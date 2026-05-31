@@ -13,6 +13,8 @@
 import { describe, it, expect } from 'vitest';
 import { generateStoryDNA } from '../data/storyGenerator';
 import type { StoryDNA } from '../types';
+import { logAuditFailures } from '../../shared/test/auditLogging';
+import { pickDeterministic } from '../../shared/test/deterministicRandom';
 
 const GENRES = [
   'Monster in the House',
@@ -59,8 +61,7 @@ describe('Comprehensive Generation Audit', () => {
         }
         
         if (issues.length > 0) {
-          console.log(`\n=== ISSUES FOUND IN ${genre} ===`);
-          console.log(issues.join('\n\n'));
+          logAuditFailures(`=== ISSUES FOUND IN ${genre} ===`, issues);
         }
         
         expect(issues).toHaveLength(0);
@@ -73,8 +74,8 @@ describe('Comprehensive Generation Audit', () => {
     const issues: string[] = [];
     
     for (let i = 0; i < 100; i++) {
-      const genre = GENRES[Math.floor(Math.random() * GENRES.length)];
-      const theme = THEMES[Math.floor(Math.random() * THEMES.length)];
+      const genre = pickDeterministic(GENRES, i);
+      const theme = pickDeterministic(THEMES, i * 3);
       const dna = generateStoryDNA(genre, theme);
       
       const allIssues = auditStoryDNA(dna, genre);
@@ -84,8 +85,7 @@ describe('Comprehensive Generation Audit', () => {
     }
     
     if (issues.length > 0) {
-      console.log('\n=== CROSS-GENRE ISSUES ===');
-      console.log(issues.join('\n\n'));
+      logAuditFailures('=== CROSS-GENRE ISSUES ===', issues);
     }
     
     expect(issues).toHaveLength(0);

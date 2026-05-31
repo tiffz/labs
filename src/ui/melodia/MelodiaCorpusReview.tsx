@@ -107,7 +107,7 @@ export default function MelodiaCorpusReview() {
           <ul>
             {normalized.validation_report.map((f, i) => (
               <li key={`${f.code}-${i}`}>
-                <strong>{f.severity}</strong> [{f.code}] measure {f.measure ?? '—'}: {f.message}
+                <strong>{f.severity}</strong> [{f.code}] measure {f.measure ?? '-'}: {f.message}
               </li>
             ))}
           </ul>

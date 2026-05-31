@@ -117,7 +117,7 @@ export function OriginalsLibraryMrtTable({ rows, search }: OriginalsLibraryMrtTa
         accessorFn: (row) => chordProLyricSnippet(row.lyricsAndChords, 120),
         Header: ({ column }) => <EncoreMrtColumnHeader label="Lyrics" column={column} />,
         Cell: ({ row }) => {
-          const snippet = chordProLyricSnippet(row.original.lyricsAndChords, 120) || '—';
+          const snippet = chordProLyricSnippet(row.original.lyricsAndChords, 120) || '-';
           return (
             <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 320 }}>
               <HighlightedText text={snippet} highlight={search} component="span" variant="inherit" />

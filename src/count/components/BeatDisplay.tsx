@@ -127,7 +127,7 @@ export function BeatDisplay({
                 const isMuted = (perBeatVolumes[b.beatIdx] ?? 1.0) === 0;
                 const isSwingSilent = b.isSwingSilent;
                 const tip = isSwingSilent
-                  ? 'Silent — swing skips this beat'
+                  ? 'Silent. swing skips this beat'
                   : isMuted
                     ? `${b.label} is muted. Click to unmute.`
                     : `Click to mute ${b.label}.`;

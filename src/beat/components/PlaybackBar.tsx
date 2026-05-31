@@ -506,7 +506,7 @@ const PlaybackBar: React.FC<PlaybackBarProps> = ({
                   className={`sync-handle ${dragging ? 'dragging' : ''}`}
                   style={{ left: `${syncStartPercent}%` }}
                   onMouseDown={handleSyncDragStart}
-                  title={`Beat sync starts at ${formatTime(syncStartTime)} — drag to adjust where beat 1 begins (useful if song has an intro or pickup notes)`}
+                  title={`Beat sync starts at ${formatTime(syncStartTime)}. drag to adjust where beat 1 begins (useful if song has an intro or pickup notes)`}
                   type="button"
                   aria-label="Drag beat sync start marker"
                 />

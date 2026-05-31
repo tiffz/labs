@@ -70,7 +70,7 @@ export function OriginalsLibraryScreen(): ReactElement {
     >
       <EncorePageHeader
         title="Originals"
-        description="Your songwriting drafts — brainstorm, chart, demo takes, and exports. Stored locally and backed up to Google Drive."
+        description="Your songwriting drafts. brainstorm, chart, demo takes, and exports. Stored locally and backed up to Google Drive."
         actions={
           <Button
             variant="contained"

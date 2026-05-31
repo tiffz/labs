@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../AnchoredPopover';
 import type { PopoverActions } from '@mui/material/Popover';
 import type { TimeSignature } from '../../music/chordTypes';
 import {
@@ -312,7 +312,7 @@ const ChordStyleInput = <TStyle extends string>({
           onClick={() => !disabled && setOpen(!open)}
         />
       </div>
-      <Popover
+      <AnchoredPopover
         action={popoverActionRef}
         open={Boolean(open && anchorRef.current && !disabled)}
         anchorEl={popoverAnchorEl(anchorRef)}
@@ -323,8 +323,7 @@ const ChordStyleInput = <TStyle extends string>({
         disableEnforceFocus
         disableRestoreFocus
         disableScrollLock
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        placement="bottom-start"
         slotProps={{
           ...playbackFieldSelectPopoverSlotProps(resolvePlaybackFieldSelectAppearance(appearance), {
             menuClassName: [
@@ -360,7 +359,7 @@ const ChordStyleInput = <TStyle extends string>({
             menuColumns={menuColumns}
           />
         </div>
-      </Popover>
+      </AnchoredPopover>
     </div>
   );
 };

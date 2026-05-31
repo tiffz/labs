@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../AnchoredPopover';
 import AppSlider from '../AppSlider';
 import {
   clampPlaybackRate,
@@ -224,30 +224,23 @@ const PlaybackSpeedControl: React.FC<PlaybackSpeedControlProps> = ({
           </div>
         </div>
         {showPresetPanel ? (
-        <Popover
+        <AnchoredPopover
           open={presetOpen}
           anchorEl={anchorRef.current}
           onClose={closePanel}
           disableAutoFocus
           disableEnforceFocus
           disableRestoreFocus
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: presetPanelHorizontal === 'right' ? 'right' : 'left',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: presetPanelHorizontal === 'right' ? 'right' : 'left',
-          }}
+          placement={presetPanelHorizontal === 'right' ? 'bottom-end' : 'bottom-start'}
+          paperClassName={[
+            'shared-bpm-dropdown',
+            'shared-bpm-dropdown--speed',
+            dropdownClassName,
+          ]
+            .filter(Boolean)
+            .join(' ')}
           slotProps={{
             paper: {
-              className: [
-                'shared-bpm-dropdown',
-                'shared-bpm-dropdown--speed',
-                dropdownClassName,
-              ]
-                .filter(Boolean)
-                .join(' '),
               style:
                 dropdownOffsetPx !== undefined
                   ? { marginTop: `${dropdownOffsetPx}px` }
@@ -302,7 +295,7 @@ const PlaybackSpeedControl: React.FC<PlaybackSpeedControlProps> = ({
               </div>
             </div>
           </div>
-        </Popover>
+        </AnchoredPopover>
         ) : null}
       </div>
     </div>

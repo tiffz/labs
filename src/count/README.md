@@ -1,5 +1,7 @@
 # Count
 
+**Before new UI:** search shared controls at [`/ui/`](/ui/) · copy: [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md)
+
 An interactive subdivision/counting trainer. Helps musicians internalize how beat subdivisions feel at different tempi.
 
 Route: `/count/`.

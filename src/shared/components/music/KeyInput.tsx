@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../AnchoredPopover';
 import { DISPLAY_KEYS_12, type MusicKey } from '../../music/musicInputConstants';
 import './keyInput.css';
 
@@ -171,18 +171,17 @@ const KeyInput: React.FC<KeyInputProps> = ({
         )}
         {trailingActions}
       </div>
-      <Popover
+      <AnchoredPopover
         open={Boolean(isOpen && anchorRef.current && !disabled)}
         anchorEl={anchorRef.current}
         onClose={() => setIsOpen(false)}
         disableAutoFocus
         disableEnforceFocus
         disableRestoreFocus
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        placement="bottom-start"
+        paperClassName={['shared-key-dropdown', dropdownClassName].filter(Boolean).join(' ')}
         slotProps={{
           paper: {
-            className: ['shared-key-dropdown', dropdownClassName].filter(Boolean).join(' '),
             style:
               dropdownOffsetPx !== undefined
                 ? { marginTop: `${dropdownOffsetPx}px` }
@@ -202,7 +201,7 @@ const KeyInput: React.FC<KeyInputProps> = ({
             itemClassName={menuItemClassName}
           />
         </div>
-      </Popover>
+      </AnchoredPopover>
       </div>
     </div>
   );

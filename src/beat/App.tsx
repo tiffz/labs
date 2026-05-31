@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
-import AnchoredPopover from '../shared/components/AnchoredPopover';
 import { type MediaFile } from './components/MediaUploader';
 import BeatVisualizer from './components/BeatVisualizer';
 import VideoPlayer from './components/VideoPlayer';
 import PlaybackSpeedControl from './components/PlaybackSpeedControl';
-import BeatMixerChannel from './components/BeatMixerChannel';
+import BeatTransportControls from './components/BeatTransportControls';
+import BeatLibraryShell from './components/BeatLibraryShell';
+import BeatLibraryCard from './components/BeatLibraryCard';
 import type { YouTubeController, YouTubePlaybackState } from './components/YouTubePlayer';
 const YouTubePlayer = lazy(() => import('./components/YouTubePlayer'));
 import PlaybackBar from './components/PlaybackBar';
@@ -27,15 +28,19 @@ import AppTooltip from '../shared/components/AppTooltip';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
 import BpmInput from '../shared/components/music/BpmInput';
 import KeyInput from '../shared/components/music/KeyInput';
-import SharedExportPopover from '../shared/components/music/SharedExportPopover';
 import { ALL_KEYS, type MusicKey } from '../shared/music/musicInputConstants';
 import type { ExportSourceAdapter } from '../shared/music/exportTypes';
 import { type Section } from './utils/sectionDetector';
-import { getMeasureDuration } from './utils/measureUtils';
-import { snapToMeasureStart } from './utils/measureUtils';
+import { getMeasureDuration, snapToMeasureStart } from './utils/measureUtils';
+import {
+  computePracticeSectionResize,
+  loopRegionForSelectedSections,
+} from './utils/practiceSectionResize';
 import { sha256Fingerprint } from './utils/fingerprint';
 import { BEAT_ANALYSIS_VERSION } from './utils/analysisVersion';
-import { shouldHandleGlobalPlaybackSpacebar } from './utils/keyboardShortcuts';
+import { usePracticeEditorHistory } from './hooks/usePracticeEditorHistory';
+import { useBeatPracticeLaneMutations } from './hooks/useBeatPracticeLaneMutations';
+import { useBeatPracticeKeyboardShortcuts } from './hooks/useBeatPracticeKeyboardShortcuts';
 import {
   createUserLane,
   loadSongSettings,
@@ -44,7 +49,6 @@ import {
   type PerSongSettings,
   toLaneSection,
   type LaneSection,
-  type PracticeEditorSnapshot,
   userSectionsStorageKey,
 } from './utils/practiceSections';
 import {
@@ -68,21 +72,7 @@ import {
 import { getAnalysisBundle, getSchemaVersion } from './storage/beatLibraryDb';
 import type { BeatLibraryEntry, UploadTaskState, UserPracticeData, UserPracticeLane, UserPracticeSection } from './types/library';
 import { decodeMediaToBuffer, runBeatAnalysisPipeline } from './utils/analysisPipeline';
-
-function repeatAudioBuffer(source: AudioBuffer, loops: number): AudioBuffer {
-  const safeLoops = Math.max(1, loops);
-  const outLength = source.length * safeLoops;
-  const context = new OfflineAudioContext(source.numberOfChannels, outLength, source.sampleRate);
-  const out = context.createBuffer(source.numberOfChannels, outLength, source.sampleRate);
-  for (let channel = 0; channel < source.numberOfChannels; channel += 1) {
-    const sourceData = source.getChannelData(channel);
-    const targetData = out.getChannelData(channel);
-    for (let loop = 0; loop < safeLoops; loop += 1) {
-      targetData.set(sourceData, loop * source.length);
-    }
-  }
-  return out;
-}
+import { repeatAudioBuffer } from './utils/repeatAudioBuffer';
 
 const App: React.FC = () => {
   const [mediaFile, setMediaFile] = useState<MediaFile | null>(null);
@@ -139,9 +129,19 @@ const App: React.FC = () => {
   const captureSongSettingsRef = useRef<() => PerSongSettings>(() => ({}));
   const [youtubeManualBpm, setYoutubeManualBpm] = useState(120);
   const [exportOpen, setExportOpen] = useState(false);
-  const historyPastRef = useRef<PracticeEditorSnapshot[]>([]);
-  const historyFutureRef = useRef<PracticeEditorSnapshot[]>([]);
-  const isApplyingHistoryRef = useRef(false);
+
+  const {
+    pushPracticeHistory,
+    undoPracticeEdit,
+    redoPracticeEdit,
+  } = usePracticeEditorHistory({
+    practiceLanes,
+    userSections,
+    activeLaneId,
+    setPracticeLanes,
+    setUserSections,
+    setActiveLaneId,
+  });
 
   const {
     isAnalyzing,
@@ -165,6 +165,25 @@ const App: React.FC = () => {
     detectSectionsFromBuffer,
     clearSections: clearAnalysisSections,
   } = useSectionDetection();
+
+  const {
+    createManualSection,
+    createPracticeLane,
+    renamePracticeLane,
+    deletePracticeLane,
+    cloneGeneratedLane,
+    clonePracticeLane,
+    renamePracticeSection,
+  } = useBeatPracticeLaneMutations({
+    practiceLanes,
+    userSections,
+    activeLaneId,
+    analysisSections,
+    setPracticeLanes,
+    setUserSections,
+    setActiveLaneId,
+    pushPracticeHistory,
+  });
 
   const {
     isAnalyzing: isAnalyzingChords,
@@ -367,47 +386,6 @@ const App: React.FC = () => {
   });
   const hasPracticeSelection = selectedSectionIds.length > 0;
   const hasAnalysisSelection = selectedAnalysisIds.length > 0;
-
-  const capturePracticeSnapshot = useCallback((): PracticeEditorSnapshot => ({
-    lanes: practiceLanes.map((lane) => ({ ...lane })),
-    sections: userSections.map((section) => ({ ...section })),
-    activeLaneId,
-  }), [activeLaneId, practiceLanes, userSections]);
-
-  const pushPracticeHistory = useCallback(() => {
-    if (isApplyingHistoryRef.current) return;
-    const snapshot = capturePracticeSnapshot();
-    historyPastRef.current = [...historyPastRef.current.slice(-79), snapshot];
-    historyFutureRef.current = [];
-  }, [capturePracticeSnapshot]);
-
-  const applyPracticeSnapshot = useCallback((snapshot: PracticeEditorSnapshot) => {
-    isApplyingHistoryRef.current = true;
-    setPracticeLanes(snapshot.lanes.map((lane) => ({ ...lane })));
-    setUserSections(snapshot.sections.map((section) => ({ ...section })));
-    setActiveLaneId(snapshot.activeLaneId);
-    window.setTimeout(() => {
-      isApplyingHistoryRef.current = false;
-    }, 0);
-  }, []);
-
-  const undoPracticeEdit = useCallback(() => {
-    const previous = historyPastRef.current[historyPastRef.current.length - 1];
-    if (!previous) return;
-    const current = capturePracticeSnapshot();
-    historyPastRef.current = historyPastRef.current.slice(0, -1);
-    historyFutureRef.current = [...historyFutureRef.current, current];
-    applyPracticeSnapshot(previous);
-  }, [applyPracticeSnapshot, capturePracticeSnapshot]);
-
-  const redoPracticeEdit = useCallback(() => {
-    const next = historyFutureRef.current[historyFutureRef.current.length - 1];
-    if (!next) return;
-    const current = capturePracticeSnapshot();
-    historyFutureRef.current = historyFutureRef.current.slice(0, -1);
-    historyPastRef.current = [...historyPastRef.current.slice(-79), current];
-    applyPracticeSnapshot(next);
-  }, [applyPracticeSnapshot, capturePracticeSnapshot]);
 
   const refreshLibrary = useCallback(async () => {
     const entries = await loadLibraryEntries();
@@ -1130,97 +1108,6 @@ const App: React.FC = () => {
     [effectiveBpm, effectiveCurrentTime, isYouTubeMedia, seekByMeasures, timeSignature.numerator]
   );
 
-  const createManualSection = useCallback((startTime: number, endTime: number, laneId?: string) => {
-    if (endTime <= startTime) return;
-    const targetLaneId = laneId ?? activeLaneId ?? practiceLanes[0]?.id;
-    if (!targetLaneId) return;
-    pushPracticeHistory();
-    setUserSections((prev) => [
-      ...prev,
-      {
-        id: `user-${crypto.randomUUID()}`,
-        startTime,
-        endTime,
-        label: `Section ${prev.length + 1}`,
-        laneId: targetLaneId,
-        color: '#7eb5c4',
-        confidence: 1,
-      },
-    ]);
-  }, [activeLaneId, practiceLanes, pushPracticeHistory]);
-
-  const createPracticeLane = useCallback((name?: string) => {
-    const laneName = name?.trim() ? name.trim() : `Lane ${practiceLanes.length + 1}`;
-    const lane = createUserLane(laneName);
-    pushPracticeHistory();
-    setPracticeLanes((prev) => [...prev, lane]);
-    setActiveLaneId(lane.id);
-    return lane;
-  }, [practiceLanes.length, pushPracticeHistory]);
-
-  const renamePracticeLane = useCallback((laneId: string, name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    const existing = practiceLanes.find((lane) => lane.id === laneId);
-    if (!existing || existing.name === trimmed) return;
-    pushPracticeHistory();
-    setPracticeLanes((prev) => prev.map((lane) => (lane.id === laneId ? { ...lane, name: trimmed } : lane)));
-  }, [practiceLanes, pushPracticeHistory]);
-
-  const deletePracticeLane = useCallback((laneId: string) => {
-    pushPracticeHistory();
-    setUserSections((prev) => prev.filter((section) => section.laneId !== laneId));
-    setPracticeLanes((prev) => {
-      const remaining = prev.filter((lane) => lane.id !== laneId);
-      if (remaining.length === 0) {
-        const fallback = createUserLane('Lane 1');
-        setActiveLaneId(fallback.id);
-        return [fallback];
-      }
-      if (activeLaneId === laneId) {
-        setActiveLaneId(remaining[0].id);
-      }
-      return remaining;
-    });
-  }, [activeLaneId, pushPracticeHistory]);
-
-  const cloneGeneratedLane = useCallback(() => {
-    if (analysisSections.length === 0) return;
-    pushPracticeHistory();
-    const lane = createPracticeLane(`Generated Copy ${practiceLanes.length + 1}`);
-    setUserSections((prev) => [
-      ...prev,
-      ...analysisSections.map((section, index) => ({
-        ...section,
-        id: `user-${crypto.randomUUID()}`,
-        label: `Section ${prev.length + index + 1}`,
-        laneId: lane.id,
-        color: '#7eb5c4',
-      })),
-    ]);
-  }, [analysisSections, createPracticeLane, practiceLanes.length, pushPracticeHistory]);
-
-  const clonePracticeLane = useCallback(
-    (laneId: string) => {
-      const sourceLane = practiceLanes.find((lane) => lane.id === laneId);
-      if (!sourceLane) return;
-      pushPracticeHistory();
-      const sourceSections = userSections.filter((section) => section.laneId === laneId);
-      const lane = createPracticeLane(`${sourceLane.name} Copy`);
-      setUserSections((prev) => [
-        ...prev,
-        ...sourceSections.map((section, index) => ({
-          ...section,
-          id: `section-${crypto.randomUUID()}`,
-          label: `Section ${index + 1}`,
-          laneId: lane.id,
-        })),
-      ]);
-      setActiveLaneId(lane.id);
-    },
-    [createPracticeLane, practiceLanes, pushPracticeHistory, userSections]
-  );
-
   const toEditableSplitTime = useCallback((time: number) => {
     if (!alignLoopToMetronome) return time;
     return snapToMeasureStart(time, Math.max(1, effectiveBpm), effectiveSyncStart, timeSignature.numerator);
@@ -1311,92 +1198,51 @@ const App: React.FC = () => {
     clearAnySelection();
   }, [clearAnySelection, pushPracticeHistory, selectedSectionIds]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const isEditableTarget = !!target && (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.tagName === 'SELECT' ||
-        target.isContentEditable
-      );
-
-      if (!isEditableTarget && (event.metaKey || event.ctrlKey)) {
-        const isRedo = event.key.toLowerCase() === 'y' || (event.shiftKey && event.key.toLowerCase() === 'z');
-        const isUndo = !event.shiftKey && event.key.toLowerCase() === 'z';
-        if (isUndo) {
-          event.preventDefault();
-          undoPracticeEdit();
-          return;
-        }
-        if (isRedo) {
-          event.preventDefault();
-          redoPracticeEdit();
-          return;
-        }
-      }
-
-      if (!isEditableTarget && (event.key === 'Delete' || event.key === 'Backspace') && selectedSectionIds.length > 0) {
-        event.preventDefault();
-        handleDeleteSelectedPracticeSections();
-        return;
-      }
-
-      if (!shouldHandleGlobalPlaybackSpacebar(event)) return;
-      event.preventDefault();
-      handlePlayPause();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleDeleteSelectedPracticeSections, handlePlayPause, redoPracticeEdit, selectedSectionIds.length, undoPracticeEdit]);
-
-  const renamePracticeSection = useCallback((sectionId: string, label: string) => {
-    const trimmed = label.trim();
-    if (!trimmed) return;
-    const existing = userSections.find((section) => section.id === sectionId);
-    if (!existing || existing.label === trimmed) return;
-    pushPracticeHistory();
-    setUserSections((prev) => prev.map((section) => (section.id === sectionId ? { ...section, label: trimmed } : section)));
-  }, [pushPracticeHistory, userSections]);
+  useBeatPracticeKeyboardShortcuts({
+    undoPracticeEdit,
+    redoPracticeEdit,
+    handleDeleteSelectedPracticeSections,
+    handlePlayPause,
+    selectedSectionCount: selectedSectionIds.length,
+  });
 
   const handleResizeSection = useCallback(
     (sectionId: string, edge: 'start' | 'end', newTime: number) => {
       const section = userSections.find((s) => s.id === sectionId);
       if (!section) return;
-      let clampedTime = Math.max(0, Math.min(effectiveDuration, newTime));
-      if (alignLoopToMetronome && effectiveBpm > 0) {
-        const measureDur = getMeasureDuration(effectiveBpm, timeSignature.numerator);
-        clampedTime = snapToMeasureStart(clampedTime, measureDur, syncStartTime ?? 0);
-      }
-      const minDuration = 0.5;
-      if (edge === 'start' && clampedTime >= section.endTime - minDuration) return;
-      if (edge === 'end' && clampedTime <= section.startTime + minDuration) return;
+      const resized = computePracticeSectionResize({
+        section,
+        edge,
+        newTime,
+        effectiveDuration,
+        alignLoopToMetronome,
+        effectiveBpm,
+        beatsPerMeasure: timeSignature.numerator,
+        syncStartTime: syncStartTime ?? 0,
+      });
+      if (!resized) return;
       setUserSections((prev) =>
-        prev.map((s) => {
-          if (s.id !== sectionId) return s;
-          return edge === 'start'
-            ? { ...s, startTime: clampedTime }
-            : { ...s, endTime: clampedTime };
-        })
+        prev.map((s) => (s.id === sectionId ? { ...s, ...resized } : s))
       );
       if (loopRegion) {
         const updatedSections = userSections.map((s) =>
-          s.id === sectionId
-            ? edge === 'start'
-              ? { ...s, startTime: clampedTime }
-              : { ...s, endTime: clampedTime }
-            : s
+          s.id === sectionId ? { ...s, ...resized } : s
         );
-        const selected = updatedSections.filter((s) => selectedSectionIds.includes(s.id));
-        if (selected.length > 0) {
-          setLoopRegion({
-            startTime: Math.min(...selected.map((s) => s.startTime)),
-            endTime: Math.max(...selected.map((s) => s.endTime)),
-          });
-        }
+        const nextLoop = loopRegionForSelectedSections(updatedSections, selectedSectionIds);
+        if (nextLoop) setLoopRegion(nextLoop);
       }
     },
-    [alignLoopToMetronome, effectiveBpm, effectiveDuration, loopRegion, selectedSectionIds, setLoopRegion, syncStartTime, timeSignature.numerator, userSections]
+    [
+      alignLoopToMetronome,
+      effectiveBpm,
+      effectiveDuration,
+      loopRegion,
+      selectedSectionIds,
+      setLoopRegion,
+      syncStartTime,
+      timeSignature.numerator,
+      userSections,
+    ]
   );
 
   const handleCombineSelection = useCallback(() => {
@@ -1538,66 +1384,27 @@ const App: React.FC = () => {
     (entry: BeatLibraryEntry, highlightActive = false) => {
       const statusLabel = getEntryStatusLabel(entry);
       const isActive = highlightActive && entry.id === activeEntryId;
-      const isEditing = editingEntryId === entry.id;
       return (
-        <div
+        <BeatLibraryCard
           key={entry.id}
-          className={`library-card ${isActive ? 'active' : ''}`}
-          role="button"
-          tabIndex={0}
-          onClick={() => { if (!isEditing) loadEntry(entry); }}
-          onKeyDown={(e) => { if (!isEditing && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); loadEntry(entry); } }}
-        >
-          <div className="library-thumb">
-            {entry.sourceType === 'youtube' && entry.youtubeVideoId ? (
-              <img src={`https://i.ytimg.com/vi/${entry.youtubeVideoId}/hqdefault.jpg`} alt={entry.title} />
-            ) : libraryPreviewUrls[entry.id] ? (
-              <video src={`${libraryPreviewUrls[entry.id]}#t=0.1`} muted preload="metadata" />
-            ) : (
-              <span className="material-symbols-outlined">movie</span>
-            )}
-          </div>
-          <div className="library-card-meta">
-            {isEditing ? (
-              <input
-                className="library-card-title-input"
-                value={editingTitle}
-                onChange={(e) => setEditingTitle(e.target.value)}
-                onBlur={() => commitRename(entry.id, editingTitle)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); commitRename(entry.id, editingTitle); }
-                  if (e.key === 'Escape') { setEditingEntryId(null); setEditingTitle(''); }
-                  e.stopPropagation();
-                }}
-                onClick={(e) => e.stopPropagation()}
-                // eslint-disable-next-line jsx-a11y/no-autofocus
-                autoFocus
-              />
-            ) : (
-              <span
-                className="library-card-title"
-                role="button"
-                tabIndex={0}
-                onDoubleClick={(e) => {
-                  e.stopPropagation();
-                  setEditingEntryId(entry.id);
-                  setEditingTitle(entry.title);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.stopPropagation();
-                    setEditingEntryId(entry.id);
-                    setEditingTitle(entry.title);
-                  }
-                }}
-                title="Double-click to rename"
-              >
-                {entry.title}
-              </span>
-            )}
-            {statusLabel && <span className={`library-status ${statusLabel === 'Outdated' ? 'stale' : 'fresh'}`}>{statusLabel}</span>}
-          </div>
-        </div>
+          entry={entry}
+          isActive={isActive}
+          isEditing={editingEntryId === entry.id}
+          editingTitle={editingTitle}
+          statusLabel={statusLabel}
+          previewUrl={libraryPreviewUrls[entry.id]}
+          onSelect={() => loadEntry(entry)}
+          onStartRename={() => {
+            setEditingEntryId(entry.id);
+            setEditingTitle(entry.title);
+          }}
+          onEditingTitleChange={setEditingTitle}
+          onCommitRename={(title) => commitRename(entry.id, title)}
+          onCancelRename={() => {
+            setEditingEntryId(null);
+            setEditingTitle('');
+          }}
+        />
       );
     },
     [activeEntryId, commitRename, editingEntryId, editingTitle, getEntryStatusLabel, libraryPreviewUrls, loadEntry]
@@ -1699,29 +1506,15 @@ const App: React.FC = () => {
             {analysisError && <p className="error-text">{analysisError}</p>}
             {duplicateMessage && <p className="error-text">{duplicateMessage}</p>}
             {libraryEntries.length > 0 && (
-              <div className="library-shell compact">
-                <div className="library-header-row">
-                  <h3>Your uploads</h3>
-                  {staleCount > 0 && (
-                    <AppTooltip title={`Reanalyze ${staleCount} outdated ${staleCount === 1 ? 'video' : 'videos'}`}>
-                      <button className="icon-btn subtle" onClick={() => setReanalysisQueue(staleLibraryIds)}>
-                        <span className="material-symbols-outlined">refresh</span>
-                      </button>
-                    </AppTooltip>
-                  )}
-                </div>
-                <div className="library-toolbar">
-                  <input
-                    className="library-search-input"
-                    placeholder="Search your uploads"
-                    value={libraryQuery}
-                    onChange={(event) => setLibraryQuery(event.target.value)}
-                  />
-                </div>
-                <div className="library-grid">
-                  {filteredLibrary.map((entry) => renderLibraryCard(entry))}
-                </div>
-              </div>
+              <BeatLibraryShell
+                staleCount={staleCount}
+                staleLibraryIds={staleLibraryIds}
+                onReanalyzeStale={setReanalysisQueue}
+                libraryQuery={libraryQuery}
+                onLibraryQueryChange={setLibraryQuery}
+              >
+                {filteredLibrary.map((entry) => renderLibraryCard(entry))}
+              </BeatLibraryShell>
             )}
           </div>
         )}
@@ -1757,153 +1550,63 @@ const App: React.FC = () => {
                   </button>
                 </div>
               )}
-              <div className="transport-controls transport-controls-sticky">
-                <div className="transport-row">
-                  <button className={`play-btn ${effectiveIsPlaying ? 'playing' : ''}`} onClick={handlePlayPause}>
-                    <span className="material-symbols-outlined">{effectiveIsPlaying ? 'pause' : 'play_arrow'}</span>
-                  </button>
-                  <button className="nav-btn" onClick={handleSkipToStart}>
-                    <span className="material-symbols-outlined">skip_previous</span>
-                  </button>
-                  <button className="nav-btn" onClick={() => handleSeekByMeasures(-1)}>
-                    <span className="material-symbols-outlined">fast_rewind</span>
-                  </button>
-                  <button className="nav-btn" onClick={() => handleSeekByMeasures(1)}>
-                    <span className="material-symbols-outlined">fast_forward</span>
-                  </button>
-                  <button className="nav-btn" onClick={handleSkipToEnd}>
-                    <span className="material-symbols-outlined">skip_next</span>
-                  </button>
-                  <PlaybackSpeedControl
-                    value={effectivePlaybackRate}
-                    onChange={handlePlaybackRateChange}
-                    variant="compact"
-                    className="shared-bpm-input beat-playback-speed-transport"
-                    dropdownClassName="beat-bpm-dropdown"
-                    sliderClassName="beat-bpm-slider"
-                  />
-                  <AppTooltip title={isYouTubeMedia ? 'Export not available for YouTube videos' : 'Export audio'}>
-                    <span>
-                      <button
-                        ref={exportButtonRef}
-                        className="nav-btn"
-                        onClick={() => { setExportOpen(true); analytics.trackEvent('export_open'); }}
-                        aria-label="Export audio"
-                        disabled={isYouTubeMedia}
-                      >
-                        <span className="material-symbols-outlined">download</span>
-                      </button>
-                    </span>
-                  </AppTooltip>
-                  <SharedExportPopover
-                    open={exportOpen}
-                    anchorEl={exportButtonRef.current}
-                    onClose={() => setExportOpen(false)}
-                    adapter={exportAdapter}
-                    persistKey="beat"
-                  />
-                  <div className="loop-options">
-                    <AppTooltip title="Play through">
-                      <label className={`loop-option has-tooltip ${!loopEnabled ? 'active' : ''}`}>
-                        <input type="radio" name="loopMode" checked={!loopEnabled} onChange={() => setLoopEnabled(false)} />
-                        <span className="material-symbols-outlined">arrow_forward</span>
-                      </label>
-                    </AppTooltip>
-                    <AppTooltip title="Loop track">
-                      <label className={`loop-option has-tooltip ${loopEnabled && selectedSectionIds.length === 0 ? 'active' : ''}`}>
-                        <input
-                          type="radio"
-                          name="loopMode"
-                          checked={loopEnabled && selectedSectionIds.length === 0}
-                          onChange={loopEntireTrack}
-                        />
-                        <span className="material-symbols-outlined">repeat</span>
-                      </label>
-                    </AppTooltip>
-                    <AppTooltip title="Loop section">
-                      <label className={`loop-option has-tooltip ${loopEnabled && (selectedSectionIds.length > 0 || selectedAnalysisIds.length > 0) ? 'active' : ''}`}>
-                        <input
-                          type="radio"
-                          name="loopMode"
-                          checked={loopEnabled && (selectedSectionIds.length > 0 || selectedAnalysisIds.length > 0)}
-                          onChange={() => {
-                            if (!loopRegion && selectedAnalysisIds.length > 0) {
-                              const selected = analysisSections.filter((section) => selectedAnalysisIds.includes(section.id));
-                              if (selected.length > 0) {
-                                const startTime = Math.min(...selected.map((section) => section.startTime));
-                                const endTime = Math.max(...selected.map((section) => section.endTime));
-                                setLoopRegion({ startTime, endTime });
-                                handleUnifiedSeek(startTime);
-                              }
-                            } else if (selectedSectionIds.length === 0 && timelineSections.length > 0) {
-                              const currentSection = timelineSections.find(
-                                (section) => effectiveCurrentTime >= section.startTime && effectiveCurrentTime < section.endTime
-                              );
-                              if (currentSection) {
-                                selectSection(currentSection, false);
-                              }
-                            }
-                            setLoopEnabled(true);
-                          }}
-                        />
-                        <span className="material-symbols-outlined">repeat_one</span>
-                      </label>
-                    </AppTooltip>
-                  </div>
-                  <div className="mixer-anchor">
-                    <AppTooltip title="Volume mixer">
-                      <button
-                        ref={mixerAnchorRef}
-                        className="icon-btn subtle"
-                        onClick={() => setMixerOpen((o) => !o)}
-                        aria-label="Volume mixer"
-                      >
-                        <span className="material-symbols-outlined">tune</span>
-                      </button>
-                    </AppTooltip>
-                  </div>
-                </div>
-                <AnchoredPopover
-                  open={mixerOpen}
-                  anchorEl={mixerAnchorRef.current}
-                  onClose={() => setMixerOpen(false)}
-                  placement="bottom-end"
-                  paperClassName="mixer-popover"
-                >
-                  <div className="volume-mixer vertical">
-                    <BeatMixerChannel
-                      label="Video"
-                      icon="movie"
-                      volume={audioVolume}
-                      muted={audioMuted}
-                      onVolumeChange={setAudioVolume}
-                      onMutedChange={setAudioMuted}
-                      sliderDisabled={isYouTube}
-                      muteDisabled={isYouTube}
-                      muteDisabledReason="YouTube volume is controlled in the player"
-                    />
-                    <BeatMixerChannel
-                      label="Drums"
-                      icon="music_cast"
-                      volume={drumVolume}
-                      muted={drumMuted}
-                      onVolumeChange={setDrumVolume}
-                      onMutedChange={setDrumMuted}
-                    />
-                    <BeatMixerChannel
-                      label="Metronome"
-                      icon="timer"
-                      volume={metronomeVolume}
-                      muted={metronomeMuted}
-                      onVolumeChange={setMetronomeVolume}
-                      onMutedChange={setMetronomeMuted}
-                      sliderDisabled={!metronomeEnabled}
-                      muteDisabled={!metronomeEnabled}
-                      muteDisabledReason="Turn on the metronome first"
-                    />
-                  </div>
-                </AnchoredPopover>
-              </div>
+              <BeatTransportControls
+                effectiveIsPlaying={effectiveIsPlaying}
+                onPlayPause={handlePlayPause}
+                onSkipToStart={handleSkipToStart}
+                onSeekByMeasures={handleSeekByMeasures}
+                onSkipToEnd={handleSkipToEnd}
+                effectivePlaybackRate={effectivePlaybackRate}
+                onPlaybackRateChange={handlePlaybackRateChange}
+                isYouTubeMedia={isYouTubeMedia}
+                exportButtonRef={exportButtonRef}
+                exportOpen={exportOpen}
+                onExportOpen={() => { setExportOpen(true); analytics.trackEvent('export_open'); }}
+                onExportClose={() => setExportOpen(false)}
+                exportAdapter={exportAdapter}
+                loopEnabled={loopEnabled}
+                selectedSectionIds={selectedSectionIds}
+                selectedAnalysisIds={selectedAnalysisIds}
+                onLoopPlayThrough={() => setLoopEnabled(false)}
+                onLoopEntireTrack={loopEntireTrack}
+                onLoopSection={() => {
+                  if (!loopRegion && selectedAnalysisIds.length > 0) {
+                    const selected = analysisSections.filter((section) => selectedAnalysisIds.includes(section.id));
+                    if (selected.length > 0) {
+                      const startTime = Math.min(...selected.map((section) => section.startTime));
+                      const endTime = Math.max(...selected.map((section) => section.endTime));
+                      setLoopRegion({ startTime, endTime });
+                      handleUnifiedSeek(startTime);
+                    }
+                  } else if (selectedSectionIds.length === 0 && timelineSections.length > 0) {
+                    const currentSection = timelineSections.find(
+                      (section) => effectiveCurrentTime >= section.startTime && effectiveCurrentTime < section.endTime
+                    );
+                    if (currentSection) {
+                      selectSection(currentSection, false);
+                    }
+                  }
+                  setLoopEnabled(true);
+                }}
+                mixerOpen={mixerOpen}
+                mixerAnchorRef={mixerAnchorRef}
+                onToggleMixer={() => setMixerOpen((o) => !o)}
+                onCloseMixer={() => setMixerOpen(false)}
+                isYouTube={isYouTube}
+                audioVolume={audioVolume}
+                audioMuted={audioMuted}
+                onAudioVolumeChange={setAudioVolume}
+                onAudioMutedChange={setAudioMuted}
+                drumVolume={drumVolume}
+                drumMuted={drumMuted}
+                onDrumVolumeChange={setDrumVolume}
+                onDrumMutedChange={setDrumMuted}
+                metronomeVolume={metronomeVolume}
+                metronomeMuted={metronomeMuted}
+                metronomeEnabled={metronomeEnabled}
+                onMetronomeVolumeChange={setMetronomeVolume}
+                onMetronomeMutedChange={setMetronomeMuted}
+              />
 
               {activeEntry && (
                 <div className="now-playing-title-bar">

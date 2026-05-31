@@ -617,7 +617,7 @@ export default function App() {
                   aria-label={voiceGain > 0 ? 'Mute voice' : 'Unmute voice'}
                 >
                   {voiceSubdivMuted && (
-                    <PulseTooltip title="Subdivision syllables auto-muted at this tempo — only beat numbers are voiced" placement="top">
+                    <PulseTooltip title="Subdivision syllables auto-muted at this tempo. only beat numbers are voiced" placement="top">
                       <span className="pulse-tempo-hint" aria-label="Voice subdivision muted">!</span>
                     </PulseTooltip>
                   )}

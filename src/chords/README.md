@@ -1,5 +1,7 @@
 # Chords App
 
+**Agents:** [`AGENTS.md`](AGENTS.md) · shared pickers: [`/ui/`](/ui/) · copy: [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md)
+
 Chord progression generator/player with notation rendering, style presets, and URL-shareable state.
 
 ## Core Responsibilities
@@ -27,11 +29,7 @@ src/chords/
 
 ## Shared Boundary Notes
 
-Canonical theory/typing now lives in `src/shared/music/**`.
-
-- `src/chords/utils/chordTheory.ts` and `src/chords/utils/chordVoicing.ts`
-  are compatibility adapters to shared implementations.
-- New theory/voicing logic should be added in shared first, then consumed here.
+Canonical theory/typing lives in `src/shared/music/**`. Import **`chordTheory`**, **`chordVoicing`**, and **`scoreTypes`** from shared directly; app adapter shims were removed.
 
 ## Playback Boundaries
 

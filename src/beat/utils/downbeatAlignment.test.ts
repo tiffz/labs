@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { alignBeatGridToDownbeat } from './downbeatAlignment';
+import { createSeededRandom } from '../../shared/test/deterministicRandom';
 
 /**
  * Create a mock audio buffer with synthetic audio containing
@@ -9,24 +10,23 @@ function createMockAudioBuffer(
   duration: number,
   sampleRate: number,
   peakTimes: number[],
-  peakEnergy: number = 0.8
+  peakEnergy: number = 0.8,
+  seed: number = 42
 ): { getChannelData: (channel: number) => Float32Array; sampleRate: number } {
+  const rand = createSeededRandom(seed);
   const numSamples = Math.floor(duration * sampleRate);
   const data = new Float32Array(numSamples);
   
-  // Fill with low-level noise
   for (let i = 0; i < numSamples; i++) {
-    data[i] = (Math.random() - 0.5) * 0.02;
+    data[i] = (rand() - 0.5) * 0.02;
   }
   
-  // Add energy peaks at specified times
-  const peakWidth = Math.floor(sampleRate * 0.02); // 20ms wide peaks
+  const peakWidth = Math.floor(sampleRate * 0.02);
   for (const peakTime of peakTimes) {
     const peakSample = Math.floor(peakTime * sampleRate);
     for (let i = 0; i < peakWidth && peakSample + i < numSamples; i++) {
-      // Gaussian-like envelope
       const envelope = Math.exp(-((i - peakWidth / 2) ** 2) / (2 * (peakWidth / 4) ** 2));
-      data[peakSample + i] = peakEnergy * envelope * (Math.random() * 0.2 + 0.8);
+      data[peakSample + i] = peakEnergy * envelope * (rand() * 0.2 + 0.8);
     }
   }
   

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../AnchoredPopover';
 import { COMMON_BPMS, DEFAULT_BPM_MAX, DEFAULT_BPM_MIN } from '../../music/musicInputConstants';
 import AppSlider from '../AppSlider';
 import { NumericStepperField } from './NumericStepperField';
@@ -212,7 +212,7 @@ const BpmInput: React.FC<BpmInputProps> = ({
             ) : null}
           </div>
         </div>
-        <Popover
+        <AnchoredPopover
           open={Boolean(showPresetDropdown && isPresetOpen && anchorRef.current && !disabled)}
           anchorEl={anchorRef.current}
           onClose={() => {
@@ -222,17 +222,10 @@ const BpmInput: React.FC<BpmInputProps> = ({
           disableAutoFocus
           disableEnforceFocus
           disableRestoreFocus
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: presetPanelHorizontal === 'right' ? 'right' : 'left',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: presetPanelHorizontal === 'right' ? 'right' : 'left',
-          }}
+          placement={presetPanelHorizontal === 'right' ? 'bottom-end' : 'bottom-start'}
+          paperClassName={['shared-bpm-dropdown', dropdownClassName].filter(Boolean).join(' ')}
           slotProps={{
             paper: {
-              className: ['shared-bpm-dropdown', dropdownClassName].filter(Boolean).join(' '),
               style: dropdownOffsetPx !== undefined ? { marginTop: `${dropdownOffsetPx}px` } : undefined,
               ref: dropdownPaperRef,
             },
@@ -279,7 +272,7 @@ const BpmInput: React.FC<BpmInputProps> = ({
               </div>
             </div>
           </div>
-        </Popover>
+        </AnchoredPopover>
       </div>
     </div>
   );

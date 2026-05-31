@@ -1,5 +1,7 @@
 # Darbuka Rhythm Trainer
 
+**Agents:** [`AGENTS.md`](AGENTS.md) · shared notation: [`src/shared/notation/`](../shared/notation/) · UI catalog: [`/ui/`](/ui/)
+
 A web application for learning and practicing Darbuka drum rhythms. Enter rhythms using simple text notation and see them displayed as professional music notation.
 
 ## Features

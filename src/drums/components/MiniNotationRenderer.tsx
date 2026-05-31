@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Dot, BarlineType } from 'vexflow';
+import { drawDrumSymbol } from '../../shared/notation/drumSymbols';
 import type { DrumSound } from '../types';
 
 interface MiniNotationRendererProps {
@@ -20,73 +21,6 @@ const SOUND_TO_PITCH: Record<DrumSound, string> = {
   slap: 'f/4',
   rest: 'f/4',
   simile: 'f/4',
-};
-
-/**
- * Draw custom SVG symbol above a note
- */
-const drawSymbolAboveNote = (
-  svg: SVGSVGElement,
-  x: number,
-  y: number,
-  sound: DrumSound
-): void => {
-  const symbolGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  symbolGroup.setAttribute('transform', `translate(${x}, ${y - 25})`);
-
-  let path: SVGPathElement;
-
-  switch (sound) {
-    case 'dum':
-      path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M 6 -7 Q -2 -7, -2 0 Q -2 7, 6 7 L 6 13');
-      path.setAttribute('stroke', 'black');
-      path.setAttribute('stroke-width', '2.5');
-      path.setAttribute('fill', 'none');
-      path.setAttribute('stroke-linecap', 'round');
-      path.setAttribute('stroke-linejoin', 'round');
-      symbolGroup.appendChild(path);
-      break;
-
-    case 'tak':
-      path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M -6 6 L 0 -6 L 6 6');
-      path.setAttribute('stroke', 'black');
-      path.setAttribute('stroke-width', '2.5');
-      path.setAttribute('fill', 'none');
-      path.setAttribute('stroke-linecap', 'round');
-      path.setAttribute('stroke-linejoin', 'miter');
-      symbolGroup.appendChild(path);
-      break;
-
-    case 'ka':
-      path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M -6 -6 L 0 6 L 6 -6');
-      path.setAttribute('stroke', 'black');
-      path.setAttribute('stroke-width', '2.5');
-      path.setAttribute('fill', 'none');
-      path.setAttribute('stroke-linecap', 'round');
-      path.setAttribute('stroke-linejoin', 'miter');
-      symbolGroup.appendChild(path);
-      break;
-
-    case 'slap': {
-      // Slap is a filled circle - slightly wider (radius 7.5)
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('cx', '0');
-      circle.setAttribute('cy', '0');
-      circle.setAttribute('r', '7.5');
-      circle.setAttribute('fill', 'black');
-      circle.setAttribute('stroke', 'none');
-      symbolGroup.appendChild(circle);
-      break;
-    }
-
-    default:
-      return;
-  }
-
-  svg.appendChild(symbolGroup);
 };
 
 /**
@@ -260,7 +194,7 @@ const MiniNotationRenderer: React.FC<MiniNotationRendererProps> = ({
           if (note && note.sound !== 'rest') {
             const noteX = staveNote.getAbsoluteX() + 6;
             const noteY = stave.getYForLine(0);
-            drawSymbolAboveNote(svgElement, noteX, noteY, note.sound);
+            drawDrumSymbol(svgElement, noteX, noteY, note.sound, 'black', 0.85, -25);
           }
         });
         

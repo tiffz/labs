@@ -1,5 +1,5 @@
 import React from 'react';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import type { PlaybackSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../types/settings';
 import AppTooltip from '../../shared/components/AppTooltip';
@@ -76,13 +76,12 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
   };
 
   return (
-    <Popover
+    <AnchoredPopover
       open={isOpen}
       onClose={onClose}
       anchorEl={buttonRef.current}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-      slotProps={{ paper: { className: 'settings-dropdown-container' } }}
+      placement="bottom-end"
+      paperClassName="settings-dropdown-container"
     >
       <div className="settings-dropdown">
         <div className="settings-header">
@@ -257,7 +256,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
           </div>
         </div>
       </div>
-    </Popover>
+    </AnchoredPopover>
   );
 };
 

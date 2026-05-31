@@ -61,7 +61,7 @@ export function AccessRestrictedScreen(props: { message: string | null; onRetry:
     kind === 'allowlist'
       ? 'This Google account is not on the allowlist for this build of Encore.'
       : kind === 'timeout'
-        ? 'Google did not return a token before the time limit. That usually means a blocked popup, a closed sign-in window, or a slow network—not that your email failed an allowlist check.'
+        ? 'Google did not return a token before the time limit. That usually means a blocked popup, a closed sign-in window, or a slow network. not that your email failed an allowlist check.'
         : kind === 'popup'
           ? 'Your browser stopped the Google sign-in window. Allow popups for this site (or try again after unblocking), then use Try again below.'
           : 'Something went wrong while signing in with Google.';

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import type { ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import { renderRhythmAudio, exportAudioBuffer, calculateRhythmDuration, formatDuration } from '../utils/audioExport';
@@ -110,12 +110,11 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
   }
 
   return (
-    <Popover
+    <AnchoredPopover
       open={isOpen}
       onClose={onClose}
       anchorEl={buttonRef?.current ?? null}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      placement="bottom-end"
     >
       <div
           className="download-dropdown"
@@ -203,7 +202,7 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
             {isExporting ? 'Exporting...' : 'Download'}
           </button>
       </div>
-    </Popover>
+    </AnchoredPopover>
   );
 };
 

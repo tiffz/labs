@@ -10,8 +10,6 @@ describe('Visual Time Coordinate Mapping', () => {
         // |: D--- :|x3 | K---
         const notation = '|: D--- :|x3 | K---';
         const parsed = parseRhythm(notation, timeSignature);
-        console.log('Visual Regression Measures:', parsed.measures.length);
-        console.log('Notation:', notation);
 
         // Click on K (Visual Tick 16 + 1 = 17)
         const lookup = findMeasureIndexFromVisualTick(parsed, 17);
@@ -52,8 +50,6 @@ describe('Visual Time Coordinate Mapping', () => {
         // Replace
         const newPattern = 'NEW-';
         const result = replacePatternAtIndex(notation, map.index, newPattern, 16);
-
-        console.log('Result:', result.newNotation);
 
         // Result: A---|: B--- :|x3 | NEW-
         expect(result.newNotation).toContain('NEW-');

@@ -8,6 +8,7 @@ Nested **`AGENTS.md`** for Project Encore. Root policy: [`../../AGENTS.md`](../.
 2. [`ARCHITECTURE.md`](ARCHITECTURE.md) — routing, Dexie, Drive layout.
 3. **Originals chord paint:** [`originals/DEVELOPMENT.md`](originals/DEVELOPMENT.md) + `.cursor/rules/encore-originals-chord-paint.mdc`.
 4. **Copy voice:** [`COPY_STYLE.md`](COPY_STYLE.md).
+5. **UI primitives:** [`UI_PRIMITIVES.md`](UI_PRIMITIVES.md) — media rows, integration cards, Spotify sync panels.
 
 ## Entry & routing
 

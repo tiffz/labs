@@ -12,12 +12,19 @@
     "KeyInput": "key-input",
     "ChordProgressionInput": "chord-progression-input",
     "ChordStyleInput": "chord-style-input",
+    "ChordPlaybackSettingsPanel": "chord-playback-settings-panel",
     "SharedExportPopover": "shared-export-popover",
     "DrumNotationMini": "drum-notation-mini",
     "AppTooltip": "app-tooltip",
     "MetronomeToggleButton": "metronome-toggle",
     "DiceIcon": "dice-icon",
-    "AppLinearVolumeSlider": "app-linear-volume-slider"
+    "AppLinearVolumeSlider": "app-linear-volume-slider",
+    "AppSlider": "app-slider",
+    "PlaybackSoundSelect": "playback-sound-select",
+    "PlaybackSpeedControl": "playback-speed-control",
+    "PlaybackVolumeRow": "playback-volume-row",
+    "AnchoredPopover": "anchored-popover",
+    "NumericStepperField": "numeric-stepper-field"
   },
   "stabilityOverrides": {
     "src/shared/music/ARCHITECTURE.md": "stable"

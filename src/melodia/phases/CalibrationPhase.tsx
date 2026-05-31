@@ -131,7 +131,7 @@ export default function CalibrationPhase({
         cleanup();
         if (!result) {
           setCaptureState('error');
-          setErrorText("Couldn't lock a steady pitch — try again or skip.");
+          setErrorText("Couldn't lock a steady pitch. try again or skip.");
           return;
         }
         const midi = result.midi;
@@ -164,7 +164,7 @@ export default function CalibrationPhase({
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
           Sing one comfortable note. We&apos;ll treat that as your <strong>Do</strong> for the
-          first lesson — movable do, no perfect pitch required.
+          first lesson. movable do, no perfect pitch required.
         </Typography>
       </Box>
 
@@ -206,7 +206,7 @@ export default function CalibrationPhase({
         )}
         {captureState === 'success' && liveMidi !== null && (
           <Typography variant="body2" className="melodia-ink-pink">
-            Locked on <strong>{midiToNoteName(liveMidi)}</strong> — starting your first lesson.
+            Locked on <strong>{midiToNoteName(liveMidi)}</strong>. starting your first lesson.
           </Typography>
         )}
         {(captureState === 'error' || captureState === 'denied') && errorText && (
@@ -240,7 +240,7 @@ export default function CalibrationPhase({
           variant="subtitle1"
           sx={{ fontWeight: 700, m: 0 }}
         >
-          Skip — pick a range
+          Skip. pick a range
         </Typography>
         <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
           Don&apos;t want to sing yet? Tap a comfortable range and we&apos;ll center the lesson

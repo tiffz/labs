@@ -367,7 +367,7 @@ const ChordChart: React.FC<ChordChartProps> = ({
                           </span>
                         ))
                       ) : (
-                        <span className="chord-name empty">—</span>
+                        <span className="chord-name empty">-</span>
                       )}
                     </div>
                     

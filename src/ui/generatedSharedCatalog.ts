@@ -2110,10 +2110,15 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat"
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
     ],
     "exportType": "default",
-    "demoId": null
+    "demoId": "anchored-popover"
   },
   {
     "id": "src-shared-components-anchoredpopover-tsx-anchoredpopoverplacement",
@@ -2129,7 +2134,12 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat"
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
     ],
     "exportType": "type",
     "demoId": null
@@ -2148,7 +2158,12 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat"
+      "beat",
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
     ],
     "exportType": "interface",
     "demoId": null
@@ -2167,6 +2182,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
+      "beat",
       "ui"
     ],
     "exportType": "default",
@@ -2186,6 +2202,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
+      "beat",
       "ui"
     ],
     "exportType": "type",
@@ -2209,11 +2226,12 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "drums",
       "forms",
       "piano",
+      "ui",
       "words",
       "zines"
     ],
     "exportType": "default",
-    "demoId": null
+    "demoId": "app-slider"
   },
   {
     "id": "src-shared-components-apptooltip-tsx-apptooltip",
@@ -2476,9 +2494,11 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "function",
-    "demoId": null
+    "demoId": "chord-playback-settings-panel"
   },
   {
     "id": "src-shared-components-music-chordplaybacksettingspanel-tsx-chordplaybacksettingspanelprops",
@@ -2494,7 +2514,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -2753,9 +2775,11 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "function",
-    "demoId": null
+    "demoId": "numeric-stepper-field"
   },
   {
     "id": "src-shared-components-music-numericstepperfield-tsx-numericstepperfieldprops",
@@ -2771,7 +2795,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -3087,6 +3113,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "chords",
       "piano",
+      "ui",
       "words"
     ],
     "exportType": "named",
@@ -3109,10 +3136,11 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "chords",
       "piano",
+      "ui",
       "words"
     ],
     "exportType": "function",
-    "demoId": null
+    "demoId": "playback-sound-select"
   },
   {
     "id": "src-shared-components-music-playbacksoundselect-tsx-playbacksoundselectprops",
@@ -3131,6 +3159,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "chords",
       "piano",
+      "ui",
       "words"
     ],
     "exportType": "type",
@@ -3150,9 +3179,11 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "default",
-    "demoId": null
+    "demoId": "playback-speed-control"
   },
   {
     "id": "src-shared-components-music-playbackspeedcontrol-tsx-playbackspeedcontrolprops",
@@ -3168,7 +3199,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -3186,9 +3219,11 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "function",
-    "demoId": null
+    "demoId": "playback-volume-row"
   },
   {
     "id": "src-shared-components-music-playbackvolumerow-tsx-playbackvolumerowprops",
@@ -3204,7 +3239,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -5858,7 +5895,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -5874,7 +5913,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -5890,7 +5931,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -5905,7 +5948,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "music"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -5920,7 +5965,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "music"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -5935,7 +5982,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "music"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -5950,7 +5999,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "music"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -7187,6 +7238,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -7205,6 +7257,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "type",
@@ -7222,6 +7275,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -7239,6 +7293,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -7256,6 +7311,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -7273,6 +7329,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -7450,6 +7507,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "chords",
       "piano",
       "words"
     ],
@@ -9188,6 +9246,93 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-playbackvolumemix-ts-buildeffectiveauxiliarydrumgain",
+    "name": "buildEffectiveAuxiliaryDrumGain",
+    "path": "src/shared/music/playbackVolumeMix.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Backing beat / auxiliary drum hits: same master × channel scaling as chord gain.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-playbackvolumemix-ts-buildeffectivechannelgain",
+    "name": "buildEffectiveChannelGain",
+    "path": "src/shared/music/playbackVolumeMix.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Scale a 0–100 channel through master mute/volume to a 0–1 gain.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-playbackvolumemix-ts-buildeffectivedrumplaybacksettings",
+    "name": "buildEffectiveDrumPlaybackSettings",
+    "path": "src/shared/music/playbackVolumeMix.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Scale drum playback settings by master + drums mixer channels.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-playbackvolumemix-ts-channelvolumeinput",
+    "name": "ChannelVolumeInput",
+    "path": "src/shared/music/playbackVolumeMix.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-playbackvolumemix-ts-masterdrummixinput",
+    "name": "MasterDrumMixInput",
+    "path": "src/shared/music/playbackVolumeMix.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-randomchordprogression-ts-getrandompopularchordprogression",
     "name": "getRandomPopularChordProgression",
     "path": "src/shared/music/randomChordProgression.ts",
@@ -9604,6 +9749,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "const",
@@ -9622,6 +9768,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "const",
@@ -9639,6 +9786,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -9656,6 +9804,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -9674,6 +9823,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "type",
@@ -9692,6 +9842,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "interface",
@@ -9710,6 +9861,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "interface",
@@ -9727,6 +9879,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -9744,6 +9897,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -9761,6 +9915,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -9778,6 +9933,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -9796,6 +9952,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "type",
@@ -9814,6 +9971,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "interface",
@@ -9832,6 +9990,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "interface",
@@ -9850,6 +10009,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "interface",
@@ -9868,6 +10028,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "interface",
@@ -9886,6 +10047,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "interface",
@@ -9904,6 +10066,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "interface",
@@ -9922,6 +10085,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano"
     ],
     "exportType": "interface",
@@ -10029,6 +10193,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "chords",
       "piano",
+      "ui",
       "words"
     ],
     "exportType": "const",
@@ -10049,6 +10214,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "chords",
       "piano",
+      "ui",
       "words"
     ],
     "exportType": "interface",
@@ -10069,6 +10235,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "chords",
       "piano",
+      "ui",
       "words"
     ],
     "exportType": "type",
@@ -10087,7 +10254,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -10107,7 +10273,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords",
       "piano"
     ],
     "exportType": "const",
@@ -10127,7 +10292,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords",
       "piano"
     ],
     "exportType": "const",
@@ -10146,7 +10310,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -10166,7 +10329,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords",
       "piano"
     ],
     "exportType": "const",
@@ -10185,7 +10347,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -10205,7 +10366,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords",
       "piano"
     ],
     "exportType": "const",
@@ -10224,7 +10384,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -10243,7 +10402,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -10262,7 +10420,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "beat",
-      "chords",
       "piano"
     ],
     "exportType": "function",
@@ -10450,6 +10607,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -10467,6 +10625,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -10519,6 +10678,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-notation-index-ts-durationtovexflow",
+    "name": "durationToVexFlow",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-notation-index-ts-getdrumsymbolchar",
     "name": "getDrumSymbolChar",
     "path": "src/shared/notation/index.ts",
@@ -10528,6 +10702,52 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "description": "No JSDoc summary provided.",
     "tags": [
       "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-isdottedduration",
+    "name": "isDottedDuration",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-isdottedsixteenthduration",
+    "name": "isDottedSixteenthDuration",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-keyedhighlightsyncoptions",
+    "name": "KeyedHighlightSyncOptions",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
     ],
     "appsUsing": [],
     "exportType": "named",
@@ -10582,6 +10802,36 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-notation-index-ts-paintsvgdescendants",
+    "name": "paintSvgDescendants",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-reapplyactivekeyhighlight",
+    "name": "reapplyActiveKeyHighlight",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-notation-index-ts-resolvenotationstyle",
     "name": "resolveNotationStyle",
     "path": "src/shared/notation/index.ts",
@@ -10626,6 +10876,262 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-setsvgelementcolor",
+    "name": "setSvgElementColor",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-setvexflownotegroupcolor",
+    "name": "setVexFlowNoteGroupColor",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-sixteenthtickstovexflowduration",
+    "name": "sixteenthTicksToVexFlowDuration",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-svgcolorfillmode",
+    "name": "SvgColorFillMode",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-synckeyedsvghighlights",
+    "name": "syncKeyedSvgHighlights",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-vexflowdurationtobeats",
+    "name": "vexFlowDurationToBeats",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-playbacksvghighlight-ts-highlightmininoteoptions",
+    "name": "HighlightMiniNoteOptions",
+    "path": "src/shared/notation/playbackSvgHighlight.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared SVG paint helpers for playback highlight sync across VexFlow renderers. See PLAYBACK_RENDERING_AUDIT.md § highlight sync helper.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-playbacksvghighlight-ts-highlightvexflowmininotegroup",
+    "name": "highlightVexFlowMiniNoteGroup",
+    "path": "src/shared/notation/playbackSvgHighlight.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Post-draw highlight for read-only mini notation (DrumNotationMini). Marks the note group and paints noteheads, stems, and beamed stem lines.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "chords",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-playbacksvghighlight-ts-keyedhighlightsyncoptions",
+    "name": "KeyedHighlightSyncOptions",
+    "path": "src/shared/notation/playbackSvgHighlight.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared SVG paint helpers for playback highlight sync across VexFlow renderers. See PLAYBACK_RENDERING_AUDIT.md § highlight sync helper.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-playbacksvghighlight-ts-paintsvgdescendants",
+    "name": "paintSvgDescendants",
+    "path": "src/shared/notation/playbackSvgHighlight.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Paint paths/circles under a symbol group (drum symbols: stroke-driven).",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "chords",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-playbacksvghighlight-ts-reapplyactivekeyhighlight",
+    "name": "reapplyActiveKeyHighlight",
+    "path": "src/shared/notation/playbackSvgHighlight.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Re-apply highlight on a single key after element-map replacement (post-redraw).",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "chords",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-playbacksvghighlight-ts-setsvgelementcolor",
+    "name": "setSvgElementColor",
+    "path": "src/shared/notation/playbackSvgHighlight.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Apply stroke/fill color to one SVG element (VexFlow note groups, symbols, paths).",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "chords",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-playbacksvghighlight-ts-setvexflownotegroupcolor",
+    "name": "setVexFlowNoteGroupColor",
+    "path": "src/shared/notation/playbackSvgHighlight.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Toggle fill/stroke on a VexFlow note group. Noteheads are `<text>`; stems/ledger lines are `<path>`.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "chords",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-playbacksvghighlight-ts-svgcolorfillmode",
+    "name": "SvgColorFillMode",
+    "path": "src/shared/notation/playbackSvgHighlight.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared SVG paint helpers for playback highlight sync across VexFlow renderers. See PLAYBACK_RENDERING_AUDIT.md § highlight sync helper.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-playbacksvghighlight-ts-synckeyedsvghighlights",
+    "name": "syncKeyedSvgHighlights",
+    "path": "src/shared/notation/playbackSvgHighlight.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Diff previous vs active keyed highlights without rebuilding SVG. Used by Chords and similar keyed note-group maps. After replacing `elementMap` (full SVG redraw), clear `previousKeysRef` first so active keys re-paint.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "chords",
+      "words"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -10702,6 +11208,57 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "piano"
     ],
     "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-vexflowduration-ts-isdottedsixteenthduration",
+    "name": "isDottedSixteenthDuration",
+    "path": "src/shared/notation/vexFlowDuration.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Whether a sixteenth-grid duration should render with a dot in VexFlow.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "chords"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-vexflowduration-ts-sixteenthtickstovexflowduration",
+    "name": "sixteenthTicksToVexFlowDuration",
+    "path": "src/shared/notation/vexFlowDuration.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Maps duration in sixteenths to a VexFlow duration string.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "chords"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-vexflowduration-ts-vexflowdurationtobeats",
+    "name": "vexFlowDurationToBeats",
+    "path": "src/shared/notation/vexFlowDuration.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Converts a VexFlow duration string to beats in the given time-signature denominator. Tokens: `w`, `h`, `q`, `8`, `16`; `d` = dotted; `r` = rest (same duration).",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "chords"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -12856,6 +13413,71 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-auditlogging-ts-isverboseaudit",
+    "name": "isVerboseAudit",
+    "path": "src/shared/test/auditLogging.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Gate verbose audit / diagnostic logging behind VITEST_VERBOSE_AUDIT=true so presubmit and CI stay quiet while local debugging stays easy.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-auditlogging-ts-logauditfailures",
+    "name": "logAuditFailures",
+    "path": "src/shared/test/auditLogging.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Log failure details only when the audit fails (always useful in CI).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-auditlogging-ts-logverboseaudit",
+    "name": "logVerboseAudit",
+    "path": "src/shared/test/auditLogging.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Gate verbose audit / diagnostic logging behind VITEST_VERBOSE_AUDIT=true so presubmit and CI stay quiet while local debugging stays easy.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-deterministicrandom-ts-createseededrandom",
+    "name": "createSeededRandom",
+    "path": "src/shared/test/deterministicRandom.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Seeded pseudo-random generator for deterministic unit tests. Prefer fixed fixtures when possible; use this when variation is required.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-deterministicrandom-ts-pickdeterministic",
+    "name": "pickDeterministic",
+    "path": "src/shared/test/deterministicRandom.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pick `items[index % items.length]` — deterministic cross-product sampling.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

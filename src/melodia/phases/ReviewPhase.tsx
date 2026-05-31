@@ -80,11 +80,11 @@ export default function ReviewPhase({
       </MelodiaStaff>
 
       <Typography variant="subtitle1" component="h3" sx={{ fontWeight: 700, m: 0 }}>
-        Review — {tierLabel}
+        Review. {tierLabel}
       </Typography>
       <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
         {stats.samplesUsed === 0
-          ? 'No steady pitch samples were detected — try closer to the mic or a quieter room.'
+          ? 'No steady pitch samples were detected. try closer to the mic or a quieter room.'
           : `${stats.closeCount} of ${stats.samplesUsed} samples (${pct}%) were within one semitone of a written pitch. Pink wash highlights notes you drifted on.`}
       </Typography>
 

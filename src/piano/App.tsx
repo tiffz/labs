@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense, type MouseEvent as ReactMouseEvent } from 'react';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../shared/components/AnchoredPopover';
 import { PianoProvider, usePiano } from './store';
 import ScoreDisplay from './components/ScoreDisplay';
 import PlaybackControls from './components/PlaybackControls';
@@ -289,13 +289,12 @@ function PianoApp() {
         <div className="header-spacer" />
         <InputSources />
       </header>
-      <Popover
+      <AnchoredPopover
         open={Boolean(exerciseAnchorEl)}
         anchorEl={exerciseAnchorEl}
         onClose={() => setExerciseAnchorEl(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        slotProps={{ paper: { className: 'piano-load-popover' } }}
+        placement="bottom-start"
+        paperClassName="piano-load-popover"
       >
         <ExercisePicker
           mode="inline"
@@ -304,14 +303,13 @@ function PianoApp() {
           initialSection={defaultExerciseSection}
           title="Load Exercise"
         />
-      </Popover>
-      <Popover
+      </AnchoredPopover>
+      <AnchoredPopover
         open={Boolean(songAnchorEl)}
         anchorEl={songAnchorEl}
         onClose={() => setSongAnchorEl(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        slotProps={{ paper: { className: 'piano-load-popover' } }}
+        placement="bottom-start"
+        paperClassName="piano-load-popover"
       >
         <ExercisePicker
           mode="inline"
@@ -324,7 +322,7 @@ function PianoApp() {
           initialSection="songs"
           title="Load Song"
         />
-      </Popover>
+      </AnchoredPopover>
       <main id="main" className="piano-layout">
         <div className="main-content">
           <CurrentlyPracticing

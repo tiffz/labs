@@ -504,10 +504,10 @@ export default function ProgressScreen() {
                             focusRipple={canPracticeHere}
                             aria-label={
                               !curriculumUnlocked
-                                ? `${ex.key} ${kindAbbrev(ex.kind)} — finish the previous exercise in this tier first`
+                                ? `${ex.key} ${kindAbbrev(ex.kind)}. finish the previous exercise in this tier first`
                                 : canStartPractice
                                   ? `Practice ${ex.key} ${kindAbbrev(ex.kind)}`
-                                  : `${ex.key} ${kindAbbrev(ex.kind)} — connect input to practice`
+                                  : `${ex.key} ${kindAbbrev(ex.kind)}. connect input to practice`
                             }
                             sx={{
                               display: 'flex',

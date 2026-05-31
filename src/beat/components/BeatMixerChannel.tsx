@@ -1,4 +1,4 @@
-import Slider from '@mui/material/Slider';
+import AppLinearVolumeSlider from '../../shared/components/AppLinearVolumeSlider';
 import AppTooltip from '../../shared/components/AppTooltip';
 
 export type BeatMixerChannelProps = {
@@ -53,14 +53,15 @@ export default function BeatMixerChannel({
           </button>
         </span>
       </AppTooltip>
-      <Slider
+      <AppLinearVolumeSlider
         min={0}
         max={100}
+        step={1}
         value={volume}
         onChange={(_, value) => onVolumeChange(Number(value))}
         className="mixer-slider"
         disabled={sliderDisabled}
-        size="small"
+        aria-label={`${label} volume`}
       />
       <span className="mixer-value">{muted ? 'Muted' : `${volume}%`}</span>
     </div>

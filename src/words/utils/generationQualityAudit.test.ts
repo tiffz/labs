@@ -13,6 +13,7 @@ import {
   type SyllableHit,
 } from './prosodyEngine';
 import { parseRhythm } from '../../shared/rhythm/rhythmParser';
+import { logAuditFailures, logVerboseAudit } from '../../shared/test/auditLogging';
 
 // ---------------------------------------------------------------------------
 // Lyrics corpus
@@ -573,67 +574,58 @@ describe('Generation Quality Audit', () => {
       ),
     };
 
-    console.log('\n========== QUALITY AUDIT SUMMARY ==========');
-    console.log(JSON.stringify(summary, null, 2));
+    logVerboseAudit('\n========== QUALITY AUDIT SUMMARY ==========');
+    logVerboseAudit(JSON.stringify(summary, null, 2));
 
-    // Log critical issues
     if (critical.length > 0) {
-      console.log(`\n--- CRITICAL ISSUES (${critical.length} combos) ---`);
+      logVerboseAudit(`\n--- CRITICAL ISSUES (${critical.length} combos) ---`);
       for (const entry of critical) {
         const critIssues = entry.issues.filter((i) => i.severity === 'critical');
-        console.log(
+        logVerboseAudit(
           `  [${entry.template}][${entry.settingsId}] ${entry.lyricsId}: ${critIssues.map((i) => i.message).join('; ')}`
         );
       }
     }
 
-    // Log major issues (sample up to 30)
     if (major.length > 0) {
-      console.log(`\n--- MAJOR ISSUES (${major.length} combos, showing up to 30) ---`);
+      logVerboseAudit(`\n--- MAJOR ISSUES (${major.length} combos, showing up to 30) ---`);
       for (const entry of major.slice(0, 30)) {
         const majIssues = entry.issues.filter((i) => i.severity === 'major');
-        console.log(
+        logVerboseAudit(
           `  [${entry.template}][${entry.settingsId}] ${entry.lyricsId}: ${majIssues.map((i) => i.message).join('; ')}`
         );
       }
     }
 
-    // Log worst template fidelity cases (bottom 10)
     const worstFidelity = [...allEntries]
       .filter((e) => !e.settingsId.includes('freestyle') && !e.settingsId.includes('all-features'))
       .sort((a, b) => a.scores.templateFidelity - b.scores.templateFidelity)
       .slice(0, 10);
     if (worstFidelity.length > 0) {
-      console.log('\n--- WORST TEMPLATE FIDELITY (non-freestyle, bottom 10) ---');
+      logVerboseAudit('\n--- WORST TEMPLATE FIDELITY (non-freestyle, bottom 10) ---');
       for (const entry of worstFidelity) {
-        console.log(
+        logVerboseAudit(
           `  [${entry.template}][${entry.settingsId}] ${entry.lyricsId}: fidelity=${entry.scores.templateFidelity.toFixed(2)} notation=${entry.notation.split('|')[0]}`
         );
       }
     }
 
-    // Log hit summaries for a sample of entries (maqsum, full-verse)
-    console.log('\n--- SAMPLE HIT SUMMARIES (maqsum × full-verse) ---');
+    logVerboseAudit('\n--- SAMPLE HIT SUMMARIES (maqsum × full-verse) ---');
     for (const entry of allEntries) {
       if (entry.template !== 'maqsum' || entry.lyricsId !== 'full-verse') continue;
-      console.log(
+      logVerboseAudit(
         `  [${entry.settingsId}] (${entry.measures}m, ${entry.hitCount}hits, fidelity=${entry.scores.templateFidelity.toFixed(2)}): ${entry.hitSummary}`
       );
     }
 
-    // Also show full-verse on maqsum for baseline vs freestyle-25 vs freestyle-75
-    // to verify freestyle strength actually differentiates
-    console.log('\n--- FREESTYLE DIFFERENTIATION (maqsum × multiline) ---');
+    logVerboseAudit('\n--- FREESTYLE DIFFERENTIATION (maqsum × multiline) ---');
     for (const entry of allEntries) {
       if (entry.template !== 'maqsum' || entry.lyricsId !== 'multiline') continue;
       if (!['baseline', 'freestyle-25', 'freestyle-75', 'bias-sixteenth', 'bias-quarter'].includes(entry.settingsId)) continue;
-      console.log(
-        `  [${entry.settingsId}] (${entry.measures}m): ${entry.notation}`
-      );
+      logVerboseAudit(`  [${entry.settingsId}] (${entry.measures}m): ${entry.notation}`);
     }
 
-    // Merge notes should produce longer average durations vs baseline
-    console.log('\n--- MERGE NOTES EFFECT (maqsum × full-verse) ---');
+    logVerboseAudit('\n--- MERGE NOTES EFFECT (maqsum × full-verse) ---');
     const baselineEntry = allEntries.find(
       (e) => e.template === 'maqsum' && e.lyricsId === 'full-verse' && e.settingsId === 'baseline'
     );
@@ -641,12 +633,11 @@ describe('Generation Quality Audit', () => {
       (e) => e.template === 'maqsum' && e.lyricsId === 'full-verse' && e.settingsId === 'merge'
     );
     if (baselineEntry && mergeEntry) {
-      console.log(`  baseline: ${baselineEntry.hitCount} hits, notation=${baselineEntry.notation.split('|')[0]}`);
-      console.log(`  merge:    ${mergeEntry.hitCount} hits, notation=${mergeEntry.notation.split('|')[0]}`);
+      logVerboseAudit(`  baseline: ${baselineEntry.hitCount} hits, notation=${baselineEntry.notation.split('|')[0]}`);
+      logVerboseAudit(`  merge:    ${mergeEntry.hitCount} hits, notation=${mergeEntry.notation.split('|')[0]}`);
     }
 
-    // A/B variations should work even with short songs (>= 2 measures)
-    console.log('\n--- A/B VARIATIONS EFFECT ---');
+    logVerboseAudit('\n--- A/B VARIATIONS EFFECT ---');
     for (const entry of allEntries) {
       if (entry.settingsId !== 'ab-variations') continue;
       if (!['short', 'medium', 'multiline'].includes(entry.lyricsId)) continue;
@@ -655,12 +646,23 @@ describe('Generation Quality Audit', () => {
         (e) => e.template === entry.template && e.lyricsId === entry.lyricsId && e.settingsId === 'baseline'
       );
       const same = baseEntry && baseEntry.notation === entry.notation;
-      console.log(
-        `  [${entry.lyricsId}] ${entry.measures}m, differs-from-baseline=${!same}`
-      );
+      logVerboseAudit(`  [${entry.lyricsId}] ${entry.measures}m, differs-from-baseline=${!same}`);
     }
 
-    console.log('\n========== END AUDIT ==========\n');
+    logVerboseAudit('\n========== END AUDIT ==========\n');
+
+    if (critical.length > 0) {
+      logAuditFailures(
+        'GENERATION QUALITY CRITICAL ISSUES:',
+        critical.map(
+          (entry) =>
+            `[${entry.template}][${entry.settingsId}] ${entry.lyricsId}: ${entry.issues
+              .filter((i) => i.severity === 'critical')
+              .map((i) => i.message)
+              .join('; ')}`
+        )
+      );
+    }
 
     // Soft assertion: no critical issues
     expect(critical.length).toBe(0);

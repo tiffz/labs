@@ -63,11 +63,11 @@ Do **not** build one monolithic shared renderer. Instead, keep renderer shells a
 
 ## Extraction roadmap (priority order)
 
-1. **Unify duration conversion helpers** used by drums/chords/words.
-2. **Unify pitch conversion helpers** used by chords/piano previews.
-3. **Converge symbol drawing** on shared notation symbol helpers (remove duplicated inline path definitions).
-4. **Extract reusable highlight sync helper** pattern for renderers that mutate SVG post-draw.
-5. **Only after stabilization** evaluate partial renderer composition; avoid full renderer unification.
+1. ~~**Unify duration conversion helpers** used by drums/chords/words.~~ → `src/shared/notation/vexFlowDuration.ts` (`sixteenthTicksToVexFlowDuration`, `vexFlowDurationToBeats`); chords/drums re-export adapters.
+2. ~~**Unify pitch conversion helpers** used by chords/piano previews.~~ → `midiToPitchString` / `midiToPitchStringForKey` in `src/shared/music/scoreTypes.ts`; chords renderers consume shared helpers.
+3. ~~**Converge symbol drawing** on shared notation symbol helpers.~~ → `MiniNotationRenderer` uses `drawDrumSymbol` from `src/shared/notation/drumSymbols.ts`.
+4. ~~**Extract reusable highlight sync helper**~~ → `src/shared/notation/playbackSvgHighlight.ts` (`setSvgElementColor`, `syncKeyedSvgHighlights`, `reapplyActiveKeyHighlight`, `highlightVexFlowMiniNoteGroup`); Words, Chords, and DrumNotationMini consume shared helpers.
+5. ~~**Only after stabilization** evaluate partial renderer composition~~ → **Evaluated (2026-05): keep app renderer shells.** Shared primitives (`vexFlowDuration`, `playbackSvgHighlight`, `drumSymbols`, `playbackAutoScroll`) are the correct composition layer. `DrumNotationMini` and `VexFlowRenderer` stay separate per ADR in `DrumNotationMini.tsx` (read-only mini vs multi-measure editor). Do **not** merge top-level renderers; adopt shared highlight/duration helpers only.
 
 ## Regression prevention checklist
 

@@ -16,6 +16,8 @@ import {
   analyzeAlignment, 
   formatAlignmentReport
 } from './onsetAlignmentScorer';
+import { createSeededRandom } from '../../shared/test/deterministicRandom';
+import { logVerboseAudit } from '../../shared/test/auditLogging';
 
 describe('Onset Alignment Scorer', () => {
   describe('calculateAlignmentScore', () => {
@@ -128,17 +130,16 @@ describe('Onset Alignment Scorer', () => {
  */
 describe('Realistic Onset Patterns', () => {
   it('should handle noisy onset data', () => {
+    const rand = createSeededRandom(42);
     // 70 BPM with some timing variation
     const beatInterval = 60 / 70;
     const onsets: number[] = [];
     
     for (let i = 0; i < 50; i++) {
-      // Add beat onset with small random variation
-      const variation = (Math.random() - 0.5) * 0.05; // ±25ms variation
+      const variation = (rand() - 0.5) * 0.05;
       onsets.push(i * beatInterval + variation);
       
-      // Sometimes add off-beat onsets (8th notes)
-      if (Math.random() > 0.5) {
+      if (rand() > 0.5) {
         onsets.push(i * beatInterval + beatInterval / 2 + variation);
       }
     }
@@ -174,56 +175,45 @@ describe('Realistic Onset Patterns', () => {
  */
 describe('Song-like Patterns', () => {
   it('should handle "Wish My Life Away" style pattern (slow ballad)', () => {
-    // Simulating ~70 BPM ballad with:
-    // - Quarter note beats
-    // - Some syncopation
-    // - Occasional 8th note patterns
-    const bpm = 69.8; // Slightly under 70
+    const rand = createSeededRandom(69);
+    const bpm = 69.8;
     const beatInterval = 60 / bpm;
     const onsets: number[] = [];
     
-    // Generate realistic onset pattern
     for (let measure = 0; measure < 20; measure++) {
       const measureStart = measure * 4 * beatInterval;
       
-      // Beat 1 - always present
       onsets.push(measureStart);
       
-      // Beat 2 - usually present
-      if (Math.random() > 0.2) {
+      if (rand() > 0.2) {
         onsets.push(measureStart + beatInterval);
       }
       
-      // Beat 2.5 (8th note) - sometimes
-      if (Math.random() > 0.7) {
+      if (rand() > 0.7) {
         onsets.push(measureStart + beatInterval * 1.5);
       }
       
-      // Beat 3 - usually present
-      if (Math.random() > 0.2) {
+      if (rand() > 0.2) {
         onsets.push(measureStart + beatInterval * 2);
       }
       
-      // Beat 4 - often present
-      if (Math.random() > 0.3) {
+      if (rand() > 0.3) {
         onsets.push(measureStart + beatInterval * 3);
       }
     }
     
     onsets.sort((a, b) => a - b);
     
-    // Test alignment with our detected 69.2 vs expected 70
     const analysis = analyzeAlignment(onsets, 69.2, 0, 60, 3, 0.2);
     
-    console.log('\n--- Simulated "Wish My Life Away" Pattern ---');
-    console.log(formatAlignmentReport(analysis));
+    logVerboseAudit('\n--- Simulated "Wish My Life Away" Pattern ---');
+    logVerboseAudit(formatAlignmentReport(analysis));
     
-    // Best BPM should be close to the actual 69.8
     expect(Math.abs(analysis.bestBpm - bpm)).toBeLessThan(0.5);
   });
   
   it('should handle "Let It Go" style pattern (upbeat)', () => {
-    // Simulating ~137 BPM with driving rhythm
+    const rand = createSeededRandom(137);
     const bpm = 137;
     const beatInterval = 60 / bpm;
     const onsets: number[] = [];
@@ -231,12 +221,10 @@ describe('Song-like Patterns', () => {
     for (let measure = 0; measure < 30; measure++) {
       const measureStart = measure * 4 * beatInterval;
       
-      // All 4 beats typically present in upbeat song
       for (let beat = 0; beat < 4; beat++) {
         onsets.push(measureStart + beat * beatInterval);
         
-        // Often have 8th notes too
-        if (Math.random() > 0.4) {
+        if (rand() > 0.4) {
           onsets.push(measureStart + beat * beatInterval + beatInterval / 2);
         }
       }
@@ -246,8 +234,8 @@ describe('Song-like Patterns', () => {
     
     const analysis = analyzeAlignment(onsets, 137, 0, 50, 5, 0.5);
     
-    console.log('\n--- Simulated "Let It Go" Pattern ---');
-    console.log(formatAlignmentReport(analysis));
+    logVerboseAudit('\n--- Simulated "Let It Go" Pattern ---');
+    logVerboseAudit(formatAlignmentReport(analysis));
     
     expect(Math.abs(analysis.bestBpm - 137)).toBeLessThan(1);
   });

@@ -99,7 +99,7 @@ const DRILL_SNOOZE_BY = 4;
 const REGULAR_STUCK_AT = 8;
 /** Jump-coaching modal only after this many finished attempts on the stage (consecutive-rough gate can still be high from history). */
 const REGULAR_STUCK_MIN_ATTEMPTS_FOR_JUMP = 4;
-/** How long the free-tempo "Nice — ready to start" overlay stays before scored playback. */
+/** How long the free-tempo "Nice. ready to start" overlay stays before scored playback. */
 const FREE_TEMPO_WARMUP_UI_MS = 2200;
 
 /** Sample cliff keys for debug preview of jump-coaching stuck copy. */
@@ -1739,7 +1739,7 @@ export default function SessionScreen() {
       </Paper>
 
 
-      {/* Exercise result — shown only when the loop is paused or the
+      {/* Exercise result. shown only when the loop is paused or the
           stage advanced. During the auto-loop dwell we collapse this into
           the compact toast over the score so the between-rounds beat
           stays tight. */}
@@ -1862,7 +1862,7 @@ export default function SessionScreen() {
                   {drillState === 'completed'
                     ? `${DRILL_TARGET_PERFECT_RUNS}/${DRILL_TARGET_PERFECT_RUNS} perfect runs`
                     : activeExercise.purpose === 'review'
-                      ? 'Nice refresh — continue when you are ready.'
+                      ? 'Nice refresh. continue when you are ready.'
                       : allStages[currentStageIdx]
                         ? `${formatStageSummary(allStages[currentStageIdx])} · next level unlocked`
                         : 'You unlocked the next level.'}
@@ -1870,7 +1870,7 @@ export default function SessionScreen() {
               </Box>
             </Box>
           )}
-          {/* Adaptive coaching hint — only when the loop is paused on a
+          {/* Adaptive coaching hint. only when the loop is paused on a
               sub-fluent run. The helper hides itself on passing runs;
               we additionally hide while at the boundary celebration so
               "Level cleared" stays the loudest signal. */}
@@ -1969,13 +1969,13 @@ export default function SessionScreen() {
         </Paper>
       )}
 
-      {/* "New for you" — modal when this stage introduces a new concept
+      {/* "New for you". modal when this stage introduces a new concept
           (also shown over the loading screen so tips are not skipped while
           the score generates). See guidance/computeGuidance.ts for triggers. */}
       {guidanceModal}
       {guidanceModalDebug}
 
-      {/* Instruction panel — visible before starting.
+      {/* Instruction panel. visible before starting.
           Stage description leads (it's level-specific and changes
           between stages). The exercise-level fingering guidance and
           video tutorial link sit in this panel next to the score so you
@@ -2061,7 +2061,7 @@ export default function SessionScreen() {
             </Box>
           )}
 
-          {/* Rotating tip — omitted when the panel is already dense (see
+          {/* Rotating tip. omitted when the panel is already dense (see
               pickPracticeTip competingContentScore). Styled as its own
               callout so it does not read as more body copy. */}
           {practiceTip && (
@@ -2233,7 +2233,7 @@ export default function SessionScreen() {
               >
                 {/*
                   Pass/fail badge. Saturated background + white glyph for
-                  high contrast — both colors come from the palette's
+                  high contrast. both colors come from the palette's
                   `contrastText` so they read on either status hue.
                 */}
                 <Box
@@ -2848,7 +2848,7 @@ export default function SessionScreen() {
           </Box>
         )}
 
-        {/* Loop paused by user — full action bar so they can choose. */}
+        {/* Loop paused by user. full action bar so they can choose. */}
         {showFullResults && !boundary && (
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
             <Button

@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../AnchoredPopover';
 import type { Key } from '../../music/chordTypes';
 import { progressionToChords } from '../../music/chordTheory';
 import { COMMON_CHORD_PROGRESSIONS, type CommonChordProgression } from '../../music/commonChordProgressions';
@@ -184,27 +184,24 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
         )}
       </div>
       {menuMode === 'popover' ? (
-        <Popover
+        <AnchoredPopover
           open={Boolean(open && anchorRef.current)}
           anchorEl={anchorRef.current}
           onClose={() => setOpen(false)}
           disableAutoFocus
           disableEnforceFocus
           disableRestoreFocus
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          placement="bottom-start"
+          paperClassName={[
+            'shared-chord-progression-dropdown',
+            `shared-chord-progression-dropdown--${appearance}`,
+            dropdownClassName,
+          ]
+            .filter(Boolean)
+            .join(' ')}
           slotProps={{
             root: {
               className: dropdownClassName ? `${dropdownClassName}-root` : undefined,
-            },
-            paper: {
-              className: [
-                'shared-chord-progression-dropdown',
-                `shared-chord-progression-dropdown--${appearance}`,
-                dropdownClassName,
-              ]
-                .filter(Boolean)
-                .join(' '),
             },
           }}
         >
@@ -275,7 +272,7 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
               })}
             </div>
           </div>
-        </Popover>
+        </AnchoredPopover>
       ) : (
         <div
           className={[

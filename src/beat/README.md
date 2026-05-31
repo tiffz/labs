@@ -1,3 +1,5 @@
+**Agents:** [`AGENTS.md`](AGENTS.md) · **Before new UI:** search [`/ui/`](/ui/) · copy: [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md)
+
 # Find the Beat
 
 A web application for detecting BPM (beats per minute) in audio and video files, with synchronized drum pattern accompaniment and automatic section detection for practice.

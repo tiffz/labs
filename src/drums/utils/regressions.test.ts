@@ -66,11 +66,6 @@ describe('Regression Tests (Phase 5, 6 & 7)', () => {
 
         const rhythm = parseRhythm(notation, { numerator: 4, denominator: 4 });
 
-        // Debug Output
-        console.log('Measures:', rhythm.measures.length);
-        console.log('Repeats:', rhythm.repeats);
-        console.log('Mapping:', rhythm.measureSourceMapping);
-
         // Logic Simulation
         let globalCharPosition = 0;
         const starts: number[] = [];
@@ -88,8 +83,6 @@ describe('Regression Tests (Phase 5, 6 & 7)', () => {
                 globalCharPosition += duration;
             }
         });
-
-        console.log('Calculated Starts:', starts);
 
         // Expecations:
         // M0: 0.
@@ -127,22 +120,6 @@ describe('Regression Tests (Phase 5, 6 & 7)', () => {
         // Replacement at 0.
 
         const result = replacePatternAtPosition(input, 0, pattern, 4, { numerator: 4, denominator: 4 }, parsedRhythm);
-
-        // We expect the original 6 ticks to be fully accounted for.
-        // 4 ticks from pattern. 2 ticks from remainder.
-        // Remainder should ideally be the original sound 'D' shortened?
-        // User said: "3rd eighth note is a shortened version of the original dotted quarter note"
-
-        // Current likely behavior: "K-K-__________" (remainder lost).
-        // Or "K-K-_ _" (auto-filled rests).
-
-        console.log('Original:', input);
-        console.log('Result:', result.newNotation);
-
-        // Check for conservation (conceptually)
-        // We look for 'K-K-' followed by something that isn't just the original tail.
-        // If we replaced D-----, the next chars should be `D-` (if preserving sound) or `__` (if filling with rest).
-        // User wants D-.
 
         expect(result.newNotation).toMatch(/^K-K-D-/);
     });

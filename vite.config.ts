@@ -1106,6 +1106,7 @@ export default defineConfig({
       // Fast mode: exclude slow regression/audit/stress tests for rapid development iteration.
       // Match any test whose filename contains "regression", "audit", "stress", or "benchmark"
       // (hyphenated or not) so new slow tests are excluded by convention.
+      // Fast smokes use *Invariants*.test.ts (always included in presubmit).
       ...(process.env.FAST_TESTS === 'true' ? [
         '**/*{regression,audit,stress,benchmark}*.test.{ts,tsx}',
         '**/*{Regression,Audit,Stress,Benchmark}*.test.{ts,tsx}',

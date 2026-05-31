@@ -314,7 +314,7 @@ const PlaybackControls: React.FC = () => {
           <span className="sb-mode-label">{state.activeMode === 'practice' ? 'Stop' : 'Practice'}</span>
           </button>
         </AppTooltip>
-        <AppTooltip title={(!state.midiConnected && !state.microphoneActive) ? 'Connect a MIDI controller or enable mic for free tempo' : 'Play at your own pace — notes advance as you play correctly'}>
+        <AppTooltip title={(!state.midiConnected && !state.microphoneActive) ? 'Connect a MIDI controller or enable mic for free tempo' : 'Play at your own pace. notes advance as you play correctly'}>
           <button
             className={`sb-mode-btn ${state.activeMode === 'free-practice' ? 'active free-practice' : ''}`}
             onClick={() => handleModeToggle('free-practice')}

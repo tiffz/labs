@@ -80,8 +80,8 @@ export default function MelodiaMicBar({
         : (devices[0]?.id ?? selectedDeviceId);
 
   let compactLabel: string;
-  if (denied) compactLabel = 'Mic blocked — tap settings';
-  else if (fault) compactLabel = 'Mic error — tap settings';
+  if (denied) compactLabel = 'Mic blocked. tap settings';
+  else if (fault) compactLabel = 'Mic error. tap settings';
   else if (!isLive) compactLabel = 'Connecting…';
   else {
     compactLabel = activeInputLabel ? 'Mic · connected' : 'Mic · listening';
@@ -199,7 +199,7 @@ export default function MelodiaMicBar({
 
               {isLive && !pitchTrackingEnabled ? (
                 <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35 }}>
-                  Pitch sketch is paused — audio is still being recorded for review.
+                  Pitch sketch is paused. audio is still being recorded for review.
                 </Typography>
               ) : null}
 

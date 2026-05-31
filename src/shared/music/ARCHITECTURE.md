@@ -34,7 +34,4 @@ safe and maintainable.
 
 ## Current Adapter Notes
 
-- `src/chords/utils/chordTheory.ts` and `src/chords/utils/chordVoicing.ts` remain
-  compatibility adapters that re-export shared implementations.
-- Existing app code can keep old `chords/*` imports during migration, but new code
-  should target shared modules directly.
+- `src/chords/utils/chordTheory.ts` and `src/chords/utils/chordVoicing.ts` were removed; import `src/shared/music/**` directly.

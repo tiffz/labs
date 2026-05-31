@@ -163,7 +163,7 @@ function IntegrationCard(props: {
         </Stack>
 
         {/* Identity (only when connected). Identity-linked open is rendered inline with the
-            value so the user reads "I'm signed in as X — open X's profile" as one unit. */}
+            value so the user reads "I'm signed in as X. open X's profile" as one unit. */}
         {identity ? (
           <Box>
             <Typography

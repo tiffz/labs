@@ -7,8 +7,9 @@ import React, { useEffect, useRef } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Dot } from 'vexflow';
 import type { ChordStylingStrategy, TimeSignature } from '../types';
 import { generateStyledChordNotes } from '../utils/chordStyling';
-import { generateVoicing } from '../utils/chordVoicing';
+import { generateVoicing } from '../../shared/music/chordVoicing';
 import type { Chord } from '../types';
+import { midiToPitchString } from '../../shared/music/scoreTypes';
 import {
   generateChordClefBeams,
   redrawBeamedStemsIfMissing,
@@ -21,16 +22,6 @@ interface ChordStylePreviewProps {
   timeSignature: TimeSignature;
   width?: number;
   height?: number;
-}
-
-/**
- * Converts MIDI note number to VexFlow pitch string
- */
-function midiToPitch(midiNote: number): string {
-  const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-  const octave = Math.floor(midiNote / 12) - 1;
-  const noteName = noteNames[midiNote % 12];
-  return `${noteName}/${octave}`;
 }
 
 /**
@@ -48,7 +39,7 @@ function notesToStaveNote(notes: number[], duration: string, clef: 'bass' | 'tre
     });
   }
   
-  const pitches = notes.map(midiToPitch);
+  const pitches = notes.map(midiToPitchString);
   
   // Check if this is a dotted note (duration contains 'd' but not 'r' for rest)
   const isDotted = duration.includes('d') && !duration.includes('r');

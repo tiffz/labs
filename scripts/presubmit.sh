@@ -7,6 +7,12 @@ set -e
 echo "== presubmit: import boundaries =="
 npm run check:import-boundaries
 
+echo "== presubmit: ui copy (em dash) =="
+npm run check:ui-copy
+
+echo "== presubmit: doc links =="
+npm run check:doc-links
+
 echo "== presubmit: lint =="
 npm run lint
 

@@ -1,5 +1,7 @@
 # Find Your Pitch (`/pitch/`)
 
+**Before new UI:** search [`/ui/`](/ui/) · visuals: [`DESIGN.md`](./DESIGN.md)
+
 A real-time pitch-detection playground (branded **Find Your Pitch**) that surfaces the microphone's detected pitch, frequency, and cents-off-from-nearest-note, with visual indicators for musicians to practice intonation.
 
 Route: `/pitch/`.

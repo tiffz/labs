@@ -1,13 +1,13 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../shared/components/AnchoredPopover';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import type { ChordProgressionState, LockedOptions } from './types';
 import { randomChordProgression, randomKey, randomTimeSignature, randomTempo, randomStylingStrategy } from './utils/randomization';
-import { progressionToChords } from './utils/chordTheory';
-import { generateVoicing } from './utils/chordVoicing';
+import { progressionToChords } from '../shared/music/chordTheory';
+import { generateVoicing } from '../shared/music/chordVoicing';
 import { generateStyledChordNotes, type StyledChordNotes } from './utils/chordStyling';
 import { getPlaybackEngine, disposePlaybackEngine, type ActiveNotes } from './utils/playback';
 import ChordScoreRenderer from './components/ChordScoreRenderer';
@@ -738,16 +738,15 @@ const App: React.FC = () => {
                 <span className="material-symbols-outlined">tune</span>
               </button>
             </AppTooltip>
-            <Popover
+            <AnchoredPopover
               open={playbackSettingsOpen}
               onClose={() => setPlaybackSettingsOpen(false)}
               anchorEl={settingsButtonRef.current}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              placement="bottom-end"
               disableAutoFocus
               disableEnforceFocus
               disableRestoreFocus
-              slotProps={{ paper: { className: 'chords-playback-settings-popover' } }}
+              paperClassName="chords-playback-settings-popover"
             >
               <div className="chords-playback-settings-menu">
                 <label className="chords-playback-setting-row">
@@ -792,7 +791,7 @@ const App: React.FC = () => {
                   <strong>{Math.round(metronomeVolume * 100)}</strong>
                 </label>
               </div>
-            </Popover>
+            </AnchoredPopover>
           </div>
           <div className="chords-score">
             <ChordScoreRenderer

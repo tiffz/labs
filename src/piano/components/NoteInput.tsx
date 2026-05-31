@@ -16,7 +16,7 @@ function getBaseScoreId(scoreId: string): string {
 
 function getBaseTitleFromSectionTitle(title: string | undefined): string | null {
   if (!title) return null;
-  const match = title.match(/^(.*?)(?:\s[—-]\sMeasures\s\d+\s*-\s*\d+)$/i);
+  const match = title.match(/^(.*?)(?:\s[. -]\sMeasures\s\d+\s*-\s*\d+)$/i);
   return match?.[1]?.trim() ?? null;
 }
 
@@ -448,7 +448,7 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
         {isEditing && !abcExpanded && (
           <span className="toolbar-hint">
             {state.durationMode === 'auto'
-              ? 'Play keys to add notes — hold to set duration'
+              ? 'Play keys to add notes. hold to set duration'
               : `Adding ${state.dotted ? 'dotted ' : ''}${state.durationMode} notes`
             }
           </span>
@@ -477,7 +477,7 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
             rows={4}
           />
           <span className="abc-hint">
-            <a href="https://abcnotation.com/wiki/abc:standard:v2.1" target="_blank" rel="noopener noreferrer">ABC notation</a> —
+            <a href="https://abcnotation.com/wiki/abc:standard:v2.1" target="_blank" rel="noopener noreferrer">ABC notation</a>.
             uppercase C–B = middle octave (C4–B4), lowercase c–b = octave above (C5–B5).
             Append <code>,</code> for lower octaves, <code>&apos;</code> for higher.
             Lengths: <code>C</code>=quarter, <code>C2</code>=half, <code>C4</code>=whole, <code>C/2</code>=eighth, <code>C/4</code>=16th.

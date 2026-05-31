@@ -54,7 +54,7 @@ function getChannelDefs(level: SubdivisionLevel, ts: TimeSignature): ChannelDef[
     if (hasSubBeat) {
       defs.push({
         key: 'sixteenth', label: 'OFF-BEAT', sublabel: '&',
-        tooltip: `The sixteenth notes between each eighth note — the "e" positions that fall halfway between beats.`,
+        tooltip: `The sixteenth notes between each eighth note. the "e" positions that fall halfway between beats.`,
       });
     }
   } else {
@@ -70,24 +70,24 @@ function getChannelDefs(level: SubdivisionLevel, ts: TimeSignature): ChannelDef[
       if (level === 3) {
         defs.push({
           key: 'eighth', label: 'OFF-BEAT', sublabel: '3',
-          tooltip: `The two triplet notes after each beat — the "+, a" syllables. In ${numerator}/${denominator} ÷3, each beat is split into three.`,
+          tooltip: `The two triplet notes after each beat. the "+, a" syllables. In ${numerator}/${denominator} ÷3, each beat is split into three.`,
         });
       } else if (level === 'swing8') {
         defs.push({
           key: 'eighth', label: 'OFF-BEAT', sublabel: '&',
-          tooltip: `The swung off-beat after each beat — played late with a triplet feel, giving the "+" a lazy, laid-back sound.`,
+          tooltip: `The swung off-beat after each beat. played late with a triplet feel, giving the "+" a lazy, laid-back sound.`,
         });
       } else {
         defs.push({
           key: 'eighth', label: 'OFF-BEAT', sublabel: '&',
-          tooltip: `The "+" between each beat — halfway through each beat in ${numerator}/${denominator} ÷2.`,
+          tooltip: `The "+" between each beat. halfway through each beat in ${numerator}/${denominator} ÷2.`,
         });
       }
     }
     if (hasSubBeat) {
       defs.push({
         key: 'sixteenth', label: 'SUB-BEAT', sublabel: 'e/a',
-        tooltip: `The "e" and "a" sixteenth notes — the finest subdivisions, falling between the beat and the "+". Each beat in ${numerator}/${denominator} ÷4 is counted "1 e + a".`,
+        tooltip: `The "e" and "a" sixteenth notes. the finest subdivisions, falling between the beat and the "+". Each beat in ${numerator}/${denominator} ÷4 is counted "1 e + a".`,
       });
     }
   }
@@ -102,13 +102,13 @@ function channelDisplayName(key: SubdivisionChannel): string {
 }
 
 function subdivTooltip(label: string, denominator: number): string {
-  if (label === '♩') return 'No subdivision — play only the beat.';
-  if (label === '♪' && denominator === 8) return 'Eighth-note pulse — the natural unit in this meter.';
+  if (label === '♩') return 'No subdivision. play only the beat.';
+  if (label === '♪' && denominator === 8) return 'Eighth-note pulse. the natural unit in this meter.';
   if (label === '÷2' && denominator === 8) return 'Divide each eighth note in half.';
   if (label === '÷2') return 'Divide each beat in half (eighth notes).';
   if (label === '÷3') return 'Divide each beat into three (triplets).';
   if (label === '÷4') return 'Divide each beat into four (sixteenth notes).';
-  if (label === 'Sw♪') return 'Swing feel — long-short eighth notes (triplet timing).';
+  if (label === 'Sw♪') return 'Swing feel. long-short eighth notes (triplet timing).';
   return '';
 }
 

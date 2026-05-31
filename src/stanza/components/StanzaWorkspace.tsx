@@ -181,9 +181,9 @@ const STANZA_EMPTY_STEMS: StanzaStemTrack[] = [];
 
 /** 4/4 default for the shared drum panel. Stanza does not yet track per-song time signature. */
 const STANZA_DRUMS_DEFAULT_TIME_SIGNATURE: TimeSignature = { numerator: 4, denominator: 4 };
-/** Fallback BPM when the metronome isn't calibrated yet — keeps the drum preview UI usable. */
+/** Fallback BPM when the metronome isn't calibrated yet. keeps the drum preview UI usable. */
 const STANZA_DRUMS_DEFAULT_BPM = 120;
-/** Notation render footprint inside the practice rail — compact so Key shift stays in view. */
+/** Notation render footprint inside the practice rail. compact so Key shift stays in view. */
 const STANZA_DRUMS_NOTATION_WIDTH = 236;
 /** Minimum host height; {@link computeMiniNotationLayout} may grow the SVG to fit the staff. */
 const STANZA_DRUMS_NOTATION_HEIGHT = 68;
@@ -209,7 +209,7 @@ function reorderStemsById(stems: StanzaStemTrack[], fromId: string, toId: string
 const STANZA_STEM_ALIGN_DRIFT_SEC = 0.32;
 /** Mix rail: narrow drag / spacer so label + mute stay compact and sliders get flex space. */
 const STANZA_MIX_DRAG_COL_PX = 22;
-/** Main row trailing spacer — balances stem “remove” IconButton column for slider alignment. */
+/** Main row trailing spacer. balances stem “remove” IconButton column for slider alignment. */
 const STANZA_MIX_TRAIL_BALANCE_PX = 32;
 /** Cap layer name width so the Slider can grow on dense practice rails. */
 const STANZA_MIX_LABEL_MAX_WIDTH = '6.75rem';
@@ -308,7 +308,7 @@ export default function StanzaWorkspace() {
   const transposeDraftRef = useRef(0);
   transposeDraftRef.current = transposeDraftSemitones;
   const [removeConfirmSong, setRemoveConfirmSong] = useState<StanzaSong | null>(null);
-  /** Pending OS drop: length matched current track — user must confirm stem import. */
+  /** Pending OS drop: length matched current track. user must confirm stem import. */
   const [stemDropConfirm, setStemDropConfirm] = useState<{
     songId: string;
     files: File[];
@@ -768,7 +768,7 @@ export default function StanzaWorkspace() {
     }
     if (!songs) return; // live query still hydrating
     if (readYoutubeVFromLocation()) return; // URL deep link will handle selection
-    if (hasStanzaDriveDeepLinkQuery()) return; // `?df=` present — wait for Drive bootstrap / error UI
+    if (hasStanzaDriveDeepLinkQuery()) return; // `?df=` present. wait for Drive bootstrap / error UI
     lastSelectedRestoreAttemptedRef.current = true;
     const savedId = readStanzaLastSelectedSongId();
     if (!savedId) return;
@@ -874,14 +874,14 @@ export default function StanzaWorkspace() {
     setLoopMode('through');
   }, [selectedId]);
 
-  /** Stable key for the primary local file blob — id + size only; MIME can flip after Drive/Dexie hydrate. */
+  /** Stable key for the primary local file blob. id + size only; MIME can flip after Drive/Dexie hydrate. */
   const primaryLocalBlobKey = useMemo(
     () => stanzaPrimaryLocalBlobKey(selected),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Dexie churns `selected` reference; key uses stable id/size/yt.
     [selected?.id, selected?.ytId, selected?.localAudioBlob?.size],
   );
 
-  /** Sorted id:size list — stable across stem row order from Dexie / UI reorder. */
+  /** Sorted id:size list. stable across stem row order from Dexie / UI reorder. */
   const stemBlobIdentityKey = stanzaStemBlobIdentityKeySorted(selected?.stems);
   const stemUrlKey = useMemo(
     () => stanzaStemUrlKeyFromSong(selected),
@@ -939,7 +939,7 @@ export default function StanzaWorkspace() {
           }
           const sb = await decodeStanzaLocalBlobForPlayback({
             blob: st.localBlob,
-            title: `${song.title || 'Stanza track'} — ${st.label}`,
+            title: `${song.title || 'Stanza track'}. ${st.label}`,
             mediaUrl,
             isVideo: false,
           });
@@ -971,7 +971,7 @@ export default function StanzaWorkspace() {
     };
   }, [localUrl, isLocalVideo, stemUrlById, transposeBuffersWanted, primaryLocalBlobKey, stemUrlKey, selectedId]);
 
-  /** New song or new primary blob — avoid carrying the previous track's duration into `timeupdate` NaN windows. */
+  /** New song or new primary blob. avoid carrying the previous track's duration into `timeupdate` NaN windows. */
   useEffect(() => {
     setPlayback({
       currentTime: 0,
@@ -2967,7 +2967,7 @@ export default function StanzaWorkspace() {
     >
       {/* Window-level drop overlay. Shown only while the user is dragging files into the page;
           `pointer-events: none` lets the drop event continue through to the window listener in
-          `useStanzaFileDrop`. Decorative (`aria-hidden`) — drag-and-drop is mouse-only UX and
+          `useStanzaFileDrop`. Decorative (`aria-hidden`). drag-and-drop is mouse-only UX and
           the keyboard upload buttons remain available below. */}
       {isFileDragging ? (
         <Box
@@ -3085,7 +3085,7 @@ export default function StanzaWorkspace() {
                   />
                 </Button>
               </Stack>
-              {/* Discovery hint for the window-level drop zone. Kept understated — power users
+              {/* Discovery hint for the window-level drop zone. Kept understated. power users
                   will notice once they try; it's not blocking the keyboard / button paths. */}
               <Typography
                 variant="caption"

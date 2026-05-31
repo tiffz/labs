@@ -83,7 +83,7 @@ describe('Melodia App', () => {
     });
     expect(screen.queryByRole('button', { name: /Sing your Do/i })).not.toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: /^Audiation — sing this silently$/i }),
+      screen.getByRole('heading', { name: /^Audiation\. sing this silently$/i }),
     ).toBeInTheDocument();
   });
 

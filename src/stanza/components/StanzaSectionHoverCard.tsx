@@ -142,7 +142,7 @@ export default function StanzaSectionHoverCard({
         </AppTooltip>
       ) : null}
       {boundariesMisalignedWithBeat && onSnapBoundariesToBeat ? (
-        <AppTooltip title="Snap this section's start onto Beat 1 and pad the end forward to the next beat. The metronome click cadence stays the same — only the section edges move.">
+        <AppTooltip title="Snap this section's start onto Beat 1 and pad the end forward to the next beat. The metronome click cadence stays the same. only the section edges move.">
           <Button
             type="button"
             variant="outlined"

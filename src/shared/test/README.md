@@ -1,4 +1,23 @@
-# Test Cleanup Patterns
+# Shared test utilities
+
+## Test tiers (ROI)
+
+| Tier               | Filename pattern                                     | Command                             | Purpose                                        |
+| ------------------ | ---------------------------------------------------- | ----------------------------------- | ---------------------------------------------- |
+| **Fast smoke**     | `*Invariants*.test.ts`, hook colocated tests         | `npm run test:fast` / presubmit     | Small, deterministic checks on critical paths  |
+| **Standard**       | Most `*.test.ts`                                     | `npm test`                          | Full unit/integration suite                    |
+| **Audit / stress** | `*audit*`, `*stress*`, `*benchmark*`, `*regression*` | `npm run test:audits` or `npm test` | Large matrices; excluded from `test:fast`      |
+| **Benchmark**      | `bpmDetectionBenchmark.test.ts`                      | `npm run test:full`                 | Expensive; opt-in via `INCLUDE_BEAT_BENCHMARK` |
+
+### Conventions
+
+- **Deterministic fixtures** — use `createSeededRandom()` from `deterministicRandom.ts` instead of `Math.random()`.
+- **Verbose audit logs** — use `logVerboseAudit()` / `logAuditFailures()` from `auditLogging.ts`; set `VITEST_VERBOSE_AUDIT=true` locally for full audit dumps.
+- **New slow tests** — put `audit`, `stress`, or `regression` in the filename so `test:fast` skips them automatically.
+
+---
+
+# Test cleanup patterns
 
 This directory contains utilities for consistent test cleanup across the codebase to prevent memory leaks and ensure reliable test execution.
 

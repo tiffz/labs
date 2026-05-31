@@ -1,5 +1,7 @@
 # Scales
 
+**Before new UI:** search [`/ui/`](/ui/) · copy: [`COPY_STYLE.md`](COPY_STYLE.md)
+
 A scale-practice companion: pick a scale, key, and tempo; hear and see it played back; practice against live MIDI or acoustic input with per-note grading.
 
 Route: `/scales/`.

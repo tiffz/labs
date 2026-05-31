@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { progressionToChords } from './chordTheory';
+import { progressionToChords } from '../../shared/music/chordTheory';
 import type { RomanNumeral } from '../types';
 
 describe('chordTheory', () => {

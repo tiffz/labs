@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import AppTooltip from '../../shared/components/AppTooltip';
 import DiceIcon from '../../shared/components/DiceIcon';
 
@@ -184,15 +184,14 @@ const OptionChip: React.FC<OptionChipProps> = ({
           </div>
           </div>
         </AppTooltip>
-        <Popover
+        <AnchoredPopover
           open={Boolean(showDropdown && options?.length)}
           anchorEl={containerRef.current}
           onClose={() => setShowDropdown(false)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+          placement="bottom-start"
+          paperClassName="option-chip-dropdown"
           slotProps={{
             paper: {
-              className: 'option-chip-dropdown',
               style: containerRef.current
                 ? { minWidth: `${Math.max(220, containerRef.current.offsetWidth)}px` }
                 : undefined,
@@ -216,7 +215,7 @@ const OptionChip: React.FC<OptionChipProps> = ({
               </button>
             ))}
           </div>
-        </Popover>
+        </AnchoredPopover>
       </div>
     </div>
   );

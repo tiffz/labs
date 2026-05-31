@@ -1,5 +1,7 @@
 # Piano
 
+**Agents:** [`AGENTS.md`](AGENTS.md) · **Before new UI:** search [`/ui/`](/ui/) · [`UI_PRIMITIVES.md`](UI_PRIMITIVES.md)
+
 An interactive piano practice app: render sheet music with VexFlow, play back via sampled piano/strings, and grade live MIDI or acoustic input against the score.
 
 Route: `/piano/`.

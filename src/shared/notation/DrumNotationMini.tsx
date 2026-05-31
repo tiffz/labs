@@ -10,7 +10,7 @@ import {
   isAsymmetricTimeSignature,
   getBeatGroupingInSixteenths,
 } from '../rhythm/timeSignatureUtils';
-import './notationMini.css';
+import { highlightVexFlowMiniNoteGroup } from './playbackSvgHighlight';
 import { RhythmTemplateVariationControls } from './RhythmTemplateVariationControls';
 
 /**
@@ -497,113 +497,28 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
             if (isActive) {
               const noteX = staveNote.getAbsoluteX();
               const noteEl = staveNote.getSVGElement();
-              
+
               if (noteEl) {
-                noteEl.setAttribute('data-highlighted', 'true');
-                
-                // Highlight ALL elements inside the note's SVG group
-                // This includes noteheads (paths in VexFlow 5.x), stems (for unbeamed notes), flags
-                noteEl.querySelectorAll('*').forEach(el => {
-                  const svgEl = el as SVGElement;
-                  const tagName = svgEl.tagName.toLowerCase();
-                  if (tagName === 'g' || tagName === 'defs') return;
-                  
-                  // Set fill for filled elements, stroke for stroked elements
-                  const currentFill = svgEl.getAttribute('fill');
-                  if (currentFill && currentFill !== 'none') {
-                    svgEl.style.setProperty('fill', highlightColor, 'important');
-                  }
-                  svgEl.style.setProperty('stroke', highlightColor, 'important');
-                });
-              }
-              
-              // Additional: Find noteheads by searching for filled paths near the note's X position
-              // VexFlow 5.x renders noteheads as path glyphs from SMuFL font
-              const staveY = stave.getYForLine(4); // Bottom staff line - where noteheads are
-              svg.querySelectorAll('path').forEach(pathEl => {
-                const bbox = (pathEl as SVGGraphicsElement).getBBox?.();
-                if (bbox && bbox.width > 0 && bbox.height > 0) {
-                  const pathX = bbox.x + bbox.width / 2;
-                  const pathY = bbox.y + bbox.height / 2;
-                  
-                  // Check if this path is near our note's X position and near the staff
-                  // Noteheads are typically small filled paths near the bottom of the staff
-                  const fill = pathEl.getAttribute('fill');
-                  if (fill && fill !== 'none' && 
-                      Math.abs(pathX - noteX) < 12 && 
-                      Math.abs(pathY - staveY) < 25 &&
-                      bbox.width < 20 && bbox.height < 20) {
-                    pathEl.style.setProperty('fill', highlightColor, 'important');
-                  }
-                }
-              });
-              
-              // For beamed notes, highlight the stem
-              // Method 1: Try to get stem directly from VexFlow's StaveNote API
-              try {
-                const stem = (staveNote as unknown as { getStem?: () => { getSVGElement?: () => SVGElement } }).getStem?.();
-                if (stem) {
-                  const stemEl = stem.getSVGElement?.();
-                  if (stemEl) {
-                    stemEl.querySelectorAll('*').forEach(el => {
-                      (el as SVGElement).style.setProperty('stroke', highlightColor, 'important');
-                      (el as SVGElement).style.setProperty('fill', highlightColor, 'important');
-                    });
-                    stemEl.style.setProperty('stroke', highlightColor, 'important');
-                  }
-                }
-              } catch { /* getStem might not exist */ }
-              
-              // Method 2: Search for VexFlow stem class elements near this note
-              svg.querySelectorAll('.vf-stem, [class*="stem"]').forEach(el => {
-                const bbox = (el as SVGGraphicsElement).getBBox?.();
-                if (bbox) {
-                  const elX = bbox.x + bbox.width / 2;
-                  if (Math.abs(elX - noteX) < 12) {
-                    (el as SVGElement).style.setProperty('stroke', highlightColor, 'important');
-                    (el as SVGElement).style.setProperty('fill', highlightColor, 'important');
-                    // Also highlight children
-                    el.querySelectorAll('*').forEach(child => {
-                      (child as SVGElement).style.setProperty('stroke', highlightColor, 'important');
-                      (child as SVGElement).style.setProperty('fill', highlightColor, 'important');
-                    });
-                  }
-                }
-              });
-              
-              // Method 3: For beamed notes, search entire SVG for vertical line/rect elements
-              if (isBeamed) {
-                svg.querySelectorAll('line, rect').forEach(el => {
-                  const tagName = el.tagName.toLowerCase();
-                  
-                  if (tagName === 'line') {
-                    const line = el as SVGLineElement;
-                    const x1 = parseFloat(line.getAttribute('x1') || '0');
-                    const x2 = parseFloat(line.getAttribute('x2') || '0');
-                    const y1 = parseFloat(line.getAttribute('y1') || '0');
-                    const y2 = parseFloat(line.getAttribute('y2') || '0');
-                    
-                    // Check if this is a vertical line at the note's X position
-                    const isVertical = Math.abs(x2 - x1) < 2;
-                    const lineHeight = Math.abs(y2 - y1);
-                    const lineX = (x1 + x2) / 2;
-                    
-                    // Stems are vertical lines, 20-60px tall, at the note's X position
-                    if (isVertical && lineHeight > 15 && lineHeight < 80 && Math.abs(lineX - noteX) < 10) {
-                      line.style.setProperty('stroke', highlightColor, 'important');
-                    }
-                  } else if (tagName === 'rect') {
-                    const rect = el as SVGRectElement;
-                    const bbox = rect.getBBox?.();
-                    if (bbox) {
-                      const rectX = bbox.x + bbox.width / 2;
-                      // Stems as rects are very thin (width < 3) and tall
-                      if (bbox.width < 4 && bbox.height > 15 && Math.abs(rectX - noteX) < 10) {
-                        rect.style.setProperty('fill', highlightColor, 'important');
-                        rect.style.setProperty('stroke', highlightColor, 'important');
+                let stemSvg: SVGElement | null = null;
+                try {
+                  stemSvg =
+                    (
+                      staveNote as unknown as {
+                        getStem?: () => { getSVGElement?: () => SVGElement };
                       }
-                    }
-                  }
+                    )
+                      .getStem?.()
+                      ?.getSVGElement?.() ?? null;
+                } catch {
+                  /* getStem might not exist */
+                }
+
+                highlightVexFlowMiniNoteGroup(noteEl, svg, {
+                  highlightColor,
+                  noteX,
+                  isBeamed,
+                  staveBottomY: stave.getYForLine(4),
+                  stemSvg,
                 });
               }
             }

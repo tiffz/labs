@@ -6,7 +6,7 @@ Nested **`AGENTS.md`** for `src/shared/`. Root policy: [`../../AGENTS.md`](../..
 
 1. [`SHARED_UI_CONVENTIONS.md`](SHARED_UI_CONVENTIONS.md) — primitives, popovers, playback field selects.
 2. [`layout/README.md`](layout/README.md) — app shell / workbench starter.
-3. **Playback / notation:** [`hooks/PLAYBACK_HOOK_PATTERN.md`](hooks/PLAYBACK_HOOK_PATTERN.md), [`music/PLAYBACK_RENDERING_AUDIT.md`](music/PLAYBACK_RENDERING_AUDIT.md).
+3. **Playback / notation:** [`hooks/PLAYBACK_HOOK_PATTERN.md`](hooks/PLAYBACK_HOOK_PATTERN.md), [`music/PLAYBACK_RENDERING_AUDIT.md`](music/PLAYBACK_RENDERING_AUDIT.md), [`notation/vexFlowDuration.ts`](notation/vexFlowDuration.ts), [`notation/playbackSvgHighlight.ts`](notation/playbackSvgHighlight.ts).
 
 ## Rules
 

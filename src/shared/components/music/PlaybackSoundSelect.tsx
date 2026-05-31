@@ -1,6 +1,6 @@
 import CheckIcon from '@mui/icons-material/Check';
 import CircularProgress from '@mui/material/CircularProgress';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../AnchoredPopover';
 import type { PopoverActions } from '@mui/material/Popover';
 import { useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { PlaybackFieldSelectTrigger } from './PlaybackFieldSelectTrigger';
@@ -112,7 +112,7 @@ export function PlaybackSoundSelect({
           onClick={() => setOpen(!open)}
         />
       </div>
-      <Popover
+      <AnchoredPopover
         id={menuId}
         action={popoverActionRef}
         open={open && Boolean(anchorRef.current)}
@@ -124,8 +124,7 @@ export function PlaybackSoundSelect({
         disableEnforceFocus
         disableRestoreFocus
         disableScrollLock
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        placement="bottom-start"
         marginThreshold={8}
         slotProps={{
           ...playbackFieldSelectPopoverSlotProps(appearance, {
@@ -177,7 +176,7 @@ export function PlaybackSoundSelect({
             );
           })}
         </div>
-      </Popover>
+      </AnchoredPopover>
     </div>
   );
 }

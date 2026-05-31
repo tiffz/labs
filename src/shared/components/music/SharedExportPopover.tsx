@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../AnchoredPopover';
 import './sharedExportPopover.css';
 import {
   DEFAULT_EXPORT_QUALITY,
@@ -147,13 +147,12 @@ export default function SharedExportPopover({
   };
 
   return (
-    <Popover
+    <AnchoredPopover
       open={open}
       anchorEl={anchorEl}
       onClose={onClose}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-      slotProps={{ paper: { className: `shared-export-popover shared-export-popover-${adapter.id}` } }}
+      placement="bottom-end"
+      paperClassName={`shared-export-popover shared-export-popover-${adapter.id}`}
     >
       <div className={`shared-export-panel shared-export-panel-${adapter.id}`}>
         <div className="shared-export-title">{adapter.title}</div>
@@ -254,6 +253,6 @@ export default function SharedExportPopover({
           {isExporting ? 'Exporting…' : 'Export'}
         </button>
       </div>
-    </Popover>
+    </AnchoredPopover>
   );
 }

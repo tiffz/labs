@@ -391,7 +391,7 @@ export function reducer(state: PianoState, action: Action): PianoState {
       const sectionScore: PianoScore = {
         ...source,
         id: `${source.id}-section-${action.index}`,
-        title: `${source.title} — ${section.name}`,
+        title: `${source.title}. ${section.name}`,
         parts: slicedParts,
       };
       return {

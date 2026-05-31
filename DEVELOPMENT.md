@@ -184,6 +184,8 @@ Production rollback is available through `.github/workflows/rollback.yml` (manua
 
 - Co-located test files alongside source code
 - Add tests when behavior is **non-obvious**, **regression-prone**, or encodes a **documented invariant**; do not test trivial getters or mirror implementation line-for-line
+- Prefer **deterministic** fixtures over `Math.random()` in unit tests (flaky tests erode trust)
+- Prefer **small fast smokes** in presubmit over huge matrices; put exhaustive audits behind `*audit*` / `*stress*` filename conventions so `test:fast` skips them
 - Prefer patterns already in the directory you are editing
 - E2E tests in `src/<app>/e2e/` per app; cross-app smokes in `e2e/`
 - Regression tests in `src/<app>/regression/` for complex integration testing
@@ -200,15 +202,36 @@ The test suite is optimized for different development scenarios:
 | Watch      | `npm run test:watch`      | -        | TDD workflow          |
 | Watch Fast | `npm run test:watch:fast` | -        | Fast TDD workflow     |
 
-**Fast mode** excludes:
+**Fast mode** (`FAST_TESTS=true`, used by presubmit) excludes files whose names contain:
 
-- `*.regression.test.{ts,tsx}` - Slow integration tests
-- `HeartSpawningService.test.ts` - Complex animation tests
+- `regression`, `audit`, `stress`, or `benchmark` (e.g. `generationQualityAudit.test.ts`, `*.audio-regression.test.ts`)
+- `HeartSpawningService.test.ts` — complex animation timing
 
-**Full mode** includes:
+**High-ROI fast smokes** (always in presubmit):
 
-- All standard tests
-- BPM detection benchmarks (~2.5 min)
+- `generationQualityInvariants.test.ts` — small generation matrix (~3 combos)
+- Hook tests colocated with extracted modules (`useWordsPlaybackLifecycle.test.ts`, etc.)
+- Guardrails (`spaGuardrails.test.ts`, `importBoundaries.test.ts`)
+
+**Full mode** includes BPM detection benchmarks (~2.5 min). Run manually when touching beat analysis:
+
+```bash
+INCLUDE_BEAT_BENCHMARK=true npm test
+```
+
+Verbose generation audit logging (optional):
+
+```bash
+VITEST_VERBOSE_AUDIT=true npm run test:words:audit:verbose
+```
+
+Targeted audit commands:
+
+```bash
+npm run test:audits          # words + story exhaustive audits
+npm run test:words:audit     # generation quality matrix only
+npm run test:story:audit     # story generation + placeholder leak audits
+```
 
 ### Pre-commit Hook Behavior
 

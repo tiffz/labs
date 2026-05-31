@@ -8,7 +8,16 @@ import SharedExportPopover from '../shared/components/music/SharedExportPopover'
 import DiceIcon from '../shared/components/DiceIcon';
 import AppTooltip from '../shared/components/AppTooltip';
 import AppLinearVolumeSlider from '../shared/components/AppLinearVolumeSlider';
+import AppSlider from '../shared/components/AppSlider';
+import AnchoredPopover from '../shared/components/AnchoredPopover';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
+import { PlaybackSoundSelect } from '../shared/components/music/PlaybackSoundSelect';
+import PlaybackSpeedControl from '../shared/components/music/PlaybackSpeedControl';
+import { PlaybackVolumeRow } from '../shared/components/music/PlaybackVolumeRow';
+import { ChordPlaybackSettingsPanel } from '../shared/components/music/ChordPlaybackSettingsPanel';
+import { NumericStepperField } from '../shared/components/music/NumericStepperField';
+import { DEFAULT_CHORD_PLAYBACK_SETTINGS } from '../shared/music/chordPlaybackSettings';
+import type { SoundType } from '../shared/music/soundOptions';
 import DrumNotationMini, { type NotationStyle } from '../shared/notation/DrumNotationMini';
 import { COMMON_CHORD_PROGRESSIONS } from '../shared/music/commonChordProgressions';
 import { CHORD_STYLE_OPTIONS, type ChordStyleId } from '../shared/music/chordStyleOptions';
@@ -606,7 +615,7 @@ function AppLinearVolumeSliderDemo() {
       }}
     >
       <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--ui-muted, #5c5c63)' }}>
-        Click the rail to jump to that level — the shared wrapper keeps vertical padding so the hit
+        Click the rail to jump to that level. The shared wrapper keeps vertical padding so the hit
         target matches the visible track in dense rows.
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -620,6 +629,119 @@ function AppLinearVolumeSliderDemo() {
           {Math.round(gain * 100)}%
         </span>
       </div>
+    </div>
+  );
+}
+
+function PlaybackSoundSelectDemo() {
+  const [sound, setSound] = useState<SoundType>('piano');
+  return (
+    <div className="ui-demo-inline" style={{ maxWidth: 220 }}>
+      <PlaybackSoundSelect value={sound} onChange={setSound} appearance="words" aria-label="Demo sound" />
+    </div>
+  );
+}
+
+function AnchoredPopoverDemo() {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  return (
+    <div className="ui-demo-inline">
+      <button type="button" className="ui-demo-button" onClick={(e) => setAnchor(e.currentTarget)}>
+        Open panel
+      </button>
+      <AnchoredPopover
+        open={Boolean(anchor)}
+        anchorEl={anchor}
+        onClose={() => setAnchor(null)}
+        placement="bottom-start"
+        paperClassName="ui-demo-popover-paper"
+      >
+        <p style={{ margin: 0, padding: 12 }}>AnchoredPopover: shared placement and paper hook.</p>
+      </AnchoredPopover>
+    </div>
+  );
+}
+
+function PlaybackSpeedControlDemo() {
+  const [rate, setRate] = useState(1);
+  return (
+    <div className="ui-demo-inline" style={{ maxWidth: 280 }}>
+      <PlaybackSpeedControl value={rate} onChange={setRate} />
+    </div>
+  );
+}
+
+function AppSliderDemo() {
+  const [bpm, setBpm] = useState(96);
+  return (
+    <div className="ui-demo-inline" style={{ maxWidth: 280 }}>
+      <AppSlider
+        value={bpm}
+        min={40}
+        max={200}
+        onChange={(e) => setBpm(Number(e.target.value))}
+        valueLabelDisplay="auto"
+        aria-label="Demo tempo"
+      />
+    </div>
+  );
+}
+
+function PlaybackVolumeRowDemo() {
+  const [volume, setVolume] = useState(0.7);
+  const [muted, setMuted] = useState(false);
+  return (
+    <div style={{ maxWidth: 320 }}>
+      <PlaybackVolumeRow
+        label="Drums"
+        volume={volume}
+        muted={muted}
+        onVolumeChange={setVolume}
+        onMutedChange={setMuted}
+      />
+    </div>
+  );
+}
+
+function NumericStepperFieldDemo() {
+  const [value, setValue] = useState(120);
+  const [draft, setDraft] = useState('120');
+  return (
+    <NumericStepperField
+      value={value}
+      inputValue={draft}
+      onInputChange={(e) => setDraft(e.target.value)}
+      onInputBlur={() => {
+        const n = Number(draft);
+        if (Number.isFinite(n)) {
+          setValue(n);
+          setDraft(String(n));
+        }
+      }}
+      inputAriaLabel="Demo numeric value"
+      stepperAriaLabel="Adjust value"
+      min={40}
+      max={200}
+      onBump={(delta) => {
+        const next = Math.min(200, Math.max(40, value + delta));
+        setValue(next);
+        setDraft(String(next));
+      }}
+      incrementAriaLabel="Increase"
+      decrementAriaLabel="Decrease"
+    />
+  );
+}
+
+function ChordPlaybackSettingsPanelDemo() {
+  const [settings, setSettings] = useState(DEFAULT_CHORD_PLAYBACK_SETTINGS);
+  return (
+    <div style={{ maxWidth: 360 }}>
+      <ChordPlaybackSettingsPanel
+        settings={settings}
+        onChange={(patch) => setSettings((prev) => ({ ...prev, ...patch }))}
+        appearance="default"
+      />
     </div>
   );
 }
@@ -954,6 +1076,20 @@ function DemoPanel({
       return <DrumNotationMiniPresetDemo />;
     case 'app-linear-volume-slider':
       return <AppLinearVolumeSliderDemo />;
+    case 'playback-sound-select':
+      return <PlaybackSoundSelectDemo />;
+    case 'anchored-popover':
+      return <AnchoredPopoverDemo />;
+    case 'playback-speed-control':
+      return <PlaybackSpeedControlDemo />;
+    case 'app-slider':
+      return <AppSliderDemo />;
+    case 'playback-volume-row':
+      return <PlaybackVolumeRowDemo />;
+    case 'numeric-stepper-field':
+      return <NumericStepperFieldDemo />;
+    case 'chord-playback-settings-panel':
+      return <ChordPlaybackSettingsPanelDemo />;
     default:
       return null;
   }

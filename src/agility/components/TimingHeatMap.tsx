@@ -21,7 +21,7 @@ export default function TimingHeatMap({ slots, width, height = 40 }: TimingHeatM
   return (
     <svg
       role="img"
-      aria-label="Rhythm deviation map — pink is early rush, blue is dragging late."
+      aria-label="Rhythm deviation map. pink is early rush, blue is dragging late."
       width={width}
       height={height + 28}
       viewBox={`0 0 ${width} ${height + 28}`}

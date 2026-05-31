@@ -6,13 +6,16 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, BarlineType, Dot } from 'vexflow';
 import type { ChordProgressionState } from '../types';
-import type { Key } from '../../shared/music/chordTypes';
-import { progressionToChords } from '../utils/chordTheory';
-import { generateVoicing } from '../utils/chordVoicing';
+import { progressionToChords } from '../../shared/music/chordTheory';
+import { generateVoicing } from '../../shared/music/chordVoicing';
 import { generateStyledChordNotes } from '../utils/chordStyling';
 import { getKeySignature } from '../utils/keySignature';
 import { scrollPlaybackTarget, type PlaybackAutoScrollState } from '../../shared/utils/playbackAutoScroll';
-import { spellPitchClass } from '../../shared/music/theory/pitchClass';
+import { midiToPitchStringForKey } from '../../shared/music/scoreTypes';
+import {
+  setVexFlowNoteGroupColor,
+  syncKeyedSvgHighlights,
+} from '../../shared/notation/playbackSvgHighlight';
 import {
   generateChordClefBeams,
   redrawBeamedStemsIfMissing,
@@ -25,12 +28,6 @@ interface ChordScoreRendererProps {
   currentChordIndex?: number | null;
   activeNoteGroups?: Set<string>; // Set of "measureIndex:clef:groupIndex" strings
   isPlaying?: boolean;
-}
-
-function midiToPitch(midiNote: number, key: string): string {
-  const octave = Math.floor(midiNote / 12) - 1;
-  const noteName = spellPitchClass(midiNote % 12, key as Key);
-  return `${noteName}/${octave}`;
 }
 
 function formatChordName(chord: ReturnType<typeof progressionToChords>[number]): string {
@@ -77,7 +74,7 @@ function notesToStaveNote(
     return staveNote;
   }
   
-  const pitches = notes.map((midiNote) => midiToPitch(midiNote, key));
+  const pitches = notes.map((midiNote) => midiToPitchStringForKey(midiNote, key));
   const isDotted = duration.includes('d') && !duration.includes('r');
   
   const staveNote = new StaveNote({
@@ -123,25 +120,14 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
   const prevHighlightedRef = useRef<Set<string>>(new Set());
 
   const applyHighlights = useCallback((groups: Set<string>) => {
-    const prev = prevHighlightedRef.current;
-
-    // Remove highlight from notes no longer active
-    prev.forEach(key => {
-      if (!groups.has(key)) {
-        const el = noteElementMapRef.current.get(key);
-        if (el) setNoteColor(el, DEFAULT_COLOR);
-      }
+    syncKeyedSvgHighlights({
+      elementMap: noteElementMapRef.current,
+      activeKeys: groups,
+      previousKeysRef: prevHighlightedRef,
+      highlightColor: HIGHLIGHT_COLOR,
+      defaultColor: DEFAULT_COLOR,
+      applyColor: setVexFlowNoteGroupColor,
     });
-
-    // Add highlight to newly active notes
-    groups.forEach(key => {
-      if (!prev.has(key)) {
-        const el = noteElementMapRef.current.get(key);
-        if (el) setNoteColor(el, HIGHLIGHT_COLOR);
-      }
-    });
-
-    prevHighlightedRef.current = new Set(groups);
   }, []);
 
   // Main render effect — only runs when musical content changes (NOT on highlight changes)
@@ -558,23 +544,5 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
     <div className="chord-score-container" ref={containerRef} />
   );
 };
-
-/**
- * Toggle fill/stroke on all renderable children of a VexFlow SVG group element.
- * VexFlow renders noteheads as <text> glyphs and stems/ledger-lines as <path>.
- */
-function setNoteColor(groupEl: SVGElement, color: string): void {
-  // Noteheads are <text> elements — set fill (default is inherited black when absent)
-  groupEl.querySelectorAll<SVGElement>('text').forEach(el => {
-    el.setAttribute('fill', color);
-  });
-  // Stems and ledger lines are <path> with stroke and fill="none"
-  groupEl.querySelectorAll<SVGElement>('path').forEach(el => {
-    const stroke = el.getAttribute('stroke');
-    if (stroke && stroke !== 'none' && stroke !== 'transparent') {
-      el.setAttribute('stroke', color);
-    }
-  });
-}
 
 export default ChordScoreRenderer;

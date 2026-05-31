@@ -683,7 +683,7 @@ export function PracticeExerciseFocusDialog({
 // Canonical originals live on {@link EncoreSong.lyricsSourceGenius} (Genius-style markers).
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Lyrics body fills the modal — no nested “card”; chrome comes from the modal shell. */
+/** Lyrics body fills the modal. no nested “card”; chrome comes from the modal shell. */
 function lyricsWritelyMainSx(): object {
   return {
     width: 1,
@@ -727,7 +727,7 @@ function lyricsDocInputSx(theme: Theme): object {
   };
 }
 
-/** Section label — no rules, only space + muted primary. */
+/** Section label. no rules, only space + muted primary. */
 function lyricsWritelySectionHeadingSx(theme: Theme, opts: { isFirst: boolean }): object {
   return {
     mt: opts.isFirst ? 0.125 : 1.65,
@@ -742,7 +742,7 @@ function lyricsWritelySectionHeadingSx(theme: Theme, opts: { isFirst: boolean })
   };
 }
 
-/** Highlight fill only while empty (no stroke — reads as highlighter, not a form field). */
+/** Highlight fill only while empty (no stroke. reads as highlighter, not a form field). */
 function lyricsWritelyRewriteShellSx(theme: Theme, unfilled: boolean): object {
   if (unfilled) {
     return {
@@ -786,7 +786,7 @@ function lyricsWritelyRewriteInputSx(theme: Theme): object {
   };
 }
 
-/** Plain lines for one parsed section — shown beside section narrative notes. */
+/** Plain lines for one parsed section. shown beside section narrative notes. */
 function sourceBodyTextForLyricsSection(sec: EncoreLyricsExerciseSection | undefined): string {
   if (!sec?.lines?.length) return '';
   return sec.lines.map((l) => l.original).join('\n');
@@ -1130,7 +1130,7 @@ const LyricsExerciseEditor = forwardRef<
     [readOnly],
   );
 
-  /** Re-parse after inline source edits (markers may move). Does not persist to the song — use Save draft or bulk Apply. */
+  /** Re-parse after inline source edits (markers may move). Does not persist to the song. use Save draft or bulk Apply. */
   const handleInlineSourceBlur = useCallback(() => {
     if (readOnly) return;
     setLocal((prev) => {
@@ -1190,7 +1190,7 @@ const LyricsExerciseEditor = forwardRef<
               <OpenInNewIcon sx={{ fontSize: 14, ml: 0.25, verticalAlign: '-2px' }} aria-hidden />
             </Link>
             . Edit originals inline or use <strong>Full lyrics</strong> for big pastes. Sections split on{' '}
-            <code>[Verse]</code> / <code>[Chorus]</code> lines or on a blank line between paragraphs — rename
+            <code>[Verse]</code> / <code>[Chorus]</code> lines or on a blank line between paragraphs. rename
             any auto-labeled section by clicking its title. <strong>Save draft</strong> stores rewrites and
             syncs lyrics to the song.
           </Typography>
@@ -1215,7 +1215,7 @@ const LyricsExerciseEditor = forwardRef<
           {sections.length === 0 ? (
             <Stack spacing={1.25}>
               <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
-                Paste lyrics to begin — add a <code>[Section]</code> marker per heading, or just leave a blank
+                Paste lyrics to begin. add a <code>[Section]</code> marker per heading, or just leave a blank
                 line between paragraphs and we&rsquo;ll split them into sections you can rename.
               </Typography>
               <InputBase
@@ -1415,7 +1415,7 @@ const SectionNarrativeAnswerRow = memo(function SectionNarrativeAnswerRow({
             value={narrative}
             onChange={onHtml}
             readOnly={readOnly}
-            placeholder="What is happening in the story here — moment, stakes, imagery?"
+            placeholder="What is happening in the story here. moment, stakes, imagery?"
             aria-label={`Narrative for ${displayLabel}`}
           />
         </Box>
@@ -1788,7 +1788,7 @@ const CharacterNineQuestionItem = memo(function CharacterNineQuestionItem({
         value={answerHtml}
         onChange={onFieldChange}
         readOnly={readOnly}
-        placeholder="Write as much as helps — paragraphs are welcome."
+        placeholder="Write as much as helps. paragraphs are welcome."
         aria-label={title}
       />
     </Box>

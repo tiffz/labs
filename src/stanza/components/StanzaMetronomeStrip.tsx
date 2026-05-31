@@ -107,7 +107,7 @@ export default function StanzaMetronomeStrip({
         </Box>
       ) : (
         <span className="stanza-metronome-strip-placeholder">
-          {enabled && needsCalibration ? 'Metronome — set BPM below ↓' : 'Metronome'}
+          {enabled && needsCalibration ? 'Metronome. set BPM below ↓' : 'Metronome'}
         </span>
       )}
     </Box>

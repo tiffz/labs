@@ -1,5 +1,7 @@
 # Words App Notes
 
+**Agents:** [`AGENTS.md`](AGENTS.md) · shared UI: [`/ui/`](/ui/) · copy: [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md)
+
 ## Major functionality
 
 - Organizes a song into stacked sections (`Verse`, `Chorus`, `Bridge`) with unlimited section count.

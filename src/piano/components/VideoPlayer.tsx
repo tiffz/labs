@@ -408,8 +408,8 @@ const VideoPlayer: React.FC = () => {
                     onClick={() => dispatch({ type: 'SET_SMART_METRONOME', enabled: !state.smartMetronomeEnabled })}
                     onMouseEnter={e => showTip(e,
                       state.smartMetronomeEnabled
-                        ? 'Disable Smart Metronome — revert to fixed BPM'
-                        : 'Enable Smart Metronome — metronome follows the recording\'s actual tempo',
+                        ? 'Disable Smart Metronome. revert to fixed BPM'
+                        : 'Enable Smart Metronome. metronome follows the recording\'s actual tempo',
                     )}
                     onMouseLeave={hideTip}
                   >
