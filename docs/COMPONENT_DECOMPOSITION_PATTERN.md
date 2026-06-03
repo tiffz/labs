@@ -74,7 +74,9 @@ These are the files flagged in the engineering audit as over-size and ripe for t
 - **`src/encore/components/song/useSongPageMediaHub.tsx`** (~2312 lines)
 - **`src/stanza/components/StanzaTimeline.tsx`** (~1135 lines)
 - **`src/drums/components/VexFlowRenderer.tsx`** (~2297 lines)
-- **`src/shared/notation/ScoreDisplay.tsx`** (~2016 lines)
+- **`src/shared/notation/ScoreDisplay.tsx`** (~1557 lines; was ~2016)
+  - Extracted `scoreDisplayHelpers.ts` — VexFlow layout, key sig, note styling, navigation glyphs
+  - Next splits: measure layout hook, render pipeline sections
 - **`src/cats/App.tsx`** (~741 lines)
 - **`src/chords/App.tsx`** (~824 lines) — playback settings now use `PlaybackVolumeRow`; further shell splits welcome.
 
