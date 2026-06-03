@@ -198,7 +198,7 @@ export type VisualRouteFromRegistry = {
 export const VISUAL_ROUTE_SPECS: VisualRouteFromRegistry[] = APP_ROUTE_REGISTRY.filter(
   (r) => r.visual,
 ).map((r) => ({
-  id: r.visualId ?? r.route.replace(/\//g, '-').replace(/^-|-$/g, '') || 'home',
+  id: r.visualId ?? (r.route.replace(/\//g, '-').replace(/^-|-$/g, '') || 'home'),
   route: r.route,
   title: r.visualTitle ?? r.title,
   readySelector: r.visualReadySelector ?? r.visibleSelector,
