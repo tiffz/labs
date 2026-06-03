@@ -62,9 +62,14 @@ These are the files flagged in the engineering audit as over-size and ripe for t
     - `StanzaLibraryGrid`, `StanzaDriveDeepLinkAlerts`, `StanzaPracticePitchSection`, `StanzaPracticeMixSection`
   - Next splits (dedicated PRs): playback transport card, landing hero / import row, viewer header, timeline wiring hooks.
 
+### In progress — Scales session screen
+
+- **`src/scales/components/SessionScreen.tsx`** (~2900 lines; was ~3034)
+  - Extracted: `sessionScreenConstants.ts`, `sessionScreenHelpers.ts`, `sessionScreen/{SessionScreenIcon,SessionAdvanceActionTooltip,SessionExerciseResultBreakdown}.tsx`
+  - Next splits: session header bar, stuck dialog, dwell toast overlay, result panel.
+
 ### Deferred to dedicated PRs
 
-- **`src/scales/components/SessionScreen.tsx`** (~3034 lines) — skill `labs-component-decomposition`; see `src/scales/AGENTS.md`.
 - **`src/encore/components/LibraryScreen.tsx`** (~2520 lines)
 - **`src/encore/components/song/useSongPageMediaHub.tsx`** (~2312 lines)
 - **`src/stanza/components/StanzaTimeline.tsx`** (~1135 lines)

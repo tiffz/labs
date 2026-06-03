@@ -11,7 +11,7 @@ Nested **`AGENTS.md`** for Scales. Root policy: [`../../AGENTS.md`](../../AGENTS
 
 ## Pitfalls
 
-- **`SessionScreen.tsx`** (~3000 lines) — decomposition in progress; use skill `labs-component-decomposition`; extract helpers before new features.
+- **`SessionScreen.tsx`** (~2900 lines) — decomposition in progress; helpers in `sessionScreenHelpers.ts` and leaves under `sessionScreen/`; use skill `labs-component-decomposition`.
 - **Store:** `store.tsx` — reducer invariants; run `npm test -- src/scales` after state shape changes.
 - **Shared grading:** extend `src/shared/` for MIDI/acoustic pipeline; do not fork from Piano wholesale.
 
