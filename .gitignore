@@ -44,8 +44,8 @@ src/beat/regression/reports/
 # Legacy local build artifacts
 storybook-static
 
-# Cursor IDE rules (personal agent config)
-.cursor/rules/
+# Cursor IDE local state (team rules + skills live under .cursor/ and are committed)
+.cursor/plans/
 
 # Local audit pipeline state and raw tool output
 .audit-state.json

@@ -1,0 +1,24 @@
+---
+description: Require running pre-commit checks before considering a task complete
+alwaysApply: true
+---
+
+# Pre-commit verification
+
+Before telling the user a task is done — and **before suggesting `git commit`** — run the same checks as the Husky pre-commit hook:
+
+```bash
+npm run presubmit
+```
+
+That runs, in order: `check:import-boundaries`, `lint`, `knip`, `typecheck`, and `test:fast` (matching `.husky/pre-commit`).
+
+If you only changed a few files, you may run subsets while iterating, but **always finish with `npm run presubmit`** so Knip and the full fast test suite are not missed. Knip scans the whole project, not just staged files; unused new files fail the hook even when ESLint passes.
+
+Minimum per-file checks when touching TypeScript:
+
+1. **ESLint** — `npx eslint <changed-files>`
+2. **TypeScript** — `npm run typecheck`
+3. **Knip** — `npm run knip` (delete any files/exports you made unused)
+
+If any check fails on code you touched, fix it before finishing. Pre-existing errors in unrelated files can be ignored.

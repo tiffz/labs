@@ -13,6 +13,9 @@ npm run check:ui-copy
 echo "== presubmit: doc links =="
 npm run check:doc-links
 
+echo "== presubmit: agent docs =="
+npm run check:agent-docs
+
 echo "== presubmit: lint =="
 npm run lint
 

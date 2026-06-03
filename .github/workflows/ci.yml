@@ -94,6 +94,9 @@ jobs:
     - name: Enforce shared-layer import boundaries
       run: npm run check:import-boundaries
 
+    - name: Validate agent docs and skills
+      run: npm run check:agent-docs
+
     - name: Generate shared catalog
       run: npm run generate:shared-catalog
 

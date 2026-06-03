@@ -1,0 +1,19 @@
+---
+description: React a11y baseline — landmarks, labels, MUI imports
+globs:
+  - src/**/*.tsx
+---
+
+# React accessibility
+
+Enforced by **`eslint-plugin-jsx-a11y`** and **`src/shared/spaGuardrails.test.ts`**. Full prose: [`STYLE_GUIDE.md`](../../STYLE_GUIDE.md) § UI and Accessibility.
+
+## Checklist (touched UI)
+
+- One `<main id="main">` + `<SkipToMain />` first in app root (`display: contents` on main if layout requires).
+- Every icon-only button / `IconButton` has **`aria-label`** (`AppTooltip` does not supply the name).
+- MUI: path imports only — `import Button from '@mui/material/Button'` (never `@mui/material` barrel).
+- No bare `outline: none` without `:focus-visible` replacement.
+- Lazy-load heavy modals/surfaces with `React.lazy` + `Suspense` (see `piano/App.tsx`, `beat/App.tsx`).
+
+Run **`npx eslint <changed-tsx>`** on edited files.

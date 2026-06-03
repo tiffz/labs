@@ -1,0 +1,36 @@
+---
+description: Search shared UI before building new controls
+globs:
+  - src/**/components/**/*
+  - src/**/App.tsx
+---
+
+# Shared UI first
+
+Before adding a **new** control, menu, slider, popover, or playback field:
+
+1. Search **`src/shared/components`** and open **`/ui/`** (or `src/ui/generatedSharedCatalog.ts`).
+2. Read the matching section in [`SHARED_UI_CONVENTIONS.md`](../../src/shared/SHARED_UI_CONVENTIONS.md).
+3. Prefer **token overrides** and documented class hooks over forking markup.
+
+## Must reuse (do not copy)
+
+| Need | Use |
+| ---- | --- |
+| 0–1 mix / gain rail | `AppLinearVolumeSlider` |
+| BPM / playback speed | `BpmInput`, `PlaybackSpeedControl` |
+| Sound / style pickers | `PlaybackSoundSelect`, `ChordStyleInput` + `appearance` |
+| Floating panel + nested menu | `AnchoredPopover`, `playbackFloatingPanelSlotProps` |
+| Tooltips on icon buttons | `AppTooltip` + **`aria-label`** on the control |
+| Multi-panel app shell | `AppShellLayout` + app `*-layout.css` |
+
+## Anti-patterns
+
+- Raw `import Slider from '@mui/material/Slider'` for volume/gain — use `AppLinearVolumeSlider` (0–1 or pass `min`/`max` for 0–100).
+- Hand-rolled popover menus for playback fields — use `PlaybackFieldSelectTrigger` / `playbackFieldSelectPopoverSlotProps`.
+- Deep MUI selector overrides when a token family (`--pfs-*`, `--bpm-*`) exists.
+- App-local duplicate of logic already in `src/shared/music/**` or `src/shared/notation/**`.
+
+Encore-only row primitives: [`src/encore/UI_PRIMITIVES.md`](../../src/encore/UI_PRIMITIVES.md).
+
+New shared primitive → `/ui` demo + `SHARED_UI_CONVENTIONS.md` entry (see root `AGENTS.md` checklist).

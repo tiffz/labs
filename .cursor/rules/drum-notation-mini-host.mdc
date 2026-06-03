@@ -1,0 +1,21 @@
+---
+description: DrumNotationMini host layout — avoid clipping and nested scrollbars in narrow rails
+globs:
+  - src/shared/notation/DrumNotationMini.tsx
+  - src/shared/notation/notationMini.css
+  - src/stanza/stanza.css
+  - src/stanza/components/StanzaWorkspace.tsx
+---
+
+# DrumNotationMini host layout
+
+When editing mini drum notation in Stanza or other narrow hosts:
+
+1. **Do not set `overflow-x: auto` on `.drum-notation-mini`** (the SVG mount). CSS computes `overflow-y: auto` on that same element and creates a nested vertical scrollbar. Use the existing `.drum-notation-mini-x-scroll` wrapper; keep `overflow-y: hidden` on it (`notationMini.css`).
+
+2. **`computeMiniNotationLayout`** — fixed `staveHeight`; grow `renderHeight` with `Math.max(hostHeight, contentHeight)`. Never shrink the staff to fund top padding inside a fixed pixel budget.
+
+3. **Stanza** — `.stanza-drums-notation-frame`: `overflow: visible`, `flex-shrink: 0`, no `min-height: 0` on the frame. See [`src/stanza/PRACTICE_RAIL.md`](../../src/stanza/PRACTICE_RAIL.md).
+
+4. After layout/CSS changes, verify in the browser at practice-rail width (~320px), not only `/ui/` catalog.
+5. **Metronome dots** — bottom padding must use `stave.getYForLine(4)` via `resolveMiniNotationRenderHeight`; do not rely on layout `staveHeight` alone. Host `.vexflow-mini-container` must not use `overflow: hidden` (clips dots in Beat).

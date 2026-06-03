@@ -10,6 +10,28 @@ How we grow documentation without drift, duplication, or low-signal narrative. *
 4. **App docs stay local.** `src/<app>/README.md` (and optional `DESIGN.md`, `COPY_STYLE.md`, `ARCHITECTURE.md`) describe **that app’s behavior and constraints**. They must not redefine repo-wide policy (copy voice, import boundaries, SPA shell) — link to `DEVELOPMENT.md`, `STYLE_GUIDE.md`, or ADRs instead.
 5. **Explorations ≠ policy.** `docs/design-explorations/` holds options and spikes. When a decision is made, **promote** to `docs/adr/` or `DEVELOPMENT.md` and **trim or archive** the exploration so readers are not pulled two ways.
 
+## Agent context map
+
+How Labs packages guidance for AI agents ([Agent Skills](https://agentskills.io/home) progressive disclosure). **Precedence when layers conflict:** [`AGENTS.md`](../AGENTS.md) § Agent precedence.
+
+| Layer                  | Location                                                                        | Loads when                       | Holds                                                            |
+| ---------------------- | ------------------------------------------------------------------------------- | -------------------------------- | ---------------------------------------------------------------- |
+| **Always-on entry**    | Root [`AGENTS.md`](../AGENTS.md)                                                | Every session                    | Precedence, boundaries, task routing index, editing checklist    |
+| **Always-on gate**     | [`.cursor/rules/pre-commit-checks.mdc`](../.cursor/rules/pre-commit-checks.mdc) | Every session                    | Presubmit before done (canonical; do not duplicate in AGENTS.md) |
+| **Path-scoped rules**  | [`.cursor/rules/*.mdc`](../.cursor/rules/README.md)                             | Matching files open/edited       | Fragile invariants (~50 lines); link to human docs               |
+| **Task-scoped skills** | [`.cursor/skills/<name>/`](../.cursor/skills/README.md)                         | Task matches skill `description` | Multi-step workflows; `references/` point at canonical docs      |
+| **Domain discovery**   | `src/<app>/AGENTS.md`                                                           | Agent reads app being edited     | App pitfalls + test entry points (no cross-app policy)           |
+| **Human canonical**    | `DEVELOPMENT.md`, ADRs, `STYLE_GUIDE.md`, app READMEs                           | Tier B or skill `references/`    | Durable why + contracts; enforced by CI/tests                    |
+
+**Where to put new agent guidance:**
+
+- **Universal never/always** → root `AGENTS.md` (keep lean)
+- **File-path invariant** → new `.mdc` rule + row in rules README
+- **Multi-step workflow with gates** → new `.cursor/skills/<name>/SKILL.md` + skills README row
+- **Deep policy or rationale** → human doc; skill/rule **links** with a one-line pointer file in `references/`
+
+**Anti-pattern:** duplicating `DEVELOPMENT.md` or playback checklists in AGENTS.md, app AGENTS.md, _and_ a skill — pick one activation layer + one canonical doc.
+
 ## Canonical map (where to put new content)
 
 | Kind of content                                                 | Canonical location                                                                   | Notes                                                                                                        |
@@ -20,10 +42,11 @@ How we grow documentation without drift, duplication, or low-signal narrative. *
 | **Default product copy voice**                                  | [`docs/USER_COPY_STYLE.md`](USER_COPY_STYLE.md)                                      | App `COPY_STYLE.md` = domain-only deltas.                                                                    |
 | **Shared UI primitives and tokens**                             | [`src/shared/SHARED_UI_CONVENTIONS.md`](../src/shared/SHARED_UI_CONVENTIONS.md)      | New shared components: document + `/ui/` demo per `AGENTS.md` checklist.                                     |
 | **“Which doc wins?”**                                           | [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md)                                      | Update when introducing a new top-level policy file.                                                         |
-| **AI assistant workflow**                                       | [`AGENTS.md`](../AGENTS.md)                                                          | Task lists, boundaries, task routing; **link** to policy instead of duplicating `DEVELOPMENT.md`.            |
+| **AI assistant workflow**                                       | [`AGENTS.md`](../AGENTS.md)                                                          | Task routing, boundaries, checklist; **link** to policy instead of duplicating `DEVELOPMENT.md`.             |
+| **Repo agent skills (workflows)**                               | [`.cursor/skills/<name>/`](../.cursor/skills/README.md)                              | [Agent Skills](https://agentskills.io/specification) format; `references/` link to human docs.               |
 | **Nested agent context (monorepo apps)**                        | `src/<app>/AGENTS.md` (+ app `README.md`)                                            | Encore, Stanza, shared, Words, Drums, Piano, Chords: see root `AGENTS.md` § Start Here.                      |
-| **Cursor rules index**                                          | [`.cursor/rules/README.md`](../.cursor/rules/README.md)                              | Update when adding scoped rules.                                                                             |
-| **Session retrospective / process improvement**                 | [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCESS_IMPROVEMENT.md)        | Agent rule: `.cursor/rules/session-retrospective.mdc`. PR template § Process improvements.                   |
+| **Cursor rules index**                                          | [`.cursor/rules/README.md`](../.cursor/rules/README.md)                              | Update when adding scoped rules; add Skill column when a skill complements the rule.                         |
+| **Session retrospective / process improvement**                 | [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCESS_IMPROVEMENT.md)        | Skill: `labs-session-retrospective`. PR template § Process improvements.                                     |
 | **Onboarding, commands, repo map**                              | Root [`README.md`](../README.md)                                                     | Short; deep policy links out.                                                                                |
 | **Regression / rollback / dependency plans**                    | `docs/REGRESSION_WORKFLOW.md`, `docs/ROLLBACK.md`, `docs/DEPENDENCY_UPGRADE_PLAN.md` | Keep procedural; avoid embedding full CI YAML in prose.                                                      |
 | **Refactor pattern for large components**                       | [`docs/COMPONENT_DECOMPOSITION_PATTERN.md`](COMPONENT_DECOMPOSITION_PATTERN.md)      | Reference from app ARCHITECTURE when relevant.                                                               |

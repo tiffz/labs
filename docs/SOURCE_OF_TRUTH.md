@@ -49,8 +49,8 @@ When **AI agents** receive conflicting instructions, use [`AGENTS.md`](../AGENTS
 - `docs/design-explorations/`
   - Non-binding design notes and spikes (see [`docs/design-explorations/README.md`](design-explorations/README.md)). Below ADRs and `DEVELOPMENT.md` in precedence. Example: [`local-first-session-and-bff.md`](design-explorations/local-first-session-and-bff.md) (OAuth / BFF / source-of-truth options).
 - AI helper docs
-  - Task-oriented guidance for agents: root [`AGENTS.md`](../AGENTS.md), nested `src/<app>/AGENTS.md` where present, [`.cursor/rules/README.md`](../.cursor/rules/README.md).
-  - Should reference canonical docs instead of duplicating policy text (see [`DOCUMENTATION_STRATEGY.md`](DOCUMENTATION_STRATEGY.md)).
+  - Task-oriented guidance for agents: root [`AGENTS.md`](../AGENTS.md), nested `src/<app>/AGENTS.md` where present, [`.cursor/rules/README.md`](../.cursor/rules/README.md), [`.cursor/skills/README.md`](../.cursor/skills/README.md).
+  - Should reference canonical docs instead of duplicating policy text (see [`DOCUMENTATION_STRATEGY.md`](DOCUMENTATION_STRATEGY.md) § Agent context map).
 
 ## Consistency Rules
 
@@ -63,7 +63,8 @@ When **AI agents** receive conflicting instructions, use [`AGENTS.md`](../AGENTS
 
 During code review and **quarterly maintenance** (or after major agent-workflow changes), verify:
 
-- [`AGENTS.md`](../AGENTS.md), [`.cursor/rules/README.md`](../.cursor/rules/README.md), and commands in `package.json` stay aligned.
+- [`AGENTS.md`](../AGENTS.md), [`.cursor/rules/README.md`](../.cursor/rules/README.md), [`.cursor/skills/README.md`](../.cursor/skills/README.md), and commands in `package.json` stay aligned.
+- Each repo skill under [`.cursor/skills/`](../.cursor/skills/README.md): `name` matches directory; `description` includes trigger keywords for its workflow; task routing table in `AGENTS.md` still points at the skill. Run `npm run check:agent-docs` (and optional `npx skills-ref validate .cursor/skills/<name>` per [Agent Skills spec](https://agentskills.io/specification)).
 - CI behavior described in docs matches `.github/workflows/*`.
 - Hook behavior described in docs matches `.husky/*`.
 - Shared boundary documentation matches `src/shared/importBoundaries.test.ts`.

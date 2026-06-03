@@ -2,7 +2,7 @@
 
 Labs treats **how we work** as a product surface alongside the apps. After meaningful sessions, agents and humans should look for durable improvements—not one-off fixes buried in chat history.
 
-**Agent workflow:** [`AGENTS.md`](../AGENTS.md) § Continuous process improvement.  
+**Agent workflow:** skill `labs-session-retrospective` (`.cursor/skills/labs-session-retrospective/SKILL.md`); pointer rule `.cursor/rules/session-retrospective.mdc`.  
 **Where to put new artifacts:** [`DOCUMENTATION_STRATEGY.md`](DOCUMENTATION_STRATEGY.md).
 
 ## When to run a session retrospective
@@ -45,7 +45,7 @@ Add a new class only when several future bugs would share it.
 Prefer **enforcement + one canonical doc** over long narrative. In priority order:
 
 1. **Regression test** — Vitest for logic; Playwright smoke for user-visible integration (`e2e/playback-ui-regressions.spec.ts` is the pattern for cross-app smokes).
-2. **Cursor rule** (`.cursor/rules/*.mdc`) — file-scoped, under ~50 lines, concrete examples.
+2. **Cursor rule** (`.cursor/rules/*.mdc`) — file-scoped, under ~50 lines, concrete examples; or repo **skill** for multi-step workflows (`.cursor/skills/`).
 3. **Checklist in living docs** — `SHARED_UI_CONVENTIONS.md`, `PLAYBACK_HOOK_PATTERN.md`, app `DEVELOPMENT.md`.
 4. **PR template / workflow** — handoff fields humans and agents reuse.
 5. **ADR** — only for **material** cross-cutting decisions ([`docs/adr/README.md`](adr/README.md)).

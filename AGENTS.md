@@ -7,58 +7,68 @@ Instructions for AI coding assistants (Cursor, Claude, Codex, Gemini, etc.). [`G
 ### Tier A — every task
 
 1. **`src/<app>/README.md`** — read the app you are editing (+ nested **`AGENTS.md`** when present).
-2. **Task routing** (table below) — open the one doc row that matches your edit surface.
-3. **Editing checklist** (incl. preflight) — before declaring done.
+2. **Task routing** (table below) — open the matching doc or **skill**.
+3. **Editing checklist** — before declaring done.
 
 ### Tier B — when the task touches policy or unfamiliar subsystems
 
 4. `DEVELOPMENT.md` — architecture, guardrails (**authoritative for humans**).
 5. `STYLE_GUIDE.md` — TypeScript + UI/a11y + UX parallelism.
 6. `docs/SOURCE_OF_TRUTH.md` — doc precedence + [agent precedence](#agent-precedence).
-7. `docs/DOCUMENTATION_STRATEGY.md` — where to put new docs.
-8. [`.cursor/rules/README.md`](.cursor/rules/README.md) — scoped Cursor rules index.
+7. `docs/DOCUMENTATION_STRATEGY.md` — where to put new docs + [agent context map](docs/DOCUMENTATION_STRATEGY.md#agent-context-map).
+8. [`.cursor/rules/README.md`](.cursor/rules/README.md) — scoped Cursor rules.
+9. [`.cursor/skills/README.md`](.cursor/skills/README.md) — repo workflow skills.
 
 ### Nested `AGENTS.md`
 
 [`src/encore/`](src/encore/AGENTS.md) · [`src/stanza/`](src/stanza/AGENTS.md) · [`src/shared/`](src/shared/AGENTS.md) · [`src/words/`](src/words/AGENTS.md) · [`src/drums/`](src/drums/AGENTS.md) · [`src/piano/`](src/piano/AGENTS.md) · [`src/chords/`](src/chords/AGENTS.md)
+
+Apps without nested `AGENTS.md` → app `README.md` + this file.
 
 ## Agent precedence
 
 When instructions conflict, resolve in this order:
 
 1. **Explicit user chat** in the current session (unless they say “follow repo policy”).
-2. **Cursor user rules** and installed **skills** (read the skill file when the task matches).
+2. **Cursor user rules** and **skills** (repo [`.cursor/skills/`](.cursor/skills/README.md) + user-installed skills — read the skill when the task matches).
 3. **Nearest `AGENTS.md`** (app or `src/shared/`, then root) + matching **`.cursor/rules/*.mdc`** for open/edited paths.
 4. **`src/<app>/README.md`** and app `DEVELOPMENT.md` / `LAYOUT.md`.
 5. **`DEVELOPMENT.md`**, **`docs/adr/`**, **`STYLE_GUIDE.md`**.
 
 Enforced config (CI, ESLint, guardrail tests) overrides prose in any doc. See [`docs/SOURCE_OF_TRUTH.md`](docs/SOURCE_OF_TRUTH.md).
 
+Presubmit before done: [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre-commit-checks.mdc) (canonical; do not duplicate steps here).
+
 ## Task routing
 
-| If you are touching…                               | Read first                                                                                                                                                 |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Any app feature                                    | `src/<app>/README.md` (+ app `AGENTS.md` if present)                                                                                                       |
-| **New UI control / form field**                    | Search `/ui/` + `src/ui/generatedSharedCatalog.ts`; [`SHARED_UI_CONVENTIONS.md`](src/shared/SHARED_UI_CONVENTIONS.md); `.cursor/rules/shared-ui-first.mdc` |
-| New/changed app shell / `index.html`               | `src/shared/templates/app-index.starter.html`, `spaGuardrails.test.ts`, `.cursor/rules/app-entry-html.mdc`                                                 |
-| Shared UI, popovers, playback pickers              | `SHARED_UI_CONVENTIONS.md`, `/ui/` catalog, `.cursor/rules/playback-ui-regressions.mdc`                                                                    |
-| Playback hooks, notation, VexFlow                  | `PLAYBACK_HOOK_PATTERN.md`, `PLAYBACK_RENDERING_AUDIT.md`                                                                                                  |
-| Encore (library, originals, sync)                  | `src/encore/AGENTS.md`, `src/encore/README.md`                                                                                                             |
-| Encore Originals chord paint                       | `originals/DEVELOPMENT.md`, `.cursor/rules/encore-originals-chord-paint.mdc`                                                                               |
-| Stanza viewer layout                               | `src/stanza/LAYOUT.md`, `.cursor/rules/stanza-viewer-layout.mdc`                                                                                           |
-| Workbench / multi-panel layout                     | `src/shared/layout/README.md`, `app-main.starter.tsx`                                                                                                      |
-| Tempo analysis / optional Stanza Analyze           | `src/shared/beat/TEST_MATRIX.md`, `.cursor/rules/beat-analysis-scope.mdc`                                                                                  |
-| User-visible copy                                  | `docs/USER_COPY_STYLE.md` (+ app `COPY_STYLE.md`)                                                                                                          |
-| Pitch visuals                                      | `src/pitch/DESIGN.md`                                                                                                                                      |
-| Rhythm presets                                     | `presetIntegrity.test.ts` after editing `RHYTHM_DATABASE`                                                                                                  |
-| Material architecture (routing, OAuth, boundaries) | `docs/adr/README.md`, `.cursor/rules/architecture-decisions.mdc`                                                                                           |
-| Regression / visual baselines                      | `docs/REGRESSION_WORKFLOW.md`                                                                                                                              |
+| If you are touching…                               | Read first                                                                                                                                                 | Skill                          |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| Any app feature                                    | `src/<app>/README.md` (+ app `AGENTS.md` if present)                                                                                                       | —                              |
+| **New UI control / form field**                    | Search `/ui/` + `src/ui/generatedSharedCatalog.ts`; [`SHARED_UI_CONVENTIONS.md`](src/shared/SHARED_UI_CONVENTIONS.md); `.cursor/rules/shared-ui-first.mdc` | —                              |
+| New/changed app shell / `index.html`               | `src/shared/templates/app-index.starter.html`, `spaGuardrails.test.ts`, `.cursor/rules/app-entry-html.mdc`                                                 | —                              |
+| Shared UI, popovers, playback pickers              | `SHARED_UI_CONVENTIONS.md`, `/ui/` catalog, `.cursor/rules/playback-ui-regressions.mdc`                                                                    | —                              |
+| Playback hooks, notation, VexFlow bugs             | `PLAYBACK_HOOK_PATTERN.md`, `PLAYBACK_RENDERING_AUDIT.md`                                                                                                  | `labs-playback-bugfix`         |
+| Encore (library, originals, sync)                  | `src/encore/AGENTS.md`, `src/encore/README.md`                                                                                                             | —                              |
+| Encore Originals chord paint                       | `originals/DEVELOPMENT.md`, `.cursor/rules/encore-originals-chord-paint.mdc`                                                                               | —                              |
+| Stanza viewer layout                               | `src/stanza/LAYOUT.md`, `.cursor/rules/stanza-viewer-layout.mdc`                                                                                           | —                              |
+| Workbench / multi-panel layout                     | `src/shared/layout/README.md`, `app-main.starter.tsx`                                                                                                      | —                              |
+| Tempo analysis / optional Stanza Analyze           | `src/shared/beat/TEST_MATRIX.md`, `.cursor/rules/beat-analysis-scope.mdc`                                                                                  | —                              |
+| User-visible copy                                  | `docs/USER_COPY_STYLE.md` (+ app `COPY_STYLE.md`)                                                                                                          | —                              |
+| Pitch visuals                                      | `src/pitch/DESIGN.md`                                                                                                                                      | —                              |
+| Rhythm presets                                     | `presetIntegrity.test.ts` after editing `RHYTHM_DATABASE`                                                                                                  | —                              |
+| Material architecture (routing, OAuth, boundaries) | `docs/adr/README.md`, `.cursor/rules/architecture-decisions.mdc`                                                                                           | `labs-write-adr`               |
+| Regression / visual baselines                      | `docs/REGRESSION_WORKFLOW.md`                                                                                                                              | `labs-visual-regression`       |
+| Large component / App.tsx refactor                 | `docs/COMPONENT_DECOMPOSITION_PATTERN.md`                                                                                                                  | `labs-component-decomposition` |
+| PR babysitting / merge-ready                       | —                                                                                                                                                          | `labs-babysit-pr`              |
+| Split work into multiple PRs                       | —                                                                                                                                                          | `labs-split-to-prs`            |
+| Session retrospective / codify learnings           | `docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`                                                                                                                   | `labs-session-retrospective`   |
+
+Commands quick reference: root [`README.md`](README.md) and `package.json` scripts.
 
 ## Boundaries
 
 ### Always (do without asking)
 
-- Run **`npm run presubmit`** before declaring a task done or suggesting a commit.
 - Respect **import boundaries** (`src/shared/**` only for cross-app reuse).
 - Use **shared UI primitives** before app-local copies.
 - **Question-only / review-only tasks:** minimal diff—do not refactor or “improve” unrelated code.
@@ -67,8 +77,8 @@ Enforced config (CI, ESLint, guardrail tests) overrides prose in any doc. See [`
 ### Ask first
 
 - **Git commit**, **push**, or **open a PR** (unless the user explicitly requested it).
-- **Visual baseline updates** (`e2e/visual/*-snapshots/`).
-- **New ADR** or material architecture change.
+- **Visual baseline updates** (`e2e/visual/*-snapshots/`) — skill `labs-visual-regression`.
+- **New ADR** or material architecture change — skill `labs-write-adr`.
 - Expanding scope beyond the user’s request.
 - **Codifying process improvements** into rules/docs (offer first; implement when the user agrees).
 
@@ -90,70 +100,36 @@ Enforced config (CI, ESLint, guardrail tests) overrides prose in any doc. See [`
 
 ## Skills
 
-When the user’s task matches an installed Cursor skill (e.g. babysit PR, split-to-PRs, create-rule), **read and follow that skill file first** before improvising a workflow.
+**Repo skills** (version-controlled): [`.cursor/skills/README.md`](.cursor/skills/README.md) — read the full `SKILL.md` when the task routing table or user request matches.
 
-## Commands
+**User-installed skills** (Cursor global): `babysit`, `split-to-prs`, `create-rule`, `create-skill`, etc. Prefer repo skills (`labs-babysit-pr`, `labs-split-to-prs`) when both exist — repo skills include Labs-specific gates.
 
-| Command                                                   | Use when                                  |
-| --------------------------------------------------------- | ----------------------------------------- |
-| `npm run presubmit`                                       | Before done / before suggesting commit    |
-| `npm run test:fast`                                       | Iterating on TS/tests (pre-commit subset) |
-| `npm test`                                                | Full Vitest (CI parity)                   |
-| `npm run test:e2e:smoke`                                  | Quick app shell smoke                     |
-| `npx playwright test e2e/playback-ui-regressions.spec.ts` | Playback UI smokes                        |
-| `npm run test:e2e:visual`                                 | Visual regression verify                  |
-| `npm run test:e2e:visual:update`                          | Intentional baseline refresh              |
-| `npm run test:regression`                                 | Audio + visual combined                   |
-| `npm run test:audits`                                     | Words + story exhaustive audit matrices   |
-| `npm run knip`                                            | After adding/removing exports or files    |
-
-```bash
-npm run dev            # vite dev server (5173)
-npm run typecheck      # tsc --noEmit
-npm run lint           # eslint
-npm run build          # production build
-npx playwright test    # all E2E (install browsers first)
-```
-
-## Handoff types (do not conflate)
-
-| Name                      | When                                           | Doc                                  |
-| ------------------------- | ---------------------------------------------- | ------------------------------------ |
-| **Iteration handoff**     | Stopping mid-refactor; next person needs state | `DEVELOPMENT.md` § Iteration handoff |
-| **Process retrospective** | Session complete; improve how we work          | `CONTINUOUS_PROCESS_IMPROVEMENT.md`  |
-| **Bug-fix handoff**       | Fixed a regression; record symptom class       | PR template § Bug-fix handoff        |
+When a task matches a skill, **read and follow it first** before improvising a workflow.
 
 ## Editing Checklist
 
 ### Preflight (UI or user-visible copy)
 
 - [ ] Searched **`/ui/`** catalog or `src/ui/generatedSharedCatalog.ts` for an existing primitive
-- [ ] Checked **`SHARED_UI_CONVENTIONS.md`** for this control type (sliders, playback pickers, popovers, layout)
+- [ ] Checked **`SHARED_UI_CONVENTIONS.md`** for this control type
 - [ ] User-visible strings follow **`docs/USER_COPY_STYLE.md`** (+ app `COPY_STYLE.md` when present)
 
 ### Before declaring a task done
 
-- [ ] `npm run presubmit` clean
+- [ ] Presubmit clean (see `pre-commit-checks.mdc`)
 - [ ] New shared primitive → `SHARED_UI_CONVENTIONS.md` + `/ui/` demo
 - [ ] New app directory → `importBoundaries.test.ts` + `check-import-boundaries.mjs`
-- [ ] Visual baselines updated **intentionally** only
-- [ ] Material architecture → ADR when practical
-
-## Continuous process improvement
-
-After substantial sessions, **proactively** offer a brief retrospective (symptom → root cause class → durable fix). See [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](docs/CONTINUOUS_PROCESS_IMPROVEMENT.md). Fill PR **Process improvements** when codifying.
-
-## Large Refactors
-
-Follow [`docs/COMPONENT_DECOMPOSITION_PATTERN.md`](docs/COMPONENT_DECOMPOSITION_PATTERN.md).
+- [ ] Visual baselines updated **intentionally** only (skill `labs-visual-regression`)
+- [ ] Material architecture → ADR when practical (skill `labs-write-adr`)
 
 ## Repo Map
 
 ```text
-src/<app>/     — micro-apps (index.html + main.tsx + README.md)
-src/shared/    — cross-app code (see src/shared/AGENTS.md)
-src/ui/        — shared UI catalog
-docs/          — policy, ADRs, regression workflow
-e2e/           — cross-app Playwright specs
-.cursor/rules/ — scoped agent rules (see README.md)
+src/<app>/       — micro-apps (index.html + main.tsx + README.md)
+src/shared/      — cross-app code (see src/shared/AGENTS.md)
+src/ui/          — shared UI catalog
+docs/            — policy, ADRs, regression workflow
+e2e/             — cross-app Playwright specs
+.cursor/rules/   — scoped agent rules (path-triggered)
+.cursor/skills/  — repo workflow skills (task-triggered)
 ```

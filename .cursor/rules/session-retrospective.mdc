@@ -1,0 +1,9 @@
+---
+description: End-of-session retrospective — activate skill labs-session-retrospective
+---
+
+# Session retrospective
+
+Do **not** load full workflow from this rule. When a substantial session ends or the user asks for process feedback, read and follow skill **[`labs-session-retrospective`](../skills/labs-session-retrospective/SKILL.md)**.
+
+Canonical doc: [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](../../docs/CONTINUOUS_PROCESS_IMPROVEMENT.md)
