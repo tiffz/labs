@@ -99,11 +99,11 @@ export function computeMiniNotationLayout(
   const noteBottomPad = isUltraCompact ? 16 : 20;
   /** Metronome dots render below the bottom staff line (see draw loop). */
   const metronomeDotRadius = 5;
-  const symbolGap = height <= 68 ? 4 : height <= 72 ? 5 : height <= 90 ? 6 : 8;
+  const symbolGap = height <= 68 ? 5 : height <= 72 ? 6 : height <= 90 ? 7 : 8;
   const metronomeDotGap = height <= 68 ? 9 : height <= 72 ? 11 : height <= 90 ? 14 : 18;
   const symbolSpace = options.showDrumSymbols
     ? isUltraCompact
-      ? Math.round(Math.min(9, Math.max(5, height * 0.1)))
+      ? Math.round(Math.min(12, Math.max(7, height * 0.12)))
       : Math.round(Math.min(14, Math.max(9, height * 0.14)))
     : 0;
   const staveY = symbolSpace + timeSignatureSpace + edgePadding;
@@ -137,6 +137,170 @@ function resolveMiniNotationRenderHeight(
     );
   }
   return Math.max(requestedHeight, layout.renderHeight, contentBottom);
+}
+
+/** Minimum SVG width so dense 16th patterns do not collide with the end barline. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function estimateMiniNotationRenderWidth(
+  requestedWidth: number,
+  notes: Pick<Note, 'durationInSixteenths'>[],
+): number {
+  const sixteenths = notes.reduce((sum, note) => sum + note.durationInSixteenths, 0);
+  const staveX = requestedWidth <= 300 ? 6 : 12;
+  const timeSignaturePad = 48;
+  const endBarPad = 18;
+  const minPerSixteenth = 10.5;
+  const contentMin = staveX + timeSignaturePad + sixteenths * minPerSixteenth + endBarPad;
+  return Math.max(requestedWidth, Math.ceil(contentMin));
+}
+
+/** Notehead bounds in SVG coordinates (after VexFlow draw). */
+export type MiniNotationNoteheadBounds = {
+  centerX: number;
+  topY: number;
+  bottomY: number;
+};
+
+const NOTEHEAD_SELECTOR =
+  '.vf-notehead, path[class*="notehead"], ellipse[class*="notehead"], circle[class*="notehead"]';
+
+function svgPointFromElementLocal(
+  svg: SVGSVGElement,
+  el: SVGGraphicsElement,
+  x: number,
+  y: number,
+): { x: number; y: number } | null {
+  if (typeof svg.createSVGPoint !== 'function') return null;
+  const pt = svg.createSVGPoint();
+  pt.x = x;
+  pt.y = y;
+
+  const withTransform = el as SVGGraphicsElement & {
+    getTransformToElement?: (target: SVGElement) => DOMMatrix;
+  };
+  if (typeof withTransform.getTransformToElement === 'function') {
+    try {
+      const matrix = withTransform.getTransformToElement(svg as unknown as SVGElement);
+      const transformed = pt.matrixTransform(matrix);
+      return { x: transformed.x, y: transformed.y };
+    } catch {
+      /* fall through */
+    }
+  }
+
+  if (typeof el.getCTM !== 'function') return null;
+  const ctm = el.getCTM();
+  if (!ctm) return null;
+  const transformed = pt.matrixTransform(ctm);
+  return { x: transformed.x, y: transformed.y };
+}
+
+/** Read the painted notehead box so symbols can center on the glyph, not the stem origin. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function readMiniNotationNoteheadBounds(
+  staveNote: StaveNote,
+): MiniNotationNoteheadBounds | null {
+  const noteEl = staveNote.getSVGElement();
+  if (!noteEl) return null;
+
+  const noteheads = noteEl.querySelectorAll(NOTEHEAD_SELECTOR);
+  if (noteheads.length === 0) return null;
+
+  const svg = noteEl.ownerSVGElement;
+  if (!svg) return null;
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  let found = false;
+
+  noteheads.forEach((head) => {
+    const el = head as SVGGraphicsElement;
+    if (typeof el.getBBox !== 'function') return;
+    try {
+      const box = el.getBBox();
+      if (box.width <= 0 || box.height <= 0) return;
+      const tl = svgPointFromElementLocal(svg, el, box.x, box.y);
+      const br = svgPointFromElementLocal(
+        svg,
+        el,
+        box.x + box.width,
+        box.y + box.height,
+      );
+      if (!tl || !br) return;
+      minX = Math.min(minX, tl.x, br.x);
+      maxX = Math.max(maxX, tl.x, br.x);
+      minY = Math.min(minY, tl.y, br.y);
+      maxY = Math.max(maxY, tl.y, br.y);
+      found = true;
+    } catch {
+      /* try next notehead */
+    }
+  });
+
+  if (found) {
+    return {
+      centerX: (minX + maxX) / 2,
+      topY: minY,
+      bottomY: maxY,
+    };
+  }
+
+  // Headless tests / pre-layout: map the note group's bbox into SVG space.
+  if (typeof (noteEl as SVGGraphicsElement).getBBox === 'function') {
+    try {
+      const noteBox = (noteEl as SVGGraphicsElement).getBBox();
+      if (noteBox.width > 0 && noteBox.height > 0) {
+        const tl = svgPointFromElementLocal(svg, noteEl as SVGGraphicsElement, noteBox.x, noteBox.y);
+        const br = svgPointFromElementLocal(
+          svg,
+          noteEl as SVGGraphicsElement,
+          noteBox.x + noteBox.width,
+          noteBox.y + noteBox.height,
+        );
+        if (tl && br) {
+          return {
+            centerX: (tl.x + br.x) / 2,
+            topY: tl.y,
+            bottomY: br.y,
+          };
+        }
+      }
+    } catch {
+      /* caller falls back to getAbsoluteX */
+    }
+  }
+
+  return null;
+}
+
+/** Scale drum symbols for compact mini hosts; explicit overrides are clamped to stay legible. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function resolveMiniDrumSymbolScale(height: number, override?: number): number {
+  const compactDefault = height <= 68 ? 0.68 : height <= 72 ? 0.72 : height <= 90 ? 0.78 : 0.85;
+  if (override == null || override <= 0) return compactDefault;
+  return Math.max(override, compactDefault * 0.92);
+}
+
+/** Vertical offset passed to {@link drawDrumSymbol} so path geometry sits above the notehead. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function resolveMiniDrumSymbolYOffset(height: number, scale: number): number {
+  const base = height <= 68 ? -16 : height <= 72 ? -18 : height <= 90 ? -22 : -28;
+  return base - Math.max(0, (scale - 0.64) * 6);
+}
+
+/** Y argument for {@link drawDrumSymbol} so symbols land in the top symbol band. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function resolveMiniDrumSymbolDrawY(
+  height: number,
+  topLineY: number,
+  symbolGap: number,
+  symbolYOffset: number,
+): number {
+  const timeSignatureSpace = height <= 68 ? 4 : height <= 72 ? 6 : 8;
+  const symbolBandCenter = Math.max(4, topLineY - timeSignatureSpace - symbolGap);
+  return symbolBandCenter - symbolYOffset;
 }
 
 interface DrumNotationMiniProps {
@@ -366,14 +530,18 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
       const measure = rhythm.measures[0];
       if (!measure || measure.notes.length === 0) return;
 
+      const renderWidth = estimateMiniNotationRenderWidth(width, measure.notes);
+
       // Calculate layout — `height` drives vertical density for host apps (Stanza rail, etc.)
       const layout = computeMiniNotationLayout(height, {
         showDrumSymbols,
         showMetronomeDots,
       });
       const { staveY, symbolGap, metronomeDotGap } = layout;
-      const staveX = width <= 300 ? 6 : 12;
-      const staveWidth = Math.max(120, width - staveX - 14);
+      const symbolScale = resolveMiniDrumSymbolScale(height, drumSymbolScale);
+      const symbolYOffset = resolveMiniDrumSymbolYOffset(height, symbolScale);
+      const staveX = renderWidth <= 300 ? 6 : 12;
+      const staveWidth = Math.max(120, renderWidth - staveX - 14);
 
       const stave = new Stave(staveX, staveY, staveWidth, { numLines: 5 });
       stave.addTimeSignature(
@@ -386,8 +554,10 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
       });
 
       const renderer = new Renderer(containerRef.current, Renderer.Backends.SVG);
-      renderer.resize(width, renderHeight);
+      renderer.resize(renderWidth, renderHeight);
       const context = renderer.getContext();
+      containerRef.current.style.minWidth = `${renderWidth}px`;
+      containerRef.current.style.width = `${renderWidth}px`;
       containerRef.current.style.minHeight = `${renderHeight}px`;
       containerRef.current.style.height = `${renderHeight}px`;
 
@@ -523,14 +693,19 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
               }
             }
 
-            // Draw drum symbol just above the note
+            // Draw drum symbol centered above the notehead. Use painted bounds for X only —
+            // notehead topY from getBoundingClientRect is unreliable in real browsers.
             if (showDrumSymbols && note.sound !== 'rest') {
-              // VexFlow absolute X sits near the stem; nudge to notehead center.
-              const noteX = staveNote.getAbsoluteX() + 6;
-              // Position symbol above the top staff line (line 0), with a small gap
-              const symbolY = stave.getYForLine(0) - symbolGap;
+              const bounds = readMiniNotationNoteheadBounds(staveNote);
+              const noteX = bounds?.centerX ?? staveNote.getAbsoluteX() + 6;
+              const symbolY = resolveMiniDrumSymbolDrawY(
+                height,
+                stave.getYForLine(0),
+                symbolGap,
+                symbolYOffset,
+              );
               const color = isActive ? resolvedStyle.highlightColor : resolvedStyle.inkColor;
-              drawDrumSymbol(svg, noteX, symbolY, note.sound, color, drumSymbolScale, 0);
+              drawDrumSymbol(svg, noteX, symbolY, note.sound, color, symbolScale, symbolYOffset);
             }
           });
 
@@ -561,7 +736,8 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
               // Calculate X position - use note position if found, otherwise estimate
               let dotX: number;
               if (noteAtBeat) {
-                dotX = noteAtBeat.getAbsoluteX() + 6; // Center under notehead
+                const bounds = readMiniNotationNoteheadBounds(noteAtBeat);
+                dotX = bounds?.centerX ?? noteAtBeat.getAbsoluteX() + 6;
               } else {
                 // Estimate position based on beat index
                 const staveStart = stave.getNoteStartX();
@@ -754,7 +930,6 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
           ref={containerRef}
           className="drum-notation-mini"
           style={{
-            width: '100%',
             overflow: 'visible',
             ['--notation-ink' as string]: resolvedStyle.inkColor,
             ['--notation-highlight' as string]: resolvedStyle.highlightColor,

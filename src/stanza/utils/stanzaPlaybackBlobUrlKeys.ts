@@ -23,7 +23,7 @@ export function stanzaStemBlobIdentityKeySorted(stems: StanzaStemTrack[] | undef
  * leave a Web Audio graph on `volume === 0` while the `<audio>` / `<video>` `src` has been replaced.
  */
 export function stanzaStemUrlKeyFromSong(selected: StanzaSong | null): string {
-  if (!selected || selected.ytId || !(selected.stems?.length ?? 0)) return '';
+  if (!selected || !(selected.stems?.length ?? 0)) return '';
   const sorted = [...selected.stems!].sort((a, b) => a.id.localeCompare(b.id));
   const stemPart = [selected.id, ...sorted.map((s) => `${s.id}:${s.localBlob.size}`)].join('\0');
   const primary = stanzaPrimaryLocalBlobKey(selected);

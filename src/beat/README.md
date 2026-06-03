@@ -2,6 +2,8 @@
 
 # Find the Beat
 
+> **Moved to Stanza.** `/beat/` redirects to `/stanza/`. Optional Analyze tempo and Suggest sections for uploads live in Stanza's practice rail ([ADR 0013](../../docs/adr/0013-stanza-subsumes-find-the-beat.md)). This directory remains for regression tests and shared-analysis shims only.
+
 A web application for detecting BPM (beats per minute) in audio and video files, with synchronized drum pattern accompaniment and automatic section detection for practice.
 
 ## Features

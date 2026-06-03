@@ -37,6 +37,15 @@
   width: var(--stanza-viewer-content-width);
   max-width: 100%;
   min-width: 0;
+  margin-inline: auto;
+}
+
+/* Keep title row aligned with the fixed-width workbench below. */
+.stanza-viewer-column > .stanza-viewer-header {
+  box-sizing: border-box;
+  width: var(--stanza-viewer-content-width);
+  max-width: 100%;
+  margin-inline: auto;
 }
 
 .stanza-viewer-scroll {
@@ -59,8 +68,7 @@
   column-gap: var(--stanza-viewer-grid-gap);
   grid-template-columns: 1fr;
   grid-template-areas:
-    'media'
-    'timeline'
+    'main'
     'rail';
 }
 
@@ -69,17 +77,27 @@
     grid-template-columns:
       minmax(0, var(--stanza-viewer-media-max-width))
       minmax(280px, var(--stanza-viewer-rail-width));
-    grid-template-areas:
-      'media rail'
-      'timeline timeline';
+    grid-template-areas: 'main rail';
   }
 }
 
-.stanza-viewer-media-stack {
-  grid-area: media;
+/*
+ * Video + playback share one column at natural height — the rail scrolls internally
+ * when its modules exceed the main column height.
+ */
+.stanza-viewer-main-column {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  gap: var(--stanza-viewer-row-gap);
   min-width: 0;
   width: 100%;
   max-width: var(--stanza-viewer-media-max-width);
+}
+
+.stanza-viewer-media-stack {
+  min-width: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -93,20 +111,32 @@
 }
 
 .stanza-viewer-timeline-slot {
-  grid-area: timeline;
   min-width: 0;
   width: 100%;
 }
 
-.stanza-viewer-body-grid .stanza-playback-stack {
-  margin-top: 0;
+@media (min-width: 900px) {
+  .stanza-viewer-main-column {
+    align-self: start;
+  }
+
+  .stanza-viewer-media-stack {
+    flex: 0 0 auto;
+  }
+
+  .stanza-viewer-rail-slot {
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: var(--stanza-viewer-rail-max-height);
+    max-height: var(--stanza-viewer-rail-max-height);
+    overflow: hidden;
+  }
 }
 
-@media (min-width: 900px) {
-  .stanza-viewer-body-grid .stanza-practice-rail--dense {
-    min-height: var(--stanza-viewer-media-height);
-    max-height: var(--stanza-viewer-media-height);
-  }
+.stanza-viewer-body-grid .stanza-playback-stack {
+  margin-top: 0;
 }
 
 .stanza-viewer-workbench .stanza-library-panel {

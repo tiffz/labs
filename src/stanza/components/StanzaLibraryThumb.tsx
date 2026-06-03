@@ -91,7 +91,7 @@ function StanzaLibraryVideoPosterThumb({ songId, videoBlob }: StanzaLibraryVideo
   if (failed) {
     return (
       <Box
-        className="stanza-library-card-thumb"
+        className="stanza-library-card-thumb stanza-library-card-thumb-placeholder"
         sx={{
           display: 'flex',
           alignItems: 'center',
@@ -149,7 +149,7 @@ export default function StanzaLibraryThumb({ song }: StanzaLibraryThumbProps) {
   }
   return (
     <Box
-      className="stanza-library-card-thumb"
+      className="stanza-library-card-thumb stanza-library-card-thumb-placeholder"
       sx={{
         display: 'flex',
         alignItems: 'center',

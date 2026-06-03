@@ -76,7 +76,9 @@ export const KeyInputMenu: React.FC<KeyInputMenuProps> = ({
 };
 
 interface KeyInputProps {
-  value: MusicKey;
+  value?: MusicKey;
+  /** Shown when `value` is unset (e.g. "Unknown"). */
+  placeholder?: string;
   onChange: (next: MusicKey) => void;
   className?: string;
   disabled?: boolean;
@@ -95,6 +97,7 @@ interface KeyInputProps {
  */
 const KeyInput: React.FC<KeyInputProps> = ({
   value,
+  placeholder,
   onChange,
   className,
   disabled = false,
@@ -109,10 +112,15 @@ const KeyInput: React.FC<KeyInputProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement | null>(null);
-  const selectedDisplay = useMemo(() => normalizeToDisplayKey(value), [value]);
+  const hasValue = value != null;
+  const selectedDisplay = useMemo(
+    () => (hasValue ? normalizeToDisplayKey(value) : null),
+    [hasValue, value],
+  );
 
   const stepKey = (delta: number): void => {
-    const index = DISPLAY_STEP_ORDER.indexOf(selectedDisplay);
+    if (!hasValue) return;
+    const index = DISPLAY_STEP_ORDER.indexOf(selectedDisplay!);
     if (index === -1) return;
     const wrappedIndex =
       (index + delta + DISPLAY_STEP_ORDER.length) % DISPLAY_STEP_ORDER.length;
@@ -127,10 +135,19 @@ const KeyInput: React.FC<KeyInputProps> = ({
             type="button"
             className="shared-key-value-btn"
             onClick={() => !disabled && setIsOpen((previous) => !previous)}
-            aria-label="Change key"
+            aria-label={hasValue ? 'Change key' : placeholder ? `Set key (${placeholder})` : 'Set key'}
             disabled={disabled}
           >
-            <span className="shared-key-value">{selectedDisplay}</span>
+            <span
+              className={[
+                'shared-key-value',
+                !hasValue && placeholder ? 'shared-key-value--placeholder' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              {selectedDisplay ?? placeholder ?? '-'}
+            </span>
             <span className="material-symbols-outlined">expand_more</span>
           </button>
         {showStepButtons && (
@@ -140,7 +157,7 @@ const KeyInput: React.FC<KeyInputProps> = ({
               className="shared-key-step-btn"
               onClick={() => stepKey(-1)}
               aria-label="Lower key by semitone"
-              disabled={disabled}
+              disabled={disabled || !hasValue}
             >
               <span className="material-symbols-outlined">remove</span>
             </button>
@@ -149,7 +166,7 @@ const KeyInput: React.FC<KeyInputProps> = ({
               className="shared-key-step-btn"
               onClick={() => stepKey(1)}
               aria-label="Raise key by semitone"
-              disabled={disabled}
+              disabled={disabled || !hasValue}
             >
               <span className="material-symbols-outlined">add</span>
             </button>
@@ -191,7 +208,7 @@ const KeyInput: React.FC<KeyInputProps> = ({
       >
         <div className="shared-key-dropdown-list">
           <KeyInputMenu
-            value={value}
+            value={value ?? 'C'}
             onSelect={(next) => {
               onChange(next);
               setIsOpen(false);

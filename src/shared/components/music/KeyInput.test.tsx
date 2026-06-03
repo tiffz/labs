@@ -21,4 +21,13 @@ describe('KeyInput', () => {
     expect(onChange).toHaveBeenCalledWith('B');
     expect(onChange).toHaveBeenCalledWith('Db');
   });
+
+  it('shows placeholder when value is unset', () => {
+    const onChange = vi.fn();
+    render(<KeyInput placeholder="Unknown" onChange={onChange} />);
+    expect(screen.getByText('Unknown')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Set key (Unknown)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'F' }));
+    expect(onChange).toHaveBeenCalledWith('F');
+  });
 });

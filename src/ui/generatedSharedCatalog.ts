@@ -1237,6 +1237,106 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-beat-analysisversion-ts-analysismetadata",
+    "name": "AnalysisMetadata",
+    "path": "src/shared/beat/analysisVersion.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-analysisversion-ts-beat-analysis-engine-version",
+    "name": "BEAT_ANALYSIS_ENGINE_VERSION",
+    "path": "src/shared/beat/analysisVersion.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-analysisversion-ts-beat-analysis-schema-version",
+    "name": "BEAT_ANALYSIS_SCHEMA_VERSION",
+    "path": "src/shared/beat/analysisVersion.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-analysisversion-ts-beat-analysis-version",
+    "name": "BEAT_ANALYSIS_VERSION",
+    "path": "src/shared/beat/analysisVersion.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-analysisversion-ts-isanalysisversionstale",
+    "name": "isAnalysisVersionStale",
+    "path": "src/shared/beat/analysisVersion.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-analysisversion-ts-persistedanalysisbundle",
+    "name": "PersistedAnalysisBundle",
+    "path": "src/shared/beat/analysisVersion.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "beat"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-beat-beatrefinement-ts-mergebeatgrids",
     "name": "mergeBeatGrids",
     "path": "src/shared/beat/beatRefinement.ts",
@@ -1373,6 +1473,60 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "beat"
     ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-detectsongkey-ts-detectedsongkey",
+    "name": "DetectedSongKey",
+    "path": "src/shared/beat/detectSongKey.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-detectsongkey-ts-detectsongkeyfrombuffer",
+    "name": "detectSongKeyFromBuffer",
+    "path": "src/shared/beat/detectSongKey.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Lightweight key guess from uploaded audio (Essentia KeyExtractor consensus). Used by Stanza original-key field; tempo analysis stays separate.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-detectsongkey-ts-formatdetectedsongkey",
+    "name": "formatDetectedSongKey",
+    "path": "src/shared/beat/detectSongKey.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-detectsongkey-ts-musickeyfromdetected",
+    "name": "musicKeyFromDetected",
+    "path": "src/shared/beat/detectSongKey.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Map Essentia/chord key detection output to the shared 12-key display set.",
+    "tags": [],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -1705,6 +1859,71 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-beat-measureutils-ts-extendtomeasureboundary",
+    "name": "extendToMeasureBoundary",
+    "path": "src/shared/beat/measureUtils.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Extend a time to the nearest measure boundary that expands the range. For start times: snap backward (floor) For end times: snap forward (ceil) Uses a small epsilon for floating point comparisons to ensure times that are very close to a boundary are treated as being on that boundary.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-measureutils-ts-generatemeasurelabel",
+    "name": "generateMeasureLabel",
+    "path": "src/shared/beat/measureUtils.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Generate a measure-based label for a section (e.g., \"M1-8\", \"M48\").",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-measureutils-ts-getmeasureduration",
+    "name": "getMeasureDuration",
+    "path": "src/shared/beat/measureUtils.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Calculate the duration of one measure in seconds.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-measureutils-ts-getmeasurenumber",
+    "name": "getMeasureNumber",
+    "path": "src/shared/beat/measureUtils.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Get the 1-indexed measure number for a given time. Returns 0 if the time is before musicStartTime.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-measureutils-ts-snaptomeasurestart",
+    "name": "snapToMeasureStart",
+    "path": "src/shared/beat/measureUtils.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Snap a time to the nearest measure boundary (either before or after).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-beat-onsetalignmentscorer-ts-alignmentanalysis",
     "name": "AlignmentAnalysis",
     "path": "src/shared/beat/onsetAlignmentScorer.ts",
@@ -1845,6 +2064,161 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-beat-sectiondetectiontypes-ts-sectiondetectionchordevent",
+    "name": "SectionDetectionChordEvent",
+    "path": "src/shared/beat/sectionDetectionTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Minimal chord event shape for section detection (harmonic boundary hints).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-sectiondetectiontypes-ts-sectiondetectionkeychange",
+    "name": "SectionDetectionKeyChange",
+    "path": "src/shared/beat/sectionDetectionTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Minimal chord event shape for section detection (harmonic boundary hints).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-sectiondetector-ts-chordevent",
+    "name": "ChordEvent",
+    "path": "src/shared/beat/sectionDetector.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Section Detector using Self-Similarity Matrix (SSM) analysis Detects song sections (verse, chorus, etc.) by: 1. Extracting MFCC features per frame using Essentia.js 2. Building a self-similarity matrix (spectral and/or chord-based) 3. Detecting novelty peaks using a checkerboard kernel 4. Snapping boundaries to beat/measure/chord positions",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-sectiondetector-ts-detectsections",
+    "name": "detectSections",
+    "path": "src/shared/beat/sectionDetector.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Section Detector using Self-Similarity Matrix (SSM) analysis Detects song sections (verse, chorus, etc.) by: 1. Extracting MFCC features per frame using Essentia.js 2. Building a self-similarity matrix (spectral and/or chord-based) 3. Detecting novelty peaks using a checkerboard kernel 4. Snapping boundaries to beat/measure/chord positions",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-sectiondetector-ts-extendtomeasureboundary",
+    "name": "extendToMeasureBoundary",
+    "path": "src/shared/beat/sectionDetector.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Section Detector using Self-Similarity Matrix (SSM) analysis Detects song sections (verse, chorus, etc.) by: 1. Extracting MFCC features per frame using Essentia.js 2. Building a self-similarity matrix (spectral and/or chord-based) 3. Detecting novelty peaks using a checkerboard kernel 4. Snapping boundaries to beat/measure/chord positions",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-sectiondetector-ts-keychangeinfo",
+    "name": "KeyChangeInfo",
+    "path": "src/shared/beat/sectionDetector.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Detect sections in an audio buffer",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-sectiondetector-ts-mergesections",
+    "name": "mergeSections",
+    "path": "src/shared/beat/sectionDetector.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Merge adjacent sections",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-sectiondetector-ts-section",
+    "name": "Section",
+    "path": "src/shared/beat/sectionDetector.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Section Detector using Self-Similarity Matrix (SSM) analysis Detects song sections (verse, chorus, etc.) by: 1. Extracting MFCC features per frame using Essentia.js 2. Building a self-similarity matrix (spectral and/or chord-based) 3. Detecting novelty peaks using a checkerboard kernel 4. Snapping boundaries to beat/measure/chord positions",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-sectiondetector-ts-sectiondetectionresult",
+    "name": "SectionDetectionResult",
+    "path": "src/shared/beat/sectionDetector.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Section Detector using Self-Similarity Matrix (SSM) analysis Detects song sections (verse, chorus, etc.) by: 1. Extracting MFCC features per frame using Essentia.js 2. Building a self-similarity matrix (spectral and/or chord-based) 3. Detecting novelty peaks using a checkerboard kernel 4. Snapping boundaries to beat/measure/chord positions",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-sectiondetector-ts-splitsection",
+    "name": "splitSection",
+    "path": "src/shared/beat/sectionDetector.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Split a section at a specific time",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-sectiondetector-ts-updatesectionboundary",
+    "name": "updateSectionBoundary",
+    "path": "src/shared/beat/sectionDetector.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Update a section boundary",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-beat-segmentbeatanalysis-ts-analyzebeatformediatimerange",
     "name": "analyzeBeatForMediaTimeRange",
     "path": "src/shared/beat/segmentBeatAnalysis.ts",
@@ -1913,6 +2287,34 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-suggestsectionmarkers-ts-sectionstosuggestedmarkers",
+    "name": "sectionsToSuggestedMarkers",
+    "path": "src/shared/beat/suggestSectionMarkers.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-suggestsectionmarkers-ts-suggestedsectionmarker",
+    "name": "SuggestedSectionMarker",
+    "path": "src/shared/beat/suggestSectionMarkers.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
     "demoId": null
   },
   {
@@ -2094,6 +2496,118 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-wholesongbeatanalysis-ts-analysismetadata",
+    "name": "AnalysisMetadata",
+    "path": "src/shared/beat/wholeSongBeatAnalysis.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-wholesongbeatanalysis-ts-beat-analysis-version",
+    "name": "BEAT_ANALYSIS_VERSION",
+    "path": "src/shared/beat/wholeSongBeatAnalysis.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-wholesongbeatanalysis-ts-calibrationfrombeatanalysis",
+    "name": "calibrationFromBeatAnalysis",
+    "path": "src/shared/beat/wholeSongBeatAnalysis.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-wholesongbeatanalysis-ts-isanalysisversionstale",
+    "name": "isAnalysisVersionStale",
+    "path": "src/shared/beat/wholeSongBeatAnalysis.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-wholesongbeatanalysis-ts-markanalysisbundlestale",
+    "name": "markAnalysisBundleStale",
+    "path": "src/shared/beat/wholeSongBeatAnalysis.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-wholesongbeatanalysis-ts-persistedanalysisbundle",
+    "name": "PersistedAnalysisBundle",
+    "path": "src/shared/beat/wholeSongBeatAnalysis.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-wholesongbeatanalysis-ts-runwholesongbeatanalysis",
+    "name": "runWholeSongBeatAnalysis",
+    "path": "src/shared/beat/wholeSongBeatAnalysis.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-wholesongbeatanalysis-ts-runwholesongbeatanalysisparams",
+    "name": "RunWholeSongBeatAnalysisParams",
+    "path": "src/shared/beat/wholeSongBeatAnalysis.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
     "demoId": null
   },
   {
@@ -8668,6 +9182,25 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-musicinputconstants-ts-transposemusickey",
+    "name": "transposeMusicKey",
+    "path": "src/shared/music/musicInputConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Transpose a key root by semitones; returns a label.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "beat",
+      "piano",
+      "ui"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-notemath-ts-miditofrequency",
     "name": "midiToFrequency",
     "path": "src/shared/music/noteMath.ts",
@@ -10513,6 +11046,47 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": "drum-notation-mini"
   },
   {
+    "id": "src-shared-notation-drumnotationmini-tsx-estimatemininotationrenderwidth",
+    "name": "estimateMiniNotationRenderWidth",
+    "path": "src/shared/notation/DrumNotationMini.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Minimum SVG width so dense 16th patterns do not collide with the end barline.",
+    "tags": [
+      "notation",
+      "react"
+    ],
+    "appsUsing": [
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-drumnotationmini-tsx-mininotationnoteheadbounds",
+    "name": "MiniNotationNoteheadBounds",
+    "path": "src/shared/notation/DrumNotationMini.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Notehead bounds in SVG coordinates (after VexFlow draw).",
+    "tags": [
+      "notation",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-notation-drumnotationmini-tsx-notation-styles",
     "name": "NOTATION_STYLES",
     "path": "src/shared/notation/DrumNotationMini.tsx",
@@ -10573,6 +11147,86 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-drumnotationmini-tsx-readmininotationnoteheadbounds",
+    "name": "readMiniNotationNoteheadBounds",
+    "path": "src/shared/notation/DrumNotationMini.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Read the painted notehead box so symbols can center on the glyph, not the stem origin.",
+    "tags": [
+      "notation",
+      "react"
+    ],
+    "appsUsing": [
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-drumnotationmini-tsx-resolveminidrumsymboldrawy",
+    "name": "resolveMiniDrumSymbolDrawY",
+    "path": "src/shared/notation/DrumNotationMini.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Y argument for so symbols land in the top symbol band.",
+    "tags": [
+      "notation",
+      "react"
+    ],
+    "appsUsing": [
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-drumnotationmini-tsx-resolveminidrumsymbolscale",
+    "name": "resolveMiniDrumSymbolScale",
+    "path": "src/shared/notation/DrumNotationMini.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Scale drum symbols for compact mini hosts; explicit overrides are clamped to stay legible.",
+    "tags": [
+      "notation",
+      "react"
+    ],
+    "appsUsing": [
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-drumnotationmini-tsx-resolveminidrumsymbolyoffset",
+    "name": "resolveMiniDrumSymbolYOffset",
+    "path": "src/shared/notation/DrumNotationMini.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Vertical offset passed to so path geometry sits above the notehead.",
+    "tags": [
+      "notation",
+      "react"
+    ],
+    "appsUsing": [
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -10680,6 +11334,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-notation-index-ts-durationtovexflow",
     "name": "durationToVexFlow",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-estimatemininotationrenderwidth",
+    "name": "estimateMiniNotationRenderWidth",
     "path": "src/shared/notation/index.ts",
     "kind": "component",
     "stability": "stable",
@@ -10817,8 +11486,68 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-notation-index-ts-readmininotationnoteheadbounds",
+    "name": "readMiniNotationNoteheadBounds",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-notation-index-ts-reapplyactivekeyhighlight",
     "name": "reapplyActiveKeyHighlight",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-resolveminidrumsymboldrawy",
+    "name": "resolveMiniDrumSymbolDrawY",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-resolveminidrumsymbolscale",
+    "name": "resolveMiniDrumSymbolScale",
+    "path": "src/shared/notation/index.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-index-ts-resolveminidrumsymbolyoffset",
+    "name": "resolveMiniDrumSymbolYOffset",
     "path": "src/shared/notation/index.ts",
     "kind": "component",
     "stability": "stable",

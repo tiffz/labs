@@ -33,9 +33,10 @@ export type StanzaSongDriveRow = Omit<
 };
 
 function songWithoutBlob(row: StanzaSong): StanzaSongDriveRow {
-  const { localAudioBlob, localVideoThumbnailBlob, stems, ...rest } = row;
+  const { localAudioBlob, localVideoThumbnailBlob, stems, analysisCache, ...rest } = row;
   void localAudioBlob;
   void localVideoThumbnailBlob;
+  void analysisCache;
   const fingerprint =
     rest.localMediaFingerprint ??
     (localAudioBlob

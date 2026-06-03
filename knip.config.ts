@@ -33,6 +33,7 @@ const config: KnipConfig = {
     'src/chords/main.tsx',
     'src/forms/main.tsx',
     'src/beat/main.tsx',
+    'src/beat/App.tsx',
     'src/piano/main.tsx',
     'src/scales/main.tsx',
     'src/melodia/main.tsx',

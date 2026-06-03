@@ -15,6 +15,7 @@
 import type { StanzaSong, StanzaStemTrack } from '../db/stanzaDb';
 import { computeStanzaLocalMediaFingerprint } from '../utils/stanzaLocalMediaFingerprint';
 import { mergeStanzaRicherSongMetadata } from './stanzaSongMetadataMerge';
+import { mergeStanzaStemTracks } from './stanzaStemMerge';
 
 /**
  * Stable identifier for the *content* a song points at. Two rows with the same content key are
@@ -65,20 +66,7 @@ function mergeStems(
   winnerStems: StanzaStemTrack[] | undefined,
   loserStems: StanzaStemTrack[] | undefined,
 ): StanzaStemTrack[] | undefined {
-  if (!winnerStems?.length && !loserStems?.length) return winnerStems;
-  const byId = new Map<string, StanzaStemTrack>();
-  for (const stem of winnerStems ?? []) byId.set(stem.id, stem);
-  for (const stem of loserStems ?? []) {
-    const existing = byId.get(stem.id);
-    if (!existing) {
-      byId.set(stem.id, stem);
-      continue;
-    }
-    if (!existing.localBlob && stem.localBlob) {
-      byId.set(stem.id, { ...existing, localBlob: stem.localBlob });
-    }
-  }
-  return Array.from(byId.values());
+  return mergeStanzaStemTracks(winnerStems, loserStems);
 }
 
 /**

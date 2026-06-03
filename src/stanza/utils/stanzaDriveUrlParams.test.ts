@@ -1,10 +1,13 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import {
   hasStanzaDriveDeepLinkQuery,
+  hasStanzaMediaFingerprintDeepLinkQuery,
   parseStanzaDriveFileIdParam,
+  parseStanzaMediaFingerprintParam,
   pushStanzaPlaybackUrlSearchParams,
   readStanzaDriveBootstrapFromLocation,
   replaceStanzaPlaybackUrlSearchParams,
+  STANZA_MEDIA_FINGERPRINT_QUERY,
 } from './stanzaDriveUrlParams';
 
 describe('hasStanzaDriveDeepLinkQuery', () => {
@@ -37,6 +40,26 @@ describe('parseStanzaDriveFileIdParam', () => {
   });
 });
 
+describe('parseStanzaMediaFingerprintParam', () => {
+  it('accepts Beat SHA256 and Stanza size/duration keys', () => {
+    const sha = '69a9c79ec8c4519a732ee7429969e167817d3c397118b38ec81c4af050c1fa33';
+    expect(parseStanzaMediaFingerprintParam(sha)).toBe(sha);
+    expect(parseStanzaMediaFingerprintParam('12345678:180.50')).toBe('12345678:180.50');
+  });
+
+  it('rejects garbage', () => {
+    expect(parseStanzaMediaFingerprintParam('abc')).toBeNull();
+  });
+});
+
+describe('hasStanzaMediaFingerprintDeepLinkQuery', () => {
+  it('is true when f is non-empty', () => {
+    vi.stubGlobal('location', { search: '?f=69a9c79ec8c4519a732ee7429969e167817d3c397118b38ec81c4af050c1fa33' } as Location);
+    expect(hasStanzaMediaFingerprintDeepLinkQuery()).toBe(true);
+    vi.unstubAllGlobals();
+  });
+});
+
 describe('readStanzaDriveBootstrapFromLocation', () => {
   it('prefers YouTube v over df', () => {
     vi.stubGlobal(
@@ -45,6 +68,26 @@ describe('readStanzaDriveBootstrapFromLocation', () => {
     );
     expect(readStanzaDriveBootstrapFromLocation().youtubeId).toBe('dQw4w9WgXcQ');
     expect(readStanzaDriveBootstrapFromLocation().driveFileId).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  it('prefers Drive df over f', () => {
+    vi.stubGlobal(
+      'location',
+      {
+        search: `?df=1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms&f=69a9c79ec8c4519a732ee7429969e167817d3c397118b38ec81c4af050c1fa33`,
+      } as Location,
+    );
+    const boot = readStanzaDriveBootstrapFromLocation();
+    expect(boot.driveFileId).toBe('1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms');
+    expect(boot.mediaFingerprint).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  it('reads local upload fingerprint when v and df absent', () => {
+    const fp = '69a9c79ec8c4519a732ee7429969e167817d3c397118b38ec81c4af050c1fa33';
+    vi.stubGlobal('location', { search: `?f=${fp}` } as Location);
+    expect(readStanzaDriveBootstrapFromLocation().mediaFingerprint).toBe(fp);
     vi.unstubAllGlobals();
   });
 });
@@ -67,6 +110,7 @@ describe('replaceStanzaPlaybackUrlSearchParams', () => {
       youtubeId: 'dQw4w9WgXcQ',
       driveFileId: null,
       driveTitle: null,
+      mediaFingerprint: null,
     });
     expect(spy).toHaveBeenCalledWith(null, '', expect.stringContaining('v=dQw4w9WgXcQ'));
     expect(String(spy.mock.calls[0]?.[2])).not.toContain('df=');
@@ -79,11 +123,28 @@ describe('replaceStanzaPlaybackUrlSearchParams', () => {
       youtubeId: null,
       driveFileId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
       driveTitle: 'Piece',
+      mediaFingerprint: null,
     });
     const url = String(spy.mock.calls[0]?.[2] ?? '');
     expect(url).toContain('df=1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms');
     expect(url).toContain('driveTitle=');
     expect(url).not.toContain('v=');
+  });
+
+  it('sets f and strips v/df for local upload selection', () => {
+    const spy = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {});
+    vi.stubGlobal('location', new URL('https://labs.test/stanza/?v=dQw4w9WgXcQ'));
+    const fp = '69a9c79ec8c4519a732ee7429969e167817d3c397118b38ec81c4af050c1fa33';
+    replaceStanzaPlaybackUrlSearchParams({
+      youtubeId: null,
+      driveFileId: null,
+      driveTitle: null,
+      mediaFingerprint: fp,
+    });
+    const url = String(spy.mock.calls[0]?.[2] ?? '');
+    expect(url).toContain(`${STANZA_MEDIA_FINGERPRINT_QUERY}=${fp}`);
+    expect(url).not.toContain('v=');
+    expect(url).not.toContain('df=');
   });
 });
 
@@ -100,6 +161,7 @@ describe('pushStanzaPlaybackUrlSearchParams', () => {
       youtubeId: 'dQw4w9WgXcQ',
       driveFileId: null,
       driveTitle: null,
+      mediaFingerprint: null,
     });
     expect(spy).toHaveBeenCalledTimes(1);
     expect(String(spy.mock.calls[0]?.[2])).toContain('v=dQw4w9WgXcQ');
@@ -112,6 +174,7 @@ describe('pushStanzaPlaybackUrlSearchParams', () => {
       youtubeId: null,
       driveFileId: null,
       driveTitle: null,
+      mediaFingerprint: null,
     });
     expect(spy).toHaveBeenCalledTimes(1);
     expect(String(spy.mock.calls[0]?.[2])).not.toContain('v=');
@@ -124,6 +187,7 @@ describe('pushStanzaPlaybackUrlSearchParams', () => {
       youtubeId: 'dQw4w9WgXcQ',
       driveFileId: null,
       driveTitle: null,
+      mediaFingerprint: null,
     });
     expect(spy).not.toHaveBeenCalled();
   });
@@ -135,6 +199,7 @@ describe('pushStanzaPlaybackUrlSearchParams', () => {
       youtubeId: 'dQw4w9WgXcQ',
       driveFileId: null,
       driveTitle: null,
+      mediaFingerprint: null,
     });
     const url = String(spy.mock.calls[0]?.[2] ?? '');
     expect(url).toContain('debug');

@@ -5,8 +5,7 @@ import type { DerivedSegment } from './segments';
 /** Live-timing id when editing whole-song metronome in the rail. */
 export const STANZA_SONG_METRONOME_LIVE_ID = '__song__';
 
-export function resolveStanzaMetronomePlaybackSync(opts: {
-  metronomeEnabled: boolean;
+export type ResolveStanzaMetronomeGridOptions = {
   playbackSeg: DerivedSegment | null;
   songCal: StanzaSegmentMetronomeCalibration | undefined;
   segmentCal: StanzaSegmentMetronomeCalibration | undefined;
@@ -16,8 +15,16 @@ export function resolveStanzaMetronomePlaybackSync(opts: {
    * or while the analysis modal drives preview timing for that section).
    */
   railFocusSegmentId?: string | null;
-}): { bpm?: number; anchor?: number } {
-  if (!opts.metronomeEnabled || !opts.playbackSeg) {
+};
+
+/**
+ * Resolve BPM + Beat 1 anchor from persisted calibration, live rail edits, or section scope.
+ * Used by drums and metronome clicks — independent of whether the metronome toggle is on.
+ */
+export function resolveStanzaMetronomeGridSync(
+  opts: ResolveStanzaMetronomeGridOptions,
+): { bpm?: number; anchor?: number } {
+  if (!opts.playbackSeg) {
     return {};
   }
   const segId = opts.playbackSeg.id;
@@ -54,4 +61,13 @@ export function resolveStanzaMetronomePlaybackSync(opts: {
   }
 
   return {};
+}
+
+export function resolveStanzaMetronomePlaybackSync(
+  opts: ResolveStanzaMetronomeGridOptions & { metronomeEnabled: boolean },
+): { bpm?: number; anchor?: number } {
+  if (!opts.metronomeEnabled) {
+    return {};
+  }
+  return resolveStanzaMetronomeGridSync(opts);
 }

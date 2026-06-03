@@ -5,7 +5,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { installServerLogger } from '../shared/utils/serverLogger';
 import { getAppTheme } from '../shared/ui/theme/appTheme';
 import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstrap';
-import App from './App';
+import App from './BeatRedirect';
 import '../shared/components/music/appSharedThemes.css';
 import './styles/beat.css';
 

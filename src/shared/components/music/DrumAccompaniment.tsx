@@ -1,5 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import type { TimeSignature } from '../../rhythm/types';
 import { parseRhythm } from '../../rhythm/rhythmParser';
 import { getRhythmTemplatePresets, getTemplatePresetVariationIndex, getTemplatePresetVariations } from '../../rhythm/presetDatabase';
@@ -68,6 +71,8 @@ interface DrumAccompanimentProps {
   onNotationValueChange?: (notation: string) => void;
   /** When false, skips local AudioPlayer init (notation picker only). */
   audioEnabled?: boolean;
+  /** Grid shows all preset pills; compact uses a single picker menu (sidebars). */
+  presetLayout?: 'grid' | 'compact';
 }
 
 const DRUM_SOUNDS = { ...DRUM_SAMPLE_URLS } as const;
@@ -125,9 +130,11 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
   notationValue,
   onNotationValueChange,
   audioEnabled = true,
+  presetLayout = 'grid',
 }) => {
   const isControlled = onNotationValueChange !== undefined;
   const [selectedPreset, setSelectedPreset] = useState(0);
+  const [presetMenuAnchor, setPresetMenuAnchor] = useState<HTMLElement | null>(null);
   const [customNotation, setCustomNotation] = useState<string | null>(null);
   const [hoverTip, setHoverTip] = useState<{ text: string; x: number; y: number } | null>(
     null
@@ -446,9 +453,86 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
     // If not a URL, allow normal paste behavior
   }, [parseRhythmFromUrl, handleNotationChange]);
 
+  const activePreset = presetRhythms[selectedPreset];
+  const activePresetLabel = activePreset?.label ?? 'Rhythm';
+
+  const randomizeButtons = showRandomizeButtons ? (
+    <>
+      <TemplateButton
+        onClick={randomizePresetTemplate}
+        isActive={false}
+        className={`preset-btn preset-btn-icon ${randomizeButtonClassName ?? ''}`.trim()}
+        ariaLabel="Random preset template"
+        onMouseEnter={(event) => showTip(event, 'Random preset template')}
+        onMouseLeave={hideTip}
+        onFocus={(event) => showTip(event, 'Random preset template')}
+        onBlur={hideTip}
+      >
+        <DiceIcon variant="single" size={15} />
+      </TemplateButton>
+      <TemplateButton
+        onClick={randomizeFullTemplate}
+        isActive={false}
+        className={`preset-btn preset-btn-icon ${randomizeButtonClassName ?? ''}`.trim()}
+        ariaLabel="Fully randomize template"
+        onMouseEnter={(event) => showTip(event, 'Fully randomize template')}
+        onMouseLeave={hideTip}
+        onFocus={(event) => showTip(event, 'Fully randomize template')}
+        onBlur={hideTip}
+      >
+        <DiceIcon variant="multiple" size={15} />
+      </TemplateButton>
+    </>
+  ) : null;
+
   return (
     <div className="drum-accompaniment">
       {/* Preset selector */}
+      {presetLayout === 'compact' ? (
+        <div className="drum-presets drum-presets--compact">
+          <button
+            type="button"
+            className={`preset-btn preset-btn--picker ${templateButtonClassName ?? ''}`.trim()}
+            aria-label={`Choose rhythm preset, currently ${activePresetLabel}`}
+            aria-haspopup="listbox"
+            aria-expanded={Boolean(presetMenuAnchor)}
+            onClick={(event) => setPresetMenuAnchor(event.currentTarget)}
+          >
+            <span className="preset-btn-label">{activePresetLabel}</span>
+            <ArrowDropDownIcon className="preset-btn-chevron" aria-hidden />
+          </button>
+          <Menu
+            anchorEl={presetMenuAnchor}
+            open={Boolean(presetMenuAnchor)}
+            onClose={() => setPresetMenuAnchor(null)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+            slotProps={{
+              paper: {
+                className: 'stanza-drums-preset-menu',
+                sx: {
+                  minWidth: presetMenuAnchor?.offsetWidth ?? undefined,
+                  maxWidth: presetMenuAnchor ? presetMenuAnchor.offsetWidth + 48 : undefined,
+                },
+              },
+            }}
+          >
+            {presetRhythms.map((preset, index) => (
+              <MenuItem
+                key={preset.id}
+                selected={selectedPreset === index}
+                onClick={() => {
+                  handlePresetChange(index);
+                  setPresetMenuAnchor(null);
+                }}
+              >
+                {preset.label}
+              </MenuItem>
+            ))}
+          </Menu>
+          {randomizeButtons}
+        </div>
+      ) : (
       <div className="drum-presets">
         {presetRhythms.map((preset, index) => (
           <TemplateButton
@@ -461,35 +545,9 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
             {preset.label}
           </TemplateButton>
         ))}
-        {showRandomizeButtons ? (
-          <>
-        <TemplateButton
-          onClick={randomizePresetTemplate}
-          isActive={false}
-          className={`preset-btn preset-btn-icon ${randomizeButtonClassName ?? ''}`.trim()}
-          ariaLabel="Random preset template"
-          onMouseEnter={(event) => showTip(event, 'Random preset template')}
-          onMouseLeave={hideTip}
-          onFocus={(event) => showTip(event, 'Random preset template')}
-          onBlur={hideTip}
-        >
-          <DiceIcon variant="single" size={15} />
-        </TemplateButton>
-        <TemplateButton
-          onClick={randomizeFullTemplate}
-          isActive={false}
-          className={`preset-btn preset-btn-icon ${randomizeButtonClassName ?? ''}`.trim()}
-          ariaLabel="Fully randomize template"
-          onMouseEnter={(event) => showTip(event, 'Fully randomize template')}
-          onMouseLeave={hideTip}
-          onFocus={(event) => showTip(event, 'Fully randomize template')}
-          onBlur={hideTip}
-        >
-          <DiceIcon variant="multiple" size={15} />
-        </TemplateButton>
-          </>
-        ) : null}
+        {randomizeButtons}
       </div>
+      )}
 
       {/* Always visible notation input */}
       {hidePatternInput ? null : (

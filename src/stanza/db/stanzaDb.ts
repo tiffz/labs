@@ -1,5 +1,8 @@
 import Dexie, { type Table } from 'dexie';
 
+import type { PersistedAnalysisBundle } from '../../shared/beat/analysisVersion';
+import type { MusicKey } from '../../shared/music/musicInputConstants';
+
 export interface StanzaMarker {
   /** Stable key for segment ids and drag; assigned on save if missing. */
   id?: string;
@@ -76,6 +79,8 @@ export interface StanzaSong {
   metronomeSongCalibration?: StanzaSegmentMetronomeCalibration;
   /** User pitch shift for uploaded audio only (−12…+12 semitones); uses decoded-buffer detune (main + stems when layered). */
   localTransposeSemitones?: number;
+  /** Detected or user-selected original key for local uploads (pitch class only). */
+  localOriginalKey?: MusicKey;
   /** Which timing target the Practice rail is editing (default: song; see ADR 0008). */
   metronomeTimingScope?: StanzaMetronomeTimingScope;
   /** User preference: attempt synced clicks while playing (requires tempo calibration). */
@@ -104,6 +109,11 @@ export interface StanzaSong {
    * skipped section auto-advances to the next non-skipped start; manual scrubs are unaffected.
    */
   skippedBySegmentId?: Record<string, true>;
+  /**
+   * Device-local cached Find-the-Beat analysis for uploaded media (not synced to Drive).
+   * See ADR 0013.
+   */
+  analysisCache?: PersistedAnalysisBundle;
 }
 
 export interface StanzaTake {
@@ -161,6 +171,11 @@ export class StanzaDB extends Dexie {
       takes: 'id, songId, segmentId, createdAt, isGuided',
     });
     this.version(8).stores({
+      songs: 'id, updatedAt, title, ytId, driveSourceFileId',
+      takes: 'id, songId, segmentId, createdAt, isGuided',
+      undoSnapshots: '++id, createdAt',
+    });
+    this.version(9).stores({
       songs: 'id, updatedAt, title, ytId, driveSourceFileId',
       takes: 'id, songId, segmentId, createdAt, isGuided',
       undoSnapshots: '++id, createdAt',

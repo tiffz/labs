@@ -146,7 +146,12 @@ export function EncoreMainShell(): React.ReactElement {
     lastSilentMerge,
     acknowledgeSilentMerge,
   } = useEncoreSync();
-  const scrolled = useScrollTrigger({ disableHysteresis: false, threshold: 8 });
+  const [mainScrollEl, setMainScrollEl] = useState<HTMLElement | null>(null);
+  const scrolled = useScrollTrigger({
+    disableHysteresis: false,
+    threshold: 8,
+    target: mainScrollEl ?? undefined,
+  });
 
   const silentMergeMessage = lastSilentMerge
     ? (() => {
@@ -453,6 +458,8 @@ export function EncoreMainShell(): React.ReactElement {
       <Box
         component="main"
         id="main"
+        ref={setMainScrollEl}
+        className="in-scroll-region"
         sx={{
           position: 'relative',
           flex: 1,

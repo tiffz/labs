@@ -64,6 +64,11 @@
   text-align: left;
 }
 
+.shared-key-value--placeholder {
+  color: var(--key-muted, #64748b);
+  font-weight: 600;
+}
+
 .shared-key-value-btn .material-symbols-outlined {
   display: inline-flex;
   align-items: center;

@@ -1,4 +1,6 @@
-import type { BeatAnalysisResult } from '../utils/beatAnalyzer';
+import type { AnalysisMetadata, PersistedAnalysisBundle } from '../../shared/beat/analysisVersion';
+
+export type { AnalysisMetadata, PersistedAnalysisBundle };
 
 export type MediaSourceType = 'local' | 'youtube';
 export type MediaKind = 'audio' | 'video';
@@ -7,18 +9,6 @@ export type AnalysisFreshness = 'fresh' | 'stale' | 'missing';
 export interface LibraryCapabilities {
   advancedAnalysis: boolean;
   manualSections: boolean;
-}
-
-export interface AnalysisMetadata {
-  analysisVersion: string;
-  analyzedAt: number;
-  stale: boolean;
-  staleReason?: string;
-}
-
-export interface PersistedAnalysisBundle {
-  beat: BeatAnalysisResult;
-  metadata: AnalysisMetadata;
 }
 
 export interface BeatLibraryEntry {

@@ -9,6 +9,5 @@ export const INLINE_DRUM_PANEL_UX = {
   audioEnabled: false,
   hideDarbukaLink: true,
   notationHeight: 72,
-  drumSymbolScale: 0.52,
-  notationShowMetronomeDots: false,
+  drumSymbolScale: 0.68,
 } as const;

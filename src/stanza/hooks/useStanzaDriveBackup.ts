@@ -167,8 +167,23 @@ async function snapshotLocalLibraryBeforeMerge(
   }
 }
 
+async function tryHydrateLibraryStemsFromDrive(opts?: {
+  interactive?: boolean;
+  accessToken?: string;
+}): Promise<number> {
+  try {
+    const token =
+      opts?.accessToken ??
+      (await ensureLabsGoogleAccessTokenForDrive({ interactive: opts?.interactive !== false }));
+    return await hydrateStanzaLibraryStemsFromDrive(token);
+  } catch {
+    return 0;
+  }
+}
+
 async function mergeRemoteEnvelopeIntoLocal(
   remoteEnvelope: StanzaDriveEnvelopeV1,
+  opts?: { accessToken?: string; hydrateInteractive?: boolean },
 ): Promise<{
   added: number;
   updatedFromRemote: number;
@@ -197,12 +212,10 @@ async function mergeRemoteEnvelopeIntoLocal(
   for (const fid of staleTombstoneFileIds) {
     clearStanzaDriveTombstone(fid);
   }
-  try {
-    const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: false });
-    await hydrateStanzaLibraryStemsFromDrive(token);
-  } catch {
-    /* Stem bytes can hydrate when the user opens a song. */
-  }
+  await tryHydrateLibraryStemsFromDrive({
+    accessToken: opts?.accessToken,
+    interactive: opts?.hydrateInteractive,
+  });
   return {
     added: report.addedFromRemote,
     updatedFromRemote: report.mergedPreferRemote,
@@ -368,7 +381,10 @@ export function useStanzaDriveBackup() {
       }
       setLatestRemoteEnvelope(remoteEnvelope);
       await snapshotLocalLibraryBeforeMerge('pre-pull');
-      const result = await mergeRemoteEnvelopeIntoLocal(remoteEnvelope);
+      const result = await mergeRemoteEnvelopeIntoLocal(remoteEnvelope, {
+        accessToken: token,
+        hydrateInteractive: !opts?.silent,
+      });
       markPullSucceeded();
       setSyncMetaTick((n) => n + 1);
       if (!opts?.silent) {
@@ -520,7 +536,16 @@ export function useStanzaDriveBackup() {
       for (const fid of staleTombstoneFileIds) {
         clearStanzaDriveTombstone(fid);
       }
-      setMessage(`${formatMergeUserMessage(report, 'Merged library (')}, then saved to Drive.`);
+      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+      const hydratedStemSongs = await tryHydrateLibraryStemsFromDrive({
+        accessToken: token,
+        interactive: true,
+      });
+      let mergeMsg = `${formatMergeUserMessage(report, 'Merged library (')}, then saved to Drive.`;
+      if (hydratedStemSongs > 0) {
+        mergeMsg += ` Downloaded mix layers for ${hydratedStemSongs} song${hydratedStemSongs === 1 ? '' : 's'}.`;
+      }
+      setMessage(mergeMsg);
       setSyncMetaTick((n) => n + 1);
       setConflict(null);
       await flushDriveWrite();
@@ -575,12 +600,20 @@ export function useStanzaDriveBackup() {
         for (const fid of restoredDriveFileIds) {
           clearStanzaDriveTombstone(fid);
         }
+        const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+        const hydratedStemSongs = await tryHydrateLibraryStemsFromDrive({
+          accessToken: token,
+          interactive: true,
+        });
         setRestoreOpen(false);
         setSyncMetaTick((n) => n + 1);
         setMessage(() => {
           let msg = `Restored snapshot from ${snap.label}. ${formatStanzaDriveMergeReport(report)}`;
           if (report.markersRecoveredFromLocal > 0) {
             msg += ` Kept your section markers for ${report.markersRecoveredFromLocal} song${report.markersRecoveredFromLocal === 1 ? '' : 's'}.`;
+          }
+          if (hydratedStemSongs > 0) {
+            msg += ` Downloaded mix layers for ${hydratedStemSongs} song${hydratedStemSongs === 1 ? '' : 's'}.`;
           }
           return msg;
         });

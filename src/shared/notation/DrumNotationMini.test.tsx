@@ -1,6 +1,13 @@
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import DrumNotationMini, { NOTATION_STYLES, computeMiniNotationLayout } from './DrumNotationMini';
+import DrumNotationMini, {
+  NOTATION_STYLES,
+  computeMiniNotationLayout,
+  estimateMiniNotationRenderWidth,
+  resolveMiniDrumSymbolDrawY,
+  resolveMiniDrumSymbolScale,
+  resolveMiniDrumSymbolYOffset,
+} from './DrumNotationMini';
 import { parseRhythm } from '../rhythm/rhythmParser';
 import type { TimeSignature } from '../rhythm/types';
 
@@ -169,6 +176,27 @@ describe('DrumNotationMini', () => {
       );
       const svg = container.querySelector('svg');
       expect(svg).toBeInTheDocument();
+      expect(container.querySelectorAll('.drum-symbol').length).toBeGreaterThan(0);
+    });
+
+    it('keeps drum symbols inside the SVG viewport for compact hosts', () => {
+      const rhythm = createRhythm('D-T-__T-D---T---');
+      const { container } = render(
+        <DrumNotationMini rhythm={rhythm} height={68} width={236} showDrumSymbols={true} />
+      );
+      const svg = container.querySelector('svg');
+      expect(svg).toBeInTheDocument();
+      const svgHeight = Number.parseFloat(svg?.getAttribute('height') ?? '0');
+      const symbols = container.querySelectorAll('.drum-symbol');
+      expect(symbols.length).toBeGreaterThan(0);
+      symbols.forEach((symbol) => {
+        const transform = symbol.getAttribute('transform') ?? '';
+        const match = /translate\([^,]+,\s*([-\d.]+)\)/.exec(transform);
+        expect(match).not.toBeNull();
+        const translateY = Number.parseFloat(match![1]);
+        expect(translateY).toBeGreaterThanOrEqual(0);
+        expect(translateY).toBeLessThanOrEqual(svgHeight);
+      });
     });
 
     it('hides drum symbols when disabled', () => {
@@ -292,6 +320,30 @@ describe('DrumNotationMini', () => {
       expect(layout.renderHeight).toBeGreaterThanOrEqual(
         layout.staveY + layout.staveHeight + layout.metronomeDotGap + 5 + 2,
       );
+    });
+
+    it('grows render width for dense sixteenth patterns', () => {
+      const denseNotes = Array.from({ length: 16 }, () => ({ durationInSixteenths: 1 }));
+      const width = estimateMiniNotationRenderWidth(236, denseNotes);
+      expect(width).toBeGreaterThan(236);
+    });
+
+    it('uses legible compact drum symbol scale defaults', () => {
+      expect(resolveMiniDrumSymbolScale(68)).toBeGreaterThanOrEqual(0.68);
+      expect(resolveMiniDrumSymbolScale(68, 0.44)).toBeGreaterThanOrEqual(0.62);
+    });
+
+    it('keeps compact drum symbols in the top symbol band', () => {
+      const layout = computeMiniNotationLayout(68, {
+        showDrumSymbols: true,
+        showMetronomeDots: false,
+      });
+      const scale = resolveMiniDrumSymbolScale(68);
+      const yOffset = resolveMiniDrumSymbolYOffset(68, scale);
+      const drawY = resolveMiniDrumSymbolDrawY(68, layout.staveY, layout.symbolGap, yOffset);
+      const translateY = drawY + yOffset;
+      expect(translateY).toBeGreaterThanOrEqual(2);
+      expect(translateY).toBeLessThan(layout.staveY);
     });
   });
 });

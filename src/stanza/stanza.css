@@ -67,13 +67,19 @@
      cards (`.stanza-library-card`) and for portaled MUI dialogs where elevation is the
      canonical lift cue. */
   /* Viewer layout — tokens + rules in stanza-viewer-layout.css */
-  --stanza-viewer-max-width: 1160px;
-  --stanza-viewer-gutter: 12px;
-  --stanza-viewer-media-max-width: 720px;
+  --stanza-viewer-max-width: 1320px;
+  --stanza-viewer-gutter: 8px;
+  --stanza-viewer-media-max-width: 768px;
   --stanza-viewer-media-height: calc(
     var(--stanza-viewer-media-max-width) * 9 / 16
   );
-  --stanza-viewer-rail-width: 360px;
+  /* Compact playback stack estimate — caps practice rail height on desktop. */
+  --stanza-viewer-playback-stack-estimate: 220px;
+  --stanza-viewer-rail-max-height: calc(
+    var(--stanza-viewer-media-height) + var(--stanza-viewer-row-gap) +
+      var(--stanza-viewer-playback-stack-estimate)
+  );
+  --stanza-viewer-rail-width: 392px;
   --stanza-viewer-grid-gap: 12px;
   --stanza-viewer-row-gap: 12px;
   --stanza-viewer-content-width: calc(
@@ -116,15 +122,15 @@
 
 @media (min-width: 600px) {
   .stanza-app {
-    --stanza-viewer-gutter: 16px;
+    --stanza-viewer-gutter: 10px;
     --stanza-viewer-library-gap: 24px;
   }
 }
 
 @media (min-width: 900px) {
   .stanza-app {
-    --stanza-viewer-grid-gap: 20px;
-    --stanza-viewer-row-gap: 16px;
+    --stanza-viewer-grid-gap: 14px;
+    --stanza-viewer-row-gap: 12px;
     --stanza-viewer-scroll-pt: 10px;
     --stanza-viewer-scroll-pb: 16px;
   }
@@ -344,6 +350,13 @@
   max-height: min(52vh, 420px);
   overflow: auto;
   padding: 2px;
+  align-items: stretch;
+}
+
+.stanza-library-grid > * {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
 }
 
 .stanza-library-card {
@@ -375,8 +388,10 @@
 }
 
 button.stanza-library-card {
-  display: block;
+  display: flex;
+  flex-direction: column;
   width: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
   font: inherit;
@@ -386,12 +401,59 @@ button.stanza-library-card {
   appearance: none;
 }
 
-.stanza-library-card-thumb {
-  aspect-ratio: 16 / 9;
+.stanza-library-card-thumb-wrap {
+  position: relative;
   width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.stanza-library-card-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   display: block;
-  background: #0f172a;
+}
+
+.stanza-library-card-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 8px 8px 10px;
+  min-height: 4.25rem;
+}
+
+.stanza-library-card-caption-slot {
+  min-height: 1.125rem;
+  margin-top: 2px;
+}
+
+.stanza-library-source-badge {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.72);
+  color: rgba(255, 251, 245, 0.96);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.28);
+  pointer-events: none;
+}
+
+.stanza-volume-mix-menu.MuiPaper-root {
+  width: min(22rem, calc(100vw - 24px));
+  max-width: 22rem;
+  padding: 10px 12px 12px;
+  border-radius: 14px;
 }
 
 .stanza-library-panel {
@@ -968,8 +1030,8 @@ button.stanza-library-card {
   flex-direction: row;
   align-items: center;
   gap: 0.45rem;
-  min-height: 44px;
-  padding: 4px 8px;
+  min-height: 36px;
+  padding: 3px 6px;
   border-radius: var(--stanza-radius-chip);
   border: 1px solid var(--stanza-paper-line-faint);
   background: rgba(255, 255, 255, 0.62);
@@ -1050,6 +1112,323 @@ button.stanza-library-card {
   border-color: var(--stanza-paper-line);
 }
 
+.stanza-practice-rail--dense {
+  padding: 8px 8px 9px;
+  --stanza-rail-control-height: 2rem;
+  --stanza-rail-control-radius: var(--stanza-radius-chip);
+  --stanza-rail-control-border: var(--stanza-paper-line-faint);
+  --stanza-rail-control-bg: var(
+    --stanza-paper-elevated-strong,
+    rgba(255, 255, 255, 0.92)
+  );
+}
+
+@media (min-width: 900px) {
+  .stanza-practice-rail.stanza-viewer-rail-slot {
+    box-sizing: border-box;
+    height: var(--stanza-viewer-rail-max-height);
+    max-height: var(--stanza-viewer-rail-max-height);
+    min-height: 0;
+  }
+}
+
+.stanza-rail-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.stanza-rail-section {
+  padding: 8px 2px 10px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  min-width: 0;
+}
+
+.stanza-rail-section + .stanza-rail-section {
+  border-top: 1px solid var(--stanza-paper-line-faint);
+  margin-top: 2px;
+  padding-top: 10px;
+}
+
+.stanza-rail-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  min-height: 22px;
+}
+
+.stanza-rail-section-title {
+  font-family: var(--stanza-font-ui);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--stanza-ink-muted);
+}
+
+.stanza-rail-section-toggle.MuiFormControlLabel-root {
+  margin: 0;
+  gap: 4px;
+}
+
+.stanza-rail-section-toggle .MuiFormControlLabel-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--stanza-ink-muted);
+}
+
+.stanza-rail-field-label {
+  display: block;
+  margin-bottom: 3px;
+  font-family: var(--stanza-font-ui);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--stanza-ink-muted);
+  line-height: 1.2;
+}
+
+.stanza-rail-calibration-grid .stanza-rail-beat-offset-shell {
+  box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
+  min-height: var(--stanza-rail-control-height);
+  border: 1px solid var(--stanza-rail-control-border);
+  border-radius: var(--stanza-rail-control-radius);
+  background: var(--stanza-rail-control-bg);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.stanza-rail-calibration-grid .stanza-rail-beat-offset-shell:focus-within {
+  border-color: var(--stanza-rose);
+}
+
+.stanza-rail-calibration-grid .stanza-rail-beat-offset-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.stanza-rail-calibration-grid
+  .stanza-rail-beat-offset-input
+  .MuiOutlinedInput-root {
+  min-height: var(--stanza-rail-control-height);
+  border-radius: var(--stanza-rail-control-radius);
+  background: transparent;
+}
+
+.stanza-rail-calibration-grid
+  .stanza-rail-beat-offset-input
+  .MuiOutlinedInput-notchedOutline {
+  border: 0;
+}
+
+.stanza-rail-calibration-grid
+  .stanza-rail-beat-offset-input
+  .MuiOutlinedInput-input {
+  padding: 0.35rem 0.55rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.stanza-rail-calibration-grid .stanza-bpm-rail-input .shared-bpm-shell {
+  min-height: var(--stanza-rail-control-height);
+  border-radius: var(--stanza-rail-control-radius);
+  border-color: var(--stanza-rail-control-border);
+  background: var(--stanza-rail-control-bg);
+}
+
+.stanza-rail-calibration-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.75rem auto;
+  gap: 6px;
+  align-items: end;
+}
+
+@media (max-width: 359px) {
+  .stanza-rail-calibration-grid {
+    grid-template-columns: minmax(0, 1fr) 5.25rem;
+  }
+
+  .stanza-rail-calibration-grid .stanza-rail-tool-pair {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    padding-top: 2px;
+  }
+}
+
+.stanza-rail-calibration-scope {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+  min-width: 0;
+}
+
+.stanza-rail-calibration-scope-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--stanza-ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stanza-rail-calibration-scope
+  .MuiToggleButtonGroup-root
+  .MuiToggleButton-root {
+  padding: 2px 7px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: none;
+  line-height: 1.2;
+  min-height: 24px;
+  border-color: var(--stanza-paper-line-faint);
+}
+
+.stanza-rail-calibration-hint {
+  margin: 0 0 4px;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  color: var(--stanza-ink-muted);
+}
+
+.stanza-rail-tool-pair {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+
+.stanza-rail-tool-pair .stanza-rail-compact-btn.MuiIconButton-root {
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 9px;
+  border: 1px solid var(--stanza-paper-line);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+@media (pointer: coarse) {
+  .stanza-rail-tool-pair .stanza-rail-compact-btn.MuiIconButton-root {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+.stanza-rail-pitch-fields {
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.stanza-rail-section--pitch .stanza-rail-field-label {
+  margin-bottom: 0;
+  min-width: 4.25rem;
+  font-size: 0.6875rem;
+}
+
+.stanza-rail-section--pitch .stanza-original-key-block,
+.stanza-rail-section--pitch .stanza-key-shift-block {
+  min-width: 0;
+}
+
+.stanza-rail-section--pitch .stanza-key-shift-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.stanza-rail-section--pitch .stanza-key-shift-row .stanza-key-shift-numeric {
+  flex: 1 1 120px;
+  min-width: 0;
+  max-width: none;
+}
+
+.stanza-rail-section--pitch
+  .stanza-key-shift-row
+  .stanza-playback-transform-chip {
+  flex-shrink: 0;
+}
+
+.stanza-rail-section--youtube-local {
+  padding-block: 0.25rem 0.65rem;
+}
+
+.stanza-rail-section--youtube-local .stanza-rail-section-title {
+  margin-bottom: 6px;
+}
+
+.stanza-youtube-local-copy {
+  margin: 0;
+  font-family: var(--stanza-font-ui);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--stanza-ink-muted);
+}
+
+.stanza-youtube-local-copy + .stanza-youtube-local-copy {
+  margin-top: 3px;
+}
+
+.stanza-youtube-local-copy--lead {
+  margin-top: 7px;
+}
+
+.stanza-youtube-local-features {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.stanza-youtube-local-feature {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.stanza-youtube-local-feature-icon {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  font-size: 15px;
+  opacity: 0.78;
+  color: var(--stanza-ink-muted);
+}
+
+.stanza-youtube-local-feature-label {
+  font-family: var(--stanza-font-ui);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  line-height: 1.25;
+  color: var(--stanza-ink-muted);
+}
+
+.stanza-practice-rail .stanza-metronome-strip {
+  border-color: var(
+    --stanza-rail-control-border,
+    var(--stanza-paper-line-faint)
+  );
+  background: var(--stanza-rail-control-bg, rgba(255, 255, 255, 0.78));
+  min-height: var(--stanza-rail-control-height, 2rem);
+}
+
 .stanza-practice-rail .MuiFormControl-root {
   margin-top: 0;
 }
@@ -1078,6 +1457,7 @@ button.stanza-library-card {
   .stanza-bpm-modal-input
   .shared-bpm-shell:focus-within,
 .stanza-app .stanza-key-shift-block .shared-bpm-shell:focus-within,
+.stanza-app .stanza-original-key-block .shared-key-shell:focus-within,
 .stanza-app .stanza-playback-speed-control .shared-bpm-shell:focus-within {
   box-shadow: none;
   border-color: var(--stanza-rose);
@@ -1246,6 +1626,148 @@ button.stanza-library-card {
   margin-bottom: 0;
 }
 
+.stanza-playback-transform-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  color: var(--stanza-muted, rgba(49, 43, 38, 0.62));
+  border: 1px solid var(--stanza-line, rgba(49, 43, 38, 0.12));
+  border-radius: 999px;
+  padding: 0.22rem 0.48rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.stanza-playback-transform-chip--shifted {
+  border-color: rgba(232, 72, 160, 0.35);
+  color: var(--stanza-ink, rgba(49, 43, 38, 0.92));
+  background: rgba(232, 72, 160, 0.1);
+}
+
+.stanza-playback-transform-chip__arrow {
+  font-size: 0.95rem !important;
+}
+
+.stanza-playback-transform-chip__arrow--up {
+  color: #4a8fd4;
+}
+
+.stanza-playback-transform-chip__arrow--down {
+  color: #d4747f;
+}
+
+.stanza-playback-toolbar .stanza-playback-transform-chip {
+  margin-left: 0.15rem;
+}
+
+.stanza-key-shift-block .stanza-playback-transform-chip {
+  margin-top: 0;
+}
+
+.stanza-rail-section--pitch .shared-key-shell,
+.stanza-rail-section--pitch .shared-bpm-shell {
+  min-height: var(--stanza-rail-control-height, 2rem);
+  border-radius: var(--stanza-rail-control-radius, var(--stanza-radius-chip));
+  border-color: var(
+    --stanza-rail-control-border,
+    var(--stanza-paper-line-faint)
+  );
+  background: var(
+    --stanza-rail-control-bg,
+    var(--stanza-paper-elevated-strong)
+  );
+}
+
+.stanza-app .stanza-original-key-block .shared-key-shell {
+  --key-focus: var(--stanza-rose);
+  --key-border: var(--stanza-rose-line);
+  --key-bg: var(--stanza-paper-elevated-strong);
+  --key-chip-hover-bg: rgba(232, 72, 160, 0.08);
+  --key-chip-active-bg: rgba(232, 72, 160, 0.14);
+  --key-chip-active-text: var(--stanza-rose-strong);
+  --key-chip-active-border: var(--stanza-rose-line);
+  --key-chip-hover-border: rgba(232, 72, 160, 0.35);
+}
+
+.stanza-app .stanza-original-key-block .stanza-original-key-detect-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--stanza-rose-strong);
+}
+
+.stanza-app .stanza-original-key-block .stanza-key-dropdown {
+  --key-chip-active-text: var(--stanza-rose-strong);
+  --key-chip-active-border: var(--stanza-rose-line);
+  --key-chip-active-bg: rgba(232, 72, 160, 0.14);
+  --key-chip-hover-bg: rgba(232, 72, 160, 0.08);
+  --key-chip-hover-border: rgba(232, 72, 160, 0.35);
+}
+
+.stanza-app .stanza-original-key-block .shared-key-value-btn {
+  font-family: var(--stanza-font-ui);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.stanza-app
+  .stanza-original-key-block
+  .shared-key-value-btn
+  .material-symbols-outlined {
+  font-size: 1.125rem;
+}
+
+/* Portaled key picker (AnchoredPopover) — outside `.stanza-app`; use literal Stanza tokens. */
+.stanza-key-dropdown.shared-key-dropdown {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
+    'Helvetica Neue', sans-serif;
+  min-width: 16.25rem;
+  max-width: min(22rem, calc(100vw - 24px));
+  margin-top: 4px;
+  border: 1px solid rgba(49, 43, 38, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 251, 245, 0.98);
+  box-shadow:
+    0 1px 2px rgba(47, 39, 33, 0.045),
+    0 16px 38px rgba(47, 39, 33, 0.075);
+}
+
+.stanza-key-dropdown .shared-key-dropdown-list {
+  padding: 6px;
+}
+
+.stanza-key-dropdown .shared-key-grid {
+  gap: 4px;
+}
+
+.stanza-key-dropdown .shared-key-grid-item {
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  min-height: 1.85rem;
+  border-radius: 8px;
+  border-color: rgba(49, 43, 38, 0.1);
+  background: rgba(255, 255, 255, 0.88);
+  color: #2a2622;
+  padding: 0.28rem 0.35rem;
+}
+
+.stanza-key-dropdown .shared-key-grid-item:hover {
+  border-color: rgba(232, 72, 160, 0.35);
+  background: rgba(232, 72, 160, 0.08);
+  color: #2a2622;
+}
+
+.stanza-key-dropdown .shared-key-grid-item.active {
+  border-color: rgba(232, 72, 160, 0.45);
+  background: rgba(232, 72, 160, 0.14);
+  color: #b81268;
+}
+
 /* Automatic tempo modal (portaled): paper is outside .stanza-app, no ancestor prefix. */
 .stanza-tempo-preview-dialog-paper.MuiPaper-root {
   border-radius: 16px;
@@ -1281,6 +1803,24 @@ button.stanza-library-card {
   padding-top: 5px;
 }
 
+.stanza-rail-section--mix {
+  padding-bottom: 6px;
+}
+
+.stanza-rail-section--mix .stanza-mix-rows {
+  margin-top: 2px;
+}
+
+.stanza-rail-section--mix .stanza-mix-row {
+  min-height: 26px;
+  gap: 0.4rem;
+}
+
+.stanza-rail-section--mix .stanza-mix-row--system + .stanza-mix-row--system {
+  margin-top: 1px;
+  padding-top: 1px;
+}
+
 .stanza-mix-row {
   min-height: 28px;
 }
@@ -1295,12 +1835,8 @@ button.stanza-library-card {
   padding-top: 2px;
 }
 
-/* "Add drums" block — sits below the metronome rail. The block always reserves a thin top
- * divider so the checkbox doesn't visually float against the rail above it; matches the
- * metronome rail's vertical rhythm. */
+/* Nested inside `.stanza-rail-section--drums` (section chrome replaces the old divider). */
 .stanza-drums-block {
-  border-top: 1px solid var(--stanza-paper-line-faint);
-  padding-top: 4px;
   overflow: visible;
 }
 
@@ -1320,10 +1856,63 @@ button.stanza-library-card {
   gap: 2px 3px;
   margin-bottom: 3px;
 }
+
+.stanza-drums-panel .drum-presets--compact {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 3px;
+}
+
+.stanza-drums-panel .preset-btn--picker {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-height: var(--stanza-rail-control-height, 2rem);
+  padding: 0 8px 0 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-color: var(
+    --stanza-rail-control-border,
+    var(--stanza-paper-line-faint)
+  );
+  background: var(--stanza-rail-control-bg, rgba(255, 255, 255, 0.72));
+}
+
+.stanza-drums-panel .preset-btn--picker:hover:not(.active) {
+  border-color: var(--stanza-rose-line);
+  background: var(--stanza-rose-wash);
+}
+
+.stanza-drums-panel .preset-btn-icon {
+  min-width: var(--stanza-rail-control-height, 2rem);
+  min-height: var(--stanza-rail-control-height, 2rem);
+  border-color: var(
+    --stanza-rail-control-border,
+    var(--stanza-paper-line-faint)
+  );
+  background: var(--stanza-rail-control-bg, rgba(255, 255, 255, 0.72));
+}
+
+.stanza-drums-panel .preset-btn--picker .preset-btn-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stanza-drums-panel .preset-btn--picker .preset-btn-chevron {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  opacity: 0.65;
+}
 .stanza-drums-panel .preset-btn {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.72);
   border: 1px solid var(--stanza-paper-line-faint);
-  border-radius: 999px;
+  border-radius: 8px;
   color: var(--stanza-ink);
   font-family: inherit;
   font-size: 0.62rem;
@@ -1423,16 +2012,16 @@ button.stanza-library-card {
   margin: 0;
 }
 
-/* Notation card: variation carousel, staff, Darbuka link, and optional hint share one tray. */
+/* Notation tray: variation + staff only — no nested card chrome. */
 .stanza-drums-panel .stanza-drums-notation-frame {
-  padding: 4px 6px 2px;
-  border-radius: calc(var(--stanza-radius-chip) - 1px);
-  background: var(--stanza-tray-bg);
-  border: 1px solid var(--stanza-paper-line-faint);
+  padding: 2px 0 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
   width: 100%;
   box-sizing: border-box;
-  gap: 1px;
+  gap: 2px;
   overflow: visible;
 }
 
@@ -1522,6 +2111,38 @@ button.stanza-library-card {
   line-height: 1.35;
   color: var(--stanza-ink-soft);
   text-align: center;
+}
+
+/* Portaled rhythm preset menu (DrumAccompaniment compact layout in Stanza). */
+.stanza-drums-preset-menu.MuiPaper-root {
+  margin-top: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--stanza-paper-line-faint);
+  box-shadow: var(--stanza-shadow-card);
+  background: var(--stanza-paper-elevated, #fff);
+}
+
+.stanza-drums-preset-menu .MuiList-root {
+  padding: 4px;
+}
+
+.stanza-drums-preset-menu .MuiMenuItem-root {
+  min-height: 2rem;
+  border-radius: 7px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--stanza-ink);
+  padding: 0.35rem 0.65rem;
+}
+
+.stanza-drums-preset-menu .MuiMenuItem-root.Mui-selected {
+  background: rgba(232, 72, 160, 0.12);
+  color: var(--stanza-rose-strong);
+}
+
+.stanza-drums-preset-menu .MuiMenuItem-root:hover {
+  background: rgba(232, 72, 160, 0.08);
 }
 
 .stanza-rail-compact-btn.MuiButton-root {

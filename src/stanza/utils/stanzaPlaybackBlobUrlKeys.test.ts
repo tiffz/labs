@@ -59,4 +59,17 @@ describe('stanzaPlaybackBlobUrlKeys', () => {
     expect(k9).not.toBe(k10);
     expect(k9.startsWith(`${stanzaPrimaryLocalBlobKey({ ...base, stems })}\0`)).toBe(true);
   });
+
+  it('stanzaStemUrlKeyFromSong works for YouTube rows with mix layers', () => {
+    const song: StanzaSong = {
+      id: 'yt-song',
+      ytId: 'abc123',
+      title: 'YT',
+      markers: [],
+      stats: {},
+      updatedAt: 1,
+      stems: [stem('layer-a', 8)],
+    };
+    expect(stanzaStemUrlKeyFromSong(song)).toBe('yt-song\u0000layer-a:8');
+  });
 });

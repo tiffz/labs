@@ -9,8 +9,8 @@ import { probeFileAudioDurationSeconds } from '../utils/probeFileAudioDuration';
  * unit-tested without spinning up the workspace component.
  *
  * Design notes:
- * - Stanza only handles audio today (`<audio>` element + YouTube iframe). Video files are filtered
- *   out so a stray `.mov` drop doesn't end up in the library producing a silent track.
+ * - Stanza handles audio and common local video containers (mp4/mov/webm). Video rows use the same
+ *   `localAudioBlob` field and render in `<video>` when {@link isStanzaBlobLikeVideo} matches.
  * - We make a fresh `Blob` from `arrayBuffer()` rather than keeping the `File` reference; this lets
  *   IndexedDB own the bytes outright (no implicit lifetime tie to the picked DOM `File`).
  */
@@ -55,13 +55,35 @@ export function isPracticeableStanzaDriveMime(mime: string | undefined, fallback
 
 export function isAudioFileForStanza(file: File): boolean {
   if (!file) return false;
-  if (typeof file.type === 'string' && file.type.toLowerCase().startsWith('audio/')) return true;
+  const mime = typeof file.type === 'string' ? file.type.toLowerCase() : '';
+  if (mime.startsWith('image/') || mime.startsWith('text/')) return false;
+  if (mime.startsWith('audio/')) return true;
   if (typeof file.name === 'string' && AUDIO_EXTENSION_FALLBACK.test(file.name)) return true;
   return false;
 }
 
+/** Audio uploads plus local video containers Stanza can practice (mp4/mov/webm). */
+export function isLocalMediaFileForStanza(file: File): boolean {
+  if (isAudioFileForStanza(file)) return true;
+  const mime = typeof file.type === 'string' ? file.type.toLowerCase() : '';
+  if (DRIVE_PRACTICEABLE_VIDEO_MIMES.has(mime)) return true;
+  if (mime.startsWith('video/') && typeof file.name === 'string' && VIDEO_EXTENSION_FALLBACK.test(file.name)) {
+    return true;
+  }
+  if (mime === 'application/octet-stream' && typeof file.name === 'string' && VIDEO_EXTENSION_FALLBACK.test(file.name)) {
+    return true;
+  }
+  return false;
+}
+
+async function probePlayableDurationSeconds(file: File): Promise<number | null> {
+  const durationSec = await probeFileAudioDurationSeconds(file);
+  if (durationSec == null || !Number.isFinite(durationSec) || durationSec <= 0) return null;
+  return durationSec;
+}
+
 /**
- * All audio-like files from a drag-and-drop payload, in list order (non-audio entries skipped).
+ * All practiceable local media from a drag-and-drop payload, in list order (non-media entries skipped).
  */
 export function allAudioFilesFromDataTransfer(dt: DataTransfer | null | undefined): File[] {
   const files = dt?.files;
@@ -69,7 +91,7 @@ export function allAudioFilesFromDataTransfer(dt: DataTransfer | null | undefine
   const out: File[] = [];
   for (let i = 0; i < files.length; i += 1) {
     const f = files.item(i);
-    if (f && isAudioFileForStanza(f)) out.push(f);
+    if (f && isLocalMediaFileForStanza(f)) out.push(f);
   }
   return out;
 }
@@ -98,11 +120,16 @@ export function stanzaSongTitleFromFileName(name: string): string {
  * @throws if `crypto.randomUUID` is unavailable (very old browsers); no other failure modes.
  */
 export async function buildLocalAudioStanzaSong(file: File): Promise<StanzaSong> {
-  if (!isAudioFileForStanza(file)) {
-    throw new Error(`Not an audio file: ${file.name || 'unnamed file'}`);
+  if (!isLocalMediaFileForStanza(file)) {
+    throw new Error(`Not a supported recording: ${file.name || 'unnamed file'}`);
+  }
+  const durationSec = await probePlayableDurationSeconds(file);
+  if (durationSec == null) {
+    throw new Error(
+      `Could not read audio from "${file.name || 'unnamed file'}". Choose a supported audio or video file (MP3, WAV, MP4, …).`,
+    );
   }
   const blob = new Blob([await file.arrayBuffer()], { type: file.type || 'audio/mpeg' });
-  const durationSec = await probeFileAudioDurationSeconds(file);
   return {
     id: crypto.randomUUID(),
     ytId: null,

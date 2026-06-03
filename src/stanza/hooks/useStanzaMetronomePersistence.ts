@@ -20,7 +20,6 @@ export function useStanzaMetronomePersistence(
         {
           id: selected.id,
           metronomeBySegmentId: { ...prev, [segmentId]: cal },
-          metronomeEnabled: true,
         },
         opts,
       );
@@ -35,7 +34,6 @@ export function useStanzaMetronomePersistence(
         {
           id: selected.id,
           metronomeSongCalibration: cal,
-          metronomeEnabled: true,
         },
         opts,
       );

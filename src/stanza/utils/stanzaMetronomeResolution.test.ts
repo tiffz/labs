@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { resolveStanzaMetronomePlaybackSync, STANZA_SONG_METRONOME_LIVE_ID } from './stanzaMetronomeResolution';
+import {
+  resolveStanzaMetronomeGridSync,
+  resolveStanzaMetronomePlaybackSync,
+  STANZA_SONG_METRONOME_LIVE_ID,
+} from './stanzaMetronomeResolution';
 import type { DerivedSegment } from './segments';
 
 const seg = (id: string, start: number): DerivedSegment => ({
@@ -15,6 +19,30 @@ const tapCal = (bpm: number, anchor: number, start: number) => ({
   anchorMediaTime: anchor,
   firstBeatOffsetSec: anchor - start,
   source: 'tap' as const,
+});
+
+describe('resolveStanzaMetronomeGridSync', () => {
+  it('returns calibration when metronome toggle is off (drums use the same grid)', () => {
+    expect(
+      resolveStanzaMetronomeGridSync({
+        playbackSeg: seg('a', 10),
+        songCal: tapCal(100, 0, 0),
+        segmentCal: undefined,
+        railLive: null,
+      }),
+    ).toEqual({ bpm: 100, anchor: 0 });
+  });
+
+  it('returns empty when no playback segment', () => {
+    expect(
+      resolveStanzaMetronomeGridSync({
+        playbackSeg: null,
+        songCal: tapCal(100, 0, 0),
+        segmentCal: undefined,
+        railLive: null,
+      }),
+    ).toEqual({});
+  });
 });
 
 describe('resolveStanzaMetronomePlaybackSync', () => {

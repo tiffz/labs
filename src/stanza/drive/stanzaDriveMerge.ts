@@ -2,6 +2,7 @@ import type { StanzaSong, StanzaStemTrack } from '../db/stanzaDb';
 import {
   stanzaLocalMediaFingerprintForDriveRow,
   stanzaLocalMediaFingerprintForRow,
+  stanzaLocalMediaFingerprintsMatch,
 } from '../utils/stanzaLocalMediaFingerprint';
 import {
   mergeStanzaRicherSongMetadata,
@@ -9,6 +10,7 @@ import {
   mergeStanzaSongWithRemotePreference,
 } from '../utils/stanzaSongMetadataMerge';
 import { consolidateStanzaSongDuplicates } from '../utils/stanzaSongDeduplication';
+import { mergeStanzaStemTracks } from '../utils/stanzaStemMerge';
 import type { StanzaSongDriveRow, StanzaStemDriveRow } from './stanzaDriveEnvelope';
 
 export interface StanzaDriveMergeReport {
@@ -53,42 +55,64 @@ function stemMetaFromRemote(
   localStems: StanzaStemTrack[] | undefined,
   remoteStems: StanzaStemDriveRow[] | undefined,
 ): StanzaStemTrack[] | undefined {
-  if (!remoteStems?.length) return localStems?.length ? localStems : undefined;
-  const localById = new Map((localStems ?? []).map((s) => [s.id, s]));
-  const out: StanzaStemTrack[] = [];
-  const seen = new Set<string>();
-  for (const r of remoteStems) {
-    seen.add(r.id);
-    const local = localById.get(r.id);
-    const blob =
-      local?.localBlob && local.localBlob.size > 0
-        ? local.localBlob
-        : new Blob([], { type: 'application/octet-stream' });
-    out.push({
-      id: r.id,
-      label: r.label || local?.label || 'Layer',
-      muted: r.muted ?? local?.muted,
-      gain: r.gain ?? local?.gain,
-      driveFileId: r.driveFileId ?? local?.driveFileId,
-      driveStemBytesFingerprint: r.driveStemBytesFingerprint ?? local?.driveStemBytesFingerprint,
-      localBlob: blob,
-    });
-  }
-  for (const local of localStems ?? []) {
-    if (seen.has(local.id)) continue;
-    if (local.localBlob?.size) out.push(local);
-  }
-  return out.length > 0 ? out : undefined;
+  return mergeStanzaStemTracks(localStems, remoteStems);
 }
 
 function stemsFromDriveRowMetadata(
   remoteStems: StanzaStemDriveRow[] | undefined,
 ): StanzaStemTrack[] | undefined {
-  if (!remoteStems?.length) return undefined;
-  return remoteStems.map((r) => ({
-    ...r,
-    localBlob: new Blob([], { type: 'application/octet-stream' }),
-  }));
+  return mergeStanzaStemTracks(undefined, remoteStems);
+}
+
+function stanzaPracticeFieldsFromDriveRow(row: StanzaSongDriveRow): Omit<
+  StanzaSong,
+  'id' | 'ytId' | 'title' | 'markers' | 'stats' | 'updatedAt' | 'stems' | 'localMediaFingerprint'
+> {
+  return {
+    primaryGain: row.primaryGain,
+    primaryMuted: row.primaryMuted,
+    metronomeBySegmentId: row.metronomeBySegmentId,
+    metronomeSongCalibration: row.metronomeSongCalibration,
+    metronomeTimingScope: row.metronomeTimingScope,
+    metronomeEnabled: row.metronomeEnabled,
+    metronomeGain: row.metronomeGain,
+    metronomeMuted: row.metronomeMuted,
+    drumsEnabled: row.drumsEnabled,
+    drumsGain: row.drumsGain,
+    drumsMuted: row.drumsMuted,
+    localTransposeSemitones: row.localTransposeSemitones,
+    localOriginalKey: row.localOriginalKey,
+    skippedBySegmentId: row.skippedBySegmentId,
+  };
+}
+
+/**
+ * Materialize practice metadata for a local upload that only exists on Drive (no YouTube / `?df=`).
+ * Keeps mix-layer metadata so other devices can hydrate `stem_audio/` bytes after pull.
+ */
+function stanzaLocalUploadPracticeRowFromDriveMetadata(row: StanzaSongDriveRow): StanzaSong | null {
+  const fp = stanzaLocalMediaFingerprintForDriveRow(row);
+  if (!fp) return null;
+  const hasStems = (row.stems ?? []).some((s) => s.driveFileId?.trim() || s.label?.trim());
+  const hasPractice =
+    (row.markers?.length ?? 0) > 0 ||
+    hasStems ||
+    row.metronomeSongCalibration != null ||
+    Object.keys(row.metronomeBySegmentId ?? {}).length > 0 ||
+    row.localOriginalKey != null ||
+    (row.localTransposeSemitones ?? 0) !== 0;
+  if (!hasPractice) return null;
+  return {
+    id: row.id,
+    ytId: null,
+    title: row.title,
+    markers: row.markers ?? [],
+    stats: row.stats ?? {},
+    updatedAt: row.updatedAt,
+    localMediaFingerprint: fp,
+    stems: stemsFromDriveRowMetadata(row.stems),
+    ...stanzaPracticeFieldsFromDriveRow(row),
+  };
 }
 
 /** Build a playable row from Drive metadata (YouTube or Drive-linked audio only). */
@@ -204,7 +228,8 @@ function findLocalRowForRemoteFingerprint(
   for (const row of mergedRows) {
     if (row.ytId || row.driveSourceFileId?.trim()) continue;
     if (!row.localAudioBlob) continue;
-    if (stanzaLocalMediaFingerprintForRow(row) === fp) return row;
+    const localFp = stanzaLocalMediaFingerprintForRow(row);
+    if (stanzaLocalMediaFingerprintsMatch(localFp, fp)) return row;
   }
   return null;
 }
@@ -310,6 +335,12 @@ export function mergeDriveRowsIntoLocalLibrary(
       const idx = mergedRows.indexOf(match);
       mergedRows[idx] = mergeStanzaRicherSongMetadata(match, R);
       report.mergedPreferRemote += 1;
+      continue;
+    }
+    const practiceRow = stanzaLocalUploadPracticeRowFromDriveMetadata(R);
+    if (practiceRow) {
+      mergedRows.push(practiceRow);
+      report.addedFromRemote += 1;
       continue;
     }
     report.skippedRemoteOnlyUnplayable += 1;

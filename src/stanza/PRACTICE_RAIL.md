@@ -11,13 +11,14 @@ Full layer table: **[`LAYOUT.md`](./LAYOUT.md)**. CSS in **`stanza-viewer-layout
 | Page shell     | `.stanza-viewer-column`    | Max width + horizontal gutter (`--stanza-viewer-gutter`)                                               |
 | Content block  | `.stanza-viewer-workbench` | **Fixed** width `--stanza-viewer-content-width` (media + rail + gap) — not `width: 100%` + `max-width` |
 | Scroll region  | `.stanza-viewer-scroll`    | `overflow: auto`, `scrollbar-gutter: stable`                                                           |
-| Main grid      | `.stanza-viewer-body-grid` | `media` / `rail` / `timeline` areas                                                                    |
+| Main grid      | `.stanza-viewer-body-grid` | `main` (video + playback) / `rail` — desktop: single row; playback stays under video                   |
 | Library footer | `.stanza-library-panel`    | Inside workbench; `width: 100%` via layout CSS                                                         |
 
 **Pitfalls**
 
 - Do not put `mx: auto` on the grid alone — it centers while siblings stay flush left.
-- Do not cap video with arbitrary `dvh` (causes letterboxing); rail height sync uses `--stanza-viewer-media-height`.
+- Do not cap video with arbitrary `dvh` (causes letterboxing); video height uses `--stanza-viewer-media-height`.
+- On desktop, the **practice rail sits beside the main column** (video + playback); a tall rail scrolls internally and must not stretch space between video and playback (see [`LAYOUT.md`](./LAYOUT.md)).
 - Tokens (`--stanza-viewer-*`) are the single source of truth; avoid duplicate pixel constants in TS.
 
 ## Before you ship
@@ -32,7 +33,7 @@ Full layer table: **[`LAYOUT.md`](./LAYOUT.md)**. CSS in **`stanza-viewer-layout
 - **Layout math** — `computeMiniNotationLayout()` keeps a fixed staff height and grows `renderHeight` when adding top/bottom headroom. Do not shrink `staveHeight` inside a fixed host height (that clips noteheads).
 - **Scroll host** — Wide patterns scroll on `.drum-notation-mini-x-scroll`, not on `.drum-notation-mini` (the SVG host). `overflow-x: auto` on the same node as the SVG forces `overflow-y: auto` and a nested vertical scrollbar; the shared wrapper sets `overflow-y: hidden`. See `notationMini.css`.
 - **Stanza frame CSS** — `.stanza-drums-notation-frame` uses `overflow: visible` and `flex-shrink: 0`. Avoid `min-height: 0` on the notation frame (flex shrink clips the staff).
-- **Constants** — `STANZA_DRUMS_NOTATION_WIDTH` / `HEIGHT` in `StanzaWorkspace.tsx` (currently 236×68); host height is a minimum — SVG may grow slightly for stems. Stanza passes `notationShowMetronomeDots={false}` (beat dots live in the metronome strip).
+- **Constants** — `STANZA_DRUMS_NOTATION_WIDTH` / `HEIGHT` in `StanzaWorkspace.tsx` (currently 368×68); host height is a minimum — SVG may grow slightly for stems. Dense patterns widen via `estimateMiniNotationRenderWidth()` + horizontal scroll. Stanza uses `INLINE_DRUM_PANEL_UX` + `presetLayout="compact"` (picker menu, no pattern field / Darbuka link).
 
 ## Tap tempo
 
@@ -41,8 +42,9 @@ Full layer table: **[`LAYOUT.md`](./LAYOUT.md)**. CSS in **`stanza-viewer-layout
 
 ## Mix row
 
+- **Inline in the practice rail** — Mix lives in `.stanza-rail-section--mix` (not a volume popover). The rail scrolls when content exceeds the grid cell height.
 - **Icon alignment** — Metronome, Drums, and Main rows share the same structure: drag spacer → `IconButton` mute → label → `AppLinearVolumeSlider` → trail spacer. Never use a decorative icon `Box` in the mute slot (Drums was misaligned until it matched Metronome).
-- **Mute vs enable** — `drumsEnabled` / metronome toggle = master on/off. `drumsMuted` / `metronomeMuted` = Mix mute (level preserved, slider dims). Tap-tempo tap gate is separate and temporary.
+- **Mute vs enable** — `drumsEnabled` / metronome toggle = master on/off. `drumsMuted` / `metronomeMuted` = Mix mute (level preserved, slider dims). Drums share BPM + Beat 1 calibration with the metronome but do **not** require the metronome toggle to be on. Tap-tempo tap gate is separate and temporary.
 
 ## Tests worth adding when touching this area
 

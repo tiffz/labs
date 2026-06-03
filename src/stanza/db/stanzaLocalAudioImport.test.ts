@@ -1,13 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   allAudioFilesFromDataTransfer,
   buildLocalAudioStanzaSong,
   firstAudioFileFromDataTransfer,
   isAudioFileForStanza,
+  isLocalMediaFileForStanza,
   isPracticeableStanzaDriveMime,
   isStanzaBlobLikeVideo,
   stanzaSongTitleFromFileName,
 } from './stanzaLocalAudioImport';
+
+vi.mock('../utils/probeFileAudioDuration', () => ({
+  probeFileAudioDurationSeconds: vi.fn(async () => 180.5),
+}));
 
 /**
  * jsdom in this repo doesn't provide `File.prototype.arrayBuffer` or `DataTransfer`, so we
@@ -53,11 +58,24 @@ describe('isAudioFileForStanza', () => {
     expect(isAudioFileForStanza(fileLike('song.opus', '') as unknown as File)).toBe(true);
   });
 
-  it('rejects video and document files', () => {
+  it('rejects video and document files for audio-only sniff', () => {
     expect(isAudioFileForStanza(fileLike('clip.mov', 'video/quicktime') as unknown as File)).toBe(false);
     expect(isAudioFileForStanza(fileLike('clip.mp4', 'video/mp4') as unknown as File)).toBe(false);
     expect(isAudioFileForStanza(fileLike('notes.txt', 'text/plain') as unknown as File)).toBe(false);
     expect(isAudioFileForStanza(fileLike('image.png', 'image/png') as unknown as File)).toBe(false);
+    expect(isAudioFileForStanza(fileLike('shot.png', 'image/png') as unknown as File)).toBe(false);
+  });
+});
+
+describe('isLocalMediaFileForStanza', () => {
+  it('accepts practiceable local video containers', () => {
+    expect(isLocalMediaFileForStanza(fileLike('clip.mp4', 'video/mp4') as unknown as File)).toBe(true);
+    expect(isLocalMediaFileForStanza(fileLike('clip.mov', 'video/quicktime') as unknown as File)).toBe(true);
+  });
+
+  it('still rejects unrelated files', () => {
+    expect(isLocalMediaFileForStanza(fileLike('notes.txt', 'text/plain') as unknown as File)).toBe(false);
+    expect(isLocalMediaFileForStanza(fileLike('shot.png', 'image/png') as unknown as File)).toBe(false);
   });
 });
 
@@ -115,27 +133,32 @@ describe('firstAudioFileFromDataTransfer', () => {
     expect(firstAudioFileFromDataTransfer(dataTransferLike([]))).toBeNull();
   });
 
-  it('picks the first audio entry from a mixed payload', () => {
+  it('picks the first practiceable entry from a mixed payload', () => {
     const dt = dataTransferLike([
       fileLike('clip.mov', 'video/quicktime'),
       fileLike('song.mp3', 'audio/mpeg'),
       fileLike('also.flac', 'audio/flac'),
     ]);
     const picked = firstAudioFileFromDataTransfer(dt);
-    expect(picked?.name).toBe('song.mp3');
+    expect(picked?.name).toBe('clip.mov');
   });
 
-  it('returns null when nothing in the payload is audio', () => {
+  it('accepts video when no audio sibling is present', () => {
+    const dt = dataTransferLike([fileLike('take.mp4', 'video/mp4')]);
+    expect(firstAudioFileFromDataTransfer(dt)?.name).toBe('take.mp4');
+  });
+
+  it('returns null when nothing in the payload is practiceable', () => {
     const dt = dataTransferLike([
-      fileLike('clip.mp4', 'video/mp4'),
       fileLike('img.png', 'image/png'),
+      fileLike('x.txt', 'text/plain'),
     ]);
     expect(firstAudioFileFromDataTransfer(dt)).toBeNull();
   });
 });
 
 describe('allAudioFilesFromDataTransfer', () => {
-  it('returns every audio entry in order, skipping non-audio', () => {
+  it('returns every practiceable entry in order, skipping non-media', () => {
     const dt = dataTransferLike([
       fileLike('clip.mov', 'video/quicktime'),
       fileLike('song.mp3', 'audio/mpeg'),
@@ -143,10 +166,10 @@ describe('allAudioFilesFromDataTransfer', () => {
       fileLike('x.txt', 'text/plain'),
     ]);
     const all = allAudioFilesFromDataTransfer(dt);
-    expect(all.map((f) => f.name)).toEqual(['song.mp3', 'also.flac']);
+    expect(all.map((f) => f.name)).toEqual(['clip.mov', 'song.mp3', 'also.flac']);
   });
 
-  it('returns an empty array when there is no audio', () => {
+  it('returns an empty array when there is no practiceable media', () => {
     expect(allAudioFilesFromDataTransfer(dataTransferLike([fileLike('x.png', 'image/png')]))).toEqual([]);
   });
 });
@@ -172,9 +195,23 @@ describe('buildLocalAudioStanzaSong', () => {
     expect(row.title).toBe('Track');
   });
 
-  it('throws when handed a non-audio file (drop sanity check)', async () => {
+  it('throws when handed an unsupported file type', async () => {
     await expect(
-      buildLocalAudioStanzaSong(fileLike('clip.mp4', 'video/mp4') as unknown as File),
-    ).rejects.toThrow(/Not an audio file/);
+      buildLocalAudioStanzaSong(fileLike('notes.txt', 'text/plain') as unknown as File),
+    ).rejects.toThrow(/Not a supported recording/);
+  });
+
+  it('accepts local mp4 video uploads', async () => {
+    const row = await buildLocalAudioStanzaSong(fileLike('take.mp4', 'video/mp4') as unknown as File);
+    expect(row.localAudioBlob?.type).toBe('video/mp4');
+    expect(row.title).toBe('take');
+  });
+
+  it('throws when the browser cannot decode the file as audio', async () => {
+    const { probeFileAudioDurationSeconds } = await import('../utils/probeFileAudioDuration');
+    vi.mocked(probeFileAudioDurationSeconds).mockResolvedValueOnce(null);
+    await expect(
+      buildLocalAudioStanzaSong(fileLike('fake.mp3', 'audio/mpeg') as unknown as File),
+    ).rejects.toThrow(/Could not read audio/);
   });
 });

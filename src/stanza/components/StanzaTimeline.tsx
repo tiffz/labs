@@ -20,6 +20,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined';
+import AutoFixHighOutlinedIcon from '@mui/icons-material/AutoFixHighOutlined';
 import CallSplitOutlinedIcon from '@mui/icons-material/CallSplitOutlined';
 import CropFreeOutlinedIcon from '@mui/icons-material/CropFreeOutlined';
 import DeselectOutlinedIcon from '@mui/icons-material/DeselectOutlined';
@@ -50,6 +51,7 @@ import { computeLoopHull } from '../utils/stanzaPlaybackLoop';
 import { stanzaPlayheadDisplayTime } from '../utils/stanzaPlayheadDisplayTime';
 import AppTooltip from '../../shared/components/AppTooltip';
 import PlaybackSpeedControl from '../../shared/components/music/PlaybackSpeedControl';
+import StanzaPlaybackTransformChip from './StanzaPlaybackTransformChip';
 import StanzaSectionHoverCard from './StanzaSectionHoverCard';
 
 export type { StanzaPlaybackLoopMode };
@@ -100,6 +102,8 @@ export interface StanzaTimelineProps {
   onSkipToLoopStart: () => void;
   onSkipToLoopEnd: () => void;
   onAddMarker?: () => void;
+  /** Run shared section detector on local uploads (ADR 0013). */
+  onSuggestSections?: () => void;
   /** Merge contiguous selected sections (internal boundaries only). */
   onJoinSections?: () => void;
   /** True when at least two adjacent sections are selected (Shift+click range). */
@@ -117,6 +121,8 @@ export interface StanzaTimelineProps {
   selectionExtendActive?: boolean;
   playbackRate: number;
   onPlaybackRateChange: (rate: number) => void;
+  /** Calibrated BPM for the current playback section (before playback-speed transform). */
+  calibratedBpm?: number;
   /** One beat in seconds for the current selection span (from metronome grid); parent falls back to 120 BPM when unset. */
   selectionSpanBeatDeltaSec?: number;
   metronomeBySegmentId?: Record<string, StanzaSegmentMetronomeCalibration>;
@@ -151,6 +157,7 @@ export default function StanzaTimeline({
   onSkipToLoopStart,
   onSkipToLoopEnd,
   onAddMarker,
+  onSuggestSections,
   onJoinSections,
   joinSectionsEnabled = false,
   onClearSegmentSelection,
@@ -161,6 +168,7 @@ export default function StanzaTimeline({
   selectionExtendActive = false,
   playbackRate,
   onPlaybackRateChange,
+  calibratedBpm = 120,
   selectionSpanBeatDeltaSec,
   metronomeBySegmentId,
   metronomeSongCalibration,
@@ -201,6 +209,10 @@ export default function StanzaTimeline({
     const sec = selectionNudgeStepSec >= 10 ? selectionNudgeStepSec.toFixed(1) : selectionNudgeStepSec.toFixed(2);
     return `one beat (~${sec}s)`;
   }, [selectionNudgeStepSec]);
+
+  const playbackRateDelta = playbackRate - 1;
+  const isPlaybackBpmShifted = Math.abs(playbackRateDelta) > 0.001;
+  const playbackBpmValue = Math.round(calibratedBpm * playbackRate);
 
   const trackRef = useRef<HTMLDivElement | null>(null);
   const scrubbingRef = useRef(false);
@@ -743,6 +755,13 @@ export default function StanzaTimeline({
                 dropdownClassName="stanza-bpm-dropdown"
                 sliderClassName="stanza-bpm-slider"
               />
+              {isPlaybackBpmShifted ? (
+                <StanzaPlaybackTransformChip
+                  shifted
+                  direction={playbackRateDelta > 0 ? 'up' : 'down'}
+                  label={`Playback BPM: ${playbackBpmValue}`}
+                />
+              ) : null}
             </Box>
           </Box>
 
@@ -1005,6 +1024,23 @@ export default function StanzaTimeline({
                         Split at playhead
                       </Button>
                     </AppTooltip>
+                  ) : null}
+                  {onSuggestSections ? (
+                    <>
+                      {onAddMarker ? <span className="stanza-playback-chip-divider" aria-hidden /> : null}
+                      <AppTooltip title="Analyze the upload and propose section boundaries.">
+                        <Button
+                          type="button"
+                          size="small"
+                          variant="text"
+                          className="stanza-playback-chip-text-btn"
+                          startIcon={<AutoFixHighOutlinedIcon fontSize="small" />}
+                          onClick={onSuggestSections}
+                        >
+                          Suggest sections
+                        </Button>
+                      </AppTooltip>
+                    </>
                   ) : null}
                   {onJoinSections ? (
                     <>

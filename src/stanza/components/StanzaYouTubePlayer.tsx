@@ -14,6 +14,9 @@ export interface StanzaYouTubeController {
   /** Current playback time in seconds (for tight loop / transport sync; not every UI tick). */
   getCurrentTime: () => number;
   setPlaybackRate: (rate: number) => void;
+  /** 0–100 per YouTube IFrame API. */
+  setVolume: (volume: number) => void;
+  getVolume: () => number;
 }
 
 interface StanzaYouTubePlayerProps {
@@ -37,6 +40,9 @@ type YtInstance = {
   getPlayerState: () => number;
   getPlaybackRate: () => number;
   setPlaybackRate: (rate: number) => void;
+  setVolume: (volume: number) => void;
+  getVolume: () => number;
+  mute: () => void;
   destroy: () => void;
 };
 
@@ -199,6 +205,23 @@ const StanzaYouTubePlayer: React.FC<StanzaYouTubePlayerProps> = ({
                     /* unsupported rate */
                   }
                 },
+                setVolume: (volume: number) => {
+                  try {
+                    const v = Math.max(0, Math.min(100, Math.round(volume)));
+                    player.setVolume(v);
+                    if (v <= 0) player.mute();
+                    else player.unMute();
+                  } catch {
+                    /* ignore */
+                  }
+                },
+                getVolume: () => {
+                  try {
+                    return player.getVolume?.() ?? 100;
+                  } catch {
+                    return 100;
+                  }
+                },
               });
             },
             onStateChange: () => {
@@ -212,7 +235,7 @@ const StanzaYouTubePlayer: React.FC<StanzaYouTubePlayerProps> = ({
         playerRef.current = player;
         pollTimerRef.current = window.setInterval(() => {
           emitState();
-        }, 220);
+        }, 280);
       })
       .catch((error) => {
         console.error('Stanza: failed to init YouTube player', error);

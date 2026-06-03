@@ -1,6 +1,7 @@
 import type { StanzaSong } from '../db/stanzaDb';
 import { stanzaDb } from '../db/stanzaDb';
 import { computeStanzaLocalMediaFingerprint } from '../utils/stanzaLocalMediaFingerprint';
+import { probeFileAudioDurationSeconds } from '../utils/probeFileAudioDuration';
 import { loadDriveFileAsStanzaLocalBlob } from './loadDriveSourceForStanza';
 
 /**
@@ -33,15 +34,22 @@ export async function hydrateStanzaDriveSongMedia(opts: {
     suggestedTitle: suggestedTitle ?? row.title,
     interactiveOAuth,
   });
+  const mediaTitle = suggestedTitle?.trim() || title || row.title;
+  const probeFile = new File([blob], mediaTitle, { type: blob.type || 'audio/mpeg' });
+  const durationSec = await probeFileAudioDurationSeconds(probeFile);
   const next: StanzaSong = {
     ...row,
     ytId: null,
-    title: suggestedTitle?.trim() || title || row.title,
+    title: mediaTitle,
     localAudioBlob: blob,
     driveSourceFileId,
     localMediaFingerprint:
       row.localMediaFingerprint ??
-      computeStanzaLocalMediaFingerprint({ sizeBytes: blob.size, fileName: row.title }),
+      computeStanzaLocalMediaFingerprint({
+        sizeBytes: blob.size,
+        durationSec: durationSec ?? undefined,
+        fileName: mediaTitle,
+      }),
   };
   await stanzaDb.songs.put(next);
   return next;

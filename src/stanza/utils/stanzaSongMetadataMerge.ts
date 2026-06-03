@@ -1,6 +1,7 @@
 import type { StanzaSong } from '../db/stanzaDb';
 import type { StanzaSongDriveRow } from '../drive/stanzaDriveEnvelope';
 import { mergeStanzaMarkers } from './stanzaMarkerMerge';
+import { mergeStanzaStemTracks } from './stanzaStemMerge';
 import {
   stanzaMarkerCount,
   stanzaSongPracticeCustomizationScore,
@@ -128,10 +129,13 @@ export function mergeStanzaRicherSongMetadataWithReport(
       drumsGain: local.drumsGain ?? remote.drumsGain,
       drumsMuted: local.drumsMuted ?? remote.drumsMuted,
       localTransposeSemitones: local.localTransposeSemitones ?? remote.localTransposeSemitones,
+      localOriginalKey: local.localOriginalKey ?? remote.localOriginalKey,
       primaryGain: local.primaryGain ?? remote.primaryGain,
       primaryMuted: local.primaryMuted ?? remote.primaryMuted,
       skippedBySegmentId,
+      analysisCache: local.analysisCache ?? remote.analysisCache,
       localMediaFingerprint: local.localMediaFingerprint ?? remote.localMediaFingerprint,
+      stems: mergeStanzaStemTracks(local.stems, remote.stems) ?? local.stems,
       updatedAt: Math.max(local.updatedAt, remote.updatedAt),
     },
     markersRecoveredFromLocal,
@@ -166,6 +170,7 @@ export function mergeStanzaSongWithRemotePreference(
       drumsGain: remote.drumsGain ?? local.drumsGain,
       drumsMuted: remote.drumsMuted ?? local.drumsMuted,
       localTransposeSemitones: remote.localTransposeSemitones ?? local.localTransposeSemitones,
+      localOriginalKey: remote.localOriginalKey ?? local.localOriginalKey,
       driveSourceFileId: remote.driveSourceFileId ?? local.driveSourceFileId,
       updatedAt: Math.max(local.updatedAt, remote.updatedAt),
     },

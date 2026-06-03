@@ -193,6 +193,34 @@ describe('mergeDriveRowsIntoLocalLibrary', () => {
     expect(nextRows[0].stems?.[0].localBlob).toBe(stemBlob);
   });
 
+  it('merges remote stem driveFileId when local row wins on updatedAt', () => {
+    const local = [
+      song({
+        id: '1',
+        ytId: null,
+        title: 'Local upload',
+        updatedAt: 200,
+        localAudioBlob: new Blob(['main'], { type: 'audio/mpeg' }),
+        localMediaFingerprint: '100:120.00',
+        stems: [{ id: 'st1', label: 'Layer', localBlob: new Blob([], { type: 'audio/wav' }) }],
+      }),
+    ];
+    const remote: StanzaSongDriveRow[] = [
+      {
+        id: '1',
+        ytId: null,
+        title: 'Local upload',
+        markers: [],
+        stats: {},
+        updatedAt: 100,
+        localMediaFingerprint: '100:120.00',
+        stems: [{ id: 'st1', label: 'Layer', driveFileId: 'stem-drive-9' }],
+      },
+    ];
+    const { nextRows } = mergeDriveRowsIntoLocalLibrary(local, remote);
+    expect(nextRows[0].stems?.[0].driveFileId).toBe('stem-drive-9');
+  });
+
   it('adds remote-only YouTube song', () => {
     const remote: StanzaSongDriveRow[] = [
       {
@@ -279,6 +307,57 @@ describe('mergeDriveRowsIntoLocalLibrary', () => {
     expect(nextRows[0]?.id).toBe('device-b');
     expect(nextRows[0]?.markers).toHaveLength(1);
     expect(nextRows[0]?.markers[0]?.label).toBe('verse');
+  });
+
+  it('merges remote mix layers onto a local file with a compatible fingerprint', () => {
+    const blob = new Blob([new Uint8Array(200)], { type: 'audio/mpeg' });
+    const local = [
+      song({
+        id: 'device-b',
+        title: 'Blue',
+        updatedAt: 50,
+        localAudioBlob: blob,
+        localMediaFingerprint: '200:240.00',
+      }),
+    ];
+    const remote: StanzaSongDriveRow[] = [
+      {
+        id: 'device-a',
+        ytId: null,
+        title: 'Blue',
+        markers: [],
+        stats: {},
+        updatedAt: 100,
+        localMediaFingerprint: '200:name:blue.mp3',
+        stems: [{ id: 'st1', label: 'lead vocals', driveFileId: 'stem-1' }],
+      },
+    ];
+    const { nextRows } = mergeDriveRowsIntoLocalLibrary(local, remote);
+    expect(nextRows).toHaveLength(1);
+    expect(nextRows[0]?.stems).toHaveLength(1);
+    expect(nextRows[0]?.stems?.[0].driveFileId).toBe('stem-1');
+  });
+
+  it('materializes practice metadata with stems when the main file is not on this device yet', () => {
+    const remote: StanzaSongDriveRow[] = [
+      {
+        id: 'device-a',
+        ytId: null,
+        title: 'Blue',
+        markers: [],
+        stats: {},
+        updatedAt: 100,
+        localMediaFingerprint: '200:240.00',
+        stems: [
+          { id: 'st1', label: 'lead vocals', driveFileId: 'stem-1' },
+          { id: 'st2', label: 'backing vocals', driveFileId: 'stem-2' },
+        ],
+      },
+    ];
+    const { nextRows, report } = mergeDriveRowsIntoLocalLibrary([], remote);
+    expect(report.addedFromRemote).toBe(1);
+    expect(nextRows[0]?.stems).toHaveLength(2);
+    expect(nextRows[0]?.stems?.[0].driveFileId).toBe('stem-1');
   });
 
   it('collapses two Drive-imported rows with the same driveSourceFileId', () => {

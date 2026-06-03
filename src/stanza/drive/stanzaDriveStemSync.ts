@@ -86,7 +86,7 @@ export async function syncStanzaLibraryStemsToDrive(
   const rows = await stanzaDb.songs.toArray();
   let uploaded = 0;
   for (const row of rows) {
-    if (row.ytId || !(row.stems?.length)) continue;
+    if (!(row.stems?.length)) continue;
     const nextStems: StanzaStemTrack[] = [];
     let changed = false;
     for (const stem of row.stems) {
@@ -99,7 +99,9 @@ export async function syncStanzaLibraryStemsToDrive(
       uploaded += 1;
     }
     if (changed) {
-      await stanzaDb.songs.put({ ...row, stems: nextStems, updatedAt: row.updatedAt });
+      const fresh = await stanzaDb.songs.get(row.id);
+      if (!fresh) continue;
+      await stanzaDb.songs.put({ ...fresh, stems: nextStems, updatedAt: fresh.updatedAt });
     }
   }
   return uploaded;
