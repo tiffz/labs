@@ -1,0 +1,22 @@
+# Scales — agent context
+
+Nested **`AGENTS.md`** for Scales. Root policy: [`../../AGENTS.md`](../../AGENTS.md).
+
+## Start here
+
+1. [`README.md`](README.md) — curriculum, grading, file layout.
+2. [`COPY_STYLE.md`](COPY_STYLE.md) — learner-facing copy.
+3. **Shared UI:** [`/ui/`](/ui/) — `BpmInput`, `InputSourcesMenu` adapter pattern in `InputSources.tsx`.
+4. **Drive backup:** skill `labs-drive-backup`; hook `hooks/useScalesDriveBackup.ts`.
+
+## Pitfalls
+
+- **`SessionScreen.tsx`** (~3000 lines) — decomposition in progress; use skill `labs-component-decomposition`; extract helpers before new features.
+- **Store:** `store.tsx` — reducer invariants; run `npm test -- src/scales` after state shape changes.
+- **Shared grading:** extend `src/shared/` for MIDI/acoustic pipeline; do not fork from Piano wholesale.
+
+## Tests
+
+- Unit: `npm test -- src/scales`
+- Smoke: `/scales/` in `e2e/smoke/app-shells.spec.ts`
+- Visual: `e2e/visual/apps.visual.spec.ts` scales desktop/mobile

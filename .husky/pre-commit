@@ -33,6 +33,12 @@ fi
 # matches CI behavior and catches boundary regressions early.
 npm run check:import-boundaries
 
+# Doc/agent hygiene when guidance files change (matches presubmit subset).
+if printf '%s\n' "$STAGED_FILES" | grep -Eq '(^AGENTS\.md$|^docs/|^\.cursor/|/AGENTS\.md$)'; then
+  npm run check:doc-links
+  npm run check:agent-docs
+fi
+
 # Lint & auto-fix staged files (eslint + prettier)
 npx lint-staged --allow-empty
 

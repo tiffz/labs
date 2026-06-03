@@ -21,9 +21,10 @@ import { useSampledPianoPreload } from '../shared/hooks/useSampledPianoPreload';
 import { useUrlState } from './hooks/useUrlState';
 import { CHORD_STYLING_STRATEGIES } from './data/chordStylingStrategies';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
+import Stack from '@mui/material/Stack';
 import { AudioPlayer } from '../shared/audio/audioPlayer';
 import AppTooltip from '../shared/components/AppTooltip';
-import AppSlider from '../shared/components/AppSlider';
+import { PlaybackVolumeRow } from '../shared/components/music/PlaybackVolumeRow';
 import SharedExportPopover from '../shared/components/music/SharedExportPopover';
 import type { ExportSourceAdapter } from '../shared/music/exportTypes';
 import { buildSingleTrackMidi, type MidiNoteEvent } from '../shared/music/midiBuilder';
@@ -749,47 +750,32 @@ const App: React.FC = () => {
               paperClassName="chords-playback-settings-popover"
             >
               <div className="chords-playback-settings-menu">
-                <label className="chords-playback-setting-row">
-                  <span>Master volume</span>
-                  <AppSlider
-                    className="chords-playback-slider"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={Math.round(masterVolume * 100)}
+                <Stack spacing={1.25} sx={{ p: 1.5, minWidth: 280 }}>
+                  <PlaybackVolumeRow
+                    label="Master"
+                    volume={Math.round(masterVolume * 100)}
+                    muted={false}
+                    onVolumeChange={(value) => setMasterVolume(value / 100)}
+                    onMutedChange={() => {}}
                     aria-label="Master volume"
-                    onChange={(event) => setMasterVolume(Number(event.target.value) / 100)}
                   />
-                  <strong>{Math.round(masterVolume * 100)}</strong>
-                </label>
-                <label className="chords-playback-setting-row">
-                  <span>Piano volume</span>
-                  <AppSlider
-                    className="chords-playback-slider"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={Math.round(pianoVolume * 100)}
+                  <PlaybackVolumeRow
+                    label="Piano"
+                    volume={Math.round(pianoVolume * 100)}
+                    muted={false}
+                    onVolumeChange={(value) => setPianoVolume(value / 100)}
+                    onMutedChange={() => {}}
                     aria-label="Piano volume"
-                    onChange={(event) => setPianoVolume(Number(event.target.value) / 100)}
                   />
-                  <strong>{Math.round(pianoVolume * 100)}</strong>
-                </label>
-                <label className="chords-playback-setting-row">
-                  <span>Metronome volume</span>
-                  <AppSlider
-                    className="chords-playback-slider"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={Math.round(metronomeVolume * 100)}
+                  <PlaybackVolumeRow
+                    label="Metronome"
+                    volume={Math.round(metronomeVolume * 100)}
+                    muted={false}
+                    onVolumeChange={(value) => setMetronomeVolume(value / 100)}
+                    onMutedChange={() => {}}
                     aria-label="Metronome volume"
-                    onChange={(event) =>
-                      setMetronomeVolume(Number(event.target.value) / 100)
-                    }
                   />
-                  <strong>{Math.round(metronomeVolume * 100)}</strong>
-                </label>
+                </Stack>
               </div>
             </AnchoredPopover>
           </div>

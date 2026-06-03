@@ -11,9 +11,16 @@ This document defines the canonical workflow for screenshot and audio regression
 
 ## Test Coverage
 
+### App shell smokes (Playwright)
+
+- Test file: `e2e/smoke/app-shells.spec.ts` (routes from [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts))
+- Includes **`/encore/`**, **`/stanza/`**, **`/agility/`** plus all other micro-apps
+- Run: `npm run test:e2e:smoke`
+
 ### Playback UI smokes (Playwright)
 
 - Test file: `e2e/playback-ui-regressions.spec.ts`
+- **CI:** runs after smoke in `.github/workflows/ci.yml`
 - Coverage (cheap integration checks, not full visual baselines):
   - Words — portaled chord sound menu uses `shared-playback-field-select__menu--words` (trigger + menu skin parity).
   - Encore Originals — inline drum mini notation highlight moves during chord chart playback.
@@ -26,8 +33,8 @@ Add a smoke here when a cross-app playback/portal/empty-state bug recurs — pre
 
 - Test file: `e2e/visual/apps.visual.spec.ts`
 - Coverage:
-  - Home (`/`)
-  - All app routes (`/cats/`, `/zines/`, `/corp/`, `/drums/`, `/story/`, `/chords/`, `/forms/`, `/words/`, `/pitch/`, `/piano/`, `/ui/`, `/drums/universal_tom/`)
+  - Routes in [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) where `visual: true` (see registry for smoke-only apps: melodia, sight, agility, stanza)
+  - Includes **`/encore/`**, **`/count/`**, **`/scales/`**, and other app routes
   - Two major canonical states per route:
     - Desktop viewport baseline
     - Mobile viewport baseline

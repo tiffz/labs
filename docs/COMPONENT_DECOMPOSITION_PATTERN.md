@@ -50,12 +50,12 @@ These are the files flagged in the engineering audit as over-size and ripe for t
 
 ### Completed in the Phase 4 rollout PR series
 
-- **`src/piano/store.tsx`** — 1493 → 1257 lines; extracted `storeTypes.ts` (258 lines) for `PianoState`, `Action` union, `ActiveMode`, `ScoreSection`, and `initialState`. Reducer + `PianoProvider` remain in `store.tsx`; splitting those into `reducer.ts` + `PianoProvider.tsx` is the next natural step but requires care because the provider's effect wiring references reducer-internal helpers.
-- **`src/words/utils/prosodyEngine.ts`** — 2209 → 2169 lines in the engine + new `prosodyEngineTypes.ts` (86 lines) for types, constants, and small helpers.
+- **`src/piano/store.tsx`** — partial split: `storeTypes.ts` extracted; `store.tsx` ~1256 lines. Next: `reducer.ts` + `PianoProvider.tsx` (skill `labs-component-decomposition`).
+- **`src/words/utils/prosodyEngine.ts`** — engine + `prosodyEngineTypes.ts` for types/constants.
 
 ### In progress — Stanza workspace (ADR 0013 follow-up)
 
-- **`src/stanza/components/StanzaWorkspace.tsx`** (~3600 lines; was ~4400)
+- **`src/stanza/components/StanzaWorkspace.tsx`** (~3607 lines; was ~4400)
   - Extracted to `components/stanzaWorkspace/`:
     - `stanzaWorkspaceHelpers.ts` — stem reorder, mix label sx, YouTube error copy, practice detection
     - `stanzaPracticeRailConstants.ts` — drums notation footprint + palette
@@ -64,20 +64,14 @@ These are the files flagged in the engineering audit as over-size and ripe for t
 
 ### Deferred to dedicated PRs
 
-These need per-component inventory sessions before splitting. Each already has its external behavior protected by unit + visual regression tests, so the pattern can be applied incrementally without user-visible risk, but the extraction itself requires enough domain knowledge that it should not be batched together.
-
-- **`src/words/App.tsx`** (4270 lines)
-  - Expected leaves: prosody controls, lyric editor, export panel, playback rail, sidebar settings.
-  - First split target: extract the export panel (visually isolated, prop surface is small).
-- **`src/stanza/components/StanzaTimeline.tsx`** (~1150 lines)
-  - Expected leaves: marker handles, loop hull overlay, transport toolbar row.
-  - First split target: pure timeline math helpers (zero React dependency).
-- **`src/stanza/components/StanzaSectionMetronomeRail.tsx`** (~900 lines)
-  - Expected leaves: analyze dialog shell, calibration row, tap-tempo affordances (partially in `StanzaTapTempoDialog`).
-- **`src/drums/components/VexFlowRenderer.tsx`** (2297 lines)
-  - First split target: the pure math helpers — zero React dependency.
-- **`src/shared/notation/ScoreDisplay.tsx`** (1720 lines)
-  - First split target: extract the legend (pure render) and the header (small state surface).
+- **`src/scales/components/SessionScreen.tsx`** (~3034 lines) — skill `labs-component-decomposition`; see `src/scales/AGENTS.md`.
+- **`src/encore/components/LibraryScreen.tsx`** (~2520 lines)
+- **`src/encore/components/song/useSongPageMediaHub.tsx`** (~2312 lines)
+- **`src/stanza/components/StanzaTimeline.tsx`** (~1135 lines)
+- **`src/drums/components/VexFlowRenderer.tsx`** (~2297 lines)
+- **`src/shared/notation/ScoreDisplay.tsx`** (~2016 lines)
+- **`src/cats/App.tsx`** (~741 lines)
+- **`src/chords/App.tsx`** (~824 lines) — playback settings now use `PlaybackVolumeRow`; further shell splits welcome.
 
 ### Removed from rollout list
 

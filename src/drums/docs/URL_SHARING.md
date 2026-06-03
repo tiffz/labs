@@ -119,6 +119,8 @@ Share rhythms with other musicians for practice or performance preparation.
 
 Post rhythm URLs on forums, social media, or messaging apps.
 
+See [`docs/URL_STATE_PATTERN.md`](../../../docs/URL_STATE_PATTERN.md) for cross-app URL sync conventions.
+
 ## Implementation Details
 
 The URL state is managed by the `useUrlState` hook located in `/src/drums/hooks/useUrlState.ts`. The hook provides:

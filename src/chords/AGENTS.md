@@ -12,7 +12,8 @@ Nested **`AGENTS.md`** for Chords. Root policy: [`../../AGENTS.md`](../../AGENTS
 
 ## Pitfalls
 
-- `ChordScoreRenderer` separates **content redraw** from **highlight toggle**; do not pass `activeNoteGroups` into the main render effect deps.
+- **`ChordPlaybackSettingsPanel`** is for chart-style playback (Encore Originals). Main app uses **`PlaybackVolumeRow`** for master/piano/metronome levels — do not hand-roll slider rows.
+- **`ChordScoreRenderer`** separates content redraw from highlight toggle; do not pass `activeNoteGroups` into main render effect deps.
 - Use `vexFlowDurationToBeats` from shared notation for duration validation.
 
 ## Tests

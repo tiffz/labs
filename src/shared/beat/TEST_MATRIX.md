@@ -20,5 +20,5 @@ npm run test:fast
 
 ## Related
 
-- [`../../beat/DEVELOPMENT.md`](../../beat/DEVELOPMENT.md) — upload/reanalysis UX contract
+- [`src/stanza/ANALYZE.md`](../../stanza/ANALYZE.md) — optional Analyze UX contract (Stanza surface)
 - [`tempoEnsemble.ts`](./tempoEnsemble.ts), [`analysis/ioiTempoHint.ts`](./analysis/ioiTempoHint.ts)

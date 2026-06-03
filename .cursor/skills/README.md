@@ -13,5 +13,11 @@ Portable [Agent Skills](https://agentskills.io/home) for Labs workflows. Discove
 | [`labs-split-to-prs`](labs-split-to-prs/SKILL.md)                       | Split branch/work into small reviewable PRs                        |
 | [`labs-write-adr`](labs-write-adr/SKILL.md)                             | Material architecture decision (routing, OAuth, boundaries)        |
 | [`labs-component-decomposition`](labs-component-decomposition/SKILL.md) | Split oversized React containers (>600 lines)                      |
+| [`labs-rhythm-preset`](labs-rhythm-preset/SKILL.md)                     | Edit `RHYTHM_DATABASE` / rhythm preset integrity                   |
+| [`labs-new-micro-app`](labs-new-micro-app/SKILL.md)                     | New micro-app shell, index.html, vite entry, boundaries            |
+| [`labs-url-state`](labs-url-state/SKILL.md)                             | URL param sync, shareable links, useUrlState hooks                 |
+| [`labs-iteration-handoff`](labs-iteration-handoff/SKILL.md)             | Mid-refactor handoff for next session                              |
+| [`labs-drive-backup`](labs-drive-backup/SKILL.md)                       | Google Drive backup, conflict prompts, sync hooks                  |
+| [`labs-dependency-upgrade`](labs-dependency-upgrade/SKILL.md)           | Toolchain / dependency major upgrades                              |
 
 **Maintenance:** Add a row here when creating a skill. Run `npm run check:agent-docs` in presubmit/CI.

@@ -46,6 +46,19 @@ for skill_dir in .cursor/skills/labs-*/; do
   case "$yaml_name" in
     *[!a-z0-9-]*|-*|*-) fail "${skill_name}: invalid name characters (use lowercase a-z, 0-9, hyphens)" ;;
   esac
+
+  if [ -d "${skill_dir}references" ]; then
+    for ref in "${skill_dir}"references/*.md; do
+      [ -f "$ref" ] || continue
+      target=$(sed -n 's/.*(\(\.\.\/[^)]*\)).*/\1/p' "$ref" | head -1)
+      if [ -n "$target" ]; then
+        ref_dir=$(dirname "$ref")
+        if [ ! -f "${ref_dir}/${target}" ]; then
+          fail "${ref}: reference target missing (${target})"
+        fi
+      fi
+    done
+  fi
 done
 
 skills_readme=".cursor/skills/README.md"
@@ -79,17 +92,17 @@ for skill_dir in .cursor/skills/labs-*/; do
   fi
 done
 
-echo "== check:agent-docs: optional skills-ref validate =="
+echo "== check:agent-docs: skills-ref validate =="
 
 if command -v npx >/dev/null 2>&1; then
   for skill_dir in .cursor/skills/labs-*/; do
     skill_name=$(basename "$skill_dir")
-    if npx --yes skills-ref validate "$skill_dir" >/dev/null 2>&1; then
-      echo "  skills-ref ok: ${skill_name}"
-    else
-      echo "  skills-ref skipped or failed for ${skill_name} (non-blocking)"
+    if ! npx --yes skills-ref validate "$skill_dir"; then
+      fail "skills-ref validate failed for ${skill_name}"
     fi
   done
+else
+  fail "npx not available for skills-ref validate"
 fi
 
 if [ "$failures" -gt 0 ]; then

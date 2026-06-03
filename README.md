@@ -93,7 +93,7 @@ Notes:
 - Follow docs precedence in `docs/SOURCE_OF_TRUTH.md` when guidance conflicts.
 - When adding or reorganizing documentation, follow `docs/DOCUMENTATION_STRATEGY.md` (canonical homes, no duplication).
 - Material cross-cutting architecture decisions: see `docs/adr/README.md` (ADRs complement `DEVELOPMENT.md`).
-- AI coding assistants: see [`AGENTS.md`](AGENTS.md) (nested `src/<app>/AGENTS.md` for Encore, Stanza, shared).
+- AI coding assistants: see [`AGENTS.md`](AGENTS.md) (nested `src/<app>/AGENTS.md` for Encore, Stanza, shared, Words, Drums, Piano, Chords, Cats, Scales).
 
 ## Responsive Checklist (Music Apps)
 

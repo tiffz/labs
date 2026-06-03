@@ -149,6 +149,14 @@ For **mix rails and other linear 0–1 gain** controls, use `AppLinearVolumeSlid
 
 `AppSlider` remains the older **legacy event-shape** helper for BPM and similar; prefer `AppLinearVolumeSlider` for new **volume / gain** UX.
 
+### Playback volume rows (`PlaybackVolumeRow`)
+
+For **labeled mix rows with mute + 0–100 slider**, use `PlaybackVolumeRow` (`src/shared/components/music/PlaybackVolumeRow.tsx`) instead of hand-rolled `AppSlider` + icon button rows. Used in `ChordPlaybackSettingsPanel`, Words sound settings, and Chords playback popover.
+
+- Volume prop is **0–100** (integer-ish); internally maps to `AppLinearVolumeSlider` 0–1 gain.
+- Pair with `ChordPlaybackSettingsPanel` when the surface matches chart/chord playback (style, sound, drums toggle).
+- URL state for shareable links: [`docs/URL_STATE_PATTERN.md`](../../docs/URL_STATE_PATTERN.md).
+
 ### AppSlider value labels (thumb tooltips)
 
 When using `valueLabelDisplay="auto"` or `"on"`:

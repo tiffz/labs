@@ -7,6 +7,7 @@ import AppSlider from '../../shared/components/AppSlider';
 import AppTooltip from '../../shared/components/AppTooltip';
 import DiceIcon from '../../shared/components/DiceIcon';
 import { PlaybackSoundSelect } from '../../shared/components/music/PlaybackSoundSelect';
+import { PlaybackVolumeRow } from '../../shared/components/music/PlaybackVolumeRow';
 import DrumNotationMini from '../../shared/notation/DrumNotationMini';
 import { RhythmTemplateVariationControls } from '../../shared/notation/RhythmTemplateVariationControls';
 import { volumeIconName } from '../utils/appRhythmHelpers';
@@ -113,48 +114,26 @@ export default function WordsSoundSettingsPanel({
       <div className="words-dropdown-header">
         <strong>Sound settings</strong>
       </div>
-      <label className="words-slider-row">
-        master volume
-        <AppSlider
-          min={0}
-          max={100}
-          className="words-slider-input"
-          value={masterVolume}
-          onChange={(event) => onMasterVolumeChange(Number(event.target.value))}
-        />
-        <span>{masterVolume}</span>
-        <AppTooltip title={masterMuted ? 'Unmute master volume' : 'Mute master volume'}>
-          <button
-            type="button"
-            className="words-button words-button-icon words-icon-tooltip"
-            onClick={onMasterMutedToggle}
-            aria-label={masterMuted ? 'Unmute master volume' : 'Mute master volume'}
-          >
-            <span className="material-symbols-outlined">{volumeIconName(masterMuted)}</span>
-          </button>
-        </AppTooltip>
-      </label>
-      <label className="words-slider-row">
-        drums volume
-        <AppSlider
-          min={0}
-          max={100}
-          className="words-slider-input"
-          value={drumsVolume}
-          onChange={(event) => onDrumsVolumeChange(Number(event.target.value))}
-        />
-        <span>{drumsVolume}</span>
-        <AppTooltip title={drumsMuted ? 'Unmute drums' : 'Mute drums'}>
-          <button
-            type="button"
-            className="words-button words-button-icon words-icon-tooltip"
-            onClick={onDrumsMutedToggle}
-            aria-label={drumsMuted ? 'Unmute drums' : 'Mute drums'}
-          >
-            <span className="material-symbols-outlined">{volumeIconName(drumsMuted)}</span>
-          </button>
-        </AppTooltip>
-      </label>
+      <PlaybackVolumeRow
+        label="Master"
+        volume={masterVolume}
+        muted={masterMuted}
+        onVolumeChange={onMasterVolumeChange}
+        onMutedChange={(next) => {
+          if (next !== masterMuted) onMasterMutedToggle();
+        }}
+        aria-label="Master volume"
+      />
+      <PlaybackVolumeRow
+        label="Drums"
+        volume={drumsVolume}
+        muted={drumsMuted}
+        onVolumeChange={onDrumsVolumeChange}
+        onMutedChange={(next) => {
+          if (next !== drumsMuted) onDrumsMutedToggle();
+        }}
+        aria-label="Drums volume"
+      />
       <label className="words-slider-row">
         accent volume
         <AppSlider
@@ -223,27 +202,16 @@ export default function WordsSoundSettingsPanel({
             triggerClassName="words-chord-sound-select"
           />
         </div>
-        <label className="words-slider-row">
-          chord volume
-          <AppSlider
-            min={0}
-            max={100}
-            className="words-slider-input"
-            value={chordVolume}
-            onChange={(event) => onChordVolumeChange(Number(event.target.value))}
-          />
-          <span>{chordVolume}</span>
-          <AppTooltip title={chordMuted ? 'Unmute chords' : 'Mute chords'}>
-            <button
-              type="button"
-              className="words-button words-button-icon words-icon-tooltip"
-              onClick={onChordMutedToggle}
-              aria-label={chordMuted ? 'Unmute chords' : 'Mute chords'}
-            >
-              <span className="material-symbols-outlined">{volumeIconName(chordMuted)}</span>
-            </button>
-          </AppTooltip>
-        </label>
+        <PlaybackVolumeRow
+          label="Chords"
+          volume={chordVolume}
+          muted={chordMuted}
+          onVolumeChange={onChordVolumeChange}
+          onMutedChange={(next) => {
+            if (next !== chordMuted) onChordMutedToggle();
+          }}
+          aria-label="Chord volume"
+        />
       </div>
       <div className="words-chord-settings">
         <label className="word-rhythm-toggle words-toggle-inline">
@@ -256,29 +224,16 @@ export default function WordsSoundSettingsPanel({
         </label>
         {backingBeatEnabled ? (
           <>
-            <label className="words-slider-row">
-              backing drum volume
-              <AppSlider
-                min={0}
-                max={100}
-                className="words-slider-input"
-                value={backingBeatVolume}
-                onChange={(event) => onBackingBeatVolumeChange(Number(event.target.value))}
-              />
-              <span>{backingBeatVolume}</span>
-              <AppTooltip title={backingBeatMuted ? 'Unmute backing drums' : 'Mute backing drums'}>
-                <button
-                  type="button"
-                  className="words-button words-button-icon words-icon-tooltip"
-                  onClick={onBackingBeatMutedToggle}
-                  aria-label={backingBeatMuted ? 'Unmute backing drums' : 'Mute backing drums'}
-                >
-                  <span className="material-symbols-outlined">
-                    {volumeIconName(backingBeatMuted)}
-                  </span>
-                </button>
-              </AppTooltip>
-            </label>
+            <PlaybackVolumeRow
+              label="Backing"
+              volume={backingBeatVolume}
+              muted={backingBeatMuted}
+              onVolumeChange={onBackingBeatVolumeChange}
+              onMutedChange={(next) => {
+                if (next !== backingBeatMuted) onBackingBeatMutedToggle();
+              }}
+              aria-label="Backing drum volume"
+            />
             <label className="word-rhythm-toggle words-toggle-inline">
               <input
                 type="checkbox"

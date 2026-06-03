@@ -16,6 +16,9 @@ npm run check:doc-links
 echo "== presubmit: agent docs =="
 npm run check:agent-docs
 
+echo "== presubmit: css important baseline =="
+npm run check:css-important
+
 echo "== presubmit: lint =="
 npm run lint
 

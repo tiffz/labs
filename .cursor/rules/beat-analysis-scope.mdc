@@ -12,6 +12,6 @@ globs:
 
 2. **Regression harness** lives under `src/shared/beat/regression/` (synthetic audio hashes, BPM benchmark, CLI runners). Update CI/pre-commit paths when moving tests.
 
-3. **Tempo changes** — Update [`TEST_MATRIX.md`](../../src/shared/beat/TEST_MATRIX.md) and run `ioiTempoHint.test.ts` when touching octave/consensus logic.
+3. **Tempo changes** — Update [`TEST_MATRIX.md`](../../src/shared/beat/TEST_MATRIX.md) and run `ioiTempoHint.test.ts` when touching octave/consensus logic. UX contract: [`src/stanza/ANALYZE.md`](../../src/stanza/ANALYZE.md).
 
 4. **Import boundaries** — `src/stanza/**` must not import deleted app code; use `src/shared/beat/**` only.

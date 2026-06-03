@@ -3048,7 +3048,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "chords",
       "drums",
       "forms",
       "piano",
@@ -4037,7 +4036,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "ui"
+      "chords",
+      "ui",
+      "words"
     ],
     "exportType": "function",
     "demoId": "playback-volume-row"
@@ -4057,7 +4058,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "ui"
+      "chords",
+      "ui",
+      "words"
     ],
     "exportType": "type",
     "demoId": null
@@ -5128,6 +5131,64 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivebackuptypes-ts-assesslabsdrivebackupconflict",
+    "name": "assessLabsDriveBackupConflict",
+    "path": "src/shared/drive/labsDriveBackupTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared Drive backup conflict assessment (Stanza, Scales, future apps). App hooks supply envelope-specific \"has remote content\" checks.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivebackuptypes-ts-labsdriveconflictassessment",
+    "name": "LabsDriveConflictAssessment",
+    "path": "src/shared/drive/labsDriveBackupTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared Drive backup conflict assessment (Stanza, Scales, future apps). App hooks supply envelope-specific \"has remote content\" checks.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivebackuptypes-ts-labsdriveconflictreason",
+    "name": "LabsDriveConflictReason",
+    "path": "src/shared/drive/labsDriveBackupTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared Drive backup conflict assessment (Stanza, Scales, future apps). App hooks supply envelope-specific \"has remote content\" checks.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivebackuptypes-ts-labsdrivesyncmetafields",
+    "name": "LabsDriveSyncMetaFields",
+    "path": "src/shared/drive/labsDriveBackupTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared Drive backup conflict assessment (Stanza, Scales, future apps). App hooks supply envelope-specific \"has remote content\" checks.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
     "demoId": null
   },
   {

@@ -38,7 +38,16 @@ test.describe('Stanza stems blob URLs', () => {
     await expect(mainAudio).toHaveAttribute('src', /^blob:/);
 
     await page.locator('button.stanza-play-btn').click();
-    await page.waitForTimeout(2500);
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(() => {
+            const audio = document.querySelector('audio.stanza-local-audio') as HTMLAudioElement | null;
+            return Boolean(audio && !audio.paused && audio.currentTime > 0);
+          }),
+        { timeout: 8000 },
+      )
+      .toBe(true);
 
     expect(blobFailures, `blob request failures: ${blobFailures.join('; ')}`).toEqual([]);
   });

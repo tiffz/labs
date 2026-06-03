@@ -16,12 +16,13 @@ Instructions for AI coding assistants (Cursor, Claude, Codex, Gemini, etc.). [`G
 5. `STYLE_GUIDE.md` — TypeScript + UI/a11y + UX parallelism.
 6. `docs/SOURCE_OF_TRUTH.md` — doc precedence + [agent precedence](#agent-precedence).
 7. `docs/DOCUMENTATION_STRATEGY.md` — where to put new docs + [agent context map](docs/DOCUMENTATION_STRATEGY.md#agent-context-map).
-8. [`.cursor/rules/README.md`](.cursor/rules/README.md) — scoped Cursor rules.
-9. [`.cursor/skills/README.md`](.cursor/skills/README.md) — repo workflow skills.
+8. [`docs/DEVELOPMENT_AGENT_INDEX.md`](docs/DEVELOPMENT_AGENT_INDEX.md) — Tier B section pointers (read one section, not all of `DEVELOPMENT.md`).
+9. [`.cursor/rules/README.md`](.cursor/rules/README.md) — scoped Cursor rules.
+10. [`.cursor/skills/README.md`](.cursor/skills/README.md) — repo workflow skills.
 
 ### Nested `AGENTS.md`
 
-[`src/encore/`](src/encore/AGENTS.md) · [`src/stanza/`](src/stanza/AGENTS.md) · [`src/shared/`](src/shared/AGENTS.md) · [`src/words/`](src/words/AGENTS.md) · [`src/drums/`](src/drums/AGENTS.md) · [`src/piano/`](src/piano/AGENTS.md) · [`src/chords/`](src/chords/AGENTS.md)
+[`src/encore/`](src/encore/AGENTS.md) · [`src/stanza/`](src/stanza/AGENTS.md) · [`src/shared/`](src/shared/AGENTS.md) · [`src/words/`](src/words/AGENTS.md) · [`src/drums/`](src/drums/AGENTS.md) · [`src/piano/`](src/piano/AGENTS.md) · [`src/chords/`](src/chords/AGENTS.md) · [`src/cats/`](src/cats/AGENTS.md) · [`src/scales/`](src/scales/AGENTS.md)
 
 Apps without nested `AGENTS.md` → app `README.md` + this file.
 
@@ -52,10 +53,15 @@ Presubmit before done: [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre
 | Encore Originals chord paint                       | `originals/DEVELOPMENT.md`, `.cursor/rules/encore-originals-chord-paint.mdc`                                                                               | —                              |
 | Stanza viewer layout                               | `src/stanza/LAYOUT.md`, `.cursor/rules/stanza-viewer-layout.mdc`                                                                                           | —                              |
 | Workbench / multi-panel layout                     | `src/shared/layout/README.md`, `app-main.starter.tsx`                                                                                                      | —                              |
-| Tempo analysis / optional Stanza Analyze           | `src/shared/beat/TEST_MATRIX.md`, `.cursor/rules/beat-analysis-scope.mdc`                                                                                  | —                              |
+| Tempo analysis / optional Stanza Analyze           | `src/stanza/ANALYZE.md`, `src/shared/beat/TEST_MATRIX.md`, `.cursor/rules/beat-analysis-scope.mdc`                                                         | —                              |
 | User-visible copy                                  | `docs/USER_COPY_STYLE.md` (+ app `COPY_STYLE.md`)                                                                                                          | —                              |
 | Pitch visuals                                      | `src/pitch/DESIGN.md`                                                                                                                                      | —                              |
-| Rhythm presets                                     | `presetIntegrity.test.ts` after editing `RHYTHM_DATABASE`                                                                                                  | —                              |
+| Rhythm presets                                     | `presetIntegrity.test.ts` after editing `RHYTHM_DATABASE`                                                                                                  | `labs-rhythm-preset`           |
+| URL param sync / shareable links                   | [`docs/URL_STATE_PATTERN.md`](docs/URL_STATE_PATTERN.md)                                                                                                   | `labs-url-state`               |
+| New micro-app / app shell                          | `app-index.starter.html`, `spaGuardrails.test.ts`                                                                                                          | `labs-new-micro-app`           |
+| Drive backup / conflict UX                         | `SHARED_UI_CONVENTIONS.md` § Drive                                                                                                                         | `labs-drive-backup`            |
+| Dependency toolchain upgrade                       | [`docs/DEPENDENCY_UPGRADE_PLAN.md`](docs/DEPENDENCY_UPGRADE_PLAN.md)                                                                                       | `labs-dependency-upgrade`      |
+| Mid-refactor handoff                               | [`DEVELOPMENT.md`](DEVELOPMENT.md) § Iteration handoff                                                                                                     | `labs-iteration-handoff`       |
 | Material architecture (routing, OAuth, boundaries) | `docs/adr/README.md`, `.cursor/rules/architecture-decisions.mdc`                                                                                           | `labs-write-adr`               |
 | Regression / visual baselines                      | `docs/REGRESSION_WORKFLOW.md`                                                                                                                              | `labs-visual-regression`       |
 | Large component / App.tsx refactor                 | `docs/COMPONENT_DECOMPOSITION_PATTERN.md`                                                                                                                  | `labs-component-decomposition` |
@@ -121,6 +127,7 @@ When a task matches a skill, **read and follow it first** before improvising a w
 - [ ] New app directory → `importBoundaries.test.ts` + `check-import-boundaries.mjs`
 - [ ] Visual baselines updated **intentionally** only (skill `labs-visual-regression`)
 - [ ] Material architecture → ADR when practical (skill `labs-write-adr`)
+- [ ] Substantial session → offer retrospective (skill `labs-session-retrospective`)
 
 ## Repo Map
 

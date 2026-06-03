@@ -419,7 +419,7 @@ When stopping **mid-refactor** or after a multi-attempt bugfix (hand off **state
 2. If layout was touched, note whether browser verification and layout e2e were run.
 3. Do not leave duplicate width constants in TS; point to CSS tokens.
 
-Related: **process retrospective** → [`CONTINUOUS_PROCESS_IMPROVEMENT.md`](docs/CONTINUOUS_PROCESS_IMPROVEMENT.md). **Bug-fix handoff** → PR template § Bug-fix handoff. See [`AGENTS.md`](AGENTS.md) § Handoff types.
+Related: **process retrospective** → skill `labs-session-retrospective`. **Bug-fix handoff** → PR template § Bug-fix handoff. **Iteration handoff** → skill `labs-iteration-handoff`.
 
 ## Bundle Splitting
 
@@ -468,4 +468,4 @@ Cross-app playback hooks, notation render order, portaled picker skins, and load
 
 After meaningful work, review the session for durable process fixes—not only product fixes. Agents should **offer** a brief retrospective at session end; humans should do the same when closing a branch or PR.
 
-Full workflow: [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](docs/CONTINUOUS_PROCESS_IMPROVEMENT.md). Agent checklist: [`AGENTS.md`](AGENTS.md) § Continuous process improvement.
+Full workflow: [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](docs/CONTINUOUS_PROCESS_IMPROVEMENT.md). Agent skill: **`labs-session-retrospective`**. Index: [`docs/DEVELOPMENT_AGENT_INDEX.md`](docs/DEVELOPMENT_AGENT_INDEX.md).

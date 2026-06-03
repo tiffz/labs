@@ -18,4 +18,4 @@ When editing mini drum notation in Stanza or other narrow hosts:
 3. **Stanza** — `.stanza-drums-notation-frame`: `overflow: visible`, `flex-shrink: 0`, no `min-height: 0` on the frame. See [`src/stanza/PRACTICE_RAIL.md`](../../src/stanza/PRACTICE_RAIL.md).
 
 4. After layout/CSS changes, verify in the browser at practice-rail width (~320px), not only `/ui/` catalog.
-5. **Metronome dots** — bottom padding must use `stave.getYForLine(4)` via `resolveMiniNotationRenderHeight`; do not rely on layout `staveHeight` alone. Host `.vexflow-mini-container` must not use `overflow: hidden` (clips dots in Beat).
+5. **Metronome dots** — bottom padding must use `stave.getYForLine(4)` via `resolveMiniNotationRenderHeight`; do not rely on layout `staveHeight` alone. Host `.vexflow-mini-container` must not use `overflow: hidden` (clips dots).

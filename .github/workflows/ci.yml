@@ -97,6 +97,15 @@ jobs:
     - name: Validate agent docs and skills
       run: npm run check:agent-docs
 
+    - name: Doc link hygiene
+      run: npm run check:doc-links
+
+    - name: UI copy baseline (em dash)
+      run: npm run check:ui-copy
+
+    - name: CSS important baseline
+      run: npm run check:css-important
+
     - name: Generate shared catalog
       run: npm run generate:shared-catalog
 
@@ -139,6 +148,9 @@ jobs:
 
     - name: Run e2e smoke tests
       run: npm run test:e2e:smoke
+
+    - name: Run playback UI regression smokes
+      run: npx playwright test e2e/playback-ui-regressions.spec.ts
 
     # Audio regression hashes are already covered by `npm test` above
     # (src/shared/beat/regression/syntheticAudioGenerator.audio-regression.test.ts); no

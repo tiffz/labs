@@ -13,6 +13,7 @@ Nested **`AGENTS.md`** for Piano. Root policy: [`../../AGENTS.md`](../../AGENTS.
 ## Pitfalls
 
 - Score edits go through `storeTypes.ts` + `store.tsx`; keep reducer invariants in `store.test.ts`.
+- **`store.tsx`** (~1256 lines) — next split: reducer + provider; skill `labs-component-decomposition`.
 - Lazy-load heavy surfaces (`VideoPlayer`, modals) per `STYLE_GUIDE.md` bundle hygiene.
 - Prefer `midiToPitchStringForKey` from `scoreTypes` for VexFlow pitch strings.
 
