@@ -12256,6 +12256,549 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-applygreytosvgelement",
+    "name": "applyGreyToSVGElement",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-applynotestyle",
+    "name": "applyNoteStyle",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-attachpianofingering",
+    "name": "attachPianoFingering",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Piano fingerings: `StringNumber` uses stem/beam extents for above (stem up) and below (stem down), so beamed triplets align on a row instead of stair-stepping with each notehead (`FretHandFinger` / `Annotation`). `StringNumber.draw()` recomputes Y from stem extents and **does not** apply `setOffsetY` for ABOVE/BELOW, so clearance vs dense beams is tuned via `radius` (still no visible circle when `setDrawCircle(false)`).",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-bass-8va-threshold",
+    "name": "BASS_8VA_THRESHOLD",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-chord-font-size",
+    "name": "CHORD_FONT_SIZE",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-closestwrongpitchdelta",
+    "name": "closestWrongPitchDelta",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-createaccidentaltracker",
+    "name": "createAccidentalTracker",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-drawcodaglyph",
+    "name": "drawCodaGlyph",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-drawnavigationlabel",
+    "name": "drawNavigationLabel",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-drawsegnoglyph",
+    "name": "drawSegnoGlyph",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-duration-complexity-weight",
+    "name": "DURATION_COMPLEXITY_WEIGHT",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-findottavaruns",
+    "name": "findOttavaRuns",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-finger-crossing-box-fill",
+    "name": "FINGER_CROSSING_BOX_FILL",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-finger-crossing-box-stroke",
+    "name": "FINGER_CROSSING_BOX_STROKE",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-flat-order",
+    "name": "FLAT_ORDER",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-getbeamgroups",
+    "name": "getBeamGroups",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-getbeamgroupsfornotes",
+    "name": "getBeamGroupsForNotes",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-getkeyaccidentalmap",
+    "name": "getKeyAccidentalMap",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-getkeysignatureinfo",
+    "name": "getKeySignatureInfo",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-getvexflowkey",
+    "name": "getVexflowKey",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-greyed-current",
+    "name": "GREYED_CURRENT",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-greyed-note",
+    "name": "GREYED_NOTE",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-greyed-staff",
+    "name": "GREYED_STAFF",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-key-flats",
+    "name": "KEY_FLATS",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-key-normalize",
+    "name": "KEY_NORMALIZE",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-key-sharps",
+    "name": "KEY_SHARPS",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-liveactivenotematched",
+    "name": "liveActiveNoteMatched",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-lyric-font-size",
+    "name": "LYRIC_FONT_SIZE",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-renderottavabracket",
+    "name": "renderOttavaBracket",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-result-colors",
+    "name": "RESULT_COLORS",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-semitone-to-pixel-shift",
+    "name": "SEMITONE_TO_PIXEL_SHIFT",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-sharp-order",
+    "name": "SHARP_ORDER",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-treble-8va-threshold",
+    "name": "TREBLE_8VA_THRESHOLD",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-unionnoteheadboundsvexflow",
+    "name": "unionNoteheadBoundsVexFlow",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Union of each VexFlow `NoteHead` bbox only (no stems, flags, or modifiers). DOM-based mapping was flaky (`getSVGElement` / `getScreenCTM` edge cases); this uses the same layout numbers VexFlow already computed after `draw()`.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-wrong-pitch-ghost-max-distance",
+    "name": "WRONG_PITCH_GHOST_MAX_DISTANCE",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-notation-vexflowduration-ts-isdottedsixteenthduration",
     "name": "isDottedSixteenthDuration",
     "path": "src/shared/notation/vexFlowDuration.ts",
