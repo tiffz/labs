@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test, expect, type TestInfo } from '@playwright/test';
+import { VISUAL_ROUTE_SPECS } from '../routeRegistry';
 import {
   configureDeterministicBrowserState,
   waitForVisualReady,
@@ -8,24 +9,7 @@ import {
   type VisualRouteSpec,
 } from './visualTestUtils';
 
-const ROUTE_SPECS: VisualRouteSpec[] = [
-  { id: 'home', route: '/', title: /Tiff Zhang Labs/i, readySelector: '.container' },
-  { id: 'cats', route: '/cats/', title: /Cat Clicker/i, readySelector: '.world-viewport-container' },
-  { id: 'zines', route: '/zines/', title: /Zine Studio/i, readySelector: '#root' },
-  { id: 'corp', route: '/corp/', title: /Corporate Ladder/i, readySelector: '#map-container' },
-  { id: 'drums', route: '/drums/', title: /Darbuka Rhythm Trainer/i, readySelector: '#root' },
-  { id: 'story', route: '/story/', title: /Save the Cat/i, readySelector: '#root' },
-  { id: 'chords', route: '/chords/', title: /Chord Progression Generator/i, readySelector: '#root' },
-  { id: 'forms', route: '/forms/', title: /Form Intersections/i, readySelector: '#root' },
-  { id: 'words', route: '/words/', title: /Words in Rhythm/i, readySelector: '#root' },
-  { id: 'pitch', route: '/pitch/', title: /Find Your Pitch|Tiff Zhang Labs/i, readySelector: '#root' },
-  { id: 'piano', route: '/piano/', title: /Piano Practice/i, readySelector: '#root' },
-  { id: 'count', route: '/count/', title: /Count Me In/i, readySelector: '#root' },
-  { id: 'scales', route: '/scales/', title: /Learn Your Scales/i, readySelector: '#root' },
-  { id: 'ui', route: '/ui/', title: /UI Catalog/i, readySelector: '#root' },
-  { id: 'universal-tom', route: '/drums/universal_tom/', title: /Universal Tom Importer/i, readySelector: '#root' },
-  { id: 'encore', route: '/encore/', title: /Encore|Tiff Zhang Labs/i, readySelector: '#root' },
-];
+const ROUTE_SPECS: VisualRouteSpec[] = VISUAL_ROUTE_SPECS;
 
 test.describe('Visual regression baselines for app routes', () => {
   const thisDir = path.dirname(fileURLToPath(import.meta.url));

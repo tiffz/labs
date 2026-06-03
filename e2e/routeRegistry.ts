@@ -10,37 +10,196 @@ export type RouteSpec = {
   smoke: boolean;
   /** Included in e2e/visual/apps.visual.spec.ts */
   visual: boolean;
+  /** Baseline snapshot id (e.g. `cats-desktop.png` → `cats`) */
+  visualId?: string;
+  /** Wait selector for visual regression; defaults to `visibleSelector` */
+  visualReadySelector?: string;
+  /** Title matcher for visual tests when smoke title is too strict */
+  visualTitle?: RegExp;
   notes?: string;
 };
 
 export const APP_ROUTE_REGISTRY: RouteSpec[] = [
-  { route: '/', title: /Tiff Zhang Labs/i, visibleSelector: '.container', smoke: true, visual: true },
-  { route: '/cats/', title: /Cat Clicker/i, visibleSelector: '#root', smoke: true, visual: true },
-  { route: '/chords/', title: /Chord Progression Generator/i, visibleSelector: '#root', smoke: true, visual: true },
-  { route: '/corp/', title: /Corporate Ladder/i, visibleSelector: '#root', smoke: true, visual: true },
-  { route: '/count/', title: /Count Me In/i, visibleSelector: '#root', smoke: true, visual: true },
-  { route: '/drums/', title: /Darbuka Rhythm Trainer/i, visibleSelector: '#root', smoke: true, visual: true },
-  { route: '/encore/', title: /Encore - Tiff Zhang Labs/i, visibleSelector: '#root', smoke: true, visual: true },
-  { route: '/forms/', title: /Form Intersections/i, visibleSelector: '#root', smoke: true, visual: true },
-  { route: '/melodia/', title: /Melodia Online/i, visibleSelector: '#root', smoke: true, visual: false, notes: 'smoke only' },
-  { route: '/piano/', title: /Piano Practice/i, visibleSelector: '#root', smoke: true, visual: true },
-  { route: '/pitch/', title: /Find Your Pitch|Tiff Zhang Labs/i, visibleSelector: '#root', smoke: true, visual: true },
-  { route: '/scales/', title: /Learn Your Scales/i, visibleSelector: '#root', smoke: true, visual: true },
-  { route: '/stanza/', title: /Stanza · Tiff Zhang Labs/i, visibleSelector: '#root', smoke: true, visual: false, notes: 'layout e2e separate' },
-  { route: '/story/', title: /Save the Cat/i, visibleSelector: '#root', smoke: true, visual: true },
-  { route: '/sight/', title: /Color Sight Trainer/i, visibleSelector: '#root', smoke: true, visual: false, notes: 'smoke only' },
-  { route: '/agility/', title: /Vocal Agility Trainer/i, visibleSelector: '#root', smoke: true, visual: false, notes: 'smoke only' },
-  { route: '/ui/', title: /UI Catalog/i, visibleSelector: '#root', smoke: true, visual: true },
-  { route: '/words/', title: /Words in Rhythm/i, visibleSelector: '#root', smoke: true, visual: true },
-  { route: '/zines/', title: /Zine Studio/i, visibleSelector: '#root', smoke: true, visual: true },
+  {
+    route: '/',
+    title: /Tiff Zhang Labs/i,
+    visibleSelector: '.container',
+    smoke: true,
+    visual: true,
+    visualId: 'home',
+  },
+  {
+    route: '/cats/',
+    title: /Cat Clicker/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: true,
+    visualId: 'cats',
+    visualReadySelector: '.world-viewport-container',
+  },
+  {
+    route: '/chords/',
+    title: /Chord Progression Generator/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: true,
+    visualId: 'chords',
+  },
+  {
+    route: '/corp/',
+    title: /Corporate Ladder/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: true,
+    visualId: 'corp',
+    visualReadySelector: '#map-container',
+  },
+  {
+    route: '/count/',
+    title: /Count Me In/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: true,
+    visualId: 'count',
+  },
+  {
+    route: '/drums/',
+    title: /Darbuka Rhythm Trainer/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: true,
+    visualId: 'drums',
+  },
+  {
+    route: '/encore/',
+    title: /Encore - Tiff Zhang Labs/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: true,
+    visualId: 'encore',
+    visualTitle: /Encore|Tiff Zhang Labs/i,
+  },
+  {
+    route: '/forms/',
+    title: /Form Intersections/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: true,
+    visualId: 'forms',
+  },
+  {
+    route: '/melodia/',
+    title: /Melodia Online/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: false,
+    notes: 'smoke only',
+  },
+  {
+    route: '/piano/',
+    title: /Piano Practice/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: true,
+    visualId: 'piano',
+  },
+  {
+    route: '/pitch/',
+    title: /Find Your Pitch|Tiff Zhang Labs/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: true,
+    visualId: 'pitch',
+  },
+  {
+    route: '/scales/',
+    title: /Learn Your Scales/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: true,
+    visualId: 'scales',
+  },
+  {
+    route: '/stanza/',
+    title: /Stanza · Tiff Zhang Labs/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: false,
+    notes: 'layout e2e separate',
+  },
+  {
+    route: '/story/',
+    title: /Save the Cat/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: true,
+    visualId: 'story',
+  },
+  {
+    route: '/sight/',
+    title: /Color Sight Trainer/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: false,
+    notes: 'smoke only',
+  },
+  {
+    route: '/agility/',
+    title: /Vocal Agility Trainer/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: false,
+    notes: 'smoke only',
+  },
+  {
+    route: '/ui/',
+    title: /UI Catalog/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: true,
+    visualId: 'ui',
+  },
+  {
+    route: '/words/',
+    title: /Words in Rhythm/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: true,
+    visualId: 'words',
+  },
+  {
+    route: '/zines/',
+    title: /Zine Studio/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: true,
+    visualId: 'zines',
+  },
   {
     route: '/drums/universal_tom/',
     title: /Universal Tom Importer/i,
     visibleSelector: '#root',
     smoke: true,
     visual: true,
+    visualId: 'universal-tom',
   },
 ];
 
 export const SMOKE_ROUTE_SPECS = APP_ROUTE_REGISTRY.filter((r) => r.smoke);
-export const VISUAL_ROUTE_SPECS = APP_ROUTE_REGISTRY.filter((r) => r.visual);
+
+/** Shape consumed by e2e/visual/apps.visual.spec.ts */
+export type VisualRouteFromRegistry = {
+  id: string;
+  route: string;
+  title: RegExp;
+  readySelector: string;
+};
+
+export const VISUAL_ROUTE_SPECS: VisualRouteFromRegistry[] = APP_ROUTE_REGISTRY.filter(
+  (r) => r.visual,
+).map((r) => ({
+  id: r.visualId ?? (r.route.replace(/\//g, '-').replace(/^-|-$/g, '') || 'home'),
+  route: r.route,
+  title: r.visualTitle ?? r.title,
+  readySelector: r.visualReadySelector ?? r.visibleSelector,
+}));
