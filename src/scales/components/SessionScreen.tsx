@@ -5,7 +5,6 @@ import {
   useCallback,
   useState,
   useMemo,
-  type ReactNode,
 } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -33,7 +32,6 @@ import { pickPracticeTip } from '../curriculum/practiceTips';
 import {
   getNewCliffConceptKeys,
   stuckJumpCoachingModalTip,
-  type ConceptKey,
 } from '../curriculum/concepts';
 import { pickShakyHint } from './shakyHint';
 import type { PracticeRecord } from '../progress/types';
@@ -41,7 +39,6 @@ import {
   getExerciseProgress,
   getAdvancementCriteria,
   formatAdvancementCleanRunsLabel,
-  formatDwellCleanRunsSubline,
   getCleanRunStreak,
   isPracticingAdvancementStage,
   runOutcomeTier,
@@ -86,104 +83,29 @@ import {
   PIANO_ADVANCE_BUTTON_TOOLTIP_MIC_ONLY,
   type PianoDoubleTapArm,
 } from '../utils/pianoAdvanceDoubleTap';
-
-// Drill = voluntary polish loop. Strict 100% required to keep the streak,
-// 3 perfect-in-a-row to complete. Stuck threshold is generous enough to
-// not nag a learner who just needs another minute, but kicks in before
-// fatigue-grooved errors set in.
-const DRILL_TARGET_PERFECT_RUNS = 3;
-const DRILL_STUCK_AT = 8;
-const DRILL_SNOOZE_BY = 4;
-// Regular auto-loop "Try going back?" — requires this many consecutive
-// rough (red-tier) runs on the same stage; snooze bumps that bar.
-const REGULAR_STUCK_AT = 8;
-/** Jump-coaching modal only after this many finished attempts on the stage (consecutive-rough gate can still be high from history). */
-const REGULAR_STUCK_MIN_ATTEMPTS_FOR_JUMP = 4;
-/** How long the free-tempo "Nice. ready to start" overlay stays before scored playback. */
-const FREE_TEMPO_WARMUP_UI_MS = 2200;
-
-/** Sample cliff keys for debug preview of jump-coaching stuck copy. */
-const DEBUG_PREVIEW_JUMP_CONCEPT_KEYS: ConceptKey[] = ['thumbUnder'];
-
-const DEBUG_SHAKY_MOCK_TIMING: ExerciseResult = {
-  accuracy: 0.5,
-  correct: 5,
-  total: 20,
-  advanced: false,
-  breakdown: { perfect: 5, early: 8, late: 5, wrongPitch: 0, missed: 2 },
-};
-
-const DEBUG_SHAKY_MOCK_PITCH: ExerciseResult = {
-  accuracy: 0.55,
-  correct: 6,
-  total: 20,
-  advanced: false,
-  breakdown: { perfect: 6, early: 1, late: 1, wrongPitch: 10, missed: 2 },
-};
-
-const DEBUG_SHAKY_MOCK_FEW_NOTES: ExerciseResult = {
-  accuracy: 0.2,
-  correct: 2,
-  total: 20,
-  advanced: false,
-  breakdown: { perfect: 2, early: 0, late: 0, wrongPitch: 0, missed: 18 },
-};
-
-/** Cached last auto-loop verdict so the chip can stay visible through metronome count-in. */
-type DwellBadgeSnapshot = {
-  result: ExerciseResult;
-  inDrill: boolean;
-  drillStreak: number;
-  cleanStreak: number;
-  displayRunStreak: number;
-  requiredRuns: number;
-  practicingAdvancementStage: boolean;
-  lastWasClean: boolean;
-  lastRunOutcomeTier: RunOutcomeTier;
-};
-
-function Icon({ name, size = 20 }: { name: string; size?: number }) {
-  return (
-    <span
-      className="material-symbols-outlined"
-      style={{
-        fontSize: size,
-        lineHeight: 1,
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      {name}
-    </span>
-  );
-}
-
-
-// Short labels for the header chip cluster. The full "Right hand" /
-// "Left hand" / "Both hands" strings are no longer needed: the header
-// chip is the only place hand info renders.
-const HAND_SHORT = { right: 'RH', left: 'LH', both: 'Both' } as const;
-
-const NOTE_NAMES = ['C', 'C\u266F', 'D', 'D\u266F', 'E', 'F', 'F\u266F', 'G', 'G\u266F', 'A', 'A\u266F', 'B'];
-function midiToNoteName(midi: number): string { return NOTE_NAMES[midi % 12]; }
-
-function AdvanceActionTooltip({ children, title }: { children: ReactNode; title: string }) {
-  return (
-    <Tooltip
-      arrow
-      describeChild
-      enterDelay={300}
-      placement="top"
-      disableInteractive
-      title={title}
-    >
-      <Box component="span" sx={{ display: 'inline-flex', justifyContent: 'center', maxWidth: '100%' }}>
-        {children}
-      </Box>
-    </Tooltip>
-  );
-}
+import {
+  DEBUG_PREVIEW_JUMP_CONCEPT_KEYS,
+  DEBUG_SHAKY_MOCK_FEW_NOTES,
+  DEBUG_SHAKY_MOCK_PITCH,
+  DEBUG_SHAKY_MOCK_TIMING,
+  DRILL_SNOOZE_BY,
+  DRILL_STUCK_AT,
+  DRILL_TARGET_PERFECT_RUNS,
+  FREE_TEMPO_WARMUP_UI_MS,
+  HAND_SHORT,
+  REGULAR_STUCK_AT,
+  REGULAR_STUCK_MIN_ATTEMPTS_FOR_JUMP,
+  type DwellBadgeSnapshot,
+} from './sessionScreenConstants';
+import {
+  buildLastRunPracticeRecord,
+  computeDwellToastCopy,
+  dwellStreakDenominator,
+  midiToNoteName,
+} from './sessionScreenHelpers';
+import { SessionAdvanceActionTooltip as AdvanceActionTooltip } from './sessionScreen/SessionAdvanceActionTooltip';
+import { SessionExerciseResultBreakdown } from './sessionScreen/SessionExerciseResultBreakdown';
+import { SessionScreenIcon as Icon } from './sessionScreen/SessionScreenIcon';
 
 export default function SessionScreen() {
   const labsDebug = readLabsDebugFromLocation().debug;
@@ -1440,17 +1362,11 @@ export default function SessionScreen() {
     })
     : null;
   const cleanThresholdPct = Math.round(advancementCriteria.threshold * 100);
-  const lastRunPracticeRecord: PracticeRecord | null = lastExerciseResult && exerciseDef
-    ? {
-        exerciseId: activeExercise.exerciseId,
-        stageId: activeExercise.stageId,
-        timestamp: 0,
-        accuracy: lastExerciseResult.accuracy,
-        noteCount: lastExerciseResult.total,
-        correctCount: lastExerciseResult.correct,
-        breakdown: lastExerciseResult.breakdown,
-      }
-    : null;
+  const lastRunPracticeRecord: PracticeRecord | null = buildLastRunPracticeRecord(
+    lastExerciseResult,
+    activeExercise,
+    exerciseDef,
+  );
   const lastRunOutcomeTier: RunOutcomeTier = lastRunPracticeRecord && currentStage && exerciseDef
     ? runOutcomeTier(lastRunPracticeRecord, exerciseDef.exercise.kind, currentStage, isFinalStage)
     : 'rough';
@@ -1775,45 +1691,7 @@ export default function SessionScreen() {
             from rather than just a single percentage. Only non-zero
             categories render to avoid noise.
           */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-              columnGap: 2,
-              rowGap: 0.5,
-              mb: 1.5,
-            }}
-          >
-            {([
-              ['Perfect',  lastExerciseResult.breakdown.perfect,    '#10b981'],
-              ['Early',    lastExerciseResult.breakdown.early,      '#3b82f6'],
-              ['Late',     lastExerciseResult.breakdown.late,       '#f59e0b'],
-              ['Wrong',    lastExerciseResult.breakdown.wrongPitch, '#ef4444'],
-              ['Missed',   lastExerciseResult.breakdown.missed,     '#94a3b8'],
-            ] as const)
-              .filter(([, count]) => count > 0)
-              .map(([label, count, color]) => (
-                <Box
-                  key={label}
-                  sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}
-                >
-                  <Box
-                    aria-hidden="true"
-                    sx={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      bgcolor: color,
-                      flexShrink: 0,
-                    }}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    {count} {label.toLowerCase()}
-                  </Typography>
-                </Box>
-              ))}
-          </Box>
+          <SessionExerciseResultBreakdown breakdown={lastExerciseResult.breakdown} />
           {boundary && (
             <Box
               role="status"
@@ -2161,40 +2039,29 @@ export default function SessionScreen() {
             ? (inDrill ? drillStreak : (practicingAdvancementStage ? cleanStreak : rawCleanStreak))
             : (inDrill ? snap!.drillStreak : snap!.displayRunStreak);
           const streakDenominator = live
-            ? (inDrill ? DRILL_TARGET_PERFECT_RUNS : advancementCriteria.runs)
-            : (inDrill ? DRILL_TARGET_PERFECT_RUNS : snap!.requiredRuns);
+            ? dwellStreakDenominator(inDrill, advancementCriteria.runs)
+            : dwellStreakDenominator(inDrill, snap!.requiredRuns);
           const wasClean = live ? lastWasClean : snap!.lastWasClean;
           const outcomeTier = live ? lastRunOutcomeTier : snap!.lastRunOutcomeTier;
-
-          const isPerfect = result.accuracy >= 1;
-          const statusOk = inDrill ? isPerfect : wasClean;
-          const statusNear = !inDrill && outcomeTier === 'near';
-          const statusBg = statusOk ? 'success.main' : statusNear ? 'warning.main' : 'error.main';
-          const statusContrast = statusOk
-            ? 'success.contrastText'
-            : statusNear ? 'warning.contrastText' : 'error.contrastText';
-          const statusHeadlineColor = statusOk
-            ? 'success.main'
-            : statusNear ? 'warning.main' : 'error.main';
-          const dwellStatusIcon = statusOk ? 'check' : statusNear ? 'schedule' : 'close';
-          const percent = Math.round(result.accuracy * 100);
-          const headline = inDrill
-            ? (isPerfect ? 'Perfect' : 'Reset')
-            : (wasClean ? 'Clean' : statusNear ? 'Almost' : 'Again');
           const onAdvancementStage = live
             ? practicingAdvancementStage
             : snap!.practicingAdvancementStage;
-          const subline =
-            inDrill
-              ? `${percent}% · ${streakNumerator}/${streakDenominator}`
-              : streakDenominator > 0
-                ? formatDwellCleanRunsSubline(
-                  percent,
-                  streakNumerator,
-                  streakDenominator,
-                  onAdvancementStage ? 'advancement' : 'stage',
-                )
-                : `${percent}%`;
+          const {
+            statusBg,
+            statusContrast,
+            statusHeadlineColor,
+            dwellStatusIcon,
+            headline,
+            subline,
+          } = computeDwellToastCopy({
+            result,
+            inDrill,
+            wasClean,
+            outcomeTier,
+            streakNumerator,
+            streakDenominator,
+            onAdvancementStage,
+          });
           const secondsLeft = loopCountdown ?? Math.ceil(AUTO_LOOP_DWELL_MS / 1000);
           const showLoopChrome = live && !fromCountIn;
           return (
