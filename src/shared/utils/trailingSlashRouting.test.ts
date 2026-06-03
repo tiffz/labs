@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildAppBasePathsFromEntryPaths, getCanonicalTrailingSlashRedirect } from './trailingSlashRouting';
+import {
+  buildAppBasePathsFromEntryPaths,
+  getCanonicalTrailingSlashRedirect,
+  getLegacyBeatRedirect,
+} from './trailingSlashRouting';
 
 describe('trailingSlashRouting', () => {
   it('builds app base paths from Vite entry paths', () => {
@@ -26,5 +30,13 @@ describe('trailingSlashRouting', () => {
     expect(getCanonicalTrailingSlashRedirect('/words/', appBasePaths)).toBeNull();
     expect(getCanonicalTrailingSlashRedirect('/unknown', appBasePaths)).toBeNull();
     expect(getCanonicalTrailingSlashRedirect('/', appBasePaths)).toBeNull();
+  });
+
+  it('redirects legacy Find the Beat routes to Stanza', () => {
+    expect(getLegacyBeatRedirect('/beat')).toBe('/stanza/');
+    expect(getLegacyBeatRedirect('/beat/')).toBe('/stanza/');
+    expect(getLegacyBeatRedirect('/beat?v=dQw4w9WgXcQ')).toBe('/stanza/?v=dQw4w9WgXcQ');
+    expect(getLegacyBeatRedirect('/beat/?v=dQw4w9WgXcQ')).toBe('/stanza/?v=dQw4w9WgXcQ');
+    expect(getLegacyBeatRedirect('/stanza/')).toBeNull();
   });
 });

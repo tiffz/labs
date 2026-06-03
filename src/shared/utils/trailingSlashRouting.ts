@@ -24,6 +24,14 @@ export function getCanonicalTrailingSlashRedirect(
   return `${pathname}/${queryString ? `?${queryString}` : ''}`;
 }
 
+/** Legacy Find the Beat URLs → Stanza (query preserved; hash handled by static redirect HTML). */
+export function getLegacyBeatRedirect(url: string | undefined): string | null {
+  if (!url) return null;
+  const [pathname, queryString = ''] = url.split('?');
+  if (pathname !== '/beat' && pathname !== '/beat/') return null;
+  return `/stanza/${queryString ? `?${queryString}` : ''}`;
+}
+
 function normalizePath(input: string): string {
   return input.replace(/\\/g, '/');
 }

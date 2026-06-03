@@ -12,6 +12,7 @@ import { compression } from 'vite-plugin-compression2';
 import {
   buildAppBasePathsFromEntryPaths,
   getCanonicalTrailingSlashRedirect,
+  getLegacyBeatRedirect,
 } from './src/shared/utils/trailingSlashRouting';
 import {
   parseDebugLogPostBody,
@@ -187,6 +188,25 @@ function labsCookieConsentVitePlugin(): Plugin {
   };
 }
 
+function applyLegacyBeatRedirect(
+  req: IncomingMessage,
+  res: ServerResponse,
+  next: Connect.NextFunction
+): void {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    next();
+    return;
+  }
+  const redirectTarget = getLegacyBeatRedirect(req.url);
+  if (!redirectTarget) {
+    next();
+    return;
+  }
+  res.statusCode = 302;
+  res.setHeader('Location', redirectTarget);
+  res.end();
+}
+
 function applyTrailingSlashRedirect(
   req: IncomingMessage,
   res: ServerResponse,
@@ -307,6 +327,15 @@ export default defineConfig({
   plugins: [
     encoreDrivePublicDevProxyPlugin(),
     labsCookieConsentVitePlugin(),
+    {
+      name: 'legacy-beat-redirect',
+      configureServer(server: ViteDevServer) {
+        server.middlewares.use(applyLegacyBeatRedirect);
+      },
+      configurePreviewServer(server: PreviewServer) {
+        server.middlewares.use(applyLegacyBeatRedirect);
+      },
+    },
     {
       name: 'canonical-trailing-slash-redirect',
       configureServer(server: ViteDevServer) {

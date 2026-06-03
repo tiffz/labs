@@ -15437,6 +15437,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-trailingslashrouting-ts-getlegacybeatredirect",
+    "name": "getLegacyBeatRedirect",
+    "path": "src/shared/utils/trailingSlashRouting.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Legacy Find the Beat URLs → Stanza (query preserved; hash handled by static redirect HTML).",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-triggerblobdownload-ts-triggerblobdownload",
     "name": "triggerBlobDownload",
     "path": "src/shared/utils/triggerBlobDownload.ts",
