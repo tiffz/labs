@@ -127,9 +127,8 @@ export default [
   // directly to stdout by design; the serverLogger policy does not apply.
   {
     files: [
-      'src/beat/tests/**/*.{ts,tsx}',
-      'src/beat/utils/nodeAudio.ts',
-      'src/beat/utils/bpmAccuracyTest.ts',
+      'src/shared/beat/regression/**/*.{ts,tsx}',
+      'src/shared/beat/bpmAccuracyTest.ts',
       'scripts/**/*.{ts,mjs,js}',
     ],
     rules: {

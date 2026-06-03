@@ -161,7 +161,6 @@ describe('React StrictMode policy', () => {
   // Removing an app from this opt-out list requires a manual StrictMode audit
   // pass — do not add new apps here.
   const STRICT_MODE_OPT_OUT = new Set<string>([
-    'beat',
     'chords',
     'corp',
     'drums',

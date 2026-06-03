@@ -49,32 +49,18 @@ import { clampMarkerTimeBetweenNeighbours } from '../utils/stanzaMarkerSpacing';
 import type { StanzaPlaybackLoopMode } from '../utils/stanzaPlaybackLoop';
 import { computeLoopHull } from '../utils/stanzaPlaybackLoop';
 import { stanzaPlayheadDisplayTime } from '../utils/stanzaPlayheadDisplayTime';
+import {
+  formatStanzaTimelineClock,
+  STANZA_TIMELINE_BAR_HELP,
+  STANZA_TIMELINE_HOVER_CLOSE_MS,
+  STANZA_TIMELINE_SELECTION_SPAN_WASH,
+} from '../utils/stanzaTimelineHelpers';
 import AppTooltip from '../../shared/components/AppTooltip';
 import PlaybackSpeedControl from '../../shared/components/music/PlaybackSpeedControl';
 import StanzaPlaybackTransformChip from './StanzaPlaybackTransformChip';
 import StanzaSectionHoverCard from './StanzaSectionHoverCard';
 
 export type { StanzaPlaybackLoopMode };
-
-const SELECTION_SPAN_WASH = 'rgba(232, 72, 160, 0.16)';
-
-/**
- * Short, sentence-case help text shown via the (i) icon next to the timeline.
- * Per docs/USER_COPY_STYLE.md: short sentences, no em dashes, scannable.
- */
-const BAR_HELP =
-  'Drag the bar or playhead to scrub. Click a section to jump there. Shift+click extends the selection across sections. ' +
-  'The light pink fill is your selection span: pad and nudge it without touching markers. ' +
-  'Loop icons play once, loop the whole song, or loop the selection.';
-
-const HOVER_CLOSE_MS = 220;
-
-function formatClock(sec: number): string {
-  if (!Number.isFinite(sec) || sec < 0) return '0:00';
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
 
 export type StanzaMarkersChangeContext = {
   /** Markers at pointer-down when the user started dragging a boundary (for undo). */
@@ -436,7 +422,7 @@ export default function StanzaTimeline({
       commitSectionRenameRef.current();
       setHoverCard(null);
       hoverCloseTimer.current = null;
-    }, HOVER_CLOSE_MS);
+    }, STANZA_TIMELINE_HOVER_CLOSE_MS);
   }, [clearHoverClose]);
 
   const positionHoverCardFromSegment = useCallback((segmentId: string) => {
@@ -744,7 +730,7 @@ export default function StanzaTimeline({
             </Box>
             <Box className="stanza-playback-chip stanza-playback-chip--meta" aria-label="Playback position and speed">
               <Typography component="span" className="stanza-playback-time">
-                {formatClock(playheadDisplaySec)} / {formatClock(duration)}
+                {formatStanzaTimelineClock(playheadDisplaySec)} / {formatStanzaTimelineClock(duration)}
               </Typography>
               <span className="stanza-playback-chip-divider" aria-hidden />
               <PlaybackSpeedControl
@@ -806,7 +792,7 @@ export default function StanzaTimeline({
                 </AppTooltip>
               </Box>
             </Box>
-            <AppTooltip title={BAR_HELP}>
+            <AppTooltip title={STANZA_TIMELINE_BAR_HELP}>
               <IconButton size="small" className="stanza-playback-chip-btn stanza-playback-chip-btn--solo" aria-label="Timeline tips">
                 <InfoOutlinedIcon fontSize="small" />
               </IconButton>
@@ -854,7 +840,7 @@ export default function StanzaTimeline({
                 top: 0,
                 bottom: 0,
                 borderRadius: 'inherit',
-                background: SELECTION_SPAN_WASH,
+                background: STANZA_TIMELINE_SELECTION_SPAN_WASH,
                 pointerEvents: 'none',
                 zIndex: 1,
                 boxSizing: 'border-box',
@@ -908,7 +894,7 @@ export default function StanzaTimeline({
                   }}
                   onPointerEnter={(e) => handleSectionPointerEnter(seg.id, e)}
                   onPointerLeave={scheduleHoverClose}
-                  aria-label={`Section ${seg.label}, ${formatClock(seg.start)} to ${formatClock(seg.end)}${practiced ? ', has practice time logged' : ''}${isSkipped ? ', skipped during playback' : ''}`}
+                  aria-label={`Section ${seg.label}, ${formatStanzaTimelineClock(seg.start)} to ${formatStanzaTimelineClock(seg.end)}${practiced ? ', has practice time logged' : ''}${isSkipped ? ', skipped during playback' : ''}`}
                   aria-pressed={isSelected}
                   style={{ width: `${widthPct}%` }}
                 >

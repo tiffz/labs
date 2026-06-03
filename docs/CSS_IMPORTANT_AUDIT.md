@@ -12,7 +12,7 @@ Current counts (run with `rg '!important' src --type css -c` to refresh):
 
 | File                                                  | Count |
 | ----------------------------------------------------- | ----: |
-| `src/beat/styles/beat.css`                            |    65 |
+| `src/stanza/stanza.css`                               |    15 |
 | `src/cats/styles/cats.css`                            |    40 |
 | `src/shared/components/music/appSharedThemes.css`     |    25 |
 | `src/chords/styles/chords.css`                        |    23 |

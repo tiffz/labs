@@ -217,9 +217,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "audio"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -235,9 +233,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "interface",
     "demoId": null
   },
@@ -252,9 +248,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "audio"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -306,7 +300,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "words"
     ],
@@ -326,7 +319,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "words"
     ],
@@ -344,9 +336,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "audio"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -1247,9 +1237,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "api"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "interface",
     "demoId": null
   },
@@ -1264,9 +1252,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "api"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "const",
     "demoId": null
   },
@@ -1281,9 +1267,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "api"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "const",
     "demoId": null
   },
@@ -1298,9 +1282,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "api"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "const",
     "demoId": null
   },
@@ -1313,9 +1295,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "owner": "shared-core",
     "description": "No JSDoc summary provided.",
     "tags": [],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -1330,9 +1310,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "api"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "interface",
     "demoId": null
   },
@@ -1440,9 +1418,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "api"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "interface",
     "demoId": null
   },
@@ -1455,9 +1431,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "owner": "shared-core",
     "description": "No JSDoc summary provided.",
     "tags": [],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -1470,9 +1444,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "owner": "shared-core",
     "description": "No JSDoc summary provided.",
     "tags": [],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -1499,19 +1471,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Lightweight key guess from uploaded audio (Essentia KeyExtractor consensus). Used by Stanza original-key field; tempo analysis stays separate.",
-    "tags": [],
-    "appsUsing": [],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-beat-detectsongkey-ts-formatdetectedsongkey",
-    "name": "formatDetectedSongKey",
-    "path": "src/shared/beat/detectSongKey.ts",
-    "kind": "utility",
-    "stability": "stable",
-    "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -1792,19 +1751,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-beat-findthebeatanalyzer-ts-regeneratebeats",
-    "name": "regenerateBeats",
-    "path": "src/shared/beat/findTheBeatAnalyzer.ts",
-    "kind": "utility",
-    "stability": "stable",
-    "owner": "shared-core",
-    "description": "Update beat positions when BPM is manually changed",
-    "tags": [],
-    "appsUsing": [],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
     "id": "src-shared-beat-gapfermatadetector-ts-detectgaponsets",
     "name": "detectGapOnsets",
     "path": "src/shared/beat/gapFermataDetector.ts",
@@ -2018,6 +1964,403 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-audiobuffer-ts-createaudiobuffer",
+    "name": "createAudioBuffer",
+    "path": "src/shared/beat/regression/audioBuffer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Create a UniversalAudioBuffer from raw audio samples",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-audiobuffer-ts-isaudiobuffer",
+    "name": "isAudioBuffer",
+    "path": "src/shared/beat/regression/audioBuffer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Type guard to check if an object is a UniversalAudioBuffer",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-audiobuffer-ts-universalaudiobuffer",
+    "name": "UniversalAudioBuffer",
+    "path": "src/shared/beat/regression/audioBuffer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Minimal audio buffer interface for cross-platform compatibility",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-nodeaudio-ts-extractaudiobuffer",
+    "name": "extractAudioBuffer",
+    "path": "src/shared/beat/regression/nodeAudio.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Extract audio from a video/audio file and return as UniversalAudioBuffer",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-nodeaudio-ts-findmediafile",
+    "name": "findMediaFile",
+    "path": "src/shared/beat/regression/nodeAudio.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Find a media file by name, searching common directories",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-nodeaudio-ts-isffmpegavailable",
+    "name": "isFFmpegAvailable",
+    "path": "src/shared/beat/regression/nodeAudio.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Check if ffmpeg is available",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-nodeaudio-ts-listavailablemediafiles",
+    "name": "listAvailableMediaFiles",
+    "path": "src/shared/beat/regression/nodeAudio.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "List available media files in the hidden directory",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-syntheticaudiogenerator-ts-bpmtestcase",
+    "name": "BpmTestCase",
+    "path": "src/shared/beat/regression/syntheticAudioGenerator.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Test case definition for BPM detection testing",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-syntheticaudiogenerator-ts-generatesyntheticaudio",
+    "name": "generateSyntheticAudio",
+    "path": "src/shared/beat/regression/syntheticAudioGenerator.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Generate a synthetic audio buffer with a known BPM Returns a MockAudioBuffer that can be used with our detection algorithms",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-syntheticaudiogenerator-ts-mockaudiobuffer",
+    "name": "MockAudioBuffer",
+    "path": "src/shared/beat/regression/syntheticAudioGenerator.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Minimal AudioBuffer-like interface for testing",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-syntheticaudiogenerator-ts-octave-ambiguity-test-cases",
+    "name": "OCTAVE_AMBIGUITY_TEST_CASES",
+    "path": "src/shared/beat/regression/syntheticAudioGenerator.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Octave ambiguity test cases (tempos that could be detected at half/double) Uses realistic 'mixed' patterns to give proper onset density cues Focused on the core reliable range (70-105 BPM)",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-syntheticaudiogenerator-ts-standard-bpm-test-cases",
+    "name": "STANDARD_BPM_TEST_CASES",
+    "path": "src/shared/beat/regression/syntheticAudioGenerator.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Standard test suite covering various BPM ranges and patterns Uses 'mixed' type for most tests as it provides realistic onset density Note: Synthetic audio has different characteristics than real music. Very slow (<70) and very fast (>120) tempos may have octave ambiguity.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-syntheticaudiogenerator-ts-syntheticaudioconfig",
+    "name": "SyntheticAudioConfig",
+    "path": "src/shared/beat/regression/syntheticAudioGenerator.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Configuration for synthetic audio generation",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectorcore-ts-analyzesections",
+    "name": "analyzeSections",
+    "path": "src/shared/beat/regression/tempoDetectorCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Analyze tempo variations across different sections of the song",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectorcore-ts-analyzetempocomplete",
+    "name": "analyzeTempoComplete",
+    "path": "src/shared/beat/regression/tempoDetectorCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Complete tempo analysis",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectorcore-ts-detectmusicstart",
+    "name": "detectMusicStart",
+    "path": "src/shared/beat/regression/tempoDetectorCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Detect the music start time (when audio becomes significant)",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectorcore-ts-detectonsets",
+    "name": "detectOnsets",
+    "path": "src/shared/beat/regression/tempoDetectorCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Energy-based onset detection Detects sudden increases in audio energy that typically correspond to note attacks, drum hits, etc.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectorcore-ts-estimatetempo",
+    "name": "estimateTempo",
+    "path": "src/shared/beat/regression/tempoDetectorCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Estimate tempo from onset times using autocorrelation Autocorrelation finds periodicities in the onset pattern, which is more robust than simple IOI histograms.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectorcore-ts-sectionalanalysis",
+    "name": "SectionalAnalysis",
+    "path": "src/shared/beat/regression/tempoDetectorCore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Result of sectional tempo analysis",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectorcore-ts-tempoanalysisresult",
+    "name": "TempoAnalysisResult",
+    "path": "src/shared/beat/regression/tempoDetectorCore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Result of tempo analysis",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectorinterface-ts-gettempodetector",
+    "name": "getTempoDetector",
+    "path": "src/shared/beat/regression/tempoDetectorInterface.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Get a tempo detector by ID",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectorinterface-ts-listtempodetectors",
+    "name": "listTempoDetectors",
+    "path": "src/shared/beat/regression/tempoDetectorInterface.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "List all available tempo detectors",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectorinterface-ts-registertempodetector",
+    "name": "registerTempoDetector",
+    "path": "src/shared/beat/regression/tempoDetectorInterface.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Register a tempo detector",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectorinterface-ts-tempodetectionresult",
+    "name": "TempoDetectionResult",
+    "path": "src/shared/beat/regression/tempoDetectorInterface.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Result from a tempo detection algorithm",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectorinterface-ts-tempodetector",
+    "name": "TempoDetector",
+    "path": "src/shared/beat/regression/tempoDetectorInterface.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Common interface for tempo detection algorithms",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectorinterface-ts-tempodetectors",
+    "name": "tempoDetectors",
+    "path": "src/shared/beat/regression/tempoDetectorInterface.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Registry of available tempo detection algorithms",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectors-ts-autocorrelationdetector",
+    "name": "autocorrelationDetector",
+    "path": "src/shared/beat/regression/tempoDetectors.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Tempo Detector Implementations Provides implementations of different tempo detection algorithms wrapped in a common interface for easy comparison.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectors-ts-essentiaensembledetector",
+    "name": "essentiaEnsembleDetector",
+    "path": "src/shared/beat/regression/tempoDetectors.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Tempo Detector Implementations Provides implementations of different tempo detection algorithms wrapped in a common interface for easy comparison.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-beat-regression-tempodetectors-ts-ioihistogramdetector",
+    "name": "ioiHistogramDetector",
+    "path": "src/shared/beat/regression/tempoDetectors.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Tempo Detector Implementations Provides implementations of different tempo detection algorithms wrapped in a common interface for easy comparison.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -2413,32 +2756,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-beat-temporegions-ts-geteffectivebpm",
-    "name": "getEffectiveBpm",
-    "path": "src/shared/beat/tempoRegions.ts",
-    "kind": "utility",
-    "stability": "stable",
-    "owner": "shared-core",
-    "description": "Get the effective BPM at a specific time For steady regions, returns the region's BPM For accelerando/ritardando, interpolates between start and target BPM For rubato/fermata, returns null",
-    "tags": [],
-    "appsUsing": [],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-beat-temporegions-ts-getregionattime",
-    "name": "getRegionAtTime",
-    "path": "src/shared/beat/tempoRegions.ts",
-    "kind": "utility",
-    "stability": "stable",
-    "owner": "shared-core",
-    "description": "Get the tempo region at a specific time",
-    "tags": [],
-    "appsUsing": [],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
     "id": "src-shared-beat-temporegions-ts-steadyregionoptions",
     "name": "SteadyRegionOptions",
     "path": "src/shared/beat/tempoRegions.ts",
@@ -2624,7 +2941,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -2648,7 +2964,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -2672,7 +2987,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -2696,7 +3010,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "ui"
     ],
     "exportType": "default",
@@ -2716,7 +3029,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "ui"
     ],
     "exportType": "type",
@@ -2761,7 +3073,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -2959,7 +3270,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -2984,7 +3294,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -3138,7 +3447,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "piano"
     ],
     "exportType": "default",
@@ -3159,7 +3467,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "piano"
     ],
     "exportType": "interface",
@@ -3180,7 +3487,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "piano"
     ],
     "exportType": "interface",
@@ -3218,7 +3524,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "piano",
       "ui",
@@ -3242,7 +3547,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "piano",
       "ui",
@@ -3266,7 +3570,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "piano",
       "ui",
@@ -3774,7 +4077,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -4038,7 +4340,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "beat",
       "cats",
       "chords",
       "corp",
@@ -8129,7 +8430,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -8152,7 +8452,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -8175,7 +8474,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -8198,7 +8496,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -8221,7 +8518,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -8244,7 +8540,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -8267,7 +8562,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -8290,7 +8584,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -8313,7 +8606,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -8336,7 +8628,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -8359,7 +8650,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -8382,7 +8672,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -8405,7 +8694,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -8428,7 +8716,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -8451,7 +8738,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "piano",
@@ -9074,7 +9360,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "piano",
       "ui"
     ],
@@ -9094,7 +9379,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "piano",
       "ui"
     ],
@@ -9114,7 +9398,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "piano",
       "ui"
     ],
@@ -9134,7 +9417,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "piano",
       "ui"
     ],
@@ -9154,7 +9436,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "piano",
       "ui"
     ],
@@ -9174,7 +9455,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "piano",
       "ui"
     ],
@@ -9193,7 +9473,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
-      "beat",
       "piano",
       "ui"
     ],
@@ -9666,9 +9945,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "music"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -9684,9 +9961,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "const",
     "demoId": null
   },
@@ -9702,9 +9977,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "const",
     "demoId": null
   },
@@ -9720,9 +9993,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "const",
     "demoId": null
   },
@@ -9738,9 +10009,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "const",
     "demoId": null
   },
@@ -9755,9 +10024,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "music"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -9772,9 +10039,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "music"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -10786,7 +11051,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
-      "beat",
       "piano"
     ],
     "exportType": "function",
@@ -10805,7 +11069,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "piano"
     ],
     "exportType": "const",
@@ -10824,7 +11087,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "piano"
     ],
     "exportType": "const",
@@ -10842,7 +11104,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
-      "beat",
       "piano"
     ],
     "exportType": "function",
@@ -10861,7 +11122,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "piano"
     ],
     "exportType": "const",
@@ -10879,7 +11139,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
-      "beat",
       "piano"
     ],
     "exportType": "function",
@@ -10898,7 +11157,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "piano"
     ],
     "exportType": "const",
@@ -10916,7 +11174,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
-      "beat",
       "piano"
     ],
     "exportType": "function",
@@ -10934,7 +11191,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
-      "beat",
       "piano"
     ],
     "exportType": "function",
@@ -10952,7 +11208,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
-      "beat",
       "piano"
     ],
     "exportType": "function",
@@ -12002,7 +12257,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "playback"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "words"
     ],
@@ -12021,7 +12275,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "playback"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "words"
     ],
@@ -12040,7 +12293,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "playback"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "words"
     ],
@@ -12060,7 +12312,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "words"
     ],
@@ -12079,7 +12330,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "playback"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "words"
     ],
@@ -13672,7 +13922,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
       "words"
     ],
     "exportType": "function",
@@ -13690,7 +13939,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
       "words"
     ],
     "exportType": "function",
@@ -13708,7 +13956,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
       "words"
     ],
     "exportType": "function",
@@ -13726,7 +13973,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
       "words"
     ],
     "exportType": "function",
@@ -13744,7 +13990,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
       "words"
     ],
     "exportType": "function",
@@ -13762,7 +14007,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
       "words"
     ],
     "exportType": "function",
@@ -13780,7 +14024,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
       "words"
     ],
     "exportType": "function",
@@ -13798,7 +14041,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
       "words"
     ],
     "exportType": "function",
@@ -13816,7 +14058,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
-      "beat",
       "words"
     ],
     "exportType": "function",
@@ -13835,7 +14076,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "drums",
       "words"
     ],
@@ -13855,7 +14095,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "drums",
       "words"
     ],
@@ -13875,7 +14114,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "drums",
       "words"
     ],
@@ -13895,7 +14133,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "drums",
       "words"
     ],
@@ -13915,7 +14152,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "drums",
       "words"
     ],
@@ -13935,7 +14171,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "drums",
       "words"
     ],
@@ -13955,7 +14190,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "drums",
       "words"
     ],
@@ -13975,7 +14209,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "drums",
       "words"
     ],
@@ -13995,7 +14228,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "drums",
       "words"
     ],
@@ -14015,7 +14247,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "drums",
       "words"
     ],
@@ -14035,7 +14266,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "drums",
       "words"
     ],
@@ -14055,7 +14285,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "drums",
       "words"
     ],
@@ -14481,7 +14710,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "description": "No JSDoc summary provided.",
     "tags": [],
     "appsUsing": [
-      "beat",
       "cats",
       "chords",
       "corp",
@@ -14508,7 +14736,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "cats",
       "chords",
       "corp",
@@ -14533,7 +14760,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "description": "No JSDoc summary provided.",
     "tags": [],
     "appsUsing": [
-      "beat",
       "cats",
       "chords",
       "corp",
@@ -14796,7 +15022,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "corp",
       "drums",
@@ -14822,7 +15047,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "corp",
       "drums",
@@ -14847,7 +15071,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "utils"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "corp",
       "drums",
@@ -14886,9 +15109,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "utils"
     ],
-    "appsUsing": [
-      "beat"
-    ],
+    "appsUsing": [],
     "exportType": "const",
     "demoId": null
   },
@@ -14981,7 +15202,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "words"
@@ -15002,7 +15222,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "words"
@@ -15022,7 +15241,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "utils"
     ],
     "appsUsing": [
-      "beat",
       "chords",
       "drums",
       "words"
@@ -15148,7 +15366,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "utils"
     ],
     "appsUsing": [
-      "beat",
       "cats",
       "chords",
       "corp",
@@ -15175,7 +15392,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "utils"
     ],
     "appsUsing": [
-      "beat",
       "cats",
       "chords",
       "corp",

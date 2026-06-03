@@ -265,7 +265,7 @@ Shared test utilities: `src/cats/test/regressionTestUtils.tsx`
 Canonical workflow and commands: `docs/REGRESSION_WORKFLOW.md`.
 
 - Visual regression snapshots are captured by Playwright via `e2e/visual/apps.visual.spec.ts`. Incremental updates: `npm run test:e2e:visual:update`; full wipe + regenerate all PNGs: `npm run test:e2e:visual:update:fresh`.
-- Audio regression uses strict SHA-256 hashes for deterministic fixtures via `src/beat/utils/syntheticAudioGenerator.audio-regression.test.ts`.
+- Audio regression uses strict SHA-256 hashes for deterministic fixtures via `src/shared/beat/regression/syntheticAudioGenerator.audio-regression.test.ts`.
 - Baseline updates must be explicit (use dedicated `:update` scripts) and manually reviewed before merge.
 - CI uploads visual and audio regression artifacts for browseable PR review.
 - Agent default behavior: run regressions, review diffs directly, and escalate uncertain diffs to the user instead of silently accepting them.
@@ -452,7 +452,7 @@ Combined with path imports from `@mui/material/<Component>` (not barrel imports 
 ### Related rules
 
 - **No `@mui/material` barrel imports.** Import each component from its path: `import Button from '@mui/material/Button'`.
-- **Lazy-load heavy modals and optional surfaces** with `React.lazy` + `<Suspense>`. Reference implementations: `src/piano/App.tsx` (ImportModal, Analytics, VideoPlayer, DebugPanel) and `src/beat/App.tsx` (YouTubePlayer).
+- **Lazy-load heavy modals and optional surfaces** with `React.lazy` + `<Suspense>`. Reference implementations: `src/piano/App.tsx` (ImportModal, Analytics, VideoPlayer, DebugPanel) and `src/stanza/components/StanzaWorkspace.tsx` (suggest-sections dialog, tap tempo).
 
 ## Playback UI patterns
 

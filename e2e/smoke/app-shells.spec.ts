@@ -6,7 +6,6 @@ const ROUTE_SPECS: Array<{
   visibleSelector: string;
 }> = [
   { route: '/', title: /Tiff Zhang Labs/i, visibleSelector: '.container' },
-  { route: '/beat/', title: /Find the Beat/i, visibleSelector: '#root' },
   { route: '/cats/', title: /Cat Clicker/i, visibleSelector: '#root' },
   { route: '/chords/', title: /Chord Progression Generator/i, visibleSelector: '#root' },
   { route: '/corp/', title: /Corporate Ladder/i, visibleSelector: '#root' },

@@ -46,13 +46,13 @@ const APPEARANCES = ['default', 'piano', 'words', 'chords'] as const;
 type Appearance = (typeof APPEARANCES)[number];
 type CatalogTab = 'gallery' | 'docs' | 'theme' | 'regression' | 'melodia';
 type RegressionRouteSection = 'screenshots' | 'report';
-const BPM_SURFACES = ['default', 'piano', 'words', 'chords', 'beat', 'drums'] as const;
-const KEY_SURFACES = ['default', 'piano', 'words', 'chords', 'beat'] as const;
-const EXPORT_SURFACES = ['piano', 'words', 'chords', 'drums', 'beat'] as const;
+const BPM_SURFACES = ['default', 'piano', 'words', 'chords', 'drums'] as const;
+const KEY_SURFACES = ['default', 'piano', 'words', 'chords'] as const;
+const EXPORT_SURFACES = ['piano', 'words', 'chords', 'drums'] as const;
 type BpmSurface = (typeof BPM_SURFACES)[number];
 type KeySurface = (typeof KEY_SURFACES)[number];
 type ExportSurface = (typeof EXPORT_SURFACES)[number];
-const DRUM_NOTATION_SURFACES = ['words', 'beat'] as const;
+const DRUM_NOTATION_SURFACES = ['words'] as const;
 type DrumNotationSurface = (typeof DRUM_NOTATION_SURFACES)[number];
 type FunctionalSection =
   | 'Shared UI Components'
@@ -65,7 +65,6 @@ type FunctionalSection =
   | 'Core Utilities';
 
 const APP_LINKS: Record<string, { label: string; href: string }> = {
-  beat: { label: 'Beat', href: '/beat/' },
   chords: { label: 'Chords', href: '/chords/' },
   drums: { label: 'Drums', href: '/drums/' },
   piano: { label: 'Piano', href: '/piano/' },
@@ -105,8 +104,6 @@ function getBpmClass(surface: BpmSurface): string {
       return 'ui-words-bpm-input';
     case 'chords':
       return 'chords-bpm-input';
-    case 'beat':
-      return 'shared-bpm-input ui-beat-bpm-input';
     case 'drums':
       return 'drums-shared-bpm-input';
     case 'piano':
@@ -122,8 +119,6 @@ function getBpmDropdownClass(surface: BpmSurface): string | undefined {
       return 'ui-words-bpm-dropdown';
     case 'chords':
       return 'chords-bpm-dropdown';
-    case 'beat':
-      return 'beat-bpm-dropdown';
     case 'piano':
       return 'piano-bpm-dropdown';
     case 'drums':
@@ -141,8 +136,6 @@ function getBpmSliderClass(surface: BpmSurface): string | undefined {
       return 'chords-bpm-slider';
     case 'piano':
       return 'piano-bpm-slider';
-    case 'beat':
-      return 'beat-bpm-slider';
     case 'drums':
       return 'drums-bpm-slider';
     default:
@@ -156,8 +149,6 @@ function getKeyClass(surface: KeySurface): string {
       return 'ui-words-key-input';
     case 'chords':
       return 'chords-key-input';
-    case 'beat':
-      return 'shared-key-input ui-beat-key-input';
     case 'piano':
       return 'ui-piano-key-input';
     default:
@@ -171,8 +162,6 @@ function getKeyDropdownClass(surface: KeySurface): string | undefined {
       return 'ui-words-key-dropdown';
     case 'chords':
       return 'chords-key-dropdown';
-    case 'beat':
-      return 'beat-key-dropdown';
     default:
       return undefined;
   }
@@ -497,7 +486,7 @@ function KeyMultiDemo({
               onChange={(next) => onChange(appearance, next)}
               className={getKeyClass(appearance)}
               dropdownClassName={getKeyDropdownClass(appearance)}
-              showStepButtons={appearance !== 'beat'}
+              showStepButtons
             />
           )}
         </section>
@@ -753,25 +742,12 @@ function DrumNotationMiniPresetDemo() {
     Record<DrumNotationSurface, string>
   >(() => ({
     words: presets[1]?.notation ?? presets[0]?.notation ?? 'D-T-__T-D---T---',
-    beat: presets[2]?.notation ?? presets[0]?.notation ?? 'D-T-__T-D---T---',
   }));
 
-  const getSurfaceNotationStyle = (
-    surface: DrumNotationSurface
-  ): 'light' | NotationStyle => {
-    if (surface === 'beat') {
-      return {
-        inkColor: '#c8c4d8',
-        highlightColor: '#22c55e',
-      };
-    }
-    return 'light';
-  };
+  const getSurfaceNotationStyle = (): 'light' | NotationStyle => 'light';
 
-  const getSurfaceNotationWrapClass = (surface: DrumNotationSurface): string =>
-    surface === 'beat'
-      ? 'ui-mini-notation-wrap vexflow-mini-container'
-      : 'ui-mini-notation-wrap words-template-preview words-section-template-preview';
+  const getSurfaceNotationWrapClass = (): string =>
+    'ui-mini-notation-wrap words-template-preview words-section-template-preview';
 
   return (
     <div className="ui-variant-grid">
@@ -816,13 +792,13 @@ function DrumNotationMiniPresetDemo() {
                 </button>
               ))}
             </div>
-            <div className={getSurfaceNotationWrapClass(surface)}>
+            <div className={getSurfaceNotationWrapClass()}>
               {parsed.isValid && parsed.measures.length > 0 ? (
                 <DrumNotationMini
                   rhythm={parsed}
                   width={300}
                   height={120}
-                  style={getSurfaceNotationStyle(surface)}
+                  style={getSurfaceNotationStyle()}
                   showDrumSymbols={true}
                 />
               ) : (
@@ -915,15 +891,6 @@ function buildExportDemoAdapter(surface: ExportSurface): ExportSourceAdapter {
         supportsFormat: (format) => ['midi', 'wav', 'mp3', 'ogg', 'flac'].includes(format),
         renderMidi: async () => new Uint8Array([0x4d, 0x54, 0x68, 0x64]),
       };
-    case 'beat':
-      return {
-        ...base,
-        id: 'beat',
-        title: 'Beat Export',
-        fileBaseName: 'ui-beat-export',
-        stems: [{ id: 'mix', label: 'Full Mix', defaultSelected: true }],
-        supportsFormat: (format) => ['wav', 'mp3', 'ogg', 'flac'].includes(format),
-      };
   }
 }
 
@@ -933,14 +900,12 @@ function SharedExportPopoverDemo() {
     words: false,
     chords: false,
     drums: false,
-    beat: false,
   });
   const [anchorBySurface, setAnchorBySurface] = useState<Record<ExportSurface, HTMLElement | null>>({
     piano: null,
     words: null,
     chords: null,
     drums: null,
-    beat: null,
   });
 
   return (
@@ -1133,7 +1098,6 @@ function App() {
     piano: 88,
     words: 104,
     chords: 120,
-    beat: 92,
     drums: 100,
   });
   const [keyBySurface, setKeyBySurface] = useState<Record<KeySurface, MusicKey>>({
@@ -1141,7 +1105,6 @@ function App() {
     piano: 'F',
     words: 'G',
     chords: 'D',
-    beat: 'Bb',
   });
   const [progressionByAppearance, setProgressionByAppearance] = useState<Record<Appearance, string>>({
     default: 'I–V–vi–IV',

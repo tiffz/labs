@@ -12,6 +12,7 @@ Nested **`AGENTS.md`** for Stanza. Root policy: [`../../AGENTS.md`](../../AGENTS
 
 - Shell: `StanzaViewerLayout` + `stanza-viewer-layout.css` (see `LAYOUT.md`).
 - Workbench width is **CSS-only** (`--stanza-viewer-content-width`); do not set viewer width in MUI `sx`.
+- Large shell splits live under `components/stanzaWorkspace/` (see `docs/COMPONENT_DECOMPOSITION_PATTERN.md`).
 
 ## Tests
 

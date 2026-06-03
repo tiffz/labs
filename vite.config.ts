@@ -34,7 +34,6 @@ const MULTI_APP_INPUTS = {
   story: resolve(__dirname, 'src/story/index.html'),
   chords: resolve(__dirname, 'src/chords/index.html'),
   forms: resolve(__dirname, 'src/forms/index.html'),
-  beat: resolve(__dirname, 'src/beat/index.html'),
   words: resolve(__dirname, 'src/words/index.html'),
   pitch: resolve(__dirname, 'src/pitch/index.html'),
   universal_tom: resolve(__dirname, 'src/drums/universal_tom/index.html'),
@@ -375,7 +374,7 @@ export default defineConfig({
               visualLastRunPath: path.join(PROJECT_ROOT, 'test-results/visual-last-run.json'),
               audioReportPath: path.join(
                 PROJECT_ROOT,
-                'src/beat/regression/reports/synthetic-audio.latest.json'
+                'src/shared/beat/regression/reports/synthetic-audio.latest.json'
               ),
               reportIndexPath: path.join(PROJECT_ROOT, 'playwright-report/index.html'),
               rejectReportDir: path.join(PROJECT_ROOT, '.regression-reports'),
@@ -589,7 +588,7 @@ export default defineConfig({
                   lastRun,
                 },
                 audio: {
-                  reportPath: 'src/beat/regression/reports/synthetic-audio.latest.json',
+                  reportPath: 'src/shared/beat/regression/reports/synthetic-audio.latest.json',
                   available: Boolean(audioReport),
                   mode: audioReport?.mode ?? null,
                   driftCount: Array.isArray(audioReport?.drifts) ? audioReport.drifts.length : 0,
@@ -1073,8 +1072,6 @@ export default defineConfig({
         { src: '../CNAME', dest: '.' },
         { src: '../public/robots.txt', dest: '.' },
         { src: '../public/_headers', dest: '.' },
-        // Basic Pitch model for ML-based chord detection
-        { src: '../node_modules/@spotify/basic-pitch/model/*', dest: 'assets' },
       ]
     })] : []),
     ...(!SKIP_DEPLOY_PLUGINS ? [compression({
@@ -1101,7 +1098,7 @@ export default defineConfig({
       'e2e/**',
       'node_modules/**',
       'dist/**',
-      // Expensive benchmark test - only run when beat files change (via INCLUDE_BEAT_BENCHMARK env)
+      // Expensive benchmark test - only run when shared tempo files change (via INCLUDE_BEAT_BENCHMARK env)
       ...(!INCLUDE_BEAT_BENCHMARK ? ['**/bpmDetectionBenchmark.test.ts'] : []),
       // Fast mode: exclude slow regression/audit/stress tests for rapid development iteration.
       // Match any test whose filename contains "regression", "audit", "stress", or "benchmark"

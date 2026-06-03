@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const APP_DIRS = new Set([
-  'beat',
   'cats',
   'chords',
   'corp',

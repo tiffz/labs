@@ -61,50 +61,6 @@ export interface SteadyRegionOptions {
 }
 
 /**
- * Get the tempo region at a specific time
- */
-export function getRegionAtTime(time: number, regions: TempoRegion[]): TempoRegion | null {
-  for (const region of regions) {
-    if (time >= region.startTime && time < region.endTime) {
-      return region;
-    }
-  }
-  return null;
-}
-
-/**
- * Get the effective BPM at a specific time
- * For steady regions, returns the region's BPM
- * For accelerando/ritardando, interpolates between start and target BPM
- * For rubato/fermata, returns null
- */
-export function getEffectiveBpm(time: number, regions: TempoRegion[]): number | null {
-  const region = getRegionAtTime(time, regions);
-  if (!region) return null;
-
-  switch (region.type) {
-    case 'steady':
-      return region.bpm;
-
-    case 'accelerando':
-    case 'ritardando':
-      if (region.bpm !== null && region.targetBpm !== undefined) {
-        // Linear interpolation between start and target BPM
-        const progress = (time - region.startTime) / (region.endTime - region.startTime);
-        return region.bpm + (region.targetBpm - region.bpm) * progress;
-      }
-      return region.bpm;
-
-    case 'fermata':
-    case 'rubato':
-      return null;
-
-    default:
-      return region.bpm;
-  }
-}
-
-/**
  * Create a default steady region for the entire track
  */
 export function createDefaultRegion(bpm: number, duration: number): TempoRegion {

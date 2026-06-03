@@ -3,7 +3,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const APP_DIRS = new Set([
-  'beat',
   'cats',
   'chords',
   'corp',

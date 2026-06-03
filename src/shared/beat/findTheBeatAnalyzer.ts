@@ -602,15 +602,4 @@ export function adjustBeatsForGaps(
   return adjusted;
 }
 
-/**
- * Update beat positions when BPM is manually changed
- */
-export function regenerateBeats(
-  bpm: number,
-  duration: number,
-  offset: number = 0
-): number[] {
-  return generateBeats(bpm, duration, offset);
-}
-
 // Onset detection is shared via utils/analysis/onsets.ts

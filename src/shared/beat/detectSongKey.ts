@@ -25,15 +25,6 @@ export function musicKeyFromDetected(detected: DetectedSongKey): MusicKey {
   return 'C';
 }
 
-/** @deprecated Prefer {@link musicKeyFromDetected} for UI that uses `KeyInput`. */
-export function formatDetectedSongKey(detected: DetectedSongKey): string {
-  const musicKey = musicKeyFromDetected(detected);
-  if (detected.scale === 'minor') {
-    return `${musicKey} minor`;
-  }
-  return `${musicKey} major`;
-}
-
 /**
  * Lightweight key guess from uploaded audio (Essentia KeyExtractor consensus).
  * Used by Stanza original-key field; tempo analysis stays separate.

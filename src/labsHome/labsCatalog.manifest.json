@@ -58,14 +58,6 @@
       "iconClass": "stanza"
     },
     {
-      "path": "/beat/",
-      "title": "Find the Beat",
-      "shortDescription": "Analyze music with BPM detection and visual beat guidance",
-      "stage": "development",
-      "category": "music",
-      "iconClass": "beat"
-    },
-    {
       "path": "/piano/",
       "title": "Piano Practice",
       "shortDescription": "Practice piano with exercises, MIDI support, and realtime feedback",

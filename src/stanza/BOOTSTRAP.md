@@ -31,4 +31,5 @@ How Stanza picks the first song on load and resolves URL deep links. Implemented
 
 - `utils/stanzaDriveUrlParams.ts` — query param read/write
 - `import/beatLibraryImport.ts` — Find the Beat → Stanza migration
+- `import/BEAT_MIGRATION.md` — intentional gaps and merge rules (why migrated songs can feel different)
 - `db/stanzaLastSelectedSong.ts` — last-opened persistence

@@ -2,7 +2,7 @@
 
 A repeatable recipe for breaking up oversized React components (roughly: >600 lines, or a file that holds three-plus visually independent subtrees) in this codebase.
 
-Pilot reference: `src/beat/components/PlaybackBar.tsx` (1058 → 727 lines) plus `src/beat/components/playbackBar/` (4 focused leaves).
+Pilot reference (historical): Find the Beat `PlaybackBar` decomposition (removed with ADR 0013). Current Stanza pilot: `StanzaWorkspace.tsx` with leaves under `src/stanza/components/stanzaWorkspace/`.
 
 ## Why a pattern
 
@@ -13,7 +13,7 @@ Without a pattern, decomposition tends to:
 - leave the container essentially unchanged
 - break visual regression in subtle ways because a useMemo moves
 
-The steps below have been validated on the PlaybackBar pilot; apply them in order on each hotspot listed below.
+The steps below have been validated on prior pilots; apply them in order on each hotspot listed below.
 
 ## The pattern
 
@@ -22,13 +22,13 @@ The steps below have been validated on the PlaybackBar pilot; apply them in orde
    - State-holding subtrees that render into a visually independent region of the DOM (a card, a row, a menu, a toolbar).
    - Stateful behavior that is a candidate for a custom hook (long mouse drag handlers, resize listeners, cached DOM measurements).
 2. **Extract pure helpers first.** Move them into a sibling `<componentName>Helpers.ts` file. No React imports. Keep exports small; export types alongside functions when helpers return structured objects. This is the lowest-risk extraction and typically unblocks the rest because it breaks most of the obvious dependency cycles.
-3. **Extract leaf components.** Prefer "fully controlled" leaves: inputs come via props, state changes go out via callbacks. No new state owned by the leaf unless it was already strictly local in the original file (e.g., a short-lived draft text field). Put each leaf in a subdirectory named after the container in lowerCamelCase (e.g., `components/playbackBar/`), one component per file. File name matches the exported component.
+3. **Extract leaf components.** Prefer "fully controlled" leaves: inputs come via props, state changes go out via callbacks. No new state owned by the leaf unless it was already strictly local in the original file (e.g., a short-lived draft text field). Put each leaf in a subdirectory named after the container in lowerCamelCase (e.g., `components/stanzaWorkspace/`), one component per file. File name matches the exported component.
 4. **Replace inline JSX with the new leaf components** inside the container. Keep prop drilling direct and explicit; do not introduce context or a new store to avoid prop drilling at this step unless the number of props crosses ~8 and the children of a leaf all need the same subset. Prop drilling is fine in this pattern — the point is to shrink the container, not change the data-flow shape.
 5. **Promote derived values to `useMemo` in the container** only when they are used by multiple leaves or have non-trivial cost. Do not eagerly wrap every helper call in `useMemo`; prefer calling the pure helper inside the leaf instead.
 6. **Defer hook extraction.** Only extract a hook when (a) the behavior is used by more than one component, or (b) it represents a self-contained lifecycle (document-level listeners, subscription + cleanup). For one-off handlers, keep them inline in the container; extracting prematurely creates a new indirection for no readability win.
-7. **Name the subtree directory after the container.** Co-location beats a flat `components/` tree once a surface has three or more extracted leaves. Example: `components/playbackBar/{LaneMenu,SectionControlsRow,SectionHoverCard}.tsx`.
+7. **Name the subtree directory after the container.** Co-location beats a flat `components/` tree once a surface has three or more extracted leaves. Example: `components/stanzaWorkspace/{StanzaLibraryGrid,StanzaPracticeMixSection}.tsx`.
 8. **Do not change any externally observable behavior in the decomposition PR.** No new props on the container, no CSS class renames, no prop rename that would break call sites. Rendering output should be byte-identical. This is how you keep visual-regression snapshots unchanged and catch any accidental regression loudly.
-9. **Run the container's test file + visual regression.** For the pilot: `npx vitest run src/beat/components/PlaybackBar.test.tsx` and the `e2e/visual/` specs that cover the surface. Decomposition with unchanged public behavior should leave both green without snapshot updates.
+9. **Run the container's test file + visual regression.** For Stanza: `npx vitest run src/stanza/components/stanzaWorkspace/` and `e2e/stanza-viewer-layout.spec.ts`. Decomposition with unchanged public behavior should leave both green without snapshot updates.
 
 ## Container-level checklist
 
@@ -50,9 +50,17 @@ These are the files flagged in the engineering audit as over-size and ripe for t
 
 ### Completed in the Phase 4 rollout PR series
 
-- **`src/beat/components/PlaybackBar.tsx`** — pilot. 1058 → 727 lines; extracted `playbackBarHelpers.ts`, `SectionHoverCard`, `SectionControlsRow`, `LaneMenu` into `components/playbackBar/`.
-- **`src/words/utils/prosodyEngine.ts`** — 2209 → 2169 lines in the engine + new `prosodyEngineTypes.ts` (86 lines) for types, constants, and small helpers. Interface `WordRhythmGenerationSettings` and the `DEFAULT_WORD_RHYTHM_GENERATION_SETTINGS` constant intentionally stay in the engine because many internal functions reference the interface fields directly; splitting `parseTemplateTimeline` (~1400 lines) into stages is deferred to a dedicated PR.
 - **`src/piano/store.tsx`** — 1493 → 1257 lines; extracted `storeTypes.ts` (258 lines) for `PianoState`, `Action` union, `ActiveMode`, `ScoreSection`, and `initialState`. Reducer + `PianoProvider` remain in `store.tsx`; splitting those into `reducer.ts` + `PianoProvider.tsx` is the next natural step but requires care because the provider's effect wiring references reducer-internal helpers.
+- **`src/words/utils/prosodyEngine.ts`** — 2209 → 2169 lines in the engine + new `prosodyEngineTypes.ts` (86 lines) for types, constants, and small helpers.
+
+### In progress — Stanza workspace (ADR 0013 follow-up)
+
+- **`src/stanza/components/StanzaWorkspace.tsx`** (~3600 lines; was ~4400)
+  - Extracted to `components/stanzaWorkspace/`:
+    - `stanzaWorkspaceHelpers.ts` — stem reorder, mix label sx, YouTube error copy, practice detection
+    - `stanzaPracticeRailConstants.ts` — drums notation footprint + palette
+    - `StanzaLibraryGrid`, `StanzaDriveDeepLinkAlerts`, `StanzaPracticePitchSection`, `StanzaPracticeMixSection`
+  - Next splits (dedicated PRs): playback transport card, landing hero / import row, viewer header, timeline wiring hooks.
 
 ### Deferred to dedicated PRs
 
@@ -60,27 +68,22 @@ These need per-component inventory sessions before splitting. Each already has i
 
 - **`src/words/App.tsx`** (4270 lines)
   - Expected leaves: prosody controls, lyric editor, export panel, playback rail, sidebar settings.
-  - Likely helpers files: prosody derivations, lyric splitting, keyboard shortcut router.
   - First split target: extract the export panel (visually isolated, prop surface is small).
-- **`src/beat/App.tsx`** (2386 lines; down from 2398 after AnchoredPopover migration)
-  - Expected leaves: uploader landing, now-playing header, sidebar settings, mixer (already partially shared via `AnchoredPopover`).
-  - Helpers: lane/section routing, persistence adapters.
-  - First split target: extract the now-playing header (stable markup, few inputs).
+- **`src/stanza/components/StanzaTimeline.tsx`** (~1150 lines)
+  - Expected leaves: marker handles, loop hull overlay, transport toolbar row.
+  - First split target: pure timeline math helpers (zero React dependency).
+- **`src/stanza/components/StanzaSectionMetronomeRail.tsx`** (~900 lines)
+  - Expected leaves: analyze dialog shell, calibration row, tap-tempo affordances (partially in `StanzaTapTempoDialog`).
 - **`src/drums/components/VexFlowRenderer.tsx`** (2297 lines)
-  - Expected leaves: voice builder, section splitter, annotation layer.
-  - Helpers: VexFlow stem/beam computations (many pure math functions that can move to a sibling `vexFlowMath.ts`).
   - First split target: the pure math helpers — zero React dependency.
 - **`src/shared/notation/ScoreDisplay.tsx`** (1720 lines)
-  - Expected leaves: score header, voice legend, interactive overlays.
   - First split target: extract the legend (pure render) and the header (small state surface).
-- **`src/beat/utils/chordAnalyzer.ts`** (1232 lines)
-  - Currently a single cohesive module with one exported orchestrator (`analyzeChords`) and one export helper (`getChordChangeTimes`). Internal split into `chordDetection.ts` / `keyDetection.ts` is viable but shares many small helpers that would need to move with care.
-  - Defer until a second orchestrator needs to reuse the inner stages, at which point the split has a clear payoff. Until then, this module is below the "split pain threshold."
 
 ### Removed from rollout list
 
-- **`src/shared/prosodyEngine.ts`** — the engine lives in `src/words/utils/prosodyEngine.ts`, not `shared`. Corrected above.
-- **`src/shared/chordAnalyzer.ts`** — the analyzer lives in `src/beat/utils/chordAnalyzer.ts`, not `shared`. Corrected above.
+- **Find the Beat app** — removed per [ADR 0013](./adr/0013-stanza-subsumes-find-the-beat.md). Shared tempo analysis lives in `src/shared/beat/**`.
+- **`src/shared/prosodyEngine.ts`** — the engine lives in `src/words/utils/prosodyEngine.ts`, not `shared`.
+- **`src/shared/chordAnalyzer.ts`** — never existed; chord analysis was Beat-only and is not ported to Stanza yet.
 
 ## Anti-patterns to avoid
 

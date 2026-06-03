@@ -10,7 +10,6 @@
 
   var APP_MAP = {
     '/agility/': { name: 'agility', group: 'Music' },
-    '/beat/':    { name: 'beat',    group: 'Music' },
     '/cats/':    { name: 'cats',    group: 'Games' },
     '/chords/':  { name: 'chords',  group: 'Music' },
     '/corp/':    { name: 'corp',    group: 'Games' },

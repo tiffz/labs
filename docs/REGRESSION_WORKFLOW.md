@@ -27,7 +27,7 @@ Add a smoke here when a cross-app playback/portal/empty-state bug recurs — pre
 - Test file: `e2e/visual/apps.visual.spec.ts`
 - Coverage:
   - Home (`/`)
-  - All app routes (`/cats/`, `/zines/`, `/corp/`, `/drums/`, `/story/`, `/chords/`, `/forms/`, `/beat/`, `/words/`, `/pitch/`, `/piano/`, `/ui/`, `/drums/universal_tom/`)
+  - All app routes (`/cats/`, `/zines/`, `/corp/`, `/drums/`, `/story/`, `/chords/`, `/forms/`, `/words/`, `/pitch/`, `/piano/`, `/ui/`, `/drums/universal_tom/`)
   - Two major canonical states per route:
     - Desktop viewport baseline
     - Mobile viewport baseline
@@ -35,14 +35,14 @@ Add a smoke here when a cross-app playback/portal/empty-state bug recurs — pre
 
 ### Audio Baselines
 
-- Test file: `src/beat/utils/syntheticAudioGenerator.audio-regression.test.ts`
+- Test file: `src/shared/beat/regression/syntheticAudioGenerator.audio-regression.test.ts`
 - Coverage:
   - Canonical deterministic synthetic audio fixtures
   - Strict SHA-256 hash matching over canonical Float32 PCM samples
 - Baseline manifest:
-  - `src/beat/regression/baselines/synthetic-audio.hashes.json`
+  - `src/shared/beat/regression/baselines/synthetic-audio.hashes.json`
 - Latest run report (generated):
-  - `src/beat/regression/reports/synthetic-audio.latest.json`
+  - `src/shared/beat/regression/reports/synthetic-audio.latest.json`
 
 ## Commands
 
@@ -158,7 +158,7 @@ CI uploads browseable artifacts for each run:
   - `playwright-report/**`
   - `test-results/**` (includes image diffs on failures)
 - `audio-regression-report`
-  - `src/beat/regression/reports/**`
+  - `src/shared/beat/regression/reports/**`
 
 Use these artifacts to inspect all screenshots and any drift without reproducing locally.
 

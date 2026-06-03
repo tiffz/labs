@@ -16,8 +16,10 @@
  *     dedicated PRs once unit tests exist for the marker / metronome flows.
  *
  * Anything visually independent that can move out cleanly already has (e.g.
- * `StanzaLibraryThumb`, `StanzaTimeline`, `StanzaSectionMetronomeRail`,
- * `StanzaMetronomeStrip`, shared `PlaybackSpeedControl`).
+ * `StanzaLibraryGrid`, `StanzaTimeline`, `StanzaSectionMetronomeRail`,
+ * `StanzaMetronomeStrip`, `StanzaPracticeMixSection`, shared `PlaybackSpeedControl`).
+ * Further splits follow `docs/COMPONENT_DECOMPOSITION_PATTERN.md` — helpers and
+ * practice-rail leaves live under `components/stanzaWorkspace/`.
  */
 
 import {
@@ -28,17 +30,8 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import AddIcon from '@mui/icons-material/Add';
-import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-import CloseIcon from '@mui/icons-material/Close';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined';
-import VolumeOffOutlinedIcon from '@mui/icons-material/VolumeOffOutlined';
-import VolumeUpOutlinedIcon from '@mui/icons-material/VolumeUpOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -47,20 +40,15 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
-import AppLinearVolumeSlider from '../../shared/components/AppLinearVolumeSlider';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
-import { alpha, type Theme } from '@mui/material/styles';
-import AppTooltip from '../../shared/components/AppTooltip';
-import { NumericStepperField } from '../../shared/components/music/NumericStepperField';
 import LabsUndoControls from '../../shared/undo/LabsUndoControls';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import {
@@ -123,13 +111,12 @@ import {
   STANZA_STEM_DURATION_MATCH_EPS_SEC,
 } from '../utils/probeFileAudioDuration';
 import { backfillStanzaVideoThumbnailIfNeeded } from '../utils/stanzaVideoThumbnail';
-import { fetchYoutubeOEmbedTitle, youtubeMqThumbnailUrl } from '../utils/stanzaYoutubeMeta';
+import { fetchYoutubeOEmbedTitle } from '../utils/stanzaYoutubeMeta';
 import { loadDriveFileAsStanzaLocalBlob } from '../drive/loadDriveSourceForStanza';
 import {
   hydrateStanzaDriveSongMedia,
   stanzaDriveSongNeedsMediaDownload,
 } from '../drive/stanzaDriveMediaHydration';
-import { LABS_GOOGLE_INTERACTIVE_DRIVE_AUTH_HINT } from '../../shared/google/labsGoogleDriveAccess';
 import {
   addStanzaDriveTombstone,
   clearStanzaDriveTombstone,
@@ -144,18 +131,14 @@ import {
   readStanzaDriveBootstrapFromLocation,
   replaceStanzaPlaybackUrlSearchParams,
   STANZA_DRIVE_FILE_QUERY,
-  STANZA_MEDIA_FINGERPRINT_QUERY,
 } from '../utils/stanzaDriveUrlParams';
 import { stripStanzaYoutubeSearchParamPreservingDrive } from '../utils/stanzaUrlYoutube';
 import StanzaYouTubePlayer, { type StanzaYouTubeController } from './StanzaYouTubePlayer';
 import StanzaAccountMenu from './StanzaAccountMenu';
-import StanzaLibraryThumb from './StanzaLibraryThumb';
-import StanzaLibrarySourceBadge, { stanzaLibrarySourceKind } from './StanzaLibrarySourceBadge';
 import StanzaTimeline from './StanzaTimeline';
 import { clampStanzaPlaybackRate } from '../utils/stanzaPlaybackRateLimits';
 import StanzaMetronomeStrip from './StanzaMetronomeStrip';
 import StanzaSectionMetronomeRail from './StanzaSectionMetronomeRail';
-import StanzaPlaybackTransformChip from './StanzaPlaybackTransformChip';
 import StanzaRepeatMark from './StanzaRepeatMark';
 import StanzaSongTitleEditor from './StanzaSongTitleEditor';
 import { StanzaViewerLayout } from './StanzaViewerLayout';
@@ -163,10 +146,8 @@ import { primeStanzaMetronomeAudio, useStanzaMetronomeSync } from '../hooks/useS
 import { useStanzaMetronomePersistence } from '../hooks/useStanzaMetronomePersistence';
 import DrumAccompaniment from '../../shared/components/music/DrumAccompaniment';
 import { INLINE_DRUM_PANEL_UX } from '../../shared/components/music/inlineDrumUxDefaults';
-import KeyInput from '../../shared/components/music/KeyInput';
 import type { MusicKey } from '../../shared/music/musicInputConstants';
 import { transposeMusicKey } from '../../shared/music/musicInputConstants';
-import type { TimeSignature } from '../../shared/rhythm/types';
 import { useStanzaLocalStemMixer } from '../hooks/useStanzaLocalStemMixer';
 import { useStanzaSongKeyDetection } from '../hooks/useStanzaSongAnalysis';
 import { StanzaLocalTransposeMirror } from '../audio/stanzaLocalTransposeMirror';
@@ -177,82 +158,27 @@ import { mergeStanzaPlaybackSnapshot } from '../utils/stanzaPlaybackStateMerge';
 import { applyStanzaYoutubeControllerMix } from '../utils/stanzaYoutubeMixVolume';
 import { useBeatLibraryMigration } from '../hooks/useBeatLibraryMigration';
 import { useStanzaPlaybackBootstrap } from '../hooks/useStanzaPlaybackBootstrap';
-import StanzaInlineAlert from './StanzaInlineAlert';
 import StanzaSuggestSectionsDialog from './StanzaSuggestSectionsDialog';
 import StanzaYoutubeLocalFeaturesNotice from './StanzaYoutubeLocalFeaturesNotice';
-
-/** Drag-reorder stem rows (not OS file drops). */
-const STANZA_STEM_REORDER_MIME = 'text/x-stanza-stem-reorder';
+import StanzaDriveDeepLinkAlerts from './stanzaWorkspace/StanzaDriveDeepLinkAlerts';
+import StanzaLibraryGrid from './stanzaWorkspace/StanzaLibraryGrid';
+import StanzaPracticeMixSection from './stanzaWorkspace/StanzaPracticeMixSection';
+import StanzaPracticePitchSection from './stanzaWorkspace/StanzaPracticePitchSection';
+import {
+  STANZA_DRUMS_DEFAULT_BPM,
+  STANZA_DRUMS_DEFAULT_TIME_SIGNATURE,
+  STANZA_DRUMS_NOTATION_HEIGHT,
+  STANZA_DRUMS_NOTATION_STYLE,
+  STANZA_DRUMS_NOTATION_WIDTH,
+} from './stanzaWorkspace/stanzaPracticeRailConstants';
+import {
+  describeYoutubePlayerError,
+  reorderStemsById,
+  songHasPractice,
+  STANZA_STEM_ALIGN_DRIFT_SEC,
+} from './stanzaWorkspace/stanzaWorkspaceHelpers';
 
 const STANZA_EMPTY_STEMS: StanzaStemTrack[] = [];
-
-/** 4/4 default for the shared drum panel. Stanza does not yet track per-song time signature. */
-const STANZA_DRUMS_DEFAULT_TIME_SIGNATURE: TimeSignature = { numerator: 4, denominator: 4 };
-/** Fallback BPM when the metronome isn't calibrated yet. keeps the drum preview UI usable. */
-const STANZA_DRUMS_DEFAULT_BPM = 120;
-/** Notation render footprint inside the practice rail. compact so Key shift stays in view. */
-const STANZA_DRUMS_NOTATION_WIDTH = 236;
-/** Minimum host height; {@link computeMiniNotationLayout} may grow the SVG to fit the staff. */
-const STANZA_DRUMS_NOTATION_HEIGHT = 68;
-/** Stanza-tinted notation palette so the staff matches `--stanza-ink` ink and the active note
- *  flashes the rose accent (`--stanza-rose`) instead of Beat Finder's green. */
-const STANZA_DRUMS_NOTATION_STYLE = {
-  inkColor: '#2a2622',
-  highlightColor: '#e848a0',
-  backgroundColor: 'transparent',
-} as const;
-
-function reorderStemsById(stems: StanzaStemTrack[], fromId: string, toId: string): StanzaStemTrack[] {
-  const list = [...stems];
-  const from = list.findIndex((s) => s.id === fromId);
-  const to = list.findIndex((s) => s.id === toId);
-  if (from < 0 || to < 0 || from === to) return stems;
-  const [moved] = list.splice(from, 1);
-  list.splice(to, 0, moved);
-  return list;
-}
-
-/** Only seek stems when drift exceeds this (avoids micro-seeks that sound like jitter). */
-const STANZA_STEM_ALIGN_DRIFT_SEC = 0.32;
-/** Mix rail: narrow drag / spacer so label + mute stay compact and sliders get flex space. */
-const STANZA_MIX_DRAG_COL_PX = 22;
-/** Main row trailing spacer. balances stem “remove” IconButton column for slider alignment. */
-const STANZA_MIX_TRAIL_BALANCE_PX = 32;
-/** Cap layer name width so the Slider can grow on dense practice rails. */
-const STANZA_MIX_LABEL_MAX_WIDTH = '6.75rem';
-/** Shared viewer canvas: layout tokens live in stanza-viewer-layout.css (`--stanza-viewer-*`). */
-
-function stanzaMixTrackLabelSurfaceSx(theme: Theme) {
-  return {
-    fontFamily: theme.typography.fontFamily,
-    fontSize: '0.6875rem',
-    fontWeight: 600,
-    lineHeight: 1.3,
-    letterSpacing: '0.01em',
-    color: theme.palette.text.primary,
-  };
-}
-
-function songHasPractice(s: StanzaSong): boolean {
-  return (s.markers?.length ?? 0) > 0 || Object.keys(s.stats ?? {}).length > 0;
-}
-
-function describeYoutubePlayerError(code: number): string {
-  if (code === 101 || code === 150) {
-    return 'This video cannot be played inside Stanza because the publisher has disabled embedding on other sites.';
-  }
-  if (code === 100) {
-    return 'This video is unavailable (removed, private, or not found).';
-  }
-  if (code === 5) {
-    return 'YouTube reported a playback error in the embedded player.';
-  }
-  if (code === 2) {
-    return 'YouTube reported invalid playback parameters.';
-  }
-  return `YouTube reported playback error ${code}.`;
-}
-
 export default function StanzaWorkspace() {
   const songs = useLiveQuery(() => stanzaDb.songs.orderBy('updatedAt').reverse().toArray(), []);
   const { push: pushUndo, isReplayingRef, clear: clearUndoStack } = useLabsUndo();
@@ -2706,246 +2632,28 @@ export default function StanzaWorkspace() {
     setSelectedId(null);
   }, []);
 
-  const renderLibraryGrid = (variant: 'landing' | 'footer') => (
-    <Box
-      className="stanza-library-grid"
-      sx={variant === 'landing' ? { maxHeight: { xs: 360, sm: 400 } } : { maxHeight: { xs: 280, sm: 360 } }}
-    >
-      {sortedLibrarySongs.length === 0 ? (
-        <Box sx={{ gridColumn: '1 / -1', py: 3, px: 1, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: '28rem', mx: 'auto', lineHeight: 1.55 }}>
-            No items yet. Paste a YouTube link or upload an audio or video file above to add your first piece.
-          </Typography>
-        </Box>
-      ) : (
-        sortedLibrarySongs.map((s) => (
-        <Box key={s.id} sx={{ position: 'relative' }}>
-          <button
-            type="button"
-            className={`stanza-library-card${s.id === selectedId ? ' stanza-library-card--selected' : ''}`}
-            onClick={() => navigateToSong(s)}
-            aria-current={s.id === selectedId ? 'true' : undefined}
-          >
-            <div className="stanza-library-card-thumb-wrap">
-              {s.ytId ? (
-                <img className="stanza-library-card-thumb" src={youtubeMqThumbnailUrl(s.ytId)} alt="" loading="lazy" />
-              ) : (
-                <StanzaLibraryThumb song={s} />
-              )}
-              <StanzaLibrarySourceBadge kind={stanzaLibrarySourceKind(s)} />
-            </div>
-            <div className="stanza-library-card-body">
-              <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                {s.title}
-              </Typography>
-              {!songHasPractice(s) ? (
-                <Typography variant="caption" color="text.secondary" className="stanza-library-card-caption-slot" sx={{ display: 'block' }}>
-                  Not started
-                </Typography>
-              ) : null}
-            </div>
-          </button>
-          <IconButton
-            type="button"
-            size="small"
-            aria-label={`More actions for ${s.title}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              setLibraryMenu({ anchor: e.currentTarget, songId: s.id });
-            }}
-            sx={{ position: 'absolute', right: 6, top: 6, bgcolor: 'rgba(255,253,250,0.92)', '&:hover': { bgcolor: 'rgba(255,253,250,1)' } }}
-          >
-            <MoreVertIcon fontSize="small" />
-          </IconButton>
-        </Box>
-        ))
-      )}
-    </Box>
-  );
-
   const libraryMenuSong = libraryMenu ? songs?.find((x) => x.id === libraryMenu.songId) : null;
   const showLandingHero = !viewerShellPending && !selectedId && songs !== undefined;
 
-  const renderDriveDeepLinkAlerts = (): ReactNode => {
-    const showLoading =
-      driveDeepLinkBusy && !driveDeepLinkError && !driveDeepLinkNeedsGesture && !driveDeepLinkRemovedPrompt;
-    const showDriveMediaHint =
-      selected != null &&
-      stanzaDriveSongNeedsMediaDownload(selected) &&
-      !driveDeepLinkBusy &&
-      !driveDeepLinkError &&
-      !driveDeepLinkNeedsGesture &&
-      !driveDeepLinkRemovedPrompt;
-    if (
-      !beatLibraryNotice &&
-      !localUploadError &&
-      !fingerprintDeepLinkError &&
-      !driveDeepLinkError &&
-      !driveDeepLinkNeedsGesture &&
-      !driveDeepLinkRemovedPrompt &&
-      !showLoading &&
-      !showDriveMediaHint
-    ) {
-      return null;
-    }
-    return (
-      <>
-        {beatLibraryNotice ? (
-          <StanzaInlineAlert
-            severity={beatLibraryNotice.severity}
-            onClose={dismissBeatLibraryNotice}
-          >
-            <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
-              {beatLibraryNotice.message}
-            </Typography>
-          </StanzaInlineAlert>
-        ) : null}
-        {localUploadError ? (
-          <StanzaInlineAlert severity="error" onClose={() => setLocalUploadError(null)}>
-            <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
-              {localUploadError}
-            </Typography>
-          </StanzaInlineAlert>
-        ) : null}
-        {fingerprintDeepLinkError ? (
-          <StanzaInlineAlert
-            severity="error"
-            onClose={() => {
-              setFingerprintDeepLinkError(null);
-              if (typeof window !== 'undefined') {
-                const sp = new URLSearchParams(window.location.search);
-                if (sp.get(STANZA_MEDIA_FINGERPRINT_QUERY)) {
-                  replaceStanzaPlaybackUrlSearchParams({
-                    youtubeId: null,
-                    driveFileId: null,
-                    driveTitle: null,
-                    mediaFingerprint: null,
-                  });
-                }
-              }
-            }}
-          >
-            <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
-              {fingerprintDeepLinkError}
-            </Typography>
-          </StanzaInlineAlert>
-        ) : null}
-        {showLoading ? (
-          <StanzaInlineAlert severity="info">
-            <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
-              Fetching audio from Google Drive…
-            </Typography>
-          </StanzaInlineAlert>
-        ) : null}
-        {showDriveMediaHint ? (
-          <StanzaInlineAlert
-            severity="info"
-            action={
-              <Button
-                color="inherit"
-                size="small"
-                variant="outlined"
-                onClick={() => void completeGestureDriveImport()}
-              >
-                Load from Drive
-              </Button>
-            }
-          >
-            <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
-              Your sections and mix settings are here. Load the recording from Google Drive to hear it on
-              this device.
-            </Typography>
-          </StanzaInlineAlert>
-        ) : null}
-        {driveDeepLinkRemovedPrompt ? (
-          <StanzaInlineAlert
-            severity="info"
-            action={
-              <Stack direction="row" spacing={0.5} alignItems="center">
-                <Button
-                  color="inherit"
-                  size="small"
-                  disabled={driveDeepLinkBusy}
-                  onClick={() => dismissDriveDeepLinkRemovedPrompt()}
-                >
-                  Not now
-                </Button>
-                <Button
-                  color="inherit"
-                  size="small"
-                  variant="outlined"
-                  disabled={driveDeepLinkBusy}
-                  onClick={() => void completeDriveDeepLinkReAdd()}
-                >
-                  {driveDeepLinkBusy ? '…' : 'Re-add'}
-                </Button>
-              </Stack>
-            }
-          >
-            <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
-              You removed{' '}
-              <strong>{driveDeepLinkRemovedPrompt.title?.trim() || 'this Drive recording'}</strong>{' '}
-              from your library. Re-add it?
-            </Typography>
-          </StanzaInlineAlert>
-        ) : null}
-        {driveDeepLinkNeedsGesture && !driveDeepLinkError ? (
-          <StanzaInlineAlert
-            severity="info"
-            action={
-              <Button
-                color="inherit"
-                size="small"
-                disabled={driveDeepLinkBusy}
-                onClick={() => void completeGestureDriveImport()}
-              >
-                {driveDeepLinkBusy ? '…' : 'Continue'}
-              </Button>
-            }
-          >
-            <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
-              {LABS_GOOGLE_INTERACTIVE_DRIVE_AUTH_HINT}
-            </Typography>
-          </StanzaInlineAlert>
-        ) : null}
-        {driveDeepLinkError ? (
-          <StanzaInlineAlert
-            severity="error"
-            onClose={() => setDriveDeepLinkError(null)}
-            action={
-              /popup|Allow popups|sign-in window|blocked/i.test(driveDeepLinkError) ? (
-                <Button
-                  color="inherit"
-                  size="small"
-                  disabled={driveDeepLinkBusy}
-                  onClick={() => void completeGestureDriveImport()}
-                >
-                  Retry
-                </Button>
-              ) : undefined
-            }
-          >
-            <Stack spacing={1}>
-              <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
-                {driveDeepLinkError}
-              </Typography>
-              {/popup|Allow popups|sign-in window|blocked/i.test(driveDeepLinkError) ? (
-                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
-                  Popups blocked here are common even when your email shows in the account menu. That menu only
-                  remembers who you last signed in as in Encore.{' '}
-                  <Link href="/encore/" target="_blank" rel="noopener noreferrer">
-                    Open Encore
-                  </Link>
-                  , finish Google sign-in from the account menu if asked, then come back and tap Retry (keep this tab).
-                </Typography>
-              ) : null}
-            </Stack>
-          </StanzaInlineAlert>
-        ) : null}
-      </>
-    );
-  };
+  const driveDeepLinkAlerts = (
+    <StanzaDriveDeepLinkAlerts
+      beatLibraryNotice={beatLibraryNotice}
+      dismissBeatLibraryNotice={dismissBeatLibraryNotice}
+      localUploadError={localUploadError}
+      onDismissLocalUploadError={() => setLocalUploadError(null)}
+      fingerprintDeepLinkError={fingerprintDeepLinkError}
+      onDismissFingerprintDeepLinkError={() => setFingerprintDeepLinkError(null)}
+      driveDeepLinkBusy={driveDeepLinkBusy}
+      driveDeepLinkError={driveDeepLinkError}
+      onDismissDriveDeepLinkError={() => setDriveDeepLinkError(null)}
+      driveDeepLinkNeedsGesture={driveDeepLinkNeedsGesture}
+      driveDeepLinkRemovedPrompt={driveDeepLinkRemovedPrompt}
+      selected={selected}
+      onCompleteGestureDriveImport={completeGestureDriveImport}
+      onDismissDriveDeepLinkRemovedPrompt={dismissDriveDeepLinkRemovedPrompt}
+      onCompleteDriveDeepLinkReAdd={completeDriveDeepLinkReAdd}
+    />
+  );
 
   return (
     <Box
@@ -3021,7 +2729,7 @@ export default function StanzaWorkspace() {
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: { xs: 1.5, sm: 2 }, pt: { xs: 1, sm: 1.25 } }}>
             <StanzaAccountMenu />
           </Box>
-          <Box sx={{ px: { xs: 1.5, sm: 2 } }}>{renderDriveDeepLinkAlerts()}</Box>
+          <Box sx={{ px: { xs: 1.5, sm: 2 } }}>{driveDeepLinkAlerts}</Box>
           <Box className="stanza-hero">
             <Box className="stanza-hero-inner">
               <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
@@ -3115,7 +2823,13 @@ export default function StanzaWorkspace() {
               <Typography variant="subtitle2" className="stanza-whisper-title" sx={{ mb: 1.5 }}>
                 Your library
               </Typography>
-              {renderLibraryGrid('landing')}
+              <StanzaLibraryGrid
+                variant="landing"
+                songs={sortedLibrarySongs}
+                selectedId={selectedId}
+                onNavigateToSong={navigateToSong}
+                onOpenLibraryMenu={(anchor, songId) => setLibraryMenu({ anchor, songId })}
+              />
             </Paper>
           )}
         </>
@@ -3123,7 +2837,7 @@ export default function StanzaWorkspace() {
 
       {selected && (
         <StanzaViewerLayout
-          alerts={renderDriveDeepLinkAlerts()}
+          alerts={driveDeepLinkAlerts}
           header={
           <Box
             className="stanza-viewer-header"
@@ -3235,7 +2949,13 @@ export default function StanzaWorkspace() {
                   </Button>
                 </Stack>
               </Stack>
-              {renderLibraryGrid('footer')}
+              <StanzaLibraryGrid
+                variant="footer"
+                songs={sortedLibrarySongs}
+                selectedId={selectedId}
+                onNavigateToSong={navigateToSong}
+                onOpenLibraryMenu={(anchor, songId) => setLibraryMenu({ anchor, songId })}
+              />
             </Box>
           </Box>
           }
@@ -3637,659 +3357,130 @@ export default function StanzaWorkspace() {
                   {isYoutube ? (
                     <StanzaYoutubeLocalFeaturesNotice />
                   ) : (
-                    <Box className="stanza-rail-section stanza-rail-section--pitch">
-                      <Typography component="h3" className="stanza-rail-section-title" sx={{ mb: 0.5 }}>
-                        Pitch
-                      </Typography>
-                      <Box className="stanza-rail-pitch-fields">
-                        <Box className="stanza-original-key-block">
-                          <Typography component="label" className="stanza-rail-field-label">
-                            Original key
-                          </Typography>
-                          <KeyInput
-                            className="shared-key-input"
-                            value={selected.localOriginalKey}
-                            placeholder="Unknown"
-                            dropdownClassName="stanza-key-dropdown"
-                            onChange={(key) => void persistSong({ id: selected.id, localOriginalKey: key })}
-                            trailingActions={
-                              <AppTooltip
-                                title={stanzaAnalysisDisabledReason ?? 'Detect key from the uploaded recording'}
-                              >
-                                <span>
-                                  <IconButton
-                                    type="button"
-                                    size="small"
-                                    className="stanza-original-key-detect-btn stanza-rail-compact-btn"
-                                    disabled={!stanzaCanAnalyze || keyDetection.keyDetectBusy}
-                                    aria-label="Detect original key"
-                                    onClick={() => void keyDetection.runDetectOriginalKey()}
-                                    sx={{ p: 0.35 }}
-                                  >
-                                    {keyDetection.keyDetectBusy ? (
-                                      <CircularProgress size={16} sx={{ color: 'inherit' }} />
-                                    ) : (
-                                      <AutoFixHighIcon sx={{ fontSize: 18 }} />
-                                    )}
-                                  </IconButton>
-                                </span>
-                              </AppTooltip>
-                            }
-                          />
-                          {keyDetection.keyDetectError ? (
-                            <Alert
-                              severity="warning"
-                              onClose={() => keyDetection.setKeyDetectError(null)}
-                              sx={{ mt: 0.75, py: 0, '& .MuiAlert-message': { py: 0.5 } }}
-                            >
-                              {keyDetection.keyDetectError}
-                            </Alert>
-                          ) : null}
-                        </Box>
-                        <Box className="stanza-key-shift-block">
-                          <Typography component="label" className="stanza-rail-field-label">
-                            Key shift
-                          </Typography>
-                          <Box className="stanza-key-shift-row">
-                            <Box className="shared-bpm-input stanza-key-shift-numeric">
-                              <AppTooltip title="Raise or lower pitch in half-steps (−12 to +12). Applies to the main file and any mix layers. Playback re-decodes shortly after you stop adjusting.">
-                                <Box
-                                  className={`shared-bpm-shell ${transposeStepperEditing ? 'is-editing' : 'is-idle'}`}
-                                  role="group"
-                                  aria-label="Pitch shift in semitones"
-                                  aria-busy={transposeDecodeBusy}
-                                >
-                                  <NumericStepperField
-                                    value={transposeDraftSemitones}
-                                    inputValue={transposeInputStr}
-                                    onInputChange={(e) => {
-                                      const raw = e.target.value;
-                                      if (!/^-?\d*$/.test(raw)) return;
-                                      setTransposeInputStr(raw);
-                                      if (raw === '' || raw === '-') return;
-                                      const n = Number.parseInt(raw, 10);
-                                      if (!Number.isFinite(n)) return;
-                                      schedulePersistTransposeSemitones(n);
-                                    }}
-                                    onInputFocus={() => setTransposeStepperEditing(true)}
-                                    onInputBlur={() => {
-                                      setTransposeStepperEditing(false);
-                                      const n = Number.parseInt(transposeInputStr, 10);
-                                      if (!Number.isFinite(n)) {
-                                        setTransposeInputStr(String(transposeDraftSemitones));
-                                        return;
-                                      }
-                                      schedulePersistTransposeSemitones(n);
-                                    }}
-                                    onInputKeyDown={(e) => {
-                                      if (e.key === 'ArrowUp') {
-                                        e.preventDefault();
-                                        schedulePersistTransposeSemitones(transposeDraftRef.current + 1);
-                                      }
-                                      if (e.key === 'ArrowDown') {
-                                        e.preventDefault();
-                                        schedulePersistTransposeSemitones(transposeDraftRef.current - 1);
-                                      }
-                                    }}
-                                    min={-12}
-                                    max={12}
-                                    step={1}
-                                    onBump={(delta) =>
-                                      schedulePersistTransposeSemitones(transposeDraftRef.current + delta)
-                                    }
-                                    incrementAriaLabel="Increase pitch by one semitone"
-                                    decrementAriaLabel="Decrease pitch by one semitone"
-                                    inputAriaLabel="Semitones relative to the recording"
-                                    stepperAriaLabel="Semitone stepper"
-                                    disabled={transposeDecodeBusy}
-                                  />
-                                  <div className="shared-bpm-trailing-actions">
-                                    <AppTooltip title="Reset to original key (0 semitones)">
-                                      <span>
-                                        <IconButton
-                                          type="button"
-                                          size="small"
-                                          aria-label="Reset pitch shift"
-                                          disabled={transposeDecodeBusy || transposeDraftSemitones === 0}
-                                          className="stanza-key-shift-reset"
-                                          onClick={() => {
-                                            if (transposePersistTimerRef.current != null) {
-                                              window.clearTimeout(transposePersistTimerRef.current);
-                                              transposePersistTimerRef.current = null;
-                                            }
-                                            setTransposeDraftSemitones(0);
-                                            setTransposeInputStr('0');
-                                            void persistSong({ id: selected.id, localTransposeSemitones: undefined });
-                                          }}
-                                          sx={{ p: 0.35 }}
-                                        >
-                                          <RestartAltOutlinedIcon sx={{ fontSize: 18 }} />
-                                        </IconButton>
-                                      </span>
-                                    </AppTooltip>
-                                  </div>
-                                </Box>
-                              </AppTooltip>
-                            </Box>
-                            {transposeDecodeBusy ? (
-                              <Box
-                                className="stanza-key-shift-busy-spinner"
-                                sx={{
-                                  flexShrink: 0,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  width: 28,
-                                }}
-                                aria-live="polite"
-                                aria-busy="true"
-                                aria-label="Rebuilding pitch-shifted audio"
-                              >
-                                <AppTooltip title="Rebuilding pitch-shifted audio…">
-                                  <span>
-                                    <CircularProgress size={20} thickness={4.5} sx={{ color: 'var(--stanza-rose, #e848a0)' }} />
-                                  </span>
-                                </AppTooltip>
-                              </Box>
-                            ) : null}
-                            {showPlaybackKeyChip ? (
-                              <StanzaPlaybackTransformChip
-                                label={playbackKeyChipLabel}
-                                shifted={transposeDraftSemitones !== 0}
-                                direction={transposeDraftSemitones > 0 ? 'up' : 'down'}
-                              />
-                            ) : null}
-                          </Box>
-                          {transposeDecodeError ? (
-                            <Box aria-live="polite" sx={{ mt: 0.75 }}>
-                              <Alert
-                                severity="warning"
-                                onClose={() => setTransposeDecodeError(null)}
-                                sx={{ py: 0, '& .MuiAlert-message': { py: 0.5 } }}
-                              >
-                                {transposeDecodeError}
-                              </Alert>
-                            </Box>
-                          ) : null}
-                        </Box>
-                      </Box>
-                    </Box>
-                  )}
-                  <Box className="stanza-rail-section stanza-rail-section--mix">
-                    <Box className="stanza-rail-section-head">
-                      <Typography component="h3" className="stanza-rail-section-title">
-                        Mix
-                      </Typography>
-                      <AppTooltip
-                        title={
-                          isYoutube
-                            ? 'Add an audio layer to mix over the video (e.g. an instrumental)'
-                            : 'Add another audio layer (e.g. an instrumental or vocal stem)'
-                        }
-                      >
-                        <IconButton
-                          size="small"
-                          aria-label="Add audio layer"
-                          className="stanza-mix-add-icon"
-                          onClick={() => stemFileInputRef.current?.click()}
-                          sx={{ p: 0.35, color: 'text.secondary' }}
-                        >
-                          <AddIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </AppTooltip>
-                    </Box>
-                    <Stack spacing={0.4} className="stanza-mix-rows">
-                      <Box
-                        className="stanza-mix-row stanza-mix-row--system"
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 28 }}
-                      >
-                        <Box sx={{ width: STANZA_MIX_DRAG_COL_PX, flexShrink: 0 }} aria-hidden />
-                        <AppTooltip
-                          title={
-                            metronomeUserMuted
-                              ? 'Unmute the metronome click'
-                              : 'Mute the metronome click (calibration is preserved)'
-                          }
-                        >
-                          <IconButton
-                            size="small"
-                            aria-label={metronomeUserMuted ? 'Unmute metronome' : 'Mute metronome'}
-                            onClick={() =>
-                              void persistSong({ id: selected.id, metronomeMuted: !metronomeUserMuted })
-                            }
-                            sx={{ p: 0.35, alignSelf: 'center' }}
-                          >
-                            {metronomeUserMuted ? (
-                              <VolumeOffOutlinedIcon sx={{ fontSize: 18 }} />
-                            ) : (
-                              <VolumeUpOutlinedIcon sx={{ fontSize: 18 }} />
-                            )}
-                          </IconButton>
-                        </AppTooltip>
-                        <Typography
-                          component="span"
-                          noWrap
-                          title="Metronome click"
-                          sx={(theme) => ({
-                            ...stanzaMixTrackLabelSurfaceSx(theme),
-                            flex: '0 1 auto',
-                            minWidth: 0,
-                            maxWidth: STANZA_MIX_LABEL_MAX_WIDTH,
-                            alignSelf: 'center',
-                          })}
-                        >
-                          Metronome
-                        </Typography>
-                        <AppLinearVolumeSlider
-                          value={mixMetronomeGainDraft ?? metronomeUserGain}
-                          onChange={(_, v) =>
-                            setMixMetronomeGainDraft(stanzaSanitizeLinearBusGain(v as number))
-                          }
-                          onChangeCommitted={async (_, v) => {
-                            const n = stanzaSanitizeLinearBusGain(v as number);
-                            await persistSong({ id: selected.id, metronomeGain: n });
-                            setMixMetronomeGainDraft(null);
-                          }}
-                          aria-label="Metronome click level"
-                          sx={{
-                            alignSelf: 'center',
-                            opacity: metronomeUserMuted || !selected.metronomeEnabled ? 0.42 : 1,
-                            transition: 'opacity 0.15s ease',
-                          }}
-                        />
-                        <Box sx={{ width: STANZA_MIX_TRAIL_BALANCE_PX, flexShrink: 0 }} aria-hidden />
-                      </Box>
-                      {selected.drumsEnabled ? (
-                        <Box
-                          className="stanza-mix-row stanza-mix-row--system"
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 28 }}
-                        >
-                          <Box sx={{ width: STANZA_MIX_DRAG_COL_PX, flexShrink: 0 }} aria-hidden />
-                          <AppTooltip
-                            title={
-                              drumsUserMuted
-                                ? 'Unmute the drum groove'
-                                : 'Mute the drum groove (pattern and level are preserved)'
-                            }
-                          >
-                            <IconButton
-                              size="small"
-                              aria-label={drumsUserMuted ? 'Unmute drums' : 'Mute drums'}
-                              onClick={() =>
-                                void persistSong({ id: selected.id, drumsMuted: !drumsUserMuted })
-                              }
-                              sx={{ p: 0.35, alignSelf: 'center' }}
-                            >
-                              {drumsUserMuted ? (
-                                <VolumeOffOutlinedIcon sx={{ fontSize: 18 }} />
-                              ) : (
-                                <VolumeUpOutlinedIcon sx={{ fontSize: 18 }} />
-                              )}
-                            </IconButton>
-                          </AppTooltip>
-                          <Typography
-                            component="span"
-                            noWrap
-                            title="Drum groove"
-                            sx={(theme) => ({
-                              ...stanzaMixTrackLabelSurfaceSx(theme),
-                              flex: '0 1 auto',
-                              minWidth: 0,
-                              maxWidth: STANZA_MIX_LABEL_MAX_WIDTH,
-                              alignSelf: 'center',
-                            })}
-                          >
-                            Drums
-                          </Typography>
-                          <AppLinearVolumeSlider
-                            value={mixDrumsGainDraft ?? drumsUserGain}
-                            onChange={(_, v) =>
-                              setMixDrumsGainDraft(stanzaSanitizeLinearBusGain(v as number))
-                            }
-                            onChangeCommitted={async (_, v) => {
-                              const n = stanzaSanitizeLinearBusGain(v as number);
-                              await persistSong({ id: selected.id, drumsGain: n });
-                              setMixDrumsGainDraft(null);
-                            }}
-                            aria-label="Drums level"
-                            sx={{
-                              alignSelf: 'center',
-                              opacity: drumsUserMuted ? 0.42 : 1,
-                              transition: 'opacity 0.15s ease',
-                            }}
-                          />
-                          <Box sx={{ width: STANZA_MIX_TRAIL_BALANCE_PX, flexShrink: 0 }} aria-hidden />
-                        </Box>
-                      ) : null}
-                      <Box
-                        className="stanza-mix-row"
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 28 }}
-                      >
-                        <Box sx={{ width: STANZA_MIX_DRAG_COL_PX, flexShrink: 0 }} aria-hidden />
-                        <AppTooltip
-                          title={
-                            primaryPlaybackMuted(selected)
-                              ? isYoutube
-                                ? 'Unmute video'
-                                : 'Unmute main track'
-                              : isYoutube
-                                ? 'Mute video'
-                                : 'Mute main track'
-                          }
-                        >
-                          <IconButton
-                            size="small"
-                            aria-label={
-                              primaryPlaybackMuted(selected)
-                                ? isYoutube
-                                  ? 'Unmute video'
-                                  : 'Unmute main track'
-                                : isYoutube
-                                  ? 'Mute video'
-                                  : 'Mute main track'
-                            }
-                            onClick={() =>
-                              void persistSong({
-                                id: selected.id,
-                                primaryMuted: !primaryPlaybackMuted(selected),
-                              })
-                            }
-                            sx={{ p: 0.35, alignSelf: 'center' }}
-                          >
-                            {primaryPlaybackMuted(selected) ? (
-                              <VolumeOffOutlinedIcon sx={{ fontSize: 18 }} />
-                            ) : (
-                              <VolumeUpOutlinedIcon sx={{ fontSize: 18 }} />
-                            )}
-                          </IconButton>
-                        </AppTooltip>
-                        <Typography
-                          component="span"
-                          noWrap
-                          title={isYoutube ? 'Video' : 'Main file'}
-                          sx={(theme) => ({
-                            ...stanzaMixTrackLabelSurfaceSx(theme),
-                            flex: '0 1 auto',
-                            minWidth: 0,
-                            maxWidth: STANZA_MIX_LABEL_MAX_WIDTH,
-                            alignSelf: 'center',
-                          })}
-                        >
-                          {isYoutube ? 'Video' : 'Main'}
-                        </Typography>
-                        <AppLinearVolumeSlider
-                          value={
-                            mixPrimaryGainDraft ??
-                            stanzaSanitizeLinearBusGain(selected.primaryGain)
-                          }
-                          onChange={(_, v) =>
-                            setMixPrimaryGainDraft(stanzaSanitizeLinearBusGain(v as number))
-                          }
-                          onChangeCommitted={async (_, v) => {
-                            const n = stanzaSanitizeLinearBusGain(v as number);
-                            await persistSong({ id: selected.id, primaryGain: n });
-                            setMixPrimaryGainDraft(null);
-                          }}
-                          aria-label={isYoutube ? 'Video level' : 'Main track level'}
-                          sx={{
-                            alignSelf: 'center',
-                            opacity: primaryPlaybackMuted(selected) ? 0.42 : 1,
-                            transition: 'opacity 0.15s ease',
-                          }}
-                        />
-                        <Box sx={{ width: STANZA_MIX_TRAIL_BALANCE_PX, flexShrink: 0 }} aria-hidden />
-                      </Box>
-                      {(selected.stems ?? []).map((stem) => (
-                          <Box
-                            key={stem.id}
-                            className="stanza-mix-row"
-                            onDragOver={(e) => {
-                              if (!Array.from(e.dataTransfer.types).includes(STANZA_STEM_REORDER_MIME)) return;
-                              e.preventDefault();
-                              e.stopPropagation();
-                              e.dataTransfer.dropEffect = 'move';
-                              setStemReorderOverId(stem.id);
-                            }}
-                            onDragLeave={(e) => {
-                              if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-                              setStemReorderOverId((id) => (id === stem.id ? null : id));
-                            }}
-                            onDrop={(e) => {
-                              if (!Array.from(e.dataTransfer.types).includes(STANZA_STEM_REORDER_MIME)) return;
-                              e.preventDefault();
-                              e.stopPropagation();
-                              const fromId = e.dataTransfer.getData(STANZA_STEM_REORDER_MIME);
-                              setStemReorderDragId(null);
-                              setStemReorderOverId(null);
-                              if (!fromId || fromId === stem.id) return;
-                              void reorderStemsPersist(fromId, stem.id);
-                            }}
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                              minHeight: 28,
-                              borderRadius: 0.75,
-                              outline:
-                                stemReorderOverId === stem.id && stemReorderDragId && stemReorderDragId !== stem.id
-                                  ? '1px dashed rgba(232, 72, 160, 0.55)'
-                                  : 'none',
-                              outlineOffset: 1,
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                width: STANZA_MIX_DRAG_COL_PX,
-                                flexShrink: 0,
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                              }}
-                            >
-                              <AppTooltip title="Drag to reorder">
-                                <Box
-                                  component="span"
-                                  draggable
-                                  onDragStart={(e) => {
-                                    e.dataTransfer.setData(STANZA_STEM_REORDER_MIME, stem.id);
-                                    e.dataTransfer.effectAllowed = 'move';
-                                    setStemReorderDragId(stem.id);
-                                  }}
-                                  onDragEnd={() => {
-                                    setStemReorderDragId(null);
-                                    setStemReorderOverId(null);
-                                  }}
-                                  sx={{
-                                    cursor: 'grab',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    touchAction: 'manipulation',
-                                    color: 'text.secondary',
-                                    '&:active': { cursor: 'grabbing' },
-                                  }}
-                                >
-                                  <DragIndicatorIcon sx={{ fontSize: 18 }} aria-hidden />
-                                </Box>
-                              </AppTooltip>
-                            </Box>
-                            <AppTooltip title={stemPlaybackMuted(stem) ? 'Unmute layer' : 'Mute layer'}>
-                              <IconButton
-                                size="small"
-                                aria-label={stemPlaybackMuted(stem) ? `Unmute ${stem.label}` : `Mute ${stem.label}`}
-                                onClick={() =>
-                                  void persistSong({
-                                    id: selected.id,
-                                    stems: (selected.stems ?? []).map((s) =>
-                                      s.id === stem.id ? { ...s, muted: !stemPlaybackMuted(s) } : s,
-                                    ),
-                                  })
-                                }
-                                sx={{ p: 0.35, alignSelf: 'center' }}
-                              >
-                                {stemPlaybackMuted(stem) ? (
-                                  <VolumeOffOutlinedIcon sx={{ fontSize: 18 }} />
-                                ) : (
-                                  <VolumeUpOutlinedIcon sx={{ fontSize: 18 }} />
-                                )}
-                              </IconButton>
-                            </AppTooltip>
-                            <Box
-                              sx={{
-                                flex: '0 1 auto',
-                                minWidth: 0,
-                                maxWidth: STANZA_MIX_LABEL_MAX_WIDTH,
-                                display: 'flex',
-                                alignItems: 'center',
-                                minHeight: 30,
-                              }}
-                            >
-                              {stemInlineEdit?.stemId === stem.id ? (
-                                <TextField
-                                  hiddenLabel
-                                  size="small"
-                                  fullWidth={false}
-                                  value={stemInlineEdit.value}
-                                  onChange={(e) => setStemInlineEdit({ stemId: stem.id, value: e.target.value })}
-                                  onBlur={(e) =>
-                                    void finishStemInlineEdit(stem.id, (e.target as HTMLInputElement).value, stem.label)
-                                  }
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Escape') {
-                                      e.preventDefault();
-                                      setStemInlineEdit(null);
-                                    }
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      void finishStemInlineEdit(
-                                        stem.id,
-                                        (e.target as HTMLInputElement).value,
-                                        stem.label,
-                                      );
-                                    }
-                                  }}
-                                  inputProps={{ 'aria-label': 'Layer name' }}
-                                  // eslint-disable-next-line jsx-a11y/no-autofocus -- inline rename: move focus from label into field
-                                  autoFocus
-                                  variant="outlined"
-                                  margin="none"
-                                  sx={(theme) => ({
-                                    flex: '0 1 auto',
-                                    maxWidth: '100%',
-                                    alignSelf: 'center',
-                                    '& .MuiOutlinedInput-root': {
-                                      ...stanzaMixTrackLabelSurfaceSx(theme),
-                                      paddingLeft: 8,
-                                      paddingRight: 8,
-                                      minHeight: 30,
-                                    },
-                                    '& .MuiOutlinedInput-notchedOutline': {
-                                      borderColor: alpha(theme.palette.text.primary, 0.16),
-                                    },
-                                    '& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': {
-                                      borderColor: alpha(theme.palette.text.primary, 0.28),
-                                    },
-                                    '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                      borderWidth: 1,
-                                      borderColor: alpha(theme.palette.primary.main, 0.55),
-                                    },
-                                    '& .MuiOutlinedInput-input': {
-                                      padding: '5px 0 !important',
-                                      width: `${Math.max(5, Math.min(18, stemInlineEdit.value.length + 2))}ch`,
-                                      maxWidth: '14rem',
-                                    },
-                                  })}
-                                />
-                              ) : (
-                                <Typography
-                                  component="button"
-                                  type="button"
-                                  noWrap
-                                  title={`${stem.label} (click to rename)`}
-                                  onClick={() => setStemInlineEdit({ stemId: stem.id, value: stem.label })}
-                                  sx={(theme) => ({
-                                    ...stanzaMixTrackLabelSurfaceSx(theme),
-                                    flex: 1,
-                                    minWidth: 0,
-                                    textAlign: 'left',
-                                    border: 'none',
-                                    background: 'none',
-                                    padding: '4px 0',
-                                    cursor: 'text',
-                                    alignSelf: 'center',
-                                  })}
-                                >
-                                  {stem.label}
-                                </Typography>
-                              )}
-                            </Box>
-                            <AppLinearVolumeSlider
-                              value={
-                                mixStemGainDraftById[stem.id] ??
-                                stanzaSanitizeLinearBusGain(stem.gain)
-                              }
-                              onChange={(_, v) => {
-                                const n = stanzaSanitizeLinearBusGain(v as number);
-                                setMixStemGainDraftById((prev) => ({ ...prev, [stem.id]: n }));
-                              }}
-                              onChangeCommitted={async (_, v) => {
-                                const n = stanzaSanitizeLinearBusGain(v as number);
-                                await persistSong({
-                                  id: selected.id,
-                                  stems: (selected.stems ?? []).map((s) =>
-                                    s.id === stem.id ? { ...s, gain: n } : s,
-                                  ),
-                                });
-                                setMixStemGainDraftById((prev) => {
-                                  const next = { ...prev };
-                                  delete next[stem.id];
-                                  return next;
-                                });
-                              }}
-                              aria-label={`${stem.label} level`}
-                              sx={{
-                                alignSelf: 'center',
-                                opacity: stemPlaybackMuted(stem) ? 0.42 : 1,
-                                transition: 'opacity 0.15s ease',
-                              }}
-                            />
-                            <Box
-                              sx={{
-                                width: STANZA_MIX_TRAIL_BALANCE_PX,
-                                flexShrink: 0,
-                                display: 'flex',
-                                justifyContent: 'flex-end',
-                                alignItems: 'center',
-                              }}
-                            >
-                              <IconButton
-                                size="small"
-                                aria-label={`Remove layer ${stem.label}`}
-                                onClick={() =>
-                                  void persistSong({
-                                    id: selected.id,
-                                    stems: (selected.stems ?? []).filter((s) => s.id !== stem.id),
-                                  })
-                                }
-                                sx={{ p: 0.2, color: 'text.secondary', alignSelf: 'center' }}
-                              >
-                                <CloseIcon sx={{ fontSize: 16 }} />
-                              </IconButton>
-                            </Box>
-                          </Box>
-                        ))}
-                    </Stack>
-                    <input
-                      ref={stemFileInputRef}
-                      type="file"
-                      accept="audio/*,video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm"
-                      hidden
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        e.target.value = '';
-                        if (f) void addStemFromFile(f);
+                    <StanzaPracticePitchSection
+                      selected={selected}
+                      stanzaCanAnalyze={stanzaCanAnalyze}
+                      stanzaAnalysisDisabledReason={stanzaAnalysisDisabledReason ?? null}
+                      keyDetectBusy={keyDetection.keyDetectBusy}
+                      keyDetectError={keyDetection.keyDetectError}
+                      onDismissKeyDetectError={() => keyDetection.setKeyDetectError(null)}
+                      onDetectOriginalKey={() => keyDetection.runDetectOriginalKey()}
+                      onOriginalKeyChange={(key) => void persistSong({ id: selected.id, localOriginalKey: key })}
+                      transposeDraftSemitones={transposeDraftSemitones}
+                      transposeInputStr={transposeInputStr}
+                      transposeStepperEditing={transposeStepperEditing}
+                      transposeDecodeBusy={transposeDecodeBusy}
+                      transposeDecodeError={transposeDecodeError}
+                      onDismissTransposeDecodeError={() => setTransposeDecodeError(null)}
+                      onTransposeInputChange={(raw) => {
+                        if (!/^-?\d*$/.test(raw)) return;
+                        setTransposeInputStr(raw);
+                        if (raw === '' || raw === '-') return;
+                        const n = Number.parseInt(raw, 10);
+                        if (!Number.isFinite(n)) return;
+                        schedulePersistTransposeSemitones(n);
                       }}
+                      onTransposeInputFocus={() => setTransposeStepperEditing(true)}
+                      onTransposeInputBlur={() => {
+                        setTransposeStepperEditing(false);
+                        const n = Number.parseInt(transposeInputStr, 10);
+                        if (!Number.isFinite(n)) {
+                          setTransposeInputStr(String(transposeDraftSemitones));
+                          return;
+                        }
+                        schedulePersistTransposeSemitones(n);
+                      }}
+                      onTransposeInputKeyDown={(key) => {
+                        if (key === 'ArrowUp') {
+                          schedulePersistTransposeSemitones(transposeDraftRef.current + 1);
+                        }
+                        if (key === 'ArrowDown') {
+                          schedulePersistTransposeSemitones(transposeDraftRef.current - 1);
+                        }
+                      }}
+                      onTransposeBump={(delta) => schedulePersistTransposeSemitones(transposeDraftRef.current + delta)}
+                      onResetTranspose={() => {
+                        if (transposePersistTimerRef.current != null) {
+                          window.clearTimeout(transposePersistTimerRef.current);
+                          transposePersistTimerRef.current = null;
+                        }
+                        setTransposeDraftSemitones(0);
+                        setTransposeInputStr('0');
+                        void persistSong({ id: selected.id, localTransposeSemitones: undefined });
+                      }}
+                      showPlaybackKeyChip={showPlaybackKeyChip}
+                      playbackKeyChipLabel={playbackKeyChipLabel}
                     />
-                  </Box>
+                  )}
+                  <StanzaPracticeMixSection
+                    selected={selected}
+                    isYoutube={isYoutube}
+                    metronomeUserMuted={metronomeUserMuted}
+                    metronomeUserGain={metronomeUserGain}
+                    mixMetronomeGainDraft={mixMetronomeGainDraft}
+                    onMetronomeMutedChange={(muted) => void persistSong({ id: selected.id, metronomeMuted: muted })}
+                    onMetronomeGainDraftChange={setMixMetronomeGainDraft}
+                    onMetronomeGainCommit={async (gain) => {
+                      await persistSong({ id: selected.id, metronomeGain: gain });
+                      setMixMetronomeGainDraft(null);
+                    }}
+                    drumsEnabled={Boolean(selected.drumsEnabled)}
+                    drumsUserMuted={drumsUserMuted}
+                    drumsUserGain={drumsUserGain}
+                    mixDrumsGainDraft={mixDrumsGainDraft}
+                    onDrumsMutedChange={(muted) => void persistSong({ id: selected.id, drumsMuted: muted })}
+                    onDrumsGainDraftChange={setMixDrumsGainDraft}
+                    onDrumsGainCommit={async (gain) => {
+                      await persistSong({ id: selected.id, drumsGain: gain });
+                      setMixDrumsGainDraft(null);
+                    }}
+                    mixPrimaryGainDraft={mixPrimaryGainDraft}
+                    onPrimaryGainDraftChange={setMixPrimaryGainDraft}
+                    onPrimaryGainCommit={async (gain) => {
+                      await persistSong({ id: selected.id, primaryGain: gain });
+                      setMixPrimaryGainDraft(null);
+                    }}
+                    onPrimaryMutedChange={(muted) => void persistSong({ id: selected.id, primaryMuted: muted })}
+                    stems={selected.stems ?? STANZA_EMPTY_STEMS}
+                    mixStemGainDraftById={mixStemGainDraftById}
+                    onStemGainDraftChange={(stemId, gain) =>
+                      setMixStemGainDraftById((prev) => ({ ...prev, [stemId]: gain }))
+                    }
+                    onStemGainCommit={async (stemId, gain) => {
+                      await persistSong({
+                        id: selected.id,
+                        stems: (selected.stems ?? []).map((s) => (s.id === stemId ? { ...s, gain } : s)),
+                      });
+                      setMixStemGainDraftById((prev) => {
+                        const next = { ...prev };
+                        delete next[stemId];
+                        return next;
+                      });
+                    }}
+                    onStemMutedChange={(stemId, muted) =>
+                      void persistSong({
+                        id: selected.id,
+                        stems: (selected.stems ?? []).map((s) => (s.id === stemId ? { ...s, muted } : s)),
+                      })
+                    }
+                    onRemoveStem={(stemId) =>
+                      void persistSong({
+                        id: selected.id,
+                        stems: (selected.stems ?? []).filter((s) => s.id !== stemId),
+                      })
+                    }
+                    stemInlineEdit={stemInlineEdit}
+                    onStemInlineEditChange={setStemInlineEdit}
+                    onFinishStemInlineEdit={finishStemInlineEdit}
+                    stemReorderDragId={stemReorderDragId}
+                    stemReorderOverId={stemReorderOverId}
+                    onStemReorderDragIdChange={setStemReorderDragId}
+                    onStemReorderOverIdChange={setStemReorderOverId}
+                    onStemDragLeave={(stemId) => setStemReorderOverId((id) => (id === stemId ? null : id))}
+                    onReorderStems={reorderStemsPersist}
+                    stemFileInputRef={stemFileInputRef}
+                    onAddStemFromFile={addStemFromFile}
+                  />
                 </Stack>
                 </Box>
               </Paper>

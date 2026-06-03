@@ -58,7 +58,7 @@ else
 
   # Check if regression test files or cat app files are staged
   REGRESSION_FILES_CHANGED=$(first_match '\.regression\.test\.(ts|tsx)$|^src/cats/')
-  BPM_BENCHMARK_FILES_CHANGED=$(first_match '^src/beat/utils/(bpmDetectionBenchmark\.test\.ts|tempoDetectorInterface\.ts|tempoDetectors\.ts|tempoDetectorCore\.ts|tempoEnsemble\.ts|syntheticAudioGenerator\.ts|bpmAccuracyTest\.ts)$')
+  BPM_BENCHMARK_FILES_CHANGED=$(first_match '^src/shared/beat/(bpmDetectionBenchmark\.test\.ts|regression/tempoDetectorInterface\.ts|regression/tempoDetectors\.ts|regression/tempoDetectorCore\.ts|tempoEnsemble\.ts|regression/syntheticAudioGenerator\.ts|bpmAccuracyTest\.ts)$')
 
   if [ -n "$BPM_BENCHMARK_FILES_CHANGED" ]; then
     echo "BPM detector files changed, running full tests including benchmarks..."

@@ -88,13 +88,4 @@ describe('shared UI reuse guardrails', () => {
     expect(violations).toEqual([]);
   });
 
-  it('Beat mixer uses AppLinearVolumeSlider for channel gain', () => {
-    const mixerPath = path.resolve(
-      path.dirname(fileURLToPath(import.meta.url)),
-      '../beat/components/BeatMixerChannel.tsx'
-    );
-    const text = fs.readFileSync(mixerPath, 'utf8');
-    expect(text).toContain('AppLinearVolumeSlider');
-    expect(text).not.toMatch(SLIDER_IMPORT);
-  });
 });

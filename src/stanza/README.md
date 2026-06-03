@@ -37,7 +37,7 @@ Behavior that's wider than a single file is captured in ADRs:
 - [ADR 0004](../../docs/adr/0004-stanza-stem-web-audio-mixer.md) — when any mix layer
   exists, the mix bus uses **Web Audio** (`MediaElementSource` → per-track
   `GainNode` → destination); otherwise the main element plays directly.
-- [ADR 0013](../../docs/adr/0013-stanza-subsumes-find-the-beat.md) — Find the Beat merged into Stanza; optional **Analyze song** / **Suggest sections** for local uploads.
+- [ADR 0013](../../docs/adr/0013-stanza-subsumes-find-the-beat.md) — Find the Beat merged into Stanza; optional **Analyze song** / **Suggest sections** for local uploads. See [`import/BEAT_MIGRATION.md`](./import/BEAT_MIGRATION.md) for why migrated library rows can behave differently.
 - [ADR 0005](../../docs/adr/0005-shared-find-the-beat-analyzer.md) — shared Essentia analyzer for metronome **Analyze**.
 - [ADR 0006](../../docs/adr/0006-stanza-drive-backup-merge-and-restore.md) — Drive
   backup conflict prompt, merge, and local undo snapshots.

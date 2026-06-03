@@ -8,6 +8,7 @@ import { stanzaDb, type StanzaSong } from '../db/stanzaDb';
 import {
   BEAT_MIGRATION_STATE_KEY,
   beatSettingsToMetronomeCalibration,
+  beatCorrectedKeyToStanzaLocalKey,
   findStanzaSongByMediaFingerprint,
   importBeatLibraryIfNeeded,
   readBeatFingerprintForStanzaSong,
@@ -163,6 +164,12 @@ describe('importBeatLibraryIfNeeded', () => {
     expect(cal?.source).toBe('analysis');
   });
 
+  it('beatCorrectedKeyToStanzaLocalKey accepts display keys only', () => {
+    expect(beatCorrectedKeyToStanzaLocalKey('F#')).toBe('F#');
+    expect(beatCorrectedKeyToStanzaLocalKey('C major')).toBeUndefined();
+    expect(beatCorrectedKeyToStanzaLocalKey(null)).toBeUndefined();
+  });
+
   it('imports YouTube entries when only fingerprint/sourceUrl identify the video', async () => {
     await seedBeatLibrary({
       entries: [
@@ -182,6 +189,35 @@ describe('importBeatLibraryIfNeeded', () => {
     expect(result?.imported).toBe(1);
     const song = await stanzaDb.songs.where('ytId').equals('dQw4w9WgXcQ').first();
     expect(song?.title).toBe('Fingerprint only');
+  });
+
+  it('imports correctedDetectedKey into localOriginalKey for local uploads', async () => {
+    const entryId = 'local-key';
+    const blob = new Blob(['audio'], { type: 'audio/mpeg' });
+    await seedBeatLibrary({
+      entries: [
+        {
+          id: entryId,
+          sourceType: 'local',
+          mediaKind: 'audio',
+          title: 'Keyed upload',
+          fingerprint: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+          updatedAt: 100,
+        },
+      ],
+      files: [{ videoId: entryId, blob }],
+      songSettings: [
+        {
+          videoId: entryId,
+          updatedAt: 100,
+          settings: { correctedDetectedKey: 'Ab' },
+        },
+      ],
+    });
+
+    await importBeatLibraryIfNeeded();
+    const song = await stanzaDb.songs.filter((s) => s.title === 'Keyed upload').first();
+    expect(song?.localOriginalKey).toBe('Ab');
   });
 
   it('derives metronome sync from analysis when Beat saved no explicit BPM or syncStartTime', async () => {

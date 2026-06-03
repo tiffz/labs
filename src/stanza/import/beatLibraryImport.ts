@@ -9,6 +9,7 @@ import { probeFileAudioDurationSeconds } from '../utils/probeFileAudioDuration';
 import { ensureMarkerIds } from '../utils/segments';
 import { buildStanzaSegmentCalibration } from '../utils/stanzaMetronome';
 import { parseYoutubeVideoId } from '../utils/parseYoutubeVideoId';
+import { ALL_KEYS, type MusicKey } from '../../shared/music/musicInputConstants';
 import type { PersistedAnalysisBundle } from '../../shared/beat/analysisVersion';
 import { isAnalysisVersionStale } from '../../shared/beat/analysisVersion';
 import { calibrationFromBeatAnalysis, markAnalysisBundleStale } from '../../shared/beat/wholeSongBeatAnalysis';
@@ -55,6 +56,7 @@ interface BeatSongSettingsRow {
     drumMuted?: boolean;
     metronomeMuted?: boolean;
     transposeSemitones?: number;
+    correctedDetectedKey?: string | null;
   };
 }
 
@@ -212,6 +214,16 @@ function clearLegacyBeatLocalStorage(entryIds: readonly string[]): void {
   for (const entryId of entryIds) {
     localStorage.removeItem(`beat:song-settings:${entryId}`);
   }
+}
+
+/** Map Beat `correctedDetectedKey` (12-key display set) to Stanza `localOriginalKey`. */
+export function beatCorrectedKeyToStanzaLocalKey(raw: string | null | undefined): MusicKey | undefined {
+  const trimmed = raw?.trim();
+  if (!trimmed) return undefined;
+  if ((ALL_KEYS as readonly string[]).includes(trimmed)) {
+    return trimmed as MusicKey;
+  }
+  return undefined;
 }
 
 /** Resolve a YouTube id from Beat library row fields (handles older rows missing `youtubeVideoId`). */
@@ -386,6 +398,7 @@ function beatFieldsFromEntry(opts: {
     primaryGain: settings?.audioVolume != null ? settings.audioVolume / 100 : 0.8,
     primaryMuted: settings?.audioMuted ?? false,
     localTransposeSemitones: settings?.transposeSemitones ?? 0,
+    localOriginalKey: beatCorrectedKeyToStanzaLocalKey(settings?.correctedDetectedKey),
     analysisCache: normalizeAnalysisCache(analysisBundle),
   };
 }
@@ -559,6 +572,8 @@ async function migrateBeatEntry(
       primaryGain: settings?.audioVolume != null ? settings.audioVolume / 100 : existing.primaryGain,
       primaryMuted: settings?.audioMuted ?? existing.primaryMuted,
       localTransposeSemitones: settings?.transposeSemitones ?? existing.localTransposeSemitones,
+      localOriginalKey:
+        beatCorrectedKeyToStanzaLocalKey(settings?.correctedDetectedKey) ?? existing.localOriginalKey,
     };
     if (resolvedYtId && !existing.ytId) {
       patch.ytId = resolvedYtId;

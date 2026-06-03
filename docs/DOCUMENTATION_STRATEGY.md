@@ -29,7 +29,7 @@ How we grow documentation without drift, duplication, or low-signal narrative. *
 | **Refactor pattern for large components**                       | [`docs/COMPONENT_DECOMPOSITION_PATTERN.md`](COMPONENT_DECOMPOSITION_PATTERN.md)      | Reference from app ARCHITECTURE when relevant.                                                               |
 | **App-specific behavior**                                       | `src/<app>/README.md` (+ optional `DESIGN.md`, etc.)                                 | Entry URL, storage, odd constraints, **link** to shared testing notes (e.g. JSDOM media) instead of copying. |
 | **App layout contract (workbench / footer)**                    | `src/<app>/LAYOUT.md` or `src/shared/layout/README.md`                               | Stanza: `src/stanza/LAYOUT.md`. Link from app README.                                                        |
-| **Async analysis / background queue UX**                        | `src/<app>/DEVELOPMENT.md`                                                           | Beat: `src/beat/DEVELOPMENT.md`. Shared tempo: `src/shared/beat/TEST_MATRIX.md`.                             |
+| **Async analysis / background queue UX**                        | `src/<app>/DEVELOPMENT.md`                                                           | Stanza Analyze: `src/stanza/DEVELOPMENT.md`. Shared tempo: `src/shared/beat/TEST_MATRIX.md`.                 |
 | **Playback hooks, notation render order, portal picker skins**  | `src/shared/hooks/PLAYBACK_HOOK_PATTERN.md` + `PLAYBACK_RENDERING_AUDIT.md`          | Agent rule: `.cursor/rules/playback-ui-regressions.mdc`. E2E smokes: `e2e/playback-ui-regressions.spec.ts`.  |
 
 ## Anti-patterns (reduce noise)

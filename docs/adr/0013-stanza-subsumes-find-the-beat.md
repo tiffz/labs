@@ -24,7 +24,7 @@ Maintaining two apps duplicates persistence, UX patterns, and regression surface
    - **Suggest sections** — run shared section detector; user confirms before inserting markers.
    - **Versioned analysis cache** on local uploads (`analysisCache` on `StanzaSong`, device-local, not in Drive envelope).
 
-3. **Shared code promotion** — Beat-only modules Stanza needs (section detection, measure helpers, analysis bundle types) move to `src/shared/beat/**`. Beat keeps thin re-export shims until the route is retired.
+3. **Shared code promotion** — Beat-only modules Stanza needs (section detection, measure helpers, analysis bundle types) live in `src/shared/beat/**`.
 
 4. **Data migration** — One-time import from `beat-finder-library` IndexedDB into Stanza Dexie: match by fingerprint / `youtube:{id}`, map practice sections → markers, map `PerSongSettings` → Stanza metronome/mix fields.
 
@@ -39,15 +39,17 @@ Maintaining two apps duplicates persistence, UX patterns, and regression surface
 | `playbackRate`                     | (future: playback rate pref if added)                                                                                           |
 | `metronomeEnabled`, volumes, mutes | `metronomeEnabled`, `metronomeGain`, `metronomeMuted`, `drumsEnabled`, `drumsGain`, `drumsMuted`, `primaryGain`, `primaryMuted` |
 | `transposeSemitones`               | `localTransposeSemitones`                                                                                                       |
+| `correctedDetectedKey`             | `localOriginalKey` (12-key display set only)                                                                                    |
 | Practice lane section boundaries   | `markers[]` (`time`, `label`)                                                                                                   |
 | Cached `PersistedAnalysisBundle`   | `analysisCache` (local-only)                                                                                                    |
 
 ## Consequences
 
-- Beat `App.tsx` and library UI stop receiving feature work; CI keeps `src/beat/**` benchmarks as the tempo regression harness until fully relocated.
+- Find the Beat app code removed; `/beat/` is a static redirect to `/stanza/` (`public/beat/index.html`).
+- Tempo regression harness lives under `src/shared/beat/regression/` (synthetic audio hashes, BPM benchmark, CLI runners).
 - Stanza gains `analysisCache`, suggest-sections UI, and import utility; Drive merge must omit local-only analysis blobs (same pattern as `localAudioBlob`).
 - Users with Beat libraries see a non-blocking import toast on first Stanza load after upgrade.
-- Import boundaries unchanged: `src/stanza/**` must not import `src/beat/**`.
+- Import boundaries unchanged: `src/stanza/**` must not import app-local code from removed apps; use `src/shared/beat/**`.
 
 ## Alternatives considered
 
@@ -57,6 +59,6 @@ Maintaining two apps duplicates persistence, UX patterns, and regression surface
 ## Links
 
 - [`src/stanza/README.md`](../../src/stanza/README.md)
-- [`src/beat/README.md`](../../src/beat/README.md)
+- [`src/shared/beat/TEST_MATRIX.md`](../../src/shared/beat/TEST_MATRIX.md)
 - [`src/shared/beat/findTheBeatAnalyzer.ts`](../../src/shared/beat/findTheBeatAnalyzer.ts)
 - [`src/stanza/import/beatLibraryImport.ts`](../../src/stanza/import/beatLibraryImport.ts)

@@ -9,7 +9,6 @@ const config: KnipConfig = {
     'src/story/index.html',
     'src/chords/index.html',
     'src/forms/index.html',
-    'src/beat/index.html',
     'src/piano/index.html',
     'src/scales/index.html',
     'src/melodia/index.html',
@@ -32,8 +31,6 @@ const config: KnipConfig = {
     'src/story/main.tsx',
     'src/chords/main.tsx',
     'src/forms/main.tsx',
-    'src/beat/main.tsx',
-    'src/beat/App.tsx',
     'src/piano/main.tsx',
     'src/scales/main.tsx',
     'src/melodia/main.tsx',
@@ -48,8 +45,8 @@ const config: KnipConfig = {
     'src/corp/App.tsx',
     'src/**/*.test.{ts,tsx}',
     // CLI tools for beat finder analysis (run via npx tsx, not imported by app)
-    'src/beat/tests/tempoAnalysisRunner.ts',
-    'src/beat/utils/nodeAudio.ts',
+    'src/shared/beat/regression/tempoAnalysisRunner.ts',
+    'src/shared/beat/regression/nodeAudio.ts',
     'scripts/analyze-tempo.ts',
     'scripts/melodia/ingest-folder.mts',
     'scripts/audit-pipeline.js',
@@ -92,7 +89,7 @@ const config: KnipConfig = {
     // Beat finder: deprecated exports kept for API compatibility (shared implementation)
     'src/shared/beat/experimental/fermataDetector.ts',
     'src/shared/beat/experimental/tempoChangeDetector.ts',
-    'src/beat/utils/audioBuffer.ts',
+    'src/shared/beat/regression/audioBuffer.ts',
     'src/shared/beat/bpmAccuracyTest.ts',
     // Count Me In: analysis/coaching features parked for future development
     'src/count/analysis/RhythmAnalyzer.ts',
