@@ -180,6 +180,8 @@ Import boundaries are always validated via `npm run check:import-boundaries` so 
 GitHub Actions runs lint, app typechecks, tests, e2e smoke checks, and builds on code changes. Docs/assets deploys also run lint and fast tests before build.
 Production rollback is available through `.github/workflows/rollback.yml` (manual dispatch with a known-good commit SHA).
 
+**Pull requests (solo):** There is no human review. PRs exist so CI runs before merge and history stays searchable. Default: squash merge to `main`, delete branch. Full loop: [`docs/PR_WORKFLOW.md`](docs/PR_WORKFLOW.md). Agent skills: `labs-babysit-pr`, `labs-split-to-prs`.
+
 ### Testing Strategy
 
 - Co-located test files alongside source code

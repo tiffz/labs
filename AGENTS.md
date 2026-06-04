@@ -65,8 +65,8 @@ Presubmit before done: [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre
 | Material architecture (routing, OAuth, boundaries) | `docs/adr/README.md`, `.cursor/rules/architecture-decisions.mdc`                                                                                           | `labs-write-adr`               |
 | Regression / visual baselines                      | `docs/REGRESSION_WORKFLOW.md`                                                                                                                              | `labs-visual-regression`       |
 | Large component / App.tsx refactor                 | `docs/COMPONENT_DECOMPOSITION_PATTERN.md`                                                                                                                  | `labs-component-decomposition` |
-| PR babysitting / merge-ready                       | —                                                                                                                                                          | `labs-babysit-pr`              |
-| Split work into multiple PRs                       | —                                                                                                                                                          | `labs-split-to-prs`            |
+| PR babysitting / merge-ready                       | [`docs/PR_WORKFLOW.md`](docs/PR_WORKFLOW.md)                                                                                                               | `labs-babysit-pr`              |
+| Split work into multiple PRs                       | [`docs/PR_WORKFLOW.md`](docs/PR_WORKFLOW.md) § Splitting                                                                                                   | `labs-split-to-prs`            |
 | Session retrospective / codify learnings           | `docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`                                                                                                                   | `labs-session-retrospective`   |
 
 Commands quick reference: root [`README.md`](README.md) and `package.json` scripts.

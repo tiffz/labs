@@ -16,9 +16,10 @@ Progressive disclosure for coding assistants. Read **only the section** that mat
 | Visual / audio baselines                 | [`docs/REGRESSION_WORKFLOW.md`](REGRESSION_WORKFLOW.md); skill `labs-visual-regression`                                                         |
 | Large component refactor                 | [`docs/COMPONENT_DECOMPOSITION_PATTERN.md`](COMPONENT_DECOMPOSITION_PATTERN.md); skill `labs-component-decomposition`                           |
 | Rhythm presets                           | `presetIntegrity.test.ts`; skill `labs-rhythm-preset`                                                                                           |
+| Dependency upgrades                      | [`docs/DEPENDENCY_UPGRADE_PLAN.md`](DEPENDENCY_UPGRADE_PLAN.md); skill `labs-dependency-upgrade`                                                |
+| Open / merge PRs (solo, no human review) | [`docs/PR_WORKFLOW.md`](PR_WORKFLOW.md); skills `labs-babysit-pr`, `labs-split-to-prs`                                                          |
 | Session retrospective / codify learnings | skill `labs-session-retrospective`                                                                                                              |
 | Mid-refactor handoff                     | skill `labs-iteration-handoff`                                                                                                                  |
 | Drive backup / conflict UX               | skill `labs-drive-backup`; `SHARED_UI_CONVENTIONS.md` § Drive                                                                                   |
-| Dependency upgrades                      | [`docs/DEPENDENCY_UPGRADE_PLAN.md`](DEPENDENCY_UPGRADE_PLAN.md); skill `labs-dependency-upgrade`                                                |
 
 Human precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). Agent workflow entry: [`AGENTS.md`](../AGENTS.md).
