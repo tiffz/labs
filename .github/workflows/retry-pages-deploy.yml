@@ -1,0 +1,32 @@
+name: Retry failed Pages deploy
+
+# After a failed deploy-docs run (often Pages "in progress deployment" race),
+# wait for the in-flight deployment to finish, then re-run failed jobs once.
+# Primary prevention: deploy-docs.yml concurrency group.
+
+on:
+  workflow_run:
+    workflows: [Deploy Docs & Assets]
+    types: [completed]
+    branches: [main, master]
+
+concurrency:
+  group: pages-deploy-retry-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+jobs:
+  retry-failed-deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.run_attempt == 1
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Wait for in-flight GitHub Pages deployment
+        run: sleep 90
+
+      - name: Re-run failed jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run rerun "${{ github.event.workflow_run.id }}" --failed

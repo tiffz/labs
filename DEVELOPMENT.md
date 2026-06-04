@@ -182,6 +182,8 @@ Production rollback is available through `.github/workflows/rollback.yml` (manua
 
 **Pull requests (solo):** There is no human review. PRs exist so CI runs before merge and history stays searchable. Default: squash merge to `main`, delete branch. Full loop: [`docs/PR_WORKFLOW.md`](docs/PR_WORKFLOW.md). Agent skills: `labs-babysit-pr`, `labs-split-to-prs`.
 
+**Deploy Docs & Assets (`deploy-docs.yml`):** Runs on `main` pushes that touch docs/assets paths (including `*.md`). Separate from the main `CI/CD` test job. Uses a Pages **concurrency group** so rapid back-to-back merges do not race `deploy-pages`. If deploy fails with `in progress deployment`, re-run failed jobs on the latest workflow run or push again after the in-flight deploy completes.
+
 ### Testing Strategy
 
 - Co-located test files alongside source code

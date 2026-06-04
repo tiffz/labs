@@ -16,6 +16,12 @@ on:
       - 'CNAME'
       - 'LICENSE'
 
+# GitHub Pages allows one in-flight deployment per environment. Rapid pushes to
+# main (e.g. merging several PRs back-to-back) otherwise race at deploy-pages.
+concurrency:
+  group: pages-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy-docs:
     runs-on: ubuntu-latest
@@ -69,4 +75,5 @@ jobs:
 
     - name: Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v5 
+      uses: actions/deploy-pages@v5
+      timeout-minutes: 10 

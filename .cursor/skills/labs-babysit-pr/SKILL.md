@@ -16,6 +16,7 @@ Get the PR to a **merge-ready** state: green CI, conflicts resolved, actionable 
 5. **Verify** — push scoped fixes, re-watch CI until mergeable + green + comments triaged
 6. **Labs gate** — run `npm run presubmit` locally before pushing substantive fixes
 7. **Merge (when authorized)** — if user asked to merge and CI is green: `gh pr merge <n> --squash --delete-branch`, then `git checkout main && git pull`. Merge stacked PRs in dependency order (see PR workflow doc)
+8. **Deploy Docs failures** — if `Deploy Docs & Assets` failed with GitHub Pages `in progress deployment` (common after rapid merges to `main`), confirm latest `main` deploy succeeded or run `gh run rerun <run-id> --failed` after ~90s. Do not treat this as a code defect unless build/lint/test steps failed
 
 ## Merge bar (solo)
 

@@ -122,6 +122,8 @@ git checkout main && git pull
 
 Merge **stacked PRs in dependency order** (foundation first). After merging PR _n_, rebase or merge `main` into downstream branches before merging _n+1_.
 
+**Rapid merges and GitHub Pages:** Each merge that touches `*.md` (including decomposition doc updates) triggers [`deploy-docs.yml`](../.github/workflows/deploy-docs.yml). GitHub Pages allows only one in-flight deployment. The workflow uses a **concurrency group** (`cancel-in-progress: true`) so only the latest deploy runs; [`retry-pages-deploy.yml`](../.github/workflows/retry-pages-deploy.yml) re-runs failed deploy jobs once after a short wait. If Actions still shows red on an old run, confirm the latest `main` deploy succeeded.
+
 Agents: merge only when the user asked to merge (or babysit through merge-ready **and** merge).
 
 ### 7. After merge
