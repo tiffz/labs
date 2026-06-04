@@ -19,6 +19,9 @@ npm run check:agent-docs
 echo "== presubmit: css important baseline =="
 npm run check:css-important
 
+echo "== presubmit: workflow guardrails =="
+npm run check:workflows
+
 echo "== presubmit: lint =="
 npm run lint
 

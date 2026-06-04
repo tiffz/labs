@@ -122,7 +122,7 @@ git checkout main && git pull
 
 Merge **stacked PRs in dependency order** (foundation first). After merging PR _n_, rebase or merge `main` into downstream branches before merging _n+1_.
 
-**Rapid merges and GitHub Pages:** Each merge that touches `*.md` (including decomposition doc updates) triggers [`deploy-docs.yml`](../.github/workflows/deploy-docs.yml). GitHub Pages allows only one in-flight deployment. The workflow uses a **concurrency group** (`cancel-in-progress: true`) so only the latest deploy runs; [`retry-pages-deploy.yml`](../.github/workflows/retry-pages-deploy.yml) re-runs failed deploy jobs once after a short wait. If Actions still shows red on an old run, confirm the latest `main` deploy succeeded.
+**Rapid merges:** Merging several PRs back-to-back triggers multiple `CI/CD` runs; workflow **concurrency** cancels superseded runs — check the **latest** run on `main`. Pages **deploy** uses its own concurrency group; transient `in progress deployment` errors are auto-retried once (see [`docs/CI_RELIABILITY.md`](CI_RELIABILITY.md)).
 
 Agents: merge only when the user asked to merge (or babysit through merge-ready **and** merge).
 
@@ -164,8 +164,9 @@ Do not open five PRs and merge all at once without checking CI on each; merge se
 
 ## Related docs
 
-- [`AGENTS.md`](../AGENTS.md) — agent boundaries and task routing
+- [`docs/CI_RELIABILITY.md`](CI_RELIABILITY.md) — Actions reliability, deploy path, triage
 - [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — what CI actually runs
 - [`docs/REGRESSION_WORKFLOW.md`](REGRESSION_WORKFLOW.md) — visual/audio baselines
 - [`docs/ROLLBACK.md`](ROLLBACK.md) — production rollback
+- [`AGENTS.md`](../AGENTS.md) — agent boundaries and task routing
 - Skills: `labs-babysit-pr`, `labs-split-to-prs`

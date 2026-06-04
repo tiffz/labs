@@ -21,6 +21,9 @@ on:
 jobs:
   rollback:
     runs-on: ubuntu-latest
+    concurrency:
+      group: pages-deploy-${{ github.ref }}
+      cancel-in-progress: true
 
     environment:
       name: github-pages

@@ -111,7 +111,7 @@ Use this quick checklist before merging music UI changes:
 Workflows:
 
 - `.github/workflows/ci.yml`: code quality checks, tests, build, deploy.
-- `.github/workflows/deploy-docs.yml`: docs/assets deployment path with lint, fast tests, and build.
+- `.github/workflows/ci.yml`: CI test gate + single GitHub Pages deploy on `main` (see `docs/CI_RELIABILITY.md`).
 - `.github/workflows/rollback.yml`: manual production rollback by known-good commit SHA.
 
 For ADR-level guidance and architecture rationale, see `DEVELOPMENT.md`.
@@ -120,5 +120,7 @@ For rollback operations, see `docs/ROLLBACK.md`.
 For visual/audio baseline and review workflow, see `docs/REGRESSION_WORKFLOW.md`.
 
 For solo PR workflow (branch → CI → merge), see `docs/PR_WORKFLOW.md`.
+
+For CI reliability and workflow changes, see `docs/CI_RELIABILITY.md`.
 To replace all screenshot baselines at once: `npm run test:e2e:visual:update:fresh`.
 The local Regression UI lives under `http://127.0.0.1:5173/ui/#regression/screenshots` (dev server only; see that doc for actions and hashes).

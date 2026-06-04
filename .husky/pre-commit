@@ -39,6 +39,10 @@ if printf '%s\n' "$STAGED_FILES" | grep -Eq '(^AGENTS\.md$|^docs/|^\.cursor/|/AG
   npm run check:agent-docs
 fi
 
+if printf '%s\n' "$STAGED_FILES" | grep -Eq '^\.github/workflows/'; then
+  npm run check:workflows
+fi
+
 # Lint & auto-fix staged files (eslint + prettier)
 npx lint-staged --allow-empty
 

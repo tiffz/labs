@@ -12,6 +12,11 @@ on:
       - '**.css'
       - '**.md'
       - '**.html'
+      - '**.svg'
+      - '**.png'
+      - '**.jpg'
+      - '**.jpeg'
+      - '**.gif'
       - 'public/**'
       - 'package*.json'
       - '.github/workflows/**'
@@ -22,6 +27,8 @@ on:
       - 'knip.config.*'
       - 'playwright.config.*'
       - 'workers/**'
+      - 'CNAME'
+      - 'LICENSE'
   pull_request:
     branches: [ main, master ]
     paths:
@@ -33,6 +40,11 @@ on:
       - '**.css'
       - '**.md'
       - '**.html'
+      - '**.svg'
+      - '**.png'
+      - '**.jpg'
+      - '**.jpeg'
+      - '**.gif'
       - 'public/**'
       - 'package*.json'
       - '.github/workflows/**'
@@ -43,6 +55,13 @@ on:
       - 'knip.config.*'
       - 'playwright.config.*'
       - 'workers/**'
+      - 'CNAME'
+      - 'LICENSE'
+
+# Cancel superseded runs on the same branch (saves CI minutes; check latest run).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -106,6 +125,9 @@ jobs:
     - name: CSS important baseline
       run: npm run check:css-important
 
+    - name: Workflow guardrails (single Pages deploy)
+      run: npm run check:workflows
+
     - name: Generate shared catalog
       run: npm run generate:shared-catalog
 
@@ -124,7 +146,8 @@ jobs:
     - name: Run tests
       env:
         INCLUDE_BEAT_BENCHMARK: ${{ steps.beat-changes.outputs.beat_changed }}
-      run: npm test
+      # One retry in CI absorbs rare Vitest worker teardown flakes (BroadcastChannel).
+      run: npm test -- --retry=1
 
     # Coverage runs after the primary test pass so a crash here doesn't hide
     # test failures. Non-blocking for now (building the floor first); flip to
@@ -190,6 +213,9 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    concurrency:
+      group: pages-deploy-${{ github.ref }}
+      cancel-in-progress: true
     
     environment:
       name: github-pages
@@ -234,4 +260,5 @@ jobs:
 
     - name: Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v5 
+      uses: actions/deploy-pages@v5
+      timeout-minutes: 10 

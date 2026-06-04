@@ -59,7 +59,7 @@ Shared defaults (including `VITE_GOOGLE_CLIENT_ID`) live in the committed **deve
 | `VITE_GOOGLE_PICKER_ORIGIN`      | Optional. **`protocol//host[:port]`** passed to Picker `setOrigin`. Use when Encore is embedded in a **cross-origin** iframe (parent origin cannot be read). Top-level Encore omits `setOrigin` (matches Google’s sample).                               |
 | `VITE_ENCORE_SHARDED_SYNC`       | Optional. Set to `1` / `true` to opt in to the per-row sharded Drive layout (Phase 5 of the perf overhaul). When on, background sync pushes only changed rows + a small manifest. The legacy monolithic push still runs as a safety net. Off by default. |
 
-**GitHub Pages (CI):** Production builds use the **`VITE_GOOGLE_API_KEY` repository secret** (or the same name on the **`github-pages` environment**). GitHub Actions injects it at build time for `.github/workflows/ci.yml` and `deploy-docs.yml`; it is not read from committed `src/.env.production`. Local dev still uses `src/.env.local` or uncommented vars in `src/.env.development`.
+**GitHub Pages (CI):** Production builds use the **`VITE_GOOGLE_API_KEY` repository secret** (or the same name on the **`github-pages` environment**). GitHub Actions injects it at build time for `.github/workflows/ci.yml`; it is not read from committed `src/.env.production`. Local dev still uses `src/.env.local` or uncommented vars in `src/.env.development`.
 
 ### Allowlist workflow
 

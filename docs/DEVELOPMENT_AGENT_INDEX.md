@@ -18,6 +18,7 @@ Progressive disclosure for coding assistants. Read **only the section** that mat
 | Rhythm presets                           | `presetIntegrity.test.ts`; skill `labs-rhythm-preset`                                                                                           |
 | Dependency upgrades                      | [`docs/DEPENDENCY_UPGRADE_PLAN.md`](DEPENDENCY_UPGRADE_PLAN.md); skill `labs-dependency-upgrade`                                                |
 | Open / merge PRs (solo, no human review) | [`docs/PR_WORKFLOW.md`](PR_WORKFLOW.md); skills `labs-babysit-pr`, `labs-split-to-prs`                                                          |
+| CI / GitHub Actions reliability          | [`docs/CI_RELIABILITY.md`](CI_RELIABILITY.md); `npm run check:workflows` when editing workflows                                                 |
 | Session retrospective / codify learnings | skill `labs-session-retrospective`                                                                                                              |
 | Mid-refactor handoff                     | skill `labs-iteration-handoff`                                                                                                                  |
 | Drive backup / conflict UX               | skill `labs-drive-backup`; `SHARED_UI_CONVENTIONS.md` § Drive                                                                                   |
