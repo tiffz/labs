@@ -5192,6 +5192,32 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsdrivebackuptypes-ts-labsportfoliolocalchangedsinceisobackup",
+    "name": "labsPortfolioLocalChangedSinceIsoBackup",
+    "path": "src/shared/drive/labsDriveBackupTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Compare a local monotonic clock (ms) to the last exported backup timestamp.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivebackuptypes-ts-shouldpromptbeforeportfoliomerge",
+    "name": "shouldPromptBeforePortfolioMerge",
+    "path": "src/shared/drive/labsDriveBackupTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Whether to show the merge/replace dialog before applying a Drive pull. Silent merge is allowed when the cloud looks newer but this device has no local edits since the last backup (merge cannot drop local work).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-labsdrivefolderurl-ts-labsdrivefolderurl",
     "name": "labsDriveFolderUrl",
     "path": "src/shared/drive/labsDriveFolderUrl.ts",
@@ -5202,6 +5228,64 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveportfoliobackupconstants-ts-labs-drive-auto-push-debounce-ms",
+    "name": "LABS_DRIVE_AUTO_PUSH_DEBOUNCE_MS",
+    "path": "src/shared/drive/labsDrivePortfolioBackupConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Debounced auto-push quiet period (Stanza, Scales, future portfolio apps).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveportfoliobackupconstants-ts-labs-drive-auto-push-min-interval-ms",
+    "name": "LABS_DRIVE_AUTO_PUSH_MIN_INTERVAL_MS",
+    "path": "src/shared/drive/labsDrivePortfolioBackupConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Minimum ms between consecutive auto-pushes on the same session.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveportfoliodedupfolders-ts-findlabsdrivestanzastemaudiofolderid",
+    "name": "findLabsDriveStanzaStemAudioFolderId",
+    "path": "src/shared/drive/labsDrivePortfolioDedupFolders.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Read-only lookup — does not create portfolio folders. Used by Encore upload dedup to index Stanza stem bytes without importing Stanza.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveportfoliodedupfolders-ts-labs-drive-stanza-stem-audio-folder",
+    "name": "LABS_DRIVE_STANZA_STEM_AUDIO_FOLDER",
+    "path": "src/shared/drive/labsDrivePortfolioDedupFolders.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Mix-layer bytes folder under `Tiff Zhang Labs/Stanza/` (same name as Stanza app).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
     "demoId": null
   },
   {
@@ -5342,6 +5426,118 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivesyncmessages-ts-formatlabsdrivesyncerror",
+    "name": "formatLabsDriveSyncError",
+    "path": "src/shared/drive/labsDriveSyncMessages.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Map sync errors to user-visible account-menu copy (portfolio apps).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivesyncmessages-ts-labs-drive-sign-in-to-sync-label",
+    "name": "LABS_DRIVE_SIGN_IN_TO_SYNC_LABEL",
+    "path": "src/shared/drive/labsDriveSyncMessages.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivesyncmessages-ts-labs-drive-sync-paused-idle-message",
+    "name": "LABS_DRIVE_SYNC_PAUSED_IDLE_MESSAGE",
+    "path": "src/shared/drive/labsDriveSyncMessages.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivesyncmessages-ts-labsdrivesyncmessageisfailure",
+    "name": "labsDriveSyncMessageIsFailure",
+    "path": "src/shared/drive/labsDriveSyncMessages.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when message should render as error in LabsAccountMenu.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivesyncmessages-ts-labsdrivesyncmessageneedssignin",
+    "name": "labsDriveSyncMessageNeedsSignIn",
+    "path": "src/shared/drive/labsDriveSyncMessages.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when message should render as warning (reconnect) in LabsAccountMenu.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivesyncmessages-ts-labsdrivesyncoperation",
+    "name": "LabsDriveSyncOperation",
+    "path": "src/shared/drive/labsDriveSyncMessages.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-uselabsdriveportfolioautosync-ts-uselabsdriveportfolioautosync",
+    "name": "useLabsDrivePortfolioAutoSync",
+    "path": "src/shared/drive/useLabsDrivePortfolioAutoSync.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared session lifecycle for portfolio Drive backup apps: - One silent auto-pull per enabled session - Debounced auto-push after local edits (gated by allowAutoPush)",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-uselabsdriveportfolioautosync-ts-uselabsdriveportfolioautosyncoptions",
+    "name": "UseLabsDrivePortfolioAutoSyncOptions",
+    "path": "src/shared/drive/useLabsDrivePortfolioAutoSync.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {
@@ -5676,9 +5872,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-google-labsdrivebackuptypes-ts-labsdrivebackupuiprops",
+    "id": "src-shared-google-labsdrivebackupuitypes-ts-labsdrivebackupuiprops",
     "name": "LabsDriveBackupUiProps",
-    "path": "src/shared/google/labsDriveBackupTypes.ts",
+    "path": "src/shared/google/labsDriveBackupUiTypes.ts",
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
@@ -5691,9 +5887,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-google-labsdrivebackuptypes-ts-labsdriveconflictuiprops",
+    "id": "src-shared-google-labsdrivebackupuitypes-ts-labsdriveconflictuiprops",
     "name": "LabsDriveConflictUiProps",
-    "path": "src/shared/google/labsDriveBackupTypes.ts",
+    "path": "src/shared/google/labsDriveBackupUiTypes.ts",
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
@@ -5706,9 +5902,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-google-labsdrivebackuptypes-ts-labsdriverestoredialogcopy",
+    "id": "src-shared-google-labsdrivebackupuitypes-ts-labsdriverestoredialogcopy",
     "name": "LabsDriveRestoreDialogCopy",
-    "path": "src/shared/google/labsDriveBackupTypes.ts",
+    "path": "src/shared/google/labsDriveBackupUiTypes.ts",
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
@@ -5721,9 +5917,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-google-labsdrivebackuptypes-ts-labsdriverestoredriveoption",
+    "id": "src-shared-google-labsdrivebackupuitypes-ts-labsdriverestoredriveoption",
     "name": "LabsDriveRestoreDriveOption",
-    "path": "src/shared/google/labsDriveBackupTypes.ts",
+    "path": "src/shared/google/labsDriveBackupUiTypes.ts",
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
@@ -5736,9 +5932,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-google-labsdrivebackuptypes-ts-labsdriveundosnapshotitem",
+    "id": "src-shared-google-labsdrivebackupuitypes-ts-labsdriveundosnapshotitem",
     "name": "LabsDriveUndoSnapshotItem",
-    "path": "src/shared/google/labsDriveBackupTypes.ts",
+    "path": "src/shared/google/labsDriveBackupUiTypes.ts",
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
@@ -5783,26 +5979,26 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-google-labsdrivetestergate-ts-getlabsdrivetesterhashesfromenv",
-    "name": "getLabsDriveTesterHashesFromEnv",
+    "id": "src-shared-google-labsdrivetestergate-ts-getlabsdrivebackuprestrictionhashesfromenv",
+    "name": "getLabsDriveBackupRestrictionHashesFromEnv",
     "path": "src/shared/google/labsDriveTesterGate.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Drive backup (`VITE_LABS_DRIVE_TESTER_HASHES`) may be unset in CI while Encore sign-in allowlist (`VITE_ALLOWED_EMAIL_HASHES`) is set. Fall back so testers do not need duplicate secrets.",
+    "description": "Optional deploy-time restriction; empty set means backup is open to all signed-in users.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
   {
-    "id": "src-shared-google-labsdrivetestergate-ts-isemailallowedlabsdrivetester",
-    "name": "isEmailAllowedLabsDriveTester",
+    "id": "src-shared-google-labsdrivetestergate-ts-isemailallowedlabsdrivebackup",
+    "name": "isEmailAllowedLabsDriveBackup",
     "path": "src/shared/google/labsDriveTesterGate.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Drive backup (`VITE_LABS_DRIVE_TESTER_HASHES`) may be unset in CI while Encore sign-in allowlist (`VITE_ALLOWED_EMAIL_HASHES`) is set. Fall back so testers do not need duplicate secrets.",
+    "description": "Optional restriction list for Stanza / Scales Drive backup (`VITE_LABS_DRIVE_TESTER_HASHES`). When unset, any signed-in Google user may use Drive backup (GA default). `resolveLabsDriveTesterHashSets` remains for legacy Encore allowlist fallback in tests only.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -5815,7 +6011,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Drive backup (`VITE_LABS_DRIVE_TESTER_HASHES`) may be unset in CI while Encore sign-in allowlist (`VITE_ALLOWED_EMAIL_HASHES`) is set. Fall back so testers do not need duplicate secrets.",
+    "description": "Optional restriction list for Stanza / Scales Drive backup (`VITE_LABS_DRIVE_TESTER_HASHES`). When unset, any signed-in Google user may use Drive backup (GA default). `resolveLabsDriveTesterHashSets` remains for legacy Encore allowlist fallback in tests only.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

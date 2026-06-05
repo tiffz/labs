@@ -27,17 +27,20 @@ import {
 } from '../../shared/drive/labsDrivePortfolioLayout';
 import {
   ensureLabsGoogleAccessTokenForDrive,
-  LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
 import {
-  getLabsDriveTesterHashesFromEnv,
-  isEmailAllowedLabsDriveTester,
+  getLabsDriveBackupRestrictionHashesFromEnv,
+  isEmailAllowedLabsDriveBackup,
 } from '../../shared/google/labsDriveTesterGate';
 import { useLabsEncoreGoogleIdentity } from '../../shared/google/useLabsEncoreGoogleSession';
 import type { StanzaSong } from '../db/stanzaDb';
 import { stanzaDb } from '../db/stanzaDb';
 import { remapStanzaTakesForConsolidation } from '../db/stanzaConsolidateLocalLibrary';
-import { assessStanzaDriveBackupConflict, type StanzaDriveConflictReason } from '../drive/stanzaDriveConflict';
+import {
+  assessStanzaDriveBackupConflict,
+  shouldPromptStanzaDriveMerge,
+  type StanzaDriveConflictReason,
+} from '../drive/stanzaDriveConflict';
 import {
   buildStanzaDriveEnvelope,
   parseStanzaDriveEnvelope,
@@ -80,13 +83,18 @@ import {
   totalMarkerCount,
 } from '../drive/stanzaDriveMarkerSummary';
 import { labsDriveAutoPushAllowed } from '../../shared/drive/labsDriveSyncGuard';
+import {
+  formatLabsDriveSyncError,
+  LABS_DRIVE_SYNC_PAUSED_IDLE_MESSAGE,
+} from '../../shared/drive/labsDriveSyncMessages';
+import { useLabsDrivePortfolioAutoSync } from '../../shared/drive/useLabsDrivePortfolioAutoSync';
 
 export function stanzaGoogleClientConfigured(): boolean {
   return Boolean((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim());
 }
 
-export function stanzaDriveTesterAllowlistEmpty(): boolean {
-  return getLabsDriveTesterHashesFromEnv().size === 0;
+export function stanzaDriveBackupRestrictionConfigured(): boolean {
+  return getLabsDriveBackupRestrictionHashesFromEnv().size > 0;
 }
 
 export type StanzaDriveBackupConflictState = {
@@ -129,15 +137,6 @@ async function persistMergedSongs(nextRows: StanzaSong[]): Promise<void> {
     stanzaDriveMergeInProgress = false;
   }
 }
-
-/**
- * Auto-push debounce window (ms). Local edits are coalesced so a slider drag or rapid marker
- * adds don't fire a flurry of Drive writes. Long enough to bundle a typical multi-control edit
- * (key shift, BPM tweak, mark a section), short enough to feel "live".
- */
-const STANZA_DRIVE_AUTO_PUSH_DEBOUNCE_MS = 6_000;
-/** Minimum spacing between auto-pushes — guards against editing-as-fast-as-debounce. */
-const STANZA_DRIVE_AUTO_PUSH_MIN_INTERVAL_MS = 4_000;
 
 /**
  * Perform a non-destructive merge of `remoteEnvelope.songs` into the local library and update
@@ -257,9 +256,6 @@ export function useStanzaDriveBackup() {
     void refreshUndoSnapshots();
   }, [refreshUndoSnapshots, syncMetaTick]);
 
-  const autoPushTimerRef = useRef<number | null>(null);
-  const autoPushInFlightRef = useRef(false);
-  const lastAutoPushAtRef = useRef(0);
   /** True after a successful session pull — gates debounced auto-push with manual backup. */
   const sessionPullSucceededRef = useRef(false);
   const manualBackupSucceededRef = useRef(false);
@@ -297,7 +293,7 @@ export function useStanzaDriveBackup() {
     }
     setTesterResolved(false);
     let cancelled = false;
-    void isEmailAllowedLabsDriveTester(identity.email).then((ok) => {
+    void isEmailAllowedLabsDriveBackup(identity.email).then((ok) => {
       if (!cancelled) {
         setTesterOk(ok);
         setTesterResolved(true);
@@ -363,6 +359,41 @@ export function useStanzaDriveBackup() {
         remoteEnvelope = parseStanzaDriveEnvelope(json);
       } catch {
         remoteEnvelope = null;
+      }
+      const syncMetaBefore = readStanzaDriveSyncMeta();
+      const localRows = await stanzaDb.songs.toArray();
+      if (
+        remoteEnvelope &&
+        shouldPromptStanzaDriveMerge({
+          syncMeta: syncMetaBefore,
+          cloudModifiedTime: meta.modifiedTime,
+          remoteEnvelope,
+          localRows,
+        })
+      ) {
+        const assessment = assessStanzaDriveBackupConflict({
+          syncMeta: syncMetaBefore,
+          cloudModifiedTime: meta.modifiedTime,
+          remoteEnvelope,
+        });
+        setLatestRemoteEnvelope(remoteEnvelope);
+        setConflict({
+          driveModifiedTime: meta.modifiedTime ?? '',
+          remoteExportedAt: remoteEnvelope.exportedAt,
+          remoteSongCount: remoteEnvelope.songs.length,
+          localSongCount: localRows.length,
+          localSongsWithMoreMarkers: countSongsWhereLocalHasMoreMarkers(localRows, remoteEnvelope.songs),
+          localSectionCount: totalMarkerCount(localRows),
+          remoteSectionCount: totalMarkerCount(remoteEnvelope.songs),
+          reasons: assessment.reasons,
+          remoteEnvelope,
+          etag: meta.etag,
+          progressFileId: refs.progressFileId,
+        });
+        if (opts?.silent) {
+          setMessage('Drive backup changed on another device. Open your account menu to choose how to merge.');
+        }
+        return { conflictPrompt: true as const };
       }
       patchStanzaDriveSyncMeta({
         driveAppFolderId: refs.appFolderId,
@@ -453,7 +484,15 @@ export function useStanzaDriveBackup() {
         remoteEnvelope,
       });
 
-      if (assessment.needsPrompt && remoteEnvelope) {
+      if (
+        remoteEnvelope &&
+        shouldPromptStanzaDriveMerge({
+          syncMeta: readStanzaDriveSyncMeta(),
+          cloudModifiedTime: metaBefore.modifiedTime,
+          remoteEnvelope,
+          localRows,
+        })
+      ) {
         setConflict({
           driveModifiedTime: metaBefore.modifiedTime ?? '',
           remoteExportedAt: remoteEnvelope.exportedAt,
@@ -655,124 +694,46 @@ export function useStanzaDriveBackup() {
     }
   }, [pullFromDriveAndMerge]);
 
-  /**
-   * Auto-pull on the first render where we have a tester-allowed identity. One-shot per session
-   * so we don't spam Drive on every focus / re-render. After this resolves, the auto-push effect
-   * is allowed to fire after a successful pull (or manual backup).
-   *
-   * If the merge collapses any cross-device duplicates we follow up with an immediate push so
-   * the cleaned library propagates back to Drive (otherwise the next device that auto-pulls
-   * would see the dupes again and we'd play whack-a-mole forever). The `stanzaDriveMergeInProgress`
-   * suppression flag means the merge writes don't trigger the debounced push by themselves, so
-   * this explicit flush is what actually closes the loop.
-   */
-  const autoPullStartedRef = useRef(false);
-  useEffect(() => {
-    if (!testerResolved || !testerOk || autoPullStartedRef.current) return;
-    autoPullStartedRef.current = true;
-    void (async () => {
-      try {
-        const result = await pullFromDriveAndMerge({ silent: true });
-        if (result.collapsedDupes > 0) {
-          try {
-            await flushDriveWrite({ silent: true });
-            lastAutoPushAtRef.current = Date.now();
-          } catch {
-            // The next user edit will retry; no need to surface a transient push failure here.
-          }
-        }
-      } catch (e) {
-        const msg =
-          e instanceof LabsGoogleInteractiveAuthRequiredError
-            ? 'Drive sync paused. Sign in again to pull the latest from Drive.'
-            : e instanceof DriveHttpError
-              ? e.message
-              : e instanceof Error
-                ? e.message
-                : 'Drive auto-pull failed.';
-        // Surface the failure so the user understands why their devices look out of sync, but
-        // don't block the UI — they can still edit locally and a manual backup recovers later.
-        setMessage(msg);
-        setSyncPaused(true);
-      }
-    })();
-  }, [testerResolved, testerOk, pullFromDriveAndMerge, flushDriveWrite]);
+  const handleAutoPullError = useCallback((msg: string) => {
+    setMessage(msg);
+    setSyncPaused(true);
+  }, []);
 
-  /**
-   * Auto-push: subscribe to Dexie `songs` changes (any local edit bumps `updatedAt`) and
-   * schedule a Drive write after a quiet period. Skips if we haven't completed the initial
-   * auto-pull, or if a push was just done; if a write fails we surface the message but don't
-   * retry — the next user edit will retry, and a manual "Back up" still works.
-   */
-  useEffect(() => {
-    if (!testerResolved || !testerOk) return;
-    let cancelled = false;
-    const schedule = () => {
-      if (cancelled) return;
-      if (autoPushTimerRef.current != null) {
-        window.clearTimeout(autoPushTimerRef.current);
-      }
-      autoPushTimerRef.current = window.setTimeout(() => {
-        autoPushTimerRef.current = null;
-        if (cancelled) return;
-        if (!allowAutoPush()) return;
-        if (autoPushInFlightRef.current) return;
-        const sinceLast = Date.now() - lastAutoPushAtRef.current;
-        if (sinceLast < STANZA_DRIVE_AUTO_PUSH_MIN_INTERVAL_MS) {
-          // Re-arm rather than push: we've written too recently. Quiet to avoid runaway pushes
-          // when many edits happen in succession.
-          schedule();
-          return;
-        }
-        autoPushInFlightRef.current = true;
-        void (async () => {
-          try {
-            await flushDriveWrite({ silent: true });
-            lastAutoPushAtRef.current = Date.now();
-          } catch (e) {
-            const msg =
-              e instanceof LabsGoogleInteractiveAuthRequiredError
-                ? 'Drive sync paused. Sign in again to back up edits to Drive.'
-                : e instanceof DriveHttpError
-                  ? e.message
-                  : e instanceof Error
-                    ? e.message
-                    : 'Drive auto-push failed.';
-            setMessage(msg);
-          } finally {
-            autoPushInFlightRef.current = false;
-          }
-        })();
-      }, STANZA_DRIVE_AUTO_PUSH_DEBOUNCE_MS);
-    };
+  const handleAutoPushError = useCallback((msg: string) => {
+    setMessage(msg);
+  }, []);
 
-    // Dexie's hook fires for any create/update/delete on `songs`. We skip:
-    //   - The very first call (initial library load shouldn't trigger an immediate push).
-    //   - Anything happening while a Drive→local merge is in flight (those are echoes of data
-    //     we just pulled; pushing them back is wasted bandwidth and risks racing).
-    let primed = false;
-    const onChange = () => {
-      if (stanzaDriveMergeInProgress) return;
-      if (!primed) {
-        primed = true;
-        return;
+  const { notifyAutoPushCompleted } = useLabsDrivePortfolioAutoSync({
+    enabled: testerResolved && testerOk,
+    allowAutoPush,
+    pullFromDriveAndMerge,
+    flushDriveWrite,
+    isMergeInProgress: () => stanzaDriveMergeInProgress,
+    onAutoPullError: handleAutoPullError,
+    onAutoPushError: handleAutoPushError,
+    afterSilentAutoPull: async (result) => {
+      const pullResult = result as { conflictPrompt?: boolean; collapsedDupes?: number } | undefined;
+      if (pullResult?.conflictPrompt) return;
+      if ((pullResult?.collapsedDupes ?? 0) > 0) {
+        try {
+          await flushDriveWrite({ silent: true });
+          notifyAutoPushCompleted();
+        } catch {
+          /* next user edit retries */
+        }
       }
-      schedule();
-    };
-    stanzaDb.songs.hook('creating', onChange);
-    stanzaDb.songs.hook('updating', onChange);
-    stanzaDb.songs.hook('deleting', onChange);
-    return () => {
-      cancelled = true;
-      if (autoPushTimerRef.current != null) {
-        window.clearTimeout(autoPushTimerRef.current);
-        autoPushTimerRef.current = null;
-      }
-      stanzaDb.songs.hook('creating').unsubscribe(onChange);
-      stanzaDb.songs.hook('updating').unsubscribe(onChange);
-      stanzaDb.songs.hook('deleting').unsubscribe(onChange);
-    };
-  }, [testerResolved, testerOk, flushDriveWrite, allowAutoPush]);
+    },
+    subscribeLocalChanges: (onChange) => {
+      stanzaDb.songs.hook('creating', onChange);
+      stanzaDb.songs.hook('updating', onChange);
+      stanzaDb.songs.hook('deleting', onChange);
+      return () => {
+        stanzaDb.songs.hook('creating').unsubscribe(onChange);
+        stanzaDb.songs.hook('updating').unsubscribe(onChange);
+        stanzaDb.songs.hook('deleting').unsubscribe(onChange);
+      };
+    },
+  });
 
   const retryPullFromDrive = useCallback(async () => {
     setMessage(null);
@@ -780,15 +741,7 @@ export function useStanzaDriveBackup() {
     try {
       await pullFromDriveAndMerge({ silent: false });
     } catch (e) {
-      const msg =
-        e instanceof LabsGoogleInteractiveAuthRequiredError
-          ? 'Drive sync paused. Sign in again to pull the latest from Drive.'
-          : e instanceof DriveHttpError
-            ? e.message
-            : e instanceof Error
-              ? e.message
-              : 'Drive pull failed.';
-      setMessage(msg);
+      setMessage(formatLabsDriveSyncError(e, 'pull'));
       setSyncPaused(true);
     } finally {
       setBusy(false);
@@ -807,10 +760,7 @@ export function useStanzaDriveBackup() {
     testerOk,
     testerResolved,
     busy,
-    message:
-      syncPaused && !message
-        ? 'Drive sync paused — sign in or retry pull before edits sync to Drive.'
-        : message,
+    message: syncPaused && !message ? LABS_DRIVE_SYNC_PAUSED_IDLE_MESSAGE : message,
     syncPaused,
     retryPullFromDrive,
     onBackup,

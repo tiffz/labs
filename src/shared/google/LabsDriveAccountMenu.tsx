@@ -3,7 +3,7 @@ import { LabsAccountMenu, type LabsAccountMenuProps } from './LabsAccountMenu';
 import LabsDriveBackupActionRow from './LabsDriveBackupActionRow';
 import LabsDriveConflictDialog from './LabsDriveConflictDialog';
 import LabsDriveRestoreDialog from './LabsDriveRestoreDialog';
-import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from './labsDriveBackupTypes';
+import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from './labsDriveBackupUiTypes';
 
 export type LabsDriveAccountMenuProps = Omit<LabsAccountMenuProps, 'renderBackupButton'> & {
   drive: LabsDriveBackupUiProps;

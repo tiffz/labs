@@ -6,6 +6,8 @@ A scale-practice companion: pick a scale, key, and tempo; hear and see it played
 
 Route: `/scales/`.
 
+**Google Drive backup:** Auto pull/push of practice progress (tester-gated). See [`docs/LOCAL_FIRST_SYNC.md`](../../docs/LOCAL_FIRST_SYNC.md) and [ADR 0012](../../docs/adr/0012-scales-drive-sync-parity.md).
+
 ## Features
 
 - **Scale catalog** — major, minor, pentatonic, modal, and custom scales drawn from the shared music catalog.

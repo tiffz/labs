@@ -7,8 +7,8 @@ import {
   type ReactNode,
 } from 'react';
 import type { LabsAccountBackupSlotProps } from '../../shared/google/LabsAccountMenu';
-import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from '../../shared/google/labsDriveBackupTypes';
-import { getLabsDriveTesterHashesFromEnv } from '../../shared/google/labsDriveTesterGate';
+import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from '../../shared/google/labsDriveBackupUiTypes';
+import { getLabsDriveBackupRestrictionHashesFromEnv } from '../../shared/google/labsDriveTesterGate';
 import { formatLabsDriveInstant } from '../../shared/google/formatLabsDriveInstant';
 import {
   scalesGoogleClientConfigured,
@@ -49,7 +49,7 @@ export function ScalesDriveBackupProvider({ children }: { children: ReactNode })
     onMergeProgress,
   });
 
-  const allowlistEmpty = getLabsDriveTesterHashesFromEnv().size === 0;
+  const allowlistEmpty = getLabsDriveBackupRestrictionHashesFromEnv().size === 0;
 
   const driveUi = useMemo((): LabsDriveBackupUiProps => {
     const meta = backup.lastMeta;

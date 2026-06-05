@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted — **implementation deferred**; see [0007 revision (proposed)](./0007-revision-stanza-encore-federated-sync.md) for federated overlay design under review.
 
 ## Context
 

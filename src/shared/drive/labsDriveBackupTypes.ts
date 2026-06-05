@@ -13,6 +13,32 @@ export interface LabsDriveConflictAssessment {
   reasons: LabsDriveConflictReason[];
 }
 
+/**
+ * Whether to show the merge/replace dialog before applying a Drive pull.
+ * Silent merge is allowed when the cloud looks newer but this device has no local
+ * edits since the last backup (merge cannot drop local work).
+ */
+export function shouldPromptBeforePortfolioMerge(params: {
+  assessment: LabsDriveConflictAssessment;
+  localChangedSinceLastBackup: boolean;
+}): boolean {
+  if (!params.assessment.needsPrompt) return false;
+  return params.localChangedSinceLastBackup;
+}
+
+/** Compare a local monotonic clock (ms) to the last exported backup timestamp. */
+export function labsPortfolioLocalChangedSinceIsoBackup(
+  localMaxUpdatedAtMs: number,
+  lastBackupExportedAt: string | undefined | null,
+): boolean {
+  if (localMaxUpdatedAtMs <= 0) return false;
+  const lastB = (lastBackupExportedAt ?? '').trim();
+  if (!lastB) return true;
+  const lastMs = Date.parse(lastB);
+  if (!Number.isFinite(lastMs)) return true;
+  return localMaxUpdatedAtMs > lastMs;
+}
+
 export interface LabsDriveSyncMetaFields {
   lastCloudModifiedTime?: string | null;
   lastBackupExportedAt?: string | null;

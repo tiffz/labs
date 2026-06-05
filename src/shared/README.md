@@ -9,7 +9,11 @@
 - `shared/playback/`: timing/lifecycle/transport/scheduler infrastructure.
 - `shared/audio/`: audio playback helpers and click/metronome services.
 - `shared/rhythm/`: rhythm parsing + time-signature utilities.
+- `shared/drive/`: Google Drive v3 client, portfolio backup layout, conflict assessment, auto-sync hook.
+- `shared/google/`: OAuth session, `LabsDriveAccountMenu`, sign-in chrome.
 - `shared/test/`: test helpers used across apps.
+
+See [`docs/LOCAL_FIRST_SYNC.md`](../../docs/LOCAL_FIRST_SYNC.md) for sync architecture across Encore, Stanza, and Scales.
 
 ## Boundary Rule
 

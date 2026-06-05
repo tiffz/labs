@@ -1,6 +1,6 @@
 # Encore
 
-Personal musical repertoire companion: **local-first** (Dexie / IndexedDB) with optional **Google Drive** sync for `repertoire_data.json`, plus an optional **public snapshot** for read-only sharing.
+Personal musical repertoire companion: **local-first** (Dexie / IndexedDB) with optional **Google Drive** sync for `repertoire_data.json`, plus an optional **public snapshot** for read-only sharing. **Sync architecture (Encore, Stanza, Scales):** [`docs/LOCAL_FIRST_SYNC.md`](../../docs/LOCAL_FIRST_SYNC.md).
 
 **Agents:** start with [`AGENTS.md`](AGENTS.md) (nested context for this app).
 

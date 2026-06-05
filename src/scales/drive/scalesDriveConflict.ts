@@ -1,8 +1,11 @@
 import {
   assessLabsDriveBackupConflict,
+  labsPortfolioLocalChangedSinceIsoBackup,
+  shouldPromptBeforePortfolioMerge,
   type LabsDriveConflictAssessment,
   type LabsDriveConflictReason,
 } from '../../shared/drive/labsDriveBackupTypes';
+import type { ScalesProgressData } from '../progress/types';
 import type { ScalesDriveSyncMeta } from './scalesDriveSyncMeta';
 import type { ScalesDriveEnvelopeV1 } from './scalesDriveEnvelope';
 
@@ -24,5 +27,22 @@ export function assessScalesDriveBackupConflict(params: {
     cloudModifiedTime,
     remoteExportedAt: remoteEnvelope.exportedAt,
     remoteHasContent: hasRemoteProgress,
+  });
+}
+
+export function shouldPromptScalesDriveMerge(params: {
+  syncMeta: ScalesDriveSyncMeta;
+  cloudModifiedTime: string | undefined;
+  remoteEnvelope: ScalesDriveEnvelopeV1 | null;
+  progress: ScalesProgressData;
+}): boolean {
+  const assessment = assessScalesDriveBackupConflict(params);
+  const localMs = Date.parse(params.progress.progressUpdatedAt ?? '');
+  return shouldPromptBeforePortfolioMerge({
+    assessment,
+    localChangedSinceLastBackup: labsPortfolioLocalChangedSinceIsoBackup(
+      Number.isFinite(localMs) ? localMs : 0,
+      params.syncMeta.lastBackupExportedAt,
+    ),
   });
 }

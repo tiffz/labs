@@ -4,8 +4,12 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DriveHttpError } from '../../shared/drive/driveFetch';
 import { labsDriveAutoPushAllowed } from '../../shared/drive/labsDriveSyncGuard';
+import {
+  formatLabsDriveSyncError,
+  LABS_DRIVE_SYNC_PAUSED_IDLE_MESSAGE,
+} from '../../shared/drive/labsDriveSyncMessages';
+import { useLabsDrivePortfolioAutoSync } from '../../shared/drive/useLabsDrivePortfolioAutoSync';
 import {
   ensureLabsDrivePortfolioProgressLayout,
   getLabsDriveProgressFileMeta,
@@ -15,13 +19,16 @@ import {
 } from '../../shared/drive/labsDrivePortfolioLayout';
 import {
   ensureLabsGoogleAccessTokenForDrive,
-  LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
 import {
-  isEmailAllowedLabsDriveTester,
+  isEmailAllowedLabsDriveBackup,
 } from '../../shared/google/labsDriveTesterGate';
 import { useLabsEncoreGoogleIdentity } from '../../shared/google/useLabsEncoreGoogleSession';
-import { assessScalesDriveBackupConflict, type ScalesDriveConflictReason } from '../drive/scalesDriveConflict';
+import {
+  assessScalesDriveBackupConflict,
+  shouldPromptScalesDriveMerge,
+  type ScalesDriveConflictReason,
+} from '../drive/scalesDriveConflict';
 import {
   buildScalesDriveEnvelope,
   parseScalesDriveEnvelope,
@@ -44,9 +51,6 @@ import {
 import { labsDriveFolderUrl } from '../../shared/drive/labsDriveFolderUrl';
 import { subscribeScalesProgressSave } from '../progress/store';
 import type { ScalesProgressData } from '../progress/types';
-
-const AUTO_PUSH_DEBOUNCE_MS = 6_000;
-const AUTO_PUSH_MIN_INTERVAL_MS = 4_000;
 
 export function scalesGoogleClientConfigured(): boolean {
   return Boolean((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim());
@@ -81,13 +85,9 @@ export function useScalesDriveBackup({ progress, onMergeProgress }: UseScalesDri
   const [latestRemoteEnvelope, setLatestRemoteEnvelope] = useState<ScalesDriveEnvelopeV1 | null>(null);
   const [syncPaused, setSyncPaused] = useState(false);
 
-  const autoPushTimerRef = useRef<number | null>(null);
-  const autoPushInFlightRef = useRef(false);
-  const lastAutoPushAtRef = useRef(0);
   const sessionPullSucceededRef = useRef(false);
   const manualBackupSucceededRef = useRef(false);
   const mergeInProgressRef = useRef(false);
-  const autoPullStartedRef = useRef(false);
   const progressRef = useRef(progress);
   progressRef.current = progress;
 
@@ -122,7 +122,7 @@ export function useScalesDriveBackup({ progress, onMergeProgress }: UseScalesDri
     }
     setTesterResolved(false);
     let cancelled = false;
-    void isEmailAllowedLabsDriveTester(identity.email).then((ok) => {
+    void isEmailAllowedLabsDriveBackup(identity.email).then((ok) => {
       if (!cancelled) {
         setTesterOk(ok);
         setTesterResolved(true);
@@ -191,8 +191,39 @@ export function useScalesDriveBackup({ progress, onMergeProgress }: UseScalesDri
       } catch {
         remoteEnvelope = null;
       }
+      const syncMetaBefore = readScalesDriveSyncMeta();
+      if (
+        remoteEnvelope &&
+        shouldPromptScalesDriveMerge({
+          syncMeta: syncMetaBefore,
+          cloudModifiedTime: meta.modifiedTime,
+          remoteEnvelope,
+          progress: progressRef.current,
+        })
+      ) {
+        const assessment = assessScalesDriveBackupConflict({
+          syncMeta: syncMetaBefore,
+          cloudModifiedTime: meta.modifiedTime,
+          remoteEnvelope,
+        });
+        setLatestRemoteEnvelope(remoteEnvelope);
+        setConflict({
+          driveModifiedTime: meta.modifiedTime ?? '',
+          remoteExportedAt: remoteEnvelope.exportedAt,
+          remoteExerciseCount: Object.keys(remoteEnvelope.payload.exercises).length,
+          localExerciseCount: Object.keys(progressRef.current.exercises).length,
+          reasons: assessment.reasons,
+          remoteEnvelope,
+          etag: meta.etag,
+          progressFileId: refs.progressFileId,
+        });
+        if (opts?.silent) {
+          setMessage('Drive backup changed on another device. Open your account menu to choose how to merge.');
+        }
+        return { conflictPrompt: true as const };
+      }
       writeScalesDriveSyncMeta({
-        ...readScalesDriveSyncMeta(),
+        ...syncMetaBefore,
         driveAppFolderId: refs.appFolderId,
         lastCloudModifiedTime: meta.modifiedTime,
         lastBackupExportedAt: remoteEnvelope?.exportedAt,
@@ -229,13 +260,7 @@ export function useScalesDriveBackup({ progress, onMergeProgress }: UseScalesDri
       await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
       await pullFromDriveAndMerge({ silent: false });
     } catch (e) {
-      const msg =
-        e instanceof DriveHttpError
-          ? e.message
-          : e instanceof Error
-            ? e.message
-            : 'Google sign-in did not finish.';
-      setMessage(msg);
+      setMessage(formatLabsDriveSyncError(e, 'pull'));
       setSyncPaused(true);
     } finally {
       setBusy(false);
@@ -265,7 +290,15 @@ export function useScalesDriveBackup({ progress, onMergeProgress }: UseScalesDri
         remoteEnvelope,
       });
 
-      if (assessment.needsPrompt && remoteEnvelope) {
+      if (
+        remoteEnvelope &&
+        shouldPromptScalesDriveMerge({
+          syncMeta: readScalesDriveSyncMeta(),
+          cloudModifiedTime: metaBefore.modifiedTime,
+          remoteEnvelope,
+          progress: progressRef.current,
+        })
+      ) {
         setConflict({
           driveModifiedTime: metaBefore.modifiedTime ?? '',
           remoteExportedAt: remoteEnvelope.exportedAt,
@@ -375,90 +408,32 @@ export function useScalesDriveBackup({ progress, onMergeProgress }: UseScalesDri
     try {
       await pullFromDriveAndMerge({ silent: false });
     } catch (e) {
-      setMessage(
-        e instanceof LabsGoogleInteractiveAuthRequiredError
-          ? 'Drive sync paused. Sign in again to pull the latest from Drive.'
-          : e instanceof Error
-            ? e.message
-            : 'Drive pull failed.',
-      );
+      setMessage(formatLabsDriveSyncError(e, 'pull'));
       setSyncPaused(true);
     } finally {
       setBusy(false);
     }
   }, [pullFromDriveAndMerge]);
 
-  useEffect(() => {
-    if (!testerResolved || !testerOk || autoPullStartedRef.current) return;
-    autoPullStartedRef.current = true;
-    void (async () => {
-      try {
-        await pullFromDriveAndMerge({ silent: true });
-      } catch (e) {
-        setMessage(
-          e instanceof LabsGoogleInteractiveAuthRequiredError
-            ? 'Drive sync paused. Sign in again to pull the latest from Drive.'
-            : e instanceof Error
-              ? e.message
-              : 'Drive auto-pull failed.',
-        );
-        setSyncPaused(true);
-      }
-    })();
-  }, [testerResolved, testerOk, pullFromDriveAndMerge]);
+  const handleAutoPullError = useCallback((msg: string) => {
+    setMessage(msg);
+    setSyncPaused(true);
+  }, []);
 
-  useEffect(() => {
-    if (!testerResolved || !testerOk) return;
-    let cancelled = false;
-    const schedule = () => {
-      if (cancelled || mergeInProgressRef.current) return;
-      if (autoPushTimerRef.current != null) window.clearTimeout(autoPushTimerRef.current);
-      autoPushTimerRef.current = window.setTimeout(() => {
-        autoPushTimerRef.current = null;
-        if (cancelled || !allowAutoPush() || autoPushInFlightRef.current) return;
-        const sinceLast = Date.now() - lastAutoPushAtRef.current;
-        if (sinceLast < AUTO_PUSH_MIN_INTERVAL_MS) {
-          schedule();
-          return;
-        }
-        autoPushInFlightRef.current = true;
-        void (async () => {
-          try {
-            await flushDriveWrite({ silent: true });
-            lastAutoPushAtRef.current = Date.now();
-          } catch (e) {
-            setMessage(
-              e instanceof LabsGoogleInteractiveAuthRequiredError
-                ? 'Drive sync paused. Sign in again to back up edits to Drive.'
-                : e instanceof Error
-                  ? e.message
-                  : 'Drive auto-push failed.',
-            );
-          } finally {
-            autoPushInFlightRef.current = false;
-          }
-        })();
-      }, AUTO_PUSH_DEBOUNCE_MS);
-    };
-
-    let primed = false;
-    const onSave = () => {
-      if (mergeInProgressRef.current) return;
-      if (!primed) {
-        primed = true;
-        return;
-      }
-      schedule();
-    };
-    const unsub = subscribeScalesProgressSave(onSave);
-    return () => {
-      cancelled = true;
-      unsub();
-      if (autoPushTimerRef.current != null) {
-        window.clearTimeout(autoPushTimerRef.current);
-      }
-    };
-  }, [testerResolved, testerOk, allowAutoPush, flushDriveWrite]);
+  useLabsDrivePortfolioAutoSync({
+    enabled: testerResolved && testerOk,
+    allowAutoPush,
+    pullFromDriveAndMerge,
+    flushDriveWrite,
+    isMergeInProgress: () => mergeInProgressRef.current,
+    onAutoPullError: handleAutoPullError,
+    onAutoPushError: (msg) => setMessage(msg),
+    subscribeLocalChanges: (onChange) =>
+      subscribeScalesProgressSave(() => {
+        if (mergeInProgressRef.current) return;
+        onChange();
+      }),
+  });
 
   const lastMeta = useMemo(() => {
     void syncMetaTick;
@@ -470,10 +445,7 @@ export function useScalesDriveBackup({ progress, onMergeProgress }: UseScalesDri
     testerOk,
     testerResolved,
     busy,
-    message:
-      syncPaused && !message
-        ? 'Drive sync paused — sign in or retry pull before edits sync to Drive.'
-        : message,
+    message: syncPaused && !message ? LABS_DRIVE_SYNC_PAUSED_IDLE_MESSAGE : message,
     syncPaused,
     onBackup,
     onSignIn,

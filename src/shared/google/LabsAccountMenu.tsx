@@ -26,6 +26,10 @@ import {
 } from './labsGoogleSessionConsumers';
 import { formatLabsDriveInstant } from './formatLabsDriveInstant';
 import { useLabsGoogleDriveNeedsSignIn } from './useLabsGoogleDriveNeedsSignIn';
+import {
+  labsDriveSyncMessageIsFailure,
+  labsDriveSyncMessageNeedsSignIn,
+} from '../drive/labsDriveSyncMessages';
 
 const PRIVACY_URL = 'https://labs.tiffzhang.com/privacy';
 
@@ -132,11 +136,11 @@ function LabsAppsCompactRow(props: {
 }
 
 function backupMessageIsFailure(message: string): boolean {
-  return /failed|error|403|401|timed out/i.test(message);
+  return labsDriveSyncMessageIsFailure(message);
 }
 
 function backupMessageNeedsSignIn(message: string): boolean {
-  return /sign in again|sync paused/i.test(message);
+  return labsDriveSyncMessageNeedsSignIn(message);
 }
 
 /**
@@ -275,9 +279,7 @@ function LabsAccountBackupBlock(props: {
     return (
       <Alert severity="info" sx={{ ...alertSurfaceSx, py: 0.5, '& .MuiAlert-message': { py: 0.5 } }}>
         <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
-          {backup.allowlistEmpty
-            ? 'Google Drive backup is off in this build. No tester hashes are configured (set VITE_LABS_DRIVE_TESTER_HASHES or VITE_ALLOWED_EMAIL_HASHES in the deployment).'
-            : 'This account is not on the Google Drive backup tester list for this deployment.'}
+          This account is not on the Google Drive backup allowlist for this deployment.
         </Typography>
       </Alert>
     );

@@ -144,12 +144,3 @@ export async function triggerEncoreResourceDownload(
 
   throw new Error('No downloadable file attached.');
 }
-
-export function encoreResourceDownloadErrorMessage(err: unknown): string {
-  if (err instanceof DriveHttpError) {
-    if (err.status === 401 || err.status === 403) return 'Sign in to Google to download this file.';
-    return err.message || 'Could not download file from Drive.';
-  }
-  if (err instanceof Error) return err.message;
-  return 'Could not download file.';
-}

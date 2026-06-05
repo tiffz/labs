@@ -10,6 +10,7 @@ import {
   fingerprintFromDriveListRow,
   inventoryFileLabel,
 } from './encoreDriveInventory';
+import { findLabsDriveStanzaStemAudioFolderId } from '../../shared/drive/labsDrivePortfolioDedupFolders';
 import type { EncoreDriveFileRef } from './encoreDriveFileRefs';
 import { collectEncoreDriveFileRefs } from './encoreDriveFileRefs';
 import { encoreDb } from '../db/encoreDb';
@@ -209,6 +210,8 @@ export async function scanEncoreDriveDuplicateUploads(
 
   const folderIds = collectEncoreManagedUploadFolderIds(layout, extras.driveUploadFolderOverrides);
   if (originalsAudioFolderId) folderIds.push(originalsAudioFolderId);
+  const stanzaStemFolderId = await findLabsDriveStanzaStemAudioFolderId(accessToken);
+  if (stanzaStemFolderId) folderIds.push(stanzaStemFolderId);
 
   const inventory = await driveCollectEncoreManagedFiles(accessToken, folderIds);
   const refIds = new Set(libraryRefs.map((r) => r.fileId));

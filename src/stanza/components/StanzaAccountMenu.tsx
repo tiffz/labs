@@ -1,13 +1,10 @@
 import { useMemo } from 'react';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { formatLabsDriveInstant } from '../../shared/google/formatLabsDriveInstant';
+import { getLabsDriveBackupRestrictionHashesFromEnv } from '../../shared/google/labsDriveTesterGate';
 import { LabsDriveAccountMenu } from '../../shared/google/LabsDriveAccountMenu';
-import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from '../../shared/google/labsDriveBackupTypes';
-import {
-  stanzaDriveTesterAllowlistEmpty,
-  stanzaGoogleClientConfigured,
-  useStanzaDriveBackup,
-} from '../hooks/useStanzaDriveBackup';
+import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from '../../shared/google/labsDriveBackupUiTypes';
+import { stanzaGoogleClientConfigured, useStanzaDriveBackup } from '../hooks/useStanzaDriveBackup';
 import { formatStanzaDriveUndoSnapshotTrigger, parseSnapshotEnvelope } from '../drive/stanzaDriveUndoSnapshots';
 import { summarizeEnvelopeSections } from '../drive/stanzaDriveMarkerSummary';
 
@@ -122,7 +119,7 @@ export default function StanzaAccountMenu() {
         identity: backup.identity?.email ? { email: backup.identity.email } : null,
         testerResolved: backup.testerResolved,
         testerOk: backup.testerOk,
-        allowlistEmpty: stanzaDriveTesterAllowlistEmpty(),
+        allowlistEmpty: getLabsDriveBackupRestrictionHashesFromEnv().size === 0,
         busy: backup.busy,
         message: backup.message,
         onBackup: backup.onBackup,

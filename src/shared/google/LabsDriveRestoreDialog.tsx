@@ -9,7 +9,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import { formatLabsDriveInstant } from './formatLabsDriveInstant';
-import type { LabsDriveBackupUiProps } from './labsDriveBackupTypes';
+import type { LabsDriveBackupUiProps } from './labsDriveBackupUiTypes';
 
 type LabsDriveRestoreDialogProps = Pick<
   LabsDriveBackupUiProps,

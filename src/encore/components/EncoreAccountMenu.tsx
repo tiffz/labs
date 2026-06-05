@@ -24,6 +24,7 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
+import { LABS_DRIVE_SIGN_IN_TO_SYNC_LABEL } from '../../shared/drive/labsDriveSyncMessages';
 import {
   useCallback,
   useEffect,
@@ -601,7 +602,7 @@ export function EncoreAccountMenu(props: {
                   variant="caption"
                   sx={{ lineHeight: 1.35, fontWeight: 600, color: 'warning.main' }}
                 >
-                  Sign in to sync
+                  {LABS_DRIVE_SIGN_IN_TO_SYNC_LABEL}
                 </Typography>
               </Stack>
             ) : (

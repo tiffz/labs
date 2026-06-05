@@ -52,29 +52,6 @@ export const shellSx = {
   position: 'relative' as const,
 };
 
-export const panelSx = {
-  p: { xs: 3, md: 4 },
-  borderRadius: '16px',
-  border: '1px solid',
-  borderColor: 'rgba(255, 255, 255, 0.06)',
-  bgcolor: 'transparent',
-};
-
-export const pillSx = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  height: 26,
-  px: 1.75,
-  borderRadius: '999px',
-  fontSize: '0.6875rem',
-  fontWeight: 600,
-  letterSpacing: '0.04em',
-  bgcolor: 'rgba(255, 255, 255, 0.06)',
-  color: 'text.secondary',
-  whiteSpace: 'nowrap' as const,
-  flexShrink: 0,
-};
-
 export const textLinkButtonSx = {
   textTransform: 'none' as const,
   fontWeight: 500,
