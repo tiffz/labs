@@ -105,12 +105,12 @@ export default function App(): React.ReactElement {
 
   if (shareFileId) {
     return (
-      <EncoreAppShell>
+      <>
         <SkipToMain />
         <main id="main">
           <GuestShareView fileId={shareFileId} />
         </main>
-      </EncoreAppShell>
+      </>
     );
   }
 
