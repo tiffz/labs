@@ -16,7 +16,7 @@ Get the PR to a **merge-ready** state: green CI, conflicts resolved, actionable 
 5. **Verify** — push scoped fixes, re-watch CI until mergeable + green + comments triaged
 6. **Labs gate** — run `npm run presubmit` locally before pushing substantive fixes
 7. **Merge (when authorized)** — if user asked to merge and CI is green: `gh pr merge <n> --squash --delete-branch`, then `git checkout main && git pull`. Merge stacked PRs in dependency order (see PR workflow doc)
-8. **Deploy Docs failures** — if `CI/CD` **deploy** failed with GitHub Pages `in progress deployment`, confirm latest `main` deploy succeeded or wait for auto-retry (`retry-pages-deploy.yml`). Do not treat as a code defect unless **test** failed. See [`docs/CI_RELIABILITY.md`](../../docs/CI_RELIABILITY.md)
+8. **Deploy failures** — if `CI/CD` **deploy** failed with GitHub Pages `in progress deployment`, confirm latest `main` deploy succeeded (deploy job retries once after 90s). Do not treat as a code defect unless **test** failed. See [`docs/CI_RELIABILITY.md`](../../docs/CI_RELIABILITY.md)
 9. **Workflow edits** — run `npm run check:workflows` + presubmit; never add a second `deploy-pages` workflow
 
 ## Merge bar (solo)
