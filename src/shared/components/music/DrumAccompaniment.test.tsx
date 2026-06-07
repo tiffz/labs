@@ -70,6 +70,27 @@ describe('DrumAccompaniment playback highlighting', () => {
     });
   });
 
+  it('shows pattern input when hidePatternInput is false', () => {
+    const view = render(
+      <DrumAccompaniment
+        {...INLINE_DRUM_PANEL_UX}
+        hidePatternInput={false}
+        bpm={80}
+        timeSignature={{ numerator: 4, denominator: 4 }}
+        isPlaying={false}
+        currentBeatTime={0}
+        currentBeat={0}
+        presetLayout="compact"
+        audioEnabled={false}
+        notationStyle={{ inkColor: '#1a1a1a', highlightColor: '#7c3aed' }}
+      />,
+    );
+
+    expect(
+      view.getByPlaceholderText('D-T-K-T- or paste Darbuka Trainer URL'),
+    ).toBeInTheDocument();
+  });
+
   it('compact preset layout opens menu and selects a preset', async () => {
     const presets = getRhythmTemplatePresets({ numerator: 4, denominator: 4 });
     const secondPreset = presets[1]!;

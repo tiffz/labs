@@ -145,7 +145,6 @@ import { StanzaViewerLayout } from './StanzaViewerLayout';
 import { primeStanzaMetronomeAudio, useStanzaMetronomeSync } from '../hooks/useStanzaMetronomeSync';
 import { useStanzaMetronomePersistence } from '../hooks/useStanzaMetronomePersistence';
 import DrumAccompaniment from '../../shared/components/music/DrumAccompaniment';
-import { INLINE_DRUM_PANEL_UX } from '../../shared/components/music/inlineDrumUxDefaults';
 import type { MusicKey } from '../../shared/music/musicInputConstants';
 import { transposeMusicKey } from '../../shared/music/musicInputConstants';
 import { useStanzaLocalStemMixer } from '../hooks/useStanzaLocalStemMixer';
@@ -170,6 +169,7 @@ import {
   STANZA_DRUMS_NOTATION_HEIGHT,
   STANZA_DRUMS_NOTATION_STYLE,
   STANZA_DRUMS_NOTATION_WIDTH,
+  STANZA_DRUM_PANEL_UX,
 } from './stanzaWorkspace/stanzaPracticeRailConstants';
 import {
   describeYoutubePlayerError,
@@ -3335,7 +3335,7 @@ export default function StanzaWorkspace() {
                     {selected.drumsEnabled ? (
                       <Box className="stanza-drums-panel">
                         <DrumAccompaniment
-                          {...INLINE_DRUM_PANEL_UX}
+                          {...STANZA_DRUM_PANEL_UX}
                           presetLayout="compact"
                           bpm={drumsBpm}
                           timeSignature={STANZA_DRUMS_DEFAULT_TIME_SIGNATURE}

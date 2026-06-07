@@ -1,4 +1,5 @@
 import type { TimeSignature } from '../../../shared/rhythm/types';
+import { INLINE_DRUM_PANEL_UX } from '../../../shared/components/music/inlineDrumUxDefaults';
 
 /** 4/4 default for the shared drum panel. Stanza does not yet track per-song time signature. */
 export const STANZA_DRUMS_DEFAULT_TIME_SIGNATURE: TimeSignature = { numerator: 4, denominator: 4 };
@@ -18,4 +19,10 @@ export const STANZA_DRUMS_NOTATION_STYLE = {
   inkColor: '#2a2622',
   highlightColor: '#e848a0',
   backgroundColor: 'transparent',
+} as const;
+
+/** Stanza drum panel: compact preset picker plus custom Darbuka notation input. */
+export const STANZA_DRUM_PANEL_UX = {
+  ...INLINE_DRUM_PANEL_UX,
+  hidePatternInput: false,
 } as const;
