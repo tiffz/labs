@@ -1,6 +1,6 @@
 # Color Sight Trainer — curriculum (schema v6)
 
-Four-phase scaffolding. **Temperature** (warm vs. cool) is a continuous Oklab axis from Phase 1 through Phase 4, not a one-off lesson.
+Seven-phase scaffolding. **Temperature** (warm vs. cool) is a continuous Oklab axis from Phase 1 through Phase 7, not a one-off lesson.
 
 ## Phase map
 
@@ -14,7 +14,7 @@ Four-phase scaffolding. **Temperature** (warm vs. cool) is a continuous Oklab ax
 | **6 — Dimensional slice**   | 25–26  | `munsell-slice`          | Value/chroma outlier in a 5-swatch grid                      |
 | **7 — Atmospheric cast**    | 27–28  | `yot-cast`               | Light preset → flat scene color                              |
 
-Level definitions live in [`levels.ts`](levels.ts). Profile migration bumps levels ≥ 5 when upgrading from schema &lt; 4.
+Level definitions live in [`levels.ts`](levels.ts). Profile migration bumps levels ≥ 5 when upgrading from schema &lt; 4 and **resets `passesAtLevel`** when the level changes. Migration runs eagerly on app mount via `ensureProfileMigrated()`.
 
 ## Judgment principles (implementation)
 

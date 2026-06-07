@@ -173,7 +173,7 @@ export default function PracticePhase({
       let updated = appendRepToProfile(prev, rep);
       if (shouldCountTowardLevelAdvance(repPurpose, reviewMode)) {
         updated = recordChallengeResult(updated, passed, {
-          challengeLevel: reviewMode ? sessionLevel : prev.level,
+          challengeLevel: sessionLevel,
         });
       } else {
         updated = { ...updated, challengesCompleted: updated.challengesCompleted + 1 };

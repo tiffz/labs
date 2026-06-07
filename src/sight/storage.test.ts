@@ -1,5 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { CURRICULUM_SCHEMA_VERSION, MAX_LEVEL } from './levels';
+import { defaultSkillMatrix } from './progress/types';
+import {
+  ensureProfileMigrated,
+  readProfile,
+  resetProfile,
+  setProfileLevel,
+  writeProfile,
+} from './storage';
+import type { SightProfile } from './types';
 
 /** Mirrors migrateLevel in storage.ts for unit tests without localStorage. */
 function migrateLevel(level: number, schemaVersion: number | undefined): number {
@@ -47,7 +56,97 @@ describe('profile level migration', () => {
     expect(migrateLevel(12, 3)).toBe(19);
   });
 
+  it('bumps schema v3 level 13 to gamut level 20', () => {
+    expect(migrateLevel(13, 3)).toBe(20);
+  });
+
   it('leaves level unchanged when schema is current', () => {
     expect(migrateLevel(12, CURRICULUM_SCHEMA_VERSION)).toBe(12);
+  });
+});
+
+describe('storage profile persistence', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  function seedProfile(partial: Partial<SightProfile>): void {
+    writeProfile({
+      level: 1,
+      challengesCompleted: 0,
+      passesAtLevel: 0,
+      schemaVersion: CURRICULUM_SCHEMA_VERSION,
+      skillMatrix: defaultSkillMatrix(partial.level ?? 1),
+      recentReps: [],
+      activeFocus: null,
+      dailyQueue: null,
+      ...partial,
+    });
+  }
+
+  it('resets passesAtLevel when migration bumps level', () => {
+    localStorage.setItem(
+      'sight:profile',
+      JSON.stringify({
+        level: 12,
+        passesAtLevel: 6,
+        schemaVersion: 3,
+        challengesCompleted: 40,
+        skillMatrix: defaultSkillMatrix(12),
+        recentReps: [],
+      }),
+    );
+
+    const profile = ensureProfileMigrated();
+    expect(profile.level).toBe(19);
+    expect(profile.passesAtLevel).toBe(0);
+    expect(profile.schemaVersion).toBe(CURRICULUM_SCHEMA_VERSION);
+
+    const stored = JSON.parse(localStorage.getItem('sight:profile')!);
+    expect(stored.level).toBe(19);
+    expect(stored.passesAtLevel).toBe(0);
+    expect(stored.schemaVersion).toBe(CURRICULUM_SCHEMA_VERSION);
+  });
+
+  it('resets passesAtLevel when schema v3 level 13 jumps to 20', () => {
+    localStorage.setItem(
+      'sight:profile',
+      JSON.stringify({
+        level: 13,
+        passesAtLevel: 6,
+        schemaVersion: 3,
+        challengesCompleted: 50,
+        skillMatrix: defaultSkillMatrix(13),
+        recentReps: [],
+      }),
+    );
+
+    const profile = ensureProfileMigrated();
+    expect(profile.level).toBe(20);
+    expect(profile.passesAtLevel).toBe(0);
+  });
+
+  it('does not re-migrate an already current profile', () => {
+    seedProfile({ level: 12, passesAtLevel: 3, schemaVersion: CURRICULUM_SCHEMA_VERSION });
+    const first = ensureProfileMigrated();
+    const second = readProfile();
+    expect(first.level).toBe(12);
+    expect(second.level).toBe(12);
+    expect(second.passesAtLevel).toBe(3);
+  });
+
+  it('resetProfile returns level 1 defaults', () => {
+    seedProfile({ level: 20, passesAtLevel: 4 });
+    const profile = resetProfile();
+    expect(profile.level).toBe(1);
+    expect(profile.passesAtLevel).toBe(0);
+    expect(readProfile().level).toBe(1);
+  });
+
+  it('setProfileLevel clamps and clears passes', () => {
+    seedProfile({ level: 5, passesAtLevel: 4 });
+    const profile = setProfileLevel(21);
+    expect(profile.level).toBe(21);
+    expect(profile.passesAtLevel).toBe(0);
   });
 });

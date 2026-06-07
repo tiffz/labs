@@ -8,11 +8,23 @@ Level thresholds and generator profiles live in [`levels.ts`](levels.ts) (28 lev
 
 ## Phases (`App.tsx`)
 
-| Phase      | Entry                 |
-| ---------- | --------------------- |
-| `home`     | Default               |
-| `practice` | After **Practice**    |
-| `sandbox`  | `?debug` + `#sandbox` |
+| Phase      | Entry                    |
+| ---------- | ------------------------ |
+| `home`     | Default                  |
+| `practice` | After **Practice**       |
+| `map`      | Curriculum map from home |
+| `sandbox`  | `?debug` + `#sandbox`    |
+
+## Debug mode (`?debug`)
+
+[`components/SightDebugPanel.tsx`](components/SightDebugPanel.tsx) uses shared [`LabsDebugDock`](../../shared/components/LabsDebugDock.tsx):
+
+- **Reset Sight** — `resetProfile()` back to level 1
+- **Set level / Set + practice** — jump to any curriculum level
+- **+1 pass / Complete level** — fast curriculum walkthrough
+- **Sandbox** — open `#sandbox` at current level
+- **Clear all local** — `localStorage.clear()` with confirm (all Labs apps)
+- Practice **S** key — cycle simulate pass / fail / off
 
 ## Scoring UX
 
@@ -24,7 +36,7 @@ Level thresholds and generator profiles live in [`levels.ts`](levels.ts) (28 lev
 
 `session/practiceChallenge.ts` picks one challenge from `profile.level` (occasional review at `level - 1`). Level advances after seven consecutive passes at the current level.
 
-`storage.ts` migrates profiles: legacy 10-level map (schema &lt; 2), then +1 for levels ≥ 5 when schema &lt; 3 (adjacent-match insert).
+`storage.ts` migrates profiles on mount (`ensureProfileMigrated()`): legacy 10-level map (schema &lt; 2), +1 for levels ≥ 5 when schema &lt; 3, +7 when schema &lt; 4. **`passesAtLevel` resets to 0** when migration changes level.
 
 ## File layout
 

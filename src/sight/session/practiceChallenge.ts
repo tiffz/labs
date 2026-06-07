@@ -17,7 +17,7 @@ export interface PickPracticeOptions {
   constraints?: PracticeGenConstraints;
 }
 
-function challengeForLevel(
+export function challengeForLevel(
   seed: number,
   level: number,
   constraints?: PracticeGenConstraints,

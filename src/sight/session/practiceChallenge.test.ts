@@ -111,4 +111,12 @@ describe('pickPracticeChallenge', () => {
     expect(updated.level).toBe(2);
     expect(updated.passesAtLevel).toBe(PASSES_TO_ADVANCE - 1);
   });
+
+  it('does not increment passes when browsing a lower session level', () => {
+    const profile = testProfile({ level: 12, passesAtLevel: 3 });
+    const updated = recordChallengeResult(profile, true, { challengeLevel: 5 });
+    expect(updated.level).toBe(12);
+    expect(updated.passesAtLevel).toBe(3);
+    expect(updated.challengesCompleted).toBe(1);
+  });
 });

@@ -5,40 +5,62 @@ import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { generateCompareChallenge } from '../generators/compare';
-import { generateBridgeChallenge } from '../generators/brokenBridge';
-import { generateContextualMatchChallenge } from '../generators/contextualMatch';
-import { generateGamutChallenge } from '../generators/gamutLandscape';
-import { randomSeed } from '../generators/rng';
+import { getLevelConfig, LEVEL_TABLE, MAX_LEVEL } from '../levels';
+import AlbersEqualizerView from '../modules/albersEqualizer/AlbersEqualizerView';
+import { initialEqualizerInput } from '../modules/albersEqualizer/albersEqualizerLogic';
+import AnchorPivotView from '../modules/anchorPivot/AnchorPivotView';
+import BrokenBridgeView from '../modules/brokenBridge/BrokenBridgeView';
+import { initialBridgeSteps } from '../modules/brokenBridge/brokenBridgeLogic';
 import CompareView from '../modules/compare/CompareView';
 import ContextualMatcherView from '../modules/contextualMatcher/ContextualMatcherView';
 import { initialContextualInput } from '../modules/contextualMatcher/contextualMatcherLogic';
-import BrokenBridgeView from '../modules/brokenBridge/BrokenBridgeView';
-import { initialBridgeSteps } from '../modules/brokenBridge/brokenBridgeLogic';
+import AlbersFlashcardView from '../modules/flashcard/AlbersFlashcardView';
+import IsolatedFlashcardView from '../modules/flashcard/IsolatedFlashcardView';
 import GamutFinderView, { defaultGamutDeform } from '../modules/gamutFinder/GamutFinderView';
+import MunsellSliceView from '../modules/munsellSlice/MunsellSliceView';
+import YotCastView from '../modules/yotCast/YotCastView';
+import { randomSeed } from '../generators/rng';
+import { LEGACY_COMPARE_LEVEL, parseSandboxLevelFromHash } from '../debug/parseSandboxLevel';
 import { deformMask } from '../scoring/gamutOverlap';
 import { colorStateToHex } from '../scoring/perceptualScore';
-import type { ModuleId, SightChallenge } from '../types';
+import { challengeForLevel } from '../session/practiceChallenge';
+import type { SightChallenge } from '../types';
 import type { WheelPoint } from '../scoring/gamutOverlap';
 
-type SandboxModule = ModuleId;
-
-function challengeForModule(module: SandboxModule, seed: number): SightChallenge {
-  if (module === 'compare') return generateCompareChallenge(seed, 3);
-  if (module === 'contextual') return generateContextualMatchChallenge(seed, 12);
-  if (module === 'bridge') return generateBridgeChallenge(seed, 17);
-  return generateGamutChallenge(seed, 19);
+function challengeForSandbox(
+  pick: number,
+  seed: number,
+): { challenge: SightChallenge; displayLevel: number } {
+  if (pick === LEGACY_COMPARE_LEVEL) {
+    return { challenge: generateCompareChallenge(seed, 3), displayLevel: 3 };
+  }
+  const level = Math.max(1, Math.min(MAX_LEVEL, pick));
+  return { challenge: challengeForLevel(seed, level), displayLevel: level };
 }
 
-export default function SandboxPhase(): React.ReactElement {
+interface SandboxPhaseProps {
+  initialLevel?: number;
+}
+
+export default function SandboxPhase({ initialLevel }: SandboxPhaseProps): React.ReactElement {
   const [seed, setSeed] = useState(48291);
-  const [module, setModule] = useState<SandboxModule>('contextual');
-  const challenge = useMemo(() => challengeForModule(module, seed), [module, seed]);
+  const [levelPick, setLevelPick] = useState(() => initialLevel ?? parseSandboxLevelFromHash());
+  const { challenge, displayLevel } = useMemo(
+    () => challengeForSandbox(levelPick, seed),
+    [levelPick, seed],
+  );
 
   const [contextualInput, setContextualInput] = useState(() =>
-    challenge.kind === 'contextual' ? initialContextualInput(challenge) : initialContextualInput(generateContextualMatchChallenge(seed, 12)),
+    challenge.kind === 'contextual' ? initialContextualInput(challenge) : null,
+  );
+  const [equalizerInput, setEqualizerInput] = useState(() =>
+    challenge.kind === 'albers-equalizer' ? initialEqualizerInput(challenge) : null,
+  );
+  const [pivotHue, setPivotHue] = useState(() =>
+    challenge.kind === 'anchor-pivot' ? challenge.pivotHue : 0,
   );
   const [bridgeSteps, setBridgeSteps] = useState(() =>
-    challenge.kind === 'bridge' ? initialBridgeSteps(challenge) : initialBridgeSteps(generateBridgeChallenge(seed, 17)),
+    challenge.kind === 'bridge' ? initialBridgeSteps(challenge) : null,
   );
   const [bridgeSlot, setBridgeSlot] = useState(1);
   const [gamutDeform, setGamutDeform] = useState(defaultGamutDeform);
@@ -48,16 +70,23 @@ export default function SandboxPhase(): React.ReactElement {
   }, [challenge, gamutDeform]);
 
   const regen = useCallback((nextSeed?: number) => {
-    const s = nextSeed ?? randomSeed();
-    setSeed(s);
+    setSeed(nextSeed ?? randomSeed());
   }, []);
 
   useEffect(() => {
-    const c = challengeForModule(module, seed);
-    if (c.kind === 'contextual') setContextualInput(initialContextualInput(c));
-    if (c.kind === 'bridge') setBridgeSteps(initialBridgeSteps(c));
-    if (c.kind === 'gamut') setGamutDeform(defaultGamutDeform);
-  }, [module, seed]);
+    if (challenge.kind === 'contextual') setContextualInput(initialContextualInput(challenge));
+    else setContextualInput(null);
+    if (challenge.kind === 'albers-equalizer') setEqualizerInput(initialEqualizerInput(challenge));
+    else setEqualizerInput(null);
+    if (challenge.kind === 'anchor-pivot') setPivotHue(challenge.pivotHue);
+    if (challenge.kind === 'bridge') {
+      setBridgeSteps(initialBridgeSteps(challenge));
+      setBridgeSlot(1);
+    } else {
+      setBridgeSteps(null);
+    }
+    if (challenge.kind === 'gamut') setGamutDeform(defaultGamutDeform);
+  }, [challenge]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -71,6 +100,11 @@ export default function SandboxPhase(): React.ReactElement {
     return () => window.removeEventListener('keydown', onKey);
   }, [regen]);
 
+  const levelLabel =
+    levelPick === LEGACY_COMPARE_LEVEL
+      ? 'Legacy compare'
+      : `${getLevelConfig(displayLevel).label} (${getLevelConfig(displayLevel).module})`;
+
   const telemetry = useMemo(() => {
     if (challenge.kind === 'compare') {
       return [
@@ -80,13 +114,28 @@ export default function SandboxPhase(): React.ReactElement {
         ['Correct', challenge.correctSide],
       ];
     }
+    if (challenge.kind === 'flashcard-isolated') {
+      return [
+        ['Kind', challenge.kind],
+        ['Profile', challenge.profile],
+        ['Axis', challenge.axis],
+        ['Correct', challenge.correctSide],
+      ];
+    }
+    if (challenge.kind === 'flashcard-albers') {
+      return [
+        ['Kind', challenge.kind],
+        ['Question', challenge.question],
+        ['Correct side', challenge.correctSide ?? 'n/a'],
+        ['Correct binary', challenge.correctBinary ?? 'n/a'],
+      ];
+    }
     if (challenge.kind === 'contextual') {
       return [
         ['Target', colorStateToHex(challenge.target)],
         ['Background', colorStateToHex(challenge.background)],
         [`Oklch T`, `L=${challenge.target.l.toFixed(3)} C=${challenge.target.c.toFixed(3)} H=${challenge.target.h.toFixed(0)}`],
         ['Display', challenge.display],
-        ['Max ΔE (L8)', '3.5'],
       ];
     }
     if (challenge.kind === 'bridge') {
@@ -94,6 +143,18 @@ export default function SandboxPhase(): React.ReactElement {
         `Step ${i + 1}`,
         `${colorStateToHex(s)} · L${s.l.toFixed(2)}`,
       ]);
+    }
+    if (challenge.kind === 'munsell-slice') {
+      return [
+        ['Outlier index', String(challenge.outlierIndex)],
+        ['Axis', challenge.axis],
+      ];
+    }
+    if (challenge.kind === 'yot-cast') {
+      return [
+        ['Preset', challenge.lightPrompt],
+        ['Correct index', String(challenge.correctIndex)],
+      ];
     }
     if (challenge.kind !== 'gamut') {
       return [['Challenge', challenge.kind]];
@@ -129,36 +190,50 @@ export default function SandboxPhase(): React.ReactElement {
         </Button>
         <Select
           size="small"
-          value={module}
-          onChange={(e) => setModule(e.target.value as SandboxModule)}
-          aria-label="Module"
+          value={levelPick}
+          onChange={(e) => setLevelPick(Number(e.target.value))}
+          aria-label="Curriculum level"
+          sx={{ minWidth: 220, maxWidth: 320 }}
         >
-          <MenuItem value="compare">Compare</MenuItem>
-          <MenuItem value="contextual">Contextual</MenuItem>
-          <MenuItem value="bridge">Bridge</MenuItem>
-          <MenuItem value="gamut">Gamut</MenuItem>
+          <MenuItem value={LEGACY_COMPARE_LEVEL}>Legacy compare (dev)</MenuItem>
+          {LEVEL_TABLE.map((row) => (
+            <MenuItem key={row.level} value={row.level}>
+              L{row.level} · {row.label}
+            </MenuItem>
+          ))}
         </Select>
         <Typography variant="caption" color="text.secondary">
-          Space = new seed
+          {levelLabel} · Space = new seed
         </Typography>
       </div>
       {challenge.kind === 'compare' && (
         <CompareView challenge={challenge} reveal={null} onPick={() => {}} />
       )}
-      {challenge.kind === 'contextual' && (
+      {challenge.kind === 'flashcard-isolated' && (
+        <IsolatedFlashcardView challenge={challenge} reveal={null} onPick={() => {}} />
+      )}
+      {challenge.kind === 'flashcard-albers' && (
+        <AlbersFlashcardView
+          challenge={challenge}
+          reveal={null}
+          onPickSide={() => {}}
+          onPickBinary={() => {}}
+        />
+      )}
+      {challenge.kind === 'contextual' && contextualInput && (
         <ContextualMatcherView
           challenge={challenge}
-          level={5}
+          level={displayLevel}
           input={contextualInput}
           onInputChange={setContextualInput}
           showLiveMetrics
           reveal={null}
         />
       )}
-      {challenge.kind === 'bridge' && (
+      {challenge.kind === 'bridge' && bridgeSteps && (
         <BrokenBridgeView
           challenge={challenge}
-          level={9}
+          level={displayLevel}
           userSteps={bridgeSteps}
           onUserStepsChange={setBridgeSteps}
           selectedSlot={bridgeSlot}
@@ -170,13 +245,36 @@ export default function SandboxPhase(): React.ReactElement {
       {challenge.kind === 'gamut' && (
         <GamutFinderView
           challenge={challenge}
-          level={11}
+          level={displayLevel}
           userMask={userMask}
           deform={gamutDeform}
           onDeformChange={setGamutDeform}
           showLiveMetrics
           reveal={null}
         />
+      )}
+      {challenge.kind === 'anchor-pivot' && (
+        <AnchorPivotView
+          challenge={challenge}
+          pivotHue={pivotHue}
+          onPivotChange={setPivotHue}
+          reveal={null}
+        />
+      )}
+      {challenge.kind === 'albers-equalizer' && equalizerInput && (
+        <AlbersEqualizerView
+          challenge={challenge}
+          level={displayLevel}
+          input={equalizerInput}
+          onInputChange={setEqualizerInput}
+          reveal={null}
+        />
+      )}
+      {challenge.kind === 'munsell-slice' && (
+        <MunsellSliceView challenge={challenge} reveal={null} onPick={() => {}} />
+      )}
+      {challenge.kind === 'yot-cast' && (
+        <YotCastView challenge={challenge} reveal={null} onPick={() => {}} />
       )}
       <aside className="sight-control-zone" style={{ maxHeight: 200, borderTop: '1px solid var(--sight-border)' }}>
         <dl className="sight-telemetry">

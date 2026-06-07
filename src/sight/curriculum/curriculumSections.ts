@@ -13,14 +13,28 @@ const SECTION_COPY: Record<CurriculumPhase, string> = {
   isolated:
     'Quick comparisons on neutral fields — value, chroma, and temperature before context gets loud.',
   relational:
-    'Albers-style fields and atmospheric casts — read color through surrounding hues.',
+    'Albers-style fields — read identity and perceived color through surrounding hues.',
   calibration:
-    'Slider matching, broken bridges, and subtractive equalizers — align Oklch to what you see.',
+    'Slider matching and broken bridges — align Oklch to what you see.',
   harmony:
     'Gamut masks and harmony wheels — where usable color lives on the wheel.',
+  subtractive:
+    'Perceived match across warm and cool fields — subtractive mixing in practice.',
+  dimensional:
+    'Value and chroma outliers in a five-swatch grid — read one dimension at a time.',
+  atmospheric:
+    'Light presets and flat scene color — atmospheric cast under controlled scenes.',
 };
 
-const PHASE_ORDER: CurriculumPhase[] = ['isolated', 'relational', 'calibration', 'harmony'];
+const PHASE_ORDER: CurriculumPhase[] = [
+  'isolated',
+  'relational',
+  'calibration',
+  'harmony',
+  'subtractive',
+  'dimensional',
+  'atmospheric',
+];
 
 export function curriculumSections(): CurriculumSection[] {
   return PHASE_ORDER.map((phase) => ({
