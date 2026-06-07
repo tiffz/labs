@@ -406,12 +406,15 @@ export default function StanzaTimeline({
     if (hoverCard == null) return;
     const i = segments.findIndex((s) => s.id === hoverCard.segmentId);
     if (i < 0) return;
+    const seg = segments[i];
+    if (!seg) return;
     const trimmed = draftSectionLabel.trim();
-    if (trimmed.length > 0) onRenameSectionFromLabel(i, trimmed);
-    else {
-      const seg = segments[i];
-      if (seg) setDraftSectionLabel(seg.label);
+    if (trimmed.length === 0) {
+      setDraftSectionLabel(seg.label);
+      return;
     }
+    if (trimmed === seg.label) return;
+    onRenameSectionFromLabel(i, trimmed);
   }, [draftSectionLabel, hoverCard, onRenameSectionFromLabel, segments]);
 
   commitSectionRenameRef.current = commitSectionRename;

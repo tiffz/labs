@@ -1,12 +1,10 @@
 import type { RefObject } from 'react';
-import type { ParsedRhythm, TimeSignature } from '../../shared/rhythm/types';
+import type { TimeSignature } from '../../shared/rhythm/types';
 import type { Key } from '../../shared/music/chordTypes';
 import type { SongSection, SongSectionType } from '../../shared/music/songSections';
 import type { SectionSettingsPosition } from '../hooks/useSectionSettingsPortalPosition';
 import type { RandomizeMode } from '../utils/randomizeModes';
 import WordsSectionCard from './WordsSectionCard';
-
-type TemplatePreset = { id: string; label: string; notation: string };
 
 type EffectiveSection = SongSection & {
   effectiveLyrics: string;
@@ -23,8 +21,6 @@ export type WordsSectionsColumnProps = {
   sectionRandomizeMenuId: string | null;
   activeSectionLoopId: string | null;
   isPlaying: boolean;
-  sectionTemplatePreviewById: Map<string, ParsedRhythm>;
-  templatePresets: TemplatePreset[];
   defaultTemplateNotation: string;
   songKey: Key;
   bpm: number;
@@ -34,9 +30,6 @@ export type WordsSectionsColumnProps = {
   sectionRandomizeMenuRef: RefObject<HTMLDivElement | null>;
   sectionSettingsAnchorRefs: RefObject<Map<string, HTMLDivElement>>;
   sectionRandomizeAnchorRefs: RefObject<Map<string, HTMLDivElement>>;
-  findTemplatePresetByNotation: (notation: string) => TemplatePreset | undefined;
-  getTemplateVariations: (presetId: string) => readonly { notation: string; label: string }[];
-  getTemplateVariationIndex: (presetId: string, notation: string) => number;
   onToggleSectionSettings: (sectionId: string) => void;
   onSectionTypeChange: (sectionId: string, type: SongSectionType) => void;
   onToggleChorusLyricsLink: (sectionId: string) => void;
@@ -56,7 +49,6 @@ export type WordsSectionsColumnProps = {
   onRandomizeSectionChordStyle: (sectionId: string) => void;
   onToggleChorusTemplateLink: (sectionId: string) => void;
   onSectionTemplateNotationChange: (sectionId: string, notation: string) => void;
-  onRandomizeSectionTemplate: (sectionId: string, mode: 'preset' | 'full') => void;
   onAddSection: (type: SongSectionType) => void;
   onImportLyrics: () => void;
 };
@@ -71,8 +63,6 @@ export default function WordsSectionsColumn({
   sectionRandomizeMenuId,
   activeSectionLoopId,
   isPlaying,
-  sectionTemplatePreviewById,
-  templatePresets,
   defaultTemplateNotation,
   songKey,
   bpm,
@@ -82,9 +72,6 @@ export default function WordsSectionsColumn({
   sectionRandomizeMenuRef,
   sectionSettingsAnchorRefs,
   sectionRandomizeAnchorRefs,
-  findTemplatePresetByNotation,
-  getTemplateVariations,
-  getTemplateVariationIndex,
   onToggleSectionSettings,
   onSectionTypeChange,
   onToggleChorusLyricsLink,
@@ -104,7 +91,6 @@ export default function WordsSectionsColumn({
   onRandomizeSectionChordStyle,
   onToggleChorusTemplateLink,
   onSectionTemplateNotationChange,
-  onRandomizeSectionTemplate,
   onAddSection,
   onImportLyrics,
 }: WordsSectionsColumnProps) {
@@ -118,13 +104,6 @@ export default function WordsSectionsColumn({
             effectiveTemplateNotation: section.templateNotation,
           };
           const sectionDisplayName = sectionDisplayNames[index] ?? 'Section';
-          const selectedTemplatePreset = findTemplatePresetByNotation(section.templateNotation);
-          const sectionTemplateVariations = selectedTemplatePreset
-            ? getTemplateVariations(selectedTemplatePreset.id)
-            : [];
-          const sectionActiveVariationIndex = selectedTemplatePreset
-            ? getTemplateVariationIndex(selectedTemplatePreset.id, section.templateNotation ?? '')
-            : -1;
 
           return (
             <WordsSectionCard
@@ -137,11 +116,6 @@ export default function WordsSectionsColumn({
               isLoopActive={isPlaying && activeSectionLoopId === section.id}
               isRandomizeMenuOpen={sectionRandomizeMenuId === section.id}
               randomizeAnchorEl={sectionRandomizeAnchorRefs.current?.get(section.id) ?? null}
-              selectedTemplatePreset={selectedTemplatePreset ?? null}
-              sectionTemplateVariations={sectionTemplateVariations}
-              sectionActiveVariationIndex={sectionActiveVariationIndex}
-              templatePreview={sectionTemplatePreviewById.get(section.id)}
-              templatePresets={templatePresets}
               defaultTemplateNotation={defaultTemplateNotation}
               settingsMenuRef={sectionSettingsMenuRef}
               randomizeMenuRef={sectionRandomizeMenuRef}
@@ -176,24 +150,6 @@ export default function WordsSectionsColumn({
               onTemplateNotationChange={(notation) =>
                 onSectionTemplateNotationChange(section.id, notation)
               }
-              onRandomizeTemplate={(mode) => onRandomizeSectionTemplate(section.id, mode)}
-              onTemplateVariationPrevious={() => {
-                const current = sectionActiveVariationIndex >= 0 ? sectionActiveVariationIndex : 0;
-                const prevIndex =
-                  (current - 1 + sectionTemplateVariations.length) % sectionTemplateVariations.length;
-                onSectionTemplateNotationChange(
-                  section.id,
-                  sectionTemplateVariations[prevIndex].notation,
-                );
-              }}
-              onTemplateVariationNext={() => {
-                const current = sectionActiveVariationIndex >= 0 ? sectionActiveVariationIndex : 0;
-                const nextIndex = (current + 1) % sectionTemplateVariations.length;
-                onSectionTemplateNotationChange(
-                  section.id,
-                  sectionTemplateVariations[nextIndex].notation,
-                );
-              }}
               songKey={songKey}
               bpm={bpm}
               timeSignature={timeSignature}

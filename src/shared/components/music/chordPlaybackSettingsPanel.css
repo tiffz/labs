@@ -115,11 +115,70 @@
   min-height: 22px;
 }
 
+.shared-chord-playback-settings--encore
+  .shared-chord-playback-settings__drums-panel
+  .drum-pattern-input-row {
+  margin-bottom: 6px;
+}
+
+.shared-chord-playback-settings--encore
+  .shared-chord-playback-settings__drums-panel
+  .drum-pattern-input
+  input {
+  width: 100%;
+  min-height: 28px;
+  box-sizing: border-box;
+  border: 1px solid var(--encore-playback-border);
+  border-radius: 8px;
+  padding: 0 8px;
+  background: #fff;
+  color: #1f2937;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.shared-chord-playback-settings--encore
+  .shared-chord-playback-settings__drums-panel
+  .drum-pattern-input
+  input:focus {
+  outline: none;
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: 0 0 0 2px var(--encore-playback-accent-soft);
+}
+
+.shared-chord-playback-settings--encore
+  .shared-chord-playback-settings__drums-panel
+  .drum-pattern-input-row
+  .darbuka-trainer-icon-link {
+  color: rgba(109, 40, 217, 0.62);
+}
+
+.shared-chord-playback-settings--encore
+  .shared-chord-playback-settings__drums-panel
+  .drum-pattern-input-row
+  .darbuka-trainer-icon-link:hover {
+  color: var(--encore-playback-accent);
+  background: var(--encore-playback-accent-soft);
+}
+
 .shared-chord-playback-settings__drums-notation {
   display: flex;
   flex-direction: column;
   align-items: center;
   margin-top: 2px;
+}
+
+.shared-chord-playback-settings__drums-notation .darbuka-trainer-icon-link {
+  color: rgba(109, 40, 217, 0.62);
+}
+
+.shared-chord-playback-settings--encore
+  .shared-chord-playback-settings__drums-notation
+  .darbuka-trainer-icon-link:hover {
+  color: var(--encore-playback-accent);
+  background: var(--encore-playback-accent-soft);
 }
 
 .shared-chord-playback-settings__drums-notation .drum-notation-mini-x-scroll {

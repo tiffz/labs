@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import type { ParsedRhythm, TimeSignature } from '../../shared/rhythm/types';
+import type { TimeSignature } from '../../shared/rhythm/types';
 import type { ChordStyleId } from '../../shared/music/chordStyleOptions';
 import { CHORD_STYLE_OPTIONS } from '../../shared/music/chordStyleOptions';
 import type { Key } from '../../shared/music/chordTypes';
@@ -8,11 +8,15 @@ import AppTooltip from '../../shared/components/AppTooltip';
 import DiceIcon from '../../shared/components/DiceIcon';
 import ChordProgressionInput from '../../shared/components/music/ChordProgressionInput';
 import ChordStyleInput from '../../shared/components/music/ChordStyleInput';
-import DrumNotationMini from '../../shared/notation/DrumNotationMini';
-import { RhythmTemplateVariationControls } from '../../shared/notation/RhythmTemplateVariationControls';
+import DarbukaTrainerIconLink from '../../shared/components/music/DarbukaTrainerIconLink';
+import DrumAccompaniment from '../../shared/components/music/DrumAccompaniment';
 import type { SectionSettingsPosition } from '../hooks/useSectionSettingsPortalPosition';
-
-type TemplatePreset = { id: string; label: string; notation: string };
+import {
+  WORDS_HOST_INPUT_DRUM_UX,
+  WORDS_INLINE_DRUM_NOTATION_STYLE,
+  WORDS_INLINE_DRUM_RANDOMIZE_BUTTON_CLASS,
+  WORDS_INLINE_DRUM_TEMPLATE_BUTTON_CLASS,
+} from '../utils/wordsInlineDrumUx';
 
 export type WordsSectionSettingsMenuProps = {
   section: SongSection;
@@ -22,11 +26,6 @@ export type WordsSectionSettingsMenuProps = {
   bpm: number;
   timeSignature: TimeSignature;
   metronomeEnabled: boolean;
-  templatePresets: TemplatePreset[];
-  selectedTemplatePreset: TemplatePreset | null;
-  sectionTemplateVariations: readonly { notation: string; label: string }[];
-  sectionActiveVariationIndex: number;
-  templatePreview: ParsedRhythm | undefined;
   defaultTemplateNotation: string;
   onChordProgressionChange: (value: string) => void;
   onRandomizeChords: () => void;
@@ -35,9 +34,6 @@ export type WordsSectionSettingsMenuProps = {
   onToggleChorusLyricsLink: () => void;
   onToggleChorusTemplateLink: () => void;
   onTemplateNotationChange: (notation: string) => void;
-  onRandomizeTemplate: (mode: 'preset' | 'full') => void;
-  onTemplateVariationPrevious: () => void;
-  onTemplateVariationNext: () => void;
 };
 
 export default function WordsSectionSettingsMenu({
@@ -48,11 +44,6 @@ export default function WordsSectionSettingsMenu({
   bpm,
   timeSignature,
   metronomeEnabled,
-  templatePresets,
-  selectedTemplatePreset,
-  sectionTemplateVariations,
-  sectionActiveVariationIndex,
-  templatePreview,
   defaultTemplateNotation,
   onChordProgressionChange,
   onRandomizeChords,
@@ -61,12 +52,8 @@ export default function WordsSectionSettingsMenu({
   onToggleChorusLyricsLink,
   onToggleChorusTemplateLink,
   onTemplateNotationChange,
-  onRandomizeTemplate,
-  onTemplateVariationPrevious,
-  onTemplateVariationNext,
 }: WordsSectionSettingsMenuProps) {
-  const previewValid =
-    templatePreview?.isValid && (templatePreview.measures.length ?? 0) > 0;
+  const templateNotation = section.templateNotation || defaultTemplateNotation;
 
   return (
     <div
@@ -190,79 +177,44 @@ export default function WordsSectionSettingsMenu({
       ) : null}
       <label className="words-slider-row words-chord-row">
         rhythm template
-        <div className="words-template-input-only">
-          <input
-            type="text"
-            value={section.templateNotation}
-            onChange={(event) => onTemplateNotationChange(event.target.value)}
-            placeholder="D---T---D-D-T---"
-          />
-        </div>
-      </label>
-      <div className="words-section-template-presets">
-        {templatePresets.map((preset) => (
-          <button
-            key={`${section.id}-${preset.label}`}
-            type="button"
-            className={`words-button words-button-template${
-              selectedTemplatePreset?.id === preset.id ? ' is-active' : ''
-            }`}
-            onClick={() => onTemplateNotationChange(preset.notation)}
-          >
-            {preset.label}
-          </button>
-        ))}
-        <AppTooltip title="Random preset template">
-          <button
-            type="button"
-            className="words-button words-button-template words-button-template-icon words-icon-tooltip"
-            onClick={() => onRandomizeTemplate('preset')}
-            aria-label="Random preset template"
-          >
-            <DiceIcon variant="single" size={15} />
-          </button>
-        </AppTooltip>
-        <AppTooltip title="Fully randomize template">
-          <button
-            type="button"
-            className="words-button words-button-template words-button-template-icon words-icon-tooltip"
-            onClick={() => onRandomizeTemplate('full')}
-            aria-label="Fully randomize template"
-          >
-            <DiceIcon variant="multiple" size={15} />
-          </button>
-        </AppTooltip>
-      </div>
-      {previewValid && templatePreview ? (
-        <div className="words-template-preview words-section-template-preview">
-          {selectedTemplatePreset && sectionTemplateVariations.length > 1 ? (
-            <RhythmTemplateVariationControls
-              className="words-template-variation-carousel"
-              presetLabel={selectedTemplatePreset.label}
-              variations={sectionTemplateVariations}
-              activeVariationIndex={sectionActiveVariationIndex}
-              onPrevious={onTemplateVariationPrevious}
-              onNext={onTemplateVariationNext}
+        <div className="words-chord-input-with-action">
+          <div className="words-template-input-only">
+            <input
+              type="text"
+              value={section.templateNotation}
+              onChange={(event) => onTemplateNotationChange(event.target.value)}
+              placeholder="D---T---D-D-T---"
             />
-          ) : null}
-          <DrumNotationMini
-            rhythm={templatePreview}
-            width={320}
-            style="light"
-            showDrumSymbols={true}
-            drumSymbolScale={0.52}
-            darbukaLinkOptions={{
-              notation: section.templateNotation || defaultTemplateNotation,
+          </div>
+          <DarbukaTrainerIconLink
+            params={{
+              notation: templateNotation,
               bpm,
               timeSignature,
               metronomeEnabled,
-              className: 'words-template-edit-link',
             }}
+            className="words-template-edit-link"
           />
         </div>
-      ) : (
-        <p className="words-template-error">Section template notation is invalid for this meter.</p>
-      )}
+      </label>
+      <div className="words-inline-drum-panel">
+        <DrumAccompaniment
+          {...WORDS_HOST_INPUT_DRUM_UX}
+          bpm={bpm}
+          timeSignature={timeSignature}
+          isPlaying={false}
+          currentBeatTime={0}
+          currentBeat={0}
+          metronomeEnabled={metronomeEnabled}
+          notationValue={templateNotation}
+          onNotationValueChange={onTemplateNotationChange}
+          notationWidth={320}
+          notationStyle={WORDS_INLINE_DRUM_NOTATION_STYLE}
+          notationFrameClassName="words-template-preview words-section-template-preview"
+          templateButtonClassName={WORDS_INLINE_DRUM_TEMPLATE_BUTTON_CLASS}
+          randomizeButtonClassName={WORDS_INLINE_DRUM_RANDOMIZE_BUTTON_CLASS}
+        />
+      </div>
     </div>
   );
 }

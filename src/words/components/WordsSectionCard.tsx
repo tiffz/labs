@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
-import type { ClipboardEvent, RefObject } from 'react';
-import type { ParsedRhythm, TimeSignature } from '../../shared/rhythm/types';
+import type { RefObject, ClipboardEvent } from 'react';
+import type { TimeSignature } from '../../shared/rhythm/types';
 import type { Key } from '../../shared/music/chordTypes';
 import type { ChordStyleId } from '../../shared/music/chordStyleOptions';
 import type { SongSection, SongSectionType } from '../../shared/music/songSections';
@@ -11,8 +11,6 @@ import WordsSectionSettingsMenu from './WordsSectionSettingsMenu';
 import type { SectionSettingsPosition } from '../hooks/useSectionSettingsPortalPosition';
 import type { RandomizeMode } from '../utils/randomizeModes';
 
-type TemplatePreset = { id: string; label: string; notation: string };
-
 export type WordsSectionCardProps = {
   section: SongSection;
   effectiveLyrics: string;
@@ -22,11 +20,6 @@ export type WordsSectionCardProps = {
   isLoopActive: boolean;
   isRandomizeMenuOpen: boolean;
   randomizeAnchorEl: HTMLElement | null;
-  selectedTemplatePreset: TemplatePreset | null;
-  sectionTemplateVariations: readonly { notation: string; label: string }[];
-  sectionActiveVariationIndex: number;
-  templatePreview: ParsedRhythm | undefined;
-  templatePresets: TemplatePreset[];
   defaultTemplateNotation: string;
   settingsMenuRef: RefObject<HTMLDivElement | null>;
   randomizeMenuRef: RefObject<HTMLDivElement | null>;
@@ -53,9 +46,6 @@ export type WordsSectionCardProps = {
   onToggleChorusLyricsLinkInSettings: () => void;
   onToggleChorusTemplateLink: () => void;
   onTemplateNotationChange: (notation: string) => void;
-  onRandomizeTemplate: (mode: 'preset' | 'full') => void;
-  onTemplateVariationPrevious: () => void;
-  onTemplateVariationNext: () => void;
   songKey: Key;
   bpm: number;
   timeSignature: TimeSignature;
@@ -71,11 +61,6 @@ export default function WordsSectionCard({
   isLoopActive,
   isRandomizeMenuOpen,
   randomizeAnchorEl,
-  selectedTemplatePreset,
-  sectionTemplateVariations,
-  sectionActiveVariationIndex,
-  templatePreview,
-  templatePresets,
   defaultTemplateNotation,
   settingsMenuRef,
   randomizeMenuRef,
@@ -102,9 +87,6 @@ export default function WordsSectionCard({
   onToggleChorusLyricsLinkInSettings,
   onToggleChorusTemplateLink,
   onTemplateNotationChange,
-  onRandomizeTemplate,
-  onTemplateVariationPrevious,
-  onTemplateVariationNext,
   songKey,
   bpm,
   timeSignature,
@@ -182,11 +164,6 @@ export default function WordsSectionCard({
                     bpm={bpm}
                     timeSignature={timeSignature}
                     metronomeEnabled={metronomeEnabled}
-                    templatePresets={templatePresets}
-                    selectedTemplatePreset={selectedTemplatePreset}
-                    sectionTemplateVariations={sectionTemplateVariations}
-                    sectionActiveVariationIndex={sectionActiveVariationIndex}
-                    templatePreview={templatePreview}
                     defaultTemplateNotation={defaultTemplateNotation}
                     onChordProgressionChange={onChordProgressionChange}
                     onRandomizeChords={onRandomizeChords}
@@ -195,9 +172,6 @@ export default function WordsSectionCard({
                     onToggleChorusLyricsLink={onToggleChorusLyricsLinkInSettings}
                     onToggleChorusTemplateLink={onToggleChorusTemplateLink}
                     onTemplateNotationChange={onTemplateNotationChange}
-                    onRandomizeTemplate={onRandomizeTemplate}
-                    onTemplateVariationPrevious={onTemplateVariationPrevious}
-                    onTemplateVariationNext={onTemplateVariationNext}
                   />,
                   document.body,
                 )

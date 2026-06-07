@@ -12,6 +12,12 @@ import {
 } from '../rhythm/timeSignatureUtils';
 import { highlightVexFlowMiniNoteGroup } from './playbackSvgHighlight';
 import { RhythmTemplateVariationControls } from './RhythmTemplateVariationControls';
+import DarbukaTrainerIconLink from '../components/music/DarbukaTrainerIconLink';
+import {
+  DARBUKA_TRAINER_LINK_TOOLTIP,
+  resolveDarbukaTrainerHref,
+} from '../rhythm/buildDarbukaEditUrl';
+import '../components/music/darbukaTrainerIconLink.css';
 
 /**
  * ARCHITECTURE DECISION: DrumNotationMini vs VexFlowRenderer
@@ -340,15 +346,23 @@ interface DrumNotationMiniProps {
     onNext: () => void;
     className?: string;
   };
-  /** Optional Darbuka Trainer link rendered under the mini notation */
+  /** Optional Darbuka Trainer icon link (prefer host {@link DrumAccompaniment} for full drum UX). */
   darbukaLinkOptions?: {
     notation?: string;
     bpm?: number;
     timeSignature?: TimeSignature;
     metronomeEnabled?: boolean;
     href?: string;
-    label?: string;
     className?: string;
+    tooltip?: string;
+    /**
+     * @deprecated Text `below-notation` links are legacy; treated as `icon-inline`.
+     * Prefer {@link DrumAccompaniment} for Darbuka deep links.
+     */
+    placement?: 'icon-inline' | 'below-notation';
+    /** @deprecated Legacy text link label. */
+    label?: string;
+    /** @deprecated Legacy text link style. */
     style?: React.CSSProperties;
   };
 }
@@ -785,26 +799,20 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
     return null;
   }
 
-  const darbukaHref = (() => {
-    if (!darbukaLinkOptions) return null;
-    if (darbukaLinkOptions.href) return darbukaLinkOptions.href;
-    if (!darbukaLinkOptions.notation) return null;
-    const params = new URLSearchParams();
-    params.set('rhythm', darbukaLinkOptions.notation);
-    if (typeof darbukaLinkOptions.bpm === 'number') {
-      params.set('bpm', String(Math.round(darbukaLinkOptions.bpm)));
-    }
-    if (darbukaLinkOptions.timeSignature) {
-      params.set(
-        'time',
-        `${darbukaLinkOptions.timeSignature.numerator}/${darbukaLinkOptions.timeSignature.denominator}`
-      );
-    }
-    if (darbukaLinkOptions.metronomeEnabled) {
-      params.set('metronome', 'true');
-    }
-    return `/drums/?${params.toString()}`;
-  })();
+  const darbukaHref = resolveDarbukaTrainerHref(
+    darbukaLinkOptions?.href,
+    darbukaLinkOptions
+      ? {
+          notation: darbukaLinkOptions.notation,
+          bpm: darbukaLinkOptions.bpm,
+          timeSignature: darbukaLinkOptions.timeSignature,
+          metronomeEnabled: darbukaLinkOptions.metronomeEnabled,
+        }
+      : undefined,
+  );
+  const darbukaLinkPlacement =
+    darbukaLinkOptions?.placement === 'below-notation' ? 'icon-inline' : (darbukaLinkOptions?.placement ?? 'icon-inline');
+  const darbukaLinkTooltip = darbukaLinkOptions?.tooltip ?? DARBUKA_TRAINER_LINK_TOOLTIP;
 
   return (
     <div style={{ width: '100%' }}>
@@ -926,6 +934,15 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
           )
         : null}
       <div className="drum-notation-mini-x-scroll">
+        {darbukaHref && darbukaLinkPlacement === 'icon-inline' ? (
+          <div className="drum-notation-mini-toolbar-row">
+            <DarbukaTrainerIconLink
+              href={darbukaHref}
+              className={darbukaLinkOptions?.className}
+              tooltip={darbukaLinkTooltip}
+            />
+          </div>
+        ) : null}
         <div
           ref={containerRef}
           className="drum-notation-mini"
@@ -936,39 +953,6 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
           }}
         />
       </div>
-      {darbukaHref ? (
-        <div style={{ marginTop: height <= 72 ? '2px' : '6px', display: 'flex', justifyContent: 'center' }}>
-          <a
-            href={darbukaHref}
-            target="_blank"
-            rel="noreferrer noopener"
-            className={`drum-notation-mini-edit-link${darbukaLinkOptions?.className ? ` ${darbukaLinkOptions.className}` : ''}`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: 'var(--drum-mini-link-size, 0.75rem)',
-              fontWeight: 600,
-              color: 'var(--drum-mini-link-color, #64748b)',
-              textDecoration: 'var(--drum-mini-link-text-decoration, none)',
-              padding: 'var(--drum-mini-link-padding, 0)',
-              borderRadius: 'var(--drum-mini-link-radius, 0.25rem)',
-              border: 'var(--drum-mini-link-border, 0)',
-              background: 'var(--drum-mini-link-bg, transparent)',
-              ...darbukaLinkOptions?.style,
-            }}
-          >
-            {darbukaLinkOptions?.label ?? 'Edit in Darbuka Trainer'}
-            <span
-              className="material-symbols-outlined"
-              style={{ fontSize: '14px', lineHeight: 1 }}
-              aria-hidden="true"
-            >
-              open_in_new
-            </span>
-          </a>
-        </div>
-      ) : null}
     </div>
   );
 };

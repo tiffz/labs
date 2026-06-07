@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import type { RefObject } from 'react';
-import { getTemplatePresetVariationIndex, getTemplatePresetVariations } from '../../shared/rhythm/presetDatabase';
 import type { ChordStyleId } from '../../shared/music/chordStyleOptions';
 import type { WordsSectionsColumnProps } from '../components/WordsSectionsColumn';
 import type { RandomizeMode } from '../utils/randomizeModes';
@@ -16,14 +15,11 @@ type SectionColumnContext = Pick<
   | 'sectionRandomizeMenuId'
   | 'activeSectionLoopId'
   | 'isPlaying'
-  | 'sectionTemplatePreviewById'
-  | 'templatePresets'
   | 'defaultTemplateNotation'
   | 'songKey'
   | 'bpm'
   | 'timeSignature'
   | 'metronomeEnabled'
-  | 'findTemplatePresetByNotation'
 >;
 
 export function useWordsSectionsColumnProps(
@@ -51,7 +47,6 @@ export function useWordsSectionsColumnProps(
     applyRandomization: (mode: RandomizeMode, sectionId?: string) => void;
     randomizeChordProgression: (sectionId: string) => void;
     randomizeChordStyle: (sectionId: string) => void;
-    randomizeSectionTemplate: (sectionId: string, mode: 'preset' | 'full') => void;
     scrollSectionIntoNotationView: (sectionId: string) => void;
     playSectionLoop: (sectionId: string, sectionIndex: number) => void;
     stopPlaybackImmediately: () => void;
@@ -83,10 +78,6 @@ export function useWordsSectionsColumnProps(
       sectionRandomizeMenuRef: refs.sectionRandomizeMenuRef,
       sectionSettingsAnchorRefs: refs.sectionSettingsAnchorRefs,
       sectionRandomizeAnchorRefs: refs.sectionRandomizeAnchorRefs,
-      getTemplateVariations: (presetId: string) =>
-        getTemplatePresetVariations(presetId, context.timeSignature),
-      getTemplateVariationIndex: (presetId: string, notationValue: string) =>
-        getTemplatePresetVariationIndex(presetId, notationValue, context.timeSignature),
       onToggleSectionSettings: (sectionId: string) =>
         actions.setOpenSectionSettingsId((previous) => {
           actions.setGenerationMenuOpen(false);
@@ -158,7 +149,6 @@ export function useWordsSectionsColumnProps(
           linkedToPreviousChorusTemplate: !previousSection.linkedToPreviousChorusTemplate,
         })),
       onSectionTemplateNotationChange: updateSectionTemplateNotation,
-      onRandomizeSectionTemplate: actions.randomizeSectionTemplate,
       onAddSection: addSection,
       onImportLyrics: () =>
         openLyricImport(

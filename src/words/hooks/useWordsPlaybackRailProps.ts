@@ -9,12 +9,9 @@ import type { SoundType } from '../../shared/music/soundOptions';
 import type { WordsPlaybackRailProps } from '../components/WordsPlaybackRail';
 import { clampBpm, pickRandom } from '../utils/appRhythmHelpers';
 import {
-  APP_DEFAULT_GENERATION_SETTINGS,
   BACKING_FALLBACK_TEMPLATE,
   TIME_SIGNATURE_OPTIONS,
 } from '../utils/wordsAppDefaults';
-import type { TemplatePresetOption } from '../utils/wordsTemplateHelpers';
-import { parseRhythm } from '../../shared/rhythm/rhythmParser';
 
 export function useWordsPlaybackRailProps(params: {
   isPlaying: boolean;
@@ -67,12 +64,6 @@ export function useWordsPlaybackRailProps(params: {
   setBackingBeatUseTemplate: React.Dispatch<React.SetStateAction<boolean>>;
   backingBeatNotation: string;
   setBackingBeatNotation: React.Dispatch<React.SetStateAction<string>>;
-  templatePresets: TemplatePresetOption[];
-  backingSelectedTemplatePreset: TemplatePresetOption | null | undefined;
-  randomizeBackingTemplate: (mode: 'preset' | 'full') => void;
-  backingPatternRhythm: ReturnType<typeof parseRhythm> | null;
-  backingTemplateVariations: readonly { notation: string; label: string }[];
-  backingActiveVariationIndex: number;
   autoFollowPlayback: boolean;
   setAutoFollowPlayback: React.Dispatch<React.SetStateAction<boolean>>;
 }): WordsPlaybackRailProps {
@@ -127,12 +118,6 @@ export function useWordsPlaybackRailProps(params: {
     setBackingBeatUseTemplate,
     backingBeatNotation,
     setBackingBeatNotation,
-    templatePresets,
-    backingSelectedTemplatePreset,
-    randomizeBackingTemplate,
-    backingPatternRhythm,
-    backingTemplateVariations,
-    backingActiveVariationIndex,
     autoFollowPlayback,
     setAutoFollowPlayback,
   } = params;
@@ -206,13 +191,6 @@ export function useWordsPlaybackRailProps(params: {
         backingBeatNotation,
         onBackingBeatNotationChange: setBackingBeatNotation,
         backingFallbackTemplate: BACKING_FALLBACK_TEMPLATE,
-        templatePresets,
-        backingSelectedTemplatePreset: backingSelectedTemplatePreset ?? null,
-        onRandomizeBackingTemplate: randomizeBackingTemplate,
-        backingPatternRhythm,
-        backingTemplateVariations,
-        backingActiveVariationIndex,
-        defaultTemplateNotation: APP_DEFAULT_GENERATION_SETTINGS.templateNotation ?? '',
         bpm,
         timeSignature,
         metronomeEnabled,
@@ -271,12 +249,6 @@ export function useWordsPlaybackRailProps(params: {
       setBackingBeatUseTemplate,
       backingBeatNotation,
       setBackingBeatNotation,
-      templatePresets,
-      backingSelectedTemplatePreset,
-      randomizeBackingTemplate,
-      backingPatternRhythm,
-      backingTemplateVariations,
-      backingActiveVariationIndex,
       autoFollowPlayback,
       setAutoFollowPlayback,
     ]

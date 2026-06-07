@@ -1,9 +1,7 @@
 import { parseRhythm } from '../../shared/rhythm/rhythmParser';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import {
-  findRhythmTemplatePresetByNotation,
   getRhythmTemplatePresets,
-  getTemplatePresetVariationIndex,
   getTemplatePresetVariations,
 } from '../../shared/rhythm/presetDatabase';
 import { BACKING_FALLBACK_TEMPLATE, TEMPLATE_PRESETS } from './wordsAppDefaults';
@@ -25,19 +23,6 @@ export function buildTemplatePresets(
   }));
 }
 
-export function findTemplatePresetByNotation(
-  value: string,
-  timeSignature: TimeSignature
-): TemplatePresetOption | undefined {
-  const preset = findRhythmTemplatePresetByNotation(value, timeSignature);
-  if (!preset) return undefined;
-  return {
-    id: preset.id,
-    label: preset.label,
-    notation: preset.notation,
-  };
-}
-
 export function buildTemplateNotationPool(
   templatePresets: TemplatePresetOption[],
   timeSignature: TimeSignature
@@ -55,30 +40,6 @@ export function buildTemplateNotationPool(
   return unique.length > 0
     ? unique
     : [templatePresets[0]?.notation ?? BACKING_FALLBACK_TEMPLATE];
-}
-
-export function buildBackingTemplateState(
-  backingBeatNotation: string,
-  timeSignature: TimeSignature,
-  findTemplatePresetByNotation: (notation: string) => TemplatePresetOption | undefined
-) {
-  const backingSelectedTemplatePreset =
-    findTemplatePresetByNotation(backingBeatNotation);
-  const backingTemplateVariations = backingSelectedTemplatePreset
-    ? getTemplatePresetVariations(backingSelectedTemplatePreset.id, timeSignature)
-    : [];
-  const backingActiveVariationIndex = backingSelectedTemplatePreset
-    ? getTemplatePresetVariationIndex(
-        backingSelectedTemplatePreset.id,
-        backingBeatNotation,
-        timeSignature
-      )
-    : -1;
-  return {
-    backingSelectedTemplatePreset,
-    backingTemplateVariations,
-    backingActiveVariationIndex,
-  };
 }
 
 export function buildBackingPatternRhythm(params: {

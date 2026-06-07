@@ -7,7 +7,7 @@ import Typography from '@mui/material/Typography';
 import { useState, type ReactElement } from 'react';
 import ChordStyleInput from './ChordStyleInput';
 import DrumAccompaniment from './DrumAccompaniment';
-import { INLINE_DRUM_PANEL_UX } from './inlineDrumUxDefaults';
+import { getInlineDrumUxProps } from './inlineDrumUxDefaults';
 import { PlaybackSoundSelect } from './PlaybackSoundSelect';
 import { PlaybackVolumeRow } from './PlaybackVolumeRow';
 import type { NotationStyle } from '../../notation/DrumNotationMini';
@@ -207,7 +207,7 @@ export function ChordPlaybackSettingsPanel({
         {settings.drumsEnabled ? (
           <Box className="shared-chord-playback-settings__drums-panel">
             <DrumAccompaniment
-              {...INLINE_DRUM_PANEL_UX}
+              {...getInlineDrumUxProps('settings-panel')}
               bpm={tempo}
               timeSignature={CHART_CHORD_PLAYBACK_TIME_SIGNATURE}
               isPlaying={playing}

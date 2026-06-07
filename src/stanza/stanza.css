@@ -1946,6 +1946,19 @@ button.stanza-library-card {
   padding: 0 2px;
   min-height: 18px;
 }
+.stanza-drums-panel .drum-pattern-input-row {
+  margin-bottom: 1px;
+}
+
+.stanza-drums-panel .darbuka-trainer-icon-link {
+  color: var(--stanza-ink-muted);
+}
+
+.stanza-drums-panel .darbuka-trainer-icon-link:hover {
+  color: var(--stanza-rose-strong);
+  background: var(--stanza-rose-wash);
+}
+
 .stanza-drums-panel .drum-pattern-input {
   margin-bottom: 1px;
 }

@@ -301,8 +301,8 @@ function inferMetronomeCalibrationFromAnalysisCache(
   const beat = song.analysisCache?.beat;
   if (!beat || !Number.isFinite(beat.bpm)) return undefined;
 
-  const existing = song.metronomeSongCalibration;
-  if (existing?.bpm) return undefined;
+  // Any saved whole-song calibration (including explicit Beat 1 = 0) beats analysis.
+  if (song.metronomeSongCalibration != null) return undefined;
 
   const cal = calibrationFromBeatAnalysis(beat, 0);
   return buildStanzaSegmentCalibration({

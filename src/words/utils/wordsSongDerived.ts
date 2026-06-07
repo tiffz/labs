@@ -1,5 +1,4 @@
 import { parseRhythm } from '../../shared/rhythm/rhythmParser';
-import type { TimeSignature } from '../../shared/rhythm/types';
 import type { SyllableHit, WordRhythmResult } from './prosodyEngine';
 import { DEFAULT_WORD_RESULT } from './wordsAppDefaults';
 import type { SectionRenderPlan } from './wordsSectionPlans';
@@ -23,22 +22,7 @@ export function buildHitMap(
   return map;
 }
 
-export function buildDarbukaEditUrl(params: {
-  notation: string;
-  timeSignature: TimeSignature;
-  bpm: number;
-  metronomeEnabled: boolean;
-}): string {
-  const urlParams = new URLSearchParams();
-  urlParams.set('rhythm', params.notation);
-  urlParams.set(
-    'time',
-    `${params.timeSignature.numerator}/${params.timeSignature.denominator}`
-  );
-  urlParams.set('bpm', String(params.bpm));
-  if (params.metronomeEnabled) urlParams.set('metronome', 'true');
-  return `/drums/?${urlParams.toString()}`;
-}
+export { buildDarbukaEditUrl } from '../../shared/rhythm/buildDarbukaEditUrl';
 
 export function estimateSongDuration(
   parsedMeasures: ReturnType<typeof parseRhythm>['measures'],

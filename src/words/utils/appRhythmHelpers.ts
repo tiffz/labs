@@ -1,5 +1,3 @@
-import type { TimeSignature } from '../../shared/rhythm/types';
-
 export function pickRandom<T>(items: readonly T[]): T {
   return items[Math.floor(Math.random() * items.length)] as T;
 }
@@ -14,26 +12,6 @@ export function getViewportMetrics(): { width: number; height: number } {
     return { width: vv.width, height: vv.height };
   }
   return { width: window.innerWidth, height: window.innerHeight };
-}
-
-export function generateRandomTemplateNotation(timeSig: TimeSignature): string {
-  const sixteenths = Math.round((timeSig.numerator * 16) / timeSig.denominator);
-  const half = Math.floor(sixteenths / 2);
-  const anchors: Array<'D' | 'T' | 'K'> = ['D', 'T', 'K'];
-  const notes: string[] = Array.from({ length: sixteenths }, () => '-');
-  notes[0] = 'D';
-  if (half > 0 && half < sixteenths) notes[half] = 'D';
-  for (let i = 0; i < notes.length; i += 1) {
-    if (notes[i] !== '-') continue;
-    const roll = Math.random();
-    if (roll < 0.24) {
-      notes[i] = pickRandom(anchors);
-    } else if (roll < 0.3) {
-      notes[i] = '_';
-    }
-  }
-  if (!notes.some((token) => token !== '-')) notes[0] = 'D';
-  return notes.join('');
 }
 
 export function getTemplateSyncopationScore(notation: string): number {

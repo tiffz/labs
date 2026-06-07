@@ -6,7 +6,6 @@ import { ALL_KEYS } from '../../shared/music/randomization';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import {
   clampBpm,
-  generateRandomTemplateNotation,
   getNoteSoundAtSixteenth,
   pickRandom,
 } from '../utils/appRhythmHelpers';
@@ -21,21 +20,19 @@ import type { WordsSectionsState } from './useWordsSectionsState';
 export function useWordsRandomization(params: {
   sectionsState: Pick<
     WordsSectionsState,
-    'sections' | 'songKey' | 'setSongKey' | 'applySectionsChange' | 'updateSection' | 'updateSectionTemplateNotation'
+    'sections' | 'songKey' | 'setSongKey' | 'applySectionsChange' | 'updateSection'
   >;
   setBpm: React.Dispatch<React.SetStateAction<number>>;
-  setBackingBeatNotation: (notation: string) => void;
   timeSignature: TimeSignature;
   templatePresets: TemplatePresetOption[];
 }) {
-  const { sectionsState, setBpm, setBackingBeatNotation, timeSignature, templatePresets } = params;
+  const { sectionsState, setBpm, timeSignature, templatePresets } = params;
   const {
     sections,
     songKey,
     setSongKey,
     applySectionsChange,
     updateSection,
-    updateSectionTemplateNotation,
   } = sectionsState;
 
   const templateNotationPool = useMemo(
@@ -79,36 +76,11 @@ export function useWordsRandomization(params: {
     [sections, updateSection]
   );
 
-  const randomizeSectionTemplate = useCallback(
-    (sectionId: string, mode: 'preset' | 'full') => {
-      if (sections.find((section) => section.id === sectionId)?.isLocked) return;
-      const notation =
-        mode === 'preset'
-          ? pickRandom(templateNotationPool)
-          : generateRandomTemplateNotation(timeSignature);
-      updateSectionTemplateNotation(sectionId, notation);
-    },
-    [sections, templateNotationPool, timeSignature, updateSectionTemplateNotation]
-  );
-
-  const randomizeBackingTemplate = useCallback(
-    (mode: 'preset' | 'full') => {
-      const notation =
-        mode === 'preset'
-          ? pickRandom(templateNotationPool)
-          : generateRandomTemplateNotation(timeSignature);
-      setBackingBeatNotation(notation);
-    },
-    [templateNotationPool, timeSignature, setBackingBeatNotation]
-  );
-
   return {
     templateNotationPool,
     applyRandomization,
     randomizeChordProgression,
     randomizeChordStyle,
-    randomizeSectionTemplate,
-    randomizeBackingTemplate,
   };
 }
 

@@ -10,6 +10,29 @@ export type DerivedSegment = {
 
 export const STANZA_TIME_EPS = 0.02;
 
+const DEFAULT_SECTION_LABEL_RE = /^Section \d+$/i;
+const DEFAULT_MARKER_LABEL_RE = /^Marker \d+$/i;
+
+function isRedundantTrackEdgeLabel(label: string): boolean {
+  const t = label.trim();
+  if (!t) return true;
+  return DEFAULT_SECTION_LABEL_RE.test(t) || DEFAULT_MARKER_LABEL_RE.test(t);
+}
+
+/**
+ * Drops markers pinned to the implicit track start/end when their labels are auto-generated.
+ * Track boundaries always exist without markers; redundant edge markers (often recreated by
+ * section hover rename) show up as undeletable "ghost" splits at 0:00.
+ */
+export function sanitizeStanzaMarkers(markers: StanzaMarker[], duration: number): StanzaMarker[] {
+  return ensureMarkerIds(markers).filter((m) => {
+    const atStart = m.time <= STANZA_TIME_EPS;
+    const atEnd = duration > 0 && m.time >= duration - STANZA_TIME_EPS;
+    if (!atStart && !atEnd) return true;
+    return !isRedundantTrackEdgeLabel(m.label ?? '');
+  });
+}
+
 const BOUNDARY_START = '__stanza_start__';
 const BOUNDARY_END = '__stanza_end__';
 

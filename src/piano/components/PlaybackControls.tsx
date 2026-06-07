@@ -9,6 +9,7 @@ import {
 import { PlaybackSoundSelect } from '../../shared/components/music/PlaybackSoundSelect';
 import { useSampledPianoPreload } from '../../shared/hooks/useSampledPianoPreload';
 import DrumAccompaniment, { type DrumScheduler } from '../../shared/components/music/DrumAccompaniment';
+import { getInlineDrumUxProps } from '../../shared/components/music/inlineDrumUxDefaults';
 import type { NotationStyle } from '../../shared/notation/DrumNotationMini';
 import { getScorePlaybackEngine } from '../utils/scorePlayback';
 import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
@@ -548,6 +549,7 @@ const PlaybackControls: React.FC = () => {
         </label>
         {state.drumEnabled && (
           <DrumAccompaniment
+            {...getInlineDrumUxProps('sidebar-compact')}
             bpm={state.tempo}
             timeSignature={state.score?.timeSignature ?? { numerator: 4, denominator: 4 }}
             isPlaying={state.isPlaying && state.activeMode !== 'free-practice' && !state.countingIn}

@@ -6,12 +6,21 @@ import MenuItem from '@mui/material/MenuItem';
 import type { TimeSignature } from '../../rhythm/types';
 import { parseRhythm } from '../../rhythm/rhythmParser';
 import { getRhythmTemplatePresets, getTemplatePresetVariationIndex, getTemplatePresetVariations } from '../../rhythm/presetDatabase';
+import { buildDarbukaEditUrl } from '../../rhythm/buildDarbukaEditUrl';
 import { RhythmTemplateVariationControls } from '../../notation/RhythmTemplateVariationControls';
 import { AudioPlayer } from '../../audio/audioPlayer';
 import DrumNotationMini, { type NotationStyle } from '../../notation/DrumNotationMini';
+import DarbukaTrainerIconLink from './DarbukaTrainerIconLink';
 import DiceIcon from '../DiceIcon';
 import { DRUM_SAMPLE_URLS } from '../../audio/drumSampleUrls';
 import { resolveDrumPlaybackNotePointer } from '../../rhythm/drumPlaybackNotePointer';
+import {
+  resolveDarbukaLinkPlacement,
+  type InlineDarbukaLinkPlacement,
+  type DeprecatedInlineDarbukaLinkPlacement,
+} from './inlineDrumUxDefaults';
+import './darbukaTrainerIconLink.css';
+import './drumAccompaniment.css';
 
 /** Precise drum scheduling via the playback engine's look-ahead scheduler */
 export interface DrumScheduler {
@@ -45,9 +54,13 @@ interface DrumAccompanimentProps {
   notationWidth?: number;
   /** Override the rendered notation staff height (px). Default uses an internal heuristic. */
   notationHeight?: number;
-  /** Hide the "Edit in Darbuka Trainer" deep-link below the notation (used by host apps that
-   * don't want to send users into a separate tool). */
+  /** Hide the Darbuka Trainer deep-link (used by host apps that don't want to send users
+   * into a separate tool). */
   hideDarbukaLink?: boolean;
+  /** Where to render the Darbuka link. Defaults from {@link resolveDarbukaLinkPlacement}. */
+  darbukaLinkPlacement?: InlineDarbukaLinkPlacement | DeprecatedInlineDarbukaLinkPlacement;
+  /** Tooltip / aria-label for the inline icon link. Below-notation uses its own default label. */
+  darbukaLinkTooltip?: string;
   /** Optional class for the Darbuka deep-link (app-specific styling). */
   darbukaLinkClassName?: string;
   /** Optional class on the notation frame wrapping variation controls + mini renderer. */
@@ -58,7 +71,7 @@ interface DrumAccompanimentProps {
   notationShowMetronomeDots?: boolean;
   /** Scale for drum symbols above noteheads (default 0.6). */
   drumSymbolScale?: number;
-  /** Hide dice randomize controls (rare; prefer {@link INLINE_DRUM_PANEL_UX} defaults). */
+  /** Hide dice randomize controls (rare; prefer {@link getInlineDrumUxProps} profiles). */
   showRandomizeButtons?: boolean;
   /** Hide the raw Darbuka notation text field (preset + notation preview only). */
   hidePatternInput?: boolean;
@@ -116,6 +129,8 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
   notationWidth,
   notationHeight,
   hideDarbukaLink = false,
+  darbukaLinkPlacement,
+  darbukaLinkTooltip = 'Customize in Darbuka trainer',
   darbukaLinkClassName,
   notationFrameClassName,
   notationFooter,
@@ -154,6 +169,21 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
 
   const notation =
     isControlled && notationValue !== undefined ? notationValue : internalNotation;
+
+  const effectiveDarbukaPlacement = resolveDarbukaLinkPlacement(
+    darbukaLinkPlacement,
+    hidePatternInput,
+  );
+
+  const darbukaHref = useMemo(() => {
+    if (hideDarbukaLink) return null;
+    return buildDarbukaEditUrl({ notation, timeSignature, bpm, metronomeEnabled });
+  }, [hideDarbukaLink, notation, timeSignature, bpm, metronomeEnabled]);
+
+  const showInlinePatternDarbukaLink =
+    darbukaHref !== null && effectiveDarbukaPlacement === 'inline-pattern';
+  const showInlineNotationDarbukaLink =
+    darbukaHref !== null && effectiveDarbukaPlacement === 'inline-notation';
 
   const syncPresetFromNotation = useCallback(
     (value: string) => {
@@ -550,16 +580,33 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
       )}
 
       {/* Always visible notation input */}
-      {hidePatternInput ? null : (
-      <div className="drum-pattern-input">
-        <input
-          type="text"
-          placeholder="D-T-K-T- or paste Darbuka Trainer URL"
-          value={notation}
-          onChange={e => handleNotationChange(e.target.value)}
-          onPaste={handlePaste}
-        />
-      </div>
+      {hidePatternInput ? null : showInlinePatternDarbukaLink ? (
+        <div className="drum-pattern-input-row">
+          <div className="drum-pattern-input">
+            <input
+              type="text"
+              placeholder="D-T-K-T- or paste Darbuka Trainer URL"
+              value={notation}
+              onChange={e => handleNotationChange(e.target.value)}
+              onPaste={handlePaste}
+            />
+          </div>
+          <DarbukaTrainerIconLink
+            href={darbukaHref}
+            className={darbukaLinkClassName}
+            tooltip={darbukaLinkTooltip}
+          />
+        </div>
+      ) : (
+        <div className="drum-pattern-input">
+          <input
+            type="text"
+            placeholder="D-T-K-T- or paste Darbuka Trainer URL"
+            value={notation}
+            onChange={e => handleNotationChange(e.target.value)}
+            onPaste={handlePaste}
+          />
+        </div>
       )}
 
       {/* Rhythm display */}
@@ -570,13 +617,32 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
             .join(' ')}
         >
           {selectedPresetData && templateVariations.length > 1 ? (
-            <RhythmTemplateVariationControls
-              presetLabel={selectedPresetData.label}
-              variations={templateVariations}
-              activeVariationIndex={activeVariationIndex}
-              onPrevious={() => cycleTemplateVariation(-1)}
-              onNext={() => cycleTemplateVariation(1)}
-            />
+            <div className="drum-notation-mini-header-row">
+              <div className="drum-notation-mini-header-row__main">
+                <RhythmTemplateVariationControls
+                  presetLabel={selectedPresetData.label}
+                  variations={templateVariations}
+                  activeVariationIndex={activeVariationIndex}
+                  onPrevious={() => cycleTemplateVariation(-1)}
+                  onNext={() => cycleTemplateVariation(1)}
+                />
+              </div>
+              {showInlineNotationDarbukaLink ? (
+                <DarbukaTrainerIconLink
+                  href={darbukaHref}
+                  className={darbukaLinkClassName}
+                  tooltip={darbukaLinkTooltip}
+                />
+              ) : null}
+            </div>
+          ) : showInlineNotationDarbukaLink ? (
+            <div className="drum-notation-mini-header-row">
+              <DarbukaTrainerIconLink
+                href={darbukaHref}
+                className={darbukaLinkClassName}
+                tooltip={darbukaLinkTooltip}
+              />
+            </div>
           ) : null}
           {/* Multi-measure indicator */}
           {parsedRhythm.measures.length > 1 && (
@@ -604,17 +670,6 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
             showMetronomeDots={notationShowMetronomeDots ?? metronomeEnabled}
             currentBeat={currentBeat}
             isPlaying={isPlaying}
-            darbukaLinkOptions={
-              hideDarbukaLink
-                ? undefined
-                : {
-                    notation,
-                    bpm,
-                    timeSignature,
-                    metronomeEnabled,
-                    className: darbukaLinkClassName ?? 'drum-edit-link',
-                  }
-            }
           />
           {notationFooter}
         </div>

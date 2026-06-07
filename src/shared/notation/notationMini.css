@@ -24,6 +24,14 @@
   overflow-y: hidden;
 }
 
+.drum-notation-mini-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 28px;
+  margin-bottom: 2px;
+}
+
 /* Preset rhythm variation carousel (Maqsum ornaments, etc.) */
 .rhythm-template-variation {
   display: grid;

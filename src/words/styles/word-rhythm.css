@@ -1271,6 +1271,12 @@ body,
   transform: translateY(0);
 }
 
+.words-chord-input-with-action .darbuka-trainer-icon-link {
+  width: 30px;
+  height: 30px;
+  align-self: center;
+}
+
 .words-template-input-with-link {
   display: grid;
   gap: 6px;
@@ -1388,6 +1394,27 @@ body,
   max-width: 100%;
 }
 
+.words-inline-drum-panel {
+  margin-top: 6px;
+}
+
+.words-inline-drum-panel .drum-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.words-inline-drum-panel .drum-display-error {
+  font-size: 0.72rem;
+  color: #b45309;
+}
+
+.words-inline-drum-panel .rhythm-template-variation {
+  margin-bottom: 4px;
+}
+
 .words-section-add-row {
   display: flex;
   justify-content: center;
@@ -1398,6 +1425,15 @@ body,
 
 .words-icon-tooltip {
   position: relative;
+}
+
+.words-template-edit-link.darbuka-trainer-icon-link {
+  color: #0f766e;
+}
+
+.words-template-edit-link.darbuka-trainer-icon-link:hover {
+  color: #0d635c;
+  background: rgba(15, 118, 110, 0.08);
 }
 
 .words-template-edit-link {

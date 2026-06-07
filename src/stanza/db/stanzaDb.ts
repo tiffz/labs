@@ -94,11 +94,11 @@ export interface StanzaSong {
   metronomeMuted?: boolean;
   /**
    * "Add drums" master switch (see ADR 0009). When true, the drums panel renders below the
-   * metronome strip; the user picks a pattern there (preset or custom mini-notation), but the
-   * pattern selection itself is not persisted — restart of the song reopens with the default,
-   * matching the Beat Finder UX.
+   * metronome strip. {@link drumPattern} stores the user's Darbuka notation for this song.
    */
   drumsEnabled?: boolean;
+  /** Darbuka-style notation for the whole-song drum groove (synced via Drive `progress.json`). */
+  drumPattern?: string;
   /** Linear drums level 0–1 (default 0.7). Global only. */
   drumsGain?: number;
   /** Mute the drum groove from the Mix without disabling the pattern or calibration. */

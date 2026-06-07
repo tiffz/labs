@@ -1,5 +1,6 @@
 import type { TimeSignature } from '../../../shared/rhythm/types';
-import { INLINE_DRUM_PANEL_UX } from '../../../shared/components/music/inlineDrumUxDefaults';
+import { getRhythmTemplatePresets } from '../../../shared/rhythm/presetDatabase';
+import { getInlineDrumUxProps } from '../../../shared/components/music/inlineDrumUxDefaults';
 
 /** 4/4 default for the shared drum panel. Stanza does not yet track per-song time signature. */
 export const STANZA_DRUMS_DEFAULT_TIME_SIGNATURE: TimeSignature = { numerator: 4, denominator: 4 };
@@ -21,8 +22,9 @@ export const STANZA_DRUMS_NOTATION_STYLE = {
   backgroundColor: 'transparent',
 } as const;
 
-/** Stanza drum panel: compact preset picker plus custom Darbuka notation input. */
-export const STANZA_DRUM_PANEL_UX = {
-  ...INLINE_DRUM_PANEL_UX,
-  hidePatternInput: false,
-} as const;
+/** Fallback Darbuka notation when the song has no saved pattern (first 4/4 preset). */
+export const STANZA_DRUMS_DEFAULT_PATTERN =
+  getRhythmTemplatePresets(STANZA_DRUMS_DEFAULT_TIME_SIGNATURE)[0]?.notation ?? 'D---D---D---D---';
+
+/** Stanza drum panel — {@link getInlineDrumUxProps}('practice-rail'). */
+export const STANZA_DRUM_PANEL_UX = getInlineDrumUxProps('practice-rail');

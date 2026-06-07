@@ -29,7 +29,6 @@ import {
   ensureLabsGoogleAccessTokenForDrive,
 } from '../../shared/google/labsGoogleDriveAccess';
 import {
-  getLabsDriveBackupRestrictionHashesFromEnv,
   isEmailAllowedLabsDriveBackup,
 } from '../../shared/google/labsDriveTesterGate';
 import { useLabsEncoreGoogleIdentity } from '../../shared/google/useLabsEncoreGoogleSession';
@@ -91,10 +90,6 @@ import { useLabsDrivePortfolioAutoSync } from '../../shared/drive/useLabsDrivePo
 
 export function stanzaGoogleClientConfigured(): boolean {
   return Boolean((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim());
-}
-
-export function stanzaDriveBackupRestrictionConfigured(): boolean {
-  return getLabsDriveBackupRestrictionHashesFromEnv().size > 0;
 }
 
 export type StanzaDriveBackupConflictState = {

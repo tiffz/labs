@@ -9,7 +9,7 @@ import type { Key } from '../../shared/music/chordTypes';
 import type { SongSection } from '../../shared/music/songSections';
 import { createWordsExportAdapter } from '../utils/exportAdapter';
 import type { WordRhythmGenerationSettings, WordRhythmResult } from '../utils/prosodyEngine';
-import { APP_DEFAULT_GENERATION_SETTINGS, DEFAULT_WORD_RESULT } from '../utils/wordsAppDefaults';
+import { DEFAULT_WORD_RESULT } from '../utils/wordsAppDefaults';
 import {
   buildChordLabelsByMeasure,
   buildChordStyleByMeasure,
@@ -27,9 +27,7 @@ import {
 import {
   buildBackingPatternRhythm,
   buildBackingTemplateMeasureMap,
-  buildBackingTemplateState,
   buildTemplatePresets,
-  findTemplatePresetByNotation,
 } from '../utils/wordsTemplateHelpers';
 import {
   buildDarbukaEditUrl,
@@ -91,10 +89,6 @@ export function useWordsSongModel(params: {
   );
   const templatePresets = useMemo(
     () => buildTemplatePresets(timeSignature),
-    [timeSignature]
-  );
-  const findPresetByNotation = useMemo(
-    () => (value: string) => findTemplatePresetByNotation(value, timeSignature),
     [timeSignature]
   );
   const effectiveSections = useMemo(
@@ -171,10 +165,6 @@ export function useWordsSongModel(params: {
       }),
     [backingBeatEnabled, backingBeatUseTemplate, sectionRenderPlans, timeSignature]
   );
-  const backingTemplateState = useMemo(
-    () => buildBackingTemplateState(backingBeatNotation, timeSignature, findPresetByNotation),
-    [backingBeatNotation, timeSignature, findPresetByNotation]
-  );
   const chordLabelsByMeasure = useMemo(
     () =>
       buildChordLabelsByMeasure(
@@ -240,22 +230,6 @@ export function useWordsSongModel(params: {
     () => buildDarbukaEditUrl({ notation, timeSignature, bpm, metronomeEnabled }),
     [notation, timeSignature, bpm, metronomeEnabled]
   );
-  const sectionTemplatePreviewById = useMemo(() => {
-    const previews = new Map<string, ReturnType<typeof parseRhythm>>();
-    sections.forEach((section) => {
-      previews.set(
-        section.id,
-        parseRhythm(
-          section.templateNotation?.trim() ||
-            APP_DEFAULT_GENERATION_SETTINGS.templateNotation ||
-            templatePresets[0]?.notation ||
-            '',
-          timeSignature
-        )
-      );
-    });
-    return previews;
-  }, [sections, timeSignature, templatePresets]);
   const lyricsExportText = useMemo(
     () => buildLyricsExportText(effectiveSections, sectionDisplayNames),
     [effectiveSections, sectionDisplayNames]
@@ -295,16 +269,12 @@ export function useWordsSongModel(params: {
     generated,
     parsedRhythm,
     templatePresets,
-    findPresetByNotation,
     effectiveSections,
     sectionDisplayNames,
     sectionRenderPlans,
     sectionTickRanges,
     backingPatternRhythm,
     backingTemplateMeasureMap,
-    backingSelectedTemplatePreset: backingTemplateState.backingSelectedTemplatePreset,
-    backingTemplateVariations: backingTemplateState.backingTemplateVariations,
-    backingActiveVariationIndex: backingTemplateState.backingActiveVariationIndex,
     chordLabelsByMeasure,
     chordStyleByMeasure,
     exportAdapter,
@@ -312,7 +282,6 @@ export function useWordsSongModel(params: {
     effectiveChordVolume,
     hitMap,
     darbukaEditUrl,
-    sectionTemplatePreviewById,
     lyricsExportText,
     asciiChordChartExportText,
     scoreMeasureCount,

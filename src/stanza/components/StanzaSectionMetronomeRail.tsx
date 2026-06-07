@@ -89,7 +89,6 @@ export interface StanzaSectionMetronomeRailProps {
   onLiveTimingChange: (info: { segmentId: string; bpm: number; anchorMediaTime: number }) => void;
   onPersistSongCalibration: (cal: StanzaSegmentMetronomeCalibration, opts?: { recordUndo?: boolean }) => void;
   onPersistSegmentCalibration: (cal: StanzaSegmentMetronomeCalibration, opts?: { recordUndo?: boolean }) => void;
-  onClearSongCalibration: () => void;
   onClearSegmentCalibration: () => void;
   /** Snap this section's boundary markers to the metronome grid (same as timeline hover card). */
   onSnapSectionBoundariesToBeat?: () => void;
@@ -154,7 +153,6 @@ export default function StanzaSectionMetronomeRail({
   onLiveTimingChange,
   onPersistSongCalibration,
   onPersistSegmentCalibration,
-  onClearSongCalibration,
   onClearSegmentCalibration,
   onSnapSectionBoundariesToBeat,
   onPrimeMetronomeAudio,
@@ -656,7 +654,13 @@ export default function StanzaSectionMetronomeRail({
                       let targetBpm: number;
                       let targetOff: number;
                       if (timingScope === 'song') {
-                        onClearSongCalibration();
+                        const built = buildStanzaSegmentCalibration({
+                          segmentStart: 0,
+                          bpm: ZERO_SEG.bpm,
+                          firstBeatOffsetSec: 0,
+                          source: 'tap',
+                        });
+                        onPersistSongCalibration(built);
                         targetBpm = ZERO_SEG.bpm;
                         targetOff = 0;
                       } else {

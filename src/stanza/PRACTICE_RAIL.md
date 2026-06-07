@@ -33,7 +33,7 @@ Full layer table: **[`LAYOUT.md`](./LAYOUT.md)**. CSS in **`stanza-viewer-layout
 - **Layout math** — `computeMiniNotationLayout()` keeps a fixed staff height and grows `renderHeight` when adding top/bottom headroom. Do not shrink `staveHeight` inside a fixed host height (that clips noteheads).
 - **Scroll host** — Wide patterns scroll on `.drum-notation-mini-x-scroll`, not on `.drum-notation-mini` (the SVG host). `overflow-x: auto` on the same node as the SVG forces `overflow-y: auto` and a nested vertical scrollbar; the shared wrapper sets `overflow-y: hidden`. See `notationMini.css`.
 - **Stanza frame CSS** — `.stanza-drums-notation-frame` uses `overflow: visible` and `flex-shrink: 0`. Avoid `min-height: 0` on the notation frame (flex shrink clips the staff).
-- **Constants** — `STANZA_DRUMS_NOTATION_WIDTH` / `HEIGHT` in `components/stanzaWorkspace/stanzaPracticeRailConstants.ts` (currently 236×68); host height is a minimum — SVG may grow slightly for stems. Dense patterns widen via `estimateMiniNotationRenderWidth()` + horizontal scroll. Stanza uses `STANZA_DRUM_PANEL_UX` + `presetLayout="compact"` (picker menu + custom notation field; Darbuka link stays hidden).
+- **Constants** — `STANZA_DRUMS_NOTATION_WIDTH` / `HEIGHT` in `components/stanzaWorkspace/stanzaPracticeRailConstants.ts` (currently 236×68); host height is a minimum — SVG may grow slightly for stems. Dense patterns widen via `estimateMiniNotationRenderWidth()` + horizontal scroll. Stanza uses `STANZA_DRUM_PANEL_UX` + `presetLayout="compact"` (picker menu + custom notation field + Darbuka link beside input).
 
 ## Tap tempo
 

@@ -6,6 +6,7 @@ import {
   ensureMarkerIds,
   findSegmentIndexAtTime,
   legacyDeriveSegments,
+  sanitizeStanzaMarkers,
 } from './segments';
 
 describe('deriveSegments', () => {
@@ -65,6 +66,27 @@ describe('findSegmentIndexAtTime', () => {
     const segs = deriveSegments([{ id: 'mx', time: 10, label: 'x' }], 100);
     expect(findSegmentIndexAtTime(segs, 5)).toBe(0);
     expect(findSegmentIndexAtTime(segs, 50)).toBe(1);
+  });
+});
+
+describe('sanitizeStanzaMarkers', () => {
+  it('drops redundant markers at track start/end with default labels', () => {
+    const markers = ensureMarkerIds([
+      { time: 0, label: 'Section 1' },
+      { time: 30, label: 'Verse' },
+      { time: 120, label: 'Section 3' },
+    ]);
+    expect(sanitizeStanzaMarkers(markers, 120)).toEqual([
+      expect.objectContaining({ time: 30, label: 'Verse' }),
+    ]);
+  });
+
+  it('keeps custom labels at track edges', () => {
+    const markers = ensureMarkerIds([
+      { time: 0, label: 'Intro' },
+      { time: 120, label: 'Outro' },
+    ]);
+    expect(sanitizeStanzaMarkers(markers, 120)).toHaveLength(2);
   });
 });
 

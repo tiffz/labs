@@ -3432,6 +3432,105 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-music-darbukatrainericonlink-tsx-darbuka-trainer-link-tooltip",
+    "name": "DARBUKA_TRAINER_LINK_TOOLTIP",
+    "path": "src/shared/components/music/DarbukaTrainerIconLink.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-darbukatrainericonlink-tsx-darbukatrainericonlink",
+    "name": "DarbukaTrainerIconLink",
+    "path": "src/shared/components/music/DarbukaTrainerIconLink.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Compact external link to Darbuka Trainer (`/drums/`) with shared tooltip + icon styling.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-darbukatrainericonlink-tsx-darbukatrainericonlinkprops",
+    "name": "DarbukaTrainerIconLinkProps",
+    "path": "src/shared/components/music/DarbukaTrainerIconLink.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-darbukatrainericonlink-tsx-darbukatrainerlinkparams",
+    "name": "DarbukaTrainerLinkParams",
+    "path": "src/shared/components/music/DarbukaTrainerIconLink.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-darbukatrainericonlink-tsx-resolvedarbukatrainerhref",
+    "name": "resolveDarbukaTrainerHref",
+    "path": "src/shared/components/music/DarbukaTrainerIconLink.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "react"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-music-drumaccompaniment-tsx-drumaccompaniment",
     "name": "DrumAccompaniment",
     "path": "src/shared/components/music/DrumAccompaniment.tsx",
@@ -3446,7 +3545,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "piano"
+      "piano",
+      "words"
     ],
     "exportType": "default",
     "demoId": null
@@ -3466,7 +3566,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "piano"
+      "piano",
+      "words"
     ],
     "exportType": "interface",
     "demoId": null
@@ -3486,9 +3587,69 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "piano"
+      "piano",
+      "words"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-inlinedrumuxdefaults-ts-deprecatedinlinedarbukalinkplacement",
+    "name": "DeprecatedInlineDarbukaLinkPlacement",
+    "path": "src/shared/components/music/inlineDrumUxDefaults.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Where the compact Darbuka Trainer link renders inside .",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-inlinedrumuxdefaults-ts-getinlinedrumuxprops",
+    "name": "getInlineDrumUxProps",
+    "path": "src/shared/components/music/inlineDrumUxDefaults.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Where the compact Darbuka Trainer link renders inside .",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-inlinedrumuxdefaults-ts-inline-darbuka-link-ux",
+    "name": "INLINE_DARBUKA_LINK_UX",
+    "path": "src/shared/components/music/inlineDrumUxDefaults.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared Darbuka deep-link props for inline drum panels (icon + tooltip).",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano",
+      "words"
+    ],
+    "exportType": "const",
     "demoId": null
   },
   {
@@ -3498,14 +3659,136 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "Shared props for compact inline drum editing (playback settings panels, sidebars). Spread onto so randomize controls, symbol scale, and notation height stay consistent everywhere we embed the inline drum UX.",
+    "description": "Where the compact Darbuka Trainer link renders inside .",
     "tags": [
       "components",
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "piano",
+      "words"
+    ],
     "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-inlinedrumuxdefaults-ts-inline-drum-presets-only-ux",
+    "name": "INLINE_DRUM_PRESETS_ONLY_UX",
+    "path": "src/shared/components/music/inlineDrumUxDefaults.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Where the compact Darbuka Trainer link renders inside .",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano",
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-inlinedrumuxdefaults-ts-inline-drum-profiles",
+    "name": "INLINE_DRUM_PROFILES",
+    "path": "src/shared/components/music/inlineDrumUxDefaults.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Behavior defaults for inline drum embeds. Hosts pass a profile via and keep theming local (`notationStyle`, wrapper className). - **settings-panel** — chord playback popovers (Encore Originals, Chords chart). - **practice-rail** — compact preset picker + audible playback (Stanza mix rail). - **sidebar-compact** — full preset grid + audible playback (Piano sidebar). Host-owned pattern fields (Words section template row): spread the profile then override `{ hidePatternInput: true, hideDarbukaLink: true }`.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano",
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-inlinedrumuxdefaults-ts-inlinedarbukalinkplacement",
+    "name": "InlineDarbukaLinkPlacement",
+    "path": "src/shared/components/music/inlineDrumUxDefaults.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Where the compact Darbuka Trainer link renders inside .",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-inlinedrumuxdefaults-ts-inlinedrumuxprofile",
+    "name": "InlineDrumUxProfile",
+    "path": "src/shared/components/music/inlineDrumUxDefaults.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Host picks a profile — not individual layout props.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-inlinedrumuxdefaults-ts-inlinedrumuxprofileprops",
+    "name": "InlineDrumUxProfileProps",
+    "path": "src/shared/components/music/inlineDrumUxDefaults.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Props bundled by / .",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-inlinedrumuxdefaults-ts-resolvedarbukalinkplacement",
+    "name": "resolveDarbukaLinkPlacement",
+    "path": "src/shared/components/music/inlineDrumUxDefaults.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Where the compact Darbuka Trainer link renders inside .",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -12388,9 +12671,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [
-      "words"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -12407,9 +12688,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [
-      "words"
-    ],
+    "appsUsing": [],
     "exportType": "interface",
     "demoId": null
   },
@@ -14189,6 +14468,68 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-builddarbukaediturl-ts-builddarbukaediturl",
+    "name": "buildDarbukaEditUrl",
+    "path": "src/shared/rhythm/buildDarbukaEditUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-builddarbukaediturl-ts-darbuka-trainer-link-tooltip",
+    "name": "DARBUKA_TRAINER_LINK_TOOLTIP",
+    "path": "src/shared/rhythm/buildDarbukaEditUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "rhythm",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-builddarbukaediturl-ts-darbukatrainerlinkparams",
+    "name": "DarbukaTrainerLinkParams",
+    "path": "src/shared/rhythm/buildDarbukaEditUrl.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "rhythm",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-builddarbukaediturl-ts-resolvedarbukatrainerhref",
+    "name": "resolveDarbukaTrainerHref",
+    "path": "src/shared/rhythm/buildDarbukaEditUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {

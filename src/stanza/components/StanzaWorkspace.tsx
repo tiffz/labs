@@ -75,6 +75,7 @@ import {
   deriveSegments,
   ensureMarkerIds,
   findSegmentIndexAtTime,
+  sanitizeStanzaMarkers,
   STANZA_TIME_EPS,
 } from '../utils/segments';
 import {
@@ -165,6 +166,7 @@ import StanzaPracticeMixSection from './stanzaWorkspace/StanzaPracticeMixSection
 import StanzaPracticePitchSection from './stanzaWorkspace/StanzaPracticePitchSection';
 import {
   STANZA_DRUMS_DEFAULT_BPM,
+  STANZA_DRUMS_DEFAULT_PATTERN,
   STANZA_DRUMS_DEFAULT_TIME_SIGNATURE,
   STANZA_DRUMS_NOTATION_HEIGHT,
   STANZA_DRUMS_NOTATION_STYLE,
@@ -239,6 +241,7 @@ export default function StanzaWorkspace() {
   const [transposeDraftSemitones, setTransposeDraftSemitones] = useState(0);
   const [transposeStepperEditing, setTransposeStepperEditing] = useState(false);
   const transposePersistTimerRef = useRef<number | null>(null);
+  const drumPatternPersistTimerRef = useRef<number | null>(null);
   const transposeMirrorRef = useRef<StanzaLocalTransposeMirror | null>(null);
   const transposeStemBusRef = useRef<StanzaLocalTransposeStemBus | null>(null);
   const transposeDraftRef = useRef(0);
@@ -314,6 +317,10 @@ export default function StanzaWorkspace() {
     if (transposePersistTimerRef.current != null) {
       window.clearTimeout(transposePersistTimerRef.current);
       transposePersistTimerRef.current = null;
+    }
+    if (drumPatternPersistTimerRef.current != null) {
+      window.clearTimeout(drumPatternPersistTimerRef.current);
+      drumPatternPersistTimerRef.current = null;
     }
     setTransposeStepperEditing(false);
   }, [selectedId]);
@@ -1120,7 +1127,10 @@ export default function StanzaWorkspace() {
       const recordUndo = opts?.recordUndo !== false && !isReplayingRef.current;
       const touchUpdatedAt = opts?.touchUpdatedAt !== false;
       const prevSnap = recordUndo ? structuredClone(row) : null;
-      const nextMarkers = patch.markers != null ? ensureMarkerIds(patch.markers) : row.markers;
+      const nextMarkers =
+        patch.markers != null
+          ? sanitizeStanzaMarkers(ensureMarkerIds(patch.markers), durationRef.current)
+          : row.markers;
       const next: StanzaSong = {
         ...row,
         ...patch,
@@ -1172,6 +1182,16 @@ export default function StanzaWorkspace() {
     [isReplayingRef, pushUndo],
   );
 
+  /** One-time cleanup for redundant 0:00 / track-end markers left from older builds or hover rename. */
+  useEffect(() => {
+    if (!selected || !(playback.duration > 0)) return;
+    const raw = selected.markers ?? [];
+    const clean = sanitizeStanzaMarkers(ensureMarkerIds(raw), playback.duration);
+    if (!markerTimesEqual(raw, clean)) {
+      void persistSong({ id: selected.id, markers: clean }, { recordUndo: false });
+    }
+  }, [selected, playback.duration, persistSong]);
+
   const commitMarkers = useCallback(
     async (markers: StanzaMarker[], context?: StanzaMarkersChangeContext) => {
       if (!selected) return;
@@ -1193,11 +1213,6 @@ export default function StanzaWorkspace() {
 
   const { saveSegmentMetronome, saveSongMetronome } = useStanzaMetronomePersistence(selected ?? undefined, persistSong);
 
-  const clearRailSongMetronome = useCallback(() => {
-    if (!selected) return;
-    void persistSong({ id: selected.id, metronomeSongCalibration: undefined });
-  }, [persistSong, selected]);
-
   const clearRailSegmentMetronome = useCallback(() => {
     if (!selected || !railCalibSeg) return;
     const prev = selected.metronomeBySegmentId ?? {};
@@ -1208,6 +1223,24 @@ export default function StanzaWorkspace() {
       metronomeBySegmentId: Object.keys(next).length > 0 ? next : undefined,
     });
   }, [persistSong, railCalibSeg, selected]);
+
+  const schedulePersistDrumPattern = useCallback(
+    (pattern: string) => {
+      if (!selected) return;
+      const trimmed = pattern.trim();
+      if (drumPatternPersistTimerRef.current != null) {
+        window.clearTimeout(drumPatternPersistTimerRef.current);
+      }
+      drumPatternPersistTimerRef.current = window.setTimeout(() => {
+        drumPatternPersistTimerRef.current = null;
+        void persistSong({
+          id: selected.id,
+          drumPattern: trimmed.length > 0 ? trimmed : undefined,
+        });
+      }, 420);
+    },
+    [persistSong, selected],
+  );
 
   const schedulePersistTransposeSemitones = useCallback(
     (next: number) => {
@@ -2405,28 +2438,37 @@ export default function StanzaWorkspace() {
       if (!selected) return;
       const seg = segments[segmentIndex];
       if (!seg) return;
-      const sorted = [...ensureMarkerIds(selected.markers ?? [])].sort((a, b) => a.time - b.time);
+      const trimmed = label.trim();
+      if (!trimmed || trimmed === seg.label) return;
+      const d = playback.duration;
+      const sorted = sanitizeStanzaMarkers(
+        [...ensureMarkerIds(selected.markers ?? [])].sort((a, b) => a.time - b.time),
+        d,
+      );
       const at = sorted.find((m) => Math.abs(m.time - seg.start) < STANZA_TIME_EPS);
       if (at) {
         void persistSong({
           id: selected.id,
-          markers: sorted.map((m) => (m.id === at.id ? { ...m, label } : m)),
+          markers: sorted.map((m) => (m.id === at.id ? { ...m, label: trimmed } : m)),
         });
         return;
       }
       if (seg.start < STANZA_TIME_EPS) {
+        // First section has no interior start marker; only persist a custom label at 0:00.
         void persistSong({
           id: selected.id,
-          markers: [{ id: crypto.randomUUID(), time: 0, label }, ...sorted.filter((m) => m.time > STANZA_TIME_EPS)],
+          markers: [{ id: crypto.randomUUID(), time: 0, label: trimmed }, ...sorted],
         });
         return;
       }
       void persistSong({
         id: selected.id,
-        markers: [...sorted, { id: crypto.randomUUID(), time: seg.start, label }].sort((a, b) => a.time - b.time),
+        markers: [...sorted, { id: crypto.randomUUID(), time: seg.start, label: trimmed }].sort(
+          (a, b) => a.time - b.time,
+        ),
       });
     },
-    [persistSong, selected, segments],
+    [persistSong, playback.duration, selected, segments],
   );
 
   /**
@@ -2520,9 +2562,9 @@ export default function StanzaWorkspace() {
   const drumsUserGain = stanzaSanitizeLinearBusGain(mixDrumsGainDraft ?? selected?.drumsGain, 0.7);
   const drumsUserMuted = selected?.drumsMuted === true;
   /**
-   * Drums follow the same BPM + Beat 1 grid as the metronome calibration, but playback is gated
-   * only by `drumsEnabled` (not the metronome toggle). When calibration is missing we still
-   * render the drum panel so the user can pick a pattern, but `isPlaying` stays false.
+   * Drums follow the same BPM + Beat 1 grid as the metronome calibration, but audible playback
+   * is gated only by `drumsEnabled` and transport (not the metronome toggle). Without calibration
+   * we fall back to {@link STANZA_DRUMS_DEFAULT_BPM} and anchor 0 so sounds still play.
    */
   const drumsHasGrid =
     timingGridSource.bpm != null &&
@@ -2546,7 +2588,6 @@ export default function StanzaWorkspace() {
   const drumsActuallyPlaying = Boolean(
     selected?.drumsEnabled &&
       playback.isPlaying &&
-      drumsHasGrid &&
       !drumsUserMuted &&
       // Silence the groove during tap-tempo count-in/tapping (metronome clicks are muted too).
       !stanzaTapMetronomeTapActive,
@@ -3298,7 +3339,6 @@ export default function StanzaWorkspace() {
                         onLiveTimingChange={handleRailLiveTiming}
                         onPersistSongCalibration={(cal, opts) => void saveSongMetronome(cal, opts)}
                         onPersistSegmentCalibration={(cal, opts) => void saveSegmentMetronome(railCalibSeg.id, cal, opts)}
-                        onClearSongCalibration={clearRailSongMetronome}
                         onClearSegmentCalibration={clearRailSegmentMetronome}
                         onSnapSectionBoundariesToBeat={
                           railCalibSegIdx != null ? () => snapHoveredSectionBoundariesToBeat(railCalibSegIdx) : undefined
@@ -3344,11 +3384,12 @@ export default function StanzaWorkspace() {
                           currentBeat={drumsCurrentBeat}
                           metronomeEnabled={Boolean(selected.metronomeEnabled)}
                           volume={Math.round(drumsUserGain * 100)}
+                          notationValue={selected.drumPattern ?? STANZA_DRUMS_DEFAULT_PATTERN}
+                          onNotationValueChange={schedulePersistDrumPattern}
                           notationWidth={STANZA_DRUMS_NOTATION_WIDTH}
                           notationHeight={STANZA_DRUMS_NOTATION_HEIGHT}
                           notationStyle={STANZA_DRUMS_NOTATION_STYLE}
                           notationFrameClassName="stanza-drums-notation-frame"
-                          darbukaLinkClassName="stanza-drums-edit-link"
                         />
                       </Box>
                     ) : null}

@@ -252,6 +252,29 @@ describe('importBeatLibraryIfNeeded', () => {
     expect(song?.metronomeSongCalibration?.source).toBe('analysis');
   });
 
+  it('does not re-infer analysis Beat 1 when user saved explicit zero offset', async () => {
+    await stanzaDb.songs.put({
+      id: 'user-zero-beat1',
+      ytId: null,
+      title: 'Local song',
+      markers: [],
+      stats: {},
+      updatedAt: 1,
+      metronomeSongCalibration: {
+        bpm: 118,
+        anchorMediaTime: 0,
+        firstBeatOffsetSec: 0,
+        source: 'tap',
+      },
+      analysisCache: mockBeatAnalysisBundle(),
+    });
+
+    await importBeatLibraryIfNeeded();
+    const song = await stanzaDb.songs.get('user-zero-beat1');
+    expect(song?.metronomeSongCalibration?.firstBeatOffsetSec).toBe(0);
+    expect(song?.metronomeSongCalibration?.source).toBe('tap');
+  });
+
   it('upgrades earlier imports missing ytId without overwriting an existing Beat 1 offset', async () => {
     await stanzaDb.songs.put({
       id: 'bad-yt-import',

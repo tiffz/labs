@@ -1,7 +1,10 @@
 import { fireEvent, render, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import DrumAccompaniment from './DrumAccompaniment';
-import { INLINE_DRUM_PANEL_UX } from './inlineDrumUxDefaults';
+import {
+  getInlineDrumUxProps,
+  INLINE_DRUM_PANEL_UX,
+} from './inlineDrumUxDefaults';
 import { getRhythmTemplatePresets } from '../../rhythm/presetDatabase';
 
 describe('DrumAccompaniment playback highlighting', () => {
@@ -122,5 +125,49 @@ describe('DrumAccompaniment playback highlighting', () => {
         }),
       ).toBeInTheDocument();
     });
+  });
+
+  it('shows inline Darbuka link beside pattern input for settings-panel profile', () => {
+    const view = render(
+      <DrumAccompaniment
+        {...getInlineDrumUxProps('settings-panel')}
+        bpm={80}
+        timeSignature={{ numerator: 4, denominator: 4 }}
+        isPlaying={false}
+        currentBeatTime={0}
+        currentBeat={0}
+        presetLayout="compact"
+        audioEnabled={false}
+        notationStyle={{ inkColor: '#1a1a1a', highlightColor: '#7c3aed' }}
+      />,
+    );
+
+    const link = view.getByRole('link', { name: 'Customize in Darbuka trainer' });
+    expect(link).toHaveAttribute('href', expect.stringContaining('/drums/?'));
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(view.queryByText('Edit in Darbuka Trainer')).not.toBeInTheDocument();
+  });
+
+  it('shows inline Darbuka link above notation when host hides pattern input', async () => {
+    const view = render(
+      <DrumAccompaniment
+        {...getInlineDrumUxProps('settings-panel', { hidePatternInput: true })}
+        bpm={80}
+        timeSignature={{ numerator: 4, denominator: 4 }}
+        isPlaying={false}
+        currentBeatTime={0}
+        currentBeat={0}
+        presetLayout="compact"
+        notationStyle={{ inkColor: '#1a1a1a', highlightColor: '#7c3aed' }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(view.container.querySelector('svg')).toBeInTheDocument();
+    });
+
+    const link = view.getByRole('link', { name: 'Customize in Darbuka trainer' });
+    expect(link.closest('.drum-notation-mini-header-row, .drum-notation-mini-toolbar-row')).toBeTruthy();
+    expect(view.queryByText('Edit in Darbuka Trainer')).not.toBeInTheDocument();
   });
 });

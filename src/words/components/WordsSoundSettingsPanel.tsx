@@ -1,18 +1,21 @@
 import type { RefObject } from 'react';
-import type { ParsedRhythm, TimeSignature } from '../../shared/rhythm/types';
+import type { TimeSignature } from '../../shared/rhythm/types';
 import type { PlaybackSettings } from '../../shared/rhythm/types';
 import type { SampledPianoLoadState } from '../../shared/music/sampledPianoLoadState';
 import type { SoundType } from '../../shared/music/soundOptions';
 import AppSlider from '../../shared/components/AppSlider';
 import AppTooltip from '../../shared/components/AppTooltip';
-import DiceIcon from '../../shared/components/DiceIcon';
 import { PlaybackSoundSelect } from '../../shared/components/music/PlaybackSoundSelect';
 import { PlaybackVolumeRow } from '../../shared/components/music/PlaybackVolumeRow';
-import DrumNotationMini from '../../shared/notation/DrumNotationMini';
-import { RhythmTemplateVariationControls } from '../../shared/notation/RhythmTemplateVariationControls';
+import DarbukaTrainerIconLink from '../../shared/components/music/DarbukaTrainerIconLink';
+import DrumAccompaniment from '../../shared/components/music/DrumAccompaniment';
 import { volumeIconName } from '../utils/appRhythmHelpers';
-
-type TemplatePreset = { id: string; label: string; notation: string };
+import {
+  WORDS_HOST_INPUT_DRUM_UX,
+  WORDS_INLINE_DRUM_NOTATION_STYLE,
+  WORDS_INLINE_DRUM_RANDOMIZE_BUTTON_CLASS,
+  WORDS_INLINE_DRUM_TEMPLATE_BUTTON_CLASS,
+} from '../utils/wordsInlineDrumUx';
 
 export type WordsSoundSettingsPanelProps = {
   menuRef: RefObject<HTMLDivElement | null>;
@@ -48,13 +51,6 @@ export type WordsSoundSettingsPanelProps = {
   backingBeatNotation: string;
   onBackingBeatNotationChange: (notation: string) => void;
   backingFallbackTemplate: string;
-  templatePresets: TemplatePreset[];
-  backingSelectedTemplatePreset: TemplatePreset | null;
-  onRandomizeBackingTemplate: (mode: 'preset' | 'full') => void;
-  backingPatternRhythm: ParsedRhythm | null;
-  backingTemplateVariations: readonly { notation: string; label: string }[];
-  backingActiveVariationIndex: number;
-  defaultTemplateNotation: string;
   bpm: number;
   timeSignature: TimeSignature;
   metronomeEnabled: boolean;
@@ -96,13 +92,6 @@ export default function WordsSoundSettingsPanel({
   backingBeatNotation,
   onBackingBeatNotationChange,
   backingFallbackTemplate,
-  templatePresets,
-  backingSelectedTemplatePreset,
-  onRandomizeBackingTemplate,
-  backingPatternRhythm,
-  backingTemplateVariations,
-  backingActiveVariationIndex,
-  defaultTemplateNotation,
   bpm,
   timeSignature,
   metronomeEnabled,
@@ -246,97 +235,46 @@ export default function WordsSoundSettingsPanel({
               <>
                 <label className="words-slider-row words-chord-row">
                   backing beat notation
-                  <div className="words-template-input-with-link words-template-input-only">
-                    <input
-                      className="words-template-input"
-                      type="text"
-                      value={backingBeatNotation}
-                      onChange={(event) => onBackingBeatNotationChange(event.target.value)}
-                      placeholder={backingFallbackTemplate}
+                  <div className="words-chord-input-with-action">
+                    <div className="words-template-input-only">
+                      <input
+                        className="words-template-input"
+                        type="text"
+                        value={backingBeatNotation}
+                        onChange={(event) => onBackingBeatNotationChange(event.target.value)}
+                        placeholder={backingFallbackTemplate}
+                      />
+                    </div>
+                    <DarbukaTrainerIconLink
+                      params={{
+                        notation: backingBeatNotation || backingFallbackTemplate,
+                        bpm,
+                        timeSignature,
+                        metronomeEnabled,
+                      }}
+                      className="words-template-edit-link"
                     />
                   </div>
                 </label>
-                <div className="words-section-template-presets">
-                  {templatePresets.map((preset) => (
-                    <button
-                      key={`backing-${preset.label}`}
-                      type="button"
-                      className={`words-button words-button-template${
-                        backingSelectedTemplatePreset?.id === preset.id ? ' is-active' : ''
-                      }`}
-                      onClick={() => onBackingBeatNotationChange(preset.notation)}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                  <AppTooltip title="Random preset template">
-                    <button
-                      type="button"
-                      className="words-button words-button-template words-button-template-icon words-icon-tooltip"
-                      onClick={() => onRandomizeBackingTemplate('preset')}
-                      aria-label="Random preset template"
-                    >
-                      <DiceIcon variant="single" size={15} />
-                    </button>
-                  </AppTooltip>
-                  <AppTooltip title="Fully randomize template">
-                    <button
-                      type="button"
-                      className="words-button words-button-template words-button-template-icon words-icon-tooltip"
-                      onClick={() => onRandomizeBackingTemplate('full')}
-                      aria-label="Fully randomize template"
-                    >
-                      <DiceIcon variant="multiple" size={15} />
-                    </button>
-                  </AppTooltip>
+                <div className="words-inline-drum-panel">
+                  <DrumAccompaniment
+                    {...WORDS_HOST_INPUT_DRUM_UX}
+                    bpm={bpm}
+                    timeSignature={timeSignature}
+                    isPlaying={false}
+                    currentBeatTime={0}
+                    currentBeat={0}
+                    metronomeEnabled={metronomeEnabled}
+                    notationValue={backingBeatNotation || backingFallbackTemplate}
+                    onNotationValueChange={onBackingBeatNotationChange}
+                    notationWidth={320}
+                    notationStyle={WORDS_INLINE_DRUM_NOTATION_STYLE}
+                    notationFrameClassName="words-template-preview words-section-template-preview"
+                    templateButtonClassName={WORDS_INLINE_DRUM_TEMPLATE_BUTTON_CLASS}
+                    randomizeButtonClassName={WORDS_INLINE_DRUM_RANDOMIZE_BUTTON_CLASS}
+                  />
                 </div>
               </>
-            ) : null}
-            {!backingBeatUseTemplate &&
-            backingPatternRhythm?.isValid &&
-            (backingPatternRhythm.measures.length ?? 0) > 0 ? (
-              <div className="words-template-preview words-section-template-preview">
-                {backingSelectedTemplatePreset && backingTemplateVariations.length > 1 ? (
-                  <RhythmTemplateVariationControls
-                    className="words-template-variation-carousel"
-                    presetLabel={backingSelectedTemplatePreset.label}
-                    variations={backingTemplateVariations}
-                    activeVariationIndex={backingActiveVariationIndex}
-                    onPrevious={() => {
-                      const current =
-                        backingActiveVariationIndex >= 0 ? backingActiveVariationIndex : 0;
-                      const prevIndex =
-                        (current - 1 + backingTemplateVariations.length) %
-                        backingTemplateVariations.length;
-                      onBackingBeatNotationChange(backingTemplateVariations[prevIndex].notation);
-                    }}
-                    onNext={() => {
-                      const current =
-                        backingActiveVariationIndex >= 0 ? backingActiveVariationIndex : 0;
-                      const nextIndex = (current + 1) % backingTemplateVariations.length;
-                      onBackingBeatNotationChange(backingTemplateVariations[nextIndex].notation);
-                    }}
-                  />
-                ) : null}
-                <DrumNotationMini
-                  rhythm={backingPatternRhythm}
-                  width={320}
-                  style="light"
-                  showDrumSymbols={true}
-                  drumSymbolScale={0.52}
-                  darbukaLinkOptions={{
-                    notation: backingBeatUseTemplate
-                      ? defaultTemplateNotation
-                      : backingBeatNotation,
-                    bpm,
-                    timeSignature,
-                    metronomeEnabled,
-                    className: 'words-template-edit-link',
-                  }}
-                />
-              </div>
-            ) : !backingBeatUseTemplate ? (
-              <p className="words-template-error">Backing beat notation is invalid for this meter.</p>
             ) : null}
           </>
         ) : null}
