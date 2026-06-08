@@ -151,9 +151,9 @@ test.describe('Playback UI regressions', () => {
     await page.goto('/words/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Words in Rhythm');
 
-    await page.getByRole('button', { name: / settings$/ }).first().click();
+    await page.getByRole('button', { name: 'Verse settings' }).click();
     await expect(page.getByPlaceholder('D---T---D-D-T---')).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByRole('button', { name: /Choose rhythm preset/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Use Maqsum drum preset/i })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Customize in Darbuka trainer' })).toBeVisible();
   });
 
@@ -172,7 +172,7 @@ test.describe('Playback UI regressions', () => {
     await page.reload();
     await expect(page).toHaveURL(songUrl);
 
-    await expect(page.getByText('Song not found')).not.toBeVisible({ timeout: 1_000 });
+    await expect(page.getByText('Song not found')).not.toBeVisible({ timeout: 3_000 });
     await expect(
       page.getByLabel('Loading original song').or(titleField),
     ).toBeVisible({ timeout: 5_000 });

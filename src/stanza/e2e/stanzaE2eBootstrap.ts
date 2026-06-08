@@ -4,11 +4,11 @@ import { writeStanzaLastSelectedSongId } from '../db/stanzaLastSelectedSong';
 export const STANZA_E2E_STEM_SONG_ID = '__stanza_e2e_stems__';
 export const STANZA_E2E_STEM_SONG_TITLE = 'E2E Stems Song';
 
-/** ~0.05s mono 8kHz 8-bit PCM WAV — decodes in Chromium for playback smoke tests. */
-export function createMinimalWavBlobForStanzaE2e(): Blob {
+/** ~mono 8kHz 8-bit PCM WAV — decodes in Chromium for playback smoke tests. */
+export function createMinimalWavBlobForStanzaE2e(durationSec = 0.05): Blob {
   const sampleRate = 8000;
-  const durationSec = 0.05;
-  const numSamples = Math.floor(sampleRate * durationSec);
+  const duration = Math.max(0.05, durationSec);
+  const numSamples = Math.floor(sampleRate * duration);
   const numChannels = 1;
   const bitsPerSample = 8;
   const blockAlign = (numChannels * bitsPerSample) / 8;
@@ -80,7 +80,7 @@ async function buildE2eSongWithStems(): Promise<StanzaSong> {
 }
 
 async function buildE2eSongWithDrumsPlayback(): Promise<StanzaSong> {
-  const primary = createMinimalWavBlobForStanzaE2e();
+  const primary = createMinimalWavBlobForStanzaE2e(4);
   return {
     id: '__stanza_e2e_drums__',
     ytId: null,
