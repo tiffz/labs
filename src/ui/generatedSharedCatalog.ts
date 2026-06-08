@@ -572,6 +572,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-mediatransposemirror-ts-mediatransposemirror",
+    "name": "MediaTransposeMirror",
+    "path": "src/shared/audio/mediaTransposeMirror.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Plays a decoded local track through `AudioBufferSourceNode` (detune) while the `<audio>` / `<video>` element stays the transport clock (often silent: `volume = 0`).",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-metronomeplayer-ts-metronomecallback",
     "name": "MetronomeCallback",
     "path": "src/shared/audio/metronomePlayer.ts",
@@ -16818,6 +16834,152 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "words"
     ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-youtube-describeyoutubeplayererror-ts-describeyoutubeplayererror",
+    "name": "describeYoutubePlayerError",
+    "path": "src/shared/youtube/describeYoutubePlayerError.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-youtube-describeyoutubeplayererror-ts-describeyoutubeplayererroropts",
+    "name": "DescribeYoutubePlayerErrorOpts",
+    "path": "src/shared/youtube/describeYoutubePlayerError.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-youtube-describeyoutubeplayererror-ts-isyoutubeembedblockederror",
+    "name": "isYoutubeEmbedBlockedError",
+    "path": "src/shared/youtube/describeYoutubePlayerError.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "YouTube IFrame API `onError` codes where embedding is disallowed.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-youtube-describeyoutubeplayererror-ts-youtubeembedblockedbarhint",
+    "name": "youtubeEmbedBlockedBarHint",
+    "path": "src/shared/youtube/describeYoutubePlayerError.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "One-line hint for compact playback UI when embed is blocked.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-youtube-describeyoutubeplayererror-ts-youtubeplaybackbartitle",
+    "name": "youtubePlaybackBarTitle",
+    "path": "src/shared/youtube/describeYoutubePlayerError.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Hide raw `Video · {id}` placeholders in playback chrome.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-youtube-labsyoutubeplayer-tsx-ensureyoutubeiframeapi",
+    "name": "ensureYouTubeIframeApi",
+    "path": "src/shared/youtube/LabsYouTubePlayer.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-youtube-labsyoutubeplayer-tsx-labsyoutubecontroller",
+    "name": "LabsYouTubeController",
+    "path": "src/shared/youtube/LabsYouTubePlayer.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-youtube-labsyoutubeplayer-tsx-labsyoutubeplaybackstate",
+    "name": "LabsYouTubePlaybackState",
+    "path": "src/shared/youtube/LabsYouTubePlayer.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-youtube-labsyoutubeplayer-tsx-labsyoutubeplayer",
+    "name": "LabsYouTubePlayer",
+    "path": "src/shared/youtube/LabsYouTubePlayer.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-youtube-labsyoutubeplayer-tsx-labsyoutubeplayerprops",
+    "name": "LabsYouTubePlayerProps",
+    "path": "src/shared/youtube/LabsYouTubePlayer.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
     "exportType": "interface",
     "demoId": null
   }

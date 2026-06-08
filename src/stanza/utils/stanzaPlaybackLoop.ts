@@ -6,8 +6,7 @@ export type StanzaPlaybackLoopMode = 'through' | 'loopAll' | 'loopSelection';
 
 /**
  * Sub-frame slack when comparing playhead time to a loop end (selection spans, resume-from-end).
- * Keep this tiny so loop wraps do not audibly clip the tail; full-song loops rely on `ended` /
- * YouTube `ENDED` instead of polling this threshold.
+ * Full-song loops also poll this threshold as a fallback when `ended` / YouTube `ENDED` is late.
  */
 export const STANZA_LOOP_WRAP_TOLERANCE_SEC = 0.008;
 

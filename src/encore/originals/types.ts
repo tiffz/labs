@@ -17,6 +17,8 @@ export interface OriginalAudioTake {
   source: 'recorded' | 'imported';
   /** Google Drive file id for the audio blob under `Encore_App/Originals/audio/`. */
   driveFileId?: string;
+  /** True when bytes are cached locally in IndexedDB (playable even before / without Drive). */
+  hasLocalAudio?: boolean;
   mimeType?: string;
   /** Optional notes (same idea as practice resource notes). */
   notes?: string;

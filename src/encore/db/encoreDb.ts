@@ -105,6 +105,7 @@ export class EncoreDB extends Dexie {
   songs!: Table<EncoreSong, string>;
   performances!: Table<EncorePerformance, string>;
   originals!: Table<EncoreOriginalSong, string>;
+  originalTakeBlobs!: Table<import('../originals/originalTakeLocalAudio').OriginalTakeBlobRow, string>;
   syncMeta!: Table<SyncMetaRow, string>;
   repertoireExtras!: Table<RepertoireExtrasRow, string>;
   dirtySync!: Table<DirtySyncRow, string>;
@@ -146,6 +147,15 @@ export class EncoreDB extends Dexie {
       songs: 'id, updatedAt, title, artist, practicing',
       performances: 'id, songId, date, updatedAt, venueTag',
       originals: 'id, updatedAt, title',
+      syncMeta: 'id',
+      repertoireExtras: 'id',
+      dirtySync: 'id, kind, markedAt',
+    });
+    this.version(7).stores({
+      songs: 'id, updatedAt, title, artist, practicing',
+      performances: 'id, songId, date, updatedAt, venueTag',
+      originals: 'id, updatedAt, title',
+      originalTakeBlobs: 'id, songId, takeId, updatedAt',
       syncMeta: 'id',
       repertoireExtras: 'id',
       dirtySync: 'id, kind, markedAt',

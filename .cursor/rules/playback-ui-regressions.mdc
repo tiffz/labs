@@ -22,4 +22,6 @@ Read [`PLAYBACK_HOOK_PATTERN.md`](../../src/shared/hooks/PLAYBACK_HOOK_PATTERN.m
 - **Async stop:** `playbackGenerationRef` + check after every `await`; real `stopAll()` (abandon bus). Test: stop during slow `ensureInstrument`.
 - **VexFlow order:** format → beams → draw → redraw stems → draw beams → highlight toggle.
 
-Smokes: `e2e/playback-ui-regressions.spec.ts`
+Smokes: `e2e/playback-ui-regressions.spec.ts` (Encore drums settings, Stanza practice-rail highlight, Words host-input + presets).
+
+Inline drum profiles: `.cursor/rules/inline-drum-ux.mdc`, `inlineDrumUxContract.test.tsx`.

@@ -626,19 +626,381 @@
   position: sticky;
   bottom: 0;
   z-index: 10;
-  border-top: 1px solid rgba(76, 29, 149, 0.12);
-  background: rgba(255, 255, 255, 0.96);
-  padding: 0.3rem 0.75rem;
+  border-top: 1px solid rgba(76, 29, 149, 0.08);
+  background: rgba(255, 255, 255, 0.94);
+  padding: 0.625rem 1.5rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  backdrop-filter: blur(6px);
+  gap: 1.25rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 -10px 32px rgba(76, 29, 149, 0.07);
 }
 
-.encore-originals-playback-bar-controls {
-  max-width: min(100%, 280px);
-  height: 32px;
+.encore-originals-playback-audio-hidden,
+.encore-media-playback-media-hidden {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Unified media playback bar (Drive audio/video, YouTube, Spotify). */
+.encore-app-shell .encore-media-playback-bar {
+  min-height: 4rem;
+}
+
+.encore-app-shell .encore-media-playback-track {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  flex: 0 1 16rem;
+  max-width: min(22rem, 34vw);
+}
+
+.encore-app-shell .encore-media-playback-track-icon {
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: 0.55rem;
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
+}
+
+.encore-app-shell .encore-media-playback-track-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.encore-app-shell .encore-media-playback-track-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #4c1d95;
+}
+
+.encore-app-shell .encore-media-playback-track-subtitle {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  color: rgba(76, 29, 149, 0.56);
+}
+
+.encore-app-shell .encore-media-playback-divider {
+  width: 1px;
+  align-self: stretch;
+  flex-shrink: 0;
+  background: rgba(76, 29, 149, 0.09);
+  margin: 0.2rem 0;
+}
+
+.encore-app-shell .encore-media-playback-transport {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.encore-app-shell .encore-media-playback-chip,
+.encore-app-shell .encore-media-playback-tools-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 2px;
+  border-radius: 0.625rem;
+  background: rgba(124, 58, 237, 0.045);
+  box-shadow: inset 0 0 0 1px rgba(76, 29, 149, 0.07);
+  flex-shrink: 0;
+}
+
+.encore-app-shell .encore-media-playback-chip-btn.MuiIconButton-root {
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 0.45rem;
+  color: rgba(76, 29, 149, 0.76);
+}
+
+.encore-app-shell
+  .encore-media-playback-chip-btn.MuiIconButton-root:hover:not(.Mui-disabled) {
+  background: rgba(124, 58, 237, 0.1);
+  color: #5b21b6;
+}
+
+.encore-app-shell .encore-media-playback-chip-btn--play.MuiIconButton-root {
+  width: 2rem;
+  height: 2rem;
+  color: #5b21b6;
+}
+
+.encore-app-shell .encore-media-playback-chip-btn--active.MuiIconButton-root {
+  background: rgba(124, 58, 237, 0.14);
+  color: #5b21b6;
+}
+
+.encore-app-shell .encore-media-playback-chip-divider {
+  width: 1px;
+  height: 1rem;
+  margin: 0 0.2rem;
+  flex-shrink: 0;
+  align-self: center;
+  background: rgba(76, 29, 149, 0.11);
+}
+
+.encore-app-shell .encore-media-playback-time {
+  padding: 0 0.5rem 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  color: rgba(76, 29, 149, 0.68);
+  white-space: nowrap;
+}
+
+.encore-app-shell .encore-media-playback-scrub-wrap {
+  flex: 1 1 6rem;
+  min-width: 4.5rem;
+  padding: 0 0.1rem;
+}
+
+.encore-app-shell .encore-media-playback-scrub.MuiSlider-root {
+  height: 3px;
+  padding: 9px 0;
+  color: #7c3aed;
+}
+
+.encore-app-shell .encore-media-playback-scrub .MuiSlider-rail {
+  opacity: 0.2;
+  border-radius: 999px;
+}
+
+.encore-app-shell .encore-media-playback-scrub .MuiSlider-track {
+  border-radius: 999px;
+}
+
+.encore-app-shell .encore-media-playback-scrub .MuiSlider-thumb {
+  width: 11px;
+  height: 11px;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.14);
+}
+
+.encore-app-shell
+  .encore-media-playback-tools-chip
+  .encore-media-playback-speed.shared-bpm-input,
+.encore-app-shell
+  .encore-media-playback-tools-chip
+  .encore-media-playback-transpose.shared-bpm-input {
+  width: auto;
+  max-width: none;
+  flex: 0 0 auto;
+}
+
+.encore-app-shell .encore-media-playback-tools-chip .shared-bpm-shell {
+  --bpm-shell-height: 1.875rem;
+  --bpm-focus: #7c3aed;
+  --bpm-dropdown-hover-bg: rgba(124, 58, 237, 0.08);
+  --bpm-dropdown-active-bg: rgba(124, 58, 237, 0.14);
+  --bpm-dropdown-active-text: #5b21b6;
+  --bpm-chip-hover-bg: rgba(124, 58, 237, 0.08);
+  --bpm-chip-active-bg: rgba(124, 58, 237, 0.14);
+  --bpm-chip-active-text: #5b21b6;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  min-height: var(--bpm-shell-height);
+  padding: 0 0.15rem;
+}
+
+.encore-app-shell
+  .encore-media-playback-tools-chip
+  .shared-bpm-shell:focus-within {
+  box-shadow: none;
+}
+
+.encore-app-shell
+  .encore-media-playback-tools-chip
+  .shared-bpm-compact-display {
+  min-width: 2.35rem;
+  height: 1.875rem;
+  padding: 0 0.45rem;
+  border-radius: 0.45rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: rgba(76, 29, 149, 0.82);
+}
+
+.encore-app-shell
+  .encore-media-playback-tools-chip
+  .shared-bpm-compact-display:hover:not(:disabled) {
+  background: rgba(124, 58, 237, 0.1);
+  color: #5b21b6;
+}
+
+.encore-app-shell
+  .encore-media-playback-tools-chip
+  .encore-media-playback-transpose
+  .shared-bpm-main-row {
+  width: auto;
+}
+
+.encore-app-shell
+  .encore-media-playback-tools-chip
+  .encore-media-playback-transpose
+  .shared-bpm-stepper {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  --bpm-stepper-min-width: 0;
+  border-right: 0;
+  padding-right: 0;
+}
+
+.encore-app-shell
+  .encore-media-playback-tools-chip
+  .encore-media-playback-transpose
+  .shared-bpm-value {
+  width: 1.9rem;
+  min-width: 1.9rem;
+  flex: 0 0 1.9rem;
+  text-align: center;
+  padding: 0;
+  font-size: 0.8125rem;
+  color: rgba(76, 29, 149, 0.82);
+}
+
+.encore-app-shell
+  .encore-media-playback-tools-chip
+  .encore-media-playback-transpose
+  .shared-bpm-arrows {
+  margin-left: 0;
+  flex-shrink: 0;
+}
+
+.encore-app-shell .encore-media-playback-trailing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.encore-app-shell .encore-media-playback-close-btn.MuiIconButton-root {
+  width: 1.875rem;
+  height: 1.875rem;
+  flex-shrink: 0;
+  border-radius: 0.45rem;
+  color: rgba(76, 29, 149, 0.5);
+}
+
+.encore-app-shell .encore-media-playback-close-btn.MuiIconButton-root:hover {
+  background: rgba(124, 58, 237, 0.08);
+  color: #5b21b6;
+}
+
+.encore-app-shell .encore-media-playback-track-subtitle--error {
+  color: rgba(185, 28, 28, 0.88);
+  white-space: normal;
+  display: block;
+}
+
+.encore-app-shell .encore-media-playback-youtube-open-btn.MuiButton-root {
+  min-width: 0;
+  padding: 0.2rem 0.65rem;
+  border-radius: 0.45rem;
+  text-transform: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #5b21b6;
+  border: 1px solid rgba(76, 29, 149, 0.18);
+  background: rgba(124, 58, 237, 0.05);
+  box-shadow: none;
+}
+
+.encore-app-shell .encore-media-playback-youtube-open-btn.MuiButton-root:hover {
+  border-color: rgba(76, 29, 149, 0.32);
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.encore-app-shell .encore-media-playback-youtube-float {
+  position: fixed;
+  left: 1.25rem;
+  bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  z-index: 11;
+  width: min(22.5rem, calc(100vw - 2.5rem));
+  aspect-ratio: 16 / 9;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, #7c3aed 24%, #e9d5ff);
+  background: #0f172a;
+  box-shadow:
+    0 16px 40px rgba(76, 29, 149, 0.18),
+    0 2px 8px rgba(76, 29, 149, 0.08);
+}
+
+.encore-app-shell .encore-media-playback-youtube-float-host {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.encore-app-shell .encore-media-playback-youtube-float-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.encore-app-shell .encore-media-playback-youtube-float-iframe iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.encore-app-shell
+  .encore-media-playback-bar--youtube
+  .encore-media-playback-transport {
+  flex: 1 1 14rem;
+}
+
+.encore-app-shell .encore-media-playback-speed-dropdown {
+  --bpm-border: color-mix(in srgb, #7c3aed 20%, #e9d5ff);
+  --bpm-dropdown-hover-bg: rgba(124, 58, 237, 0.08);
+  --bpm-dropdown-active-bg: rgba(124, 58, 237, 0.14);
+  --bpm-dropdown-active-text: #5b21b6;
+}
+
+@media (max-width: 960px) {
+  .encore-app-shell .encore-media-playback-bar {
+    flex-wrap: wrap;
+    row-gap: 0.625rem;
+    padding-inline: 1rem;
+  }
+
+  .encore-app-shell .encore-media-playback-track {
+    flex: 1 1 calc(100% - 2.5rem);
+    max-width: none;
+  }
+
+  .encore-app-shell .encore-media-playback-youtube-float {
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(20rem, calc(100vw - 1.5rem));
+    bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .encore-app-shell .encore-media-playback-transport {
+    order: 3;
+    flex: 1 1 100%;
+  }
+
+  .encore-app-shell .encore-media-playback-divider:nth-of-type(2) {
+    display: none;
+  }
 }
 
 .encore-originals-playback-audio-hidden {

@@ -79,8 +79,24 @@ async function buildE2eSongWithStems(): Promise<StanzaSong> {
   };
 }
 
+async function buildE2eSongWithDrumsPlayback(): Promise<StanzaSong> {
+  const primary = createMinimalWavBlobForStanzaE2e();
+  return {
+    id: '__stanza_e2e_drums__',
+    ytId: null,
+    title: 'E2E Drums Song',
+    markers: [],
+    stats: {},
+    updatedAt: Date.now(),
+    localAudioBlob: primary,
+    drumsEnabled: true,
+    drumPattern: 'D---D---D---D---',
+  };
+}
+
 export type StanzaE2eWindowHooks = {
   seedSongWithStems: () => Promise<string>;
+  seedSongWithDrumsPlayback: () => Promise<string>;
 };
 
 declare global {
@@ -97,6 +113,12 @@ export function installStanzaE2eHooks(): void {
   window.__stanzaE2e = {
     async seedSongWithStems() {
       const row = await buildE2eSongWithStems();
+      await stanzaDb.songs.put(row);
+      writeStanzaLastSelectedSongId(row.id);
+      return row.id;
+    },
+    async seedSongWithDrumsPlayback() {
+      const row = await buildE2eSongWithDrumsPlayback();
       await stanzaDb.songs.put(row);
       writeStanzaLastSelectedSongId(row.id);
       return row.id;

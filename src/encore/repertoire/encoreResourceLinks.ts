@@ -1,4 +1,5 @@
 import { parseDriveFileIdFromUrlOrId } from '../drive/parseDriveFileUrl';
+import { inferMediaMimeType } from '../../shared/drive/inferMediaMimeType';
 import type { EncoreMiscResource, EncoreMiscResourceKind, EncoreSong } from '../types';
 
 export function resourceLinkOpenUrl(resource: EncoreMiscResource): string | undefined {
@@ -16,9 +17,10 @@ export function inferResourceKindFromUrl(url: string): EncoreMiscResourceKind {
 }
 
 export function inferResourceKindFromFile(file: File): EncoreMiscResourceKind {
-  if (file.type === 'application/pdf') return 'pdf';
-  if (file.type.startsWith('audio/')) return 'audio';
-  if (file.type.startsWith('text/')) return 'text';
+  const mime = inferMediaMimeType(file);
+  if (mime === 'application/pdf') return 'pdf';
+  if (mime.startsWith('audio/')) return 'audio';
+  if (mime.startsWith('text/')) return 'text';
   return 'file';
 }
 
@@ -49,12 +51,13 @@ export function createResourceFromUrl(rawUrl: string, label?: string): EncoreMis
 }
 
 export function createResourceFromLocalFile(file: File): EncoreMiscResource {
+  const mimeType = inferMediaMimeType(file);
   return {
     id: crypto.randomUUID(),
     kind: inferResourceKindFromFile(file),
     label: file.name,
     url: URL.createObjectURL(file),
-    mimeType: file.type || undefined,
+    mimeType: mimeType === 'application/octet-stream' ? undefined : mimeType,
     createdAt: new Date().toISOString(),
   };
 }
@@ -65,7 +68,7 @@ export function createResourceFromDriveFile(
 ): EncoreMiscResource {
   const id = driveFileId.trim();
   const label = opts?.label?.trim() || 'File';
-  const mime = opts?.mimeType ?? '';
+  const mime = inferMediaMimeType({ name: label, type: opts?.mimeType ?? '' });
   let kind: EncoreMiscResourceKind = 'file';
   if (mime === 'application/pdf') kind = 'pdf';
   else if (mime.startsWith('audio/')) kind = 'audio';
@@ -76,7 +79,7 @@ export function createResourceFromDriveFile(
     kind,
     label,
     driveFileId: id,
-    mimeType: mime || undefined,
+    mimeType: mime === 'application/octet-stream' ? opts?.mimeType || undefined : mime,
     createdAt: new Date().toISOString(),
   };
 }

@@ -12,6 +12,7 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | [`react-a11y.mdc`](react-a11y.mdc)                                     | `**/*.tsx`                           | `STYLE_GUIDE.md`, `spaGuardrails.test.ts`  | —                            |
 | [`architecture-decisions.mdc`](architecture-decisions.mdc)             | ADR/routing/hosting paths            | `docs/adr/README.md`                       | `labs-write-adr`             |
 | [`playback-ui-regressions.mdc`](playback-ui-regressions.mdc)           | playback, notation, renderers        | `PLAYBACK_HOOK_PATTERN.md`                 | `labs-playback-bugfix`       |
+| [`inline-drum-ux.mdc`](inline-drum-ux.mdc)                             | inline drum hosts, DrumAccompaniment | `SHARED_UI_CONVENTIONS.md` § Inline drums  | —                            |
 | [`encore-originals-chord-paint.mdc`](encore-originals-chord-paint.mdc) | `encore/originals/**`, `chordPro/**` | `originals/DEVELOPMENT.md`                 | —                            |
 | [`stanza-viewer-layout.mdc`](stanza-viewer-layout.mdc)                 | `stanza/**`                          | `stanza/LAYOUT.md`                         | —                            |
 | [`beat-analysis-scope.mdc`](beat-analysis-scope.mdc)                   | beat analysis paths                  | `stanza/ANALYZE.md`, `beat/TEST_MATRIX.md` | —                            |

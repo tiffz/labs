@@ -89,6 +89,8 @@ import {
   appendMiscResourceFromUrl,
 } from '../../repertoire/songMiscResources';
 import { EncoreSongMiscResourcesPanel } from './EncoreSongMiscResourcesPanel';
+import { useEncoreMediaPlaybackHoverProps } from '../../hooks/useEncoreMediaPlaybackHoverProps';
+import { inferMediaMimeType } from '../../../shared/drive/inferMediaMimeType';
 import type { SongPageMediaSlots } from './SongPageMediaHubCards';
 import type { SongMediaUploadSlot } from './songMediaUploadSlot';
 
@@ -245,6 +247,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
   } = props;
   const { withBlockingJob } = useEncoreBlockingJobs();
   const { uploadWithDuplicateCheck, registerUploadedDriveFile } = useEncoreDriveUploadDedup();
+  const { propsForMediaLink, propsForRecording } = useEncoreMediaPlaybackHoverProps();
   const googleAccessTokenRef = useRef(googleAccessToken);
   useEffect(() => {
     googleAccessTokenRef.current = googleAccessToken;
@@ -716,7 +719,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       );
       if (!driveFileId) return;
       setDraft((d) =>
-        d ? appendMiscResourceFromDriveFile(d, driveFileId, { label: file.name, mimeType: file.type }) : d,
+        d ? appendMiscResourceFromDriveFile(d, driveFileId, { label: file.name, mimeType: inferMediaMimeType(file) }) : d,
       );
     },
     [encoreDriveUploadLabel, miscUploadFolderId, setDraft, uploadDriveFileWithDedup],
@@ -1338,6 +1341,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                   return { ...d, referenceLinks: next };
                                 })
                               }
+                              {...propsForMediaLink(link, formatMediaLinkCaption(link), 'Spotify')}
                             >
                               {inner}
                             </EncoreStreamingHoverCard>
@@ -1370,6 +1374,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                     return { ...d, referenceLinks: next };
                                   })
                                 }
+                                {...propsForMediaLink(link, formatMediaLinkCaption(link), 'YouTube')}
                               >
                                 {inner}
                               </EncoreStreamingHoverCard>
@@ -1404,6 +1409,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                     link.driveFileId,
                                     googleAccessToken,
                                   )}
+                                  {...propsForMediaLink(link, formatMediaLinkCaption(link), 'Google Drive')}
                                 >
                                   {inner}
                                 </EncoreStaticResourceHoverCard>
@@ -1679,6 +1685,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                   return { ...d, backingLinks: next };
                                 })
                               }
+                              {...propsForMediaLink(link, formatMediaLinkCaption(link), 'Spotify')}
                             >
                               {inner}
                             </EncoreStreamingHoverCard>
@@ -1711,6 +1718,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                     return { ...d, backingLinks: next };
                                   })
                                 }
+                                {...propsForMediaLink(link, formatMediaLinkCaption(link), 'YouTube')}
                               >
                                 {inner}
                               </EncoreStreamingHoverCard>
@@ -1745,6 +1753,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                                     link.driveFileId,
                                     googleAccessToken,
                                   )}
+                                  {...propsForMediaLink(link, formatMediaLinkCaption(link), 'Google Drive')}
                                 >
                                   {inner}
                                 </EncoreStaticResourceHoverCard>
@@ -2153,22 +2162,41 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                         })
                       }
                     >
-                      <EncoreMediaLinkRow
-                        slot="chart"
-                        source="drive"
-                        link={{
-                          id: `recording-${a.driveFileId}`,
-                          source: 'drive',
-                          driveFileId: a.driveFileId,
-                          label: a.label,
-                        }}
-                        stanzaPracticeAllowDrive
-                        isPrimary={false}
-                        caption={a.label ?? 'Take'}
-                        fullCaption={a.label ?? a.driveFileId}
-                        openUrl={driveFileWebUrl(a.driveFileId)}
-                        openAriaLabel="Open take in new tab"
-                      />
+                      <EncoreStaticResourceHoverCard
+                        title={a.label ?? 'Take'}
+                        subtitle="Take"
+                        resourceNotes={a.notes ?? ''}
+                        onResourceNotesChange={(value) =>
+                          setDraft((d) => {
+                            if (!d) return d;
+                            const next = (d.attachments ?? []).map((x) =>
+                              x.kind === 'recording' && x.driveFileId === a.driveFileId
+                                ? { ...x, notes: value || undefined }
+                                : x,
+                            );
+                            return { ...d, attachments: next };
+                          })
+                        }
+                        {...staticHoverCardDownloadProps(a.label ?? 'Take', a.driveFileId, googleAccessToken)}
+                        {...propsForRecording(a, a.label ?? 'Take')}
+                      >
+                        <EncoreMediaLinkRow
+                          slot="chart"
+                          source="drive"
+                          link={{
+                            id: `recording-${a.driveFileId}`,
+                            source: 'drive',
+                            driveFileId: a.driveFileId,
+                            label: a.label,
+                          }}
+                          stanzaPracticeAllowDrive
+                          isPrimary={false}
+                          caption={a.label ?? 'Take'}
+                          fullCaption={a.label ?? a.driveFileId}
+                          openUrl={driveFileWebUrl(a.driveFileId)}
+                          openAriaLabel="Open take in new tab"
+                        />
+                      </EncoreStaticResourceHoverCard>
                     </EncoreAudioResourceNotesWrapper>
                   ))}
                   <Button

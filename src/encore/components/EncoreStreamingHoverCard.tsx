@@ -99,6 +99,10 @@ export type EncoreStreamingHoverCardProps = {
   onEditNicknameChange?: (value: string) => void;
   resourceNotes?: string;
   onResourceNotesChange?: (value: string) => void;
+  onPlay?: () => void;
+  isPlaying?: boolean;
+  playDisabled?: boolean;
+  playDisabledReason?: string;
 };
 
 /**
@@ -125,6 +129,10 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
     onEditNicknameChange,
     resourceNotes,
     onResourceNotesChange,
+    onPlay,
+    isPlaying = false,
+    playDisabled = false,
+    playDisabledReason,
   } = props;
 
   // Seed meta from the module cache synchronously so the very first open paints with the cached
@@ -219,6 +227,20 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
           ) : null}
         </Box>
       </Box>
+      {onPlay ? (
+        <Box sx={{ mt: 1, display: 'flex', gap: 0.5, alignItems: 'center' }}>
+          <Button
+            size="small"
+            variant={isPlaying ? 'contained' : 'outlined'}
+            startIcon={<PlayArrowIcon fontSize="small" />}
+            disabled={playDisabled}
+            title={playDisabled ? playDisabledReason : undefined}
+            onClick={() => onPlay()}
+          >
+            {isPlaying ? 'Playing' : 'Play'}
+          </Button>
+        </Box>
+      ) : null}
       {onEditNicknameChange || onResourceNotesChange ? (
         <Box
           sx={{ mt: 1.25, pt: 1, borderTop: 1, borderColor: 'divider' }}

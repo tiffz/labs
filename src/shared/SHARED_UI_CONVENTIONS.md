@@ -157,6 +157,21 @@ For **labeled mix rows with mute + 0–100 slider**, use `PlaybackVolumeRow` (`s
 - Pair with `ChordPlaybackSettingsPanel` when the surface matches chart/chord playback (style, sound, drums toggle).
 - URL state for shareable links: [`docs/URL_STATE_PATTERN.md`](../../docs/URL_STATE_PATTERN.md).
 
+### Inline drum panels (`DrumAccompaniment` + profiles)
+
+Hosts embed [`DrumAccompaniment`](components/music/DrumAccompaniment.tsx) with a **profile** from [`getInlineDrumUxProps`](components/music/inlineDrumUxDefaults.ts) — never hand-roll layout flags unless the host owns the pattern text field.
+
+| Host                           | Profile                                                                | Pattern input      | Darbuka link                             | Audible drums |
+| ------------------------------ | ---------------------------------------------------------------------- | ------------------ | ---------------------------------------- | ------------- |
+| Encore Originals / Chords      | `settings-panel`                                                       | in panel           | inline icon                              | no            |
+| Stanza practice rail           | `practice-rail`                                                        | in panel           | inline icon                              | yes           |
+| Piano sidebar                  | `sidebar-compact`                                                      | in panel           | inline icon                              | yes           |
+| Words section / sound settings | `settings-panel` + `{ hidePatternInput: true, hideDarbukaLink: true }` | **host `<input>`** | on host field (`DarbukaTrainerIconLink`) | no            |
+
+- **Contract tests:** `inlineDrumUxContract.test.tsx`, `inlineDrumUxDefaults.test.ts`
+- **Cursor rule:** `.cursor/rules/inline-drum-ux.mdc`
+- **Deprecated:** `below-notation` Darbuka placement — use inline icon only.
+
 ### AppSlider value labels (thumb tooltips)
 
 When using `valueLabelDisplay="auto"` or `"on"`:

@@ -31,7 +31,7 @@ import { EncoreDriveUploadDedupProvider } from './EncoreDriveUploadDedupContext'
 import { EncoreRepertoirePlaylistProvider } from './EncoreRepertoirePlaylistContext';
 import { EncoreOriginalsLibraryProvider } from './EncoreOriginalsLibraryContext';
 import { EncoreOriginalsActionsProvider } from './EncoreOriginalsActionsContext';
-import { EncoreOriginalsPlaybackProvider } from '../originals/context/EncoreOriginalsPlaybackContext';
+import { EncoreMediaPlaybackProvider } from './EncoreMediaPlaybackContext';
 import { useEncoreSync } from './useEncoreSync';
 import { useEncoreActions } from './useEncoreActions';
 
@@ -121,7 +121,7 @@ export function EncoreProvider({ children }: { children: ReactNode }): ReactElem
         <EncoreAuthProvider>
           <EncoreLibraryProvider>
             <EncoreOriginalsLibraryProvider>
-              <EncoreOriginalsPlaybackProvider>
+              <EncoreMediaPlaybackProvider>
                 <EncoreSyncProvider>
                   <EncoreOriginalsActionsProvider>
                     <EncoreActionsProvider>
@@ -131,7 +131,7 @@ export function EncoreProvider({ children }: { children: ReactNode }): ReactElem
                     </EncoreActionsProvider>
                   </EncoreOriginalsActionsProvider>
                 </EncoreSyncProvider>
-              </EncoreOriginalsPlaybackProvider>
+              </EncoreMediaPlaybackProvider>
             </EncoreOriginalsLibraryProvider>
           </EncoreLibraryProvider>
         </EncoreAuthProvider>

@@ -1874,14 +1874,13 @@ export default function StanzaWorkspace() {
     const t = readLiveTransportTime();
     timeRef.current = t;
     const d = durationRef.current;
-    if (loopMode === 'loopAll' && d > 0) {
+    const mode = loopModeRef.current;
+    const span = effectiveSelectionSpanRef.current;
+    if (mode === 'loopAll' && d > 0) {
       if (t < 0 || isPastLoopWrapPoint(t, d)) seekUnified(0, { flushPlaybackState: true });
-    } else if (loopMode === 'loopSelection' && effectiveSelectionSpan) {
-      if (
-        t < effectiveSelectionSpan.start - 0.05 ||
-        isPastLoopWrapPoint(t, effectiveSelectionSpan.end)
-      ) {
-        seekUnified(effectiveSelectionSpan.start, { flushPlaybackState: true });
+    } else if (mode === 'loopSelection' && span) {
+      if (t < span.start - 0.05 || isPastLoopWrapPoint(t, span.end)) {
+        seekUnified(span.start, { flushPlaybackState: true });
       }
     }
     if (isYoutube) {
@@ -1929,8 +1928,6 @@ export default function StanzaWorkspace() {
     finalizeStemMixerResume,
     isYoutube,
     selected?.stems?.length,
-    loopMode,
-    effectiveSelectionSpan,
     readLiveTransportTime,
     pauseStemAudios,
     prepareStemMixerForPlaySync,
@@ -1943,22 +1940,32 @@ export default function StanzaWorkspace() {
     getLocalMainMedia,
   ]);
 
+  const playUnifiedRef = useRef(playUnified);
+  playUnifiedRef.current = playUnified;
+
+  /** Resume transport on the next frame so seek applies before play (YouTube ENDED, loop wraps). */
+  const resumeLoopTransportAfterWrap = useCallback(() => {
+    requestAnimationFrame(() => {
+      playUnifiedRef.current();
+    });
+  }, []);
+
   const handleLoopAtMediaEnd = useCallback(() => {
     const mode = loopModeRef.current;
     if (mode === 'through') return;
     if (mode === 'loopAll') {
       seekUnified(0, { flushPlaybackState: true });
-      void playUnified();
+      resumeLoopTransportAfterWrap();
       return;
     }
     if (mode === 'loopSelection') {
       const span = effectiveSelectionSpanRef.current;
       if (span != null && span.end - span.start >= STANZA_MIN_LOOP_SPAN_SEC) {
         seekUnified(span.start, { flushPlaybackState: true });
-        void playUnified();
+        resumeLoopTransportAfterWrap();
       }
     }
-  }, [seekUnified, playUnified]);
+  }, [seekUnified, resumeLoopTransportAfterWrap]);
 
   const pauseUnified = useCallback(() => {
     if (isYoutube) {
@@ -2096,13 +2103,15 @@ export default function StanzaWorkspace() {
       // exhausted flag so a future skip can re-trigger the pause path.
       pausedForSkipExhausted = false;
 
-      // 2. Loop-bound enforcement.
+      // 2. Loop-bound enforcement (sub-frame tolerance avoids audibly clipping tails).
       try {
-        // loopAll: let onEnded / handleLoopAtMediaEnd wrap at the natural tail so the full
-        // ending is heard; polling here used to fire ~60 ms early and audibly clipped fades.
-        if (loopMode === 'loopSelection' && span) {
+        if (loopMode === 'loopAll' && d > 0 && isPastLoopWrapPoint(tLive, d)) {
+          seekUnifiedRef.current(0, { flushPlaybackState: true });
+          requestAnimationFrame(() => playUnifiedRef.current());
+        } else if (loopMode === 'loopSelection' && span) {
           if (isPastLoopWrapPoint(tLive, span.end)) {
             seekUnifiedRef.current(span.start, { flushPlaybackState: true });
+            requestAnimationFrame(() => playUnifiedRef.current());
           } else if (tLive < span.start - STANZA_LOOP_WRAP_TOLERANCE_SEC) {
             seekUnifiedRef.current(span.start, { flushPlaybackState: true });
           }

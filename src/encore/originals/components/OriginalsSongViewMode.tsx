@@ -9,7 +9,7 @@ import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
-import type { ReactElement } from 'react';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { parseChordProToChartLayout } from '../../../shared/music/chordPro/chordChartLayout';
 import { chartLayoutToAsciiExport } from '../../../shared/music/chordChartAsciiExport';
 import { layoutToWriteDocument } from '../../../shared/music/chordPro/chordChartLayout';
@@ -28,6 +28,7 @@ import { useEncoreOriginalsPlayback } from '../context/EncoreOriginalsPlaybackCo
 import { isStageComplete } from '../originalsWorkflowCompletion';
 import { ORIGINALS_WORKFLOW_STAGES, workflowStageShortLabel } from '../originalsWorkflowStages';
 import { originalTakeListenHint } from '../originalsTakeDisplay';
+import { hasOriginalTakeBlob, originalTakeBlobKey } from '../originalTakeLocalAudio';
 import { preferredOriginalTake, type EncoreOriginalSong, type OriginalAudioTake } from '../types';
 
 export type OriginalsSongViewModeProps = {
@@ -47,28 +48,65 @@ export function OriginalsSongViewMode({
   const ascii = chartLayoutToAsciiExport(parseChordProToChartLayout(song.lyricsAndChords));
   const brainstormPlain = richTextPlainText(song.brainstormHtml);
   const preferredTake = preferredOriginalTake(song);
+  const [localAudioIds, setLocalAudioIds] = useState<Set<string>>(() => new Set());
   const { playTake, stopPlayback, isPlayingTake, isLoadingTake, phase, errorMessage, target } =
     useEncoreOriginalsPlayback();
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const found = new Set<string>();
+      await Promise.all(
+        song.takes.map(async (t) => {
+          if (t.hasLocalAudio || (await hasOriginalTakeBlob(song.id, t.id))) {
+            found.add(t.id);
+          }
+        }),
+      );
+      if (!cancelled) setLocalAudioIds(found);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [song.id, song.takes]);
+
+  const takeIsPlayable = useCallback(
+    (take: OriginalAudioTake) =>
+      Boolean(take.driveFileId?.trim()) || take.hasLocalAudio === true || localAudioIds.has(take.id),
+    [localAudioIds],
+  );
+
+  const playOriginalTake = useCallback(
+    (take: OriginalAudioTake) => {
+      playTake({
+        songId: song.id,
+        songTitle: song.title,
+        takeId: take.id,
+        takeLabel: take.label,
+        driveFileId: take.driveFileId,
+        localTakeKey: originalTakeBlobKey(song.id, take.id),
+        mimeType: take.mimeType,
+      });
+    },
+    [playTake, song.id, song.title],
+  );
   const preferredIsPlaying = preferredTake ? isPlayingTake(song.id, preferredTake.id) : false;
   const preferredIsLoading = preferredTake ? isLoadingTake(song.id, preferredTake.id) : false;
-  const canPlayPreferred = Boolean(preferredTake?.driveFileId);
+  const canPlayPreferred = preferredTake ? takeIsPlayable(preferredTake) : false;
   const playbackErrorForPreferred =
-    preferredTake && target?.takeId === preferredTake.id && phase === 'error' ? errorMessage : null;
+    preferredTake &&
+    target?.playbackId === `original-take:${song.id}:${preferredTake.id}` &&
+    phase === 'error'
+      ? errorMessage
+      : null;
 
   const onPreferredPlayClick = () => {
-    if (!preferredTake?.driveFileId) return;
+    if (!preferredTake || !canPlayPreferred) return;
     if (preferredIsPlaying) {
       stopPlayback();
       return;
     }
-    playTake({
-      songId: song.id,
-      songTitle: song.title,
-      takeId: preferredTake.id,
-      takeLabel: preferredTake.label,
-      driveFileId: preferredTake.driveFileId,
-      mimeType: preferredTake.mimeType,
-    });
+    playOriginalTake(preferredTake);
   };
 
   const updateTake = (takeId: string, patch: Partial<OriginalAudioTake>) => {
@@ -271,22 +309,17 @@ export function OriginalsSongViewMode({
                     onEditNicknameChange={(value) => updateTake(t.id, { label: value.trim() || t.label })}
                     resourceNotes={t.notes ?? ''}
                     onResourceNotesChange={(value) => updateTake(t.id, { notes: value.trim() || undefined })}
-                    onPlay={
-                      t.driveFileId
-                        ? () =>
-                            playTake({
-                              songId: song.id,
-                              songTitle: song.title,
-                              takeId: t.id,
-                              takeLabel: t.label,
-                              driveFileId: t.driveFileId!,
-                              mimeType: t.mimeType,
-                            })
-                        : undefined
-                    }
+                    onPlay={() => {
+                      if (!takeIsPlayable(t)) return;
+                      playOriginalTake(t);
+                    }}
                     isPlaying={isPlayingTake(song.id, t.id)}
-                    playDisabled={!t.driveFileId}
-                    playDisabledReason={!t.driveFileId ? 'Sign in to Google to play in Encore' : undefined}
+                    playDisabled={!takeIsPlayable(t)}
+                    playDisabledReason={
+                      takeIsPlayable(t)
+                        ? undefined
+                        : 'Re-open this song in Record takes and choose the audio file again'
+                    }
                     {...(downloadTarget
                       ? {
                           onDownload: () => triggerEncoreResourceDownload(downloadTarget, googleAccessToken),

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BEAT_ANALYSIS_VERSION } from '../../shared/beat/analysisVersion';
 import type { StanzaSong } from '../db/stanzaDb';
 import { stanzaSongPracticeCustomizationScore } from './stanzaSongCustomizationScore';
 import {
@@ -99,5 +100,66 @@ describe('mergeStanzaRicherSongMetadata', () => {
     const merged = mergeStanzaRicherSongMetadata(local, remote);
     expect(merged.markers).toHaveLength(2);
     expect(merged.title).toBe('Local');
+  });
+
+  it('keeps local drumPattern when remote is newer but omitted', () => {
+    const local = song({
+      id: '1',
+      title: 'Local',
+      updatedAt: 5,
+      drumPattern: 'D-T-K-T-',
+    });
+    const remote = {
+      id: '1',
+      ytId: 'vid',
+      title: 'Remote',
+      markers: [],
+      stats: {},
+      updatedAt: 100,
+    };
+    const merged = mergeStanzaRicherSongMetadata(local, remote);
+    expect(merged.drumPattern).toBe('D-T-K-T-');
+  });
+
+  it('keeps explicit zero Beat 1 when analysis cache would infer offset', () => {
+    const local = song({
+      id: '1',
+      title: 'Local',
+      updatedAt: 5,
+      metronomeSongCalibration: {
+        bpm: 120,
+        anchorMediaTime: 0,
+        firstBeatOffsetSec: 0,
+        source: 'tap',
+      },
+      analysisCache: {
+        beat: {
+          bpm: 118,
+          confidence: 0.9,
+          confidenceLevel: 'high',
+          beats: [0, 0.5],
+          musicStartTime: 2.5,
+          musicEndTime: 180,
+          offset: 0,
+          warnings: [],
+        },
+        metadata: {
+          analysisVersion: BEAT_ANALYSIS_VERSION,
+          analyzedAt: 1,
+          stale: false,
+        },
+      },
+    });
+    const remote = {
+      id: '1',
+      ytId: 'vid',
+      title: 'Remote',
+      markers: [],
+      stats: {},
+      updatedAt: 100,
+    };
+    const merged = mergeStanzaRicherSongMetadata(local, remote);
+    expect(merged.metronomeSongCalibration?.firstBeatOffsetSec).toBe(0);
+    expect(merged.metronomeSongCalibration?.source).toBe('tap');
   });
 });

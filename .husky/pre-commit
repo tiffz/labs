@@ -60,7 +60,10 @@ else
   first_match() {
     pattern="$1"
     if command -v rg >/dev/null 2>&1; then
-      printf '%s\n' "$STAGED_FILES" | rg -m 1 "$pattern"
+      match="$(printf '%s\n' "$STAGED_FILES" | rg -m 1 "$pattern" || true)"
+      if [ -n "$match" ]; then
+        printf '%s\n' "$match"
+      fi
     else
       printf '%s\n' "$STAGED_FILES" | grep -E "$pattern" | head -n 1
     fi

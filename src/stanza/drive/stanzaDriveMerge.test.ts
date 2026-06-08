@@ -470,4 +470,54 @@ describe('mergeDriveRowsIntoLocalLibrary', () => {
       expect(staleTombstoneFileIds).toEqual([]);
     });
   });
+
+  it('keeps local drumPattern when remote wins metadata but remote has no pattern', () => {
+    const local = [
+      song({
+        id: '1',
+        ytId: 'vid',
+        title: 'Local',
+        updatedAt: 5,
+        drumPattern: 'D-T-K-T-',
+      }),
+    ];
+    const remote: StanzaSongDriveRow[] = [
+      {
+        id: '1',
+        ytId: 'vid',
+        title: 'Remote mix tweak',
+        markers: [],
+        stats: {},
+        updatedAt: 100,
+        primaryGain: 0.8,
+      },
+    ];
+    const { nextRows } = mergeDriveRowsIntoLocalLibrary(local, remote);
+    expect(nextRows[0].drumPattern).toBe('D-T-K-T-');
+  });
+
+  it('prefers local drumPattern when local updatedAt wins richer merge', () => {
+    const local = [
+      song({
+        id: '1',
+        ytId: 'vid',
+        title: 'Local',
+        updatedAt: 200,
+        drumPattern: 'D---D---',
+      }),
+    ];
+    const remote: StanzaSongDriveRow[] = [
+      {
+        id: '1',
+        ytId: 'vid',
+        title: 'Remote',
+        markers: [],
+        stats: {},
+        updatedAt: 10,
+        drumPattern: 'D-T-K-T-',
+      },
+    ];
+    const { nextRows } = mergeDriveRowsIntoLocalLibrary(local, remote);
+    expect(nextRows[0].drumPattern).toBe('D---D---');
+  });
 });

@@ -1,4 +1,5 @@
 import type { Theme } from '@mui/material/styles';
+import { describeYoutubePlayerError as describeYoutubePlayerErrorShared } from '../../../shared/youtube/describeYoutubePlayerError';
 import type { StanzaSong, StanzaStemTrack } from '../../db/stanzaDb';
 
 /** Drag-reorder stem rows (not OS file drops). */
@@ -42,17 +43,5 @@ export function songHasPractice(s: StanzaSong): boolean {
 }
 
 export function describeYoutubePlayerError(code: number): string {
-  if (code === 101 || code === 150) {
-    return 'This video cannot be played inside Stanza because the publisher has disabled embedding on other sites.';
-  }
-  if (code === 100) {
-    return 'This video is unavailable (removed, private, or not found).';
-  }
-  if (code === 5) {
-    return 'YouTube reported a playback error in the embedded player.';
-  }
-  if (code === 2) {
-    return 'YouTube reported invalid playback parameters.';
-  }
-  return `YouTube reported playback error ${code}.`;
+  return describeYoutubePlayerErrorShared(code, { embedBlockedContext: 'inside Stanza' });
 }

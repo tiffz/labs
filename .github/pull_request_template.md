@@ -4,6 +4,14 @@
 
 <!-- What changed and why (1–3 bullets). -->
 
+## Integration surface (when `src/shared/**` or cross-app UX changes)
+
+<!-- Required when this PR touches shared bundles consumed by 2+ apps. -->
+
+| Shared bundle              | Profile / API          | Host apps wired      | Manual QA                       |
+| -------------------------- | ---------------------- | -------------------- | ------------------------------- |
+| <!-- e.g. inline drums --> | <!-- practice-rail --> | <!-- Stanza rail --> | <!-- Play + pattern persist --> |
+
 ## Bug-fix handoff (when applicable)
 
 Fill these when fixing playback, notation, portal, or async-load UI bugs:

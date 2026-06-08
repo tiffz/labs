@@ -20,6 +20,7 @@ beforeEach(async () => {
   await encoreDb.repertoireExtras.clear();
   await encoreDb.dirtySync.clear();
   await encoreDb.originals.clear();
+  await encoreDb.originalTakeBlobs.clear();
 });
 
 afterEach(async () => {
@@ -29,13 +30,14 @@ afterEach(async () => {
   await encoreDb.repertoireExtras.clear();
   await encoreDb.dirtySync.clear();
   await encoreDb.originals.clear();
+  await encoreDb.originalTakeBlobs.clear();
 });
 
 describe('encoreDb schema', () => {
-  it('opens at version 6 with repertoire + originals tables', async () => {
-    expect(encoreDb.verno).toBe(6);
+  it('opens at version 7 with repertoire + originals tables', async () => {
+    expect(encoreDb.verno).toBe(7);
     expect(encoreDb.tables.map((t) => t.name).sort()).toEqual(
-      ['dirtySync', 'originals', 'performances', 'repertoireExtras', 'songs', 'syncMeta'].sort(),
+      ['dirtySync', 'originalTakeBlobs', 'originals', 'performances', 'repertoireExtras', 'songs', 'syncMeta'].sort(),
     );
   });
 

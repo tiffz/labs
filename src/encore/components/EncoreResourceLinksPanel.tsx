@@ -33,6 +33,7 @@ import {
 } from '../drive/encoreResourceDownload';
 import { EncoreStaticResourceHoverCard } from './EncoreStreamingHoverCard';
 import { EncoreMediaLinkRow } from '../ui/EncoreMediaLinkRow';
+import { useEncoreMediaPlaybackHoverProps } from '../hooks/useEncoreMediaPlaybackHoverProps';
 
 const DEFAULT_FILE_ACCEPT =
   'audio/*,video/*,image/*,.pdf,.txt,.md,.doc,.docx,application/pdf,text/*,.mp3,.m4a,.wav,.webm,.aac,.flac,.ogg';
@@ -97,6 +98,7 @@ export function EncoreResourceLinksPanel({
 }: EncoreResourceLinksPanelProps): ReactElement {
   const theme = useTheme();
   const { googleAccessToken } = useEncoreAuth();
+  const { propsForMiscResource } = useEncoreMediaPlaybackHoverProps();
   const isHubCard = layout === 'media-hub-card';
   const isSidebar = layout === 'sidebar';
   const panelDropEnabled = !readOnly && isSidebar;
@@ -210,6 +212,7 @@ export function EncoreResourceLinksPanel({
             downloadDisabledReason: downloadGate.reason,
           }
         : {}),
+      ...propsForMiscResource(resource),
     };
 
     if (isHubCard) {
