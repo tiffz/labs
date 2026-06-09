@@ -8,6 +8,7 @@ import {
   isEncorePlayableDriveMime,
   resolveEncoreDriveMediaMime,
 } from './encorePlayableMedia';
+import { encoreSpotifyInAppPlaybackSupported } from './encoreSpotifyEmbed';
 import { parseYoutubeVideoId } from '../youtube/parseYoutubeVideoUrl';
 
 export function encoreMediaTargetFromDriveFile(input: {
@@ -52,7 +53,7 @@ export function encoreMediaTargetFromMediaLink(
 ): EncoreMediaPlaybackTarget | null {
   if (link.source === 'spotify') {
     const trackId = link.spotifyTrackId?.trim();
-    if (!trackId) return null;
+    if (!trackId || !encoreSpotifyInAppPlaybackSupported()) return null;
     return {
       playbackId: encoreSpotifyMediaPlaybackId(trackId),
       kind: 'spotify',

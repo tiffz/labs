@@ -27,6 +27,16 @@ type WindowWithSpotifyEmbed = Window & {
   onSpotifyIframeApiReady?: (api: SpotifyIframeApi) => void;
 };
 
+/**
+ * Whether Encore should offer an in-app Play control for Spotify links.
+ * The hidden iframe host does not reliably start playback (browser autoplay + embed limits),
+ * so we omit Play until a supported path exists. Set `VITE_ENCORE_SPOTIFY_IN_APP_PLAYBACK=1` to re-enable.
+ */
+export function encoreSpotifyInAppPlaybackSupported(): boolean {
+  const flag = (import.meta.env.VITE_ENCORE_SPOTIFY_IN_APP_PLAYBACK as string | undefined)?.trim();
+  return flag === '1' || flag === 'true';
+}
+
 let spotifyEmbedApiPromise: Promise<SpotifyIframeApi> | null = null;
 
 function ensureSpotifyEmbedApi(): Promise<SpotifyIframeApi> {

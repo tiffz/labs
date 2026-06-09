@@ -13,7 +13,9 @@ import { spotifyDataSourceTrackId } from '../repertoire/songMediaLinks';
 import {
   fetchSpotifyPlaylistTracks,
   replaceSpotifyPlaylistTracks,
+  spotifyTrackTitleAndArtist,
   type SpotifyPlaylistTrackRow,
+  type SpotifySearchTrack,
 } from './spotifyApi';
 
 export type EncorePlaylistImportSuggestRow = {
@@ -36,6 +38,25 @@ export function encoreStubWithPlaylistImportTags(stub: EncoreSong, tags?: string
   }
   const next = [...merged];
   return next.length > 0 ? { ...stub, tags: next } : stub;
+}
+
+export function encoreSongStubFromSpotifySearchTrack(
+  track: SpotifySearchTrack,
+  opts?: { practicing?: boolean },
+): EncoreSong {
+  const { title, artist } = spotifyTrackTitleAndArtist(track);
+  const now = new Date().toISOString();
+  return {
+    id: crypto.randomUUID(),
+    title,
+    artist,
+    spotifyTrackId: track.id,
+    albumArtUrl: track.album?.images?.[0]?.url,
+    journalMarkdown: '',
+    practicing: opts?.practicing ?? false,
+    createdAt: now,
+    updatedAt: now,
+  };
 }
 
 export function encoreSongStubFromSpotifyPlaylistRow(

@@ -57,13 +57,12 @@ describe('encorePlayableMedia', () => {
 });
 
 describe('encoreMediaPlaybackTargets', () => {
-  it('builds spotify target from media link', () => {
+  it('omits spotify playback target when in-app playback is disabled', () => {
     const target = encoreMediaTargetFromMediaLink(
       { id: '1', source: 'spotify', spotifyTrackId: 'abc' },
       'Track title',
     );
-    expect(target?.kind).toBe('spotify');
-    expect(target?.spotifyTrackId).toBe('abc');
+    expect(target).toBeNull();
   });
 
   it('builds misc audio resource target', () => {
