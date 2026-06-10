@@ -23,7 +23,7 @@ import {
   type ReactElement,
 } from 'react';
 import { resourceLinkOpenUrl } from '../repertoire/encoreResourceLinks';
-import { encoreMediaHubAddButtonSx, encoreRadius, songPageResourceRowShellSx } from '../theme/encoreUiTokens';
+import { encoreMediaHubAddButtonSx, encoreRadius, practiceResourceChipFieldSx } from '../theme/encoreUiTokens';
 import type { EncoreMiscResource } from '../types';
 import { useEncoreAuth } from '../context/EncoreAuthContext';
 import {
@@ -53,7 +53,7 @@ function filesFromDataTransfer(dt: DataTransfer): File[] {
   return out;
 }
 
-export type EncoreResourceLinksPanelLayout = 'media-hub-card' | 'sidebar' | 'stack';
+export type EncoreResourceLinksPanelLayout = 'media-hub-card' | 'practice-list' | 'sidebar' | 'stack';
 
 export type EncoreResourceLinksPanelProps = {
   resources: EncoreMiscResource[];
@@ -100,6 +100,7 @@ export function EncoreResourceLinksPanel({
   const { googleAccessToken } = useEncoreAuth();
   const { propsForMiscResource } = useEncoreMediaPlaybackHoverProps();
   const isHubCard = layout === 'media-hub-card';
+  const isPracticeList = layout === 'practice-list';
   const isSidebar = layout === 'sidebar';
   const panelDropEnabled = !readOnly && isSidebar;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -194,6 +195,8 @@ export function EncoreResourceLinksPanel({
     const downloadTarget = encoreResourceDownloadTargetFromMisc(resource);
     const downloadGate = encoreResourceDownloadDisabled(resource, googleAccessToken);
 
+    const playback = propsForMiscResource(resource);
+
     const hoverCardProps = {
       title: resource.label,
       subtitle: resource.kind,
@@ -212,33 +215,23 @@ export function EncoreResourceLinksPanel({
             downloadDisabledReason: downloadGate.reason,
           }
         : {}),
-      ...propsForMiscResource(resource),
     };
 
-    if (isHubCard) {
+    if (isHubCard || isPracticeList) {
       return (
-        <Box
+        <EncoreMediaLinkRow
           key={resource.id}
-          sx={(t) => ({
-            width: '100%',
-            maxWidth: 'min(100%, 440px)',
-            mb: 0.25,
-            ...songPageResourceRowShellSx(t, false),
-          })}
-        >
-          <EncoreMediaLinkRow
-            slot="reference"
-            isPrimary={false}
-            embedded
-            caption={resource.label}
-            openUrl={openUrl}
-            openAriaLabel={`Open ${resource.label}`}
-            onRemove={onRemove}
-            hoverStripWrapper={(strip) => (
-              <EncoreStaticResourceHoverCard {...hoverCardProps}>{strip}</EncoreStaticResourceHoverCard>
-            )}
-          />
-        </Box>
+          slot="reference"
+          isPrimary={false}
+          caption={resource.label}
+          openUrl={openUrl}
+          openAriaLabel={`Open ${resource.label}`}
+          onRemove={onRemove}
+          hoverStripWrapper={(strip) => (
+            <EncoreStaticResourceHoverCard {...hoverCardProps}>{strip}</EncoreStaticResourceHoverCard>
+          )}
+          {...playback}
+        />
       );
     }
 
@@ -250,6 +243,7 @@ export function EncoreResourceLinksPanel({
         openUrl={openUrl}
         openAriaLabel={`Open ${resource.label}`}
         onRemove={onRemove}
+        {...playback}
       />
     );
 
@@ -273,7 +267,7 @@ export function EncoreResourceLinksPanel({
       variant="outlined"
       color="inherit"
       disabled={driveUploading}
-      startIcon={<AddIcon sx={{ fontSize: 15 }} />}
+      startIcon={<AddIcon sx={{ fontSize: 14 }} />}
       onClick={(e) => setAddMenuAnchor(e.currentTarget)}
       sx={(t) => encoreMediaHubAddButtonSx(t)}
       aria-haspopup="menu"
@@ -360,22 +354,19 @@ export function EncoreResourceLinksPanel({
     </>
   ) : null;
 
-  if (isHubCard) {
+  if (isPracticeList || isHubCard) {
     return (
       <>
         <Stack
           direction="row"
           flexWrap="wrap"
           alignItems="center"
-          gap={0.5}
-          rowGap={0.5}
           useFlexGap
-          className={['encore-resource-links-panel', 'encore-resource-links-panel--hub', className]
+          sx={(t) => practiceResourceChipFieldSx(t)}
+          className={['encore-resource-links-panel', isPracticeList ? 'encore-resource-links-panel--practice-chips' : 'encore-resource-links-panel--hub', className]
             .filter(Boolean)
             .join(' ')}
-          sx={{ width: 1 }}
         >
-          {emptyLine}
           {resources.map(renderResourceRow)}
           {addButton}
         </Stack>

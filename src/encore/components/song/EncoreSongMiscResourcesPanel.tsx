@@ -24,7 +24,7 @@ export function EncoreSongMiscResourcesPanel({
 }: EncoreSongMiscResourcesPanelProps): ReactElement {
   return (
     <EncoreResourceLinksPanel
-      layout="media-hub-card"
+      layout="practice-list"
       className="encore-song-misc-resources"
       resources={resources}
       onChange={onChange}

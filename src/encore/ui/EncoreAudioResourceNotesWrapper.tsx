@@ -46,16 +46,17 @@ export function EncoreAudioResourceNotesWrapper(props: EncoreAudioResourceNotesW
       sx={{
         display: 'inline-flex',
         alignItems: 'stretch',
-        maxWidth: 'min(100%, 440px)',
-        width: '100%',
+        maxWidth: 'min(100%, 340px)',
+        width: 'auto',
+        flex: '0 1 auto',
         minWidth: 0,
-        mb: 0.25,
         boxSizing: 'border-box',
         minHeight: encoreMediaHubChipMinHeight,
         ...encoreMediaLinkRowSx(theme, false),
-        pr: 1.25,
-        pl: 0.75,
-        gap: 0.25,
+        pr: 0.875,
+        pl: 0.625,
+        py: 0.125,
+        gap: 0.125,
       }}
     >
       <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', alignItems: 'center' }}>{rowChild}</Box>

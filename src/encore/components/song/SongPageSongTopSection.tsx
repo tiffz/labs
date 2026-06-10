@@ -4,7 +4,9 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import type { ReactElement, ReactNode } from 'react';
 
-import { SongPageMediaHubCards, type SongPageMediaHubFileDropConfig, type SongPageMediaSlots } from './SongPageMediaHubCards';
+import { PracticeResourcesPanel } from './PracticeResourcesPanel';
+import type { SongPageMediaHubFileDropConfig } from './practiceResourceGroups';
+import type { PracticeResourceGroup } from './practiceResourceGroups';
 
 export type SongPageHeroBlocks = {
   albumArt: ReactNode;
@@ -17,7 +19,7 @@ export type SongPageTopHalfBlocks = SongPageHeroBlocks & {
   /** Spotify song info source row (metadata / sync / default art), below title + artist. */
   catalogStrip: ReactNode;
   spotifyAlerts: ReactNode;
-  mediaSlots: SongPageMediaSlots;
+  resourceGroups: PracticeResourceGroup[];
   /** De-emphasized web search links below the main song surface. */
   searchWebFooter: ReactNode;
 };
@@ -31,7 +33,7 @@ export function SongPageSongTopSection(props: {
   mediaHubFileDrop?: SongPageMediaHubFileDropConfig;
 }): ReactElement {
   const { blocks, mediaHubFileDrop } = props;
-  const { spotifyAlerts, mediaSlots, catalogStrip, searchWebFooter, ...heroBlocks } = blocks;
+  const { spotifyAlerts, resourceGroups, catalogStrip, searchWebFooter, ...heroBlocks } = blocks;
   const { albumArt, titleField, artistField, tagsKeyPractice } = heroBlocks;
   const theme = useTheme();
 
@@ -131,12 +133,12 @@ export function SongPageSongTopSection(props: {
               textTransform: 'uppercase',
               color: 'text.secondary',
               mt: 0.5,
-              mb: -0.25,
+              mb: 0.75,
             }}
           >
             Practice resources
           </Typography>
-          <SongPageMediaHubCards slots={mediaSlots} fileDrop={mediaHubFileDrop} />
+          <PracticeResourcesPanel groups={resourceGroups} fileDrop={mediaHubFileDrop} />
         </Stack>
       </Stack>
     </Stack>

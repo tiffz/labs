@@ -17,7 +17,7 @@ import {
 } from '../theme/encoreUiTokens';
 import { songWithSyncedLegacyDriveIds } from '../utils/songAttachments';
 import type { EncoreMilestoneDefinition, EncoreSong } from '../types';
-import { SongPageMediaHubCards } from './song/SongPageMediaHubCards';
+import { PracticeResourcesPanel } from './song/PracticeResourcesPanel';
 import { useSongPageMediaHub } from './song/useSongPageMediaHub';
 
 export type SongResourcesEditSection =
@@ -130,7 +130,7 @@ export function SongResourcesEditDialog(props: {
           <Stack spacing={2} sx={{ pt: 0.5 }}>
             {mediaHub.spotifyAlerts}
             <Box id="encore-media-hub-spotify">{mediaHub.catalogStrip}</Box>
-            <SongPageMediaHubCards slots={mediaHub.mediaSlots} />
+            <PracticeResourcesPanel groups={mediaHub.resourceGroups} />
             {mediaHub.searchWebFooter}
           </Stack>
         ) : null}

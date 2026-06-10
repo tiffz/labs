@@ -7,21 +7,23 @@ import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import PauseIcon from '@mui/icons-material/Pause';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { useMemo, type ReactElement, type ReactNode } from 'react';
 import type { EncoreMediaLink, EncoreMediaSource } from '../types';
 import { GoogleDriveBrandIcon, SpotifyBrandIcon, YouTubeBrandIcon } from '../components/EncoreBrandIcon';
 import { useYoutubeOembedForMediaChip } from '../youtube/useYoutubeOembedForMediaChip';
 import {
   formatMediaLinkCaption,
-  formatMediaLinkShortCaption,
-  truncateMediaLinkCaption,
   youtubeWatchUrlFromMediaLink,
 } from './encoreMediaLinkFormat';
 import {
   encoreMediaHubChipFontSize,
   encoreMediaLinkRowSx,
+  encoreExternalToolLinkProps,
 } from '../theme/encoreUiTokens';
 import { stanzaPracticeHrefFromEncoreMediaLink } from '../youtube/stanzaPracticeOpenUrl';
+import type { EncoreHoverCardPlayProps } from '../media/encoreMediaPlaybackTargets';
 
 /**
  * Which "primary" facet the row belongs to. Drives:
@@ -84,7 +86,9 @@ export type EncoreMediaLinkRowProps = {
   stanzaPracticeAllowDrive?: boolean;
   /** When true, no outer chip border (parent supplies a single shell around row + notes). */
   embedded?: boolean;
-};
+  /** `list`: full-width practice resources row; `chip`: inline hub chip (default). */
+  layout?: 'chip' | 'list';
+} & EncoreHoverCardPlayProps;
 
 /**
  * Single row primitive for media links across SongPage / PracticeScreen / GuestShareView /
@@ -109,7 +113,13 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
     hoverStripWrapper,
     stanzaPracticeAllowDrive,
     embedded = false,
+    layout = 'chip',
+    onPlay,
+    isPlaying = false,
+    playDisabled = false,
+    playDisabledReason,
   } = props;
+  const isListLayout = layout === 'list';
   const source = sourceProp ?? link?.source;
   const youtubeWatchUrlForChip =
     caption === undefined &&
@@ -127,8 +137,8 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
       caption ??
       (link
         ? link.source === 'youtube' && !link.label?.trim() && ytOembedTitle?.trim()
-          ? truncateMediaLinkCaption(ytOembedTitle.trim(), 26)
-          : formatMediaLinkShortCaption(link)
+          ? ytOembedTitle.trim()
+          : formatMediaLinkCaption(link)
         : ''),
     [caption, link, ytOembedTitle],
   );
@@ -230,8 +240,7 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
     <Box
       component="a"
       href={openUrl}
-      target="_blank"
-      rel="noreferrer"
+      {...encoreExternalToolLinkProps}
       aria-label={openAriaLabel ?? 'Open link'}
       sx={stripLinkSx}
     >
@@ -244,14 +253,26 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
   const wrappedStrip = hoverStripWrapper ? hoverStripWrapper(stripInner) : stripInner;
 
   const showActionsCluster =
+    Boolean(onPlay) ||
     Boolean(trailing) ||
     isPrimary ||
     stanzaHref != null ||
     (!isPrimary && onMakePrimary) ||
     Boolean(onRemove);
 
+  const playTooltip = playDisabled
+    ? playDisabledReason
+    : isPlaying
+      ? 'Pause'
+      : 'Play in Encore';
+
   const actionsCluster = (
     <Box
+      className={
+        isListLayout
+          ? 'encore-practice-resource-row-actions encore-practice-resource-row-actions--secondary'
+          : undefined
+      }
       sx={{
         display: 'flex',
         alignItems: 'center',
@@ -261,8 +282,39 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
         boxSizing: 'border-box',
       }}
     >
+      {onPlay ? (
+        <Tooltip title={playTooltip}>
+          <span>
+            <IconButton
+              size="small"
+              aria-label={playTooltip ?? 'Play in Encore'}
+              disabled={playDisabled}
+              onClick={(e) => {
+                e.stopPropagation();
+                onPlay();
+              }}
+              sx={{
+                ...iconBtnSx,
+                ...(isPlaying
+                  ? {
+                      color: 'primary.main',
+                      bgcolor: (t) => t.palette.action.selected,
+                      '&:hover': { color: 'primary.main', bgcolor: (t) => t.palette.action.selected },
+                    }
+                  : undefined),
+              }}
+            >
+              {isPlaying ? (
+                <PauseIcon sx={{ fontSize: 15 }} aria-hidden />
+              ) : (
+                <PlayArrowIcon sx={{ fontSize: 15 }} aria-hidden />
+              )}
+            </IconButton>
+          </span>
+        </Tooltip>
+      ) : null}
       {trailing}
-      {isPrimary ? (
+      {!isListLayout && isPrimary ? (
         <Tooltip title={primaryCopy.active}>
           <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
             <StarIcon sx={{ fontSize: 14, color: 'text.primary' }} aria-hidden />
@@ -274,6 +326,7 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
           <IconButton
             component="a"
             href={stanzaHref}
+            {...encoreExternalToolLinkProps}
             size="small"
             aria-label="Open practice in Stanza (Segno)"
             sx={iconBtnSx}
@@ -311,21 +364,56 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
     </Box>
   );
 
+  const primaryOnlyCluster =
+    isListLayout && isPrimary ? (
+      <Box
+        className="encore-practice-resource-row-actions"
+        sx={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0, pl: 0.5 }}
+      >
+        <Tooltip title={primaryCopy.active}>
+          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center' }}>
+            <StarIcon sx={{ fontSize: 14, color: 'text.primary' }} aria-hidden />
+          </Box>
+        </Tooltip>
+      </Box>
+    ) : null;
+
   return (
     <Box
       sx={(t: Theme) => ({
-        ...encoreMediaLinkRowSx(t, isPrimary, { embedded }),
-        display: embedded ? 'flex' : 'inline-flex',
-        width: embedded ? '100%' : 'auto',
-        alignItems: 'center',
-        alignSelf: embedded ? 'stretch' : undefined,
-        maxWidth: '100%',
-        flexWrap: 'nowrap',
-        columnGap: 0,
+        ...(isListLayout
+          ? {
+              display: 'flex',
+              alignItems: 'center',
+              width: '100%',
+              minWidth: 0,
+              flexWrap: 'nowrap',
+            }
+          : {
+              ...encoreMediaLinkRowSx(t, isPrimary, { embedded }),
+              display: embedded ? 'flex' : 'inline-flex',
+              width: embedded ? '100%' : 'auto',
+              alignItems: 'center',
+              alignSelf: embedded ? 'stretch' : undefined,
+              maxWidth: embedded ? '100%' : 'min(100%, 340px)',
+              flexWrap: 'nowrap',
+              columnGap: 0,
+            }),
       })}
     >
-      <Box sx={{ flex: embedded ? '1 1 0%' : '0 1 auto', minWidth: 0, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>{wrappedStrip}</Box>
-      {showActionsCluster ? actionsCluster : null}
+      <Box sx={{ flex: '1 1 0%', minWidth: 0, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>{wrappedStrip}</Box>
+      {showActionsCluster ? (
+        isListLayout && isPrimary ? (
+          <>
+            {primaryOnlyCluster}
+            {actionsCluster}
+          </>
+        ) : (
+          actionsCluster
+        )
+      ) : isListLayout && isPrimary ? (
+        primaryOnlyCluster
+      ) : null}
     </Box>
   );
 }

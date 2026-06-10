@@ -42,6 +42,9 @@ import {
   type EncoreSpotifyEmbedController,
 } from '../media/encoreSpotifyEmbed';
 import {
+  EncoreMediaPlaybackAdjustmentStore,
+} from '../media/encoreMediaPlaybackAdjustments';
+import {
   EncoreMediaPlaybackContext,
   type EncoreMediaPlaybackContextValue,
   type OriginalsPlaybackTarget,
@@ -100,6 +103,11 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
   const youtubeControllerRef = useRef<LabsYouTubeController | null>(null);
   const loopEnabledRef = useRef(loopEnabled);
   loopEnabledRef.current = loopEnabled;
+  const playbackRateRef = useRef(playbackRate);
+  playbackRateRef.current = playbackRate;
+  const transposeSemitonesRef = useRef(transposeSemitones);
+  transposeSemitonesRef.current = transposeSemitones;
+  const adjustmentsByPlaybackIdRef = useRef(new EncoreMediaPlaybackAdjustmentStore());
   const blockedYoutubeVideoIdsRef = useRef<Set<string>>(new Set());
   const spotifyControllerRef = useRef<EncoreSpotifyEmbedController | null>(null);
   const spotifyHostRef = useRef<HTMLDivElement | null>(null);
@@ -107,7 +115,28 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
   const audioBufferRef = useRef<AudioBuffer | null>(null);
   const webAudioMirrorRef = useRef(false);
 
+  const persistAdjustmentsForPlaybackId = useCallback((playbackId: string) => {
+    adjustmentsByPlaybackIdRef.current.save(playbackId, {
+      playbackRate: playbackRateRef.current,
+      transposeSemitones: transposeSemitonesRef.current,
+      loopEnabled: loopEnabledRef.current,
+    });
+  }, []);
+
+  const applyAdjustmentsForPlaybackId = useCallback((playbackId: string) => {
+    const next = adjustmentsByPlaybackIdRef.current.get(playbackId);
+    playbackRateRef.current = next.playbackRate;
+    transposeSemitonesRef.current = next.transposeSemitones;
+    loopEnabledRef.current = next.loopEnabled;
+    setPlaybackRateState(next.playbackRate);
+    setTransposeSemitonesState(next.transposeSemitones);
+    setLoopEnabledState(next.loopEnabled);
+  }, []);
+
   const stopPlayback = useCallback(() => {
+    if (target?.playbackId) {
+      persistAdjustmentsForPlaybackId(target.playbackId);
+    }
     loadIdRef.current += 1;
     mediaRef.current?.pause();
     if (mediaRef.current) {
@@ -133,7 +162,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       if (prev) URL.revokeObjectURL(prev);
       return null;
     });
-  }, []);
+  }, [persistAdjustmentsForPlaybackId, target?.playbackId]);
 
   const playMedia = useCallback(
     (next: EncoreMediaPlaybackTarget) => {
@@ -145,6 +174,10 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
         stopPlayback();
         return;
       }
+      if (target?.playbackId) {
+        persistAdjustmentsForPlaybackId(target.playbackId);
+      }
+      applyAdjustmentsForPlaybackId(next.playbackId);
       loadIdRef.current += 1;
       mediaRef.current?.pause();
       youtubeControllerRef.current?.pause();
@@ -163,7 +196,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       setTransport(EMPTY_TRANSPORT);
       setYoutubePlayerErrorCode(null);
     },
-    [phase, stopPlayback, target],
+    [applyAdjustmentsForPlaybackId, persistAdjustmentsForPlaybackId, phase, stopPlayback, target],
   );
 
   const playTake = useCallback(
@@ -286,7 +319,8 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
   const syncTransposeMirror = useCallback(() => {
     const media = mediaRef.current;
     const mirror = transposeMirrorRef.current;
-    const useMirror = webAudioMirrorRef.current || transposeSemitones !== 0;
+    const semitones = transposeSemitonesRef.current;
+    const useMirror = webAudioMirrorRef.current || semitones !== 0;
     if (!media || !mirror?.isReady() || !useMirror) {
       mirror?.stop();
       if (media && !webAudioMirrorRef.current) media.volume = 1;
@@ -298,8 +332,10 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       return;
     }
     if (mirror.hasActiveSource()) return;
-    mirror.startOrRestart(media.currentTime, media.playbackRate, transposeSemitones, 1);
-  }, [transposeSemitones]);
+    mirror.startOrRestart(media.currentTime, media.playbackRate, semitones, 1);
+  }, []);
+  const syncTransposeMirrorRef = useRef(syncTransposeMirror);
+  syncTransposeMirrorRef.current = syncTransposeMirror;
 
   useEffect(() => {
     if (!target || target.kind !== 'drive-audio') {
@@ -352,9 +388,12 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
     if (!media || !objectUrl || phase !== 'playing') return;
     if (target?.kind !== 'drive-audio' && target?.kind !== 'drive-video') return;
     media.src = objectUrl;
-    media.loop = loopEnabled;
-    media.playbackRate = playbackRate;
-    if (target.kind === 'drive-audio' && (webAudioMirrorRef.current || transposeSemitones !== 0)) {
+    media.loop = loopEnabledRef.current;
+    media.playbackRate = playbackRateRef.current;
+    if (
+      target.kind === 'drive-audio' &&
+      (webAudioMirrorRef.current || transposeSemitonesRef.current !== 0)
+    ) {
       media.volume = 0;
     }
     const onError = () => {
@@ -366,7 +405,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       if (transposeMirrorRef.current?.isReady()) {
         webAudioMirrorRef.current = true;
         media.volume = 0;
-        syncTransposeMirror();
+        syncTransposeMirrorRef.current();
         void media.play().catch(() => undefined);
         return;
       }
@@ -381,7 +420,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
     return () => {
       media.removeEventListener('error', onError);
     };
-  }, [loopEnabled, objectUrl, phase, playbackRate, syncTransposeMirror, target?.kind, transposeSemitones]);
+  }, [objectUrl, phase, target?.kind, target?.playbackId]);
 
   useEffect(() => {
     const media = mediaRef.current;
@@ -566,16 +605,27 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
 
   const setPlaybackRate = useCallback((rate: number) => {
     setPlaybackRateState(rate);
-  }, []);
+    if (target?.playbackId) {
+      adjustmentsByPlaybackIdRef.current.patch(target.playbackId, { playbackRate: rate });
+    }
+  }, [target?.playbackId]);
 
   const setTransposeSemitones = useCallback((semitones: number) => {
+    transposeSemitonesRef.current = semitones;
     setTransposeSemitonesState(semitones);
     transposeMirrorRef.current?.stop();
-  }, []);
+    if (target?.playbackId) {
+      adjustmentsByPlaybackIdRef.current.patch(target.playbackId, { transposeSemitones: semitones });
+    }
+    queueMicrotask(() => syncTransposeMirrorRef.current());
+  }, [target?.playbackId]);
 
   const setLoopEnabled = useCallback((enabled: boolean) => {
     setLoopEnabledState(enabled);
-  }, []);
+    if (target?.playbackId) {
+      adjustmentsByPlaybackIdRef.current.patch(target.playbackId, { loopEnabled: enabled });
+    }
+  }, [target?.playbackId]);
 
   const isActiveMedia = useCallback(
     (playbackId: string) =>

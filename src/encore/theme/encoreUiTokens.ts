@@ -59,7 +59,7 @@ export function encoreExcludeTone(theme: Theme): {
 export const encoreMediaHubChipFontSize = '0.75rem' as const;
 
 /** Shared band height for hub chips, row shells, and "+ Add …" controls. */
-export const encoreMediaHubChipMinHeight = 30 as const;
+export const encoreMediaHubChipMinHeight = 28 as const;
 
 export function encoreMediaLinkRowSx(
   theme: Theme,
@@ -70,19 +70,36 @@ export function encoreMediaLinkRowSx(
   return {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 0.375,
-    pl: embedded ? 0.375 : 0.75,
-    pr: embedded ? 0.375 : 0.25,
-    py: embedded ? 0.375 : 0.25,
+    gap: 0.25,
+    pl: embedded ? 0.5 : 0.625,
+    pr: embedded ? 0.375 : 0.375,
+    py: embedded ? 0.25 : 0.125,
     boxSizing: 'border-box',
     minHeight: embedded ? encoreMediaHubChipMinHeight : encoreMediaHubChipMinHeight,
     borderRadius: embedded ? 0 : encoreRadius,
     border: embedded ? 0 : 1,
     borderStyle: 'solid',
-    borderColor: embedded ? 'transparent' : isPrimary ? alpha(theme.palette.primary.main, 0.3) : encoreHairline,
+    borderColor: embedded ? 'transparent' : isPrimary ? alpha(theme.palette.primary.main, 0.26) : encoreHairline,
     maxWidth: '100%',
-    bgcolor: embedded ? 'transparent' : isPrimary ? alpha(theme.palette.primary.main, 0.08) : theme.palette.background.paper,
+    bgcolor: embedded ? 'transparent' : isPrimary ? alpha(theme.palette.primary.main, 0.06) : theme.palette.background.paper,
     boxShadow: embedded ? 'none' : encoreShadowSurface,
+    transition: embedded
+      ? undefined
+      : theme.transitions.create(['border-color', 'background-color', 'box-shadow'], {
+          duration: theme.transitions.duration.shorter,
+        }),
+    ...(!embedded
+      ? {
+          '&:hover, &:focus-within': {
+            borderColor: isPrimary
+              ? alpha(theme.palette.primary.main, 0.38)
+              : alpha(theme.palette.text.primary, 0.1),
+            boxShadow: isPrimary
+              ? `0 2px 8px ${alpha(theme.palette.primary.main, 0.1)}`
+              : `0 2px 6px ${alpha(theme.palette.text.primary, 0.05)}`,
+          },
+        }
+      : {}),
   };
 }
 
@@ -98,8 +115,8 @@ export function encoreMediaHubAddButtonSx(theme: Theme): SystemStyleObject<Theme
     fontSize: encoreMediaHubChipFontSize,
     lineHeight: 1.3,
     minHeight: encoreMediaHubChipMinHeight,
-    px: 1,
-    py: 0.25,
+    px: 0.75,
+    py: 0.125,
     borderRadius: encoreRadius,
     color: 'text.primary',
     bgcolor: theme.palette.background.paper,
@@ -138,10 +155,68 @@ export function songPageResourceRowShellSx(
     boxSizing: 'border-box',
     minHeight: encoreMediaHubChipMinHeight,
     /** Inset from outer stroke; extra right room for remove / star hit targets. */
-    pl: 1,
-    pr: 1.5,
-    py: 0.375,
+    pl: 0.75,
+    pr: 1,
+    py: 0.25,
   };
+}
+
+/** Flex wrap field for one practice resources section (chips + add control, no nested card). */
+export function practiceResourceChipFieldSx(theme: Theme): SystemStyleObject<Theme> {
+  return {
+    display: 'flex',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    alignContent: 'flex-start',
+    gap: theme.spacing(0.375),
+    width: 1,
+    minWidth: 0,
+    minHeight: encoreMediaHubChipMinHeight,
+    py: 0.125,
+  };
+}
+
+/** Two-column practice resources section (label rail + chip field). */
+export const practiceResourceSectionGridSx: SystemStyleObject<Theme> = {
+  display: 'grid',
+  gridTemplateColumns: { xs: '1fr', sm: '5.25rem minmax(0, 1fr)' },
+  columnGap: { xs: 0.25, sm: 1.5 },
+  rowGap: 0.25,
+  alignItems: 'start',
+  py: 0.625,
+};
+
+export const practiceResourceSectionLabelSx: SystemStyleObject<Theme> = {
+  fontWeight: 600,
+  fontSize: '0.6875rem',
+  lineHeight: 1.25,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  color: 'text.secondary',
+  display: 'block',
+};
+
+export const practiceResourceSectionMetaSx: SystemStyleObject<Theme> = {
+  display: 'block',
+  fontSize: '0.625rem',
+  lineHeight: 1.3,
+  color: 'text.disabled',
+  mt: 0.125,
+  fontWeight: 500,
+  fontVariantNumeric: 'tabular-nums',
+};
+
+export const practiceResourceSectionLabelRailSx: SystemStyleObject<Theme> = {
+  minWidth: 0,
+  textAlign: { xs: 'left', sm: 'right' },
+  pr: { sm: 0.25 },
+  pt: 0.3125,
+};
+
+/** @deprecated Use {@link practiceResourceChipFieldSx} — chip stacks no longer use an inner bordered field. */
+export function practiceResourceChipStackSx(theme: Theme): SystemStyleObject<Theme> {
+  return practiceResourceChipFieldSx(theme);
 }
 
 /** Primary content column: one max width for list and detail screens (8px grid, ~82rem). */
@@ -168,6 +243,12 @@ export const encorePageKickerSx: SystemStyleObject<Theme> = {
   textTransform: 'uppercase',
   mb: 0.5,
 };
+
+/** Anchor attrs for opening another Labs app or third-party tool without leaving Encore. */
+export const encoreExternalToolLinkProps = {
+  target: '_blank',
+  rel: 'noreferrer',
+} as const;
 
 /** Page title (h6) — single primary heading per view. */
 export const encorePageTitleSx: SystemStyleObject<Theme> = {

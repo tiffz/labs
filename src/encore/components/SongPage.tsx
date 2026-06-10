@@ -870,7 +870,7 @@ export function SongPage(props: {
     ...songHeroBlocks,
     catalogStrip: mediaHub.catalogStrip,
     spotifyAlerts: mediaHub.spotifyAlerts,
-    mediaSlots: mediaHub.mediaSlots,
+    resourceGroups: mediaHub.resourceGroups,
     searchWebFooter: mediaHub.searchWebFooter,
   };
 
@@ -913,7 +913,10 @@ export function SongPage(props: {
           sx={{ ...encoreSongPageCardPaperSx, mb: 2.5 }}
         >
           <Box sx={encoreSongPageCardPaddingSx}>
-            <SongPageSongTopSection blocks={songTopHalfBlocks} mediaHubFileDrop={mediaHubFileDrop} />
+            <SongPageSongTopSection
+              blocks={songTopHalfBlocks}
+              mediaHubFileDrop={mediaHubFileDrop}
+            />
           </Box>
         </Paper>
 

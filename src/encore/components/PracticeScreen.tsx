@@ -5,6 +5,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import ListItem from '@mui/material/ListItem';
@@ -52,8 +53,8 @@ import { SongMilestoneChecklist } from './SongMilestoneChecklist';
 import { EncoreSpotifyPlaylistImportReviewDialog } from './EncoreSpotifyPlaylistImportReviewDialog';
 import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
 import { songAutosaveDirty } from './song/songPageHelpers';
+import { PracticeResourcesPanel } from './song/PracticeResourcesPanel';
 import { useSongPageMediaHub } from './song/useSongPageMediaHub';
-import { SongPageMediaHubCards } from './song/SongPageMediaHubCards';
 import type { SongMediaUploadSlot } from './song/songMediaUploadSlot';
 import {
   dragPayloadRelevantToMediaHub,
@@ -93,6 +94,7 @@ export function PracticeScreen({
   const theme = useTheme();
   const {
     songs,
+    songsHydrated,
     saveSong,
     repertoireExtras,
     saveRepertoireExtras,
@@ -627,7 +629,15 @@ export function PracticeScreen({
         </Stack>
       </Paper>
 
-      {practicingSongs.length === 0 ? (
+      {!songsHydrated ? (
+        <Box
+          sx={{ display: 'flex', justifyContent: 'center', py: 8 }}
+          aria-busy="true"
+          aria-label="Loading practice list"
+        >
+          <CircularProgress />
+        </Box>
+      ) : practicingSongs.length === 0 ? (
         <Stack spacing={1.5} sx={{ py: 1, mb: 2, alignItems: 'flex-start' }}>
           <Typography color="text.secondary" sx={{ lineHeight: 1.6 }}>
             Nothing here yet. Add a song you’re working on to keep it at hand for practice
@@ -888,10 +898,23 @@ export function PracticeScreen({
                   </Stack>
 
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.25 }}>
+                    <Typography
+                      component="h2"
+                      variant="subtitle2"
+                      sx={{
+                        fontWeight: 800,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        color: 'text.secondary',
+                        mb: 0.75,
+                      }}
+                    >
                       Practice resources
                     </Typography>
-                    <SongPageMediaHubCards slots={mediaHub.mediaSlots} fileDrop={practiceMediaHubFileDrop} />
+                    <PracticeResourcesPanel
+                      groups={mediaHub.resourceGroups}
+                      fileDrop={practiceMediaHubFileDrop}
+                    />
                   </Box>
 
                   <PracticeExercisesSection
