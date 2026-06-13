@@ -25,6 +25,18 @@ vi.mock('../auth/hashEmail', () => ({
   isEmailHashAllowed: () => true,
 }));
 
+vi.mock('../../shared/session/labsGoogleSessionPort', () => ({
+  isLabsGoogleSessionBffEnabled: vi.fn(() => false),
+  tryRefreshGoogleAccessTokenViaBff: vi.fn(async () => null),
+  signInWithGoogleViaBff: vi.fn(),
+  persistLabsGoogleBffSession: vi.fn(),
+  signOutGoogleViaBff: vi.fn(async () => undefined),
+}));
+
+vi.mock('../../shared/session/useLabsGoogleSessionRefresh', () => ({
+  useLabsGoogleSessionRefresh: vi.fn(),
+}));
+
 import { requestGoogleAccessToken } from '../auth/googleTokenClient';
 import { fetchGoogleUserProfile } from '../auth/loadGisScript';
 import {

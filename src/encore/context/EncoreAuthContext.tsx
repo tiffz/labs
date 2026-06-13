@@ -41,6 +41,15 @@ import { hasSpotifyPrivacyAck, setSpotifyPrivacyAck } from '../spotify/spotifyPr
 import { startSpotifyOAuthFlow } from '../spotify/startSpotifyOAuthFlow';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import {
+  isLabsGoogleSessionBffEnabled,
+  isRecoverableBffSignInFailure,
+  persistLabsGoogleBffSession,
+  signInWithGoogleViaBff,
+  signOutGoogleViaBff,
+  tryRefreshGoogleAccessTokenViaBff,
+} from '../../shared/session/labsGoogleSessionPort';
+import { useLabsGoogleSessionRefresh } from '../../shared/session/useLabsGoogleSessionRefresh';
+import {
   getEncoreLocationHash,
   getEncoreLocationHashServerSnapshot,
   parseGuestShareSnapshotFileIdFromHash,
@@ -371,7 +380,20 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
         writeGoogleGateBypassed(false);
         setGoogleGateBypassed(false);
       } else if (rememberedIdentity?.email) {
-        enterSessionExpiredMode();
+        if (isLabsGoogleSessionBffEnabled()) {
+          void tryRefreshGoogleAccessTokenViaBff().then((token) => {
+            if (token) {
+              setGoogleAccessToken(token);
+              setGoogleSessionExpired(false);
+              writeGoogleGateBypassed(false);
+              setGoogleGateBypassed(false);
+            } else {
+              enterSessionExpiredMode();
+            }
+          });
+        } else {
+          enterSessionExpiredMode();
+        }
       } else if (stored) {
         // Stale token, no remembered identity. Drop the token; user lands on the sign-in gate.
         clearPersistedGoogleSession();
@@ -398,7 +420,19 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
     if (!s) return;
     const tickInMs = Math.max(0, s.expiresAtMs - 60_000 - Date.now());
     const handle = window.setTimeout(() => {
-      enterSessionExpiredMode();
+      void (async () => {
+        if (isLabsGoogleSessionBffEnabled()) {
+          const token = await tryRefreshGoogleAccessTokenViaBff();
+          if (token) {
+            setGoogleAccessToken(token);
+            setGoogleSessionExpired(false);
+            writeGoogleGateBypassed(false);
+            setGoogleGateBypassed(false);
+            return;
+          }
+        }
+        enterSessionExpiredMode();
+      })();
     }, tickInMs);
     return () => window.clearTimeout(handle);
   }, [googleAccessToken, enterSessionExpiredMode, guestShareRoute]);
@@ -462,6 +496,21 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
         googleEmail?.trim() ||
         readPersistedGoogleIdentity()?.email?.trim() ||
         undefined;
+      if (isLabsGoogleSessionBffEnabled()) {
+        try {
+          const bffResponse = await signInWithGoogleViaBff();
+          const ok = await finalizeGoogleSession(bffResponse.access_token, bffResponse.expires_in, {
+            persist: true,
+            silent: false,
+          });
+          if (!ok) return;
+          persistLabsGoogleBffSession(bffResponse);
+          setGoogleSessionExpired(false);
+          return;
+        } catch (e) {
+          if (!isRecoverableBffSignInFailure(e)) throw e;
+        }
+      }
       const { access_token, expires_in } = await requestGoogleAccessToken(clientId, GOOGLE_SCOPES, {
         ...(loginHint ? { loginHint } : {}),
       });
@@ -493,9 +542,17 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
     clearPersistedGoogleSession();
     clearPersistedGoogleIdentity();
     if (token) revokeGoogleAccessTokenBestEffort(token);
+    if (isLabsGoogleSessionBffEnabled()) void signOutGoogleViaBff();
     writeGoogleGateBypassed(true);
     setGoogleGateBypassed(true);
   }, [clearUndoStack, googleAccessToken]);
+
+  useLabsGoogleSessionRefresh((accessToken) => {
+    setGoogleAccessToken(accessToken);
+    setGoogleSessionExpired(false);
+    writeGoogleGateBypassed(false);
+    setGoogleGateBypassed(false);
+  });
 
   const retryAccessGate = useCallback(() => {
     setAccessDenied(false);

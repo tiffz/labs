@@ -8,6 +8,13 @@ import {
   writePersistedGoogleSession,
 } from './encoreGoogleTokenStorage';
 import { requestGoogleAccessToken } from './googleTokenClient';
+import {
+  isLabsGoogleSessionBffEnabled,
+  isRecoverableBffSignInFailure,
+  persistLabsGoogleBffSession,
+  signInWithGoogleViaBff,
+  tryRefreshGoogleAccessTokenViaBff,
+} from '../session/labsGoogleSessionPort';
 
 /** User-visible copy when GIS needs a popup from a click (not from automatic page load). */
 export const LABS_GOOGLE_INTERACTIVE_DRIVE_AUTH_HINT =
@@ -89,6 +96,19 @@ export async function ensureLabsGoogleAccessTokenForDrive(options?: {
       // the caller. An auth rejection means the persisted token was actually revoked / expired
       // server-side, so we fall through to the interactive-or-throw path below.
       if (!isLikelyGoogleAuthRejection(e)) throw e;
+    }
+  }
+
+  if (isLabsGoogleSessionBffEnabled()) {
+    const refreshed = await tryRefreshGoogleAccessTokenViaBff();
+    if (refreshed) return refreshed;
+    if (!allowInteractive) throw new LabsGoogleInteractiveAuthRequiredError();
+    try {
+      const signedIn = await signInWithGoogleViaBff();
+      persistLabsGoogleBffSession(signedIn);
+      return signedIn.access_token;
+    } catch (e) {
+      if (!isRecoverableBffSignInFailure(e)) throw e;
     }
   }
 

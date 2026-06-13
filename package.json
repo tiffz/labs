@@ -27,6 +27,7 @@
     "deps:outdated": "npm outdated --long",
     "deps:update:safe": "npm update",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "typecheck:session-bff": "npm run typecheck --prefix workers/labs-session-bff",
     "typecheck:full": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:fast": "FAST_TESTS=true vitest run",

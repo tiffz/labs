@@ -18,6 +18,17 @@ vi.mock('./googleTokenClient', () => ({
   revokeGoogleAccessTokenBestEffort: vi.fn(),
 }));
 
+vi.mock('../session/labsGoogleSessionPort', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../session/labsGoogleSessionPort')>();
+  return {
+    ...actual,
+    isLabsGoogleSessionBffEnabled: vi.fn(() => false),
+    tryRefreshGoogleAccessTokenViaBff: vi.fn(async () => null),
+    signInWithGoogleViaBff: vi.fn(),
+    persistLabsGoogleBffSession: vi.fn(),
+  };
+});
+
 vi.mock('./loadGisScript', () => ({
   fetchGoogleUserProfile: vi.fn(),
   friendlyGoogleDisplayName: (p: { name?: string; email?: string }) => p?.name ?? p?.email ?? '',
@@ -130,11 +141,63 @@ describe('ensureLabsGoogleAccessTokenForDrive — ADR 0011 (no silent prompt:"no
     const tok = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
     expect(tok).toBe('interactive-tok');
     expect(requestGoogleAccessToken).toHaveBeenCalledTimes(1);
-    // Crucially: the single call did NOT pass `prompt: 'none'`. If a silent path snuck back in,
-    // we'd see two calls (silent then interactive) — or a single call with `prompt: 'none'`.
     const opts = vi.mocked(requestGoogleAccessToken).mock.calls[0]![2] as
       | { prompt?: string }
       | undefined;
     expect(opts?.prompt).toBeUndefined();
   });
 });
+
+describe('ensureLabsGoogleAccessTokenForDrive — BFF path (ADR 0014)', () => {
+  it('uses BFF refresh when stale + interactive: false (no GIS)', async () => {
+    const sessionPort = await import('../session/labsGoogleSessionPort');
+    vi.mocked(sessionPort.isLabsGoogleSessionBffEnabled).mockReturnValue(true);
+    vi.mocked(sessionPort.tryRefreshGoogleAccessTokenViaBff).mockResolvedValue('bff-refreshed');
+
+    window.localStorage.setItem(
+      ENCORE_GOOGLE_SESSION_STORAGE_KEY,
+      JSON.stringify({ accessToken: 'stale', expiresAtMs: Date.now() - 10_000 }),
+    );
+
+    const tok = await ensureLabsGoogleAccessTokenForDrive({ interactive: false });
+    expect(tok).toBe('bff-refreshed');
+    expect(requestGoogleAccessToken).not.toHaveBeenCalled();
+  });
+
+  it('never calls GIS with prompt none when BFF is enabled', async () => {
+    const sessionPort = await import('../session/labsGoogleSessionPort');
+    vi.mocked(sessionPort.isLabsGoogleSessionBffEnabled).mockReturnValue(true);
+    vi.mocked(sessionPort.tryRefreshGoogleAccessTokenViaBff).mockResolvedValue(null);
+
+    await expect(
+      ensureLabsGoogleAccessTokenForDrive({ interactive: false }),
+    ).rejects.toBeInstanceOf(LabsGoogleInteractiveAuthRequiredError);
+
+    expect(requestGoogleAccessToken).not.toHaveBeenCalled();
+    const calls = vi.mocked(requestGoogleAccessToken).mock.calls;
+    for (const call of calls) {
+      const opts = call[2] as { prompt?: string } | undefined;
+      expect(opts?.prompt).not.toBe('none');
+    }
+  });
+
+  it('falls back to GIS when BFF interactive sign-in fails recoverably', async () => {
+    const sessionPort = await import('../session/labsGoogleSessionPort');
+    vi.mocked(sessionPort.isLabsGoogleSessionBffEnabled).mockReturnValue(true);
+    vi.mocked(sessionPort.tryRefreshGoogleAccessTokenViaBff).mockResolvedValue(null);
+    vi.mocked(sessionPort.signInWithGoogleViaBff).mockRejectedValue(new Error('Session service unreachable.'));
+    vi.mocked(requestGoogleAccessToken).mockResolvedValue({
+      access_token: 'gis-fallback-tok',
+      expires_in: 3600,
+    });
+    vi.mocked(fetchGoogleUserProfile).mockResolvedValue({
+      email: 'me@example.com',
+      name: 'Me',
+    } as unknown as Awaited<ReturnType<typeof fetchGoogleUserProfile>>);
+
+    const tok = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+    expect(tok).toBe('gis-fallback-tok');
+    expect(requestGoogleAccessToken).toHaveBeenCalledTimes(1);
+  });
+});
+

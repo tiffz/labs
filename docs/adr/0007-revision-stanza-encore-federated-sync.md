@@ -12,7 +12,7 @@
 | 2   | Auto-pull conflicts      | **Silent merge only when it cannot drop local edits**; otherwise show [`LabsDriveConflictDialog`](../src/shared/google/LabsDriveConflictDialog.tsx) (implemented via [`shouldPromptBeforePortfolioMerge`](../src/shared/drive/labsDriveBackupTypes.ts)) |
 | 3   | Tester gate              | **Remove sooner** — Drive backup open to all signed-in Google users unless `VITE_LABS_DRIVE_TESTER_HASHES` restricts deploy                                                                                                                             |
 | 4   | Stanza vs Encore uploads | **Stanza direct uploads stay common**; no Encore reuse workflow yet beyond shared Drive files. **Encore must not duplicate** bytes already on Drive from Stanza (stem folder indexed in duplicate scan)                                                 |
-| 5   | Token refresh BFF        | **Next PR** — stay on ADR 0010/0011 client-only until then                                                                                                                                                                                              |
+| 5   | Token refresh BFF        | **Implemented** — [ADR 0014](./0014-google-oauth-session-bff.md); opt-in via `VITE_LABS_SESSION_BFF_URL`                                                                                                                                                |
 
 ## Target architecture (Option B)
 
@@ -51,7 +51,7 @@ flowchart TB
 | Tester gate removal (GA default)           | Done — [`labsDriveTesterGate.ts`](../src/shared/google/labsDriveTesterGate.ts)                                            |
 | Encore dedup includes Stanza `stem_audio/` | Done — [`labsDrivePortfolioDedupFolders.ts`](../src/shared/drive/labsDrivePortfolioDedupFolders.ts)                       |
 | Dual-read / dual-write migration           | **Next PR stack** — see [`stanza-encore-overlay-migration.md`](../design-explorations/stanza-encore-overlay-migration.md) |
-| OAuth BFF / token refresh                  | **Next PR**                                                                                                               |
+| OAuth BFF / token refresh                  | **Done** — ADR 0014; feature-flagged                                                                                      |
 
 ## Upload dedup policy (decision 4)
 

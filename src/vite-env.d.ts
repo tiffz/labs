@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_ALLOWED_EMAIL_HASHES?: string;
   /** Optional label for builds (`staging` | `production`); inject in CI when using env-specific Google clients. */
   readonly VITE_APP_ENV?: string;
+  /** Cloudflare session BFF base URL (ADR 0014). When unset, legacy GIS-only sign-in applies. */
+  readonly VITE_LABS_SESSION_BFF_URL?: string;
 }
 
 // CSS module declarations
