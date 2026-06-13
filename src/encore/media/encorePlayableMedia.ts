@@ -70,7 +70,7 @@ export function encoreMediaPlaybackSupportsSpeed(kind: EncoreMediaPlaybackKind):
 }
 
 export function encoreMediaPlaybackSupportsTranspose(kind: EncoreMediaPlaybackKind): boolean {
-  return kind === 'drive-audio';
+  return kind === 'drive-audio' || kind === 'drive-video';
 }
 
 export function encoreMediaPlaybackSupportsLoop(kind: EncoreMediaPlaybackKind): boolean {

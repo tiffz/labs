@@ -41,6 +41,7 @@ import { OriginalsLibraryScreen as OriginalsLibraryScreenBase } from '../origina
 import { OriginalSongPage as OriginalSongPageBase } from '../originals/components/OriginalSongPage';
 import { EncoreMediaPlaybackBar } from '../components/EncoreMediaPlaybackBar';
 import { EncoreMediaPlaybackYoutubeFloat } from '../components/EncoreMediaPlaybackYoutubeFloat';
+import { EncoreMediaPlaybackDriveVideoFloat } from '../components/EncoreMediaPlaybackDriveVideoFloat';
 
 /** Eager imports: Encore’s main surfaces are one cohesive shell; avoiding `React.lazy` removes Suspense + chunk latency on tab and song navigation for a modest bundle cost. */
 const LibraryScreen = memo(LibraryScreenBase);
@@ -670,6 +671,7 @@ export function EncoreMainShell(): React.ReactElement {
         ) : null}
       </Box>
       <EncoreMediaPlaybackYoutubeFloat />
+      <EncoreMediaPlaybackDriveVideoFloat />
       <EncoreMediaPlaybackBar />
       <SyncConflictReviewDialog
         open={Boolean(conflict?.conflict) && (conflictAnalysis?.bothEdited.length ?? 0) > 0}

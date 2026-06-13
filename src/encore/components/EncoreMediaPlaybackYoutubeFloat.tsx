@@ -23,7 +23,7 @@ export function EncoreMediaPlaybackYoutubeFloat(): ReactElement | null {
   if (!show || !youtubeVideoId) return null;
 
   return (
-    <Box className="encore-media-playback-youtube-float encore-originals-no-print" aria-label="YouTube video">
+    <Box className="encore-media-playback-youtube-float encore-media-playback-video-float encore-originals-no-print" aria-label="YouTube video">
       <LabsYouTubePlayer
         videoId={youtubeVideoId}
         onControllerReady={registerYoutubeController}

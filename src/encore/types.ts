@@ -237,6 +237,15 @@ export interface EncoreSong {
   updatedAt: string;
 }
 
+export interface EncorePerformanceVideo {
+  id: string;
+  videoShortcutDriveFileId?: string;
+  videoTargetDriveFileId?: string;
+  externalVideoUrl?: string;
+  label?: string;
+  createdAt: string;
+}
+
 export interface EncorePerformance {
   id: string;
   songId: string;
@@ -249,6 +258,10 @@ export interface EncorePerformance {
   videoTargetDriveFileId?: string;
   /** External URL if not using Drive */
   externalVideoUrl?: string;
+  /** Multiple videos for the same logged performance. Legacy single-video fields mirror the primary. */
+  videos?: EncorePerformanceVideo[];
+  /** Id of {@link EncorePerformanceVideo} used for list thumbnails and default playback. */
+  primaryVideoId?: string;
   notes?: string;
   /** Multi-select accompaniment chips (e.g. ["Piano", "Self-accompany"]). */
   accompanimentTags?: EncoreAccompanimentTag[];

@@ -21,7 +21,7 @@ Use these patterns when a modal or dense form feels noisy or repetitive. They al
 6. **Terminology.** Match action names to the dialog title (`Log performance` ↔ logging flow) so users are not mapping “Add” vs “Log” mentally.
 7. **Card grids (repertoire).** Prefer a **flat card** with `border: 1` + `encoreHairline` and **no shadow** at rest; lift slightly on hover. **Do not** lump unrelated concepts (tags vs milestones vs performance history) into one tinted `Paper`; that implies a single task. Use **generous vertical spacing** (or a hairline divider) between those regions so each reads as its own idea. Keep **title + artist** as the obvious header.
 
-Reference implementation: `PerformanceEditorDialog.tsx` (intentional single `Paper` for one workflow: video source); `LibraryScreen.tsx` `RepertoireGridCard` (separate vertical sections, no shared group box).
+Reference implementation: [`PERFORMANCE_UX.md`](PERFORMANCE_UX.md) (grouping rules + component map); [`PerformanceEditorDialog.tsx`](components/PerformanceEditorDialog.tsx) + [`PerformanceAddVideosPanel.tsx`](components/performance/PerformanceAddVideosPanel.tsx).
 
 ## Canonical micro-copy
 
@@ -41,8 +41,9 @@ Use the helper in [`ui/EncoreMediaLinkRow.tsx`](ui/EncoreMediaLinkRow.tsx) to ke
 - Reference recording row: `Make primary reference`
 - Backing track row: `Make primary backing`
 - Chart attachment row: `Make primary chart`
+- Performance video row: `Make primary video`
 
-When the row is already the primary, the star button is replaced by a filled star with tooltip `Primary <slot>` (read-only). Don't drift to "Set as primary…", "Mark as default…", or other variants.
+When the row is already the primary, the star button is replaced by a filled star with tooltip `Primary <slot>` (read-only). Don't drift to "Set as primary…", "Mark as default…", or other variants. Performance videos use [`PerformanceVideoPrimaryStar`](components/performance/PerformanceVideoPrimaryStar.tsx) (`Primary video` / `Make primary video`) for icon-only rows and [`PerformanceVideoPrimaryRowAction`](components/performance/PerformanceVideoPrimaryStar.tsx) for editor cards (filled star + `Primary video` vs outline star + `Make primary` in the same action slot).
 
 ### Action labels on media-link rows
 

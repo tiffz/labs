@@ -4979,6 +4979,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-buildpublicdrivealtmediaurl-ts-ispublicdriveguestfetchconfigured",
+    "name": "isPublicDriveGuestFetchConfigured",
+    "path": "src/shared/drive/buildPublicDriveAltMediaUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when the app can attempt a guest snapshot / public Drive JSON read.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-buildpublicdrivealtmediaurl-ts-shouldusepublicdrivesameoriginproxy",
     "name": "shouldUsePublicDriveSameOriginProxy",
     "path": "src/shared/drive/buildPublicDriveAltMediaUrl.ts",
@@ -5809,6 +5822,58 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-resolvevitegoogleapikeyfordev-ts-applydevgoogleapikeyfromgithub",
+    "name": "applyDevGoogleApiKeyFromGitHub",
+    "path": "src/shared/drive/resolveViteGoogleApiKeyForDev.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Set `process.env.VITE_GOOGLE_API_KEY` when missing locally and resolvable (files or GitHub).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-resolvevitegoogleapikeyfordev-ts-fetchgoogleapikeyfromgithubactionsvariable",
+    "name": "fetchGoogleApiKeyFromGitHubActionsVariable",
+    "path": "src/shared/drive/resolveViteGoogleApiKeyForDev.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Read `VITE_GOOGLE_API_KEY` from GitHub Actions variables (repo, then `github-pages` env).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-resolvevitegoogleapikeyfordev-ts-readlabsviteenvfiles",
+    "name": "readLabsViteEnvFiles",
+    "path": "src/shared/drive/resolveViteGoogleApiKeyForDev.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Resolve VITE_GOOGLE_API_KEY for local dev: `.env.local` / `.env.development` first, then GitHub Actions **variables** via `gh` (secrets are write-only and cannot be fetched).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-resolvevitegoogleapikeyfordev-ts-resolvevitegoogleapikeyfordev",
+    "name": "resolveViteGoogleApiKeyForDev",
+    "path": "src/shared/drive/resolveViteGoogleApiKeyForDev.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Resolve VITE_GOOGLE_API_KEY for local dev: `.env.local` / `.env.development` first, then GitHub Actions **variables** via `gh` (secrets are write-only and cannot be fetched).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -6673,6 +6738,49 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "id": "src-shared-hooks-usechartchordplayback-ts-usechartchordplaybackresult",
     "name": "UseChartChordPlaybackResult",
     "path": "src/shared/hooks/useChartChordPlayback.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-hooks-usedragdrophighlight-ts-dragdrophighlighthandlers",
+    "name": "DragDropHighlightHandlers",
+    "path": "src/shared/hooks/useDragDropHighlight.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-hooks-usedragdrophighlight-ts-usedragdrophighlight",
+    "name": "useDragDropHighlight",
+    "path": "src/shared/hooks/useDragDropHighlight.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Depth-counter drag highlight — avoids flicker when crossing child elements. Used by and Encore section drop targets.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-hooks-usedragdrophighlight-ts-usedragdrophighlightoptions",
+    "name": "UseDragDropHighlightOptions",
+    "path": "src/shared/hooks/useDragDropHighlight.ts",
     "kind": "hook",
     "stability": "stable",
     "owner": "shared-core",
@@ -15516,6 +15624,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-session-labsgooglesessionport-ts-labs-google-oauth-broadcast-channel",
+    "name": "LABS_GOOGLE_OAUTH_BROADCAST_CHANNEL",
+    "path": "src/shared/session/labsGoogleSessionPort.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Google session port — BFF (ADR 0014) or legacy GIS fallback (ADR 0010/0011). When `VITE_LABS_SESSION_BFF_URL` is set, refresh and interactive sign-in go through the Cloudflare Worker. GIS `prompt: 'none'` is never used.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
     "demoId": null
   },
   {

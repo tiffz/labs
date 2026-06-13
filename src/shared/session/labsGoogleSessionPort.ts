@@ -17,6 +17,7 @@ import {
 
 export const LABS_GOOGLE_OAUTH_DONE_MESSAGE = 'labs_google_oauth_done' as const;
 export const LABS_GOOGLE_OAUTH_DONE_PATH = '/google-oauth-done.html';
+export const LABS_GOOGLE_OAUTH_BROADCAST_CHANNEL = 'labs_google_oauth';
 
 export type LabsGoogleBffTokenResponse = {
   access_token: string;
@@ -56,6 +57,16 @@ const BFF_SIGN_IN_USER_ABORT_MESSAGES = [
 
 const BFF_OAUTH_POPUP_NAME = 'labs_google_oauth';
 const BFF_OAUTH_POPUP_FEATURES = 'width=520,height=640';
+/** Abandon interactive sign-in if the bridge never posts back (closed popup, COOP, etc.). */
+const BFF_OAUTH_SIGN_IN_TIMEOUT_MS = 3 * 60 * 1000;
+
+function closeOAuthPopupSafely(popup: Window): void {
+  try {
+    if (!popup.closed) popup.close();
+  } catch {
+    /* Cross-origin (Google COOP) — opener cannot close or inspect the popup. */
+  }
+}
 
 function openBffOAuthPopup(): Window {
   // Must run synchronously inside the user click handler — never after `await fetch`.
@@ -166,26 +177,31 @@ export async function signInWithGoogleViaBff(options?: {
     }
     popup.location.href = startBody.authUrl;
   } catch (e) {
-    if (!popup.closed) popup.close();
+    closeOAuthPopupSafely(popup);
     throw e;
   }
 
   return new Promise((resolve, reject) => {
     let settled = false;
     const expectedBffOrigin = bffOrigin();
+    const allowedOrigins = new Set([expectedBffOrigin, returnOrigin]);
+
+    let broadcastChannel: BroadcastChannel | null = null;
 
     const finish = (fn: () => void) => {
       if (settled) return;
       settled = true;
       window.removeEventListener('message', onMessage);
-      clearInterval(closedPoll);
+      window.clearTimeout(signInTimeout);
+      try {
+        broadcastChannel?.close();
+      } catch {
+        /* ignore */
+      }
       fn();
     };
 
-    const onMessage = (event: MessageEvent) => {
-      const allowedOrigins = new Set([expectedBffOrigin, returnOrigin]);
-      if (!allowedOrigins.has(event.origin)) return;
-      const data = event.data as LabsGoogleOAuthDoneMessage | undefined;
+    const handleOAuthDonePayload = (data: LabsGoogleOAuthDoneMessage | undefined) => {
       if (!data || data.type !== LABS_GOOGLE_OAUTH_DONE_MESSAGE) return;
       if (data.error) {
         finish(() => reject(new Error(data.error)));
@@ -215,11 +231,26 @@ export async function signInWithGoogleViaBff(options?: {
       );
     };
 
-    const closedPoll = window.setInterval(() => {
-      if (popup.closed) {
-        finish(() => reject(new Error('Google sign-in closed before finishing. Try again and complete the Google window.')));
-      }
-    }, 400);
+    const onMessage = (event: MessageEvent) => {
+      if (!allowedOrigins.has(event.origin)) return;
+      handleOAuthDonePayload(event.data as LabsGoogleOAuthDoneMessage | undefined);
+    };
+
+    try {
+      broadcastChannel = new BroadcastChannel(LABS_GOOGLE_OAUTH_BROADCAST_CHANNEL);
+      broadcastChannel.onmessage = (event: MessageEvent<LabsGoogleOAuthDoneMessage>) => {
+        handleOAuthDonePayload(event.data);
+      };
+    } catch {
+      broadcastChannel = null;
+    }
+
+    // Do not poll popup.closed — after redirect to Google, COOP makes that noisy and unreliable.
+    const signInTimeout = window.setTimeout(() => {
+      finish(() =>
+        reject(new Error('Google sign-in timed out. Try again and complete the Google window.')),
+      );
+    }, BFF_OAUTH_SIGN_IN_TIMEOUT_MS);
 
     window.addEventListener('message', onMessage);
   });

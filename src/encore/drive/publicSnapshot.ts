@@ -18,8 +18,10 @@ import { fetchPublicDriveJson } from './bootstrapFolders';
 import { PUBLIC_SNAPSHOT_FILE_NAME } from './constants';
 import { driveFileWebUrl } from './driveWebUrls';
 import { encoreDb, getSyncMeta, patchSyncMeta } from '../db/encoreDb';
+import { getPrimaryPerformanceVideo } from '../utils/performanceVideoModel';
 import { orderSnapshotSongsByLatestPerformanceDesc } from './publicSnapshotSort';
 import { isPublicDriveFileMetadataReadable } from '../../shared/drive/fetchPublicDriveMediaBytes';
+import { isPublicDriveGuestFetchConfigured } from '../../shared/drive/buildPublicDriveAltMediaUrl';
 
 export { orderSnapshotSongsByLatestPerformanceDesc } from './publicSnapshotSort';
 
@@ -98,9 +100,11 @@ async function resolvePublicVideoUrl(
   accessToken: string,
   perf: EncorePerformance,
 ): Promise<string | undefined> {
-  const ext = perf.externalVideoUrl?.trim();
+  const primary = getPrimaryPerformanceVideo(perf);
+  if (!primary) return undefined;
+  const ext = primary.externalVideoUrl?.trim();
   if (ext) return ext;
-  const rawIds = [perf.videoTargetDriveFileId?.trim(), perf.videoShortcutDriveFileId?.trim()].filter(
+  const rawIds = [primary.videoTargetDriveFileId?.trim(), primary.videoShortcutDriveFileId?.trim()].filter(
     (x): x is string => Boolean(x?.trim()),
   );
   const uniqueRawIds = [...new Set(rawIds)];
@@ -136,13 +140,14 @@ export async function buildPublicSnapshot(
     performancesOut,
     SNAPSHOT_VIDEO_RESOLVE_POOL,
     async (p) => {
+      const primary = getPrimaryPerformanceVideo(p);
       const videoOpenUrl = await resolvePublicVideoUrl(accessToken, p);
       return {
         id: p.id,
         songId: p.songId,
         date: p.date,
         venueTag: p.venueTag,
-        externalVideoUrl: p.externalVideoUrl,
+        externalVideoUrl: primary?.externalVideoUrl ?? p.externalVideoUrl,
         notes: p.notes,
         videoOpenUrl,
       };
@@ -235,9 +240,15 @@ export async function publishSnapshotToDrive(
   const driveModifiedTime = patchResult.modifiedTime;
 
   const { performances: performancesForCounts } = filterSnapshotSource(songs, performances, publishOptions);
-  const totalVideos = performancesForCounts.filter(
-    (p) => p.externalVideoUrl?.trim() || p.videoTargetDriveFileId?.trim() || p.videoShortcutDriveFileId?.trim(),
-  ).length;
+  const totalVideos = performancesForCounts.filter((p) => {
+    const primary = getPrimaryPerformanceVideo(p);
+    if (!primary) return false;
+    return Boolean(
+      primary.externalVideoUrl?.trim() ||
+        primary.videoTargetDriveFileId?.trim() ||
+        primary.videoShortcutDriveFileId?.trim(),
+    );
+  }).length;
   const publicVideoCount = snap.performances.filter((p) => Boolean(p.videoOpenUrl)).length;
   const privateVideoCount = Math.max(0, totalVideos - publicVideoCount);
 
@@ -248,8 +259,8 @@ export async function publishSnapshotToDrive(
     permissionWarning = e instanceof Error ? e.message : String(e);
   }
 
-  const apiKey = (import.meta.env.VITE_GOOGLE_API_KEY as string | undefined)?.trim();
-  if (!apiKey) {
+  const apiKey = (import.meta.env.VITE_GOOGLE_API_KEY as string | undefined)?.trim() ?? '';
+  if (!isPublicDriveGuestFetchConfigured()) {
     return {
       fileId,
       generatedAt: snap.generatedAt,

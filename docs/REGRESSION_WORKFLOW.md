@@ -14,6 +14,7 @@ This document defines the canonical workflow for screenshot and audio regression
 ### App shell smokes (Playwright)
 
 - Test file: `e2e/smoke/app-shells.spec.ts` (routes from [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts))
+- **`e2e/smoke/encore-performance-routes.spec.ts`** — Encore `#/library` and `#/practice` hash routes + Practice tab navigation (performance list shell wiring)
 - Includes **`/encore/`**, **`/stanza/`**, **`/agility/`** plus all other micro-apps
 - Run: `npm run test:e2e:smoke`
 

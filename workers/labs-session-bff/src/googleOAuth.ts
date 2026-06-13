@@ -99,13 +99,24 @@ async function fetchGoogleUserInfo(accessToken: string): Promise<GoogleUserInfo>
   return (await res.json()) as GoogleUserInfo;
 }
 
+const LABS_GOOGLE_OAUTH_BROADCAST_CHANNEL = 'labs_google_oauth';
+const LABS_GOOGLE_OAUTH_DONE_MESSAGE = 'labs_google_oauth_done';
+
 function popupDoneRedirectUrl(returnOrigin: string, error?: string): string {
   const url = new URL(`${returnOrigin}${LABS_GOOGLE_OAUTH_DONE_PATH}`);
   if (error) url.searchParams.set('error', error);
   return url.toString();
 }
 
+/** Success popup: stay on the worker origin so the session cookie is first-party for token fetch. */
+function popupSuccessRedirectUrl(request: Request, returnOrigin: string): string {
+  const url = new URL('/v1/oauth/google/popup-done', request.url);
+  url.searchParams.set('return_origin', returnOrigin);
+  return url.toString();
+}
+
 function popupDoneResponse(input: {
+  request: Request;
   returnOrigin: string;
   popup: boolean;
   cookie?: string;
@@ -117,7 +128,10 @@ function popupDoneResponse(input: {
   if (input.cookie) headers.append('Set-Cookie', input.cookie);
 
   if (input.popup) {
-    headers.set('Location', popupDoneRedirectUrl(input.returnOrigin, input.error));
+    const location = input.error
+      ? popupDoneRedirectUrl(input.returnOrigin, input.error)
+      : popupSuccessRedirectUrl(input.request, input.returnOrigin);
+    headers.set('Location', location);
     return new Response(null, { status: 302, headers });
   }
 
@@ -188,6 +202,7 @@ export async function handleGoogleOAuthCallback(request: Request, env: Env): Pro
 
   if (oauthError || !code) {
     return popupDoneResponse({
+      request,
       returnOrigin: stateRecord.returnOrigin,
       popup: stateRecord.popup,
       error: oauthError ?? 'Sign-in was cancelled.',
@@ -204,6 +219,7 @@ export async function handleGoogleOAuthCallback(request: Request, env: Env): Pro
 
   if (!token.access_token) {
     return popupDoneResponse({
+      request,
       returnOrigin: stateRecord.returnOrigin,
       popup: stateRecord.popup,
       error: token.error_description ?? token.error ?? 'Token exchange failed.',
@@ -213,6 +229,7 @@ export async function handleGoogleOAuthCallback(request: Request, env: Env): Pro
   const profile = await fetchGoogleUserInfo(token.access_token);
   if (!profile.sub || !profile.email) {
     return popupDoneResponse({
+      request,
       returnOrigin: stateRecord.returnOrigin,
       popup: stateRecord.popup,
       error: 'Google profile missing required fields.',
@@ -221,6 +238,7 @@ export async function handleGoogleOAuthCallback(request: Request, env: Env): Pro
 
   if (!token.refresh_token) {
     return popupDoneResponse({
+      request,
       returnOrigin: stateRecord.returnOrigin,
       popup: stateRecord.popup,
       error:
@@ -239,9 +257,78 @@ export async function handleGoogleOAuthCallback(request: Request, env: Env): Pro
   const cookie = await buildSessionCookie(sessionId, profile.sub, env.SESSION_SIGNING_KEY);
 
   return popupDoneResponse({
+    request,
     returnOrigin: stateRecord.returnOrigin,
     popup: stateRecord.popup,
     cookie,
+  });
+}
+
+/** Popup bridge on the worker origin — fetches access token with first-party cookie, then notifies opener. */
+export async function handleGoogleOAuthPopupDone(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  const returnOrigin = url.searchParams.get('return_origin')?.trim() ?? '';
+  if (!returnOrigin || !isAllowedReturnOrigin(returnOrigin, env)) {
+    return new Response('Invalid return_origin.', { status: 400 });
+  }
+
+  const safeReturnOrigin = JSON.stringify(returnOrigin);
+  const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8" /><title>Signing in…</title></head><body>
+<script>
+(function () {
+  var returnOrigin = ${safeReturnOrigin};
+  var MESSAGE_TYPE = ${JSON.stringify(LABS_GOOGLE_OAUTH_DONE_MESSAGE)};
+  var CHANNEL = ${JSON.stringify(LABS_GOOGLE_OAUTH_BROADCAST_CHANNEL)};
+
+  function notify(payload) {
+    if (window.opener && !window.opener.closed) {
+      try { window.opener.postMessage(payload, returnOrigin); } catch (e) { /* ignore */ }
+    }
+    try {
+      var bc = new BroadcastChannel(CHANNEL);
+      bc.postMessage(payload);
+      bc.close();
+    } catch (e) { /* ignore */ }
+  }
+
+  fetch('/v1/session/google/access-token', { credentials: 'include' })
+    .then(function (res) {
+      return res.json().then(function (body) { return { ok: res.ok, body: body }; });
+    })
+    .then(function (result) {
+      if (!result.ok || !result.body || !result.body.access_token) {
+        notify({
+          type: MESSAGE_TYPE,
+          error: (result.body && result.body.error) || 'Session refresh failed after sign-in.',
+        });
+        document.body.textContent = 'Sign-in failed.';
+        return;
+      }
+      notify({
+        type: MESSAGE_TYPE,
+        access_token: result.body.access_token,
+        expires_in: result.body.expires_in,
+        email: result.body.email,
+        display_name: result.body.display_name,
+      });
+      document.body.textContent = 'Finishing sign-in…';
+      window.setTimeout(function () { window.close(); }, 200);
+    })
+    .catch(function () {
+      notify({ type: MESSAGE_TYPE, error: 'Session refresh failed after sign-in.' });
+      document.body.textContent = 'Sign-in failed.';
+    });
+})();
+</script>
+</body></html>`;
+
+  return new Response(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    },
   });
 }
 

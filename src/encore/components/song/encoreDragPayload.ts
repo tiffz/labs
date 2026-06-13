@@ -1,4 +1,6 @@
 import { inferMediaMimeType } from '../../../shared/drive/inferMediaMimeType';
+import { fileMatchesAccept } from '../../../shared/utils/fileMatchesAccept';
+import { PERF_LOCAL_VIDEO_ACCEPT } from '../../utils/performanceVideoAccept';
 import type { SongMediaUploadSlot } from './songMediaUploadSlot';
 
 const ALL_SLOTS: SongMediaUploadSlot[] = ['listen', 'play', 'charts', 'takes', 'misc'];
@@ -59,7 +61,40 @@ export function hasPotentialUrlPayload(dt: DataTransfer | null): boolean {
   return false;
 }
 
-export function eligibleSlotsForDragDataTransfer(dt: DataTransfer | null): Set<SongMediaUploadSlot> | null {
+export function dragPayloadRelevantToMediaHub(dt: DataTransfer | null): boolean {
+  return Boolean(dt?.types?.includes('Files')) || hasPotentialUrlPayload(dt);
+}
+
+export function dataTransferHasPerformanceVideoFile(dt: DataTransfer | null): boolean {
+  if (!dt?.types.includes('Files')) return false;
+  const files = dt.files;
+  if (files && files.length > 0) {
+    return Array.from(files).some((f) => fileMatchesAccept(f, PERF_LOCAL_VIDEO_ACCEPT));
+  }
+  for (const item of Array.from(dt.items ?? [])) {
+    if (item.kind !== 'file') continue;
+    if (!item.type) return true;
+    if (item.type.startsWith('video/')) return true;
+  }
+  return false;
+}
+
+/** When true, file drag should route to performance logging — not practice resource slots. */
+export function isPerformanceVideoFileDrag(dt: DataTransfer | null): boolean {
+  return dataTransferHasPerformanceVideoFile(dt);
+}
+
+export function eligibleSlotsForDragDataTransfer(
+  dt: DataTransfer | null,
+  options?: { performanceSurfaceActive?: boolean },
+): Set<SongMediaUploadSlot> | null {
+  if (options?.performanceSurfaceActive && isPerformanceVideoFileDrag(dt)) {
+    return null;
+  }
+  return eligibleSlotsForDragDataTransferInner(dt);
+}
+
+function eligibleSlotsForDragDataTransferInner(dt: DataTransfer | null): Set<SongMediaUploadSlot> | null {
   if (!dt) return null;
   if (dt.types.includes('Files')) {
     const { files } = dt;
@@ -83,8 +118,4 @@ export function eligibleSlotsForDragDataTransfer(dt: DataTransfer | null): Set<S
     return eligibleSlotsForUrlDrop();
   }
   return null;
-}
-
-export function dragPayloadRelevantToMediaHub(dt: DataTransfer | null): boolean {
-  return Boolean(dt?.types?.includes('Files')) || hasPotentialUrlPayload(dt);
 }

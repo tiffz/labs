@@ -16,8 +16,16 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchPublicDriveJson } from '../drive/bootstrapFolders';
+import {
+  guestSnapshotErrorKindFromUnknown,
+  guestSnapshotErrorMessage,
+  shouldShowGuestSnapshotDevSetup,
+  type GuestSnapshotErrorKind,
+} from '../drive/guestSnapshotLoadError';
 import type { PublicSnapshot } from '../types';
 import { orderSnapshotSongsByLatestPerformanceDesc } from '../drive/publicSnapshotSort';
+import { isPublicDriveGuestFetchConfigured } from '../../shared/drive/buildPublicDriveAltMediaUrl';
+import { GuestSnapshotDevSetupPanel } from './guest/GuestSnapshotDevSetupPanel';
 import { encoreNoAlbumArtIconSx, encoreNoAlbumArtSurfaceSx } from '../utils/encoreNoAlbumArtSurface';
 import {
   encorePageKickerSx,
@@ -47,6 +55,7 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
   const theme = useTheme();
   const [state, setState] = useState<'loading' | 'error' | 'ready'>('loading');
   const [message, setMessage] = useState<string | null>(null);
+  const [errorKind, setErrorKind] = useState<GuestSnapshotErrorKind | 'generic' | null>(null);
   const [snap, setSnap] = useState<PublicSnapshot | null>(null);
   const [attempt, setAttempt] = useState(0);
 
@@ -144,21 +153,24 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
   }, [snap]);
 
   useEffect(() => {
-    const key = (import.meta.env.VITE_GOOGLE_API_KEY as string | undefined)?.trim();
-    if (!key) {
+    if (!isPublicDriveGuestFetchConfigured()) {
       setState('error');
-      setMessage('This site is not configured to open shared snapshots.');
+      setErrorKind(import.meta.env.DEV ? 'dev_missing_api_key' : 'not_configured');
+      setMessage(guestSnapshotErrorMessage(import.meta.env.DEV ? 'dev_missing_api_key' : 'not_configured'));
       return;
     }
+    const key = (import.meta.env.VITE_GOOGLE_API_KEY as string | undefined)?.trim() ?? '';
     let cancelled = false;
     setState('loading');
     setMessage(null);
+    setErrorKind(null);
     void (async () => {
       try {
         const data = await fetchPublicDriveJson(fileId, key);
         if (cancelled) return;
         if (!isPublicSnapshot(data)) {
           setState('error');
+          setErrorKind('generic');
           setMessage('This snapshot file is not in a format Encore recognizes.');
           return;
         }
@@ -167,7 +179,13 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
       } catch (e) {
         if (cancelled) return;
         setState('error');
-        setMessage(e instanceof Error ? e.message : String(e));
+        const kind = guestSnapshotErrorKindFromUnknown(e);
+        setErrorKind(kind);
+        if (kind === 'generic') {
+          setMessage(e instanceof Error ? e.message : String(e));
+        } else {
+          setMessage(guestSnapshotErrorMessage(kind));
+        }
       }
     })();
     return () => {
@@ -184,6 +202,7 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
   }
 
   if (state === 'error' || !snap) {
+    const showDevSetup = shouldShowGuestSnapshotDevSetup(errorKind);
     return (
       <Box className="encore-app-shell" sx={{ minHeight: '100dvh' }}>
         <Container maxWidth="sm" sx={{ py: { xs: 6, sm: 8 } }}>
@@ -193,10 +212,19 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
           <Typography variant="h5" component="h1" sx={{ ...encorePageTitleSx, mb: 1 }}>
             Couldn’t open this snapshot
           </Typography>
-          <Typography color="text.secondary" sx={{ lineHeight: 1.6, mb: 1 }}>
-            {message ?? 'The link may have expired or been removed.'}
-          </Typography>
-          <Typography color="text.secondary" sx={{ lineHeight: 1.6, mb: 3 }}>
+          {showDevSetup ? (
+            <>
+              <Typography color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                {message ?? guestSnapshotErrorMessage('dev_missing_api_key')}
+              </Typography>
+              <GuestSnapshotDevSetupPanel />
+            </>
+          ) : (
+            <Typography color="text.secondary" sx={{ lineHeight: 1.6, mb: 1 }}>
+              {message ?? 'The link may have expired or been removed.'}
+            </Typography>
+          )}
+          <Typography color="text.secondary" sx={{ lineHeight: 1.6, mb: 3, mt: showDevSetup ? 0 : undefined }}>
             If this keeps happening, ask the owner to publish the snapshot again from Encore. The link does not change.
           </Typography>
           <Button variant="outlined" startIcon={<RefreshIcon />} onClick={retry}>

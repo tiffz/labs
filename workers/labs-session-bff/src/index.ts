@@ -2,6 +2,7 @@ import type { Env } from './constants';
 import {
   handleGoogleAccessToken,
   handleGoogleOAuthCallback,
+  handleGoogleOAuthPopupDone,
   handleGoogleOAuthStart,
   handleGoogleSignOut,
   handleOptions,
@@ -28,6 +29,10 @@ export default {
 
       if (url.pathname === '/v1/oauth/google/callback' && request.method === 'GET') {
         return handleGoogleOAuthCallback(request, env);
+      }
+
+      if (url.pathname === '/v1/oauth/google/popup-done' && request.method === 'GET') {
+        return handleGoogleOAuthPopupDone(request, env);
       }
 
       if (url.pathname === '/v1/session/google/access-token' && request.method === 'GET') {

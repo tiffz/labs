@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { EncorePerformance } from '../types';
-import { performanceVideoOpenUrl } from './performanceVideoUrl';
+import { performanceVideoOpenLabel, performanceVideoOpenUrl } from './performanceVideoUrl';
 
 function perf(p: Partial<EncorePerformance>): EncorePerformance {
   const now = new Date().toISOString();
@@ -31,5 +31,21 @@ describe('performanceVideoOpenUrl', () => {
 
   it('returns null when no video fields', () => {
     expect(performanceVideoOpenUrl(perf({}))).toBeNull();
+  });
+});
+
+describe('performanceVideoOpenLabel', () => {
+  it('labels YouTube links', () => {
+    expect(
+      performanceVideoOpenLabel(perf({ externalVideoUrl: 'https://youtu.be/dQw4w9WgXcQ' })),
+    ).toBe('Open in YouTube');
+  });
+
+  it('labels Drive files', () => {
+    expect(performanceVideoOpenLabel(perf({ videoTargetDriveFileId: 'abc123XYZ' }))).toBe('Open in Drive');
+  });
+
+  it('returns null when no video fields', () => {
+    expect(performanceVideoOpenLabel(perf({}))).toBeNull();
   });
 });

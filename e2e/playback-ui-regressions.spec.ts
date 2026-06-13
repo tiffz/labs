@@ -1,15 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
+import { enterEncoreApp } from './helpers/enterEncoreApp';
 
 const ENCORE_CHORD_PLAYBACK_SETTINGS_KEY = 'encore-originals-chord-playback-settings';
-
-async function enterEncoreApp(page: Page): Promise<void> {
-  await page.goto('/encore/');
-  await page.waitForSelector('#root', { state: 'attached' });
-  const continueLocal = page.getByRole('button', { name: 'Continue without Google' });
-  if (await continueLocal.isVisible().catch(() => false)) {
-    await continueLocal.click();
-  }
-}
 
 async function seedEncoreOriginalWithChords(page: Page): Promise<void> {
   await enterEncoreApp(page);

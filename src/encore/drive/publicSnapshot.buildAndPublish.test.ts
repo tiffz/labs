@@ -179,6 +179,26 @@ describe('buildPublicSnapshot', () => {
     expect(snap.performances[0]!.videoOpenUrl).toBeUndefined();
   });
 
+  it('uses the primary video from a multi-video stack (ignores secondary clip URLs)', async () => {
+    const songs = [song({ id: 's1', title: 'Performed', artist: 'A' })];
+    const performances = [
+      perf({
+        id: 'p1',
+        songId: 's1',
+        videos: [
+          { id: 'v1', videoTargetDriveFileId: 'primaryDrive' },
+          { id: 'v2', externalVideoUrl: 'https://youtu.be/secondary' },
+        ],
+        primaryVideoId: 'v1',
+        externalVideoUrl: 'https://youtu.be/secondary',
+      }),
+    ];
+    (driveFileHasAnyoneReader as any).mockResolvedValueOnce(true);
+    const snap = await buildPublicSnapshot('tok', songs, performances, undefined);
+    expect(snap.performances[0]!.videoOpenUrl).toContain('primaryDrive');
+    expect(snap.performances[0]!.videoOpenUrl).not.toContain('secondary');
+  });
+
   it('falls back to the shortcut id when the target id cannot be resolved but the shortcut can', async () => {
     const songs = [song({ id: 's1', title: 'Performed', artist: 'A' })];
     const performances = [

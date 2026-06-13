@@ -51,7 +51,7 @@ describe('encorePlayableMedia', () => {
     expect(encoreMediaPlaybackSupportsSpeed('youtube')).toBe(true);
     expect(encoreMediaPlaybackSupportsSpeed('spotify')).toBe(false);
     expect(encoreMediaPlaybackSupportsTranspose('drive-audio')).toBe(true);
-    expect(encoreMediaPlaybackSupportsTranspose('drive-video')).toBe(false);
+    expect(encoreMediaPlaybackSupportsTranspose('drive-video')).toBe(true);
     expect(encoreMediaPlaybackSupportsLoop('spotify')).toBe(false);
   });
 });
