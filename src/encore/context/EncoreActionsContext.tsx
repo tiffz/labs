@@ -14,6 +14,10 @@ import { defaultRepertoireExtrasRow } from '../drive/repertoireWire';
 import { publishSnapshotToDrive, type BuildPublicSnapshotOptions } from '../drive/publicSnapshot';
 import { reorganizeAllDriveUploads, type ReorganizeDriveUploadsResult } from '../drive/driveReorganize';
 import { syncPerformanceVideo, syncPerformanceVideoFileName } from '../drive/performanceShortcut';
+import {
+  normalizeEncorePerformance,
+  syncPerformanceLegacyVideoFields,
+} from '../utils/performanceVideoModel';
 import { installServerLogger } from '../../shared/utils/serverLogger';
 import { useEncoreAuth } from './EncoreAuthContext';
 import { useEncoreLibraryExtras } from './EncoreLibraryContext';
@@ -188,54 +192,88 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
 
   const savePerformance = useCallback(
     async (p: EncorePerformance, options?: { silentUndo?: boolean }) => {
-      const previous = await encoreDb.performances.get(p.id);
+      const toSave = syncPerformanceLegacyVideoFields(normalizeEncorePerformance(p));
+      const previous = await encoreDb.performances.get(toSave.id);
       const willPushUndo = !isReplayingRef.current && !options?.silentUndo;
       const prevSnap = willPushUndo && previous ? cloneRow(previous) : undefined;
-      const nextSnap = willPushUndo ? cloneRow(p) : undefined;
-      await encoreDb.performances.put(p);
-      await markDirtyRow('performance', p.id, 'upsert');
+      const nextSnap = willPushUndo ? cloneRow(toSave) : undefined;
+      await encoreDb.performances.put(toSave);
+      await markDirtyRow('performance', toSave.id, 'upsert');
       scheduleBackgroundSync();
       if (willPushUndo && nextSnap) {
         pushUndo({
           undo: async () => {
             if (prevSnap) {
               await encoreDb.performances.put(prevSnap);
-              await markDirtyRow('performance', p.id, 'upsert');
+              await markDirtyRow('performance', toSave.id, 'upsert');
             } else {
-              await encoreDb.performances.delete(p.id);
-              await markDirtyRow('performance', p.id, 'delete');
+              await encoreDb.performances.delete(toSave.id);
+              await markDirtyRow('performance', toSave.id, 'delete');
             }
             scheduleBackgroundSync();
           },
           redo: async () => {
             await encoreDb.performances.put(nextSnap);
-            await markDirtyRow('performance', p.id, 'upsert');
+            await markDirtyRow('performance', toSave.id, 'upsert');
             scheduleBackgroundSync();
           },
         });
       }
-      if (googleAccessToken && p.videoTargetDriveFileId) {
-        void (async () => {
-          try {
-            const song = (await encoreDb.songs.get(p.songId)) ?? null;
-            const result = await syncPerformanceVideo(
-              googleAccessToken,
-              p,
-              song,
-              driveUploadFolderOverridesRef.current,
-            );
-            if (result.shortcutCreatedId && result.shortcutCreatedId !== p.videoShortcutDriveFileId) {
-              await encoreDb.performances.put({
-                ...p,
-                videoShortcutDriveFileId: result.shortcutCreatedId,
-                updatedAt: new Date().toISOString(),
-              });
-              scheduleBackgroundSync();
+      if (googleAccessToken) {
+        const videos = toSave.videos ?? [];
+        const entries =
+          videos.length > 0
+            ? videos
+            : toSave.videoTargetDriveFileId
+              ? [
+                  {
+                    id: toSave.primaryVideoId ?? toSave.id,
+                    videoTargetDriveFileId: toSave.videoTargetDriveFileId,
+                    videoShortcutDriveFileId: toSave.videoShortcutDriveFileId,
+                  },
+                ]
+              : [];
+        if (entries.length > 0) {
+          void (async () => {
+            try {
+              const song = (await encoreDb.songs.get(toSave.songId)) ?? null;
+              let updatedVideos = [...videos];
+              let shortcutChanged = false;
+              for (const video of entries) {
+                if (!video.videoTargetDriveFileId?.trim()) continue;
+                const pseudo: EncorePerformance = {
+                  ...toSave,
+                  videoTargetDriveFileId: video.videoTargetDriveFileId,
+                  videoShortcutDriveFileId: video.videoShortcutDriveFileId,
+                };
+                const result = await syncPerformanceVideo(
+                  googleAccessToken,
+                  pseudo,
+                  song,
+                  driveUploadFolderOverridesRef.current,
+                );
+                if (result.shortcutCreatedId && result.shortcutCreatedId !== video.videoShortcutDriveFileId) {
+                  shortcutChanged = true;
+                  if (updatedVideos.length > 0) {
+                    updatedVideos = updatedVideos.map((v) =>
+                      v.id === video.id ? { ...v, videoShortcutDriveFileId: result.shortcutCreatedId } : v,
+                    );
+                  }
+                }
+              }
+              if (shortcutChanged) {
+                const merged = syncPerformanceLegacyVideoFields({
+                  ...toSave,
+                  videos: updatedVideos.length > 0 ? updatedVideos : toSave.videos,
+                });
+                await encoreDb.performances.put(merged);
+                scheduleBackgroundSync();
+              }
+            } catch (err) {
+              serverLogger.warn('encore.savePerformance: video shortcut sync failed', err);
             }
-          } catch (err) {
-            serverLogger.warn('encore.savePerformance: video shortcut sync failed', err);
-          }
-        })();
+          })();
+        }
       }
     },
     [googleAccessToken, isReplayingRef, pushUndo, scheduleBackgroundSync],

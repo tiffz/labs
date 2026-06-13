@@ -34,10 +34,16 @@ import {
 import { parseSpotifyPlaylistId } from '../spotify/parseSpotifyPlaylistUrl';
 import { spotifyGrantedScopesSufficientForPlaylistModify } from '../spotify/spotifyScopes';
 import type { SpotifyPlaylistTrackRow } from '../spotify/spotifyApi';
-import type { EncoreSong } from '../types';
+import type { EncorePerformance, EncoreSong } from '../types';
+import { PerformanceEditorDialog } from './PerformanceEditorDialog';
+import { SongPerformancesCompactPanel } from './song/SongPerformancesCompactPanel';
+import { getEncoreDropSurface, shouldEncoreMediaHubHighlightDrag } from './song/encoreDropSurface';
+import { usePerformanceSectionDrop } from './song/usePerformanceSectionDrop';
 import { AddToPracticeDialog } from './AddToPracticeDialog';
 import {
   encoreMaxWidthPage,
+  encorePerformanceDropHintSx,
+  encorePerformanceSectionDropSx,
   encoreRadius,
   encoreShadowSurface,
 } from '../theme/encoreUiTokens';
@@ -63,6 +69,7 @@ import {
 } from './song/encoreDragPayload';
 import { applyMediaUrlToSongSlot, extractFirstUrlFromDataTransfer } from './song/songMediaUrlDrop';
 import { PracticeExercisesSection } from './practice/PracticeExercisesSection';
+import { setPrimaryPerformanceVideo } from '../utils/performanceVideoModel';
 
 const LEARNING_PLAYLIST_HELP_CONTENT = (
   <Box sx={{ maxWidth: 300, py: 0.25 }}>
@@ -96,6 +103,9 @@ export function PracticeScreen({
     songs,
     songsHydrated,
     saveSong,
+    savePerformance,
+    deletePerformance,
+    performances,
     repertoireExtras,
     saveRepertoireExtras,
     spotifyLinked,
@@ -129,6 +139,11 @@ export function PracticeScreen({
   const [importSuggestions, setImportSuggestions] = useState<EncorePlaylistImportSuggestRow[] | null>(null);
   const [focusedSongId, setFocusedSongId] = useState<string | null>(null);
   const [addToPracticeOpen, setAddToPracticeOpen] = useState(false);
+  const [perfOpen, setPerfOpen] = useState(false);
+  const [perfEditing, setPerfEditing] = useState<EncorePerformance | null>(null);
+  const [pendingPerfDropFile, setPendingPerfDropFile] = useState<File | null>(null);
+  const [perfAddVideoMode, setPerfAddVideoMode] = useState(false);
+  const [perfVenueFilter, setPerfVenueFilter] = useState<string | null>(null);
 
   useEffect(() => {
     if (!practiceHashActive) return;
@@ -153,6 +168,75 @@ export function PracticeScreen({
     () => (effectiveFocusId ? practicingSongs.find((x) => x.id === effectiveFocusId) ?? null : null),
     [effectiveFocusId, practicingSongs],
   );
+
+  const venueOptions = useMemo(() => {
+    const s = new Set<string>();
+    for (const v of repertoireExtras.venueCatalog) {
+      const t = v.trim();
+      if (t) s.add(t);
+    }
+    for (const p of performances) {
+      const t = p.venueTag.trim();
+      if (t) s.add(t);
+    }
+    return [...s];
+  }, [repertoireExtras.venueCatalog, performances]);
+
+  const panelSongPerformances = useMemo(() => {
+    if (!panelSong) return [];
+    return performances
+      .filter((p) => p.songId === panelSong.id)
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [panelSong, performances]);
+
+  const panelPerformanceVenueBreakdown = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of panelSongPerformances) {
+      const v = p.venueTag.trim() || 'Venue';
+      m.set(v, (m.get(v) ?? 0) + 1);
+    }
+    return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [panelSongPerformances]);
+
+  const filteredPanelPerformances = useMemo(() => {
+    if (!perfVenueFilter) return panelSongPerformances;
+    return panelSongPerformances.filter((p) => (p.venueTag.trim() || 'Venue') === perfVenueFilter);
+  }, [panelSongPerformances, perfVenueFilter]);
+
+  const openPerformanceEditor = useCallback(
+    (opts: { performance?: EncorePerformance | null; file?: File | null; addVideo?: boolean }) => {
+      setPerfEditing(opts.performance ?? null);
+      setPerfAddVideoMode(Boolean(opts.addVideo));
+      setPendingPerfDropFile(opts.file ?? null);
+      setPerfOpen(true);
+    },
+    [],
+  );
+
+  const closePerformanceEditor = useCallback(() => {
+    setPerfOpen(false);
+    setPerfEditing(null);
+    setPendingPerfDropFile(null);
+    setPerfAddVideoMode(false);
+  }, []);
+
+  const setPerformancePrimaryVideo = useCallback(
+    (performance: EncorePerformance, videoId: string) => {
+      void savePerformance(setPrimaryPerformanceVideo(performance, videoId));
+    },
+    [savePerformance],
+  );
+
+  const perfSectionDropEnabled = Boolean(panelSong && googleAccessToken && !perfOpen);
+  const {
+    dragActive: perfSectionDragOver,
+    sectionHandlers: perfSectionHandlers,
+  } = usePerformanceSectionDrop({
+    enabled: perfSectionDropEnabled,
+    onDropVideo: (file) => {
+      if (panelSong) openPerformanceEditor({ file });
+    },
+  });
 
   const [journalLocalBySongId, setJournalLocalBySongId] = useState<Record<string, string>>({});
   const [practiceMediaDraft, setPracticeMediaDraft] = useState<EncoreSong | null>(null);
@@ -321,15 +405,22 @@ export function PracticeScreen({
       return;
     }
     const onEnter = (e: DragEvent) => {
+      if (perfOpen) return;
+      if (!shouldEncoreMediaHubHighlightDrag()) return;
       if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
       e.preventDefault();
       practiceFileDragDepthRef.current += 1;
       setPracticeFileDragActive(true);
-      setPracticeMediaDragEligibleSlots(eligibleSlotsForDragDataTransfer(e.dataTransfer));
+      setPracticeMediaDragEligibleSlots(
+        eligibleSlotsForDragDataTransfer(e.dataTransfer, {
+          performanceSurfaceActive: getEncoreDropSurface() === 'performance',
+        }),
+      );
     };
     const onLeave = (e: DragEvent) => {
+      if (perfOpen) return;
+      if (!shouldEncoreMediaHubHighlightDrag()) return;
       if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
-      e.preventDefault();
       practiceFileDragDepthRef.current = Math.max(0, practiceFileDragDepthRef.current - 1);
       if (practiceFileDragDepthRef.current === 0) {
         setPracticeFileDragActive(false);
@@ -348,6 +439,7 @@ export function PracticeScreen({
       onEnd();
     };
     const onDragOver = (e: DragEvent) => {
+      if (perfOpen || !shouldEncoreMediaHubHighlightDrag()) return;
       if (dragPayloadRelevantToMediaHub(e.dataTransfer)) {
         e.preventDefault();
         e.dataTransfer!.dropEffect = 'copy';
@@ -365,7 +457,7 @@ export function PracticeScreen({
       document.removeEventListener('drop', onDrop, true);
       document.removeEventListener('dragover', onDragOver);
     };
-  }, [practiceMediaDraft]);
+  }, [practiceMediaDraft, perfOpen]);
 
   const onPracticeMediaSlotDragOver = useCallback(
     (slot: SongMediaUploadSlot, e: ReactDragEvent<HTMLElement>) => {
@@ -917,6 +1009,68 @@ export function PracticeScreen({
                     />
                   </Box>
 
+                  <Box
+                    component="section"
+                    aria-labelledby="encore-practice-performances-heading"
+                    onDragEnter={perfSectionHandlers.onDragEnter}
+                    onDragOver={perfSectionHandlers.onDragOver}
+                    onDragLeave={perfSectionHandlers.onDragLeave}
+                    onDrop={perfSectionHandlers.onDrop}
+                    sx={(theme) => ({
+                      position: 'relative',
+                      ...encorePerformanceSectionDropSx(theme, perfSectionDragOver),
+                    })}
+                  >
+                    <Typography
+                      id="encore-practice-performances-heading"
+                      component="h2"
+                      variant="subtitle2"
+                      sx={{
+                        fontWeight: 800,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        color: 'text.secondary',
+                        mb: 0.75,
+                      }}
+                    >
+                      Performances
+                    </Typography>
+                    <SongPerformancesCompactPanel
+                      performances={panelSongPerformances}
+                      filteredPerformances={filteredPanelPerformances}
+                      venueBreakdown={panelPerformanceVenueBreakdown}
+                      venueFilter={perfVenueFilter}
+                      songTitle={s.title}
+                      googleAccessToken={googleAccessToken}
+                      onSelectVenueFilter={setPerfVenueFilter}
+                      onAddPerformance={() => openPerformanceEditor({})}
+                      onEditPerformance={(p) => openPerformanceEditor({ performance: p })}
+                      onAddVideoToPerformance={(p, file) =>
+                        openPerformanceEditor({ performance: p, file, addVideo: true })
+                      }
+                      onSetPrimaryVideo={setPerformancePrimaryVideo}
+                    />
+                    {perfSectionDragOver ? (
+                      <Box
+                        aria-hidden
+                        sx={{
+                          position: 'absolute',
+                          inset: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          pointerEvents: 'none',
+                          borderRadius: 1,
+                          zIndex: 1,
+                        }}
+                      >
+                        <Typography variant="caption" sx={(theme) => encorePerformanceDropHintSx(theme)}>
+                          Drop to log a new performance
+                        </Typography>
+                      </Box>
+                    ) : null}
+                  </Box>
+
                   <PracticeExercisesSection
                     song={exerciseBase}
                     onPersistSong={persistPracticeSongBundle}
@@ -998,6 +1152,29 @@ export function PracticeScreen({
         onClose={() => setAddToPracticeOpen(false)}
         onAdded={handleSongAddedToPractice}
       />
+
+      {panelSong ? (
+        <PerformanceEditorDialog
+          open={perfOpen}
+          performance={perfEditing}
+          songId={panelSong.id}
+          googleAccessToken={googleAccessToken}
+          venueOptions={venueOptions}
+          initialLocalVideoFile={pendingPerfDropFile}
+          addVideoMode={perfAddVideoMode}
+          onClose={closePerformanceEditor}
+          onSave={async (p) => {
+            await savePerformance(p);
+          }}
+          onDelete={
+            perfEditing
+              ? async (id) => {
+                  await deletePerformance(id);
+                }
+              : undefined
+          }
+        />
+      ) : null}
     </Box>
   );
 }

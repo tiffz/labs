@@ -60,7 +60,9 @@ Shared defaults (including `VITE_GOOGLE_CLIENT_ID`) live in the committed **deve
 | `VITE_GOOGLE_PICKER_ORIGIN`      | Optional. **`protocol//host[:port]`** passed to Picker `setOrigin`. Use when Encore is embedded in a **cross-origin** iframe (parent origin cannot be read). Top-level Encore omits `setOrigin` (matches Google’s sample).                                                 |
 | `VITE_ENCORE_SHARDED_SYNC`       | Optional. Set to `1` / `true` to opt in to the per-row sharded Drive layout (Phase 5 of the perf overhaul). When on, background sync pushes only changed rows + a small manifest. The legacy monolithic push still runs as a safety net. Off by default.                   |
 
-**GitHub Pages (CI):** Production builds use the **`VITE_GOOGLE_API_KEY` repository secret** (or the same name on the **`github-pages` environment**). GitHub Actions injects it at build time for `.github/workflows/ci.yml`; it is not read from committed `src/.env.production`. Local dev still uses `src/.env.local` or uncommented vars in `src/.env.development`.
+**GitHub Pages (CI):** Production builds use the **`VITE_GOOGLE_API_KEY` repository secret** (or the same name on the **`github-pages` environment**). GitHub Actions injects it at build time for `.github/workflows/ci.yml`; it is not read from committed `src/.env.production`.
+
+**Local dev without `.env.local`:** If `VITE_GOOGLE_API_KEY` is missing from your env files, `npm run dev` tries to load the same value from a GitHub Actions **variable** via the [`gh`](https://cli.github.com/) CLI (`gh variable get VITE_GOOGLE_API_KEY`, then the `github-pages` environment). **Secrets cannot be read back from GitHub** — mirror the key once as a repo or environment **variable** (Settings → Secrets and variables → Actions → Variables). `.env.local` still overrides when present.
 
 ### Allowlist workflow
 
@@ -97,6 +99,8 @@ Create this in **Google Cloud Console → APIs & Services → Credentials → Cr
      Missing **`127.0.0.1`** in the key’s referrer list is the usual cause of Google’s **“There was an error! The API developer key is invalid.”** in local development.
 2. **API restrictions:** restrict the key and allow **Google Drive API** and **Google Picker API** (enable both APIs under **APIs & Services → Library** in the same project first). The Picker UI calls the Picker API; omission is a common cause of **“The API developer key is invalid.”** when clicking **Browse Drive**.
 3. Put the key in **`src/.env.local`** as `VITE_GOOGLE_API_KEY=…`, then **restart** `npm run dev` so Vite picks it up. **Do not** put this key in committed `src/.env.development`; that file is shared in git, while `.env.local` stays on your machine only.
+
+   **Or** skip the local file: add a GitHub Actions **variable** named `VITE_GOOGLE_API_KEY` (same value as the CI secret), run `gh auth login`, then `npm run dev` will pull it automatically. Secrets alone are not enough — GitHub does not expose secret values to `gh`.
 
 **Local dev + guest snapshot reads:** Browsers load `public_snapshot.json` via the Drive API using this key. Referrer-restricted keys often make **direct** `googleapis.com` requests fail CORS on `http://127.0.0.1:…` even when the key is valid. With `npm run dev`, Encore uses a **same-origin Vite proxy** for those reads so publish checks and the guest view work without relaxing key restrictions. The proxy sends `Referer: http://<your-dev-host>/encore/` by default (from the incoming request’s `Host`). If your key’s allowlist only includes **production** (e.g. `https://labs.example.com/*` but **not** loopback), set **`VITE_GOOGLE_DRIVE_DEV_PROXY_REFERER`** in `.env.local` to that production origin with path, for example `https://labs.example.com/encore/`, so outbound Drive requests match an allowed referrer.
 
@@ -197,6 +201,16 @@ Keep MRT tables scroll-friendly: stable row/cell `sx`, debounced search feeding 
 ### `EncoreMediaLink[]` model
 
 Songs persist `referenceLinks: EncoreMediaLink[]` and `backingLinks: EncoreMediaLink[]`. Each link is a Spotify track, YouTube video, or Drive file with `id`, `source`, `isPrimaryReference?`/`isPrimaryBacking?`, and an optional human `label`. The legacy single-id fields (`spotifyTrackId`, `youtubeVideoId`) are mirrored into `referenceLinks` by `ensureSongHasDerivedMediaLinks` (and the legacy mirror is kept in sync by `syncSongLegacyMediaIds`). Read media via `referenceLinks` / `backingLinks`; write via the helpers in [`src/encore/repertoire/songMediaLinks.ts`](repertoire/songMediaLinks.ts) (e.g. `appendSpotifyReferenceLink`, `removeMediaLinkById`, `setPrimaryReferenceLinkId`).
+
+### Performances — drag-and-drop, playback, UX
+
+See **[`PERFORMANCE_UX.md`](PERFORMANCE_UX.md)** for interaction design (Gestalt grouping, modal vs detail page, video source cards).
+
+- **Performance videos** use `DragDropFileUpload` (via `PerformanceAddVideoSourceStrip`) inside `PerformanceEditorDialog` only — do not add a second Paper-level drag handler on the same surface (that leaves a stuck outline).
+- **Section drops** (song page Performances card, Practice tab compact list) use `usePerformanceSectionDrop`, which sets `encoreDropSurface` to `'performance'` and routes video files into the log-performance flow.
+- **While the performance modal is open**, `encoreDropSurface` is `'performance-modal'`; SongPage / PracticeScreen document listeners call `shouldEncoreMediaHubHighlightDrag()` and skip the media-hub Takes / Listen intent path for performance-video drags (`encoreDragPayload.eligibleSlotsForDragDataTransfer` returns `null` when the performance surface is active).
+- **In-app playback:** `performanceVideoPlaybackTarget` + `useEncoreMediaPlaybackHoverProps().propsForPerformance` feed Play on song grid cards and the Practice compact list; Drive performance videos float above the playback bar (same shell as YouTube); **key shift** works for Drive audio and video (video picture stays native; audio routes through Web Audio when shifted); **session cache** keeps recently played Drive blobs in memory so replay skips re-download; external Open remains secondary.
+- **Multi-video stack:** `EncorePerformance.videos[]` + `primaryVideoId` (legacy single-video fields kept in sync via `performanceVideoModel`). Drop a video onto an existing performance card to open the editor in add-video mode (metadata locked). The **+N videos** chip on song/practice performance rows opens a browse popover (play or open any clip).
 
 ### Hover cards + media-link rows
 

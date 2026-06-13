@@ -28,14 +28,12 @@ import {
   resolveEncoreDriveMediaMime,
 } from '../media/encorePlayableMedia';
 import {
-  encoreDriveMediaPlaybackErrorMessage,
-  loadEncoreDriveMediaAudioBuffer,
-  loadEncoreDriveMediaObjectUrl,
-} from '../media/loadEncoreDriveMediaObjectUrl';
-import {
-  loadOriginalTakeBlobArrayBuffer,
-  loadOriginalTakeObjectUrl,
-} from '../originals/originalTakeLocalAudio';
+  encoreDriveMediaCacheKey,
+  getOrDecodeCachedEncoreDriveAudioBuffer,
+  resolveEncoreDriveMediaForPlayback,
+  shouldRevokeEncoreDriveMediaObjectUrl,
+} from '../media/encoreDriveMediaPlaybackCache';
+import { encoreDriveMediaPlaybackErrorMessage } from '../media/loadEncoreDriveMediaObjectUrl';
 import {
   createEncoreSpotifyEmbedController,
   encoreSpotifyPlaybackErrorMessage,
@@ -85,6 +83,12 @@ const EMPTY_TRANSPORT: EncoreMediaTransportState = {
   duration: 0,
   isPlaying: false,
 };
+
+function revokePlaybackObjectUrl(objectUrl: string | null): void {
+  if (objectUrl && shouldRevokeEncoreDriveMediaObjectUrl(objectUrl)) {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
 
 export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode }): ReactElement {
   const { googleAccessToken } = useEncoreAuth();
@@ -159,7 +163,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
     setPhase('idle');
     setErrorMessage(null);
     setObjectUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
+      revokePlaybackObjectUrl(prev);
       return null;
     });
   }, [persistAdjustmentsForPlaybackId, target?.playbackId]);
@@ -187,7 +191,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       audioBufferRef.current = null;
       webAudioMirrorRef.current = false;
       setObjectUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
+        revokePlaybackObjectUrl(prev);
         return null;
       });
       setTarget(next);
@@ -268,38 +272,17 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
     }
 
     const loadId = loadIdRef.current;
-    let revoked: string | null = null;
 
     void (async () => {
       try {
-        if (localTakeKey && (!driveFileId || !googleAccessToken)) {
-          const loaded = await loadOriginalTakeObjectUrl(localTakeKey, target.subtitle ?? target.title);
-          if (loadIdRef.current !== loadId) {
-            URL.revokeObjectURL(loaded.objectUrl);
-            return;
-          }
-          revoked = loaded.objectUrl;
-          setObjectUrl(loaded.objectUrl);
-          setPhase('playing');
-          setErrorMessage(null);
-          return;
-        }
-        if (!driveFileId || !googleAccessToken) {
-          setPhase('error');
-          setErrorMessage('Sign in to Google to play this file.');
-          return;
-        }
-        const loaded = await loadEncoreDriveMediaObjectUrl(
-          googleAccessToken,
+        const loaded = await resolveEncoreDriveMediaForPlayback({
+          accessToken: googleAccessToken,
           driveFileId,
-          target.mimeType,
-          target.subtitle ?? target.title,
-        );
-        if (loadIdRef.current !== loadId) {
-          URL.revokeObjectURL(loaded.objectUrl);
-          return;
-        }
-        revoked = loaded.objectUrl;
+          localTakeKey,
+          mimeTypeHint: target.mimeType,
+          fileNameHint: target.subtitle ?? target.title,
+        });
+        if (loadIdRef.current !== loadId) return;
         setObjectUrl(loaded.objectUrl);
         setPhase('playing');
         setErrorMessage(null);
@@ -310,10 +293,6 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
         setObjectUrl(null);
       }
     })();
-
-    return () => {
-      if (revoked) URL.revokeObjectURL(revoked);
-    };
   }, [googleAccessToken, target]);
 
   const syncTransposeMirror = useCallback(() => {
@@ -338,40 +317,62 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
   syncTransposeMirrorRef.current = syncTransposeMirror;
 
   useEffect(() => {
-    if (!target || target.kind !== 'drive-audio') {
+    const isDriveAudio = target?.kind === 'drive-audio';
+    const isDriveVideo = target?.kind === 'drive-video';
+    if (!target || (!isDriveAudio && !isDriveVideo)) {
       audioBufferRef.current = null;
       transposeMirrorRef.current?.setBuffer(null);
       webAudioMirrorRef.current = false;
       if (mediaRef.current) mediaRef.current.volume = 1;
       return;
     }
-    const driveFileId = target.driveFileId?.trim();
-    const localTakeKey = target.localTakeKey?.trim();
-    if (!driveFileId && !localTakeKey) return;
-    const loadId = loadIdRef.current;
+
+    const cacheKey = encoreDriveMediaCacheKey({
+      driveFileId: target.driveFileId,
+      localTakeKey: target.localTakeKey,
+    });
+
     const resolvedMime = resolveEncoreDriveMediaMime({
       fileName: target.subtitle ?? target.title,
       mimeType: target.mimeType,
     });
-    webAudioMirrorRef.current = encoreDriveMediaPreferWebAudioPlayback(resolvedMime);
+    if (isDriveAudio) {
+      webAudioMirrorRef.current = encoreDriveMediaPreferWebAudioPlayback(resolvedMime);
+    } else {
+      webAudioMirrorRef.current = false;
+    }
+
+    const needsAudioBuffer = isDriveAudio;
+    const needsVideoTranspose = isDriveVideo && transposeSemitones !== 0;
+    if (!needsAudioBuffer && !needsVideoTranspose) {
+      audioBufferRef.current = null;
+      transposeMirrorRef.current?.setBuffer(null);
+      if (mediaRef.current && isDriveVideo) mediaRef.current.volume = 1;
+      return;
+    }
+    if (!objectUrl || !cacheKey) return;
+
+    const loadId = loadIdRef.current;
     void (async () => {
       try {
-        const buf =
-          localTakeKey && (!driveFileId || !googleAccessToken)
-            ? await loadOriginalTakeBlobArrayBuffer(localTakeKey).then((ab) => {
-                const ctx = new AudioContext();
-                return ctx.decodeAudioData(ab.slice(0)).finally(() => void ctx.close());
-              })
-            : driveFileId && googleAccessToken
-              ? await loadEncoreDriveMediaAudioBuffer(googleAccessToken, driveFileId)
-              : null;
-        if (!buf) return;
+        const buf = await getOrDecodeCachedEncoreDriveAudioBuffer(cacheKey);
+        if (!buf) {
+          if (loadIdRef.current !== loadId) return;
+          if (isDriveVideo) return;
+          throw new Error('Could not decode audio.');
+        }
         if (loadIdRef.current !== loadId) return;
         audioBufferRef.current = buf;
         if (!transposeMirrorRef.current) {
           transposeMirrorRef.current = new MediaTransposeMirror();
         }
         transposeMirrorRef.current.setBuffer(buf);
+        if (
+          mediaRef.current &&
+          (webAudioMirrorRef.current || transposeSemitonesRef.current !== 0)
+        ) {
+          mediaRef.current.volume = 0;
+        }
         syncTransposeMirror();
       } catch {
         if (loadIdRef.current !== loadId) return;
@@ -381,7 +382,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
         if (mediaRef.current) mediaRef.current.volume = 1;
       }
     })();
-  }, [googleAccessToken, syncTransposeMirror, target]);
+  }, [googleAccessToken, syncTransposeMirror, target, objectUrl, transposeSemitones]);
 
   useEffect(() => {
     const media = mediaRef.current;
@@ -390,10 +391,11 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
     media.src = objectUrl;
     media.loop = loopEnabledRef.current;
     media.playbackRate = playbackRateRef.current;
-    if (
-      target.kind === 'drive-audio' &&
-      (webAudioMirrorRef.current || transposeSemitonesRef.current !== 0)
-    ) {
+    const muteNativeAudio =
+      target.kind === 'drive-audio'
+        ? webAudioMirrorRef.current || transposeSemitonesRef.current !== 0
+        : target.kind === 'drive-video' && transposeSemitonesRef.current !== 0;
+    if (muteNativeAudio) {
       media.volume = 0;
     }
     const onError = () => {
@@ -735,15 +737,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
   return (
     <>
       <div ref={spotifyHostRef} className="encore-spotify-embed-host" aria-hidden hidden />
-      {target?.kind === 'drive-video' ? (
-        /* eslint-disable-next-line jsx-a11y/media-has-caption -- user-provided practice video */
-        <video
-          ref={mediaRef as RefObject<HTMLVideoElement>}
-          className="encore-media-playback-media-hidden"
-          playsInline
-          aria-hidden
-        />
-      ) : target?.kind === 'drive-audio' ? (
+      {target?.kind === 'drive-audio' ? (
         /* eslint-disable-next-line jsx-a11y/media-has-caption -- user-provided practice audio */
         <audio ref={mediaRef as RefObject<HTMLAudioElement>} className="encore-media-playback-media-hidden" aria-hidden />
       ) : null}

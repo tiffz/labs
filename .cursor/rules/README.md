@@ -14,6 +14,7 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | [`playback-ui-regressions.mdc`](playback-ui-regressions.mdc)           | playback, notation, renderers        | `PLAYBACK_HOOK_PATTERN.md`                 | `labs-playback-bugfix`       |
 | [`inline-drum-ux.mdc`](inline-drum-ux.mdc)                             | inline drum hosts, DrumAccompaniment | `SHARED_UI_CONVENTIONS.md` § Inline drums  | —                            |
 | [`encore-originals-chord-paint.mdc`](encore-originals-chord-paint.mdc) | `encore/originals/**`, `chordPro/**` | `originals/DEVELOPMENT.md`                 | —                            |
+| [`encore-performance-ux.mdc`](encore-performance-ux.mdc)               | performance components, editor       | `src/encore/PERFORMANCE_UX.md`             | —                            |
 | [`stanza-viewer-layout.mdc`](stanza-viewer-layout.mdc)                 | `stanza/**`                          | `stanza/LAYOUT.md`                         | —                            |
 | [`beat-analysis-scope.mdc`](beat-analysis-scope.mdc)                   | beat analysis paths                  | `stanza/ANALYZE.md`, `beat/TEST_MATRIX.md` | —                            |
 | [`drum-notation-mini-host.mdc`](drum-notation-mini-host.mdc)           | DrumNotationMini hosts               | `DrumNotationMini.tsx`                     | —                            |

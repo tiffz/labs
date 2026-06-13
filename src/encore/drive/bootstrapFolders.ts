@@ -1,4 +1,8 @@
-import { buildPublicDriveAltMediaUrl } from '../../shared/drive/buildPublicDriveAltMediaUrl';
+import {
+  buildPublicDriveAltMediaUrl,
+  isPublicDriveGuestFetchConfigured,
+} from '../../shared/drive/buildPublicDriveAltMediaUrl';
+import { GuestSnapshotLoadError } from './guestSnapshotLoadError';
 import { sleepMs } from '../../shared/thirdParty/politeNetworkPause';
 import { driveCreateFolder, driveCreateJsonFile, driveListFiles, pickPreferredDriveListFileId } from './driveFetch';
 import {
@@ -188,6 +192,9 @@ function throwGuestPublicDriveFetchFailure(err: PublicDriveFetchErr): never {
   if (err.status === 404) {
     throw new Error('Snapshot not found. The owner may have deleted or replaced it.');
   }
+  if (err.status === 503) {
+    throw new GuestSnapshotLoadError('dev_missing_api_key');
+  }
   if (typeof err.status === 'number') {
     throw new Error(`Could not load this snapshot (HTTP ${err.status}).`);
   }
@@ -258,11 +265,15 @@ const fetchPublicDriveJsonInflight = new Map<string, Promise<unknown>>();
  * production, the browser calls Google directly with `key=` in the query string.
  */
 export async function fetchPublicDriveJson(fileId: string, apiKey: string): Promise<unknown> {
+  const trimmedKey = apiKey.trim();
+  if (!trimmedKey && !isPublicDriveGuestFetchConfigured()) {
+    throw new GuestSnapshotLoadError('dev_missing_api_key');
+  }
   const inflightKey = fileId.trim();
   const existing = fetchPublicDriveJsonInflight.get(inflightKey);
   if (existing) return existing;
 
-  const run = fetchPublicDriveJsonOnce(inflightKey, apiKey);
+  const run = fetchPublicDriveJsonOnce(inflightKey, trimmedKey);
   const tracked = run.finally(() => {
     fetchPublicDriveJsonInflight.delete(inflightKey);
   });

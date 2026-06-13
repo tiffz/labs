@@ -11,7 +11,7 @@ import Stack from '@mui/material/Stack';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { alpha, useTheme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import {
   useCallback,
   useEffect,
@@ -37,7 +37,7 @@ import {
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { useEncore, useEncoreSong } from '../context/EncoreContext';
-import { encoreMaxWidthPage } from '../theme/encoreUiTokens';
+import { encoreMaxWidthPage, encorePerformanceDropHintSx, encorePerformanceSectionDropSx } from '../theme/encoreUiTokens';
 import {
   encorePagePaddingTop,
   encoreScreenPaddingX,
@@ -50,8 +50,6 @@ import {
 } from './song/SongPageSongTopSection';
 import { SongPerformancesPanel } from './song/SongPerformancesPanel';
 import { PerformanceEditorDialog } from './PerformanceEditorDialog';
-import { PERF_LOCAL_VIDEO_ACCEPT } from '../utils/performanceVideoAccept';
-import { fileMatchesAccept } from '../../shared/utils/fileMatchesAccept';
 import { PracticeExercisesSection } from './practice/PracticeExercisesSection';
 import { SongMilestoneChecklist } from './SongMilestoneChecklist';
 import { SpotifyBrandIcon } from './EncoreBrandIcon';
@@ -80,7 +78,10 @@ import {
   eligibleSlotsForDragDataTransfer,
   hasPotentialUrlPayload,
 } from './song/encoreDragPayload';
+import { getEncoreDropSurface, shouldEncoreMediaHubHighlightDrag } from './song/encoreDropSurface';
+import { usePerformanceSectionDrop } from './song/usePerformanceSectionDrop';
 import { applyMediaUrlToSongSlot, extractFirstUrlFromDataTransfer } from './song/songMediaUrlDrop';
+import { setPrimaryPerformanceVideo } from '../utils/performanceVideoModel';
 
 export function SongPage(props: {
   route: Extract<EncoreAppRoute, { kind: 'song' } | { kind: 'songNew' }>;
@@ -127,9 +128,7 @@ export function SongPage(props: {
    * click opens the dialog with no pre-staged file.
    */
   const [pendingPerfDropFile, setPendingPerfDropFile] = useState<File | null>(null);
-  /** Drag-overlay flag for the Performances `Paper` (true while a video file is hovering it). */
-  const [perfSectionDragOver, setPerfSectionDragOver] = useState(false);
-  const perfSectionDragDepthRef = useRef(0);
+  const [perfAddVideoMode, setPerfAddVideoMode] = useState(false);
   const [perfVenueFilter, setPerfVenueFilter] = useState<string | null>(null);
   const [songPageFileDragActive, setSongPageFileDragActive] = useState(false);
   const [hoveredMediaSlot, setHoveredMediaSlot] = useState<SongMediaUploadSlot | null>(null);
@@ -382,15 +381,22 @@ export function SongPage(props: {
       return;
     }
     const onEnter = (e: DragEvent) => {
+      if (perfOpen) return;
+      if (!shouldEncoreMediaHubHighlightDrag()) return;
       if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
       e.preventDefault();
       songFileDragDepthRef.current += 1;
       setSongPageFileDragActive(true);
-      setMediaDragEligibleSlots(eligibleSlotsForDragDataTransfer(e.dataTransfer));
+      setMediaDragEligibleSlots(
+        eligibleSlotsForDragDataTransfer(e.dataTransfer, {
+          performanceSurfaceActive: getEncoreDropSurface() === 'performance',
+        }),
+      );
     };
     const onLeave = (e: DragEvent) => {
+      if (perfOpen) return;
+      if (!shouldEncoreMediaHubHighlightDrag()) return;
       if (!dragPayloadRelevantToMediaHub(e.dataTransfer)) return;
-      e.preventDefault();
       songFileDragDepthRef.current = Math.max(0, songFileDragDepthRef.current - 1);
       if (songFileDragDepthRef.current === 0) {
         setSongPageFileDragActive(false);
@@ -410,6 +416,7 @@ export function SongPage(props: {
       onEnd();
     };
     const onDragOver = (e: DragEvent) => {
+      if (perfOpen || !shouldEncoreMediaHubHighlightDrag()) return;
       if (dragPayloadRelevantToMediaHub(e.dataTransfer)) {
         e.preventDefault();
         e.dataTransfer!.dropEffect = 'copy';
@@ -427,7 +434,7 @@ export function SongPage(props: {
       document.removeEventListener('drop', onDrop, true);
       document.removeEventListener('dragover', onDragOver);
     };
-  }, [draft, loadState]);
+  }, [draft, loadState, perfOpen]);
 
   const onMediaSlotDragOver = useCallback(
     (slot: SongMediaUploadSlot, e: ReactDragEvent<HTMLElement>) => {
@@ -506,105 +513,54 @@ export function SongPage(props: {
     ],
   );
 
-  const handleSongPageFileDrop = useCallback((e: ReactDragEvent) => {
-    if (!e.dataTransfer.types.includes('Files')) return;
-    const fl = e.dataTransfer.files;
-    if (!fl?.length) return;
-    e.preventDefault();
-    setIntentUploadFiles(Array.from(fl));
-  }, []);
-
-  /**
-   * Performances-section drop zone: dragging a video file onto the song page's Performances
-   * card opens the editor with the file pre-staged, mirroring the dialog's own drop affordance
-   * but reachable without first clicking "Add performance".
-   *
-   * `stopPropagation` keeps the page-level `handleSongPageFileDrop` from also firing and
-   * showing the media-hub intent dialog (which targets Listen / Play / Charts / Takes — not a
-   * useful destination for a performance video).
-   *
-   * Sign-in is required to actually upload (the editor's `stageLocalVideoFile` is a no-op
-   * without a Drive token), so we gate the drop on `googleAccessToken` here too — falling back
-   * to the page-level intent dialog when the user isn't signed in still gives them a path to
-   * the import flow without a confusing silent drop.
-   */
-  const perfSectionDropEnabled = !isNew && Boolean(googleAccessToken);
-
-  const dataTransferHasVideoFile = useCallback((dt: DataTransfer | null): boolean => {
-    if (!dt) return false;
-    if (!dt.types.includes('Files')) return false;
-    // While dragging, browsers expose item types but not file contents. Many video MIME
-    // strings start with `video/`, but some clips (e.g. `.mkv`) report empty MIME until drop;
-    // err on the side of activating the overlay whenever any item could be a file. The actual
-    // accept-list filtering happens on drop via `fileMatchesAccept`.
-    for (const item of Array.from(dt.items)) {
-      if (item.kind !== 'file') continue;
-      if (!item.type) return true;
-      if (item.type.startsWith('video/')) return true;
-    }
-    return false;
-  }, []);
-
-  const handlePerfSectionDragEnter = useCallback(
+  const handleSongPageFileDrop = useCallback(
     (e: ReactDragEvent) => {
-      if (!perfSectionDropEnabled) return;
-      if (!dataTransferHasVideoFile(e.dataTransfer)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      perfSectionDragDepthRef.current += 1;
-      setPerfSectionDragOver(true);
-    },
-    [perfSectionDropEnabled, dataTransferHasVideoFile],
-  );
-
-  const handlePerfSectionDragOver = useCallback(
-    (e: ReactDragEvent) => {
-      if (!perfSectionDropEnabled) return;
-      if (!dataTransferHasVideoFile(e.dataTransfer)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      // Hint to the OS that this is a copy-style drop (no move semantics for files).
-      try {
-        e.dataTransfer.dropEffect = 'copy';
-      } catch {
-        /* read-only in some browsers; non-fatal */
-      }
-    },
-    [perfSectionDropEnabled, dataTransferHasVideoFile],
-  );
-
-  const handlePerfSectionDragLeave = useCallback(
-    (e: ReactDragEvent) => {
-      if (!perfSectionDropEnabled) return;
-      e.preventDefault();
-      e.stopPropagation();
-      perfSectionDragDepthRef.current = Math.max(0, perfSectionDragDepthRef.current - 1);
-      if (perfSectionDragDepthRef.current === 0) setPerfSectionDragOver(false);
-    },
-    [perfSectionDropEnabled],
-  );
-
-  const handlePerfSectionDrop = useCallback(
-    (e: ReactDragEvent) => {
-      if (!perfSectionDropEnabled) return;
       if (!e.dataTransfer.types.includes('Files')) return;
-      const files = Array.from(e.dataTransfer.files);
-      const video = files.find((f) => fileMatchesAccept(f, PERF_LOCAL_VIDEO_ACCEPT));
-      if (!video) {
-        // Let the page-level handler fire for non-video drops so the media-hub intent dialog
-        // can still surface (e.g. dropping audio onto the performances card by mistake).
-        return;
-      }
+      if (perfOpen) return;
+      const surface = getEncoreDropSurface();
+      if (surface === 'performance' || surface === 'performance-modal') return;
+      const fl = e.dataTransfer.files;
+      if (!fl?.length) return;
       e.preventDefault();
-      e.stopPropagation();
-      perfSectionDragDepthRef.current = 0;
-      setPerfSectionDragOver(false);
-      setPerfEditing(null);
-      setPendingPerfDropFile(video);
+      setIntentUploadFiles(Array.from(fl));
+    },
+    [perfOpen],
+  );
+
+  const openPerformanceEditor = useCallback(
+    (opts: { performance?: EncorePerformance | null; file?: File | null; addVideo?: boolean }) => {
+      setPerfEditing(opts.performance ?? null);
+      setPerfAddVideoMode(Boolean(opts.addVideo));
+      setPendingPerfDropFile(opts.file ?? null);
       setPerfOpen(true);
     },
-    [perfSectionDropEnabled],
+    [],
   );
+
+  const closePerformanceEditor = useCallback(() => {
+    setPerfOpen(false);
+    setPerfEditing(null);
+    setPendingPerfDropFile(null);
+    setPerfAddVideoMode(false);
+  }, []);
+
+  const setPerformancePrimaryVideo = useCallback(
+    (performance: EncorePerformance, videoId: string) => {
+      void savePerformance(setPrimaryPerformanceVideo(performance, videoId));
+    },
+    [savePerformance],
+  );
+
+  const perfSectionDropEnabled = !isNew && Boolean(googleAccessToken) && !perfOpen;
+  const {
+    dragActive: perfSectionDragOver,
+    sectionHandlers: perfSectionHandlers,
+  } = usePerformanceSectionDrop({
+    enabled: perfSectionDropEnabled,
+    onDropVideo: (file) => {
+      openPerformanceEditor({ file });
+    },
+  });
 
   const handleSaveJournal = async () => {
     if (!draft) return;
@@ -925,20 +881,17 @@ export function SongPage(props: {
             component="section"
             elevation={0}
             aria-labelledby="encore-song-performances-heading"
-            onDragEnter={handlePerfSectionDragEnter}
-            onDragOver={handlePerfSectionDragOver}
-            onDragLeave={handlePerfSectionDragLeave}
-            onDrop={handlePerfSectionDrop}
-            sx={{
+            onDragEnter={perfSectionHandlers.onDragEnter}
+            onDragOver={perfSectionHandlers.onDragOver}
+            onDragLeave={perfSectionHandlers.onDragLeave}
+            onDrop={perfSectionHandlers.onDrop}
+            sx={(theme) => ({
               ...encoreSongPageCardPaperSx,
               mb: 2.5,
               position: 'relative',
-              outline: perfSectionDragOver ? '2px solid' : 'none',
-              outlineColor: 'primary.main',
-              outlineOffset: '-2px',
-              transition: (t) =>
-                t.transitions.create(['outline-color', 'box-shadow'], { duration: 150 }),
-            }}
+              ...encorePerformanceSectionDropSx(theme, perfSectionDragOver),
+              transition: theme.transitions.create(['border-color', 'box-shadow'], { duration: 150 }),
+            })}
           >
             <Box sx={encoreSongPageCardPaddingSx}>
               <Typography
@@ -954,24 +907,21 @@ export function SongPage(props: {
                 filteredPerformances={filteredSongPerformances}
                 venueBreakdown={songPerformanceVenueBreakdown}
                 venueFilter={perfVenueFilter}
+                songTitle={draft.title}
                 googleAccessToken={googleAccessToken}
                 onSelectVenueFilter={setPerfVenueFilter}
-                onAddPerformance={() => {
-                  setPerfEditing(null);
-                  setPendingPerfDropFile(null);
-                  setPerfOpen(true);
-                }}
-                onEditPerformance={(p) => {
-                  setPerfEditing(p);
-                  setPendingPerfDropFile(null);
-                  setPerfOpen(true);
-                }}
+                onAddPerformance={() => openPerformanceEditor({})}
+                onEditPerformance={(p) => openPerformanceEditor({ performance: p })}
+                onAddVideoToPerformance={(p, file) =>
+                  openPerformanceEditor({ performance: p, file, addVideo: true })
+                }
+                onSetPrimaryVideo={setPerformancePrimaryVideo}
               />
             </Box>
             {perfSectionDragOver ? (
               <Box
                 aria-hidden
-                sx={(t) => ({
+                sx={{
                   position: 'absolute',
                   inset: 0,
                   display: 'flex',
@@ -979,25 +929,11 @@ export function SongPage(props: {
                   justifyContent: 'center',
                   pointerEvents: 'none',
                   borderRadius: 'inherit',
-                  bgcolor: alpha(t.palette.primary.main, 0.08),
                   zIndex: 1,
-                })}
+                }}
               >
-                <Typography
-                  variant="subtitle2"
-                  sx={(t) => ({
-                    px: 2,
-                    py: 1,
-                    borderRadius: 999,
-                    bgcolor: t.palette.background.paper,
-                    border: '1px solid',
-                    borderColor: 'primary.main',
-                    color: 'primary.main',
-                    fontWeight: 700,
-                    boxShadow: 1,
-                  })}
-                >
-                  Drop video to log a performance
+                <Typography variant="caption" sx={(theme) => encorePerformanceDropHintSx(theme)}>
+                  Drop to log a new performance
                 </Typography>
               </Box>
             ) : null}
@@ -1064,11 +1000,8 @@ export function SongPage(props: {
           googleAccessToken={googleAccessToken}
           venueOptions={venueOptions}
           initialLocalVideoFile={pendingPerfDropFile}
-          onClose={() => {
-            setPerfOpen(false);
-            setPerfEditing(null);
-            setPendingPerfDropFile(null);
-          }}
+          addVideoMode={perfAddVideoMode}
+          onClose={closePerformanceEditor}
           onSave={async (p: EncorePerformance) => {
             await savePerformance(p);
           }}

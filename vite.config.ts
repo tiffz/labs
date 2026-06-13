@@ -18,6 +18,7 @@ import {
   parseDebugLogPostBody,
   printDebugLogEntriesToConsole,
 } from './src/shared/debug/debugLogPostBody';
+import { applyDevGoogleApiKeyFromGitHub, resolveViteGoogleApiKeyForDev } from './src/shared/drive/resolveViteGoogleApiKeyForDev';
 
 const BUILD_VERSION = `${Date.now()}-${randomBytes(4).toString('hex')}`;
 
@@ -52,6 +53,16 @@ const MULTI_APP_INPUTS = {
 const SRC_ROOT = resolve(__dirname, 'src');
 /** Repo root (directory containing this config). Prefer over process.cwd() for baselines so dev server matches Playwright output even when cwd differs. */
 const PROJECT_ROOT = resolve(__dirname);
+
+if (!IS_TEST) {
+  const viteSubcommand = process.argv.includes('vite') ? process.argv[process.argv.indexOf('vite') + 1] : undefined;
+  const isDevServer =
+    process.env.npm_lifecycle_event === 'dev' ||
+    (process.argv.includes('vite') && viteSubcommand !== 'build' && viteSubcommand !== 'preview');
+  if (isDevServer) {
+    applyDevGoogleApiKeyFromGitHub(SRC_ROOT);
+  }
+}
 const E2E_VISUAL_SNAPSHOTS_DIR = resolve(__dirname, 'e2e/visual/apps.visual.spec.ts-snapshots');
 
 const APP_BASE_PATHS = buildAppBasePathsFromEntryPaths(Object.values(MULTI_APP_INPUTS), SRC_ROOT);
@@ -117,12 +128,17 @@ function encoreDrivePublicDevProxyPlugin(): Plugin {
           return;
         }
         // `root` is `src/` — Vite loads `.env*` from `envDir` (defaults to `root`), not the repo root.
-        const env = loadEnv(server.config.mode, server.config.envDir, '');
-        const apiKey = (env.VITE_GOOGLE_API_KEY as string | undefined)?.trim();
+        const envDir = typeof server.config.envDir === 'string' ? server.config.envDir : SRC_ROOT;
+        const apiKey = resolveViteGoogleApiKeyForDev({
+          envDir,
+          mode: server.config.mode,
+        });
         if (!apiKey) {
           res.statusCode = 503;
           res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-          res.end('VITE_GOOGLE_API_KEY is not set');
+          res.end(
+            'VITE_GOOGLE_API_KEY is not set. Add it to src/.env.local, or set a GitHub Actions variable named VITE_GOOGLE_API_KEY (gh auth login). Secrets cannot be read locally.',
+          );
           return;
         }
         const port = server.config.server.port ?? 5173;
@@ -132,8 +148,9 @@ function encoreDrivePublicDevProxyPlugin(): Plugin {
             : undefined) ||
           req.headers.host ||
           `127.0.0.1:${port}`;
+        const refererEnv = loadEnv(server.config.mode, envDir, '');
         const referer =
-          (env.VITE_GOOGLE_DRIVE_DEV_PROXY_REFERER as string | undefined)?.trim() ||
+          refererEnv.VITE_GOOGLE_DRIVE_DEV_PROXY_REFERER?.trim() ||
           `http://${host}/encore/`;
         const fields = encodeURIComponent('mimeType,name,shortcutDetails');
         const googleUrl = isMeta

@@ -73,13 +73,14 @@ VITE_LABS_SESSION_BFF_URL=http://127.0.0.1:8787 npm run dev
 
 ## API
 
-| Method | Path                                            | Description                                                                              |
-| ------ | ----------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| GET    | `/health`                                       | Liveness                                                                                 |
-| GET    | `/v1/oauth/google/start?return_origin=&popup=1` | Returns `{ authUrl }`                                                                    |
-| GET    | `/v1/oauth/google/callback`                     | Google redirect (sets session cookie; popup → redirect to app `/google-oauth-done.html`) |
-| GET    | `/v1/session/google/access-token`               | Refresh access token (cookie auth)                                                       |
-| POST   | `/v1/session/google/sign-out`                   | Clear session                                                                            |
+| Method | Path                                            | Description                                                                         |
+| ------ | ----------------------------------------------- | ----------------------------------------------------------------------------------- |
+| GET    | `/health`                                       | Liveness                                                                            |
+| GET    | `/v1/oauth/google/start?return_origin=&popup=1` | Returns `{ authUrl }`                                                               |
+| GET    | `/v1/oauth/google/callback`                     | Google redirect (sets session cookie; popup → worker `/v1/oauth/google/popup-done`) |
+| GET    | `/v1/oauth/google/popup-done`                   | Popup bridge: first-party token fetch + `postMessage` to app origin                 |
+| GET    | `/v1/session/google/access-token`               | Refresh access token (cookie auth)                                                  |
+| POST   | `/v1/session/google/sign-out`                   | Clear session                                                                       |
 
 The worker calls **only** `https://oauth2.googleapis.com/token` — never Drive/YouTube APIs.
 
@@ -134,3 +135,4 @@ curl -s "https://labs-session-bff.tiffz.workers.dev/v1/oauth/google/start?return
 | CORS error from `127.0.0.1:5173`        | Confirm origin is in `ALLOWED_ORIGINS` in `wrangler.toml`; redeploy Worker.                     |
 | Still GIS-only (no BFF requests)        | BFF URL not in the running build — check `.env.local` + Vite restart, or wait for Pages deploy. |
 | Popup blocked                           | Allow popups for `127.0.0.1` / `labs.tiffzhang.com`.                                            |
+| “Closed before finishing” after consent | Redeploy Worker (`popup-done` route) + hard-refresh Encore; see ADR 0014 popup bridge.          |

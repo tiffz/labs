@@ -19,6 +19,60 @@ export const encoreShadowLift = '0 12px 40px rgba(76, 29, 149, 0.08)' as const;
  */
 export const encoreHairline = 'rgba(76, 29, 149, 0.04)' as const;
 
+/** Soft fuchsia wash for performance-editor upload surfaces (footer, drag-over). */
+export function encoreSoftPinkWash(
+  theme: Theme,
+  strength: 'rest' | 'hover' | 'active' = 'rest',
+): string {
+  const primary = theme.palette.primary.main;
+  switch (strength) {
+    case 'active':
+      return alpha(primary, 0.07);
+    case 'hover':
+      return alpha(primary, 0.045);
+    default:
+      return alpha(primary, 0.028);
+  }
+}
+
+/** Uppercase kicker for device / link source groups in performance modals. */
+export function encorePerformanceSourceLabelSx(theme: Theme): SystemStyleObject<Theme> {
+  return {
+    fontWeight: 600,
+    letterSpacing: '0.04em',
+    fontSize: '0.6875rem',
+    textTransform: 'uppercase',
+    color: alpha(theme.palette.primary.main, 0.68),
+  };
+}
+
+/** "Add another" label in the staged-videos footer. */
+export function encorePerformanceAddAnotherLabelSx(theme: Theme): SystemStyleObject<Theme> {
+  return {
+    fontWeight: 700,
+    letterSpacing: '0.06em',
+    fontSize: '0.6875rem',
+    textTransform: 'uppercase',
+    color: alpha(theme.palette.primary.main, 0.62),
+    display: 'block',
+    mb: 1.25,
+  };
+}
+
+/** Outlined link field paired with {@link encorePerformanceSourceLabelSx} upload strips. */
+export function encorePerformanceLinkFieldSx(theme: Theme): SystemStyleObject<Theme> {
+  const primary = theme.palette.primary.main;
+  return {
+    '& .MuiOutlinedInput-root': {
+      bgcolor: encoreSoftPinkWash(theme, 'rest'),
+      transition: theme.transitions.create(['background-color', 'border-color'], { duration: 150 }),
+      '& fieldset': { borderColor: alpha(primary, 0.14) },
+      '&:hover fieldset': { borderColor: alpha(primary, 0.24) },
+      '&.Mui-focused fieldset': { borderColor: alpha(primary, 0.42) },
+    },
+  };
+}
+
 /**
  * Tone for **Exclude / NOT-IN** filter UI (chip, toggle, and checked-state checkbox).
  *
@@ -217,6 +271,128 @@ export const practiceResourceSectionLabelRailSx: SystemStyleObject<Theme> = {
 /** @deprecated Use {@link practiceResourceChipFieldSx} — chip stacks no longer use an inner bordered field. */
 export function practiceResourceChipStackSx(theme: Theme): SystemStyleObject<Theme> {
   return practiceResourceChipFieldSx(theme);
+}
+
+/**
+ * Performance surfaces — list rows, editor video panels, staged clips, and section drop hints.
+ * Prefer these over ad-hoc `border: 2` / `boxShadow: 1` so Practice and the editor stay aligned.
+ */
+
+/** Compact performance row (Practice page, song lists). Border is opt-in — use only when the row is its own drop/interaction target. */
+export function encorePerformanceListRowSx(
+  theme: Theme,
+  opts?: { dragActive?: boolean; bordered?: boolean },
+): SystemStyleObject<Theme> {
+  const dragActive = Boolean(opts?.dragActive);
+  const bordered = opts?.bordered !== false;
+  const base = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1.25,
+    borderRadius: encoreRadius,
+    transition: theme.transitions.create(['border-color', 'box-shadow', 'background-color'], {
+      duration: theme.transitions.duration.shorter,
+    }),
+  } as const;
+
+  if (!bordered) {
+    return {
+      ...base,
+      py: 0.25,
+    };
+  }
+
+  return {
+    ...base,
+    px: 1,
+    py: 0.75,
+    border: '1px solid',
+    borderColor: dragActive ? alpha(theme.palette.primary.main, 0.32) : encoreHairline,
+    bgcolor: dragActive ? alpha(theme.palette.primary.main, 0.035) : theme.palette.background.paper,
+    boxShadow: dragActive
+      ? `0 0 0 1px ${alpha(theme.palette.primary.main, 0.06)}`
+      : encoreShadowSurface,
+    '&:hover': {
+      borderColor: alpha(theme.palette.primary.main, 0.24),
+      boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.05)}`,
+    },
+  };
+}
+
+/** One video identity + source block in the performance editor. */
+export function encorePerformanceVideoPanelSx(
+  theme: Theme,
+  opts?: { isPrimary?: boolean },
+): SystemStyleObject<Theme> {
+  const isPrimary = opts?.isPrimary !== false;
+  return {
+    borderRadius: encoreRadius,
+    border: '1px solid',
+    borderColor: isPrimary ? alpha(theme.palette.primary.main, 0.18) : encoreHairline,
+    bgcolor: theme.palette.background.paper,
+    boxShadow: encoreShadowSurface,
+    overflow: 'hidden',
+  };
+}
+
+/** Staged clip preview spacing — no card chrome; section headers provide grouping. */
+export function encorePerformanceStagedVideoSx(): SystemStyleObject<Theme> {
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 1,
+  };
+}
+
+/** Section-level drop highlight (Performances block on Practice / Song). Matches {@link DragDropFileUpload} dashed language. */
+export function encorePerformanceSectionDropSx(
+  theme: Theme,
+  dragActive: boolean,
+  opts?: { neutral?: boolean; soft?: boolean },
+): SystemStyleObject<Theme> {
+  if (!dragActive) return {};
+  if (opts?.neutral) {
+    return {
+      borderRadius: encoreRadius,
+      border: '1px dashed',
+      borderColor: alpha(theme.palette.divider, 0.95),
+      bgcolor: alpha(theme.palette.action.hover, 0.65),
+    };
+  }
+  const primary = theme.palette.primary.main;
+  if (opts?.soft === false) {
+    return {
+      borderRadius: encoreRadius,
+      border: '1px dashed',
+      borderColor: alpha(primary, 0.32),
+      bgcolor: alpha(primary, 0.035),
+      boxShadow: `0 1px 3px ${alpha(primary, 0.05)}`,
+    };
+  }
+  return {
+    borderRadius: encoreRadius,
+    border: '1px dashed',
+    borderColor: alpha(primary, 0.22),
+    bgcolor: encoreSoftPinkWash(theme, 'active'),
+    boxShadow: `0 1px 2px ${alpha(primary, 0.04)}`,
+  };
+}
+
+/** Floating pill copy over a performance drop target. */
+export function encorePerformanceDropHintSx(theme: Theme): SystemStyleObject<Theme> {
+  return {
+    px: 1.5,
+    py: 0.625,
+    borderRadius: 999,
+    bgcolor: theme.palette.background.paper,
+    border: '1px solid',
+    borderColor: alpha(theme.palette.primary.main, 0.22),
+    color: 'primary.main',
+    fontWeight: 600,
+    fontSize: '0.8125rem',
+    letterSpacing: '-0.01em',
+    boxShadow: encoreShadowSurface,
+  };
 }
 
 /** Primary content column: one max width for list and detail screens (8px grid, ~82rem). */

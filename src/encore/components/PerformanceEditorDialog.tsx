@@ -1,29 +1,18 @@
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import Alert from '@mui/material/Alert';
-import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import IconButton from '@mui/material/IconButton';
-import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { alpha } from '@mui/material/styles';
-import { useCallback, useEffect, useMemo, useRef, useState, Fragment, type DragEvent, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, Fragment, type ReactElement } from 'react';
 import { driveGetFileMetadata, driveUploadFileResumable } from '../drive/driveFetch';
 import { useEncoreDriveUploadDedup } from '../context/EncoreDriveUploadDedupContext';
 import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
-import { resolveDriveUploadFolderId, type DriveUploadFolderLayout } from '../drive/resolveDriveUploadFolder';
-import { driveFileWebUrl, driveFolderWebUrl } from '../drive/driveWebUrls';
+import { resolveDriveUploadFolderId } from '../drive/resolveDriveUploadFolder';
 import { parseDriveFileIdFromUrlOrId } from '../drive/parseDriveFileUrl';
 import { buildPerformanceVideoName, splitFileNameExtension } from '../drive/performanceVideoNaming';
 import { suggestPerformanceVenueFromFile } from '../import/venueCatalogMatch';
@@ -35,17 +24,43 @@ import {
   encoreDialogActionsSx,
   encoreDialogContentSx,
   encoreDialogTitleSx,
-  encoreHairline,
 } from '../theme/encoreUiTokens';
-import { EncoreBrowseDriveButton } from '../ui/EncoreDriveSourceButtons';
 import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { useEncore } from '../context/EncoreContext';
 import type { EncorePerformance } from '../types';
-import { ENCORE_ACCOMPANIMENT_TAGS } from '../types';
 import { parsePerformanceVideoInput } from '../utils/parsePerformanceVideoInput';
-import { PERF_LOCAL_VIDEO_ACCEPT } from '../utils/performanceVideoAccept';
-import { DragDropFileUpload } from '../../shared/components/DragDropFileUpload';
-import { fileMatchesAccept } from '../../shared/utils/fileMatchesAccept';
+import {
+  getPrimaryPerformanceVideo,
+  normalizeEncorePerformance,
+  newPerformanceVideo,
+  syncPerformanceLegacyVideoFields,
+} from '../utils/performanceVideoModel';
+import { PerformanceContextSummary } from './performance/PerformanceContextSummary';
+import { PerformanceEditorSection, PERFORMANCE_EDITOR_SECTION_FIELD_SPACING } from './performance/PerformanceEditorSection';
+import { PerformanceMetadataSection } from './performance/PerformanceMetadataSection';
+import { PerformanceAddVideosPanel } from './performance/PerformanceAddVideosPanel';
+import { filterAcceptedPerformanceVideoFiles } from './performance/filterAcceptedPerformanceVideoFiles';
+import { PerformanceEditorVideoCard } from './performance/PerformanceEditorVideoCard';
+import { PerformanceVideoCompactRow } from './performance/PerformanceVideoCompactRow';
+import { isVideoLinkInputDirty, videoToLinkInput } from './performance/performanceVideoLinkInput';
+import type { PerformanceAddVideoSourceStripProps } from './performance/PerformanceAddVideoSourceStrip';
+import { PerformanceEditorVideosDropZone } from './performance/PerformanceEditorVideosDropZone';
+import { setEncoreDropSurface } from './song/encoreDropSurface';
+
+type PendingLinkVideo = {
+  externalVideoUrl?: string;
+  videoTargetDriveFileId?: string;
+  videoShortcutDriveFileId?: string;
+  displayName?: string;
+};
+
+function buildVideoLinkDrafts(videos: { id: string; externalVideoUrl?: string; videoTargetDriveFileId?: string; videoShortcutDriveFileId?: string }[]): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const video of videos) {
+    map[video.id] = videoToLinkInput(video);
+  }
+  return map;
+}
 
 function newPerformance(songId: string): EncorePerformance {
   // ISO timestamps for createdAt/updatedAt are stored as instants and intentionally use UTC
@@ -115,6 +130,8 @@ export function PerformanceEditorDialog(props: {
    * can keep the prop set across renders without worry.
    */
   initialLocalVideoFile?: File | null;
+  /** When true (edit mode), metadata fields stay read-only and saves append videos only. */
+  addVideoMode?: boolean;
   onClose: () => void;
   onSave: (p: EncorePerformance) => Promise<void>;
   /** When set (edit mode only), shows a de-emphasized control to remove this row from the log (Drive files stay). */
@@ -127,6 +144,7 @@ export function PerformanceEditorDialog(props: {
     googleAccessToken,
     venueOptions,
     initialLocalVideoFile,
+    addVideoMode = false,
     onClose,
     onSave,
     onDelete,
@@ -139,17 +157,21 @@ export function PerformanceEditorDialog(props: {
   const [videoInput, setVideoInput] = useState('');
   const [shortcutMsg, setShortcutMsg] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [driveUploadLayout, setDriveUploadLayout] = useState<DriveUploadFolderLayout | null>(null);
-  /** Local file chosen via drag/drop; uploaded on Save using the current date / venue. */
-  const [pendingLocalVideoFile, setPendingLocalVideoFile] = useState<File | null>(null);
+  /** Device clips queued for upload on save (log + add-video). */
+  const [pendingLocalVideoFiles, setPendingLocalVideoFiles] = useState<File[]>([]);
+  /** Staged link (YouTube / Drive) for add-video mode — appended on save only. */
+  const [pendingLinkVideo, setPendingLinkVideo] = useState<PendingLinkVideo | null>(null);
+  /** Per saved-video link field values while editing a performance. */
+  const [videoLinkDrafts, setVideoLinkDrafts] = useState<Record<string, string>>({});
+  /** When set, drive link feedback is shown on that saved video row only. */
+  const [inlineLinkFeedbackVideoId, setInlineLinkFeedbackVideoId] = useState<string | null>(null);
   const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
   const [removeSubmitting, setRemoveSubmitting] = useState(false);
   /** Drive file id (normalized) tied to this row when the dialog opened — avoid overwriting the log date from Drive metadata on edit. */
   const initialDriveFileIdRef = useRef<string>('');
   const driveLookupGen = useRef(0);
-  const perfDialogDragDepthRef = useRef(0);
-  const [perfDialogDragOver, setPerfDialogDragOver] = useState(false);
   const [driveLinkFeedback, setDriveLinkFeedback] = useState<PerfDriveLinkFeedback>(null);
+  const metadataLocked = Boolean(performance && addVideoMode);
 
   const venueList = useMemo(() => [...new Set(venueOptions.map((v) => v.trim()).filter(Boolean))].sort(), [venueOptions]);
 
@@ -162,130 +184,270 @@ export function PerformanceEditorDialog(props: {
 
   useEffect(() => {
     if (open) {
-      const base = performance ? { ...performance } : newPerformance(songId);
+      const base = normalizeEncorePerformance(performance ? { ...performance } : newPerformance(songId));
       setDraft(base);
-      initialDriveFileIdRef.current = normalizeDriveFileIdForCompare(base.videoTargetDriveFileId);
-      const parts: string[] = [];
-      if (base.externalVideoUrl) parts.push(base.externalVideoUrl);
-      else if (base.videoTargetDriveFileId) parts.push(base.videoTargetDriveFileId);
-      setVideoInput(parts.join(''));
+      const primary = base.videos?.find((v) => v.id === base.primaryVideoId) ?? base.videos?.[0];
+      initialDriveFileIdRef.current = normalizeDriveFileIdForCompare(primary?.videoTargetDriveFileId);
+      if (addVideoMode) {
+        setVideoLinkDrafts({});
+      } else {
+        setVideoLinkDrafts(buildVideoLinkDrafts(base.videos ?? []));
+      }
+      setVideoInput('');
       setShortcutMsg(null);
-      setPendingLocalVideoFile(null);
+      setPendingLocalVideoFiles([]);
+      setPendingLinkVideo(null);
+      setInlineLinkFeedbackVideoId(null);
       setRemoveConfirmOpen(false);
       setDriveLinkFeedback(null);
     }
-  }, [open, performance, songId]);
+  }, [open, performance, songId, initialLocalVideoFile, addVideoMode]);
 
   useEffect(() => {
-    if (!open) {
-      perfDialogDragDepthRef.current = 0;
-      setPerfDialogDragOver(false);
+    if (open) {
+      setEncoreDropSurface('performance-modal');
+      return () => setEncoreDropSurface(null);
     }
+    setEncoreDropSurface(null);
   }, [open]);
 
-  useEffect(() => {
-    if (!open || !googleAccessToken) {
-      setDriveUploadLayout(null);
-      return;
-    }
-    let cancelled = false;
-    void ensureEncoreDriveLayout(googleAccessToken)
-      .then((layout) => {
-        if (!cancelled) setDriveUploadLayout(layout);
-      })
-      .catch(() => {
-        if (!cancelled) setDriveUploadLayout(null);
+  const applyLinkedVideo = useCallback(
+    (
+      fields: {
+        externalVideoUrl?: string;
+        videoTargetDriveFileId?: string;
+        videoShortcutDriveFileId?: string;
+      },
+      opts?: { targetVideoId?: string; appendNew?: boolean },
+    ) => {
+      setDraft((d) => {
+        const normalized = normalizeEncorePerformance(d);
+        const existing = [...(normalized.videos ?? [])];
+        if (metadataLocked || opts?.appendNew) {
+          const appended = newPerformanceVideo({
+            externalVideoUrl: fields.externalVideoUrl,
+            videoTargetDriveFileId: fields.videoTargetDriveFileId,
+            videoShortcutDriveFileId: fields.videoShortcutDriveFileId,
+          });
+          return syncPerformanceLegacyVideoFields({
+            ...d,
+            videos: [...existing, appended],
+            primaryVideoId: normalized.primaryVideoId ?? existing[0]?.id ?? appended.id,
+          });
+        }
+        if (opts?.targetVideoId) {
+          const idx = existing.findIndex((v) => v.id === opts.targetVideoId);
+          if (idx >= 0) {
+            const nextVideos = [...existing];
+            nextVideos[idx] = {
+              ...nextVideos[idx]!,
+              externalVideoUrl: fields.externalVideoUrl,
+              videoTargetDriveFileId: fields.videoTargetDriveFileId,
+              videoShortcutDriveFileId: fields.videoShortcutDriveFileId,
+            };
+            return syncPerformanceLegacyVideoFields({
+              ...d,
+              videos: nextVideos,
+              primaryVideoId: normalized.primaryVideoId ?? nextVideos[0]?.id,
+            });
+          }
+        }
+        const primaryId = normalized.primaryVideoId ?? existing[0]?.id;
+        if (primaryId) {
+          const idx = existing.findIndex((v) => v.id === primaryId);
+          const updated = {
+            ...(idx >= 0 ? existing[idx]! : existing[0]!),
+            externalVideoUrl: fields.externalVideoUrl,
+            videoTargetDriveFileId: fields.videoTargetDriveFileId,
+            videoShortcutDriveFileId: fields.videoShortcutDriveFileId,
+          };
+          const nextVideos = [...existing];
+          if (idx >= 0) nextVideos[idx] = updated;
+          else if (nextVideos[0]) nextVideos[0] = updated;
+          return syncPerformanceLegacyVideoFields({ ...d, videos: nextVideos, primaryVideoId: primaryId });
+        }
+        const created = newPerformanceVideo(fields);
+        return syncPerformanceLegacyVideoFields({
+          ...d,
+          videos: [created],
+          primaryVideoId: created.id,
+        });
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, googleAccessToken]);
-
-  const performancesUploadFolderId = useMemo(
-    () =>
-      driveUploadLayout
-        ? resolveDriveUploadFolderId('performances', driveUploadLayout, repertoireExtras.driveUploadFolderOverrides) ??
-          null
-        : null,
-    [driveUploadLayout, repertoireExtras.driveUploadFolderOverrides],
+    },
+    [metadataLocked],
   );
 
-  const syncVideoFromInput = useCallback(async () => {
-    const parsed = parsePerformanceVideoInput(videoInput);
-    if (parsed.kind === 'youtube') {
-      setDriveLinkFeedback(null);
-      setPendingLocalVideoFile(null);
-      setDraft((d) => ({
-        ...d,
-        externalVideoUrl: `https://www.youtube.com/watch?v=${encodeURIComponent(parsed.videoId)}`,
-        videoTargetDriveFileId: undefined,
-      }));
-      return;
-    }
-    if (parsed.kind === 'external') {
-      setDriveLinkFeedback(null);
-      setPendingLocalVideoFile(null);
-      setDraft((d) => ({ ...d, externalVideoUrl: parsed.url, videoTargetDriveFileId: undefined }));
-      return;
-    }
-    if (parsed.kind === 'drive-folder') {
-      setPendingLocalVideoFile(null);
-      setDriveLinkFeedback({ kind: 'folder' });
-      setDraft((d) => ({ ...d, videoTargetDriveFileId: undefined, externalVideoUrl: undefined }));
-      return;
-    }
-    if (parsed.kind === 'drive') {
-      setPendingLocalVideoFile(null);
-      const fileIdForMeta = parsed.fileId;
-      const gen = ++driveLookupGen.current;
-      const isNewDriveLink = fileIdForMeta !== initialDriveFileIdRef.current;
-      const shouldSetDateFromDriveMeta = performance == null || isNewDriveLink;
-      setDraft((d) => ({ ...d, videoTargetDriveFileId: fileIdForMeta, externalVideoUrl: undefined }));
+  type SyncVideoLinkOpts = {
+    targetVideoId?: string;
+    appendNew?: boolean;
+    feedbackVideoId?: string | null;
+    finishEditor?: boolean;
+  };
 
-      if (!googleAccessToken) {
-        setDriveLinkFeedback({ kind: 'needs_signin' });
-        return;
-      }
+  const syncVideoLinkInput = useCallback(
+    async (input: string, opts?: SyncVideoLinkOpts) => {
+      const existingVideoCount = normalizeEncorePerformance(draft).videos?.length ?? 0;
+      const linkApplyOpts = metadataLocked
+        ? ({ appendNew: true } as const)
+        : opts?.targetVideoId
+          ? ({ targetVideoId: opts.targetVideoId } as const)
+          : opts?.appendNew || existingVideoCount > 0
+            ? ({ appendNew: true } as const)
+            : undefined;
 
-      setDriveLinkFeedback({ kind: 'loading' });
-      try {
-        const meta = await driveGetFileMetadata(googleAccessToken, fileIdForMeta);
-        if (gen !== driveLookupGen.current) return;
-        if (isDriveFolderMetadata(meta)) {
-          setDriveLinkFeedback({ kind: 'folder' });
-          setDraft((d) => ({ ...d, videoTargetDriveFileId: undefined, externalVideoUrl: undefined }));
+      const applyFeedback = (feedback: PerfDriveLinkFeedback) => {
+        if (opts?.feedbackVideoId) {
+          setInlineLinkFeedbackVideoId(opts.feedbackVideoId);
+        } else if (opts?.feedbackVideoId === null) {
+          setInlineLinkFeedbackVideoId(null);
+        }
+        setDriveLinkFeedback(feedback);
+      };
+
+      const clearAddPanelLink = () => {
+        setVideoInput('');
+        setDriveLinkFeedback(null);
+        setInlineLinkFeedbackVideoId(null);
+      };
+
+      const parsed = parsePerformanceVideoInput(input);
+      if (parsed.kind === 'youtube') {
+        applyFeedback(null);
+        setPendingLocalVideoFiles([]);
+        if (metadataLocked) {
+          setPendingLinkVideo({
+            externalVideoUrl: `https://www.youtube.com/watch?v=${encodeURIComponent(parsed.videoId)}`,
+            displayName: 'YouTube video',
+          });
+          setVideoInput('');
+          setDriveLinkFeedback(null);
           return;
         }
-        const displayName = meta.name?.trim() || 'Untitled';
-        setDriveLinkFeedback({ kind: 'ok', name: displayName });
-        const day = isoDateFromDriveFileMeta(meta);
-        if (day && shouldSetDateFromDriveMeta) {
-          setDraft((d) => {
-            if (normalizeDriveFileIdForCompare(d.videoTargetDriveFileId) !== fileIdForMeta) return d;
-            return { ...d, date: day };
-          });
-        }
-        const guessedVenue = suggestPerformanceVenueFromFile(venueList, meta.name ?? '').trim();
-        if (guessedVenue && shouldSetDateFromDriveMeta) {
-          setDraft((d) => {
-            if (normalizeDriveFileIdForCompare(d.videoTargetDriveFileId) !== fileIdForMeta) return d;
-            return { ...d, venueTag: d.venueTag.trim() ? d.venueTag : guessedVenue };
-          });
-        }
-      } catch {
-        if (gen !== driveLookupGen.current) return;
-        setDriveLinkFeedback({
-          kind: 'error',
-          message: 'Could not open this in Drive. Check the link and try again.',
-        });
+        applyLinkedVideo(
+          {
+            externalVideoUrl: `https://www.youtube.com/watch?v=${encodeURIComponent(parsed.videoId)}`,
+            videoTargetDriveFileId: undefined,
+            videoShortcutDriveFileId: undefined,
+          },
+          linkApplyOpts,
+        );
+        if (linkApplyOpts?.appendNew && opts?.finishEditor !== false) clearAddPanelLink();
+        return;
       }
-      return;
-    }
-    if (parsed.kind === 'empty') {
-      setDriveLinkFeedback(null);
-      setDraft((d) => ({ ...d, externalVideoUrl: undefined, videoTargetDriveFileId: undefined }));
-    }
-  }, [videoInput, googleAccessToken, performance, venueList]);
+      if (parsed.kind === 'external') {
+        applyFeedback(null);
+        setPendingLocalVideoFiles([]);
+        if (metadataLocked) {
+          setPendingLinkVideo({ externalVideoUrl: parsed.url, displayName: 'External video' });
+          setVideoInput('');
+          setDriveLinkFeedback(null);
+          return;
+        }
+        applyLinkedVideo(
+          { externalVideoUrl: parsed.url, videoTargetDriveFileId: undefined, videoShortcutDriveFileId: undefined },
+          linkApplyOpts,
+        );
+        if (linkApplyOpts?.appendNew && opts?.finishEditor !== false) clearAddPanelLink();
+        return;
+      }
+      if (parsed.kind === 'drive-folder') {
+        setPendingLocalVideoFiles([]);
+        applyFeedback({ kind: 'folder' });
+        return;
+      }
+      if (parsed.kind === 'drive') {
+        setPendingLocalVideoFiles([]);
+        const fileIdForMeta = parsed.fileId;
+        const gen = ++driveLookupGen.current;
+        const isNewDriveLink = fileIdForMeta !== initialDriveFileIdRef.current;
+        const shouldSetDateFromDriveMeta = !metadataLocked && (performance == null || isNewDriveLink);
+        if (!metadataLocked) {
+          applyLinkedVideo(
+            { videoTargetDriveFileId: fileIdForMeta, externalVideoUrl: undefined, videoShortcutDriveFileId: undefined },
+            linkApplyOpts,
+          );
+        }
+
+        if (!googleAccessToken) {
+          if (metadataLocked) {
+            setPendingLinkVideo({ videoTargetDriveFileId: fileIdForMeta, displayName: 'Drive video' });
+          }
+          applyFeedback({ kind: 'needs_signin' });
+          return;
+        }
+
+        applyFeedback({ kind: 'loading' });
+        try {
+          const meta = await driveGetFileMetadata(googleAccessToken, fileIdForMeta);
+          if (gen !== driveLookupGen.current) return;
+          if (isDriveFolderMetadata(meta)) {
+            applyFeedback({ kind: 'folder' });
+            return;
+          }
+          const displayName = meta.name?.trim() || 'Untitled';
+          applyFeedback({ kind: 'ok', name: displayName });
+          if (metadataLocked) {
+            setPendingLinkVideo({
+              videoTargetDriveFileId: fileIdForMeta,
+              displayName,
+            });
+            setVideoInput('');
+            return;
+          }
+          if (linkApplyOpts?.appendNew && opts?.finishEditor !== false) clearAddPanelLink();
+          const day = isoDateFromDriveFileMeta(meta);
+          if (day && shouldSetDateFromDriveMeta) {
+            setDraft((d) => ({ ...d, date: day }));
+          }
+          const guessedVenue = suggestPerformanceVenueFromFile(venueList, meta.name ?? '').trim();
+          if (guessedVenue && shouldSetDateFromDriveMeta) {
+            setDraft((d) => ({
+              ...d,
+              venueTag: d.venueTag.trim() ? d.venueTag : guessedVenue,
+            }));
+          }
+        } catch {
+          if (gen !== driveLookupGen.current) return;
+          applyFeedback({
+            kind: 'error',
+            message: 'Could not open this in Drive. Check the link and try again.',
+          });
+        }
+        return;
+      }
+      if (parsed.kind === 'empty') {
+        applyFeedback(null);
+        if (metadataLocked) {
+          setPendingLinkVideo(null);
+          return;
+        }
+        if (opts?.targetVideoId) {
+          applyLinkedVideo(
+            { externalVideoUrl: undefined, videoTargetDriveFileId: undefined, videoShortcutDriveFileId: undefined },
+            { targetVideoId: opts.targetVideoId },
+          );
+          return;
+        }
+        if (existingVideoCount > 0 || performance) return;
+        setDraft((d) =>
+          syncPerformanceLegacyVideoFields({
+            ...d,
+            externalVideoUrl: undefined,
+            videoTargetDriveFileId: undefined,
+            videoShortcutDriveFileId: undefined,
+            videos: undefined,
+            primaryVideoId: undefined,
+          }),
+        );
+      }
+    },
+    [googleAccessToken, performance, venueList, applyLinkedVideo, metadataLocked, draft],
+  );
+
+  const syncVideoFromInput = useCallback(
+    () => syncVideoLinkInput(videoInput, { feedbackVideoId: null }),
+    [syncVideoLinkInput, videoInput],
+  );
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -301,10 +463,17 @@ export function PerformanceEditorDialog(props: {
 
   const handleSave = async () => {
     const now = new Date().toISOString();
-    let videoTargetDriveFileId = draft.videoTargetDriveFileId?.trim();
-    let externalVideoUrl = draft.externalVideoUrl?.trim();
+    let videos = [...(normalizeEncorePerformance(draft).videos ?? [])];
+    let primaryVideoId = draft.primaryVideoId ?? videos[0]?.id;
 
-    if (pendingLocalVideoFile) {
+    if (metadataLocked && pendingLocalVideoFiles.length === 0 && !pendingLinkVideo) {
+      setShortcutMsg('Choose a video before saving.');
+      return;
+    }
+
+    const deviceFilesToUpload = [...pendingLocalVideoFiles];
+
+    if (deviceFilesToUpload.length > 0) {
       if (!googleAccessToken) {
         setShortcutMsg('Sign in with Google to upload the video from your device.');
         return;
@@ -320,37 +489,46 @@ export function PerformanceEditorDialog(props: {
           if (!parent?.trim()) {
             throw new Error('Performances folder is not ready yet.');
           }
-          const { extension } = splitFileNameExtension(pendingLocalVideoFile.name);
           const venueForNaming = draft.venueTag.trim() || 'Venue';
-          const desiredName = buildPerformanceVideoName(
-            { date: draft.date, venueTag: venueForNaming },
-            songForPerformance,
-            extension,
-          );
           const perfLabel = `${draft.venueTag.trim() || 'Venue'} · Video`;
-          const uploadedId = await uploadWithDuplicateCheck({
-            file: pendingLocalVideoFile,
-            uploadNew: async () => {
-              const created = await driveUploadFileResumable(
-                googleAccessToken,
-                pendingLocalVideoFile,
-                [parent.trim()],
-                desiredName,
-              );
-              await registerUploadedDriveFile(created.id, perfLabel);
-              return created.id;
-            },
-            reuseExisting: async (driveFileId) => {
-              await registerUploadedDriveFile(driveFileId, perfLabel);
-              return driveFileId;
-            },
-          });
-          if (!uploadedId) {
-            setUploading(false);
-            return;
+
+          for (const file of deviceFilesToUpload) {
+            const { extension } = splitFileNameExtension(file.name);
+            const desiredName = buildPerformanceVideoName(
+              { date: draft.date, venueTag: venueForNaming },
+              songForPerformance,
+              extension,
+            );
+            const uploadedId = await uploadWithDuplicateCheck({
+              file,
+              uploadNew: async () => {
+                const created = await driveUploadFileResumable(
+                  googleAccessToken,
+                  file,
+                  [parent.trim()],
+                  desiredName,
+                );
+                await registerUploadedDriveFile(created.id, perfLabel);
+                return created.id;
+              },
+              reuseExisting: async (driveFileId) => {
+                await registerUploadedDriveFile(driveFileId, perfLabel);
+                return driveFileId;
+              },
+            });
+            if (!uploadedId) {
+              setUploading(false);
+              return;
+            }
+            const uploadedVideo = newPerformanceVideo({ videoTargetDriveFileId: uploadedId });
+            if (videos.length === 0) {
+              videos = [uploadedVideo];
+              primaryVideoId = uploadedVideo.id;
+            } else {
+              videos = [...videos, uploadedVideo];
+              primaryVideoId = primaryVideoId ?? videos[0]?.id;
+            }
           }
-          videoTargetDriveFileId = uploadedId;
-          externalVideoUrl = undefined;
         });
       } catch (e) {
         setShortcutMsg(`Upload failed: ${e instanceof Error ? e.message : String(e)}`);
@@ -358,22 +536,24 @@ export function PerformanceEditorDialog(props: {
         return;
       }
       setUploading(false);
+    } else if (pendingLinkVideo) {
+      videos = [...videos, newPerformanceVideo(pendingLinkVideo)];
+      primaryVideoId = primaryVideoId ?? videos[0]?.id;
     }
 
-    const finalDraft: EncorePerformance = {
+    const withVideos: EncorePerformance = syncPerformanceLegacyVideoFields({
       ...draft,
       venueTag: draft.venueTag.trim() || 'Venue',
       date: draft.date,
-      accompanimentTags: draft.accompanimentTags && draft.accompanimentTags.length > 0 ? draft.accompanimentTags : undefined,
-      externalVideoUrl: externalVideoUrl || undefined,
+      accompanimentTags:
+        draft.accompanimentTags && draft.accompanimentTags.length > 0 ? draft.accompanimentTags : undefined,
       notes: draft.notes?.trim() || undefined,
-      videoTargetDriveFileId: videoTargetDriveFileId || undefined,
+      videos: videos.length > 0 ? videos : undefined,
+      primaryVideoId: primaryVideoId || undefined,
       updatedAt: now,
       createdAt: draft.createdAt || now,
-    };
-    // savePerformance() in EncoreContext takes care of creating any missing shortcut
-    // (for picked-from-Drive files) and renaming Drive files to the canonical name.
-    await onSave(finalDraft);
+    });
+    await onSave(withVideos);
     onClose();
   };
 
@@ -389,35 +569,35 @@ export function PerformanceEditorDialog(props: {
     }
   };
 
-  const stageLocalVideoFile = useCallback(
-    (file: File | null) => {
-      if (!file || !googleAccessToken) return;
-      if (file.size <= 0) {
+  const appendLocalVideoFiles = useCallback(
+    (files: File[]) => {
+      if (!googleAccessToken || files.length === 0) return;
+      const valid = files.filter((file) => file.size > 0);
+      if (valid.length < files.length) {
         setShortcutMsg('That file is empty (0 bytes). Pick a different video.');
         return;
       }
       setDriveLinkFeedback(null);
-      setPendingLocalVideoFile(file);
+      setPendingLinkVideo(null);
       setVideoInput('');
-      setDraft((d) => {
-        const guessedVenue = suggestPerformanceVenueFromFile(venueList, file.name);
-        // Only override the date when the filename itself contains a parseable date — that's
-        // the user-explicit signal (e.g. `"2024-09-17 Blue Note.mov"`). Otherwise leave
-        // whatever's already in the field, which is either the dialog's "today" default or a
-        // value the user just typed. `File.lastModified` is too unreliable to override the
-        // user with (it's export time, not record time, and is `0` for many broken exports).
-        const dateFromFileName = performance == null ? guessIsoDateFromFreeText(file.name) : null;
-        return {
-          ...d,
-          externalVideoUrl: undefined,
-          videoTargetDriveFileId: undefined,
-          date: dateFromFileName ?? d.date,
-          venueTag: d.venueTag.trim() ? d.venueTag : guessedVenue || d.venueTag,
-        };
+      setPendingLocalVideoFiles((prev) => {
+        if (!metadataLocked && prev.length === 0 && valid[0]) {
+          const file = valid[0];
+          setDraft((d) => {
+            const guessedVenue = suggestPerformanceVenueFromFile(venueList, file.name);
+            const dateFromFileName = performance == null ? guessIsoDateFromFreeText(file.name) : null;
+            return {
+              ...d,
+              date: dateFromFileName ?? d.date,
+              venueTag: d.venueTag.trim() ? d.venueTag : guessedVenue || d.venueTag,
+            };
+          });
+        }
+        return [...prev, ...valid];
       });
       setShortcutMsg(null);
     },
-    [googleAccessToken, performance, venueList],
+    [googleAccessToken, performance, venueList, metadataLocked],
   );
 
   /**
@@ -435,52 +615,220 @@ export function PerformanceEditorDialog(props: {
     if (!initialLocalVideoFile) return;
     if (consumedInitialFileRef.current === initialLocalVideoFile) return;
     consumedInitialFileRef.current = initialLocalVideoFile;
-    stageLocalVideoFile(initialLocalVideoFile);
-  }, [open, initialLocalVideoFile, stageLocalVideoFile]);
+    appendLocalVideoFiles([initialLocalVideoFile]);
+  }, [open, initialLocalVideoFile, appendLocalVideoFiles]);
 
-  const handlePerfDialogPaperDragOver = useCallback(
-    (e: DragEvent<HTMLElement>) => {
-      if (!googleAccessToken || uploading) return;
-      e.preventDefault();
-      e.stopPropagation();
+  const draftVideos = useMemo(() => normalizeEncorePerformance(draft).videos ?? [], [draft]);
+  const primaryVideo = useMemo(() => getPrimaryPerformanceVideo(draft), [draft]);
+
+  const handleRemoveDeviceFileAt = useCallback((index: number) => {
+    setPendingLocalVideoFiles((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleRemovePendingLinkVideo = useCallback(() => {
+    setPendingLinkVideo(null);
+    setVideoInput('');
+    setDriveLinkFeedback(null);
+  }, []);
+
+  const handleKeepExistingVideo = useCallback(() => {
+    setPendingLocalVideoFiles([]);
+    setPendingLinkVideo(null);
+    setDriveLinkFeedback(null);
+    const primary = getPrimaryPerformanceVideo(draft);
+    setVideoInput(primary ? videoToLinkInput(primary) : '');
+  }, [draft]);
+
+  const handleInlineVideoLinkBlur = useCallback(
+    (videoId: string) => {
+      void syncVideoLinkInput(videoLinkDrafts[videoId] ?? '', {
+        targetVideoId: videoId,
+        feedbackVideoId: videoId,
+      });
     },
-    [googleAccessToken, uploading],
+    [syncVideoLinkInput, videoLinkDrafts],
   );
 
-  const handlePerfDialogPaperDragEnter = useCallback(
-    (e: DragEvent<HTMLElement>) => {
-      if (!googleAccessToken || uploading) return;
-      e.preventDefault();
-      e.stopPropagation();
-      perfDialogDragDepthRef.current += 1;
-      setPerfDialogDragOver(true);
+  const handleRevertInlineVideoLink = useCallback(
+    (video: { id: string; externalVideoUrl?: string; videoTargetDriveFileId?: string; videoShortcutDriveFileId?: string }) => {
+      setVideoLinkDrafts((prev) => ({ ...prev, [video.id]: videoToLinkInput(video) }));
+      setInlineLinkFeedbackVideoId((current) => {
+        if (current === video.id) setDriveLinkFeedback(null);
+        return current === video.id ? null : current;
+      });
     },
-    [googleAccessToken, uploading],
+    [],
   );
 
-  const handlePerfDialogPaperDragLeave = useCallback(
-    (e: DragEvent<HTMLElement>) => {
-      if (!googleAccessToken || uploading) return;
-      e.preventDefault();
-      e.stopPropagation();
-      perfDialogDragDepthRef.current = Math.max(0, perfDialogDragDepthRef.current - 1);
-      if (perfDialogDragDepthRef.current === 0) setPerfDialogDragOver(false);
+  const routeDroppedVideoFiles = useCallback(
+    (files: File[]) => {
+      if (!googleAccessToken) {
+        setShortcutMsg('Sign in with Google to upload the video from your device.');
+        return;
+      }
+      const accepted = filterAcceptedPerformanceVideoFiles(files);
+      if (accepted.length === 0) return;
+      appendLocalVideoFiles(accepted);
     },
-    [googleAccessToken, uploading],
+    [googleAccessToken, appendLocalVideoFiles],
   );
 
-  const handlePerfDialogPaperDrop = useCallback(
-    (e: DragEvent<HTMLElement>) => {
-      if (!googleAccessToken || uploading) return;
-      e.preventDefault();
-      e.stopPropagation();
-      perfDialogDragDepthRef.current = 0;
-      setPerfDialogDragOver(false);
-      const list = Array.from(e.dataTransfer.files);
-      const first = list.find((f) => fileMatchesAccept(f, PERF_LOCAL_VIDEO_ACCEPT));
-      if (first) stageLocalVideoFile(first);
+  const videoDropEnabled = Boolean(open && googleAccessToken && !uploading);
+
+  const stagedLinkLabel =
+    pendingLinkVideo?.displayName ??
+    (driveLinkFeedback?.kind === 'ok' ? driveLinkFeedback.name : null) ??
+    (videoInput.trim() || null);
+
+  const isEditingSavedPerformance = Boolean(performance && !metadataLocked);
+  const primaryVideoIdInDraft = draft.primaryVideoId ?? draftVideos[0]?.id;
+
+  const addVideoSourceStrip: PerformanceAddVideoSourceStripProps = useMemo(
+    () => ({
+      videoInput,
+      onVideoInputChange: setVideoInput,
+      onVideoInputBlur: () => void syncVideoFromInput(),
+      driveLinkFeedback,
+      browseDriveVideoFileId,
+      onPickFiles: routeDroppedVideoFiles,
+      pickerDisabled: !googleAccessToken || uploading,
+      uploading,
+      hasQueuedVideos:
+        draftVideos.length > 0 || pendingLocalVideoFiles.length > 0 || Boolean(pendingLinkVideo),
+    }),
+    [
+      videoInput,
+      syncVideoFromInput,
+      driveLinkFeedback,
+      browseDriveVideoFileId,
+      routeDroppedVideoFiles,
+      googleAccessToken,
+      uploading,
+      draftVideos.length,
+      pendingLocalVideoFiles.length,
+      pendingLinkVideo,
+    ],
+  );
+
+  const pendingLinkRows = useMemo(
+    () =>
+      metadataLocked && pendingLinkVideo
+        ? [
+            {
+              id: 'pending-link',
+              label: stagedLinkLabel ?? 'Linked video',
+              onRemove: handleRemovePendingLinkVideo,
+            },
+          ]
+        : [],
+    [metadataLocked, pendingLinkVideo, stagedLinkLabel, handleRemovePendingLinkVideo],
+  );
+
+  const buildInlineLinkProps = useCallback(
+    (video: (typeof draftVideos)[number]) => ({
+      value: videoLinkDrafts[video.id] ?? videoToLinkInput(video),
+      onChange: (value: string) => setVideoLinkDrafts((prev) => ({ ...prev, [video.id]: value })),
+      onBlur: () => handleInlineVideoLinkBlur(video.id),
+      onRevert: () => handleRevertInlineVideoLink(video),
+      showRevert: isVideoLinkInputDirty(video, videoLinkDrafts[video.id] ?? videoToLinkInput(video)),
+      driveLinkFeedback: inlineLinkFeedbackVideoId === video.id ? driveLinkFeedback : null,
+      browseDriveVideoFileId:
+        parseDriveFileIdFromUrlOrId((videoLinkDrafts[video.id] ?? '').trim()) ??
+        parseDriveFileIdFromUrlOrId(video.videoTargetDriveFileId ?? '') ??
+        parseDriveFileIdFromUrlOrId(video.videoShortcutDriveFileId ?? ''),
+      disabled: uploading,
+    }),
+    [
+      videoLinkDrafts,
+      handleInlineVideoLinkBlur,
+      handleRevertInlineVideoLink,
+      inlineLinkFeedbackVideoId,
+      driveLinkFeedback,
+      uploading,
+    ],
+  );
+
+  const handleRemoveSavedVideo = useCallback(
+    (videoId: string) => {
+      setVideoLinkDrafts((prev) => {
+        const next = { ...prev };
+        delete next[videoId];
+        return next;
+      });
+      if (inlineLinkFeedbackVideoId === videoId) {
+        setInlineLinkFeedbackVideoId(null);
+        setDriveLinkFeedback(null);
+      }
+      setDraft((d) => {
+        const normalized = normalizeEncorePerformance(d);
+        const nextVideos = (normalized.videos ?? []).filter((v) => v.id !== videoId);
+        const nextPrimary =
+          d.primaryVideoId === videoId ? nextVideos[0]?.id : d.primaryVideoId ?? nextVideos[0]?.id;
+        return syncPerformanceLegacyVideoFields({
+          ...d,
+          videos: nextVideos.length > 0 ? nextVideos : undefined,
+          primaryVideoId: nextPrimary,
+          externalVideoUrl: undefined,
+          videoTargetDriveFileId: undefined,
+          videoShortcutDriveFileId: undefined,
+        });
+      });
     },
-    [googleAccessToken, uploading, stageLocalVideoFile],
+    [inlineLinkFeedbackVideoId],
+  );
+
+  const renderVideoStack = (opts: { hideSavedVideos?: boolean }) => (
+    <Stack spacing={PERFORMANCE_EDITOR_SECTION_FIELD_SPACING}>
+      {!opts.hideSavedVideos
+        ? draftVideos.map((video) =>
+            isEditingSavedPerformance ? (
+              <PerformanceEditorVideoCard
+                key={video.id}
+                video={video}
+                performanceShell={draft}
+                isPrimary={video.id === primaryVideoIdInDraft}
+                googleAccessToken={googleAccessToken}
+                inlineLink={buildInlineLinkProps(video)}
+                uploading={uploading}
+                playbackActive={open}
+                onSetPrimary={
+                  draftVideos.length > 1
+                    ? () => setDraft((d) => syncPerformanceLegacyVideoFields({ ...d, primaryVideoId: video.id }))
+                    : undefined
+                }
+                onRemove={() => handleRemoveSavedVideo(video.id)}
+              />
+            ) : (
+              <PerformanceVideoCompactRow
+                key={video.id}
+                video={video}
+                performanceShell={draft}
+                isPrimary={video.id === primaryVideoIdInDraft}
+                googleAccessToken={googleAccessToken}
+                onSetPrimary={
+                  draftVideos.length > 1
+                    ? () => setDraft((d) => syncPerformanceLegacyVideoFields({ ...d, primaryVideoId: video.id }))
+                    : undefined
+                }
+                onRemove={() => handleRemoveSavedVideo(video.id)}
+              />
+            ),
+          )
+        : null}
+      <PerformanceAddVideosPanel
+        deviceFiles={pendingLocalVideoFiles}
+        linkRows={pendingLinkRows}
+        uploading={uploading}
+        onRemoveDeviceFileAt={handleRemoveDeviceFileAt}
+        sourceStrip={addVideoSourceStrip}
+        playbackActive={open}
+        onKeepExistingVideo={
+          primaryVideo && !metadataLocked && pendingLocalVideoFiles.length === 1
+            ? handleKeepExistingVideo
+            : undefined
+        }
+      />
+    </Stack>
   );
 
   const shortcutSeverity = shortcutMsg?.startsWith('Upload failed:') ? 'error' : 'info';
@@ -491,25 +839,12 @@ export function PerformanceEditorDialog(props: {
         open={open}
         onClose={onClose}
         fullWidth
-        maxWidth="sm"
+        maxWidth="md"
         aria-labelledby="perf-editor-title"
-        PaperProps={{
-          onDragEnter: handlePerfDialogPaperDragEnter,
-          onDragLeave: handlePerfDialogPaperDragLeave,
-          onDragOver: handlePerfDialogPaperDragOver,
-          onDrop: handlePerfDialogPaperDrop,
-          sx: (theme) =>
-            perfDialogDragOver && googleAccessToken && !uploading
-              ? {
-                  outline: `2px dashed ${theme.palette.primary.main}`,
-                  outlineOffset: '-6px',
-                }
-              : {},
-        }}
       >
         <DialogTitle id="perf-editor-title" sx={encoreDialogTitleSx}>
-          {performance ? 'Edit performance' : 'Log performance'}
-          {songForPerformance ? (
+          {metadataLocked ? 'Add video to performance' : performance ? 'Edit performance' : 'Log performance'}
+          {songForPerformance && !metadataLocked ? (
             <Typography
               component="div"
               variant="body2"
@@ -529,241 +864,71 @@ export function PerformanceEditorDialog(props: {
           ) : null}
         </DialogTitle>
       <DialogContent sx={encoreDialogContentSx}>
-        <Stack spacing={2.25}>
-          <Paper
-            variant="outlined"
-            sx={(theme) => ({
-              p: 2,
-              borderRadius: 2,
-              borderColor: encoreHairline,
-              bgcolor: alpha(theme.palette.primary.main, 0.02),
-            })}
-          >
-            <Stack spacing={1.25}>
-              <TextField
-                label="Video link"
-                value={videoInput}
-                onChange={(e) => setVideoInput(e.target.value)}
-                onBlur={() => void syncVideoFromInput()}
-                fullWidth
-                size="small"
-                placeholder="URL, YouTube, or Drive file id"
-              />
-              {driveLinkFeedback?.kind === 'loading' ? (
-                <Stack direction="row" alignItems="center" gap={1} sx={{ minHeight: 28 }}>
-                  <CircularProgress size={14} />
-                  <Typography variant="caption" color="text.secondary">
-                    Checking Drive…
-                  </Typography>
-                </Stack>
-              ) : null}
-              {driveLinkFeedback?.kind === 'ok' && browseDriveVideoFileId ? (
-                <Box
-                  sx={(theme) => ({
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    py: 0.75,
-                    px: 1,
-                    borderRadius: 1,
-                    border: 1,
-                    borderColor: alpha(theme.palette.success.main, 0.35),
-                    bgcolor: alpha(theme.palette.success.main, 0.06),
-                  })}
-                >
-                  <CheckCircleOutlineIcon color="success" sx={{ fontSize: 18, flexShrink: 0 }} aria-hidden />
-                  <Typography
-                    variant="body2"
-                    fontWeight={600}
-                    sx={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}
-                    noWrap
-                    title={driveLinkFeedback.name}
-                  >
-                    {driveLinkFeedback.name}
-                  </Typography>
-                  <Tooltip title="Open in Drive">
-                    <IconButton
-                      component="a"
-                      href={driveFileWebUrl(browseDriveVideoFileId)}
-                      target="_blank"
-                      rel="noreferrer"
-                      color="success"
-                      size="small"
-                      aria-label="Open in Drive"
-                      sx={{ flexShrink: 0 }}
-                    >
-                      <OpenInNewIcon sx={{ fontSize: 18 }} />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              ) : null}
-              {driveLinkFeedback?.kind === 'folder' ? (
-                <Alert severity="warning" variant="outlined" sx={{ py: 0.25, '& .MuiAlert-message': { py: 0.5 } }}>
-                  That’s a folder. Use a video file link.
-                </Alert>
-              ) : null}
-              {driveLinkFeedback?.kind === 'needs_signin' ? (
-                <Alert severity="info" variant="outlined" sx={{ py: 0.25, '& .MuiAlert-message': { py: 0.5 } }}>
-                  Sign in with Google to verify this file.
-                </Alert>
-              ) : null}
-              {driveLinkFeedback?.kind === 'error' ? (
-                <Alert severity="error" variant="outlined" sx={{ py: 0.25, '& .MuiAlert-message': { py: 0.5 } }}>
-                  {driveLinkFeedback.message}
-                </Alert>
-              ) : null}
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
-                {browseDriveVideoFileId && driveLinkFeedback?.kind !== 'ok' ? (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    component="a"
-                    href={driveFileWebUrl(browseDriveVideoFileId)}
-                    target="_blank"
-                    rel="noreferrer"
-                    startIcon={<OpenInNewIcon sx={{ fontSize: 18 }} />}
-                  >
-                    Open in Drive
-                  </Button>
-                ) : null}
-                <EncoreBrowseDriveButton
-                  size="small"
-                  signedIn={Boolean(googleAccessToken)}
-                  fullWidth={!browseDriveVideoFileId || driveLinkFeedback?.kind === 'ok'}
-                  onClick={() => {
-                    if (!googleAccessToken || !performancesUploadFolderId) return;
-                    window.open(driveFolderWebUrl(performancesUploadFolderId), '_blank', 'noopener,noreferrer');
-                  }}
-                  disabled={!performancesUploadFolderId}
-                  sx={{
-                    flex:
-                      browseDriveVideoFileId && driveLinkFeedback?.kind !== 'ok' ? { sm: '1 1 0' } : undefined,
-                    minWidth: 0,
-                    textTransform: 'none',
-                    fontWeight: 600,
-                  }}
-                >
-                  Performances folder
-                </EncoreBrowseDriveButton>
-              </Stack>
-              <DragDropFileUpload
-                compact
-                minHeight={48}
-                multiple={false}
-                disabled={!googleAccessToken || uploading}
-                accept={PERF_LOCAL_VIDEO_ACCEPT}
-                label={
-                  uploading
-                    ? 'Uploading…'
-                    : pendingLocalVideoFile
-                      ? pendingLocalVideoFile.name
-                      : 'Video from device'
+        <Stack spacing={2.5}>
+          {metadataLocked && performance ? (
+            <>
+              <PerformanceContextSummary
+                performance={performance}
+                googleAccessToken={googleAccessToken}
+                song={
+                  songForPerformance
+                    ? {
+                        title: songForPerformance.title,
+                        artist: songForPerformance.artist,
+                        albumArtUrl: songForPerformance.albumArtUrl,
+                      }
+                    : null
                 }
-                helperText={pendingLocalVideoFile && googleAccessToken ? 'Uploads when you save.' : undefined}
-                ariaLabel="Add performance video from device"
-                onFiles={(files) => stageLocalVideoFile(files[0] ?? null)}
               />
-              {pendingLocalVideoFile && googleAccessToken ? (
-                <Button
-                  type="button"
-                  size="small"
-                  color="inherit"
-                  onClick={() => {
-                    setPendingLocalVideoFile(null);
-                    setShortcutMsg(null);
-                  }}
-                  sx={{ alignSelf: 'flex-start', textTransform: 'none', fontWeight: 600 }}
+              <PerformanceEditorSection title="Video" caption="Drop a file anywhere below, or add from the panel.">
+                <PerformanceEditorVideosDropZone
+                  enabled={videoDropEnabled}
+                  onDropVideos={routeDroppedVideoFiles}
+                  dropHint="Drop to add video"
                 >
-                  Remove file
-                </Button>
-              ) : null}
-              {!googleAccessToken ? (
-                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45 }}>
-                  Sign in with Google for Drive and device upload.
-                </Typography>
-              ) : !performancesUploadFolderId ? (
-                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45 }}>
-                  Drive folders are still preparing. Paste a file link above, or try again shortly.
-                </Typography>
-              ) : null}
-              {shortcutMsg ? (
-                <Alert
-                  severity={shortcutSeverity}
-                  variant="outlined"
-                  sx={{
-                    borderColor: encoreHairline,
-                    whiteSpace: 'pre-line',
-                    py: 0.25,
-                    '& .MuiAlert-message': { py: 0.5 },
-                  }}
+                  {renderVideoStack({ hideSavedVideos: true })}
+                </PerformanceEditorVideosDropZone>
+              </PerformanceEditorSection>
+            </>
+          ) : (
+            <>
+              <PerformanceEditorSection
+                title="Performance details"
+                caption="When and where you played this song."
+              >
+                <PerformanceMetadataSection
+                  draft={draft}
+                  venueList={venueList}
+                  onChange={(next) => setDraft(next)}
+                />
+              </PerformanceEditorSection>
+              <PerformanceEditorSection
+                title="Videos"
+                caption={
+                  isEditingSavedPerformance
+                    ? 'Saved clips upload on save. Drop a file anywhere below to add more.'
+                    : 'Drop a file anywhere below, or add from the panel.'
+                }
+              >
+                <PerformanceEditorVideosDropZone
+                  enabled={videoDropEnabled}
+                  onDropVideos={routeDroppedVideoFiles}
+                  dropHint="Drop to add video"
                 >
-                  {shortcutSeverity === 'error' ? shortcutMsg.replace(/^Upload failed:\s*/i, '') : shortcutMsg}
-                </Alert>
-              ) : null}
-            </Stack>
-          </Paper>
-
-          <Stack spacing={2}>
-            <TextField
-              label="Date"
-              type="date"
-              value={draft.date}
-              size="small"
-              onChange={(e) => setDraft((d) => ({ ...d, date: e.target.value }))}
-              InputLabelProps={{ shrink: true }}
-              fullWidth
-            />
-            <Box>
-              <Typography component="p" variant="subtitle2" color="text.secondary" sx={{ mb: 1, mt: 0, fontWeight: 600 }}>
-                Accompaniment
-              </Typography>
-              <Stack direction="row" gap={0.75} flexWrap="wrap" useFlexGap>
-                {ENCORE_ACCOMPANIMENT_TAGS.map((tag) => {
-                  const active = (draft.accompanimentTags ?? []).includes(tag);
-                  return (
-                    <Chip
-                      key={tag}
-                      size="small"
-                      label={tag}
-                      clickable
-                      color={active ? 'primary' : 'default'}
-                      variant={active ? 'filled' : 'outlined'}
-                      sx={{ height: 28, fontWeight: 600 }}
-                      onClick={() => {
-                        setDraft((d) => {
-                          const cur = new Set(d.accompanimentTags ?? []);
-                          if (cur.has(tag)) cur.delete(tag);
-                          else cur.add(tag);
-                          const next = ENCORE_ACCOMPANIMENT_TAGS.filter((t) => cur.has(t));
-                          return { ...d, accompanimentTags: next.length ? next : undefined };
-                        });
-                      }}
-                    />
-                  );
-                })}
-              </Stack>
-            </Box>
-            <Autocomplete
-              freeSolo
-              size="small"
-              options={venueList}
-              inputValue={draft.venueTag}
-              onInputChange={(_, v) => setDraft((d) => ({ ...d, venueTag: v }))}
-              renderInput={(params) => (
-                <TextField {...params} label="Venue" placeholder="Type or choose" fullWidth />
-              )}
-            />
-            <TextField
-              label="Notes"
-              value={draft.notes ?? ''}
-              size="small"
-              onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value || undefined }))}
-              fullWidth
-              multiline
-              minRows={2}
-              placeholder="Optional"
-            />
-          </Stack>
+                  {renderVideoStack({})}
+                </PerformanceEditorVideosDropZone>
+              </PerformanceEditorSection>
+            </>
+          )}
+          {shortcutMsg ? (
+            <Alert
+              severity={shortcutSeverity}
+              variant="outlined"
+              sx={{ whiteSpace: 'pre-line', py: 0.25, '& .MuiAlert-message': { py: 0.5 } }}
+            >
+              {shortcutSeverity === 'error' ? shortcutMsg.replace(/^Upload failed:\s*/i, '') : shortcutMsg}
+            </Alert>
+          ) : null}
         </Stack>
       </DialogContent>
       <DialogActions
@@ -776,7 +941,7 @@ export function PerformanceEditorDialog(props: {
         }}
       >
         <Box sx={{ minWidth: 0, flexShrink: 0 }}>
-          {performance && onDelete ? (
+          {performance && onDelete && !metadataLocked ? (
             <Button
               type="button"
               variant="text"
@@ -802,7 +967,7 @@ export function PerformanceEditorDialog(props: {
             Cancel
           </Button>
           <Button onClick={() => void handleSave()} variant="contained" disabled={uploading}>
-            Save
+            {metadataLocked ? 'Add video' : 'Save'}
           </Button>
         </Stack>
       </DialogActions>

@@ -16,19 +16,31 @@
           error: error || undefined,
         };
         var target = window.location.origin;
-        if (window.opener) {
+        var channelName = 'labs_google_oauth';
+
+        function notifyParent() {
+          if (window.opener && !window.opener.closed) {
+            try {
+              window.opener.postMessage(payload, target);
+            } catch (e) {
+              /* ignore */
+            }
+          }
           try {
-            window.opener.postMessage(payload, target);
+            var bc = new BroadcastChannel(channelName);
+            bc.postMessage(payload);
+            bc.close();
           } catch (e) {
             /* ignore */
           }
-          window.close();
         }
+
+        notifyParent();
         if (!window.closed) {
           document.body.textContent = error ? 'Sign-in failed.' : 'Finishing sign-in…';
           window.setTimeout(function () {
             window.close();
-          }, 150);
+          }, 200);
         }
       })();
     </script>

@@ -13,6 +13,12 @@ export function shouldUsePublicDriveSameOriginProxy(): boolean {
   return Boolean(import.meta.env.DEV);
 }
 
+/** True when the app can attempt a guest snapshot / public Drive JSON read. */
+export function isPublicDriveGuestFetchConfigured(): boolean {
+  const key = (import.meta.env.VITE_GOOGLE_API_KEY as string | undefined)?.trim();
+  return Boolean(key) || shouldUsePublicDriveSameOriginProxy();
+}
+
 function buildPublicDriveProxyMediaUrl(fileId: string, suffix: 'media' | 'meta'): string | undefined {
   if (!shouldUsePublicDriveSameOriginProxy()) return undefined;
   if (typeof window === 'undefined' || typeof window.location?.origin !== 'string') return undefined;

@@ -22,3 +22,10 @@ Minimum per-file checks when touching TypeScript:
 3. **Knip** — `npm run knip` (delete any files/exports you made unused)
 
 If any check fails on code you touched, fix it before finishing. Pre-existing errors in unrelated files can be ignored.
+
+## Shell / provider / route wiring
+
+Presubmit does **not** run `vite build`. When you touch app shells, React context providers, hash routing, or Vite entry HTML:
+
+1. Run **`npm run build`** locally before commit (CI runs build; catch bundling issues early).
+2. For Encore performance list/editor UI, run **`npm run test:e2e:smoke`** (includes `e2e/smoke/encore-performance-routes.spec.ts`) or hard-refresh `#/library` and `#/practice` in dev — HMR can hide provider wiring bugs.

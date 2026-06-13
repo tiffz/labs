@@ -50,6 +50,7 @@ export function EncoreMediaPlaybackBar(): ReactElement | null {
 
   const clampTranspose = (next: number) => Math.max(-12, Math.min(12, next));
   const isYoutube = target.kind === 'youtube';
+  const isDriveVideo = target.kind === 'drive-video';
 
   const youtubeEmbedBlocked =
     isYoutube &&
@@ -78,7 +79,7 @@ export function EncoreMediaPlaybackBar(): ReactElement | null {
     <Box
       className={`encore-media-playback-bar encore-originals-playback-bar encore-originals-no-print${
         isYoutube ? ' encore-media-playback-bar--youtube' : ''
-      }${youtubeEmbedBlocked ? ' encore-media-playback-bar--youtube-blocked' : ''}`}
+      }${isDriveVideo ? ' encore-media-playback-bar--video' : ''}${youtubeEmbedBlocked ? ' encore-media-playback-bar--youtube-blocked' : ''}`}
     >
       <Box className="encore-media-playback-track">
         <Box

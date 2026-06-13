@@ -2148,18 +2148,45 @@ export function LibraryScreen(props?: {
       ) : null}
 
       {songsHydrated && songs.length === 0 && (
-        <Stack spacing={2} sx={{ py: 5, alignItems: 'center', px: 2, maxWidth: 560, mx: 'auto' }}>
-          <Typography color="text.secondary" sx={{ textAlign: 'center', lineHeight: 1.65 }}>
-            Nothing here yet. Add a song to start. Data stays on this device until you sign in to Google for Drive sync
-            (Account menu).
+        <Box
+          sx={{
+            py: { xs: 3, sm: 3.5 },
+            px: { xs: 2.5, sm: 3 },
+            maxWidth: 440,
+            mx: 'auto',
+            mt: 1,
+            borderRadius: 2,
+            border: 1,
+            borderColor: 'divider',
+            bgcolor: (t) => alpha(t.palette.background.paper, 0.85),
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.02em', mb: 1 }}>
+            Nothing here yet
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', lineHeight: 1.65, maxWidth: 480 }}>
-            Playlist import is usually the fastest way to grow the library. Spotify rows give cleaner titles and artists
-            than YouTube alone, so many people start from a Spotify playlist and add YouTube playlists in the same import
-            when they need to.
+          <Typography color="text.secondary" sx={{ lineHeight: 1.6, mb: 0.75 }}>
+            Add a song, or import from a playlist.{' '}
+            <Link href={encoreAppHref({ kind: 'help' })} underline="hover" sx={{ fontWeight: 600 }}>
+              Import guide
+            </Link>
           </Typography>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="center" sx={{ width: 1 }}>
-            <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={() => setAddSongOpen(true)} sx={{ textTransform: 'none' }}>
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2.5, lineHeight: 1.5 }}>
+            Saved on this device until you sign in with Google (Account menu).
+          </Typography>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            justifyContent="center"
+            alignItems="center"
+          >
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={() => setAddSongOpen(true)}
+              sx={{ textTransform: 'none', minWidth: { sm: 140 } }}
+            >
               Add song
             </Button>
             <Button
@@ -2170,22 +2197,12 @@ export function LibraryScreen(props?: {
                 setImportPlacement('reference');
                 setImportOpen(true);
               }}
-              sx={{ textTransform: 'none' }}
+              sx={{ textTransform: 'none', minWidth: { sm: 180 } }}
             >
               Import from playlists
             </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<MenuBookOutlinedIcon />}
-              component="a"
-              href={encoreAppHref({ kind: 'help' })}
-              sx={{ textTransform: 'none' }}
-            >
-              Import guide (Help)
-            </Button>
           </Stack>
-        </Stack>
+        </Box>
       )}
       {songs.length > 0 && repertoireSongs.length === 0 ? (
         <Typography color="text.secondary" sx={{ mb: 2, lineHeight: 1.55 }}>

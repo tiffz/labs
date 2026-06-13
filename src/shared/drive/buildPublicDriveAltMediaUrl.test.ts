@@ -2,11 +2,24 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   buildPublicDriveAltMediaUrl,
   buildPublicDriveFileMetadataUrl,
+  isPublicDriveGuestFetchConfigured,
   shouldUsePublicDriveSameOriginProxy,
 } from './buildPublicDriveAltMediaUrl';
 
 afterEach(() => {
   vi.unstubAllEnvs();
+});
+
+describe('isPublicDriveGuestFetchConfigured', () => {
+  it('is false in test mode without an API key', () => {
+    vi.stubEnv('VITE_GOOGLE_API_KEY', '');
+    expect(isPublicDriveGuestFetchConfigured()).toBe(false);
+  });
+
+  it('is true when an API key is set', () => {
+    vi.stubEnv('VITE_GOOGLE_API_KEY', 'sample-key');
+    expect(isPublicDriveGuestFetchConfigured()).toBe(true);
+  });
 });
 
 describe('shouldUsePublicDriveSameOriginProxy', () => {

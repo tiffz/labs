@@ -9,7 +9,8 @@ import {
   encoreMediaTargetFromMiscResource,
   encoreMediaTargetFromRecordingAttachment,
 } from '../media/encoreMediaPlaybackTargets';
-import type { EncoreMediaLink, EncoreMiscResource, EncoreSongAttachment } from '../types';
+import type { EncoreMediaLink, EncoreMiscResource, EncorePerformance, EncorePerformanceVideo, EncoreSongAttachment } from '../types';
+import { performanceVideoPlaybackTarget } from '../utils/performancePlaybackTarget';
 
 function playPropsForTarget(
   target: EncoreMediaPlaybackTarget,
@@ -121,13 +122,52 @@ export function useEncoreMediaPlaybackHoverProps() {
     [googleAccessToken, playbackCtx],
   );
 
+  const propsForPerformance = useCallback(
+    (
+      performance: EncorePerformance,
+      titleParts?: { songTitle?: string; venue?: string },
+    ): EncoreHoverCardPlayProps => {
+      const mediaTarget = performanceVideoPlaybackTarget(performance, undefined, titleParts);
+      if (!mediaTarget) return {};
+      const needsDrive = mediaTarget.kind === 'drive-video';
+      return playPropsForTarget(
+        mediaTarget,
+        playbackCtx,
+        needsDrive && !googleAccessToken,
+        needsDrive && !googleAccessToken ? 'Sign in to Google to play in Encore' : undefined,
+      );
+    },
+    [googleAccessToken, playbackCtx],
+  );
+
+  const propsForPerformanceVideo = useCallback(
+    (
+      performance: EncorePerformance,
+      video: EncorePerformanceVideo,
+      titleParts?: { songTitle?: string; venue?: string },
+    ): EncoreHoverCardPlayProps => {
+      const mediaTarget = performanceVideoPlaybackTarget(performance, video, titleParts);
+      if (!mediaTarget) return {};
+      const needsDrive = mediaTarget.kind === 'drive-video';
+      return playPropsForTarget(
+        mediaTarget,
+        playbackCtx,
+        needsDrive && !googleAccessToken,
+        needsDrive && !googleAccessToken ? 'Sign in to Google to play in Encore' : undefined,
+      );
+    },
+    [googleAccessToken, playbackCtx],
+  );
+
   return useMemo(
     () => ({
       propsForMediaLink,
       propsForRecording,
       propsForMiscResource,
       propsForDriveFile,
+      propsForPerformance,
+      propsForPerformanceVideo,
     }),
-    [propsForDriveFile, propsForMediaLink, propsForMiscResource, propsForRecording],
+    [propsForDriveFile, propsForMediaLink, propsForMiscResource, propsForPerformance, propsForPerformanceVideo, propsForRecording],
   );
 }
