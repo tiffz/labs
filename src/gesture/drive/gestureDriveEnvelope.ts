@@ -1,15 +1,18 @@
-import type { GestureDrawRecord, GesturePack, GestureSyncPayload } from '../types';
+import type { GestureDrawRecord, GesturePack, GesturePackFile, GestureSyncPayload } from '../types';
 
 export const GESTURE_DRIVE_APP_ID = 'gesture' as const;
 
 export type GesturePackRow = GesturePack;
 export type GestureDrawHistoryRow = GestureDrawRecord;
+export type GesturePackFileRow = GesturePackFile;
 
 export interface GestureDriveEnvelopeV1 {
   schemaVersion: 1;
   exportedAt: string;
   app: typeof GESTURE_DRIVE_APP_ID;
   packs: GesturePackRow[];
+  /** Photo index metadata; omitted in backups before 2026-06. */
+  packFiles?: GesturePackFile[];
   drawHistory: GestureDrawHistoryRow[];
 }
 
@@ -19,6 +22,7 @@ export function buildGestureDriveEnvelope(payload: GestureSyncPayload): GestureD
     exportedAt: new Date().toISOString(),
     app: GESTURE_DRIVE_APP_ID,
     packs: payload.packs,
+    packFiles: payload.packFiles,
     drawHistory: payload.drawHistory,
   };
 }
@@ -38,5 +42,9 @@ export function parseGestureDriveEnvelope(json: string): GestureDriveEnvelopeV1 
 }
 
 export function envelopeToPayload(envelope: GestureDriveEnvelopeV1): GestureSyncPayload {
-  return { packs: envelope.packs, drawHistory: envelope.drawHistory };
+  return {
+    packs: envelope.packs,
+    packFiles: envelope.packFiles ?? [],
+    drawHistory: envelope.drawHistory,
+  };
 }

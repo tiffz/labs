@@ -18,6 +18,7 @@ describe('gestureDriveEnvelope', () => {
         },
       ],
       drawHistory: [],
+      packFiles: [],
     });
     const parsed = parseGestureDriveEnvelope(serializeGestureDriveEnvelope(env));
     expect(parsed.app).toBe('gesture');
@@ -33,6 +34,7 @@ describe('gestureDriveEnvelope', () => {
           app: 'other',
           packs: [],
           drawHistory: [],
+          packFiles: [],
         }),
       ),
     ).toThrow(/not from Gesture/);

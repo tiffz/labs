@@ -16,6 +16,7 @@ import {
   gestureGoogleClientConfigured,
   useGestureDriveBackup,
 } from '../hooks/useGestureDriveBackup';
+import { useGestureAutoReindex } from '../hooks/useGestureAutoReindex';
 
 export type GestureDriveBackupContextValue = {
   googleClientConfigured: boolean;
@@ -40,6 +41,8 @@ export function GestureDriveBackupProvider({ children }: { children: ReactNode }
   }, []);
 
   const backup = useGestureDriveBackup({ onMergePayload });
+
+  useGestureAutoReindex(gestureGoogleClientConfigured());
 
   const allowlistEmpty = getLabsDriveBackupRestrictionHashesFromEnv().size === 0;
 
@@ -97,7 +100,7 @@ export function GestureDriveBackupProvider({ children }: { children: ReactNode }
       onBackup: backup.onBackup,
       onSignIn: backup.syncPaused ? backup.retryPullFromDrive : backup.onSignIn,
       lastBackupExportedAt: backup.lastMeta.lastBackupExportedAt,
-      scopeSummary: 'Packs and draw history on Drive.',
+      scopeSummary: 'Packs, photo index, and draw history on Drive.',
       scopeTooltip:
         'Saves your Gesture Room progress JSON to a folder this app creates. Reference photos stay in your own Drive folders.',
     };

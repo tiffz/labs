@@ -1,23 +1,42 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import Radio from '@mui/material/Radio';
+import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import { useLiveQuery } from 'dexie-react-hooks';
 import PackCollectionCard from '../components/PackCollectionCard';
-import { useGestureCollectionPreviewWarmup } from '../hooks/useGestureCollectionPreviewWarmup';
 import { gestureDb } from '../db/gestureDb';
+import { readGestureDriveAccessToken } from '../drive/readGestureDriveAccessToken';
+import {
+  GESTURE_EMPTY_DRAW_HISTORY,
+  GESTURE_EMPTY_PACK_FILES,
+} from '../hooks/gestureLiveQueryEmpty';
+import { useGestureCollectionPreviewWarmup } from '../hooks/useGestureCollectionPreviewWarmup';
+import { useGesturePackStats } from '../hooks/useGesturePackStats';
+import { useGesturePacks } from '../hooks/useGesturePacks';
+import { prefetchGestureSessionImages } from '../media/prefetchGestureSessionImages';
 import { isIncompleteUploadPack } from '../drive/gestureUploadActivity';
+import { buildGestureSessionQueueFromConfig } from '../session/gestureSessionQueueFromConfig';
 import type { SessionConfig } from '../types';
 
 const PRESETS = [
   { label: '30s', sec: 30 },
   { label: '1 min', sec: 60 },
+  { label: '2 min', sec: 120 },
   { label: '5 min', sec: 300 },
+  { label: '10 min', sec: 600 },
 ] as const;
+
+const CUSTOM_PRESET = 'custom' as const;
+
+type TimerPreset = (typeof PRESETS)[number]['sec'] | typeof CUSTOM_PRESET;
+
+type SessionLengthMode = 'endless' | 'limited';
 
 interface PracticeTabProps {
   onStart: (config: SessionConfig) => void;
@@ -25,27 +44,15 @@ interface PracticeTabProps {
 }
 
 export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabProps): React.ReactElement {
-  const packs = useLiveQuery(() => gestureDb.packs.orderBy('linkedAt').reverse().toArray(), []) ?? [];
-  const packFiles = useLiveQuery(() => gestureDb.packFiles.toArray(), []) ?? [];
-  const drawHistory = useLiveQuery(() => gestureDb.drawHistory.toArray(), []) ?? [];
+  const packs = useGesturePacks();
+  const { counts, ids, drawnSets } = useGesturePackStats();
+  const packFilesRaw = useLiveQuery(() => gestureDb.packFiles.toArray(), [], undefined);
+  const drawHistoryRaw = useLiveQuery(() => gestureDb.drawHistory.toArray(), [], undefined);
+  const packFiles = packFilesRaw ?? GESTURE_EMPTY_PACK_FILES;
+  const drawHistory = drawHistoryRaw ?? GESTURE_EMPTY_DRAW_HISTORY;
 
-  const { counts, ids, drawnSets } = useMemo(() => {
-    const counts = new Map<string, number>();
-    const ids = new Map<string, string[]>();
-    const drawnSets = new Map<string, Set<string>>();
-    for (const f of packFiles) {
-      counts.set(f.packId, (counts.get(f.packId) ?? 0) + 1);
-      const list = ids.get(f.packId) ?? [];
-      list.push(f.driveFileId);
-      ids.set(f.packId, list);
-    }
-    for (const row of drawHistory) {
-      const set = drawnSets.get(row.packId) ?? new Set<string>();
-      set.add(row.driveFileId);
-      drawnSets.set(row.packId, set);
-    }
-    return { counts, ids, drawnSets };
-  }, [drawHistory, packFiles]);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   const readyPacks = useMemo(() => packs.filter((p) => !isIncompleteUploadPack(p)), [packs]);
 
@@ -66,14 +73,20 @@ export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabP
 
   const [selectedPackIds, setSelectedPackIds] = useState<string[]>([]);
   const [durationSec, setDurationSec] = useState(60);
-  const [excludePreviouslyDrawn, setExcludePreviouslyDrawn] = useState(true);
+  const [timerPreset, setTimerPreset] = useState<TimerPreset>(60);
+  const [customDurationSec, setCustomDurationSec] = useState('90');
+  const [prioritizeLeastDrawn, setPrioritizeLeastDrawn] = useState(true);
   const [shuffle, setShuffle] = useState(true);
+  const [sessionLengthMode, setSessionLengthMode] = useState<SessionLengthMode>('endless');
+  const [photoLimit, setPhotoLimit] = useState('20');
 
+  const didInitSelection = useRef(false);
   useEffect(() => {
-    if (selectedPackIds.length === 0 && packIdsWithPhotos.length > 0) {
+    if (!didInitSelection.current && packIdsWithPhotos.length > 0) {
       setSelectedPackIds(packIdsWithPhotos);
+      didInitSelection.current = true;
     }
-  }, [packIdsWithPhotos, selectedPackIds.length]);
+  }, [packIdsWithPhotos]);
 
   const togglePack = (packId: string) => {
     setSelectedPackIds((prev) =>
@@ -81,7 +94,46 @@ export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabP
     );
   };
 
-  const canStart = selectedPackIds.length > 0;
+  const effectiveDurationSec =
+    timerPreset === CUSTOM_PRESET
+      ? Math.max(5, Math.min(3600, Number.parseInt(customDurationSec, 10) || 60))
+      : durationSec;
+
+  const effectiveMaxPhotos =
+    sessionLengthMode === 'endless'
+      ? null
+      : Math.max(1, Math.min(9999, Number.parseInt(photoLimit, 10) || 1));
+
+  const canStart = selectedPackIds.length > 0 && !starting;
+
+  const handleEnterRoom = async () => {
+    const sessionConfig: SessionConfig = {
+      durationSec: effectiveDurationSec,
+      prioritizeLeastDrawn,
+      shuffle,
+      packIds: selectedPackIds,
+      maxPhotos: effectiveMaxPhotos,
+    };
+    const queue = buildGestureSessionQueueFromConfig(sessionConfig, packFiles, drawHistory);
+    if (queue.length === 0) {
+      setStartError('Selected collections have no photos yet.');
+      return;
+    }
+
+    setStarting(true);
+    setStartError(null);
+    try {
+      const token = await readGestureDriveAccessToken();
+      const prefetch = await prefetchGestureSessionImages(token, queue);
+      if (!prefetch.ok) {
+        setStartError(prefetch.error);
+        return;
+      }
+      onStart({ ...sessionConfig, queue });
+    } finally {
+      setStarting(false);
+    }
+  };
 
   if (packIdsWithPhotos.length === 0) {
     return (
@@ -106,31 +158,98 @@ export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabP
           <Typography component="h2" className="gesture-practice-label">
             Timer
           </Typography>
-          <ToggleButtonGroup
-            exclusive
-            value={durationSec}
-            onChange={(_e, v: number | null) => {
-              if (v != null) setDurationSec(v);
-            }}
-            size="small"
-            className="gesture-timer-toggle"
-          >
-            {PRESETS.map((p) => (
-              <ToggleButton key={p.sec} value={p.sec}>
-                {p.label}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
+          <div className="gesture-timer-controls">
+            <ToggleButtonGroup
+              exclusive
+              value={timerPreset}
+              onChange={(_e, v: TimerPreset | null) => {
+                if (v == null) return;
+                setTimerPreset(v);
+                if (v !== CUSTOM_PRESET) setDurationSec(v);
+              }}
+              size="small"
+              className="gesture-timer-toggle"
+            >
+              {PRESETS.map((p) => (
+                <ToggleButton key={p.sec} value={p.sec}>
+                  {p.label}
+                </ToggleButton>
+              ))}
+              <ToggleButton value={CUSTOM_PRESET}>Custom</ToggleButton>
+            </ToggleButtonGroup>
+            {timerPreset === CUSTOM_PRESET ? (
+              <span className="gesture-custom-duration-limited">
+                <TextField
+                  id="gesture-custom-duration"
+                  size="small"
+                  type="number"
+                  aria-label="Custom duration in seconds"
+                  inputProps={{ min: 5, max: 3600, step: 5 }}
+                  value={customDurationSec}
+                  onChange={(e) => setCustomDurationSec(e.target.value)}
+                  className="gesture-custom-duration-field"
+                />
+                <span className="gesture-custom-duration-suffix">sec</span>
+              </span>
+            ) : null}
+          </div>
+        </div>
+        <div className="gesture-practice-control-row">
+          <Typography component="h2" className="gesture-practice-label">
+            Session length
+          </Typography>
+          <div className="gesture-session-length-controls">
+            <FormControlLabel
+              className="gesture-session-length-option"
+              control={
+                <Radio
+                  size="small"
+                  checked={sessionLengthMode === 'endless'}
+                  onChange={() => setSessionLengthMode('endless')}
+                  inputProps={{ 'aria-label': 'Endless session' }}
+                />
+              }
+              label="Endless"
+            />
+            <FormControlLabel
+              className="gesture-session-length-option gesture-session-length-option--limited"
+              control={
+                <Radio
+                  size="small"
+                  checked={sessionLengthMode === 'limited'}
+                  onChange={() => setSessionLengthMode('limited')}
+                  inputProps={{ 'aria-label': 'Limited session length' }}
+                />
+              }
+              label={
+                <span className="gesture-session-length-limited">
+                  <TextField
+                    id="gesture-session-photo-limit"
+                    size="small"
+                    type="number"
+                    aria-label="Number of photos in session"
+                    inputProps={{ min: 1, max: 9999 }}
+                    value={photoLimit}
+                    onChange={(e) => setPhotoLimit(e.target.value)}
+                    onFocus={() => setSessionLengthMode('limited')}
+                    disabled={sessionLengthMode !== 'limited'}
+                    className="gesture-session-photo-limit-field"
+                  />
+                  <span className="gesture-session-length-suffix">photos</span>
+                </span>
+              }
+            />
+          </div>
         </div>
         <div className="gesture-practice-options">
           <FormControlLabel
             control={
               <Checkbox
-                checked={excludePreviouslyDrawn}
-                onChange={(e) => setExcludePreviouslyDrawn(e.target.checked)}
+                checked={prioritizeLeastDrawn}
+                onChange={(e) => setPrioritizeLeastDrawn(e.target.checked)}
               />
             }
-            label="Skip drawn photos"
+            label="Prioritize least drawn photos"
           />
           <FormControlLabel
             control={
@@ -145,7 +264,7 @@ export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabP
         Collections
       </Typography>
       <div className="gesture-collection-grid gesture-collection-grid--practice">
-        {packs
+        {readyPacks
           .filter((p) => packIdsWithPhotos.includes(p.id))
           .map((pack) => (
             <PackCollectionCard
@@ -162,22 +281,20 @@ export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabP
       </div>
 
       <Box className="gesture-practice-footer">
+        {startError ? (
+          <Typography role="alert" color="error" sx={{ mb: 1.5 }}>
+            {startError}
+          </Typography>
+        ) : null}
         <Button
           variant="contained"
           size="large"
           fullWidth
           className="gesture-enter-btn"
           disabled={!canStart}
-          onClick={() =>
-            onStart({
-              durationSec,
-              excludePreviouslyDrawn,
-              shuffle,
-              packIds: selectedPackIds,
-            })
-          }
+          onClick={() => void handleEnterRoom()}
         >
-          Enter the room
+          {starting ? 'Preparing photos…' : 'Enter the room'}
         </Button>
       </Box>
     </div>

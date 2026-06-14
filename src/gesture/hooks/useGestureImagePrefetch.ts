@@ -4,18 +4,28 @@ import { resolveGestureReferenceImageUrl } from '../media/gestureThumbnailLinkCa
 import {
   getCachedGestureImageUrl,
   preloadGestureImageViaElement,
-  prefetchGestureImageUrl,
+  resolveGestureSessionImageSrc,
   retainGesturePrefetchKeys,
 } from '../media/gestureImagePrefetchCache';
 import type { SessionQueueItem } from '../types';
+
+async function prefetchQueueItem(
+  accessToken: string | null,
+  item: SessionQueueItem,
+): Promise<void> {
+  if (getCachedGestureImageUrl(item.driveFileId)) return;
+  const remoteUrl = await resolveGestureReferenceImageUrl(accessToken, item.driveFileId);
+  await resolveGestureSessionImageSrc(accessToken, item.driveFileId, remoteUrl, item.name);
+}
 
 export function useGestureImagePrefetch(
   queue: SessionQueueItem[],
   index: number,
   accessToken: string | null,
-): { src: string | null; loading: boolean; error: string | null } {
+): { src: string | null; ready: boolean; loading: boolean; error: string | null } {
   const current = queue[index] ?? null;
   const [src, setSrc] = useState<string | null>(null);
+  const [displayReady, setDisplayReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +46,7 @@ export function useGestureImagePrefetch(
     let cancelled = false;
     if (!current) {
       setSrc(null);
+      setDisplayReady(false);
       setLoading(false);
       setError(null);
       return;
@@ -48,6 +59,8 @@ export function useGestureImagePrefetch(
       setLoading(false);
       setError(null);
     } else {
+      setSrc(null);
+      setDisplayReady(false);
       setLoading(true);
       setError(null);
     }
@@ -55,19 +68,20 @@ export function useGestureImagePrefetch(
     void (async () => {
       try {
         const remoteUrl = await resolveGestureReferenceImageUrl(accessToken, key);
-        const objectUrl = getCachedGestureImageUrl(key) ?? (await prefetchGestureImageUrl(remoteUrl, key));
+        const displayUrl = await resolveGestureSessionImageSrc(
+          accessToken,
+          key,
+          remoteUrl,
+          current.name,
+        );
         if (!cancelled) {
-          setSrc(objectUrl);
+          setSrc(displayUrl);
           setLoading(false);
         }
-        for (let i = index + 1; i <= index + 2 && i < queue.length; i += 1) {
-          const next = queue[i]!;
-          if (getCachedGestureImageUrl(next.driveFileId)) continue;
-          const nextUrl = await resolveGestureReferenceImageUrl(accessToken, next.driveFileId);
-          void prefetchGestureImageUrl(nextUrl, next.driveFileId).catch(() => {
-            void preloadGestureImageViaElement(nextUrl).catch(() => undefined);
-          });
-        }
+        const warmItems = queue.slice(index + 1, index + 3);
+        await Promise.all(
+          warmItems.map((item) => prefetchQueueItem(accessToken, item).catch(() => undefined)),
+        );
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : 'Could not load image.');
@@ -81,5 +95,28 @@ export function useGestureImagePrefetch(
     };
   }, [accessToken, current, index, queue]);
 
-  return { src, loading, error };
+  useEffect(() => {
+    if (!src) {
+      setDisplayReady(false);
+      return;
+    }
+    let cancelled = false;
+    void preloadGestureImageViaElement(src)
+      .then(() => {
+        if (!cancelled) setDisplayReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDisplayReady(false);
+          setError('Could not load image.');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [src]);
+
+  const ready = Boolean(src) && displayReady;
+
+  return { src, ready, loading: loading || (Boolean(src) && !displayReady), error };
 }

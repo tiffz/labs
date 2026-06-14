@@ -18,6 +18,7 @@ Read [`src/gesture/DESIGN.md`](../../src/gesture/DESIGN.md) before changing UI i
 ## Shared chrome
 
 - Account menu: [`GestureAccountMenu.tsx`](../../src/gesture/components/GestureAccountMenu.tsx) + `.gesture-account-menu` / `#gesture-account-menu-button` in `gesture.css` — do not restyle with heavy borders or shadows in TSX.
+- Practice / Collections tabs: segmented pill in `gesture.css` — hover wash on unselected tabs; no underline indicator.
 
 ## New surfaces
 

@@ -14,7 +14,7 @@ function dataTransferHasFiles(dataTransfer: DataTransfer): boolean {
 }
 
 export function useGestureCollectionDrop({ disabled, upload }: UseGestureCollectionDropOptions) {
-  const { busy, activity, uploadFromSnapshot } = upload;
+  const { activity, uploadFromSnapshot } = upload;
 
   const processDrop = useCallback(
     (snapshot: ReturnType<typeof collectDataTransferDropSnapshot>) => {
@@ -24,7 +24,7 @@ export function useGestureCollectionDrop({ disabled, upload }: UseGestureCollect
   );
 
   const { dragActive, handlers: baseHandlers } = useDragDropHighlight({
-    disabled: disabled || busy,
+    disabled,
     stopPropagation: true,
     onDrop: (e) => {
       const snapshot = collectDataTransferDropSnapshot(e.dataTransfer);
@@ -35,13 +35,13 @@ export function useGestureCollectionDrop({ disabled, upload }: UseGestureCollect
   const handlers = useMemo(
     () => ({
       onDragEnter: (e: DragEvent<HTMLElement>) => {
-        if (disabled || busy) return;
+        if (disabled) return;
         if (!dataTransferHasFiles(e.dataTransfer)) return;
         baseHandlers.onDragEnter(e);
       },
       onDragLeave: baseHandlers.onDragLeave,
       onDragOver: (e: DragEvent<HTMLElement>) => {
-        if (disabled || busy) return;
+        if (disabled) return;
         if (!dataTransferHasFiles(e.dataTransfer)) return;
         baseHandlers.onDragOver(e);
         try {
@@ -52,7 +52,7 @@ export function useGestureCollectionDrop({ disabled, upload }: UseGestureCollect
       },
       onDrop: baseHandlers.onDrop,
     }),
-    [baseHandlers, busy, disabled],
+    [baseHandlers, disabled],
   );
 
   useEffect(() => {
@@ -70,7 +70,6 @@ export function useGestureCollectionDrop({ disabled, upload }: UseGestureCollect
   }, []);
 
   return {
-    busy,
     activity,
     dragActive,
     handlers,

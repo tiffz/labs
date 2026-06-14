@@ -11,7 +11,7 @@ Timed drawing practice from your own Google Drive photo collections.
 - Collections show **photo previews** so you know what is inside without tags or notes.
 - Track drawn photos and sync progress across devices via `progress.json`.
 
-Reference photos are shown via OAuth **thumbnail URLs** (screen-sized, not full originals).
+Reference photos are shown via OAuth **thumbnail URLs** in `<img>` elements (with authenticated `alt=media` fallback when thumbnails fail).
 
 ## Design
 

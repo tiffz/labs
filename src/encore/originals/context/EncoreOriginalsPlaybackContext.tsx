@@ -1,3 +1,5 @@
+/* Re-export barrel for Originals playback; Fast Refresh split not worth the import churn. */
+/* eslint-disable react-refresh/only-export-components */
 export {
   useEncoreMediaPlayback,
   useEncoreOriginalsPlayback,

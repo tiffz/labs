@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   collectLocalFolderUploadImages,
+  hasMultipleTopLevelFolders,
   inferLocalFolderName,
   isLocalFolderUpload,
+  splitFilesByTopLevelFolder,
 } from './gestureLocalFolderUpload';
 
 function fileWithPath(path: string, type = 'image/jpeg'): File {
@@ -29,5 +31,17 @@ describe('gestureLocalFolderUpload', () => {
       fileWithPath('Hands/nested/b.png', 'image/png'),
     ];
     expect(collectLocalFolderUploadImages(files)).toHaveLength(2);
+  });
+
+  it('splits multi-root directory picks into separate batches', () => {
+    const files = [
+      fileWithPath('Cats/a.jpg'),
+      fileWithPath('Dogs/b.jpg'),
+    ];
+    expect(hasMultipleTopLevelFolders(files)).toBe(true);
+    expect(splitFilesByTopLevelFolder(files)).toEqual([
+      { files: [files[0]], suggestedFolderName: 'Cats' },
+      { files: [files[1]], suggestedFolderName: 'Dogs' },
+    ]);
   });
 });

@@ -5,6 +5,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import InlinePackName from './InlinePackName';
 import InlinePackSourceLink from './InlinePackSourceLink';
+import PackDriveFolderLink from './PackDriveFolderLink';
 import PackPreviewStrip from './PackPreviewStrip';
 import { usePackCollectionDrop } from '../hooks/usePackCollectionDrop';
 import type { GestureCollectionUploadHandle } from '../hooks/useGestureCollectionUpload';
@@ -72,26 +73,31 @@ export default function PackCollectionCard({
     <>
       <PackPreviewStrip driveFileIds={driveFileIds} limit={4} />
       <div className="gesture-collection-card-body">
+        <div className="gesture-collection-card-title-row">
+          <div className="gesture-collection-card-title-main">
+            {mode === 'manage' ? (
+              <InlinePackName
+                pack={pack}
+                onRenamed={onRenamed}
+                onError={onError}
+                disabled={metadataDisabled}
+              />
+            ) : (
+              <Typography component="h3" className="gesture-collection-card-title">
+                {pack.name}
+              </Typography>
+            )}
+          </div>
+          <PackDriveFolderLink pack={pack} />
+        </div>
         {mode === 'manage' ? (
-          <>
-            <InlinePackName
-              pack={pack}
-              onRenamed={onRenamed}
-              onError={onError}
-              disabled={metadataDisabled}
-            />
-            <InlinePackSourceLink
-              pack={pack}
-              onUpdated={onUpdated}
-              onError={onError}
-              disabled={metadataDisabled}
-            />
-          </>
-        ) : (
-          <Typography component="h3" className="gesture-collection-card-title">
-            {pack.name}
-          </Typography>
-        )}
+          <InlinePackSourceLink
+            pack={pack}
+            onUpdated={onUpdated}
+            onError={onError}
+            disabled={metadataDisabled}
+          />
+        ) : null}
         <Typography className="gesture-collection-card-meta" variant="body2">
           {isUploading
             ? `Uploading… ${uploadDone} of ${uploadTotal || '?'}`
@@ -135,17 +141,31 @@ export default function PackCollectionCard({
   );
 
   if (mode === 'select') {
+    const selectDisabled = disabled || needsRefresh;
     return (
-      <button
-        type="button"
-        className={`gesture-collection-card gesture-collection-card--selectable${selected ? ' is-selected' : ''}`}
-        onClick={onToggleSelect}
-        disabled={disabled || needsRefresh}
+      <div
+        className={`gesture-collection-card gesture-collection-card--selectable${selected ? ' is-selected' : ''}${selectDisabled ? ' is-disabled' : ''}`}
+        role="button"
+        tabIndex={selectDisabled ? -1 : 0}
         aria-pressed={selected}
+        aria-disabled={selectDisabled || undefined}
         aria-label={`${selected ? 'Deselect' : 'Select'} ${pack.name}`}
+        data-pack-id={pack.id}
+        onClick={() => {
+          if (!selectDisabled) onToggleSelect?.();
+        }}
+        onKeyDown={(e) => {
+          if (selectDisabled) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onToggleSelect?.();
+          }
+        }}
       >
-        <div className="gesture-collection-card-shell">{body}</div>
-      </button>
+        <div className="gesture-collection-card-shell gesture-collection-card-shell--select">
+          {body}
+        </div>
+      </div>
     );
   }
 

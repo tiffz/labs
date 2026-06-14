@@ -35,9 +35,15 @@ function GestureAppContent(): React.ReactElement {
 
   const finishSession = useCallback((result: SessionDebrief) => {
     setDebrief(result);
-    setSessionConfig(null);
     setPhase('debrief');
   }, []);
+
+  const restartSession = useCallback(() => {
+    if (!debrief) return;
+    setSessionConfig(debrief.config);
+    setDebrief(null);
+    setPhase('session');
+  }, [debrief]);
 
   return (
     <div ref={appRef} className="gesture-app" data-gesture-theme="linen">
@@ -48,7 +54,7 @@ function GestureAppContent(): React.ReactElement {
           <ZenSessionPhase config={sessionConfig} onExit={finishSession} />
         ) : null}
         {phase === 'debrief' && debrief ? (
-          <DebriefPhase debrief={debrief} onHome={backHome} />
+          <DebriefPhase debrief={debrief} onHome={backHome} onRestart={restartSession} />
         ) : null}
       </main>
     </div>

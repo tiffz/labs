@@ -1,3 +1,5 @@
+/* Provider + hook share module state; Fast Refresh split not worth the import churn. */
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useCallback,

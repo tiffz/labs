@@ -21,6 +21,7 @@
   --gesture-shadow-soft: none;
   --gesture-card-shadow: none;
   --gesture-zen-bg: #2a2d28;
+  --gesture-zen-error: #fca5a5;
   --gesture-preview-bg: rgba(95, 133, 102, 0.06);
   --gesture-preview-cell: rgba(216, 224, 217, 0.55);
   --gesture-preview-placeholder: #ebe8e2;
@@ -129,11 +130,16 @@
   min-height: auto;
   width: fit-content;
   max-width: 100%;
-  padding: 0.2rem;
+  padding: 0.28rem;
   border: 1px solid var(--gesture-border);
   border-radius: 999px;
   background: color-mix(in srgb, var(--gesture-card-bg) 72%, transparent);
   backdrop-filter: blur(8px);
+  overflow: visible;
+}
+
+.gesture-tabs .MuiTabs-scroller {
+  overflow: visible;
 }
 
 .gesture-tabs .MuiTabs-flexContainer {
@@ -158,6 +164,17 @@
 .gesture-tabs .MuiTab-root.Mui-selected {
   color: var(--gesture-ink);
   background: var(--gesture-card-bg);
+}
+
+.gesture-tabs .MuiTab-root:hover:not(.Mui-selected) {
+  color: color-mix(in srgb, var(--gesture-ink) 88%, var(--gesture-text-muted));
+  background: color-mix(in srgb, var(--gesture-accent-soft) 42%, transparent);
+}
+
+.gesture-tabs .MuiTab-root:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--gesture-accent) 50%, transparent);
 }
 
 .gesture-tabs .MuiTabs-indicator {
@@ -437,6 +454,9 @@
 
 .gesture-collection-grid > * {
   animation: gesture-card-in 480ms var(--gesture-ease-out) both;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 18rem;
+  min-width: 0;
 }
 
 .gesture-collection-grid > *:nth-child(1) {
@@ -509,7 +529,7 @@
     box-shadow 220ms var(--gesture-ease-out);
 }
 
-.gesture-collection-card--selectable:hover:not(:disabled)
+.gesture-collection-card--selectable:hover:not(.is-disabled)
   .gesture-collection-card-shell {
   border-color: color-mix(
     in srgb,
@@ -550,9 +570,32 @@
     color-mix(in srgb, var(--gesture-accent) 24%, transparent);
 }
 
-.gesture-collection-card--selectable:disabled {
+.gesture-collection-card--selectable.is-disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.gesture-collection-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.gesture-collection-card-title-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.gesture-app .gesture-pack-drive-icon-btn {
+  flex-shrink: 0;
+  margin: -0.15rem -0.25rem -0.15rem 0;
+  color: var(--gesture-text-muted);
+}
+
+.gesture-app .gesture-pack-drive-icon-btn:hover {
+  color: var(--gesture-accent);
+  background: color-mix(in srgb, var(--gesture-accent-soft) 35%, transparent);
 }
 
 .gesture-collection-card--selectable .gesture-preview-strip {
@@ -774,7 +817,7 @@
   opacity: 1;
 }
 
-.gesture-collection-card--selectable:hover:not(:disabled)
+.gesture-collection-card--selectable:hover:not(.is-disabled)
   .gesture-preview-image.is-visible,
 .gesture-collection-card:hover .gesture-preview-image.is-visible {
   transform: scale(1.04);
@@ -1051,6 +1094,105 @@
   gap: 0.25rem 1.25rem;
 }
 
+.gesture-timer-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  max-width: 100%;
+}
+
+.gesture-app .gesture-custom-duration-field {
+  width: 4.25rem;
+  flex-shrink: 0;
+}
+
+.gesture-app .gesture-custom-duration-field .MuiInputBase-root {
+  min-height: 2.25rem;
+  border-radius: 999px;
+  font-size: 0.84rem;
+}
+
+.gesture-app .gesture-custom-duration-field .MuiInputBase-input {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  text-align: center;
+}
+
+.gesture-custom-duration-limited {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.gesture-custom-duration-suffix {
+  font-size: 0.92rem;
+  color: var(--gesture-text-muted);
+  white-space: nowrap;
+}
+
+.gesture-session-length-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem 0.85rem;
+  max-width: 100%;
+}
+
+.gesture-app .gesture-session-length-option {
+  margin: 0;
+}
+
+.gesture-app .gesture-session-length-option .MuiFormControlLabel-label {
+  font-size: 0.92rem;
+  color: var(--gesture-ink);
+}
+
+.gesture-session-length-limited {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.gesture-app .gesture-session-photo-limit-field {
+  width: 4.25rem;
+  flex-shrink: 0;
+}
+
+.gesture-app .gesture-session-photo-limit-field .MuiInputBase-root {
+  min-height: 2.25rem;
+  border-radius: 999px;
+  font-size: 0.84rem;
+}
+
+.gesture-app .gesture-session-photo-limit-field .MuiInputBase-input {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  text-align: center;
+}
+
+.gesture-app
+  .gesture-session-photo-limit-field
+  .MuiInputBase-root.Mui-disabled {
+  opacity: 0.45;
+}
+
+.gesture-session-length-suffix {
+  font-size: 0.92rem;
+  color: var(--gesture-text-muted);
+  white-space: nowrap;
+}
+
+.gesture-collection-card-shell--select {
+  pointer-events: none;
+}
+
+.gesture-collection-card--selectable .gesture-collection-card-selected {
+  pointer-events: none;
+}
+
 .gesture-practice-footer {
   position: sticky;
   bottom: 0;
@@ -1201,6 +1343,48 @@
   color: var(--gesture-text-muted);
 }
 
+.gesture-stat--muted .gesture-stat-value {
+  color: color-mix(in srgb, var(--gesture-ink) 72%, var(--gesture-text-muted));
+}
+
+.gesture-debrief {
+  max-width: 36rem;
+}
+
+.gesture-debrief-header {
+  margin-bottom: 1.5rem;
+}
+
+.gesture-debrief-summary {
+  padding: 1.25rem 1.35rem;
+  border: 1px solid var(--gesture-border);
+  border-radius: calc(var(--gesture-card-radius) + 2px);
+  background: color-mix(in srgb, var(--gesture-card-bg) 88%, transparent);
+}
+
+.gesture-stat-grid--debrief {
+  margin-bottom: 0;
+}
+
+.gesture-debrief-skipped-note {
+  margin: 1rem 0 0;
+  font-size: 0.92rem;
+  color: var(--gesture-text-muted);
+  line-height: 1.45;
+}
+
+.gesture-debrief-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  margin-top: 1.5rem;
+}
+
+.gesture-app .gesture-debrief-home-btn.MuiButton-root {
+  color: var(--gesture-text-muted);
+}
+
 /* Zen mode */
 .gesture-zen-root {
   position: fixed;
@@ -1254,19 +1438,73 @@
   opacity: 0.12;
 }
 
-.gesture-zen-timer-label {
+.gesture-zen-timer-ring-center {
   position: absolute;
-  top: 1.25rem;
-  left: 50%;
-  transform: translateX(-50%);
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gesture-zen-timer-ring-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(8px);
+  transition:
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.gesture-zen-timer-ring-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.gesture-zen-timer-ring-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
+}
+
+.gesture-zen-timer-ring-btn:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.gesture-zen-timer-countdown {
+  font-family: var(--gesture-sans);
   font-variant-numeric: tabular-nums;
-  font-size: 0.75rem;
+  font-size: 0.9375rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(232, 234, 239, 0.45);
-  pointer-events: none;
-  z-index: 2;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.96);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.85);
+}
+
+.gesture-zen-paused {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  font-family: var(--gesture-sans);
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.92);
+  z-index: 1;
 }
 
 .gesture-zen-controls {
@@ -1279,14 +1517,7 @@
   justify-content: center;
   gap: 0.65rem;
   padding: 1.25rem 1rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
-  opacity: 0.4;
-  transition: opacity 200ms ease;
   z-index: 3;
-}
-
-.gesture-zen-root:hover .gesture-zen-controls,
-.gesture-zen-root:focus-within .gesture-zen-controls {
-  opacity: 1;
 }
 
 .gesture-zen-control-btn {
@@ -1294,6 +1525,16 @@
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(10px);
+  opacity: 0.4;
+  transition:
+    opacity 200ms ease,
+    background 180ms ease,
+    border-color 180ms ease;
+}
+
+.gesture-zen-root:hover .gesture-zen-control-btn,
+.gesture-zen-root:focus-within .gesture-zen-control-btn {
+  opacity: 1;
 }
 
 .gesture-zen-control-btn:hover {
@@ -1323,28 +1564,24 @@
   transition: stroke-dashoffset 100ms linear;
 }
 
-.gesture-zen-timer-ring-center {
+.gesture-zen-preparing {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: var(--gesture-sans);
+  font-size: 1.125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.75);
+  z-index: 1;
 }
 
-.gesture-zen-paused {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(3px);
-  font-family: var(--gesture-sans);
-  font-size: 1.5rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.92);
-  z-index: 1;
+.gesture-zen-error {
+  color: var(--gesture-zen-error);
+  text-align: center;
+  padding-inline: 1rem;
 }
 
 /* Account menu — Linen flat surface */
@@ -1376,7 +1613,7 @@
 }
 
 @media (pointer: coarse) {
-  .gesture-zen-controls {
+  .gesture-zen-control-btn {
     opacity: 0.75;
   }
 }
@@ -1393,7 +1630,8 @@
   .gesture-collection-card--manage .gesture-collection-card-shell,
   .gesture-collection-card--selectable .gesture-collection-card-shell,
   .gesture-collection-grid > *,
-  .gesture-drop-zone {
+  .gesture-drop-zone,
+  .gesture-tabs .MuiTab-root {
     animation: none;
     transition: none;
   }

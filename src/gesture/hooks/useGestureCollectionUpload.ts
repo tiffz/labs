@@ -1,10 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   ensureLabsGoogleAccessTokenForDrive,
   LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
 import type { DataTransferDropSnapshot } from '../../shared/utils/readDataTransferEntryFiles';
-import { readDataTransferDropFromSnapshot } from '../../shared/utils/readDataTransferEntryFiles';
+import { readDataTransferDropBatches } from '../../shared/utils/readDataTransferEntryFiles';
 import { addPhotosToExistingPack } from '../drive/addPhotosToExistingPack';
 import { createPackFromUpload } from '../drive/createPackFromUpload';
 import { gestureDb } from '../db/gestureDb';
@@ -13,6 +13,9 @@ import {
   inferLocalFolderName,
   isLocalFolderUpload,
   resolveUploadCollectionName,
+  splitFilesByTopLevelFolder,
+  hasMultipleTopLevelFolders,
+  type GestureUploadFileBatch,
 } from '../drive/gestureLocalFolderUpload';
 import { filterGestureUploadImageFiles } from '../drive/gesturePackMetadata';
 import { resumePackUpload } from '../drive/resumePackUpload';
@@ -25,57 +28,123 @@ type UseGestureCollectionUploadOptions = {
   onError: (message: string) => void;
 };
 
+type NewCollectionJob = {
+  files: File[];
+  suggestedFolderName?: string;
+};
+
+function batchesFromPickedFiles(picked: File[], suggestedFolderName?: string): GestureUploadFileBatch[] {
+  if (hasMultipleTopLevelFolders(picked)) {
+    return splitFilesByTopLevelFolder(picked);
+  }
+  return [{ files: picked, suggestedFolderName }];
+}
+
+function newCollectionJobsFromBatches(batches: GestureUploadFileBatch[]): NewCollectionJob[] {
+  const jobs: NewCollectionJob[] = [];
+  for (const batch of batches) {
+    const fromFolder = Boolean(batch.suggestedFolderName) || isLocalFolderUpload(batch.files);
+    const images = fromFolder
+      ? collectLocalFolderUploadImages(batch.files)
+      : filterGestureUploadImageFiles(batch.files);
+    if (images.length === 0) continue;
+    jobs.push({
+      files: images,
+      suggestedFolderName: resolveUploadCollectionName(batch.files, batch.suggestedFolderName),
+    });
+  }
+  return jobs;
+}
+
 export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCollectionUploadOptions) {
   const [busy, setBusy] = useState(false);
+  const [queuedCount, setQueuedCount] = useState(0);
   const [activity, setActivity] = useState<GestureUploadActivity | null>(null);
+  const queueRef = useRef<NewCollectionJob[]>([]);
+  const drainingRef = useRef(false);
+  const tokenRef = useRef<string | null>(null);
+  const needsInteractiveAuthRef = useRef(true);
 
-  const runUpload = useCallback(
-    async (picked: File[], suggestedFolderName?: string) => {
-      const fromFolder = Boolean(suggestedFolderName) || isLocalFolderUpload(picked);
-      const images = fromFolder ? collectLocalFolderUploadImages(picked) : filterGestureUploadImageFiles(picked);
-      if (images.length === 0) {
-        setActivity(null);
-        onError('Use JPEG, PNG, WebP, GIF, or similar images.');
-        return;
+  const setUploadActivity = useCallback(
+    (next: GestureUploadActivity | null) => {
+      if (next && queueRef.current.length > 0) {
+        setActivity({ ...next, queuedCount: queueRef.current.length });
+      } else {
+        setActivity(next);
       }
+    },
+    [],
+  );
 
-      const collectionName = resolveUploadCollectionName(picked, suggestedFolderName);
+  const resolveUploadToken = useCallback(async (): Promise<string> => {
+    if (!needsInteractiveAuthRef.current && tokenRef.current) {
+      try {
+        return await ensureLabsGoogleAccessTokenForDrive({ interactive: false });
+      } catch {
+        /* refresh interactively below */
+      }
+    }
+    const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+    tokenRef.current = token;
+    needsInteractiveAuthRef.current = false;
+    return token;
+  }, []);
 
-      setBusy(true);
-      setActivity(buildUploadActivity('checking', { total: images.length, collectionName }));
+  const executeNewCollectionJob = useCallback(
+    async (job: NewCollectionJob): Promise<string | null> => {
+      const fromFolder = Boolean(job.suggestedFolderName) || isLocalFolderUpload(job.files);
+      const images = job.files;
+      const collectionName = job.suggestedFolderName;
+
+      setUploadActivity(buildUploadActivity('checking', { total: images.length, collectionName }));
       onError('');
 
+      const token = await resolveUploadToken();
+      setUploadActivity(buildUploadActivity('preparing', { total: images.length, collectionName }));
+      const result = await createPackFromUpload(
+        token,
+        { files: images, name: collectionName },
+        (done, total) => {
+          setUploadActivity(buildUploadActivity('uploading', { done, total, collectionName }));
+        },
+        (hashed, total) => {
+          setUploadActivity(buildUploadActivity('checking', { done: hashed, total, collectionName }));
+        },
+      );
+      const dupeSuffix = formatUploadDuplicateSkipMessage(result.skippedDuplicates);
+      if (result.imageCount === 0 && result.skippedDuplicates > 0) {
+        return `All ${result.skippedDuplicates} photos were duplicates. Nothing new to upload.`;
+      }
+      setUploadActivity(
+        buildUploadActivity('finishing', {
+          done: result.imageCount,
+          total: result.imageCount,
+          collectionName,
+        }),
+      );
+      return fromFolder
+        ? `Added ${result.imageCount} photo${result.imageCount === 1 ? '' : 's'} to "${result.pack.name}".${dupeSuffix}`
+        : `Added ${result.imageCount} photo${result.imageCount === 1 ? '' : 's'}. Tap the collection to name it.${dupeSuffix}`;
+    },
+    [onError, resolveUploadToken, setUploadActivity],
+  );
+
+  const drainQueue = useCallback(async () => {
+    if (drainingRef.current) return;
+    drainingRef.current = true;
+    setBusy(true);
+
+    const summaries: string[] = [];
+    let hadError = false;
+
+    while (queueRef.current.length > 0) {
+      const job = queueRef.current.shift()!;
+      setQueuedCount(queueRef.current.length);
       try {
-        const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-        setActivity(buildUploadActivity('preparing', { total: images.length, collectionName }));
-        const result = await createPackFromUpload(
-          token,
-          { files: images, name: collectionName },
-          (done, total) => {
-            setActivity(buildUploadActivity('uploading', { done, total, collectionName }));
-          },
-          (hashed, total) => {
-            setActivity(buildUploadActivity('checking', { done: hashed, total, collectionName }));
-          },
-        );
-        const dupeSuffix = formatUploadDuplicateSkipMessage(result.skippedDuplicates);
-        if (result.imageCount === 0 && result.skippedDuplicates > 0) {
-          onComplete(`All ${result.skippedDuplicates} photos were duplicates. Nothing new to upload.`);
-          return;
-        }
-        setActivity(
-          buildUploadActivity('finishing', {
-            done: result.imageCount,
-            total: result.imageCount,
-            collectionName,
-          }),
-        );
-        onComplete(
-          fromFolder
-            ? `Added ${result.imageCount} photo${result.imageCount === 1 ? '' : 's'} to "${result.pack.name}".${dupeSuffix}`
-            : `Added ${result.imageCount} photo${result.imageCount === 1 ? '' : 's'}. Tap the collection to name it.${dupeSuffix}`,
-        );
+        const message = await executeNewCollectionJob(job);
+        if (message) summaries.push(message);
       } catch (e) {
+        hadError = true;
         if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
           onError(e.message);
         } else {
@@ -85,26 +154,50 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
               : 'Upload failed. Check Collections to continue or clean up.',
           );
         }
-      } finally {
-        setBusy(false);
-        setActivity(null);
+        queueRef.current = [];
+        break;
       }
+    }
+
+    setQueuedCount(0);
+    drainingRef.current = false;
+    setBusy(false);
+    setActivity(null);
+
+    if (summaries.length === 1) {
+      onComplete(summaries[0]!);
+    } else if (summaries.length > 1) {
+      onComplete(`Uploaded ${summaries.length} collections.`);
+    } else if (!hadError && summaries.length === 0 && queueRef.current.length === 0) {
+      /* empty queue after invalid jobs — caller should have surfaced error */
+    }
+  }, [executeNewCollectionJob, onComplete, onError]);
+
+  const enqueueNewCollectionJobs = useCallback(
+    (jobs: NewCollectionJob[]) => {
+      if (jobs.length === 0) {
+        onError('Use JPEG, PNG, WebP, GIF, or similar images.');
+        return;
+      }
+      queueRef.current.push(...jobs);
+      setQueuedCount(queueRef.current.length);
+      void drainQueue();
     },
-    [onComplete, onError],
+    [drainQueue, onError],
   );
 
   const continueUploadForPack = useCallback(
     async (packId: string, picked: File[]) => {
       const collectionName = resolveUploadCollectionName(picked, inferLocalFolderName(picked));
       setBusy(true);
-      setActivity(buildUploadActivity('scanning', { scannedCount: picked.length, collectionName }));
+      setUploadActivity(buildUploadActivity('scanning', { scannedCount: picked.length, collectionName }));
       onError('');
 
       try {
         const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-        setActivity(buildUploadActivity('preparing', { collectionName }));
+        setUploadActivity(buildUploadActivity('preparing', { collectionName }));
         const result = await resumePackUpload(token, packId, picked, (done, total) => {
-          setActivity(buildUploadActivity('uploading', { done, total, collectionName }));
+          setUploadActivity(buildUploadActivity('uploading', { done, total, collectionName }));
         });
         const dupeSuffix = formatUploadDuplicateSkipMessage(result.skippedDuplicates);
         onComplete(
@@ -123,25 +216,30 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         setActivity(null);
       }
     },
-    [onComplete, onError],
+    [onComplete, onError, setUploadActivity],
   );
 
   const uploadPhotosToPack = useCallback(
     async (packId: string, snapshot: DataTransferDropSnapshot) => {
       setBusy(true);
-      setActivity(buildUploadActivity('scanning'));
+      setUploadActivity(buildUploadActivity('scanning'));
       onError('');
 
       try {
-        const drop = await readDataTransferDropFromSnapshot(snapshot, {
+        const dropBatches = await readDataTransferDropBatches(snapshot, {
           onFileFound: (count) => {
-            setActivity(buildUploadActivity('scanning', { scannedCount: count }));
+            setUploadActivity(buildUploadActivity('scanning', { scannedCount: count }));
           },
         });
-        if (drop.files.length === 0) {
+        if (dropBatches.length === 0 || dropBatches.every((b) => b.files.length === 0)) {
           onError('Drop a folder or image files to upload.');
           return;
         }
+        if (dropBatches.length > 1) {
+          onError('Drop one folder or photo set at a time when adding to a collection.');
+          return;
+        }
+        const drop = dropBatches[0]!;
 
         const fromFolder = Boolean(drop.suggestedFolderName) || isLocalFolderUpload(drop.files);
         const images = fromFolder
@@ -152,7 +250,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
           return;
         }
 
-        setActivity(buildUploadActivity('checking', { total: images.length }));
+        setUploadActivity(buildUploadActivity('checking', { total: images.length }));
         const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
         const pack = await gestureDb.packs.get(packId);
         const collectionName = pack?.name ?? 'collection';
@@ -161,10 +259,10 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
           packId,
           drop.files,
           (done, total) => {
-            setActivity(buildUploadActivity('uploading', { done, total, collectionName }));
+            setUploadActivity(buildUploadActivity('uploading', { done, total, collectionName }));
           },
           (hashed, total) => {
-            setActivity(buildUploadActivity('checking', { done: hashed, total, collectionName }));
+            setUploadActivity(buildUploadActivity('checking', { done: hashed, total, collectionName }));
           },
         );
         const dupeSuffix = formatUploadDuplicateSkipMessage(result.skippedDuplicates);
@@ -176,7 +274,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
           );
           return;
         }
-        setActivity(
+        setUploadActivity(
           buildUploadActivity('finishing', {
             done: result.uploadedCount,
             total: result.uploadedCount,
@@ -197,50 +295,82 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         setActivity(null);
       }
     },
-    [onComplete, onError],
+    [onComplete, onError, setUploadActivity],
   );
 
   const uploadFromSnapshot = useCallback(
     async (snapshot: DataTransferDropSnapshot) => {
       setBusy(true);
-      setActivity(buildUploadActivity('scanning'));
+      setUploadActivity(buildUploadActivity('scanning'));
       onError('');
 
       try {
-        const drop = await readDataTransferDropFromSnapshot(snapshot, {
+        const dropBatches = await readDataTransferDropBatches(snapshot, {
           onFileFound: (count) => {
-            setActivity(buildUploadActivity('scanning', { scannedCount: count }));
+            setUploadActivity(buildUploadActivity('scanning', { scannedCount: count }));
           },
         });
-        if (drop.files.length === 0) {
+        if (dropBatches.length === 0) {
+          onError('Drop a folder or image files to upload.');
           setBusy(false);
           setActivity(null);
-          onError('Drop a folder or image files to upload.');
           return;
         }
+
+        const jobs = newCollectionJobsFromBatches(
+          dropBatches.flatMap((batch) =>
+            hasMultipleTopLevelFolders(batch.files)
+              ? splitFilesByTopLevelFolder(batch.files)
+              : [batch],
+          ),
+        );
+        if (jobs.length === 0) {
+          onError('Use JPEG, PNG, WebP, GIF, or similar images.');
+          setBusy(false);
+          setActivity(null);
+          return;
+        }
+
         setBusy(false);
         setActivity(null);
-        await runUpload(drop.files, drop.suggestedFolderName);
+        enqueueNewCollectionJobs(jobs);
       } catch (e) {
+        onError(e instanceof Error ? e.message : 'Could not read dropped folder.');
         setBusy(false);
         setActivity(null);
-        onError(e instanceof Error ? e.message : 'Could not read dropped folder.');
       }
     },
-    [onError, runUpload],
+    [enqueueNewCollectionJobs, onError, setUploadActivity],
   );
 
   const uploadFiles = useCallback(
     async (picked: File[], suggestedFolderName?: string) => {
       if (picked.length === 0) return;
-      setBusy(true);
-      setActivity(buildUploadActivity('scanning', { scannedCount: picked.length }));
-      await runUpload(picked, suggestedFolderName);
+      const batches = batchesFromPickedFiles(picked, suggestedFolderName);
+      const jobs = newCollectionJobsFromBatches(batches);
+      if (jobs.length === 0) {
+        onError('Use JPEG, PNG, WebP, GIF, or similar images.');
+        return;
+      }
+      if (drainingRef.current || queueRef.current.length > 0) {
+        enqueueNewCollectionJobs(jobs);
+        return;
+      }
+      setUploadActivity(buildUploadActivity('scanning', { scannedCount: picked.length }));
+      enqueueNewCollectionJobs(jobs);
     },
-    [runUpload],
+    [enqueueNewCollectionJobs, onError, setUploadActivity],
   );
 
-  return { busy, activity, uploadFiles, uploadFromSnapshot, uploadPhotosToPack, continueUploadForPack };
+  return {
+    busy,
+    queuedCount,
+    activity,
+    uploadFiles,
+    uploadFromSnapshot,
+    uploadPhotosToPack,
+    continueUploadForPack,
+  };
 }
 
 export type GestureCollectionUploadHandle = ReturnType<typeof useGestureCollectionUpload>;

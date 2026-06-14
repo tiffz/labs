@@ -72,6 +72,7 @@ Elevated defaults within the same family:
 ### Tabs
 
 - Segmented **pill** bar: frosted paper track, selected tab on `--gesture-card-bg`.
+- Unselected tabs: subtle sage wash + ink tint on **hover**; focus-visible ring for keyboard.
 - No underline indicator (hidden).
 - Tab labels: weight 500, sentence case.
 

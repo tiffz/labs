@@ -28,6 +28,7 @@ export const GESTURE_LINEN_CSS_VARS: Record<string, string> = {
   '--gesture-shadow-soft': 'none',
   '--gesture-card-shadow': 'none',
   '--gesture-zen-bg': '#2a2d28',
+  '--gesture-zen-error': '#fca5a5',
   '--gesture-preview-bg': 'rgba(95, 133, 102, 0.06)',
   '--gesture-preview-cell': 'rgba(216, 224, 217, 0.55)',
   '--gesture-preview-placeholder': '#ebe8e2',

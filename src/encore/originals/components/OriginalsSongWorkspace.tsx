@@ -17,11 +17,14 @@ import {
 import { encoreHairline, encoreRadius, encoreShadowSurface } from '../../theme/encoreUiTokens';
 import { useOriginalsChartLayout } from '../hooks/useOriginalsChartLayout';
 import {
-  inferredWorkflowStage,
   isStageComplete,
   toggleStageCompletion,
 } from '../originalsWorkflowCompletion';
 import { workflowStageCaption, workflowStageShortLabel, type OriginalsWorkflowStage } from '../originalsWorkflowStages';
+import {
+  persistWorkflowStage,
+  readPersistedWorkflowStage,
+} from '../originalsWorkflowStagePersistence';
 import type { EncoreOriginalSong } from '../types';
 import { OriginalsBrainstormStage } from './OriginalsBrainstormStage';
 import { OriginalsChordPalette } from './chart/OriginalsChordPalette';
@@ -30,10 +33,6 @@ import { OriginalsPaintChordsEditor } from './OriginalsPaintChordsEditor';
 import { OriginalsTakesStage } from './OriginalsTakesStage';
 import { OriginalsWorkflowStepper } from './OriginalsWorkflowStepper';
 import { OriginalsWriteLyricsEditor } from './OriginalsWriteLyricsEditor';
-
-function stageStorageKey(songId: string): string {
-  return `encore-originals-workflow-stage:${songId}`;
-}
 
 function chordNotationStorageKey(songId: string): string {
   return `encore-originals-chord-notation:${songId}`;
@@ -47,16 +46,6 @@ function readChordNotation(songId: string): ChordNotationMode {
     /* ignore */
   }
   return 'letters';
-}
-
-export function readPersistedWorkflowStage(songId: string, song: EncoreOriginalSong): OriginalsWorkflowStage {
-  try {
-    const raw = sessionStorage.getItem(stageStorageKey(songId));
-    if (raw === 'brainstorm' || raw === 'write' || raw === 'chords' || raw === 'takes') return raw;
-  } catch {
-    /* ignore */
-  }
-  return inferredWorkflowStage(song);
 }
 
 export type OriginalsSongWorkspaceProps = {
@@ -108,11 +97,7 @@ export function OriginalsSongWorkspace({
   }, [onWorkflowStageChange, stage]);
 
   useEffect(() => {
-    try {
-      sessionStorage.setItem(stageStorageKey(song.id), stage);
-    } catch {
-      /* ignore */
-    }
+    persistWorkflowStage(song.id, stage);
   }, [song.id, stage]);
 
   const handleArmChord = useCallback(

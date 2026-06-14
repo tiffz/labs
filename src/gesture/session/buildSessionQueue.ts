@@ -2,16 +2,27 @@ import type { SessionQueueItem } from '../types';
 
 export function buildSessionQueue(params: {
   files: SessionQueueItem[];
-  drawnIds: Set<string>;
-  excludePreviouslyDrawn: boolean;
+  drawCounts: Map<string, number>;
+  prioritizeLeastDrawn: boolean;
   shuffle: boolean;
+  maxPhotos?: number | null;
 }): SessionQueueItem[] {
-  let pool = params.files;
-  if (params.excludePreviouslyDrawn) {
-    pool = pool.filter((f) => !params.drawnIds.has(f.driveFileId));
+  let pool = [...params.files];
+
+  if (params.prioritizeLeastDrawn) {
+    pool.sort((a, b) => {
+      const countA = params.drawCounts.get(a.driveFileId) ?? 0;
+      const countB = params.drawCounts.get(b.driveFileId) ?? 0;
+      if (countA !== countB) return countA - countB;
+      if (params.shuffle) return Math.random() - 0.5;
+      return 0;
+    });
+  } else if (params.shuffle) {
+    pool.sort(() => Math.random() - 0.5);
   }
-  if (params.shuffle) {
-    pool = [...pool].sort(() => Math.random() - 0.5);
+
+  if (params.maxPhotos != null && params.maxPhotos > 0) {
+    pool = pool.slice(0, params.maxPhotos);
   }
   return pool;
 }

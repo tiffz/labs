@@ -2,20 +2,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import PauseIcon from '@mui/icons-material/Pause';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
 import CloseIcon from '@mui/icons-material/Close';
 import { useLiveQuery } from 'dexie-react-hooks';
 import AppTooltip from '../../shared/components/AppTooltip';
 import ZenTimerRing from '../components/ZenTimerRing';
-import { readPersistedGoogleSession } from '../../shared/google/encoreGoogleTokenStorage';
 import { recordGestureDraw } from '../db/gestureLocalData';
 import { gestureDb } from '../db/gestureDb';
+import { readGestureDriveAccessToken } from '../drive/readGestureDriveAccessToken';
+import {
+  GESTURE_EMPTY_DRAW_HISTORY,
+  GESTURE_EMPTY_PACK_FILES,
+} from '../hooks/gestureLiveQueryEmpty';
 import { clearGestureImagePrefetchCache } from '../media/gestureImagePrefetchCache';
 import { useGestureImagePrefetch } from '../hooks/useGestureImagePrefetch';
-import { buildSessionQueue, formatTimerSec } from '../session/buildSessionQueue';
+import { formatTimerSec } from '../session/buildSessionQueue';
+import { buildGestureSessionQueueFromConfig } from '../session/gestureSessionQueueFromConfig';
+import { prefetchGestureSessionImages } from '../media/prefetchGestureSessionImages';
 import { useDrawingTimer } from '../session/useDrawingTimer';
 import { useSessionKeyboard } from '../session/useSessionKeyboard';
 import type { SessionConfig, SessionDebrief, SessionQueueItem } from '../types';
@@ -26,42 +30,53 @@ interface ZenSessionPhaseProps {
 }
 
 export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps) {
-  const packFiles = useLiveQuery(() => gestureDb.packFiles.toArray(), []) ?? [];
-  const drawHistory = useLiveQuery(() => gestureDb.drawHistory.toArray(), []) ?? [];
-
-  const drawnIds = useMemo(() => new Set(drawHistory.map((r) => r.driveFileId)), [drawHistory]);
+  const packFilesRaw = useLiveQuery(() => gestureDb.packFiles.toArray(), [], undefined);
+  const drawHistoryRaw = useLiveQuery(() => gestureDb.drawHistory.toArray(), [], undefined);
+  const packFiles = packFilesRaw ?? GESTURE_EMPTY_PACK_FILES;
+  const drawHistory = drawHistoryRaw ?? GESTURE_EMPTY_DRAW_HISTORY;
 
   const queue = useMemo((): SessionQueueItem[] => {
-    const files: SessionQueueItem[] = packFiles
-      .filter((f) => config.packIds.includes(f.packId))
-      .map((f) => ({ driveFileId: f.driveFileId, packId: f.packId, name: f.name }));
-    return buildSessionQueue({
-      files,
-      drawnIds,
-      excludePreviouslyDrawn: config.excludePreviouslyDrawn,
-      shuffle: config.shuffle,
-    });
-  }, [config, packFiles, drawnIds]);
+    if (config.queue?.length) return config.queue;
+    return buildGestureSessionQueueFromConfig(config, packFiles, drawHistory);
+  }, [config, drawHistory, packFiles]);
 
   const [index, setIndex] = useState(0);
   const [photosCompleted, setPhotosCompleted] = useState(0);
+  const [photosSkipped, setPhotosSkipped] = useState(0);
   const [totalMs, setTotalMs] = useState(0);
   const loggedIndexRef = useRef<number | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
-  const accessToken = readPersistedGoogleSession()?.accessToken ?? null;
+  useEffect(() => {
+    void readGestureDriveAccessToken().then(setAccessToken);
+  }, []);
+
+  useEffect(() => {
+    if (!accessToken || config.queue?.length || queue.length === 0) return;
+    void prefetchGestureSessionImages(accessToken, queue);
+  }, [accessToken, config.queue, queue]);
+
   const current = queue[index] ?? null;
-  const { src, loading, error } = useGestureImagePrefetch(queue, index, accessToken);
+  const { src, ready, loading, error } = useGestureImagePrefetch(queue, index, accessToken);
 
-  const timer = useDrawingTimer(config.durationSec, Boolean(current));
+  const timer = useDrawingTimer(config.durationSec, Boolean(current) && ready);
 
   const finishSession = useCallback(() => {
     clearGestureImagePrefetchCache();
     onExit({
       photosCompleted,
+      photosSkipped,
       totalMs,
       packIds: config.packIds,
+      config: {
+        durationSec: config.durationSec,
+        prioritizeLeastDrawn: config.prioritizeLeastDrawn,
+        shuffle: config.shuffle,
+        packIds: config.packIds,
+        maxPhotos: config.maxPhotos,
+      },
     });
-  }, [config.packIds, onExit, photosCompleted, totalMs]);
+  }, [config, onExit, photosCompleted, photosSkipped, totalMs]);
 
   const logCurrentPhoto = useCallback(async () => {
     if (!current || loggedIndexRef.current === index) return;
@@ -76,17 +91,26 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
     setTotalMs((ms) => ms + durationMs);
   }, [config.durationSec, current, index]);
 
-  const goNext = useCallback(async () => {
-    if (current) await logCurrentPhoto();
-    if (index >= queue.length - 1) {
-      finishSession();
-      return;
-    }
-    loggedIndexRef.current = null;
-    setIndex((i) => i + 1);
-    timer.resetForNext(config.durationSec);
-  }, [config.durationSec, current, finishSession, index, logCurrentPhoto, queue.length, timer]);
+  const advance = useCallback(
+    async (mode: 'complete' | 'skip') => {
+      if (mode === 'complete' && current) {
+        await logCurrentPhoto();
+      } else if (mode === 'skip' && current) {
+        setPhotosSkipped((n) => n + 1);
+      }
 
+      if (index >= queue.length - 1) {
+        finishSession();
+        return;
+      }
+      loggedIndexRef.current = null;
+      setIndex((i) => i + 1);
+      timer.resetForNext(config.durationSec);
+    },
+    [config.durationSec, current, finishSession, index, logCurrentPhoto, queue.length, timer],
+  );
+
+  const goNext = useCallback(() => void advance('skip'), [advance]);
   const goBack = useCallback(() => {
     if (index <= 0) return;
     loggedIndexRef.current = null;
@@ -96,13 +120,13 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
 
   useEffect(() => {
     if (!timer.complete) return;
-    void goNext();
-  }, [timer.complete, goNext]);
+    void advance('complete');
+  }, [timer.complete, advance]);
 
   useSessionKeyboard(
     {
       onPause: timer.togglePause,
-      onSkip: () => void goNext(),
+      onSkip: goNext,
       onBack: goBack,
       onExit: () => {
         if (window.confirm('End this session? Progress for completed photos is saved.')) {
@@ -110,10 +134,11 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
         }
       },
     },
-    Boolean(current),
+    Boolean(current) && ready,
   );
 
-  const timerProgress = config.durationSec > 0 ? timer.remainingSec / config.durationSec : 0;
+  const timerProgress =
+    ready && config.durationSec > 0 ? timer.remainingSec / config.durationSec : 0;
 
   if (queue.length === 0) {
     return (
@@ -122,9 +147,7 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
           No photos available
         </Typography>
         <Typography color="text.secondary" sx={{ mb: 2 }}>
-          {config.excludePreviouslyDrawn
-            ? 'You have drawn every photo in the selected packs. Turn off exclude or refresh a pack.'
-            : 'Refresh your packs from the home screen.'}
+          Selected collections have no photos yet. Refresh a collection or choose another.
         </Typography>
         <Button variant="contained" onClick={() => finishSession()}>
           Back home
@@ -142,10 +165,6 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
         />
       </div>
 
-      <div className="gesture-zen-timer-label" aria-live="polite">
-        {formatTimerSec(timer.remainingSec)}
-      </div>
-
       <div className="gesture-zen-image-wrap">
         {src ? (
           <img
@@ -154,12 +173,17 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
             className={`gesture-zen-image${loading ? ' is-loading' : ''}`}
           />
         ) : null}
+        {!ready && !error ? (
+          <div className="gesture-zen-preparing" aria-live="polite">
+            Preparing photo…
+          </div>
+        ) : null}
         {error ? (
-          <Typography role="alert" sx={{ color: '#fca5a5', textAlign: 'center', px: 2 }}>
+          <Typography role="alert" className="gesture-zen-error">
             {error}
           </Typography>
         ) : null}
-        {timer.paused ? <div className="gesture-zen-paused">Paused</div> : null}
+        {ready && timer.paused ? <div className="gesture-zen-paused">Paused</div> : null}
       </div>
 
       <div className="gesture-zen-controls">
@@ -176,23 +200,32 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
         <AppTooltip title={timer.paused ? 'Resume (Space)' : 'Pause (Space)'}>
           <ZenTimerRing
             progress={timerProgress}
+            size={72}
             ariaLabel={`${formatTimerSec(timer.remainingSec)} remaining`}
           >
-            <IconButton
-              aria-label={timer.paused ? 'Resume timer' : 'Pause timer'}
+            <button
+              type="button"
+              className="gesture-zen-timer-ring-btn"
+              aria-label={
+                ready
+                  ? timer.paused
+                    ? `Resume timer, ${formatTimerSec(timer.remainingSec)} remaining`
+                    : `Pause timer, ${formatTimerSec(timer.remainingSec)} remaining`
+                  : 'Timer waiting for photo'
+              }
               onClick={timer.togglePause}
-              className="gesture-zen-control-btn"
-              size="medium"
-              sx={{ width: 40, height: 40 }}
+              disabled={!ready}
             >
-              {timer.paused ? <PlayArrowIcon /> : <PauseIcon />}
-            </IconButton>
+              <span className="gesture-zen-timer-countdown" aria-live="polite">
+                {ready ? formatTimerSec(timer.remainingSec) : '…'}
+              </span>
+            </button>
           </ZenTimerRing>
         </AppTooltip>
         <AppTooltip title="Skip (N or →)">
           <IconButton
             aria-label="Skip to next photo"
-            onClick={() => void goNext()}
+            onClick={goNext}
             className="gesture-zen-control-btn"
             size="large"
           >

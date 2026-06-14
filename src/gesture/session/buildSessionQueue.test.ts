@@ -8,23 +8,51 @@ describe('buildSessionQueue', () => {
     { driveFileId: 'c', packId: 'p2', name: 'C' },
   ];
 
-  it('excludes drawn photos when requested', () => {
+  it('prioritizes least drawn photos first', () => {
+    const drawCounts = new Map([
+      ['a', 5],
+      ['b', 0],
+      ['c', 2],
+    ]);
     const queue = buildSessionQueue({
       files,
-      drawnIds: new Set(['a']),
-      excludePreviouslyDrawn: true,
+      drawCounts,
+      prioritizeLeastDrawn: true,
       shuffle: false,
     });
-    expect(queue.map((f) => f.driveFileId)).toEqual(['b', 'c']);
+    expect(queue.map((f) => f.driveFileId)).toEqual(['b', 'c', 'a']);
   });
 
-  it('keeps all photos when exclude is off', () => {
+  it('treats missing draw history as never drawn', () => {
+    const drawCounts = new Map([['a', 3]]);
     const queue = buildSessionQueue({
       files,
-      drawnIds: new Set(['a']),
-      excludePreviouslyDrawn: false,
+      drawCounts,
+      prioritizeLeastDrawn: true,
       shuffle: false,
     });
-    expect(queue).toHaveLength(3);
+    expect(queue.map((f) => f.driveFileId)).toEqual(['b', 'c', 'a']);
+  });
+
+  it('keeps original order when prioritize and shuffle are off', () => {
+    const drawCounts = new Map([['a', 1]]);
+    const queue = buildSessionQueue({
+      files,
+      drawCounts,
+      prioritizeLeastDrawn: false,
+      shuffle: false,
+    });
+    expect(queue.map((f) => f.driveFileId)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('caps queue length when maxPhotos is set', () => {
+    const queue = buildSessionQueue({
+      files,
+      drawCounts: new Map([['a', 2], ['b', 0], ['c', 1]]),
+      prioritizeLeastDrawn: true,
+      shuffle: false,
+      maxPhotos: 2,
+    });
+    expect(queue.map((f) => f.driveFileId)).toEqual(['b', 'c']);
   });
 });

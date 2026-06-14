@@ -5,6 +5,7 @@ describe('mergeGestureSyncPayload', () => {
   it('merges draw history by file id', () => {
     const local = {
       packs: [],
+      packFiles: [],
       drawHistory: [
         {
           driveFileId: 'f1',
@@ -18,6 +19,7 @@ describe('mergeGestureSyncPayload', () => {
     };
     const remote = {
       packs: [],
+      packFiles: [],
       drawHistory: [
         {
           driveFileId: 'f1',
@@ -49,6 +51,7 @@ describe('mergeGestureSyncPayload', () => {
         },
       ],
       drawHistory: [],
+      packFiles: [],
     };
     const remote = {
       packs: [
@@ -61,6 +64,7 @@ describe('mergeGestureSyncPayload', () => {
         },
       ],
       drawHistory: [],
+      packFiles: [],
     };
     const { payload, report } = mergeGestureSyncPayload(local, remote);
     expect(payload.packs).toHaveLength(2);
@@ -81,6 +85,7 @@ describe('mergeGestureSyncPayload', () => {
         },
       ],
       drawHistory: [],
+      packFiles: [],
     };
     const remote = {
       packs: [
@@ -95,9 +100,49 @@ describe('mergeGestureSyncPayload', () => {
         },
       ],
       drawHistory: [],
+      packFiles: [],
     };
     const { payload } = mergeGestureSyncPayload(local, remote);
     expect(payload.packs[0]?.tags).toEqual(['gesture', 'study']);
     expect(payload.packs[0]?.subject).toBe('Hands');
+  });
+
+  it('remaps remote pack file rows to merged pack ids', () => {
+    const local = {
+      packs: [
+        {
+          id: 'local-id',
+          driveFolderId: 'folder-a',
+          name: 'Cats',
+          linkedAt: '2026-01-01T00:00:00.000Z',
+          lastIndexedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      packFiles: [],
+      drawHistory: [],
+    };
+    const remote = {
+      packs: [
+        {
+          id: 'remote-id',
+          driveFolderId: 'folder-a',
+          name: 'Cats',
+          linkedAt: '2026-01-01T00:00:00.000Z',
+          lastIndexedAt: '2026-01-02T00:00:00.000Z',
+        },
+      ],
+      packFiles: [
+        {
+          driveFileId: 'photo-1',
+          packId: 'remote-id',
+          name: 'a.jpg',
+          mimeType: 'image/jpeg',
+        },
+      ],
+      drawHistory: [],
+    };
+    const { payload } = mergeGestureSyncPayload(local, remote);
+    expect(payload.packFiles).toHaveLength(1);
+    expect(payload.packFiles[0]?.packId).toBe('local-id');
   });
 });

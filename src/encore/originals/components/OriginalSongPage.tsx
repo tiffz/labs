@@ -13,7 +13,8 @@ import { createBlankOriginalSong, type EncoreOriginalSong } from '../types';
 import { OriginalsPdfImportDialog } from './OriginalsPdfImportDialog';
 import { OriginalsSongHeader, type OriginalsPageMode } from './OriginalsSongHeader';
 import { OriginalsSongViewMode } from './OriginalsSongViewMode';
-import { OriginalsSongWorkspace, readPersistedWorkflowStage } from './OriginalsSongWorkspace';
+import { OriginalsSongWorkspace } from './OriginalsSongWorkspace';
+import { readPersistedWorkflowStage } from '../originalsWorkflowStagePersistence';
 import type { OriginalsWorkflowStage } from '../originalsWorkflowStages';
 
 export type OriginalSongPageProps = {

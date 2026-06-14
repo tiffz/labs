@@ -35,58 +35,79 @@ export function formatInterruptedUploadSummary(pack: GesturePack, indexedPhotoCo
 
 export function buildUploadActivity(
   phase: GestureUploadPhase,
-  params?: { done?: number; total?: number; collectionName?: string; scannedCount?: number },
+  params?: {
+    done?: number;
+    total?: number;
+    collectionName?: string;
+    scannedCount?: number;
+    queuedCount?: number;
+  },
 ): GestureUploadActivity {
-  const { done, total, collectionName, scannedCount } = params ?? {};
+  const { done, total, collectionName, scannedCount, queuedCount } = params ?? {};
+  const queueSuffix =
+    queuedCount != null && queuedCount > 0
+      ? ` · ${queuedCount} more folder${queuedCount === 1 ? '' : 's'} queued`
+      : '';
+  const withQueue = (label: string): string => `${label}${queueSuffix}`;
   switch (phase) {
     case 'scanning':
       return {
         phase,
-        label:
+        label: withQueue(
           scannedCount != null && scannedCount > 0
             ? `Reading folder… ${scannedCount} file${scannedCount === 1 ? '' : 's'} found`
             : 'Reading dropped folder…',
+        ),
+        queuedCount,
       };
     case 'checking':
       return {
         phase,
-        label:
+        label: withQueue(
           total != null && done != null
             ? `Checking for duplicates… ${done} of ${total}`
             : 'Checking for duplicates…',
+        ),
         done,
         total,
         collectionName,
+        queuedCount,
       };
     case 'preparing':
       return {
         phase,
-        label: collectionName
-          ? `Preparing “${collectionName}” on Drive…`
-          : 'Preparing collection on Drive…',
+        label: withQueue(
+          collectionName
+            ? `Preparing “${collectionName}” on Drive…`
+            : 'Preparing collection on Drive…',
+        ),
         total,
         collectionName,
+        queuedCount,
       };
     case 'uploading':
       return {
         phase,
-        label:
+        label: withQueue(
           total != null && done != null
             ? `Uploading to Drive… ${done} of ${total}`
             : 'Uploading to Drive…',
+        ),
         done,
         total,
         collectionName,
+        queuedCount,
       };
     case 'finishing':
       return {
         phase,
-        label: 'Saving collection…',
+        label: withQueue('Saving collection…'),
         done,
         total,
         collectionName,
+        queuedCount,
       };
     default:
-      return { phase: 'preparing', label: 'Preparing upload…' };
+      return { phase: 'preparing', label: withQueue('Preparing upload…'), queuedCount };
   }
 }

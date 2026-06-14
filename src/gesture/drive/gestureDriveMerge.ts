@@ -1,8 +1,10 @@
-import type { GestureDrawRecord, GesturePack, GestureSyncPayload } from '../types';
+import type { GestureDrawRecord, GesturePack, GesturePackFile, GestureSyncPayload } from '../types';
 
 export type GestureDriveMergeReport = {
   packsMerged: number;
   packsFromRemoteOnly: number;
+  packFilesMerged: number;
+  packFilesFromRemoteOnly: number;
   historyMerged: number;
   historyFromRemoteOnly: number;
 };
@@ -41,6 +43,45 @@ function mergePack(local: GesturePack, remote: GesturePack): GesturePack {
   };
 }
 
+function mergePackFiles(
+  local: GesturePackFile[],
+  remote: GesturePackFile[],
+  mergedPacks: GesturePack[],
+  remotePacks: GesturePack[],
+): { rows: GesturePackFile[]; merged: number; fromRemoteOnly: number } {
+  const folderToMergedId = new Map(mergedPacks.map((p) => [p.driveFolderId, p.id]));
+  const remotePackIdToFolder = new Map(remotePacks.map((p) => [p.id, p.driveFolderId]));
+  const mergedPackIds = new Set(mergedPacks.map((p) => p.id));
+
+  const byFileId = new Map<string, GesturePackFile>();
+  let merged = 0;
+  let fromRemoteOnly = 0;
+
+  for (const file of local) {
+    if (!mergedPackIds.has(file.packId)) continue;
+    byFileId.set(file.driveFileId, file);
+  }
+
+  for (const file of remote) {
+    const folderId = remotePackIdToFolder.get(file.packId);
+    if (!folderId) continue;
+    const mergedPackId = folderToMergedId.get(folderId);
+    if (!mergedPackId) continue;
+    const row = { ...file, packId: mergedPackId };
+    const existing = byFileId.get(row.driveFileId);
+    if (existing) {
+      const keepRemote = (row.modifiedTime ?? '') >= (existing.modifiedTime ?? '');
+      byFileId.set(row.driveFileId, keepRemote ? row : existing);
+      merged += 1;
+    } else {
+      byFileId.set(row.driveFileId, row);
+      fromRemoteOnly += 1;
+    }
+  }
+
+  return { rows: [...byFileId.values()], merged, fromRemoteOnly };
+}
+
 export function mergeGestureSyncPayload(
   local: GestureSyncPayload,
   remote: GestureSyncPayload | null,
@@ -51,6 +92,8 @@ export function mergeGestureSyncPayload(
       report: {
         packsMerged: 0,
         packsFromRemoteOnly: 0,
+        packFilesMerged: 0,
+        packFilesFromRemoteOnly: 0,
         historyMerged: 0,
         historyFromRemoteOnly: 0,
       },
@@ -71,6 +114,9 @@ export function mergeGestureSyncPayload(
       packsFromRemoteOnly += 1;
     }
   }
+  const mergedPacks = [...packByFolder.values()];
+
+  const packFileMerge = mergePackFiles(local.packFiles, remote.packFiles, mergedPacks, remote.packs);
 
   const historyByFile = new Map<string, GestureDrawRecord>();
   for (const h of local.drawHistory) historyByFile.set(h.driveFileId, h);
@@ -89,12 +135,15 @@ export function mergeGestureSyncPayload(
 
   return {
     payload: {
-      packs: [...packByFolder.values()],
+      packs: mergedPacks,
+      packFiles: packFileMerge.rows,
       drawHistory: [...historyByFile.values()],
     },
     report: {
       packsMerged,
       packsFromRemoteOnly,
+      packFilesMerged: packFileMerge.merged,
+      packFilesFromRemoteOnly: packFileMerge.fromRemoteOnly,
       historyMerged,
       historyFromRemoteOnly,
     },
@@ -106,10 +155,19 @@ export function formatGestureDriveMergeReport(report: GestureDriveMergeReport): 
   if (report.packsFromRemoteOnly > 0) {
     parts.push(`added ${report.packsFromRemoteOnly} pack${report.packsFromRemoteOnly === 1 ? '' : 's'} from Drive`);
   }
+  if (report.packFilesFromRemoteOnly > 0) {
+    parts.push(
+      `added ${report.packFilesFromRemoteOnly} photo index row${report.packFilesFromRemoteOnly === 1 ? '' : 's'}`,
+    );
+  }
   if (report.historyFromRemoteOnly > 0) {
     parts.push(`added ${report.historyFromRemoteOnly} drawn photo${report.historyFromRemoteOnly === 1 ? '' : 's'}`);
   }
-  if (report.packsMerged > 0 || report.historyMerged > 0) {
+  if (
+    report.packsMerged > 0 ||
+    report.packFilesMerged > 0 ||
+    report.historyMerged > 0
+  ) {
     parts.push('merged overlapping progress');
   }
   return parts.length > 0 ? parts.join(', ') : 'already in sync';

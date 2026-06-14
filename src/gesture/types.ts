@@ -35,6 +35,8 @@ export type GestureUploadActivity = {
   done?: number;
   total?: number;
   collectionName?: string;
+  /** When more folders are waiting in the upload queue. */
+  queuedCount?: number;
 };
 
 export type GesturePackMetadataInput = {
@@ -68,6 +70,7 @@ export type GestureDrawRecord = {
 
 export type GestureSyncPayload = {
   packs: GesturePack[];
+  packFiles: GesturePackFile[];
   drawHistory: GestureDrawRecord[];
 };
 
@@ -79,15 +82,22 @@ export type SessionQueueItem = {
 
 export type SessionConfig = {
   durationSec: number;
-  excludePreviouslyDrawn: boolean;
+  /** When true, never-drawn and lightly drawn photos come first. */
+  prioritizeLeastDrawn: boolean;
   shuffle: boolean;
   packIds: string[];
+  /** Cap queue length; `null` means endless session. */
+  maxPhotos: number | null;
+  /** Locked at session start so prefetch matches the zen queue. */
+  queue?: SessionQueueItem[];
 };
 
 export type SessionDebrief = {
   photosCompleted: number;
+  photosSkipped: number;
   totalMs: number;
   packIds: string[];
+  config: SessionConfig;
 };
 
 export type AppPhase = 'home' | 'session' | 'debrief';

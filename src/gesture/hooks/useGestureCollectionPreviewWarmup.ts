@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ensureLabsGoogleAccessTokenForDrive } from '../../shared/google/labsGoogleDriveAccess';
+import { readGestureDriveAccessToken } from '../drive/readGestureDriveAccessToken';
 import { warmGesturePreviewUrls } from '../media/gesturePreviewImageUrl';
 
 /** Resolve collection-card preview URLs once per visible pack list (deduped in preview cache). */
@@ -11,7 +11,7 @@ export function useGestureCollectionPreviewWarmup(fileIds: string[]): void {
     let cancelled = false;
 
     void (async () => {
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: false }).catch(() => null);
+      const token = await readGestureDriveAccessToken();
       if (cancelled) return;
       await warmGesturePreviewUrls(token, key.split(','));
     })();

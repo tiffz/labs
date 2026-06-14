@@ -1,4 +1,5 @@
 import { driveResolveThumbnailLink } from '../../shared/drive/driveFetch';
+import { fetchDriveImageObjectUrl, probeImageUrlLoads } from './gestureDriveImageLoad';
 import {
   buildDriveThumbnailFallbackUrl,
   scaleDriveThumbnailUrl,
@@ -38,17 +39,27 @@ function previewCacheKey(fileId: string): string {
 }
 
 function readPreviewCache(fileId: string): string | null {
-  const row = previewCache.get(previewCacheKey(fileId));
+  const key = previewCacheKey(fileId);
+  const row = previewCache.get(key);
   if (!row) return null;
   if (Date.now() > row.expiresAt) {
-    previewCache.delete(previewCacheKey(fileId));
+    revokePreviewBlob(row.url);
+    previewCache.delete(key);
     return null;
   }
   return row.url;
 }
 
+function revokePreviewBlob(url: string): void {
+  if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+}
+
 function writePreviewCache(fileId: string, url: string, hit: boolean): void {
-  previewCache.set(previewCacheKey(fileId), {
+  const key = previewCacheKey(fileId);
+  const prev = previewCache.get(key);
+  if (prev && prev.url !== url) revokePreviewBlob(prev.url);
+
+  previewCache.set(key, {
     url,
     expiresAt: Date.now() + (hit ? HIT_TTL_MS : MISS_TTL_MS),
   });
@@ -82,9 +93,19 @@ export async function resolveGesturePreviewImageUrl(
       const link = await driveResolveThumbnailLink(accessToken, fileId);
       if (link) {
         const scaled = scaleDriveThumbnailUrl(link, width);
-        writePreviewCache(fileId, scaled, true);
-        return scaled;
+        if (await probeImageUrlLoads(scaled)) {
+          writePreviewCache(fileId, scaled, true);
+          return scaled;
+        }
       }
+    } catch {
+      /* fall through */
+    }
+
+    try {
+      const blobUrl = await fetchDriveImageObjectUrl(accessToken, fileId);
+      writePreviewCache(fileId, blobUrl, true);
+      return blobUrl;
     } catch {
       /* fall through */
     }

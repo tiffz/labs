@@ -16850,6 +16850,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-readdatatransferentryfiles-ts-readdatatransferdropbatches",
+    "name": "readDataTransferDropBatches",
+    "path": "src/shared/utils/readDataTransferEntryFiles.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "One batch per dropped folder when multiple top-level directories are present.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-readdatatransferentryfiles-ts-readdatatransferdropfromsnapshot",
     "name": "readDataTransferDropFromSnapshot",
     "path": "src/shared/utils/readDataTransferEntryFiles.ts",

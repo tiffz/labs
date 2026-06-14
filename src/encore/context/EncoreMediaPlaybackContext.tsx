@@ -731,6 +731,8 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       isPlayingTake,
       isLoadingTake,
       registerYoutubeController,
+      mediaRef,
+      audioRef,
     ],
   );
 

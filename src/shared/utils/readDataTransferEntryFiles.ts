@@ -143,3 +143,27 @@ export async function readDataTransferDropFromSnapshot(
 export async function readDataTransferDrop(dataTransfer: DataTransfer): Promise<DataTransferDrop> {
   return readDataTransferDropFromSnapshot(collectDataTransferDropSnapshot(dataTransfer));
 }
+
+/** One batch per dropped folder when multiple top-level directories are present. */
+export async function readDataTransferDropBatches(
+  snapshot: DataTransferDropSnapshot,
+  options?: { onFileFound?: (count: number) => void },
+): Promise<DataTransferDrop[]> {
+  const directoryEntries = snapshot.entries.filter((entry) => entry.isDirectory);
+  if (directoryEntries.length > 1) {
+    const batches: DataTransferDrop[] = [];
+    for (const entry of directoryEntries) {
+      const files = await readEntryFiles(entry, entry.name);
+      options?.onFileFound?.(files.length);
+      batches.push({ files, suggestedFolderName: entry.name });
+    }
+    if (snapshot.looseFiles.length > 0) {
+      batches.push({ files: [...snapshot.looseFiles] });
+    }
+    return batches;
+  }
+
+  const drop = await readDataTransferDropFromSnapshot(snapshot, options);
+  if (drop.files.length === 0) return [];
+  return [drop];
+}

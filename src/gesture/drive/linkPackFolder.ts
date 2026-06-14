@@ -1,30 +1,15 @@
-import { driveGetFileMetadata, driveListFiles, type DriveFileListRow } from '../../shared/drive/driveFetch';
+import { driveGetFileMetadata } from '../../shared/drive/driveFetch';
 import { gestureDb } from '../db/gestureDb';
 import { notifyGestureLocalChange } from '../db/gestureChangeBus';
-import type { GesturePack, GesturePackFile } from '../types';
-import { isGestureReferenceImageFile } from './gestureImageFilter';
+import type { GesturePack } from '../types';
+import {
+  driveRowsToPackFiles,
+  indexGesturePackFromDrive,
+  listImagesInGesturePackFolder,
+} from './gesturePackIndex';
 import { parseDriveFolderIdFromInput } from './parseDriveFolderInput';
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
-
-function escapeDriveQueryString(id: string): string {
-  return id.replace(/'/g, "\\'");
-}
-
-async function listImagesInFolder(accessToken: string, folderId: string): Promise<DriveFileListRow[]> {
-  const out: DriveFileListRow[] = [];
-  let pageToken: string | undefined;
-  const q = `'${escapeDriveQueryString(folderId)}' in parents and trashed=false`;
-  const fields = 'nextPageToken,files(id,name,mimeType,modifiedTime)';
-  do {
-    const res = await driveListFiles(accessToken, q, fields, 100, pageToken);
-    for (const file of res.files ?? []) {
-      if (isGestureReferenceImageFile(file)) out.push(file);
-    }
-    pageToken = res.nextPageToken;
-  } while (pageToken);
-  return out;
-}
 
 export type LinkPackFolderResult = {
   pack: GesturePack;
@@ -56,24 +41,15 @@ export async function linkPackFolderFromInput(
         source: 'link',
       };
 
-  const images = await listImagesInFolder(accessToken, folderId);
-  const packFiles: GesturePackFile[] = images
-    .filter((f) => f.id)
-    .map((f) => ({
-      driveFileId: f.id!,
-      packId: pack.id,
-      name: f.name?.trim() || 'Photo',
-      mimeType: f.mimeType ?? 'image/jpeg',
-      modifiedTime: f.modifiedTime,
-    }));
+  const images = await listImagesInGesturePackFolder(accessToken, folderId);
+  const packFiles = driveRowsToPackFiles(pack, images);
 
   await gestureDb.transaction('rw', gestureDb.packs, gestureDb.packFiles, async () => {
     await gestureDb.packs.put(pack);
     const stale = await gestureDb.packFiles.where('packId').equals(pack.id).toArray();
-    const staleIds = new Set(stale.map((f) => f.driveFileId));
     const freshIds = new Set(packFiles.map((f) => f.driveFileId));
-    for (const id of staleIds) {
-      if (!freshIds.has(id)) await gestureDb.packFiles.delete(id);
+    for (const row of stale) {
+      if (!freshIds.has(row.driveFileId)) await gestureDb.packFiles.delete(row.driveFileId);
     }
     await gestureDb.packFiles.bulkPut(packFiles);
   });
@@ -85,6 +61,5 @@ export async function linkPackFolderFromInput(
 export async function refreshPackFolder(accessToken: string, packId: string): Promise<number> {
   const pack = await gestureDb.packs.get(packId);
   if (!pack) throw new Error('Pack not found.');
-  const result = await linkPackFolderFromInput(accessToken, pack.driveFolderId);
-  return result.imageCount;
+  return indexGesturePackFromDrive(accessToken, pack);
 }

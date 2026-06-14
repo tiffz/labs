@@ -1,19 +1,17 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useDeferredValue, useMemo, useRef, useState } from 'react';
 import Typography from '@mui/material/Typography';
-import { useLiveQuery } from 'dexie-react-hooks';
-import {
-  ensureLabsGoogleAccessTokenForDrive,
-} from '../../shared/google/labsGoogleDriveAccess';
+import { ensureLabsGoogleAccessTokenForDrive } from '../../shared/google/labsGoogleDriveAccess';
 import AddCollectionActions from '../components/AddCollectionActions';
 import CollectionDropZone from '../components/CollectionDropZone';
 import CollectionUploadStatus from '../components/CollectionUploadStatus';
 import DeleteCollectionDialog from '../components/DeleteCollectionDialog';
 import InterruptedUploadBanner from '../components/InterruptedUploadBanner';
 import PackCollectionCard from '../components/PackCollectionCard';
-import { gestureDb } from '../db/gestureDb';
 import { refreshPackFolder } from '../drive/linkPackFolder';
 import { shouldShowUploadRecoveryBanner } from '../drive/gestureUploadActivity';
 import { useGestureCollectionPreviewWarmup } from '../hooks/useGestureCollectionPreviewWarmup';
+import { useGesturePackStats } from '../hooks/useGesturePackStats';
+import { useGesturePacks } from '../hooks/useGesturePacks';
 import { useGestureCollectionDrop } from '../hooks/useGestureCollectionDrop';
 import { useGestureCollectionUpload } from '../hooks/useGestureCollectionUpload';
 import type { GesturePack } from '../types';
@@ -27,49 +25,38 @@ export default function CollectionsTab({ onMessage, onError }: CollectionsTabPro
   const [busy, setBusy] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<GesturePack | null>(null);
   const upload = useGestureCollectionUpload({ onComplete: onMessage, onError });
-  const { dragActive, handlers, activity, busy: uploadBusy } = useGestureCollectionDrop({
+  const { dragActive, handlers, activity } = useGestureCollectionDrop({
     disabled: busy,
     upload,
   });
 
-  const interactionDisabled = busy || uploadBusy;
+  const interactionDisabled = busy;
+  const uploadSessionActive = upload.busy || upload.queuedCount > 0;
 
-  const packs = useLiveQuery(() => gestureDb.packs.orderBy('linkedAt').reverse().toArray(), []) ?? [];
-  const packFiles = useLiveQuery(() => gestureDb.packFiles.toArray(), []) ?? [];
-  const drawHistory = useLiveQuery(() => gestureDb.drawHistory.toArray(), []) ?? [];
+  const packs = useGesturePacks();
+  const filesByPack = useGesturePackStats();
+  const deferredFilesByPack = useDeferredValue(filesByPack);
+  const statsForGrid = uploadSessionActive ? deferredFilesByPack : filesByPack;
 
-  const recoveryPacks = useMemo(
-    () => packs.filter((pack) => shouldShowUploadRecoveryBanner(pack, uploadBusy)),
-    [packs, uploadBusy],
-  );
-
-  const filesByPack = useMemo(() => {
-    const counts = new Map<string, number>();
-    const ids = new Map<string, string[]>();
-    const drawnSets = new Map<string, Set<string>>();
-    for (const f of packFiles) {
-      counts.set(f.packId, (counts.get(f.packId) ?? 0) + 1);
-      const list = ids.get(f.packId) ?? [];
-      list.push(f.driveFileId);
-      ids.set(f.packId, list);
-    }
-    for (const row of drawHistory) {
-      const set = drawnSets.get(row.packId) ?? new Set<string>();
-      set.add(row.driveFileId);
-      drawnSets.set(row.packId, set);
-    }
-    return { counts, ids, drawnSets };
-  }, [drawHistory, packFiles]);
-
+  const previewSnapshotRef = useRef<string[]>([]);
   const previewFileIds = useMemo(() => {
+    if (uploadSessionActive && previewSnapshotRef.current.length > 0) {
+      return previewSnapshotRef.current;
+    }
     const fileIds: string[] = [];
     for (const pack of packs) {
       fileIds.push(...(filesByPack.ids.get(pack.id) ?? []).slice(0, 4));
     }
+    previewSnapshotRef.current = fileIds;
     return fileIds;
-  }, [filesByPack.ids, packs]);
+  }, [filesByPack.ids, packs, uploadSessionActive]);
 
-  useGestureCollectionPreviewWarmup(previewFileIds);
+  useGestureCollectionPreviewWarmup(uploadSessionActive ? [] : previewFileIds);
+
+  const recoveryPacks = useMemo(
+    () => packs.filter((pack) => shouldShowUploadRecoveryBanner(pack, uploadSessionActive)),
+    [packs, uploadSessionActive],
+  );
 
   const handleRefresh = useCallback(
     async (pack: GesturePack) => {
@@ -95,7 +82,7 @@ export default function CollectionsTab({ onMessage, onError }: CollectionsTabPro
 
   return (
     <div
-      className={`gesture-tab-panel${dragActive ? ' is-drag-active' : ''}${uploadBusy ? ' is-upload-busy' : ''}`}
+      className={`gesture-tab-panel${dragActive ? ' is-drag-active' : ''}${uploadSessionActive ? ' is-upload-busy' : ''}`}
       aria-label="Drop a folder or photos to upload"
       {...handlers}
     >
@@ -128,7 +115,7 @@ export default function CollectionsTab({ onMessage, onError }: CollectionsTabPro
         />
       </div>
 
-      <CollectionDropZone compact={packs.length > 0} dragActive={dragActive} uploadActive={uploadBusy} />
+      <CollectionDropZone compact={packs.length > 0} dragActive={dragActive} uploadActive={uploadSessionActive} />
 
       {packs.length === 0 ? (
         <div className="gesture-empty-state">
@@ -141,15 +128,18 @@ export default function CollectionsTab({ onMessage, onError }: CollectionsTabPro
       ) : (
         <div className="gesture-collection-grid">
           {packs.map((pack) => {
-            const photoCount = filesByPack.counts.get(pack.id) ?? 0;
-            const fileIds = filesByPack.ids.get(pack.id) ?? [];
+            const photoCount = statsForGrid.counts.get(pack.id) ?? 0;
+            const fileIds =
+              pack.uploadStatus === 'uploading'
+                ? (statsForGrid.ids.get(pack.id) ?? []).slice(0, 4)
+                : (statsForGrid.ids.get(pack.id) ?? []);
             return (
               <PackCollectionCard
                 key={pack.id}
                 pack={pack}
                 driveFileIds={fileIds}
                 photoCount={photoCount}
-                drawnCount={filesByPack.drawnSets.get(pack.id)?.size ?? 0}
+                drawnCount={statsForGrid.drawnSets.get(pack.id)?.size ?? 0}
                 mode="manage"
                 disabled={interactionDisabled}
                 upload={upload}
@@ -170,7 +160,7 @@ export default function CollectionsTab({ onMessage, onError }: CollectionsTabPro
       <DeleteCollectionDialog
         pack={deleteTarget}
         open={deleteTarget != null}
-        busy={busy || uploadBusy}
+        busy={busy || uploadSessionActive}
         onClose={() => setDeleteTarget(null)}
         onComplete={onMessage}
         onError={onError}

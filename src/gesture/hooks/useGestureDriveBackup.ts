@@ -41,6 +41,9 @@ import {
   formatGestureDriveMergeReport,
   mergeGestureSyncPayload,
 } from '../drive/gestureDriveMerge';
+import { reindexGesturePacksMissingPhotos } from '../drive/gesturePackIndex';
+import { reconcileStaleGestureUploadPacks } from '../drive/reconcileStaleGestureUploadPacks';
+import { readGestureDriveAccessToken } from '../drive/readGestureDriveAccessToken';
 import {
   gestureDriveFolderUrl,
   readGestureDriveSyncMeta,
@@ -169,10 +172,23 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
   }, []);
 
   const applyMerged = useCallback(
-    async (merged: GestureSyncPayload, userMessage: string | null) => {
+    async (merged: GestureSyncPayload, userMessage: string | null, accessToken?: string) => {
       mergeInProgressRef.current = true;
       try {
         await onMergePayload(merged);
+        const tokenForReindex = accessToken ?? (await readGestureDriveAccessToken());
+        if (tokenForReindex) {
+          const reindex = await reindexGesturePacksMissingPhotos(tokenForReindex);
+          await reconcileStaleGestureUploadPacks();
+          if (reindex.photoCount > 0 && userMessage) {
+            setMessage(
+              `${userMessage} Loaded ${reindex.photoCount} photo${reindex.photoCount === 1 ? '' : 's'} from Drive folders.`,
+            );
+            return;
+          }
+        } else {
+          await reconcileStaleGestureUploadPacks();
+        }
       } finally {
         mergeInProgressRef.current = false;
       }
@@ -250,6 +266,7 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
           : reportText
             ? `Synced from Drive (${reportText}).`
             : 'Already in sync with Drive.',
+        token,
       );
       markPullSucceeded();
     },
@@ -350,9 +367,11 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
         local,
         envelopeToPayload(conflict.remoteEnvelope),
       );
+      const token = await ensureLabsGoogleAccessTokenForDrive();
       await applyMerged(
         merged,
         `Merged progress (${formatGestureDriveMergeReport(report)}), then saved to Drive.`,
+        token,
       );
       setConflict(null);
       await flushDriveWrite();
@@ -372,9 +391,11 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
         const env = parseGestureSnapshotEnvelope(snap);
         const local = await readGestureLocalPayload();
         const { payload: merged, report } = mergeGestureSyncPayload(local, envelopeToPayload(env));
+        const token = await ensureLabsGoogleAccessTokenForDrive();
         await applyMerged(
           merged,
           `Restored snapshot from ${snap.label} (${formatGestureDriveMergeReport(report)}).`,
+          token,
         );
         setRestoreOpen(false);
       } catch (e) {

@@ -37,7 +37,7 @@ export default function AddCollectionActions({
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [linkOpen, setLinkOpen] = useState(false);
   const [folderInput, setFolderInput] = useState('');
-  const { busy, uploadFiles } = upload;
+  const { uploadFiles } = upload;
 
   const handleFiles = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,7 +99,7 @@ export default function AddCollectionActions({
         variant={variant === 'primary' ? 'contained' : 'outlined'}
         startIcon={<AddIcon />}
         onClick={(e) => setMenuAnchor(e.currentTarget)}
-        disabled={disabled || busy}
+        disabled={disabled}
         className={variant === 'subtle' ? 'gesture-add-btn-subtle' : undefined}
       >
         Add
@@ -140,7 +140,7 @@ export default function AddCollectionActions({
 
       <Dialog
         open={linkOpen}
-        onClose={busy ? undefined : () => setLinkOpen(false)}
+        onClose={() => setLinkOpen(false)}
         fullWidth
         maxWidth="xs"
         aria-labelledby="gesture-link-dialog-title"
@@ -157,14 +157,14 @@ export default function AddCollectionActions({
             fullWidth
             size="small"
             placeholder="https://drive.google.com/drive/folders/…"
-            disabled={busy}
+            disabled={disabled}
           />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setLinkOpen(false)} disabled={busy}>
+          <Button onClick={() => setLinkOpen(false)} disabled={disabled}>
             Cancel
           </Button>
-          <Button variant="contained" onClick={() => void handleLink()} disabled={busy || !folderInput.trim()}>
+          <Button variant="contained" onClick={() => void handleLink()} disabled={disabled || !folderInput.trim()}>
             Link
           </Button>
         </DialogActions>

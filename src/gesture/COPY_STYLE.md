@@ -12,7 +12,7 @@ Defer to [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md) first.
 
 - **Collection** — a linked or uploaded Drive folder of photos.
 - **Practice** — timed drawing session (zen mode / the room).
-- **Drawn** — user completed a timed slot for that photo (not sketched in-app).
+- **Drawn** — user completed a timed slot for that photo (not sketched in-app). Track `sessionCount` per photo for least-drawn ordering.
 
 ## Avoid
 

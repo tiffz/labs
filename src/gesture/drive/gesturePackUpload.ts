@@ -133,6 +133,22 @@ export async function uploadFilesToExistingPack(
 
   onProgress?.(done, total);
 
+  const pendingPackFiles: GesturePackFile[] = [];
+  let lastPackProgressWriteAt = 0;
+
+  const flushPackProgress = async (force = false) => {
+    const now = Date.now();
+    if (!force && done % 20 !== 0 && now - lastPackProgressWriteAt < 800) return;
+    lastPackProgressWriteAt = now;
+    await gestureDb.packs.put(current);
+  };
+
+  const flushPendingPackFiles = async () => {
+    if (pendingPackFiles.length === 0) return;
+    const batch = pendingPackFiles.splice(0, pendingPackFiles.length);
+    await gestureDb.packFiles.bulkPut(batch);
+  };
+
   try {
     for (const file of images) {
       const relativePath = localFileRelativePath(file);
@@ -141,7 +157,7 @@ export async function uploadFilesToExistingPack(
       if (entry?.status === 'uploaded' && entry.driveFileId) {
         done += 1;
         current = { ...current, uploadedFileCount: done, expectedFileCount: total };
-        await gestureDb.packs.put(current);
+        await flushPackProgress();
         onProgress?.(done, total);
         continue;
       }
@@ -152,7 +168,7 @@ export async function uploadFilesToExistingPack(
         await markManifestFileUploaded(pack.id, file, existingOnDrive.driveFileId);
         done += 1;
         current = { ...current, uploadedFileCount: done, expectedFileCount: total };
-        await gestureDb.packs.put(current);
+        await flushPackProgress();
         onProgress?.(done, total);
         continue;
       }
@@ -169,20 +185,28 @@ export async function uploadFilesToExistingPack(
         name: driveName,
         mimeType: file.type || 'image/jpeg',
       };
-      await gestureDb.packFiles.put(packFile);
+      pendingPackFiles.push(packFile);
+      if (pendingPackFiles.length >= 25) {
+        await flushPendingPackFiles();
+      }
       packFileByName.set(driveName, packFile);
       await markManifestFileUploaded(pack.id, file, uploaded.id);
 
       newlyUploaded += 1;
       done += 1;
       current = { ...current, uploadedFileCount: done, expectedFileCount: total };
-      await gestureDb.packs.put(current);
+      await flushPackProgress();
       onProgress?.(done, total);
     }
+
+    await flushPendingPackFiles();
+    await flushPackProgress(true);
   } catch (e) {
+    await flushPendingPackFiles();
+    await flushPackProgress(true);
     current = { ...current, uploadStatus: 'incomplete' };
     await gestureDb.packs.put(current);
-    notifyGestureLocalChange();
+    notifyGestureLocalChange({ immediate: true });
     throw e;
   }
 
@@ -198,7 +222,7 @@ export async function uploadFilesToExistingPack(
     await gestureDb.packs.put(current);
   }
 
-  notifyGestureLocalChange();
+  notifyGestureLocalChange({ immediate: true });
   return { pack: current, uploadedCount: newlyUploaded, total, skippedDuplicates };
 }
 

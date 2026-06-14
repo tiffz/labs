@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { ensureLabsGoogleAccessTokenForDrive } from '../../shared/google/labsGoogleDriveAccess';
+import { readGestureDriveAccessToken } from '../drive/readGestureDriveAccessToken';
 import {
   getGesturePreviewCacheVersion,
   peekGesturePreviewUrl,
@@ -46,7 +46,7 @@ export function usePackPreviewUrls(
     setLoading(true);
 
     void (async () => {
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: false }).catch(() => null);
+      const token = await readGestureDriveAccessToken();
       const resolved = await Promise.all(ids.map((id) => resolveGesturePreviewImageUrl(token, id)));
       if (cancelled) return;
       setUrls(resolved);

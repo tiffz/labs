@@ -11,6 +11,11 @@ vi.mock('../../shared/drive/driveFetch', () => ({
   ),
 }));
 
+vi.mock('./gestureDriveImageLoad', () => ({
+  probeImageUrlLoads: vi.fn(async () => true),
+  fetchDriveImageObjectUrl: vi.fn(),
+}));
+
 describe('gesturePreviewImageUrl', () => {
   beforeEach(() => {
     vi.clearAllMocks();

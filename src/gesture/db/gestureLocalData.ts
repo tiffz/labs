@@ -3,20 +3,39 @@ import { notifyGestureLocalChange } from './gestureChangeBus';
 import type { GestureSyncPayload } from '../types';
 
 export async function readGestureLocalPayload(): Promise<GestureSyncPayload> {
-  const [packs, drawHistory] = await Promise.all([
+  const [packs, packFiles, drawHistory] = await Promise.all([
     gestureDb.packs.toArray(),
+    gestureDb.packFiles.toArray(),
     gestureDb.drawHistory.toArray(),
   ]);
-  return { packs, drawHistory };
+  return { packs, packFiles, drawHistory };
 }
 
 export async function applyGestureMergedPayload(payload: GestureSyncPayload): Promise<void> {
-  await gestureDb.transaction('rw', gestureDb.packs, gestureDb.drawHistory, async () => {
-    await gestureDb.packs.clear();
-    await gestureDb.drawHistory.clear();
-    if (payload.packs.length > 0) await gestureDb.packs.bulkPut(payload.packs);
-    if (payload.drawHistory.length > 0) await gestureDb.drawHistory.bulkPut(payload.drawHistory);
-  });
+  const validPackIds = new Set(payload.packs.map((p) => p.id));
+  let packFiles = payload.packFiles.filter((f) => validPackIds.has(f.packId));
+
+  await gestureDb.transaction(
+    'rw',
+    gestureDb.packs,
+    gestureDb.packFiles,
+    gestureDb.drawHistory,
+    async () => {
+      // Keep a local photo index when Drive merge did not include one (legacy backup or race).
+      if (packFiles.length === 0 && payload.packs.length > 0) {
+        const existing = await gestureDb.packFiles.toArray();
+        const preserved = existing.filter((f) => validPackIds.has(f.packId));
+        if (preserved.length > 0) packFiles = preserved;
+      }
+
+      await gestureDb.packs.clear();
+      await gestureDb.packFiles.clear();
+      await gestureDb.drawHistory.clear();
+      if (payload.packs.length > 0) await gestureDb.packs.bulkPut(payload.packs);
+      if (packFiles.length > 0) await gestureDb.packFiles.bulkPut(packFiles);
+      if (payload.drawHistory.length > 0) await gestureDb.drawHistory.bulkPut(payload.drawHistory);
+    },
+  );
   notifyGestureLocalChange();
 }
 
