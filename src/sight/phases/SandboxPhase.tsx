@@ -16,7 +16,8 @@ import ContextualMatcherView from '../modules/contextualMatcher/ContextualMatche
 import { initialContextualInput } from '../modules/contextualMatcher/contextualMatcherLogic';
 import AlbersFlashcardView from '../modules/flashcard/AlbersFlashcardView';
 import IsolatedFlashcardView from '../modules/flashcard/IsolatedFlashcardView';
-import GamutFinderView, { defaultGamutDeform } from '../modules/gamutFinder/GamutFinderView';
+import GamutFinderView from '../modules/gamutFinder/GamutFinderView';
+import { defaultGamutDeform } from '../modules/gamutFinder/gamutFinderDefaults';
 import MunsellSliceView from '../modules/munsellSlice/MunsellSliceView';
 import YotCastView from '../modules/yotCast/YotCastView';
 import { randomSeed } from '../generators/rng';

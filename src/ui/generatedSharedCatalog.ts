@@ -15930,6 +15930,73 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-test-layoutheuristicscore-ts-contrastratio",
+    "name": "contrastRatio",
+    "path": "src/shared/test/layoutHeuristicsCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pure layout heuristic math — unit-tested; keep in sync with e2e/helpers/layoutHeuristics.ts browser fn.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-layoutheuristicscore-ts-edgeinsetpx",
+    "name": "edgeInsetPx",
+    "path": "src/shared/test/layoutHeuristicsCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pure layout heuristic math — unit-tested; keep in sync with e2e/helpers/layoutHeuristics.ts browser fn.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-layoutheuristicscore-ts-layout-heuristic-defaults",
+    "name": "LAYOUT_HEURISTIC_DEFAULTS",
+    "path": "src/shared/test/layoutHeuristicsCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pure layout heuristic math — unit-tested; keep in sync with e2e/helpers/layoutHeuristics.ts browser fn.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-layoutheuristicscore-ts-parsecsscolortorgb",
+    "name": "parseCssColorToRgb",
+    "path": "src/shared/test/layoutHeuristicsCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pure layout heuristic math — unit-tested; keep in sync with e2e/helpers/layoutHeuristics.ts browser fn.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-layoutheuristicscore-ts-relativeluminance",
+    "name": "relativeLuminance",
+    "path": "src/shared/test/layoutHeuristicsCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pure layout heuristic math — unit-tested; keep in sync with e2e/helpers/layoutHeuristics.ts browser fn.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-test-mocks-audio-ts-createmockaudiocontext",
     "name": "createMockAudioContext",
     "path": "src/shared/test/mocks/audio.ts",
@@ -17328,18 +17395,44 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-youtube-labsyoutubeplayer-tsx-ensureyoutubeiframeapi",
+    "id": "src-shared-youtube-labsyoutubeiframeapi-ts-ensureyoutubeiframeapi",
     "name": "ensureYouTubeIframeApi",
-    "path": "src/shared/youtube/LabsYouTubePlayer.tsx",
+    "path": "src/shared/youtube/labsYouTubeIframeApi.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
     "description": "No JSDoc summary provided.",
-    "tags": [
-      "react"
-    ],
+    "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-youtube-labsyoutubeiframeapi-ts-readyoutubeiframeapi",
+    "name": "readYouTubeIframeApi",
+    "path": "src/shared/youtube/labsYouTubeIframeApi.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-youtube-labsyoutubeiframeapi-ts-ytplayerinstance",
+    "name": "YtPlayerInstance",
+    "path": "src/shared/youtube/labsYouTubeIframeApi.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {

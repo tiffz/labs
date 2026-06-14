@@ -107,6 +107,32 @@ jobs:
           echo "No shared tempo analysis file changes - will skip benchmarks"
         fi
 
+    - name: Detect e2e smoke scope
+      id: e2e-scope
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          BASE_REF="origin/${{ github.base_ref }}"
+        else
+          BASE_REF="${{ github.event.before }}"
+        fi
+        CHANGED="$(git diff --name-only "$BASE_REF" HEAD 2>/dev/null || true)"
+        if echo "$CHANGED" | grep -qE '^(src/shared/|e2e/|vite\.config|playwright\.config|package|\.github/workflows/)'; then
+          echo "mode=full" >> $GITHUB_OUTPUT
+          echo "Cross-cutting changes — full e2e smoke"
+        elif [ -z "$CHANGED" ]; then
+          echo "mode=full" >> $GITHUB_OUTPUT
+          echo "No diff — full e2e smoke"
+        else
+          APP_COUNT="$(echo "$CHANGED" | grep -E '^src/[^/]+/' | cut -d/ -f2 | sort -u | wc -l | tr -d ' ')"
+          if [ "$APP_COUNT" -le 2 ] && [ "$APP_COUNT" -gt 0 ]; then
+            echo "mode=scoped" >> $GITHUB_OUTPUT
+            echo "Single-app diff — scoped e2e via run-scoped-e2e.mjs"
+          else
+            echo "mode=full" >> $GITHUB_OUTPUT
+            echo "Multi-app or non-app diff — full e2e smoke"
+          fi
+        fi
+
     - name: Install dependencies
       run: npm ci
 
@@ -169,10 +195,16 @@ jobs:
     - name: Install Playwright browsers
       run: npx playwright install --with-deps chromium
 
-    - name: Run e2e smoke tests
+    - name: Run e2e smoke tests (full)
+      if: steps.e2e-scope.outputs.mode == 'full'
       run: npm run test:e2e:smoke
 
+    - name: Run e2e smoke tests (scoped)
+      if: steps.e2e-scope.outputs.mode == 'scoped'
+      run: node scripts/run-scoped-e2e.mjs
+
     - name: Run playback UI regression smokes
+      if: steps.e2e-scope.outputs.mode == 'full'
       run: npx playwright test e2e/playback-ui-regressions.spec.ts
 
     # Audio regression hashes are already covered by `npm test` above

@@ -11,10 +11,12 @@ import { installServerLogger } from '../shared/utils/serverLogger';
 import { getAppTheme } from '../shared/ui/theme/appTheme';
 import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstrap';
 import App from './App';
+import { installGestureE2eSeedHook } from './e2e/gestureE2eSeed';
 import './gesture.css';
 
 installServerLogger('GESTURE');
 initMaterialIconRuntime();
+installGestureE2eSeedHook();
 
 const theme = getAppTheme('gesture');
 

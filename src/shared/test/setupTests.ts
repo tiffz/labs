@@ -63,31 +63,11 @@ if (!global.performance.now) {
   global.performance.now = () => Date.now();
 }
 
-// Global test cleanup to prevent animation frame leaks and memory issues
+// Global test cleanup to prevent animation frame leaks
 afterEach(() => {
-  // Cancel all pending animation frames after each test
   const globalWithHelper = global as typeof global & { __cancelAllAnimationFrames?: () => void };
   if (globalWithHelper.__cancelAllAnimationFrames) {
     globalWithHelper.__cancelAllAnimationFrames();
-  }
-  
-  // Clean up any remaining timers from the animation frame mock
-  // This prevents setTimeout leaks from requestAnimationFrame mocks
-  try {
-    // Get the highest timeout ID to know the range
-    const testTimeoutId = window.setTimeout(() => {}, 0);
-    // Clear a reasonable range of timeout IDs (up to 1000 should cover most test scenarios)
-    // This is safer than clearing all IDs which could interfere with vitest internals
-    for (let i = 0; i < Math.min(testTimeoutId, 1000); i++) {
-      try {
-        window.clearTimeout(i);
-      } catch {
-        // Ignore errors for invalid IDs
-      }
-    }
-    window.clearTimeout(testTimeoutId);
-  } catch {
-    // Ignore errors during cleanup
   }
 });
 

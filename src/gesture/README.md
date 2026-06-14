@@ -52,6 +52,7 @@ npm run test:e2e:smoke
 | Key    | Action         |
 | ------ | -------------- |
 | Space  | Pause / resume |
+| Enter  | Mark done      |
 | → or N | Skip           |
 | ← or B | Previous       |
 | Esc    | End session    |

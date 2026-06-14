@@ -1,0 +1,36 @@
+---
+description: Gesture preview vs session media — resolution order and blob ownership
+globs:
+  - src/gesture/media/**
+  - src/gesture/hooks/usePackPreviewUrls.ts
+  - src/gesture/hooks/useGestureMediaWarmup.ts
+  - src/gesture/hooks/useGestureSession*.ts
+  - src/gesture/components/PackPreview*.tsx
+---
+
+# Gesture media tiers
+
+Canonical policy: [`gestureMediaPolicy.ts`](../../src/gesture/media/gestureMediaPolicy.ts) + [`src/gesture/AGENTS.md`](../../src/gesture/AGENTS.md) § Media tiers.
+
+## Preview (collection card strips)
+
+1. In-memory / IDB blob (`kind: preview`)
+2. OAuth `driveResolveThumbnailLink` → scaled https URL → `<img>`
+3. Public `drive.google.com/thumbnail?id=…` fallback
+4. **Last:** OAuth `alt=media` blob cache
+
+**Never** start preview resolution with full-file `alt=media` — grids request 4×N files and starve the connection pool.
+
+## Session (zen drawing)
+
+1. Session prefetch LRU + IDB (`kind: session`)
+2. Thumbnail https via `<img>` probe
+3. OAuth `alt=media` blob
+
+## Invariants
+
+- **Blob URL owner:** `gestureMediaCache` only — preview https cache must not retain revoked `blob:` URLs.
+- **No `fetch()` on lh3 / thumbnail URLs** — CORS blocks; use `<img>` / `probeImageUrlLoads`.
+- **Display-ready:** session pipeline decodes one photo at a time (`gestureSessionPhotoPipeline`).
+
+Root cause class: **`wrong-io-tier`**. Regression test: `gesturePreviewImageUrl.test.ts` (thumbnail before alt=media).

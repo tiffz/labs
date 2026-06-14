@@ -28,10 +28,10 @@ Fill these when fixing playback, notation, portal, or async-load UI bugs:
 - [ ] CI green on PR (`test` job)
 - [ ] Manual / E2E (if UI or playback): <!-- route or spec name -->
 
-## Process improvements (when applicable)
+## Process improvements (required on agent PRs)
 
-<!-- Session learnings codified in this PR — link files or write "none". See docs/CONTINUOUS_PROCESS_IMPROVEMENT.md -->
+<!-- Use "None — trivial single-file fix" only when applicable. See docs/CONTINUOUS_PROCESS_IMPROVEMENT.md -->
 
-| Item                                      | Root cause class        | Artifact added/updated                          |
-| ----------------------------------------- | ----------------------- | ----------------------------------------------- |
-| <!-- e.g. Words menu purple in portal --> | <!-- portal styling --> | <!-- playback-ui-regressions.mdc, e2e smoke --> |
+| Item       | Root cause class                           | Artifact added/updated  |
+| ---------- | ------------------------------------------ | ----------------------- |
+| <!-- … --> | <!-- ux-redundancy · wrong-io-tier · … --> | <!-- path or "None" --> |

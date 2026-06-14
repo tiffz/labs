@@ -42,10 +42,13 @@ Presubmit before done: [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre
 
 ## Task routing
 
-| If you are touching…                               | Read first                                                                                                                                                                                                              | Skill                          |
+**Doc cost:** **A** = read every task · **B** = read when row matches · **C** = link only unless implementing
+
+| If you are touching…                               | Read first (cost)                                                                                                                                                                                                       | Skill                          |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| Any app feature                                    | `src/<app>/README.md` (+ app `AGENTS.md` if present)                                                                                                                                                                    | —                              |
-| **New UI control / form field**                    | Search `/ui/` + `src/ui/generatedSharedCatalog.ts`; [`SHARED_UI_CONVENTIONS.md`](src/shared/SHARED_UI_CONVENTIONS.md); `.cursor/rules/shared-ui-first.mdc`                                                              | —                              |
+| Any app feature                                    | `src/<app>/README.md` (+ app `AGENTS.md` if present) **(A)**                                                                                                                                                            | —                              |
+| **New UI / layout / upload-sync UX**               | [`docs/UX_AGENT_GUIDE.md`](docs/UX_AGENT_GUIDE.md), app `DESIGN.md`, `STYLE_GUIDE.md` **(B)**; `.cursor/rules/ux-agent-guide.mdc`                                                                                       | `labs-ux-journey`              |
+| **New UI control / form field**                    | Search `/ui/` + `src/ui/generatedSharedCatalog.ts`; [`SHARED_UI_CONVENTIONS.md`](src/shared/SHARED_UI_CONVENTIONS.md); `.cursor/rules/shared-ui-first.mdc` **(B)**                                                      | —                              |
 | New/changed app shell / `index.html`               | `src/shared/templates/app-index.starter.html`, `spaGuardrails.test.ts`, `.cursor/rules/app-entry-html.mdc`                                                                                                              | —                              |
 | Shared UI, popovers, playback pickers              | `SHARED_UI_CONVENTIONS.md`, `/ui/` catalog, `.cursor/rules/playback-ui-regressions.mdc`                                                                                                                                 | —                              |
 | Playback hooks, notation, VexFlow bugs             | `PLAYBACK_HOOK_PATTERN.md`, `PLAYBACK_RENDERING_AUDIT.md`                                                                                                                                                               | `labs-playback-bugfix`         |
@@ -67,11 +70,15 @@ Presubmit before done: [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre
 | Regression / visual baselines                      | `docs/REGRESSION_WORKFLOW.md`                                                                                                                                                                                           | `labs-visual-regression`       |
 | In-app UI design theme iterations / preview picker | app `README.md` + [`labs-ui-design-variations`](.cursor/skills/labs-ui-design-variations/SKILL.md)                                                                                                                      | `labs-ui-design-variations`    |
 | The Gesture Room UI / Linen theme                  | [`src/gesture/DESIGN.md`](src/gesture/DESIGN.md), `.cursor/rules/gesture-linen-design.mdc`                                                                                                                              | —                              |
+| Gesture media / preview / session cache            | [`src/gesture/AGENTS.md`](src/gesture/AGENTS.md) § Media tiers, `.cursor/rules/gesture-media-tiers.mdc`                                                                                                                 | —                              |
 | GitHub Actions / CI reliability                    | [`docs/CI_RELIABILITY.md`](docs/CI_RELIABILITY.md)                                                                                                                                                                      | `labs-babysit-pr`              |
 | Large component / App.tsx refactor                 | `docs/COMPONENT_DECOMPOSITION_PATTERN.md`                                                                                                                                                                               | `labs-component-decomposition` |
 | PR babysitting / merge-ready                       | [`docs/PR_WORKFLOW.md`](docs/PR_WORKFLOW.md)                                                                                                                                                                            | `labs-babysit-pr`              |
 | Split work into multiple PRs                       | [`docs/PR_WORKFLOW.md`](docs/PR_WORKFLOW.md) § Splitting                                                                                                                                                                | `labs-split-to-prs`            |
-| Session retrospective / codify learnings           | `docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`                                                                                                                                                                                | `labs-session-retrospective`   |
+| Session retrospective / codify learnings           | [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](docs/CONTINUOUS_PROCESS_IMPROVEMENT.md), [`docs/AGENT_INVARIANTS.md`](docs/AGENT_INVARIANTS.md) **(B)**                                                                      | `labs-session-retrospective`   |
+| Agent invariants index                             | [`docs/AGENT_INVARIANTS.md`](docs/AGENT_INVARIANTS.md) **(C)**                                                                                                                                                          | —                              |
+| E2e smoke / dev fixtures                           | [`docs/E2E_SMOKE_CONVENTIONS.md`](docs/E2E_SMOKE_CONVENTIONS.md) **(C)**                                                                                                                                                | —                              |
+| CI path scoping / faster local checks              | [`docs/CI_PATH_SCOPING.md`](docs/CI_PATH_SCOPING.md) **(C)**                                                                                                                                                            | —                              |
 
 Commands quick reference: root [`README.md`](README.md) and `package.json` scripts.
 
@@ -81,6 +88,7 @@ Commands quick reference: root [`README.md`](README.md) and `package.json` scrip
 
 - Respect **import boundaries** (`src/shared/**` only for cross-app reuse).
 - Use **shared UI primitives** before app-local copies.
+- **Non-trivial UX tasks:** read skill **`labs-ux-journey`**, **post the journey sketch in chat**, then code — see [`.cursor/rules/ux-journey-mandatory.mdc`](.cursor/rules/ux-journey-mandatory.mdc). Do not skip the sketch unless the user waived it or the change is trivial (copy-only, no layout).
 - **Question-only / review-only tasks:** minimal diff—do not refactor or “improve” unrelated code.
 - Read the **nearest app README** before editing an unfamiliar app.
 
@@ -90,7 +98,7 @@ Commands quick reference: root [`README.md`](README.md) and `package.json` scrip
 - **Visual baseline updates** (`e2e/visual/*-snapshots/`) — skill `labs-visual-regression`.
 - **New ADR** or material architecture change — skill `labs-write-adr`.
 - Expanding scope beyond the user’s request.
-- **Codifying process improvements** into rules/docs (offer first; implement when the user agrees).
+- **Codifying process improvements** into rules/docs when the user has not agreed — except retrospective **proposals** (always deliver) and **codify-on-second-occurrence** per [`CONTINUOUS_PROCESS_IMPROVEMENT.md`](docs/CONTINUOUS_PROCESS_IMPROVEMENT.md).
 
 ### Never
 
@@ -120,9 +128,11 @@ When a task matches a skill, **read and follow it first** before improvising a w
 
 ### Preflight (UI or user-visible copy)
 
+- [ ] **`labs-ux-journey`** — **journey sketch posted in chat before any UI code** (non-trivial tasks; rule `ux-journey-mandatory.mdc`)
 - [ ] Searched **`/ui/`** catalog or `src/ui/generatedSharedCatalog.ts` for an existing primitive
 - [ ] Checked **`SHARED_UI_CONVENTIONS.md`** for this control type
 - [ ] User-visible strings follow **`docs/USER_COPY_STYLE.md`** (+ app `COPY_STYLE.md` when present)
+- [ ] App **`DESIGN.md`** + tokens (no ad-hoc hex); see **`docs/UX_AGENT_GUIDE.md`**
 
 ### Before declaring a task done
 
@@ -130,9 +140,10 @@ When a task matches a skill, **read and follow it first** before improvising a w
 - [ ] **`npx eslint` on changed files — zero warnings** (see pre-commit rule § ESLint warnings)
 - [ ] New shared primitive → `SHARED_UI_CONVENTIONS.md` + `/ui/` demo
 - [ ] New app directory → `importBoundaries.test.ts` + `check-import-boundaries.mjs`
+- [ ] New user-visible route / shell wiring → e2e smoke per **`docs/E2E_SMOKE_CONVENTIONS.md`**
 - [ ] Visual baselines updated **intentionally** only (skill `labs-visual-regression`)
 - [ ] Material architecture → ADR when practical (skill `labs-write-adr`)
-- [ ] Substantial session → offer retrospective (skill `labs-session-retrospective`)
+- [ ] **Substantial session → deliver retrospective** (skill `labs-session-retrospective`; not optional)
 
 ## Repo Map
 

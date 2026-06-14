@@ -84,7 +84,34 @@ EOF
 
 Use the [PR template](../.github/pull_request_template.md). For solo work, **Summary + Test plan** are enough; skip Bug-fix handoff unless it was a regression fix.
 
-### 4. Wait for CI
+### 4. CI without blocking the session
+
+CI takes **≈8–15 min**. Agents and humans should not sit idle watching checks unless babysitting a merge.
+
+| Do locally (before push)                                | Defer to CI                                |
+| ------------------------------------------------------- | ------------------------------------------ |
+| `npm run presubmit`                                     | Full Vitest (`npm test`), e2e smoke, build |
+| `npm run test:e2e:smoke` when touching routes/shells    | Visual regression (advisory)               |
+| Hard-refresh affected hash routes after provider wiring | Pages deploy                               |
+
+**Agent workflow**
+
+1. Run **presubmit** on the final commit; fix failures before push.
+2. **Push + open PR** (or push to branch); tell the user the PR URL — do **not** poll CI for the full run in-chat unless they asked to babysit (`labs-babysit-pr`).
+3. **Keep working** on the next task locally while CI runs; merge when green.
+4. Prefer **small PRs** (`labs-split-to-prs`) so CI surface area stays small and failures are easier to attribute.
+5. **Direct push to `main`** only for trivial docs typos when skipping PR CI is acceptable — still run presubmit locally.
+
+**Human workflow**
+
+- Enable GitHub **allow auto-merge** (one-time): `gh api repos/tiffz/labs -X PATCH -f allow_auto_merge=true` — see [`docs/PR_WORKFLOW.md`](docs/PR_WORKFLOW.md) § Auto-merge.
+- Queue **auto-merge squash** on PRs you trust: `gh pr merge <n> --auto --squash --delete-branch`.
+- Re-run failed **`test`** once for known Vitest teardown flakes (`docs/CI_RELIABILITY.md`); fix if persistent.
+- Use **`gh pr checks --watch`** only when actively babysitting — not as default agent idle time.
+
+See also: [`docs/CI_RELIABILITY.md`](CI_RELIABILITY.md) (concurrency cancellation, deploy retry).
+
+### 5. Wait for CI (when babysitting)
 
 Watch the **`test`** job on the PR (≈8–15 min). CodeRabbit may comment; treat inline suggestions as a **second pair of eyes**, not a veto.
 
@@ -101,7 +128,7 @@ Watch the **`test`** job on the PR (≈8–15 min). CodeRabbit may comment; trea
 - CodeRabbit nit with no CI impact (still fix quick wins like syntax errors)
 - Empty human review (there are no human reviewers)
 
-### 5. Triage feedback
+### 6. Triage feedback
 
 Skill: **`labs-babysit-pr`**.
 
@@ -111,7 +138,7 @@ Skill: **`labs-babysit-pr`**.
 
 Do **not** weaken CI, skip hooks, or `--no-verify` to merge.
 
-### 6. Merge
+### 7. Merge
 
 When CI is green and presubmit passed on HEAD:
 
@@ -119,6 +146,22 @@ When CI is green and presubmit passed on HEAD:
 gh pr merge <number> --squash --delete-branch
 git checkout main && git pull
 ```
+
+### Auto-merge (optional, recommended)
+
+Enable once per repo so PRs merge automatically when required checks pass:
+
+```bash
+# One-time repo setting (requires admin)
+gh api repos/tiffz/labs -X PATCH -f allow_auto_merge=true
+
+# Per PR — queue squash merge when CI green (after push)
+gh pr merge <number> --auto --squash --delete-branch
+```
+
+**Requirements:** Branch protection on `main` with required status checks (`test` job). Auto-merge waits for green CI; it does not skip presubmit locally.
+
+If `allow_auto_merge` is already true, only the per-PR `--auto` step is needed.
 
 Merge **stacked PRs in dependency order** (foundation first). After merging PR _n_, rebase or merge `main` into downstream branches before merging _n+1_.
 

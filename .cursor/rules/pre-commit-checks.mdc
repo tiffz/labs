@@ -44,3 +44,6 @@ Presubmit does **not** run `vite build`. When you touch app shells, React contex
 
 1. Run **`npm run build`** locally before commit (CI runs build; catch bundling issues early).
 2. For Encore performance list/editor UI, run **`npm run test:e2e:smoke`** (includes `e2e/smoke/encore-performance-routes.spec.ts`) or hard-refresh `#/library` and `#/practice` in dev — HMR can hide provider wiring bugs.
+3. For Gesture preview strips / media cache, run **`npm run test:e2e:smoke`** (`e2e/smoke/gesture-preview-strip.spec.ts`) or hard-refresh `#/gesture/` — HMR can hide cache-layer bugs.
+4. For new/major UI, run skill **`labs-ux-journey`** — **post journey sketch in chat before coding** (rule `ux-journey-mandatory.mdc`).
+5. Locally after app-scoped edits: **`npm run test:changed-apps`** and **`node scripts/run-scoped-e2e.mjs`** (see `docs/CI_PATH_SCOPING.md`).

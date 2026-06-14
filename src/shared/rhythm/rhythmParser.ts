@@ -354,7 +354,6 @@ function processSectionRepeats(notation: string, sixteenthsPerMeasure: number, i
     const content = match[1].trim();
     let actualPaddedContent = content;
     const count = match[2] ? parseInt(match[2], 10) : 1;
-    console.log(`DEBUG: Section Match '${match[0]}' -> count ${count}`);
     const contentSixteenths = countDurationInSixteenths(content);
     if (contentSixteenths > 0 && contentSixteenths < sixteenthsPerMeasure) {
       actualPaddedContent += ' ' + '_'.repeat(sixteenthsPerMeasure - contentSixteenths);

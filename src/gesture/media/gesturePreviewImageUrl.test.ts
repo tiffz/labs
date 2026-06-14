@@ -5,9 +5,13 @@ import {
   warmGesturePreviewUrls,
 } from './gesturePreviewImageUrl';
 
-vi.mock('./gestureMediaFetch', () => ({
+vi.mock('./gestureMediaPolicy', () => ({
   fetchAndCacheGestureMediaBlob: vi.fn(async () => null),
   peekCachedGestureMediaUrl: vi.fn(() => null),
+  resolveGesturePreviewTierUrl: vi.fn(async (token: string, fileId: string) =>
+    token ? `https://lh3.googleusercontent.com/${fileId}=s320` : `https://drive.google.com/thumbnail?id=${fileId}&sz=w320`,
+  ),
+  GESTURE_PREVIEW_THUMB_WIDTH: 320,
 }));
 
 vi.mock('../../shared/drive/driveFetch', () => ({
@@ -24,7 +28,7 @@ vi.mock('./gestureDriveImageLoad', () => ({
 describe('gesturePreviewImageUrl', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    const mediaFetch = await import('./gestureMediaFetch');
+    const mediaFetch = await import('./gestureMediaPolicy');
     vi.mocked(mediaFetch.fetchAndCacheGestureMediaBlob).mockResolvedValue(null);
     vi.mocked(mediaFetch.peekCachedGestureMediaUrl).mockReturnValue(null);
   });
@@ -42,7 +46,7 @@ describe('gesturePreviewImageUrl', () => {
   });
 
   it('serves blob previews from the media cache layer only', async () => {
-    const mediaFetch = await import('./gestureMediaFetch');
+    const mediaFetch = await import('./gestureMediaPolicy');
     vi.mocked(mediaFetch.fetchAndCacheGestureMediaBlob).mockResolvedValueOnce('blob:cached-preview');
     vi.mocked(mediaFetch.peekCachedGestureMediaUrl).mockReturnValue('blob:cached-preview');
 
@@ -52,9 +56,10 @@ describe('gesturePreviewImageUrl', () => {
   });
 
   it('prefers fast thumbnail links before full-file alt=media cache', async () => {
-    const mediaFetch = await import('./gestureMediaFetch');
+    const mediaFetch = await import('./gestureMediaPolicy');
     const url = await resolveGesturePreviewImageUrl('token', 'file-fast');
     expect(url).toBe('https://lh3.googleusercontent.com/file-fast=s320');
+    expect(mediaFetch.resolveGesturePreviewTierUrl).toHaveBeenCalled();
     expect(mediaFetch.fetchAndCacheGestureMediaBlob).not.toHaveBeenCalled();
   });
 });

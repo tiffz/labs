@@ -10,7 +10,8 @@ import ContextualMatcherView from '../modules/contextualMatcher/ContextualMatche
 import { initialContextualInput, scoreContextual } from '../modules/contextualMatcher/contextualMatcherLogic';
 import BrokenBridgeView from '../modules/brokenBridge/BrokenBridgeView';
 import { initialBridgeSteps, scoreBridge } from '../modules/brokenBridge/brokenBridgeLogic';
-import GamutFinderView, { defaultGamutDeform } from '../modules/gamutFinder/GamutFinderView';
+import GamutFinderView from '../modules/gamutFinder/GamutFinderView';
+import { defaultGamutDeform } from '../modules/gamutFinder/gamutFinderDefaults';
 import { scoreGamut } from '../modules/gamutFinder/gamutFinderLogic';
 import AlbersEqualizerView from '../modules/albersEqualizer/AlbersEqualizerView';
 import { initialEqualizerInput, scoreEqualizer } from '../modules/albersEqualizer/albersEqualizerLogic';

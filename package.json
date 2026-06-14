@@ -34,6 +34,8 @@
     "test:full": "INCLUDE_BEAT_BENCHMARK=true vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:changed-apps": "node scripts/run-changed-app-tests.mjs",
+    "test:e2e:scoped": "node scripts/run-scoped-e2e.mjs",
     "test:e2e:smoke": "playwright test \"e2e/smoke/.*\\.spec\\.ts$\"",
     "test:e2e:visual": "playwright test --project=visual e2e/visual/apps.visual.spec.ts",
     "test:e2e:visual:update": "playwright test --project=visual e2e/visual/apps.visual.spec.ts --update-snapshots",

@@ -1,14 +1,9 @@
-import { driveResolveThumbnailLink } from '../../shared/drive/driveFetch';
-import { fetchAndCacheGestureMediaBlob, peekCachedGestureMediaUrl } from './gestureMediaFetch';
-import { getCachedGestureMediaObjectUrl, subscribeGestureMediaCacheEvictions } from './gestureMediaCache';
-import { probeImageUrlLoads } from './gestureDriveImageLoad';
 import {
-  buildDriveThumbnailFallbackUrl,
-  scaleDriveThumbnailUrl,
-} from './gestureReferenceImageUrl';
-
-/** Small thumbs for collection cards — keep bytes low for fast paint. */
-export const GESTURE_PREVIEW_THUMB_WIDTH = 320;
+  GESTURE_PREVIEW_THUMB_WIDTH,
+  peekCachedGestureMediaUrl,
+  resolveGesturePreviewTierUrl,
+} from './gestureMediaPolicy';
+import { getCachedGestureMediaObjectUrl, subscribeGestureMediaCacheEvictions } from './gestureMediaCache';
 
 const HIT_TTL_MS = 45 * 60 * 1000;
 const MISS_TTL_MS = 2 * 60 * 1000;
@@ -70,6 +65,8 @@ export function getGesturePreviewCacheVersion(): number {
   for (const version of cacheVersions.values()) total += version;
   return total;
 }
+
+export { GESTURE_PREVIEW_THUMB_WIDTH } from './gestureMediaPolicy';
 
 function previewCacheKey(fileId: string): string {
   return `${fileId}@${GESTURE_PREVIEW_THUMB_WIDTH}`;
@@ -143,38 +140,9 @@ export async function resolveGesturePreviewImageUrl(
 
   const promise = (async () => {
     const width = GESTURE_PREVIEW_THUMB_WIDTH;
-    const fallback = buildDriveThumbnailFallbackUrl(fileId, width);
-
-    // Fast path: small https thumbnails — never block card paint on full alt=media downloads.
-    if (accessToken) {
-      try {
-        const link = await driveResolveThumbnailLink(accessToken, fileId);
-        if (link) {
-          const scaled = scaleDriveThumbnailUrl(link, width);
-          if (await probeImageUrlLoads(scaled)) {
-            writePreviewCache(fileId, scaled, true);
-            return scaled;
-          }
-        }
-      } catch {
-        /* fall through */
-      }
-    }
-
-    if (!accessToken || (await probeImageUrlLoads(fallback))) {
-      writePreviewCache(fileId, fallback, Boolean(accessToken));
-      return fallback;
-    }
-
-    // Slow path: persist a preview blob for offline reuse when thumbnails fail.
-    const idbUrl = await fetchAndCacheGestureMediaBlob(accessToken, fileId, 'preview', width);
-    if (idbUrl) {
-      writePreviewCache(fileId, idbUrl, true);
-      return idbUrl;
-    }
-
-    writePreviewCache(fileId, fallback, false);
-    return fallback;
+    const url = await resolveGesturePreviewTierUrl(accessToken, fileId, width);
+    writePreviewCache(fileId, url, true);
+    return url;
   })().finally(() => {
     inflight.delete(fileId);
   });
