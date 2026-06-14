@@ -11,7 +11,8 @@ import {
   formatPlaybackRateLabel,
 } from '../../music/playbackRateConstants';
 import { NumericStepperField } from './NumericStepperField';
-import { buildSliderMilestones, SliderMilestoneLabels } from './sliderMilestoneLabels';
+import { buildSliderMilestones } from './sliderMilestoneUtils';
+import SliderMilestoneLabels from './sliderMilestoneLabels';
 import './bpmInput.css';
 
 export interface PlaybackSpeedControlProps {

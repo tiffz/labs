@@ -2,6 +2,7 @@ import Dexie, { type EntityTable } from 'dexie';
 
 import type {
   GestureDrawRecord,
+  GestureMediaCacheRow,
   GesturePack,
   GesturePackFile,
   GestureUploadManifestFile,
@@ -20,6 +21,7 @@ export class GestureDb extends Dexie {
   drawHistory!: EntityTable<GestureDrawRecord, 'driveFileId'>;
   syncMeta!: EntityTable<GestureSyncMetaRow, 'key'>;
   uploadManifestFiles!: EntityTable<GestureUploadManifestFile, 'id'>;
+  mediaCache!: EntityTable<GestureMediaCacheRow, 'id'>;
 
   constructor() {
     super('gesture-practice');
@@ -31,6 +33,9 @@ export class GestureDb extends Dexie {
     });
     this.version(2).stores({
       uploadManifestFiles: 'id, packId, status, [packId+status]',
+    });
+    this.version(3).stores({
+      mediaCache: 'id, driveFileId, kind, fetchedAt, [driveFileId+kind]',
     });
   }
 }

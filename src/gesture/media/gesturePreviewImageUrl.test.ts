@@ -5,6 +5,11 @@ import {
   warmGesturePreviewUrls,
 } from './gesturePreviewImageUrl';
 
+vi.mock('./gestureMediaFetch', () => ({
+  fetchAndCacheGestureMediaBlob: vi.fn(async () => null),
+  peekCachedGestureMediaUrl: vi.fn(() => null),
+}));
+
 vi.mock('../../shared/drive/driveFetch', () => ({
   driveResolveThumbnailLink: vi.fn(async (token: string, fileId: string) =>
     token ? `https://lh3.googleusercontent.com/${fileId}=s220` : null,
@@ -17,8 +22,11 @@ vi.mock('./gestureDriveImageLoad', () => ({
 }));
 
 describe('gesturePreviewImageUrl', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    const mediaFetch = await import('./gestureMediaFetch');
+    vi.mocked(mediaFetch.fetchAndCacheGestureMediaBlob).mockResolvedValue(null);
+    vi.mocked(mediaFetch.peekCachedGestureMediaUrl).mockReturnValue(null);
   });
 
   it('caches preview-sized urls and serves peeks synchronously', async () => {
@@ -31,5 +39,22 @@ describe('gesturePreviewImageUrl', () => {
     await warmGesturePreviewUrls('token', ['file-a', 'file-b', 'file-a']);
     expect(peekGesturePreviewUrl('file-a')).toContain('file-a');
     expect(peekGesturePreviewUrl('file-b')).toContain('file-b');
+  });
+
+  it('serves blob previews from the media cache layer only', async () => {
+    const mediaFetch = await import('./gestureMediaFetch');
+    vi.mocked(mediaFetch.fetchAndCacheGestureMediaBlob).mockResolvedValueOnce('blob:cached-preview');
+    vi.mocked(mediaFetch.peekCachedGestureMediaUrl).mockReturnValue('blob:cached-preview');
+
+    const url = await resolveGesturePreviewImageUrl('token', 'file-blob');
+    expect(url).toBe('blob:cached-preview');
+    expect(peekGesturePreviewUrl('file-blob')).toBe('blob:cached-preview');
+  });
+
+  it('prefers fast thumbnail links before full-file alt=media cache', async () => {
+    const mediaFetch = await import('./gestureMediaFetch');
+    const url = await resolveGesturePreviewImageUrl('token', 'file-fast');
+    expect(url).toBe('https://lh3.googleusercontent.com/file-fast=s320');
+    expect(mediaFetch.fetchAndCacheGestureMediaBlob).not.toHaveBeenCalled();
   });
 });

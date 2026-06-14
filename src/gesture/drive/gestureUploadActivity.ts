@@ -1,17 +1,27 @@
 import type { GesturePack, GestureUploadActivity, GestureUploadPhase } from '../types';
+import { isGesturePackUploadResolved } from './reconcileStaleGestureUploadPacks';
 
 /** Pack is mid-upload or was interrupted — not ready for practice. */
-export function isIncompleteUploadPack(pack: GesturePack): boolean {
+export function isIncompleteUploadPack(pack: GesturePack, indexedPhotoCount = 0): boolean {
+  if (!pack.uploadStatus) return false;
+  if (isGesturePackUploadResolved(pack, indexedPhotoCount)) return false;
   return pack.uploadStatus === 'uploading' || pack.uploadStatus === 'incomplete';
 }
 
 /** Upload stopped before finishing (not an in-flight session). */
-export function isInterruptedUploadPack(pack: GesturePack): boolean {
+export function isInterruptedUploadPack(pack: GesturePack, indexedPhotoCount = 0): boolean {
+  if (isGesturePackUploadResolved(pack, indexedPhotoCount)) return false;
   return pack.uploadStatus === 'incomplete';
 }
 
-/** Show recovery banner — hide while this tab is actively uploading the same flow. */
-export function shouldShowUploadRecoveryBanner(pack: GesturePack, sessionUploadActive: boolean): boolean {
+/** Show recovery banner — hide when indexed photos satisfy the upload ledger. */
+export function shouldShowUploadRecoveryBanner(
+  pack: GesturePack,
+  sessionUploadActive: boolean,
+  indexedPhotoCount = 0,
+): boolean {
+  if (!pack.uploadStatus) return false;
+  if (isGesturePackUploadResolved(pack, indexedPhotoCount)) return false;
   if (pack.uploadStatus === 'incomplete') return true;
   if (pack.uploadStatus === 'uploading' && !sessionUploadActive) return true;
   return false;
@@ -22,13 +32,16 @@ export function formatInterruptedUploadHeadline(pack: GesturePack): string {
 }
 
 export function formatInterruptedUploadSummary(pack: GesturePack, indexedPhotoCount: number): string {
-  const manifestTotal = pack.expectedFileCount;
-  const uploaded = pack.uploadedFileCount ?? indexedPhotoCount;
-  if (manifestTotal != null && manifestTotal > 0) {
-    return `${uploaded} of ${manifestTotal} photo${manifestTotal === 1 ? '' : 's'} reached Google Drive before the upload stopped.`;
+  const onDrive = Math.max(indexedPhotoCount, pack.uploadedFileCount ?? 0);
+  const expected = pack.expectedFileCount;
+  if (expected != null && expected > 0) {
+    if (onDrive >= expected) {
+      return `All ${expected} photo${expected === 1 ? '' : 's'} are on Google Drive.`;
+    }
+    return `${onDrive} of ${expected} photo${expected === 1 ? '' : 's'} on Google Drive.`;
   }
-  if (indexedPhotoCount > 0) {
-    return `${indexedPhotoCount} photo${indexedPhotoCount === 1 ? '' : 's'} on Drive; the upload did not finish.`;
+  if (onDrive > 0) {
+    return `${onDrive} photo${onDrive === 1 ? '' : 's'} on Drive; the upload did not finish.`;
   }
   return 'The upload started but no photos finished uploading to Drive.';
 }

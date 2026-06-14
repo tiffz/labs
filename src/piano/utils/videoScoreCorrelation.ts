@@ -540,12 +540,6 @@ async function runDtwAlignment(
     scoreFrames, audioChromaResult.frames, 0.35, 'cosine', 50,
   );
 
-  console.log(
-    `[Correlation] DTW: ${scoreFrames.length} score × ${audioChromaResult.frames.length} audio frames ` +
-    `@ ${effectiveRate.toFixed(1)} Hz, cost=${dtwResult.normalizedCost.toFixed(4)}, ` +
-    `${scoreTotalBeats} beats`,
-  );
-
   const rawBeats = sampleDtwPathAtBeats(
     dtwResult.path, chromaBpm, effectiveRate, musicStartTime, scoreTotalBeats,
   );

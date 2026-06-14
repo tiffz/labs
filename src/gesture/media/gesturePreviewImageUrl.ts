@@ -1,5 +1,7 @@
 import { driveResolveThumbnailLink } from '../../shared/drive/driveFetch';
-import { fetchDriveImageObjectUrl, probeImageUrlLoads } from './gestureDriveImageLoad';
+import { fetchAndCacheGestureMediaBlob, peekCachedGestureMediaUrl } from './gestureMediaFetch';
+import { getCachedGestureMediaObjectUrl, subscribeGestureMediaCacheEvictions } from './gestureMediaCache';
+import { probeImageUrlLoads } from './gestureDriveImageLoad';
 import {
   buildDriveThumbnailFallbackUrl,
   scaleDriveThumbnailUrl,
@@ -15,23 +17,58 @@ type CacheEntry = { url: string; expiresAt: number };
 
 const previewCache = new Map<string, CacheEntry>();
 const inflight = new Map<string, Promise<string>>();
-let cacheVersion = 0;
-const listeners = new Set<() => void>();
+const cacheVersions = new Map<string, number>();
+const idListeners = new Map<string, Set<() => void>>();
 
-function notifyPreviewCache(): void {
-  cacheVersion += 1;
-  for (const listener of listeners) {
-    listener();
+if (typeof window !== 'undefined') {
+  subscribeGestureMediaCacheEvictions((fileId, kind) => {
+    if (kind === 'preview') notifyPreviewCache(fileId);
+  });
+}
+
+function notifyPreviewCache(fileId: string): void {
+  cacheVersions.set(fileId, (cacheVersions.get(fileId) ?? 0) + 1);
+  idListeners.get(fileId)?.forEach((listener) => listener());
+}
+
+export function subscribeGesturePreviewCacheForIds(
+  fileIds: string[],
+  listener: () => void,
+): () => void {
+  const subscribed = new Set<string>();
+  for (const id of fileIds) {
+    if (!id || subscribed.has(id)) continue;
+    subscribed.add(id);
+    let set = idListeners.get(id);
+    if (!set) {
+      set = new Set();
+      idListeners.set(id, set);
+    }
+    set.add(listener);
   }
+  return () => {
+    for (const id of subscribed) {
+      idListeners.get(id)?.delete(listener);
+    }
+  };
 }
 
+export function getGesturePreviewCacheSnapshot(fileIds: string[]): string {
+  return fileIds.map((id) => cacheVersions.get(id) ?? 0).join(',');
+}
+
+/** @deprecated Prefer {@link subscribeGesturePreviewCacheForIds} scoped to visible ids. */
 export function subscribeGesturePreviewCache(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
+  const proxy = () => listener();
+  const allIds = [...previewCache.keys()].map((key) => key.split('@')[0] ?? key);
+  return subscribeGesturePreviewCacheForIds(allIds, proxy);
 }
 
+/** @deprecated Prefer {@link getGesturePreviewCacheSnapshot}. */
 export function getGesturePreviewCacheVersion(): number {
-  return cacheVersion;
+  let total = 0;
+  for (const version of cacheVersions.values()) total += version;
+  return total;
 }
 
 function previewCacheKey(fileId: string): string {
@@ -47,6 +84,11 @@ function readPreviewCache(fileId: string): string | null {
     previewCache.delete(key);
     return null;
   }
+  // Blob URLs are owned by gestureMediaCache — never keep a stale copy here.
+  if (row.url.startsWith('blob:')) {
+    previewCache.delete(key);
+    return null;
+  }
   return row.url;
 }
 
@@ -55,6 +97,11 @@ function revokePreviewBlob(url: string): void {
 }
 
 function writePreviewCache(fileId: string, url: string, hit: boolean): void {
+  if (url.startsWith('blob:')) {
+    notifyPreviewCache(fileId);
+    return;
+  }
+
   const key = previewCacheKey(fileId);
   const prev = previewCache.get(key);
   if (prev && prev.url !== url) revokePreviewBlob(prev.url);
@@ -63,20 +110,33 @@ function writePreviewCache(fileId: string, url: string, hit: boolean): void {
     url,
     expiresAt: Date.now() + (hit ? HIT_TTL_MS : MISS_TTL_MS),
   });
-  notifyPreviewCache();
+  notifyPreviewCache(fileId);
+}
+
+/** Load a preview blob from IndexedDB into the memory LRU (no network). */
+export async function hydrateGesturePreviewFromIdb(fileId: string): Promise<string | null> {
+  if (peekGesturePreviewUrl(fileId)) return peekGesturePreviewUrl(fileId);
+  const url = await getCachedGestureMediaObjectUrl(fileId, 'preview');
+  if (url) notifyPreviewCache(fileId);
+  return url;
 }
 
 /** Synchronous read — use for instant re-render when another card already warmed the cache. */
 export function peekGesturePreviewUrl(fileId: string): string | null {
-  return readPreviewCache(fileId);
+  const mem = readPreviewCache(fileId);
+  if (mem) return mem;
+  return peekCachedGestureMediaUrl(fileId, 'preview');
 }
 
 export async function resolveGesturePreviewImageUrl(
   accessToken: string | null,
   fileId: string,
 ): Promise<string> {
-  const cached = readPreviewCache(fileId);
-  if (cached) return cached;
+  const cached = readPreviewCache(fileId) ?? peekCachedGestureMediaUrl(fileId, 'preview');
+  if (cached) {
+    if (!readPreviewCache(fileId)) writePreviewCache(fileId, cached, true);
+    return cached;
+  }
 
   const pending = inflight.get(fileId);
   if (pending) return pending;
@@ -84,30 +144,33 @@ export async function resolveGesturePreviewImageUrl(
   const promise = (async () => {
     const width = GESTURE_PREVIEW_THUMB_WIDTH;
     const fallback = buildDriveThumbnailFallbackUrl(fileId, width);
-    if (!accessToken) {
-      writePreviewCache(fileId, fallback, false);
+
+    // Fast path: small https thumbnails — never block card paint on full alt=media downloads.
+    if (accessToken) {
+      try {
+        const link = await driveResolveThumbnailLink(accessToken, fileId);
+        if (link) {
+          const scaled = scaleDriveThumbnailUrl(link, width);
+          if (await probeImageUrlLoads(scaled)) {
+            writePreviewCache(fileId, scaled, true);
+            return scaled;
+          }
+        }
+      } catch {
+        /* fall through */
+      }
+    }
+
+    if (!accessToken || (await probeImageUrlLoads(fallback))) {
+      writePreviewCache(fileId, fallback, Boolean(accessToken));
       return fallback;
     }
 
-    try {
-      const link = await driveResolveThumbnailLink(accessToken, fileId);
-      if (link) {
-        const scaled = scaleDriveThumbnailUrl(link, width);
-        if (await probeImageUrlLoads(scaled)) {
-          writePreviewCache(fileId, scaled, true);
-          return scaled;
-        }
-      }
-    } catch {
-      /* fall through */
-    }
-
-    try {
-      const blobUrl = await fetchDriveImageObjectUrl(accessToken, fileId);
-      writePreviewCache(fileId, blobUrl, true);
-      return blobUrl;
-    } catch {
-      /* fall through */
+    // Slow path: persist a preview blob for offline reuse when thumbnails fail.
+    const idbUrl = await fetchAndCacheGestureMediaBlob(accessToken, fileId, 'preview', width);
+    if (idbUrl) {
+      writePreviewCache(fileId, idbUrl, true);
+      return idbUrl;
     }
 
     writePreviewCache(fileId, fallback, false);
@@ -125,7 +188,7 @@ export async function warmGesturePreviewUrls(
   fileIds: string[],
 ): Promise<void> {
   const unique = [...new Set(fileIds.filter(Boolean))];
-  const missing = unique.filter((id) => !readPreviewCache(id));
+  const missing = unique.filter((id) => !peekGesturePreviewUrl(id));
   if (missing.length === 0) return;
   await Promise.all(missing.map((id) => resolveGesturePreviewImageUrl(accessToken, id)));
 }

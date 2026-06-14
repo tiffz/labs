@@ -16,10 +16,11 @@ import {
   GESTURE_EMPTY_PACK_FILES,
 } from '../hooks/gestureLiveQueryEmpty';
 import { clearGestureImagePrefetchCache } from '../media/gestureImagePrefetchCache';
+import { clearGestureSessionPhotoDisplayReady } from '../media/gestureSessionPhotoPipeline';
 import { useGestureImagePrefetch } from '../hooks/useGestureImagePrefetch';
+import { useGestureSessionPhotoPipeline } from '../hooks/useGestureSessionPhotoPipeline';
 import { formatTimerSec } from '../session/buildSessionQueue';
 import { buildGestureSessionQueueFromConfig } from '../session/gestureSessionQueueFromConfig';
-import { prefetchGestureSessionImages } from '../media/prefetchGestureSessionImages';
 import { useDrawingTimer } from '../session/useDrawingTimer';
 import { useSessionKeyboard } from '../session/useSessionKeyboard';
 import type { SessionConfig, SessionDebrief, SessionQueueItem } from '../types';
@@ -30,7 +31,14 @@ interface ZenSessionPhaseProps {
 }
 
 export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps) {
-  const packFilesRaw = useLiveQuery(() => gestureDb.packFiles.toArray(), [], undefined);
+  const packFilesRaw = useLiveQuery(
+    () =>
+      config.packIds.length === 0
+        ? Promise.resolve(GESTURE_EMPTY_PACK_FILES)
+        : gestureDb.packFiles.where('packId').anyOf(config.packIds).toArray(),
+    [config.packIds.join(',')],
+    undefined,
+  );
   const drawHistoryRaw = useLiveQuery(() => gestureDb.drawHistory.toArray(), [], undefined);
   const packFiles = packFilesRaw ?? GESTURE_EMPTY_PACK_FILES;
   const drawHistory = drawHistoryRaw ?? GESTURE_EMPTY_DRAW_HISTORY;
@@ -45,16 +53,20 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
   const [photosSkipped, setPhotosSkipped] = useState(0);
   const [totalMs, setTotalMs] = useState(0);
   const loggedIndexRef = useRef<number | null>(null);
+  const advancingRef = useRef(false);
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
     void readGestureDriveAccessToken().then(setAccessToken);
   }, []);
 
-  useEffect(() => {
-    if (!accessToken || config.queue?.length || queue.length === 0) return;
-    void prefetchGestureSessionImages(accessToken, queue);
-  }, [accessToken, config.queue, queue]);
+  const aheadIndex = index + 1 < queue.length ? index + 1 : null;
+  useGestureSessionPhotoPipeline({
+    queue,
+    headIndex: index,
+    aheadIndex,
+    enabled: queue.length > 0,
+  });
 
   const current = queue[index] ?? null;
   const { src, ready, loading, error } = useGestureImagePrefetch(queue, index, accessToken);
@@ -63,6 +75,7 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
 
   const finishSession = useCallback(() => {
     clearGestureImagePrefetchCache();
+    clearGestureSessionPhotoDisplayReady();
     onExit({
       photosCompleted,
       photosSkipped,
@@ -93,29 +106,37 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
 
   const advance = useCallback(
     async (mode: 'complete' | 'skip') => {
-      if (mode === 'complete' && current) {
-        await logCurrentPhoto();
-      } else if (mode === 'skip' && current) {
-        setPhotosSkipped((n) => n + 1);
-      }
-
-      if (index >= queue.length - 1) {
-        finishSession();
-        return;
-      }
-      loggedIndexRef.current = null;
-      setIndex((i) => i + 1);
+      if (advancingRef.current) return;
+      advancingRef.current = true;
       timer.resetForNext(config.durationSec);
+      try {
+        if (mode === 'complete' && current) {
+          await logCurrentPhoto();
+        } else if (mode === 'skip' && current) {
+          setPhotosSkipped((n) => n + 1);
+        }
+
+        if (index >= queue.length - 1) {
+          finishSession();
+          return;
+        }
+        loggedIndexRef.current = null;
+        setIndex((i) => i + 1);
+      } finally {
+        advancingRef.current = false;
+      }
     },
     [config.durationSec, current, finishSession, index, logCurrentPhoto, queue.length, timer],
   );
 
   const goNext = useCallback(() => void advance('skip'), [advance]);
   const goBack = useCallback(() => {
-    if (index <= 0) return;
+    if (index <= 0 || advancingRef.current) return;
+    advancingRef.current = true;
+    timer.resetForNext(config.durationSec);
     loggedIndexRef.current = null;
     setIndex((i) => i - 1);
-    timer.resetForNext(config.durationSec);
+    advancingRef.current = false;
   }, [config.durationSec, index, timer]);
 
   useEffect(() => {
@@ -165,71 +186,73 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
         />
       </div>
 
-      <div className="gesture-zen-image-wrap">
-        {src ? (
-          <img
-            src={src}
-            alt={current?.name ?? 'Reference photo'}
-            className={`gesture-zen-image${loading ? ' is-loading' : ''}`}
-          />
-        ) : null}
-        {!ready && !error ? (
-          <div className="gesture-zen-preparing" aria-live="polite">
-            Preparing photo…
-          </div>
-        ) : null}
-        {error ? (
-          <Typography role="alert" className="gesture-zen-error">
-            {error}
-          </Typography>
-        ) : null}
-        {ready && timer.paused ? <div className="gesture-zen-paused">Paused</div> : null}
+      <div className="gesture-zen-stage">
+        <div className="gesture-zen-image-wrap">
+          {src ? (
+            <img
+              src={src}
+              alt={current?.name ?? 'Reference photo'}
+              className={`gesture-zen-image${loading ? ' is-loading' : ''}`}
+            />
+          ) : null}
+          {!ready && !error ? (
+            <div className="gesture-zen-preparing" aria-live="polite">
+              Preparing photo…
+            </div>
+          ) : null}
+          {error ? (
+            <Typography role="alert" className="gesture-zen-error">
+              {error}
+            </Typography>
+          ) : null}
+          {ready && timer.paused ? <div className="gesture-zen-paused">Paused</div> : null}
+        </div>
       </div>
 
-      <div className="gesture-zen-controls">
+      <div className="gesture-zen-dock">
         <AppTooltip title="Previous (B or ←)">
           <IconButton
             aria-label="Previous photo"
             onClick={goBack}
             className="gesture-zen-control-btn"
-            size="large"
+            size="small"
           >
-            <SkipPreviousIcon />
+            <SkipPreviousIcon fontSize="small" />
           </IconButton>
         </AppTooltip>
         <AppTooltip title={timer.paused ? 'Resume (Space)' : 'Pause (Space)'}>
-          <ZenTimerRing
-            progress={timerProgress}
-            size={72}
-            ariaLabel={`${formatTimerSec(timer.remainingSec)} remaining`}
+          <button
+            type="button"
+            className="gesture-zen-timer-btn"
+            aria-label={
+              ready
+                ? timer.paused
+                  ? `Resume timer, ${formatTimerSec(timer.remainingSec)} remaining`
+                  : `Pause timer, ${formatTimerSec(timer.remainingSec)} remaining`
+                : 'Timer waiting for photo'
+            }
+            onClick={timer.togglePause}
+            disabled={!ready}
           >
-            <button
-              type="button"
-              className="gesture-zen-timer-ring-btn"
-              aria-label={
-                ready
-                  ? timer.paused
-                    ? `Resume timer, ${formatTimerSec(timer.remainingSec)} remaining`
-                    : `Pause timer, ${formatTimerSec(timer.remainingSec)} remaining`
-                  : 'Timer waiting for photo'
-              }
-              onClick={timer.togglePause}
-              disabled={!ready}
+            <ZenTimerRing
+              progress={timerProgress}
+              size={44}
+              ariaLabel={`${formatTimerSec(timer.remainingSec)} remaining`}
             >
               <span className="gesture-zen-timer-countdown" aria-live="polite">
                 {ready ? formatTimerSec(timer.remainingSec) : '…'}
               </span>
-            </button>
-          </ZenTimerRing>
+            </ZenTimerRing>
+          </button>
         </AppTooltip>
         <AppTooltip title="Skip (N or →)">
           <IconButton
             aria-label="Skip to next photo"
             onClick={goNext}
             className="gesture-zen-control-btn"
-            size="large"
+            size="small"
           >
-            <SkipNextIcon />
+            <SkipNextIcon fontSize="small" />
           </IconButton>
         </AppTooltip>
         <AppTooltip title="End session (Esc)">
@@ -241,9 +264,9 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
               }
             }}
             className="gesture-zen-control-btn"
-            size="large"
+            size="small"
           >
-            <CloseIcon />
+            <CloseIcon fontSize="small" />
           </IconButton>
         </AppTooltip>
       </div>

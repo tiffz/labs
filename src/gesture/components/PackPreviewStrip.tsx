@@ -1,3 +1,4 @@
+import { useNearViewport } from '../hooks/useNearViewport';
 import { usePackPreviewUrls } from '../hooks/usePackPreviewUrls';
 import PackPreviewCell from './PackPreviewCell';
 
@@ -12,18 +13,23 @@ export default function PackPreviewStrip({
   limit = 4,
   className,
 }: PackPreviewStripProps): React.ReactElement {
-  const { urls, loading } = usePackPreviewUrls(driveFileIds, limit);
+  const { ref, near } = useNearViewport('400px');
+  const { urls, loading } = usePackPreviewUrls(driveFileIds, limit, near);
   const previewIds = driveFileIds.slice(0, limit);
   const slots = previewIds.length > 0 ? previewIds.length : limit;
 
   return (
-    <div className={`gesture-preview-strip${className ? ` ${className}` : ''}`} aria-hidden={previewIds.length === 0}>
+    <div
+      ref={ref}
+      className={`gesture-preview-strip${className ? ` ${className}` : ''}`}
+      aria-hidden={previewIds.length === 0}
+    >
       {Array.from({ length: slots }, (_, index) => (
         <PackPreviewCell
           key={previewIds[index] ?? `empty-${index}`}
           url={urls[index] || undefined}
-          loading={loading && !urls[index]}
-          priority={index === 0 ? 'high' : 'auto'}
+          loading={!urls[index] && near && loading}
+          priority="high"
         />
       ))}
     </div>

@@ -34,6 +34,26 @@ describe('gestureUploadActivity', () => {
     expect(shouldShowUploadRecoveryBanner(basePack, false)).toBe(false);
   });
 
+  it('hides recovery banner when indexed photos satisfy expected upload total', () => {
+    const stuck = {
+      ...basePack,
+      uploadStatus: 'incomplete' as const,
+      expectedFileCount: 400,
+      uploadedFileCount: 58,
+    };
+    expect(shouldShowUploadRecoveryBanner(stuck, false, 58)).toBe(true);
+    expect(shouldShowUploadRecoveryBanner(stuck, false, 400)).toBe(false);
+  });
+
+  it('uses indexed count when higher than uploaded ledger', () => {
+    expect(
+      formatInterruptedUploadSummary(
+        { ...basePack, uploadStatus: 'incomplete', expectedFileCount: 400, uploadedFileCount: 58 },
+        400,
+      ),
+    ).toContain('All 400 photos');
+  });
+
   it('formats interrupted upload summaries', () => {
     expect(
       formatInterruptedUploadSummary(

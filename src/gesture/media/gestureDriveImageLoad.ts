@@ -28,13 +28,22 @@ export function probeImageUrlLoads(url: string): Promise<boolean> {
 }
 
 /** OAuth `alt=media` fetch — works for `drive.file` uploads when thumbnail URLs fail. */
+export async function fetchDriveImageBlob(
+  accessToken: string,
+  fileId: string,
+  name?: string,
+): Promise<{ blob: Blob; mimeType: string }> {
+  const buffer = await driveGetMediaArrayBuffer(accessToken, fileId);
+  const mimeType = inferImageMimeType(name ?? fileId);
+  const blob = new Blob([buffer], { type: mimeType });
+  return { blob, mimeType };
+}
+
 export async function fetchDriveImageObjectUrl(
   accessToken: string,
   fileId: string,
   name?: string,
 ): Promise<string> {
-  const buffer = await driveGetMediaArrayBuffer(accessToken, fileId);
-  const mimeType = inferImageMimeType(name ?? fileId);
-  const blob = new Blob([buffer], { type: mimeType });
+  const { blob } = await fetchDriveImageBlob(accessToken, fileId, name);
   return URL.createObjectURL(blob);
 }

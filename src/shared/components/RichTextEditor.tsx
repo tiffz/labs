@@ -18,11 +18,8 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { normalizeRichTextLinkHref, plainOrHtmlToEditorHtml } from '../utils/richTextContent';
-import {
-  RichTextLinkHoverPopover,
-  selectLinkDomRange,
-  useRichTextLinkHover,
-} from './RichTextLinkHover';
+import RichTextLinkHoverPopover from './RichTextLinkHoverPopover';
+import { selectLinkDomRange, useRichTextLinkHover } from './useRichTextLinkHover';
 import './richTextEditor.css';
 
 function isSafeRichTextLinkHref(href: string): boolean {

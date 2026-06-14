@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -7,6 +8,7 @@ import InlinePackName from './InlinePackName';
 import InlinePackSourceLink from './InlinePackSourceLink';
 import PackDriveFolderLink from './PackDriveFolderLink';
 import PackPreviewStrip from './PackPreviewStrip';
+import { isIncompleteUploadPack } from '../drive/gestureUploadActivity';
 import { usePackCollectionDrop } from '../hooks/usePackCollectionDrop';
 import type { GestureCollectionUploadHandle } from '../hooks/useGestureCollectionUpload';
 import type { GesturePack } from '../types';
@@ -29,7 +31,9 @@ type PackCollectionCardProps = {
   onError?: (message: string) => void;
 };
 
-export default function PackCollectionCard({
+export default memo(PackCollectionCard);
+
+function PackCollectionCard({
   pack,
   driveFileIds,
   photoCount,
@@ -47,8 +51,9 @@ export default function PackCollectionCard({
   onError,
 }: PackCollectionCardProps): React.ReactElement {
   const needsRefresh = photoCount === 0;
+  const uploadInterrupted = isIncompleteUploadPack(pack, photoCount);
   const isUploading = pack.uploadStatus === 'uploading';
-  const uploadDone = pack.uploadedFileCount ?? photoCount;
+  const uploadDone = Math.max(photoCount, pack.uploadedFileCount ?? 0);
   const uploadTotal = pack.expectedFileCount ?? 0;
   const uploadPct =
     isUploading && uploadTotal > 0 ? Math.min(100, Math.round((uploadDone / uploadTotal) * 100)) : 0;
@@ -101,7 +106,7 @@ export default function PackCollectionCard({
         <Typography className="gesture-collection-card-meta" variant="body2">
           {isUploading
             ? `Uploading… ${uploadDone} of ${uploadTotal || '?'}`
-            : pack.uploadStatus === 'incomplete'
+            : uploadInterrupted
               ? `Upload stopped · ${photoCount} on Drive`
               : needsRefresh
                 ? 'No photos loaded yet'

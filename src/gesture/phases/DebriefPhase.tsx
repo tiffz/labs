@@ -1,7 +1,14 @@
+import { useLiveQuery } from 'dexie-react-hooks';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import ReplayIcon from '@mui/icons-material/Replay';
+import { gestureDb } from '../db/gestureDb';
+import {
+  GESTURE_EMPTY_DRAW_HISTORY,
+  GESTURE_EMPTY_PACK_FILES,
+} from '../hooks/gestureLiveQueryEmpty';
+import { useGestureRestartWarmup } from '../hooks/useGestureSessionWarmup';
 import { formatDurationMs } from '../session/buildSessionQueue';
 import type { SessionDebrief } from '../types';
 
@@ -12,6 +19,20 @@ interface DebriefPhaseProps {
 }
 
 export default function DebriefPhase({ debrief, onHome, onRestart }: DebriefPhaseProps) {
+  const packFilesRaw = useLiveQuery(
+    () =>
+      debrief.config.packIds.length === 0
+        ? Promise.resolve(GESTURE_EMPTY_PACK_FILES)
+        : gestureDb.packFiles.where('packId').anyOf(debrief.config.packIds).toArray(),
+    [debrief.config.packIds.join(',')],
+    undefined,
+  );
+  const drawHistoryRaw = useLiveQuery(() => gestureDb.drawHistory.toArray(), [], undefined);
+  const packFiles = packFilesRaw ?? GESTURE_EMPTY_PACK_FILES;
+  const drawHistory = drawHistoryRaw ?? GESTURE_EMPTY_DRAW_HISTORY;
+
+  useGestureRestartWarmup(debrief.config, packFiles, drawHistory);
+
   const hasSkipped = debrief.photosSkipped > 0;
   const totalPhotos = debrief.photosCompleted + debrief.photosSkipped;
 

@@ -229,11 +229,7 @@ export function alignBeatGridToDownbeat(
   
   // Only use aligned time if confidence is reasonable
   const useAlignedTime = confidence >= 0.4 && bestScore >= 0.3;
-  
-  console.log(`[DownbeatAlignment] Candidates: ${candidateOnsets.length}, Best score: ${bestScore.toFixed(3)}, ` +
-    `Original: ${musicStartTime.toFixed(3)}s, Aligned: ${bestCandidate.time.toFixed(3)}s, ` +
-    `HasPickup: ${hasPickup}, Using aligned: ${useAlignedTime}`);
-  
+
   return {
     alignedStartTime: useAlignedTime ? bestCandidate.time : musicStartTime,
     confidence,

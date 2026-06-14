@@ -19,6 +19,8 @@ export type GesturePack = {
   uploadSourceFolderName?: string;
   /** Where you found or downloaded this collection (optional). */
   sourceUrl?: string;
+  /** Stable preview covers (max 4) — set on index, synced via progress.json. */
+  coverFileIds?: string[];
   /** Legacy sync fields — not shown in UI. */
   subject?: string;
   notes?: string;
@@ -57,6 +59,18 @@ export type GesturePackFile = {
   name: string;
   mimeType: string;
   modifiedTime?: string;
+};
+
+export type GestureMediaCacheKind = 'preview' | 'session';
+
+export type GestureMediaCacheRow = {
+  id: string;
+  driveFileId: string;
+  kind: GestureMediaCacheKind;
+  blob: Blob;
+  width: number;
+  mimeType: string;
+  fetchedAt: number;
 };
 
 export type GestureDrawRecord = {

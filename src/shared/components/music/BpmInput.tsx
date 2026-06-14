@@ -3,7 +3,8 @@ import AnchoredPopover from '../AnchoredPopover';
 import { COMMON_BPMS, DEFAULT_BPM_MAX, DEFAULT_BPM_MIN } from '../../music/musicInputConstants';
 import AppSlider from '../AppSlider';
 import { NumericStepperField } from './NumericStepperField';
-import { buildSliderMilestones, pickBpmSliderMilestones, SliderMilestoneLabels } from './sliderMilestoneLabels';
+import { buildSliderMilestones, pickBpmSliderMilestones } from './sliderMilestoneUtils';
+import SliderMilestoneLabels from './sliderMilestoneLabels';
 import './bpmInput.css';
 
 interface BpmInputProps {

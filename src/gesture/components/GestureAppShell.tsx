@@ -9,6 +9,7 @@ import GestureStatusBanner from './GestureStatusBanner';
 import GestureWordmark from './GestureWordmark';
 import PracticeTab from './PracticeTab';
 import type { GestureHomeTab, SessionConfig } from '../types';
+import { useGestureMediaWarmup } from '../hooks/useGestureMediaWarmup';
 
 interface GestureAppShellProps {
   onStartSession: (config: SessionConfig) => void;
@@ -18,6 +19,8 @@ export default function GestureAppShell({ onStartSession }: GestureAppShellProps
   const [tab, setTab] = useState<GestureHomeTab>('practice');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useGestureMediaWarmup();
 
   return (
     <div className="gesture-shell">
@@ -52,12 +55,13 @@ export default function GestureAppShell({ onStartSession }: GestureAppShellProps
         </GestureStatusBanner>
       ) : null}
 
-      {tab === 'practice' ? (
+      <div hidden={tab !== 'practice'} aria-hidden={tab !== 'practice'}>
         <PracticeTab
           onStart={onStartSession}
           onNeedCollections={() => setTab('collections')}
         />
-      ) : (
+      </div>
+      <div hidden={tab !== 'collections'} aria-hidden={tab !== 'collections'}>
         <CollectionsTab
           onMessage={(msg) => {
             setError(null);
@@ -68,7 +72,7 @@ export default function GestureAppShell({ onStartSession }: GestureAppShellProps
             setError(msg);
           }}
         />
-      )}
+      </div>
     </div>
   );
 }

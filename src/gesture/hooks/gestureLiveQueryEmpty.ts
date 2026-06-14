@@ -4,3 +4,5 @@ import type { GestureDrawRecord, GesturePack, GesturePackFile } from '../types';
 export const GESTURE_EMPTY_PACKS: GesturePack[] = [];
 export const GESTURE_EMPTY_PACK_FILES: GesturePackFile[] = [];
 export const GESTURE_EMPTY_DRAW_HISTORY: GestureDrawRecord[] = [];
+
+/** Prefer `resolveDexieLiveQuery` + a `*Hydrated` flag — never treat `undefined` as an empty library. */

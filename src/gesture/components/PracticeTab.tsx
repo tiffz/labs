@@ -10,17 +10,21 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import { useLiveQuery } from 'dexie-react-hooks';
 import PackCollectionCard from '../components/PackCollectionCard';
+import GestureTabLoading from '../components/GestureTabLoading';
 import { gestureDb } from '../db/gestureDb';
 import { readGestureDriveAccessToken } from '../drive/readGestureDriveAccessToken';
+import { isIncompleteUploadPack } from '../drive/gestureUploadActivity';
 import {
   GESTURE_EMPTY_DRAW_HISTORY,
   GESTURE_EMPTY_PACK_FILES,
 } from '../hooks/gestureLiveQueryEmpty';
-import { useGestureCollectionPreviewWarmup } from '../hooks/useGestureCollectionPreviewWarmup';
-import { useGesturePackStats } from '../hooks/useGesturePackStats';
+import { useGesturePackStats, resolveGesturePackCoverFileIds } from '../hooks/useGesturePackStats';
 import { useGesturePacks } from '../hooks/useGesturePacks';
-import { prefetchGestureSessionImages } from '../media/prefetchGestureSessionImages';
-import { isIncompleteUploadPack } from '../drive/gestureUploadActivity';
+import { useGestureSessionWarmup } from '../hooks/useGestureSessionWarmup';
+import {
+  isGestureSessionPhotoDisplayReady,
+  prefetchGestureSessionPhotoUntilReady,
+} from '../media/gestureSessionPhotoPipeline';
 import { buildGestureSessionQueueFromConfig } from '../session/gestureSessionQueueFromConfig';
 import type { SessionConfig } from '../types';
 
@@ -44,33 +48,11 @@ interface PracticeTabProps {
 }
 
 export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabProps): React.ReactElement {
-  const packs = useGesturePacks();
-  const { counts, ids, drawnSets } = useGesturePackStats();
-  const packFilesRaw = useLiveQuery(() => gestureDb.packFiles.toArray(), [], undefined);
-  const drawHistoryRaw = useLiveQuery(() => gestureDb.drawHistory.toArray(), [], undefined);
-  const packFiles = packFilesRaw ?? GESTURE_EMPTY_PACK_FILES;
-  const drawHistory = drawHistoryRaw ?? GESTURE_EMPTY_DRAW_HISTORY;
+  const { packs, packsHydrated } = useGesturePacks();
+  const { counts, coverIds, drawnSets, statsHydrated } = useGesturePackStats();
 
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
-
-  const readyPacks = useMemo(() => packs.filter((p) => !isIncompleteUploadPack(p)), [packs]);
-
-  const packIdsWithPhotos = useMemo(
-    () => readyPacks.filter((p) => (counts.get(p.id) ?? 0) > 0).map((p) => p.id),
-    [counts, readyPacks],
-  );
-
-  const previewFileIds = useMemo(() => {
-    const fileIds: string[] = [];
-    for (const packId of packIdsWithPhotos) {
-      fileIds.push(...(ids.get(packId) ?? []).slice(0, 4));
-    }
-    return fileIds;
-  }, [ids, packIdsWithPhotos]);
-
-  useGestureCollectionPreviewWarmup(previewFileIds);
-
   const [selectedPackIds, setSelectedPackIds] = useState<string[]>([]);
   const [durationSec, setDurationSec] = useState(60);
   const [timerPreset, setTimerPreset] = useState<TimerPreset>(60);
@@ -79,6 +61,28 @@ export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabP
   const [shuffle, setShuffle] = useState(true);
   const [sessionLengthMode, setSessionLengthMode] = useState<SessionLengthMode>('endless');
   const [photoLimit, setPhotoLimit] = useState('20');
+
+  const packFilesRaw = useLiveQuery(
+    () =>
+      selectedPackIds.length === 0
+        ? Promise.resolve(GESTURE_EMPTY_PACK_FILES)
+        : gestureDb.packFiles.where('packId').anyOf(selectedPackIds).toArray(),
+    [selectedPackIds.join(',')],
+    undefined,
+  );
+  const drawHistoryRaw = useLiveQuery(() => gestureDb.drawHistory.toArray(), [], undefined);
+  const packFiles = packFilesRaw ?? GESTURE_EMPTY_PACK_FILES;
+  const drawHistory = drawHistoryRaw ?? GESTURE_EMPTY_DRAW_HISTORY;
+
+  const readyPacks = useMemo(
+    () => packs.filter((p) => !isIncompleteUploadPack(p, counts.get(p.id) ?? 0)),
+    [counts, packs],
+  );
+
+  const packIdsWithPhotos = useMemo(
+    () => readyPacks.filter((p) => (counts.get(p.id) ?? 0) > 0).map((p) => p.id),
+    [counts, readyPacks],
+  );
 
   const didInitSelection = useRef(false);
   useEffect(() => {
@@ -106,34 +110,59 @@ export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabP
 
   const canStart = selectedPackIds.length > 0 && !starting;
 
-  const handleEnterRoom = async () => {
-    const sessionConfig: SessionConfig = {
+  const sessionConfigDraft = useMemo(
+    (): Omit<SessionConfig, 'queue'> => ({
       durationSec: effectiveDurationSec,
       prioritizeLeastDrawn,
       shuffle,
       packIds: selectedPackIds,
       maxPhotos: effectiveMaxPhotos,
-    };
+    }),
+    [effectiveDurationSec, effectiveMaxPhotos, prioritizeLeastDrawn, selectedPackIds, shuffle],
+  );
+
+  const { firstPhotoReady } = useGestureSessionWarmup({
+    config: sessionConfigDraft,
+    packFiles,
+    drawHistory,
+    enabled: selectedPackIds.length > 0,
+  });
+
+  const handleEnterRoom = async () => {
+    const sessionConfig: SessionConfig = { ...sessionConfigDraft };
     const queue = buildGestureSessionQueueFromConfig(sessionConfig, packFiles, drawHistory);
     if (queue.length === 0) {
       setStartError('Selected collections have no photos yet.');
       return;
     }
 
-    setStarting(true);
+    const first = queue[0]!;
+    const ready = isGestureSessionPhotoDisplayReady(first.driveFileId) || firstPhotoReady;
+
+    setStarting(!ready);
     setStartError(null);
     try {
-      const token = await readGestureDriveAccessToken();
-      const prefetch = await prefetchGestureSessionImages(token, queue);
-      if (!prefetch.ok) {
-        setStartError(prefetch.error);
-        return;
+      if (!isGestureSessionPhotoDisplayReady(first.driveFileId)) {
+        const token = await readGestureDriveAccessToken();
+        await prefetchGestureSessionPhotoUntilReady(token, first);
       }
       onStart({ ...sessionConfig, queue });
+    } catch (e) {
+      setStartError(e instanceof Error ? e.message : 'Could not load reference image.');
     } finally {
       setStarting(false);
     }
   };
+
+  const collectionsReady = packsHydrated && statsHydrated;
+
+  if (!collectionsReady) {
+    return (
+      <div className="gesture-tab-panel">
+        <GestureTabLoading />
+      </div>
+    );
+  }
 
   if (packIdsWithPhotos.length === 0) {
     return (
@@ -270,7 +299,7 @@ export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabP
             <PackCollectionCard
               key={pack.id}
               pack={pack}
-              driveFileIds={ids.get(pack.id) ?? []}
+              driveFileIds={resolveGesturePackCoverFileIds(pack, coverIds)}
               photoCount={counts.get(pack.id) ?? 0}
               drawnCount={drawnSets.get(pack.id)?.size ?? 0}
               mode="select"
@@ -294,7 +323,7 @@ export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabP
           disabled={!canStart}
           onClick={() => void handleEnterRoom()}
         >
-          {starting ? 'Preparing photos…' : 'Enter the room'}
+          {starting ? 'Preparing photo…' : 'Enter the room'}
         </Button>
       </Box>
     </div>

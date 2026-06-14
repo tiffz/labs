@@ -3,6 +3,16 @@ import { notifyGestureLocalChange } from '../db/gestureChangeBus';
 import type { GesturePack } from '../types';
 import { clearUploadManifestForPack, clearedUploadFields } from './gesturePackUpload';
 
+/** Indexed photos meet the upload ledger — upload flags can clear. */
+export function isGesturePackUploadResolved(
+  pack: GesturePack,
+  indexedPhotoCount: number,
+): boolean {
+  if (!pack.uploadStatus) return false;
+  const expected = pack.expectedFileCount ?? 0;
+  return expected > 0 && indexedPhotoCount >= expected;
+}
+
 /** True when indexed photos satisfy the upload ledger (manifest is local-only, not on Drive). */
 export function isGesturePackUploadComplete(
   pack: GesturePack,
@@ -11,6 +21,7 @@ export function isGesturePackUploadComplete(
   manifestTotal: number,
 ): boolean {
   if (!pack.uploadStatus) return false;
+  if (isGesturePackUploadResolved(pack, indexedPhotoCount)) return true;
 
   const expected = pack.expectedFileCount ?? (manifestTotal > 0 ? manifestTotal : 0);
   if (expected > 0 && indexedPhotoCount >= expected) return true;

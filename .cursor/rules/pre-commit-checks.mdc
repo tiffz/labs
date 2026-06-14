@@ -21,7 +21,22 @@ Minimum per-file checks when touching TypeScript:
 2. **TypeScript** — `npm run typecheck`
 3. **Knip** — `npm run knip` (delete any files/exports you made unused)
 
-If any check fails on code you touched, fix it before finishing. Pre-existing errors in unrelated files can be ignored.
+If any check fails on code you touched, fix it before finishing.
+
+## ESLint warnings are not optional
+
+`npm run lint` exits 0 with warnings, but **CI annotates every warning** and they accumulate into noise that hides real failures. Agents must:
+
+1. **Fix warnings in files you edit** — including `react-hooks/exhaustive-deps`, `react-refresh/only-export-components`, and `no-console` (use `console.warn` / `console.error`, or remove debug logs).
+2. **Do not split components + hooks/utilities in one `.tsx` file** — Fast Refresh warns when a file exports both components and non-components. Put hooks in `use*.ts`, helpers in `*Utils.ts`, keep `.tsx` for components only.
+3. **When fixing a file, clear its existing warnings** if the fix is local (a few lines). Do not leave "pre-existing" warnings in files you touched.
+4. **Verify clean lint on touched paths** before done:
+   ```bash
+   npx eslint <changed-files>
+   ```
+   Aim for **zero warnings** in changed files. Repo-wide warning cleanup is welcome when small; do not scope-creep large unrelated refactors.
+
+Do not defer lint hygiene with "pre-existing errors in unrelated files can be ignored" for files in your diff.
 
 ## Shell / provider / route wiring
 

@@ -1,19 +1,19 @@
-import { useCallback, useDeferredValue, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useMemo, useState } from 'react';
 import Typography from '@mui/material/Typography';
 import { ensureLabsGoogleAccessTokenForDrive } from '../../shared/google/labsGoogleDriveAccess';
 import AddCollectionActions from '../components/AddCollectionActions';
 import CollectionDropZone from '../components/CollectionDropZone';
 import CollectionUploadStatus from '../components/CollectionUploadStatus';
 import DeleteCollectionDialog from '../components/DeleteCollectionDialog';
+import GestureTabLoading from '../components/GestureTabLoading';
 import InterruptedUploadBanner from '../components/InterruptedUploadBanner';
 import PackCollectionCard from '../components/PackCollectionCard';
 import { refreshPackFolder } from '../drive/linkPackFolder';
 import { shouldShowUploadRecoveryBanner } from '../drive/gestureUploadActivity';
-import { useGestureCollectionPreviewWarmup } from '../hooks/useGestureCollectionPreviewWarmup';
-import { useGesturePackStats } from '../hooks/useGesturePackStats';
-import { useGesturePacks } from '../hooks/useGesturePacks';
 import { useGestureCollectionDrop } from '../hooks/useGestureCollectionDrop';
 import { useGestureCollectionUpload } from '../hooks/useGestureCollectionUpload';
+import { useGesturePackStats, resolveGesturePackCoverFileIds } from '../hooks/useGesturePackStats';
+import { useGesturePacks } from '../hooks/useGesturePacks';
 import type { GesturePack } from '../types';
 
 interface CollectionsTabProps {
@@ -33,29 +33,21 @@ export default function CollectionsTab({ onMessage, onError }: CollectionsTabPro
   const interactionDisabled = busy;
   const uploadSessionActive = upload.busy || upload.queuedCount > 0;
 
-  const packs = useGesturePacks();
+  const { packs, packsHydrated } = useGesturePacks();
   const filesByPack = useGesturePackStats();
   const deferredFilesByPack = useDeferredValue(filesByPack);
   const statsForGrid = uploadSessionActive ? deferredFilesByPack : filesByPack;
 
-  const previewSnapshotRef = useRef<string[]>([]);
-  const previewFileIds = useMemo(() => {
-    if (uploadSessionActive && previewSnapshotRef.current.length > 0) {
-      return previewSnapshotRef.current;
-    }
-    const fileIds: string[] = [];
-    for (const pack of packs) {
-      fileIds.push(...(filesByPack.ids.get(pack.id) ?? []).slice(0, 4));
-    }
-    previewSnapshotRef.current = fileIds;
-    return fileIds;
-  }, [filesByPack.ids, packs, uploadSessionActive]);
-
-  useGestureCollectionPreviewWarmup(uploadSessionActive ? [] : previewFileIds);
-
   const recoveryPacks = useMemo(
-    () => packs.filter((pack) => shouldShowUploadRecoveryBanner(pack, uploadSessionActive)),
-    [packs, uploadSessionActive],
+    () =>
+      packs.filter((pack) =>
+        shouldShowUploadRecoveryBanner(
+          pack,
+          uploadSessionActive,
+          filesByPack.counts.get(pack.id) ?? 0,
+        ),
+      ),
+    [filesByPack.counts, packs, uploadSessionActive],
   );
 
   const handleRefresh = useCallback(
@@ -115,9 +107,11 @@ export default function CollectionsTab({ onMessage, onError }: CollectionsTabPro
         />
       </div>
 
-      <CollectionDropZone compact={packs.length > 0} dragActive={dragActive} uploadActive={uploadSessionActive} />
+      <CollectionDropZone compact={packsHydrated && packs.length > 0} dragActive={dragActive} uploadActive={uploadSessionActive} />
 
-      {packs.length === 0 ? (
+      {!packsHydrated ? (
+        <GestureTabLoading />
+      ) : packs.length === 0 ? (
         <div className="gesture-empty-state">
           <Typography className="gesture-empty-title">No collections yet</Typography>
           <Typography className="gesture-empty-copy">
@@ -129,10 +123,7 @@ export default function CollectionsTab({ onMessage, onError }: CollectionsTabPro
         <div className="gesture-collection-grid">
           {packs.map((pack) => {
             const photoCount = statsForGrid.counts.get(pack.id) ?? 0;
-            const fileIds =
-              pack.uploadStatus === 'uploading'
-                ? (statsForGrid.ids.get(pack.id) ?? []).slice(0, 4)
-                : (statsForGrid.ids.get(pack.id) ?? []);
+            const fileIds = resolveGesturePackCoverFileIds(pack, statsForGrid.coverIds);
             return (
               <PackCollectionCard
                 key={pack.id}

@@ -186,7 +186,7 @@ When using `valueLabelDisplay="auto"` or `"on"`:
 
 - Sidebar playback speed shows values like `0.75×` in the stepper field — use the shared `shared-bpm-stepper--playback-speed` width tokens (`5.5ch`); do not cap the value field with a tight `max-width` in app CSS.
 - Milestone labels under the speed slider are positioned by rate (`left: %`), not `space-between`; do not re-center them in app overrides.
-- Use `SliderMilestoneLabels` + `buildSliderMilestones` for any new slider dropdown; do not render raw `<span>` lists inside `.shared-bpm-milestones`.
+- Use `SliderMilestoneLabels` + `buildSliderMilestones` from `sliderMilestoneUtils.ts` for any new slider dropdown; do not render raw `<span>` lists inside `.shared-bpm-milestones`.
 
 ### Playback field selects (`playbackFieldSelect.css`)
 

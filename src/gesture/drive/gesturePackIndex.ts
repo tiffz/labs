@@ -3,6 +3,7 @@ import { gestureDb } from '../db/gestureDb';
 import { notifyGestureLocalChange } from '../db/gestureChangeBus';
 import type { GesturePack, GesturePackFile } from '../types';
 import { isGestureReferenceImageFile } from './gestureImageFilter';
+import { reconcileStaleGestureUploadPacks } from './reconcileStaleGestureUploadPacks';
 
 function escapeDriveQueryString(id: string): string {
   return id.replace(/'/g, "\\'");
@@ -26,6 +27,19 @@ export async function listImagesInGesturePackFolder(
   return out;
 }
 
+export const GESTURE_PACK_COVER_COUNT = 4;
+
+/** First N image file ids sorted by name — stable collection card covers. */
+export function pickGesturePackCoverFileIds(
+  packFiles: GesturePackFile[],
+  limit = GESTURE_PACK_COVER_COUNT,
+): string[] {
+  return [...packFiles]
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+    .slice(0, limit)
+    .map((f) => f.driveFileId);
+}
+
 export function driveRowsToPackFiles(pack: GesturePack, images: DriveFileListRow[]): GesturePackFile[] {
   return images
     .filter((f) => f.id)
@@ -38,6 +52,14 @@ export function driveRowsToPackFiles(pack: GesturePack, images: DriveFileListRow
     }));
 }
 
+/** True when this pack should re-list its Drive folder (empty index or stale upload ledger). */
+export function packNeedsPhotoReindex(pack: GesturePack, indexedPhotoCount: number): boolean {
+  if (indexedPhotoCount === 0) return true;
+  if (!pack.uploadStatus) return false;
+  const expected = pack.expectedFileCount ?? 0;
+  return expected > 0 && indexedPhotoCount < expected;
+}
+
 /** Lists Drive folder contents and writes packFiles for one pack. */
 export async function indexGesturePackFromDrive(
   accessToken: string,
@@ -45,10 +67,11 @@ export async function indexGesturePackFromDrive(
 ): Promise<number> {
   const images = await listImagesInGesturePackFolder(accessToken, pack.driveFolderId);
   const packFiles = driveRowsToPackFiles(pack, images);
+  const coverFileIds = pickGesturePackCoverFileIds(packFiles);
   const now = new Date().toISOString();
 
   await gestureDb.transaction('rw', gestureDb.packs, gestureDb.packFiles, async () => {
-    await gestureDb.packs.put({ ...pack, lastIndexedAt: now });
+    await gestureDb.packs.put({ ...pack, coverFileIds, lastIndexedAt: now });
     const stale = await gestureDb.packFiles.where('packId').equals(pack.id).toArray();
     const freshIds = new Set(packFiles.map((f) => f.driveFileId));
     for (const row of stale) {
@@ -58,6 +81,7 @@ export async function indexGesturePackFromDrive(
   });
 
   notifyGestureLocalChange();
+  await reconcileStaleGestureUploadPacks();
   return packFiles.length;
 }
 
@@ -67,7 +91,7 @@ export type ReindexMissingPacksResult = {
   errors: string[];
 };
 
-/** Re-list Drive folders for packs that have no indexed photos (post-sync fallback). */
+/** Re-list Drive folders for packs missing photos or stuck below an expected upload total. */
 export async function reindexGesturePacksMissingPhotos(
   accessToken: string,
 ): Promise<ReindexMissingPacksResult> {
@@ -78,7 +102,9 @@ export async function reindexGesturePacksMissingPhotos(
     countByPack.set(f.packId, (countByPack.get(f.packId) ?? 0) + 1);
   }
 
-  const needsIndex = packs.filter((p) => (countByPack.get(p.id) ?? 0) === 0);
+  const needsIndex = packs.filter((pack) =>
+    packNeedsPhotoReindex(pack, countByPack.get(pack.id) ?? 0),
+  );
   let photoCount = 0;
   const errors: string[] = [];
 

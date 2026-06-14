@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { prefetchGestureSessionImages } from './prefetchGestureSessionImages';
 
-vi.mock('./gestureThumbnailLinkCache', () => ({
-  resolveGestureReferenceImageUrl: vi.fn(async () => 'https://example.com/thumb.jpg'),
+vi.mock('./gestureSessionPhotoPipeline', () => ({
+  isGestureSessionPhotoDisplayReady: vi.fn(() => false),
+  prefetchGestureSessionPhotoUntilReady: vi.fn(async () => undefined),
+  prefetchGestureSessionQueuePhoto: vi.fn(async () => undefined),
 }));
 
 vi.mock('./gestureImagePrefetchCache', () => ({
-  getCachedGestureImageUrl: vi.fn(() => null),
-  resolveGestureSessionImageSrc: vi.fn(async () => 'https://example.com/thumb.jpg'),
   retainGesturePrefetchKeys: vi.fn(),
 }));
 
@@ -23,14 +23,17 @@ describe('prefetchGestureSessionImages', () => {
   });
 
   it('prefetches the first photo before starting', async () => {
-    const { resolveGestureSessionImageSrc } = await import('./gestureImagePrefetchCache');
+    const { prefetchGestureSessionPhotoUntilReady } = await import('./gestureSessionPhotoPipeline');
     const result = await prefetchGestureSessionImages(null, queue);
     expect(result).toEqual({ ok: true });
-    expect(resolveGestureSessionImageSrc).toHaveBeenCalledWith(
-      null,
-      'a',
-      'https://example.com/thumb.jpg',
-      'A',
-    );
+    expect(prefetchGestureSessionPhotoUntilReady).toHaveBeenCalledWith(null, queue[0]);
+  });
+
+  it('skips required prefetch when requiredCount is zero', async () => {
+    const { prefetchGestureSessionPhotoUntilReady } = await import('./gestureSessionPhotoPipeline');
+    vi.mocked(prefetchGestureSessionPhotoUntilReady).mockClear();
+    const result = await prefetchGestureSessionImages(null, queue, { requiredCount: 0, aheadCount: 2 });
+    expect(result).toEqual({ ok: true });
+    expect(prefetchGestureSessionPhotoUntilReady).not.toHaveBeenCalled();
   });
 });

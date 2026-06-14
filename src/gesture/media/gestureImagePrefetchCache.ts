@@ -1,4 +1,8 @@
-const MAX_ENTRIES = 4;
+import { fetchAndCacheGestureMediaBlob, peekCachedGestureMediaUrl } from './gestureMediaFetch';
+import { probeImageUrlLoads } from './gestureDriveImageLoad';
+import { resolveReferenceImageDisplayWidth } from './gestureReferenceImageUrl';
+
+const MAX_ENTRIES = 8;
 const MAX_BYTES = 48 * 1024 * 1024;
 
 type PrefetchEntry = {
@@ -10,6 +14,8 @@ type PrefetchEntry = {
 
 const entries = new Map<string, PrefetchEntry>();
 let totalBytes = 0;
+/** Keys retained for the current session window — never LRU-evicted while retained. */
+let retainedKeys = new Set<string>();
 
 function touch(entry: PrefetchEntry): void {
   entry.lastUsedAt = Date.now();
@@ -35,6 +41,7 @@ function evictLru(): void {
     let oldestKey: string | null = null;
     let oldestAt = Infinity;
     for (const [key, entry] of entries) {
+      if (retainedKeys.has(key)) continue;
       if (entry.lastUsedAt < oldestAt) {
         oldestAt = entry.lastUsedAt;
         oldestKey = key;
@@ -51,7 +58,12 @@ function evictLru(): void {
   }
 }
 
-import { fetchDriveImageObjectUrl, probeImageUrlLoads } from './gestureDriveImageLoad';
+function rememberEntry(key: string, objectUrl: string, byteSize = 0): string {
+  entries.set(key, { key, objectUrl, byteSize, lastUsedAt: Date.now() });
+  totalBytes += byteSize;
+  evictLru();
+  return objectUrl;
+}
 
 /**
  * Cache a display URL for a queue item. Thumbnail links load via `<img>` (no CORS fetch).
@@ -69,21 +81,26 @@ export async function resolveGestureSessionImageSrc(
     return existing.objectUrl;
   }
 
+  const idbCached = peekCachedGestureMediaUrl(fileId, 'session');
+  if (idbCached) {
+    return rememberEntry(fileId, idbCached);
+  }
+
+  const width = resolveReferenceImageDisplayWidth();
+  const idbUrl = await fetchAndCacheGestureMediaBlob(accessToken, fileId, 'session', width, fileName);
+  if (idbUrl) {
+    return rememberEntry(fileId, idbUrl);
+  }
+
   if (await probeImageUrlLoads(remoteUrl)) {
-    entries.set(fileId, { key: fileId, objectUrl: remoteUrl, byteSize: 0, lastUsedAt: Date.now() });
-    evictLru();
-    return remoteUrl;
+    return rememberEntry(fileId, remoteUrl, 0);
   }
 
   if (!accessToken) {
     throw new Error('Could not load reference image. Sign in to Google and try again.');
   }
 
-  const objectUrl = await fetchDriveImageObjectUrl(accessToken, fileId, fileName);
-  const byteSize = 0;
-  entries.set(fileId, { key: fileId, objectUrl, byteSize, lastUsedAt: Date.now() });
-  evictLru();
-  return objectUrl;
+  throw new Error('Could not load reference image.');
 }
 
 /** @deprecated Prefer {@link resolveGestureSessionImageSrc} — Drive thumbnails reject CORS fetch. */
@@ -95,9 +112,7 @@ export async function prefetchGestureImageUrl(url: string, key: string): Promise
   }
 
   if (await probeImageUrlLoads(url)) {
-    entries.set(key, { key, objectUrl: url, byteSize: 0, lastUsedAt: Date.now() });
-    evictLru();
-    return url;
+    return rememberEntry(key, url, 0);
   }
 
   throw new Error('Could not load reference image.');
@@ -105,13 +120,16 @@ export async function prefetchGestureImageUrl(url: string, key: string): Promise
 
 export function getCachedGestureImageUrl(key: string): string | null {
   const entry = entries.get(key);
-  if (!entry) return null;
-  touch(entry);
-  return entry.objectUrl;
+  if (entry) {
+    touch(entry);
+    return entry.objectUrl;
+  }
+  return peekCachedGestureMediaUrl(key, 'session');
 }
 
 export function retainGesturePrefetchKeys(keepKeys: string[]): void {
-  evictOutside(new Set(keepKeys));
+  retainedKeys = new Set(keepKeys);
+  evictOutside(retainedKeys);
 }
 
 export function clearGestureImagePrefetchCache(): void {
@@ -122,6 +140,7 @@ export function clearGestureImagePrefetchCache(): void {
   }
   entries.clear();
   totalBytes = 0;
+  retainedKeys = new Set();
 }
 
 export async function preloadGestureImageViaElement(url: string): Promise<void> {

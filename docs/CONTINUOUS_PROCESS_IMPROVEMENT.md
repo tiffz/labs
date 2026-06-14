@@ -85,5 +85,6 @@ Do not turn every typo fix into a process initiative. Scale effort to session co
 | Encore chord paint selection bugs | `encore-originals-chord-paint.mdc` + `originals/DEVELOPMENT.md`                     |
 | Performance UX revision churn     | `PERFORMANCE_UX.md` checklist + `encore-performance-ux.mdc` + component map         |
 | UI shipped broken until manual QA | `presubmit` + `npm run build` for shell changes + `encore-performance-routes` smoke |
+| Dexie `undefined` → false empty   | `resolveDexieLiveQuery` + `dexie-live-query-empty-states.mdc` + `*Hydrated` flags   |
 
 Use these as templates for the **kind** of artifact to add next time—not as a mandate to duplicate structure.

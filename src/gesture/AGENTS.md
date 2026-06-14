@@ -12,12 +12,13 @@ Nested **`AGENTS.md`** for Gesture. Root policy: [`../../AGENTS.md`](../../AGENT
 
 ## Architecture
 
-- **Local:** Dexie (`gestureDb`) — packs, packFiles (metadata only), drawHistory, syncMeta, upload manifest.
+- **Local:** Dexie (`gestureDb`) — packs, packFiles (metadata only), drawHistory, syncMeta, upload manifest, **mediaCache** (preview/session JPEG blobs).
 - **Cloud:** `Tiff Zhang Labs/Gesture/progress.json` — packs, **packFiles** (photo index metadata), and drawHistory (no image bytes).
 - **Upload layout:** `Tiff Zhang Labs/Gesture/Reference Packs/{collection name}/` — app-created folders via `drive.file`.
-- **Images:** OAuth `driveResolveThumbnailLink` → display via `<img>` (never CORS `fetch` on thumbnail URLs). Fallback: `driveGetMediaArrayBuffer` → blob URL. Session cache: 4 entries (`gestureImagePrefetchCache`); collection previews: 320px cache (`gesturePreviewImageUrl`). Token: `readGestureDriveAccessToken`. **Practice start** prefetches the first photo (and warms the next two) before entering zen mode; the drawing timer does not run until the current photo is decoded.
+- **Images:** IndexedDB-backed **mediaCache** (memory LRU → Dexie → network). Session photos use **`gestureSessionPhotoPipeline`**: one photo prefetched + decoded at a time (first photo on Practice/debrief restart; current + next during zen). OAuth `driveResolveThumbnailLink` → `<img>` (never `fetch()` thumbnails). Fallback: `driveGetMediaArrayBuffer` → blob URL.
 - **Phases:** home (Practice / Collections tabs) → zen session → debrief (`App.tsx`).
-- **Pack stats:** `useGesturePackStats` — shared counts / file ids / drawn sets for both tabs.
+- **Pack stats:** `useGesturePackStats` — counts, cover ids (max 4), drawn sets; cards prefer synced `pack.coverFileIds`.
+- **Live queries:** `useGesturePacks()` exposes `packsHydrated`; never show empty collections while Dexie is still loading (`resolveDexieLiveQuery`, rule `dexie-live-query-empty-states.mdc`).
 - **Folder drop:** entire Collections tab accepts drops (`useGestureCollectionDrop`); traverse folders via `readDataTransferEntryFiles` (not `dataTransfer.files` alone).
 
 ## Pitfalls

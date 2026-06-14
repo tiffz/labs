@@ -3448,26 +3448,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-components-music-darbukatrainericonlink-tsx-darbuka-trainer-link-tooltip",
-    "name": "DARBUKA_TRAINER_LINK_TOOLTIP",
-    "path": "src/shared/components/music/DarbukaTrainerIconLink.tsx",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-ui",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "components",
-      "music",
-      "api",
-      "react"
-    ],
-    "appsUsing": [
-      "words"
-    ],
-    "exportType": "named",
-    "demoId": null
-  },
-  {
     "id": "src-shared-components-music-darbukatrainericonlink-tsx-darbukatrainericonlink",
     "name": "DarbukaTrainerIconLink",
     "path": "src/shared/components/music/DarbukaTrainerIconLink.tsx",
@@ -3505,45 +3485,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "type",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-components-music-darbukatrainericonlink-tsx-darbukatrainerlinkparams",
-    "name": "DarbukaTrainerLinkParams",
-    "path": "src/shared/components/music/DarbukaTrainerIconLink.tsx",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-ui",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "components",
-      "music",
-      "api",
-      "react"
-    ],
-    "appsUsing": [
-      "words"
-    ],
-    "exportType": "named",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-components-music-darbukatrainericonlink-tsx-resolvedarbukatrainerhref",
-    "name": "resolveDarbukaTrainerHref",
-    "path": "src/shared/components/music/DarbukaTrainerIconLink.tsx",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-ui",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "components",
-      "music",
-      "react"
-    ],
-    "appsUsing": [
-      "words"
-    ],
-    "exportType": "named",
     "demoId": null
   },
   {
@@ -4389,58 +4330,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": "shared-export-popover"
   },
   {
-    "id": "src-shared-components-music-slidermilestonelabels-tsx-buildslidermilestones",
-    "name": "buildSliderMilestones",
-    "path": "src/shared/components/music/sliderMilestoneLabels.tsx",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-ui",
-    "description": "Map slider tick values to horizontal positions under the rail (linear scale).",
-    "tags": [
-      "components",
-      "music",
-      "react"
-    ],
-    "appsUsing": [],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-components-music-slidermilestonelabels-tsx-pickbpmslidermilestones",
-    "name": "pickBpmSliderMilestones",
-    "path": "src/shared/components/music/sliderMilestoneLabels.tsx",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-ui",
-    "description": "BPM dropdown milestones: min, 100, 200, max — dropping ticks that would crowd (e.g. 200 + 220 when max is 220 in Words in Rhythm).",
-    "tags": [
-      "components",
-      "music",
-      "react"
-    ],
-    "appsUsing": [],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-components-music-slidermilestonelabels-tsx-slidermilestonealign",
-    "name": "SliderMilestoneAlign",
-    "path": "src/shared/components/music/sliderMilestoneLabels.tsx",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-ui",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "components",
-      "music",
-      "api",
-      "react"
-    ],
-    "appsUsing": [],
-    "exportType": "type",
-    "demoId": null
-  },
-  {
     "id": "src-shared-components-music-slidermilestonelabels-tsx-slidermilestoneitem",
     "name": "SliderMilestoneItem",
     "path": "src/shared/components/music/sliderMilestoneLabels.tsx",
@@ -4455,7 +4344,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [],
-    "exportType": "interface",
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -4473,7 +4362,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [],
-    "exportType": "function",
+    "exportType": "default",
     "demoId": null
   },
   {
@@ -4489,6 +4378,72 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api",
       "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-slidermilestoneutils-ts-buildslidermilestones",
+    "name": "buildSliderMilestones",
+    "path": "src/shared/components/music/sliderMilestoneUtils.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Map slider tick values to horizontal positions under the rail (linear scale).",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-slidermilestoneutils-ts-pickbpmslidermilestones",
+    "name": "pickBpmSliderMilestones",
+    "path": "src/shared/components/music/sliderMilestoneUtils.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "BPM dropdown milestones: min, 100, 200, max — dropping ticks that would crowd (e.g. 200 + 220 when max is 220 in Words in Rhythm).",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-slidermilestoneutils-ts-slidermilestonealign",
+    "name": "SliderMilestoneAlign",
+    "path": "src/shared/components/music/sliderMilestoneUtils.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-slidermilestoneutils-ts-slidermilestoneitem",
+    "name": "SliderMilestoneItem",
+    "path": "src/shared/components/music/sliderMilestoneUtils.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api"
     ],
     "appsUsing": [],
     "exportType": "interface",
@@ -4529,26 +4484,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-components-richtextlinkhover-tsx-richtextlinkhovercontroller",
-    "name": "RichTextLinkHoverController",
-    "path": "src/shared/components/RichTextLinkHover.tsx",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-ui",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "components",
-      "api",
-      "react"
-    ],
-    "appsUsing": [],
-    "exportType": "type",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-components-richtextlinkhover-tsx-richtextlinkhoverpopover",
+    "id": "src-shared-components-richtextlinkhoverpopover-tsx-richtextlinkhoverpopover",
     "name": "RichTextLinkHoverPopover",
-    "path": "src/shared/components/RichTextLinkHover.tsx",
+    "path": "src/shared/components/RichTextLinkHoverPopover.tsx",
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
@@ -4559,13 +4497,13 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [],
-    "exportType": "function",
+    "exportType": "default",
     "demoId": null
   },
   {
-    "id": "src-shared-components-richtextlinkhover-tsx-richtextlinkhoverpopoverprops",
+    "id": "src-shared-components-richtextlinkhoverpopover-tsx-richtextlinkhoverpopoverprops",
     "name": "RichTextLinkHoverPopoverProps",
-    "path": "src/shared/components/RichTextLinkHover.tsx",
+    "path": "src/shared/components/RichTextLinkHoverPopover.tsx",
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
@@ -4577,55 +4515,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-components-richtextlinkhover-tsx-richtextlinkhoverstate",
-    "name": "RichTextLinkHoverState",
-    "path": "src/shared/components/RichTextLinkHover.tsx",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-ui",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "components",
-      "api",
-      "react"
-    ],
-    "appsUsing": [],
-    "exportType": "type",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-components-richtextlinkhover-tsx-selectlinkdomrange",
-    "name": "selectLinkDomRange",
-    "path": "src/shared/components/RichTextLinkHover.tsx",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-ui",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "components",
-      "react"
-    ],
-    "appsUsing": [],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-components-richtextlinkhover-tsx-userichtextlinkhover",
-    "name": "useRichTextLinkHover",
-    "path": "src/shared/components/RichTextLinkHover.tsx",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-ui",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "components",
-      "react"
-    ],
-    "appsUsing": [],
-    "exportType": "function",
     "demoId": null
   },
   {
@@ -4654,6 +4543,68 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "zines"
     ],
     "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-userichtextlinkhover-ts-richtextlinkhovercontroller",
+    "name": "RichTextLinkHoverController",
+    "path": "src/shared/components/useRichTextLinkHover.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-userichtextlinkhover-ts-richtextlinkhoverstate",
+    "name": "RichTextLinkHoverState",
+    "path": "src/shared/components/useRichTextLinkHover.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-userichtextlinkhover-ts-selectlinkdomrange",
+    "name": "selectLinkDomRange",
+    "path": "src/shared/components/useRichTextLinkHover.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-userichtextlinkhover-ts-userichtextlinkhover",
+    "name": "useRichTextLinkHover",
+    "path": "src/shared/components/useRichTextLinkHover.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -4895,6 +4846,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "piano"
     ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-dexie-resolvedexielivequery-ts-resolvedexielivequery",
+    "name": "resolveDexieLiveQuery",
+    "path": "src/shared/dexie/resolveDexieLiveQuery.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Dexie `useLiveQuery` returns `undefined` until the first emission — not an empty result. Use this helper so UI can distinguish loading from a real empty library. Reference: Encore `songsHydrated` in `EncoreLibraryContext.tsx`.",
+    "tags": [],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },

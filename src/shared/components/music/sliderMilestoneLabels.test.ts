@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildSliderMilestones, pickBpmSliderMilestones } from './sliderMilestoneLabels';
+import { buildSliderMilestones, pickBpmSliderMilestones } from './sliderMilestoneUtils';
 
 describe('pickBpmSliderMilestones', () => {
   it('keeps full spread for wide Beat / Stanza ranges', () => {

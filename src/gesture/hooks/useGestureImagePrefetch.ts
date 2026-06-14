@@ -7,16 +7,11 @@ import {
   resolveGestureSessionImageSrc,
   retainGesturePrefetchKeys,
 } from '../media/gestureImagePrefetchCache';
+import {
+  isGestureSessionPhotoDisplayReady,
+  markGestureSessionPhotoDisplayReady,
+} from '../media/gestureSessionPhotoPipeline';
 import type { SessionQueueItem } from '../types';
-
-async function prefetchQueueItem(
-  accessToken: string | null,
-  item: SessionQueueItem,
-): Promise<void> {
-  if (getCachedGestureImageUrl(item.driveFileId)) return;
-  const remoteUrl = await resolveGestureReferenceImageUrl(accessToken, item.driveFileId);
-  await resolveGestureSessionImageSrc(accessToken, item.driveFileId, remoteUrl, item.name);
-}
 
 export function useGestureImagePrefetch(
   queue: SessionQueueItem[],
@@ -26,15 +21,17 @@ export function useGestureImagePrefetch(
   const current = queue[index] ?? null;
   const [src, setSrc] = useState<string | null>(null);
   const [displayReady, setDisplayReady] = useState(false);
+  /** Keep the last decoded photo visible while the next one loads (avoids blank/broken frames). */
+  const [visibleSrc, setVisibleSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const windowKeys = useMemo(() => {
     const keys: string[] = [];
-    for (let i = index; i <= index + 2 && i < queue.length; i += 1) {
-      keys.push(queue[i]!.driveFileId);
-    }
-    if (index > 0) keys.unshift(queue[index - 1]!.driveFileId);
+    const cur = queue[index];
+    if (cur) keys.push(cur.driveFileId);
+    const next = queue[index + 1];
+    if (next) keys.push(next.driveFileId);
     return keys;
   }, [index, queue]);
 
@@ -47,22 +44,33 @@ export function useGestureImagePrefetch(
     if (!current) {
       setSrc(null);
       setDisplayReady(false);
+      setVisibleSrc(null);
       setLoading(false);
       setError(null);
       return;
     }
 
     const key = current.driveFileId;
+    setError(null);
+
+    if (isGestureSessionPhotoDisplayReady(key)) {
+      const cached = getCachedGestureImageUrl(key);
+      if (cached) {
+        setSrc(cached);
+        setDisplayReady(true);
+        setLoading(false);
+        return;
+      }
+    }
+
     const cached = getCachedGestureImageUrl(key);
     if (cached) {
       setSrc(cached);
       setLoading(false);
-      setError(null);
     } else {
       setSrc(null);
       setDisplayReady(false);
       setLoading(true);
-      setError(null);
     }
 
     void (async () => {
@@ -78,10 +86,6 @@ export function useGestureImagePrefetch(
           setSrc(displayUrl);
           setLoading(false);
         }
-        const warmItems = queue.slice(index + 1, index + 3);
-        await Promise.all(
-          warmItems.map((item) => prefetchQueueItem(accessToken, item).catch(() => undefined)),
-        );
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : 'Could not load image.');
@@ -100,10 +104,17 @@ export function useGestureImagePrefetch(
       setDisplayReady(false);
       return;
     }
+    if (isGestureSessionPhotoDisplayReady(current?.driveFileId ?? '')) {
+      setDisplayReady(true);
+      return;
+    }
     let cancelled = false;
     void preloadGestureImageViaElement(src)
       .then(() => {
-        if (!cancelled) setDisplayReady(true);
+        if (!cancelled) {
+          if (current?.driveFileId) markGestureSessionPhotoDisplayReady(current.driveFileId);
+          setDisplayReady(true);
+        }
       })
       .catch(() => {
         if (!cancelled) {
@@ -114,9 +125,20 @@ export function useGestureImagePrefetch(
     return () => {
       cancelled = true;
     };
-  }, [src]);
+  }, [current?.driveFileId, src]);
+
+  useEffect(() => {
+    if (displayReady && src) {
+      setVisibleSrc(src);
+    }
+  }, [displayReady, src]);
 
   const ready = Boolean(src) && displayReady;
 
-  return { src, ready, loading: loading || (Boolean(src) && !displayReady), error };
+  return {
+    src: visibleSrc,
+    ready,
+    loading: loading || (Boolean(src) && !displayReady),
+    error,
+  };
 }

@@ -3,9 +3,6 @@ import { resolveDarbukaTrainerHref, type DarbukaTrainerLinkParams } from '../../
 import { DARBUKA_TRAINER_LINK_TOOLTIP } from '../../rhythm/buildDarbukaEditUrl';
 import './darbukaTrainerIconLink.css';
 
-export type { DarbukaTrainerLinkParams };
-export { DARBUKA_TRAINER_LINK_TOOLTIP, resolveDarbukaTrainerHref };
-
 export type DarbukaTrainerIconLinkProps = {
   href?: string | null;
   params?: DarbukaTrainerLinkParams;

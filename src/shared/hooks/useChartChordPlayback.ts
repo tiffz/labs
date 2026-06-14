@@ -98,7 +98,7 @@ export function useChartChordPlayback({
     setPlaying(false);
     setPlaybackBeatTime(0);
     onActiveStepChange?.(null);
-  }, [onActiveStepChange]);
+  }, [instrumentSessionRef, onActiveStepChange]);
 
   const playMeasure = useCallback(
     async (step: ChartPlaybackStep, generation: number) => {
@@ -159,7 +159,7 @@ export function useChartChordPlayback({
         });
       }
     },
-    [tempo],
+    [instrumentSessionRef, tempo],
   );
 
   const start = useCallback(() => {
@@ -198,7 +198,7 @@ export function useChartChordPlayback({
       runStep(idx);
       stepIndexRef.current += 1;
     }, chartPlaybackMeasureDurationMs(tempo));
-  }, [onActiveStepChange, playMeasure, steps, stop, tempo]);
+  }, [instrumentSessionRef, onActiveStepChange, playMeasure, steps, stop, tempo]);
 
   useEffect(() => {
     if (!playing) {
@@ -239,7 +239,7 @@ export function useChartChordPlayback({
       drumPlayerRef.current?.destroy();
       drumPlayerRef.current = null;
     };
-  }, []);
+  }, [instrumentSessionRef]);
 
   return {
     playing,
