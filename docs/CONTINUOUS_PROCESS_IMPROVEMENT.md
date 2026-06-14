@@ -39,6 +39,12 @@ Structure findings as **symptom → root cause class → durable fix** (same fie
 - `test gap` — logic covered but not user-visible integration
 - `ux revision churn` — many human cycles on basic gestalt/theme parity; fix with scoped rule + living checklist
 - `hmr false confidence` — presubmit green but dev shell broken after hot reload; hard-refresh affected route
+- `wrong-io-tier` — preview UI used session-weight fetch (e.g. alt=media before thumbnails); fix with tier policy + regression test
+- `ux-gestalt` — related controls separated or parallel surfaces use different shells/verbs
+- `ux-redundancy` — duplicate copy, progress bars, or controls in one viewport
+- `ux-visual-weight` — excessive borders, shadows, card-in-card nesting
+- `ux-spec-violation` — padding, contrast, alignment grid breaks
+- `ux-journey-overload` — unclear primary action; too many equal CTAs
 
 Add a new class only when several future bugs would share it.
 
@@ -52,9 +58,9 @@ Prefer **enforcement + one canonical doc** over long narrative. In priority orde
 4. **PR template / workflow** — handoff fields humans and agents reuse.
 5. **ADR** — only for **material** cross-cutting decisions ([`docs/adr/README.md`](adr/README.md)).
 
-Implement in the **same PR** when the user asked to codify; otherwise **offer** a short prioritized list and let the user choose.
+**Codify on second occurrence:** if the same **root cause class** shows up twice in one session or across two sessions, **implement** a durable artifact (test, rule, smoke, doc section) in the same PR when practical — do not wait for a third incident or only add a backlog row.
 
-**Codify on second occurrence:** if the same **root cause class** shows up in two sessions (or two bugs in one session), default to proposing a durable artifact (test, rule, or smoke) without waiting for a third incident.
+Implement in the **same PR** when the user asked to codify **or** the root cause class hit twice; otherwise **offer** a short prioritized list and let the user choose.
 
 ## Handoff types
 
@@ -68,10 +74,12 @@ Implement in the **same PR** when the user asked to codify; otherwise **offer** 
 
 Before closing a substantial session:
 
-1. **Offer** a brief retrospective (bullets, not an essay)—even if the user did not ask.
-2. If improvements are clear and low-risk, **propose** specific files (rule, doc section, smoke test).
-3. If the user wants them codified, **implement** and run `npm run presubmit`.
-4. Record what landed in the PR **Process improvements** section when opening a PR.
+1. **Deliver** a retrospective using the skill template (bullets, not an essay)—**required**, not optional.
+2. If improvements are clear and low-risk, **propose** specific files (rule, doc section, smoke test, `UX_AGENT_GUIDE` section).
+3. If the user asked to codify—or the same root cause class appeared twice—**implement** and run `npm run presubmit`.
+4. Record what landed in the PR **Process improvements** section; deferrals in [`PROCESS_BACKLOG.md`](PROCESS_BACKLOG.md).
+
+Always-on rule: [`.cursor/rules/session-retrospective-mandatory.mdc`](../.cursor/rules/session-retrospective-mandatory.mdc).
 
 Do not turn every typo fix into a process initiative. Scale effort to session complexity.
 

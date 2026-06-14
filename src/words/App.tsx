@@ -237,6 +237,7 @@ const App: React.FC = () => {
       scrollSectionIntoNotationView,
       playSectionLoop,
       stopPlaybackImmediately,
+      setActiveSectionLoopId,
     ]
   );
 

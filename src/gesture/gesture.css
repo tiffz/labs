@@ -1511,6 +1511,11 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
+.gesture-zen-complete-btn:hover:not(:disabled) {
+  color: var(--gesture-accent-soft);
+  background: color-mix(in srgb, var(--gesture-accent) 22%, transparent);
+}
+
 .gesture-zen-timer-ring {
   position: relative;
   display: inline-flex;

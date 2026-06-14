@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { ensureYouTubeIframeApi, readYouTubeIframeApi, type YtPlayerInstance } from './labsYouTubeIframeApi';
 
 export interface LabsYouTubePlaybackState {
   currentTime: number;
@@ -33,76 +34,7 @@ export interface LabsYouTubePlayerProps {
   iframeClassName?: string;
 }
 
-type YtInstance = {
-  playVideo: () => void;
-  pauseVideo: () => void;
-  unMute: () => void;
-  seekTo: (seconds: number, allowSeekAhead?: boolean) => void;
-  getCurrentTime: () => number;
-  getDuration: () => number;
-  getPlayerState: () => number;
-  getPlaybackRate: () => number;
-  setPlaybackRate: (rate: number) => void;
-  setVolume: (volume: number) => void;
-  getVolume: () => number;
-  mute: () => void;
-  destroy: () => void;
-};
-
-type YTApi = {
-  Player: new (
-    elementId: string,
-    options: {
-      videoId: string;
-      playerVars?: Record<string, number | string>;
-      events?: {
-        onReady?: () => void;
-        onStateChange?: () => void;
-        onError?: (event: { data: number }) => void;
-      };
-    },
-  ) => YtInstance;
-  PlayerState: { PLAYING: number; ENDED: number; PAUSED: number; BUFFERING: number; CUED: number };
-};
-
-type WindowWithYt = Window & { YT?: YTApi; onYouTubeIframeAPIReady?: () => void };
-
-function readYt(): YTApi | undefined {
-  return (window as WindowWithYt).YT;
-}
-
-let youtubeApiPromise: Promise<void> | null = null;
-
-export function ensureYouTubeIframeApi(): Promise<void> {
-  if (readYt()?.Player) {
-    return Promise.resolve();
-  }
-  if (youtubeApiPromise) {
-    return youtubeApiPromise;
-  }
-  youtubeApiPromise = new Promise((resolve) => {
-    const existing = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
-    if (!existing) {
-      const script = document.createElement('script');
-      script.src = 'https://www.youtube.com/iframe_api';
-      script.async = true;
-      document.body.appendChild(script);
-    }
-    const w = window as WindowWithYt;
-    const previousReady = w.onYouTubeIframeAPIReady;
-    w.onYouTubeIframeAPIReady = () => {
-      previousReady?.();
-      resolve();
-    };
-    const waitForApi = window.setInterval(() => {
-      if (readYt()?.Player) {
-        window.clearInterval(waitForApi);
-        resolve();
-      }
-    }, 100);
-  });
-  return youtubeApiPromise;
-}
+type YtInstance = YtPlayerInstance;
 
 const LabsYouTubePlayer: React.FC<LabsYouTubePlayerProps> = ({
   videoId,
@@ -142,7 +74,7 @@ const LabsYouTubePlayer: React.FC<LabsYouTubePlayerProps> = ({
 
   const emitState = useCallback(() => {
     const player = playerRef.current;
-    const YT = readYt();
+    const YT = readYouTubeIframeApi();
     if (!player || !onStateChangeRef.current || !YT) return;
     const st = player.getPlayerState();
     const ENDED = YT.PlayerState?.ENDED ?? 0;
@@ -166,13 +98,13 @@ const LabsYouTubePlayer: React.FC<LabsYouTubePlayerProps> = ({
     let mounted = true;
     ensureYouTubeIframeApi()
       .then(() => {
-        if (!mounted || !readYt()?.Player) return;
+        if (!mounted || !readYouTubeIframeApi()?.Player) return;
         if (!hostRef.current) return;
         hostRef.current.innerHTML = '';
         const mountNode = document.createElement('div');
         mountNode.id = playerDomId;
         hostRef.current.appendChild(mountNode);
-        const ytApi = readYt()!;
+        const ytApi = readYouTubeIframeApi()!;
         const origin =
           typeof window !== 'undefined' && window.location?.origin ? window.location.origin : undefined;
         const player = new ytApi.Player(playerDomId, {

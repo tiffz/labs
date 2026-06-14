@@ -9,8 +9,6 @@ import type { WheelPoint } from '../../scoring/gamutOverlap';
 import GamutLandscapeCanvas from './GamutLandscapeCanvas';
 import GamutWheelCanvas from './GamutWheelCanvas';
 
-const DEFAULT_DEFORM = { h: 0, c: 0, scale: 1 };
-
 interface GamutFinderViewProps {
   challenge: GamutChallenge;
   level: number;
@@ -127,5 +125,3 @@ export default function GamutFinderView({
     </div>
   );
 }
-
-export { DEFAULT_DEFORM as defaultGamutDeform };

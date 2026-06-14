@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
+import CheckIcon from '@mui/icons-material/Check';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
 import CloseIcon from '@mui/icons-material/Close';
@@ -91,10 +92,9 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
     });
   }, [config, onExit, photosCompleted, photosSkipped, totalMs]);
 
-  const logCurrentPhoto = useCallback(async () => {
+  const logCurrentPhoto = useCallback(async (durationMs: number) => {
     if (!current || loggedIndexRef.current === index) return;
     loggedIndexRef.current = index;
-    const durationMs = config.durationSec * 1000;
     await recordGestureDraw({
       driveFileId: current.driveFileId,
       packId: current.packId,
@@ -102,7 +102,7 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
     });
     setPhotosCompleted((n) => n + 1);
     setTotalMs((ms) => ms + durationMs);
-  }, [config.durationSec, current, index]);
+  }, [current, index]);
 
   const advance = useCallback(
     async (mode: 'complete' | 'skip') => {
@@ -111,7 +111,8 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
       timer.resetForNext(config.durationSec);
       try {
         if (mode === 'complete' && current) {
-          await logCurrentPhoto();
+          const durationMs = Math.max(1, timer.elapsedMs);
+          await logCurrentPhoto(durationMs);
         } else if (mode === 'skip' && current) {
           setPhotosSkipped((n) => n + 1);
         }
@@ -129,6 +130,7 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
     [config.durationSec, current, finishSession, index, logCurrentPhoto, queue.length, timer],
   );
 
+  const markDone = useCallback(() => void advance('complete'), [advance]);
   const goNext = useCallback(() => void advance('skip'), [advance]);
   const goBack = useCallback(() => {
     if (index <= 0 || advancingRef.current) return;
@@ -147,6 +149,7 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
   useSessionKeyboard(
     {
       onPause: timer.togglePause,
+      onMarkDone: markDone,
       onSkip: goNext,
       onBack: goBack,
       onExit: () => {
@@ -244,6 +247,17 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
               </span>
             </ZenTimerRing>
           </button>
+        </AppTooltip>
+        <AppTooltip title="Mark done (Enter)">
+          <IconButton
+            aria-label="Mark drawing complete and go to next photo"
+            onClick={markDone}
+            className="gesture-zen-control-btn gesture-zen-complete-btn"
+            size="small"
+            disabled={!ready}
+          >
+            <CheckIcon fontSize="small" />
+          </IconButton>
         </AppTooltip>
         <AppTooltip title="Skip (N or →)">
           <IconButton

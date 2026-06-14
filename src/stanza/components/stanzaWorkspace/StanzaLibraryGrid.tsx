@@ -4,7 +4,8 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import type { StanzaSong } from '../../db/stanzaDb';
 import { youtubeMqThumbnailUrl } from '../../utils/stanzaYoutubeMeta';
-import StanzaLibrarySourceBadge, { stanzaLibrarySourceKind } from '../StanzaLibrarySourceBadge';
+import StanzaLibrarySourceBadge from '../StanzaLibrarySourceBadge';
+import { stanzaLibrarySourceKind } from '../stanzaLibrarySourceKind';
 import StanzaLibraryThumb from '../StanzaLibraryThumb';
 import { songHasPractice } from './stanzaWorkspaceHelpers';
 

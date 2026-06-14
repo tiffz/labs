@@ -18,7 +18,8 @@ This repo follows the [Google TypeScript Style Guide](https://google.github.io/s
 
 ## UI and Accessibility Rules
 
-- Reuse shared primitives from `src/shared/components` before creating app-local variants.
+Agent UX workflow: [`docs/UX_AGENT_GUIDE.md`](docs/UX_AGENT_GUIDE.md) + skill `labs-ux-journey`. This section remains the human canonical detail for parallelism and density.
+
 - Use MUI primitives for complex interaction surfaces (`Dialog`, `Menu`, `Popover`, `Autocomplete`, `Select`).
 - Preserve app-specific identity through theme tokens, not custom focus/interaction mechanics.
 - Keyboard access, visible focus states, and semantic labeling are required in touched UI code.

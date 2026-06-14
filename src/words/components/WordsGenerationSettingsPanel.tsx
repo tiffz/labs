@@ -6,8 +6,8 @@ import {
   ALIGNMENT_HELP,
   ALIGNMENT_STRENGTH_OPTIONS,
   PHRASING_OPTIONS,
-  WordsSettingHelpLabel,
-} from './WordsSettingHelpLabel';
+} from './wordsSettingHelpCopy';
+import { WordsSettingHelpLabel } from './WordsSettingHelpLabel';
 import {
   BIAS_LEVELS,
   NOTE_VALUE_LABELS,

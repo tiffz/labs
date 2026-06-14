@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 
 export type SessionKeyboardHandlers = {
   onPause: () => void;
+  onMarkDone: () => void;
   onSkip: () => void;
   onBack: () => void;
   onExit: () => void;
@@ -16,6 +17,10 @@ export function useSessionKeyboard(handlers: SessionKeyboardHandlers, enabled: b
         case ' ':
           e.preventDefault();
           handlers.onPause();
+          break;
+        case 'Enter':
+          e.preventDefault();
+          handlers.onMarkDone();
           break;
         case 'ArrowRight':
         case 'n':
