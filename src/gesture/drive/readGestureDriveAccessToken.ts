@@ -4,15 +4,30 @@ import {
 } from '../../shared/google/encoreGoogleTokenStorage';
 import { ensureLabsGoogleAccessTokenForDrive } from '../../shared/google/labsGoogleDriveAccess';
 
-/** Best-effort Drive token for background image loads (previews, session). */
+let tokenInFlight: Promise<string | null> | null = null;
+
+/** Best-effort Drive token for background image loads (previews, session). Single-flight per tab. */
 export async function readGestureDriveAccessToken(): Promise<string | null> {
-  try {
-    return await ensureLabsGoogleAccessTokenForDrive({ interactive: false });
-  } catch {
-    const session = readPersistedGoogleSession();
-    if (session && isPersistedSessionStillFresh(session)) {
-      return session.accessToken;
+  if (tokenInFlight) return tokenInFlight;
+
+  tokenInFlight = (async () => {
+    try {
+      return await ensureLabsGoogleAccessTokenForDrive({ interactive: false });
+    } catch {
+      const session = readPersistedGoogleSession();
+      if (session && isPersistedSessionStillFresh(session)) {
+        return session.accessToken;
+      }
+      return session?.accessToken ?? null;
+    } finally {
+      tokenInFlight = null;
     }
-    return session?.accessToken ?? null;
-  }
+  })();
+
+  return tokenInFlight;
+}
+
+/** Clear single-flight state after sign-in/out (optional). */
+export function resetGestureDriveAccessTokenFlight(): void {
+  tokenInFlight = null;
 }

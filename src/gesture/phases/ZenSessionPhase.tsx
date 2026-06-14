@@ -66,6 +66,7 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
     queue,
     headIndex: index,
     aheadIndex,
+    accessToken,
     enabled: queue.length > 0,
   });
 

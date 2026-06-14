@@ -15739,7 +15739,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Refresh the Google access token via the session BFF (HttpOnly cookie auth). Single-flight: concurrent callers share one request.",
+    "description": "Refresh the Google access token via the session BFF (HttpOnly cookie auth). Single-flight: concurrent callers share one request. After 429, blocks retries briefly.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

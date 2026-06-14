@@ -6,10 +6,12 @@ import {
   preloadGestureImageViaElement,
   resolveGestureSessionImageSrc,
   retainGesturePrefetchKeys,
+  dropGesturePrefetchEntry,
 } from '../media/gestureImagePrefetchCache';
 import {
   isGestureSessionPhotoDisplayReady,
   markGestureSessionPhotoDisplayReady,
+  unmarkGestureSessionPhotoDisplayReady,
 } from '../media/gestureSessionPhotoPipeline';
 import type { SessionQueueItem } from '../types';
 
@@ -28,6 +30,8 @@ export function useGestureImagePrefetch(
 
   const windowKeys = useMemo(() => {
     const keys: string[] = [];
+    const prev = queue[index - 1];
+    if (prev) keys.push(prev.driveFileId);
     const cur = queue[index];
     if (cur) keys.push(cur.driveFileId);
     const next = queue[index + 1];
@@ -52,20 +56,22 @@ export function useGestureImagePrefetch(
 
     const key = current.driveFileId;
     setError(null);
-
-    if (isGestureSessionPhotoDisplayReady(key)) {
-      const cached = getCachedGestureImageUrl(key);
-      if (cached) {
-        setSrc(cached);
-        setDisplayReady(true);
-        setLoading(false);
-        return;
-      }
-    }
+    setVisibleSrc(null);
 
     const cached = getCachedGestureImageUrl(key);
+    if (isGestureSessionPhotoDisplayReady(key) && cached) {
+      setSrc(cached);
+      setDisplayReady(true);
+      setLoading(false);
+      return;
+    }
+    if (isGestureSessionPhotoDisplayReady(key) && !cached) {
+      unmarkGestureSessionPhotoDisplayReady(key);
+    }
+
     if (cached) {
       setSrc(cached);
+      setDisplayReady(false);
       setLoading(false);
     } else {
       setSrc(null);
@@ -100,25 +106,24 @@ export function useGestureImagePrefetch(
   }, [accessToken, current, index, queue]);
 
   useEffect(() => {
-    if (!src) {
+    if (!src || !current?.driveFileId) {
       setDisplayReady(false);
-      return;
-    }
-    if (isGestureSessionPhotoDisplayReady(current?.driveFileId ?? '')) {
-      setDisplayReady(true);
       return;
     }
     let cancelled = false;
     void preloadGestureImageViaElement(src)
       .then(() => {
         if (!cancelled) {
-          if (current?.driveFileId) markGestureSessionPhotoDisplayReady(current.driveFileId);
+          markGestureSessionPhotoDisplayReady(current.driveFileId);
           setDisplayReady(true);
         }
       })
       .catch(() => {
         if (!cancelled) {
+          unmarkGestureSessionPhotoDisplayReady(current.driveFileId);
+          dropGesturePrefetchEntry(current.driveFileId);
           setDisplayReady(false);
+          setVisibleSrc(null);
           setError('Could not load image.');
         }
       });

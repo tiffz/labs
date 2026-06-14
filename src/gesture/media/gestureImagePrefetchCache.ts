@@ -10,6 +10,11 @@ type PrefetchEntry = {
   objectUrl: string;
   byteSize: number;
   lastUsedAt: number;
+  /**
+   * When false, `objectUrl` is owned by `gestureMediaCache` (or is https) — never revoke here.
+   * Prefetch entries are references; revoking on LRU break breaks back navigation.
+   */
+  ownsRevocableBlob: boolean;
 };
 
 const entries = new Map<string, PrefetchEntry>();
@@ -26,13 +31,9 @@ function isRevocableObjectUrl(url: string): boolean {
 }
 
 function evictOutside(keepKeys: Set<string>): void {
-  for (const [key, entry] of entries) {
+  for (const key of [...entries.keys()]) {
     if (keepKeys.has(key)) continue;
-    if (isRevocableObjectUrl(entry.objectUrl)) {
-      URL.revokeObjectURL(entry.objectUrl);
-    }
-    totalBytes -= entry.byteSize;
-    entries.delete(key);
+    dropPrefetchEntry(key);
   }
 }
 
@@ -48,18 +49,46 @@ function evictLru(): void {
       }
     }
     if (!oldestKey) break;
-    const victim = entries.get(oldestKey);
-    if (!victim) break;
-    if (isRevocableObjectUrl(victim.objectUrl)) {
-      URL.revokeObjectURL(victim.objectUrl);
-    }
-    totalBytes -= victim.byteSize;
-    entries.delete(oldestKey);
+    dropPrefetchEntry(oldestKey);
   }
 }
 
-function rememberEntry(key: string, objectUrl: string, byteSize = 0): string {
-  entries.set(key, { key, objectUrl, byteSize, lastUsedAt: Date.now() });
+function dropPrefetchEntry(key: string): void {
+  const entry = entries.get(key);
+  if (!entry) return;
+  if (entry.ownsRevocableBlob && isRevocableObjectUrl(entry.objectUrl)) {
+    URL.revokeObjectURL(entry.objectUrl);
+  }
+  totalBytes -= entry.byteSize;
+  entries.delete(key);
+}
+
+/** Drop a stale prefetch row when media cache evicts the underlying blob. */
+export function dropGesturePrefetchEntry(fileId: string): void {
+  dropPrefetchEntry(fileId);
+}
+
+function syncSessionBlobEntry(fileId: string, entry: PrefetchEntry): string | null {
+  if (!entry.objectUrl.startsWith('blob:')) {
+    touch(entry);
+    return entry.objectUrl;
+  }
+  const live = peekCachedGestureMediaUrl(fileId, 'session');
+  if (live === entry.objectUrl) {
+    touch(entry);
+    return entry.objectUrl;
+  }
+  dropPrefetchEntry(fileId);
+  return live;
+}
+
+function rememberEntry(
+  key: string,
+  objectUrl: string,
+  byteSize = 0,
+  ownsRevocableBlob = false,
+): string {
+  entries.set(key, { key, objectUrl, byteSize, lastUsedAt: Date.now(), ownsRevocableBlob });
   totalBytes += byteSize;
   evictLru();
   return objectUrl;
@@ -77,8 +106,8 @@ export async function resolveGestureSessionImageSrc(
 ): Promise<string> {
   const existing = entries.get(fileId);
   if (existing) {
-    touch(existing);
-    return existing.objectUrl;
+    const live = syncSessionBlobEntry(fileId, existing);
+    if (live) return live;
   }
 
   const idbCached = peekCachedGestureMediaUrl(fileId, 'session');
@@ -86,14 +115,14 @@ export async function resolveGestureSessionImageSrc(
     return rememberEntry(fileId, idbCached);
   }
 
+  if (await probeImageUrlLoads(remoteUrl)) {
+    return rememberEntry(fileId, remoteUrl, 0);
+  }
+
   const width = resolveReferenceImageDisplayWidth();
   const idbUrl = await fetchAndCacheGestureMediaBlob(accessToken, fileId, 'session', width, fileName);
   if (idbUrl) {
     return rememberEntry(fileId, idbUrl);
-  }
-
-  if (await probeImageUrlLoads(remoteUrl)) {
-    return rememberEntry(fileId, remoteUrl, 0);
   }
 
   if (!accessToken) {
@@ -121,8 +150,8 @@ export async function prefetchGestureImageUrl(url: string, key: string): Promise
 export function getCachedGestureImageUrl(key: string): string | null {
   const entry = entries.get(key);
   if (entry) {
-    touch(entry);
-    return entry.objectUrl;
+    const live = syncSessionBlobEntry(key, entry);
+    if (live) return live;
   }
   return peekCachedGestureMediaUrl(key, 'session');
 }
@@ -133,13 +162,9 @@ export function retainGesturePrefetchKeys(keepKeys: string[]): void {
 }
 
 export function clearGestureImagePrefetchCache(): void {
-  for (const entry of entries.values()) {
-    if (isRevocableObjectUrl(entry.objectUrl)) {
-      URL.revokeObjectURL(entry.objectUrl);
-    }
+  for (const key of [...entries.keys()]) {
+    dropPrefetchEntry(key);
   }
-  entries.clear();
-  totalBytes = 0;
   retainedKeys = new Set();
 }
 

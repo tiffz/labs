@@ -12,6 +12,8 @@ type UseGestureSessionPhotoPipelineOptions = {
   headIndex?: number;
   /** When set, also prefetch this index (typically current + 1 during zen). */
   aheadIndex?: number | null;
+  /** Reuse zen session token — avoids parallel BFF refresh storms. */
+  accessToken?: string | null;
   enabled?: boolean;
 };
 
@@ -23,6 +25,7 @@ export function useGestureSessionPhotoPipeline({
   queue,
   headIndex = 0,
   aheadIndex = null,
+  accessToken = null,
   enabled = true,
 }: UseGestureSessionPhotoPipelineOptions): {
   headReady: boolean;
@@ -49,7 +52,9 @@ export function useGestureSessionPhotoPipeline({
     let cancelled = false;
 
     void (async () => {
-      const token = await readGestureDriveAccessToken();
+      const token =
+        accessToken ??
+        (await readGestureDriveAccessToken());
       if (cancelled || runIdRef.current !== runId) return;
 
       const activeQueue = queueRef.current;
@@ -68,7 +73,7 @@ export function useGestureSessionPhotoPipeline({
     return () => {
       cancelled = true;
     };
-  }, [aheadIndex, enabled, headId, headIndex, queueKey]);
+  }, [accessToken, aheadIndex, enabled, headId, headIndex, queueKey]);
 
   return { headReady };
 }

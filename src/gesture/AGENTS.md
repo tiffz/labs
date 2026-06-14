@@ -29,7 +29,7 @@ Canonical module: [`media/gestureMediaPolicy.ts`](media/gestureMediaPolicy.ts). 
 | **Preview** | Collection card 4-up strips (~320px) | memory/IDB → OAuth thumbnail https → public thumbnail → alt=media blob | Start with full-file download; `fetch()` lh3 URLs |
 | **Session** | Zen drawing (1280–1920px)            | prefetch LRU → IDB → thumbnail `<img>` → alt=media blob                | Bulk prefetch entire queue                        |
 
-- **Blob URL owner:** `gestureMediaCache` only — `gesturePreviewImageUrl` stores https URLs; never retain revoked `blob:` copies.
+- **Blob URL owner:** `gestureMediaCache` only — prefetch LRU holds references; never `revokeObjectURL` on cache-owned blobs.
 - **Display-ready:** `gestureSessionPhotoPipeline` — decode one photo at a time (head on Practice/debrief; current + next in zen).
 - **Warmup:** `useGestureMediaWarmup` (cover thumbs, idle); `useGestureSessionWarmup` (first session photo on Practice tab).
 
@@ -41,6 +41,9 @@ Canonical module: [`media/gestureMediaPolicy.ts`](media/gestureMediaPolicy.ts). 
 - Pack file index syncs via `progress.json`; after pull, **auto-reindex from Drive** fills any collection still missing photos (legacy backups or linked folders). Runs for all signed-in users, not only Drive backup testers.
 - Shared Google token storage with Encore/Stanza/Scales — do not narrow OAuth scopes in Gesture-only code paths.
 - **Skip vs complete:** skip does not write `drawHistory`; timer completion and **Mark done** (checkmark / Enter) record a draw with elapsed time.
+- **Session back:** prefetch window keeps prev + current + next; prefetch must not revoke `gestureMediaCache` blob URLs on LRU eviction.
+- **Session resolve order:** thumbnail `<img>` probe before OAuth `alt=media`; validate prefetch rows against live media cache blobs.
+- **Drive token:** `readGestureDriveAccessToken` is single-flight; pass zen `accessToken` into session pipeline to avoid BFF refresh storms.
 - **Queue order:** `prioritizeLeastDrawn` sorts by `sessionCount` ascending (never-drawn first); endless sessions never exclude photos.
 - **Styles:** prefer `gesture.css` + `--gesture-*` tokens over ad-hoc hex in `sx` (zen error uses `--gesture-zen-error`).
 
