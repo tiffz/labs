@@ -102,12 +102,16 @@ function bffOrigin(): string {
 }
 
 let refreshInFlight: Promise<LabsGoogleBffTokenResponse> | null = null;
+let refreshBlockedUntilMs = 0;
 
 /**
  * Refresh the Google access token via the session BFF (HttpOnly cookie auth).
- * Single-flight: concurrent callers share one request.
+ * Single-flight: concurrent callers share one request. After 429, blocks retries briefly.
  */
 export async function refreshGoogleAccessTokenViaBff(): Promise<LabsGoogleBffTokenResponse> {
+  if (Date.now() < refreshBlockedUntilMs) {
+    throw new Error('Session refresh temporarily rate limited.');
+  }
   if (refreshInFlight) return refreshInFlight;
   const bffUrl = readLabsSessionBffUrl();
   if (!bffUrl) throw new Error('Session BFF is not configured.');
@@ -118,6 +122,10 @@ export async function refreshGoogleAccessTokenViaBff(): Promise<LabsGoogleBffTok
       credentials: 'include',
     });
     const body = (await res.json().catch(() => ({}))) as { error?: string } & Partial<LabsGoogleBffTokenResponse>;
+    if (res.status === 429) {
+      refreshBlockedUntilMs = Date.now() + 30_000;
+      throw new Error(body.error ?? 'Session refresh rate limited.');
+    }
     if (!res.ok) {
       throw new Error(body.error ?? `Session refresh failed (${res.status}).`);
     }
