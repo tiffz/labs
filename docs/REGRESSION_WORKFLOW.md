@@ -138,12 +138,12 @@ Baseline updates are never "auto-approved". Every changed baseline must be revie
 
 ### Agent default behavior
 
-Agents must follow this sequence on any UI or audio-impacting change:
+Agents must follow [`docs/VISUAL_REGRESSION_AGENT.md`](VISUAL_REGRESSION_AGENT.md) and skill `labs-visual-regression`. Summary:
 
-1. Run regression checks.
-2. Review screenshot/audio diffs directly.
-3. Keep clearly expected updates.
-4. Escalate uncertain diffs to the user before finalizing.
+1. Run or download regression artifacts when CI warns or shared UI changed.
+2. Review screenshot/audio diffs directly (actual, expected, diff — not blind updates).
+3. Update baselines from **Linux CI actuals** when diffs are expected; use `scripts/import-visual-baselines-from-artifacts.mjs`.
+4. Escalate uncertain diffs, error banners, or multi-app drift without a shared-layer explanation.
 
 Escalation is required when:
 
