@@ -1,0 +1,32 @@
+---
+description: Agent workflow for screenshot visual regression review and baseline updates
+globs:
+  - e2e/visual/**
+  - e2e/routeRegistry.ts
+  - scripts/import-visual-baselines-from-artifacts.mjs
+  - scripts/refresh-visual-baselines.mjs
+  - docs/REGRESSION_WORKFLOW.md
+  - docs/VISUAL_REGRESSION_AGENT.md
+---
+
+# Visual regression (agents)
+
+Read [`docs/VISUAL_REGRESSION_AGENT.md`](../../docs/VISUAL_REGRESSION_AGENT.md) and skill [`labs-visual-regression`](../skills/labs-visual-regression/SKILL.md) before updating `e2e/visual/apps.visual.spec.ts-snapshots/`.
+
+## Must do
+
+1. **Review** actual + expected + diff (CI artifact or local `test-results/`) — never blind `--update-snapshots`.
+2. **Classify** each failure: expected · platform drift · bug · uncertain.
+3. **Update from Linux CI** when approved: `node scripts/import-visual-baselines-from-artifacts.mjs <test-results-dir>`.
+4. **Commit audit trail** — list each PNG and why it changed.
+5. **Escalate** error banners, blank content, overlap, or unexplained multi-app diffs.
+
+## Must not
+
+- Update baselines to hide a layout bug.
+- Run full `--update-snapshots` on macOS for repo-wide refresh (Linux CI is canonical).
+- Skip review when `src/shared/**` or `/ui/**` changed.
+
+## CI warning = agent todo
+
+When CI emits `Visual regression (advisory)`, download `visual-regression-artifacts` and run the playbook.
