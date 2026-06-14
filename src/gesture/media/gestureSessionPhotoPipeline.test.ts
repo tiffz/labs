@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   clearGestureSessionPhotoDisplayReady,
   isGestureSessionPhotoDisplayReady,
+  markGestureSessionPhotoDisplayReady,
   prefetchGestureSessionPhotoUntilReady,
 } from './gestureSessionPhotoPipeline';
 
@@ -36,5 +37,46 @@ describe('gestureSessionPhotoPipeline', () => {
       prefetchGestureSessionPhotoUntilReady('token', item),
     ]);
     expect(preloadGestureImageViaElement).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-fetches when display-ready cache URL fails decode', async () => {
+    const {
+      getCachedGestureImageUrl,
+      preloadGestureImageViaElement,
+      resolveGestureSessionImageSrc,
+    } = await import('./gestureImagePrefetchCache');
+    const item = { driveFileId: 'c', packId: 'p1', name: 'C.jpg' };
+
+    vi.mocked(getCachedGestureImageUrl)
+      .mockReturnValueOnce('blob:stale')
+      .mockReturnValueOnce(null);
+    vi.mocked(preloadGestureImageViaElement)
+      .mockRejectedValueOnce(new Error('stale blob'))
+      .mockResolvedValueOnce(undefined);
+    vi.mocked(resolveGestureSessionImageSrc).mockResolvedValue('https://example.com/fresh.jpg');
+
+    markGestureSessionPhotoDisplayReady('c');
+
+    await prefetchGestureSessionPhotoUntilReady('token', item);
+
+    expect(isGestureSessionPhotoDisplayReady('c')).toBe(true);
+    expect(resolveGestureSessionImageSrc).toHaveBeenCalled();
+    expect(preloadGestureImageViaElement).toHaveBeenCalledTimes(2);
+  });
+
+  it('unmarks display-ready when cached URL is missing', async () => {
+    const { getCachedGestureImageUrl, resolveGestureSessionImageSrc } = await import(
+      './gestureImagePrefetchCache'
+    );
+    const item = { driveFileId: 'd', packId: 'p1', name: 'D.jpg' };
+
+    markGestureSessionPhotoDisplayReady('d');
+    vi.mocked(getCachedGestureImageUrl).mockReturnValue(null);
+    vi.mocked(resolveGestureSessionImageSrc).mockResolvedValue('https://example.com/d.jpg');
+
+    await prefetchGestureSessionPhotoUntilReady('token', item);
+
+    expect(isGestureSessionPhotoDisplayReady('d')).toBe(true);
+    expect(resolveGestureSessionImageSrc).toHaveBeenCalled();
   });
 });

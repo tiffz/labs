@@ -180,8 +180,14 @@ jobs:
     # blocking once the thresholds in vite.config.ts are comfortable.
     - name: Collect test coverage
       if: always()
-      continue-on-error: true
-      run: npm run test:coverage
+      run: |
+        set +e
+        npm run test:coverage
+        code=$?
+        if [ "$code" -ne 0 ]; then
+          echo "::warning title=Coverage (advisory)::Coverage collection exited with code $code (non-blocking)."
+        fi
+        exit 0
 
     - name: Upload coverage report
       if: always()
@@ -212,15 +218,23 @@ jobs:
     # separate re-run needed here.
 
     - name: Run visual regression screenshots
-      # Visual regressions are advisory, not blocking. Linux Playwright rendering
-      # drifts on its own (fonts, anti-aliasing, catalog layout) and refreshing
-      # baselines on every drift would gate unrelated PRs. Artifacts are still
-      # uploaded below so you can inspect diffs when intentionally changing UI.
-      continue-on-error: true
-      run: npm run test:e2e:visual
+      # Advisory, not merge-blocking. Linux Playwright rendering drifts on its own
+      # (fonts, anti-aliasing, catalog layout). Only run on cross-cutting diffs —
+      # scoped single-app PRs skip this (~3m) and avoid noisy snapshot failures
+      # unrelated to the change. Failures emit a warning (not ##[error]) so the
+      # job summary stays green while artifacts remain for intentional baseline review.
+      if: steps.e2e-scope.outputs.mode == 'full'
+      run: |
+        set +e
+        npm run test:e2e:visual
+        code=$?
+        if [ "$code" -ne 0 ]; then
+          echo "::warning title=Visual regression (advisory)::Snapshot mismatches (exit $code). See visual-regression-artifacts. Update baselines intentionally per docs/REGRESSION_WORKFLOW.md"
+        fi
+        exit 0
 
     - name: Upload visual regression artifacts
-      if: always()
+      if: always() && steps.e2e-scope.outputs.mode == 'full'
       uses: actions/upload-artifact@v6
       with:
         name: visual-regression-artifacts
