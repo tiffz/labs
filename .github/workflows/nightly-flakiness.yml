@@ -73,6 +73,9 @@ jobs:
       - name: Run e2e smoke
         run: npm run test:e2e:smoke
 
+      - name: Run visual regression baselines
+        run: npm run test:e2e:visual
+
       - name: Upload Playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v6
