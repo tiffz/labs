@@ -292,6 +292,12 @@ body {
   background-image: url('/icons/favicon-forms.svg');
 }
 
+.app-icon.gesture {
+  background-color: #e8e4dc;
+  background-image: url('/icons/favicon-gesture.svg');
+  background-size: 100% 100%;
+}
+
 .app-icon.beat {
   background-image: url('/icons/favicon-beat.svg');
 }

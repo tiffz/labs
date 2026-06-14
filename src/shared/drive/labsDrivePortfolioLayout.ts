@@ -17,6 +17,7 @@ import {
 export const LABS_DRIVE_ROOT_FOLDER = 'Tiff Zhang Labs';
 export const LABS_DRIVE_APP_FOLDER_SCALES = 'LearnYourScales';
 export const LABS_DRIVE_APP_FOLDER_STANZA = 'Stanza';
+export const LABS_DRIVE_APP_FOLDER_GESTURE = 'Gesture';
 export const LABS_DRIVE_PROGRESS_FILE = 'progress.json';
 
 function qFolderInParent(name: string, parentId: string): string {

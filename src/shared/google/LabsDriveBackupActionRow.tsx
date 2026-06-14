@@ -1,4 +1,7 @@
+import type { ReactNode } from 'react';
+import BackupOutlinedIcon from '@mui/icons-material/BackupOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import RestoreOutlinedIcon from '@mui/icons-material/RestoreOutlined';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
@@ -23,6 +26,8 @@ export type LabsDriveBackupActionRowProps = {
   variant?: 'google-outlined' | 'contained';
   googleButtonClassName?: string;
   googleButtonSx?: SxProps<Theme>;
+  /** Optional trailing control (e.g. Organize) aligned to the right of backup actions. */
+  trailing?: ReactNode;
 };
 
 export default function LabsDriveBackupActionRow(props: LabsDriveBackupActionRowProps) {
@@ -40,6 +45,7 @@ export default function LabsDriveBackupActionRow(props: LabsDriveBackupActionRow
     variant = 'contained',
     googleButtonClassName,
     googleButtonSx,
+    trailing,
   } = props;
 
   const primaryAction = needsSignIn ? onSignIn ?? onBackup : onBackup;
@@ -60,49 +66,67 @@ export default function LabsDriveBackupActionRow(props: LabsDriveBackupActionRow
 
   return (
     <Stack spacing={1} useFlexGap sx={{ width: '100%' }}>
-      <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap" useFlexGap>
-        {variant === 'google-outlined' ? (
-          <LabsGoogleSignInButton
-            className={googleButtonClassName}
-            disabled={disabled}
-            onClick={() => void primaryAction()}
-            aria-label={primaryAriaLabel}
-            label={primaryLabel}
-            sx={{
-              borderRadius: 999,
-              minHeight: 36,
-              ...googleButtonSx,
-            }}
-          />
-        ) : (
-          <Button
-            variant="contained"
-            size="small"
-            disabled={disabled}
-            onClick={() => void primaryAction()}
-            aria-label={primaryAriaLabel}
-            startIcon={busy ? <CircularProgress size={14} color="inherit" aria-hidden /> : undefined}
-          >
-            {primaryLabel}
-          </Button>
-        )}
-        <AppTooltip
-          title={
-            canRestore ? 'Restore from Drive or a local snapshot' : 'Restore is available after your first backup'
-          }
-        >
-          <span>
+      <Stack
+        direction="row"
+        spacing={0.5}
+        alignItems="center"
+        justifyContent="space-between"
+        flexWrap="wrap"
+        useFlexGap
+        sx={{ width: '100%' }}
+      >
+        <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap" useFlexGap>
+          {variant === 'google-outlined' ? (
+            <LabsGoogleSignInButton
+              className={googleButtonClassName}
+              disabled={disabled}
+              onClick={() => void primaryAction()}
+              aria-label={primaryAriaLabel}
+              label={primaryLabel}
+              sx={{
+                borderRadius: 999,
+                minHeight: 36,
+                ...googleButtonSx,
+              }}
+            />
+          ) : (
             <Button
+              variant="contained"
               size="small"
-              variant="text"
-              disabled={disabled || !canRestore}
-              onClick={onOpenRestore}
-              sx={{ minWidth: 0, px: 1 }}
+              disabled={disabled}
+              onClick={() => void primaryAction()}
+              aria-label={primaryAriaLabel}
+              startIcon={
+                busy ? (
+                  <CircularProgress size={14} color="inherit" aria-hidden />
+                ) : (
+                  <BackupOutlinedIcon fontSize="small" aria-hidden />
+                )
+              }
             >
-              Restore
+              {primaryLabel}
             </Button>
-          </span>
-        </AppTooltip>
+          )}
+          <AppTooltip
+            title={
+              canRestore ? 'Restore from Drive or a local snapshot' : 'Restore is available after your first backup'
+            }
+          >
+            <span>
+              <Button
+                size="small"
+                variant="text"
+                disabled={disabled || !canRestore}
+                onClick={onOpenRestore}
+                startIcon={<RestoreOutlinedIcon fontSize="small" aria-hidden />}
+                sx={{ minWidth: 0, px: 1 }}
+              >
+                Restore
+              </Button>
+            </span>
+          </AppTooltip>
+        </Stack>
+        {trailing ? <Stack direction="row" alignItems="center">{trailing}</Stack> : null}
       </Stack>
       {driveFolderUrl ? (
         <Link

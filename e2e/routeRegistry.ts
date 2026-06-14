@@ -152,6 +152,14 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     notes: 'smoke only',
   },
   {
+    route: '/gesture/',
+    title: /The Gesture Room/i,
+    visibleSelector: '#root',
+    smoke: true,
+    visual: false,
+    notes: 'smoke only',
+  },
+  {
     route: '/ui/',
     title: /UI Catalog/i,
     visibleSelector: '#root',

@@ -17,6 +17,7 @@
     '/drums/':   { name: 'drums',   group: 'Music' },
     '/encore/':  { name: 'encore',  group: 'Music' },
     '/forms/':   { name: 'forms',   group: 'Art & Writing' },
+    '/gesture/': { name: 'gesture', group: 'Art & Writing' },
     '/melodia/': { name: 'melodia', group: 'Music' },
     '/piano/':   { name: 'piano',   group: 'Music' },
     '/pitch/':   { name: 'pitch',   group: 'Music' },

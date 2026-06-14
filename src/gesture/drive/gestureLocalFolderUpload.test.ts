@@ -1,0 +1,33 @@
+import { describe, expect, it } from 'vitest';
+import {
+  collectLocalFolderUploadImages,
+  inferLocalFolderName,
+  isLocalFolderUpload,
+} from './gestureLocalFolderUpload';
+
+function fileWithPath(path: string, type = 'image/jpeg'): File {
+  const name = path.split('/').pop() ?? path;
+  const file = new File(['x'], name, { type });
+  Object.defineProperty(file, 'webkitRelativePath', { value: path, configurable: true });
+  return file;
+}
+
+describe('gestureLocalFolderUpload', () => {
+  it('detects directory uploads', () => {
+    expect(isLocalFolderUpload([fileWithPath('Hands/a.jpg')])).toBe(true);
+    expect(isLocalFolderUpload([new File(['x'], 'a.jpg', { type: 'image/jpeg' })])).toBe(false);
+  });
+
+  it('infers the root folder name', () => {
+    expect(inferLocalFolderName([fileWithPath('Life drawing/refs/01.jpg')])).toBe('Life drawing');
+  });
+
+  it('collects images from nested paths', () => {
+    const files = [
+      fileWithPath('Hands/a.jpg'),
+      fileWithPath('Hands/notes.txt', 'text/plain'),
+      fileWithPath('Hands/nested/b.png', 'image/png'),
+    ];
+    expect(collectLocalFolderUploadImages(files)).toHaveLength(2);
+  });
+});

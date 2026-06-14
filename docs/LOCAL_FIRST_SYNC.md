@@ -4,11 +4,12 @@ Canonical reference for how Labs micro-apps sync user data with Google Drive. So
 
 ## Apps with Drive sync
 
-| App        | Model                                           | Drive location                                         | Local store        |
-| ---------- | ----------------------------------------------- | ------------------------------------------------------ | ------------------ |
-| **Encore** | Continuous bidirectional repertoire + Originals | `Encore_App/`                                          | Dexie (`encoreDb`) |
-| **Stanza** | Auto pull/push portfolio backup                 | `Tiff Zhang Labs/Stanza/progress.json` + `stem_audio/` | Dexie (`stanzaDb`) |
-| **Scales** | Same as Stanza                                  | `Tiff Zhang Labs/LearnYourScales/progress.json`        | Progress reducer   |
+| App         | Model                                           | Drive location                                         | Local store         |
+| ----------- | ----------------------------------------------- | ------------------------------------------------------ | ------------------- |
+| **Encore**  | Continuous bidirectional repertoire + Originals | `Encore_App/`                                          | Dexie (`encoreDb`)  |
+| **Stanza**  | Auto pull/push portfolio backup                 | `Tiff Zhang Labs/Stanza/progress.json` + `stem_audio/` | Dexie (`stanzaDb`)  |
+| **Scales**  | Same as Stanza                                  | `Tiff Zhang Labs/LearnYourScales/progress.json`        | Progress reducer    |
+| **Gesture** | Portfolio backup (packs + draw history)         | `Tiff Zhang Labs/Gesture/progress.json`                | Dexie (`gestureDb`) |
 
 No other micro-apps use Drive JSON backup today. Encore also uses Drive for uploads, picker, public snapshot, and guest reads — separate from the JSON sync loops below.
 

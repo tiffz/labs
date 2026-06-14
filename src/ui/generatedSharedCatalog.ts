@@ -5005,6 +5005,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-computefilemd5hex-ts-computefilemd5hex",
+    "name": "computeFileMd5Hex",
+    "path": "src/shared/drive/computeFileMd5Hex.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "MD5 hex digest aligned with Google Drive `md5Checksum` (lowercase hex).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-drivefetch-ts-drivecreateanyonereaderpermission",
     "name": "driveCreateAnyoneReaderPermission",
     "path": "src/shared/drive/driveFetch.ts",
@@ -5200,6 +5213,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Move a file so it is filed under `newParentId`. Removes prior parent folder ids except any that already match `newParentId`. Uses Drive `addParents` / `removeParents` (v3).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-drivefetch-ts-drivepatchfiledescription",
+    "name": "drivePatchFileDescription",
+    "path": "src/shared/drive/driveFetch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Update a file or folder description (visible in Drive UI).",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -5624,6 +5650,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveportfoliolayout-ts-labs-drive-app-folder-gesture",
+    "name": "LABS_DRIVE_APP_FOLDER_GESTURE",
+    "path": "src/shared/drive/labsDrivePortfolioLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Portfolio Drive layout for Tiff Zhang Labs micro-apps (separate from Encore's `Encore_App` tree). Requesting `https://www.googleapis.com/auth/drive.file` only (via the app's GIS token request). This app cannot see files created by other apps or the user's personal documents outside what Drive's `drive.file` scope allows — only files the app creates or opens through this flow.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
     "demoId": null
   },
   {
@@ -16739,6 +16780,83 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Ensures callers never wait forever if a third-party OAuth callback never fires (blocked popups / iframes / stalled GIS).",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-readdatatransferentryfiles-ts-collectdatatransferdropsnapshot",
+    "name": "collectDataTransferDropSnapshot",
+    "path": "src/shared/utils/readDataTransferEntryFiles.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Snapshots drop payload synchronously during the `drop` handler. Must run before any `await`.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-readdatatransferentryfiles-ts-datatransferdrop",
+    "name": "DataTransferDrop",
+    "path": "src/shared/utils/readDataTransferEntryFiles.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "utils",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-readdatatransferentryfiles-ts-datatransferdropsnapshot",
+    "name": "DataTransferDropSnapshot",
+    "path": "src/shared/utils/readDataTransferEntryFiles.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Captured synchronously during `drop` — DataTransfer is cleared after the event turn.",
+    "tags": [
+      "utils",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-readdatatransferentryfiles-ts-readdatatransferdrop",
+    "name": "readDataTransferDrop",
+    "path": "src/shared/utils/readDataTransferEntryFiles.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Reads dropped files from a DataTransfer, traversing folders when the browser exposes `webkitGetAsEntry` (required for folder drag-and-drop).",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-readdatatransferentryfiles-ts-readdatatransferdropfromsnapshot",
+    "name": "readDataTransferDropFromSnapshot",
+    "path": "src/shared/utils/readDataTransferEntryFiles.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Traverses a synchronous snapshot (folder tree reads may await).",
     "tags": [
       "utils"
     ],

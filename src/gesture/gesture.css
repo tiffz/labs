@@ -1,0 +1,1400 @@
+/* The Gesture Room — Linen design. Tokens: design/linenTheme.ts · DESIGN.md */
+
+.gesture-app {
+  --gesture-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --gesture-display: 'Fraunces', 'Cormorant Garamond', Georgia, serif;
+  --gesture-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  /* Linen fallbacks (mirrors linenTheme.ts) */
+  --gesture-bg: #e8e4dc;
+  --gesture-card-bg: #f7f5f1;
+  --gesture-ink: #2f332c;
+  --gesture-text-muted: #6f6c65;
+  --gesture-border: rgba(47, 51, 44, 0.09);
+  --gesture-border-strong: rgba(47, 51, 44, 0.15);
+  --gesture-accent: #5f8566;
+  --gesture-accent-hover: #4d7154;
+  --gesture-accent-soft: #d8e0d9;
+  --gesture-accent-warm: #e5dfd6;
+  --gesture-accent-alt: #9a958d;
+  --gesture-surface-muted: transparent;
+  --gesture-shadow: none;
+  --gesture-shadow-soft: none;
+  --gesture-card-shadow: none;
+  --gesture-zen-bg: #2a2d28;
+  --gesture-preview-bg: rgba(95, 133, 102, 0.06);
+  --gesture-preview-cell: rgba(216, 224, 217, 0.55);
+  --gesture-preview-placeholder: #ebe8e2;
+  --gesture-app-bg:
+    radial-gradient(
+      ellipse 120% 70% at 100% -15%,
+      rgba(216, 224, 217, 0.45),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 85% 55% at -5% 105%,
+      rgba(229, 223, 214, 0.55),
+      transparent 50%
+    ),
+    #e8e4dc;
+  --gesture-title-font: var(--gesture-serif);
+  --gesture-title-size: clamp(1.85rem, 4vw, 2.25rem);
+  --gesture-title-weight: 500;
+  --gesture-title-tracking: -0.015em;
+  --gesture-title-transform: none;
+  --gesture-shell-max: 44rem;
+  --gesture-card-radius: 0.625rem;
+  --gesture-card-border-width: 0;
+  --gesture-button-radius: 0.625rem;
+  --gesture-grid-min: 14rem;
+  --gesture-preview-aspect: 3 / 2;
+  --gesture-preview-gap: 5px;
+  --gesture-tab-weight: 500;
+  --gesture-tab-transform: none;
+  --gesture-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  min-height: 100dvh;
+  background: var(--gesture-app-bg);
+  background-attachment: fixed;
+  color: var(--gesture-ink);
+  font-family: var(--gesture-sans);
+  font-feature-settings:
+    'kern' 1,
+    'liga' 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+.gesture-main {
+  min-height: 100dvh;
+}
+
+.gesture-shell {
+  max-width: var(--gesture-shell-max);
+  margin: 0 auto;
+  padding: 2.75rem 1.35rem 2.75rem;
+}
+
+.gesture-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 2.25rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--gesture-border);
+}
+
+/* Site logo lockup — Fraunces text-only (gallery option 8) */
+.gesture-wordmark {
+  margin: 0;
+}
+
+.gesture-wordmark-name {
+  font-family: var(--gesture-display);
+  font-size: clamp(1.65rem, 4.2vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: var(--gesture-ink);
+  font-feature-settings: 'kern' 1;
+  min-width: 0;
+}
+
+.gesture-wordmark-the {
+  font-weight: 500;
+  color: color-mix(in srgb, var(--gesture-ink) 88%, var(--gesture-text-muted));
+}
+
+.gesture-title {
+  margin: 0;
+  font-family: var(--gesture-title-font, var(--gesture-serif));
+  font-size: var(--gesture-title-size);
+  font-weight: var(--gesture-title-weight, 500);
+  line-height: 1.08;
+  letter-spacing: var(--gesture-title-tracking, -0.015em);
+  text-transform: var(--gesture-title-transform, none);
+  color: var(--gesture-ink);
+}
+
+.gesture-lede {
+  margin: 0.5rem 0 0;
+  max-width: 28rem;
+  color: var(--gesture-text-muted);
+  line-height: 1.6;
+  font-size: 0.97rem;
+}
+
+/* Tabs — segmented pill control */
+.gesture-tabs {
+  margin-bottom: 1.75rem;
+  min-height: auto;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.2rem;
+  border: 1px solid var(--gesture-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gesture-card-bg) 72%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.gesture-tabs .MuiTabs-flexContainer {
+  gap: 0.15rem;
+}
+
+.gesture-tabs .MuiTab-root {
+  min-height: 2.25rem;
+  min-width: 5.5rem;
+  padding: 0 1.15rem;
+  border-radius: 999px;
+  font-weight: var(--gesture-tab-weight, 500);
+  font-size: 0.84rem;
+  letter-spacing: 0.02em;
+  text-transform: var(--gesture-tab-transform, none);
+  color: var(--gesture-text-muted);
+  transition:
+    color 180ms var(--gesture-ease-out),
+    background 180ms var(--gesture-ease-out);
+}
+
+.gesture-tabs .MuiTab-root.Mui-selected {
+  color: var(--gesture-ink);
+  background: var(--gesture-card-bg);
+}
+
+.gesture-tabs .MuiTabs-indicator {
+  display: none;
+}
+
+.gesture-tab-panel {
+  animation: gesture-fade-in 220ms ease;
+}
+
+.gesture-tab-panel.is-drag-active {
+  border-radius: var(--gesture-card-radius);
+  outline: 2px dashed color-mix(in srgb, var(--gesture-accent) 45%, transparent);
+  outline-offset: 4px;
+  background: color-mix(in srgb, var(--gesture-accent-soft) 18%, transparent);
+}
+
+.gesture-drop-zone > * {
+  pointer-events: none;
+}
+
+.gesture-tab-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.gesture-tab-lede {
+  margin: 0;
+  max-width: 28rem;
+  color: var(--gesture-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+@keyframes gesture-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Drop zone */
+.gesture-drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem 1.35rem;
+  border: 1px solid color-mix(in srgb, var(--gesture-accent) 12%, transparent);
+  border-radius: var(--gesture-card-radius);
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--gesture-accent-soft) 42%, transparent),
+    color-mix(in srgb, var(--gesture-card-bg) 55%, transparent)
+  );
+  text-align: center;
+  transition:
+    border-color 220ms var(--gesture-ease-out),
+    background 220ms var(--gesture-ease-out),
+    transform 220ms var(--gesture-ease-out);
+}
+
+.gesture-drop-zone-icon {
+  font-size: 1.35rem !important;
+  color: color-mix(
+    in srgb,
+    var(--gesture-accent) 72%,
+    var(--gesture-text-muted)
+  );
+  margin-bottom: 0.15rem;
+  transition: color 220ms var(--gesture-ease-out);
+}
+
+.gesture-drop-zone--compact {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.15rem;
+  gap: 0.35rem 0.65rem;
+}
+
+.gesture-drop-zone--compact .gesture-drop-zone-icon {
+  font-size: 1.05rem !important;
+  margin-bottom: 0;
+}
+
+.gesture-drop-zone.is-drag-active {
+  border-color: color-mix(in srgb, var(--gesture-accent) 35%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--gesture-accent-soft) 58%,
+    var(--gesture-card-bg)
+  );
+  transform: scale(1.005);
+}
+
+.gesture-drop-zone.is-drag-active .gesture-drop-zone-icon {
+  color: var(--gesture-accent);
+}
+
+.gesture-drop-zone-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.94rem;
+  letter-spacing: -0.01em;
+  color: var(--gesture-ink);
+}
+
+.gesture-drop-zone-copy {
+  margin: 0.35rem 0 0;
+  color: var(--gesture-text-muted);
+}
+
+.gesture-drop-zone.is-upload-active {
+  border-color: color-mix(
+    in srgb,
+    var(--gesture-accent) 45%,
+    var(--gesture-border)
+  );
+  background: color-mix(
+    in srgb,
+    var(--gesture-accent-soft) 28%,
+    var(--gesture-card-bg)
+  );
+}
+
+.gesture-tab-panel.is-upload-busy {
+  pointer-events: auto;
+}
+
+.gesture-upload-status {
+  width: 100%;
+  max-width: 28rem;
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--gesture-card-radius);
+  background: var(--gesture-card-bg);
+  border: 1px solid var(--gesture-border);
+}
+
+.gesture-upload-status--compact {
+  max-width: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.gesture-upload-status-label {
+  margin: 0 0 0.55rem;
+  color: var(--gesture-ink);
+  font-weight: 500;
+}
+
+.gesture-upload-status--compact .gesture-upload-status-label {
+  margin-bottom: 0.35rem;
+  text-align: center;
+}
+
+.gesture-upload-status-bar {
+  border-radius: 999px;
+}
+
+.gesture-drop-zone-progress {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--gesture-text-muted);
+}
+
+/* Banners */
+.gesture-banner {
+  padding: 0.7rem 0.95rem;
+  margin-bottom: 1rem;
+  border-radius: var(--gesture-card-radius);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.gesture-banner--dismissible {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.gesture-banner-text {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.gesture-app .gesture-banner-dismiss.MuiIconButton-root {
+  margin: -0.15rem -0.35rem 0 0;
+  color: color-mix(in srgb, var(--gesture-text-muted) 85%, var(--gesture-ink));
+}
+
+.gesture-app .gesture-banner-dismiss.MuiIconButton-root:hover {
+  color: var(--gesture-ink);
+  background: color-mix(in srgb, var(--gesture-accent-soft) 35%, transparent);
+}
+
+.gesture-banner--success {
+  color: var(--gesture-ink);
+  background: color-mix(
+    in srgb,
+    var(--gesture-accent-soft) 35%,
+    var(--gesture-card-bg)
+  );
+  border: 1px solid var(--gesture-border);
+}
+
+.gesture-banner--error {
+  color: var(--gesture-ink);
+  background: color-mix(
+    in srgb,
+    var(--gesture-accent-warm) 65%,
+    var(--gesture-card-bg)
+  );
+  border: 1px solid var(--gesture-border-strong);
+}
+
+.gesture-banner--warning {
+  color: var(--gesture-ink);
+  background: color-mix(
+    in srgb,
+    var(--gesture-accent-warm) 40%,
+    var(--gesture-card-bg)
+  );
+  border: 1px solid var(--gesture-border-strong);
+}
+
+.gesture-interrupted-upload-title {
+  margin: 0 0 0.35rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.gesture-interrupted-upload-copy {
+  margin: 0 0 0.5rem;
+  color: var(--gesture-text-muted);
+}
+
+.gesture-interrupted-upload-hint {
+  margin: 0 0 0.75rem;
+  color: var(--gesture-ink);
+  font-size: 0.88rem;
+}
+
+.gesture-interrupted-upload-hint strong {
+  font-weight: 600;
+}
+
+.gesture-interrupted-upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Collection grid */
+.gesture-collection-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(var(--gesture-grid-min), 1fr)
+  );
+  gap: 1.1rem;
+}
+
+.gesture-collection-grid > * {
+  animation: gesture-card-in 480ms var(--gesture-ease-out) both;
+}
+
+.gesture-collection-grid > *:nth-child(1) {
+  animation-delay: 30ms;
+}
+.gesture-collection-grid > *:nth-child(2) {
+  animation-delay: 60ms;
+}
+.gesture-collection-grid > *:nth-child(3) {
+  animation-delay: 90ms;
+}
+.gesture-collection-grid > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.gesture-collection-grid > *:nth-child(n + 5) {
+  animation-delay: 150ms;
+}
+
+@keyframes gesture-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gesture-collection-grid--practice {
+  margin-bottom: 1rem;
+}
+
+.gesture-collection-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  border: none;
+  border-radius: var(--gesture-card-radius);
+  overflow: visible;
+  box-shadow: none;
+  transition:
+    background 220ms var(--gesture-ease-out),
+    transform 220ms var(--gesture-ease-out);
+}
+
+.gesture-collection-card--selectable {
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+}
+
+.gesture-collection-card--selectable .gesture-collection-card-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1px solid var(--gesture-border);
+  border-radius: var(--gesture-card-radius);
+  overflow: hidden;
+  background: var(--gesture-card-bg);
+  transition:
+    border-color 220ms var(--gesture-ease-out),
+    background 220ms var(--gesture-ease-out),
+    transform 220ms var(--gesture-ease-out),
+    box-shadow 220ms var(--gesture-ease-out);
+}
+
+.gesture-collection-card--selectable:hover:not(:disabled)
+  .gesture-collection-card-shell {
+  border-color: color-mix(
+    in srgb,
+    var(--gesture-accent) 28%,
+    var(--gesture-border)
+  );
+  transform: translateY(-2px);
+}
+
+.gesture-collection-card--selectable.is-selected
+  .gesture-collection-card-shell {
+  border-color: color-mix(
+    in srgb,
+    var(--gesture-accent) 72%,
+    var(--gesture-border)
+  );
+  background: color-mix(
+    in srgb,
+    var(--gesture-accent-soft) 36%,
+    var(--gesture-card-bg)
+  );
+  box-shadow: 0 0 0 1px
+    color-mix(in srgb, var(--gesture-accent) 18%, transparent);
+}
+
+.gesture-collection-card--selectable:focus-visible {
+  outline: none;
+}
+
+.gesture-collection-card--selectable:focus-visible
+  .gesture-collection-card-shell {
+  border-color: color-mix(
+    in srgb,
+    var(--gesture-accent) 55%,
+    var(--gesture-border)
+  );
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--gesture-accent) 24%, transparent);
+}
+
+.gesture-collection-card--selectable:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.gesture-collection-card--selectable .gesture-preview-strip {
+  border-radius: 0;
+  box-shadow: none;
+  border-bottom: 1px solid var(--gesture-border);
+}
+
+.gesture-collection-card--selectable .gesture-collection-card-body {
+  padding: 0.8rem 0.85rem 0.85rem;
+}
+
+.gesture-collection-card-body {
+  padding: 0.85rem 0.15rem 0.35rem;
+}
+
+.gesture-collection-card--manage .gesture-collection-card-shell {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--gesture-border);
+  border-radius: var(--gesture-card-radius);
+  overflow: hidden;
+  background: var(--gesture-card-bg);
+  transition:
+    border-color 220ms var(--gesture-ease-out),
+    transform 220ms var(--gesture-ease-out);
+}
+
+.gesture-collection-card--manage:hover .gesture-collection-card-shell {
+  border-color: color-mix(
+    in srgb,
+    var(--gesture-accent) 24%,
+    var(--gesture-border)
+  );
+  transform: translateY(-1px);
+}
+
+.gesture-collection-card--manage.is-drop-target .gesture-collection-card-shell {
+  border-color: color-mix(
+    in srgb,
+    var(--gesture-accent) 55%,
+    var(--gesture-border)
+  );
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--gesture-accent) 28%, transparent);
+  transform: translateY(-2px);
+}
+
+.gesture-collection-card--manage .gesture-preview-strip {
+  border-radius: 0;
+  box-shadow: none;
+  border-bottom: 1px solid var(--gesture-border);
+}
+
+.gesture-collection-card--manage .gesture-collection-card-body {
+  padding: 0.8rem 0.85rem 0;
+}
+
+.gesture-collection-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.35rem;
+  margin-top: 0.65rem;
+  padding: 0.55rem 0.65rem 0.65rem;
+  border-top: 1px solid var(--gesture-border);
+  background: color-mix(
+    in srgb,
+    var(--gesture-accent-soft) 10%,
+    var(--gesture-card-bg)
+  );
+}
+
+.gesture-app .gesture-collection-card-action.MuiButton-root {
+  min-width: 0;
+  padding: 0.28rem 0.55rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--gesture-text-muted);
+}
+
+.gesture-app
+  .gesture-collection-card-action.MuiButton-root
+  .MuiButton-startIcon {
+  margin-right: 0.3rem;
+  font-size: 0.95rem;
+}
+
+.gesture-app
+  .gesture-collection-card-action.MuiButton-root:not(:disabled):hover {
+  color: var(--gesture-ink);
+  background: color-mix(in srgb, var(--gesture-accent-soft) 35%, transparent);
+}
+
+.gesture-app .gesture-collection-card-action.MuiButton-outlined {
+  color: var(--gesture-accent);
+  border-color: color-mix(
+    in srgb,
+    var(--gesture-accent) 35%,
+    var(--gesture-border)
+  );
+}
+
+.gesture-app
+  .gesture-collection-card-action.MuiButton-outlined:not(:disabled):hover {
+  color: var(--gesture-accent-hover);
+  border-color: color-mix(
+    in srgb,
+    var(--gesture-accent) 50%,
+    var(--gesture-border)
+  );
+  background: color-mix(in srgb, var(--gesture-accent-soft) 40%, transparent);
+}
+
+.gesture-app .gesture-collection-card-action--danger.MuiButton-root {
+  color: color-mix(in srgb, #8b4545 78%, var(--gesture-text-muted));
+}
+
+.gesture-app
+  .gesture-collection-card-action--danger.MuiButton-root:not(:disabled):hover {
+  color: #7a3a3a;
+  background: color-mix(in srgb, var(--gesture-accent-warm) 55%, transparent);
+}
+
+.gesture-collection-card-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.94rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--gesture-ink);
+}
+
+.gesture-collection-card-meta {
+  margin: 0.3rem 0 0;
+  color: var(--gesture-text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.01em;
+}
+
+.gesture-collection-card-progress {
+  margin-top: 0.65rem;
+  height: 3px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.gesture-collection-card-progress--upload {
+  background: color-mix(in srgb, var(--gesture-accent) 18%, transparent);
+}
+
+.gesture-collection-card-progress--drawn {
+  background: color-mix(in srgb, var(--gesture-accent) 14%, transparent);
+}
+
+.gesture-collection-card--manage.is-uploading .gesture-collection-card-shell {
+  border-color: color-mix(
+    in srgb,
+    var(--gesture-accent) 38%,
+    var(--gesture-border)
+  );
+}
+
+.gesture-collection-card-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--gesture-accent);
+}
+
+.gesture-collection-card-selected {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  background: var(--gesture-card-bg);
+  color: var(--gesture-accent);
+  border: 1px solid color-mix(in srgb, var(--gesture-accent) 25%, transparent);
+  box-shadow: none;
+}
+
+/* Preview strip */
+.gesture-preview-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--gesture-preview-gap);
+  aspect-ratio: var(--gesture-preview-aspect);
+  background: var(--gesture-preview-bg);
+  border-radius: calc(var(--gesture-card-radius) + 2px);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--gesture-ink) 7%, transparent);
+}
+
+.gesture-preview-cell {
+  position: relative;
+  overflow: hidden;
+  background: var(--gesture-preview-cell);
+}
+
+.gesture-preview-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  transition:
+    opacity 220ms var(--gesture-ease-out),
+    transform 520ms var(--gesture-ease-out);
+}
+
+.gesture-preview-image.is-visible {
+  opacity: 1;
+}
+
+.gesture-collection-card--selectable:hover:not(:disabled)
+  .gesture-preview-image.is-visible,
+.gesture-collection-card:hover .gesture-preview-image.is-visible {
+  transform: scale(1.04);
+}
+
+.gesture-preview-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  background: var(--gesture-preview-placeholder);
+}
+
+.gesture-preview-placeholder.is-loading {
+  animation: gesture-shimmer 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes gesture-shimmer {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Inline rename */
+.gesture-inline-name {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--gesture-ink);
+  cursor: pointer;
+}
+
+.gesture-inline-name-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gesture-inline-name-icon {
+  flex-shrink: 0;
+  width: 0.95rem;
+  height: 0.95rem;
+  opacity: 0;
+  color: var(--gesture-text-muted);
+  transition:
+    opacity 180ms var(--gesture-ease-out),
+    color 180ms var(--gesture-ease-out);
+}
+
+.gesture-inline-name:hover:not(:disabled) .gesture-inline-name-icon,
+.gesture-inline-name:focus-visible .gesture-inline-name-icon {
+  opacity: 0.72;
+}
+
+.gesture-inline-name.is-unnamed {
+  color: var(--gesture-text-muted);
+  font-style: italic;
+  font-weight: 500;
+}
+
+.gesture-inline-name:hover:not(:disabled),
+.gesture-inline-name:focus-visible {
+  color: var(--gesture-accent);
+}
+
+.gesture-inline-name:hover:not(:disabled) .gesture-inline-name-icon,
+.gesture-inline-name:focus-visible .gesture-inline-name-icon {
+  color: var(--gesture-accent);
+}
+
+.gesture-inline-name-input {
+  width: 100%;
+  padding: 0.15rem 0.35rem;
+  margin: -0.15rem -0.35rem;
+  border: 1px solid var(--gesture-border-strong);
+  border-radius: 0.35rem;
+  background: var(--gesture-card-bg);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--gesture-ink);
+}
+
+/* Inline source link */
+.gesture-inline-source {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: var(--gesture-text-muted);
+  text-align: left;
+}
+
+.gesture-inline-source--empty {
+  cursor: pointer;
+  opacity: 0.88;
+}
+
+.gesture-inline-source--empty:hover:not(:disabled),
+.gesture-inline-source--empty:focus-visible {
+  color: var(--gesture-accent);
+  opacity: 1;
+}
+
+.gesture-inline-source--linked {
+  gap: 0.45rem;
+}
+
+.gesture-inline-source-icon {
+  flex-shrink: 0;
+  width: 0.85rem;
+  height: 0.85rem;
+  opacity: 0.72;
+}
+
+.gesture-inline-source-anchor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.gesture-inline-source-anchor:hover {
+  color: var(--gesture-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.gesture-inline-source-anchor span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gesture-inline-source-open {
+  flex-shrink: 0;
+  width: 0.75rem;
+  height: 0.75rem;
+  opacity: 0.55;
+}
+
+.gesture-inline-source-edit {
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: inherit;
+  color: var(--gesture-text-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.gesture-inline-source-edit:hover:not(:disabled) {
+  color: var(--gesture-accent);
+}
+
+.gesture-inline-source-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.12rem 0.3rem;
+  border: 1px solid var(--gesture-border-strong);
+  border-radius: 0.3rem;
+  background: var(--gesture-card-bg);
+  font: inherit;
+  font-size: inherit;
+  color: var(--gesture-ink);
+}
+
+/* Empty states */
+.gesture-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.85rem;
+  padding: 3rem 1.5rem;
+  border: 1px dashed color-mix(in srgb, var(--gesture-accent) 18%, transparent);
+  border-radius: calc(var(--gesture-card-radius) + 4px);
+  background: color-mix(in srgb, var(--gesture-card-bg) 45%, transparent);
+}
+
+.gesture-empty-title {
+  margin: 0;
+  font-family: var(--gesture-serif);
+  font-size: 1.45rem;
+  font-weight: var(--gesture-title-weight);
+  letter-spacing: -0.015em;
+  color: var(--gesture-ink);
+}
+
+.gesture-empty-copy {
+  margin: 0;
+  max-width: 22rem;
+  color: var(--gesture-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.gesture-upload-progress {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--gesture-card-radius);
+  background: var(--gesture-card-bg);
+  border: 1px solid var(--gesture-border);
+}
+
+/* Practice tab */
+.gesture-practice-panel {
+  position: relative;
+}
+
+.gesture-practice-controls {
+  padding: 1.25rem 1.35rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--gesture-border);
+  border-radius: calc(var(--gesture-card-radius) + 2px);
+  background: color-mix(in srgb, var(--gesture-card-bg) 88%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: none;
+}
+
+.gesture-practice-label {
+  margin: 0 0 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(
+    in srgb,
+    var(--gesture-text-muted) 88%,
+    var(--gesture-accent)
+  );
+}
+
+.gesture-practice-control-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.gesture-practice-control-row .gesture-practice-label {
+  margin-bottom: 0;
+}
+
+.gesture-practice-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+}
+
+.gesture-practice-footer {
+  position: sticky;
+  bottom: 0;
+  margin: 0 -1.35rem;
+  padding: 1.35rem 1.35rem 0.65rem;
+  background: linear-gradient(to top, var(--gesture-bg) 75%, transparent);
+}
+
+.gesture-app .gesture-enter-btn.MuiButton-root {
+  min-height: 3.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  border-radius: calc(var(--gesture-button-radius) + 2px);
+  transition:
+    background 200ms var(--gesture-ease-out),
+    transform 200ms var(--gesture-ease-out);
+}
+
+.gesture-app .gesture-enter-btn.MuiButton-root:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+/* MUI overrides */
+.gesture-app .MuiButton-root {
+  border-radius: var(--gesture-button-radius);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  box-shadow: none;
+  transition:
+    background 180ms var(--gesture-ease-out),
+    border-color 180ms var(--gesture-ease-out),
+    color 180ms var(--gesture-ease-out);
+}
+
+.gesture-app .MuiButton-contained {
+  background: var(--gesture-accent);
+}
+
+.gesture-app .MuiButton-contained:hover {
+  background: var(--gesture-accent-hover);
+  box-shadow: none;
+}
+
+.gesture-app .MuiButton-outlined {
+  border-color: var(--gesture-border-strong);
+  color: var(--gesture-ink);
+  background: color-mix(in srgb, var(--gesture-card-bg) 75%, transparent);
+}
+
+.gesture-app .MuiButton-contained.Mui-disabled {
+  background: color-mix(in srgb, var(--gesture-accent) 35%, transparent);
+}
+
+.gesture-app .gesture-add-btn-subtle.MuiButton-outlined {
+  border-color: var(--gesture-border);
+  color: var(--gesture-text-muted);
+}
+
+.gesture-app .MuiTextField-root .MuiOutlinedInput-root {
+  border-radius: var(--gesture-card-radius);
+  background: var(--gesture-card-bg);
+}
+
+.gesture-app .MuiTextField-root .MuiOutlinedInput-notchedOutline {
+  border-color: var(--gesture-border);
+}
+
+.gesture-app
+  .MuiTextField-root
+  .MuiOutlinedInput-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  border-color: var(--gesture-accent);
+}
+
+.gesture-app .MuiToggleButtonGroup-root .MuiToggleButton-root {
+  border-color: var(--gesture-border);
+  border-radius: 999px;
+  margin-right: 0.35rem;
+  font-weight: 600;
+  font-size: 0.84rem;
+  color: var(--gesture-text-muted);
+  transition:
+    background 180ms var(--gesture-ease-out),
+    color 180ms var(--gesture-ease-out),
+    border-color 180ms var(--gesture-ease-out);
+}
+
+.gesture-app .MuiToggleButtonGroup-root .MuiToggleButton-root.Mui-selected {
+  background: var(--gesture-accent);
+  color: #fff;
+  border-color: var(--gesture-accent);
+}
+
+.gesture-app .MuiCheckbox-root.Mui-checked {
+  color: var(--gesture-accent);
+}
+
+.gesture-app .MuiFormControlLabel-label {
+  font-size: 0.9rem;
+}
+
+.gesture-app .MuiLinearProgress-bar {
+  background: var(--gesture-accent);
+}
+
+.gesture-app .MuiIconButton-root {
+  color: var(--gesture-text-muted);
+}
+
+.gesture-app .MuiIconButton-root:hover {
+  color: var(--gesture-accent);
+  background: color-mix(in srgb, var(--gesture-accent-soft) 35%, transparent);
+}
+
+/* Debrief stats */
+.gesture-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.gesture-stat {
+  padding: 1.15rem 1.2rem;
+  border-radius: calc(var(--gesture-card-radius) + 2px);
+  border: 1px solid var(--gesture-border);
+  background: color-mix(in srgb, var(--gesture-card-bg) 92%, transparent);
+}
+
+.gesture-stat-value {
+  display: block;
+  font-family: var(--gesture-serif);
+  font-size: 2rem;
+  font-weight: var(--gesture-title-weight);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--gesture-ink);
+}
+
+.gesture-stat-label {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gesture-text-muted);
+}
+
+/* Zen mode */
+.gesture-zen-root {
+  position: fixed;
+  inset: 0;
+  background: var(--gesture-zen-bg);
+  color: #e8eaef;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.gesture-zen-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  z-index: 2;
+}
+
+.gesture-zen-progress-bar-fill {
+  height: 100%;
+  background: var(--gesture-accent-soft);
+  transition: width 100ms linear;
+}
+
+.gesture-zen-image-wrap {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem 1rem 5rem;
+}
+
+.gesture-zen-image {
+  max-width: min(100%, 1200px);
+  max-height: calc(100dvh - 6rem);
+  object-fit: contain;
+  border-radius: 4px;
+  opacity: 1;
+  transition: opacity 280ms ease;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.gesture-zen-image.is-loading {
+  opacity: 0.12;
+}
+
+.gesture-zen-timer-label {
+  position: absolute;
+  top: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(232, 234, 239, 0.45);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.gesture-zen-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 1.25rem 1rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  opacity: 0.4;
+  transition: opacity 200ms ease;
+  z-index: 3;
+}
+
+.gesture-zen-root:hover .gesture-zen-controls,
+.gesture-zen-root:focus-within .gesture-zen-controls {
+  opacity: 1;
+}
+
+.gesture-zen-control-btn {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.gesture-zen-control-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: color-mix(in srgb, var(--gesture-accent-soft) 55%, transparent);
+}
+
+.gesture-zen-timer-ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gesture-zen-timer-ring svg {
+  display: block;
+}
+
+.gesture-zen-timer-ring-track {
+  stroke: rgba(255, 255, 255, 0.1);
+}
+
+.gesture-zen-timer-ring-progress {
+  stroke: var(--gesture-accent-soft);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 100ms linear;
+}
+
+.gesture-zen-timer-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gesture-zen-paused {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  font-family: var(--gesture-sans);
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.92);
+  z-index: 1;
+}
+
+/* Account menu — Linen flat surface */
+.gesture-app #gesture-account-menu-button {
+  border: 1px solid var(--gesture-border-strong);
+  box-shadow: none;
+  background: var(--gesture-card-bg);
+}
+
+.gesture-app #gesture-account-menu-button:hover {
+  border-color: var(--gesture-accent);
+  background: color-mix(
+    in srgb,
+    var(--gesture-accent-soft) 30%,
+    var(--gesture-card-bg)
+  );
+  color: var(--gesture-ink);
+}
+
+.gesture-app .gesture-account-menu {
+  border: 1px solid var(--gesture-border-strong);
+  border-radius: var(--gesture-card-radius);
+  box-shadow: none;
+  background: var(--gesture-card-bg);
+}
+
+.gesture-app .gesture-account-menu .MuiDivider-root {
+  border-color: var(--gesture-border);
+}
+
+@media (pointer: coarse) {
+  .gesture-zen-controls {
+    opacity: 0.75;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gesture-tab-panel,
+  .gesture-zen-image,
+  .gesture-zen-controls,
+  .gesture-zen-progress-bar-fill,
+  .gesture-zen-timer-ring-progress,
+  .gesture-preview-placeholder.is-loading,
+  .gesture-preview-image,
+  .gesture-collection-card,
+  .gesture-collection-card--manage .gesture-collection-card-shell,
+  .gesture-collection-card--selectable .gesture-collection-card-shell,
+  .gesture-collection-grid > *,
+  .gesture-drop-zone {
+    animation: none;
+    transition: none;
+  }
+}

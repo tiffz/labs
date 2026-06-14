@@ -22,7 +22,7 @@ Instructions for AI coding assistants (Cursor, Claude, Codex, Gemini, etc.). [`G
 
 ### Nested `AGENTS.md`
 
-[`src/encore/`](src/encore/AGENTS.md) · [`src/stanza/`](src/stanza/AGENTS.md) · [`src/shared/`](src/shared/AGENTS.md) · [`src/words/`](src/words/AGENTS.md) · [`src/drums/`](src/drums/AGENTS.md) · [`src/piano/`](src/piano/AGENTS.md) · [`src/chords/`](src/chords/AGENTS.md) · [`src/cats/`](src/cats/AGENTS.md) · [`src/scales/`](src/scales/AGENTS.md)
+[`src/encore/`](src/encore/AGENTS.md) · [`src/gesture/`](src/gesture/AGENTS.md) · [`src/stanza/`](src/stanza/AGENTS.md) · [`src/shared/`](src/shared/AGENTS.md) · [`src/words/`](src/words/AGENTS.md) · [`src/drums/`](src/drums/AGENTS.md) · [`src/piano/`](src/piano/AGENTS.md) · [`src/chords/`](src/chords/AGENTS.md) · [`src/cats/`](src/cats/AGENTS.md) · [`src/scales/`](src/scales/AGENTS.md)
 
 Apps without nested `AGENTS.md` → app `README.md` + this file.
 
@@ -65,6 +65,8 @@ Presubmit before done: [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre
 | Mid-refactor handoff                               | [`DEVELOPMENT.md`](DEVELOPMENT.md) § Iteration handoff                                                                                                                                                                  | `labs-iteration-handoff`       |
 | Material architecture (routing, OAuth, boundaries) | `docs/adr/README.md`, `.cursor/rules/architecture-decisions.mdc`                                                                                                                                                        | `labs-write-adr`               |
 | Regression / visual baselines                      | `docs/REGRESSION_WORKFLOW.md`                                                                                                                                                                                           | `labs-visual-regression`       |
+| In-app UI design theme iterations / preview picker | app `README.md` + [`labs-ui-design-variations`](.cursor/skills/labs-ui-design-variations/SKILL.md)                                                                                                                      | `labs-ui-design-variations`    |
+| The Gesture Room UI / Linen theme                  | [`src/gesture/DESIGN.md`](src/gesture/DESIGN.md), `.cursor/rules/gesture-linen-design.mdc`                                                                                                                              | —                              |
 | GitHub Actions / CI reliability                    | [`docs/CI_RELIABILITY.md`](docs/CI_RELIABILITY.md)                                                                                                                                                                      | `labs-babysit-pr`              |
 | Large component / App.tsx refactor                 | `docs/COMPONENT_DECOMPOSITION_PATTERN.md`                                                                                                                                                                               | `labs-component-decomposition` |
 | PR babysitting / merge-ready                       | [`docs/PR_WORKFLOW.md`](docs/PR_WORKFLOW.md)                                                                                                                                                                            | `labs-babysit-pr`              |

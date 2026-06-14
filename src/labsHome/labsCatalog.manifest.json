@@ -106,6 +106,14 @@
       "iconClass": "sight"
     },
     {
+      "path": "/gesture/",
+      "title": "The Gesture Room",
+      "shortDescription": "Timed reference drawing from your own Drive photo collections",
+      "stage": "unlisted",
+      "category": "art",
+      "iconClass": "gesture"
+    },
+    {
       "path": "/forms/",
       "title": "Form Intersections",
       "shortDescription": "3D visualization for Drawabox form intersections",

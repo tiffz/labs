@@ -579,6 +579,33 @@ export async function driveRenameFile(
   }
 }
 
+/** Update a file or folder description (visible in Drive UI). */
+export async function drivePatchFileDescription(
+  accessToken: string,
+  fileId: string,
+  description: string,
+): Promise<void> {
+  const res = await fetch(
+    `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}?fields=id&supportsAllDrives=true`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ description: description.trim() || '' }),
+    },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new DriveHttpError(
+      formatDriveRequestFailure('PATCH', 'files (description)', res.status, text),
+      res.status,
+      text,
+    );
+  }
+}
+
 /**
  * Move a file so it is filed under `newParentId`. Removes prior parent folder ids except any that
  * already match `newParentId`. Uses Drive `addParents` / `removeParents` (v3).

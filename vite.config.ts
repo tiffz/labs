@@ -48,6 +48,7 @@ const MULTI_APP_INPUTS = {
   encore: resolve(__dirname, 'src/encore/index.html'),
   stanza: resolve(__dirname, 'src/stanza/index.html'),
   sight: resolve(__dirname, 'src/sight/index.html'),
+  gesture: resolve(__dirname, 'src/gesture/index.html'),
 } as const;
 
 const SRC_ROOT = resolve(__dirname, 'src');

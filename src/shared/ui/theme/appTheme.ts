@@ -20,7 +20,8 @@ export type AppThemeId =
   | 'agility'
   | 'encore'
   | 'stanza'
-  | 'sight';
+  | 'sight'
+  | 'gesture';
 
 interface AppThemeConfig {
   mode: 'light' | 'dark';
@@ -406,6 +407,19 @@ const THEMES: Record<AppThemeId, Theme> = {
     radius: 4,
     spacingBase: 4,
     readable: true,
+  }),
+  gesture: buildTheme({
+    mode: 'light',
+    fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+    primary: '#5f8566',
+    secondary: '#9a958d',
+    backgroundDefault: '#e8e4dc',
+    backgroundPaper: '#f7f5f1',
+    textPrimary: '#2f332c',
+    textSecondary: '#6f6c65',
+    divider: 'rgba(47, 51, 44, 0.09)',
+    radius: 10,
+    spacingBase: 4,
   }),
   encore: createTheme(
     buildTheme({
