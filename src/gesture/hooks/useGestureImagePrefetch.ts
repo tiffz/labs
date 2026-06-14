@@ -20,7 +20,14 @@ export function useGestureImagePrefetch(
   index: number,
   accessToken: string | null,
 ): { src: string | null; ready: boolean; loading: boolean; error: string | null } {
-  const current = queue[index] ?? null;
+  const driveFileId = queue[index]?.driveFileId ?? '';
+  const fileName = queue[index]?.name;
+  const queueKey = useMemo(() => queue.map((item) => item.driveFileId).join(','), [queue]);
+  const queueIds = useMemo(
+    () => (queueKey.length > 0 ? queueKey.split(',') : []),
+    [queueKey],
+  );
+
   const [src, setSrc] = useState<string | null>(null);
   const [displayReady, setDisplayReady] = useState(false);
   /** Keep the last decoded photo visible while the next one loads (avoids blank/broken frames). */
@@ -30,14 +37,14 @@ export function useGestureImagePrefetch(
 
   const windowKeys = useMemo(() => {
     const keys: string[] = [];
-    const prev = queue[index - 1];
-    if (prev) keys.push(prev.driveFileId);
-    const cur = queue[index];
-    if (cur) keys.push(cur.driveFileId);
-    const next = queue[index + 1];
-    if (next) keys.push(next.driveFileId);
+    const prev = queueIds[index - 1];
+    if (prev) keys.push(prev);
+    const cur = queueIds[index];
+    if (cur) keys.push(cur);
+    const next = queueIds[index + 1];
+    if (next) keys.push(next);
     return keys;
-  }, [index, queue]);
+  }, [index, queueIds]);
 
   useEffect(() => {
     retainGesturePrefetchKeys(windowKeys);
@@ -45,7 +52,7 @@ export function useGestureImagePrefetch(
 
   useEffect(() => {
     let cancelled = false;
-    if (!current) {
+    if (!driveFileId) {
       setSrc(null);
       setDisplayReady(false);
       setVisibleSrc(null);
@@ -54,17 +61,19 @@ export function useGestureImagePrefetch(
       return;
     }
 
-    const key = current.driveFileId;
+    const key = driveFileId;
     setError(null);
-    setVisibleSrc(null);
 
     const cached = getCachedGestureImageUrl(key);
     if (isGestureSessionPhotoDisplayReady(key) && cached) {
       setSrc(cached);
+      setVisibleSrc(cached);
       setDisplayReady(true);
       setLoading(false);
       return;
     }
+
+    setVisibleSrc(null);
     if (isGestureSessionPhotoDisplayReady(key) && !cached) {
       unmarkGestureSessionPhotoDisplayReady(key);
     }
@@ -86,7 +95,7 @@ export function useGestureImagePrefetch(
           accessToken,
           key,
           remoteUrl,
-          current.name,
+          fileName,
         );
         if (!cancelled) {
           setSrc(displayUrl);
@@ -103,25 +112,29 @@ export function useGestureImagePrefetch(
     return () => {
       cancelled = true;
     };
-  }, [accessToken, current, index, queue]);
+  }, [accessToken, driveFileId, fileName, index, queueKey]);
 
   useEffect(() => {
-    if (!src || !current?.driveFileId) {
+    if (!src || !driveFileId) {
       setDisplayReady(false);
+      return;
+    }
+    if (isGestureSessionPhotoDisplayReady(driveFileId)) {
+      setDisplayReady(true);
       return;
     }
     let cancelled = false;
     void preloadGestureImageViaElement(src)
       .then(() => {
         if (!cancelled) {
-          markGestureSessionPhotoDisplayReady(current.driveFileId);
+          markGestureSessionPhotoDisplayReady(driveFileId);
           setDisplayReady(true);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          unmarkGestureSessionPhotoDisplayReady(current.driveFileId);
-          dropGesturePrefetchEntry(current.driveFileId);
+          unmarkGestureSessionPhotoDisplayReady(driveFileId);
+          dropGesturePrefetchEntry(driveFileId);
           setDisplayReady(false);
           setVisibleSrc(null);
           setError('Could not load image.');
@@ -130,7 +143,7 @@ export function useGestureImagePrefetch(
     return () => {
       cancelled = true;
     };
-  }, [current?.driveFileId, src]);
+  }, [driveFileId, src]);
 
   useEffect(() => {
     if (displayReady && src) {
@@ -138,7 +151,7 @@ export function useGestureImagePrefetch(
     }
   }, [displayReady, src]);
 
-  const ready = Boolean(src) && displayReady;
+  const ready = Boolean(visibleSrc) && displayReady;
 
   return {
     src: visibleSrc,
