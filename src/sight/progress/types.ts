@@ -23,7 +23,8 @@ export type RepPurpose = 'curriculum' | 'focus' | 'maintenance' | 'practice';
 export type GrowthDiagnosticId =
   | 'WARM_VALUE_BLINDNESS'
   | 'CHROMA_OVER_STEERING'
-  | 'TEMPERATURE_UNDER_COMPENSATION';
+  | 'TEMPERATURE_UNDER_COMPENSATION'
+  | 'PERCEIVED_TEMPERATURE_INDUCTION';
 
 export interface PracticeGenConstraints {
   hueRange?: [number, number];

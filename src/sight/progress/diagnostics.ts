@@ -66,7 +66,33 @@ export function evaluateDeficiencies(reps: RepRecord[]): GrowthDiagnostic | null
 
   const tempRate = passRateForTags(reps, ['axis:warmer'], []);
   const tempCool = passRateForTags(reps, ['axis:cooler'], []);
+  const isolatedTempOk = passRateForTags(
+    reps,
+    ['profile:temperatureUndertone', 'profile:temperatureHueBoundary'],
+    [],
+  );
+  const perceivedTempAlbers = passRateForTags(reps, ['profile:perceivedTemperature'], []);
   const valueOk = passRateForTags(reps, ['axis:lighter'], []);
+  if (
+    isolatedTempOk !== null &&
+    isolatedTempOk >= 0.65 &&
+    perceivedTempAlbers !== null &&
+    perceivedTempAlbers < 0.5 &&
+    reps.filter((r) => r.tags.includes('profile:perceivedTemperature')).length >= 6
+  ) {
+    return {
+      id: 'PERCEIVED_TEMPERATURE_INDUCTION',
+      label: 'Focus workout · perceived temperature',
+      description:
+        'Undertones read on gray, but warm/cool fields still fool you. Practice matching across contrasting grounds.',
+      severityScore: 1 - perceivedTempAlbers,
+      remedyModule: 'albers-equalizer',
+      remedyLevel: 23,
+      forcedConstraints: {
+        minBackgroundChroma: 0.14,
+      },
+    };
+  }
   if (
     tempRate !== null &&
     tempCool !== null &&

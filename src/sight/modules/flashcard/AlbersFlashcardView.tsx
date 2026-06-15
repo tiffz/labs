@@ -1,7 +1,7 @@
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import CompactVerdict from '../../components/reveal/CompactVerdict';
-import FlashcardProofStrip from '../../components/reveal/FlashcardProofStrip';
+import AlbersInductionReveal from '../../components/reveal/AlbersInductionReveal';
 import { albersPrompt } from '../../generators/albersFlashcard';
 import { colorStateToHex } from '../../scoring/perceptualScore';
 import type { AlbersFlashcardChallenge, PracticeReveal } from '../../types';
@@ -118,11 +118,11 @@ export default function AlbersFlashcardView({
                 <CompactVerdict passed={albersReveal?.passed !== false} />
               </div>
             </div>
-            <FlashcardProofStrip
-              left={challenge.left.target}
-              right={challenge.right.target}
-              leftLabel="Left square"
-              rightLabel="Right square"
+            <AlbersInductionReveal
+              left={challenge.left}
+              right={challenge.right}
+              question={challenge.question}
+              targetsIdentical={challenge.targetsIdentical}
               visible={feedbackVisible}
             />
           </div>

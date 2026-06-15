@@ -1,12 +1,15 @@
 import { getLevelConfig } from '../levels';
 import type { PracticeGenConstraints } from '../progress/types';
 import {
+  inducedDeltaForQuestion,
+  meetsMinimumInducedDelta,
   perceivedLighterSide,
   perceivedMoreSaturatedSide,
   perceivedWarmerSide,
 } from '../scoring/chromaticInduction';
 import { clampColorState } from '../scoring/perceptualScore';
 import type {
+  AlbersField,
   AlbersFlashcardChallenge,
   AlbersProfile,
   AlbersQuestionKind,
@@ -80,6 +83,66 @@ function correctForPerceived(
   }
 }
 
+const MAX_PERCEIVED_ATTEMPTS = 48;
+
+function rollPerceivedFields(rng: () => number): { left: AlbersField; right: AlbersField } {
+  const { warm, cool } = contrastingBackgrounds(rng);
+  const target = neutralTarget(rng);
+  const warmField = { background: warm, target };
+  const coolField = { background: cool, target };
+  const swap = rng() < 0.5;
+  return {
+    left: swap ? warmField : coolField,
+    right: swap ? coolField : warmField,
+  };
+}
+
+function buildPerceivedChallenge(
+  rng: () => number,
+  seed: number,
+  profile: AlbersProfile,
+  question: AlbersQuestionKind,
+): AlbersFlashcardChallenge {
+  let fallback: AlbersFlashcardChallenge | null = null;
+  let fallbackDelta = -1;
+
+  for (let attempt = 0; attempt < MAX_PERCEIVED_ATTEMPTS; attempt += 1) {
+    const { left, right } = rollPerceivedFields(rng);
+    const delta = inducedDeltaForQuestion(question, left, right);
+
+    if (delta > fallbackDelta) {
+      fallbackDelta = delta;
+      fallback = {
+        kind: 'flashcard-albers',
+        seed: seed + attempt,
+        profile,
+        question,
+        left,
+        right,
+        targetsIdentical: true,
+        correctSide: correctForPerceived(question, left, right),
+        correctBinary: null,
+      };
+    }
+
+    if (meetsMinimumInducedDelta(question, left, right)) {
+      return {
+        kind: 'flashcard-albers',
+        seed: seed + attempt,
+        profile,
+        question,
+        left,
+        right,
+        targetsIdentical: true,
+        correctSide: correctForPerceived(question, left, right),
+        correctBinary: null,
+      };
+    }
+  }
+
+  return fallback!;
+}
+
 export function albersPrompt(question: AlbersQuestionKind): string {
   switch (question) {
     case 'identity':
@@ -112,6 +175,11 @@ export function generateAlbersFlashcardChallenge(
   const profile = constraints?.albersProfile ?? getLevelConfig(level).albersProfile ?? 'identity';
   const questions = questionsForProfile(profile);
   const question = questions[Math.floor(rng() * questions.length)]!;
+
+  if (question !== 'identity') {
+    return buildPerceivedChallenge(rng, seed, profile, question);
+  }
+
   const { warm, cool } = contrastingBackgrounds(rng);
   const target = neutralTarget(rng);
 
@@ -122,39 +190,23 @@ export function generateAlbersFlashcardChallenge(
   const left = swap ? warmField : coolField;
   const right = swap ? coolField : warmField;
 
-  if (question === 'identity') {
-    const identical = rng() < 0.55;
-    let rightTarget = target;
-    if (!identical) {
-      rightTarget = clampColorState({
-        ...target,
-        l: target.l + pickInRange(rng, 0.04, 0.08) * (rng() < 0.5 ? 1 : -1),
-      });
-    }
-    return {
-      kind: 'flashcard-albers',
-      seed,
-      profile,
-      question,
-      left,
-      right: { ...right, target: rightTarget },
-      targetsIdentical: identical,
-      correctSide: null,
-      correctBinary: identical ? 'same' : 'different',
-    };
+  const identical = rng() < 0.55;
+  let rightTarget = target;
+  if (!identical) {
+    rightTarget = clampColorState({
+      ...target,
+      l: target.l + pickInRange(rng, 0.04, 0.08) * (rng() < 0.5 ? 1 : -1),
+    });
   }
-
-  const correctSide = correctForPerceived(question, left, right);
-
   return {
     kind: 'flashcard-albers',
     seed,
     profile,
     question,
     left,
-    right,
-    targetsIdentical: true,
-    correctSide,
-    correctBinary: null,
+    right: { ...right, target: rightTarget },
+    targetsIdentical: identical,
+    correctSide: null,
+    correctBinary: identical ? 'same' : 'different',
   };
 }

@@ -21,7 +21,11 @@ Level definitions live in [`levels.ts`](levels.ts). Profile migration bumps leve
 1. **Absolute objectivity** — Correct answers come from Oklch/Oklab math (`temperatureIndex`, ΔE, induction model), not taste.
 2. **Micro-progression** — `IsolatedProfile` / `AlbersProfile` on each row tighten deltas and distractors (grayscale → hue noise → near-match).
 3. **Procedural generators** — No static question bank; `generateIsolatedFlashcardChallenge` / `generateAlbersFlashcardChallenge`.
-4. **Instant visual feedback** — `FlashcardProofStrip` shows true target colors on neutral gray after each tap.
+4. **Instant visual feedback** — After Albers perceived items, `AlbersInductionReveal` shows the physical chip on gray **and** the model’s induced read side by side, with a one-line note that the ground shifted appearance. Isolated items still use `FlashcardProofStrip` only.
+
+## Phase 2 perceived difficulty floor
+
+Perceived Albers items (levels 9–11) are regenerated up to 48 times until `inducedDeltaForQuestion` meets `MIN_INDUCED_DELTAS` in [`scoring/chromaticInduction.ts`](scoring/chromaticInduction.ts). This keeps binary “which looks warmer?” prompts above guess threshold while preserving identical physical targets.
 
 ## TypeScript payloads
 
