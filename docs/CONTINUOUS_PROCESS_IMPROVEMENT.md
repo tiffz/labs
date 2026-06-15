@@ -40,11 +40,13 @@ Structure findings as **symptom → root cause class → durable fix** (same fie
 - `ux revision churn` — many human cycles on basic gestalt/theme parity; fix with scoped rule + living checklist
 - `hmr false confidence` — presubmit green but dev shell broken after hot reload; hard-refresh affected route
 - `wrong-io-tier` — preview UI used session-weight fetch (e.g. alt=media before thumbnails); fix with tier policy + regression test
+- `revoked-blob-display` — UI showed `blob:` URLs that LRU/cache eviction revoked (`ERR_FILE_NOT_FOUND`, blank thumbs, tab OOM); fix with https-only grid display + invariant tests (see [`GESTURE_MEDIA_STABILITY.md`](GESTURE_MEDIA_STABILITY.md))
 - `ux-gestalt` — related controls separated or parallel surfaces use different shells/verbs
 - `ux-redundancy` — duplicate copy, progress bars, or controls in one viewport
 - `ux-visual-weight` — excessive borders, shadows, card-in-card nesting
 - `ux-spec-violation` — padding, contrast, alignment grid breaks
 - `ux-journey-overload` — unclear primary action; too many equal CTAs
+- `optimistic-ui-gap` — local edit updates chips but shared suggestions/filters read only persisted state; fix with session registry or parent merge (see `gestureTagRegistry.ts`)
 
 Add a new class only when several future bugs would share it.
 

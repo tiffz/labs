@@ -6,6 +6,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import InlinePackName from './InlinePackName';
 import InlinePackSourceLink from './InlinePackSourceLink';
+import InlinePackTags from './InlinePackTags';
 import PackDriveFolderLink from './PackDriveFolderLink';
 import PackPreviewStrip from './PackPreviewStrip';
 import { isIncompleteUploadPack } from '../drive/gestureUploadActivity';
@@ -23,6 +24,11 @@ type PackCollectionCardProps = {
   disabled?: boolean;
   upload?: GestureCollectionUploadHandle;
   dropEnabled?: boolean;
+  allTags?: string[];
+  /** Practice grid: hide tag pills when tag filters already show them. */
+  suppressTags?: boolean;
+  /** When false, preview strips only read cache (inactive tab). */
+  previewFetchEnabled?: boolean;
   onToggleSelect?: () => void;
   onRefresh?: () => void;
   onDelete?: () => void;
@@ -30,8 +36,6 @@ type PackCollectionCardProps = {
   onUpdated?: (pack: GesturePack) => void;
   onError?: (message: string) => void;
 };
-
-export default memo(PackCollectionCard);
 
 function PackCollectionCard({
   pack,
@@ -43,6 +47,9 @@ function PackCollectionCard({
   disabled,
   upload,
   dropEnabled = false,
+  allTags = [],
+  suppressTags = false,
+  previewFetchEnabled = true,
   onToggleSelect,
   onRefresh,
   onDelete,
@@ -61,6 +68,8 @@ function PackCollectionCard({
   const showUploadProgress = isUploading && uploadTotal > 0;
   const showDrawnProgress = !isUploading && !needsRefresh && photoCount > 0 && drawnCount > 0;
   const metadataDisabled = Boolean(disabled && isUploading);
+  const showSelectTags =
+    mode === 'select' && !suppressTags && pack.tags && pack.tags.length > 0;
 
   const canAcceptDrop =
     dropEnabled &&
@@ -74,9 +83,23 @@ function PackCollectionCard({
     upload,
   });
 
+  const previewLimit = mode === 'select' ? 2 : 4;
+
+  const metaLine = isUploading
+    ? `Uploading… ${uploadDone} of ${uploadTotal || '?'}`
+    : uploadInterrupted
+      ? `Upload stopped · ${photoCount} on Drive`
+      : needsRefresh
+        ? 'No photos loaded yet'
+        : `${photoCount} photo${photoCount === 1 ? '' : 's'} · ${drawnCount} drawn`;
+
   const body = (
     <>
-      <PackPreviewStrip driveFileIds={driveFileIds} limit={4} />
+      <PackPreviewStrip
+        driveFileIds={driveFileIds}
+        limit={previewLimit}
+        previewFetchEnabled={previewFetchEnabled}
+      />
       <div className="gesture-collection-card-body">
         <div className="gesture-collection-card-title-row">
           <div className="gesture-collection-card-title-main">
@@ -103,39 +126,50 @@ function PackCollectionCard({
             disabled={metadataDisabled}
           />
         ) : null}
-        <Typography className="gesture-collection-card-meta" variant="body2">
-          {isUploading
-            ? `Uploading… ${uploadDone} of ${uploadTotal || '?'}`
-            : uploadInterrupted
-              ? `Upload stopped · ${photoCount} on Drive`
-              : needsRefresh
-                ? 'No photos loaded yet'
-                : `${photoCount} photo${photoCount === 1 ? '' : 's'} · ${drawnCount} drawn`}
-        </Typography>
-        {showUploadProgress ? (
-          <div
-            className="gesture-collection-card-progress gesture-collection-card-progress--upload"
-            role="progressbar"
-            aria-valuenow={uploadPct}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={`Uploading ${uploadDone} of ${uploadTotal}`}
-          >
-            <div className="gesture-collection-card-progress-fill" style={{ width: `${uploadPct}%` }} />
+        {mode === 'manage' ? (
+          <InlinePackTags
+            pack={pack}
+            allTags={allTags}
+            onUpdated={onUpdated}
+            onError={onError}
+            disabled={metadataDisabled}
+          />
+        ) : showSelectTags ? (
+          <div className="gesture-collection-card-tag-row" aria-label="Tags">
+            {pack.tags!.map((tag) => (
+              <span key={tag} className="gesture-collection-card-tag">{tag}</span>
+            ))}
           </div>
         ) : null}
-        {showDrawnProgress ? (
-          <div
-            className="gesture-collection-card-progress gesture-collection-card-progress--drawn"
-            role="progressbar"
-            aria-valuenow={drawnPct}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={`${drawnCount} of ${photoCount} drawn`}
-          >
-            <div className="gesture-collection-card-progress-fill" style={{ width: `${drawnPct}%` }} />
-          </div>
-        ) : null}
+        <div className="gesture-collection-card-stats-row">
+          <Typography className="gesture-collection-card-meta" variant="body2">
+            {metaLine}
+          </Typography>
+          {showUploadProgress ? (
+            <div
+              className="gesture-collection-card-progress gesture-collection-card-progress--upload gesture-collection-card-progress--inline"
+              role="progressbar"
+              aria-valuenow={uploadPct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Uploading ${uploadDone} of ${uploadTotal}`}
+            >
+              <div className="gesture-collection-card-progress-fill" style={{ width: `${uploadPct}%` }} />
+            </div>
+          ) : null}
+          {showDrawnProgress ? (
+            <div
+              className="gesture-collection-card-progress gesture-collection-card-progress--drawn gesture-collection-card-progress--inline"
+              role="progressbar"
+              aria-valuenow={drawnPct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`${drawnCount} of ${photoCount} drawn`}
+            >
+              <div className="gesture-collection-card-progress-fill" style={{ width: `${drawnPct}%` }} />
+            </div>
+          ) : null}
+        </div>
       </div>
       {mode === 'select' && selected ? (
         <div className="gesture-collection-card-selected" aria-hidden="true">
@@ -177,6 +211,7 @@ function PackCollectionCard({
   return (
     <article
       className={`gesture-collection-card gesture-collection-card--manage${dragActive ? ' is-drop-target' : ''}${isUploading ? ' is-uploading' : ''}`}
+      data-pack-id={pack.id}
       aria-label={canAcceptDrop ? `Drop photos to add to ${pack.name}` : undefined}
       {...(canAcceptDrop ? dropHandlers : {})}
     >
@@ -208,3 +243,31 @@ function PackCollectionCard({
     </article>
   );
 }
+
+function tagsEqual(a: string[] | undefined, b: string[] | undefined): boolean {
+  const left = a ?? [];
+  const right = b ?? [];
+  if (left.length !== right.length) return false;
+  return left.every((tag, index) => tag === right[index]);
+}
+
+function arePackCollectionCardPropsEqual(
+  a: PackCollectionCardProps,
+  b: PackCollectionCardProps,
+): boolean {
+  if (a.pack.id !== b.pack.id) return false;
+  if (a.photoCount !== b.photoCount || a.drawnCount !== b.drawnCount) return false;
+  if (a.selected !== b.selected || a.disabled !== b.disabled || a.mode !== b.mode) return false;
+  if (a.suppressTags !== b.suppressTags || a.dropEnabled !== b.dropEnabled) return false;
+  if (a.previewFetchEnabled !== b.previewFetchEnabled) return false;
+  if (a.pack.name !== b.pack.name) return false;
+  if (a.pack.sourceUrl !== b.pack.sourceUrl) return false;
+  if (!tagsEqual(a.pack.tags, b.pack.tags)) return false;
+  if (a.pack.uploadStatus !== b.pack.uploadStatus) return false;
+  if (a.pack.uploadedFileCount !== b.pack.uploadedFileCount) return false;
+  if (a.pack.expectedFileCount !== b.pack.expectedFileCount) return false;
+  if (a.driveFileIds.join(',') !== b.driveFileIds.join(',')) return false;
+  return true;
+}
+
+export default memo(PackCollectionCard, arePackCollectionCardPropsEqual);

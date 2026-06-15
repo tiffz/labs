@@ -24,12 +24,12 @@ Nested **`AGENTS.md`** for Gesture. Root policy: [`../../AGENTS.md`](../../AGENT
 
 Canonical module: [`media/gestureMediaPolicy.ts`](media/gestureMediaPolicy.ts). Rule: `.cursor/rules/gesture-media-tiers.mdc`.
 
-| Tier        | Use                                  | Resolution order                                                       | Never                                             |
-| ----------- | ------------------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------- |
-| **Preview** | Collection card 4-up strips (~320px) | memory/IDB → OAuth thumbnail https → public thumbnail → alt=media blob | Start with full-file download; `fetch()` lh3 URLs |
-| **Session** | Zen drawing (1280–1920px)            | prefetch LRU → IDB → thumbnail `<img>` → alt=media blob                | Bulk prefetch entire queue                        |
+| Tier        | Use                                  | Resolution order                                                           | Never                                                          |
+| ----------- | ------------------------------------ | -------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **Preview** | Collection card 4-up strips (~320px) | **https thumbnail only in `<img>`** — resolve via `gesturePreviewImageUrl` | `blob:` object URLs in card grids; full-file `alt=media` first |
+| **Session** | Zen drawing (1280–1920px)            | prefetch LRU → IDB → thumbnail `<img>` → alt=media blob                    | Bulk prefetch entire queue                                     |
 
-- **Blob URL owner:** `gestureMediaCache` only — prefetch LRU holds references; never `revokeObjectURL` on cache-owned blobs.
+- **Blob URL owner:** `gestureMediaCache` only — session prefetch holds references; preview **display** is https-only ([`docs/GESTURE_MEDIA_STABILITY.md`](../../docs/GESTURE_MEDIA_STABILITY.md)).
 - **Display-ready:** `gestureSessionPhotoPipeline` — decode one photo at a time (head on Practice/debrief; current + next in zen).
 - **Warmup:** `useGestureMediaWarmup` (cover thumbs, idle); `useGestureSessionWarmup` (first session photo on Practice tab).
 
@@ -50,4 +50,7 @@ Canonical module: [`media/gestureMediaPolicy.ts`](media/gestureMediaPolicy.ts). 
 ## Tests
 
 - Unit: `src/gesture/**/*.test.ts`
-- Smoke: `/gesture/` in `e2e/routeRegistry.ts`; preview strip: `e2e/smoke/gesture-preview-strip.spec.ts` (dev-only `?e2eSeed=1` fixture)
+- **Preview display invariants (presubmit):** `gesturePreviewDisplayInvariants.test.ts`, `gesturePreviewImageUrl.test.ts`
+- **Preview source audit:** `src/gesture/audits/gesturePreviewDisplayAudit.test.ts`
+- Stability playbook: [`docs/GESTURE_MEDIA_STABILITY.md`](../../docs/GESTURE_MEDIA_STABILITY.md)
+- Smoke: `/gesture/` in `e2e/routeRegistry.ts`; preview strip: `e2e/smoke/gesture-preview-strip.spec.ts` (dev-only `?e2eSeed=1` fixture — https `src`, no blob console errors)

@@ -15,7 +15,7 @@ See [CURRICULUM.md](./CURRICULUM.md). Phases: isolated flashcards (1–7), Alber
 - **Focus hints** may appear when diagnostics detect a pattern (e.g. warm-background value reads); adaptive data still updates in the background.
 - After submit or tap, compact feedback and auto-advance; daily sessions end with a short summary.
 
-Profile persists in `localStorage` (`sight:profile`). Older curriculum saves are migrated on mount; use **Reset Sight** in the debug dock to start over.
+Profile persists in `localStorage` (`sight:profile`). Older curriculum saves are migrated on mount; use **Clear Sight localStorage** in the debug dock to start over.
 
 ## Developer debug workflow
 
@@ -26,7 +26,7 @@ Profile persists in `localStorage` (`sight:profile`). Older curriculum saves are
 | `/sight/?debug#sandbox&level=21` | Open sandbox at a specific curriculum level                               |
 | Practice + `?debug`, **S** key   | Cycle forced pass → forced fail → normal scoring                          |
 
-**Reset Sight** clears only `sight:profile`. **Clear all local** wipes all `localStorage` for the origin (every Labs app) after confirmation.
+**Clear Sight localStorage** resets only `sight:profile`. **Clear all Labs localStorage** wipes all `localStorage` for the origin (every Labs app) after confirmation. Both live under **Local storage** in the expanded debug dock (not the main toolbar).
 
 ## Developer sandbox
 

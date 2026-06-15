@@ -232,7 +232,9 @@ Migrate existing MUI `Popover` usages opportunistically (i.e. when touching the 
 
 ## LabsDebugDock (URL-gated debug chrome)
 
-For local-only debug surfaces (e.g. practice timelines), wrap app-specific content in `LabsDebugDock` from [`src/shared/components/LabsDebugDock.tsx`](./components/LabsDebugDock.tsx). It provides a consistent bottom dock, collapse affordance, optional **Copy bundle** (JSON for bug reports / LLM paste), and an optional `reportOuterHeightCssVar` hook when the main app layout must subtract dock height (see scales `--debug-panel-height`).
+For local-only debug surfaces (e.g. practice timelines), wrap app-specific content in `LabsDebugDock` from [`src/shared/components/LabsDebugDock.tsx`](./components/LabsDebugDock.tsx). It provides a consistent bottom dock, collapse affordance, and **Copy bundle** (JSON for bug reports / LLM paste).
+
+While mounted, the dock sets `--labs-debug-dock-height` on `:root` (and mirrors `--debug-panel-height` for Scales). [`public/styles/shared.css`](../../public/styles/shared.css) shrinks common full-viewport shells (`sight-app`, `scales-app`, `piano-app`, etc.) so fixed dock chrome never covers footers or controls. New apps with `min-height: 100dvh` shells should add their root class to that rule or use `height: calc(100dvh - var(--labs-debug-dock-height, 0px))`.
 
 ## App-specific shared primitives
 

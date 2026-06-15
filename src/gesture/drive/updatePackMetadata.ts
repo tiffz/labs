@@ -3,6 +3,7 @@ import { gestureDb } from '../db/gestureDb';
 import { notifyGestureLocalChange } from '../db/gestureChangeBus';
 import type { GesturePack, GesturePackMetadataInput } from '../types';
 import { sanitizePackFolderName } from './gesturePackMetadata';
+import { normalizeGestureTags } from './gesturePackTags';
 import { normalizePackSourceUrl } from './gesturePackSourceUrl';
 
 export async function updatePackMetadata(
@@ -39,6 +40,15 @@ export async function updatePackMetadata(
     updated.sourceUrl = sourceUrl;
   } else {
     delete updated.sourceUrl;
+  }
+
+  if (input.tags !== undefined) {
+    const tags = normalizeGestureTags(input.tags);
+    if (tags.length > 0) {
+      updated.tags = tags;
+    } else {
+      delete updated.tags;
+    }
   }
 
   await gestureDb.packs.put(updated);

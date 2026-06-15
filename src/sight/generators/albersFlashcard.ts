@@ -83,19 +83,19 @@ function correctForPerceived(
 export function albersPrompt(question: AlbersQuestionKind): string {
   switch (question) {
     case 'identity':
-      return 'Are these inner targets mathematically identical?';
+      return 'Are the inner squares the same color?';
     case 'perceivedLighter':
-      return 'Which inner target looks lighter?';
+      return 'Which inner square looks lighter?';
     case 'perceivedDarker':
-      return 'Which inner target looks darker?';
+      return 'Which inner square looks darker?';
     case 'perceivedWarmer':
-      return 'Which inner target looks warmer?';
+      return 'Which inner square looks warmer?';
     case 'perceivedCooler':
-      return 'Which inner target looks cooler?';
+      return 'Which inner square looks cooler?';
     case 'perceivedMoreSaturated':
-      return 'Which inner target looks more saturated?';
+      return 'Which inner square looks more vivid?';
     case 'perceivedLessSaturated':
-      return 'Which inner target looks less saturated?';
+      return 'Which inner square looks less vivid?';
   }
 }
 

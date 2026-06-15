@@ -64,6 +64,15 @@ Elevated defaults within the same family:
 - Preview: 3:2 aspect, 6px gap, rounded strip (`overflow: hidden` on strip).
 - Selected state (Practice tab): inset sage wash — `color-mix` on `--gesture-accent-soft`, not a heavy ring.
 
+### Inline collection metadata (name, source link, tags)
+
+Card metadata edits should feel **light**, not form-heavy:
+
+- **Tags** — borderless sage chips (`gesture-pack-tag-chip`); **dashed** `+ Tag` pill (`gesture-pack-tag-add`); borderless inline input when adding. No MUI outlined combobox on the card.
+- **Autocomplete** — suggestions from `useGestureKnownTags` (Dexie packs + `gestureTagRegistry` session additions). Register local tags immediately so new labels appear on other cards without refresh.
+- **Persistence** — optimistic chip UI; debounced Drive save; do not disable the whole row while saving.
+- **Source link** — ghost inline edit pattern (`InlinePackSourceLink`); match tag/name weight.
+
 ### Drop zone
 
 - No dashed border; soft sage wash background.

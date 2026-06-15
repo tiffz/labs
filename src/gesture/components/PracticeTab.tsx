@@ -11,9 +11,15 @@ import Typography from '@mui/material/Typography';
 import { useLiveQuery } from 'dexie-react-hooks';
 import PackCollectionCard from '../components/PackCollectionCard';
 import GestureTabLoading from '../components/GestureTabLoading';
+import GestureTagFilterBar from '../components/GestureTagFilterBar';
 import { gestureDb } from '../db/gestureDb';
 import { readGestureDriveAccessToken } from '../drive/readGestureDriveAccessToken';
 import { isIncompleteUploadPack } from '../drive/gestureUploadActivity';
+import {
+  packHasGestureTag,
+  packMatchesGestureTagFilters,
+} from '../drive/gesturePackTags';
+import { useGestureKnownTags } from '../hooks/useGestureKnownTags';
 import {
   GESTURE_EMPTY_DRAW_HISTORY,
   GESTURE_EMPTY_PACK_FILES,
@@ -26,6 +32,11 @@ import {
   prefetchGestureSessionPhotoUntilReady,
 } from '../media/gestureSessionPhotoPipeline';
 import { buildGestureSessionQueueFromConfig } from '../session/gestureSessionQueueFromConfig';
+import {
+  readGesturePracticeSessionConfig,
+  writeGesturePracticeSessionConfig,
+  type GesturePracticeTimerPreset,
+} from '../practice/gesturePracticeConfigStorage';
 import type { SessionConfig } from '../types';
 
 const PRESETS = [
@@ -38,29 +49,49 @@ const PRESETS = [
 
 const CUSTOM_PRESET = 'custom' as const;
 
-type TimerPreset = (typeof PRESETS)[number]['sec'] | typeof CUSTOM_PRESET;
+type TimerPreset = GesturePracticeTimerPreset;
 
 type SessionLengthMode = 'endless' | 'limited';
 
 interface PracticeTabProps {
   onStart: (config: SessionConfig) => void;
   onNeedCollections: () => void;
+  activeTagFilters: string[];
+  onActiveTagFiltersChange: (tags: string[]) => void;
+  previewFetchEnabled?: boolean;
 }
 
-export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabProps): React.ReactElement {
+export default function PracticeTab({
+  onStart,
+  onNeedCollections,
+  activeTagFilters,
+  onActiveTagFiltersChange,
+  previewFetchEnabled = true,
+}: PracticeTabProps): React.ReactElement {
+  const storedConfig = readGesturePracticeSessionConfig();
   const { packs, packsHydrated } = useGesturePacks();
   const { counts, coverIds, drawnSets, statsHydrated } = useGesturePackStats();
 
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
-  const [selectedPackIds, setSelectedPackIds] = useState<string[]>([]);
-  const [durationSec, setDurationSec] = useState(60);
-  const [timerPreset, setTimerPreset] = useState<TimerPreset>(60);
-  const [customDurationSec, setCustomDurationSec] = useState('90');
-  const [prioritizeLeastDrawn, setPrioritizeLeastDrawn] = useState(true);
-  const [shuffle, setShuffle] = useState(true);
-  const [sessionLengthMode, setSessionLengthMode] = useState<SessionLengthMode>('endless');
-  const [photoLimit, setPhotoLimit] = useState('20');
+  const [selectedPackIds, setSelectedPackIds] = useState<string[]>(
+    () => storedConfig?.selectedPackIds ?? [],
+  );
+  const [durationSec, setDurationSec] = useState(() => storedConfig?.durationSec ?? 60);
+  const [timerPreset, setTimerPreset] = useState<TimerPreset>(
+    () => storedConfig?.timerPreset ?? 60,
+  );
+  const [customDurationSec, setCustomDurationSec] = useState(
+    () => storedConfig?.customDurationSec ?? '90',
+  );
+  const [prioritizeLeastDrawn, setPrioritizeLeastDrawn] = useState(
+    () => storedConfig?.prioritizeLeastDrawn ?? true,
+  );
+  const [shuffle, setShuffle] = useState(() => storedConfig?.shuffle ?? true);
+  const [sessionLengthMode, setSessionLengthMode] = useState<SessionLengthMode>(
+    () => storedConfig?.sessionLengthMode ?? 'endless',
+  );
+  const [photoLimit, setPhotoLimit] = useState(() => storedConfig?.photoLimit ?? '20');
 
   const packFilesRaw = useLiveQuery(
     () =>
@@ -79,24 +110,104 @@ export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabP
     [counts, packs],
   );
 
-  const packIdsWithPhotos = useMemo(
+  const allTags = useGestureKnownTags(packs);
+
+  const practicePacks = useMemo(
+    () =>
+      readyPacks.filter(
+        (p) =>
+          (counts.get(p.id) ?? 0) > 0 && packMatchesGestureTagFilters(p, activeTagFilters),
+      ),
+    [activeTagFilters, counts, readyPacks],
+  );
+
+  const packIdsWithPhotos = useMemo(() => practicePacks.map((p) => p.id), [practicePacks]);
+
+  const allPackIdsWithPhotos = useMemo(
     () => readyPacks.filter((p) => (counts.get(p.id) ?? 0) > 0).map((p) => p.id),
     [counts, readyPacks],
   );
 
-  const didInitSelection = useRef(false);
+  const didInitSelection = useRef(storedConfig != null);
   useEffect(() => {
-    if (!didInitSelection.current && packIdsWithPhotos.length > 0) {
-      setSelectedPackIds(packIdsWithPhotos);
+    if (!didInitSelection.current && allPackIdsWithPhotos.length > 0) {
+      setSelectedPackIds(allPackIdsWithPhotos);
       didInitSelection.current = true;
     }
-  }, [packIdsWithPhotos]);
+  }, [allPackIdsWithPhotos]);
+
+  useEffect(() => {
+    if (allPackIdsWithPhotos.length === 0) return;
+    setSelectedPackIds((prev) => {
+      const valid = prev.filter((id) => allPackIdsWithPhotos.includes(id));
+      return valid.length === prev.length ? prev : valid;
+    });
+  }, [allPackIdsWithPhotos]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      writeGesturePracticeSessionConfig({
+        version: 1,
+        selectedPackIds,
+        durationSec,
+        timerPreset,
+        customDurationSec,
+        prioritizeLeastDrawn,
+        shuffle,
+        sessionLengthMode,
+        photoLimit,
+        activeTagFilters,
+      });
+    }, 350);
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    activeTagFilters,
+    customDurationSec,
+    durationSec,
+    photoLimit,
+    prioritizeLeastDrawn,
+    selectedPackIds,
+    sessionLengthMode,
+    shuffle,
+    timerPreset,
+  ]);
 
   const togglePack = (packId: string) => {
     setSelectedPackIds((prev) =>
       prev.includes(packId) ? prev.filter((id) => id !== packId) : [...prev, packId],
     );
   };
+
+  const toggleTagFilter = (tag: string) => {
+    const wasActive = activeTagFilters.includes(tag);
+    const nextFilters = wasActive
+      ? activeTagFilters.filter((t) => t !== tag)
+      : [...activeTagFilters, tag];
+    onActiveTagFiltersChange(nextFilters);
+
+    if (!wasActive) {
+      const matchingIds = readyPacks
+        .filter((pack) => (counts.get(pack.id) ?? 0) > 0 && packHasGestureTag(pack, tag))
+        .map((pack) => pack.id);
+      if (matchingIds.length > 0) {
+        setSelectedPackIds((prev) => [...new Set([...prev, ...matchingIds])]);
+      }
+    }
+  };
+
+  const selectAllVisible = () => {
+    setSelectedPackIds((prev) => [...new Set([...prev, ...packIdsWithPhotos])]);
+  };
+
+  const deselectAllVisible = () => {
+    setSelectedPackIds((prev) => prev.filter((id) => !packIdsWithPhotos.includes(id)));
+  };
+
+  const visibleSelectedCount = packIdsWithPhotos.filter((id) => selectedPackIds.includes(id)).length;
+  const selectionHint =
+    packIdsWithPhotos.length > 0
+      ? `${visibleSelectedCount} of ${packIdsWithPhotos.length} selected`
+      : null;
 
   const effectiveDurationSec =
     timerPreset === CUSTOM_PRESET
@@ -164,7 +275,7 @@ export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabP
     );
   }
 
-  if (packIdsWithPhotos.length === 0) {
+  if (packIdsWithPhotos.length === 0 && activeTagFilters.length === 0) {
     return (
       <div className="gesture-tab-panel">
         <div className="gesture-empty-state">
@@ -175,6 +286,25 @@ export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabP
           <Button variant="contained" onClick={onNeedCollections}>
             Go to collections
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (packIdsWithPhotos.length === 0) {
+    return (
+      <div className="gesture-tab-panel">
+        <GestureTagFilterBar
+          tags={allTags}
+          activeTags={activeTagFilters}
+          onToggleTag={toggleTagFilter}
+          onClear={() => onActiveTagFiltersChange([])}
+        />
+        <div className="gesture-empty-state">
+          <Typography className="gesture-empty-title">No collections match these tags</Typography>
+          <Typography className="gesture-empty-copy">
+            Clear the tag filters or tag collections on the Collections tab.
+          </Typography>
         </div>
       </div>
     );
@@ -289,24 +419,34 @@ export default function PracticeTab({ onStart, onNeedCollections }: PracticeTabP
         </div>
       </section>
 
+      <GestureTagFilterBar
+        tags={allTags}
+        activeTags={activeTagFilters}
+        onToggleTag={toggleTagFilter}
+        onClear={() => onActiveTagFiltersChange([])}
+        selectionHint={selectionHint}
+        onSelectAllShown={packIdsWithPhotos.length > 0 ? selectAllVisible : undefined}
+        onDeselectAllShown={packIdsWithPhotos.length > 0 ? deselectAllVisible : undefined}
+      />
+
       <Typography component="h2" className="gesture-practice-label">
         Collections
       </Typography>
       <div className="gesture-collection-grid gesture-collection-grid--practice">
-        {readyPacks
-          .filter((p) => packIdsWithPhotos.includes(p.id))
-          .map((pack) => (
-            <PackCollectionCard
-              key={pack.id}
-              pack={pack}
-              driveFileIds={resolveGesturePackCoverFileIds(pack, coverIds)}
-              photoCount={counts.get(pack.id) ?? 0}
-              drawnCount={drawnSets.get(pack.id)?.size ?? 0}
-              mode="select"
-              selected={selectedPackIds.includes(pack.id)}
-              onToggleSelect={() => togglePack(pack.id)}
-            />
-          ))}
+        {practicePacks.map((pack) => (
+          <PackCollectionCard
+            key={pack.id}
+            pack={pack}
+            driveFileIds={resolveGesturePackCoverFileIds(pack, coverIds)}
+            photoCount={counts.get(pack.id) ?? 0}
+            drawnCount={drawnSets.get(pack.id)?.size ?? 0}
+            mode="select"
+            selected={selectedPackIds.includes(pack.id)}
+            suppressTags={activeTagFilters.length > 0}
+            previewFetchEnabled={previewFetchEnabled}
+            onToggleSelect={() => togglePack(pack.id)}
+          />
+        ))}
       </div>
 
       <Box className="gesture-practice-footer">

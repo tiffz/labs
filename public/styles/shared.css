@@ -47,6 +47,11 @@ body {
 /* Global reduced-motion baseline. Apps may opt individual animations back in
    inside their own `@media (prefers-reduced-motion: reduce)` blocks when an
    animation is critical to the UX (e.g. beat-sync indicators). */
+:root {
+  --labs-debug-dock-height: 0px;
+  --debug-panel-height: 0px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -55,5 +60,32 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * LabsDebugDock is position:fixed at the viewport bottom. While mounted, shrink
+ * full-viewport app shells so practice footers and controls stay above the bar.
+ * Height is synced to --labs-debug-dock-height (see LabsDebugDock.tsx).
+ */
+html:has(.labs-debug-dock) .sight-app,
+html:has(.labs-debug-dock) .scales-app,
+html:has(.labs-debug-dock) .piano-app,
+html:has(.labs-debug-dock) .melodia-app,
+html:has(.labs-debug-dock) .gesture-app {
+  box-sizing: border-box;
+  height: calc(100vh - var(--labs-debug-dock-height, 0px));
+  max-height: calc(100vh - var(--labs-debug-dock-height, 0px));
+  min-height: 0;
+}
+
+@supports (height: 100dvh) {
+  html:has(.labs-debug-dock) .sight-app,
+  html:has(.labs-debug-dock) .scales-app,
+  html:has(.labs-debug-dock) .piano-app,
+  html:has(.labs-debug-dock) .melodia-app,
+  html:has(.labs-debug-dock) .gesture-app {
+    height: calc(100dvh - var(--labs-debug-dock-height, 0px));
+    max-height: calc(100dvh - var(--labs-debug-dock-height, 0px));
   }
 }

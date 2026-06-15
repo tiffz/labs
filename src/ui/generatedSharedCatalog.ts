@@ -3212,6 +3212,46 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-labsdebugdock-tsx-labs-debug-dock-height-var",
+    "name": "LABS_DEBUG_DOCK_HEIGHT_VAR",
+    "path": "src/shared/components/LabsDebugDock.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Written to `:root` while is mounted; apps subtract this from `100dvh`.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "drums",
+      "piano"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labsdebugdock-tsx-labs-debug-panel-height-var",
+    "name": "LABS_DEBUG_PANEL_HEIGHT_VAR",
+    "path": "src/shared/components/LabsDebugDock.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Legacy alias kept for Scales (`scales.css`); synced to the same pixel height.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "drums",
+      "piano"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-labsdebugdock-tsx-labsdebugdock",
     "name": "LabsDebugDock",
     "path": "src/shared/components/LabsDebugDock.tsx",
@@ -3238,7 +3278,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "No JSDoc summary provided.",
+    "description": "Written to `:root` while is mounted; apps subtract this from `100dvh`.",
     "tags": [
       "components",
       "api",
@@ -3258,7 +3298,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "No JSDoc summary provided.",
+    "description": "Written to `:root` while is mounted; apps subtract this from `100dvh`.",
     "tags": [
       "components",
       "api",

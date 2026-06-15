@@ -16,6 +16,7 @@ type MemoryEntry = {
 
 const memory = new Map<string, MemoryEntry>();
 let memoryBytes = 0;
+const inflightGet = new Map<string, Promise<string | null>>();
 
 type EvictListener = (driveFileId: string, kind: GestureMediaCacheKind) => void;
 const evictListeners = new Set<EvictListener>();
@@ -113,14 +114,18 @@ async function evictIdbIfNeeded(kind: GestureMediaCacheKind): Promise<void> {
   }
 }
 
-/** Decode blob off the critical path so first paint can use the object URL immediately. */
-export function warmGestureMediaBitmap(objectUrl: string): void {
-  if (!objectUrl.startsWith('blob:')) return;
+/**
+ * Session-tier decode warm — preview cards load via `<img>` already; warming preview
+ * blobs here duplicated work and raced LRU eviction (stale blob: ERR_FILE_NOT_FOUND).
+ */
+export function warmGestureMediaBitmap(cacheKey: string): void {
   const run = () => {
+    const entry = memory.get(cacheKey);
+    if (!entry?.objectUrl.startsWith('blob:')) return;
     const img = new Image();
     img.onload = () => undefined;
     img.onerror = () => undefined;
-    img.src = objectUrl;
+    img.src = entry.objectUrl;
   };
   if (typeof requestIdleCallback === 'function') {
     requestIdleCallback(run, { timeout: 2000 });
@@ -145,15 +150,25 @@ export async function getCachedGestureMediaObjectUrl(
     memoryBytes -= mem.byteSize;
   }
 
-  const row = await gestureDb.mediaCache.get(rowId(driveFileId, kind));
-  if (!row || isExpired(row.fetchedAt, kind)) {
-    if (row) await deleteIdbRow(row.id);
-    return null;
-  }
+  const pending = inflightGet.get(key);
+  if (pending) return pending;
 
-  const objectUrl = putMemory(key, row.blob, row.fetchedAt);
-  warmGestureMediaBitmap(objectUrl);
-  return objectUrl;
+  const promise = (async () => {
+    const row = await gestureDb.mediaCache.get(rowId(driveFileId, kind));
+    if (!row || isExpired(row.fetchedAt, kind)) {
+      if (row) await deleteIdbRow(row.id);
+      return null;
+    }
+
+    const objectUrl = putMemory(key, row.blob, row.fetchedAt);
+    if (kind === 'session') warmGestureMediaBitmap(key);
+    return objectUrl;
+  })().finally(() => {
+    inflightGet.delete(key);
+  });
+
+  inflightGet.set(key, promise);
+  return promise;
 }
 
 export async function putCachedGestureMediaBlob(
@@ -177,11 +192,12 @@ export async function putCachedGestureMediaBlob(
   });
   await evictIdbIfNeeded(kind);
   const objectUrl = putMemory(key, blob, fetchedAt);
-  warmGestureMediaBitmap(objectUrl);
+  if (kind === 'session') warmGestureMediaBitmap(key);
   return objectUrl;
 }
 
 export async function clearGestureMediaCache(): Promise<void> {
+  inflightGet.clear();
   for (const entry of memory.values()) revokeObjectUrl(entry.objectUrl);
   memory.clear();
   memoryBytes = 0;

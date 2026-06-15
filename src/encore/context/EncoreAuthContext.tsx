@@ -144,21 +144,74 @@ function getGoogleClientId(): string {
   return id?.trim() ?? '';
 }
 
+/** True when bootstrap must await async BFF token refresh before the access gate can render truthfully. */
+function needsAsyncGoogleSessionRestore(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (!getGoogleClientId()) return false;
+  const stored = readPersistedGoogleSession();
+  const identity = readPersistedGoogleIdentity();
+  if (stored && isPersistedSessionStillFresh(stored)) return false;
+  if (identity?.email && isLabsGoogleSessionBffEnabled()) return true;
+  return false;
+}
+
+function readInitialGoogleAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  const stored = readPersistedGoogleSession();
+  if (stored && isPersistedSessionStillFresh(stored)) return stored.accessToken;
+  return null;
+}
+
+function readInitialGoogleGateBypassed(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (readGoogleGateBypassed()) return true;
+  if (!getGoogleClientId()) return true;
+  const stored = readPersistedGoogleSession();
+  const identity = readPersistedGoogleIdentity();
+  if (
+    stored &&
+    !isPersistedSessionStillFresh(stored) &&
+    identity?.email &&
+    !isLabsGoogleSessionBffEnabled()
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function readInitialGoogleSessionExpired(): boolean {
+  if (typeof window === 'undefined') return false;
+  const stored = readPersistedGoogleSession();
+  const identity = readPersistedGoogleIdentity();
+  if (
+    stored &&
+    !isPersistedSessionStillFresh(stored) &&
+    identity?.email &&
+    !isLabsGoogleSessionBffEnabled()
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function readInitialGoogleAuthReady(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (parseGuestShareSnapshotFileIdFromHash() !== null) return true;
+  if (needsAsyncGoogleSessionRestore()) return false;
+  return true;
+}
+
 export function EncoreAuthProvider({ children }: { children: ReactNode }): ReactElement {
   const { clear: clearUndoStack } = useLabsUndo();
-  const [googleAuthReady, setGoogleAuthReady] = useState(
-    () => typeof window !== 'undefined' && parseGuestShareSnapshotFileIdFromHash() !== null,
-  );
+  const [googleAuthReady, setGoogleAuthReady] = useState(readInitialGoogleAuthReady);
   const locationHash = useSyncExternalStore(
     subscribeEncoreLocationHash,
     getEncoreLocationHash,
     getEncoreLocationHashServerSnapshot,
   );
   const guestShareRoute = parseGuestShareSnapshotFileIdFromHash(locationHash) !== null;
-  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
-  const [googleGateBypassed, setGoogleGateBypassed] = useState(() =>
-    typeof window !== 'undefined' ? readGoogleGateBypassed() : false,
-  );
+  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(readInitialGoogleAccessToken);
+  const [googleGateBypassed, setGoogleGateBypassed] = useState(readInitialGoogleGateBypassed);
   // Hydrate identity synchronously so the account menu / shell don't flash a "Not signed in"
   // state on first paint. Per ADR 0010 the bootstrap effect is now purely synchronous (no GIS
   // calls), but the initial render of the shell still needs the persisted identity before the
@@ -171,7 +224,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
     if (typeof window === 'undefined') return null;
     return readPersistedGoogleIdentity()?.email ?? null;
   });
-  const [googleSessionExpired, setGoogleSessionExpired] = useState(false);
+  const [googleSessionExpired, setGoogleSessionExpired] = useState(readInitialGoogleSessionExpired);
   const [accessDenied, setAccessDenied] = useState(false);
   const [accessDeniedMessage, setAccessDeniedMessage] = useState<string | null>(null);
   const [googleSignInPending, setGoogleSignInPending] = useState(false);
@@ -190,10 +243,18 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
     setSpotifyLinked(hasUsableSpotifyTokenBundle());
   }, []);
 
-  /** Leaving the guest route must clear “ready” before paint so the main shell shows the spinner, not the sign-in gate. */
+  /**
+   * Leaving the guest share route must clear “ready” before paint so the main shell shows the
+   * spinner, not the sign-in gate, while Encore auth bootstraps. Initial load keeps the
+   * synchronously-hydrated ready state so returning users do not flash the sign-in landing.
+   */
+  const wasGuestShareRouteRef = useRef(guestShareRoute);
   useLayoutEffect(() => {
-    if (guestShareRoute) return;
-    setGoogleAuthReady(false);
+    const wasGuest = wasGuestShareRouteRef.current;
+    wasGuestShareRouteRef.current = guestShareRoute;
+    if (wasGuest && !guestShareRoute) {
+      setGoogleAuthReady(false);
+    }
   }, [guestShareRoute]);
 
   useEffect(() => {
@@ -365,6 +426,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
       setGoogleAuthReady(true);
       return;
     }
+    let deferReady = false;
     try {
       const clientId = getGoogleClientId();
       if (!clientId) return;
@@ -381,6 +443,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
         setGoogleGateBypassed(false);
       } else if (rememberedIdentity?.email) {
         if (isLabsGoogleSessionBffEnabled()) {
+          deferReady = true;
           void tryRefreshGoogleAccessTokenViaBff().then((token) => {
             if (token) {
               setGoogleAccessToken(token);
@@ -390,6 +453,7 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
             } else {
               enterSessionExpiredMode();
             }
+            setGoogleAuthReady(true);
           });
         } else {
           enterSessionExpiredMode();
@@ -399,7 +463,9 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
         clearPersistedGoogleSession();
       }
     } finally {
-      setGoogleAuthReady(true);
+      if (!deferReady) {
+        setGoogleAuthReady(true);
+      }
     }
   }, [enterSessionExpiredMode, guestShareRoute]);
 

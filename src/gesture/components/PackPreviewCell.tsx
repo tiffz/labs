@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useLayoutEffect, useRef, useState } from 'react';
 
 type PackPreviewCellProps = {
   url?: string;
@@ -7,7 +7,7 @@ type PackPreviewCellProps = {
   priority?: 'high' | 'auto';
 };
 
-export default function PackPreviewCell({
+function PackPreviewCell({
   url,
   loading = false,
   priority = 'auto',
@@ -15,12 +15,28 @@ export default function PackPreviewCell({
   const imgRef = useRef<HTMLImageElement>(null);
   const [visible, setVisible] = useState(false);
   const [failed, setFailed] = useState(false);
+  const loadedUrlRef = useRef<string | undefined>(undefined);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (!url) {
+      loadedUrlRef.current = undefined;
+      setVisible(false);
+      setFailed(false);
+      return;
+    }
+
+    const img = imgRef.current;
+    if (loadedUrlRef.current === url && img?.complete && img.naturalWidth > 0) {
+      setVisible(true);
+      setFailed(false);
+      return;
+    }
+
+    loadedUrlRef.current = url;
     setVisible(false);
     setFailed(false);
-    const img = imgRef.current;
-    if (!img || !url) return;
+
+    if (!img) return;
 
     const onLoad = () => setVisible(true);
     const onError = () => setFailed(true);
@@ -57,3 +73,5 @@ export default function PackPreviewCell({
     </div>
   );
 }
+
+export default memo(PackPreviewCell);

@@ -10,6 +10,7 @@ import GestureWordmark from './GestureWordmark';
 import PracticeTab from './PracticeTab';
 import type { GestureHomeTab, SessionConfig } from '../types';
 import { useGestureMediaWarmup } from '../hooks/useGestureMediaWarmup';
+import { readGesturePracticeSessionConfig } from '../practice/gesturePracticeConfigStorage';
 
 interface GestureAppShellProps {
   onStartSession: (config: SessionConfig) => void;
@@ -19,6 +20,9 @@ export default function GestureAppShell({ onStartSession }: GestureAppShellProps
   const [tab, setTab] = useState<GestureHomeTab>('practice');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeTagFilters, setActiveTagFilters] = useState<string[]>(
+    () => readGesturePracticeSessionConfig()?.activeTagFilters ?? [],
+  );
 
   useGestureMediaWarmup();
 
@@ -59,10 +63,16 @@ export default function GestureAppShell({ onStartSession }: GestureAppShellProps
         <PracticeTab
           onStart={onStartSession}
           onNeedCollections={() => setTab('collections')}
+          activeTagFilters={activeTagFilters}
+          onActiveTagFiltersChange={setActiveTagFilters}
+          previewFetchEnabled={tab === 'practice'}
         />
       </div>
       <div hidden={tab !== 'collections'} aria-hidden={tab !== 'collections'}>
         <CollectionsTab
+          activeTagFilters={activeTagFilters}
+          onActiveTagFiltersChange={setActiveTagFilters}
+          previewFetchEnabled={tab === 'collections'}
           onMessage={(msg) => {
             setError(null);
             setMessage(msg);

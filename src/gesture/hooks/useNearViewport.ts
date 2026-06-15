@@ -20,6 +20,19 @@ export function useNearViewport(rootMargin = '320px'): {
       { rootMargin },
     );
     observer.observe(root);
+
+    // IntersectionObserver may not fire synchronously when the node is already on screen.
+    const rect = root.getBoundingClientRect();
+    const margin = Number.parseFloat(rootMargin) || 0;
+    const alreadyVisible =
+      rect.bottom >= -margin &&
+      rect.top <= window.innerHeight + margin &&
+      rect.right >= -margin &&
+      rect.left <= window.innerWidth + margin;
+    if (alreadyVisible) {
+      setNear(true);
+    }
+
     return () => observer.disconnect();
   }, [near, root, rootMargin]);
 

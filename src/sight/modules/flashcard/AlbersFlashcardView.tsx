@@ -68,7 +68,8 @@ export default function AlbersFlashcardView({
               {isIdentity ? (
                 <>
                   <Button
-                    variant="contained"
+                    variant="outlined"
+                    className="sight-albers-choice-btn"
                     onClick={() => onPickBinary('same')}
                     disabled={disabled}
                   >
@@ -76,6 +77,7 @@ export default function AlbersFlashcardView({
                   </Button>
                   <Button
                     variant="outlined"
+                    className="sight-albers-choice-btn"
                     onClick={() => onPickBinary('different')}
                     disabled={disabled}
                   >
@@ -84,10 +86,20 @@ export default function AlbersFlashcardView({
                 </>
               ) : (
                 <>
-                  <Button variant="contained" onClick={() => onPickSide('left')} disabled={disabled}>
+                  <Button
+                    variant="outlined"
+                    className="sight-albers-choice-btn"
+                    onClick={() => onPickSide('left')}
+                    disabled={disabled}
+                  >
                     Left
                   </Button>
-                  <Button variant="outlined" onClick={() => onPickSide('right')} disabled={disabled}>
+                  <Button
+                    variant="outlined"
+                    className="sight-albers-choice-btn"
+                    onClick={() => onPickSide('right')}
+                    disabled={disabled}
+                  >
                     Right
                   </Button>
                 </>
@@ -109,8 +121,8 @@ export default function AlbersFlashcardView({
             <FlashcardProofStrip
               left={challenge.left.target}
               right={challenge.right.target}
-              leftLabel="Left target"
-              rightLabel="Right target"
+              leftLabel="Left square"
+              rightLabel="Right square"
               visible={feedbackVisible}
             />
           </div>

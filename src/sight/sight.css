@@ -17,13 +17,16 @@ body {
 }
 
 .sight-app {
-  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .sight-main {
-  display: contents;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .sight-header {
@@ -747,6 +750,11 @@ body {
   gap: 0.75rem;
   justify-content: center;
   margin-bottom: 0.5rem;
+}
+
+/* Equal-weight answer chips — no contained/outlined hierarchy between options */
+.sight-app .sight-albers-choice-btn.MuiButton-root {
+  min-width: 5.75rem;
 }
 
 /* Flashcard proof — neutral gray targets (always reserved in feedback slot) */

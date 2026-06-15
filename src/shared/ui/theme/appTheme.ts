@@ -394,20 +394,65 @@ const THEMES: Record<AppThemeId, Theme> = {
     ...MUSIC_LIGHT_DEFAULT,
     ...STANZA_THEME_OVERRIDES,
   }),
-  sight: buildTheme({
-    mode: 'dark',
-    fontFamily: "'JetBrains Mono', ui-monospace, Menlo, monospace",
-    primary: '#a78bfa',
-    secondary: '#f472b6',
-    backgroundDefault: '#121214',
-    backgroundPaper: '#1a1a1e',
-    textPrimary: '#e4e4e7',
-    textSecondary: '#a1a1aa',
-    divider: '#2e2e34',
-    radius: 4,
-    spacingBase: 4,
-    readable: true,
-  }),
+  sight: createTheme(
+    buildTheme({
+      mode: 'dark',
+      fontFamily: "'JetBrains Mono', ui-monospace, Menlo, monospace",
+      primary: '#a78bfa',
+      secondary: '#f472b6',
+      backgroundDefault: '#121214',
+      backgroundPaper: '#1a1a1e',
+      textPrimary: '#e4e4e7',
+      textSecondary: '#a1a1aa',
+      divider: '#2e2e34',
+      radius: 4,
+      spacingBase: 4,
+      readable: true,
+    }),
+    {
+      components: {
+        MuiButton: {
+          styleOverrides: {
+            containedPrimary: {
+              color: '#18181b',
+              backgroundColor: '#f4f4f5',
+              boxShadow: 'none',
+              '&:hover': {
+                backgroundColor: '#ffffff',
+                boxShadow: 'none',
+              },
+              '&:active': {
+                backgroundColor: '#e4e4e7',
+              },
+              '&.Mui-disabled': {
+                color: alpha('#18181b', 0.38),
+                backgroundColor: alpha('#f4f4f5', 0.28),
+              },
+            },
+            outlinedPrimary: {
+              color: '#fafafa',
+              borderColor: 'rgba(255, 255, 255, 0.72)',
+              '&:hover': {
+                color: '#ffffff',
+                borderColor: '#ffffff',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              },
+              '&.Mui-disabled': {
+                color: alpha('#fafafa', 0.38),
+                borderColor: alpha('#fafafa', 0.28),
+              },
+            },
+            textPrimary: {
+              color: '#e4e4e7',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.06)',
+              },
+            },
+          },
+        },
+      },
+    },
+  ),
   gesture: buildTheme({
     mode: 'light',
     fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",

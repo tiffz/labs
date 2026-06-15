@@ -14,12 +14,13 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 
 ## Data & async
 
-| Invariant                                    | Enforcement                                                  |
-| -------------------------------------------- | ------------------------------------------------------------ |
-| Dexie `undefined` = **loading**, not empty   | `resolveDexieLiveQuery`, `dexie-live-query-empty-states.mdc` |
-| Preview media ≠ session media I/O tier       | `gestureMediaPolicy.ts`, `gesture-media-tiers.mdc`           |
-| Blob URL owner is the cache module only      | `gesture-media-tiers.mdc`, preview cache tests               |
-| Never `fetch()` Google thumbnail URLs (CORS) | `gestureMediaPolicy.ts`; use `<img>` / `probeImageUrlLoads`  |
+| Invariant                                    | Enforcement                                                                                                                            |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Dexie `undefined` = **loading**, not empty   | `resolveDexieLiveQuery`, `dexie-live-query-empty-states.mdc`                                                                           |
+| Preview media ≠ session media I/O tier       | `gestureMediaPolicy.ts`, `gesture-media-tiers.mdc`                                                                                     |
+| Preview grid `<img>` is https-only (no blob) | `gesturePreviewDisplayInvariants.test.ts`, `gesture-preview-strip.spec.ts`, [`GESTURE_MEDIA_STABILITY.md`](GESTURE_MEDIA_STABILITY.md) |
+| Blob URL owner is the cache module only      | `gesture-media-tiers.mdc`, preview display tests                                                                                       |
+| Never `fetch()` Google thumbnail URLs (CORS) | `gestureMediaPolicy.ts`; use `<img>` / `probeImageUrlLoads`                                                                            |
 
 ## UI & UX
 
@@ -54,6 +55,6 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 
 ## Root cause classes (grep labels)
 
-`stale state` · `portal styling` · `render order` · `async race` · `empty-state logic` · `fake stopAll` · `missing invariant` · `test gap` · `ux revision churn` · `hmr false confidence` · `wrong-io-tier` · `ux-gestalt` · `ux-redundancy` · `ux-visual-weight` · `ux-journey-overload` · `ux-spec-violation`
+`stale state` · `portal styling` · `render order` · `async race` · `empty-state logic` · `fake stopAll` · `missing invariant` · `test gap` · `ux revision churn` · `hmr false confidence` · `wrong-io-tier` · `revoked-blob-display` · `ux-gestalt` · `ux-redundancy` · `ux-visual-weight` · `ux-journey-overload` · `ux-spec-violation`
 
 Add a new class only when several future issues would share it.

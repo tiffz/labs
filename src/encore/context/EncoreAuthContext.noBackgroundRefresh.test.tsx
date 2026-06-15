@@ -40,6 +40,10 @@ vi.mock('../../shared/session/useLabsGoogleSessionRefresh', () => ({
 import { requestGoogleAccessToken } from '../auth/googleTokenClient';
 import { fetchGoogleUserProfile } from '../auth/loadGisScript';
 import {
+  isLabsGoogleSessionBffEnabled,
+  tryRefreshGoogleAccessTokenViaBff,
+} from '../../shared/session/labsGoogleSessionPort';
+import {
   clearPersistedGoogleIdentity,
   clearPersistedGoogleSession,
   ENCORE_GOOGLE_SESSION_STORAGE_KEY,
@@ -76,6 +80,8 @@ function renderProvider(): () => EncoreAuthContextValue {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(isLabsGoogleSessionBffEnabled).mockReturnValue(false);
+  vi.mocked(tryRefreshGoogleAccessTokenViaBff).mockResolvedValue(null);
   window.localStorage.clear();
   // Provide a non-empty client id so getGoogleClientId() doesn't bail early before running the
   // bootstrap logic. The mocked `requestGoogleAccessToken` ignores it.
@@ -182,6 +188,37 @@ describe('EncoreAuthContext — ADR 0010 (no background Google refresh)', () => 
 
     expect(get().googleAccessToken).toBe('sibling-tab-tok');
     expect(get().googleEmail).toBe('me@example.com');
+    expect(get().googleSessionExpired).toBe(false);
+    expect(requestGoogleAccessToken).not.toHaveBeenCalled();
+  });
+
+  it('defers googleAuthReady until BFF refresh completes (no sign-in gate flash window)', async () => {
+    vi.mocked(isLabsGoogleSessionBffEnabled).mockReturnValue(true);
+
+    let resolveRefresh!: (token: string | null) => void;
+    vi.mocked(tryRefreshGoogleAccessTokenViaBff).mockImplementation(
+      () =>
+        new Promise<string | null>((resolve) => {
+          resolveRefresh = resolve;
+        }),
+    );
+
+    window.localStorage.setItem(
+      ENCORE_GOOGLE_SESSION_STORAGE_KEY,
+      JSON.stringify({ accessToken: 'stale', expiresAtMs: Date.now() - 5_000 }),
+    );
+    writePersistedGoogleIdentity({ email: 'me@example.com', displayName: 'Me' });
+
+    const get = renderProvider();
+    expect(get().googleAuthReady).toBe(false);
+
+    await act(async () => {
+      resolveRefresh('bff-restored');
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(get().googleAuthReady).toBe(true));
+    expect(get().googleAccessToken).toBe('bff-restored');
     expect(get().googleSessionExpired).toBe(false);
     expect(requestGoogleAccessToken).not.toHaveBeenCalled();
   });

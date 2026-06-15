@@ -6,9 +6,12 @@ import CollectionDropZone from '../components/CollectionDropZone';
 import CollectionUploadStatus from '../components/CollectionUploadStatus';
 import DeleteCollectionDialog from '../components/DeleteCollectionDialog';
 import GestureTabLoading from '../components/GestureTabLoading';
+import GestureTagFilterBar from '../components/GestureTagFilterBar';
 import InterruptedUploadBanner from '../components/InterruptedUploadBanner';
 import PackCollectionCard from '../components/PackCollectionCard';
 import { refreshPackFolder } from '../drive/linkPackFolder';
+import { packMatchesGestureTagFilters } from '../drive/gesturePackTags';
+import { useGestureKnownTags } from '../hooks/useGestureKnownTags';
 import { shouldShowUploadRecoveryBanner } from '../drive/gestureUploadActivity';
 import { useGestureCollectionDrop } from '../hooks/useGestureCollectionDrop';
 import { useGestureCollectionUpload } from '../hooks/useGestureCollectionUpload';
@@ -17,11 +20,20 @@ import { useGesturePacks } from '../hooks/useGesturePacks';
 import type { GesturePack } from '../types';
 
 interface CollectionsTabProps {
+  activeTagFilters: string[];
+  onActiveTagFiltersChange: (tags: string[]) => void;
   onMessage: (message: string | null) => void;
   onError: (message: string | null) => void;
+  previewFetchEnabled?: boolean;
 }
 
-export default function CollectionsTab({ onMessage, onError }: CollectionsTabProps): React.ReactElement {
+export default function CollectionsTab({
+  activeTagFilters,
+  onActiveTagFiltersChange,
+  onMessage,
+  onError,
+  previewFetchEnabled = true,
+}: CollectionsTabProps): React.ReactElement {
   const [busy, setBusy] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<GesturePack | null>(null);
   const upload = useGestureCollectionUpload({ onComplete: onMessage, onError });
@@ -48,6 +60,24 @@ export default function CollectionsTab({ onMessage, onError }: CollectionsTabPro
         ),
       ),
     [filesByPack.counts, packs, uploadSessionActive],
+  );
+
+  const allTags = useGestureKnownTags(packs);
+
+  const visiblePacks = useMemo(
+    () => packs.filter((pack) => packMatchesGestureTagFilters(pack, activeTagFilters)),
+    [activeTagFilters, packs],
+  );
+
+  const toggleTagFilter = useCallback(
+    (tag: string) => {
+      onActiveTagFiltersChange(
+        activeTagFilters.includes(tag)
+          ? activeTagFilters.filter((t) => t !== tag)
+          : [...activeTagFilters, tag],
+      );
+    },
+    [activeTagFilters, onActiveTagFiltersChange],
   );
 
   const handleRefresh = useCallback(
@@ -95,8 +125,7 @@ export default function CollectionsTab({ onMessage, onError }: CollectionsTabPro
 
       <div className="gesture-tab-toolbar">
         <Typography className="gesture-tab-lede">
-          Upload a folder or photos, drop on a collection to add there, or link a Drive folder. Tap a title to rename or
-          add a source link anytime.
+          Upload photos or link a Drive folder. Drop on a collection to add more, or edit names and tags on the card.
         </Typography>
         <AddCollectionActions
           disabled={interactionDisabled}
@@ -109,6 +138,13 @@ export default function CollectionsTab({ onMessage, onError }: CollectionsTabPro
 
       <CollectionDropZone compact={packsHydrated && packs.length > 0} dragActive={dragActive} uploadActive={uploadSessionActive} />
 
+      <GestureTagFilterBar
+        tags={allTags}
+        activeTags={activeTagFilters}
+        onToggleTag={toggleTagFilter}
+        onClear={() => onActiveTagFiltersChange([])}
+      />
+
       {!packsHydrated ? (
         <GestureTabLoading />
       ) : packs.length === 0 ? (
@@ -119,9 +155,16 @@ export default function CollectionsTab({ onMessage, onError }: CollectionsTabPro
           </Typography>
           <AddCollectionActions disabled={busy} upload={upload} onComplete={onMessage} onError={onError} />
         </div>
+      ) : visiblePacks.length === 0 ? (
+        <div className="gesture-empty-state">
+          <Typography className="gesture-empty-title">No collections match these tags</Typography>
+          <Typography className="gesture-empty-copy">
+            Clear the tag filters or add tags on a collection card.
+          </Typography>
+        </div>
       ) : (
         <div className="gesture-collection-grid">
-          {packs.map((pack) => {
+          {visiblePacks.map((pack) => {
             const photoCount = statsForGrid.counts.get(pack.id) ?? 0;
             const fileIds = resolveGesturePackCoverFileIds(pack, statsForGrid.coverIds);
             return (
@@ -133,6 +176,7 @@ export default function CollectionsTab({ onMessage, onError }: CollectionsTabPro
                 drawnCount={statsForGrid.drawnSets.get(pack.id)?.size ?? 0}
                 mode="manage"
                 disabled={interactionDisabled}
+                allTags={allTags}
                 upload={upload}
                 dropEnabled
                 onRefresh={() => void handleRefresh(pack)}
@@ -142,6 +186,7 @@ export default function CollectionsTab({ onMessage, onError }: CollectionsTabPro
                 onError={(msg) => {
                   onError(msg);
                 }}
+                previewFetchEnabled={previewFetchEnabled}
               />
             );
           })}

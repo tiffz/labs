@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { fetchDriveImageBlob } from './gestureDriveImageLoad';
 import {
   peekGesturePreviewUrl,
   resolveGesturePreviewImageUrl,
@@ -23,14 +24,34 @@ vi.mock('../../shared/drive/driveFetch', () => ({
 vi.mock('./gestureDriveImageLoad', () => ({
   probeImageUrlLoads: vi.fn(async () => true),
   fetchDriveImageObjectUrl: vi.fn(),
+  fetchDriveImageBlob: vi.fn(async () => ({
+    blob: new Blob(['jpeg'], { type: 'image/jpeg' }),
+    mimeType: 'image/jpeg',
+  })),
 }));
 
 describe('gesturePreviewImageUrl', () => {
   beforeEach(async () => {
-    vi.clearAllMocks();
+    if (!URL.createObjectURL) {
+      URL.createObjectURL = vi.fn(() => 'blob:display-pin-test') as typeof URL.createObjectURL;
+      URL.revokeObjectURL = vi.fn() as typeof URL.revokeObjectURL;
+    } else {
+      vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:display-pin-test');
+      vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    }
+    vi.mocked(fetchDriveImageBlob).mockResolvedValue({
+      blob: new Blob(['jpeg'], { type: 'image/jpeg' }),
+      mimeType: 'image/jpeg',
+    });
     const mediaFetch = await import('./gestureMediaPolicy');
     vi.mocked(mediaFetch.fetchAndCacheGestureMediaBlob).mockResolvedValue(null);
     vi.mocked(mediaFetch.peekCachedGestureMediaUrl).mockReturnValue(null);
+    vi.mocked(mediaFetch.resolveGesturePreviewTierUrl).mockImplementation(
+      async (token: string, fileId: string) =>
+        token
+          ? `https://lh3.googleusercontent.com/${fileId}=s320`
+          : `https://drive.google.com/thumbnail?id=${fileId}&sz=w320`,
+    );
   });
 
   it('caches preview-sized urls and serves peeks synchronously', async () => {
@@ -45,14 +66,13 @@ describe('gesturePreviewImageUrl', () => {
     expect(peekGesturePreviewUrl('file-b')).toContain('file-b');
   });
 
-  it('serves blob previews from the media cache layer only', async () => {
+  it('pins a display blob when tier resolution only yields alt=media', async () => {
     const mediaFetch = await import('./gestureMediaPolicy');
-    vi.mocked(mediaFetch.fetchAndCacheGestureMediaBlob).mockResolvedValueOnce('blob:cached-preview');
-    vi.mocked(mediaFetch.peekCachedGestureMediaUrl).mockReturnValue('blob:cached-preview');
+    vi.mocked(mediaFetch.resolveGesturePreviewTierUrl).mockResolvedValueOnce('blob:cached-preview');
 
     const url = await resolveGesturePreviewImageUrl('token', 'file-blob');
-    expect(url).toBe('blob:cached-preview');
-    expect(peekGesturePreviewUrl('file-blob')).toBe('blob:cached-preview');
+    expect(url).toBe('blob:display-pin-test');
+    expect(peekGesturePreviewUrl('file-blob')).toBe(url);
   });
 
   it('prefers fast thumbnail links before full-file alt=media cache', async () => {

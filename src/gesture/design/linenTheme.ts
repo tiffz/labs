@@ -44,6 +44,7 @@ export const GESTURE_LINEN_CSS_VARS: Record<string, string> = {
   '--gesture-card-border-width': '0',
   '--gesture-button-radius': '0.625rem',
   '--gesture-grid-min': '14rem',
+  '--gesture-grid-min-practice': '9.5rem',
   '--gesture-preview-aspect': '3 / 2',
   '--gesture-preview-gap': '5px',
   '--gesture-tab-weight': '500',

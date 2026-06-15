@@ -19,11 +19,10 @@ Level thresholds and generator profiles live in [`levels.ts`](levels.ts) (28 lev
 
 [`components/SightDebugPanel.tsx`](components/SightDebugPanel.tsx) uses shared [`LabsDebugDock`](../../shared/components/LabsDebugDock.tsx):
 
-- **Reset Sight** — `resetProfile()` back to level 1
+- **Local storage** (collapsed in dock body): **Clear Sight localStorage** — `resetProfile()`; **Clear all Labs localStorage** — `localStorage.clear()`. Both confirm before running.
 - **Set level / Set + practice** — jump to any curriculum level
 - **+1 pass / Complete level** — fast curriculum walkthrough
 - **Sandbox** — open `#sandbox` at current level
-- **Clear all local** — `localStorage.clear()` with confirm (all Labs apps)
 - Practice **S** key — cycle simulate pass / fail / off
 
 ## Scoring UX

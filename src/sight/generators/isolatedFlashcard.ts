@@ -205,9 +205,9 @@ export function isolatedPrompt(axis: IsolatedAxis): string {
     case 'darker':
       return 'Which swatch is darker?';
     case 'moreSaturated':
-      return 'Which swatch is more saturated?';
+      return 'Which swatch is more vivid?';
     case 'lessSaturated':
-      return 'Which swatch is less saturated?';
+      return 'Which swatch is less vivid?';
     case 'warmer':
       return 'Which swatch is warmer?';
     case 'cooler':

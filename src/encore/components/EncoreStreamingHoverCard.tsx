@@ -8,7 +8,7 @@ import TextField from '@mui/material/TextField';
 import Tooltip, { tooltipClasses, type TooltipProps } from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
-import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
 import { fetchSpotifyTrack } from '../spotify/spotifyApi';
 import type { EncoreMediaSource } from '../types';
@@ -84,6 +84,135 @@ const HoverCardTooltip = styled(({ className, ...props }: TooltipProps) => (
   },
 }));
 
+const HOVER_CARD_OFFSET_MODIFIER = { name: 'offset', options: { offset: [0, 4] } } as const;
+
+/** Pin the popper while inline nickname/notes are focused so chip layout shifts do not yank the card. */
+const HOVER_CARD_PINNED_POPPER_MODIFIERS = [
+  HOVER_CARD_OFFSET_MODIFIER,
+  { name: 'flip', enabled: false },
+  { name: 'preventOverflow', enabled: false },
+  { name: 'eventListeners', options: { scroll: false, resize: false } },
+];
+
+type DeferredHoverCardEditFields = {
+  nickname?: string;
+  onNicknameChange?: (value: string) => void;
+  notes?: string;
+  onNotesChange?: (value: string) => void;
+};
+
+function useDeferredHoverCardEdits(fields: DeferredHoverCardEditFields) {
+  const { nickname, onNicknameChange, notes, onNotesChange } = fields;
+  const [nicknameDraft, setNicknameDraft] = useState(nickname ?? '');
+  const [notesDraft, setNotesDraft] = useState(notes ?? '');
+  const [nicknameEditing, setNicknameEditing] = useState(false);
+  const [notesEditing, setNotesEditing] = useState(false);
+
+  useEffect(() => {
+    if (!nicknameEditing) setNicknameDraft(nickname ?? '');
+  }, [nickname, nicknameEditing]);
+
+  useEffect(() => {
+    if (!notesEditing) setNotesDraft(notes ?? '');
+  }, [notes, notesEditing]);
+
+  const commitNickname = useCallback(() => {
+    if (!onNicknameChange) return;
+    setNicknameEditing(false);
+    onNicknameChange(nicknameDraft);
+  }, [onNicknameChange, nicknameDraft]);
+
+  const commitNotes = useCallback(() => {
+    if (!onNotesChange) return;
+    setNotesEditing(false);
+    onNotesChange(notesDraft);
+  }, [onNotesChange, notesDraft]);
+
+  const commitAll = useCallback(() => {
+    if (nicknameEditing) commitNickname();
+    if (notesEditing) commitNotes();
+  }, [commitNickname, commitNotes, nicknameEditing, notesEditing]);
+
+  const popperPinned = nicknameEditing || notesEditing;
+
+  return {
+    popperPinned,
+    commitAll,
+    nicknameField: onNicknameChange
+      ? {
+          value: nicknameDraft,
+          onChange: setNicknameDraft,
+          onFocus: () => setNicknameEditing(true),
+          onBlur: commitNickname,
+        }
+      : null,
+    notesField: onNotesChange
+      ? {
+          value: notesDraft,
+          onChange: setNotesDraft,
+          onFocus: () => setNotesEditing(true),
+          onBlur: commitNotes,
+        }
+      : null,
+  };
+}
+
+function EncoreHoverCardResourceEditFields(props: {
+  edits: ReturnType<typeof useDeferredHoverCardEdits>;
+  notesPlaceholder?: string;
+}): ReactElement | null {
+  const { edits, notesPlaceholder = 'e.g. which take to use' } = props;
+  const { nicknameField, notesField } = edits;
+  if (!nicknameField && !notesField) return null;
+
+  return (
+    <Box
+      sx={{ mt: 1.25, pt: 1, borderTop: 1, borderColor: 'divider' }}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      {nicknameField ? (
+        <TextField
+          label="Nickname"
+          size="small"
+          fullWidth
+          value={nicknameField.value}
+          onChange={(e) => nicknameField.onChange(e.target.value)}
+          onFocus={nicknameField.onFocus}
+          onBlur={nicknameField.onBlur}
+          placeholder="Optional label in your list"
+          sx={{ mb: notesField ? 1 : 0 }}
+        />
+      ) : null}
+      {notesField ? (
+        <TextField
+          label="Notes"
+          size="small"
+          fullWidth
+          multiline
+          minRows={2}
+          maxRows={6}
+          value={notesField.value}
+          onChange={(e) => notesField.onChange(e.target.value)}
+          onFocus={notesField.onFocus}
+          onBlur={notesField.onBlur}
+          placeholder={notesPlaceholder}
+        />
+      ) : null}
+    </Box>
+  );
+}
+
+function hoverCardPopperSlotProps(popperPinned: boolean) {
+  return {
+    popper: {
+      modifiers: popperPinned ? HOVER_CARD_PINNED_POPPER_MODIFIERS : [HOVER_CARD_OFFSET_MODIFIER],
+      sx: {
+        zIndex: (z: { zIndex: { modal: number } }) => z.zIndex.modal + 25,
+      },
+    },
+  };
+}
+
 export type EncoreStreamingHoverCardProps = {
   kind: EncoreStreamingHoverCardKind;
   spotifyTrackId?: string | null;
@@ -151,6 +280,17 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
   const [meta, setMeta] = useState<ResolvedMeta | null>(cachedAtMount);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const resourceEdits = useDeferredHoverCardEdits({
+    nickname: editNickname,
+    onNicknameChange: onEditNicknameChange,
+    notes: resourceNotes,
+    onNotesChange: onResourceNotesChange,
+  });
+
+  const handleClose = () => {
+    resourceEdits.commitAll();
+    setOpen(false);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -242,35 +382,7 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
         </Box>
       ) : null}
       {onEditNicknameChange || onResourceNotesChange ? (
-        <Box
-          sx={{ mt: 1.25, pt: 1, borderTop: 1, borderColor: 'divider' }}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          {onEditNicknameChange ? (
-            <TextField
-              label="Nickname"
-              size="small"
-              fullWidth
-              value={editNickname ?? ''}
-              onChange={(e) => onEditNicknameChange(e.target.value)}
-              placeholder="Optional label in your list"
-              sx={{ mb: onResourceNotesChange ? 1 : 0 }}
-            />
-          ) : null}
-          {onResourceNotesChange ? (
-            <TextField
-              label="Notes"
-              size="small"
-              fullWidth
-              multiline
-              minRows={2}
-              maxRows={6}
-              value={resourceNotes ?? ''}
-              onChange={(e) => onResourceNotesChange(e.target.value)}
-              placeholder="e.g. which take to use"
-            />
-          ) : null}
-        </Box>
+        <EncoreHoverCardResourceEditFields edits={resourceEdits} />
       ) : null}
     </Box>
   );
@@ -285,25 +397,12 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
       leaveDelay={140}
       open={open}
       onOpen={() => setOpen(true)}
-      onClose={() => setOpen(false)}
+      onClose={handleClose}
       // Tooltip's default `disableInteractive` is false, so the mouse can move from trigger into
       // the tooltip without closing it. Keeping it interactive is what makes this read as a hover
       // *card* rather than a pure tooltip.
       disableInteractive={false}
-      slotProps={{
-        popper: {
-          modifiers: [
-            // Stable vertical offset; Tooltip's default 14px gap can leave the cursor briefly in
-            // dead space between the trigger and the content. 4px keeps a hairline gap (so the
-            // shadow reads) while staying inside Tooltip's invisible bridge.
-            { name: 'offset', options: { offset: [0, 4] } },
-          ],
-          sx: {
-            // Render above modal-priority content (e.g. EncoreAudioResourceNotesWrapper popover).
-            zIndex: (z) => z.zIndex.modal + 25,
-          },
-        },
-      }}
+      slotProps={hoverCardPopperSlotProps(resourceEdits.popperPinned)}
     >
       {/* Tooltip needs a single ref-forwarding child. Wrapping span keeps the trigger
           inline-aligned with the surrounding caption row. */}
@@ -366,6 +465,17 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
   const [open, setOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const heading = title.trim() || 'Attachment';
+  const resourceEdits = useDeferredHoverCardEdits({
+    nickname: editNickname,
+    onNicknameChange: onEditNicknameChange,
+    notes: resourceNotes,
+    onNotesChange: onResourceNotesChange,
+  });
+
+  const handleClose = () => {
+    resourceEdits.commitAll();
+    setOpen(false);
+  };
 
   const handleDownload = async () => {
     if (!onDownload || downloading || downloadDisabled) return;
@@ -428,35 +538,10 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
         </Box>
       ) : null}
       {onEditNicknameChange || onResourceNotesChange ? (
-        <Box
-          sx={{ mt: 1.25, pt: 1, borderTop: 1, borderColor: 'divider' }}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          {onEditNicknameChange ? (
-            <TextField
-              label="Nickname"
-              size="small"
-              fullWidth
-              value={editNickname ?? ''}
-              onChange={(e) => onEditNicknameChange(e.target.value)}
-              placeholder="Optional label in your list"
-              sx={{ mb: onResourceNotesChange ? 1 : 0 }}
-            />
-          ) : null}
-          {onResourceNotesChange ? (
-            <TextField
-              label="Notes"
-              size="small"
-              fullWidth
-              multiline
-              minRows={2}
-              maxRows={6}
-              value={resourceNotes ?? ''}
-              onChange={(e) => onResourceNotesChange(e.target.value)}
-              placeholder="e.g. transposed copy"
-            />
-          ) : null}
-        </Box>
+        <EncoreHoverCardResourceEditFields
+          edits={resourceEdits}
+          notesPlaceholder="e.g. transposed copy"
+        />
       ) : null}
     </Box>
   );
@@ -471,16 +556,9 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
       leaveDelay={140}
       open={open}
       onOpen={() => setOpen(true)}
-      onClose={() => setOpen(false)}
+      onClose={handleClose}
       disableInteractive={false}
-      slotProps={{
-        popper: {
-          modifiers: [{ name: 'offset', options: { offset: [0, 4] } }],
-          sx: {
-            zIndex: (z) => z.zIndex.modal + 25,
-          },
-        },
-      }}
+      slotProps={hoverCardPopperSlotProps(resourceEdits.popperPinned)}
     >
       <Box
         component="span"

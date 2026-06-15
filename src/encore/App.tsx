@@ -25,6 +25,7 @@ function EncoreSignedInRouter(): React.ReactElement {
     googleAuthReady,
     googleAccessToken,
     googleGateBypassed,
+    googleEmail,
     accessDenied,
     accessDeniedMessage,
     signInWithGoogle,
@@ -51,6 +52,12 @@ function EncoreSignedInRouter(): React.ReactElement {
       ) : !googleAuthReady ? (
         <main id="main">
           <EncoreAppShell centered aria-busy="true" aria-label="Checking saved Google sign-in">
+            <CircularProgress color="primary" />
+          </EncoreAppShell>
+        </main>
+      ) : !canUseMainShell && googleEmail?.trim() ? (
+        <main id="main">
+          <EncoreAppShell centered aria-busy="true" aria-label="Restoring Google sign-in">
             <CircularProgress color="primary" />
           </EncoreAppShell>
         </main>

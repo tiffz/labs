@@ -45,6 +45,8 @@ export type GesturePackMetadataInput = {
   name?: string;
   /** Pass null or empty string to clear. */
   sourceUrl?: string | null;
+  /** Replace tags; pass an empty array to clear. */
+  tags?: string[];
 };
 
 export type CreatePackFromUploadInput = {

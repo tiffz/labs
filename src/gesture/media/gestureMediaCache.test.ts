@@ -52,6 +52,27 @@ describe('gestureMediaCache', () => {
     expect(row?.width).toBe(1280);
   });
 
+  it('dedupes concurrent idb hydrates for the same file', async () => {
+    const blob = new Blob(['jpeg-bytes'], { type: 'image/jpeg' });
+    await gestureDb.mediaCache.put({
+      id: 'preview:file-dup',
+      driveFileId: 'file-dup',
+      kind: 'preview',
+      blob,
+      width: 320,
+      mimeType: 'image/jpeg',
+      fetchedAt: Date.now(),
+    });
+
+    const { getCachedGestureMediaObjectUrl } = await import('./gestureMediaCache');
+    const [a, b] = await Promise.all([
+      getCachedGestureMediaObjectUrl('file-dup', 'preview'),
+      getCachedGestureMediaObjectUrl('file-dup', 'preview'),
+    ]);
+    expect(a).toBe(b);
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+  });
+
   it('evicts oldest preview rows beyond the preview limit', async () => {
     for (let i = 0; i < 205; i += 1) {
       const blob = new Blob([`b${i}`], { type: 'image/jpeg' });

@@ -1,6 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { copyLabsDebugBundleToClipboard } from '../debug/copyLabsDebugBundle';
 
+/** Written to `:root` while {@link LabsDebugDock} is mounted; apps subtract this from `100dvh`. */
+export const LABS_DEBUG_DOCK_HEIGHT_VAR = '--labs-debug-dock-height';
+
+/** Legacy alias kept for Scales (`scales.css`); synced to the same pixel height. */
+export const LABS_DEBUG_PANEL_HEIGHT_VAR = '--debug-panel-height';
+
 export type LabsDebugDockLayout = 'toolbar-top' | 'log-first';
 
 export type LabsDebugDockProps = {
@@ -18,7 +24,7 @@ export type LabsDebugDockProps = {
    * `toolbar-top`: toolbar first, then content (piano-style).
    */
   layout?: LabsDebugDockLayout;
-  /** When set, dock outer height is written to this CSS variable (e.g. scales layout). */
+  /** Optional extra CSS variable synced to dock height (canonical: {@link LABS_DEBUG_DOCK_HEIGHT_VAR}). */
   reportOuterHeightCssVar?: string;
 };
 
@@ -42,18 +48,31 @@ export default function LabsDebugDock({
   const [copyHint, setCopyHint] = useState<string | null>(null);
 
   useEffect(() => {
-    const name = reportOuterHeightCssVar;
     const el = rootRef.current;
-    if (!name || !el) return;
+    if (!el) return;
     const sync = () => {
-      document.documentElement.style.setProperty(name, `${el.offsetHeight}px`);
+      const heightPx = `${el.offsetHeight}px`;
+      document.documentElement.style.setProperty(LABS_DEBUG_DOCK_HEIGHT_VAR, heightPx);
+      document.documentElement.style.setProperty(LABS_DEBUG_PANEL_HEIGHT_VAR, heightPx);
+      if (
+        reportOuterHeightCssVar &&
+        reportOuterHeightCssVar !== LABS_DEBUG_DOCK_HEIGHT_VAR &&
+        reportOuterHeightCssVar !== LABS_DEBUG_PANEL_HEIGHT_VAR
+      ) {
+        document.documentElement.style.setProperty(reportOuterHeightCssVar, heightPx);
+      }
     };
     sync();
-    const ro = new ResizeObserver(sync);
-    ro.observe(el);
+    const ro =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(sync) : null;
+    ro?.observe(el);
     return () => {
-      ro.disconnect();
-      document.documentElement.style.removeProperty(name);
+      ro?.disconnect();
+      document.documentElement.style.removeProperty(LABS_DEBUG_DOCK_HEIGHT_VAR);
+      document.documentElement.style.removeProperty(LABS_DEBUG_PANEL_HEIGHT_VAR);
+      if (reportOuterHeightCssVar) {
+        document.documentElement.style.removeProperty(reportOuterHeightCssVar);
+      }
     };
   }, [reportOuterHeightCssVar, collapsed, layout]);
 
@@ -147,6 +166,7 @@ export default function LabsDebugDock({
   return (
     <div
       ref={rootRef}
+      className="labs-debug-dock"
       style={{
         position: 'fixed',
         bottom: 0,

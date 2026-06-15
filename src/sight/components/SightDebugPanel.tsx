@@ -26,14 +26,6 @@ const DEBUG_BTN: CSSProperties = {
   cursor: 'pointer',
 };
 
-const DEBUG_BTN_PRIMARY: CSSProperties = {
-  ...DEBUG_BTN,
-  background: ACCENT,
-  color: '#fff',
-  border: 'none',
-  fontWeight: 700,
-};
-
 const DEBUG_BTN_DANGER: CSSProperties = {
   ...DEBUG_BTN,
   color: '#fca5a5',
@@ -68,6 +60,13 @@ export default function SightDebugPanel({
   }, [onProfileChange]);
 
   const handleReset = useCallback(() => {
+    if (
+      !window.confirm(
+        'Clear Color Sight Trainer localStorage? This removes your level progress and cannot be undone. Other Labs apps on this site keep their data.',
+      )
+    ) {
+      return;
+    }
     onProfileChange(resetProfile());
     setLevelPick(1);
     onGoHome();
@@ -93,7 +92,11 @@ export default function SightDebugPanel({
   }, [onProfileChange]);
 
   const handleClearAllLocal = useCallback(() => {
-    if (!window.confirm('Clear all localStorage for this origin? This affects every Labs app.')) {
+    if (
+      !window.confirm(
+        'Clear localStorage for every Labs app on this site? This removes unsynced progress everywhere and cannot be undone. Cloud backups may still exist, but local-only data will be lost.',
+      )
+    ) {
       return;
     }
     localStorage.clear();
@@ -101,6 +104,8 @@ export default function SightDebugPanel({
     setLevelPick(1);
     onGoHome();
   }, [onGoHome, onProfileChange]);
+
+  const [localStorageToolsOpen, setLocalStorageToolsOpen] = useState(false);
 
   const levelCfg = getLevelConfig(profile.level);
   const simulateLabel =
@@ -115,16 +120,6 @@ export default function SightDebugPanel({
       layout="log-first"
       toolbar={
         <>
-          <button
-            type="button"
-            style={DEBUG_BTN_PRIMARY}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleReset();
-            }}
-          >
-            Reset Sight
-          </button>
           <Select
             size="small"
             value={levelPick}
@@ -196,16 +191,6 @@ export default function SightDebugPanel({
           >
             Sandbox
           </button>
-          <button
-            type="button"
-            style={DEBUG_BTN_DANGER}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleClearAllLocal();
-            }}
-          >
-            Clear all local
-          </button>
           {phase === 'practice' && (
             <span style={{ color: '#94a3b8', fontSize: 10 }}>
               Simulate (S): {simulateLabel}
@@ -241,6 +226,64 @@ export default function SightDebugPanel({
           2,
         )}
       </Typography>
+      <div
+        style={{
+          borderTop: '1px solid #334155',
+          padding: '8px 12px',
+          background: '#0f172a',
+        }}
+      >
+        <button
+          type="button"
+          style={{
+            ...DEBUG_BTN,
+            color: '#94a3b8',
+            border: 'none',
+            padding: '2px 0',
+          }}
+          onClick={() => setLocalStorageToolsOpen((open) => !open)}
+          aria-expanded={localStorageToolsOpen}
+        >
+          {localStorageToolsOpen ? '▼' : '▶'} Local storage
+        </button>
+        {localStorageToolsOpen ? (
+          <div style={{ marginTop: 8 }}>
+            <Typography
+              component="p"
+              sx={{
+                m: 0,
+                mb: 1,
+                fontSize: 10,
+                lineHeight: 1.45,
+                color: '#fca5a5',
+              }}
+            >
+              These actions delete browser-stored data. Lost progress may not be recoverable.
+            </Typography>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+              <button
+                type="button"
+                style={DEBUG_BTN_DANGER}
+                onClick={() => void handleReset()}
+              >
+                Clear Sight localStorage
+              </button>
+              <button
+                type="button"
+                style={{
+                  ...DEBUG_BTN,
+                  color: '#94a3b8',
+                  fontSize: 9,
+                  borderColor: '#475569',
+                }}
+                onClick={() => void handleClearAllLocal()}
+              >
+                Clear all Labs localStorage
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
     </LabsDebugDock>
   );
 }

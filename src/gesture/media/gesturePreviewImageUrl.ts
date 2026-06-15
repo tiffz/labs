@@ -1,9 +1,16 @@
 import {
   GESTURE_PREVIEW_THUMB_WIDTH,
-  peekCachedGestureMediaUrl,
   resolveGesturePreviewTierUrl,
 } from './gestureMediaPolicy';
-import { getCachedGestureMediaObjectUrl, subscribeGestureMediaCacheEvictions } from './gestureMediaCache';
+import { buildDriveThumbnailFallbackUrl } from './gestureReferenceImageUrl';
+import { fetchDriveImageBlob } from './gestureDriveImageLoad';
+import { getCachedGestureMediaObjectUrl } from './gestureMediaCache';
+import {
+  peekPinnedGesturePreviewBlobUrl,
+  pinGesturePreviewBlobUrl,
+  releasePinnedGesturePreviewBlobUrls,
+  retainPinnedGesturePreviewBlobUrls,
+} from './gesturePreviewDisplayPins';
 
 const HIT_TTL_MS = 45 * 60 * 1000;
 const MISS_TTL_MS = 2 * 60 * 1000;
@@ -15,10 +22,27 @@ const inflight = new Map<string, Promise<string>>();
 const cacheVersions = new Map<string, number>();
 const idListeners = new Map<string, Set<() => void>>();
 
-if (typeof window !== 'undefined') {
-  subscribeGestureMediaCacheEvictions((fileId, kind) => {
-    if (kind === 'preview') notifyPreviewCache(fileId);
+const MAX_CONCURRENT_PREVIEW_RESOLVES = 8;
+let activePreviewResolves = 0;
+const previewResolveWaiters: Array<() => void> = [];
+
+function acquirePreviewResolveSlot(): Promise<void> {
+  if (activePreviewResolves < MAX_CONCURRENT_PREVIEW_RESOLVES) {
+    activePreviewResolves += 1;
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    previewResolveWaiters.push(() => {
+      activePreviewResolves += 1;
+      resolve();
+    });
   });
+}
+
+function releasePreviewResolveSlot(): void {
+  activePreviewResolves -= 1;
+  const next = previewResolveWaiters.shift();
+  if (next) next();
 }
 
 function notifyPreviewCache(fileId: string): void {
@@ -118,37 +142,76 @@ export async function hydrateGesturePreviewFromIdb(fileId: string): Promise<stri
   return url;
 }
 
-/** Synchronous read — use for instant re-render when another card already warmed the cache. */
+/**
+ * Synchronous read of cached https preview URLs for card grids.
+ * Blob object URLs are owned by gestureMediaCache and are not stable for `<img>` display.
+ */
 export function peekGesturePreviewUrl(fileId: string): string | null {
-  const mem = readPreviewCache(fileId);
-  if (mem) return mem;
-  return peekCachedGestureMediaUrl(fileId, 'preview');
+  const https = readPreviewCache(fileId);
+  if (https) return https;
+  return peekPinnedGesturePreviewBlobUrl(fileId);
+}
+
+async function ensurePinnedPreviewBlobUrl(
+  accessToken: string | null,
+  fileId: string,
+  width: number,
+): Promise<string> {
+  const pinned = peekPinnedGesturePreviewBlobUrl(fileId);
+  if (pinned) return pinned;
+
+  if (accessToken) {
+    try {
+      const { blob } = await fetchDriveImageBlob(accessToken, fileId);
+      const url = pinGesturePreviewBlobUrl(fileId, blob);
+      notifyPreviewCache(fileId);
+      return url;
+    } catch {
+      /* fall through */
+    }
+  }
+
+  return buildDriveThumbnailFallbackUrl(fileId, width);
 }
 
 export async function resolveGesturePreviewImageUrl(
   accessToken: string | null,
   fileId: string,
 ): Promise<string> {
-  const cached = readPreviewCache(fileId) ?? peekCachedGestureMediaUrl(fileId, 'preview');
-  if (cached) {
-    if (!readPreviewCache(fileId)) writePreviewCache(fileId, cached, true);
-    return cached;
-  }
+  const cached = peekGesturePreviewUrl(fileId);
+  if (cached) return cached;
 
   const pending = inflight.get(fileId);
   if (pending) return pending;
 
   const promise = (async () => {
-    const width = GESTURE_PREVIEW_THUMB_WIDTH;
-    const url = await resolveGesturePreviewTierUrl(accessToken, fileId, width);
-    writePreviewCache(fileId, url, true);
-    return url;
+    await acquirePreviewResolveSlot();
+    try {
+      const width = GESTURE_PREVIEW_THUMB_WIDTH;
+      const resolved = await resolveGesturePreviewTierUrl(accessToken, fileId, width);
+      if (!resolved.startsWith('blob:')) {
+        writePreviewCache(fileId, resolved, true);
+        return resolved;
+      }
+      return await ensurePinnedPreviewBlobUrl(accessToken, fileId, width);
+    } finally {
+      releasePreviewResolveSlot();
+    }
   })().finally(() => {
     inflight.delete(fileId);
   });
 
   inflight.set(fileId, promise);
   return promise;
+}
+
+/** Retain pinned preview blobs while a strip displays these ids (call release on cleanup). */
+export function retainGesturePreviewUrlsForDisplay(fileIds: string[]): void {
+  retainPinnedGesturePreviewBlobUrls(fileIds);
+}
+
+export function releaseGesturePreviewUrlsForDisplay(fileIds: string[]): void {
+  releasePinnedGesturePreviewBlobUrls(fileIds);
 }
 
 export async function warmGesturePreviewUrls(
