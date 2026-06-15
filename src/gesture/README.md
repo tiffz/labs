@@ -7,7 +7,7 @@ Timed drawing practice from your own Google Drive photo collections.
 ## What it does
 
 - **Practice** tab: pick collections, set the timer, and enter zen mode immediately.
-- **Collections** tab: upload a local folder (uses the folder name), upload loose photos, or link a Drive folder.
+- **Collections** tab: upload a local folder (nested subfolders preserved on Drive), upload multiple folders (drop or **Upload folders…**), upload loose photos, or link a Drive folder.
 - Collections show **photo previews** so you know what is inside without tags or notes.
 - Track drawn photos and sync progress across devices via `progress.json`.
 

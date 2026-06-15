@@ -8,13 +8,13 @@ Nested context for Sight. Root policy: [`../../AGENTS.md`](../../AGENTS.md).
 2. [`ARCHITECTURE.md`](ARCHITECTURE.md) — phases, scoring, generators.
 3. [`CUJs.md`](CUJs.md) — critical journeys + performance budgets.
 4. [`COPY_STYLE.md`](COPY_STYLE.md) — user-facing copy.
-5. **Layout / debug dock:** [`sight.css`](sight.css) — `.sight-app` uses `calc(100dvh - var(--labs-debug-dock-height, 0px))`; `.sight-main { display: contents }`. Debug must not change non-debug layout.
+5. **Layout / debug dock:** [`sight.css`](sight.css) — `.sight-app` uses `calc(100dvh - var(--labs-debug-dock-height, 0px))`; `.sight-main` + `.sight-practice-shell` flex column. Debug must not change non-debug layout.
 
 ## Pitfalls
 
 - **Never** remove full-viewport height from `.sight-app` and rely only on `html:has(.labs-debug-dock)` — normal mode loses pinned footer.
+- **Practice** uses `.sight-practice-shell` inside `.sight-main` (not `display: contents` on main).
 - **Sandbox** uses `.sight-sandbox`, not nested `.sight-app`.
-- **Practice footer** is a flex sibling of header/body under `.sight-app` (via `display: contents` on main).
 - Profile in `localStorage` (`sight:profile`); migrations on mount.
 
 ## Tests

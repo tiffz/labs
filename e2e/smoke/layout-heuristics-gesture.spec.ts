@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { GESTURE_E2E_PACK_ID, stubGestureDriveThumbnailImages } from '../helpers/gesturePreviewFixtures';
+import { stubGestureDriveThumbnailImages } from '../helpers/gesturePreviewFixtures';
 import { runLayoutHeuristicsInBrowser } from '../helpers/layoutHeuristics';
 
 /**
@@ -12,9 +12,8 @@ test.describe('Gesture layout heuristics', () => {
     await page.goto('/gesture/?e2eSeed=1');
 
     await expect(page.locator('.gesture-shell')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator(`[data-pack-id="${GESTURE_E2E_PACK_ID}"]`)).toBeVisible({
-      timeout: 15_000,
-    });
+    await expect(page.locator('.gesture-header')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.gesture-lede')).toBeVisible({ timeout: 15_000 });
 
     const result = await page.evaluate(runLayoutHeuristicsInBrowser, {
       containerSelector: '.gesture-shell',

@@ -1,25 +1,7 @@
-import { driveListFiles, driveTrashFile } from '../../shared/drive/driveFetch';
+import { driveTrashFile } from '../../shared/drive/driveFetch';
 import { gestureDb } from '../db/gestureDb';
 import { notifyGestureLocalChange } from '../db/gestureChangeBus';
-import { isGestureReferenceImageFile } from './gestureImageFilter';
-
-function escapeDriveQueryString(id: string): string {
-  return id.replace(/'/g, "\\'");
-}
-
-async function listImageFileIdsInFolder(accessToken: string, folderId: string): Promise<string[]> {
-  const ids: string[] = [];
-  let pageToken: string | undefined;
-  const q = `'${escapeDriveQueryString(folderId)}' in parents and trashed=false`;
-  do {
-    const res = await driveListFiles(accessToken, q, 'nextPageToken,files(id,mimeType)', 100, pageToken);
-    for (const file of res.files ?? []) {
-      if (file.id && isGestureReferenceImageFile(file)) ids.push(file.id);
-    }
-    pageToken = res.nextPageToken;
-  } while (pageToken);
-  return ids;
-}
+import { listImageFileIdsInPackFolderRecursive } from './gesturePackFolderListing';
 
 async function deletePackLocalRows(packId: string): Promise<void> {
   await gestureDb.transaction(
@@ -92,7 +74,7 @@ export async function deleteCollectionAndDrivePhotos(
 
   onProgress?.({ phase: 'listing' });
   const fileIds = pack.driveFolderId
-    ? await listImageFileIdsInFolder(accessToken, pack.driveFolderId)
+    ? await listImageFileIdsInPackFolderRecursive(accessToken, pack.driveFolderId)
     : [];
 
   await trashDriveFiles(accessToken, fileIds, onProgress);

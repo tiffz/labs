@@ -2,11 +2,14 @@ import { driveUploadFileResumable } from '../../shared/drive/driveFetch';
 import { gestureDb } from '../db/gestureDb';
 import { notifyGestureLocalChange } from '../db/gestureChangeBus';
 import type { GesturePack, GesturePackFile, GestureUploadManifestFile } from '../types';
-import { collectPackContentFingerprintKeys } from './gestureDuplicateDetection';
 import {
-  gestureDriveUploadFileName,
-  gestureDriveUploadFileNameWithSuffix,
-} from './gestureDriveUploadFileName';
+  collectionRelativePath,
+  driveUploadBasename,
+  gestureCollectionFileKey,
+  subfolderSegments,
+} from './gestureCollectionPaths';
+import { collectPackContentFingerprintKeys } from './gestureDuplicateDetection';
+import { GestureDriveFolderCache } from './gestureDriveFolderTree';
 import { reconcileManifestWithDriveFolder } from './gestureManifestDriveReconcile';
 import { filterUploadFilesSkippingDuplicates } from './gestureUploadDuplicateFilter';
 import {
@@ -72,29 +75,21 @@ export async function appendUploadManifest(
   return entries;
 }
 
-function reserveUniqueDriveName(baseName: string, taken: Set<string>): string {
-  let suffix = 1;
-  while (taken.has(gestureDriveUploadFileNameWithSuffix(baseName, suffix))) {
-    suffix += 1;
-  }
-  const unique = gestureDriveUploadFileNameWithSuffix(baseName, suffix);
-  taken.add(unique);
-  return unique;
-}
-
 export async function uploadFilesToExistingPack(
   accessToken: string,
   pack: GesturePack,
   files: File[],
   onProgress?: (done: number, total: number) => void,
   onDuplicateCheck?: (hashed: number, total: number) => void,
+  options?: { collectionRootName?: string },
 ): Promise<{ pack: GesturePack; uploadedCount: number; total: number; skippedDuplicates: number }> {
   const allImages = filterGestureUploadImageFiles(files);
   if (allImages.length === 0) {
     throw new Error('No photos to upload.');
   }
 
-  await reconcileManifestWithDriveFolder(accessToken, pack.id, pack.driveFolderId);
+  const collectionRoot = options?.collectionRootName ?? pack.uploadSourceFolderName;
+  await reconcileManifestWithDriveFolder(accessToken, pack.id, pack.driveFolderId, collectionRoot);
 
   const packFilesExisting = await gestureDb.packFiles.where('packId').equals(pack.id).toArray();
   let manifest = await gestureDb.uploadManifestFiles.where('packId').equals(pack.id).toArray();
@@ -104,6 +99,7 @@ export async function uploadFilesToExistingPack(
     {
       existingKeys,
       indexedDriveNames: new Set(packFilesExisting.map((row) => row.name)),
+      collectionRootName: collectionRoot,
       uploadedManifestEntries: manifest,
       onProgress: onDuplicateCheck,
     },
@@ -122,8 +118,8 @@ export async function uploadFilesToExistingPack(
   await gestureDb.packs.put(current);
 
   const manifestByPath = new Map(manifest.map((entry) => [entry.relativePath, entry]));
-  const packFileByName = new Map(packFilesExisting.map((row) => [row.name, row]));
-  const takenDriveNames = new Set(packFilesExisting.map((row) => row.name));
+  const packFileByKey = new Map(packFilesExisting.map((row) => [row.name, row]));
+  const folderCache = new GestureDriveFolderCache(accessToken, pack.driveFolderId);
 
   const alreadyDone = manifest.filter((entry) => entry.status === 'uploaded').length;
   const total =
@@ -151,8 +147,8 @@ export async function uploadFilesToExistingPack(
 
   try {
     for (const file of images) {
-      const relativePath = localFileRelativePath(file);
-      const entry = manifestByPath.get(relativePath);
+      const fileKey = gestureCollectionFileKey(file, collectionRoot);
+      const entry = manifestByPath.get(localFileRelativePath(file));
 
       if (entry?.status === 'uploaded' && entry.driveFileId) {
         done += 1;
@@ -162,8 +158,7 @@ export async function uploadFilesToExistingPack(
         continue;
       }
 
-      const driveName = reserveUniqueDriveName(gestureDriveUploadFileName(file), takenDriveNames);
-      const existingOnDrive = packFileByName.get(driveName);
+      const existingOnDrive = packFileByKey.get(fileKey);
       if (existingOnDrive) {
         await markManifestFileUploaded(pack.id, file, existingOnDrive.driveFileId);
         done += 1;
@@ -173,23 +168,26 @@ export async function uploadFilesToExistingPack(
         continue;
       }
 
+      const relWithinCollection = collectionRelativePath(file, collectionRoot);
+      const parentId = await folderCache.resolveParentId(subfolderSegments(relWithinCollection));
+      const driveBasename = driveUploadBasename(file, collectionRoot);
       const uploaded = await driveUploadFileResumable(
         accessToken,
         file,
-        [pack.driveFolderId],
-        driveName,
+        [parentId],
+        driveBasename,
       );
       const packFile: GesturePackFile = {
         driveFileId: uploaded.id,
         packId: pack.id,
-        name: driveName,
+        name: fileKey,
         mimeType: file.type || 'image/jpeg',
       };
       pendingPackFiles.push(packFile);
       if (pendingPackFiles.length >= 25) {
         await flushPendingPackFiles();
       }
-      packFileByName.set(driveName, packFile);
+      packFileByKey.set(fileKey, packFile);
       await markManifestFileUploaded(pack.id, file, uploaded.id);
 
       newlyUploaded += 1;

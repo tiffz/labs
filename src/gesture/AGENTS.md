@@ -36,7 +36,7 @@ Canonical module: [`media/gestureMediaPolicy.ts`](media/gestureMediaPolicy.ts). 
 
 ## Pitfalls
 
-- v1 indexes **flat folders only** for **linked** Drive folders — local folder drop flattens nested images into one pack folder.
+- v1 **linked** Drive folders index photos in the folder root only — local uploads preserve nested subfolders on Drive.
 - **Uploads** must show status from drop/picker through completion; persist pack rows before all files finish (`createPackFromUpload`).
 - Refresh mid-upload leaves partial Drive folders — surface `InterruptedUploadBanner`; never silently delete Drive content.
 - Pack file index syncs via `progress.json`; after pull, **auto-reindex from Drive** fills any collection still missing photos (legacy backups or linked folders). Runs for all signed-in users, not only Drive backup testers.

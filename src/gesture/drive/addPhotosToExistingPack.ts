@@ -3,6 +3,7 @@ import { notifyGestureLocalChange } from '../db/gestureChangeBus';
 import type { GesturePack } from '../types';
 import {
   collectLocalFolderUploadImages,
+  inferLocalFolderName,
   isLocalFolderUpload,
 } from './gestureLocalFolderUpload';
 import { filterGestureUploadImageFiles } from './gesturePackMetadata';
@@ -49,6 +50,7 @@ export async function addPhotosToExistingPack(
     images,
     onProgress,
     onDuplicateCheck,
+    { collectionRootName: inferLocalFolderName(files) ?? pack.uploadSourceFolderName },
   );
 
   return {

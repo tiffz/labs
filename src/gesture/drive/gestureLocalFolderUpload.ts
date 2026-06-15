@@ -20,7 +20,7 @@ export function inferLocalFolderName(files: File[]): string | undefined {
   return undefined;
 }
 
-/** Image files from a local folder upload (includes nested subfolders; stored flat in Drive). */
+/** Image files from a local folder upload (includes nested subfolders). */
 export function collectLocalFolderUploadImages(files: File[]): File[] {
   return filterGestureUploadImageFiles(files);
 }

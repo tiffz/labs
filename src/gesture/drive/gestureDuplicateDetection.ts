@@ -1,11 +1,7 @@
-import { driveListFiles } from '../../shared/drive/driveFetch';
 import { gestureDb } from '../db/gestureDb';
 import type { GesturePack } from '../types';
 import { isGestureReferenceImageFile } from './gestureImageFilter';
-
-function escapeDriveQueryString(id: string): string {
-  return id.replace(/'/g, "\\'");
-}
+import { listImagesInGesturePackFolderRecursive } from './gesturePackFolderListing';
 
 export type GestureDriveImageRow = {
   id: string;
@@ -127,30 +123,29 @@ export async function collectPackContentFingerprintKeys(
   accessToken: string,
   folderId: string,
 ): Promise<Set<string>> {
-  const files = await listImagesInFolder(accessToken, folderId);
-  return buildContentFingerprintKeysFromDriveFiles(files);
+  const files = await listImagesInGesturePackFolderRecursive(accessToken, folderId);
+  return buildContentFingerprintKeysFromDriveFiles(
+    files.map((file) => ({
+      id: file.id!,
+      name: file.relativePath || file.name!,
+      createdTime: file.createdTime,
+      md5Checksum: file.md5Checksum,
+      size: file.size,
+    })),
+  );
 }
 
 async function listImagesInFolder(accessToken: string, folderId: string): Promise<GestureDriveImageRow[]> {
-  const rows: GestureDriveImageRow[] = [];
-  let pageToken: string | undefined;
-  const q = `'${escapeDriveQueryString(folderId)}' in parents and trashed=false`;
-  const fields = 'nextPageToken,files(id,name,mimeType,createdTime,size,md5Checksum)';
-  do {
-    const res = await driveListFiles(accessToken, q, fields, 100, pageToken);
-    for (const file of res.files ?? []) {
-      if (!file.id || !file.name || !isGestureReferenceImageFile(file)) continue;
-      rows.push({
-        id: file.id,
-        name: file.name,
-        createdTime: file.createdTime,
-        md5Checksum: file.md5Checksum,
-        size: file.size,
-      });
-    }
-    pageToken = res.nextPageToken;
-  } while (pageToken);
-  return rows;
+  const rows = await listImagesInGesturePackFolderRecursive(accessToken, folderId);
+  return rows
+    .filter((file) => file.id && file.name && isGestureReferenceImageFile(file))
+    .map((file) => ({
+      id: file.id!,
+      name: file.relativePath || file.name!,
+      createdTime: file.createdTime,
+      md5Checksum: file.md5Checksum,
+      size: file.size,
+    }));
 }
 
 export async function scanGestureCollectionDuplicates(

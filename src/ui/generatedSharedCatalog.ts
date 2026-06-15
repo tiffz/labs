@@ -16026,6 +16026,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-test-interactionlatencycore-ts-tab-navigation-budget-ms",
+    "name": "TAB_NAVIGATION_BUDGET_MS",
+    "path": "src/shared/test/interactionLatencyCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Hash/tab route switches — CI variance; matches Encore CUJ-001 table.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-test-layoutheuristicscore-ts-contrastratio",
     "name": "contrastRatio",
     "path": "src/shared/test/layoutHeuristicsCore.ts",

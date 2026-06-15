@@ -29,7 +29,10 @@ describe('deleteCollectionAndDrivePhotos', () => {
     });
 
     (driveListFiles as ReturnType<typeof vi.fn>).mockResolvedValue({
-      files: [{ id: 'photo-1', mimeType: 'image/jpeg' }, { id: 'photo-2', mimeType: 'image/jpeg' }],
+      files: [
+        { id: 'photo-1', name: 'a.jpg', mimeType: 'image/jpeg' },
+        { id: 'photo-2', name: 'b.jpg', mimeType: 'image/jpeg' },
+      ],
     });
     (driveTrashFile as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 

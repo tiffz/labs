@@ -3,7 +3,7 @@ import { localFileRelativePath } from './gestureUploadManifest';
 const INVALID_DRIVE_NAME = /[\\/:*?"<>|]/g;
 const MAX_DRIVE_NAME_LEN = 200;
 
-function sanitizeDriveFileName(raw: string): string {
+export function sanitizeDriveFileName(raw: string): string {
   const cleaned = raw.replace(INVALID_DRIVE_NAME, '_').replace(/\s+/g, ' ').trim();
   return cleaned || 'photo.jpg';
 }

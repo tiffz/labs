@@ -1,4 +1,5 @@
 import { computeFileMd5Hex } from '../../shared/drive/computeFileMd5Hex';
+import { gestureCollectionFileKey } from './gestureCollectionPaths';
 import { gestureDriveUploadFileName } from './gestureDriveUploadFileName';
 import { gestureDuplicateGroupKey } from './gestureDuplicateDetection';
 import { fileMatchesManifestEntry } from './gestureUploadManifest';
@@ -16,8 +17,10 @@ export function localFileContentFingerprintKey(file: File, md5Hex: string): stri
 
 export type UploadDuplicateFilterInput = {
   existingKeys: Set<string>;
-  /** Flat Drive names already in Dexie for this pack — O(1) re-drop skip without hashing. */
+  /** Collection-relative paths (or legacy flat Drive names) already indexed for this pack. */
   indexedDriveNames?: Set<string>;
+  /** Strip this folder prefix from `webkitRelativePath` when matching indexed names. */
+  collectionRootName?: string;
   /** Uploaded manifest rows — skip when local path + size + lastModified match. */
   uploadedManifestEntries?: GestureUploadManifestFile[];
   hashConcurrency?: number;
@@ -67,6 +70,7 @@ export async function filterUploadFilesSkippingDuplicates(
   const {
     existingKeys,
     indexedDriveNames,
+    collectionRootName,
     uploadedManifestEntries,
     hashConcurrency = DEFAULT_HASH_CONCURRENCY,
     onProgress,
@@ -94,8 +98,10 @@ export async function filterUploadFilesSkippingDuplicates(
       continue;
     }
 
-    const driveName = gestureDriveUploadFileName(file);
-    if (indexedDriveNames?.has(driveName)) {
+    const indexedKey = collectionRootName
+      ? gestureCollectionFileKey(file, collectionRootName)
+      : gestureDriveUploadFileName(file);
+    if (indexedDriveNames?.has(indexedKey) || indexedDriveNames?.has(gestureDriveUploadFileName(file))) {
       skippedDuplicates += 1;
       checked += 1;
       report();

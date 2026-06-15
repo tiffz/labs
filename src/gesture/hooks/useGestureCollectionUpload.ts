@@ -362,11 +362,26 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
     [enqueueNewCollectionJobs, onError, setUploadActivity],
   );
 
+  const uploadFolderBatches = useCallback(
+    (batches: GestureUploadFileBatch[]) => {
+      const jobs = newCollectionJobsFromBatches(batches);
+      if (jobs.length === 0) {
+        onError('Use JPEG, PNG, WebP, GIF, or similar images.');
+        return;
+      }
+      const fileCount = batches.reduce((sum, batch) => sum + batch.files.length, 0);
+      setUploadActivity(buildUploadActivity('scanning', { scannedCount: fileCount }));
+      enqueueNewCollectionJobs(jobs);
+    },
+    [enqueueNewCollectionJobs, onError, setUploadActivity],
+  );
+
   return {
     busy,
     queuedCount,
     activity,
     uploadFiles,
+    uploadFolderBatches,
     uploadFromSnapshot,
     uploadPhotosToPack,
     continueUploadForPack,

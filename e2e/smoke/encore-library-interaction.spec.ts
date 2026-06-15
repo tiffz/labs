@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { enterEncoreApp } from '../helpers/enterEncoreApp';
 import { measureClickUntil } from '../helpers/interactionLatency';
-import { DEFAULT_INTERACTION_BUDGET_MS } from '../../src/shared/test/interactionLatencyCore';
+import { TAB_NAVIGATION_BUDGET_MS } from '../../src/shared/test/interactionLatencyCore';
 
 /**
  * CUJ-001: Library ↔ Practice tab responsiveness.
@@ -18,7 +18,7 @@ test.describe('Encore library interaction latency', () => {
       await expect(page.getByRole('heading', { name: 'Your practice' })).toBeVisible({ timeout: 10_000 });
     });
 
-    expect(ms).toBeLessThanOrEqual(DEFAULT_INTERACTION_BUDGET_MS);
+    expect(ms).toBeLessThanOrEqual(TAB_NAVIGATION_BUDGET_MS);
     await expect(page).toHaveURL(/#\/practice/);
   });
 });

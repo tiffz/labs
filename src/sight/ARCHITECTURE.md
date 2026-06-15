@@ -22,7 +22,8 @@ Level thresholds and generator profiles live in [`levels.ts`](levels.ts) (28 lev
 **Layout (practice shell)**
 
 - **`.sight-app`** — full viewport flex column; height `calc(100dvh - var(--labs-debug-dock-height, 0px))` always (Scales pattern).
-- **`.sight-main`** — `display: contents` so practice header / body / footer are direct flex children of `.sight-app`.
+- **`.sight-main`** — `flex: 1` column shell (Scales pattern).
+- **`.sight-practice-shell`** — practice header / body / footer column inside main.
 - **Debug dock** — fixed overlay; shrinks shell via CSS variable only when mounted. Non-debug URLs must match full-viewport layout (`--labs-debug-dock-height` defaults to `0px`).
 - **Sandbox** — `.sight-sandbox` wrapper (not nested `.sight-app`).
 

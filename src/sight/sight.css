@@ -22,10 +22,25 @@ body {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  width: 100%;
+  overflow: hidden;
 }
 
 .sight-main {
-  display: contents;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+
+/** Practice header + workspace + footer column (Scales-style shell). */
+.sight-practice-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
 }
 
 .sight-header {
@@ -110,10 +125,27 @@ body {
 
 .sight-workspace--single {
   grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 1fr);
+  width: 100%;
 }
 
 .sight-workspace--single .sight-canvas-zone {
   border-right: none;
+  min-height: 0;
+  height: 100%;
+  padding: clamp(0.75rem, 2dvh, 1.5rem);
+  align-items: center;
+  justify-content: center;
+}
+
+.sight-workspace--single .sight-compare-stage,
+.sight-workspace--single .sight-albers-stage {
+  flex: 0 1 auto;
+  width: min(100%, 480px);
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  justify-content: center;
 }
 
 .sight-canvas-zone {
@@ -171,6 +203,12 @@ body {
   text-align: inherit;
   font: inherit;
   color: inherit;
+}
+
+.sight-practice-body > .sight-workspace {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
 }
 
 .sight-practice-body--advance {
@@ -477,21 +515,22 @@ body {
   pointer-events: none;
 }
 
-/* Compare — fixed stage so swatches do not shift when verdict appears */
+/* Compare — stage flexes to viewport; swatches scale on shorter screens */
 .sight-compare-stage {
   width: min(100%, 420px);
-  min-height: 16rem;
-  padding: 1.25rem 1.5rem 1rem;
+  min-height: 0;
+  padding: clamp(0.85rem, 2dvh, 1.25rem) clamp(1rem, 2.5dvh, 1.5rem)
+    clamp(0.65rem, 1.5dvh, 1rem);
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   box-sizing: border-box;
 }
 
 .sight-compare-prompt {
-  margin: 0 0 1.25rem;
+  margin: 0 0 clamp(0.75rem, 2dvh, 1.25rem);
   flex-shrink: 0;
 }
 
@@ -504,8 +543,8 @@ body {
 }
 
 .sight-compare-swatch {
-  width: 7rem;
-  height: 7rem;
+  width: clamp(5rem, 14dvh, 7rem);
+  height: clamp(5rem, 14dvh, 7rem);
   flex-shrink: 0;
   border-radius: 4px;
   border: 2px solid rgba(0, 0, 0, 0.25);
@@ -534,17 +573,28 @@ body {
   outline-color: #f87171;
 }
 
-/* Reserved feedback slot — verdict, proof strip, axis (no layout shift) */
+/* Reserved feedback slot — collapsed until answer (no invisible layout reserve) */
 .sight-compare-feedback {
   width: 100%;
-  min-height: 7rem;
-  margin-top: 0.75rem;
+  min-height: 0;
+  margin-top: clamp(0.5rem, 1.5dvh, 0.75rem);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   gap: 0.35rem;
+}
+
+.sight-compare-verdict:not(.sight-compare-verdict--visible) {
+  display: none;
+}
+
+.sight-proof-strip:not(.sight-proof-strip--visible),
+.sight-albers-reveal:not(.sight-albers-reveal--visible),
+.sight-axis-readout:not(.sight-axis-readout--visible),
+.sight-oklch-pair:not(.sight-oklch-pair--visible) {
+  display: none;
 }
 
 .sight-compare-verdict {
@@ -709,16 +759,24 @@ body {
 /* Albers relational flashcards */
 .sight-albers-stage {
   width: min(100%, 480px);
-  padding: 1.25rem 1.5rem 1rem;
+  min-height: 0;
+  padding: clamp(0.85rem, 2dvh, 1.25rem) clamp(1rem, 2.5dvh, 1.5rem)
+    clamp(0.65rem, 1.5dvh, 1rem);
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .sight-albers-fields {
   display: flex;
-  gap: 1rem;
+  gap: clamp(0.65rem, 2dvh, 1rem);
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 0.75rem;
+  margin-bottom: clamp(0.5rem, 1.5dvh, 0.75rem);
+  flex-shrink: 0;
 }
 
 .sight-albers-field {
@@ -736,8 +794,8 @@ body {
 }
 
 .sight-albers-field__bg {
-  width: 8.5rem;
-  height: 8.5rem;
+  width: clamp(6rem, 22dvh, 8.5rem);
+  height: clamp(6rem, 22dvh, 8.5rem);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -745,8 +803,8 @@ body {
 }
 
 .sight-albers-field__target {
-  width: 3.25rem;
-  height: 3.25rem;
+  width: clamp(2.25rem, 8dvh, 3.25rem);
+  height: clamp(2.25rem, 8dvh, 3.25rem);
   border-radius: 4px;
   border: 2px solid rgba(0, 0, 0, 0.2);
 }
@@ -755,7 +813,8 @@ body {
   display: flex;
   gap: 0.75rem;
   justify-content: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
+  flex-shrink: 0;
 }
 
 /* Equal-weight answer chips — no contained/outlined hierarchy between options */
@@ -766,15 +825,12 @@ body {
 /* Flashcard proof — neutral gray targets (always reserved in feedback slot) */
 .sight-proof-strip {
   width: 100%;
-  min-height: 2.75rem;
-  opacity: 0;
-  visibility: hidden;
+  min-height: 0;
   transition: opacity 0.15s ease;
 }
 
 .sight-proof-strip--visible {
   opacity: 1;
-  visibility: visible;
 }
 
 .sight-proof-strip__pair .sight-flush-swatch {
@@ -796,14 +852,15 @@ body {
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  opacity: 0;
-  visibility: hidden;
   transition: opacity 0.15s ease;
+}
+
+.sight-albers-reveal:not(.sight-albers-reveal--visible) {
+  display: none;
 }
 
 .sight-albers-reveal--visible {
   opacity: 1;
-  visibility: visible;
 }
 
 .sight-albers-reveal__note {
@@ -1107,6 +1164,8 @@ body {
 /* Landing (home + curriculum map) */
 .sight-landing {
   isolation: isolate;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .sight-landing--home::before {

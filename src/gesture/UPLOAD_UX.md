@@ -38,7 +38,7 @@ Use `aria-live="polite"` and `aria-busy` on the status region (`CollectionUpload
 2. **`gestureDb.packs.put`** with `uploadStatus: 'uploading'`, counts, `uploadSourceFolderName`
 3. **`uploadManifestFiles.bulkPut`** — one row per image (path, name, size, lastModified, `pending`)
 4. **Reconcile** pending manifest rows against files already in the Drive folder before uploading (skip after refresh/crash)
-5. **Drive file names:** flatten relative paths (`Cats/sub/a.jpg` → `Cats__sub__a.jpg`) so nested folders do not collide on basename
+5. **Drive layout:** mirror nested subfolders under the collection folder (`Cats/session 1/a.jpg` → `Reference Packs/Cats/session 1/a.jpg`). Legacy flat uploads (`Cats__session 1__a.jpg`) still reconcile on resume.
 6. After **each** successful file: `packFiles.put`, manifest → `uploaded`, bump `uploadedFileCount`
 7. On success: clear upload fields + delete manifest rows
 8. On error: set `uploadStatus: 'incomplete'`

@@ -105,7 +105,7 @@ export default function CollectionsTab({
   return (
     <div
       className={`gesture-tab-panel${dragActive ? ' is-drag-active' : ''}${uploadSessionActive ? ' is-upload-busy' : ''}`}
-      aria-label="Drop a folder or photos to upload"
+      aria-label="Drop folders or photos to upload"
       {...handlers}
     >
       {activity ? <CollectionUploadStatus activity={activity} /> : null}
@@ -125,7 +125,7 @@ export default function CollectionsTab({
 
       <div className="gesture-tab-toolbar">
         <Typography className="gesture-tab-lede">
-          Upload photos or link a Drive folder. Drop on a collection to add more, or edit names and tags on the card.
+          Upload folders or photos, or link a Drive folder. Drop several folders at once for separate collections. Drop on a card to add photos to that collection.
         </Typography>
         <AddCollectionActions
           disabled={interactionDisabled}

@@ -36,6 +36,7 @@ Dev server, hard refresh, **no** `?debug`.
 ### Known traps
 
 - Removing `100dvh` from `.sight-app` and only sizing under `html:has(.labs-debug-dock)` — breaks normal mode (`render-cascade` / layout).
+- `display: contents` on `.sight-main` — breaks practice flex chain; use `.sight-practice-shell` instead.
 - Nested `.sight-app` in sandbox doubles height rules.
 - Debug dock must shrink shell via `--labs-debug-dock-height`, not permanently change practice layout.
 

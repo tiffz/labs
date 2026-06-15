@@ -386,7 +386,7 @@ export default function PracticePhase({
   );
 
   return (
-    <>
+    <div className="sight-practice-shell">
       <header className="sight-header">
         <h1>Color Sight Trainer</h1>
         <div className="sight-level-nav">
@@ -448,6 +448,6 @@ export default function PracticePhase({
         hideSubmit={isTapAnswer}
         progressHint={progressLabel}
       />
-    </>
+    </div>
   );
 }

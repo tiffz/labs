@@ -1,30 +1,18 @@
-import { driveListFiles, type DriveFileListRow } from '../../shared/drive/driveFetch';
 import { gestureDb } from '../db/gestureDb';
 import { notifyGestureLocalChange } from '../db/gestureChangeBus';
 import type { GesturePack, GesturePackFile } from '../types';
-import { isGestureReferenceImageFile } from './gestureImageFilter';
+import {
+  listImagesInGesturePackFolderRecursive,
+  type GesturePackDriveImage,
+} from './gesturePackFolderListing';
 import { reconcileStaleGestureUploadPacks } from './reconcileStaleGestureUploadPacks';
 
-function escapeDriveQueryString(id: string): string {
-  return id.replace(/'/g, "\\'");
-}
-
+/** @deprecated Use listImagesInGesturePackFolderRecursive — kept for flat-only callers. */
 export async function listImagesInGesturePackFolder(
   accessToken: string,
   folderId: string,
-): Promise<DriveFileListRow[]> {
-  const out: DriveFileListRow[] = [];
-  let pageToken: string | undefined;
-  const q = `'${escapeDriveQueryString(folderId)}' in parents and trashed=false`;
-  const fields = 'nextPageToken,files(id,name,mimeType,modifiedTime)';
-  do {
-    const res = await driveListFiles(accessToken, q, fields, 100, pageToken);
-    for (const file of res.files ?? []) {
-      if (isGestureReferenceImageFile(file)) out.push(file);
-    }
-    pageToken = res.nextPageToken;
-  } while (pageToken);
-  return out;
+): Promise<GesturePackDriveImage[]> {
+  return listImagesInGesturePackFolderRecursive(accessToken, folderId);
 }
 
 export const GESTURE_PACK_COVER_COUNT = 4;
@@ -40,13 +28,13 @@ export function pickGesturePackCoverFileIds(
     .map((f) => f.driveFileId);
 }
 
-export function driveRowsToPackFiles(pack: GesturePack, images: DriveFileListRow[]): GesturePackFile[] {
+export function driveRowsToPackFiles(pack: GesturePack, images: GesturePackDriveImage[]): GesturePackFile[] {
   return images
     .filter((f) => f.id)
     .map((f) => ({
       driveFileId: f.id!,
       packId: pack.id,
-      name: f.name?.trim() || 'Photo',
+      name: f.relativePath || f.name?.trim() || 'Photo',
       mimeType: f.mimeType ?? 'image/jpeg',
       modifiedTime: f.modifiedTime,
     }));

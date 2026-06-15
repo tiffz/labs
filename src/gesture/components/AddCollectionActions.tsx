@@ -15,7 +15,10 @@ import {
 } from '../../shared/google/labsGoogleDriveAccess';
 import { GESTURE_REFERENCE_IMAGE_ACCEPT } from '../drive/gestureDriveConstants';
 import { inferLocalFolderName } from '../drive/gestureLocalFolderUpload';
+import { supportsDirectoryPicker } from '../drive/gestureFolderPicker';
 import { linkPackFolderFromInput } from '../drive/linkPackFolder';
+import MultiFolderUploadDialog from './MultiFolderUploadDialog';
+import type { GestureUploadFileBatch } from '../drive/gestureLocalFolderUpload';
 import type { GestureCollectionUploadHandle } from '../hooks/useGestureCollectionUpload';
 interface AddCollectionActionsProps {
   disabled?: boolean;
@@ -36,8 +39,9 @@ export default function AddCollectionActions({
   const folderInputRef = useRef<HTMLInputElement>(null);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [linkOpen, setLinkOpen] = useState(false);
+  const [multiFolderOpen, setMultiFolderOpen] = useState(false);
   const [folderInput, setFolderInput] = useState('');
-  const { uploadFiles } = upload;
+  const { uploadFiles, uploadFolderBatches } = upload;
 
   const handleFiles = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,6 +124,16 @@ export default function AddCollectionActions({
         >
           Upload folder
         </MenuItem>
+        {supportsDirectoryPicker() ? (
+          <MenuItem
+            onClick={() => {
+              setMenuAnchor(null);
+              setMultiFolderOpen(true);
+            }}
+          >
+            Upload folders…
+          </MenuItem>
+        ) : null}
         <MenuItem
           onClick={() => {
             setMenuAnchor(null);
@@ -169,6 +183,14 @@ export default function AddCollectionActions({
           </Button>
         </DialogActions>
       </Dialog>
+
+      <MultiFolderUploadDialog
+        open={multiFolderOpen}
+        disabled={disabled}
+        onClose={() => setMultiFolderOpen(false)}
+        onUpload={(batches: GestureUploadFileBatch[]) => uploadFolderBatches(batches)}
+        onError={onError}
+      />
     </>
   );
 }
