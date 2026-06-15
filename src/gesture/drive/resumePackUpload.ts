@@ -4,6 +4,7 @@ import { inferLocalFolderName } from './gestureLocalFolderUpload';
 import {
   clearedUploadFields,
   clearUploadManifestForPack,
+  finalizeGesturePackUploadIfComplete,
   uploadFilesToExistingPack,
 } from './gesturePackUpload';
 import {
@@ -25,6 +26,7 @@ export async function resumePackUpload(
   packId: string,
   picked: File[],
   onProgress?: (done: number, total: number) => void,
+  options?: { isCancelled?: (packId: string) => boolean },
 ): Promise<ResumePackUploadResult> {
   const pack = await gestureDb.packs.get(packId);
   if (!pack) throw new Error('Collection not found.');
@@ -38,6 +40,20 @@ export async function resumePackUpload(
 
   const { toUpload, skipped } = selectFilesToUpload(manifest, picked, uploadedNames);
   if (toUpload.length === 0) {
+    const finalized = await finalizeGesturePackUploadIfComplete(accessToken, pack);
+    if (finalized) {
+      const { total } = countManifestProgress(
+        await gestureDb.uploadManifestFiles.where('packId').equals(packId).toArray(),
+      );
+      return {
+        pack: finalized,
+        newlyUploaded: 0,
+        skipped,
+        skippedDuplicates: 0,
+        total: total || uploadedNames.size,
+      };
+    }
+
     const { uploaded, total } = countManifestProgress(manifest);
     const totalCount = total || pack.expectedFileCount || uploadedNames.size;
     if (uploaded >= totalCount && totalCount > 0) {
@@ -71,6 +87,8 @@ export async function resumePackUpload(
     { ...packForUpload, expectedFileCount: total },
     toUpload,
     onProgress,
+    undefined,
+    { isCancelled: options?.isCancelled },
   );
   const progress = countManifestProgress(
     await gestureDb.uploadManifestFiles.where('packId').equals(packId).toArray(),

@@ -45,6 +45,15 @@ Use `aria-live="polite"` and `aria-busy` on the status region (`CollectionUpload
 
 ### 3. Interrupted upload recovery (Tier 1)
 
+Upload recovery uses **two local layers** that must stay aligned:
+
+| Layer       | Storage                                                      | Purpose                            |
+| ----------- | ------------------------------------------------------------ | ---------------------------------- |
+| Pack ledger | Dexie `packs.uploadStatus`, counts, `uploadSourceFolderName` | Card progress + banner eligibility |
+| File ledger | Dexie `uploadManifestFiles` (never on Drive)                 | Resume / duplicate reconciliation  |
+
+**Drive `progress.json` does not carry upload recovery state** — ephemeral upload fields are stripped on push and when importing remote-only packs. Recovery is per-browser session storage (+ manifest), not cross-device sync.
+
 On load, surface packs where upload stopped via **`InterruptedUploadBanner`** (`shouldShowUploadRecoveryBanner`):
 
 - `uploadStatus: 'incomplete'` — always show until resolved
@@ -85,6 +94,20 @@ Surface skipped counts in the completion toast.
 
 In Collections manage mode, each collection card accepts folder/photo drops (`usePackCollectionDrop`) and adds photos to that pack via `addPhotosToExistingPack`. Tab-level drop still creates a new collection. Card drop targets use `stopPropagation` so only the hovered card highlights.
 
+### 4d. Multiple folders at once
+
+| Method                    | Multi-folder? | Notes                                                                                                                                                           |
+| ------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Add → Upload folders…** | Yes           | Chrome/Edge `showDirectoryPicker` queue; preferred for large batches                                                                                            |
+| **Add → Upload folder**   | One folder    | Standard `webkitdirectory` input                                                                                                                                |
+| **Tab drag-drop**         | Best-effort   | Browsers often expose only one directory per drop; if multiple items are dropped but one folder is read, the app shows an error pointing to **Upload folders…** |
+
+Safari has no directory picker API — use drag-drop or upload one folder at a time.
+
+### 4e. Merge collections
+
+Select two collections on the Collections tab → **Merge into one…** moves the source into a subfolder inside the target on Drive and removes the source pack locally. Nested folder layout on cards is under **Folders** (collapsed by default).
+
 ### 5. Delete collection
 
 `DeleteCollectionDialog` — always offer:
@@ -95,6 +118,8 @@ In Collections manage mode, each collection card accepts folder/photo drops (`us
 | **App and Drive photos** | Trash all images in the Drive folder + trash folder (~30 day Drive trash). Then remove local rows. |
 
 List Drive folder contents when trashing (not only locally indexed files) so failed partial uploads clean up fully.
+
+Removing a collection while its upload is in progress stops the upload first (`cancelUploadForPack`), then deletes local rows without writing the pack back as incomplete.
 
 ### 6. Honest errors
 
@@ -127,5 +152,6 @@ Incomplete upload packs must not be treated as ready for practice until resolved
 | `drive/gesturePackUpload.ts`             | Per-file upload loop + manifest updates                        |
 | `drive/resumePackUpload.ts`              | Continue after re-pick                                         |
 | `drive/gestureDeleteCollection.ts`       | App-only vs Drive trash delete                                 |
+| `drive/gestureMergeCollections.ts`       | Merge two packs into one (subfolder on Drive)                  |
 | `components/InterruptedUploadBanner.tsx` | Recovery UI                                                    |
 | `components/DeleteCollectionDialog.tsx`  | Remove collection options                                      |

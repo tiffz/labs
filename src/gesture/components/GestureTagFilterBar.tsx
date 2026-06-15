@@ -10,6 +10,13 @@ type GestureTagFilterBarProps = {
   selectionHint?: string | null;
   onSelectAllShown?: () => void;
   onDeselectAllShown?: () => void;
+  /** Optional primary action in the selection row (e.g. Merge into one…). */
+  selectionPrimaryAction?: {
+    label: string;
+    disabled?: boolean;
+    onClick: () => void;
+  };
+  onClearSelection?: () => void;
 };
 
 export default function GestureTagFilterBar({
@@ -20,10 +27,15 @@ export default function GestureTagFilterBar({
   selectionHint,
   onSelectAllShown,
   onDeselectAllShown,
+  selectionPrimaryAction,
+  onClearSelection,
 }: GestureTagFilterBarProps): ReactElement | null {
   const showSelectionActions =
     selectionHint &&
-    (onSelectAllShown != null || onDeselectAllShown != null);
+    (onSelectAllShown != null ||
+      onDeselectAllShown != null ||
+      selectionPrimaryAction != null ||
+      onClearSelection != null);
 
   if (tags.length === 0 && !showSelectionActions) return null;
 
@@ -81,6 +93,25 @@ export default function GestureTagFilterBar({
                 onClick={onDeselectAllShown}
               >
                 Deselect all
+              </button>
+            ) : null}
+            {selectionPrimaryAction ? (
+              <button
+                type="button"
+                className="gesture-selection-bar-btn gesture-selection-bar-btn--primary"
+                disabled={selectionPrimaryAction.disabled}
+                onClick={selectionPrimaryAction.onClick}
+              >
+                {selectionPrimaryAction.label}
+              </button>
+            ) : null}
+            {onClearSelection ? (
+              <button
+                type="button"
+                className="gesture-selection-bar-btn"
+                onClick={onClearSelection}
+              >
+                Cancel
               </button>
             ) : null}
           </span>

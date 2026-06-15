@@ -17,7 +17,7 @@ async function deletePackLocalRows(packId: string): Promise<void> {
       await gestureDb.packs.delete(packId);
     },
   );
-  notifyGestureLocalChange();
+  notifyGestureLocalChange({ immediate: true });
 }
 
 export type DeleteCollectionScope = 'app-only' | 'app-and-drive-photos';

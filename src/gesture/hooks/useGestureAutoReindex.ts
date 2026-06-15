@@ -51,7 +51,9 @@ export function useGestureAutoReindex(enabled: boolean): void {
       if (needsReindex && token) {
         await reindexGesturePacksMissingPhotos(token);
       }
-      if (uploadLedgerFingerprint) {
+      if (uploadLedgerFingerprint && token) {
+        await reconcileStaleGestureUploadPacks(token);
+      } else if (uploadLedgerFingerprint) {
         await reconcileStaleGestureUploadPacks();
       }
     } finally {

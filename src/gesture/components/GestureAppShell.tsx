@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
@@ -8,7 +8,13 @@ import GestureAccountMenu from './GestureAccountMenu';
 import GestureStatusBanner from './GestureStatusBanner';
 import GestureWordmark from './GestureWordmark';
 import PracticeTab from './PracticeTab';
-import type { GestureHomeTab, SessionConfig } from '../types';
+import type { SessionConfig } from '../types';
+import {
+  gestureRouteToTab,
+  navigateGesture,
+  parseGestureAppHash,
+  type GestureHomeTab,
+} from '../routes/gestureAppHash';
 import { useGestureMediaWarmup } from '../hooks/useGestureMediaWarmup';
 import { readGesturePracticeSessionConfig } from '../practice/gesturePracticeConfigStorage';
 
@@ -17,7 +23,9 @@ interface GestureAppShellProps {
 }
 
 export default function GestureAppShell({ onStartSession }: GestureAppShellProps): React.ReactElement {
-  const [tab, setTab] = useState<GestureHomeTab>('practice');
+  const [tab, setTab] = useState<GestureHomeTab>(() =>
+    gestureRouteToTab(parseGestureAppHash(window.location.hash)),
+  );
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTagFilters, setActiveTagFilters] = useState<string[]>(
@@ -25,6 +33,19 @@ export default function GestureAppShell({ onStartSession }: GestureAppShellProps
   );
 
   useGestureMediaWarmup();
+
+  useEffect(() => {
+    const syncFromHash = () => {
+      setTab(gestureRouteToTab(parseGestureAppHash(window.location.hash)));
+    };
+    window.addEventListener('hashchange', syncFromHash);
+    return () => window.removeEventListener('hashchange', syncFromHash);
+  }, []);
+
+  const handleTabChange = useCallback((_e: unknown, value: GestureHomeTab) => {
+    navigateGesture({ kind: value });
+    setTab(value);
+  }, []);
 
   return (
     <div className="gesture-shell">
@@ -40,7 +61,7 @@ export default function GestureAppShell({ onStartSession }: GestureAppShellProps
 
       <Tabs
         value={tab}
-        onChange={(_e, value: GestureHomeTab) => setTab(value)}
+        onChange={handleTabChange}
         className="gesture-tabs"
         aria-label="Main sections"
       >
@@ -62,7 +83,7 @@ export default function GestureAppShell({ onStartSession }: GestureAppShellProps
       <div hidden={tab !== 'practice'} aria-hidden={tab !== 'practice'}>
         <PracticeTab
           onStart={onStartSession}
-          onNeedCollections={() => setTab('collections')}
+          onNeedCollections={() => navigateGesture({ kind: 'collections' })}
           activeTagFilters={activeTagFilters}
           onActiveTagFiltersChange={setActiveTagFilters}
           previewFetchEnabled={tab === 'practice'}

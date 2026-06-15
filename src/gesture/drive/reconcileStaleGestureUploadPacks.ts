@@ -1,7 +1,11 @@
 import { gestureDb } from '../db/gestureDb';
 import { notifyGestureLocalChange } from '../db/gestureChangeBus';
 import type { GesturePack } from '../types';
-import { clearUploadManifestForPack, clearedUploadFields } from './gesturePackUpload';
+import {
+  clearUploadManifestForPack,
+  clearedUploadFields,
+  finalizeGesturePackUploadIfComplete,
+} from './gesturePackUpload';
 
 /** Indexed photos meet the upload ledger — upload flags can clear. */
 export function isGesturePackUploadResolved(
@@ -33,12 +37,22 @@ export function isGesturePackUploadComplete(
  * Clear stale upload flags after restore or reindex. Upload manifest lives in Dexie only,
  * so a merged Drive backup may still say "uploading" even when every photo is on Drive.
  */
-export async function reconcileStaleGestureUploadPacks(): Promise<number> {
+export async function reconcileStaleGestureUploadPacks(
+  accessToken?: string,
+): Promise<number> {
   const packs = await gestureDb.packs.toArray();
   let cleared = 0;
 
   for (const pack of packs) {
     if (!pack.uploadStatus) continue;
+
+    if (accessToken) {
+      const finalized = await finalizeGesturePackUploadIfComplete(accessToken, pack);
+      if (finalized) {
+        cleared += 1;
+        continue;
+      }
+    }
 
     const manifest = await gestureDb.uploadManifestFiles.where('packId').equals(pack.id).toArray();
     const pending = manifest.filter((entry) => entry.status === 'pending').length;

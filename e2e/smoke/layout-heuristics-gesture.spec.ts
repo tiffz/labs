@@ -7,6 +7,15 @@ import { runLayoutHeuristicsInBrowser } from '../helpers/layoutHeuristics';
  * Complements gesture-preview-strip (functional) with ux-spec-violation heuristics.
  */
 test.describe('Gesture layout heuristics', () => {
+  test('collections hash route renders shell', async ({ page }) => {
+    await stubGestureDriveThumbnailImages(page);
+    await page.goto('/gesture/?e2eSeed=1#/collections');
+
+    await expect(page.locator('.gesture-shell')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.gesture-tab-panel')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByPlaceholder('Search collections')).toBeVisible({ timeout: 15_000 });
+  });
+
   test('practice shell has panel padding and readable muted lede', async ({ page }) => {
     await stubGestureDriveThumbnailImages(page);
     await page.goto('/gesture/?e2eSeed=1');

@@ -1,7 +1,9 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  LABS_DRIVE_AUTO_PULL_INTERVAL_MS,
   LABS_DRIVE_AUTO_PUSH_DEBOUNCE_MS,
+  LABS_DRIVE_AUTO_PUSH_MIN_INTERVAL_MS,
 } from './labsDrivePortfolioBackupConstants';
 import { useLabsDrivePortfolioAutoSync } from './useLabsDrivePortfolioAutoSync';
 
@@ -198,9 +200,29 @@ describe('useLabsDrivePortfolioAutoSync', () => {
     act(() => onChange?.());
     act(() => onChange?.());
     await act(async () => {
-      vi.advanceTimersByTime(LABS_DRIVE_AUTO_PUSH_DEBOUNCE_MS);
+      vi.advanceTimersByTime(
+        LABS_DRIVE_AUTO_PUSH_DEBOUNCE_MS + LABS_DRIVE_AUTO_PUSH_MIN_INTERVAL_MS,
+      );
       await Promise.resolve();
     });
     expect(flush).toHaveBeenCalledTimes(2);
+  });
+
+  it('runs periodic silent pull while enabled and visible', async () => {
+    const pull = vi.fn().mockResolvedValue({});
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'visible',
+    });
+
+    renderHook(() => useLabsDrivePortfolioAutoSync(baseOptions({ pullFromDriveAndMerge: pull })));
+    await flushPromises();
+    expect(pull).toHaveBeenCalledOnce();
+
+    await act(async () => {
+      vi.advanceTimersByTime(LABS_DRIVE_AUTO_PULL_INTERVAL_MS);
+      await Promise.resolve();
+    });
+    expect(pull).toHaveBeenCalledTimes(2);
   });
 });

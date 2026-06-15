@@ -107,6 +107,32 @@ describe('mergeGestureSyncPayload', () => {
     expect(payload.packs[0]?.subject).toBe('Hands');
   });
 
+  it('strips ephemeral upload fields from remote-only packs', () => {
+    const { payload } = mergeGestureSyncPayload(
+      { packs: [], packFiles: [], drawHistory: [] },
+      {
+        packs: [
+          {
+            id: 'remote-id',
+            driveFolderId: 'folder-b',
+            name: 'MistyMountains (2)',
+            linkedAt: '2026-01-01T00:00:00.000Z',
+            lastIndexedAt: '2026-01-02T00:00:00.000Z',
+            uploadStatus: 'incomplete',
+            expectedFileCount: 128,
+            uploadedFileCount: 71,
+            uploadSourceFolderName: 'MistyMountains',
+          },
+        ],
+        packFiles: [],
+        drawHistory: [],
+      },
+    );
+    expect(payload.packs[0]?.name).toBe('MistyMountains (2)');
+    expect(payload.packs[0]?.uploadStatus).toBeUndefined();
+    expect(payload.packs[0]?.expectedFileCount).toBeUndefined();
+  });
+
   it('remaps remote pack file rows to merged pack ids', () => {
     const local = {
       packs: [

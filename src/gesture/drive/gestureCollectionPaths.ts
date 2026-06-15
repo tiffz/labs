@@ -43,3 +43,17 @@ export function driveUploadBasename(file: File, collectionRootName?: string): st
   const rel = collectionRelativePath(file, collectionRootName);
   return sanitizeDriveFileName(basenameFromCollectionPath(rel));
 }
+
+/** Top-level subfolder names from collection-relative pack file paths. */
+export function topLevelSubfolderCounts(names: string[]): { name: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const name of names) {
+    const slash = name.indexOf('/');
+    if (slash < 0) continue;
+    const top = name.slice(0, slash);
+    counts.set(top, (counts.get(top) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}

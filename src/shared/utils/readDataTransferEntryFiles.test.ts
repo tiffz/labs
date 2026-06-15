@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   collectDataTransferDropSnapshot,
   readDataTransferDrop,
+  readDataTransferDropBatches,
   readDataTransferDropFromSnapshot,
 } from './readDataTransferEntryFiles';
 
@@ -131,5 +132,81 @@ describe('readDataTransferDrop', () => {
 
     const drop = await readDataTransferDropFromSnapshot(snapshot);
     expect(drop.files).toHaveLength(1);
+  });
+
+  it('returns one batch per dropped directory entry', async () => {
+    const makeDir = (name: string, files: File[]) => {
+      let read = false;
+      return {
+        isFile: false,
+        isDirectory: true,
+        name,
+        createReader: () => ({
+          readEntries: (ok: (entries: FileSystemEntry[]) => void) => {
+            if (read) {
+              ok([]);
+              return;
+            }
+            read = true;
+            ok(
+              files.map((file) => ({
+                isFile: true,
+                isDirectory: false,
+                name: file.name,
+                file: (cb: (f: File) => void) => cb(file),
+              })) as FileSystemEntry[],
+            );
+          },
+        }),
+      } as FileSystemEntry;
+    };
+
+    const fileA = new File(['a'], 'a.jpg', { type: 'image/jpeg' });
+    const fileB = new File(['b'], 'b.jpg', { type: 'image/jpeg' });
+    const snapshot = {
+      entries: [makeDir('FolderA', [fileA]), makeDir('FolderB', [fileB])],
+      looseFiles: [],
+      snapshotFiles: [],
+      fileItemCount: 2,
+    };
+
+    const batches = await readDataTransferDropBatches(snapshot);
+    expect(batches).toHaveLength(2);
+    expect(batches[0]?.suggestedFolderName).toBe('FolderA');
+    expect(batches[1]?.suggestedFolderName).toBe('FolderB');
+  });
+
+  it('splits snapshotFiles by top-level webkitRelativePath when items under-report folders', async () => {
+    const fileA = new File(['a'], 'a.jpg', { type: 'image/jpeg' });
+    const fileB = new File(['b'], 'b.jpg', { type: 'image/jpeg' });
+    Object.defineProperty(fileA, 'webkitRelativePath', { value: 'FolderA/a.jpg', configurable: true });
+    Object.defineProperty(fileB, 'webkitRelativePath', { value: 'FolderB/b.jpg', configurable: true });
+
+    const makeSingleDir = (name: string) => {
+      let read = false;
+      return {
+        isFile: false,
+        isDirectory: true,
+        name,
+        createReader: () => ({
+          readEntries: (ok: (entries: FileSystemEntry[]) => void) => {
+            ok(read ? [] : []);
+            read = true;
+          },
+        }),
+      } as FileSystemEntry;
+    };
+
+    const snapshot = {
+      entries: [makeSingleDir('FolderA')],
+      looseFiles: [],
+      snapshotFiles: [fileA, fileB],
+      fileItemCount: 2,
+    };
+
+    const batches = await readDataTransferDropBatches(snapshot);
+    expect(batches).toHaveLength(2);
+    expect(batches[0]?.suggestedFolderName).toBe('FolderA');
+    expect(batches[1]?.suggestedFolderName).toBe('FolderB');
   });
 });

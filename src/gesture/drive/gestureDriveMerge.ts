@@ -1,4 +1,5 @@
 import type { GestureDrawRecord, GesturePack, GesturePackFile, GestureSyncPayload } from '../types';
+import { stripEphemeralUploadFields } from './gestureUploadEphemeral';
 
 export type GestureDriveMergeReport = {
   packsMerged: number;
@@ -110,7 +111,7 @@ export function mergeGestureSyncPayload(
       packByFolder.set(remotePack.driveFolderId, mergePack(localPack, remotePack));
       packsMerged += 1;
     } else {
-      packByFolder.set(remotePack.driveFolderId, remotePack);
+      packByFolder.set(remotePack.driveFolderId, stripEphemeralUploadFields(remotePack));
       packsFromRemoteOnly += 1;
     }
   }

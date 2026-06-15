@@ -5573,13 +5573,43 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsdriveportfoliobackupconstants-ts-labs-drive-auto-pull-interval-ms",
+    "name": "LABS_DRIVE_AUTO_PULL_INTERVAL_MS",
+    "path": "src/shared/drive/labsDrivePortfolioBackupConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Silent re-pull interval while the tab is visible (cross-device sync).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveportfoliobackupconstants-ts-labs-drive-auto-pull-min-interval-ms",
+    "name": "LABS_DRIVE_AUTO_PULL_MIN_INTERVAL_MS",
+    "path": "src/shared/drive/labsDrivePortfolioBackupConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Minimum ms between visibility-triggered silent re-pulls.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-labsdriveportfoliobackupconstants-ts-labs-drive-auto-push-debounce-ms",
     "name": "LABS_DRIVE_AUTO_PUSH_DEBOUNCE_MS",
     "path": "src/shared/drive/labsDrivePortfolioBackupConstants.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Debounced auto-push quiet period (Stanza, Scales, future portfolio apps).",
+    "description": "Debounced auto-push quiet period (Stanza, Scales, Gesture portfolio apps).",
     "tags": [
       "api"
     ],
@@ -5928,7 +5958,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Shared session lifecycle for portfolio Drive backup apps: - One silent auto-pull per enabled session - Debounced auto-push after local edits (gated by allowAutoPush)",
+    "description": "Shared session lifecycle for portfolio Drive backup apps: - Silent auto-pull on session start, periodically while visible, and on tab focus - Debounced auto-push after local edits (gated by allowAutoPush)",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -17014,6 +17044,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Traverses a synchronous snapshot (folder tree reads may await).",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-readdatatransferentryfiles-ts-snapshothasmultipletoplevelfolders",
+    "name": "snapshotHasMultipleTopLevelFolders",
+    "path": "src/shared/utils/readDataTransferEntryFiles.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when snapshot files span multiple top-level folder roots (multi-folder drag).",
     "tags": [
       "utils"
     ],

@@ -168,36 +168,8 @@ jobs:
 
     - name: Check for dead code
       run: npm run knip
-      
-    - name: Run tests
-      env:
-        INCLUDE_BEAT_BENCHMARK: ${{ steps.beat-changes.outputs.beat_changed }}
-      # One retry in CI absorbs rare Vitest worker teardown flakes (BroadcastChannel).
-      run: npm test -- --retry=1
 
-    # Coverage runs after the primary test pass so a crash here doesn't hide
-    # test failures. Non-blocking for now (building the floor first); flip to
-    # blocking once the thresholds in vite.config.ts are comfortable.
-    - name: Collect test coverage
-      if: always()
-      run: |
-        set +e
-        npm run test:coverage
-        code=$?
-        if [ "$code" -ne 0 ]; then
-          echo "::warning title=Coverage (advisory)::Coverage collection exited with code $code (non-blocking)."
-        fi
-        exit 0
-
-    - name: Upload coverage report
-      if: always()
-      uses: actions/upload-artifact@v6
-      with:
-        name: coverage-report
-        if-no-files-found: ignore
-        path: |
-          coverage/**
-
+    # E2e before Vitest so smoke failures surface in ~4–5 min (fail-fast).
     - name: Install Playwright browsers
       run: npx playwright install --with-deps chromium
 
@@ -252,8 +224,27 @@ jobs:
         path: |
           src/shared/beat/regression/reports/**
 
+    - name: Run tests
+      env:
+        INCLUDE_BEAT_BENCHMARK: ${{ steps.beat-changes.outputs.beat_changed }}
+      # One retry in CI absorbs rare Vitest worker teardown flakes (BroadcastChannel).
+      run: npm test -- --retry=1
+
+  # Coverage runs nightly (nightly-flakiness.yml) — not on every PR/main push.
+
     - name: Build project
+      env:
+        VITE_GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
+        VITE_LABS_DRIVE_TESTER_HASHES: ${{ secrets.VITE_LABS_DRIVE_TESTER_HASHES }}
+        VITE_APP_ENV: production
       run: npm run build
+
+    - name: Upload production build artifact
+      uses: actions/upload-artifact@v6
+      with:
+        name: production-dist
+        path: dist/
+        retention-days: 1
 
   deploy:
     needs: test
@@ -273,28 +264,11 @@ jobs:
       id-token: write
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v5
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v5
+    - name: Download production build artifact
+      uses: actions/download-artifact@v6
       with:
-        node-version: '20'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-
-    # Browser-restricted Google API key (Drive Picker, guest snapshot reads). Set as
-    # repo or `github-pages` environment secret — see src/encore/README.md.
-    - name: Build project
-      env:
-        VITE_GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
-        # Optional: comma-separated SHA-256 email hashes so Drive backup UI appears for testers on scales/stanza.
-        VITE_LABS_DRIVE_TESTER_HASHES: ${{ secrets.VITE_LABS_DRIVE_TESTER_HASHES }}
-        # Optional: `staging` vs `production` label when wiring env-specific Google OAuth clients in CI.
-        VITE_APP_ENV: production
-      run: npm run build
+        name: production-dist
+        path: dist
 
     - name: Setup Pages
       uses: actions/configure-pages@v6

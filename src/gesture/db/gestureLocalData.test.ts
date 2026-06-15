@@ -8,6 +8,7 @@ describe('applyGestureMergedPayload', () => {
     await gestureDb.packs.clear();
     await gestureDb.packFiles.clear();
     await gestureDb.drawHistory.clear();
+    await gestureDb.uploadManifestFiles.clear();
   });
 
   it('preserves local packFiles when merged payload omits the photo index', async () => {
@@ -42,5 +43,25 @@ describe('applyGestureMergedPayload', () => {
     const files = await gestureDb.packFiles.toArray();
     expect(files).toHaveLength(1);
     expect(files[0]?.driveFileId).toBe('photo-1');
+  });
+
+  it('drops upload manifest rows for packs removed during merge', async () => {
+    await gestureDb.uploadManifestFiles.put({
+      id: 'pack-ghost::a.jpg',
+      packId: 'pack-ghost',
+      relativePath: 'a.jpg',
+      name: 'a.jpg',
+      size: 100,
+      lastModified: 1,
+      status: 'pending',
+    });
+
+    await applyGestureMergedPayload({
+      packs: [],
+      packFiles: [],
+      drawHistory: [],
+    });
+
+    expect(await gestureDb.uploadManifestFiles.count()).toBe(0);
   });
 });

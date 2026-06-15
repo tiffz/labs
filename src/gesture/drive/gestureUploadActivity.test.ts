@@ -72,4 +72,15 @@ describe('gestureUploadActivity', () => {
     expect(buildUploadActivity('scanning', { scannedCount: 12 }).label).toContain('12 files');
     expect(buildUploadActivity('uploading', { done: 2, total: 5 }).label).toContain('2 of 5');
   });
+
+  it('builds aggregate labels for multi-collection sessions', () => {
+    expect(
+      buildUploadActivity('uploading', {
+        done: 103,
+        total: 271,
+        multiCollection: true,
+        collectionsRemaining: 1,
+      }).label,
+    ).toBe('Uploading to Drive… 103 of 271 · 1 folder left');
+  });
 });

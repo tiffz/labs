@@ -1,5 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
+  LABS_DRIVE_AUTO_PULL_INTERVAL_MS,
+  LABS_DRIVE_AUTO_PULL_MIN_INTERVAL_MS,
   LABS_DRIVE_AUTO_PUSH_DEBOUNCE_MS,
   LABS_DRIVE_AUTO_PUSH_MIN_INTERVAL_MS,
 } from './labsDrivePortfolioBackupConstants';
@@ -22,7 +24,7 @@ export type UseLabsDrivePortfolioAutoSyncOptions = {
 
 /**
  * Shared session lifecycle for portfolio Drive backup apps:
- * - One silent auto-pull per enabled session
+ * - Silent auto-pull on session start, periodically while visible, and on tab focus
  * - Debounced auto-push after local edits (gated by allowAutoPush)
  */
 export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAutoSyncOptions): {
@@ -44,6 +46,10 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
   const autoPushTimerRef = useRef<number | null>(null);
   const autoPushInFlightRef = useRef(false);
   const lastAutoPushAtRef = useRef(0);
+  const lastAutoPullAtRef = useRef(0);
+  const periodicPullTimerRef = useRef<number | null>(null);
+  const visibilityPullTimerRef = useRef<number | null>(null);
+  const pullInFlightRef = useRef(false);
 
   const pullRef = useRef(pullFromDriveAndMerge);
   pullRef.current = pullFromDriveAndMerge;
@@ -55,19 +61,74 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
   allowPushRef.current = allowAutoPush;
   const mergeBusyRef = useRef(isMergeInProgress);
   mergeBusyRef.current = isMergeInProgress;
+  const onAutoPullErrorRef = useRef(onAutoPullError);
+  onAutoPullErrorRef.current = onAutoPullError;
+
+  const runSilentPull = useCallback(async () => {
+    if (pullInFlightRef.current || mergeBusyRef.current()) return;
+    pullInFlightRef.current = true;
+    try {
+      const result = await pullRef.current({ silent: true });
+      lastAutoPullAtRef.current = Date.now();
+      await afterPullRef.current?.(result);
+    } catch (e) {
+      onAutoPullErrorRef.current(formatLabsDriveSyncError(e, 'auto-pull'));
+    } finally {
+      pullInFlightRef.current = false;
+    }
+  }, []);
 
   useEffect(() => {
     if (!enabled || autoPullStartedRef.current) return;
     autoPullStartedRef.current = true;
-    void (async () => {
-      try {
-        const result = await pullRef.current({ silent: true });
-        await afterPullRef.current?.(result);
-      } catch (e) {
-        onAutoPullError(formatLabsDriveSyncError(e, 'auto-pull'));
+    void runSilentPull();
+  }, [enabled, runSilentPull]);
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    const scheduleVisibilityPull = () => {
+      if (document.visibilityState !== 'visible') return;
+      const sinceLast = Date.now() - lastAutoPullAtRef.current;
+      if (sinceLast < LABS_DRIVE_AUTO_PULL_MIN_INTERVAL_MS) return;
+      if (visibilityPullTimerRef.current != null) {
+        window.clearTimeout(visibilityPullTimerRef.current);
       }
-    })();
-  }, [enabled, onAutoPullError]);
+      visibilityPullTimerRef.current = window.setTimeout(() => {
+        visibilityPullTimerRef.current = null;
+        void runSilentPull();
+      }, 500);
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        scheduleVisibilityPull();
+      }
+    };
+
+    periodicPullTimerRef.current = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      const sinceLast = Date.now() - lastAutoPullAtRef.current;
+      if (sinceLast < LABS_DRIVE_AUTO_PULL_MIN_INTERVAL_MS) return;
+      void runSilentPull();
+    }, LABS_DRIVE_AUTO_PULL_INTERVAL_MS);
+
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', scheduleVisibilityPull);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', scheduleVisibilityPull);
+      if (periodicPullTimerRef.current != null) {
+        window.clearInterval(periodicPullTimerRef.current);
+        periodicPullTimerRef.current = null;
+      }
+      if (visibilityPullTimerRef.current != null) {
+        window.clearTimeout(visibilityPullTimerRef.current);
+        visibilityPullTimerRef.current = null;
+      }
+    };
+  }, [enabled, runSilentPull]);
 
   useEffect(() => {
     if (!enabled) return;

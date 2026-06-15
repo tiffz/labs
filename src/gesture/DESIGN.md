@@ -48,7 +48,7 @@ Elevated defaults within the same family:
 - **Border radius:** `0.625rem` (`--gesture-card-radius`, `--gesture-button-radius`).
 - **Borders:** Hairline only when needed (`--gesture-border`). Collection cards are **borderless**.
 - **Shadows:** **None.** Never add `box-shadow` or zine offset shadows.
-- **Max content width:** `44rem` (`--gesture-shell-max`).
+- **Max content width:** `56rem` (`--gesture-shell-max`).
 
 ## Components
 

@@ -10,7 +10,11 @@ export type DataTransferDrop = {
 export type DataTransferDropSnapshot = {
   entries: FileSystemEntry[];
   looseFiles: File[];
+  /** Full `dataTransfer.files` list (sync); used when `items` under-reports folder count. */
+  snapshotFiles: File[];
   suggestedFolderName?: string;
+  /** Number of file items in the drop (for multi-folder drag diagnostics). */
+  fileItemCount: number;
 };
 
 function fileWithRelativePath(file: File, relativePath: string): File {
@@ -75,6 +79,53 @@ async function readEntryFiles(entry: FileSystemEntry, pathPrefix: string): Promi
   return nested;
 }
 
+function topLevelFolderRoots(files: File[]): Set<string> {
+  const roots = new Set<string>();
+  for (const file of files) {
+    const rel = (file as FileWithRelativePath).webkitRelativePath?.trim();
+    if (!rel?.includes('/')) continue;
+    const root = rel.split('/')[0]?.trim();
+    if (root) roots.add(root);
+  }
+  return roots;
+}
+
+function batchesFromRelativePaths(files: File[]): DataTransferDrop[] | null {
+  const roots = topLevelFolderRoots(files);
+  if (roots.size <= 1) return null;
+
+  const groups = new Map<string, File[]>();
+  const loose: File[] = [];
+
+  for (const file of files) {
+    const rel = (file as FileWithRelativePath).webkitRelativePath?.trim();
+    if (!rel?.includes('/')) {
+      loose.push(file);
+      continue;
+    }
+    const root = rel.split('/')[0]?.trim();
+    if (!root) {
+      loose.push(file);
+      continue;
+    }
+    const list = groups.get(root) ?? [];
+    list.push(file);
+    groups.set(root, list);
+  }
+
+  const batches: DataTransferDrop[] = [...groups.entries()].map(([folderName, batchFiles]) => ({
+    files: batchFiles,
+    suggestedFolderName: folderName,
+  }));
+  if (loose.length > 0) batches.push({ files: loose });
+  return batches.length > 0 ? batches : null;
+}
+
+/** True when snapshot files span multiple top-level folder roots (multi-folder drag). */
+export function snapshotHasMultipleTopLevelFolders(snapshot: DataTransferDropSnapshot): boolean {
+  return topLevelFolderRoots(snapshot.snapshotFiles).size > 1;
+}
+
 function suggestedFolderNameFromEntries(entries: FileSystemEntry[]): string | undefined {
   const directories = entries.filter((entry) => entry.isDirectory);
   return directories.length === 1 && entries.length === 1 ? directories[0]?.name : undefined;
@@ -86,12 +137,14 @@ function suggestedFolderNameFromEntries(entries: FileSystemEntry[]): string | un
 export function collectDataTransferDropSnapshot(dataTransfer: DataTransfer): DataTransferDropSnapshot {
   const entries: FileSystemEntry[] = [];
   const looseFiles: File[] = [];
+  let fileItemCount = 0;
 
   const items = dataTransfer.items;
   if (items && items.length > 0) {
     for (let i = 0; i < items.length; i += 1) {
       const item = items[i];
       if (!item || item.kind !== 'file') continue;
+      fileItemCount += 1;
       const entry = item.webkitGetAsEntry?.() ?? null;
       if (entry) {
         entries.push(entry);
@@ -103,13 +156,24 @@ export function collectDataTransferDropSnapshot(dataTransfer: DataTransfer): Dat
   }
 
   if (entries.length === 0 && looseFiles.length === 0 && dataTransfer.files.length > 0) {
-    looseFiles.push(...dataTransfer.files);
+    for (let i = 0; i < dataTransfer.files.length; i += 1) {
+      const file = dataTransfer.files[i];
+      if (file) looseFiles.push(file);
+    }
+  }
+
+  const snapshotFiles: File[] = [];
+  for (let i = 0; i < dataTransfer.files.length; i += 1) {
+    const file = dataTransfer.files[i];
+    if (file) snapshotFiles.push(file);
   }
 
   return {
     entries,
     looseFiles,
+    snapshotFiles,
     suggestedFolderName: suggestedFolderNameFromEntries(entries),
+    fileItemCount,
   };
 }
 
@@ -149,6 +213,16 @@ export async function readDataTransferDropBatches(
   snapshot: DataTransferDropSnapshot,
   options?: { onFileFound?: (count: number) => void },
 ): Promise<DataTransferDrop[]> {
+  const fromSnapshotFiles = batchesFromRelativePaths(snapshot.snapshotFiles);
+  if (fromSnapshotFiles && fromSnapshotFiles.length > 1) {
+    let count = 0;
+    for (const batch of fromSnapshotFiles) {
+      count += batch.files.length;
+      options?.onFileFound?.(count);
+    }
+    return fromSnapshotFiles;
+  }
+
   const directoryEntries = snapshot.entries.filter((entry) => entry.isDirectory);
   if (directoryEntries.length > 1) {
     const batches: DataTransferDrop[] = [];

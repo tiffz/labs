@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildManifestEntriesFromFiles,
   fileMatchesManifestEntry,
+  fileMatchesManifestEntryLoose,
   selectFilesToUpload,
 } from './gestureUploadManifest';
 
@@ -28,6 +29,15 @@ describe('gestureUploadManifest', () => {
     const entry = buildManifestEntriesFromFiles('p', [file])[0]!;
     expect(fileMatchesManifestEntry(file, entry)).toBe(true);
     expect(fileMatchesManifestEntry(fileWithPath('Hands/a.jpg', 999, 42), entry)).toBe(false);
+    expect(fileMatchesManifestEntryLoose(fileWithPath('Hands/a.jpg', 999, 42), entry)).toBe(true);
+  });
+
+  it('selects pending files on resume when size or mtime changed', () => {
+    const original = fileWithPath('Folder/b.jpg', 1200, 42);
+    const reDownloaded = fileWithPath('Folder/b.jpg', 1300, 99);
+    const manifest = buildManifestEntriesFromFiles('p', [original]);
+    const { toUpload } = selectFilesToUpload(manifest, [reDownloaded], new Set());
+    expect(toUpload.map((f) => f.name)).toEqual(['b.jpg']);
   });
 
   it('selects only pending manifest files on resume', () => {

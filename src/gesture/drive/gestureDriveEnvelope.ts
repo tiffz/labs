@@ -1,4 +1,5 @@
 import type { GestureDrawRecord, GesturePack, GesturePackFile, GestureSyncPayload } from '../types';
+import { stripEphemeralUploadFieldsFromPayload } from './gestureUploadEphemeral';
 
 export const GESTURE_DRIVE_APP_ID = 'gesture' as const;
 
@@ -21,7 +22,7 @@ export function buildGestureDriveEnvelope(payload: GestureSyncPayload): GestureD
     schemaVersion: 1,
     exportedAt: new Date().toISOString(),
     app: GESTURE_DRIVE_APP_ID,
-    packs: payload.packs,
+    packs: stripEphemeralUploadFieldsFromPayload(payload.packs),
     packFiles: payload.packFiles,
     drawHistory: payload.drawHistory,
   };

@@ -4,7 +4,10 @@ import {
   LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
 import type { DataTransferDropSnapshot } from '../../shared/utils/readDataTransferEntryFiles';
-import { readDataTransferDropBatches } from '../../shared/utils/readDataTransferEntryFiles';
+import {
+  readDataTransferDropBatches,
+  snapshotHasMultipleTopLevelFolders,
+} from '../../shared/utils/readDataTransferEntryFiles';
 import { addPhotosToExistingPack } from '../drive/addPhotosToExistingPack';
 import { createPackFromUpload } from '../drive/createPackFromUpload';
 import { gestureDb } from '../db/gestureDb';
@@ -20,8 +23,9 @@ import {
 import { filterGestureUploadImageFiles } from '../drive/gesturePackMetadata';
 import { resumePackUpload } from '../drive/resumePackUpload';
 import { buildUploadActivity } from '../drive/gestureUploadActivity';
+import { isGestureUploadCancelledError } from '../drive/gestureUploadCancellation';
 import { formatUploadDuplicateSkipMessage } from '../drive/gestureUploadDuplicateFilter';
-import type { GestureUploadActivity } from '../types';
+import type { GestureUploadActivity, GestureUploadPhase } from '../types';
 
 type UseGestureCollectionUploadOptions = {
   onComplete: (message: string) => void;
@@ -32,6 +36,17 @@ type NewCollectionJob = {
   files: File[];
   suggestedFolderName?: string;
 };
+
+type UploadSessionProgress = {
+  totalFiles: number;
+  completedFiles: number;
+  totalCollections: number;
+  completedCollections: number;
+};
+
+function sessionFileCount(jobs: NewCollectionJob[]): number {
+  return jobs.reduce((sum, job) => sum + job.files.length, 0);
+}
 
 function batchesFromPickedFiles(picked: File[], suggestedFolderName?: string): GestureUploadFileBatch[] {
   if (hasMultipleTopLevelFolders(picked)) {
@@ -62,16 +77,79 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
   const [activity, setActivity] = useState<GestureUploadActivity | null>(null);
   const queueRef = useRef<NewCollectionJob[]>([]);
   const drainingRef = useRef(false);
+  const sessionRef = useRef<UploadSessionProgress | null>(null);
   const tokenRef = useRef<string | null>(null);
   const needsInteractiveAuthRef = useRef(true);
+  const cancelledPackIdsRef = useRef(new Set<string>());
+
+  const isUploadCancelled = useCallback((packId: string) => cancelledPackIdsRef.current.has(packId), []);
+
+  const cancelUploadForPack = useCallback((packId: string) => {
+    cancelledPackIdsRef.current.add(packId);
+  }, []);
+
+  const extendUploadSession = useCallback((jobs: NewCollectionJob[]) => {
+    if (jobs.length === 0) return;
+    const fileCount = sessionFileCount(jobs);
+    const existing = sessionRef.current;
+    if (!existing) {
+      sessionRef.current = {
+        totalFiles: fileCount,
+        completedFiles: 0,
+        totalCollections: jobs.length,
+        completedCollections: 0,
+      };
+      return;
+    }
+    existing.totalFiles += fileCount;
+    existing.totalCollections += jobs.length;
+  }, []);
+
+  const completeUploadSessionJob = useCallback((job: NewCollectionJob) => {
+    const session = sessionRef.current;
+    if (!session) return;
+    session.completedFiles += job.files.length;
+    session.completedCollections += 1;
+  }, []);
+
+  const buildSessionActivity = useCallback(
+    (
+      phase: GestureUploadPhase,
+      params?: {
+        done?: number;
+        total?: number;
+        collectionName?: string;
+        scannedCount?: number;
+      },
+    ): GestureUploadActivity => {
+      const queuedCount = queueRef.current.length;
+      const session = sessionRef.current;
+      const multiCollection = session != null && session.totalCollections > 1;
+
+      if (multiCollection && session) {
+        const jobDone = params?.done ?? 0;
+        const aggregateDone = session.completedFiles + jobDone;
+        const aggregateTotal = session.totalFiles;
+        const collectionsRemaining = queuedCount;
+
+        return buildUploadActivity(phase, {
+          ...params,
+          done: aggregateDone,
+          total: aggregateTotal,
+          queuedCount,
+          multiCollection: true,
+          collectionsRemaining,
+        });
+      }
+
+      return buildUploadActivity(phase, { ...params, queuedCount });
+    },
+    [],
+  );
 
   const setUploadActivity = useCallback(
     (next: GestureUploadActivity | null) => {
-      if (next && queueRef.current.length > 0) {
-        setActivity({ ...next, queuedCount: queueRef.current.length });
-      } else {
-        setActivity(next);
-      }
+      setActivity(next);
     },
     [],
   );
@@ -96,37 +174,39 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
       const images = job.files;
       const collectionName = job.suggestedFolderName;
 
-      setUploadActivity(buildUploadActivity('checking', { total: images.length, collectionName }));
+      setUploadActivity(buildSessionActivity('checking', { total: images.length, collectionName }));
       onError('');
 
       const token = await resolveUploadToken();
-      setUploadActivity(buildUploadActivity('preparing', { total: images.length, collectionName }));
+      setUploadActivity(buildSessionActivity('preparing', { total: images.length, collectionName }));
       const result = await createPackFromUpload(
         token,
         { files: images, name: collectionName },
         (done, total) => {
-          setUploadActivity(buildUploadActivity('uploading', { done, total, collectionName }));
+          setUploadActivity(buildSessionActivity('uploading', { done, total, collectionName }));
         },
         (hashed, total) => {
-          setUploadActivity(buildUploadActivity('checking', { done: hashed, total, collectionName }));
+          setUploadActivity(buildSessionActivity('checking', { done: hashed, total, collectionName }));
         },
+        { isCancelled: isUploadCancelled },
       );
       const dupeSuffix = formatUploadDuplicateSkipMessage(result.skippedDuplicates);
       if (result.imageCount === 0 && result.skippedDuplicates > 0) {
         return `All ${result.skippedDuplicates} photos were duplicates. Nothing new to upload.`;
       }
       setUploadActivity(
-        buildUploadActivity('finishing', {
+        buildSessionActivity('finishing', {
           done: result.imageCount,
           total: result.imageCount,
           collectionName,
         }),
       );
+      completeUploadSessionJob(job);
       return fromFolder
         ? `Added ${result.imageCount} photo${result.imageCount === 1 ? '' : 's'} to "${result.pack.name}".${dupeSuffix}`
         : `Added ${result.imageCount} photo${result.imageCount === 1 ? '' : 's'}. Tap the collection to name it.${dupeSuffix}`;
     },
-    [onError, resolveUploadToken, setUploadActivity],
+    [completeUploadSessionJob, isUploadCancelled, onError, resolveUploadToken, buildSessionActivity, setUploadActivity],
   );
 
   const drainQueue = useCallback(async () => {
@@ -144,6 +224,9 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         const message = await executeNewCollectionJob(job);
         if (message) summaries.push(message);
       } catch (e) {
+        if (isGestureUploadCancelledError(e)) {
+          continue;
+        }
         hadError = true;
         if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
           onError(e.message);
@@ -155,6 +238,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
           );
         }
         queueRef.current = [];
+        sessionRef.current = null;
         break;
       }
     }
@@ -163,6 +247,8 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
     drainingRef.current = false;
     setBusy(false);
     setActivity(null);
+    sessionRef.current = null;
+    cancelledPackIdsRef.current.clear();
 
     if (summaries.length === 1) {
       onComplete(summaries[0]!);
@@ -179,11 +265,12 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         onError('Use JPEG, PNG, WebP, GIF, or similar images.');
         return;
       }
+      extendUploadSession(jobs);
       queueRef.current.push(...jobs);
       setQueuedCount(queueRef.current.length);
       void drainQueue();
     },
-    [drainQueue, onError],
+    [drainQueue, extendUploadSession, onError],
   );
 
   const continueUploadForPack = useCallback(
@@ -198,7 +285,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         setUploadActivity(buildUploadActivity('preparing', { collectionName }));
         const result = await resumePackUpload(token, packId, picked, (done, total) => {
           setUploadActivity(buildUploadActivity('uploading', { done, total, collectionName }));
-        });
+        }, { isCancelled: isUploadCancelled });
         const dupeSuffix = formatUploadDuplicateSkipMessage(result.skippedDuplicates);
         onComplete(
           result.newlyUploaded > 0
@@ -206,6 +293,9 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
             : `Upload complete for "${result.pack.name}".${dupeSuffix}`,
         );
       } catch (e) {
+        if (isGestureUploadCancelledError(e)) {
+          return;
+        }
         if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
           onError(e.message);
         } else {
@@ -216,7 +306,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         setActivity(null);
       }
     },
-    [onComplete, onError, setUploadActivity],
+    [isUploadCancelled, onComplete, onError, setUploadActivity],
   );
 
   const uploadPhotosToPack = useCallback(
@@ -264,6 +354,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
           (hashed, total) => {
             setUploadActivity(buildUploadActivity('checking', { done: hashed, total, collectionName }));
           },
+          { isCancelled: isUploadCancelled },
         );
         const dupeSuffix = formatUploadDuplicateSkipMessage(result.skippedDuplicates);
         if (result.uploadedCount === 0) {
@@ -285,6 +376,9 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
           `Added ${result.uploadedCount} photo${result.uploadedCount === 1 ? '' : 's'} to "${result.pack.name}".${dupeSuffix}`,
         );
       } catch (e) {
+        if (isGestureUploadCancelledError(e)) {
+          return;
+        }
         if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
           onError(e.message);
         } else {
@@ -295,19 +389,19 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         setActivity(null);
       }
     },
-    [onComplete, onError, setUploadActivity],
+    [isUploadCancelled, onComplete, onError, setUploadActivity],
   );
 
   const uploadFromSnapshot = useCallback(
     async (snapshot: DataTransferDropSnapshot) => {
       setBusy(true);
-      setUploadActivity(buildUploadActivity('scanning'));
+      setUploadActivity(buildSessionActivity('scanning'));
       onError('');
 
       try {
         const dropBatches = await readDataTransferDropBatches(snapshot, {
           onFileFound: (count) => {
-            setUploadActivity(buildUploadActivity('scanning', { scannedCount: count }));
+            setUploadActivity(buildSessionActivity('scanning', { scannedCount: count }));
           },
         });
         if (dropBatches.length === 0) {
@@ -331,6 +425,21 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
           return;
         }
 
+        const directoryEntries = snapshot.entries.filter((entry) => entry.isDirectory);
+        if (
+          jobs.length === 1 &&
+          snapshot.fileItemCount > 1 &&
+          directoryEntries.length <= 1 &&
+          !snapshotHasMultipleTopLevelFolders(snapshot)
+        ) {
+          onError(
+            'Only one folder was read from this drop. Use Add → Upload folders… to batch several folders at once.',
+          );
+          setBusy(false);
+          setActivity(null);
+          return;
+        }
+
         setBusy(false);
         setActivity(null);
         enqueueNewCollectionJobs(jobs);
@@ -340,7 +449,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         setActivity(null);
       }
     },
-    [enqueueNewCollectionJobs, onError, setUploadActivity],
+    [buildSessionActivity, enqueueNewCollectionJobs, onError, setUploadActivity],
   );
 
   const uploadFiles = useCallback(
@@ -356,10 +465,10 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         enqueueNewCollectionJobs(jobs);
         return;
       }
-      setUploadActivity(buildUploadActivity('scanning', { scannedCount: picked.length }));
+      setUploadActivity(buildSessionActivity('scanning', { scannedCount: picked.length }));
       enqueueNewCollectionJobs(jobs);
     },
-    [enqueueNewCollectionJobs, onError, setUploadActivity],
+    [buildSessionActivity, enqueueNewCollectionJobs, onError, setUploadActivity],
   );
 
   const uploadFolderBatches = useCallback(
@@ -370,10 +479,10 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         return;
       }
       const fileCount = batches.reduce((sum, batch) => sum + batch.files.length, 0);
-      setUploadActivity(buildUploadActivity('scanning', { scannedCount: fileCount }));
+      setUploadActivity(buildSessionActivity('scanning', { scannedCount: fileCount }));
       enqueueNewCollectionJobs(jobs);
     },
-    [enqueueNewCollectionJobs, onError, setUploadActivity],
+    [buildSessionActivity, enqueueNewCollectionJobs, onError, setUploadActivity],
   );
 
   return {
@@ -385,6 +494,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
     uploadFromSnapshot,
     uploadPhotosToPack,
     continueUploadForPack,
+    cancelUploadForPack,
   };
 }
 

@@ -16,7 +16,7 @@ No other micro-apps use Drive JSON backup today. Encore also uses Drive for uplo
 ## Principles
 
 1. **Local-first** — Dexie / in-memory progress is the working copy. Apps work offline without Google.
-2. **Background by default** — Session auto-pull and debounced auto-push; no toast on every success.
+2. **Background by default** — Session auto-pull, **periodic re-pull while the tab is visible** (every 5 min), debounced auto-push (3 s); no toast on every success.
 3. **Data-loss guards** — Empty devices must not overwrite richer cloud data; undo snapshots before destructive merges; deletions propagate where union-merge would resurrect rows.
 4. **Prompt only when judgment is needed** — Silent merge when heuristics are safe; dialogs when overwrite or per-row choices matter.
 5. **Shared UX for portfolio apps** — Stanza and Scales use [`LabsDriveAccountMenu`](../src/shared/google/LabsDriveAccountMenu.tsx); Encore uses its own account menu with row-level conflict UI.
@@ -79,7 +79,7 @@ App-local code owns envelope schema, merge logic, tombstones (Stanza), and progr
 
 ## Conflict decision tree
 
-### Portfolio apps (Stanza, Scales)
+### Portfolio apps (Stanza, Scales, Gesture)
 
 ```mermaid
 flowchart TD
@@ -126,7 +126,7 @@ See [`src/encore/ARCHITECTURE.md`](../src/encore/ARCHITECTURE.md) § Sync state 
 
 | Situation       | Expected behavior                                                                                                 |
 | --------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Happy path      | Silent auto-pull/push; “Last backup …” in account menu when known                                                 |
+| Happy path      | Silent auto-pull/push; periodic re-pull every 5 min while tab visible; “Last backup …” in account menu when known |
 | Token expired   | “Sign in again to sync” / “Drive sync paused …” (see `labsDriveSyncMessages.ts`)                                  |
 | Conflict        | Merge primary; replace-only with warning when cloud is richer                                                     |
 | Restore         | Drive latest + local undo snapshots ([`LabsDriveRestoreDialog`](../src/shared/google/LabsDriveRestoreDialog.tsx)) |

@@ -26,6 +26,7 @@ type DeleteCollectionDialogProps = {
   pack: GesturePack | null;
   open: boolean;
   busy?: boolean;
+  onCancelUpload?: (packId: string) => void;
   onClose: () => void;
   onComplete: (message: string) => void;
   onError: (message: string) => void;
@@ -61,6 +62,7 @@ export default function DeleteCollectionDialog({
   pack,
   open,
   busy,
+  onCancelUpload,
   onClose,
   onComplete,
   onError,
@@ -88,6 +90,7 @@ export default function DeleteCollectionDialog({
     setDeleting(true);
     setDeleteProgress(null);
     try {
+      onCancelUpload?.(pack.id);
       if (scope === 'app-only') {
         await deleteCollectionFromApp(pack.id);
         onComplete(`Removed "${pack.name}" from The Gesture Room. Photos stay on Google Drive.`);
@@ -109,7 +112,7 @@ export default function DeleteCollectionDialog({
       setDeleting(false);
       setDeleteProgress(null);
     }
-  }, [deleting, onClose, onComplete, onError, pack, scope]);
+  }, [deleting, onCancelUpload, onClose, onComplete, onError, pack, scope]);
 
   const statusLabel = deleting ? deleteStatusLabel(scope, deleteProgress) : null;
   const progressValue = deleteProgressValue(deleteProgress);
@@ -128,6 +131,12 @@ export default function DeleteCollectionDialog({
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
           Choose whether to keep photos on Google Drive or delete them with this collection.
+          {pack?.uploadStatus === 'uploading' ? (
+            <>
+              {' '}
+              Removing now also stops the upload in progress.
+            </>
+          ) : null}
         </Typography>
         <RadioGroup
           value={scope}

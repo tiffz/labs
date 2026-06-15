@@ -16,11 +16,11 @@ On PRs and `main`, the **`test`** job in `CI/CD` must pass:
 
 - Import boundaries, agent-docs, doc-links, ui-copy, css-important
 - Lint, typecheck, knip
+- E2e smoke + playback UI regressions (**before** Vitest — fail-fast on smokes)
 - Full Vitest (`npm test`, with **one retry** in CI for rare worker teardown flakes)
-- E2e smoke + playback UI regressions
-- Production build
+- Production build (artifact reused by `deploy` — no second compile on `main`)
 
-**Advisory (non-blocking):** visual regression on cross-cutting `main`/`PR` diffs only (exits 0 with a warning when snapshots differ; artifacts uploaded). Full visual matrix runs **nightly** (`Nightly Flakiness Detector`). Coverage upload is also advisory.
+**Advisory (non-blocking):** visual regression on cross-cutting `main`/`PR` diffs only (exits 0 with a warning when snapshots differ; artifacts uploaded). Full visual matrix and **coverage** run **nightly** (`Nightly Flakiness Detector`).
 
 ## Pages deployment (single path)
 

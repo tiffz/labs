@@ -54,22 +54,34 @@ export function buildUploadActivity(
     collectionName?: string;
     scannedCount?: number;
     queuedCount?: number;
+    /** When uploading several collections in one session. */
+    multiCollection?: boolean;
+    collectionsRemaining?: number;
   },
 ): GestureUploadActivity {
-  const { done, total, collectionName, scannedCount, queuedCount } = params ?? {};
+  const { done, total, collectionName, scannedCount, queuedCount, multiCollection, collectionsRemaining } =
+    params ?? {};
   const queueSuffix =
-    queuedCount != null && queuedCount > 0
+    queuedCount != null && queuedCount > 0 && !multiCollection
       ? ` · ${queuedCount} more folder${queuedCount === 1 ? '' : 's'} queued`
       : '';
-  const withQueue = (label: string): string => `${label}${queueSuffix}`;
+  const foldersLeftSuffix =
+    multiCollection && collectionsRemaining != null && collectionsRemaining > 0
+      ? ` · ${collectionsRemaining} folder${collectionsRemaining === 1 ? '' : 's'} left`
+      : '';
+  const progress =
+    done != null && total != null && total > 0 ? ` ${done} of ${total}` : '';
+  const withQueue = (label: string): string => `${label}${queueSuffix}${foldersLeftSuffix}`;
   switch (phase) {
     case 'scanning':
       return {
         phase,
         label: withQueue(
           scannedCount != null && scannedCount > 0
-            ? `Reading folder… ${scannedCount} file${scannedCount === 1 ? '' : 's'} found`
-            : 'Reading dropped folder…',
+            ? `Reading folders… ${scannedCount} file${scannedCount === 1 ? '' : 's'} found`
+            : multiCollection
+              ? 'Reading dropped folders…'
+              : 'Reading dropped folder…',
         ),
         queuedCount,
       };
@@ -77,8 +89,8 @@ export function buildUploadActivity(
       return {
         phase,
         label: withQueue(
-          total != null && done != null
-            ? `Checking for duplicates… ${done} of ${total}`
+          progress
+            ? `Checking for duplicates…${progress}`
             : 'Checking for duplicates…',
         ),
         done,
@@ -90,9 +102,11 @@ export function buildUploadActivity(
       return {
         phase,
         label: withQueue(
-          collectionName
-            ? `Preparing “${collectionName}” on Drive…`
-            : 'Preparing collection on Drive…',
+          multiCollection
+            ? 'Preparing collections on Drive…'
+            : collectionName
+              ? `Preparing “${collectionName}” on Drive…`
+              : 'Preparing collection on Drive…',
         ),
         total,
         collectionName,
@@ -102,9 +116,7 @@ export function buildUploadActivity(
       return {
         phase,
         label: withQueue(
-          total != null && done != null
-            ? `Uploading to Drive… ${done} of ${total}`
-            : 'Uploading to Drive…',
+          progress ? `Uploading to Drive…${progress}` : 'Uploading to Drive…',
         ),
         done,
         total,
@@ -114,7 +126,7 @@ export function buildUploadActivity(
     case 'finishing':
       return {
         phase,
-        label: withQueue('Saving collection…'),
+        label: withQueue(multiCollection ? 'Saving collections…' : 'Saving collection…'),
         done,
         total,
         collectionName,

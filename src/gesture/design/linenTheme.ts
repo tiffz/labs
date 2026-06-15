@@ -39,7 +39,7 @@ export const GESTURE_LINEN_CSS_VARS: Record<string, string> = {
   '--gesture-title-weight': '500',
   '--gesture-title-tracking': '-0.015em',
   '--gesture-title-transform': 'none',
-  '--gesture-shell-max': '44rem',
+  '--gesture-shell-max': '56rem',
   '--gesture-card-radius': '0.625rem',
   '--gesture-card-border-width': '0',
   '--gesture-button-radius': '0.625rem',

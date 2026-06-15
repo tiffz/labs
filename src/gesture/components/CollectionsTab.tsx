@@ -1,4 +1,6 @@
 import { useCallback, useDeferredValue, useMemo, useState } from 'react';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { ensureLabsGoogleAccessTokenForDrive } from '../../shared/google/labsGoogleDriveAccess';
 import AddCollectionActions from '../components/AddCollectionActions';
@@ -8,7 +10,9 @@ import DeleteCollectionDialog from '../components/DeleteCollectionDialog';
 import GestureTabLoading from '../components/GestureTabLoading';
 import GestureTagFilterBar from '../components/GestureTagFilterBar';
 import InterruptedUploadBanner from '../components/InterruptedUploadBanner';
+import MergeCollectionsDialog from '../components/MergeCollectionsDialog';
 import PackCollectionCard from '../components/PackCollectionCard';
+import { canMergeGesturePacks } from '../drive/gestureMergeCollections';
 import { refreshPackFolder } from '../drive/linkPackFolder';
 import { packMatchesGestureTagFilters } from '../drive/gesturePackTags';
 import { useGestureKnownTags } from '../hooks/useGestureKnownTags';
@@ -36,6 +40,10 @@ export default function CollectionsTab({
 }: CollectionsTabProps): React.ReactElement {
   const [busy, setBusy] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<GesturePack | null>(null);
+  const [nameQuery, setNameQuery] = useState('');
+  const [mergeMode, setMergeMode] = useState(false);
+  const [mergeSelection, setMergeSelection] = useState<string[]>([]);
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const upload = useGestureCollectionUpload({ onComplete: onMessage, onError });
   const { dragActive, handlers, activity } = useGestureCollectionDrop({
     disabled: busy,
@@ -63,11 +71,23 @@ export default function CollectionsTab({
   );
 
   const allTags = useGestureKnownTags(packs);
+  const deferredNameQuery = useDeferredValue(nameQuery.trim().toLowerCase());
 
-  const visiblePacks = useMemo(
-    () => packs.filter((pack) => packMatchesGestureTagFilters(pack, activeTagFilters)),
-    [activeTagFilters, packs],
-  );
+  const visiblePacks = useMemo(() => {
+    return packs.filter((pack) => {
+      if (!packMatchesGestureTagFilters(pack, activeTagFilters)) return false;
+      if (!deferredNameQuery) return true;
+      return pack.name.toLowerCase().includes(deferredNameQuery);
+    });
+  }, [activeTagFilters, deferredNameQuery, packs]);
+
+  const mergePacks = useMemo((): [GesturePack, GesturePack] | null => {
+    if (mergeSelection.length !== 2) return null;
+    const a = packs.find((p) => p.id === mergeSelection[0]);
+    const b = packs.find((p) => p.id === mergeSelection[1]);
+    if (!a || !b) return null;
+    return [a, b];
+  }, [mergeSelection, packs]);
 
   const toggleTagFilter = useCallback(
     (tag: string) => {
@@ -79,6 +99,14 @@ export default function CollectionsTab({
     },
     [activeTagFilters, onActiveTagFiltersChange],
   );
+
+  const toggleMergeSelect = useCallback((packId: string) => {
+    setMergeSelection((prev) => {
+      if (prev.includes(packId)) return prev.filter((id) => id !== packId);
+      if (prev.length >= 2) return [prev[1], packId];
+      return [...prev, packId];
+    });
+  }, []);
 
   const handleRefresh = useCallback(
     async (pack: GesturePack) => {
@@ -101,6 +129,22 @@ export default function CollectionsTab({
   const openDeleteDialog = useCallback((pack: GesturePack) => {
     setDeleteTarget(pack);
   }, []);
+
+  const exitMergeMode = useCallback(() => {
+    setMergeMode(false);
+    setMergeSelection([]);
+  }, []);
+
+  const mergeSelectionHint = mergeMode
+    ? mergeSelection.length === 2
+      ? '2 collections selected'
+      : mergeSelection.length === 1
+        ? '1 selected · pick one more'
+        : 'Pick two collections to merge'
+    : null;
+
+  const canOpenMerge =
+    mergePacks != null && canMergeGesturePacks(mergePacks[0], mergePacks[1]);
 
   return (
     <div
@@ -127,22 +171,57 @@ export default function CollectionsTab({
         <Typography className="gesture-tab-lede">
           Upload folders or photos, or link a Drive folder. Drop several folders at once for separate collections. Drop on a card to add photos to that collection.
         </Typography>
-        <AddCollectionActions
-          disabled={interactionDisabled}
-          variant="subtle"
-          upload={upload}
-          onComplete={onMessage}
-          onError={onError}
-        />
+        <div className="gesture-tab-toolbar-actions">
+          <AddCollectionActions
+            disabled={interactionDisabled}
+            variant="subtle"
+            upload={upload}
+            onComplete={onMessage}
+            onError={onError}
+          />
+          {!mergeMode && packsHydrated && packs.length >= 2 ? (
+            <Button
+              size="small"
+              variant="text"
+              className="gesture-merge-entry-btn"
+              disabled={interactionDisabled}
+              onClick={() => setMergeMode(true)}
+            >
+              Merge collections…
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <CollectionDropZone compact={packsHydrated && packs.length > 0} dragActive={dragActive} uploadActive={uploadSessionActive} />
+
+      <TextField
+        className="gesture-collections-search"
+        size="small"
+        fullWidth
+        placeholder="Search collections"
+        value={nameQuery}
+        onChange={(e) => setNameQuery(e.target.value)}
+        disabled={!packsHydrated || packs.length === 0}
+        inputProps={{ 'aria-label': 'Search collections by name' }}
+      />
 
       <GestureTagFilterBar
         tags={allTags}
         activeTags={activeTagFilters}
         onToggleTag={toggleTagFilter}
         onClear={() => onActiveTagFiltersChange([])}
+        selectionHint={mergeSelectionHint}
+        selectionPrimaryAction={
+          mergeMode && mergeSelection.length === 2
+            ? {
+                label: 'Merge into one…',
+                disabled: !canOpenMerge || interactionDisabled,
+                onClick: () => setMergeDialogOpen(true),
+              }
+            : undefined
+        }
+        onClearSelection={mergeMode ? exitMergeMode : undefined}
       />
 
       {!packsHydrated ? (
@@ -157,13 +236,13 @@ export default function CollectionsTab({
         </div>
       ) : visiblePacks.length === 0 ? (
         <div className="gesture-empty-state">
-          <Typography className="gesture-empty-title">No collections match these tags</Typography>
+          <Typography className="gesture-empty-title">No collections match</Typography>
           <Typography className="gesture-empty-copy">
-            Clear the tag filters or add tags on a collection card.
+            Try a different search or clear tag filters.
           </Typography>
         </div>
       ) : (
-        <div className="gesture-collection-grid">
+        <div className="gesture-collection-grid gesture-collection-grid--compact">
           {visiblePacks.map((pack) => {
             const photoCount = statsForGrid.counts.get(pack.id) ?? 0;
             const fileIds = resolveGesturePackCoverFileIds(pack, statsForGrid.coverIds);
@@ -178,7 +257,11 @@ export default function CollectionsTab({
                 disabled={interactionDisabled}
                 allTags={allTags}
                 upload={upload}
-                dropEnabled
+                dropEnabled={!mergeMode}
+                compactManage
+                mergeMode={mergeMode}
+                mergeSelected={mergeSelection.includes(pack.id)}
+                onToggleMergeSelect={() => toggleMergeSelect(pack.id)}
                 onRefresh={() => void handleRefresh(pack)}
                 onDelete={() => openDeleteDialog(pack)}
                 onRenamed={(updated) => onMessage(`Renamed to "${updated.name}".`)}
@@ -196,11 +279,26 @@ export default function CollectionsTab({
       <DeleteCollectionDialog
         pack={deleteTarget}
         open={deleteTarget != null}
-        busy={busy || uploadSessionActive}
+        busy={busy}
+        onCancelUpload={upload.cancelUploadForPack}
         onClose={() => setDeleteTarget(null)}
         onComplete={onMessage}
         onError={onError}
       />
+
+      {mergePacks ? (
+        <MergeCollectionsDialog
+          open={mergeDialogOpen}
+          packs={mergePacks}
+          busy={busy || uploadSessionActive}
+          onClose={() => setMergeDialogOpen(false)}
+          onComplete={(msg) => {
+            exitMergeMode();
+            onMessage(msg);
+          }}
+          onError={onError}
+        />
+      ) : null}
     </div>
   );
 }

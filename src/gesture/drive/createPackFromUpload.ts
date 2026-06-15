@@ -25,6 +25,7 @@ export async function createPackFromUpload(
   input: CreatePackFromUploadInput,
   onProgress?: (done: number, total: number) => void,
   onDuplicateCheck?: (hashed: number, total: number) => void,
+  options?: { isCancelled?: (packId: string) => boolean },
 ): Promise<CreatePackFromUploadResult> {
   const images = filterGestureUploadImageFiles(input.files);
   if (images.length === 0) {
@@ -59,7 +60,14 @@ export async function createPackFromUpload(
   await writeUploadManifest(pack.id, input.files);
   notifyGestureLocalChange();
 
-  const result = await uploadFilesToExistingPack(accessToken, pack, images, onProgress, onDuplicateCheck);
+  const result = await uploadFilesToExistingPack(
+    accessToken,
+    pack,
+    images,
+    onProgress,
+    onDuplicateCheck,
+    { isCancelled: options?.isCancelled },
+  );
   return {
     pack: result.pack,
     imageCount: result.uploadedCount,

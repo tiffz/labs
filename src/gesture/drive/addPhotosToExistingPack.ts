@@ -22,6 +22,7 @@ export async function addPhotosToExistingPack(
   files: File[],
   onProgress?: (done: number, total: number) => void,
   onDuplicateCheck?: (hashed: number, total: number) => void,
+  options?: { isCancelled?: (packId: string) => boolean },
 ): Promise<AddPhotosToPackResult> {
   const pack = await gestureDb.packs.get(packId);
   if (!pack) throw new Error('Collection not found.');
@@ -50,7 +51,10 @@ export async function addPhotosToExistingPack(
     images,
     onProgress,
     onDuplicateCheck,
-    { collectionRootName: inferLocalFolderName(files) ?? pack.uploadSourceFolderName },
+    {
+      collectionRootName: inferLocalFolderName(files) ?? pack.uploadSourceFolderName,
+      isCancelled: options?.isCancelled,
+    },
   );
 
   return {

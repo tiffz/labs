@@ -1,42 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import {
-  buildGestureDriveEnvelope,
-  parseGestureDriveEnvelope,
-  serializeGestureDriveEnvelope,
-} from './gestureDriveEnvelope';
+import { buildGestureDriveEnvelope } from './gestureDriveEnvelope';
 
-describe('gestureDriveEnvelope', () => {
-  it('round-trips envelope json', () => {
-    const env = buildGestureDriveEnvelope({
+describe('buildGestureDriveEnvelope', () => {
+  it('omits ephemeral upload fields from progress.json', () => {
+    const envelope = buildGestureDriveEnvelope({
       packs: [
         {
           id: 'p1',
-          driveFolderId: 'folder',
-          name: 'Hands',
+          driveFolderId: 'f1',
+          name: 'Cats',
           linkedAt: '2026-01-01T00:00:00.000Z',
-          lastIndexedAt: '2026-01-01T00:00:00.000Z',
+          lastIndexedAt: '2026-01-02T00:00:00.000Z',
+          uploadStatus: 'incomplete',
+          expectedFileCount: 128,
+          uploadedFileCount: 71,
+          uploadSourceFolderName: 'Cats',
         },
       ],
-      drawHistory: [],
       packFiles: [],
+      drawHistory: [],
     });
-    const parsed = parseGestureDriveEnvelope(serializeGestureDriveEnvelope(env));
-    expect(parsed.app).toBe('gesture');
-    expect(parsed.packs).toHaveLength(1);
-  });
-
-  it('rejects wrong app id', () => {
-    expect(() =>
-      parseGestureDriveEnvelope(
-        JSON.stringify({
-          schemaVersion: 1,
-          exportedAt: '2026-01-01T00:00:00.000Z',
-          app: 'other',
-          packs: [],
-          drawHistory: [],
-          packFiles: [],
-        }),
-      ),
-    ).toThrow(/not from Gesture/);
+    expect(envelope.packs[0]?.uploadStatus).toBeUndefined();
+    expect(envelope.packs[0]?.expectedFileCount).toBeUndefined();
+    expect(envelope.packs[0]?.name).toBe('Cats');
   });
 });

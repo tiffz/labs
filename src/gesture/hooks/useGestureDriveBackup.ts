@@ -179,7 +179,7 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
         const tokenForReindex = accessToken ?? (await readGestureDriveAccessToken());
         if (tokenForReindex) {
           const reindex = await reindexGesturePacksMissingPhotos(tokenForReindex);
-          await reconcileStaleGestureUploadPacks();
+          await reconcileStaleGestureUploadPacks(tokenForReindex);
           if (reindex.photoCount > 0 && userMessage) {
             setMessage(
               `${userMessage} Loaded ${reindex.photoCount} photo${reindex.photoCount === 1 ? '' : 's'} from Drive folders.`,

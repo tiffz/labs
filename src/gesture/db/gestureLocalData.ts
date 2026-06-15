@@ -20,12 +20,20 @@ export async function applyGestureMergedPayload(payload: GestureSyncPayload): Pr
     gestureDb.packs,
     gestureDb.packFiles,
     gestureDb.drawHistory,
+    gestureDb.uploadManifestFiles,
     async () => {
       // Keep a local photo index when Drive merge did not include one (legacy backup or race).
       if (packFiles.length === 0 && payload.packs.length > 0) {
         const existing = await gestureDb.packFiles.toArray();
         const preserved = existing.filter((f) => validPackIds.has(f.packId));
         if (preserved.length > 0) packFiles = preserved;
+      }
+
+      const orphanManifest = await gestureDb.uploadManifestFiles
+        .filter((row) => !validPackIds.has(row.packId))
+        .toArray();
+      if (orphanManifest.length > 0) {
+        await gestureDb.uploadManifestFiles.bulkDelete(orphanManifest.map((row) => row.id));
       }
 
       await gestureDb.packs.clear();

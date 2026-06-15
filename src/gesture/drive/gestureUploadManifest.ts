@@ -23,6 +23,11 @@ export function fileMatchesManifestEntry(file: File, entry: GestureUploadManifes
   );
 }
 
+/** Resume upload when the folder was re-downloaded (size / mtime may differ). */
+export function fileMatchesManifestEntryLoose(file: File, entry: GestureUploadManifestFile): boolean {
+  return entry.relativePath === localFileRelativePath(file) && entry.name === file.name;
+}
+
 export function buildManifestEntriesFromFiles(
   packId: string,
   files: File[],
@@ -63,7 +68,10 @@ export function selectFilesToUpload(
     }
   }
   for (const file of picked) {
-    const match = pending.find((entry) => fileMatchesManifestEntry(file, entry));
+    const match = pending.find(
+      (entry) =>
+        fileMatchesManifestEntry(file, entry) || fileMatchesManifestEntryLoose(file, entry),
+    );
     if (match) {
       toUpload.push(file);
     }

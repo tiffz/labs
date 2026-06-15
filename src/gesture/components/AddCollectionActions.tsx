@@ -116,14 +116,6 @@ export default function AddCollectionActions({
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <MenuItem
-          onClick={() => {
-            setMenuAnchor(null);
-            folderInputRef.current?.click();
-          }}
-        >
-          Upload folder
-        </MenuItem>
         {supportsDirectoryPicker() ? (
           <MenuItem
             onClick={() => {
@@ -134,6 +126,14 @@ export default function AddCollectionActions({
             Upload folders…
           </MenuItem>
         ) : null}
+        <MenuItem
+          onClick={() => {
+            setMenuAnchor(null);
+            folderInputRef.current?.click();
+          }}
+        >
+          Upload folder
+        </MenuItem>
         <MenuItem
           onClick={() => {
             setMenuAnchor(null);
