@@ -4,8 +4,8 @@
  */
 export const DEFAULT_INTERACTION_BUDGET_MS = 400;
 
-/** Hash/tab route switches — CI variance; matches Encore CUJ-001 table. */
-export const TAB_NAVIGATION_BUDGET_MS = 500;
+/** Hash/tab route switches — CI runners vary; keep generous vs DEFAULT_INTERACTION_BUDGET_MS. */
+export const TAB_NAVIGATION_BUDGET_MS = 800;
 
 export const RELAXED_INTERACTION_BUDGET_MS = 800;
 

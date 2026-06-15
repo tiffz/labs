@@ -60,6 +60,7 @@
     "knip": "knip",
     "knip:fix": "knip --fix",
     "presubmit": "sh scripts/presubmit.sh",
+    "presubmit:push": "npm run presubmit && npm run test:e2e:smoke",
     "audit-pipeline": "node scripts/audit-pipeline.js",
     "audit-refresh": "node scripts/audit-pipeline.js --force",
     "audit-refresh:fast": "node scripts/audit-pipeline.js --force --skip-code-audit",

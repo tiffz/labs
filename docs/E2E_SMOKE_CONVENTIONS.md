@@ -23,7 +23,7 @@ Registry: [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) — update when addi
 ### Example: Gesture preview strip
 
 - Fixture: `src/gesture/e2e/gestureE2eSeed.ts`, `?e2eSeed=1` gate in `App.tsx`
-- Spec: `e2e/smoke/gesture-preview-strip.spec.ts` — Collections 4-up + Practice 2-up visible thumbs, **https-only `src`**, no `blob: ERR_FILE_NOT_FOUND` console errors
+- Spec: `e2e/smoke/gesture-preview-strip.spec.ts` — Collections 2-up compact manage + Practice 2-up visible thumbs, **https-only `src`**, no `blob: ERR_FILE_NOT_FOUND` console errors
 - Stubs: `e2e/helpers/gesturePreviewFixtures.ts` — 1×1 PNG for Drive thumbnail URLs
 - Playbook: [`docs/GESTURE_MEDIA_STABILITY.md`](GESTURE_MEDIA_STABILITY.md) — invariant map + when to extend tests/audits
 

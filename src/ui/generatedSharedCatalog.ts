@@ -16062,7 +16062,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Hash/tab route switches — CI variance; matches Encore CUJ-001 table.",
+    "description": "Hash/tab route switches — CI runners vary; keep generous vs DEFAULT_INTERACTION_BUDGET_MS.",
     "tags": [
       "api"
     ],

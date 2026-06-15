@@ -12,7 +12,7 @@ test.describe('Gesture layout heuristics', () => {
     await page.goto('/gesture/?e2eSeed=1#/collections');
 
     await expect(page.locator('.gesture-shell')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.gesture-tab-panel')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByLabel('Drop folders or photos to upload')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByPlaceholder('Search collections')).toBeVisible({ timeout: 15_000 });
   });
 

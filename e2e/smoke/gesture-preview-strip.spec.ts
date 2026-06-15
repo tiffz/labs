@@ -12,11 +12,11 @@ async function stubDriveThumbnailImages(page: Parameters<typeof stubGestureDrive
 }
 
 /**
- * Collections tab cards render four preview thumbs per pack (Practice select cards show two).
+ * Collections tab cards render two preview thumbs per pack in compact manage mode (Practice select cards show two).
  * Catches preview-tier regressions (lazy load, wrong I/O order, blob display) that Vitest misses.
  */
 test.describe('Gesture preview strip', () => {
-  test('loads four visible preview images per collection card', async ({ page }) => {
+  test('loads two visible preview images per collection card', async ({ page }) => {
     const consoleErrors = collectPageConsoleErrors(page);
     await prepareGestureE2ePage(page);
     await stubDriveThumbnailImages(page);
@@ -31,7 +31,7 @@ test.describe('Gesture preview strip', () => {
     const strip = card.locator('.gesture-preview-strip');
     await expect(strip).toBeVisible({ timeout: 10_000 });
 
-    await assertGesturePreviewStripHttps(strip, 4);
+    await assertGesturePreviewStripHttps(strip, 2);
 
     const blobErrors = consoleErrors.filter(
       (line) => line.includes('ERR_FILE_NOT_FOUND') && line.includes('blob:'),

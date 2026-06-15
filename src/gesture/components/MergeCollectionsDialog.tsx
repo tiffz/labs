@@ -45,13 +45,12 @@ export default function MergeCollectionsDialog({
   useEffect(() => {
     if (!open) return;
     setTargetId(packs[0]?.id ?? '');
-    setSubfolderName(sanitizeDriveFolderSegment(packs[1]?.name ?? ''));
   }, [open, packs]);
 
   useEffect(() => {
     if (!open || !sourcePack) return;
     setSubfolderName(sanitizeDriveFolderSegment(sourcePack.name));
-  }, [open, sourcePack?.id, sourcePack?.name]);
+  }, [open, sourcePack]);
 
   const handleMerge = useCallback(async () => {
     if (!sourcePack || !targetPack) return;

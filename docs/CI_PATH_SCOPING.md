@@ -8,9 +8,10 @@ Full merge bar unchanged for cross-cutting changes: presubmit + full CI on `src/
 
 | Command                           | When                                                        |
 | --------------------------------- | ----------------------------------------------------------- |
-| `npm run presubmit`               | Always before push                                          |
+| `npm run presubmit`               | Always before commit                                        |
+| `npm run presubmit:push`          | Before **push** — adds full e2e smoke (matches CI test job) |
 | `npm run test:changed-apps`       | After edits; runs Vitest for apps touched in diff vs `main` |
-| `node scripts/run-scoped-e2e.mjs` | After UI/route changes in one app                           |
+| `node scripts/run-scoped-e2e.mjs` | Faster e2e when only one app changed                        |
 | `npm run test:e2e:smoke`          | Shell/provider wiring, or before merge when unsure          |
 
 ## CI behavior
