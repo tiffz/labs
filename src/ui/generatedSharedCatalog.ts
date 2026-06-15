@@ -15970,6 +15970,62 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-test-interactionlatencycore-ts-default-interaction-budget-ms",
+    "name": "DEFAULT_INTERACTION_BUDGET_MS",
+    "path": "src/shared/test/interactionLatencyCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared interaction latency budgets for Playwright smokes and CUJ docs. CI machines vary — keep budgets generous but catch multi-second regressions.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-interactionlatencycore-ts-formatinteractionbudgetmessage",
+    "name": "formatInteractionBudgetMessage",
+    "path": "src/shared/test/interactionLatencyCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Format for assertion messages and CUJ tables.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-interactionlatencycore-ts-iswithininteractionbudget",
+    "name": "isWithinInteractionBudget",
+    "path": "src/shared/test/interactionLatencyCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Returns true when measured latency is within budget (inclusive).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-interactionlatencycore-ts-relaxed-interaction-budget-ms",
+    "name": "RELAXED_INTERACTION_BUDGET_MS",
+    "path": "src/shared/test/interactionLatencyCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared interaction latency budgets for Playwright smokes and CUJ docs. CI machines vary — keep budgets generous but catch multi-second regressions.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-test-layoutheuristicscore-ts-contrastratio",
     "name": "contrastRatio",
     "path": "src/shared/test/layoutHeuristicsCore.ts",

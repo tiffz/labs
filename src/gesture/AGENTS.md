@@ -9,6 +9,7 @@ Nested **`AGENTS.md`** for Gesture. Root policy: [`../../AGENTS.md`](../../AGENT
 3. **Drive sync:** [`docs/LOCAL_FIRST_SYNC.md`](../../docs/LOCAL_FIRST_SYNC.md) — portfolio `progress.json` pattern via `useGestureDriveBackup`.
 4. **Upload UX:** [`UPLOAD_UX.md`](UPLOAD_UX.md) — phased feedback, manifest resume, duplicate skip.
 5. **Design:** [`DESIGN.md`](DESIGN.md) — Linen tokens; rule `.cursor/rules/gesture-linen-design.mdc`.
+6. **CUJs:** [`CUJs.md`](CUJs.md) — critical journeys, perf budgets, verification map.
 
 ## Architecture
 
@@ -54,3 +55,4 @@ Canonical module: [`media/gestureMediaPolicy.ts`](media/gestureMediaPolicy.ts). 
 - **Preview source audit:** `src/gesture/audits/gesturePreviewDisplayAudit.test.ts`
 - Stability playbook: [`docs/GESTURE_MEDIA_STABILITY.md`](../../docs/GESTURE_MEDIA_STABILITY.md)
 - Smoke: `/gesture/` in `e2e/routeRegistry.ts`; preview strip: `e2e/smoke/gesture-preview-strip.spec.ts` (dev-only `?e2eSeed=1` fixture — https `src`, no blob console errors)
+- Interaction: `e2e/smoke/gesture-practice-interaction.spec.ts` — CUJ-001 session controls latency (`src/gesture/CUJs.md`)

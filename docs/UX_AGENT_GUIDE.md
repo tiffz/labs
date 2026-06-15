@@ -4,6 +4,8 @@ How agents should design and implement UI so humans spend less time on gestalt, 
 
 **Canonical human docs:** [`STYLE_GUIDE.md`](../STYLE_GUIDE.md) (parallel surfaces, density), app `DESIGN.md`, [`docs/USER_COPY_STYLE.md`](USER_COPY_STYLE.md).  
 **Workflow skill:** [`labs-ux-journey`](../.cursor/skills/labs-ux-journey/SKILL.md).  
+**Durable journeys:** [`docs/CRITICAL_USER_JOURNEYS.md`](CRITICAL_USER_JOURNEYS.md) → `src/<app>/CUJs.md` after the flow stabilizes.  
+**Performance:** [`docs/PERFORMANCE.md`](PERFORMANCE.md), skill [`labs-performance`](../.cursor/skills/labs-performance/SKILL.md).  
 **Scoped rule:** [`.cursor/rules/ux-agent-guide.mdc`](../.cursor/rules/ux-agent-guide.mdc).
 
 **Hard gate (always-on):** [`.cursor/rules/ux-journey-mandatory.mdc`](../.cursor/rules/ux-journey-mandatory.mdc) — post journey sketch in chat **before UI code**.
@@ -19,6 +21,8 @@ Run skill **`labs-ux-journey`** and **post the journey sketch in chat** (not onl
 5. **Uncertainty** — if primary vs secondary priority is unclear, **ask the user** (`AskQuestion`) before implementing.
 
 Do not “throw all controls on the page.” Hierarchy beats completeness.
+
+When the journey ships, **promote** steps + success criteria to `src/<app>/CUJs.md` (see [`docs/CRITICAL_USER_JOURNEYS.md`](CRITICAL_USER_JOURNEYS.md)). Add performance budget rows if the screen has grids, media, or Dexie live queries.
 
 ## Gestalt & consistency
 

@@ -34,6 +34,17 @@ Registry: [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) — update when addi
 - Specs: `e2e/smoke/layout-heuristics-gesture.spec.ts`, `layout-heuristics-encore.spec.ts`
 - Catches `ux-spec-violation`: content flush to container edges, muted text below WCAG 4.5:1
 
+### Example: Interaction latency (CUJ step)
+
+- CUJ doc: `src/<app>/CUJs.md` — steps + budgets
+- Helper: `e2e/helpers/interactionLatency.ts` + `src/shared/test/interactionLatencyCore.ts`
+- Specs:
+  - `e2e/smoke/gesture-practice-interaction.spec.ts` — Gesture Practice session controls
+  - `e2e/smoke/sight-practice-interaction.spec.ts` — Sight practice tap + footer layout
+  - `e2e/smoke/encore-library-interaction.spec.ts` — Encore Library → Practice tab
+- Skill: `labs-performance`
+- Command: `npm run test:e2e:interaction`
+
 ## Dev seed contract
 
 ```typescript

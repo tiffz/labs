@@ -60,6 +60,7 @@ Answer before coding:
 
 - [ ] Screenshot / browser snapshot for changed route when UI is user-visible
 - [ ] Add or extend e2e smoke if invariant is testable (see [`docs/E2E_SMOKE_CONVENTIONS.md`](../../docs/E2E_SMOKE_CONVENTIONS.md))
+- [ ] If grid + controls on same screen → read [`docs/PERFORMANCE.md`](../../docs/PERFORMANCE.md); consider CUJ row + interaction smoke
 - [ ] `npx eslint` zero warnings on touched files
 
 ## Red flags (stop and redesign)
@@ -77,4 +78,5 @@ Answer before coding:
 ## Related skills
 
 - `labs-ui-design-variations` — palette/theme exploration (dev preview picker)
+- `labs-performance` — CUJ budgets + interaction smokes after journey ships
 - `labs-session-retrospective` — codify repeated UX pain into rules/smokes

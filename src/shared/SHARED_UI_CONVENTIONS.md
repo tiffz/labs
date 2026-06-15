@@ -234,7 +234,7 @@ Migrate existing MUI `Popover` usages opportunistically (i.e. when touching the 
 
 For local-only debug surfaces (e.g. practice timelines), wrap app-specific content in `LabsDebugDock` from [`src/shared/components/LabsDebugDock.tsx`](./components/LabsDebugDock.tsx). It provides a consistent bottom dock, collapse affordance, and **Copy bundle** (JSON for bug reports / LLM paste).
 
-While mounted, the dock sets `--labs-debug-dock-height` on `:root` (and mirrors `--debug-panel-height` for Scales). [`public/styles/shared.css`](../../public/styles/shared.css) shrinks common full-viewport shells (`sight-app`, `scales-app`, `piano-app`, etc.) so fixed dock chrome never covers footers or controls. New apps with `min-height: 100dvh` shells should add their root class to that rule or use `height: calc(100dvh - var(--labs-debug-dock-height, 0px))`.
+While mounted, the dock sets `--labs-debug-dock-height` on `:root` (and mirrors `--debug-panel-height` for Scales). **Each full-viewport app shell should always use** `height: calc(100dvh - var(--labs-debug-dock-height, 0px))` in its own CSS (see Scales, Sight, Gesture). The variable defaults to `0px` when the dock is absent so **non-debug layout is unchanged**. [`public/styles/shared.css`](../../public/styles/shared.css) also applies the same calc under `html:has(.labs-debug-dock)` as a backstop — do not rely on `:has()` alone without the always-on app rule.
 
 ## App-specific shared primitives
 

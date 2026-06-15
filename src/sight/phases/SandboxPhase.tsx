@@ -173,7 +173,7 @@ export default function SandboxPhase({ initialLevel }: SandboxPhaseProps): React
   }, [challenge]);
 
   return (
-    <div className="sight-app">
+    <div className="sight-sandbox">
       <div className="sight-sandbox-toolbar">
         <Typography component="span" variant="caption" sx={{ fontWeight: 700 }}>
           SANDBOX

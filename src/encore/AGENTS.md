@@ -9,7 +9,8 @@ Nested **`AGENTS.md`** for Project Encore. Root policy: [`../../AGENTS.md`](../.
 3. **Originals chord paint:** [`originals/DEVELOPMENT.md`](originals/DEVELOPMENT.md) + `.cursor/rules/encore-originals-chord-paint.mdc`.
 4. **Copy voice:** [`COPY_STYLE.md`](COPY_STYLE.md).
 5. **Performance UX (log / edit / video):** [`PERFORMANCE_UX.md`](PERFORMANCE_UX.md) — Gestalt grouping, modal vs detail page.
-6. **UI primitives:** [`UI_PRIMITIVES.md`](UI_PRIMITIVES.md) — media rows, integration cards, Spotify sync panels.
+6. **CUJs:** [`CUJs.md`](CUJs.md) — library, practice, originals, performance budgets.
+7. **UI primitives:** [`UI_PRIMITIVES.md`](UI_PRIMITIVES.md) — media rows, integration cards, Spotify sync panels.
 
 ## Entry & routing
 
@@ -29,4 +30,5 @@ Nested **`AGENTS.md`** for Project Encore. Root policy: [`../../AGENTS.md`](../.
 - Chord paint: `e2e/encore-originals-chord-paint.spec.ts`
 - Playback UI: `e2e/playback-ui-regressions.spec.ts`
 - Performance routes: `e2e/smoke/encore-performance-routes.spec.ts` (via `npm run test:e2e:smoke`)
+- Library tab latency: `e2e/smoke/encore-library-interaction.spec.ts` (CUJ-001)
 - Performance video UX (unit): `components/performance/*.test.tsx`, `utils/performanceVideoModel.test.ts`, `utils/performancePlaybackTarget.test.ts`, `drive/guestSnapshotLoadError.test.ts`

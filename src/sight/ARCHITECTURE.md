@@ -15,9 +15,18 @@ Level thresholds and generator profiles live in [`levels.ts`](levels.ts) (28 lev
 | `map`      | Curriculum map from home |
 | `sandbox`  | `?debug` + `#sandbox`    |
 
-## Debug mode (`?debug`)
+## Layout + debug mode (`?debug`)
 
-[`components/SightDebugPanel.tsx`](components/SightDebugPanel.tsx) uses shared [`LabsDebugDock`](../../shared/components/LabsDebugDock.tsx):
+[`components/SightDebugPanel.tsx`](components/SightDebugPanel.tsx) uses shared [`LabsDebugDock`](../../shared/components/LabsDebugDock.tsx).
+
+**Layout (practice shell)**
+
+- **`.sight-app`** — full viewport flex column; height `calc(100dvh - var(--labs-debug-dock-height, 0px))` always (Scales pattern).
+- **`.sight-main`** — `display: contents` so practice header / body / footer are direct flex children of `.sight-app`.
+- **Debug dock** — fixed overlay; shrinks shell via CSS variable only when mounted. Non-debug URLs must match full-viewport layout (`--labs-debug-dock-height` defaults to `0px`).
+- **Sandbox** — `.sight-sandbox` wrapper (not nested `.sight-app`).
+
+**Debug tools**
 
 - **Local storage** (collapsed in dock body): **Clear Sight localStorage** — `resetProfile()`; **Clear all Labs localStorage** — `localStorage.clear()`. Both confirm before running.
 - **Set level / Set + practice** — jump to any curriculum level

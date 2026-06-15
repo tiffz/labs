@@ -25,6 +25,7 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | [`drum-notation-mini-host.mdc`](drum-notation-mini-host.mdc)                 | DrumNotationMini hosts                   | `DrumNotationMini.tsx`                     | —                            |
 | [`session-retrospective-mandatory.mdc`](session-retrospective-mandatory.mdc) | **Always**                               | `CONTINUOUS_PROCESS_IMPROVEMENT.md`        | `labs-session-retrospective` |
 | [`session-retrospective.mdc`](session-retrospective.mdc)                     | Reference (skill pointer)                | `CONTINUOUS_PROCESS_IMPROVEMENT.md`        | `labs-session-retrospective` |
+| [`react-interaction-perf.mdc`](react-interaction-perf.mdc)                   | Control + grid tabs, practice configure  | `docs/PERFORMANCE.md`                      | `labs-performance`           |
 | [`ux-agent-guide.mdc`](ux-agent-guide.mdc)                                   | `src/**/components/**`, app shells, CSS  | `docs/UX_AGENT_GUIDE.md`                   | `labs-ux-journey`            |
 
 **Maintenance:** When adding a rule or skill, update this table and [`.cursor/skills/README.md`](../skills/README.md) in the same PR. Keep each rule **~50 lines**; link to canonical docs for prose. Prefer **enforcement** (tests, ESLint) over duplicated policy.

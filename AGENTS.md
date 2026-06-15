@@ -22,7 +22,7 @@ Instructions for AI coding assistants (Cursor, Claude, Codex, Gemini, etc.). [`G
 
 ### Nested `AGENTS.md`
 
-[`src/encore/`](src/encore/AGENTS.md) · [`src/gesture/`](src/gesture/AGENTS.md) · [`src/stanza/`](src/stanza/AGENTS.md) · [`src/shared/`](src/shared/AGENTS.md) · [`src/words/`](src/words/AGENTS.md) · [`src/drums/`](src/drums/AGENTS.md) · [`src/piano/`](src/piano/AGENTS.md) · [`src/chords/`](src/chords/AGENTS.md) · [`src/cats/`](src/cats/AGENTS.md) · [`src/scales/`](src/scales/AGENTS.md)
+[`src/encore/`](src/encore/AGENTS.md) · [`src/gesture/`](src/gesture/AGENTS.md) · [`src/stanza/`](src/stanza/AGENTS.md) · [`src/shared/`](src/shared/AGENTS.md) · [`src/words/`](src/words/AGENTS.md) · [`src/drums/`](src/drums/AGENTS.md) · [`src/piano/`](src/piano/AGENTS.md) · [`src/chords/`](src/chords/AGENTS.md) · [`src/cats/`](src/cats/AGENTS.md) · [`src/scales/`](src/scales/AGENTS.md) · [`src/sight/`](src/sight/AGENTS.md)
 
 Apps without nested `AGENTS.md` → app `README.md` + this file.
 
@@ -68,6 +68,7 @@ Presubmit before done: [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre
 | Mid-refactor handoff                               | [`DEVELOPMENT.md`](DEVELOPMENT.md) § Iteration handoff                                                                                                                                                                  | `labs-iteration-handoff`       |
 | Material architecture (routing, OAuth, boundaries) | `docs/adr/README.md`, `.cursor/rules/architecture-decisions.mdc`                                                                                                                                                        | `labs-write-adr`               |
 | Regression / visual baselines                      | [`docs/VISUAL_REGRESSION_AGENT.md`](docs/VISUAL_REGRESSION_AGENT.md), `docs/REGRESSION_WORKFLOW.md`                                                                                                                     | `labs-visual-regression`       |
+| Interaction perf / CUJ benchmarks                  | [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md), [`docs/CRITICAL_USER_JOURNEYS.md`](docs/CRITICAL_USER_JOURNEYS.md), app `CUJs.md`                                                                                         | `labs-performance`             |
 | In-app UI design theme iterations / preview picker | app `README.md` + [`labs-ui-design-variations`](.cursor/skills/labs-ui-design-variations/SKILL.md)                                                                                                                      | `labs-ui-design-variations`    |
 | The Gesture Room UI / Linen theme                  | [`src/gesture/DESIGN.md`](src/gesture/DESIGN.md), `.cursor/rules/gesture-linen-design.mdc`                                                                                                                              | —                              |
 | Gesture media / preview / session cache            | [`docs/GESTURE_MEDIA_STABILITY.md`](docs/GESTURE_MEDIA_STABILITY.md), [`src/gesture/AGENTS.md`](src/gesture/AGENTS.md) § Media tiers, `.cursor/rules/gesture-media-tiers.mdc`                                           | —                              |
@@ -142,6 +143,7 @@ When a task matches a skill, **read and follow it first** before improvising a w
 - [ ] New app directory → `importBoundaries.test.ts` + `check-import-boundaries.mjs`
 - [ ] New user-visible route / shell wiring → e2e smoke per **`docs/E2E_SMOKE_CONVENTIONS.md`**
 - [ ] Visual baselines updated **intentionally** only (skill `labs-visual-regression`)
+- [ ] Interaction perf / CUJ: update `src/<app>/CUJs.md` + interaction smoke when fixing lag (skill `labs-performance`)
 - [ ] Material architecture → ADR when practical (skill `labs-write-adr`)
 - [ ] **Substantial session → deliver retrospective** (skill `labs-session-retrospective`; not optional)
 

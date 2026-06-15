@@ -47,6 +47,9 @@ Structure findings as **symptom → root cause class → durable fix** (same fie
 - `ux-spec-violation` — padding, contrast, alignment grid breaks
 - `ux-journey-overload` — unclear primary action; too many equal CTAs
 - `optimistic-ui-gap` — local edit updates chips but shared suggestions/filters read only persisted state; fix with session registry or parent merge (see `gestureTagRegistry.ts`)
+- `render-cascade` — lightweight control state in parent re-renders heavy grid/list (fix: isolate state + memo)
+- `main-thread-jank` — O(n) sort/shuffle/index on interaction path
+- `warmup-storm` — prefetch or queue rebuild on unrelated config changes
 
 Add a new class only when several future bugs would share it.
 

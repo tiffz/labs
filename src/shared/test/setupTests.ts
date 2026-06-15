@@ -104,6 +104,34 @@ Object.defineProperty(window, 'gtag', {
   value: () => undefined,
 });
 
+/** Node's worker BroadcastChannel can dispatch MessageEvent after tests finish (Vitest flake). */
+class MockBroadcastChannel implements BroadcastChannel {
+  readonly name: string;
+  onmessage: ((this: BroadcastChannel, ev: MessageEvent) => unknown) | null = null;
+  onmessageerror: ((this: BroadcastChannel, ev: MessageEvent) => unknown) | null = null;
+
+  constructor(name: string) {
+    this.name = name;
+  }
+
+  postMessage(): void {
+    /* no-op — real channel leaks async messages across tests */
+  }
+
+  close(): void {
+    this.onmessage = null;
+    this.onmessageerror = null;
+  }
+
+  addEventListener(): void {}
+  removeEventListener(): void {}
+  dispatchEvent(): boolean {
+    return true;
+  }
+}
+
+globalThis.BroadcastChannel = MockBroadcastChannel as typeof BroadcastChannel;
+
 // Mock HTMLCanvasElement.getContext to suppress VexFlow errors in tests
 // VexFlow tries to use canvas for text measurement, but JSDOM doesn't support it
 const originalGetContext = HTMLCanvasElement.prototype.getContext;

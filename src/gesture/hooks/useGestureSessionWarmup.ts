@@ -17,9 +17,20 @@ export function useGestureSessionWarmup({
   drawHistory,
   enabled = true,
 }: UseGestureSessionWarmupInput): { firstPhotoReady: boolean } {
+  const queueConfig = useMemo(
+    () => ({
+      packIds: config.packIds,
+      prioritizeLeastDrawn: config.prioritizeLeastDrawn,
+      // Warmup uses deterministic order; shuffle runs when the user enters the room.
+      shuffle: false,
+      maxPhotos: config.maxPhotos,
+    }),
+    [config.maxPhotos, config.packIds, config.prioritizeLeastDrawn],
+  );
+
   const queue = useMemo(
-    () => buildGestureSessionQueueFromConfig(config, packFiles, drawHistory),
-    [config, drawHistory, packFiles],
+    () => buildGestureSessionQueueFromConfig(queueConfig, packFiles, drawHistory),
+    [drawHistory, packFiles, queueConfig],
   );
 
   const { headReady } = useGestureSessionPhotoPipeline({

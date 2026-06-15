@@ -19,6 +19,8 @@ Profile persists in `localStorage` (`sight:profile`). Older curriculum saves are
 
 ## Developer debug workflow
 
+Debug mode uses shared [`LabsDebugDock`](../shared/components/LabsDebugDock.tsx). **Regular `/sight/` layout must not depend on debug being mounted** — the app shell always uses `height: calc(100dvh - var(--labs-debug-dock-height, 0px))` (zero when dock absent). See [`CUJs.md`](./CUJs.md) CUJ-003.
+
 | URL / action                     | Purpose                                                                   |
 | -------------------------------- | ------------------------------------------------------------------------- |
 | `/sight/?debug`                  | Debug dock: reset progress, set level, +pass, complete level, copy bundle |

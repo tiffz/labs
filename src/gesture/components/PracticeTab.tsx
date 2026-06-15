@@ -1,19 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import Box from '@mui/material/Box';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Button from '@mui/material/Button';
-import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Radio from '@mui/material/Radio';
-import TextField from '@mui/material/TextField';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import { useLiveQuery } from 'dexie-react-hooks';
 import PackCollectionCard from '../components/PackCollectionCard';
 import GestureTabLoading from '../components/GestureTabLoading';
 import GestureTagFilterBar from '../components/GestureTagFilterBar';
+import PracticeSessionConfigProvider, {
+  PracticeSessionControls,
+  PracticeSessionFooter,
+} from '../components/PracticeSessionControls';
 import { gestureDb } from '../db/gestureDb';
-import { readGestureDriveAccessToken } from '../drive/readGestureDriveAccessToken';
 import { isIncompleteUploadPack } from '../drive/gestureUploadActivity';
 import {
   packHasGestureTag,
@@ -26,32 +22,57 @@ import {
 } from '../hooks/gestureLiveQueryEmpty';
 import { useGesturePackStats, resolveGesturePackCoverFileIds } from '../hooks/useGesturePackStats';
 import { useGesturePacks } from '../hooks/useGesturePacks';
-import { useGestureSessionWarmup } from '../hooks/useGestureSessionWarmup';
-import {
-  isGestureSessionPhotoDisplayReady,
-  prefetchGestureSessionPhotoUntilReady,
-} from '../media/gestureSessionPhotoPipeline';
-import { buildGestureSessionQueueFromConfig } from '../session/gestureSessionQueueFromConfig';
-import {
-  readGesturePracticeSessionConfig,
-  writeGesturePracticeSessionConfig,
-  type GesturePracticeTimerPreset,
-} from '../practice/gesturePracticeConfigStorage';
-import type { SessionConfig } from '../types';
+import { readGesturePracticeSessionConfig } from '../practice/gesturePracticeConfigStorage';
+import type { SessionConfig, GesturePack } from '../types';
 
-const PRESETS = [
-  { label: '30s', sec: 30 },
-  { label: '1 min', sec: 60 },
-  { label: '2 min', sec: 120 },
-  { label: '5 min', sec: 300 },
-  { label: '10 min', sec: 600 },
-] as const;
+type PracticeCollectionGridProps = {
+  practicePacks: GesturePack[];
+  coverIds: Map<string, string[]>;
+  counts: Map<string, number>;
+  drawnSets: Map<string, Set<string>>;
+  selectedSet: Set<string>;
+  suppressTags: boolean;
+  previewFetchEnabled: boolean;
+  onTogglePack: (packId: string) => void;
+};
 
-const CUSTOM_PRESET = 'custom' as const;
+const PracticeCollectionGrid = memo(function PracticeCollectionGrid({
+  practicePacks,
+  coverIds,
+  counts,
+  drawnSets,
+  selectedSet,
+  suppressTags,
+  previewFetchEnabled,
+  onTogglePack,
+}: PracticeCollectionGridProps): React.ReactElement {
+  const toggleHandlers = useMemo(() => {
+    const map = new Map<string, () => void>();
+    for (const pack of practicePacks) {
+      map.set(pack.id, () => onTogglePack(pack.id));
+    }
+    return map;
+  }, [onTogglePack, practicePacks]);
 
-type TimerPreset = GesturePracticeTimerPreset;
-
-type SessionLengthMode = 'endless' | 'limited';
+  return (
+    <div className="gesture-collection-grid gesture-collection-grid--practice">
+      {practicePacks.map((pack) => (
+        <PackCollectionCard
+          key={pack.id}
+          pack={pack}
+          driveFileIds={resolveGesturePackCoverFileIds(pack, coverIds)}
+          photoCount={counts.get(pack.id) ?? 0}
+          drawnCount={drawnSets.get(pack.id)?.size ?? 0}
+          mode="select"
+          selected={selectedSet.has(pack.id)}
+          suppressTags={suppressTags}
+          previewFetchEnabled={previewFetchEnabled}
+          onToggleSelect={toggleHandlers.get(pack.id)}
+        />
+      ))}
+    </div>
+  );
+});
 
 interface PracticeTabProps {
   onStart: (config: SessionConfig) => void;
@@ -68,30 +89,12 @@ export default function PracticeTab({
   onActiveTagFiltersChange,
   previewFetchEnabled = true,
 }: PracticeTabProps): React.ReactElement {
-  const storedConfig = readGesturePracticeSessionConfig();
   const { packs, packsHydrated } = useGesturePacks();
   const { counts, coverIds, drawnSets, statsHydrated } = useGesturePackStats();
 
-  const [starting, setStarting] = useState(false);
-  const [startError, setStartError] = useState<string | null>(null);
   const [selectedPackIds, setSelectedPackIds] = useState<string[]>(
-    () => storedConfig?.selectedPackIds ?? [],
+    () => readGesturePracticeSessionConfig()?.selectedPackIds ?? [],
   );
-  const [durationSec, setDurationSec] = useState(() => storedConfig?.durationSec ?? 60);
-  const [timerPreset, setTimerPreset] = useState<TimerPreset>(
-    () => storedConfig?.timerPreset ?? 60,
-  );
-  const [customDurationSec, setCustomDurationSec] = useState(
-    () => storedConfig?.customDurationSec ?? '90',
-  );
-  const [prioritizeLeastDrawn, setPrioritizeLeastDrawn] = useState(
-    () => storedConfig?.prioritizeLeastDrawn ?? true,
-  );
-  const [shuffle, setShuffle] = useState(() => storedConfig?.shuffle ?? true);
-  const [sessionLengthMode, setSessionLengthMode] = useState<SessionLengthMode>(
-    () => storedConfig?.sessionLengthMode ?? 'endless',
-  );
-  const [photoLimit, setPhotoLimit] = useState(() => storedConfig?.photoLimit ?? '20');
 
   const packFilesRaw = useLiveQuery(
     () =>
@@ -128,11 +131,15 @@ export default function PracticeTab({
     [counts, readyPacks],
   );
 
-  const didInitSelection = useRef(storedConfig != null);
+  const selectedSet = useMemo(() => new Set(selectedPackIds), [selectedPackIds]);
+
+  const hadStoredSelection = useRef(
+    readGesturePracticeSessionConfig()?.selectedPackIds != null,
+  );
   useEffect(() => {
-    if (!didInitSelection.current && allPackIdsWithPhotos.length > 0) {
+    if (!hadStoredSelection.current && allPackIdsWithPhotos.length > 0) {
       setSelectedPackIds(allPackIdsWithPhotos);
-      didInitSelection.current = true;
+      hadStoredSelection.current = true;
     }
   }, [allPackIdsWithPhotos]);
 
@@ -144,126 +151,49 @@ export default function PracticeTab({
     });
   }, [allPackIdsWithPhotos]);
 
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      writeGesturePracticeSessionConfig({
-        version: 1,
-        selectedPackIds,
-        durationSec,
-        timerPreset,
-        customDurationSec,
-        prioritizeLeastDrawn,
-        shuffle,
-        sessionLengthMode,
-        photoLimit,
-        activeTagFilters,
-      });
-    }, 350);
-    return () => window.clearTimeout(timeoutId);
-  }, [
-    activeTagFilters,
-    customDurationSec,
-    durationSec,
-    photoLimit,
-    prioritizeLeastDrawn,
-    selectedPackIds,
-    sessionLengthMode,
-    shuffle,
-    timerPreset,
-  ]);
-
-  const togglePack = (packId: string) => {
+  const togglePack = useCallback((packId: string) => {
     setSelectedPackIds((prev) =>
       prev.includes(packId) ? prev.filter((id) => id !== packId) : [...prev, packId],
     );
-  };
+  }, []);
 
-  const toggleTagFilter = (tag: string) => {
-    const wasActive = activeTagFilters.includes(tag);
-    const nextFilters = wasActive
-      ? activeTagFilters.filter((t) => t !== tag)
-      : [...activeTagFilters, tag];
-    onActiveTagFiltersChange(nextFilters);
+  const toggleTagFilter = useCallback(
+    (tag: string) => {
+      const wasActive = activeTagFilters.includes(tag);
+      const nextFilters = wasActive
+        ? activeTagFilters.filter((t) => t !== tag)
+        : [...activeTagFilters, tag];
+      onActiveTagFiltersChange(nextFilters);
 
-    if (!wasActive) {
-      const matchingIds = readyPacks
-        .filter((pack) => (counts.get(pack.id) ?? 0) > 0 && packHasGestureTag(pack, tag))
-        .map((pack) => pack.id);
-      if (matchingIds.length > 0) {
-        setSelectedPackIds((prev) => [...new Set([...prev, ...matchingIds])]);
+      if (!wasActive) {
+        const matchingIds = readyPacks
+          .filter((pack) => (counts.get(pack.id) ?? 0) > 0 && packHasGestureTag(pack, tag))
+          .map((pack) => pack.id);
+        if (matchingIds.length > 0) {
+          setSelectedPackIds((prev) => [...new Set([...prev, ...matchingIds])]);
+        }
       }
-    }
-  };
+    },
+    [activeTagFilters, counts, onActiveTagFiltersChange, readyPacks],
+  );
 
-  const selectAllVisible = () => {
+  const selectAllVisible = useCallback(() => {
     setSelectedPackIds((prev) => [...new Set([...prev, ...packIdsWithPhotos])]);
-  };
+  }, [packIdsWithPhotos]);
 
-  const deselectAllVisible = () => {
+  const deselectAllVisible = useCallback(() => {
     setSelectedPackIds((prev) => prev.filter((id) => !packIdsWithPhotos.includes(id)));
-  };
+  }, [packIdsWithPhotos]);
 
-  const visibleSelectedCount = packIdsWithPhotos.filter((id) => selectedPackIds.includes(id)).length;
+  const visibleSelectedCount = useMemo(
+    () => packIdsWithPhotos.filter((id) => selectedSet.has(id)).length,
+    [packIdsWithPhotos, selectedSet],
+  );
+
   const selectionHint =
     packIdsWithPhotos.length > 0
       ? `${visibleSelectedCount} of ${packIdsWithPhotos.length} selected`
       : null;
-
-  const effectiveDurationSec =
-    timerPreset === CUSTOM_PRESET
-      ? Math.max(5, Math.min(3600, Number.parseInt(customDurationSec, 10) || 60))
-      : durationSec;
-
-  const effectiveMaxPhotos =
-    sessionLengthMode === 'endless'
-      ? null
-      : Math.max(1, Math.min(9999, Number.parseInt(photoLimit, 10) || 1));
-
-  const canStart = selectedPackIds.length > 0 && !starting;
-
-  const sessionConfigDraft = useMemo(
-    (): Omit<SessionConfig, 'queue'> => ({
-      durationSec: effectiveDurationSec,
-      prioritizeLeastDrawn,
-      shuffle,
-      packIds: selectedPackIds,
-      maxPhotos: effectiveMaxPhotos,
-    }),
-    [effectiveDurationSec, effectiveMaxPhotos, prioritizeLeastDrawn, selectedPackIds, shuffle],
-  );
-
-  const { firstPhotoReady } = useGestureSessionWarmup({
-    config: sessionConfigDraft,
-    packFiles,
-    drawHistory,
-    enabled: selectedPackIds.length > 0,
-  });
-
-  const handleEnterRoom = async () => {
-    const sessionConfig: SessionConfig = { ...sessionConfigDraft };
-    const queue = buildGestureSessionQueueFromConfig(sessionConfig, packFiles, drawHistory);
-    if (queue.length === 0) {
-      setStartError('Selected collections have no photos yet.');
-      return;
-    }
-
-    const first = queue[0]!;
-    const ready = isGestureSessionPhotoDisplayReady(first.driveFileId) || firstPhotoReady;
-
-    setStarting(!ready);
-    setStartError(null);
-    try {
-      if (!isGestureSessionPhotoDisplayReady(first.driveFileId)) {
-        const token = await readGestureDriveAccessToken();
-        await prefetchGestureSessionPhotoUntilReady(token, first);
-      }
-      onStart({ ...sessionConfig, queue });
-    } catch (e) {
-      setStartError(e instanceof Error ? e.message : 'Could not load reference image.');
-    } finally {
-      setStarting(false);
-    }
-  };
 
   const collectionsReady = packsHydrated && statsHydrated;
 
@@ -311,161 +241,42 @@ export default function PracticeTab({
   }
 
   return (
-    <div className="gesture-tab-panel gesture-practice-panel">
-      <section className="gesture-practice-controls" aria-label="Session options">
-        <div className="gesture-practice-control-row">
-          <Typography component="h2" className="gesture-practice-label">
-            Timer
-          </Typography>
-          <div className="gesture-timer-controls">
-            <ToggleButtonGroup
-              exclusive
-              value={timerPreset}
-              onChange={(_e, v: TimerPreset | null) => {
-                if (v == null) return;
-                setTimerPreset(v);
-                if (v !== CUSTOM_PRESET) setDurationSec(v);
-              }}
-              size="small"
-              className="gesture-timer-toggle"
-            >
-              {PRESETS.map((p) => (
-                <ToggleButton key={p.sec} value={p.sec}>
-                  {p.label}
-                </ToggleButton>
-              ))}
-              <ToggleButton value={CUSTOM_PRESET}>Custom</ToggleButton>
-            </ToggleButtonGroup>
-            {timerPreset === CUSTOM_PRESET ? (
-              <span className="gesture-custom-duration-limited">
-                <TextField
-                  id="gesture-custom-duration"
-                  size="small"
-                  type="number"
-                  aria-label="Custom duration in seconds"
-                  inputProps={{ min: 5, max: 3600, step: 5 }}
-                  value={customDurationSec}
-                  onChange={(e) => setCustomDurationSec(e.target.value)}
-                  className="gesture-custom-duration-field"
-                />
-                <span className="gesture-custom-duration-suffix">sec</span>
-              </span>
-            ) : null}
-          </div>
-        </div>
-        <div className="gesture-practice-control-row">
-          <Typography component="h2" className="gesture-practice-label">
-            Session length
-          </Typography>
-          <div className="gesture-session-length-controls">
-            <FormControlLabel
-              className="gesture-session-length-option"
-              control={
-                <Radio
-                  size="small"
-                  checked={sessionLengthMode === 'endless'}
-                  onChange={() => setSessionLengthMode('endless')}
-                  inputProps={{ 'aria-label': 'Endless session' }}
-                />
-              }
-              label="Endless"
-            />
-            <FormControlLabel
-              className="gesture-session-length-option gesture-session-length-option--limited"
-              control={
-                <Radio
-                  size="small"
-                  checked={sessionLengthMode === 'limited'}
-                  onChange={() => setSessionLengthMode('limited')}
-                  inputProps={{ 'aria-label': 'Limited session length' }}
-                />
-              }
-              label={
-                <span className="gesture-session-length-limited">
-                  <TextField
-                    id="gesture-session-photo-limit"
-                    size="small"
-                    type="number"
-                    aria-label="Number of photos in session"
-                    inputProps={{ min: 1, max: 9999 }}
-                    value={photoLimit}
-                    onChange={(e) => setPhotoLimit(e.target.value)}
-                    onFocus={() => setSessionLengthMode('limited')}
-                    disabled={sessionLengthMode !== 'limited'}
-                    className="gesture-session-photo-limit-field"
-                  />
-                  <span className="gesture-session-length-suffix">photos</span>
-                </span>
-              }
-            />
-          </div>
-        </div>
-        <div className="gesture-practice-options">
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={prioritizeLeastDrawn}
-                onChange={(e) => setPrioritizeLeastDrawn(e.target.checked)}
-              />
-            }
-            label="Prioritize least drawn photos"
-          />
-          <FormControlLabel
-            control={
-              <Checkbox checked={shuffle} onChange={(e) => setShuffle(e.target.checked)} />
-            }
-            label="Shuffle"
-          />
-        </div>
-      </section>
+    <PracticeSessionConfigProvider
+      selectedPackIds={selectedPackIds}
+      activeTagFilters={activeTagFilters}
+      packFiles={packFiles}
+      drawHistory={drawHistory}
+      onStart={onStart}
+    >
+      <div className="gesture-tab-panel gesture-practice-panel">
+        <PracticeSessionControls />
 
-      <GestureTagFilterBar
-        tags={allTags}
-        activeTags={activeTagFilters}
-        onToggleTag={toggleTagFilter}
-        onClear={() => onActiveTagFiltersChange([])}
-        selectionHint={selectionHint}
-        onSelectAllShown={packIdsWithPhotos.length > 0 ? selectAllVisible : undefined}
-        onDeselectAllShown={packIdsWithPhotos.length > 0 ? deselectAllVisible : undefined}
-      />
+        <GestureTagFilterBar
+          tags={allTags}
+          activeTags={activeTagFilters}
+          onToggleTag={toggleTagFilter}
+          onClear={() => onActiveTagFiltersChange([])}
+          selectionHint={selectionHint}
+          onSelectAllShown={packIdsWithPhotos.length > 0 ? selectAllVisible : undefined}
+          onDeselectAllShown={packIdsWithPhotos.length > 0 ? deselectAllVisible : undefined}
+        />
 
-      <Typography component="h2" className="gesture-practice-label">
-        Collections
-      </Typography>
-      <div className="gesture-collection-grid gesture-collection-grid--practice">
-        {practicePacks.map((pack) => (
-          <PackCollectionCard
-            key={pack.id}
-            pack={pack}
-            driveFileIds={resolveGesturePackCoverFileIds(pack, coverIds)}
-            photoCount={counts.get(pack.id) ?? 0}
-            drawnCount={drawnSets.get(pack.id)?.size ?? 0}
-            mode="select"
-            selected={selectedPackIds.includes(pack.id)}
-            suppressTags={activeTagFilters.length > 0}
-            previewFetchEnabled={previewFetchEnabled}
-            onToggleSelect={() => togglePack(pack.id)}
-          />
-        ))}
+        <Typography component="h2" className="gesture-practice-label">
+          Collections
+        </Typography>
+        <PracticeCollectionGrid
+          practicePacks={practicePacks}
+          coverIds={coverIds}
+          counts={counts}
+          drawnSets={drawnSets}
+          selectedSet={selectedSet}
+          suppressTags={activeTagFilters.length > 0}
+          previewFetchEnabled={previewFetchEnabled}
+          onTogglePack={togglePack}
+        />
+
+        <PracticeSessionFooter />
       </div>
-
-      <Box className="gesture-practice-footer">
-        {startError ? (
-          <Typography role="alert" color="error" sx={{ mb: 1.5 }}>
-            {startError}
-          </Typography>
-        ) : null}
-        <Button
-          variant="contained"
-          size="large"
-          fullWidth
-          className="gesture-enter-btn"
-          disabled={!canStart}
-          onClick={() => void handleEnterRoom()}
-        >
-          {starting ? 'Preparing photo…' : 'Enter the room'}
-        </Button>
-      </Box>
-    </div>
+    </PracticeSessionConfigProvider>
   );
 }

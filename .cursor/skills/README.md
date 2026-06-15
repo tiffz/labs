@@ -21,5 +21,6 @@ Portable [Agent Skills](https://agentskills.io/home) for Labs workflows. Discove
 | [`labs-drive-backup`](labs-drive-backup/SKILL.md)                       | Google Drive backup, conflict prompts, sync hooks                         |
 | [`labs-dependency-upgrade`](labs-dependency-upgrade/SKILL.md)           | Toolchain / dependency major upgrades                                     |
 | [`labs-ui-design-variations`](labs-ui-design-variations/SKILL.md)       | In-app design theme iterations + live preview selector                    |
+| [`labs-performance`](labs-performance/SKILL.md)                         | CUJ interaction latency, render isolation, perf benchmarks                |
 
 **Maintenance:** Add a row here when creating a skill. Run `npm run check:agent-docs` in presubmit/CI.

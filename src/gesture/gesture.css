@@ -54,7 +54,9 @@
   --gesture-tab-transform: none;
   --gesture-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
-  min-height: 100dvh;
+  min-height: calc(100dvh - var(--labs-debug-dock-height, 0px));
+  height: calc(100vh - var(--labs-debug-dock-height, 0px));
+  height: calc(100dvh - var(--labs-debug-dock-height, 0px));
   background: var(--gesture-app-bg);
   color: var(--gesture-ink);
   font-family: var(--gesture-sans);
@@ -65,7 +67,7 @@
 }
 
 .gesture-main {
-  min-height: 100dvh;
+  min-height: calc(100dvh - var(--labs-debug-dock-height, 0px));
 }
 
 .gesture-shell {
