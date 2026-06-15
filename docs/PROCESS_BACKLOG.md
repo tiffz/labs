@@ -12,21 +12,22 @@ Proposed durable fixes from session retrospectives **not yet implemented**. Land
 | P2       | `ux-journey-overload` | `labs-ux-journey` skill + mandatory journey sketch for new screens                                                                  | Done                                                        |
 | P3       | —                     | Auto-merge squash when presubmit green (GitHub repo setting)                                                                        | Done — [`docs/PR_WORKFLOW.md`](PR_WORKFLOW.md) § Auto-merge |
 | P2       | `optimistic-ui-gap`   | Document inline-metadata optimistic patterns in app `DESIGN.md` when chips + autocomplete share a registry                          | Done — `src/gesture/DESIGN.md` § Inline collection metadata |
-| P3       | `test gap`            | Vitest isolation flake (`gestureDeleteCollection` BroadcastChannel under full `test:fast` load)                                     | Open — investigate parallel worker + Dexie sync             |
+| P3       | `test gap`            | Vitest isolation flake (`gestureDeleteCollection` BroadcastChannel under full `test:fast` load)                                     | Done — `MockBroadcastChannel` in `setupTests.ts`            |
 | P3       | —                     | Add `CUJs.md` for Encore library/practice primary flows                                                                             | Done — `src/encore/CUJs.md`                                 |
 
 ## Completed (archive reference)
 
-| Session                        | Landed in                                                                                                                                   |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Gesture media / preview strips | [`docs/GESTURE_MEDIA_STABILITY.md`](GESTURE_MEDIA_STABILITY.md), `gesturePreviewDisplayInvariants.test.ts`, `gesture-preview-strip.spec.ts` |
-| Gesture inline tags + registry | `InlinePackTags.tsx`, `gestureTagRegistry.ts`, `useGestureKnownTags`, `DESIGN.md` § Inline collection metadata                              |
-| Performance / CUJ process      | `docs/PERFORMANCE.md`, `docs/CRITICAL_USER_JOURNEYS.md`, `labs-performance`, interaction smokes (Gesture, Encore, Sight)                    |
-| Sight debug layout regression  | `sight.css` always-on viewport calc, `CUJs.md`, `sight-practice-interaction.spec.ts`                                                        |
-| UX journey hard gate           | `ux-journey-mandatory.mdc`, `labs-ux-journey` skill                                                                                         |
-| Layout heuristic smokes        | `layout-heuristics-gesture.spec.ts`, `layout-heuristics-encore.spec.ts`, `layoutHeuristicsCore.ts`                                          |
-| Mark done (Gesture zen)        | `ZenSessionPhase.tsx` checkmark + `drawHistory` on early complete                                                                           |
-| Dexie empty flash              | `resolveDexieLiveQuery`, `dexie-live-query-empty-states.mdc`                                                                                |
-| ESLint warning drift           | `pre-commit-checks.mdc` zero-warning policy                                                                                                 |
-| Vitest teardown noise          | Removed aggressive `clearTimeout` loop in `setupTests.ts`                                                                                   |
-| Agent process index            | `AGENT_INVARIANTS.md`, retrospective skill upgrade, PR template                                                                             |
+| Session                         | Landed in                                                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Gesture media / preview strips  | [`docs/GESTURE_MEDIA_STABILITY.md`](GESTURE_MEDIA_STABILITY.md), `gesturePreviewDisplayInvariants.test.ts`, `gesture-preview-strip.spec.ts` |
+| Gesture inline tags + registry  | `InlinePackTags.tsx`, `gestureTagRegistry.ts`, `useGestureKnownTags`, `DESIGN.md` § Inline collection metadata                              |
+| Performance / CUJ process       | `docs/PERFORMANCE.md`, `docs/CRITICAL_USER_JOURNEYS.md`, `labs-performance`, interaction smokes (Gesture, Encore, Sight)                    |
+| Sight debug layout regression   | `sight.css` always-on viewport calc, `CUJs.md`, `sight-practice-interaction.spec.ts`                                                        |
+| Sight Albers perceived pedagogy | `MIN_INDUCED_DELTAS`, `AlbersInductionReveal`, `PERCEIVED_TEMPERATURE_INDUCTION` diagnostic                                                 |
+| UX journey hard gate            | `ux-journey-mandatory.mdc`, `labs-ux-journey` skill                                                                                         |
+| Layout heuristic smokes         | `layout-heuristics-gesture.spec.ts`, `layout-heuristics-encore.spec.ts`, `layoutHeuristicsCore.ts`                                          |
+| Mark done (Gesture zen)         | `ZenSessionPhase.tsx` checkmark + `drawHistory` on early complete                                                                           |
+| Dexie empty flash               | `resolveDexieLiveQuery`, `dexie-live-query-empty-states.mdc`                                                                                |
+| ESLint warning drift            | `pre-commit-checks.mdc` zero-warning policy                                                                                                 |
+| Vitest teardown noise           | Removed aggressive `clearTimeout` loop in `setupTests.ts`                                                                                   |
+| Agent process index             | `AGENT_INVARIANTS.md`, retrospective skill upgrade, PR template                                                                             |

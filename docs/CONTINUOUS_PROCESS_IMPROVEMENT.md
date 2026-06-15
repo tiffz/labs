@@ -50,6 +50,7 @@ Structure findings as **symptom → root cause class → durable fix** (same fie
 - `render-cascade` — lightweight control state in parent re-renders heavy grid/list (fix: isolate state + memo)
 - `main-thread-jank` — O(n) sort/shuffle/index on interaction path
 - `warmup-storm` — prefetch or queue rebuild on unrelated config changes
+- `pedagogy-reveal-gap` — quiz feedback shows ground truth that contradicts the lesson (e.g. identical chips on gray after a perceived-contrast item); fix with induced-read reveal + copy + minimum perceptual delta gates
 
 Add a new class only when several future bugs would share it.
 
