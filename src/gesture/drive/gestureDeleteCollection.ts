@@ -1,19 +1,37 @@
 import { driveTrashFile } from '../../shared/drive/driveFetch';
 import { gestureDb } from '../db/gestureDb';
 import { notifyGestureLocalChange } from '../db/gestureChangeBus';
+import {
+  addGestureDriveFileTombstones,
+  addGestureDriveFolderTombstone,
+} from './gestureDriveTombstones';
 import { listImageFileIdsInPackFolderRecursive } from './gesturePackFolderListing';
 
-async function deletePackLocalRows(packId: string): Promise<void> {
+async function deletePackLocalRows(packId: string, driveFolderId?: string): Promise<void> {
+  const packFiles = await gestureDb.packFiles.where('packId').equals(packId).toArray();
+  if (driveFolderId?.trim()) {
+    addGestureDriveFolderTombstone(driveFolderId);
+  }
+  if (packFiles.length > 0) {
+    addGestureDriveFileTombstones(packFiles.map((row) => row.driveFileId));
+  }
+
   await gestureDb.transaction(
     'rw',
-    gestureDb.packs,
-    gestureDb.packFiles,
-    gestureDb.drawHistory,
-    gestureDb.uploadManifestFiles,
+    [
+      gestureDb.packs,
+      gestureDb.packFiles,
+      gestureDb.drawHistory,
+      gestureDb.uploadManifestFiles,
+      gestureDb.uploadStagingBlobs,
+      gestureDb.uploadDirectoryHandles,
+    ],
     async () => {
       await gestureDb.packFiles.where('packId').equals(packId).delete();
       await gestureDb.drawHistory.where('packId').equals(packId).delete();
       await gestureDb.uploadManifestFiles.where('packId').equals(packId).delete();
+      await gestureDb.uploadStagingBlobs.where('packId').equals(packId).delete();
+      await gestureDb.uploadDirectoryHandles.delete(packId);
       await gestureDb.packs.delete(packId);
     },
   );
@@ -60,7 +78,8 @@ async function trashDriveFiles(
 
 /** Remove collection from Dexie only. Drive folder and photos stay. */
 export async function deleteCollectionFromApp(packId: string): Promise<void> {
-  await deletePackLocalRows(packId);
+  const pack = await gestureDb.packs.get(packId);
+  await deletePackLocalRows(packId, pack?.driveFolderId);
 }
 
 /** Remove from app and trash photos in the Drive folder plus the folder itself. */
@@ -86,7 +105,7 @@ export async function deleteCollectionAndDrivePhotos(
   }
 
   onProgress?.({ phase: 'finishing' });
-  await deletePackLocalRows(packId);
+  await deletePackLocalRows(packId, pack.driveFolderId);
   return {
     scope: 'app-and-drive-photos',
     drivePhotosTrashed: fileIds.length,

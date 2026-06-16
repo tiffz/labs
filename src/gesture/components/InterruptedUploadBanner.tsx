@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import {
@@ -7,6 +7,7 @@ import {
 } from '../../shared/google/labsGoogleDriveAccess';
 import { keepPartialUploadCollection } from '../drive/gestureIncompleteUpload';
 import { inferLocalFolderName } from '../drive/gestureLocalFolderUpload';
+import { canResumeUploadWithoutRepick } from '../drive/gestureUploadResume';
 import {
   formatInterruptedUploadHeadline,
   formatInterruptedUploadSummary,
@@ -34,9 +35,20 @@ export default function InterruptedUploadBanner({
   onRemove,
 }: InterruptedUploadBannerProps): React.ReactElement {
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const [canContinueWithoutPick, setCanContinueWithoutPick] = useState(false);
   const headline = formatInterruptedUploadHeadline(pack);
   const summary = formatInterruptedUploadSummary(pack, photoCount);
   const folderHint = pack.uploadSourceFolderName ?? pack.name;
+
+  useEffect(() => {
+    let cancelled = false;
+    void canResumeUploadWithoutRepick(pack.id).then((ok) => {
+      if (!cancelled) setCanContinueWithoutPick(ok);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pack.id]);
 
   const handleKeep = async () => {
     onError('');
@@ -59,6 +71,14 @@ export default function InterruptedUploadBanner({
 
   const handleContinuePick = () => {
     folderInputRef.current?.click();
+  };
+
+  const handleContinue = () => {
+    if (canContinueWithoutPick) {
+      void upload.continueUploadForPackPersisted(pack.id);
+      return;
+    }
+    handleContinuePick();
   };
 
   const handleFolderSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,10 +118,13 @@ export default function InterruptedUploadBanner({
         {summary}
       </Typography>
       <Typography className="gesture-interrupted-upload-hint" variant="body2">
-        To continue, choose the same folder: <strong>{folderHint}</strong>
+        {canContinueWithoutPick
+          ? 'Continue upload picks up from saved folder access or staged photos in this browser.'
+          : `To continue after you close this tab, choose the same folder: `}
+        {!canContinueWithoutPick ? <strong>{folderHint}</strong> : null}
       </Typography>
       <div className="gesture-interrupted-upload-actions">
-        <Button variant="contained" size="small" disabled={disabled || upload.busy} onClick={handleContinuePick}>
+        <Button variant="contained" size="small" disabled={disabled || upload.busy} onClick={handleContinue}>
           Continue upload
         </Button>
         <Button variant="outlined" size="small" disabled={disabled || upload.busy} onClick={() => void handleKeep()}>

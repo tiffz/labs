@@ -195,6 +195,18 @@ Use skill **`labs-split-to-prs`**:
 
 Do not open five PRs and merge all at once without checking CI on each; merge sequentially reduces “everything broke at once” debugging.
 
+### Velocity: split feature trains
+
+When a session touches **CI + multiple apps + e2e + docs** (common agent batch), split before push:
+
+1. **Infra slice** — workflows, presubmit scripts, agent docs (no product UI).
+2. **App slice(s)** — one micro-app or subsystem per PR (`labs-split-to-prs`).
+3. **Baselines slice** — visual/audio PNG updates alone when possible.
+
+Each slice: `npm run presubmit:push` → push → wait for green CI → merge → next slice. Monolithic commits save chat time but cost **one full CI cycle per fix** when smokes drift.
+
+Set `LABS_PRESUBMIT_PUSH=1` in your shell profile to enforce e2e smokes on every push via Husky (see `.husky/pre-push`).
+
 ## Agent + user conventions
 
 | Action            | Default                                                   |

@@ -46,10 +46,23 @@ export function supportsDirectoryPicker(): boolean {
   return typeof window !== 'undefined' && 'showDirectoryPicker' in window;
 }
 
-/** Native folder picker when available; returns files with `webkitRelativePath` set. */
-export async function pickLocalFolderFiles(): Promise<File[] | null> {
+export type LocalFolderPickResult = {
+  files: File[];
+  handle: FileSystemDirectoryHandle;
+  folderName: string;
+};
+
+/** Native folder picker when available. */
+export async function pickLocalFolder(): Promise<LocalFolderPickResult | null> {
   const pickerWindow = window as DirectoryPickerWindow;
   if (!pickerWindow.showDirectoryPicker) return null;
   const handle = await pickerWindow.showDirectoryPicker({ mode: 'read' });
-  return readDirectoryHandleFiles(handle, handle.name);
+  const files = await readDirectoryHandleFiles(handle, handle.name);
+  return { files, handle, folderName: handle.name };
+}
+
+/** Native folder picker when available; returns files with `webkitRelativePath` set. */
+export async function pickLocalFolderFiles(): Promise<File[] | null> {
+  const picked = await pickLocalFolder();
+  return picked?.files ?? null;
 }

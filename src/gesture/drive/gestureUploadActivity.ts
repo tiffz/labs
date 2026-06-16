@@ -123,6 +123,19 @@ export function buildUploadActivity(
         collectionName,
         queuedCount,
       };
+    case 'waiting':
+      return {
+        phase,
+        label: withQueue(
+          progress
+            ? `Waiting for internet…${progress}`
+            : 'Waiting for internet…',
+        ),
+        done,
+        total,
+        collectionName,
+        queuedCount,
+      };
     case 'finishing':
       return {
         phase,

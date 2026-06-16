@@ -5,6 +5,7 @@ import {
   listImagesInGesturePackFolderRecursive,
   type GesturePackDriveImage,
 } from './gesturePackFolderListing';
+import { getTombstonedFileIds } from './gestureDriveTombstones';
 import { reconcileStaleGestureUploadPacks } from './reconcileStaleGestureUploadPacks';
 
 /** @deprecated Use listImagesInGesturePackFolderRecursive — kept for flat-only callers. */
@@ -53,7 +54,10 @@ export async function indexGesturePackFromDrive(
   accessToken: string,
   pack: GesturePack,
 ): Promise<number> {
-  const images = await listImagesInGesturePackFolder(accessToken, pack.driveFolderId);
+  const tombstonedFileIds = getTombstonedFileIds();
+  const images = (await listImagesInGesturePackFolder(accessToken, pack.driveFolderId)).filter(
+    (image) => !image.id || !tombstonedFileIds.has(image.id),
+  );
   const packFiles = driveRowsToPackFiles(pack, images);
   const coverFileIds = pickGesturePackCoverFileIds(packFiles);
   const now = new Date().toISOString();

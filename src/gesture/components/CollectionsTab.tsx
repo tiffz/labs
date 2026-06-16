@@ -1,9 +1,10 @@
-import { useCallback, useDeferredValue, useMemo, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { ensureLabsGoogleAccessTokenForDrive } from '../../shared/google/labsGoogleDriveAccess';
 import AddCollectionActions from '../components/AddCollectionActions';
+import CollectionsCollectionGrid from '../components/CollectionsCollectionGrid';
 import CollectionDropZone from '../components/CollectionDropZone';
 import CollectionUploadStatus from '../components/CollectionUploadStatus';
 import DeleteCollectionDialog from '../components/DeleteCollectionDialog';
@@ -11,7 +12,6 @@ import GestureTabLoading from '../components/GestureTabLoading';
 import GestureTagFilterBar from '../components/GestureTagFilterBar';
 import InterruptedUploadBanner from '../components/InterruptedUploadBanner';
 import MergeCollectionsDialog from '../components/MergeCollectionsDialog';
-import PackCollectionCard from '../components/PackCollectionCard';
 import { canMergeGesturePacks } from '../drive/gestureMergeCollections';
 import { refreshPackFolder } from '../drive/linkPackFolder';
 import { packMatchesGestureTagFilters } from '../drive/gesturePackTags';
@@ -19,8 +19,9 @@ import { useGestureKnownTags } from '../hooks/useGestureKnownTags';
 import { shouldShowUploadRecoveryBanner } from '../drive/gestureUploadActivity';
 import { useGestureCollectionDrop } from '../hooks/useGestureCollectionDrop';
 import { useGestureCollectionUpload } from '../hooks/useGestureCollectionUpload';
-import { useGesturePackStats, resolveGesturePackCoverFileIds } from '../hooks/useGesturePackStats';
+import { useGesturePackStats } from '../hooks/useGesturePackStats';
 import { useGesturePacks } from '../hooks/useGesturePacks';
+import { mountGestureCollectionsScrollPerf } from '../perf/gestureCollectionsScrollPerf';
 import type { GesturePack } from '../types';
 
 interface CollectionsTabProps {
@@ -38,6 +39,8 @@ export default function CollectionsTab({
   onError,
   previewFetchEnabled = true,
 }: CollectionsTabProps): React.ReactElement {
+  useEffect(() => mountGestureCollectionsScrollPerf(), []);
+
   const [busy, setBusy] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<GesturePack | null>(null);
   const [nameQuery, setNameQuery] = useState('');
@@ -242,38 +245,22 @@ export default function CollectionsTab({
           </Typography>
         </div>
       ) : (
-        <div className="gesture-collection-grid gesture-collection-grid--compact">
-          {visiblePacks.map((pack) => {
-            const photoCount = statsForGrid.counts.get(pack.id) ?? 0;
-            const fileIds = resolveGesturePackCoverFileIds(pack, statsForGrid.coverIds);
-            return (
-              <PackCollectionCard
-                key={pack.id}
-                pack={pack}
-                driveFileIds={fileIds}
-                photoCount={photoCount}
-                drawnCount={statsForGrid.drawnSets.get(pack.id)?.size ?? 0}
-                mode="manage"
-                disabled={interactionDisabled}
-                allTags={allTags}
-                upload={upload}
-                dropEnabled={!mergeMode}
-                compactManage
-                mergeMode={mergeMode}
-                mergeSelected={mergeSelection.includes(pack.id)}
-                onToggleMergeSelect={() => toggleMergeSelect(pack.id)}
-                onRefresh={() => void handleRefresh(pack)}
-                onDelete={() => openDeleteDialog(pack)}
-                onRenamed={(updated) => onMessage(`Renamed to "${updated.name}".`)}
-                onUpdated={() => onMessage(null)}
-                onError={(msg) => {
-                  onError(msg);
-                }}
-                previewFetchEnabled={previewFetchEnabled}
-              />
-            );
-          })}
-        </div>
+        <CollectionsCollectionGrid
+          visiblePacks={visiblePacks}
+          stats={statsForGrid}
+          allTags={allTags}
+          upload={upload}
+          mergeMode={mergeMode}
+          mergeSelection={mergeSelection}
+          interactionDisabled={interactionDisabled}
+          previewFetchEnabled={previewFetchEnabled}
+          onToggleMergeSelect={toggleMergeSelect}
+          onRefresh={handleRefresh}
+          onDelete={openDeleteDialog}
+          onRenamed={(updated) => onMessage(`Renamed to "${updated.name}".`)}
+          onUpdated={() => onMessage(null)}
+          onError={onError}
+        />
       )}
 
       <DeleteCollectionDialog

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ensureLabsGoogleAccessTokenForDrive,
   LabsGoogleInteractiveAuthRequiredError,
@@ -22,6 +22,8 @@ import {
 } from '../drive/gestureLocalFolderUpload';
 import { filterGestureUploadImageFiles } from '../drive/gesturePackMetadata';
 import { resumePackUpload } from '../drive/resumePackUpload';
+import { findResumablePackForUploadJob, loadFilesForUploadResume } from '../drive/gestureUploadResume';
+import { isTransientUploadError } from '../drive/gestureUploadNetwork';
 import { buildUploadActivity } from '../drive/gestureUploadActivity';
 import { isGestureUploadCancelledError } from '../drive/gestureUploadCancellation';
 import { formatUploadDuplicateSkipMessage } from '../drive/gestureUploadDuplicateFilter';
@@ -35,6 +37,7 @@ type UseGestureCollectionUploadOptions = {
 type NewCollectionJob = {
   files: File[];
   suggestedFolderName?: string;
+  directoryHandle?: FileSystemDirectoryHandle;
 };
 
 type UploadSessionProgress = {
@@ -66,6 +69,7 @@ function newCollectionJobsFromBatches(batches: GestureUploadFileBatch[]): NewCol
     jobs.push({
       files: images,
       suggestedFolderName: resolveUploadCollectionName(batch.files, batch.suggestedFolderName),
+      directoryHandle: batch.directoryHandle,
     });
   }
   return jobs;
@@ -174,21 +178,57 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
       const images = job.files;
       const collectionName = job.suggestedFolderName;
 
+      const uploadHandlers = {
+        onProgress: (done: number, total: number) => {
+          setUploadActivity(buildSessionActivity('uploading', { done, total, collectionName }));
+        },
+        onNetworkWait: (done: number, total: number) => {
+          setUploadActivity(buildSessionActivity('waiting', { done, total, collectionName }));
+        },
+        isCancelled: isUploadCancelled,
+      };
+
       setUploadActivity(buildSessionActivity('checking', { total: images.length, collectionName }));
       onError('');
 
       const token = await resolveUploadToken();
+      const resumablePack = await findResumablePackForUploadJob(job);
+
+      if (resumablePack) {
+        setUploadActivity(buildSessionActivity('preparing', { total: images.length, collectionName }));
+        const result = await resumePackUpload(
+          token,
+          resumablePack.id,
+          images,
+          uploadHandlers.onProgress,
+          uploadHandlers,
+        );
+        const dupeSuffix = formatUploadDuplicateSkipMessage(result.skippedDuplicates);
+        if (result.newlyUploaded === 0 && result.skippedDuplicates === 0 && result.skipped > 0) {
+          return `Upload complete for "${result.pack.name}".${dupeSuffix}`;
+        }
+        setUploadActivity(
+          buildSessionActivity('finishing', {
+            done: result.newlyUploaded,
+            total: result.newlyUploaded,
+            collectionName,
+          }),
+        );
+        completeUploadSessionJob(job);
+        return result.newlyUploaded > 0
+          ? `Uploaded ${result.newlyUploaded} more photo${result.newlyUploaded === 1 ? '' : 's'} to "${result.pack.name}".${dupeSuffix}`
+          : `Upload complete for "${result.pack.name}".${dupeSuffix}`;
+      }
+
       setUploadActivity(buildSessionActivity('preparing', { total: images.length, collectionName }));
       const result = await createPackFromUpload(
         token,
         { files: images, name: collectionName },
-        (done, total) => {
-          setUploadActivity(buildSessionActivity('uploading', { done, total, collectionName }));
-        },
+        uploadHandlers.onProgress,
         (hashed, total) => {
           setUploadActivity(buildSessionActivity('checking', { done: hashed, total, collectionName }));
         },
-        { isCancelled: isUploadCancelled },
+        { ...uploadHandlers, directoryHandle: job.directoryHandle },
       );
       const dupeSuffix = formatUploadDuplicateSkipMessage(result.skippedDuplicates);
       if (result.imageCount === 0 && result.skippedDuplicates > 0) {
@@ -228,27 +268,40 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
           continue;
         }
         hadError = true;
+        const transient = isTransientUploadError(e);
         if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
           onError(e.message);
-        } else {
-          onError(
-            e instanceof Error
-              ? `${e.message} Check Collections to continue or clean up this upload.`
-              : 'Upload failed. Check Collections to continue or clean up.',
-          );
+          queueRef.current = [];
+          sessionRef.current = null;
+          break;
         }
-        queueRef.current = [];
-        sessionRef.current = null;
+        if (transient) {
+          queueRef.current.unshift(job);
+          onError(
+            'Connection lost. Upload paused. It will resume automatically when you are back online.',
+          );
+          break;
+        }
+        onError(
+          e instanceof Error
+            ? `${e.message} Check Collections to continue or clean up this upload.`
+            : 'Upload failed. Check Collections to continue or clean up.',
+        );
         break;
       }
     }
 
     setQueuedCount(0);
     drainingRef.current = false;
-    setBusy(false);
-    setActivity(null);
-    sessionRef.current = null;
-    cancelledPackIdsRef.current.clear();
+    const queueEmpty = queueRef.current.length === 0;
+    if (queueEmpty) {
+      setBusy(false);
+      setActivity(null);
+      sessionRef.current = null;
+      cancelledPackIdsRef.current.clear();
+    } else {
+      setQueuedCount(queueRef.current.length);
+    }
 
     if (summaries.length === 1) {
       onComplete(summaries[0]!);
@@ -258,6 +311,16 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
       /* empty queue after invalid jobs — caller should have surfaced error */
     }
   }, [executeNewCollectionJob, onComplete, onError]);
+
+  useEffect(() => {
+    const resumeQueuedUploads = () => {
+      if (queueRef.current.length === 0 || drainingRef.current) return;
+      setBusy(true);
+      void drainQueue();
+    };
+    window.addEventListener('online', resumeQueuedUploads);
+    return () => window.removeEventListener('online', resumeQueuedUploads);
+  }, [drainQueue]);
 
   const enqueueNewCollectionJobs = useCallback(
     (jobs: NewCollectionJob[]) => {
@@ -283,9 +346,22 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
       try {
         const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
         setUploadActivity(buildUploadActivity('preparing', { collectionName }));
-        const result = await resumePackUpload(token, packId, picked, (done, total) => {
-          setUploadActivity(buildUploadActivity('uploading', { done, total, collectionName }));
-        }, { isCancelled: isUploadCancelled });
+        const uploadHandlers = {
+          onProgress: (done: number, total: number) => {
+            setUploadActivity(buildUploadActivity('uploading', { done, total, collectionName }));
+          },
+          onNetworkWait: (done: number, total: number) => {
+            setUploadActivity(buildUploadActivity('waiting', { done, total, collectionName }));
+          },
+          isCancelled: isUploadCancelled,
+        };
+        const result = await resumePackUpload(
+          token,
+          packId,
+          picked,
+          uploadHandlers.onProgress,
+          uploadHandlers,
+        );
         const dupeSuffix = formatUploadDuplicateSkipMessage(result.skippedDuplicates);
         onComplete(
           result.newlyUploaded > 0
@@ -307,6 +383,18 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
       }
     },
     [isUploadCancelled, onComplete, onError, setUploadActivity],
+  );
+
+  const continueUploadForPackPersisted = useCallback(
+    async (packId: string) => {
+      const files = await loadFilesForUploadResume(packId);
+      if (!files || files.length === 0) {
+        onError('Choose the same folder to continue this upload.');
+        return;
+      }
+      await continueUploadForPack(packId, files);
+    },
+    [continueUploadForPack, onError],
   );
 
   const uploadPhotosToPack = useCallback(
@@ -344,17 +432,24 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
         const pack = await gestureDb.packs.get(packId);
         const collectionName = pack?.name ?? 'collection';
+        const uploadHandlers = {
+          onProgress: (done: number, total: number) => {
+            setUploadActivity(buildUploadActivity('uploading', { done, total, collectionName }));
+          },
+          onNetworkWait: (done: number, total: number) => {
+            setUploadActivity(buildUploadActivity('waiting', { done, total, collectionName }));
+          },
+          isCancelled: isUploadCancelled,
+        };
         const result = await addPhotosToExistingPack(
           token,
           packId,
           drop.files,
-          (done, total) => {
-            setUploadActivity(buildUploadActivity('uploading', { done, total, collectionName }));
-          },
+          uploadHandlers.onProgress,
           (hashed, total) => {
             setUploadActivity(buildUploadActivity('checking', { done: hashed, total, collectionName }));
           },
-          { isCancelled: isUploadCancelled },
+          uploadHandlers,
         );
         const dupeSuffix = formatUploadDuplicateSkipMessage(result.skippedDuplicates);
         if (result.uploadedCount === 0) {
@@ -494,6 +589,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
     uploadFromSnapshot,
     uploadPhotosToPack,
     continueUploadForPack,
+    continueUploadForPackPersisted,
     cancelUploadForPack,
   };
 }

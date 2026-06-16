@@ -18,6 +18,11 @@ vi.mock('./gestureMediaPolicy', () => ({
 vi.mock('./gestureMediaCache', () => ({
   getCachedGestureMediaObjectUrl: vi.fn(async () => 'blob:memory-preview'),
   peekCachedGestureMediaObjectUrl: vi.fn(() => 'blob:memory-preview'),
+  putCachedGestureMediaBlob: vi.fn(async (_id, _kind, blob) => URL.createObjectURL(blob)),
+}));
+
+vi.mock('./gesturePreviewBlobResize', () => ({
+  resizeGesturePreviewBlob: vi.fn(async (blob: Blob) => blob),
 }));
 
 vi.mock('./gestureDriveImageLoad', () => ({

@@ -43,6 +43,20 @@ Use `aria-live="polite"` and `aria-busy` on the status region (`CollectionUpload
 7. On success: clear upload fields + delete manifest rows
 8. On error: set `uploadStatus: 'incomplete'`
 
+### 2b. Network resilience (active upload session)
+
+Brief Wi‑Fi drops should **not** end the whole job while the tab still holds the picked `File` list in memory.
+
+| Behavior         | Implementation                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- |
+| Per-file retry   | `gestureUploadNetwork.ts` — quick retries when online, then wait for `online` (up to 15 min per stall)     |
+| UI               | `waiting` phase — “Waiting for internet… 47 of 240” with progress bar held                                 |
+| Paused queue     | Multi-folder jobs stay queued; `online` event re-runs `drainQueue`                                         |
+| Resume same pack | `findResumablePackForUploadJob` — reconnect resumes incomplete pack instead of creating a duplicate folder |
+| After tab close  | Still use **Continue upload** (manifest + folder re-pick) — see §3                                         |
+
+Non-transient errors (auth, quota) still stop and surface Collections recovery.
+
 ### 3. Interrupted upload recovery (Tier 1)
 
 Upload recovery uses **two local layers** that must stay aligned:
@@ -136,22 +150,38 @@ Incomplete upload packs must not be treated as ready for practice until resolved
 ## What we deliberately do not do (yet)
 
 - **Persisted directory handles** (`showDirectoryPicker` + IndexedDB handle) for one-click continue without re-pick.
-- **Local blob cache** of photos before upload (quota / duplication).
+- **Local blob staging** of full photo bytes in IndexedDB before upload (quota-heavy; see phased plan below).
 - **Background upload** via service worker.
+
+### Future: IndexedDB staging and background upload
+
+| Phase                     | Status                    | Notes                                                                                                                                                                             |
+| ------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A — Directory handles** | **Shipped**               | `uploadDirectoryHandles` in Dexie; **Upload folders…** persists handle per pack; **Continue upload** re-reads without re-pick when permission granted                             |
+| **B — Blob staging**      | **Shipped (quota-gated)** | `uploadStagingBlobs` — lazy per-file stage before upload, delete after Drive confirms; only when `navigator.storage.estimate` headroom fits pending bytes and no directory handle |
+| **C — Service worker**    | Deferred                  | Background Sync / off-tab continuation (limited browser support)                                                                                                                  |
+
+Drag-drop and **Upload folder** use blob staging when quota allows; otherwise stream from memory for the active session only (manifest + **Continue upload** folder re-pick after refresh).
 
 ## Key files
 
-| File                                     | Role                                                           |
-| ---------------------------------------- | -------------------------------------------------------------- |
-| `hooks/useGestureCollectionUpload.ts`    | Phase machine + `continueUploadForPack` + `uploadPhotosToPack` |
-| `hooks/usePackCollectionDrop.ts`         | Per-collection card drop target                                |
-| `drive/gestureUploadManifest.ts`         | Manifest build + resume matching                               |
-| `drive/gestureUploadDuplicateFilter.ts`  | MD5 pre-upload duplicate skip                                  |
-| `drive/addPhotosToExistingPack.ts`       | Add photos to linked Drive folder                              |
-| `shared/drive/computeFileMd5Hex.ts`      | Local MD5 for Drive checksum match                             |
-| `drive/gesturePackUpload.ts`             | Per-file upload loop + manifest updates                        |
-| `drive/resumePackUpload.ts`              | Continue after re-pick                                         |
-| `drive/gestureDeleteCollection.ts`       | App-only vs Drive trash delete                                 |
-| `drive/gestureMergeCollections.ts`       | Merge two packs into one (subfolder on Drive)                  |
-| `components/InterruptedUploadBanner.tsx` | Recovery UI                                                    |
-| `components/DeleteCollectionDialog.tsx`  | Remove collection options                                      |
+| File                                     | Role                                                             |
+| ---------------------------------------- | ---------------------------------------------------------------- |
+| `hooks/useGestureCollectionUpload.ts`    | Phase machine + `continueUploadForPack` + `uploadPhotosToPack`   |
+| `hooks/usePackCollectionDrop.ts`         | Per-collection card drop target                                  |
+| `drive/gestureUploadManifest.ts`         | Manifest build + resume matching                                 |
+| `drive/gestureUploadDuplicateFilter.ts`  | MD5 pre-upload duplicate skip                                    |
+| `drive/addPhotosToExistingPack.ts`       | Add photos to linked Drive folder                                |
+| `shared/drive/computeFileMd5Hex.ts`      | Local MD5 for Drive checksum match                               |
+| `drive/gesturePackUpload.ts`             | Per-file upload loop + manifest updates                          |
+| `drive/gestureUploadNetwork.ts`          | Transient error detection + wait-for-online retry                |
+| `drive/gestureUploadResume.ts`           | Match queued jobs to incomplete packs; load handle/staging files |
+| `drive/gestureUploadDirectoryHandle.ts`  | Persist `showDirectoryPicker` handles per pack                   |
+| `drive/gestureUploadStaging.ts`          | Quota-gated per-file blob staging + delete-on-upload             |
+| `drive/gestureUploadStorageQuota.ts`     | `navigator.storage.estimate` headroom for staging                |
+| `drive/gestureUploadRecovery.ts`         | Clear manifest + handle + staging on completion/delete           |
+| `drive/resumePackUpload.ts`              | Continue after re-pick                                           |
+| `drive/gestureDeleteCollection.ts`       | App-only vs Drive trash delete                                   |
+| `drive/gestureMergeCollections.ts`       | Merge two packs into one (subfolder on Drive)                    |
+| `components/InterruptedUploadBanner.tsx` | Recovery UI                                                      |
+| `components/DeleteCollectionDialog.tsx`  | Remove collection options                                        |

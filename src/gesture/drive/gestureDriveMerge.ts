@@ -1,13 +1,21 @@
 import type { GestureDrawRecord, GesturePack, GesturePackFile, GestureSyncPayload } from '../types';
 import { stripEphemeralUploadFields } from './gestureUploadEphemeral';
 
+export type GestureDriveMergeOptions = {
+  tombstonedFolderIds?: ReadonlySet<string>;
+  tombstonedFileIds?: ReadonlySet<string>;
+};
+
 export type GestureDriveMergeReport = {
   packsMerged: number;
   packsFromRemoteOnly: number;
+  packsSkippedTombstone: number;
   packFilesMerged: number;
   packFilesFromRemoteOnly: number;
+  packFilesSkippedTombstone: number;
   historyMerged: number;
   historyFromRemoteOnly: number;
+  historySkippedTombstone: number;
 };
 
 function mergeDrawRecord(local: GestureDrawRecord, remote: GestureDrawRecord): GestureDrawRecord {
@@ -49,7 +57,8 @@ function mergePackFiles(
   remote: GesturePackFile[],
   mergedPacks: GesturePack[],
   remotePacks: GesturePack[],
-): { rows: GesturePackFile[]; merged: number; fromRemoteOnly: number } {
+  tombstonedFileIds: ReadonlySet<string>,
+): { rows: GesturePackFile[]; merged: number; fromRemoteOnly: number; skippedTombstone: number } {
   const folderToMergedId = new Map(mergedPacks.map((p) => [p.driveFolderId, p.id]));
   const remotePackIdToFolder = new Map(remotePacks.map((p) => [p.id, p.driveFolderId]));
   const mergedPackIds = new Set(mergedPacks.map((p) => p.id));
@@ -57,13 +66,22 @@ function mergePackFiles(
   const byFileId = new Map<string, GesturePackFile>();
   let merged = 0;
   let fromRemoteOnly = 0;
+  let skippedTombstone = 0;
 
   for (const file of local) {
     if (!mergedPackIds.has(file.packId)) continue;
+    if (tombstonedFileIds.has(file.driveFileId)) {
+      skippedTombstone += 1;
+      continue;
+    }
     byFileId.set(file.driveFileId, file);
   }
 
   for (const file of remote) {
+    if (tombstonedFileIds.has(file.driveFileId)) {
+      skippedTombstone += 1;
+      continue;
+    }
     const folderId = remotePackIdToFolder.get(file.packId);
     if (!folderId) continue;
     const mergedPackId = folderToMergedId.get(folderId);
@@ -80,32 +98,56 @@ function mergePackFiles(
     }
   }
 
-  return { rows: [...byFileId.values()], merged, fromRemoteOnly };
+  return { rows: [...byFileId.values()], merged, fromRemoteOnly, skippedTombstone };
 }
 
 export function mergeGestureSyncPayload(
   local: GestureSyncPayload,
   remote: GestureSyncPayload | null,
+  options?: GestureDriveMergeOptions,
 ): { payload: GestureSyncPayload; report: GestureDriveMergeReport } {
+  const tombstonedFolderIds = options?.tombstonedFolderIds ?? new Set<string>();
+  const tombstonedFileIds = options?.tombstonedFileIds ?? new Set<string>();
+
   if (!remote) {
+    const packs = local.packs.filter((p) => !tombstonedFolderIds.has(p.driveFolderId));
+    const validPackIds = new Set(packs.map((p) => p.id));
+    const packFiles = local.packFiles.filter(
+      (f) => validPackIds.has(f.packId) && !tombstonedFileIds.has(f.driveFileId),
+    );
+    const drawHistory = local.drawHistory.filter((h) => !tombstonedFileIds.has(h.driveFileId));
     return {
-      payload: local,
+      payload: { packs, packFiles, drawHistory },
       report: {
         packsMerged: 0,
         packsFromRemoteOnly: 0,
+        packsSkippedTombstone: local.packs.length - packs.length,
         packFilesMerged: 0,
         packFilesFromRemoteOnly: 0,
+        packFilesSkippedTombstone: local.packFiles.length - packFiles.length,
         historyMerged: 0,
         historyFromRemoteOnly: 0,
+        historySkippedTombstone: local.drawHistory.length - drawHistory.length,
       },
     };
   }
 
   const packByFolder = new Map<string, GesturePack>();
-  for (const p of local.packs) packByFolder.set(p.driveFolderId, p);
+  let packsSkippedTombstone = 0;
+  for (const p of local.packs) {
+    if (tombstonedFolderIds.has(p.driveFolderId)) {
+      packsSkippedTombstone += 1;
+      continue;
+    }
+    packByFolder.set(p.driveFolderId, p);
+  }
   let packsMerged = 0;
   let packsFromRemoteOnly = 0;
   for (const remotePack of remote.packs) {
+    if (tombstonedFolderIds.has(remotePack.driveFolderId)) {
+      packsSkippedTombstone += 1;
+      continue;
+    }
     const localPack = packByFolder.get(remotePack.driveFolderId);
     if (localPack) {
       packByFolder.set(remotePack.driveFolderId, mergePack(localPack, remotePack));
@@ -117,13 +159,30 @@ export function mergeGestureSyncPayload(
   }
   const mergedPacks = [...packByFolder.values()];
 
-  const packFileMerge = mergePackFiles(local.packFiles, remote.packFiles, mergedPacks, remote.packs);
+  const packFileMerge = mergePackFiles(
+    local.packFiles,
+    remote.packFiles,
+    mergedPacks,
+    remote.packs,
+    tombstonedFileIds,
+  );
 
   const historyByFile = new Map<string, GestureDrawRecord>();
-  for (const h of local.drawHistory) historyByFile.set(h.driveFileId, h);
+  let historySkippedTombstone = 0;
+  for (const h of local.drawHistory) {
+    if (tombstonedFileIds.has(h.driveFileId)) {
+      historySkippedTombstone += 1;
+      continue;
+    }
+    historyByFile.set(h.driveFileId, h);
+  }
   let historyMerged = 0;
   let historyFromRemoteOnly = 0;
   for (const remoteRow of remote.drawHistory) {
+    if (tombstonedFileIds.has(remoteRow.driveFileId)) {
+      historySkippedTombstone += 1;
+      continue;
+    }
     const localRow = historyByFile.get(remoteRow.driveFileId);
     if (localRow) {
       historyByFile.set(remoteRow.driveFileId, mergeDrawRecord(localRow, remoteRow));
@@ -143,10 +202,13 @@ export function mergeGestureSyncPayload(
     report: {
       packsMerged,
       packsFromRemoteOnly,
+      packsSkippedTombstone,
       packFilesMerged: packFileMerge.merged,
       packFilesFromRemoteOnly: packFileMerge.fromRemoteOnly,
+      packFilesSkippedTombstone: packFileMerge.skippedTombstone,
       historyMerged,
       historyFromRemoteOnly,
+      historySkippedTombstone,
     },
   };
 }

@@ -33,6 +33,25 @@ export async function seedGestureE2ePreviewFixtures(): Promise<number> {
   return gestureDb.packFiles.where('packId').equals(packId).count();
 }
 
+const GESTURE_E2E_SCROLL_PACK_COUNT = 20;
+
+/** Extra packs for scroll perf smoke — lightweight rows (cover ids only, no packFiles). */
+export async function seedGestureE2eScrollGridFixtures(): Promise<number> {
+  await seedGestureE2ePreviewFixtures();
+  const now = '2026-01-01T00:00:00.000Z';
+  const scrollPacks = Array.from({ length: GESTURE_E2E_SCROLL_PACK_COUNT }, (_, index) => ({
+    id: `e2e-scroll-pack-${index}`,
+    driveFolderId: `e2e-scroll-folder-${index}`,
+    name: `E2E Scroll Pack ${index + 1}`,
+    linkedAt: now,
+    lastIndexedAt: now,
+    coverFileIds: [GESTURE_E2E_COVER_IDS[0], GESTURE_E2E_COVER_IDS[1]],
+  }));
+  await gestureDb.packs.bulkPut(scrollPacks);
+  notifyGestureLocalChange({ immediate: true });
+  return scrollPacks.length + 1;
+}
+
 declare global {
   interface Window {
     __gestureE2eSeedPreviewFixtures?: () => Promise<number>;

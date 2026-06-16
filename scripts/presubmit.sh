@@ -34,4 +34,7 @@ npm run typecheck
 echo "== presubmit: test:fast =="
 npm run test:fast
 
+echo "== presubmit: css parse (when *.css changed) =="
+node scripts/presubmit-css-if-needed.mjs
+
 echo "presubmit: all checks passed"

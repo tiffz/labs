@@ -30,6 +30,15 @@ vi.mock('./gestureDriveImageLoad', () => ({
   })),
 }));
 
+vi.mock('./gestureMediaCache', () => ({
+  getCachedGestureMediaObjectUrl: vi.fn(async () => null),
+  putCachedGestureMediaBlob: vi.fn(async (_id, _kind, blob) => URL.createObjectURL(blob)),
+}));
+
+vi.mock('./gesturePreviewBlobResize', () => ({
+  resizeGesturePreviewBlob: vi.fn(async (blob: Blob) => blob),
+}));
+
 describe('gesturePreviewImageUrl', () => {
   beforeEach(async () => {
     if (!URL.createObjectURL) {
@@ -66,12 +75,16 @@ describe('gesturePreviewImageUrl', () => {
     expect(peekGesturePreviewUrl('file-b')).toContain('file-b');
   });
 
-  it('pins a display blob when tier resolution only yields alt=media', async () => {
+  it('pins a downscaled display blob when tier resolution only yields alt=media', async () => {
     const mediaFetch = await import('./gestureMediaPolicy');
+    const mediaCache = await import('./gestureMediaCache');
+    const resize = await import('./gesturePreviewBlobResize');
     vi.mocked(mediaFetch.resolveGesturePreviewTierUrl).mockResolvedValueOnce('blob:cached-preview');
 
     const url = await resolveGesturePreviewImageUrl('token', 'file-blob');
     expect(url).toBe('blob:display-pin-test');
+    expect(resize.resizeGesturePreviewBlob).toHaveBeenCalled();
+    expect(mediaCache.putCachedGestureMediaBlob).toHaveBeenCalled();
     expect(peekGesturePreviewUrl('file-blob')).toBe(url);
   });
 

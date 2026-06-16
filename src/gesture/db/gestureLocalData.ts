@@ -17,10 +17,14 @@ export async function applyGestureMergedPayload(payload: GestureSyncPayload): Pr
 
   await gestureDb.transaction(
     'rw',
-    gestureDb.packs,
-    gestureDb.packFiles,
-    gestureDb.drawHistory,
-    gestureDb.uploadManifestFiles,
+    [
+      gestureDb.packs,
+      gestureDb.packFiles,
+      gestureDb.drawHistory,
+      gestureDb.uploadManifestFiles,
+      gestureDb.uploadStagingBlobs,
+      gestureDb.uploadDirectoryHandles,
+    ],
     async () => {
       // Keep a local photo index when Drive merge did not include one (legacy backup or race).
       if (packFiles.length === 0 && payload.packs.length > 0) {
@@ -34,6 +38,20 @@ export async function applyGestureMergedPayload(payload: GestureSyncPayload): Pr
         .toArray();
       if (orphanManifest.length > 0) {
         await gestureDb.uploadManifestFiles.bulkDelete(orphanManifest.map((row) => row.id));
+      }
+
+      const orphanStaging = await gestureDb.uploadStagingBlobs
+        .filter((row) => !validPackIds.has(row.packId))
+        .toArray();
+      if (orphanStaging.length > 0) {
+        await gestureDb.uploadStagingBlobs.bulkDelete(orphanStaging.map((row) => row.id));
+      }
+
+      const orphanHandles = await gestureDb.uploadDirectoryHandles
+        .filter((row) => !validPackIds.has(row.packId))
+        .toArray();
+      if (orphanHandles.length > 0) {
+        await gestureDb.uploadDirectoryHandles.bulkDelete(orphanHandles.map((row) => row.packId));
       }
 
       await gestureDb.packs.clear();

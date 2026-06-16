@@ -1342,9 +1342,7 @@ html:has(.gesture-app) {
   object-fit: cover;
   display: block;
   opacity: 0;
-  transition:
-    opacity 220ms var(--gesture-ease-out),
-    transform 520ms var(--gesture-ease-out);
+  transition: opacity 80ms var(--gesture-ease-out);
 }
 
 .gesture-preview-image.is-visible {
@@ -1352,9 +1350,11 @@ html:has(.gesture-app) {
 }
 
 .gesture-collection-card--selectable:hover:not(.is-disabled)
-  .gesture-preview-image.is-visible,
-.gesture-collection-card:hover .gesture-preview-image.is-visible {
+  .gesture-preview-image.is-visible {
   transform: scale(1.04);
+  transition:
+    opacity 80ms var(--gesture-ease-out),
+    transform 220ms var(--gesture-ease-out);
 }
 
 .gesture-preview-placeholder {

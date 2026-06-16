@@ -1,5 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { buildGestureDriveEnvelope } from './gestureDriveEnvelope';
+import {
+  addGestureDriveFolderTombstone,
+  clearAllGestureDriveTombstonesForTesting,
+} from './gestureDriveTombstones';
+
+afterEach(() => {
+  clearAllGestureDriveTombstonesForTesting();
+});
 
 describe('buildGestureDriveEnvelope', () => {
   it('omits ephemeral upload fields from progress.json', () => {
@@ -23,5 +31,11 @@ describe('buildGestureDriveEnvelope', () => {
     expect(envelope.packs[0]?.uploadStatus).toBeUndefined();
     expect(envelope.packs[0]?.expectedFileCount).toBeUndefined();
     expect(envelope.packs[0]?.name).toBe('Cats');
+  });
+
+  it('includes deletion tombstones when present locally', () => {
+    addGestureDriveFolderTombstone('folder-deleted');
+    const envelope = buildGestureDriveEnvelope({ packs: [], packFiles: [], drawHistory: [] });
+    expect(envelope.deletedDriveFolderIds?.map((t) => t.folderId)).toEqual(['folder-deleted']);
   });
 });

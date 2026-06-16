@@ -6,13 +6,13 @@ Canonical tier policy: [`src/gesture/media/gestureMediaPolicy.ts`](../../src/ges
 
 ## Symptom → root cause
 
-| User-visible symptom                        | Root cause class             | Typical mistake                                                                            |
-| ------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------ |
-| Chrome “Aw, Snap!” (Error 5)                | `revoked-blob-display`       | Hundreds of parallel blob loads + LRU eviction while `<img>` still references revoked URLs |
-| Thumbnails flash then go blank              | `revoked-blob-display`       | Preview grid shows `gestureMediaCache` blob URLs that LRU revokes                          |
-| Console wall of `blob:… ERR_FILE_NOT_FOUND` | `revoked-blob-display`       | Eviction listener retriggers fetch/hydrate loop                                            |
-| Thumbnails never load                       | `test gap` + `wrong-io-tier` | Fetch gated on viewport observer; IDB hydrate returns blobs that fail before network runs  |
-| Slow collection grid                        | `wrong-io-tier`              | Preview tier starts with full-file `alt=media` instead of thumbnail https                  |
+| User-visible symptom                        | Root cause class                     | Typical mistake                                                                               |
+| ------------------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------- |
+| Chrome “Aw, Snap!” (Error 5)                | `revoked-blob-display`               | Hundreds of parallel blob loads + LRU eviction while `<img>` still references revoked URLs    |
+| Thumbnails flash then go blank              | `revoked-blob-display`               | Preview grid shows `gestureMediaCache` blob URLs that LRU revokes                             |
+| Console wall of `blob:… ERR_FILE_NOT_FOUND` | `revoked-blob-display`               | Eviction listener retriggers fetch/hydrate loop                                               |
+| Thumbnails never load                       | `test gap` + `wrong-io-tier`         | Fetch gated on viewport observer; IDB hydrate returns blobs that fail before network runs     |
+| Slow collection grid / scroll blanking      | `main-thread-jank` + `wrong-io-tier` | All strips fetch eagerly; `content-visibility` skips paint; opacity-0 until every thumb loads |
 
 ## Invariants (non-negotiable)
 
@@ -21,7 +21,8 @@ Canonical tier policy: [`src/gesture/media/gestureMediaPolicy.ts`](../../src/ges
 3. **Blob owner** — `gestureMediaCache` for session/offline bytes; preview pins for grid fallback only.
 4. **No eviction refetch loop** — LRU eviction in `gestureMediaCache` must not subscribe preview UI hooks to re-hydrate/re-fetch en masse.
 5. **Preview I/O tier** — thumbnail https before `alt=media`; cap concurrent preview resolves (see `gesturePreviewImageUrl.ts`).
-6. **Tab-active fetch** — when Collections/Practice tab is active, preview strips fetch without waiting for intersection observer alone (`previewFetchEnabled`).
+6. **Tab-active fetch** — active tab enables the preview pipeline (`previewFetchEnabled`); **viewport intersection** (`useNearViewport`) selects which strips may hit the network. Cache hits still render when off-screen.
+7. **Resolve priority** — visible strip ids resolve first (`gesturePreviewResolvePriority.ts`); pinned blob revoke is delayed ~45s on scroll-away so scroll-back stays warm.
 
 Indexed in [`docs/AGENT_INVARIANTS.md`](AGENT_INVARIANTS.md).
 

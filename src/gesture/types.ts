@@ -27,7 +27,13 @@ export type GesturePack = {
   tags?: string[];
 };
 
-export type GestureUploadPhase = 'scanning' | 'checking' | 'preparing' | 'uploading' | 'finishing';
+export type GestureUploadPhase =
+  | 'scanning'
+  | 'checking'
+  | 'preparing'
+  | 'uploading'
+  | 'waiting'
+  | 'finishing';
 
 /** Live upload feedback — shown from the first drop / picker action through completion. */
 export type GestureUploadActivity = {
@@ -132,4 +138,23 @@ export type GestureUploadManifestFile = {
   lastModified: number;
   status: GestureUploadManifestStatus;
   driveFileId?: string;
+};
+
+/** Staged photo bytes for resume-without-re-pick (deleted after each Drive upload). */
+export type GestureUploadStagingBlobRow = {
+  id: string;
+  packId: string;
+  relativePath: string;
+  blob: Blob;
+  mimeType: string;
+  byteSize: number;
+  lastModified: number;
+  savedAt: number;
+};
+
+export type GestureUploadDirectoryHandleRow = {
+  packId: string;
+  folderName: string;
+  handle: FileSystemDirectoryHandle;
+  savedAt: number;
 };

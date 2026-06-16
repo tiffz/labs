@@ -16,7 +16,6 @@ import {
   gestureGoogleClientConfigured,
   useGestureDriveBackup,
 } from '../hooks/useGestureDriveBackup';
-import { useGestureAutoReindex } from '../hooks/useGestureAutoReindex';
 
 export type GestureDriveBackupContextValue = {
   googleClientConfigured: boolean;
@@ -41,8 +40,6 @@ export function GestureDriveBackupProvider({ children }: { children: ReactNode }
   }, []);
 
   const backup = useGestureDriveBackup({ onMergePayload });
-
-  useGestureAutoReindex(gestureGoogleClientConfigured());
 
   const allowlistEmpty = getLabsDriveBackupRestrictionHashesFromEnv().size === 0;
 

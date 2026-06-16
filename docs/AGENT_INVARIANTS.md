@@ -40,7 +40,9 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 | ------------------------------------------------------- | ----------------------------------------------------------- |
 | Zero ESLint **warnings** on touched files               | `pre-commit-checks.mdc`                                     |
 | Presubmit before done                                   | `npm run presubmit`                                         |
+| Presubmit + e2e smoke before **push**                   | `npm run presubmit:push` (or `LABS_PRESUBMIT_PUSH=1` hook)  |
 | Shell / provider / route changes → `npm run build`      | `pre-commit-checks.mdc`                                     |
+| CSS changes → vite build (PostCSS parse)                | `scripts/presubmit-css-if-needed.mjs` in presubmit          |
 | New user-visible route → smoke spec                     | [`docs/E2E_SMOKE_CONVENTIONS.md`](E2E_SMOKE_CONVENTIONS.md) |
 | Layout padding/contrast on Encore/Gesture home surfaces | `layout-heuristics-*.spec.ts`                               |
 | HMR is not proof — hard-refresh affected routes         | `pre-commit-checks.mdc`                                     |

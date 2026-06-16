@@ -11,8 +11,11 @@ import {
   scaleDriveThumbnailUrl,
 } from './gestureReferenceImageUrl';
 
-/** Small thumbs for collection cards — keep bytes low for fast paint. */
+/** Default preview width for 4-up strips and session-adjacent surfaces. */
 export const GESTURE_PREVIEW_THUMB_WIDTH = 320;
+
+/** 2-up compact manage cards (~88px per cell at 1x; 160px covers 2× retina). */
+export const GESTURE_COMPACT_PREVIEW_THUMB_WIDTH = 160;
 
 /**
  * Canonical resolution order per tier. See `src/gesture/AGENTS.md` § Media tiers.

@@ -14,10 +14,10 @@ Nested **`AGENTS.md`** for Gesture. Root policy: [`../../AGENTS.md`](../../AGENT
 ## Architecture
 
 - **Local:** Dexie (`gestureDb`) — packs, packFiles (metadata only), drawHistory, syncMeta, upload manifest, **mediaCache** (preview/session JPEG blobs).
-- **Cloud:** `Tiff Zhang Labs/Gesture/progress.json` — packs, **packFiles** (photo index metadata), and drawHistory (no image bytes).
+- **Cloud:** `Tiff Zhang Labs/Gesture/progress.json` — packs, **packFiles** (photo index metadata), drawHistory, and **deletion tombstones** (`deletedDriveFolderIds` / `deletedDriveFileIds`) so removed collections do not resurrect on sync.
 - **Upload layout:** `Tiff Zhang Labs/Gesture/Reference Packs/{collection name}/` — app-created folders via `drive.file`.
 - **Phases:** home (Practice / Collections tabs) → zen session → debrief (`App.tsx`). Tab deep links: `#/practice`, `#/collections` via [`routes/gestureAppHash.ts`](routes/gestureAppHash.ts).
-- **Pack stats:** `useGesturePackStats` — counts, cover ids (max 4), drawn sets; cards prefer synced `pack.coverFileIds`.
+- **Pack stats:** `GesturePackStatsProvider` / `useGesturePackStats` — counts, cover ids (max 4), drawn sets; cursor aggregate + debounce; cards prefer synced `pack.coverFileIds`.
 - **Live queries:** `useGesturePacks()` exposes `packsHydrated`; never show empty collections while Dexie is still loading (`resolveDexieLiveQuery`, rule `dexie-live-query-empty-states.mdc`).
 - **Folder drop:** entire Collections tab accepts drops (`useGestureCollectionDrop`); traverse folders via `readDataTransferEntryFiles` (not `dataTransfer.files` alone).
 
@@ -25,10 +25,10 @@ Nested **`AGENTS.md`** for Gesture. Root policy: [`../../AGENTS.md`](../../AGENT
 
 Canonical module: [`media/gestureMediaPolicy.ts`](media/gestureMediaPolicy.ts). Rule: `.cursor/rules/gesture-media-tiers.mdc`.
 
-| Tier        | Use                                  | Resolution order                                                           | Never                                                          |
-| ----------- | ------------------------------------ | -------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| **Preview** | Collection card 4-up strips (~320px) | **https thumbnail only in `<img>`** — resolve via `gesturePreviewImageUrl` | `blob:` object URLs in card grids; full-file `alt=media` first |
-| **Session** | Zen drawing (1280–1920px)            | prefetch LRU → IDB → thumbnail `<img>` → alt=media blob                    | Bulk prefetch entire queue                                     |
+| Tier        | Use                                                               | Resolution order                                                                              | Never                                                              |
+| ----------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| **Preview** | Collection card 4-up strips (~320px network; compact 2-up ~192px) | **https thumbnail first** — preview IDB stores downscaled blobs (max 320px), never full files | `blob:` from stale LRU in card grids; full-file `alt=media` in IDB |
+| **Session** | Zen drawing (1280–1920px)                                         | prefetch LRU → IDB → thumbnail `<img>` → alt=media blob                                       | Bulk prefetch entire queue                                         |
 
 - **Blob URL owner:** `gestureMediaCache` only — session prefetch holds references; preview **display** is https-only ([`docs/GESTURE_MEDIA_STABILITY.md`](../../docs/GESTURE_MEDIA_STABILITY.md)).
 - **Display-ready:** `gestureSessionPhotoPipeline` — decode one photo at a time (head on Practice/debrief; current + next in zen).
@@ -56,3 +56,13 @@ Canonical module: [`media/gestureMediaPolicy.ts`](media/gestureMediaPolicy.ts). 
 - Stability playbook: [`docs/GESTURE_MEDIA_STABILITY.md`](../../docs/GESTURE_MEDIA_STABILITY.md)
 - Smoke: `/gesture/` in `e2e/routeRegistry.ts`; preview strip: `e2e/smoke/gesture-preview-strip.spec.ts` (dev-only `?e2eSeed=1` fixture — https `src`, no blob console errors)
 - Interaction: `e2e/smoke/gesture-practice-interaction.spec.ts` — CUJ-001 session controls latency (`src/gesture/CUJs.md`)
+- Layout: `e2e/smoke/layout-heuristics-gesture.spec.ts` — hash routes keep **both** tab panels mounted; assert collections via `aria-label`, not bare `.gesture-tab-panel`
+- **After changing:** preview strip count, tab mounting/hash routes, or collection card layout → `npm run test:e2e:scoped` (gesture) or `presubmit:push`
+
+## Performance (Collections / Practice grids)
+
+- **Shared stats:** `GesturePackStatsProvider` + `loadGesturePackStatsAggregate()` — one Dexie subscription, cursor aggregation, 280ms debounce, stable `Map` refs when unchanged.
+- **Scroll / thumbnails:** viewport-gated fetch (`previewFetchEnabled && near`); lazy `loading` on non-lead cells; priority resolve queue; delayed pin revoke on scroll-away.
+- **Large libraries:** CSS grid in `CollectionsCollectionGrid` (variable card height — no fixed-row virtualizer). Viewport-gated preview fetch via `useNearViewport` + shared `gestureNearViewportObserver`.
+- **Card memo:** stable handler maps in `CollectionsCollectionGrid` / `PracticeCollectionGrid` — do not inline `() => handler(id)` in `.map()` on large grids.
+- **Covers:** prefer synced `pack.coverFileIds`; avoid recomputing cover maps when pack row already has covers.

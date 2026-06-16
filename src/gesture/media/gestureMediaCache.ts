@@ -1,11 +1,15 @@
 import { gestureDb } from '../db/gestureDb';
 import type { GestureMediaCacheKind } from '../types';
+import { GESTURE_PREVIEW_THUMB_WIDTH } from './gestureMediaPolicy';
+import { resizeGesturePreviewBlob } from './gesturePreviewBlobResize';
 
 const MAX_PREVIEW_ENTRIES = 200;
 const MAX_SESSION_ENTRIES = 30;
 const MAX_TOTAL_BYTES = 50 * 1024 * 1024;
 const PREVIEW_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+/** Oversized legacy preview rows are dropped so they re-resolve as small thumbs. */
+const LEGACY_PREVIEW_BLOB_MAX_BYTES = 512_000;
 
 type MemoryEntry = {
   objectUrl: string;
@@ -159,6 +163,21 @@ export async function getCachedGestureMediaObjectUrl(
       if (row) await deleteIdbRow(row.id);
       return null;
     }
+    if (kind === 'preview' && row.blob.size > LEGACY_PREVIEW_BLOB_MAX_BYTES) {
+      const resized = await resizeGesturePreviewBlob(
+        row.blob,
+        GESTURE_PREVIEW_THUMB_WIDTH,
+        row.mimeType,
+      );
+      await gestureDb.mediaCache.put({
+        ...row,
+        blob: resized,
+        mimeType: 'image/jpeg',
+        width: GESTURE_PREVIEW_THUMB_WIDTH,
+      });
+      const objectUrl = putMemory(key, resized, row.fetchedAt);
+      return objectUrl;
+    }
 
     const objectUrl = putMemory(key, row.blob, row.fetchedAt);
     if (kind === 'session') warmGestureMediaBitmap(key);
@@ -181,17 +200,22 @@ export async function putCachedGestureMediaBlob(
   const key = cacheKey(driveFileId, kind);
   const fetchedAt = Date.now();
   const id = rowId(driveFileId, kind);
+  let storeBlob = blob;
+  if (kind === 'preview') {
+    const targetWidth = Math.min(width > 0 ? width : GESTURE_PREVIEW_THUMB_WIDTH, GESTURE_PREVIEW_THUMB_WIDTH);
+    storeBlob = await resizeGesturePreviewBlob(blob, targetWidth, mimeType);
+  }
   await gestureDb.mediaCache.put({
     id,
     driveFileId,
     kind,
-    blob,
-    width,
-    mimeType,
+    blob: storeBlob,
+    width: kind === 'preview' ? Math.min(width, GESTURE_PREVIEW_THUMB_WIDTH) : width,
+    mimeType: kind === 'preview' ? 'image/jpeg' : mimeType,
     fetchedAt,
   });
   await evictIdbIfNeeded(kind);
-  const objectUrl = putMemory(key, blob, fetchedAt);
+  const objectUrl = putMemory(key, storeBlob, fetchedAt);
   if (kind === 'session') warmGestureMediaBitmap(key);
   return objectUrl;
 }

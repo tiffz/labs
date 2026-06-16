@@ -41,6 +41,7 @@ import {
   formatGestureDriveMergeReport,
   mergeGestureSyncPayload,
 } from '../drive/gestureDriveMerge';
+import { prepareGestureDriveMerge } from '../drive/prepareGestureDriveMerge';
 import { reindexGesturePacksMissingPhotos } from '../drive/gesturePackIndex';
 import { reconcileStaleGestureUploadPacks } from '../drive/reconcileStaleGestureUploadPacks';
 import { readGestureDriveAccessToken } from '../drive/readGestureDriveAccessToken';
@@ -255,7 +256,12 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
       }
       setLatestRemoteEnvelope(remoteEnvelope);
       await snapshotBeforeMerge('pre-pull');
-      const { payload: merged, report } = mergeGestureSyncPayload(local, envelopeToPayload(remoteEnvelope));
+      const mergeOptions = prepareGestureDriveMerge(remoteEnvelope);
+      const { payload: merged, report } = mergeGestureSyncPayload(
+        local,
+        envelopeToPayload(remoteEnvelope),
+        mergeOptions,
+      );
       const reportText = formatGestureDriveMergeReport(report);
       await applyMerged(
         merged,
@@ -363,9 +369,11 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
     try {
       await snapshotBeforeMerge('pre-merge');
       const local = await readGestureLocalPayload();
+      const mergeOptions = prepareGestureDriveMerge(conflict.remoteEnvelope);
       const { payload: merged, report } = mergeGestureSyncPayload(
         local,
         envelopeToPayload(conflict.remoteEnvelope),
+        mergeOptions,
       );
       const token = await ensureLabsGoogleAccessTokenForDrive();
       await applyMerged(
@@ -390,7 +398,12 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
         await snapshotBeforeMerge('pre-restore');
         const env = parseGestureSnapshotEnvelope(snap);
         const local = await readGestureLocalPayload();
-        const { payload: merged, report } = mergeGestureSyncPayload(local, envelopeToPayload(env));
+        const mergeOptions = prepareGestureDriveMerge(env);
+        const { payload: merged, report } = mergeGestureSyncPayload(
+          local,
+          envelopeToPayload(env),
+          mergeOptions,
+        );
         const token = await ensureLabsGoogleAccessTokenForDrive();
         await applyMerged(
           merged,

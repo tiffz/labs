@@ -6,8 +6,11 @@ import {
   peekGesturePreviewUrl,
   resolveGesturePreviewImageUrl,
 } from '../media/gesturePreviewImageUrl';
+import { GESTURE_COMPACT_PREVIEW_THUMB_WIDTH } from '../media/gestureMediaPolicy';
 
 const WARMUP_CONCURRENCY = 6;
+/** Cap idle warmup so large libraries defer to viewport-gated card fetches. */
+const WARMUP_MAX_FILE_IDS = 24;
 
 function scheduleIdle(task: () => void): void {
   if (typeof requestIdleCallback === 'function') {
@@ -18,7 +21,9 @@ function scheduleIdle(task: () => void): void {
 }
 
 async function runWarmupQueue(fileIds: string[], accessToken: string | null): Promise<void> {
-  const pending = fileIds.filter((id) => !peekGesturePreviewUrl(id));
+  const pending = fileIds.filter(
+    (id) => !peekGesturePreviewUrl(id, GESTURE_COMPACT_PREVIEW_THUMB_WIDTH),
+  );
   if (pending.length === 0) return;
 
   let index = 0;
@@ -28,7 +33,11 @@ async function runWarmupQueue(fileIds: string[], accessToken: string | null): Pr
       index += 1;
       if (!fileId) continue;
       try {
-        await resolveGesturePreviewImageUrl(accessToken, fileId);
+        await resolveGesturePreviewImageUrl(
+          accessToken,
+          fileId,
+          GESTURE_COMPACT_PREVIEW_THUMB_WIDTH,
+        );
       } catch {
         /* best-effort */
       }
@@ -38,8 +47,8 @@ async function runWarmupQueue(fileIds: string[], accessToken: string | null): Pr
   await Promise.all(Array.from({ length: WARMUP_CONCURRENCY }, () => worker()));
 }
 
-/** Background preview warmup for collection cover thumbnails after Dexie hydrates. */
-export function useGestureMediaWarmup(): void {
+/** Background preview warmup for collection cover thumbnails (Collections tab only). */
+export function useGestureMediaWarmup(enabled = true): void {
   const { packs, packsHydrated } = useGesturePacks();
   const { coverIds } = useGesturePackStats();
   const runIdRef = useRef(0);
@@ -47,15 +56,21 @@ export function useGestureMediaWarmup(): void {
   const coverFileIds = useMemo(() => {
     const ids = new Set<string>();
     for (const pack of packs) {
+      if (pack.coverFileIds?.length) {
+        for (const id of pack.coverFileIds.slice(0, 4)) {
+          if (id) ids.add(id);
+        }
+        continue;
+      }
       for (const id of resolveGesturePackCoverFileIds(pack, coverIds)) {
         if (id) ids.add(id);
       }
     }
-    return [...ids];
+    return [...ids].slice(0, WARMUP_MAX_FILE_IDS);
   }, [coverIds, packs]);
 
   useEffect(() => {
-    if (!packsHydrated || coverFileIds.length === 0) return;
+    if (!enabled || !packsHydrated || coverFileIds.length === 0) return;
     const runId = runIdRef.current + 1;
     runIdRef.current = runId;
     let cancelled = false;
@@ -71,5 +86,5 @@ export function useGestureMediaWarmup(): void {
     return () => {
       cancelled = true;
     };
-  }, [coverFileIds, packsHydrated]);
+  }, [coverFileIds, enabled, packsHydrated]);
 }

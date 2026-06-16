@@ -1,0 +1,148 @@
+import { memo, useMemo } from 'react';
+import PackCollectionCard from './PackCollectionCard';
+import type { GestureCollectionUploadHandle } from '../hooks/useGestureCollectionUpload';
+import { resolveGesturePackCoverFileIds } from '../hooks/useGesturePackStats';
+import type { GesturePack } from '../types';
+import type { GesturePackStats } from '../hooks/useGesturePackStatsTypes';
+
+type CollectionsCollectionGridProps = {
+  visiblePacks: GesturePack[];
+  stats: GesturePackStats;
+  allTags: string[];
+  upload: GestureCollectionUploadHandle;
+  mergeMode: boolean;
+  mergeSelection: string[];
+  interactionDisabled: boolean;
+  previewFetchEnabled: boolean;
+  onToggleMergeSelect: (packId: string) => void;
+  onRefresh: (pack: GesturePack) => void;
+  onDelete: (pack: GesturePack) => void;
+  onRenamed: (pack: GesturePack) => void;
+  onUpdated: () => void;
+  onError: (message: string) => void;
+};
+
+function CollectionGridCard({
+  pack,
+  stats,
+  allTags,
+  upload,
+  mergeMode,
+  mergeSelected,
+  interactionDisabled,
+  previewFetchEnabled,
+  onToggleMergeSelect,
+  onRefresh,
+  onDelete,
+  onRenamed,
+  onUpdated,
+  onError,
+}: {
+  pack: GesturePack;
+  stats: GesturePackStats;
+  allTags: string[];
+  upload: GestureCollectionUploadHandle;
+  mergeMode: boolean;
+  mergeSelected: boolean;
+  interactionDisabled: boolean;
+  previewFetchEnabled: boolean;
+  onToggleMergeSelect?: () => void;
+  onRefresh?: () => void;
+  onDelete?: () => void;
+  onRenamed: (pack: GesturePack) => void;
+  onUpdated: () => void;
+  onError: (message: string) => void;
+}): React.ReactElement {
+  const photoCount = stats.counts.get(pack.id) ?? 0;
+  const fileIds = resolveGesturePackCoverFileIds(pack, stats.coverIds);
+  return (
+    <PackCollectionCard
+      pack={pack}
+      driveFileIds={fileIds}
+      photoCount={photoCount}
+      drawnCount={stats.drawnSets.get(pack.id)?.size ?? 0}
+      mode="manage"
+      disabled={interactionDisabled}
+      allTags={allTags}
+      upload={upload}
+      dropEnabled={!mergeMode}
+      compactManage
+      mergeMode={mergeMode}
+      mergeSelected={mergeSelected}
+      onToggleMergeSelect={onToggleMergeSelect}
+      onRefresh={onRefresh}
+      onDelete={onDelete}
+      onRenamed={onRenamed}
+      onUpdated={onUpdated}
+      onError={onError}
+      previewFetchEnabled={previewFetchEnabled}
+    />
+  );
+}
+
+const CollectionsCollectionGrid = memo(function CollectionsCollectionGrid({
+  visiblePacks,
+  stats,
+  allTags,
+  upload,
+  mergeMode,
+  mergeSelection,
+  interactionDisabled,
+  previewFetchEnabled,
+  onToggleMergeSelect,
+  onRefresh,
+  onDelete,
+  onRenamed,
+  onUpdated,
+  onError,
+}: CollectionsCollectionGridProps): React.ReactElement {
+  const mergeHandlers = useMemo(() => {
+    const map = new Map<string, () => void>();
+    for (const pack of visiblePacks) {
+      map.set(pack.id, () => onToggleMergeSelect(pack.id));
+    }
+    return map;
+  }, [onToggleMergeSelect, visiblePacks]);
+
+  const refreshHandlers = useMemo(() => {
+    const map = new Map<string, () => void>();
+    for (const pack of visiblePacks) {
+      map.set(pack.id, () => onRefresh(pack));
+    }
+    return map;
+  }, [onRefresh, visiblePacks]);
+
+  const deleteHandlers = useMemo(() => {
+    const map = new Map<string, () => void>();
+    for (const pack of visiblePacks) {
+      map.set(pack.id, () => onDelete(pack));
+    }
+    return map;
+  }, [onDelete, visiblePacks]);
+
+  return (
+    <div className="gesture-collection-grid gesture-collection-grid--compact">
+      {visiblePacks.map((pack) => (
+        <CollectionGridCard
+          key={pack.id}
+          pack={pack}
+          stats={stats}
+          allTags={allTags}
+          upload={upload}
+          mergeMode={mergeMode}
+          mergeSelected={mergeSelection.includes(pack.id)}
+          interactionDisabled={interactionDisabled}
+          previewFetchEnabled={previewFetchEnabled}
+          onToggleMergeSelect={mergeHandlers.get(pack.id)}
+          onRefresh={refreshHandlers.get(pack.id)}
+          onDelete={deleteHandlers.get(pack.id)}
+          onRenamed={onRenamed}
+          onUpdated={onUpdated}
+          onError={onError}
+        />
+      ))}
+    </div>
+  );
+});
+
+export default CollectionsCollectionGrid;

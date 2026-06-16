@@ -7,6 +7,15 @@ import {
   putCachedGestureMediaBlob,
 } from './gestureMediaCache';
 
+vi.mock('./gesturePreviewBlobResize', () => ({
+  resizeGesturePreviewBlob: vi.fn(async (blob: Blob, maxWidth: number) => {
+    if (maxWidth >= 320 && blob.size > 10) {
+      return new Blob(['small-preview'], { type: 'image/jpeg' });
+    }
+    return blob;
+  }),
+}));
+
 describe('gestureMediaCache', () => {
   beforeEach(async () => {
     let nextUrl = 0;
@@ -24,7 +33,7 @@ describe('gestureMediaCache', () => {
     );
     vi.stubGlobal(
       'createImageBitmap',
-      vi.fn(async () => ({ close: vi.fn() })),
+      vi.fn(async () => ({ width: 64, height: 64, close: vi.fn() })),
     );
     await gestureDb.delete();
     await gestureDb.open();
@@ -80,5 +89,32 @@ describe('gestureMediaCache', () => {
     }
     const count = await gestureDb.mediaCache.where('kind').equals('preview').count();
     expect(count).toBeLessThanOrEqual(200);
+  });
+
+  it('downscales preview blobs before idb put', async () => {
+    const resize = await import('./gesturePreviewBlobResize');
+    const blob = new Blob(['0123456789'], { type: 'image/jpeg' });
+    const url = await putCachedGestureMediaBlob('file-wide', 'preview', blob, 320, 'image/jpeg');
+    expect(url.startsWith('blob:')).toBe(true);
+    expect(resize.resizeGesturePreviewBlob).toHaveBeenCalledWith(blob, 320, 'image/jpeg');
+  });
+
+  it('migrates oversized legacy preview blobs on read instead of deleting them', async () => {
+    const resize = await import('./gesturePreviewBlobResize');
+    const large = new Blob([new Uint8Array(600_000)], { type: 'image/jpeg' });
+    await gestureDb.mediaCache.put({
+      id: 'preview:file-legacy',
+      driveFileId: 'file-legacy',
+      kind: 'preview',
+      blob: large,
+      width: 320,
+      mimeType: 'image/jpeg',
+      fetchedAt: Date.now(),
+    });
+
+    const { getCachedGestureMediaObjectUrl } = await import('./gestureMediaCache');
+    const url = await getCachedGestureMediaObjectUrl('file-legacy', 'preview');
+    expect(url?.startsWith('blob:')).toBe(true);
+    expect(resize.resizeGesturePreviewBlob).toHaveBeenCalled();
   });
 });

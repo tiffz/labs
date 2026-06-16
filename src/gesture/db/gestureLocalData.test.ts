@@ -1,14 +1,21 @@
 import 'fake-indexeddb/auto';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { gestureDb } from './gestureDb';
 import { applyGestureMergedPayload } from './gestureLocalData';
 
 describe('applyGestureMergedPayload', () => {
+  beforeEach(async () => {
+    await gestureDb.delete();
+    await gestureDb.open();
+  });
+
   afterEach(async () => {
     await gestureDb.packs.clear();
     await gestureDb.packFiles.clear();
     await gestureDb.drawHistory.clear();
     await gestureDb.uploadManifestFiles.clear();
+    await gestureDb.uploadStagingBlobs.clear();
+    await gestureDb.uploadDirectoryHandles.clear();
   });
 
   it('preserves local packFiles when merged payload omits the photo index', async () => {

@@ -2,15 +2,25 @@ import { driveUploadFileResumable } from '../../shared/drive/driveFetch';
 import { gestureDb } from '../db/gestureDb';
 import { notifyGestureLocalChange } from '../db/gestureChangeBus';
 import type { GesturePack, GesturePackFile, GestureUploadManifestFile } from '../types';
+import { collectPackContentFingerprintKeys } from './gestureDuplicateDetection';
+import { GestureDriveFolderCache } from './gestureDriveFolderTree';
+import { reconcileManifestWithDriveFolder } from './gestureManifestDriveReconcile';
 import {
   collectionRelativePath,
   driveUploadBasename,
   gestureCollectionFileKey,
   subfolderSegments,
 } from './gestureCollectionPaths';
-import { collectPackContentFingerprintKeys } from './gestureDuplicateDetection';
-import { GestureDriveFolderCache } from './gestureDriveFolderTree';
-import { reconcileManifestWithDriveFolder } from './gestureManifestDriveReconcile';
+import { driveUploadFileWithNetworkRetry } from './gestureUploadNetwork';
+import { clearUploadRecoveryForPack } from './gestureUploadRecovery';
+import { hasPersistedUploadDirectoryHandle, saveUploadDirectoryHandle } from './gestureUploadDirectoryHandle';
+import { deleteStagedUploadBlob, putStagedUploadBlob } from './gestureUploadStaging';
+import {
+  estimateUploadStagingHeadroom,
+  planUploadStagingMode,
+  totalFileBytes,
+  type UploadStagingPlan,
+} from './gestureUploadStorageQuota';
 import { filterUploadFilesSkippingDuplicates } from './gestureUploadDuplicateFilter';
 import {
   buildUploadManifestId,
@@ -64,6 +74,7 @@ async function syncManifestForSkippedDuplicates(
     const existing = packFileByKey.get(fileKey);
     if (!existing) continue;
     await markManifestFileUploaded(packId, file, existing.driveFileId);
+    await deleteStagedUploadBlob(packId, file);
     manifestByPath.set(entry.relativePath, { ...entry, status: 'uploaded', driveFileId: existing.driveFileId });
     marked += 1;
   }
@@ -104,7 +115,7 @@ export async function finalizeGesturePackUploadIfComplete(
     lastIndexedAt: new Date().toISOString(),
   });
   await gestureDb.packs.put(cleared);
-  await clearUploadManifestForPack(pack.id);
+  await clearUploadRecoveryForPack(pack.id);
   notifyGestureLocalChange({ immediate: true });
   return cleared;
 }
@@ -171,7 +182,13 @@ export async function uploadFilesToExistingPack(
   files: File[],
   onProgress?: (done: number, total: number) => void,
   onDuplicateCheck?: (hashed: number, total: number) => void,
-  options?: { collectionRootName?: string; isCancelled?: (packId: string) => boolean },
+  options?: {
+    collectionRootName?: string;
+    isCancelled?: (packId: string) => boolean;
+    onNetworkWait?: (done: number, total: number) => void;
+    stagingMode?: UploadStagingPlan;
+    directoryHandle?: FileSystemDirectoryHandle;
+  },
 ): Promise<{ pack: GesturePack; uploadedCount: number; total: number; skippedDuplicates: number }> {
   const allImages = filterGestureUploadImageFiles(files);
   if (allImages.length === 0) {
@@ -179,6 +196,10 @@ export async function uploadFilesToExistingPack(
   }
 
   await assertUploadActive(pack.id, options?.isCancelled);
+
+  if (options?.directoryHandle) {
+    await saveUploadDirectoryHandle(pack.id, options.directoryHandle);
+  }
 
   const collectionRoot = options?.collectionRootName ?? pack.uploadSourceFolderName;
   await reconcileManifestWithDriveFolder(accessToken, pack.id, pack.driveFolderId, collectionRoot);
@@ -250,6 +271,13 @@ export async function uploadFilesToExistingPack(
 
   onProgress?.(done, total);
 
+  const hasHandle =
+    Boolean(options?.directoryHandle) || (await hasPersistedUploadDirectoryHandle(pack.id));
+  const headroom = await estimateUploadStagingHeadroom();
+  const stagingMode =
+    options?.stagingMode ??
+    planUploadStagingMode(hasHandle, totalFileBytes(images), headroom.headroomBytes);
+
   const pendingPackFiles: GesturePackFile[] = [];
   let lastPackProgressWriteAt = 0;
 
@@ -275,6 +303,7 @@ export async function uploadFilesToExistingPack(
       const entry = manifestByPath.get(localFileRelativePath(file));
 
       if (entry?.status === 'uploaded' && entry.driveFileId) {
+        await deleteStagedUploadBlob(pack.id, file);
         done += 1;
         current = { ...current, uploadedFileCount: done, expectedFileCount: total };
         await flushPackProgress();
@@ -285,6 +314,7 @@ export async function uploadFilesToExistingPack(
       const existingOnDrive = packFileByKey.get(fileKey);
       if (existingOnDrive) {
         await markManifestFileUploaded(pack.id, file, existingOnDrive.driveFileId);
+        await deleteStagedUploadBlob(pack.id, file);
         done += 1;
         current = { ...current, uploadedFileCount: done, expectedFileCount: total };
         await flushPackProgress();
@@ -295,11 +325,17 @@ export async function uploadFilesToExistingPack(
       const relWithinCollection = collectionRelativePath(file, collectionRoot);
       const parentId = await folderCache.resolveParentId(subfolderSegments(relWithinCollection));
       const driveBasename = driveUploadBasename(file, collectionRoot);
-      const uploaded = await driveUploadFileResumable(
-        accessToken,
-        file,
-        [parentId],
-        driveBasename,
+      if (stagingMode === 'staging') {
+        await putStagedUploadBlob(pack.id, file);
+      }
+      const uploaded = await driveUploadFileWithNetworkRetry(
+        () => driveUploadFileResumable(accessToken, file, [parentId], driveBasename),
+        {
+          isCancelled: async () => {
+            await assertUploadActive(pack.id, options?.isCancelled);
+          },
+          onWaiting: () => options?.onNetworkWait?.(done, total),
+        },
       );
       const packFile: GesturePackFile = {
         driveFileId: uploaded.id,
@@ -313,6 +349,9 @@ export async function uploadFilesToExistingPack(
       }
       packFileByKey.set(fileKey, packFile);
       await markManifestFileUploaded(pack.id, file, uploaded.id);
+      if (stagingMode === 'staging') {
+        await deleteStagedUploadBlob(pack.id, file);
+      }
 
       newlyUploaded += 1;
       done += 1;
@@ -346,7 +385,7 @@ export async function uploadFilesToExistingPack(
   if (pendingLeft === 0) {
     current = clearedUploadFields({ ...current, lastIndexedAt: new Date().toISOString() });
     await gestureDb.packs.put(current);
-    await clearUploadManifestForPack(pack.id);
+    await clearUploadRecoveryForPack(pack.id);
   } else {
     const finalized = await finalizeGesturePackUploadIfComplete(accessToken, current);
     if (finalized) {

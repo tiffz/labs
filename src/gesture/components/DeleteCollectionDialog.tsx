@@ -93,7 +93,7 @@ export default function DeleteCollectionDialog({
       onCancelUpload?.(pack.id);
       if (scope === 'app-only') {
         await deleteCollectionFromApp(pack.id);
-        onComplete(`Removed "${pack.name}" from The Gesture Room. Photos stay on Google Drive.`);
+        onComplete(`Removed "${pack.name}" from The Gesture Room. Photos stay on Google Drive; sync will not restore this collection.`);
       } else {
         const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
         const result = await deleteCollectionAndDrivePhotos(token, pack.id, setDeleteProgress);

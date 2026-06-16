@@ -138,6 +138,7 @@ When a task matches a skill, **read and follow it first** before improvising a w
 ### Before declaring a task done
 
 - [ ] Presubmit clean (see `pre-commit-checks.mdc`)
+- [ ] **`npm run presubmit:push` before `git push`** when touching shells, routes, gesture/encore cards, or `e2e/` (see `docs/CI_PATH_SCOPING.md`)
 - [ ] **`npx eslint` on changed files — zero warnings** (see pre-commit rule § ESLint warnings)
 - [ ] New shared primitive → `SHARED_UI_CONVENTIONS.md` + `/ui/` demo
 - [ ] New app directory → `importBoundaries.test.ts` + `check-import-boundaries.mjs`

@@ -171,4 +171,46 @@ describe('mergeGestureSyncPayload', () => {
     expect(payload.packFiles).toHaveLength(1);
     expect(payload.packFiles[0]?.packId).toBe('local-id');
   });
+
+  it('does not resurrect tombstoned remote collections', () => {
+    const { payload } = mergeGestureSyncPayload(
+      { packs: [], packFiles: [], drawHistory: [] },
+      {
+        packs: [
+          {
+            id: 'remote-id',
+            driveFolderId: 'folder-b',
+            name: 'Feet',
+            linkedAt: '2026-01-02T00:00:00.000Z',
+            lastIndexedAt: '2026-01-02T00:00:00.000Z',
+          },
+        ],
+        packFiles: [],
+        drawHistory: [],
+      },
+      { tombstonedFolderIds: new Set(['folder-b']) },
+    );
+    expect(payload.packs).toHaveLength(0);
+  });
+
+  it('drops local collections tombstoned on this device', () => {
+    const { payload } = mergeGestureSyncPayload(
+      {
+        packs: [
+          {
+            id: 'local-id',
+            driveFolderId: 'folder-a',
+            name: 'Hands',
+            linkedAt: '2026-01-01T00:00:00.000Z',
+            lastIndexedAt: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+        packFiles: [],
+        drawHistory: [],
+      },
+      null,
+      { tombstonedFolderIds: new Set(['folder-a']) },
+    );
+    expect(payload.packs).toHaveLength(0);
+  });
 });

@@ -18,15 +18,16 @@ Labs optimizes **interaction + sustained** as heavily as load — SPAs with Dexi
 
 ## Agent invariants (React / SPA)
 
-| Invariant                                     | Why                                                     | Enforcement                                                             |
-| --------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------- |
-| **Isolate config state from heavy grids**     | Timer/radio/checkbox must not re-render N preview cards | Context + `memo` grid; see Gesture `PracticeSessionControls`            |
-| **No random/shuffle work on every keystroke** | `Math.random()` queue rebuild → prefetch restart        | Shuffle at session start only for warmup paths                          |
-| **Debounce persistence, not UI**              | localStorage/Drive writes must not disable controls     | Optimistic UI + background persist                                      |
-| **Stable memo props**                         | Inline `() => fn(id)` breaks memo                       | Stable callbacks; custom comparators ignore callback identity when safe |
-| **Dexie live query ≠ render storm**           | `useLiveQuery` updates should not rebuild unrelated UI  | Narrow subscriptions; defer heavy derived work                          |
-| **Media display tier**                        | Preview grids ≠ session blobs                           | `GESTURE_MEDIA_STABILITY.md`, gesture media tests                       |
-| **Measure CUJ budgets**                       | “Feels slow” needs a number                             | App `CUJs.md` + `e2e/smoke/*interaction*.spec.ts`                       |
+| Invariant                                     | Why                                                        | Enforcement                                                                         |
+| --------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Isolate config state from heavy grids**     | Timer/radio/checkbox must not re-render N preview cards    | Context + `memo` grid; see Gesture `PracticeSessionControls`                        |
+| **No random/shuffle work on every keystroke** | `Math.random()` queue rebuild → prefetch restart           | Shuffle at session start only for warmup paths                                      |
+| **Debounce persistence, not UI**              | localStorage/Drive writes must not disable controls        | Optimistic UI + background persist                                                  |
+| **Stable memo props**                         | Inline `() => fn(id)` breaks memo                          | Stable callbacks; custom comparators ignore callback identity when safe             |
+| **Dexie live query ≠ render storm**           | `useLiveQuery` updates should not rebuild unrelated UI     | Narrow subscriptions; defer heavy derived work                                      |
+| **Media display tier**                        | Preview grids ≠ session blobs                              | `GESTURE_MEDIA_STABILITY.md`, gesture media tests                                   |
+| **Gesture Collections scroll**                | Visible cards stay painted; thumbs load near viewport only | `PackPreviewStrip` + `useWindowVirtualizer`; no `content-visibility: auto` on cards |
+| **Measure CUJ budgets**                       | “Feels slow” needs a number                                | App `CUJs.md` + `e2e/smoke/*interaction*.spec.ts`                                   |
 
 Indexed in [`docs/AGENT_INVARIANTS.md`](AGENT_INVARIANTS.md).
 

@@ -32,7 +32,7 @@ export default function GestureAppShell({ onStartSession }: GestureAppShellProps
     () => readGesturePracticeSessionConfig()?.activeTagFilters ?? [],
   );
 
-  useGestureMediaWarmup();
+  useGestureMediaWarmup(tab === 'collections');
 
   useEffect(() => {
     const syncFromHash = () => {
@@ -81,28 +81,32 @@ export default function GestureAppShell({ onStartSession }: GestureAppShellProps
       ) : null}
 
       <div hidden={tab !== 'practice'} aria-hidden={tab !== 'practice'}>
-        <PracticeTab
-          onStart={onStartSession}
-          onNeedCollections={() => navigateGesture({ kind: 'collections' })}
-          activeTagFilters={activeTagFilters}
-          onActiveTagFiltersChange={setActiveTagFilters}
-          previewFetchEnabled={tab === 'practice'}
-        />
+        {tab === 'practice' ? (
+          <PracticeTab
+            onStart={onStartSession}
+            onNeedCollections={() => navigateGesture({ kind: 'collections' })}
+            activeTagFilters={activeTagFilters}
+            onActiveTagFiltersChange={setActiveTagFilters}
+            previewFetchEnabled
+          />
+        ) : null}
       </div>
       <div hidden={tab !== 'collections'} aria-hidden={tab !== 'collections'}>
-        <CollectionsTab
-          activeTagFilters={activeTagFilters}
-          onActiveTagFiltersChange={setActiveTagFilters}
-          previewFetchEnabled={tab === 'collections'}
-          onMessage={(msg) => {
-            setError(null);
-            setMessage(msg);
-          }}
-          onError={(msg) => {
-            setMessage(null);
-            setError(msg);
-          }}
-        />
+        {tab === 'collections' ? (
+          <CollectionsTab
+            activeTagFilters={activeTagFilters}
+            onActiveTagFiltersChange={setActiveTagFilters}
+            previewFetchEnabled
+            onMessage={(msg) => {
+              setError(null);
+              setMessage(msg);
+            }}
+            onError={(msg) => {
+              setMessage(null);
+              setError(msg);
+            }}
+          />
+        ) : null}
       </div>
     </div>
   );

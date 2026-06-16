@@ -9,6 +9,7 @@ import InlinePackSourceLink from './InlinePackSourceLink';
 import InlinePackTags from './InlinePackTags';
 import PackDriveFolderLink from './PackDriveFolderLink';
 import PackPreviewStrip from './PackPreviewStrip';
+import { GESTURE_COMPACT_PREVIEW_THUMB_WIDTH } from '../media/gestureMediaPolicy';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { topLevelSubfolderCounts } from '../drive/gestureCollectionPaths';
 import { isIncompleteUploadPack } from '../drive/gestureUploadActivity';
@@ -98,6 +99,8 @@ function PackCollectionCard({
   });
 
   const previewLimit = mode === 'select' || compactManage || mergeMode ? 2 : 4;
+  const previewThumbWidth =
+    previewLimit === 2 ? GESTURE_COMPACT_PREVIEW_THUMB_WIDTH : undefined;
 
   const [foldersOpen, setFoldersOpen] = useState(false);
   const packFileNames = useLiveQuery(
@@ -128,6 +131,7 @@ function PackCollectionCard({
         driveFileIds={driveFileIds}
         limit={previewLimit}
         previewFetchEnabled={previewFetchEnabled}
+        thumbWidth={previewThumbWidth}
       />
       <div className="gesture-collection-card-body">
         <div className="gesture-collection-card-title-row">

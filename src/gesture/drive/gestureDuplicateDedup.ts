@@ -1,6 +1,7 @@
 import { driveTrashFile } from '../../shared/drive/driveFetch';
 import { gestureDb } from '../db/gestureDb';
 import { notifyGestureLocalChange } from '../db/gestureChangeBus';
+import { addGestureDriveFileTombstones } from './gestureDriveTombstones';
 import type { GestureDuplicateGroup } from './gestureDuplicateDetection';
 
 export type ApplyGestureDuplicateDedupResult = {
@@ -70,13 +71,19 @@ export async function applyGestureDuplicateDedup(
 
   let trashed = 0;
   let trashErrors = 0;
+  const trashedIds: string[] = [];
   for (const trashId of replacements.keys()) {
     try {
       await driveTrashFile(accessToken, trashId);
       trashed += 1;
+      trashedIds.push(trashId);
     } catch {
       trashErrors += 1;
     }
+  }
+
+  if (trashedIds.length > 0) {
+    addGestureDriveFileTombstones(trashedIds);
   }
 
   notifyGestureLocalChange();

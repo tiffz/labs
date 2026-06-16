@@ -15,7 +15,7 @@ That runs, in order: `check:import-boundaries`, `lint`, `knip`, `typecheck`, and
 
 If you only changed a few files, you may run subsets while iterating, but **always finish with `npm run presubmit`** so Knip and the full fast test suite are not missed. Knip scans the whole project, not just staged files; unused new files fail the hook even when ESLint passes.
 
-Before **`git push`**, run **`npm run presubmit:push`** (presubmit + full e2e smoke). Husky pre-commit only runs presubmit; CI runs e2e smokes **before** Vitest and will fail on stale Playwright specs even when presubmit is green.
+Before **`git push`**, run **`npm run presubmit:push`** (presubmit + full e2e smoke). Husky pre-commit only runs presubmit; CI runs e2e smokes **before** Vitest and will fail on stale Playwright specs even when presubmit is green. Optional: `export LABS_PRESUBMIT_PUSH=1` to run `presubmit:push` from `.husky/pre-push`.
 
 Minimum per-file checks when touching TypeScript:
 

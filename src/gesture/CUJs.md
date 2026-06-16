@@ -103,7 +103,7 @@ Dev server, hard refresh, `?e2eSeed=1` or normal library.
 ### Steps
 
 1. Open tab with collection grid.
-2. Wait for preview strips (4-up manage, 2-up practice select).
+2. Wait for preview strips (2-up compact manage, 2-up practice select).
 3. Scroll grid if many collections.
 
 ### Success criteria
@@ -111,13 +111,14 @@ Dev server, hard refresh, `?e2eSeed=1` or normal library.
 - Visible thumbs use **https** `src` (no revoked `blob:`).
 - No console flood of `ERR_FILE_NOT_FOUND`.
 - Tab switch does not OOM/crash Chrome.
+- **Sustained scroll:** cards stay painted; thumbs load as rows enter the viewport (no full-page blank bands).
 
 ### Performance budgets
 
-| Step                     | Metric                    | Budget     | Verification                    |
-| ------------------------ | ------------------------- | ---------- | ------------------------------- |
-| First card strip visible | 4 thumbs loaded           | ≤ 10 s dev | `gesture-preview-strip.spec.ts` |
-| Sustained scroll         | no crash / no blob errors | session    | media stability doc + smoke     |
+| Step                     | Metric                            | Budget                                         | Verification                    |
+| ------------------------ | --------------------------------- | ---------------------------------------------- | ------------------------------- |
+| First card strip visible | 2 thumbs loaded (manage)          | ≤ 10 s dev                                     | `gesture-preview-strip.spec.ts` |
+| Sustained scroll         | max frame ≤ 50 ms; ≤ 6 long tasks | `e2e/smoke/gesture-collections-scroll.spec.ts` |
 
 ### Automation
 

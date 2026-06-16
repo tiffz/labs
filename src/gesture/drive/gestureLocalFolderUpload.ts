@@ -28,6 +28,8 @@ export function collectLocalFolderUploadImages(files: File[]): File[] {
 export type GestureUploadFileBatch = {
   files: File[];
   suggestedFolderName?: string;
+  /** Persisted when picked via `showDirectoryPicker` for resume without re-pick. */
+  directoryHandle?: FileSystemDirectoryHandle;
 };
 
 /** Split a multi-root directory pick or combined drop into one batch per top-level folder. */

@@ -8,6 +8,7 @@ import {
   listImagesInGesturePackFolder,
 } from './gesturePackIndex';
 import { parseDriveFolderIdFromInput } from './parseDriveFolderInput';
+import { clearGestureDriveFolderTombstone } from './gestureDriveTombstones';
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 
@@ -27,6 +28,8 @@ export async function linkPackFolderFromInput(
   if ((meta.mimeType ?? '').toLowerCase() !== FOLDER_MIME) {
     throw new Error('That link is not a Drive folder. Choose a folder that holds your reference photos.');
   }
+
+  clearGestureDriveFolderTombstone(folderId);
 
   const existing = await gestureDb.packs.where('driveFolderId').equals(folderId).first();
   const now = new Date().toISOString();

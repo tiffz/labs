@@ -3,10 +3,10 @@ import type { GesturePack } from '../types';
 import { inferLocalFolderName } from './gestureLocalFolderUpload';
 import {
   clearedUploadFields,
-  clearUploadManifestForPack,
   finalizeGesturePackUploadIfComplete,
   uploadFilesToExistingPack,
 } from './gesturePackUpload';
+import { clearUploadRecoveryForPack } from './gestureUploadRecovery';
 import {
   countManifestProgress,
   selectFilesToUpload,
@@ -26,7 +26,10 @@ export async function resumePackUpload(
   packId: string,
   picked: File[],
   onProgress?: (done: number, total: number) => void,
-  options?: { isCancelled?: (packId: string) => boolean },
+  options?: {
+    isCancelled?: (packId: string) => boolean;
+    onNetworkWait?: (done: number, total: number) => void;
+  },
 ): Promise<ResumePackUploadResult> {
   const pack = await gestureDb.packs.get(packId);
   if (!pack) throw new Error('Collection not found.');
@@ -62,7 +65,7 @@ export async function resumePackUpload(
         lastIndexedAt: new Date().toISOString(),
       });
       await gestureDb.packs.put(finalized);
-      await clearUploadManifestForPack(packId);
+      await clearUploadRecoveryForPack(packId);
       return { pack: finalized, newlyUploaded: 0, skipped, skippedDuplicates: 0, total: totalCount };
     }
     throw new Error(
@@ -88,7 +91,7 @@ export async function resumePackUpload(
     toUpload,
     onProgress,
     undefined,
-    { isCancelled: options?.isCancelled },
+    { isCancelled: options?.isCancelled, onNetworkWait: options?.onNetworkWait },
   );
   const progress = countManifestProgress(
     await gestureDb.uploadManifestFiles.where('packId').equals(packId).toArray(),

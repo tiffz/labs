@@ -5,7 +5,9 @@ import type {
   GestureMediaCacheRow,
   GesturePack,
   GesturePackFile,
+  GestureUploadDirectoryHandleRow,
   GestureUploadManifestFile,
+  GestureUploadStagingBlobRow,
 } from '../types';
 
 export type GestureSyncMetaRow = {
@@ -22,6 +24,8 @@ export class GestureDb extends Dexie {
   syncMeta!: EntityTable<GestureSyncMetaRow, 'key'>;
   uploadManifestFiles!: EntityTable<GestureUploadManifestFile, 'id'>;
   mediaCache!: EntityTable<GestureMediaCacheRow, 'id'>;
+  uploadStagingBlobs!: EntityTable<GestureUploadStagingBlobRow, 'id'>;
+  uploadDirectoryHandles!: EntityTable<GestureUploadDirectoryHandleRow, 'packId'>;
 
   constructor() {
     super('gesture-practice');
@@ -36,6 +40,10 @@ export class GestureDb extends Dexie {
     });
     this.version(3).stores({
       mediaCache: 'id, driveFileId, kind, fetchedAt, [driveFileId+kind]',
+    });
+    this.version(4).stores({
+      uploadStagingBlobs: 'id, packId, savedAt, [packId+savedAt]',
+      uploadDirectoryHandles: 'packId, savedAt',
     });
   }
 }

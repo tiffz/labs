@@ -15,7 +15,9 @@ export default function CollectionUploadStatus({
   if (!activity) return null;
 
   const progressValue =
-    (activity.phase === 'uploading' || activity.phase === 'checking') &&
+    (activity.phase === 'uploading' ||
+      activity.phase === 'checking' ||
+      activity.phase === 'waiting') &&
     activity.total != null &&
     activity.done != null &&
     activity.total > 0

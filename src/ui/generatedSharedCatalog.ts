@@ -16000,6 +16000,77 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-test-gesturescrollperfcore-ts-collections-scroll-max-frame-ms",
+    "name": "COLLECTIONS_SCROLL_MAX_FRAME_MS",
+    "path": "src/shared/test/gestureScrollPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Target ~60fps — allow one missed frame plus scheduler slack on CI.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-gesturescrollperfcore-ts-collections-scroll-max-long-tasks",
+    "name": "COLLECTIONS_SCROLL_MAX_LONG_TASKS",
+    "path": "src/shared/test/gestureScrollPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Long tasks (>50ms) during a short scroll burst should stay rare.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-gesturescrollperfcore-ts-formatgesturescrollperfmessage",
+    "name": "formatGestureScrollPerfMessage",
+    "path": "src/shared/test/gestureScrollPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Target ~60fps — allow one missed frame plus scheduler slack on CI.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-gesturescrollperfcore-ts-gesturescrollperfsample",
+    "name": "GestureScrollPerfSample",
+    "path": "src/shared/test/gestureScrollPerfCore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Target ~60fps — allow one missed frame plus scheduler slack on CI.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-gesturescrollperfcore-ts-summarizegesturescrollframes",
+    "name": "summarizeGestureScrollFrames",
+    "path": "src/shared/test/gestureScrollPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Target ~60fps — allow one missed frame plus scheduler slack on CI.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-test-interactionlatencycore-ts-default-interaction-budget-ms",
     "name": "DEFAULT_INTERACTION_BUDGET_MS",
     "path": "src/shared/test/interactionLatencyCore.ts",

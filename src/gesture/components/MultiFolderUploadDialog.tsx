@@ -8,7 +8,7 @@ import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
-import { pickLocalFolderFiles, supportsDirectoryPicker } from '../drive/gestureFolderPicker';
+import { pickLocalFolder, supportsDirectoryPicker } from '../drive/gestureFolderPicker';
 import { inferLocalFolderName } from '../drive/gestureLocalFolderUpload';
 import type { GestureUploadFileBatch } from '../drive/gestureLocalFolderUpload';
 
@@ -43,10 +43,13 @@ export default function MultiFolderUploadDialog({
     setPicking(true);
     onError('');
     try {
-      const files = await pickLocalFolderFiles();
-      if (!files || files.length === 0) return;
-      const name = inferLocalFolderName(files);
-      setQueued((prev) => [...prev, { files, suggestedFolderName: name }]);
+      const picked = await pickLocalFolder();
+      if (!picked || picked.files.length === 0) return;
+      const name = inferLocalFolderName(picked.files) ?? picked.folderName;
+      setQueued((prev) => [
+        ...prev,
+        { files: picked.files, suggestedFolderName: name, directoryHandle: picked.handle },
+      ]);
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return;
       onError(e instanceof Error ? e.message : 'Could not read folder.');
