@@ -33,7 +33,7 @@ describe('gesturePreviewDisplayAudit', () => {
     expect(pinsSrc).toContain('revokeObjectURL');
   });
 
-  it('PackPreviewStrip gates resolve priority by viewport but always fetches when tab is active', () => {
+  it('PackPreviewStrip fetches when tab is active; resolve tier boosts only near viewport', () => {
     const src = readGesture('components/PackPreviewStrip.tsx');
     expect(src).toContain('const fetchEnabled = previewFetchEnabled');
     expect(src).not.toMatch(/fetchEnabled\s*=\s*previewFetchEnabled\s*&&\s*near/);

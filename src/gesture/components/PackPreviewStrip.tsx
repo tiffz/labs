@@ -35,7 +35,7 @@ function PackPreviewStrip({
   const slots = previewIds.length > 0 ? previewIds.length : limit;
 
   useEffect(() => {
-    if (!previewFetchEnabled || !near || previewIds.length === 0) return;
+    if (!(previewFetchEnabled && near) || previewIds.length === 0) return;
     setGesturePreviewResolveTier(previewIds, 0);
     return () => clearGesturePreviewResolveTier(previewIds);
   }, [near, previewFetchEnabled, previewIds]);
