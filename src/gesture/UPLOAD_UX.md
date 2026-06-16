@@ -149,11 +149,9 @@ Incomplete upload packs must not be treated as ready for practice until resolved
 
 ## What we deliberately do not do (yet)
 
-- **Persisted directory handles** (`showDirectoryPicker` + IndexedDB handle) for one-click continue without re-pick.
-- **Local blob staging** of full photo bytes in IndexedDB before upload (quota-heavy; see phased plan below).
-- **Background upload** via service worker.
+- **Background upload** via service worker (Phase C — see table below).
 
-### Future: IndexedDB staging and background upload
+### IndexedDB staging and background upload (phased)
 
 | Phase                     | Status                    | Notes                                                                                                                                                                             |
 | ------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

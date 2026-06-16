@@ -20,21 +20,25 @@ Proposed durable fixes from session retrospectives **not yet implemented**. Land
 | P2       | —                      | Husky pre-push opt-in `LABS_PRESUBMIT_PUSH=1` → `presubmit:push`                                                                    | Done — `.husky/pre-push`                                       |
 | P3       | —                      | PR workflow § Velocity: split feature trains                                                                                        | Done — `docs/PR_WORKFLOW.md`                                   |
 | P1       | `main-thread-jank`     | Gesture pack stats cursor aggregate + shared provider + grid memo + `content-visibility`                                            | Done — `GesturePackStatsProvider`, `CollectionsCollectionGrid` |
+| P2       | `test gap`             | Playwright smoke: upload stalls on `offline` then resumes on `online` (manifest + in-memory files)                                  | Open                                                           |
+| P3       | —                      | Gesture upload Phase C — service worker / Background Sync for off-tab continuation                                                  | Deferred — `UPLOAD_UX.md` § Phase C                            |
+| P2       | `stale state`          | Cursor rule: image/preview `useEffect` deps must not include unstable parent callbacks (ref-wrap pattern like `PackPreviewCell`)    | Open                                                           |
 
 ## Completed (archive reference)
 
-| Session                                 | Landed in                                                                                                                                   |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Gesture media / preview strips          | [`docs/GESTURE_MEDIA_STABILITY.md`](GESTURE_MEDIA_STABILITY.md), `gesturePreviewDisplayInvariants.test.ts`, `gesture-preview-strip.spec.ts` |
-| Gesture inline tags + registry          | `InlinePackTags.tsx`, `gestureTagRegistry.ts`, `useGestureKnownTags`, `DESIGN.md` § Inline collection metadata                              |
-| Performance / CUJ process               | `docs/PERFORMANCE.md`, `docs/CRITICAL_USER_JOURNEYS.md`, `labs-performance`, interaction smokes (Gesture, Encore, Sight)                    |
-| Sight debug layout regression           | `sight.css` always-on viewport calc, `CUJs.md`, `sight-practice-interaction.spec.ts`                                                        |
-| Sight Albers perceived pedagogy         | `MIN_INDUCED_DELTAS`, `AlbersInductionReveal`, `PERCEIVED_TEMPERATURE_INDUCTION` diagnostic                                                 |
-| UX journey hard gate                    | `ux-journey-mandatory.mdc`, `labs-ux-journey` skill                                                                                         |
-| Layout heuristic smokes                 | `layout-heuristics-gesture.spec.ts`, `layout-heuristics-encore.spec.ts`, `layoutHeuristicsCore.ts`                                          |
-| Mark done (Gesture zen)                 | `ZenSessionPhase.tsx` checkmark + `drawHistory` on early complete                                                                           |
-| Dexie empty flash                       | `resolveDexieLiveQuery`, `dexie-live-query-empty-states.mdc`                                                                                |
-| ESLint warning drift                    | `pre-commit-checks.mdc` zero-warning policy                                                                                                 |
-| Vitest teardown noise                   | Removed aggressive `clearTimeout` loop in `setupTests.ts`                                                                                   |
-| Agent process index                     | `AGENT_INVARIANTS.md`, retrospective skill upgrade, PR template                                                                             |
-| CI presubmit parity + Gesture grid perf | `presubmit:push`, `presubmit-css-if-needed.mjs`, `GesturePackStatsProvider`, grid scroll opts                                               |
+| Session                                      | Landed in                                                                                                                                              |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Gesture media / preview strips               | [`docs/GESTURE_MEDIA_STABILITY.md`](GESTURE_MEDIA_STABILITY.md), `gesturePreviewDisplayInvariants.test.ts`, `gesture-preview-strip.spec.ts`            |
+| Gesture inline tags + registry               | `InlinePackTags.tsx`, `gestureTagRegistry.ts`, `useGestureKnownTags`, `DESIGN.md` § Inline collection metadata                                         |
+| Performance / CUJ process                    | `docs/PERFORMANCE.md`, `docs/CRITICAL_USER_JOURNEYS.md`, `labs-performance`, interaction smokes (Gesture, Encore, Sight)                               |
+| Sight debug layout regression                | `sight.css` always-on viewport calc, `CUJs.md`, `sight-practice-interaction.spec.ts`                                                                   |
+| Sight Albers perceived pedagogy              | `MIN_INDUCED_DELTAS`, `AlbersInductionReveal`, `PERCEIVED_TEMPERATURE_INDUCTION` diagnostic                                                            |
+| UX journey hard gate                         | `ux-journey-mandatory.mdc`, `labs-ux-journey` skill                                                                                                    |
+| Layout heuristic smokes                      | `layout-heuristics-gesture.spec.ts`, `layout-heuristics-encore.spec.ts`, `layoutHeuristicsCore.ts`                                                     |
+| Mark done (Gesture zen)                      | `ZenSessionPhase.tsx` checkmark + `drawHistory` on early complete                                                                                      |
+| Dexie empty flash                            | `resolveDexieLiveQuery`, `dexie-live-query-empty-states.mdc`                                                                                           |
+| ESLint warning drift                         | `pre-commit-checks.mdc` zero-warning policy                                                                                                            |
+| Vitest teardown noise                        | Removed aggressive `clearTimeout` loop in `setupTests.ts`                                                                                              |
+| Agent process index                          | `AGENT_INVARIANTS.md`, retrospective skill upgrade, PR template                                                                                        |
+| CI presubmit parity + Gesture grid perf      | `presubmit:push`, `presubmit-css-if-needed.mjs`, `GesturePackStatsProvider`, grid scroll opts                                                          |
+| Gesture collections perf + upload resilience | `gesture-collections-scroll.spec.ts`, upload handle/staging (Dexie v4), `gestureUploadNetwork.ts`, `gestureDriveTombstones.ts`, preview pipeline fixes |
