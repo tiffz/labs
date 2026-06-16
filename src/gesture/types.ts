@@ -3,6 +3,9 @@ export type GesturePackSource = 'link' | 'upload';
 /** Set while a local upload is in flight or was interrupted before finishing. */
 export type GesturePackUploadStatus = 'uploading' | 'incomplete';
 
+/** Set while a Drive merge was interrupted before all folders moved and sources removed. */
+export type GesturePackMergeStatus = 'incomplete';
+
 export type GesturePack = {
   id: string;
   driveFolderId: string;
@@ -17,6 +20,14 @@ export type GesturePack = {
   uploadedFileCount?: number;
   /** Local folder name from the original drop/picker (for continue-upload copy). */
   uploadSourceFolderName?: string;
+  /** Present while a multi-collection merge is incomplete (parent pack only). */
+  mergeStatus?: GesturePackMergeStatus;
+  /** Source collection ids being merged into this parent. */
+  mergeSourcePackIds?: string[];
+  /** Sources whose folders were moved on Drive already. */
+  mergeCompletedSourcePackIds?: string[];
+  /** Sanitized subfolder name per source pack id. */
+  mergeSubfolderBySourceId?: Record<string, string>;
   /** Where you found or downloaded this collection (optional). */
   sourceUrl?: string;
   /** Stable preview covers (max 4) — set on index, synced via progress.json. */

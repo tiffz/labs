@@ -51,14 +51,14 @@ Skill: **`labs-babysit-pr`**. When adding checks, prefer extending `ci.yml` `tes
 
 ## Failure triage
 
-| Symptom                                                                            | Likely cause                                              | Fix                                                                        |
-| ---------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `in progress deployment` on **deploy**                                             | Two deploys raced (historical) or external Pages activity | Deploy job auto-retries once after 90s; confirm single deploy path         |
-| Vitest passed count OK but job failed with `Unhandled Errors` / `BroadcastChannel` | Worker teardown flake                                     | CI retries once; if persistent, fix test cleanup or run nightly            |
-| Knip / lint / typecheck failed                                                     | Real regression                                           | Fix code                                                                   |
-| E2e smoke parse error                                                              | Syntax error in imported TS                               | Fix source; run smoke locally                                              |
-| Visual step warning, job green                                                     | Expected — visual is advisory on cross-cutting diffs      | Inspect artifact; update baselines intentionally or fix nightly visual job |
-| Workflow red after push but newer push exists                                      | Cancelled superseded run                                  | Check latest run on `main`                                                 |
+| Symptom                                                       | Likely cause                                                                 | Fix                                                                        |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `in progress deployment` on **deploy**                        | Two deploys raced (historical) or external Pages activity                    | Deploy job auto-retries once after 90s; confirm single deploy path         |
+| Gesture collections scroll perf flake (50.1ms on 50ms budget) | Scroll perf helper counted intentional `stepDelayMs` pacing in frame samples | Fixed measurement in `e2e/helpers/gestureScrollPerf.ts`                    |
+| Knip / lint / typecheck failed                                | Real regression                                                              | Fix code                                                                   |
+| E2e smoke parse error                                         | Syntax error in imported TS                                                  | Fix source; run smoke locally                                              |
+| Visual step warning, job green                                | Expected — visual is advisory on cross-cutting diffs                         | Inspect artifact; update baselines intentionally or fix nightly visual job |
+| Workflow red after push but newer push exists                 | Cancelled superseded run                                                     | Check latest run on `main`                                                 |
 
 ## Related
 

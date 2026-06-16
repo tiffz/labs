@@ -10,7 +10,7 @@ export async function keepPartialUploadCollection(
   accessToken: string,
   pack: GesturePack,
 ): Promise<number> {
-  const count = await refreshPackFolder(accessToken, pack.id);
+  const count = (await refreshPackFolder(accessToken, pack.id)).photoCount;
   const latest = await gestureDb.packs.get(pack.id);
   if (latest) {
     await gestureDb.packs.put(

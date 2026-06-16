@@ -39,10 +39,10 @@ type PackCollectionCardProps = {
   onRenamed?: (pack: GesturePack) => void;
   onUpdated?: (pack: GesturePack) => void;
   onError?: (message: string) => void;
-  /** Collections tab: practice-style card selection for merge. */
-  mergeMode?: boolean;
-  mergeSelected?: boolean;
-  onToggleMergeSelect?: () => void;
+  /** Collections grid: checkbox selection without entering a separate mode. */
+  collectionSelectable?: boolean;
+  collectionSelected?: boolean;
+  onToggleCollectionSelect?: () => void;
   /** Denser manage cards (2-up preview). */
   compactManage?: boolean;
 };
@@ -66,9 +66,9 @@ function PackCollectionCard({
   onRenamed,
   onUpdated,
   onError,
-  mergeMode = false,
-  mergeSelected = false,
-  onToggleMergeSelect,
+  collectionSelectable = false,
+  collectionSelected = false,
+  onToggleCollectionSelect,
   compactManage = false,
 }: PackCollectionCardProps): React.ReactElement {
   const needsRefresh = photoCount === 0;
@@ -81,14 +81,15 @@ function PackCollectionCard({
   const drawnPct = photoCount > 0 ? Math.round((drawnCount / photoCount) * 100) : 0;
   const showUploadProgress = isUploading && uploadTotal > 0;
   const showDrawnProgress = !isUploading && !needsRefresh && photoCount > 0 && drawnCount > 0;
+  const manageMode = mode === 'manage';
   const metadataDisabled = Boolean(disabled && isUploading);
   const showSelectTags =
     mode === 'select' && !suppressTags && pack.tags && pack.tags.length > 0;
 
   const canAcceptDrop =
     dropEnabled &&
-    mode === 'manage' &&
-    !mergeMode &&
+    manageMode &&
+    !collectionSelected &&
     Boolean(upload) &&
     !isUploading &&
     !disabled;
@@ -98,21 +99,21 @@ function PackCollectionCard({
     upload,
   });
 
-  const previewLimit = mode === 'select' || compactManage || mergeMode ? 2 : 4;
+  const previewLimit = mode === 'select' || compactManage ? 2 : 4;
   const previewThumbWidth =
     previewLimit === 2 ? GESTURE_COMPACT_PREVIEW_THUMB_WIDTH : undefined;
 
   const [foldersOpen, setFoldersOpen] = useState(false);
   const packFileNames = useLiveQuery(
     () =>
-      foldersOpen && mode === 'manage' && !mergeMode
+      foldersOpen && manageMode
         ? gestureDb.packFiles
             .where('packId')
             .equals(pack.id)
             .toArray()
             .then((rows) => rows.map((row) => row.name))
         : [],
-    [foldersOpen, mergeMode, mode, pack.id],
+    [foldersOpen, manageMode, pack.id],
     undefined,
   );
   const subfolderSummary = topLevelSubfolderCounts(packFileNames ?? []);
@@ -125,37 +126,68 @@ function PackCollectionCard({
         ? 'No photos loaded yet'
         : `${photoCount} photo${photoCount === 1 ? '' : 's'} · ${drawnCount} drawn`;
 
-  const body = (
-    <>
+  const previewSelectionEnabled = mode === 'select' || collectionSelectable;
+  const previewSelected = mode === 'select' ? selected : collectionSelected;
+  const previewToggleDisabled =
+    mode === 'select' ? Boolean(disabled || needsRefresh) : Boolean(disabled);
+  const handlePreviewToggle =
+    mode === 'select' ? onToggleSelect : onToggleCollectionSelect;
+
+  const previewBlock = previewSelectionEnabled ? (
+    <button
+      type="button"
+      className={`gesture-collection-card-preview-toggle${previewSelected ? ' is-selected' : ''}`}
+      aria-pressed={previewSelected}
+      aria-label={`${previewSelected ? 'Deselect' : 'Select'} ${pack.name}`}
+      disabled={previewToggleDisabled}
+      onClick={() => handlePreviewToggle?.()}
+    >
+      <span
+        className={`gesture-collection-card-preview-check${previewSelected ? ' is-filled' : ''}`}
+        aria-hidden="true"
+      >
+        <CheckCircleIcon fontSize="small" />
+      </span>
       <PackPreviewStrip
         driveFileIds={driveFileIds}
         limit={previewLimit}
         previewFetchEnabled={previewFetchEnabled}
         thumbWidth={previewThumbWidth}
       />
+    </button>
+  ) : (
+    <div className="gesture-collection-card-preview-wrap">
+      <PackPreviewStrip
+        driveFileIds={driveFileIds}
+        limit={previewLimit}
+        previewFetchEnabled={previewFetchEnabled}
+        thumbWidth={previewThumbWidth}
+      />
+    </div>
+  );
+
+  const body = (
+    <>
+      {previewBlock}
       <div className="gesture-collection-card-body">
         <div className="gesture-collection-card-title-row">
           <div className="gesture-collection-card-title-main">
-            {mode === 'manage' && !mergeMode ? (
+            {manageMode ? (
               <InlinePackName
                 pack={pack}
                 onRenamed={onRenamed}
                 onError={onError}
                 disabled={metadataDisabled}
               />
-            ) : mode === 'manage' && mergeMode ? (
-              <Typography component="h3" className="gesture-collection-card-title">
-                {pack.name}
-              </Typography>
             ) : (
               <Typography component="h3" className="gesture-collection-card-title">
                 {pack.name}
               </Typography>
             )}
           </div>
-          {mode === 'manage' && !mergeMode ? <PackDriveFolderLink pack={pack} /> : null}
+          {manageMode ? <PackDriveFolderLink pack={pack} /> : null}
         </div>
-        {mode === 'manage' && !mergeMode ? (
+        {manageMode ? (
           <InlinePackSourceLink
             pack={pack}
             onUpdated={onUpdated}
@@ -163,7 +195,7 @@ function PackCollectionCard({
             disabled={metadataDisabled}
           />
         ) : null}
-        {mode === 'manage' && !mergeMode ? (
+        {manageMode ? (
           <InlinePackTags
             pack={pack}
             allTags={allTags}
@@ -207,7 +239,7 @@ function PackCollectionCard({
             </div>
           ) : null}
         </div>
-        {mode === 'manage' && !mergeMode && subfolderSummary.length > 0 ? (
+        {manageMode && subfolderSummary.length > 0 ? (
           <details
             className="gesture-collection-card-folders"
             onToggle={(e) => setFoldersOpen(e.currentTarget.open)}
@@ -223,11 +255,6 @@ function PackCollectionCard({
           </details>
         ) : null}
       </div>
-      {(mode === 'select' && selected) || (mergeMode && mergeSelected) ? (
-        <div className="gesture-collection-card-selected" aria-hidden="true">
-          <CheckCircleIcon fontSize="small" />
-        </div>
-      ) : null}
     </>
   );
 
@@ -236,22 +263,7 @@ function PackCollectionCard({
     return (
       <div
         className={`gesture-collection-card gesture-collection-card--selectable${selected ? ' is-selected' : ''}${selectDisabled ? ' is-disabled' : ''}`}
-        role="button"
-        tabIndex={selectDisabled ? -1 : 0}
-        aria-pressed={selected}
-        aria-disabled={selectDisabled || undefined}
-        aria-label={`${selected ? 'Deselect' : 'Select'} ${pack.name}`}
         data-pack-id={pack.id}
-        onClick={() => {
-          if (!selectDisabled) onToggleSelect?.();
-        }}
-        onKeyDown={(e) => {
-          if (selectDisabled) return;
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onToggleSelect?.();
-          }
-        }}
       >
         <div className="gesture-collection-card-shell gesture-collection-card-shell--select">
           {body}
@@ -260,66 +272,41 @@ function PackCollectionCard({
     );
   }
 
-  if (mode === 'manage' && mergeMode) {
-    const mergeDisabled = disabled || isUploading || needsRefresh;
-    return (
-      <div
-        className={`gesture-collection-card gesture-collection-card--selectable${mergeSelected ? ' is-selected' : ''}${mergeDisabled ? ' is-disabled' : ''}`}
-        role="button"
-        tabIndex={mergeDisabled ? -1 : 0}
-        aria-pressed={mergeSelected}
-        aria-disabled={mergeDisabled || undefined}
-        aria-label={`${mergeSelected ? 'Deselect' : 'Select'} ${pack.name} for merge`}
-        data-pack-id={pack.id}
-        onClick={() => {
-          if (!mergeDisabled) onToggleMergeSelect?.();
-        }}
-        onKeyDown={(e) => {
-          if (mergeDisabled) return;
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onToggleMergeSelect?.();
-          }
-        }}
-      >
-        <div className="gesture-collection-card-shell gesture-collection-card-shell--select">
-          {body}
-        </div>
-      </div>
-    );
-  }
+  const showCardFooter = manageMode && onRefresh && onDelete;
 
   return (
     <article
-      className={`gesture-collection-card gesture-collection-card--manage${dragActive ? ' is-drop-target' : ''}${isUploading ? ' is-uploading' : ''}`}
+      className={`gesture-collection-card gesture-collection-card--manage${collectionSelected ? ' is-collection-selected is-selected' : ''}${dragActive ? ' is-drop-target' : ''}${isUploading ? ' is-uploading' : ''}`}
       data-pack-id={pack.id}
       aria-label={canAcceptDrop ? `Drop photos to add to ${pack.name}` : undefined}
       {...(canAcceptDrop ? dropHandlers : {})}
     >
       <div className="gesture-collection-card-shell">
         {body}
-        <div className="gesture-collection-card-footer">
-          <Button
-            variant={needsRefresh ? 'outlined' : 'text'}
-            size="small"
-            className="gesture-collection-card-action"
-            startIcon={<RefreshIcon fontSize="inherit" />}
-            onClick={onRefresh}
-            disabled={disabled}
-          >
-            Refresh photos
-          </Button>
-          <Button
-            variant="text"
-            size="small"
-            className="gesture-collection-card-action gesture-collection-card-action--danger"
-            startIcon={<DeleteOutlineIcon fontSize="inherit" />}
-            onClick={onDelete}
-            disabled={disabled}
-          >
-            Remove…
-          </Button>
-        </div>
+        {showCardFooter ? (
+          <div className="gesture-collection-card-footer">
+            <Button
+              variant={needsRefresh ? 'outlined' : 'text'}
+              size="small"
+              className="gesture-collection-card-action"
+              startIcon={<RefreshIcon fontSize="inherit" />}
+              onClick={onRefresh}
+              disabled={disabled}
+            >
+              Refresh photos
+            </Button>
+            <Button
+              variant="text"
+              size="small"
+              className="gesture-collection-card-action gesture-collection-card-action--danger"
+              startIcon={<DeleteOutlineIcon fontSize="inherit" />}
+              onClick={onDelete}
+              disabled={disabled}
+            >
+              Remove…
+            </Button>
+          </div>
+        ) : null}
       </div>
     </article>
   );
@@ -341,7 +328,7 @@ function arePackCollectionCardPropsEqual(
   if (a.selected !== b.selected || a.disabled !== b.disabled || a.mode !== b.mode) return false;
   if (a.suppressTags !== b.suppressTags || a.dropEnabled !== b.dropEnabled) return false;
   if (a.previewFetchEnabled !== b.previewFetchEnabled) return false;
-  if (a.mergeSelected !== b.mergeSelected || a.mergeMode !== b.mergeMode) return false;
+  if (a.collectionSelected !== b.collectionSelected || a.collectionSelectable !== b.collectionSelectable) return false;
   if (a.compactManage !== b.compactManage) return false;
   if (a.pack.name !== b.pack.name) return false;
   if (a.pack.sourceUrl !== b.pack.sourceUrl) return false;

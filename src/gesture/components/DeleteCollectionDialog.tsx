@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
@@ -23,7 +23,7 @@ import {
 import type { GesturePack } from '../types';
 
 type DeleteCollectionDialogProps = {
-  pack: GesturePack | null;
+  packs: GesturePack[];
   open: boolean;
   busy?: boolean;
   onCancelUpload?: (packId: string) => void;
@@ -32,22 +32,29 @@ type DeleteCollectionDialogProps = {
   onError: (message: string) => void;
 };
 
-function deleteStatusLabel(scope: DeleteCollectionScope, progress: DeleteCollectionProgress | null): string {
-  if (scope === 'app-only') return 'Removing collection…';
+function deleteStatusLabel(
+  scope: DeleteCollectionScope,
+  progress: DeleteCollectionProgress | null,
+  bulkIndex: number,
+  bulkTotal: number,
+): string {
+  const prefix = bulkTotal > 1 ? `Collection ${bulkIndex + 1} of ${bulkTotal}: ` : '';
 
-  if (!progress) return 'Connecting to Google Drive…';
+  if (scope === 'app-only') return `${prefix}Removing collection…`;
+
+  if (!progress) return `${prefix}Connecting to Google Drive…`;
 
   switch (progress.phase) {
     case 'listing':
-      return 'Finding photos on Google Drive…';
+      return `${prefix}Finding photos on Google Drive…`;
     case 'trashing':
       return progress.total > 0
-        ? `Moving photos to Drive trash (${progress.done} of ${progress.total})…`
-        : 'Moving photos to Drive trash…';
+        ? `${prefix}Moving photos to Drive trash (${progress.done} of ${progress.total})…`
+        : `${prefix}Moving photos to Drive trash…`;
     case 'finishing':
-      return 'Finishing up…';
+      return `${prefix}Finishing up…`;
     default:
-      return 'Removing collection…';
+      return `${prefix}Removing collection…`;
   }
 }
 
@@ -59,7 +66,7 @@ function deleteProgressValue(progress: DeleteCollectionProgress | null): number 
 }
 
 export default function DeleteCollectionDialog({
-  pack,
+  packs,
   open,
   busy,
   onCancelUpload,
@@ -70,13 +77,22 @@ export default function DeleteCollectionDialog({
   const [scope, setScope] = useState<DeleteCollectionScope>('app-only');
   const [deleting, setDeleting] = useState(false);
   const [deleteProgress, setDeleteProgress] = useState<DeleteCollectionProgress | null>(null);
+  const [bulkIndex, setBulkIndex] = useState(0);
+
+  const packCount = packs.length;
+  const primaryPack = packs[0] ?? null;
+  const hasInterruptedUpload = useMemo(
+    () => packs.some((pack) => pack.uploadStatus === 'incomplete' || pack.uploadStatus === 'uploading'),
+    [packs],
+  );
 
   useEffect(() => {
     if (!open) return;
-    setScope(pack?.uploadStatus === 'incomplete' || pack?.uploadStatus === 'uploading' ? 'app-and-drive-photos' : 'app-only');
+    setScope(hasInterruptedUpload ? 'app-and-drive-photos' : 'app-only');
     setDeleting(false);
     setDeleteProgress(null);
-  }, [open, pack?.uploadStatus]);
+    setBulkIndex(0);
+  }, [hasInterruptedUpload, open]);
 
   const interactionDisabled = busy || deleting;
 
@@ -84,21 +100,47 @@ export default function DeleteCollectionDialog({
     if (!interactionDisabled) onClose();
   };
 
+  const title =
+    packCount === 0
+      ? 'Remove collection?'
+      : packCount === 1
+        ? `Remove "${primaryPack?.name}"?`
+        : `Remove ${packCount} collections?`;
+
   const handleConfirm = useCallback(async () => {
-    if (!pack || deleting) return;
+    if (packCount === 0 || deleting) return;
     onError('');
     setDeleting(true);
+    setBulkIndex(0);
     setDeleteProgress(null);
     try {
-      onCancelUpload?.(pack.id);
-      if (scope === 'app-only') {
-        await deleteCollectionFromApp(pack.id);
-        onComplete(`Removed "${pack.name}" from The Gesture Room. Photos stay on Google Drive; sync will not restore this collection.`);
+      let drivePhotosTrashed = 0;
+      for (let index = 0; index < packs.length; index += 1) {
+        const pack = packs[index];
+        setBulkIndex(index);
+        setDeleteProgress(null);
+        onCancelUpload?.(pack.id);
+        if (scope === 'app-only') {
+          await deleteCollectionFromApp(pack.id);
+        } else {
+          const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+          const result = await deleteCollectionAndDrivePhotos(token, pack.id, setDeleteProgress);
+          drivePhotosTrashed += result.drivePhotosTrashed;
+        }
+      }
+      if (packCount === 1 && primaryPack) {
+        if (scope === 'app-only') {
+          onComplete(
+            `Removed "${primaryPack.name}" from The Gesture Room. Photos stay on Google Drive; sync will not restore this collection.`,
+          );
+        } else {
+          onComplete(`Removed "${primaryPack.name}" and moved photos to Google Drive trash.`);
+        }
+      } else if (scope === 'app-only') {
+        onComplete(`Removed ${packCount} collections from The Gesture Room. Photos stay on Google Drive.`);
       } else {
-        const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-        const result = await deleteCollectionAndDrivePhotos(token, pack.id, setDeleteProgress);
         onComplete(
-          `Removed "${pack.name}" and moved ${result.drivePhotosTrashed} photo${result.drivePhotosTrashed === 1 ? '' : 's'} to Google Drive trash.`,
+          `Removed ${packCount} collections and moved ${drivePhotosTrashed} photo${drivePhotosTrashed === 1 ? '' : 's'} to Google Drive trash.`,
         );
       }
       onClose();
@@ -111,10 +153,11 @@ export default function DeleteCollectionDialog({
     } finally {
       setDeleting(false);
       setDeleteProgress(null);
+      setBulkIndex(0);
     }
-  }, [deleting, onCancelUpload, onClose, onComplete, onError, pack, scope]);
+  }, [deleting, onCancelUpload, onClose, onComplete, onError, packCount, packs, primaryPack, scope]);
 
-  const statusLabel = deleting ? deleteStatusLabel(scope, deleteProgress) : null;
+  const statusLabel = deleting ? deleteStatusLabel(scope, deleteProgress, bulkIndex, packCount) : null;
   const progressValue = deleteProgressValue(deleteProgress);
 
   return (
@@ -125,19 +168,23 @@ export default function DeleteCollectionDialog({
       maxWidth="xs"
       aria-labelledby="gesture-delete-collection-title"
     >
-      <DialogTitle id="gesture-delete-collection-title">
-        Remove {pack ? `"${pack.name}"` : 'collection'}?
-      </DialogTitle>
+      <DialogTitle id="gesture-delete-collection-title">{title}</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-          Choose whether to keep photos on Google Drive or delete them with this collection.
-          {pack?.uploadStatus === 'uploading' ? (
+          Choose whether to keep photos on Google Drive or delete them with{' '}
+          {packCount === 1 ? 'this collection' : 'these collections'}.
+          {packs.some((pack) => pack.uploadStatus === 'uploading') ? (
             <>
               {' '}
-              Removing now also stops the upload in progress.
+              Removing now also stops uploads in progress.
             </>
           ) : null}
         </Typography>
+        {packCount > 1 ? (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            {packs.map((pack) => pack.name).join(' · ')}
+          </Typography>
+        ) : null}
         <RadioGroup
           value={scope}
           onChange={(e) => setScope(e.target.value as DeleteCollectionScope)}
@@ -151,7 +198,7 @@ export default function DeleteCollectionDialog({
               <span>
                 <strong>App only</strong>
                 <Typography component="span" variant="body2" color="text.secondary" display="block">
-                  Removes the collection here. Drive folder and photos stay.
+                  Removes {packCount === 1 ? 'the collection' : 'the collections'} here. Drive folders and photos stay.
                 </Typography>
               </span>
             }
@@ -164,7 +211,7 @@ export default function DeleteCollectionDialog({
               <span>
                 <strong>App and Drive photos</strong>
                 <Typography component="span" variant="body2" color="text.secondary" display="block">
-                  Trashes photos and the collection folder on Drive (recoverable in Drive trash ~30 days).
+                  Trashes photos and collection folders on Drive (recoverable in Drive trash ~30 days).
                 </Typography>
               </span>
             }
@@ -191,7 +238,7 @@ export default function DeleteCollectionDialog({
           variant="contained"
           color={scope === 'app-and-drive-photos' ? 'error' : 'primary'}
           onClick={() => void handleConfirm()}
-          disabled={interactionDisabled || !pack}
+          disabled={interactionDisabled || packCount === 0}
           startIcon={deleting ? <CircularProgress size={16} color="inherit" aria-hidden /> : undefined}
         >
           {deleting ? 'Removing…' : 'Remove'}

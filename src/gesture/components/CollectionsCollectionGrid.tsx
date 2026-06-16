@@ -10,11 +10,10 @@ type CollectionsCollectionGridProps = {
   stats: GesturePackStats;
   allTags: string[];
   upload: GestureCollectionUploadHandle;
-  mergeMode: boolean;
-  mergeSelection: string[];
+  selectedSet: Set<string>;
   interactionDisabled: boolean;
   previewFetchEnabled: boolean;
-  onToggleMergeSelect: (packId: string) => void;
+  onToggleCollectionSelect: (packId: string) => void;
   onRefresh: (pack: GesturePack) => void;
   onDelete: (pack: GesturePack) => void;
   onRenamed: (pack: GesturePack) => void;
@@ -27,11 +26,10 @@ function CollectionGridCard({
   stats,
   allTags,
   upload,
-  mergeMode,
-  mergeSelected,
+  collectionSelected,
   interactionDisabled,
   previewFetchEnabled,
-  onToggleMergeSelect,
+  onToggleCollectionSelect,
   onRefresh,
   onDelete,
   onRenamed,
@@ -42,11 +40,10 @@ function CollectionGridCard({
   stats: GesturePackStats;
   allTags: string[];
   upload: GestureCollectionUploadHandle;
-  mergeMode: boolean;
-  mergeSelected: boolean;
+  collectionSelected: boolean;
   interactionDisabled: boolean;
   previewFetchEnabled: boolean;
-  onToggleMergeSelect?: () => void;
+  onToggleCollectionSelect?: () => void;
   onRefresh?: () => void;
   onDelete?: () => void;
   onRenamed: (pack: GesturePack) => void;
@@ -65,11 +62,11 @@ function CollectionGridCard({
       disabled={interactionDisabled}
       allTags={allTags}
       upload={upload}
-      dropEnabled={!mergeMode}
+      dropEnabled
       compactManage
-      mergeMode={mergeMode}
-      mergeSelected={mergeSelected}
-      onToggleMergeSelect={onToggleMergeSelect}
+      collectionSelectable
+      collectionSelected={collectionSelected}
+      onToggleCollectionSelect={onToggleCollectionSelect}
       onRefresh={onRefresh}
       onDelete={onDelete}
       onRenamed={onRenamed}
@@ -85,24 +82,23 @@ const CollectionsCollectionGrid = memo(function CollectionsCollectionGrid({
   stats,
   allTags,
   upload,
-  mergeMode,
-  mergeSelection,
+  selectedSet,
   interactionDisabled,
   previewFetchEnabled,
-  onToggleMergeSelect,
+  onToggleCollectionSelect,
   onRefresh,
   onDelete,
   onRenamed,
   onUpdated,
   onError,
 }: CollectionsCollectionGridProps): React.ReactElement {
-  const mergeHandlers = useMemo(() => {
+  const toggleHandlers = useMemo(() => {
     const map = new Map<string, () => void>();
     for (const pack of visiblePacks) {
-      map.set(pack.id, () => onToggleMergeSelect(pack.id));
+      map.set(pack.id, () => onToggleCollectionSelect(pack.id));
     }
     return map;
-  }, [onToggleMergeSelect, visiblePacks]);
+  }, [onToggleCollectionSelect, visiblePacks]);
 
   const refreshHandlers = useMemo(() => {
     const map = new Map<string, () => void>();
@@ -129,11 +125,10 @@ const CollectionsCollectionGrid = memo(function CollectionsCollectionGrid({
           stats={stats}
           allTags={allTags}
           upload={upload}
-          mergeMode={mergeMode}
-          mergeSelected={mergeSelection.includes(pack.id)}
+          collectionSelected={selectedSet.has(pack.id)}
           interactionDisabled={interactionDisabled}
           previewFetchEnabled={previewFetchEnabled}
-          onToggleMergeSelect={mergeHandlers.get(pack.id)}
+          onToggleCollectionSelect={toggleHandlers.get(pack.id)}
           onRefresh={refreshHandlers.get(pack.id)}
           onDelete={deleteHandlers.get(pack.id)}
           onRenamed={onRenamed}

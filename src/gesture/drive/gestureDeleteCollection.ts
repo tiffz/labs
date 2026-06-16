@@ -16,6 +16,11 @@ async function deletePackLocalRows(packId: string, driveFolderId?: string): Prom
     addGestureDriveFileTombstones(packFiles.map((row) => row.driveFileId));
   }
 
+  await removePackLocalRowsOnly(packId);
+}
+
+/** Remove Dexie rows for a pack without tombstones (Drive folder still exists elsewhere). */
+async function removePackLocalRowsOnly(packId: string): Promise<void> {
   await gestureDb.transaction(
     'rw',
     [
@@ -36,6 +41,10 @@ async function deletePackLocalRows(packId: string, driveFolderId?: string): Prom
     },
   );
   notifyGestureLocalChange({ immediate: true });
+}
+
+export async function removePackFromAppWithoutTombstones(packId: string): Promise<void> {
+  await removePackLocalRowsOnly(packId);
 }
 
 export type DeleteCollectionScope = 'app-only' | 'app-and-drive-photos';

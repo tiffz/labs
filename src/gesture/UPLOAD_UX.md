@@ -120,7 +120,11 @@ Safari has no directory picker API — use drag-drop or upload one folder at a t
 
 ### 4e. Merge collections
 
-Select two collections on the Collections tab → **Merge into one…** moves the source into a subfolder inside the target on Drive and removes the source pack locally. Nested folder layout on cards is under **Folders** (collapsed by default).
+Select two or more collections → **Merge…** creates a **new** folder under Reference Packs on Drive. Each selected collection becomes a **subfolder** inside it (whole folders are moved — same as dragging in Drive, not photo-by-photo). Tags are combined and one source link is kept (first when they differ). Original collections are removed from the app after folders move.
+
+**Interrupted merges:** progress is saved on the parent collection (`mergeStatus: incomplete`). On reload, the app auto-resumes when possible and shows a warning banner with **Continue merge**, **Reconcile from Drive** (if you finished moving folders manually), or **Drop partial merge**.
+
+If you **move folders on Google Drive** instead (drag collection B into collection A), **Refresh** on any involved collection (or automatic sync on load) detects the new parent/child layout, merges tags, re-indexes the parent, and removes the absorbed collections from the app — without moving files again on Drive.
 
 ### 5. Delete collection
 
@@ -163,23 +167,24 @@ Drag-drop and **Upload folder** use blob staging when quota allows; otherwise st
 
 ## Key files
 
-| File                                     | Role                                                             |
-| ---------------------------------------- | ---------------------------------------------------------------- |
-| `hooks/useGestureCollectionUpload.ts`    | Phase machine + `continueUploadForPack` + `uploadPhotosToPack`   |
-| `hooks/usePackCollectionDrop.ts`         | Per-collection card drop target                                  |
-| `drive/gestureUploadManifest.ts`         | Manifest build + resume matching                                 |
-| `drive/gestureUploadDuplicateFilter.ts`  | MD5 pre-upload duplicate skip                                    |
-| `drive/addPhotosToExistingPack.ts`       | Add photos to linked Drive folder                                |
-| `shared/drive/computeFileMd5Hex.ts`      | Local MD5 for Drive checksum match                               |
-| `drive/gesturePackUpload.ts`             | Per-file upload loop + manifest updates                          |
-| `drive/gestureUploadNetwork.ts`          | Transient error detection + wait-for-online retry                |
-| `drive/gestureUploadResume.ts`           | Match queued jobs to incomplete packs; load handle/staging files |
-| `drive/gestureUploadDirectoryHandle.ts`  | Persist `showDirectoryPicker` handles per pack                   |
-| `drive/gestureUploadStaging.ts`          | Quota-gated per-file blob staging + delete-on-upload             |
-| `drive/gestureUploadStorageQuota.ts`     | `navigator.storage.estimate` headroom for staging                |
-| `drive/gestureUploadRecovery.ts`         | Clear manifest + handle + staging on completion/delete           |
-| `drive/resumePackUpload.ts`              | Continue after re-pick                                           |
-| `drive/gestureDeleteCollection.ts`       | App-only vs Drive trash delete                                   |
-| `drive/gestureMergeCollections.ts`       | Merge two packs into one (subfolder on Drive)                    |
-| `components/InterruptedUploadBanner.tsx` | Recovery UI                                                      |
-| `components/DeleteCollectionDialog.tsx`  | Remove collection options                                        |
+| File                                         | Role                                                                  |
+| -------------------------------------------- | --------------------------------------------------------------------- |
+| `hooks/useGestureCollectionUpload.ts`        | Phase machine + `continueUploadForPack` + `uploadPhotosToPack`        |
+| `hooks/usePackCollectionDrop.ts`             | Per-collection card drop target                                       |
+| `drive/gestureUploadManifest.ts`             | Manifest build + resume matching                                      |
+| `drive/gestureUploadDuplicateFilter.ts`      | MD5 pre-upload duplicate skip                                         |
+| `drive/addPhotosToExistingPack.ts`           | Add photos to linked Drive folder                                     |
+| `shared/drive/computeFileMd5Hex.ts`          | Local MD5 for Drive checksum match                                    |
+| `drive/gesturePackUpload.ts`                 | Per-file upload loop + manifest updates                               |
+| `drive/gestureUploadNetwork.ts`              | Transient error detection + wait-for-online retry                     |
+| `drive/gestureUploadResume.ts`               | Match queued jobs to incomplete packs; load handle/staging files      |
+| `drive/gestureUploadDirectoryHandle.ts`      | Persist `showDirectoryPicker` handles per pack                        |
+| `drive/gestureUploadStaging.ts`              | Quota-gated per-file blob staging + delete-on-upload                  |
+| `drive/gestureUploadStorageQuota.ts`         | `navigator.storage.estimate` headroom for staging                     |
+| `drive/gestureUploadRecovery.ts`             | Clear manifest + handle + staging on completion/delete                |
+| `drive/resumePackUpload.ts`                  | Continue after re-pick                                                |
+| `drive/gestureDeleteCollection.ts`           | App-only vs Drive trash delete                                        |
+| `drive/gestureMergeCollections.ts`           | Merge collections into a new parent folder on Drive                   |
+| `drive/gestureReconcileDriveFolderMerges.ts` | Detect Drive folder moves and reconcile as merged collections locally |
+| `components/InterruptedUploadBanner.tsx`     | Recovery UI                                                           |
+| `components/DeleteCollectionDialog.tsx`      | Remove collection options                                             |

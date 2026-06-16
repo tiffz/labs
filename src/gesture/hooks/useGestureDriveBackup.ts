@@ -43,6 +43,7 @@ import {
 } from '../drive/gestureDriveMerge';
 import { prepareGestureDriveMerge } from '../drive/prepareGestureDriveMerge';
 import { reindexGesturePacksMissingPhotos } from '../drive/gesturePackIndex';
+import { reconcileDriveFolderMerges } from '../drive/gestureReconcileDriveFolderMerges';
 import { reconcileStaleGestureUploadPacks } from '../drive/reconcileStaleGestureUploadPacks';
 import { readGestureDriveAccessToken } from '../drive/readGestureDriveAccessToken';
 import {
@@ -179,6 +180,7 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
         await onMergePayload(merged);
         const tokenForReindex = accessToken ?? (await readGestureDriveAccessToken());
         if (tokenForReindex) {
+          await reconcileDriveFolderMerges(tokenForReindex);
           const reindex = await reindexGesturePacksMissingPhotos(tokenForReindex);
           await reconcileStaleGestureUploadPacks(tokenForReindex);
           if (reindex.photoCount > 0 && userMessage) {

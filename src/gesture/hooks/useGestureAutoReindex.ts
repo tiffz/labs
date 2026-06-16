@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { gestureDb } from '../db/gestureDb';
 import { readGestureDriveAccessToken } from '../drive/readGestureDriveAccessToken';
 import { packNeedsPhotoReindex, reindexGesturePacksMissingPhotos } from '../drive/gesturePackIndex';
+import { reconcileDriveFolderMerges } from '../drive/gestureReconcileDriveFolderMerges';
 import { reconcileStaleGestureUploadPacks } from '../drive/reconcileStaleGestureUploadPacks';
 import { useGesturePackStats } from './useGesturePackStats';
 import { GESTURE_EMPTY_PACKS } from './gestureLiveQueryEmpty';
@@ -33,8 +34,11 @@ export function useGestureAutoReindex(enabled: boolean): void {
     inFlightRef.current = true;
     try {
       const token = await readGestureDriveAccessToken();
-      if (needsReindex && token) {
-        await reindexGesturePacksMissingPhotos(token);
+      if (token) {
+        await reconcileDriveFolderMerges(token);
+        if (needsReindex) {
+          await reindexGesturePacksMissingPhotos(token);
+        }
       }
       if (uploadLedgerFingerprint && token) {
         await reconcileStaleGestureUploadPacks(token);

@@ -9,6 +9,7 @@ import {
 } from './gesturePackIndex';
 import { parseDriveFolderIdFromInput } from './parseDriveFolderInput';
 import { clearGestureDriveFolderTombstone } from './gestureDriveTombstones';
+import { reconcileDriveFolderMerges } from './gestureReconcileDriveFolderMerges';
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 
@@ -61,8 +62,41 @@ export async function linkPackFolderFromInput(
   return { pack, imageCount: packFiles.length };
 }
 
-export async function refreshPackFolder(accessToken: string, packId: string): Promise<number> {
+export type RefreshPackFolderResult = {
+  photoCount: number;
+  driveMergeMessages: string[];
+  driveMergeErrors: string[];
+};
+
+export async function refreshPackFolder(
+  accessToken: string,
+  packId: string,
+): Promise<RefreshPackFolderResult> {
+  const reconcile = await reconcileDriveFolderMerges(accessToken);
   const pack = await gestureDb.packs.get(packId);
-  if (!pack) throw new Error('Pack not found.');
-  return indexGesturePackFromDrive(accessToken, pack);
+  if (!pack) {
+    const absorbed = reconcile.groups.flatMap((group) =>
+      group.absorbedPackIds.includes(packId)
+        ? [`This collection is now part of “${group.parentName}”.`]
+        : [],
+    );
+    if (absorbed.length > 0) {
+      return {
+        photoCount: 0,
+        driveMergeMessages: absorbed,
+        driveMergeErrors: reconcile.errors,
+      };
+    }
+    return {
+      photoCount: 0,
+      driveMergeMessages: [],
+      driveMergeErrors: reconcile.errors,
+    };
+  }
+  const photoCount = await indexGesturePackFromDrive(accessToken, pack);
+  return {
+    photoCount,
+    driveMergeMessages: reconcile.messages,
+    driveMergeErrors: reconcile.errors,
+  };
 }

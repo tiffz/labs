@@ -630,6 +630,190 @@ html:has(.gesture-app) {
 }
 
 /* Tag filter + inline pack tags */
+.gesture-collections-sticky-head {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  background: var(--gesture-bg);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--gesture-border) 50%, transparent);
+}
+
+.gesture-collections-sticky-head .gesture-collections-search {
+  margin-bottom: 0.85rem;
+}
+
+.gesture-collections-sticky-head .gesture-tag-filter {
+  margin-bottom: 0.75rem;
+}
+
+.gesture-collections-bulk-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin: 1rem -1.35rem 0;
+  padding: 0.7rem 1.35rem 0.55rem;
+  background: var(--gesture-bg);
+  border-top: 1px solid
+    color-mix(in srgb, var(--gesture-border) 50%, transparent);
+  animation: gesture-fade-in 180ms var(--gesture-ease-out);
+}
+
+.gesture-tab-panel.has-collections-bulk-dock {
+  padding-bottom: 0.5rem;
+}
+
+.gesture-collections-bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem 1rem;
+  min-width: 0;
+}
+
+.gesture-collections-bulk-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+  min-width: 0;
+}
+
+.gesture-collections-bulk-meta-actions {
+  margin-left: 0;
+}
+
+.gesture-collections-bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem 0.45rem;
+  min-width: 0;
+}
+
+.gesture-collections-bulk-progress {
+  font-size: 0.78rem;
+  color: var(--gesture-text-muted);
+  white-space: nowrap;
+}
+
+.gesture-merge-dialog-content {
+  padding-top: 0.35rem !important;
+}
+
+/* MUI portals the dialog outside .gesture-app — re-scope linen tokens on the paper. */
+.gesture-merge-dialog .MuiDialog-paper {
+  --gesture-card-bg: #f7f5f1;
+  --gesture-bg: #e8e4dc;
+  --gesture-ink: #2f332c;
+  --gesture-text-muted: #6f6c65;
+  --gesture-border: rgba(47, 51, 44, 0.09);
+  --gesture-accent: #5f8566;
+  --gesture-accent-hover: #4d7154;
+  --gesture-accent-soft: #d8e0d9;
+  --gesture-card-radius: 0.625rem;
+}
+
+.gesture-merge-dialog-error {
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--gesture-card-radius);
+  color: #7f1d1d;
+  background: color-mix(in srgb, #fecaca 55%, var(--gesture-card-bg));
+  border: 1px solid color-mix(in srgb, #f87171 45%, transparent);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.gesture-merge-status {
+  margin-top: 1rem;
+}
+
+.gesture-merge-status .gesture-merge-dialog-hint {
+  margin-bottom: 0.55rem;
+}
+
+.gesture-merge-dialog-lede {
+  margin: 0 0 0.25rem;
+  color: var(--gesture-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.gesture-merge-dialog-section {
+  margin-top: 1.15rem;
+}
+
+.gesture-merge-dialog-section .gesture-practice-label {
+  margin-bottom: 0.45rem;
+}
+
+.gesture-merge-dialog-hint {
+  margin: 0 0 0.45rem;
+  color: var(--gesture-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.gesture-merge-name-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--gesture-card-radius);
+  background: color-mix(in srgb, var(--gesture-card-bg) 94%, var(--gesture-bg));
+  border: 1px solid color-mix(in srgb, var(--gesture-border) 85%, transparent);
+  max-height: 8.5rem;
+  overflow-y: auto;
+}
+
+.gesture-merge-name-chip {
+  max-width: 100%;
+  padding: 0.24rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--gesture-accent) 82%, var(--gesture-ink));
+  background: color-mix(
+    in srgb,
+    var(--gesture-accent-soft) 48%,
+    var(--gesture-card-bg)
+  );
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gesture-merge-dialog-tags {
+  margin-top: 0;
+}
+
+.gesture-merge-source-row {
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--gesture-card-radius);
+  background: color-mix(in srgb, var(--gesture-card-bg) 94%, var(--gesture-bg));
+  border: 1px solid color-mix(in srgb, var(--gesture-border) 85%, transparent);
+}
+
+.gesture-merge-source-link {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--gesture-accent);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.gesture-merge-source-link:hover {
+  color: var(--gesture-accent-hover);
+  text-decoration: underline;
+}
+
 .gesture-tag-filter {
   margin-bottom: 1.25rem;
 }
@@ -804,6 +988,15 @@ html:has(.gesture-app) {
 .gesture-selection-bar-btn--primary:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.gesture-selection-bar-btn--danger {
+  color: color-mix(in srgb, #a33 78%, var(--gesture-ink));
+}
+
+.gesture-selection-bar-btn--danger:hover {
+  color: color-mix(in srgb, #a33 92%, var(--gesture-ink));
+  background: color-mix(in srgb, #a33 10%, var(--gesture-card-bg));
 }
 
 .gesture-inline-tags {
@@ -1073,16 +1266,17 @@ html:has(.gesture-app) {
   .gesture-collection-card-shell {
   border-color: color-mix(
     in srgb,
-    var(--gesture-accent) 72%,
+    var(--gesture-accent) 78%,
     var(--gesture-border)
   );
   background: color-mix(
     in srgb,
-    var(--gesture-accent-soft) 36%,
+    var(--gesture-accent-soft) 52%,
     var(--gesture-card-bg)
   );
-  box-shadow: 0 0 0 1px
-    color-mix(in srgb, var(--gesture-accent) 18%, transparent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--gesture-accent) 28%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--gesture-accent) 12%, transparent);
 }
 
 .gesture-collection-card--selectable:focus-visible {
@@ -1299,20 +1493,124 @@ html:has(.gesture-app) {
   background: var(--gesture-accent);
 }
 
-.gesture-collection-card-selected {
+.gesture-collection-card-preview-wrap,
+.gesture-collection-card-preview-toggle {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.gesture-collection-card-preview-toggle {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.gesture-collection-card-preview-toggle:focus-visible {
+  outline: none;
+}
+
+.gesture-collection-card-preview-toggle:focus-visible .gesture-preview-strip {
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--gesture-accent) 35%, transparent);
+}
+
+.gesture-collection-card-preview-toggle .gesture-preview-strip {
+  position: relative;
+  pointer-events: none;
+}
+
+.gesture-collection-card-preview-check {
   position: absolute;
-  top: 0.65rem;
-  right: 0.65rem;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.65rem;
-  height: 1.65rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 2px solid
+    color-mix(in srgb, var(--gesture-card-bg) 88%, var(--gesture-ink));
   border-radius: 999px;
-  background: var(--gesture-card-bg);
-  color: var(--gesture-accent);
-  border: 1px solid color-mix(in srgb, var(--gesture-accent) 25%, transparent);
-  box-shadow: none;
+  background: color-mix(in srgb, var(--gesture-card-bg) 94%, transparent);
+  color: var(--gesture-text-muted);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--gesture-ink) 12%, transparent);
+  opacity: 0;
+  transition:
+    opacity 180ms var(--gesture-ease-out),
+    color 180ms var(--gesture-ease-out),
+    background 180ms var(--gesture-ease-out),
+    border-color 180ms var(--gesture-ease-out),
+    transform 180ms var(--gesture-ease-out);
+}
+
+.gesture-collection-card--manage:hover .gesture-collection-card-preview-check,
+.gesture-collection-card--selectable:hover
+  .gesture-collection-card-preview-check,
+.gesture-collection-card-preview-toggle:focus-visible
+  .gesture-collection-card-preview-check,
+.gesture-collection-card-preview-toggle.is-selected
+  .gesture-collection-card-preview-check {
+  opacity: 1;
+}
+
+.gesture-collection-card-preview-check.is-filled {
+  background: var(--gesture-accent);
+  color: var(--gesture-card-bg);
+  border-color: color-mix(
+    in srgb,
+    var(--gesture-accent) 88%,
+    var(--gesture-ink)
+  );
+  transform: scale(1.04);
+}
+
+.gesture-collection-card-preview-toggle.is-selected
+  .gesture-preview-strip::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--gesture-accent-soft) 38%, transparent);
+  pointer-events: none;
+}
+
+.gesture-collection-card-preview-toggle.is-selected .gesture-preview-strip {
+  box-shadow:
+    inset 0 0 0 3px color-mix(in srgb, var(--gesture-accent) 62%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--gesture-ink) 7%, transparent);
+}
+
+.gesture-collection-card--manage:hover:not(.is-uploading)
+  .gesture-collection-card-preview-toggle:not(.is-selected)
+  .gesture-preview-strip {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--gesture-accent) 22%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--gesture-ink) 7%, transparent);
+}
+
+.gesture-collection-card-preview-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.gesture-collection-card--manage.is-collection-selected
+  .gesture-collection-card-shell {
+  border: 1px solid
+    color-mix(in srgb, var(--gesture-accent) 78%, var(--gesture-border));
+  background: color-mix(
+    in srgb,
+    var(--gesture-accent-soft) 52%,
+    var(--gesture-card-bg)
+  );
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--gesture-accent) 28%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--gesture-accent) 12%, transparent);
 }
 
 /* Preview strip */
@@ -1731,8 +2029,8 @@ html:has(.gesture-app) {
   pointer-events: none;
 }
 
-.gesture-collection-card--selectable .gesture-collection-card-selected {
-  pointer-events: none;
+.gesture-collection-card-shell--select .gesture-collection-card-preview-toggle {
+  pointer-events: auto;
 }
 
 .gesture-practice-footer {

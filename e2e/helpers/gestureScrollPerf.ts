@@ -47,6 +47,8 @@ export async function measureGestureCollectionsScrollPerf(
         await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
         sampleFrame();
         await new Promise<void>((resolve) => setTimeout(resolve, stepDelayMs));
+        // Deliberate pacing between scroll bursts — do not count toward frame budget.
+        last = performance.now();
       }
 
       if (observer) observer.disconnect();
