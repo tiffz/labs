@@ -11,10 +11,8 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import {
-  ensureLabsGoogleAccessTokenForDriveImport,
-  LabsGoogleInteractiveAuthRequiredError,
-} from '../../shared/google/labsGoogleDriveAccess';
+import { ensureZineboxGoogleDriveAccess } from '../drive/zineboxGoogleDriveAccess';
+import { LabsGoogleInteractiveAuthRequiredError } from '../../shared/google/labsGoogleDriveAccess';
 import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
 import { importScannedDriveFolderPdfs } from '../drive/importDriveFolderPdfs';
 import { formatZineboxDriveImportError } from '../drive/zineboxDriveImportErrors';
@@ -81,10 +79,9 @@ export default function DriveFolderImportDialog({
       try {
         const token =
           accessTokenRef.current ??
-          (await ensureLabsGoogleAccessTokenForDriveImport({
+          (await ensureZineboxGoogleDriveAccess({
             interactive: true,
             upgradeScopes: false,
-            skipBff: true,
           }));
         const result = await scanDriveFolderForImport(token, folderInput);
         if (cancelled) return;
@@ -139,10 +136,9 @@ export default function DriveFolderImportDialog({
 
     const token =
       accessTokenRef.current ??
-      (await ensureLabsGoogleAccessTokenForDriveImport({
+      (await ensureZineboxGoogleDriveAccess({
         interactive: true,
         upgradeScopes: false,
-        skipBff: true,
       }));
 
     const folderName = scan.folderName;

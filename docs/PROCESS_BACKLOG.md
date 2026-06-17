@@ -24,8 +24,8 @@ Proposed durable fixes from session retrospectives **not yet implemented**. Land
 | P3       | —                      | Gesture upload Phase C — service worker / Background Sync for off-tab continuation                                                                | Deferred — `UPLOAD_UX.md` § Phase C                            |
 | P2       | `stale state`          | Cursor rule: image/preview `useEffect` deps must not include unstable parent callbacks (ref-wrap pattern like `PackPreviewCell`)                  | Open                                                           |
 | P2       | `ux-spec-violation`    | ESLint or guardrail: forbid app-local `Snackbar` / progress bars for `withBlockingJob` work (allow Encore completion toasts only)                 | Open                                                           |
-| P2       | `oauth-scope-split`    | Zine Box: single sign-in for Drive folder import (`drive.readonly`) + portfolio backup (`drive.file`) — document split in `src/zinebox/README.md` | Open                                                           |
-| P3       | `test gap`             | E2e smoke pattern: assert library chrome before navigation actions that leave `#/library` (Random → reader)                                       | Open                                                           |
+| P2       | `oauth-scope-split`    | Zine Box: single sign-in for Drive folder import (`drive.readonly`) + portfolio backup (`drive.file`) — document split in `src/zinebox/README.md` | Done — `zineboxGoogleDriveAccess.ts`                           |
+| P3       | `test gap`             | E2e smoke pattern: assert library chrome before navigation actions that leave `#/library` (Random → reader)                                       | Done — `e2e/helpers/zineboxLibrary.ts`                         |
 
 ## Completed (archive reference)
 

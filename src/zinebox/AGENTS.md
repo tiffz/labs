@@ -11,6 +11,7 @@ Nested **`AGENTS.md`**. Root: [`../../AGENTS.md`](../../AGENTS.md).
 ## Architecture
 
 - **Local:** Dexie `zinebox` — `comics`, `collections`
+- **Drive OAuth:** `drive/zineboxGoogleDriveAccess.ts` — one GIS prompt for backup + folder import (do not use `ensureLabsGoogleAccessTokenForDrive` here)
 - **MVP PDF:** shared stub at `/zinebox/fixtures/sample-comic.pdf`
 - **Mock import:** `db/mockDriveImport.ts` — 20 seeded comics, idempotent
 - **Stacks:** `@dnd-kit/core` drag-to-group; `collections/naturalSortComics.ts`
@@ -19,11 +20,10 @@ Nested **`AGENTS.md`**. Root: [`../../AGENTS.md`](../../AGENTS.md).
 ## Pitfalls
 
 - `useLiveQuery` undefined = loading, not empty — use `resolveDexieLiveQuery`
-- Shelves view: PointerSensor `distance: 8` to avoid drag vs horizontal scroll fights
-- Reader progress: debounced Dexie update on page change
+- Reader progress: seed page from Dexie once per open; do not re-sync on every progress write (see `ReaderView` `pageSeedKeyRef`)
 
 ## Tests
 
 - Unit: `src/zinebox/**/*.test.ts`
-- Smoke: `/zinebox/` in `e2e/routeRegistry.ts`
+- Smoke: `e2e/smoke/zinebox-library.spec.ts` — use `e2e/helpers/zineboxLibrary.expectZineboxLibraryChrome` before actions that leave `#/library`
 - Debug: `?debug=1` → `ZineboxDebugPanel` + `clearZineboxLocalData()` (IndexedDB only)

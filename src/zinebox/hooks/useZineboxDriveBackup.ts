@@ -17,7 +17,7 @@ import {
   writeLabsDriveProgressJson,
 } from '../../shared/drive/labsDrivePortfolioLayout';
 import { labsDriveFolderUrl } from '../../shared/drive/labsDriveFolderUrl';
-import { ensureLabsGoogleAccessTokenForDrive } from '../../shared/google/labsGoogleDriveAccess';
+import { ensureZineboxGoogleDriveAccess, signInZineboxGoogleDrive } from '../drive/zineboxGoogleDriveAccess';
 import { isEmailAllowedLabsDriveBackup } from '../../shared/google/labsDriveTesterGate';
 import { useLabsEncoreGoogleIdentity } from '../../shared/google/useLabsEncoreGoogleSession';
 import {
@@ -175,7 +175,7 @@ export function useZineboxDriveBackup({ onMergePayload }: UseZineboxDriveBackupO
     async (opts?: { silent?: boolean; onUploadLabel?: (label: string) => void }) => {
       driveSyncInProgressRef.current = true;
       try {
-        const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: !opts?.silent });
+        const token = await ensureZineboxGoogleDriveAccess({ interactive: !opts?.silent });
         const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_ZINEBOX);
         const localBeforeUpload = await readZineboxLocalPayload();
         await uploadZineboxPdfsForBackup(token, refs.appFolderId, localBeforeUpload.comics, (label) => {
@@ -206,7 +206,7 @@ export function useZineboxDriveBackup({ onMergePayload }: UseZineboxDriveBackupO
 
   const pullFromDriveAndMerge = useCallback(
     async (opts?: { silent?: boolean }) => {
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: !opts?.silent });
+      const token = await ensureZineboxGoogleDriveAccess({ interactive: !opts?.silent });
       const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_ZINEBOX);
       const meta = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
       let remoteEnvelope: ZineboxDriveEnvelopeV1 | null = null;
@@ -294,7 +294,7 @@ export function useZineboxDriveBackup({ onMergePayload }: UseZineboxDriveBackupO
     setMessage(null);
     try {
       await withBlockingJob('Syncing with Google Drive…', async () => {
-        await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+        await signInZineboxGoogleDrive();
         await pullFromDriveAndMerge({ silent: false });
       });
     } catch (e) {
@@ -307,7 +307,7 @@ export function useZineboxDriveBackup({ onMergePayload }: UseZineboxDriveBackupO
     setMessage(null);
     const job = startBlockingJob('Backing up to Google Drive…');
     try {
-      await ensureLabsGoogleAccessTokenForDrive();
+      await ensureZineboxGoogleDriveAccess();
       await snapshotBeforeMerge('manual-backup');
       await pullFromDriveAndMerge({ silent: true });
       await flushDriveWrite({ silent: false, onUploadLabel: (label) => job.updateLabel(label) });
@@ -345,7 +345,7 @@ export function useZineboxDriveBackup({ onMergePayload }: UseZineboxDriveBackupO
         local,
         envelopeToPayload(conflict.remoteEnvelope),
       );
-      const token = await ensureLabsGoogleAccessTokenForDrive();
+      const token = await ensureZineboxGoogleDriveAccess();
       await applyMerged(
         merged,
         `Merged library (${formatZineboxDriveMergeReport(report)}), then saved to Drive.`,
@@ -370,7 +370,7 @@ export function useZineboxDriveBackup({ onMergePayload }: UseZineboxDriveBackupO
           const env = parseZineboxSnapshotEnvelope(snap);
           const local = await readZineboxLocalPayload();
           const { payload: merged, report } = mergeZineboxSyncPayload(local, envelopeToPayload(env));
-          const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+          const token = await ensureZineboxGoogleDriveAccess({ interactive: true });
           await applyMerged(
             merged,
             `Restored snapshot from ${snap.label} (${formatZineboxDriveMergeReport(report)}).`,

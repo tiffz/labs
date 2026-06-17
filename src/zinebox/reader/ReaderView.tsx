@@ -55,6 +55,8 @@ export default function ReaderView({
   const spreadRightRef = useRef<HTMLCanvasElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<Awaited<ReturnType<typeof loadPdfDocument>> | null>(null);
+  /** Resume from saved progress once per open — not on every Dexie progress write while reading. */
+  const pageSeedKeyRef = useRef<string | null>(null);
 
   const goPrev = useCallback(() => {
     setCurrentPage((p) => clampPage(p - 1, totalPages));
@@ -65,8 +67,11 @@ export default function ReaderView({
   }, [totalPages]);
 
   useEffect(() => {
+    pageSeedKeyRef.current = null;
     let cancelled = false;
     setLoading(true);
+    setCurrentPage(1);
+    setTotalPages(0);
     void (async () => {
       const source = await resolveComicPdfSource(comicId);
       const doc = await loadPdfDocument(source);
@@ -82,8 +87,11 @@ export default function ReaderView({
 
   useEffect(() => {
     if (!comicHydrated || !comic || totalPages <= 0) return;
+    const seedKey = `${comicId}:${totalPages}`;
+    if (pageSeedKeyRef.current === seedKey) return;
+    pageSeedKeyRef.current = seedKey;
     setCurrentPage(pageFromProgress(comic.progressPercentage, totalPages));
-  }, [comic, comicHydrated, totalPages, comicId]);
+  }, [comic, comicHydrated, comicId, totalPages]);
 
   useDebouncedProgress(comicId, currentPage, totalPages);
 

@@ -27,6 +27,12 @@ Registry: [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) — update when addi
 - Stubs: `e2e/helpers/gesturePreviewFixtures.ts` — 1×1 PNG for Drive thumbnail URLs
 - Playbook: [`docs/GESTURE_MEDIA_STABILITY.md`](GESTURE_MEDIA_STABILITY.md) — invariant map + when to extend tests/audits
 
+### Example: Zine Box library chrome before navigation
+
+- Helper: `e2e/helpers/zineboxLibrary.ts` → `expectZineboxLibraryChrome`
+- Spec: `e2e/smoke/zinebox-library.spec.ts` — assert upload UI on `#/library`, then separate test for Random → `#/read/`
+- Catches smokes that click navigation actions before library header controls are visible
+
 ### Example: Layout heuristics (padding + contrast)
 
 - Core math: `src/shared/test/layoutHeuristicsCore.ts` (Vitest)

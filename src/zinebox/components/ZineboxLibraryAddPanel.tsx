@@ -8,10 +8,8 @@ import { useCallback, useState } from 'react';
 import { DragDropFileUpload } from '../../shared/components/DragDropFileUpload';
 import AppTooltip from '../../shared/components/AppTooltip';
 import { LabsDriveFolderPasteOrBrowseBlock } from '../../shared/drive/LabsDriveFolderPasteOrBrowseBlock';
-import {
-  ensureLabsGoogleAccessTokenForDriveImport,
-  LabsGoogleInteractiveAuthRequiredError,
-} from '../../shared/google/labsGoogleDriveAccess';
+import { ensureZineboxGoogleDriveAccess } from '../drive/zineboxGoogleDriveAccess';
+import { LabsGoogleInteractiveAuthRequiredError } from '../../shared/google/labsGoogleDriveAccess';
 import { useZineboxGoogleAccessToken } from '../hooks/useZineboxGoogleAccessToken';
 import DriveFolderImportDialog from './DriveFolderImportDialog';
 
@@ -64,10 +62,9 @@ export default function ZineboxLibraryAddPanel({
     onError(null);
     setReviewBusy(true);
     try {
-      const token = await ensureLabsGoogleAccessTokenForDriveImport({
+      const token = await ensureZineboxGoogleDriveAccess({
         interactive: true,
         upgradeScopes: true,
-        skipBff: true,
       });
       setDriveAccessToken(token);
       onDriveReviewOpen?.();

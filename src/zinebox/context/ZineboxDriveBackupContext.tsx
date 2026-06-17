@@ -103,9 +103,9 @@ export function ZineboxDriveBackupProvider({ children }: { children: ReactNode }
       onBackup: backup.onBackup,
       onSignIn: backup.syncPaused ? backup.retryPullFromDrive : backup.onSignIn,
       lastBackupExportedAt: backup.lastMeta.lastBackupExportedAt,
-      scopeSummary: 'Library metadata and PDFs on Drive.',
+      scopeSummary: 'Library backup and Drive folder import.',
       scopeTooltip:
-        'Saves your Zine Box library and PDF copies to a folder this app creates under Tiff Zhang Labs (drive.file).',
+        'One Google sign-in covers portfolio backup (drive.file) and importing PDFs from folders you paste (drive.readonly).',
     };
   }, [allowlistEmpty, backup]);
 
