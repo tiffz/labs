@@ -84,6 +84,7 @@ flowchart TB
 | [`labsDrivePortfolioBackupConstants.ts`](../src/shared/drive/labsDrivePortfolioBackupConstants.ts) | Debounce / interval constants                         |
 | [`labsDriveSyncMessages.ts`](../src/shared/drive/labsDriveSyncMessages.ts)                         | Shared sync status copy                               |
 | [`useLabsDrivePortfolioAutoSync.ts`](../src/shared/drive/useLabsDrivePortfolioAutoSync.ts)         | Auto-pull once + debounced auto-push effects          |
+| [`LabsBlockingJobContext.tsx`](../src/shared/jobs/LabsBlockingJobContext.tsx)                      | Sticky snackbar + `beforeunload` for long jobs        |
 | [`labsDriveBackupUiTypes.ts`](../src/shared/google/labsDriveBackupUiTypes.ts)                      | UI prop types for restore/conflict dialogs            |
 | [`LabsDriveAccountMenu.tsx`](../src/shared/google/LabsDriveAccountMenu.tsx)                        | Account menu + restore + conflict shell               |
 
@@ -151,6 +152,44 @@ See [`src/encore/ARCHITECTURE.md`](../src/encore/ARCHITECTURE.md) § Sync state 
 | Cloud diverged  | **`silent_union`:** merge in background; optional account-menu note. **Stanza:** dialog when both sides edited.   |
 | Restore         | Drive latest + local undo snapshots ([`LabsDriveRestoreDialog`](../src/shared/google/LabsDriveRestoreDialog.tsx)) |
 | Clear site data | Undo snapshots lost; Drive remains recovery path (restore dialog copy)                                            |
+
+## Long-running jobs (portfolio + Encore)
+
+**Canonical module:** [`LabsBlockingJobContext.tsx`](../src/shared/jobs/LabsBlockingJobContext.tsx) — bottom snackbar with indeterminate/determinate progress, `role="status"`, and a “keep this tab open” caption. **`beforeunload` is armed only while at least one non-silent job is running.**
+
+| App                 | Provider                                                                                        | Hook                      |
+| ------------------- | ----------------------------------------------------------------------------------------------- | ------------------------- |
+| **Encore**          | `EncoreBlockingJobProvider` (wraps shared; Encore-specific caption)                             | `useEncoreBlockingJobs()` |
+| **Gesture**         | `LabsBlockingJobProvider` in `App.tsx`                                                          | `useLabsBlockingJobs()`   |
+| **Stanza / Scales** | Adopt shared provider when adding user-visible bulk work (today: account-menu sync status only) | `useLabsBlockingJobs()`   |
+
+### When to wrap work
+
+| Wrap with **`withBlockingJob(label, fn)`** (loud)                  | Use **`{ silent: true }`** or no job                                                |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| User launched; **> ~1 s**; writes Dexie or Drive                   | Debounced auto-push, session auto-pull, background re-index                         |
+| Uploads, imports, merge/delete/organize, refresh index, bulk edits | Quick local toggles, typing, navigation                                             |
+| Anything the user should not navigate away from mid-flight         | Pair `{ silent: true }` with account-menu / `syncState` copy when work is invisible |
+
+### UX rules (all Drive-synced apps)
+
+1. **One sticky snackbar** per app shell — do not add a second full-width progress bar in tab content for the same job.
+2. **Do not dim the whole page** for background work — disable only the control that was pressed (or block conflicting actions, e.g. uploads).
+3. **Update the snackbar label** as phases change (`startBlockingJob` → `updateLabel` / `updateProgress`).
+4. **Dialogs** may show a short status line; **progress bar lives in the snackbar**, not duplicated in the dialog body.
+5. **Completion toasts** — optional success/error banner at top (`GestureStatusBanner`, Encore snackbar) after the blocking job ends; the blocking snackbar clears in `finally`.
+
+### Adopting in a new app (do not fork)
+
+When a micro-app needs long-running job UX, **copy Encore’s wiring first** — do not invent app-local snackbars, docked bars, or theme-specific progress UI.
+
+1. **Provider at app root** — wrap the shell in `LabsBlockingJobProvider` (or a thin re-export like `EncoreBlockingJobProvider`) so hooks such as `useGestureDriveBackup` can call `withBlockingJob`.
+2. **Default shared chrome** — use the stock snackbar from `LabsBlockingJobContext` + `labsBlockingJob.css`. Theme tokens (`background.paper`, `primary`, `shape.borderRadius`) adapt per app automatically.
+3. **Wrap every user-launched job** — scan, organize, backup, refresh, upload, merge, delete. Inline button spinners and account-menu “busy” copy are not a substitute; disable the control and let the snackbar carry progress.
+4. **Only customize after shipping** — `snackbarBottom`, `unloadCaption`, or shared-module polish when Encore and Gesture both need it. **Do not** add app CSS overrides (e.g. full-width Linen dock) unless the user explicitly rejects the shared look.
+5. **Reference** — Encore: [`EncoreBlockingJobContext.tsx`](../src/encore/context/EncoreBlockingJobContext.tsx), [`EncoreActionsContext.tsx`](../src/encore/context/EncoreActionsContext.tsx) (`reorganizeDriveUploads`). Gesture: [`App.tsx`](../src/gesture/App.tsx), [`GestureAccountMenu.tsx`](../src/gesture/components/GestureAccountMenu.tsx).
+
+**Tests:** [`LabsBlockingJobContext.test.tsx`](../src/shared/jobs/LabsBlockingJobContext.test.tsx), Encore re-exports in [`EncoreBlockingJobContext.test.tsx`](../src/encore/context/EncoreBlockingJobContext.test.tsx).
 
 ## Stanza ↔ Encore data model
 

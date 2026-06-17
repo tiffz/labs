@@ -4,6 +4,7 @@ import AddToDriveIcon from '@mui/icons-material/AddToDrive';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
@@ -15,7 +16,10 @@ import Alert from '@mui/material/Alert';
 import { alpha, type SxProps, type Theme } from '@mui/material/styles';
 import AppTooltip from '../components/AppTooltip';
 import LabsGoogleSignInButton from './LabsGoogleSignInButton';
-import { ensureLabsGoogleAccessTokenForDrive } from './labsGoogleDriveAccess';
+import {
+  ensureLabsGoogleAccessTokenForDrive,
+  reconnectLabsGoogleDriveSession,
+} from './labsGoogleDriveAccess';
 import {
   getLabsGoogleSessionConsumerIdFromPath,
   LABS_GOOGLE_SESSION_CONSUMERS,
@@ -262,10 +266,25 @@ function LabsAccountBackupBlock(props: {
   renderBackupButton: LabsAccountMenuProps['renderBackupButton'];
 }) {
   const { backup, alertSurfaceSx, renderBackupButton } = props;
+  const [reconnectBusy, setReconnectBusy] = useState(false);
   const msgFail = typeof backup.message === 'string' && backupMessageIsFailure(backup.message);
   const msgNeedsSignIn = typeof backup.message === 'string' && backupMessageNeedsSignIn(backup.message);
   const needsSignIn = useLabsGoogleDriveNeedsSignIn(Boolean(backup.identity?.email?.trim()));
   const onSignIn = backup.onSignIn ?? backup.onBackup;
+
+  const handleReconnect = useCallback(() => {
+    setReconnectBusy(true);
+    void (async () => {
+      try {
+        await reconnectLabsGoogleDriveSession();
+        await onSignIn();
+      } catch {
+        /* Apps surface backup.message from their Drive hooks on the next sync attempt. */
+      } finally {
+        setReconnectBusy(false);
+      }
+    })();
+  }, [onSignIn]);
 
   if (!backup.testerResolved) {
     return (
@@ -312,13 +331,33 @@ function LabsAccountBackupBlock(props: {
       ) : null}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
         {renderBackupButton({
-          disabled: backup.busy,
+          disabled: backup.busy || reconnectBusy,
           busy: backup.busy,
           onBackup: backup.onBackup,
           needsSignIn,
           onSignIn,
         })}
       </Box>
+      {!needsSignIn && backup.identity ? (
+        <Button
+          size="small"
+          variant="text"
+          disabled={backup.busy || reconnectBusy}
+          onClick={handleReconnect}
+          sx={{
+            alignSelf: 'flex-start',
+            px: 0,
+            minWidth: 0,
+            mt: -0.5,
+            fontWeight: 600,
+            color: 'text.secondary',
+            textTransform: 'none',
+            '&:hover': { color: 'text.primary', bgcolor: 'transparent' },
+          }}
+        >
+          {reconnectBusy ? 'Opening Google…' : 'Sign in again'}
+        </Button>
+      ) : null}
       {backup.message ? (
         <Alert
           severity={msgFail ? 'error' : msgNeedsSignIn ? 'warning' : 'success'}

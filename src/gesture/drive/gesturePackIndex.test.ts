@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { packNeedsPhotoReindex, pickGesturePackCoverFileIds } from './gesturePackIndex';
+import {
+  gestureDriveIndexListingProgress,
+  packNeedsPhotoReindex,
+  pickGesturePackCoverFileIds,
+} from './gesturePackIndex';
 import type { GesturePack, GesturePackFile } from '../types';
 
 const basePack: GesturePack = {
@@ -10,6 +14,19 @@ const basePack: GesturePack = {
   lastIndexedAt: '2026-01-01T00:00:00.000Z',
   source: 'upload',
 };
+
+describe('gestureDriveIndexListingProgress', () => {
+  it('uses photoIndexCount as a determinate hint', () => {
+    expect(gestureDriveIndexListingProgress(50, 400)).toBeCloseTo(0.125);
+    expect(gestureDriveIndexListingProgress(400, 400)).toBe(0.95);
+    expect(gestureDriveIndexListingProgress(800, 400)).toBe(0.95);
+  });
+
+  it('falls back to a soft curve without a hint', () => {
+    expect(gestureDriveIndexListingProgress(0, 0)).toBeNull();
+    expect(gestureDriveIndexListingProgress(40, 0)).toBeCloseTo(40 / 120);
+  });
+});
 
 describe('packNeedsPhotoReindex', () => {
   it('reindexes empty collections', () => {
@@ -23,6 +40,24 @@ describe('packNeedsPhotoReindex', () => {
         58,
       ),
     ).toBe(true);
+  });
+
+  it('reindexes when indexed count is below pack photoIndexCount', () => {
+    expect(
+      packNeedsPhotoReindex({ ...basePack, source: 'link', photoIndexCount: 400 }, 10),
+    ).toBe(true);
+    expect(
+      packNeedsPhotoReindex({ ...basePack, source: 'link', photoIndexCount: 400 }, 400),
+    ).toBe(false);
+  });
+
+  it('skips linked collections once the local index matches photoIndexCount', () => {
+    expect(
+      packNeedsPhotoReindex(
+        { ...basePack, source: 'link', photoIndexCount: 120 },
+        120,
+      ),
+    ).toBe(false);
   });
 
   it('skips healthy collections', () => {

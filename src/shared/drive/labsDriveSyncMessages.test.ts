@@ -22,8 +22,10 @@ describe('labsDriveSyncMessages', () => {
 
   it('detects sign-in messages for alert severity', () => {
     expect(labsDriveSyncMessageNeedsSignIn('Drive sync paused. Sign in again.')).toBe(true);
+    expect(labsDriveSyncMessageNeedsSignIn('The user aborted a request.')).toBe(true);
     expect(labsDriveSyncMessageIsFailure('Drive auto-pull failed.')).toBe(true);
     expect(labsDriveSyncMessageIsFailure('Drive sync paused. Sign in again.')).toBe(false);
+    expect(labsDriveSyncMessageIsFailure('The user aborted a request.')).toBe(false);
   });
 
   it('exports shared idle labels', () => {

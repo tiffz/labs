@@ -4,6 +4,7 @@ import { touchLabsGoogleSessionConsumer } from '../shared/google/labsGoogleSessi
 import GestureAppShell from './components/GestureAppShell';
 import { GestureDriveBackupProvider } from './context/GestureDriveBackupContext';
 import GesturePackStatsProvider from './context/GesturePackStatsProvider';
+import { LabsBlockingJobProvider } from '../shared/jobs/LabsBlockingJobContext';
 import { seedGestureE2ePreviewFixtures } from './e2e/gestureE2eSeed';
 import { applyGestureLinenCssVars } from './design/linenTheme';
 import { gestureGoogleClientConfigured } from './hooks/useGestureDriveBackup';
@@ -88,10 +89,12 @@ function GestureAppContent(): React.ReactElement {
 
 export default function App(): React.ReactElement {
   return (
-    <GestureDriveBackupProvider>
-      <GesturePackStatsProvider>
-        <GestureAppContent />
-      </GesturePackStatsProvider>
-    </GestureDriveBackupProvider>
+    <LabsBlockingJobProvider unloadCaption="Keep this tab open. Closing it or leaving The Gesture Room can cancel in-progress work.">
+      <GestureDriveBackupProvider>
+        <GesturePackStatsProvider>
+          <GestureAppContent />
+        </GesturePackStatsProvider>
+      </GestureDriveBackupProvider>
+    </LabsBlockingJobProvider>
   );
 }

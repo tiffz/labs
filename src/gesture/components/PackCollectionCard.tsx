@@ -1,5 +1,6 @@
 import { memo, useState } from 'react';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -35,6 +36,7 @@ type PackCollectionCardProps = {
   previewFetchEnabled?: boolean;
   onToggleSelect?: () => void;
   onRefresh?: () => void;
+  refreshing?: boolean;
   onDelete?: () => void;
   onRenamed?: (pack: GesturePack) => void;
   onUpdated?: (pack: GesturePack) => void;
@@ -62,6 +64,7 @@ function PackCollectionCard({
   previewFetchEnabled = true,
   onToggleSelect,
   onRefresh,
+  refreshing = false,
   onDelete,
   onRenamed,
   onUpdated,
@@ -289,9 +292,15 @@ function PackCollectionCard({
               variant={needsRefresh ? 'outlined' : 'text'}
               size="small"
               className="gesture-collection-card-action"
-              startIcon={<RefreshIcon fontSize="inherit" />}
+              startIcon={
+                refreshing ? (
+                  <CircularProgress size={14} color="inherit" aria-hidden />
+                ) : (
+                  <RefreshIcon fontSize="inherit" />
+                )
+              }
               onClick={onRefresh}
-              disabled={disabled}
+              disabled={disabled || refreshing}
             >
               Refresh photos
             </Button>
@@ -325,7 +334,7 @@ function arePackCollectionCardPropsEqual(
 ): boolean {
   if (a.pack.id !== b.pack.id) return false;
   if (a.photoCount !== b.photoCount || a.drawnCount !== b.drawnCount) return false;
-  if (a.selected !== b.selected || a.disabled !== b.disabled || a.mode !== b.mode) return false;
+  if (a.selected !== b.selected || a.disabled !== b.disabled || a.refreshing !== b.refreshing || a.mode !== b.mode) return false;
   if (a.suppressTags !== b.suppressTags || a.dropEnabled !== b.dropEnabled) return false;
   if (a.previewFetchEnabled !== b.previewFetchEnabled) return false;
   if (a.collectionSelected !== b.collectionSelected || a.collectionSelectable !== b.collectionSelectable) return false;

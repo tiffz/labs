@@ -104,7 +104,7 @@ The Encore data + sync layer is **split into four focused providers** that nest 
 - **`EncoreSyncContext.tsx`** — Drive sync state machine (`syncState`, `syncMessage`, `conflict`, `conflictAnalysis`, `lastSilentMerge`), `scheduleBackgroundSync`, the per-row `resolveConflictWithChoices`, plus the legacy "all local" / "all remote" resolvers for back-compat. Wraps `runInitialSyncIfPossible` and the silent auto-merge path described above.
 - **`EncoreActionsContext.tsx`** — every Dexie mutation (`saveSong`, `deleteSong`, `savePerformance`, `deletePerformance`, `bulkSaveSongs`, `bulkDeleteSongs`, `bulkSavePerformances`, `bulkDeletePerformances`, `saveRepertoireExtras`, `setOwnerDisplayName`). Each action is a granular Dexie write that pushes a single undo entry, marks the row dirty in the `dirtySync` table, and triggers `scheduleBackgroundSync()` once. Bulk variants wrap their writes in a single Dexie transaction so 50 songs get 50 dirty marks but **one** undo entry and **one** debounced push.
 - **`EncoreContext.tsx`** — composer + back-compat façade. Renders the providers in `Auth → Library → Sync → Actions` order and exposes `useEncore()` that flattens the four context values into the legacy shape.
-- **`EncoreBlockingJobContext.tsx`** — long-running-job snackbar with progress; `beforeunload` is registered only while **at least one non-silent** job is running. `withBlockingJob(label, fn)` is the canonical wrapper.
+- **`EncoreBlockingJobContext.tsx`** — thin wrapper around shared [`LabsBlockingJobContext.tsx`](../shared/jobs/LabsBlockingJobContext.tsx). Long-running-job snackbar with progress; `beforeunload` is registered only while **at least one non-silent** job is running. `withBlockingJob(label, fn)` is the canonical wrapper.
 
 ### `db/`
 

@@ -4,14 +4,14 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import LinearProgress from '@mui/material/LinearProgress';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ensureLabsGoogleAccessTokenForDrive,
   LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
+import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
 import {
   mergeCollectionsIntoNewParent,
   mergedSourceUrlFromPacks,
@@ -64,6 +64,8 @@ export default function MergeCollectionsDialog({
   onComplete,
   onError,
 }: MergeCollectionsDialogProps): React.ReactElement {
+  const { startBlockingJob } = useLabsBlockingJobs();
+  const mergeJobRef = useRef<ReturnType<typeof startBlockingJob> | null>(null);
   const [folderName, setFolderName] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [merging, setMerging] = useState(false);
@@ -133,7 +135,30 @@ export default function MergeCollectionsDialog({
 
   const disabled = busy || merging;
   const statusLabel = merging ? mergeStatusLabel(mergeProgress) : null;
-  const progressValue = mergeProgressValue(mergeProgress);
+
+  useEffect(() => {
+    if (!merging) {
+      mergeJobRef.current?.end();
+      mergeJobRef.current = null;
+      return;
+    }
+    const label = mergeStatusLabel(mergeProgress);
+    const progressValue = mergeProgressValue(mergeProgress);
+    const progress = progressValue != null ? progressValue / 100 : null;
+    if (!mergeJobRef.current) {
+      mergeJobRef.current = startBlockingJob(label);
+    } else {
+      mergeJobRef.current.updateLabel(label);
+    }
+    mergeJobRef.current.updateProgress(progress);
+  }, [mergeProgress, merging, startBlockingJob]);
+
+  useEffect(
+    () => () => {
+      mergeJobRef.current?.end();
+    },
+    [],
+  );
 
   return (
     <Dialog
@@ -242,16 +267,9 @@ export default function MergeCollectionsDialog({
         ) : null}
 
         {merging ? (
-          <div className="gesture-merge-status" role="status" aria-live="polite" aria-busy="true">
-            <Typography className="gesture-merge-dialog-hint" variant="body2">
-              {statusLabel}
-            </Typography>
-            {progressValue != null ? (
-              <LinearProgress variant="determinate" value={progressValue} aria-label="Merge progress" />
-            ) : (
-              <LinearProgress aria-label="Merge in progress" />
-            )}
-          </div>
+          <Typography className="gesture-merge-dialog-hint" variant="body2" role="status">
+            {statusLabel}
+          </Typography>
         ) : null}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>

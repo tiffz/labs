@@ -4,6 +4,7 @@ import {
   isPersistedSessionStillFresh,
   readPersistedGoogleIdentity,
   readPersistedGoogleSession,
+  clearPersistedGoogleSession,
   writePersistedGoogleIdentity,
   writePersistedGoogleSession,
 } from './encoreGoogleTokenStorage';
@@ -126,4 +127,13 @@ export async function ensureLabsGoogleAccessTokenForDrive(options?: {
     displayName: friendlyGoogleDisplayName(profile),
   });
   return interactive.access_token;
+}
+
+/**
+ * Clears the cached access token and opens Google sign-in from a user gesture.
+ * Keeps the remembered email as a login hint. Use from Account → Sign in again.
+ */
+export async function reconnectLabsGoogleDriveSession(): Promise<string> {
+  clearPersistedGoogleSession();
+  return ensureLabsGoogleAccessTokenForDrive({ interactive: true });
 }

@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { gestureDb } from './gestureDb';
-import { applyGestureMergedPayload } from './gestureLocalData';
+import { applyGestureMergedPayload, supplementPackFilesFromLocalIndex } from './gestureLocalData';
 
 describe('applyGestureMergedPayload', () => {
   beforeEach(async () => {
@@ -50,6 +50,84 @@ describe('applyGestureMergedPayload', () => {
     const files = await gestureDb.packFiles.toArray();
     expect(files).toHaveLength(1);
     expect(files[0]?.driveFileId).toBe('photo-1');
+  });
+
+  it('keeps the larger local photo index when merge payload shrinks a collection', async () => {
+    const linkedAt = '2026-01-01T00:00:00.000Z';
+    await gestureDb.packs.put({
+      id: 'pack-1',
+      driveFolderId: 'folder-1',
+      name: 'Hattie in Motion',
+      linkedAt,
+      lastIndexedAt: '2026-01-03T00:00:00.000Z',
+      source: 'link',
+    });
+    const localFiles = Array.from({ length: 700 }, (_, index) => ({
+      driveFileId: `photo-${index}`,
+      packId: 'pack-1',
+      name: `photo-${index}.jpg`,
+      mimeType: 'image/jpeg',
+    }));
+    await gestureDb.packFiles.bulkPut(localFiles);
+
+    await applyGestureMergedPayload({
+      packs: [
+        {
+          id: 'pack-1',
+          driveFolderId: 'folder-1',
+          name: 'Hattie in Motion',
+          linkedAt,
+          lastIndexedAt: '2026-01-02T00:00:00.000Z',
+          source: 'link',
+        },
+      ],
+      packFiles: Array.from({ length: 10 }, (_, index) => ({
+        driveFileId: `remote-${index}`,
+        packId: 'pack-1',
+        name: `remote-${index}.jpg`,
+        mimeType: 'image/jpeg',
+      })),
+      drawHistory: [],
+    });
+
+    expect(await gestureDb.packFiles.count()).toBe(710);
+  });
+
+  it('supplementPackFilesFromLocalIndex remaps stale pack ids by folder', () => {
+    const linkedAt = '2026-01-01T00:00:00.000Z';
+    const existingFiles = Array.from({ length: 700 }, (_, index) => ({
+      driveFileId: `photo-${index}`,
+      packId: 'old-pack-id',
+      name: `photo-${index}.jpg`,
+      mimeType: 'image/jpeg',
+    }));
+    const supplemented = supplementPackFilesFromLocalIndex({
+      mergedPackFiles: [],
+      mergedPacks: [
+        {
+          id: 'new-pack-id',
+          driveFolderId: 'folder-1',
+          name: 'Hattie in Motion',
+          linkedAt,
+          lastIndexedAt: linkedAt,
+          source: 'link',
+        },
+      ],
+      existingPackFiles: existingFiles,
+      existingPacks: [
+        {
+          id: 'old-pack-id',
+          driveFolderId: 'folder-1',
+          name: 'Hattie in Motion',
+          linkedAt,
+          lastIndexedAt: '2026-01-03T00:00:00.000Z',
+          source: 'link',
+        },
+      ],
+    });
+
+    expect(supplemented).toHaveLength(700);
+    expect(supplemented.every((row) => row.packId === 'new-pack-id')).toBe(true);
   });
 
   it('drops upload manifest rows for packs removed during merge', async () => {

@@ -3,6 +3,7 @@ import {
   ensureLabsGoogleAccessTokenForDrive,
   LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
+import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
 import type { DataTransferDropSnapshot } from '../../shared/utils/readDataTransferEntryFiles';
 import {
   readDataTransferDropBatches,
@@ -29,6 +30,7 @@ import { isGestureUploadCancelledError } from '../drive/gestureUploadCancellatio
 import { formatUploadDuplicateSkipMessage } from '../drive/gestureUploadDuplicateFilter';
 import {
   getActiveBatchUploadSession,
+  dismissBatchUploadSession,
   loadRestorableBatchJobs,
   markBatchJobCompleted,
   markBatchJobFailed,
@@ -36,6 +38,7 @@ import {
   persistUploadBatchJobs,
   type ActiveBatchUploadSession,
 } from '../drive/gestureUploadBatchQueue';
+import { throttleUploadProgress } from '../drive/gestureUploadProgressReport';
 import type { GestureUploadActivity, GestureUploadPhase } from '../types';
 
 type UseGestureCollectionUploadOptions = {
@@ -97,6 +100,44 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
   const tokenRef = useRef<string | null>(null);
   const needsInteractiveAuthRef = useRef(true);
   const cancelledPackIdsRef = useRef(new Set<string>());
+  const cancelledBatchJobIdsRef = useRef(new Set<string>());
+  const { startBlockingJob } = useLabsBlockingJobs();
+  const uploadJobRef = useRef<ReturnType<typeof startBlockingJob> | null>(null);
+
+  useEffect(() => {
+    if (!busy && !activity) {
+      uploadJobRef.current?.end();
+      uploadJobRef.current = null;
+      return;
+    }
+    if (!activity) return;
+
+    let progress: number | null = null;
+    if (
+      (activity.phase === 'uploading' ||
+        activity.phase === 'checking' ||
+        activity.phase === 'waiting') &&
+      activity.total != null &&
+      activity.total > 0 &&
+      activity.done != null
+    ) {
+      progress = activity.done / activity.total;
+    }
+
+    if (!uploadJobRef.current) {
+      uploadJobRef.current = startBlockingJob(activity.label);
+    } else {
+      uploadJobRef.current.updateLabel(activity.label);
+    }
+    uploadJobRef.current.updateProgress(progress);
+  }, [activity, busy, startBlockingJob]);
+
+  useEffect(
+    () => () => {
+      uploadJobRef.current?.end();
+    },
+    [],
+  );
 
   const refreshPendingBatchSession = useCallback(async () => {
     const session = await getActiveBatchUploadSession();
@@ -109,9 +150,58 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
 
   const isUploadCancelled = useCallback((packId: string) => cancelledPackIdsRef.current.has(packId), []);
 
-  const cancelUploadForPack = useCallback((packId: string) => {
-    cancelledPackIdsRef.current.add(packId);
+  const isJobAborted = useCallback((job: NewCollectionJob) => {
+    return Boolean(job.batchJobId && cancelledBatchJobIdsRef.current.has(job.batchJobId));
   }, []);
+
+  const purgeCancelledPackFromQueue = useCallback(async (packId: string) => {
+    cancelledPackIdsRef.current.add(packId);
+    const batchJob = await gestureDb.uploadBatchJobs.where('packId').equals(packId).first();
+    if (batchJob) {
+      cancelledBatchJobIdsRef.current.add(batchJob.id);
+      queueRef.current = queueRef.current.filter((job) => job.batchJobId !== batchJob.id);
+      await markBatchJobFailed(batchJob.id);
+    }
+    setQueuedCount(queueRef.current.length);
+    if (queueRef.current.length === 0 && !drainingRef.current) {
+      setBusy(false);
+      setActivity(null);
+      sessionRef.current = null;
+    }
+    void refreshPendingBatchSession();
+  }, [refreshPendingBatchSession]);
+
+  const cancelUploadForPack = useCallback(
+    (packId: string) => {
+      void purgeCancelledPackFromQueue(packId);
+    },
+    [purgeCancelledPackFromQueue],
+  );
+
+  const cancelPendingUploadSession = useCallback(
+    async (sessionId: string) => {
+      const jobs = await gestureDb.uploadBatchJobs.where('sessionId').equals(sessionId).toArray();
+      for (const job of jobs) {
+        cancelledBatchJobIdsRef.current.add(job.id);
+        if (job.packId) cancelledPackIdsRef.current.add(job.packId);
+        if (job.status === 'pending' || job.status === 'in_progress') {
+          await markBatchJobFailed(job.id);
+        }
+      }
+      queueRef.current = queueRef.current.filter((job) => job.sessionId !== sessionId);
+      setQueuedCount(queueRef.current.length);
+      await dismissBatchUploadSession(sessionId);
+      if (queueRef.current.length === 0 && !drainingRef.current) {
+        setBusy(false);
+        setActivity(null);
+        sessionRef.current = null;
+        cancelledPackIdsRef.current.clear();
+        cancelledBatchJobIdsRef.current.clear();
+      }
+      void refreshPendingBatchSession();
+    },
+    [refreshPendingBatchSession],
+  );
 
   const extendUploadSession = useCallback((jobs: NewCollectionJob[]) => {
     if (jobs.length === 0) return;
@@ -199,14 +289,21 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
       const images = job.files;
       const collectionName = job.suggestedFolderName;
 
+      const reportUploadProgress = throttleUploadProgress((done: number, total: number) => {
+        setUploadActivity(buildSessionActivity('uploading', { done, total, collectionName }));
+      });
+      const reportDuplicateCheck = throttleUploadProgress((hashed: number, total: number) => {
+        setUploadActivity(buildSessionActivity('checking', { done: hashed, total, collectionName }));
+      });
+      const reportNetworkWait = throttleUploadProgress((done: number, total: number) => {
+        setUploadActivity(buildSessionActivity('waiting', { done, total, collectionName }));
+      });
+
       const uploadHandlers = {
-        onProgress: (done: number, total: number) => {
-          setUploadActivity(buildSessionActivity('uploading', { done, total, collectionName }));
-        },
-        onNetworkWait: (done: number, total: number) => {
-          setUploadActivity(buildSessionActivity('waiting', { done, total, collectionName }));
-        },
+        onProgress: reportUploadProgress,
+        onNetworkWait: reportNetworkWait,
         isCancelled: isUploadCancelled,
+        shouldAbort: () => isJobAborted(job),
       };
 
       setUploadActivity(buildSessionActivity('checking', { total: images.length, collectionName }));
@@ -254,7 +351,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         { files: images, name: collectionName },
         uploadHandlers.onProgress,
         (hashed, total) => {
-          setUploadActivity(buildSessionActivity('checking', { done: hashed, total, collectionName }));
+          reportDuplicateCheck(hashed, total);
         },
         { ...uploadHandlers, directoryHandle: job.directoryHandle },
       );
@@ -280,7 +377,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         ? `Added ${result.imageCount} photo${result.imageCount === 1 ? '' : 's'} to "${result.pack.name}".${dupeSuffix}`
         : `Added ${result.imageCount} photo${result.imageCount === 1 ? '' : 's'}. Tap the collection to name it.${dupeSuffix}`;
     },
-    [completeUploadSessionJob, isUploadCancelled, onError, resolveUploadToken, buildSessionActivity, setUploadActivity],
+    [completeUploadSessionJob, isJobAborted, isUploadCancelled, onError, resolveUploadToken, buildSessionActivity, setUploadActivity],
   );
 
   const drainQueue = useCallback(async () => {
@@ -295,6 +392,12 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
     while (queueRef.current.length > 0) {
       const job = queueRef.current.shift()!;
       setQueuedCount(queueRef.current.length);
+      if (isJobAborted(job)) {
+        if (job.batchJobId) {
+          await markBatchJobFailed(job.batchJobId);
+        }
+        continue;
+      }
       try {
         const message = await executeNewCollectionJob(job);
         if (message) summaries.push(message);
@@ -337,6 +440,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
       setActivity(null);
       sessionRef.current = null;
       cancelledPackIdsRef.current.clear();
+      cancelledBatchJobIdsRef.current.clear();
     } else {
       setQueuedCount(queueRef.current.length);
     }
@@ -350,7 +454,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
     } else if (!hadError && summaries.length === 0 && queueRef.current.length === 0) {
       /* empty queue after invalid jobs — caller should have surfaced error */
     }
-  }, [executeNewCollectionJob, buildSessionActivity, setUploadActivity, onComplete, onError, refreshPendingBatchSession]);
+  }, [executeNewCollectionJob, buildSessionActivity, isJobAborted, setUploadActivity, onComplete, onError, refreshPendingBatchSession]);
 
   useEffect(() => {
     const resumeQueuedUploads = () => {
@@ -683,6 +787,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
     continueUploadForPackPersisted,
     continueBatchUpload,
     cancelUploadForPack,
+    cancelPendingUploadSession,
   };
 }
 

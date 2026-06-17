@@ -6,6 +6,7 @@ import {
   driveRowsToPackFiles,
   indexGesturePackFromDrive,
   listImagesInGesturePackFolder,
+  pickGesturePackCoverFileIds,
 } from './gesturePackIndex';
 import { parseDriveFolderIdFromInput } from './parseDriveFolderInput';
 import { clearGestureDriveFolderTombstone } from './gestureDriveTombstones';
@@ -49,7 +50,12 @@ export async function linkPackFolderFromInput(
   const packFiles = driveRowsToPackFiles(pack, images);
 
   await gestureDb.transaction('rw', gestureDb.packs, gestureDb.packFiles, async () => {
-    await gestureDb.packs.put(pack);
+    await gestureDb.packs.put({
+      ...pack,
+      photoIndexCount: packFiles.length,
+      coverFileIds: pickGesturePackCoverFileIds(packFiles),
+      lastIndexedAt: now,
+    });
     const stale = await gestureDb.packFiles.where('packId').equals(pack.id).toArray();
     const freshIds = new Set(packFiles.map((f) => f.driveFileId));
     for (const row of stale) {
@@ -68,11 +74,19 @@ export type RefreshPackFolderResult = {
   driveMergeErrors: string[];
 };
 
+export type RefreshPackFolderOptions = {
+  /** 0–1 listing/index progress for the pack refresh, or null when unknown. */
+  onProgress?: (fraction: number | null) => void;
+};
+
 export async function refreshPackFolder(
   accessToken: string,
   packId: string,
+  options?: RefreshPackFolderOptions,
 ): Promise<RefreshPackFolderResult> {
+  options?.onProgress?.(0.02);
   const reconcile = await reconcileDriveFolderMerges(accessToken);
+  options?.onProgress?.(0.08);
   const pack = await gestureDb.packs.get(packId);
   if (!pack) {
     const absorbed = reconcile.groups.flatMap((group) =>
@@ -93,7 +107,15 @@ export async function refreshPackFolder(
       driveMergeErrors: reconcile.errors,
     };
   }
-  const photoCount = await indexGesturePackFromDrive(accessToken, pack);
+  const photoCount = await indexGesturePackFromDrive(accessToken, pack, {
+    onProgress: (fraction) => {
+      if (fraction == null) {
+        options?.onProgress?.(null);
+        return;
+      }
+      options?.onProgress?.(0.08 + fraction * 0.92);
+    },
+  });
   return {
     photoCount,
     driveMergeMessages: reconcile.messages,

@@ -4,7 +4,6 @@ type CollectionsBulkBarProps = {
   selectedCount: number;
   visibleCount: number;
   busy?: boolean;
-  progressLabel?: string | null;
   mergeEnabled: boolean;
   mergeHint?: string | null;
   refreshEnabled: boolean;
@@ -21,7 +20,6 @@ export default function CollectionsBulkBar({
   selectedCount,
   visibleCount,
   busy,
-  progressLabel,
   mergeEnabled,
   mergeHint,
   refreshEnabled,
@@ -42,11 +40,6 @@ export default function CollectionsBulkBar({
           {selectedCount} selected
           {visibleCount > 0 ? ` · ${visibleCount} shown` : ''}
         </span>
-        {progressLabel ? (
-          <span className="gesture-collections-bulk-progress" role="status" aria-live="polite">
-            {progressLabel}
-          </span>
-        ) : null}
         <span className="gesture-selection-bar-actions gesture-collections-bulk-meta-actions">
           <button
             type="button"

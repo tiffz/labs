@@ -2,6 +2,8 @@ import { computeFileMd5Hex } from '../../shared/drive/computeFileMd5Hex';
 import { gestureCollectionFileKey } from './gestureCollectionPaths';
 import { gestureDriveUploadFileName } from './gestureDriveUploadFileName';
 import { gestureDuplicateGroupKey } from './gestureDuplicateDetection';
+import { GestureUploadCancelledError } from './gestureUploadCancellation';
+import { yieldToMain } from './gestureUploadProgressReport';
 import { fileMatchesManifestEntry } from './gestureUploadManifest';
 import type { GestureUploadManifestFile } from '../types';
 
@@ -25,6 +27,7 @@ export type UploadDuplicateFilterInput = {
   uploadedManifestEntries?: GestureUploadManifestFile[];
   hashConcurrency?: number;
   onProgress?: (checked: number, total: number) => void;
+  shouldAbort?: () => boolean;
 };
 
 export type UploadDuplicateFilterResult = {
@@ -74,7 +77,14 @@ export async function filterUploadFilesSkippingDuplicates(
     uploadedManifestEntries,
     hashConcurrency = DEFAULT_HASH_CONCURRENCY,
     onProgress,
+    shouldAbort,
   } = input;
+
+  const assertActive = () => {
+    if (shouldAbort?.()) {
+      throw new GestureUploadCancelledError('duplicate-check');
+    }
+  };
 
   const toUpload: File[] = [];
   let skippedDuplicates = 0;
@@ -82,6 +92,8 @@ export async function filterUploadFilesSkippingDuplicates(
   const needHash: File[] = [];
   let checked = 0;
   const report = () => onProgress?.(checked, files.length);
+
+  assertActive();
 
   const uploadedManifest = uploadedManifestEntries?.filter((entry) => entry.status === 'uploaded') ?? [];
   const existingSizes = sizesFromContentKeys(existingKeys);
@@ -91,6 +103,7 @@ export async function filterUploadFilesSkippingDuplicates(
   }
 
   for (const file of files) {
+    assertActive();
     if (uploadedManifest.some((entry) => fileMatchesManifestEntry(file, entry))) {
       skippedDuplicates += 1;
       checked += 1;
@@ -120,10 +133,15 @@ export async function filterUploadFilesSkippingDuplicates(
   }
 
   const hashResults = await mapWithConcurrency(needHash, hashConcurrency, async (file) => {
+    assertActive();
     const md5Hex = await computeFileMd5Hex(file);
+    assertActive();
     const key = localFileContentFingerprintKey(file, md5Hex);
     checked += 1;
     report();
+    if (checked % 12 === 0) {
+      await yieldToMain();
+    }
     return { file, key };
   });
 

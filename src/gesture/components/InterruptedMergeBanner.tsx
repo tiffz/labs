@@ -1,10 +1,14 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import {
   ensureLabsGoogleAccessTokenForDrive,
   LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
+import {
+  useLabsBlockingJobs,
+  useLabsBlockingJobsVisible,
+} from '../../shared/jobs/LabsBlockingJobContext';
 import {
   formatInterruptedMergeHeadline,
   formatInterruptedMergeSummary,
@@ -28,54 +32,53 @@ export default function InterruptedMergeBanner({
   onError,
   onRemove,
 }: InterruptedMergeBannerProps): React.ReactElement {
-  const [busy, setBusy] = useState(false);
+  const { withBlockingJob } = useLabsBlockingJobs();
+  const blockingVisible = useLabsBlockingJobsVisible();
   const headline = formatInterruptedMergeHeadline(pack);
   const summary = formatInterruptedMergeSummary(pack);
 
   const handleContinue = useCallback(async () => {
-    setBusy(true);
     onError(null);
     try {
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      const result = await resumeIncompleteMerge(token, pack.id);
-      onMessage(
-        `Finished merge for “${result.folderName}” (${result.filesMoved} photo${result.filesMoved === 1 ? '' : 's'}).`,
-      );
+      await withBlockingJob(`Continuing merge for “${pack.name}”…`, async () => {
+        const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+        const result = await resumeIncompleteMerge(token, pack.id);
+        onMessage(
+          `Finished merge for “${result.folderName}” (${result.filesMoved} photo${result.filesMoved === 1 ? '' : 's'}).`,
+        );
+      });
     } catch (e) {
       if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
         onError(e.message);
       } else {
         onError(e instanceof Error ? e.message : 'Could not continue merge.');
       }
-    } finally {
-      setBusy(false);
     }
-  }, [onError, onMessage, pack.id]);
+  }, [onError, onMessage, pack.id, pack.name, withBlockingJob]);
 
   const handleReconcile = useCallback(async () => {
-    setBusy(true);
     onError(null);
     try {
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      const reconcile = await reconcileDriveFolderMerges(token);
-      if (reconcile.messages.length > 0) {
-        onMessage(reconcile.messages.join(' '));
-      } else {
-        onMessage('Checked Drive layout. Use Continue merge if folders still need to move.');
-      }
-      if (reconcile.errors.length > 0) {
-        onError(reconcile.errors.join(' '));
-      }
+      await withBlockingJob('Reconciling from Google Drive…', async () => {
+        const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+        const reconcile = await reconcileDriveFolderMerges(token);
+        if (reconcile.messages.length > 0) {
+          onMessage(reconcile.messages.join(' '));
+        } else {
+          onMessage('Checked Drive layout. Use Continue merge if folders still need to move.');
+        }
+        if (reconcile.errors.length > 0) {
+          onError(reconcile.errors.join(' '));
+        }
+      });
     } catch (e) {
       if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
         onError(e.message);
       } else {
         onError(e instanceof Error ? e.message : 'Could not reconcile from Drive.');
       }
-    } finally {
-      setBusy(false);
     }
-  }, [onError, onMessage]);
+  }, [onError, onMessage, withBlockingJob]);
 
   const handleAbandon = useCallback(async () => {
     if (
@@ -85,19 +88,16 @@ export default function InterruptedMergeBanner({
     ) {
       return;
     }
-    setBusy(true);
     onError(null);
     try {
       await abandonIncompleteMerge(pack.id);
       onMessage(`Removed incomplete merge “${pack.name}” from the app.`);
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Could not remove merge.');
-    } finally {
-      setBusy(false);
     }
   }, [onError, onMessage, pack.id, pack.name]);
 
-  const interactionDisabled = Boolean(disabled || busy);
+  const interactionDisabled = Boolean(disabled || blockingVisible);
 
   return (
     <div className="gesture-banner gesture-banner--warning gesture-interrupted-upload" role="status">

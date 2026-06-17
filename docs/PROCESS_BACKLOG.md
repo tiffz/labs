@@ -23,12 +23,13 @@ Proposed durable fixes from session retrospectives **not yet implemented**. Land
 | P2       | `test gap`             | Playwright smoke: upload stalls on `offline` then resumes on `online` (manifest + in-memory files)                                  | Open                                                           |
 | P3       | —                      | Gesture upload Phase C — service worker / Background Sync for off-tab continuation                                                  | Deferred — `UPLOAD_UX.md` § Phase C                            |
 | P2       | `stale state`          | Cursor rule: image/preview `useEffect` deps must not include unstable parent callbacks (ref-wrap pattern like `PackPreviewCell`)    | Open                                                           |
+| P2       | `ux-spec-violation`    | ESLint or guardrail: forbid app-local `Snackbar` / progress bars for `withBlockingJob` work (allow Encore completion toasts only)   | Open                                                           |
 
 ## Completed (archive reference)
 
 | Session                                      | Landed in                                                                                                                                              |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Gesture media / preview strips               | [`docs/GESTURE_MEDIA_STABILITY.md`](GESTURE_MEDIA_STABILITY.md), `gesturePreviewDisplayInvariants.test.ts`, `gesture-preview-strip.spec.ts`            |
+| Gesture blocking-job snackbar churn          | `LOCAL_FIRST_SYNC.md` § Adopting in a new app (do not fork); shared `src/shared/jobs/` module                                                          |
 | Gesture inline tags + registry               | `InlinePackTags.tsx`, `gestureTagRegistry.ts`, `useGestureKnownTags`, `DESIGN.md` § Inline collection metadata                                         |
 | Performance / CUJ process                    | `docs/PERFORMANCE.md`, `docs/CRITICAL_USER_JOURNEYS.md`, `labs-performance`, interaction smokes (Gesture, Encore, Sight)                               |
 | Sight debug layout regression                | `sight.css` always-on viewport calc, `CUJs.md`, `sight-practice-interaction.spec.ts`                                                                   |

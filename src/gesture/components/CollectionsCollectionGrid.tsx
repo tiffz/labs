@@ -12,6 +12,7 @@ type CollectionsCollectionGridProps = {
   upload: GestureCollectionUploadHandle;
   selectedSet: Set<string>;
   interactionDisabled: boolean;
+  refreshingPackIds: ReadonlySet<string>;
   previewFetchEnabled: boolean;
   onToggleCollectionSelect: (packId: string) => void;
   onRefresh: (pack: GesturePack) => void;
@@ -28,6 +29,7 @@ function CollectionGridCard({
   upload,
   collectionSelected,
   interactionDisabled,
+  refreshing,
   previewFetchEnabled,
   onToggleCollectionSelect,
   onRefresh,
@@ -42,6 +44,7 @@ function CollectionGridCard({
   upload: GestureCollectionUploadHandle;
   collectionSelected: boolean;
   interactionDisabled: boolean;
+  refreshing: boolean;
   previewFetchEnabled: boolean;
   onToggleCollectionSelect?: () => void;
   onRefresh?: () => void;
@@ -68,6 +71,7 @@ function CollectionGridCard({
       collectionSelected={collectionSelected}
       onToggleCollectionSelect={onToggleCollectionSelect}
       onRefresh={onRefresh}
+      refreshing={refreshing}
       onDelete={onDelete}
       onRenamed={onRenamed}
       onUpdated={onUpdated}
@@ -84,6 +88,7 @@ const CollectionsCollectionGrid = memo(function CollectionsCollectionGrid({
   upload,
   selectedSet,
   interactionDisabled,
+  refreshingPackIds,
   previewFetchEnabled,
   onToggleCollectionSelect,
   onRefresh,
@@ -127,6 +132,7 @@ const CollectionsCollectionGrid = memo(function CollectionsCollectionGrid({
           upload={upload}
           collectionSelected={selectedSet.has(pack.id)}
           interactionDisabled={interactionDisabled}
+          refreshing={refreshingPackIds.has(pack.id)}
           previewFetchEnabled={previewFetchEnabled}
           onToggleCollectionSelect={toggleHandlers.get(pack.id)}
           onRefresh={refreshHandlers.get(pack.id)}

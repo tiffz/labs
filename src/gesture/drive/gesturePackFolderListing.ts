@@ -32,6 +32,7 @@ async function listChildren(
 export async function listImagesInGesturePackFolderRecursive(
   accessToken: string,
   folderId: string,
+  options?: { onListedCount?: (imageCount: number) => void },
 ): Promise<GesturePackDriveImage[]> {
   const images: GesturePackDriveImage[] = [];
 
@@ -47,6 +48,7 @@ export async function listImagesInGesturePackFolderRecursive(
       if (!isGestureReferenceImageFile(child)) continue;
       const relativePath = pathPrefix ? `${pathPrefix}/${child.name}` : child.name;
       images.push({ ...child, relativePath });
+      options?.onListedCount?.(images.length);
     }
   }
 

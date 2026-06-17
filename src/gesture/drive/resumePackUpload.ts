@@ -29,6 +29,7 @@ export async function resumePackUpload(
   onProgress?: (done: number, total: number) => void,
   options?: {
     isCancelled?: (packId: string) => boolean;
+    shouldAbort?: () => boolean;
     onNetworkWait?: (done: number, total: number) => void;
   },
 ): Promise<ResumePackUploadResult> {
@@ -94,7 +95,7 @@ export async function resumePackUpload(
     toUpload,
     onProgress,
     undefined,
-    { isCancelled: options?.isCancelled, onNetworkWait: options?.onNetworkWait },
+    { isCancelled: options?.isCancelled, shouldAbort: options?.shouldAbort, onNetworkWait: options?.onNetworkWait },
   );
   const progress = countManifestProgress(
     await gestureDb.uploadManifestFiles.where('packId').equals(packId).toArray(),

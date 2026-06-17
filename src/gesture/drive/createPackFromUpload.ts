@@ -6,6 +6,7 @@ import {
   ensureGestureReferencePacksLayout,
   ensureUniquePackFolderName,
 } from './gestureDriveLayout';
+import { GestureUploadCancelledError } from './gestureUploadCancellation';
 import { collectPackContentFingerprintKeys } from './gestureDuplicateDetection';
 import {
   defaultUploadCollectionName,
@@ -27,9 +28,13 @@ async function findExistingPackForFullDuplicateUpload(
   accessToken: string,
   images: File[],
   collectionRootName: string,
+  shouldAbort?: () => boolean,
 ): Promise<GesturePack | null> {
   const packs = await gestureDb.packs.toArray();
   for (const pack of packs) {
+    if (shouldAbort?.()) {
+      throw new GestureUploadCancelledError('duplicate-scan');
+    }
     if (!pack.driveFolderId?.trim() || pack.uploadStatus === 'uploading') continue;
     const existingKeys = await collectPackContentFingerprintKeys(accessToken, pack.driveFolderId);
     const { toUpload, skippedDuplicates } = await filterUploadFilesSkippingDuplicates(images, {
@@ -55,6 +60,7 @@ export async function createPackFromUpload(
   onDuplicateCheck?: (hashed: number, total: number) => void,
   options?: {
     isCancelled?: (packId: string) => boolean;
+    shouldAbort?: () => boolean;
     onNetworkWait?: (done: number, total: number) => void;
     directoryHandle?: FileSystemDirectoryHandle;
   },
@@ -70,6 +76,7 @@ export async function createPackFromUpload(
     accessToken,
     images,
     sourceFolderName,
+    options?.shouldAbort,
   );
   if (existingPack) {
     const result = await uploadFilesToExistingPack(
@@ -78,7 +85,7 @@ export async function createPackFromUpload(
       images,
       onProgress,
       onDuplicateCheck,
-      { collectionRootName: sourceFolderName, isCancelled: options?.isCancelled, onNetworkWait: options?.onNetworkWait, directoryHandle: options?.directoryHandle },
+      { collectionRootName: sourceFolderName, isCancelled: options?.isCancelled, shouldAbort: options?.shouldAbort, onNetworkWait: options?.onNetworkWait, directoryHandle: options?.directoryHandle },
     );
     return {
       pack: result.pack,
@@ -123,7 +130,7 @@ export async function createPackFromUpload(
     images,
     onProgress,
     onDuplicateCheck,
-    { isCancelled: options?.isCancelled, onNetworkWait: options?.onNetworkWait, directoryHandle: options?.directoryHandle },
+    { isCancelled: options?.isCancelled, shouldAbort: options?.shouldAbort, onNetworkWait: options?.onNetworkWait, directoryHandle: options?.directoryHandle },
   );
   return {
     pack: result.pack,

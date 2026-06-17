@@ -38,7 +38,7 @@ export function formatLabsDriveSyncError(error: unknown, operation: LabsDriveSyn
 
 /** True when message should render as warning (reconnect) in LabsAccountMenu. */
 export function labsDriveSyncMessageNeedsSignIn(message: string): boolean {
-  return /sign in again|sync paused/i.test(message);
+  return /sign in again|sync paused|aborted|cancel(l)?ed|closed before finishing/i.test(message);
 }
 
 /** True when message should render as error in LabsAccountMenu. */

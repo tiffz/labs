@@ -27,6 +27,7 @@ import {
   localFileRelativePath,
   markManifestFileUploaded,
 } from './gestureUploadManifest';
+import { throttleUploadProgress, yieldToMain } from './gestureUploadProgressReport';
 import { filterGestureUploadImageFiles } from './gesturePackMetadata';
 import {
   putGesturePackUploadCleared,
@@ -152,7 +153,13 @@ export async function writeUploadManifest(
     lastModified: file.lastModified,
     status: 'pending',
   }));
-  await gestureDb.uploadManifestFiles.bulkPut(entries);
+  const chunkSize = 250;
+  for (let offset = 0; offset < entries.length; offset += chunkSize) {
+    await gestureDb.uploadManifestFiles.bulkPut(entries.slice(offset, offset + chunkSize));
+    if (offset + chunkSize < entries.length) {
+      await yieldToMain();
+    }
+  }
   return entries;
 }
 
@@ -190,6 +197,7 @@ export async function uploadFilesToExistingPack(
   options?: {
     collectionRootName?: string;
     isCancelled?: (packId: string) => boolean;
+    shouldAbort?: () => boolean;
     onNetworkWait?: (done: number, total: number) => void;
     stagingMode?: UploadStagingPlan;
     directoryHandle?: FileSystemDirectoryHandle;
@@ -220,6 +228,7 @@ export async function uploadFilesToExistingPack(
       collectionRootName: collectionRoot,
       uploadedManifestEntries: manifest,
       onProgress: onDuplicateCheck,
+      shouldAbort: () => options?.shouldAbort?.() === true || options?.isCancelled?.(pack.id) === true,
     },
   );
 
@@ -275,6 +284,9 @@ export async function uploadFilesToExistingPack(
   }
 
   onProgress?.(done, total);
+  const reportUploadProgress = throttleUploadProgress((nextDone: number, nextTotal: number) => {
+    onProgress?.(nextDone, nextTotal);
+  });
 
   const hasHandle =
     Boolean(options?.directoryHandle) || (await hasPersistedUploadDirectoryHandle(pack.id));
@@ -316,7 +328,7 @@ export async function uploadFilesToExistingPack(
         done += 1;
         current = { ...current, uploadedFileCount: done, expectedFileCount: total };
         await flushPackProgress();
-        onProgress?.(done, total);
+        reportUploadProgress(done, total);
         continue;
       }
 
@@ -327,7 +339,7 @@ export async function uploadFilesToExistingPack(
         done += 1;
         current = { ...current, uploadedFileCount: done, expectedFileCount: total };
         await flushPackProgress();
-        onProgress?.(done, total);
+        reportUploadProgress(done, total);
         continue;
       }
 
@@ -366,7 +378,7 @@ export async function uploadFilesToExistingPack(
       done += 1;
       current = { ...current, uploadedFileCount: done, expectedFileCount: total };
       await flushPackProgress();
-      onProgress?.(done, total);
+      reportUploadProgress(done, total);
     }
 
     await flushPendingPackFiles();

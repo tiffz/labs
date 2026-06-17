@@ -12,11 +12,11 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import CircularProgress from '@mui/material/CircularProgress';
 import {
   ensureLabsGoogleAccessTokenForDrive,
   LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
+import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
 import { labsDriveFolderUrl } from '../../shared/drive/labsDriveFolderUrl';
 import { applyGestureDuplicateDedup } from '../drive/gestureDuplicateDedup';
 import { linkPackFolderFromInput } from '../drive/linkPackFolder';
@@ -52,19 +52,20 @@ export default function GestureOrganizeDuplicatesDialog({
   onComplete,
   onError,
 }: GestureOrganizeDuplicatesDialogProps): React.ReactElement {
-  const [busy, setBusy] = useState(false);
+  const { withBlockingJob } = useLabsBlockingJobs();
   const [busyAction, setBusyAction] = useState<'link' | 'dedup' | 'paste' | null>(null);
   const [folderInput, setFolderInput] = useState('');
   const [dialogError, setDialogError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
-      setBusy(false);
       setBusyAction(null);
       setFolderInput('');
       setDialogError(null);
     }
   }, [open]);
+
+  const busy = busyAction !== null;
 
   const duplicateScan = scan?.duplicates ?? null;
   const unlinkedFolders = useMemo(() => scan?.unlinkedFolders ?? [], [scan?.unlinkedFolders]);
@@ -99,14 +100,18 @@ export default function GestureOrganizeDuplicatesDialog({
 
   const handleLinkUnlinked = useCallback(async () => {
     if (!scan || unlinkedFolders.length === 0) return;
-    setBusy(true);
     setBusyAction('link');
     setDialogError(null);
     try {
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      const result = await linkUnlinkedReferencePackFolders(token, unlinkedFolders);
-      finishSuccess(
-        `Added ${result.linkedCount} collection${result.linkedCount === 1 ? '' : 's'} (${result.photoCount} photo${result.photoCount === 1 ? '' : 's'}).`,
+      await withBlockingJob(
+        `Linking ${unlinkedFolders.length} collection${unlinkedFolders.length === 1 ? '' : 's'}…`,
+        async () => {
+          const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+          const result = await linkUnlinkedReferencePackFolders(token, unlinkedFolders);
+          finishSuccess(
+            `Added ${result.linkedCount} collection${result.linkedCount === 1 ? '' : 's'} (${result.photoCount} photo${result.photoCount === 1 ? '' : 's'}).`,
+          );
+        },
       );
     } catch (e) {
       if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
@@ -115,23 +120,23 @@ export default function GestureOrganizeDuplicatesDialog({
         reportFailure(e instanceof Error ? e.message : 'Could not link folders from Drive.');
       }
     } finally {
-      setBusy(false);
       setBusyAction(null);
     }
-  }, [finishSuccess, reportFailure, scan, unlinkedFolders]);
+  }, [finishSuccess, reportFailure, scan, unlinkedFolders, withBlockingJob]);
 
   const handlePasteLink = useCallback(async () => {
     if (!folderInput.trim()) return;
-    setBusy(true);
     setBusyAction('paste');
     setDialogError(null);
     try {
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      const result = await linkPackFolderFromInput(token, folderInput);
-      setFolderInput('');
-      finishSuccess(
-        `Linked “${result.pack.name}” with ${result.imageCount} photo${result.imageCount === 1 ? '' : 's'}.`,
-      );
+      await withBlockingJob('Linking Drive folder…', async () => {
+        const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+        const result = await linkPackFolderFromInput(token, folderInput);
+        setFolderInput('');
+        finishSuccess(
+          `Linked “${result.pack.name}” with ${result.imageCount} photo${result.imageCount === 1 ? '' : 's'}.`,
+        );
+      });
     } catch (e) {
       if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
         reportFailure(e.message);
@@ -139,29 +144,29 @@ export default function GestureOrganizeDuplicatesDialog({
         reportFailure(e instanceof Error ? e.message : 'Could not link folder.');
       }
     } finally {
-      setBusy(false);
       setBusyAction(null);
     }
-  }, [finishSuccess, folderInput, reportFailure]);
+  }, [finishSuccess, folderInput, reportFailure, withBlockingJob]);
 
   const handleConfirmDedup = useCallback(async () => {
     if (!duplicateScan || duplicateScan.duplicateFileCount === 0) return;
-    setBusy(true);
     setBusyAction('dedup');
     setDialogError(null);
     try {
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      const result = await applyGestureDuplicateDedup(token, duplicateScan.groups);
-      if (result.trashed === 0 && result.trashErrors > 0) {
-        reportFailure('Could not move duplicates to Drive trash. Try again or remove them in Drive.');
-        return;
-      }
-      const base = `Moved ${result.trashed} duplicate photo${result.trashed === 1 ? '' : 's'} to Google Drive trash.`;
-      const err =
-        result.trashErrors > 0
-          ? ` ${result.trashErrors} could not be trashed; check Drive manually.`
-          : '';
-      finishSuccess(`${base}${err}`);
+      await withBlockingJob('Moving duplicate photos to Drive trash…', async () => {
+        const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+        const result = await applyGestureDuplicateDedup(token, duplicateScan.groups);
+        if (result.trashed === 0 && result.trashErrors > 0) {
+          reportFailure('Could not move duplicates to Drive trash. Try again or remove them in Drive.');
+          return;
+        }
+        const base = `Moved ${result.trashed} duplicate photo${result.trashed === 1 ? '' : 's'} to Google Drive trash.`;
+        const err =
+          result.trashErrors > 0
+            ? ` ${result.trashErrors} could not be trashed; check Drive manually.`
+            : '';
+        finishSuccess(`${base}${err}`);
+      });
     } catch (e) {
       if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
         reportFailure(e.message);
@@ -169,10 +174,9 @@ export default function GestureOrganizeDuplicatesDialog({
         reportFailure(e instanceof Error ? e.message : 'Could not organize collections.');
       }
     } finally {
-      setBusy(false);
       setBusyAction(null);
     }
-  }, [duplicateScan, finishSuccess, reportFailure]);
+  }, [duplicateScan, finishSuccess, reportFailure, withBlockingJob]);
 
   const hasDuplicates = (duplicateScan?.duplicateFileCount ?? 0) > 0;
   const hasUnlinked = unlinkedFolders.length > 0;
@@ -195,7 +199,7 @@ export default function GestureOrganizeDuplicatesDialog({
         ) : null}
         {!scan ? (
           <Typography variant="body2" color="text.secondary">
-            Scanning collections…
+            Preparing results…
           </Typography>
         ) : !hasWork ? (
           <Stack spacing={2}>
@@ -318,27 +322,13 @@ export default function GestureOrganizeDuplicatesDialog({
           {hasWork ? 'Cancel' : 'Close'}
         </Button>
         {!hasWork && folderInput.trim() ? (
-          <Button
-            variant="contained"
-            onClick={() => void handlePasteLink()}
-            disabled={busy}
-            startIcon={
-              busyAction === 'paste' ? <CircularProgress size={16} color="inherit" aria-hidden /> : undefined
-            }
-          >
-            {busyAction === 'paste' ? 'Linking…' : 'Link folder'}
+          <Button variant="contained" onClick={() => void handlePasteLink()} disabled={busy}>
+            Link folder
           </Button>
         ) : null}
         {hasUnlinked ? (
-          <Button
-            variant="contained"
-            onClick={() => void handleLinkUnlinked()}
-            disabled={busy}
-            startIcon={busyAction === 'link' ? <CircularProgress size={16} color="inherit" aria-hidden /> : undefined}
-          >
-            {busyAction === 'link'
-              ? 'Linking…'
-              : `Link ${unlinkedFolders.length} folder${unlinkedFolders.length === 1 ? '' : 's'}`}
+          <Button variant="contained" onClick={() => void handleLinkUnlinked()} disabled={busy}>
+            {`Link ${unlinkedFolders.length} folder${unlinkedFolders.length === 1 ? '' : 's'}`}
           </Button>
         ) : null}
         {hasDuplicates ? (
@@ -347,9 +337,8 @@ export default function GestureOrganizeDuplicatesDialog({
             color="error"
             onClick={() => void handleConfirmDedup()}
             disabled={busy}
-            startIcon={busyAction === 'dedup' ? <CircularProgress size={16} color="inherit" aria-hidden /> : undefined}
           >
-            {busyAction === 'dedup' ? 'Organizing…' : 'Move duplicates to trash'}
+            Move duplicates to trash
           </Button>
         ) : null}
       </DialogActions>

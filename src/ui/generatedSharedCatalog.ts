@@ -6573,6 +6573,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-google-labsgoogledriveaccess-ts-reconnectlabsgoogledrivesession",
+    "name": "reconnectLabsGoogleDriveSession",
+    "path": "src/shared/google/labsGoogleDriveAccess.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Clears the cached access token and opens Google sign-in from a user gesture. Keeps the remembered email as a login hint. Use from Account → Sign in again.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-google-labsgoogleoauthredirecturi-ts-resolvelabsgoogleoauthredirecturi",
     "name": "resolveLabsGoogleOAuthRedirectUri",
     "path": "src/shared/google/labsGoogleOAuthRedirectUri.ts",
@@ -6964,6 +6977,147 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-jobs-labsblockingjobcontext-tsx-labsblockingjobhandle",
+    "name": "LabsBlockingJobHandle",
+    "path": "src/shared/jobs/LabsBlockingJobContext.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-jobs-labsblockingjobcontext-tsx-labsblockingjobprovider",
+    "name": "LabsBlockingJobProvider",
+    "path": "src/shared/jobs/LabsBlockingJobContext.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-jobs-labsblockingjobcontext-tsx-labsblockingjobproviderprops",
+    "name": "LabsBlockingJobProviderProps",
+    "path": "src/shared/jobs/LabsBlockingJobContext.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-jobs-labsblockingjobcontext-tsx-labsblockingjobsactive",
+    "name": "labsBlockingJobsActive",
+    "path": "src/shared/jobs/LabsBlockingJobContext.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-jobs-labsblockingjobcontext-tsx-labsblockingjobsapi",
+    "name": "LabsBlockingJobsApi",
+    "path": "src/shared/jobs/LabsBlockingJobContext.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-jobs-labsblockingjobcontext-tsx-labsstartblockingjoboptions",
+    "name": "LabsStartBlockingJobOptions",
+    "path": "src/shared/jobs/LabsBlockingJobContext.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-jobs-labsblockingjobcontext-tsx-uselabsblockingjobs",
+    "name": "useLabsBlockingJobs",
+    "path": "src/shared/jobs/LabsBlockingJobContext.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-jobs-labsblockingjobcontext-tsx-uselabsblockingjobsvisible",
+    "name": "useLabsBlockingJobsVisible",
+    "path": "src/shared/jobs/LabsBlockingJobContext.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-jobs-labsblockingjobprogressbar-tsx-labsblockingjobprogressbar",
+    "name": "LabsBlockingJobProgressBar",
+    "path": "src/shared/jobs/LabsBlockingJobProgressBar.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
     "demoId": null
   },
   {

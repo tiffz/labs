@@ -32,6 +32,8 @@ export type GesturePack = {
   sourceUrl?: string;
   /** Stable preview covers (max 4) — set on index, synced via progress.json. */
   coverFileIds?: string[];
+  /** Photos indexed from Drive on last full listing — synced via progress.json. */
+  photoIndexCount?: number;
   /** Legacy sync fields — not shown in UI. */
   subject?: string;
   notes?: string;

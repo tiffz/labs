@@ -28,7 +28,7 @@ Show **`GestureUploadActivity`** from the first user action (drop or picker), no
 | `uploading` | Each file upload                    | “Uploading to Drive… 12 of 240” + determinate progress |
 | `finishing` | Final Dexie writes                  | “Saving collection…”                                   |
 
-Use `aria-live="polite"` and `aria-busy` on the status region (`CollectionUploadStatus`).
+Progress copy comes from `GestureUploadActivity` labels; the **sticky bottom snackbar** (`LabsBlockingJobProvider` / `useLabsBlockingJobs`) owns the progress bar and `role="status"` (`aria-live="polite"`). See [`docs/LOCAL_FIRST_SYNC.md`](../../docs/LOCAL_FIRST_SYNC.md) § Long-running jobs.
 
 ### 2. Incremental local persistence
 
@@ -73,7 +73,7 @@ On load, surface packs where upload stopped via **`InterruptedUploadBanner`** (`
 - `uploadStatus: 'incomplete'` — always show until resolved
 - `uploadStatus: 'uploading'` — only when **no** upload is active in this session (e.g. after refresh mid-upload)
 
-While an upload runs, show **one** progress bar at the top of Collections (`CollectionUploadStatus`). Do not duplicate progress in the Add toolbar or drop zone.
+While an upload runs, show **one** sticky snackbar for progress (`useGestureCollectionUpload` syncs activity into `useLabsBlockingJobs`). Do not duplicate progress in the Add toolbar, drop zone, or a second in-tab bar.
 
 Copy must name the collection and progress, e.g.:
 

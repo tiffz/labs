@@ -38,6 +38,7 @@ Canonical module: [`media/gestureMediaPolicy.ts`](media/gestureMediaPolicy.ts). 
 
 - v1 **linked** Drive folders index photos in the folder root only — local uploads preserve nested subfolders on Drive.
 - **Uploads** must show status from drop/picker through completion; persist pack rows before all files finish (`createPackFromUpload`).
+- **Long-running jobs** → wrap with `useLabsBlockingJobs().withBlockingJob(label, fn)` (shared snackbar; see [`docs/LOCAL_FIRST_SYNC.md`](../../docs/LOCAL_FIRST_SYNC.md) § Long-running jobs). Do not dim the whole Collections grid — only disable conflicting actions (e.g. during upload).
 - Refresh mid-upload leaves partial Drive folders — surface `InterruptedUploadBanner`; never silently delete Drive content.
 - Pack file index syncs via `progress.json`; after pull, **auto-reindex from Drive** fills any collection still missing photos (legacy backups or linked folders). Runs for all signed-in users, not only Drive backup testers.
 - Shared Google token storage with Encore/Stanza/Scales — do not narrow OAuth scopes in Gesture-only code paths.

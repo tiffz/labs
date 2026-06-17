@@ -44,26 +44,53 @@ export function driveRowsToPackFiles(pack: GesturePack, images: GesturePackDrive
 /** True when this pack should re-list its Drive folder (empty index or stale upload ledger). */
 export function packNeedsPhotoReindex(pack: GesturePack, indexedPhotoCount: number): boolean {
   if (indexedPhotoCount === 0) return true;
+  const indexedOnPack = pack.photoIndexCount ?? 0;
+  if (indexedOnPack > 0 && indexedPhotoCount < indexedOnPack) return true;
   if (!pack.uploadStatus) return false;
   const expected = pack.expectedFileCount ?? 0;
   return expected > 0 && indexedPhotoCount < expected;
+}
+
+/** Fraction 0–1 while listing Drive images; null when count is unknown. */
+export function gestureDriveIndexListingProgress(
+  listedCount: number,
+  photoIndexHint: number,
+): number | null {
+  if (listedCount <= 0) return null;
+  if (photoIndexHint > 0) {
+    return Math.min(0.95, listedCount / photoIndexHint);
+  }
+  return Math.min(0.9, listedCount / (listedCount + 80));
 }
 
 /** Lists Drive folder contents and writes packFiles for one pack. */
 export async function indexGesturePackFromDrive(
   accessToken: string,
   pack: GesturePack,
+  options?: { onProgress?: (fraction: number | null) => void },
 ): Promise<number> {
   const tombstonedFileIds = getTombstonedFileIds();
-  const images = (await listImagesInGesturePackFolder(accessToken, pack.driveFolderId)).filter(
-    (image) => !image.id || !tombstonedFileIds.has(image.id),
-  );
+  const photoIndexHint = pack.photoIndexCount ?? 0;
+  options?.onProgress?.(null);
+  const images = (
+    await listImagesInGesturePackFolderRecursive(accessToken, pack.driveFolderId, {
+      onListedCount: (count) => {
+        options?.onProgress?.(gestureDriveIndexListingProgress(count, photoIndexHint));
+      },
+    })
+  ).filter((image) => !image.id || !tombstonedFileIds.has(image.id));
+  options?.onProgress?.(0.96);
   const packFiles = driveRowsToPackFiles(pack, images);
   const coverFileIds = pickGesturePackCoverFileIds(packFiles);
   const now = new Date().toISOString();
 
   await gestureDb.transaction('rw', gestureDb.packs, gestureDb.packFiles, async () => {
-    await gestureDb.packs.put({ ...pack, coverFileIds, lastIndexedAt: now });
+    await gestureDb.packs.put({
+      ...pack,
+      coverFileIds,
+      photoIndexCount: packFiles.length,
+      lastIndexedAt: now,
+    });
     const stale = await gestureDb.packFiles.where('packId').equals(pack.id).toArray();
     const freshIds = new Set(packFiles.map((f) => f.driveFileId));
     for (const row of stale) {
@@ -74,6 +101,7 @@ export async function indexGesturePackFromDrive(
 
   notifyGestureLocalChange();
   await reconcileStaleGestureUploadPacks();
+  options?.onProgress?.(1);
   return packFiles.length;
 }
 

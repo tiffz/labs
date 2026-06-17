@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { LabsDriveAccountMenu } from '../../shared/google/LabsDriveAccountMenu';
@@ -9,6 +8,10 @@ import {
   ensureLabsGoogleAccessTokenForDrive,
   LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
+import {
+  useLabsBlockingJobs,
+  useLabsBlockingJobsVisible,
+} from '../../shared/jobs/LabsBlockingJobContext';
 import { gestureDb } from '../db/gestureDb';
 import { scanGestureLibraryOrganize, type GestureOrganizeScanResult } from '../drive/gestureOrganizeScan';
 import { useGestureDriveBackupContext } from '../context/GestureDriveBackupContext';
@@ -17,7 +20,8 @@ import GestureOrganizeDuplicatesDialog from './GestureOrganizeDuplicatesDialog';
 export default function GestureAccountMenu() {
   const { googleClientConfigured, backupSlot, driveUi, conflict, organizeProbeFolderIds } =
     useGestureDriveBackupContext();
-  const [scanBusy, setScanBusy] = useState(false);
+  const { withBlockingJob } = useLabsBlockingJobs();
+  const blockingVisible = useLabsBlockingJobsVisible();
   const [organizeOpen, setOrganizeOpen] = useState(false);
   const [scanResult, setScanResult] = useState<GestureOrganizeScanResult | null>(null);
   const [organizeNote, setOrganizeNote] = useState<string | null>(null);
@@ -26,26 +30,25 @@ export default function GestureAccountMenu() {
   const handleOrganizeClick = useCallback(async () => {
     setOrganizeNote(null);
     setOrganizeError(null);
-    setScanBusy(true);
     setScanResult(null);
     try {
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      const packs = await gestureDb.packs.toArray();
-      const result = await scanGestureLibraryOrganize(token, packs, {
-        probeFolderIds: organizeProbeFolderIds,
+      await withBlockingJob('Scanning collections…', async () => {
+        const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+        const packs = await gestureDb.packs.toArray();
+        const result = await scanGestureLibraryOrganize(token, packs, {
+          probeFolderIds: organizeProbeFolderIds,
+        });
+        setScanResult(result);
+        setOrganizeOpen(true);
       });
-      setScanResult(result);
-      setOrganizeOpen(true);
     } catch (e) {
       if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
         setOrganizeError(e.message);
       } else {
         setOrganizeError(e instanceof Error ? e.message : 'Could not scan collections.');
       }
-    } finally {
-      setScanBusy(false);
     }
-  }, [organizeProbeFolderIds]);
+  }, [organizeProbeFolderIds, withBlockingJob]);
 
   if (!googleClientConfigured) return null;
 
@@ -79,18 +82,12 @@ export default function GestureAccountMenu() {
                 <Button
                   size="small"
                   variant="text"
-                  disabled={ctx.disabled || scanBusy}
+                  disabled={ctx.disabled || blockingVisible}
                   onClick={() => void handleOrganizeClick()}
-                  startIcon={
-                    scanBusy ? (
-                      <CircularProgress size={14} aria-hidden />
-                    ) : (
-                      <AutoFixHighIcon fontSize="small" aria-hidden />
-                    )
-                  }
+                  startIcon={<AutoFixHighIcon fontSize="small" aria-hidden />}
                   sx={{ minWidth: 0, px: 0.75, whiteSpace: 'nowrap' }}
                 >
-                  {scanBusy ? 'Scanning…' : 'Organize'}
+                  Organize
                 </Button>
               }
             />

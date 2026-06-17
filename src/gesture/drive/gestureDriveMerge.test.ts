@@ -133,6 +133,49 @@ describe('mergeGestureSyncPayload', () => {
     expect(payload.packs[0]?.expectedFileCount).toBeUndefined();
   });
 
+  it('remaps local pack file rows when pack ids differ but folder matches', () => {
+    const localFiles = Array.from({ length: 700 }, (_, index) => ({
+      driveFileId: `local-photo-${index}`,
+      packId: 'old-local-id',
+      name: `photo-${index}.jpg`,
+      mimeType: 'image/jpeg',
+    }));
+    const local = {
+      packs: [
+        {
+          id: 'old-local-id',
+          driveFolderId: 'folder-a',
+          name: 'Hattie in Motion',
+          linkedAt: '2026-01-01T00:00:00.000Z',
+          lastIndexedAt: '2026-01-03T00:00:00.000Z',
+        },
+      ],
+      packFiles: localFiles,
+      drawHistory: [],
+    };
+    const remote = {
+      packs: [
+        {
+          id: 'remote-id',
+          driveFolderId: 'folder-a',
+          name: 'Hattie in Motion',
+          linkedAt: '2026-01-01T00:00:00.000Z',
+          lastIndexedAt: '2026-01-02T00:00:00.000Z',
+        },
+      ],
+      packFiles: Array.from({ length: 10 }, (_, index) => ({
+        driveFileId: `remote-photo-${index}`,
+        packId: 'remote-id',
+        name: `remote-${index}.jpg`,
+        mimeType: 'image/jpeg',
+      })),
+      drawHistory: [],
+    };
+    const { payload } = mergeGestureSyncPayload(local, remote);
+    expect(payload.packFiles).toHaveLength(710);
+    expect(payload.packFiles.every((row) => row.packId === 'old-local-id')).toBe(true);
+  });
+
   it('remaps remote pack file rows to merged pack ids', () => {
     const local = {
       packs: [

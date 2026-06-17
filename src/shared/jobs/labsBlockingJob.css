@@ -1,0 +1,101 @@
+/*
+ * Canonical Labs long-running job snackbar (M3-inspired, shared Encore + Gesture).
+ * See docs/LOCAL_FIRST_SYNC.md § Long-running jobs.
+ */
+
+.labs-blocking-job-snackbar.MuiSnackbar-root {
+  z-index: 1400;
+}
+
+.labs-blocking-job-panel.MuiPaper-root {
+  width: 100%;
+}
+
+.labs-blocking-job-progress {
+  width: 100%;
+  padding-block: 2px;
+}
+
+.labs-blocking-job-progress-track {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.labs-blocking-job-progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: inherit;
+  min-width: 0;
+  transition: width 320ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.labs-blocking-job-progress-fill.is-determinate {
+  overflow: hidden;
+}
+
+/* Shimmer sweep — runs even when width is unchanged so the bar feels alive */
+.labs-blocking-job-progress-fill.is-determinate::after,
+.labs-blocking-job-progress-fill.is-indeterminate::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.42) 42%,
+    rgb(255 255 255 / 0.55) 50%,
+    transparent 88%
+  );
+  animation: labs-blocking-job-shimmer 1.5s ease-in-out infinite;
+  transform: translateX(-120%);
+}
+
+.labs-blocking-job-progress-fill.is-indeterminate {
+  width: 36%;
+  animation: labs-blocking-job-indeterminate 1.2s cubic-bezier(0.4, 0, 0.2, 1)
+    infinite;
+}
+
+@keyframes labs-blocking-job-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+@keyframes labs-blocking-job-indeterminate {
+  0% {
+    left: -38%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .labs-blocking-job-progress-fill.is-determinate::after,
+  .labs-blocking-job-progress-fill.is-indeterminate::after {
+    animation: none;
+    opacity: 0.3;
+    transform: none;
+  }
+
+  .labs-blocking-job-progress-fill.is-indeterminate {
+    animation: labs-blocking-job-indeterminate-slow 2.4s ease-in-out infinite;
+  }
+}
+
+@keyframes labs-blocking-job-indeterminate-slow {
+  0% {
+    left: 0%;
+  }
+  100% {
+    left: 64%;
+  }
+}

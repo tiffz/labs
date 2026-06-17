@@ -2,7 +2,6 @@ import { useState } from 'react';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import {
-  dismissBatchUploadSession,
   formatBatchUploadRecoveryHeadline,
   formatBatchUploadRecoverySummary,
   type ActiveBatchUploadSession,
@@ -34,7 +33,7 @@ export default function InterruptedBatchUploadBanner({
   const handleDismiss = async () => {
     setDismissing(true);
     try {
-      await dismissBatchUploadSession(session.id);
+      await upload.cancelPendingUploadSession(session.id);
       onDismiss();
     } finally {
       setDismissing(false);

@@ -27,6 +27,8 @@ export type GestureDriveBackupContextValue = {
   conflict: (LabsDriveConflictUiProps & { dialogTitleId: string }) | null;
   /** Remote backup pack folder ids — probed during Organize when missing locally. */
   organizeProbeFolderIds: readonly string[];
+  /** Push local progress to Drive immediately (e.g. after refresh reindex). */
+  flushDriveWrite: (opts?: { silent?: boolean }) => Promise<void>;
 };
 
 const GestureDriveBackupContext = createContext<GestureDriveBackupContextValue | null>(null);
@@ -148,8 +150,9 @@ export function GestureDriveBackupProvider({ children }: { children: ReactNode }
       driveUi,
       conflict,
       organizeProbeFolderIds,
+      flushDriveWrite: backup.flushDriveWrite,
     }),
-    [backupSlot, driveUi, conflict, organizeProbeFolderIds],
+    [backup, backupSlot, driveUi, conflict, organizeProbeFolderIds],
   );
 
   return (

@@ -2,13 +2,13 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'rea
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { ensureLabsGoogleAccessTokenForDrive } from '../../shared/google/labsGoogleDriveAccess';
+import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
 import AddCollectionActions from '../components/AddCollectionActions';
 import BulkAddTagsDialog from '../components/BulkAddTagsDialog';
 import BulkSetSourceDialog from '../components/BulkSetSourceDialog';
 import CollectionsBulkBar from '../components/CollectionsBulkBar';
 import CollectionsCollectionGrid from '../components/CollectionsCollectionGrid';
 import CollectionDropZone from '../components/CollectionDropZone';
-import CollectionUploadStatus from '../components/CollectionUploadStatus';
 import DeleteCollectionDialog from '../components/DeleteCollectionDialog';
 import GestureTabLoading from '../components/GestureTabLoading';
 import GestureTagFilterBar from '../components/GestureTagFilterBar';
@@ -16,13 +16,14 @@ import InterruptedMergeBanner from '../components/InterruptedMergeBanner';
 import InterruptedBatchUploadBanner from '../components/InterruptedBatchUploadBanner';
 import InterruptedUploadBanner from '../components/InterruptedUploadBanner';
 import MergeCollectionsDialog from '../components/MergeCollectionsDialog';
+import { useGestureDriveBackupContext } from '../context/GestureDriveBackupContext';
 import { canMergeGesturePacks, isPackInvolvedInIncompleteMerge } from '../drive/gestureMergeCollections';
 import { shouldShowMergeRecoveryBanner } from '../drive/gestureMergeActivity';
 import { refreshPackFolder } from '../drive/linkPackFolder';
 import { packMatchesGestureTagFilters, countGestureCollectionsPerTag } from '../drive/gesturePackTags';
 import { useCollectionGridSelection } from '../hooks/useCollectionGridSelection';
 import { useGestureKnownTags } from '../hooks/useGestureKnownTags';
-import { buildUploadActivity, shouldShowUploadRecoveryBanner } from '../drive/gestureUploadActivity';
+import { shouldShowUploadRecoveryBanner } from '../drive/gestureUploadActivity';
 import { useGestureCollectionDrop } from '../hooks/useGestureCollectionDrop';
 import { useGestureCollectionUpload } from '../hooks/useGestureCollectionUpload';
 import { useGestureMergeResume } from '../hooks/useGestureMergeResume';
@@ -49,8 +50,9 @@ export default function CollectionsTab({
   useEffect(() => mountGestureCollectionsScrollPerf(), []);
   useGestureMergeResume(true, onMessage, onError);
 
-  const [busy, setBusy] = useState(false);
-  const [bulkProgressLabel, setBulkProgressLabel] = useState<string | null>(null);
+  const { withBlockingJob } = useLabsBlockingJobs();
+  const { flushDriveWrite } = useGestureDriveBackupContext();
+  const [refreshingPackIds, setRefreshingPackIds] = useState<ReadonlySet<string>>(() => new Set());
   const [deleteTargets, setDeleteTargets] = useState<GesturePack[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [nameQuery, setNameQuery] = useState('');
@@ -59,20 +61,16 @@ export default function CollectionsTab({
   const [bulkTagsOpen, setBulkTagsOpen] = useState(false);
   const [bulkSourceOpen, setBulkSourceOpen] = useState(false);
   const upload = useGestureCollectionUpload({ onComplete: onMessage, onError });
-  const { dragActive, handlers, activity } = useGestureCollectionDrop({
-    disabled: busy,
+  const { dragActive, handlers } = useGestureCollectionDrop({
+    disabled: upload.busy,
     upload,
   });
 
-  const interactionDisabled = busy;
   const uploadSessionActive = upload.busy || upload.queuedCount > 0;
-  const uploadActivity =
-    activity ?? (uploadSessionActive ? buildUploadActivity('preparing') : null);
+  const interactionDisabled = upload.busy;
 
   const { packs, packsHydrated } = useGesturePacks();
   const filesByPack = useGesturePackStats();
-  const deferredFilesByPack = useDeferredValue(filesByPack);
-  const statsForGrid = uploadSessionActive ? deferredFilesByPack : filesByPack;
 
   const incompleteMergeParents = useMemo(
     () => packs.filter((pack) => pack.mergeStatus === 'incomplete'),
@@ -150,62 +148,88 @@ export default function CollectionsTab({
     async (pack: GesturePack) => {
       onError(null);
       onMessage(null);
-      setBusy(true);
+      setRefreshingPackIds((prev) => new Set(prev).add(pack.id));
       try {
-        const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-        const result = await refreshPackFolder(token, pack.id);
-        const parts = [
-          ...result.driveMergeMessages,
-          `Refreshed (${result.photoCount} photo${result.photoCount === 1 ? '' : 's'}).`,
-        ];
-        onMessage(parts.join(' '));
-        if (result.driveMergeErrors.length > 0) {
-          onError(result.driveMergeErrors.join(' '));
-        }
+        await withBlockingJob(`Refreshing “${pack.name}”…`, async (setProgress) => {
+          const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+          const result = await refreshPackFolder(token, pack.id, { onProgress: setProgress });
+          await flushDriveWrite({ silent: true });
+          const parts = [
+            ...result.driveMergeMessages,
+            `Refreshed (${result.photoCount} photo${result.photoCount === 1 ? '' : 's'}).`,
+          ];
+          onMessage(parts.join(' '));
+          if (result.driveMergeErrors.length > 0) {
+            onError(result.driveMergeErrors.join(' '));
+          }
+        });
       } catch (e) {
         onError(e instanceof Error ? e.message : 'Refresh failed.');
       } finally {
-        setBusy(false);
+        setRefreshingPackIds((prev) => {
+          const next = new Set(prev);
+          next.delete(pack.id);
+          return next;
+        });
       }
     },
-    [onError, onMessage],
+    [flushDriveWrite, onError, onMessage, withBlockingJob],
   );
 
   const handleBulkRefresh = useCallback(async () => {
     if (selectedPacks.length === 0) return;
     onError(null);
     onMessage(null);
-    setBusy(true);
-    setBulkProgressLabel(null);
     try {
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      let totalPhotos = 0;
-      const mergeMessages: string[] = [];
-      const mergeErrors: string[] = [];
-      for (let index = 0; index < selectedPacks.length; index += 1) {
-        const pack = selectedPacks[index];
-        setBulkProgressLabel(`Refreshing ${index + 1} of ${selectedPacks.length}…`);
-        const result = await refreshPackFolder(token, pack.id);
-        totalPhotos += result.photoCount;
-        mergeMessages.push(...result.driveMergeMessages);
-        mergeErrors.push(...result.driveMergeErrors);
-      }
-      clear();
-      const parts = [
-        ...mergeMessages,
-        `Refreshed ${selectedPacks.length} collection${selectedPacks.length === 1 ? '' : 's'} (${totalPhotos} photo${totalPhotos === 1 ? '' : 's'}).`,
-      ];
-      onMessage(parts.join(' '));
-      if (mergeErrors.length > 0) {
-        onError(mergeErrors.join(' '));
-      }
+      await withBlockingJob(
+        `Refreshing ${selectedPacks.length} collection${selectedPacks.length === 1 ? '' : 's'}…`,
+        async (setProgress) => {
+          const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+          let totalPhotos = 0;
+          const mergeMessages: string[] = [];
+          const mergeErrors: string[] = [];
+          for (let index = 0; index < selectedPacks.length; index += 1) {
+            const pack = selectedPacks[index]!;
+            setProgress((index + 0.05) / selectedPacks.length);
+            setRefreshingPackIds((prev) => new Set(prev).add(pack.id));
+            try {
+              const result = await refreshPackFolder(token, pack.id, {
+                onProgress: (packFraction) => {
+                  if (packFraction == null) {
+                    setProgress(null);
+                    return;
+                  }
+                  setProgress((index + packFraction * 0.95) / selectedPacks.length);
+                },
+              });
+              totalPhotos += result.photoCount;
+              mergeMessages.push(...result.driveMergeMessages);
+              mergeErrors.push(...result.driveMergeErrors);
+            } finally {
+              setRefreshingPackIds((prev) => {
+                const next = new Set(prev);
+                next.delete(pack.id);
+                return next;
+              });
+            }
+            setProgress((index + 1) / selectedPacks.length);
+          }
+          await flushDriveWrite({ silent: true });
+          clear();
+          const parts = [
+            ...mergeMessages,
+            `Refreshed ${selectedPacks.length} collection${selectedPacks.length === 1 ? '' : 's'} (${totalPhotos} photo${totalPhotos === 1 ? '' : 's'}).`,
+          ];
+          onMessage(parts.join(' '));
+          if (mergeErrors.length > 0) {
+            onError(mergeErrors.join(' '));
+          }
+        },
+      );
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Refresh failed.');
-    } finally {
-      setBusy(false);
-      setBulkProgressLabel(null);
     }
-  }, [clear, onError, onMessage, selectedPacks]);
+  }, [clear, flushDriveWrite, onError, onMessage, selectedPacks, withBlockingJob]);
 
   const openDeleteDialog = useCallback((targets: GesturePack[]) => {
     setDeleteTargets(targets);
@@ -241,8 +265,6 @@ export default function CollectionsTab({
       aria-label="Drop folders or photos to upload"
       {...handlers}
     >
-      {uploadActivity ? <CollectionUploadStatus activity={uploadActivity} /> : null}
-
       {upload.pendingBatchSession && upload.pendingBatchSession.pendingCount > 0 && !uploadSessionActive ? (
         <InterruptedBatchUploadBanner
           session={upload.pendingBatchSession}
@@ -323,7 +345,7 @@ export default function CollectionsTab({
           <Typography className="gesture-empty-copy">
             Drag a folder here, or use Add to pick files. Everything saves to your Drive automatically.
           </Typography>
-          <AddCollectionActions disabled={busy} upload={upload} onComplete={onMessage} onError={onError} />
+          <AddCollectionActions disabled={upload.busy} upload={upload} onComplete={onMessage} onError={onError} />
         </div>
       ) : visiblePacks.length === 0 ? (
         <div className="gesture-empty-state">
@@ -335,11 +357,12 @@ export default function CollectionsTab({
       ) : (
         <CollectionsCollectionGrid
           visiblePacks={visiblePacks}
-          stats={statsForGrid}
+          stats={filesByPack}
           allTags={allTags}
           upload={upload}
           selectedSet={selectedSet}
           interactionDisabled={interactionDisabled}
+          refreshingPackIds={refreshingPackIds}
           previewFetchEnabled={previewFetchEnabled}
           onToggleCollectionSelect={toggle}
           onRefresh={handleRefresh}
@@ -353,7 +376,6 @@ export default function CollectionsTab({
       <DeleteCollectionDialog
         packs={deleteTargets}
         open={deleteDialogOpen}
-        busy={busy}
         onCancelUpload={upload.cancelUploadForPack}
         onClose={() => {
           setDeleteDialogOpen(false);
@@ -366,7 +388,7 @@ export default function CollectionsTab({
       <MergeCollectionsDialog
         open={mergeDialogOpen && mergeTargets.length >= 2}
         packs={mergeTargets}
-        busy={busy || uploadSessionActive}
+        busy={uploadSessionActive}
         onClose={closeMergeDialog}
         onComplete={handleMergeComplete}
         onError={onError}
@@ -405,7 +427,6 @@ export default function CollectionsTab({
             selectedCount={selectedIds.length}
             visibleCount={visiblePacks.length}
             busy={interactionDisabled}
-            progressLabel={bulkProgressLabel}
             mergeEnabled={mergeEnabled}
             mergeHint={mergeHint}
             refreshEnabled={refreshEnabled}

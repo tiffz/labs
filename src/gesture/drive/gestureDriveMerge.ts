@@ -39,6 +39,11 @@ function mergePack(local: GesturePack, remote: GesturePack): GesturePack {
     const merged = [...new Set([...(a ?? []), ...(b ?? [])])];
     return merged.length ? merged : undefined;
   };
+  const photoIndexCount = Math.max(local.photoIndexCount ?? 0, remote.photoIndexCount ?? 0);
+  const coverFileIds =
+    (newerIsRemote ? remote.coverFileIds : local.coverFileIds) ??
+    local.coverFileIds ??
+    remote.coverFileIds;
   return {
     ...local,
     name: newerIsRemote ? remote.name : local.name,
@@ -49,17 +54,21 @@ function mergePack(local: GesturePack, remote: GesturePack): GesturePack {
     subject: pickMeta(local.subject, remote.subject),
     notes: pickMeta(local.notes, remote.notes),
     tags: mergeTags(local.tags, remote.tags),
+    ...(photoIndexCount > 0 ? { photoIndexCount } : {}),
+    ...(coverFileIds?.length ? { coverFileIds } : {}),
   };
 }
 
 function mergePackFiles(
   local: GesturePackFile[],
+  localPacks: GesturePack[],
   remote: GesturePackFile[],
   mergedPacks: GesturePack[],
   remotePacks: GesturePack[],
   tombstonedFileIds: ReadonlySet<string>,
 ): { rows: GesturePackFile[]; merged: number; fromRemoteOnly: number; skippedTombstone: number } {
   const folderToMergedId = new Map(mergedPacks.map((p) => [p.driveFolderId, p.id]));
+  const localPackIdToFolder = new Map(localPacks.map((p) => [p.id, p.driveFolderId]));
   const remotePackIdToFolder = new Map(remotePacks.map((p) => [p.id, p.driveFolderId]));
   const mergedPackIds = new Set(mergedPacks.map((p) => p.id));
 
@@ -69,12 +78,18 @@ function mergePackFiles(
   let skippedTombstone = 0;
 
   for (const file of local) {
-    if (!mergedPackIds.has(file.packId)) continue;
     if (tombstonedFileIds.has(file.driveFileId)) {
       skippedTombstone += 1;
       continue;
     }
-    byFileId.set(file.driveFileId, file);
+    let packId = file.packId;
+    if (!mergedPackIds.has(packId)) {
+      const folderId = localPackIdToFolder.get(packId);
+      const mergedPackId = folderId ? folderToMergedId.get(folderId) : undefined;
+      if (!mergedPackId) continue;
+      packId = mergedPackId;
+    }
+    byFileId.set(file.driveFileId, packId === file.packId ? file : { ...file, packId });
   }
 
   for (const file of remote) {
@@ -161,6 +176,7 @@ export function mergeGestureSyncPayload(
 
   const packFileMerge = mergePackFiles(
     local.packFiles,
+    local.packs,
     remote.packFiles,
     mergedPacks,
     remote.packs,

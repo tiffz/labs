@@ -9,6 +9,7 @@ import {
   LABS_DRIVE_SYNC_PAUSED_IDLE_MESSAGE,
 } from '../../shared/drive/labsDriveSyncMessages';
 import { useLabsDrivePortfolioAutoSync } from '../../shared/drive/useLabsDrivePortfolioAutoSync';
+import { labsBlockingJobsActive, useLabsBlockingJobs, useLabsBlockingJobsVisible } from '../../shared/jobs/LabsBlockingJobContext';
 import {
   ensureLabsDrivePortfolioProgressLayout,
   getLabsDriveProgressFileMeta,
@@ -79,9 +80,10 @@ export type UseGestureDriveBackupOptions = {
 
 export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupOptions) {
   const identity = useLabsEncoreGoogleIdentity();
+  const { withBlockingJob } = useLabsBlockingJobs();
+  const blockingVisible = useLabsBlockingJobsVisible();
   const [testerOk, setTesterOk] = useState(false);
   const [testerResolved, setTesterResolved] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [conflict, setConflict] = useState<GestureDriveBackupConflictState | null>(null);
   const [restoreOpen, setRestoreOpen] = useState(false);
@@ -251,105 +253,100 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
 
   const onSignIn = useCallback(async () => {
     setMessage(null);
-    setBusy(true);
     try {
-      await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      await pullFromDriveAndMerge({ silent: false });
+      await withBlockingJob('Syncing with Google Drive…', async () => {
+        await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+        await pullFromDriveAndMerge({ silent: false });
+      });
     } catch (e) {
       setMessage(formatLabsDriveSyncError(e, 'pull'));
       setSyncPaused(true);
-    } finally {
-      setBusy(false);
     }
-  }, [pullFromDriveAndMerge]);
+  }, [pullFromDriveAndMerge, withBlockingJob]);
 
   const onBackup = useCallback(async () => {
     setMessage(null);
-    setBusy(true);
     try {
-      await ensureLabsGoogleAccessTokenForDrive();
-      await snapshotBeforeMerge('manual-backup');
-      await pullFromDriveAndMerge({ silent: true });
-      await flushDriveWrite();
-      markManualBackupSucceeded();
+      await withBlockingJob('Backing up to Google Drive…', async () => {
+        await ensureLabsGoogleAccessTokenForDrive();
+        await snapshotBeforeMerge('manual-backup');
+        await pullFromDriveAndMerge({ silent: true });
+        await flushDriveWrite();
+        markManualBackupSucceeded();
+      });
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Backup failed.');
-    } finally {
-      setBusy(false);
     }
-  }, [flushDriveWrite, markManualBackupSucceeded, pullFromDriveAndMerge, snapshotBeforeMerge]);
+  }, [flushDriveWrite, markManualBackupSucceeded, pullFromDriveAndMerge, snapshotBeforeMerge, withBlockingJob]);
 
   const cancelConflict = useCallback(() => setConflict(null), []);
 
   const confirmReplaceDriveOnly = useCallback(async () => {
     if (!conflict) return;
-    setBusy(true);
     try {
-      await flushDriveWrite();
-      markManualBackupSucceeded();
-      setConflict(null);
+      await withBlockingJob('Saving to Google Drive…', async () => {
+        await flushDriveWrite();
+        markManualBackupSucceeded();
+        setConflict(null);
+      });
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Backup failed.');
-    } finally {
-      setBusy(false);
     }
-  }, [conflict, flushDriveWrite, markManualBackupSucceeded]);
+  }, [conflict, flushDriveWrite, markManualBackupSucceeded, withBlockingJob]);
 
   const confirmMergeThenUpload = useCallback(async () => {
     if (!conflict) return;
-    setBusy(true);
     try {
-      await snapshotBeforeMerge('pre-merge');
-      const local = await readGestureLocalPayload();
-      const mergeOptions = prepareGestureDriveMerge(conflict.remoteEnvelope);
-      const { payload: merged, report } = mergeGestureSyncPayload(
-        local,
-        envelopeToPayload(conflict.remoteEnvelope),
-        mergeOptions,
-      );
-      const token = await ensureLabsGoogleAccessTokenForDrive();
-      await applyMerged(
-        merged,
-        `Merged progress (${formatGestureDriveMergeReport(report)}), then saved to Drive.`,
-        token,
-      );
-      setConflict(null);
-      await flushDriveWrite();
-      markManualBackupSucceeded();
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : 'Merge or backup failed.');
-    } finally {
-      setBusy(false);
-    }
-  }, [applyMerged, conflict, flushDriveWrite, markManualBackupSucceeded, snapshotBeforeMerge]);
-
-  const applyUndoSnapshot = useCallback(
-    async (snap: GestureDriveUndoSnapshot) => {
-      setBusy(true);
-      try {
-        await snapshotBeforeMerge('pre-restore');
-        const env = parseGestureSnapshotEnvelope(snap);
+      await withBlockingJob('Merging and backing up…', async () => {
+        await snapshotBeforeMerge('pre-merge');
         const local = await readGestureLocalPayload();
-        const mergeOptions = prepareGestureDriveMerge(env);
+        const mergeOptions = prepareGestureDriveMerge(conflict.remoteEnvelope);
         const { payload: merged, report } = mergeGestureSyncPayload(
           local,
-          envelopeToPayload(env),
+          envelopeToPayload(conflict.remoteEnvelope),
           mergeOptions,
         );
         const token = await ensureLabsGoogleAccessTokenForDrive();
         await applyMerged(
           merged,
-          `Restored snapshot from ${snap.label} (${formatGestureDriveMergeReport(report)}).`,
+          `Merged progress (${formatGestureDriveMergeReport(report)}), then saved to Drive.`,
           token,
         );
-        setRestoreOpen(false);
+        setConflict(null);
+        await flushDriveWrite();
+        markManualBackupSucceeded();
+      });
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : 'Merge or backup failed.');
+    }
+  }, [applyMerged, conflict, flushDriveWrite, markManualBackupSucceeded, snapshotBeforeMerge, withBlockingJob]);
+
+  const applyUndoSnapshot = useCallback(
+    async (snap: GestureDriveUndoSnapshot) => {
+      try {
+        await withBlockingJob('Restoring snapshot…', async () => {
+          await snapshotBeforeMerge('pre-restore');
+          const env = parseGestureSnapshotEnvelope(snap);
+          const local = await readGestureLocalPayload();
+          const mergeOptions = prepareGestureDriveMerge(env);
+          const { payload: merged, report } = mergeGestureSyncPayload(
+            local,
+            envelopeToPayload(env),
+            mergeOptions,
+          );
+          const token = await ensureLabsGoogleAccessTokenForDrive();
+          await applyMerged(
+            merged,
+            `Restored snapshot from ${snap.label} (${formatGestureDriveMergeReport(report)}).`,
+            token,
+          );
+          setRestoreOpen(false);
+        });
       } catch (e) {
         setMessage(e instanceof Error ? e.message : 'Restore failed.');
-      } finally {
-        setBusy(false);
       }
     },
-    [applyMerged, snapshotBeforeMerge],
+    [applyMerged, snapshotBeforeMerge, withBlockingJob],
   );
 
   const restoreLatestPrePullSnapshot = useCallback(async () => {
@@ -362,29 +359,27 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
   }, [applyUndoSnapshot]);
 
   const restoreLatestFromDrive = useCallback(async () => {
-    setBusy(true);
     try {
-      await pullFromDriveAndMerge({ silent: false });
-      setRestoreOpen(false);
+      await withBlockingJob('Syncing from Google Drive…', async () => {
+        await pullFromDriveAndMerge({ silent: false });
+        setRestoreOpen(false);
+      });
     } catch (e) {
       setMessage(e instanceof Error ? e.message : 'Restore from Drive failed.');
-    } finally {
-      setBusy(false);
     }
-  }, [pullFromDriveAndMerge]);
+  }, [pullFromDriveAndMerge, withBlockingJob]);
 
   const retryPullFromDrive = useCallback(async () => {
     setMessage(null);
-    setBusy(true);
     try {
-      await pullFromDriveAndMerge({ silent: false });
+      await withBlockingJob('Syncing with Google Drive…', async () => {
+        await pullFromDriveAndMerge({ silent: false });
+      });
     } catch (e) {
       setMessage(formatLabsDriveSyncError(e, 'pull'));
       setSyncPaused(true);
-    } finally {
-      setBusy(false);
     }
-  }, [pullFromDriveAndMerge]);
+  }, [pullFromDriveAndMerge, withBlockingJob]);
 
   const handleAutoPullError = useCallback((msg: string) => {
     setMessage(msg);
@@ -396,12 +391,12 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
     allowAutoPush,
     pullFromDriveAndMerge,
     flushDriveWrite,
-    isMergeInProgress: () => mergeInProgressRef.current,
+    isMergeInProgress: () => mergeInProgressRef.current || labsBlockingJobsActive(),
     onAutoPullError: handleAutoPullError,
     onAutoPushError: (msg) => setMessage(msg),
     subscribeLocalChanges: (onChange) =>
       subscribeGestureLocalChanges(() => {
-        if (mergeInProgressRef.current) return;
+        if (mergeInProgressRef.current || labsBlockingJobsActive()) return;
         onChange();
       }),
   });
@@ -419,7 +414,7 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
     identity,
     testerOk,
     testerResolved,
-    busy,
+    busy: blockingVisible,
     message: syncPaused && !message ? LABS_DRIVE_SYNC_PAUSED_IDLE_MESSAGE : message,
     syncPaused,
     conflict,
@@ -442,5 +437,6 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
     formatGestureDriveUndoSnapshotTrigger,
     canRestore: testerOk && Boolean(identity?.email),
     canUndoLastSync: undoSnapshots.some((s) => s.trigger === 'pre-pull'),
+    flushDriveWrite,
   };
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
@@ -6,7 +6,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import LinearProgress from '@mui/material/LinearProgress';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import Typography from '@mui/material/Typography';
@@ -14,6 +13,7 @@ import {
   ensureLabsGoogleAccessTokenForDrive,
   LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
+import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
 import {
   deleteCollectionAndDrivePhotos,
   deleteCollectionFromApp,
@@ -25,7 +25,6 @@ import type { GesturePack } from '../types';
 type DeleteCollectionDialogProps = {
   packs: GesturePack[];
   open: boolean;
-  busy?: boolean;
   onCancelUpload?: (packId: string) => void;
   onClose: () => void;
   onComplete: (message: string) => void;
@@ -68,12 +67,13 @@ function deleteProgressValue(progress: DeleteCollectionProgress | null): number 
 export default function DeleteCollectionDialog({
   packs,
   open,
-  busy,
   onCancelUpload,
   onClose,
   onComplete,
   onError,
 }: DeleteCollectionDialogProps): React.ReactElement {
+  const { startBlockingJob } = useLabsBlockingJobs();
+  const deleteJobRef = useRef<ReturnType<typeof startBlockingJob> | null>(null);
   const [scope, setScope] = useState<DeleteCollectionScope>('app-only');
   const [deleting, setDeleting] = useState(false);
   const [deleteProgress, setDeleteProgress] = useState<DeleteCollectionProgress | null>(null);
@@ -94,7 +94,31 @@ export default function DeleteCollectionDialog({
     setBulkIndex(0);
   }, [hasInterruptedUpload, open]);
 
-  const interactionDisabled = busy || deleting;
+  const interactionDisabled = deleting;
+
+  useEffect(() => {
+    if (!deleting) {
+      deleteJobRef.current?.end();
+      deleteJobRef.current = null;
+      return;
+    }
+    const label = deleteStatusLabel(scope, deleteProgress, bulkIndex, packCount);
+    const progressValue = deleteProgressValue(deleteProgress);
+    const progress = progressValue != null ? progressValue / 100 : null;
+    if (!deleteJobRef.current) {
+      deleteJobRef.current = startBlockingJob(label);
+    } else {
+      deleteJobRef.current.updateLabel(label);
+    }
+    deleteJobRef.current.updateProgress(progress);
+  }, [bulkIndex, deleteProgress, deleting, packCount, scope, startBlockingJob]);
+
+  useEffect(
+    () => () => {
+      deleteJobRef.current?.end();
+    },
+    [],
+  );
 
   const handleClose = () => {
     if (!interactionDisabled) onClose();
@@ -158,7 +182,6 @@ export default function DeleteCollectionDialog({
   }, [deleting, onCancelUpload, onClose, onComplete, onError, packCount, packs, primaryPack, scope]);
 
   const statusLabel = deleting ? deleteStatusLabel(scope, deleteProgress, bulkIndex, packCount) : null;
-  const progressValue = deleteProgressValue(deleteProgress);
 
   return (
     <Dialog
@@ -218,16 +241,9 @@ export default function DeleteCollectionDialog({
           />
         </RadioGroup>
         {deleting ? (
-          <div className="gesture-delete-status" role="status" aria-live="polite" aria-busy="true">
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, mb: 0.75 }}>
-              {statusLabel}
-            </Typography>
-            {progressValue != null ? (
-              <LinearProgress variant="determinate" value={progressValue} aria-label="Remove progress" />
-            ) : (
-              <LinearProgress aria-label="Remove in progress" />
-            )}
-          </div>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+            {statusLabel}
+          </Typography>
         ) : null}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>

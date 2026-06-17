@@ -1,14 +1,12 @@
 import { driveGetFileMetadata, driveListFiles } from '../../shared/drive/driveFetch';
 import { gestureDb } from '../db/gestureDb';
-import { notifyGestureLocalChange } from '../db/gestureChangeBus';
 import type { GesturePack, GestureUnlinkedPackFolder } from '../types';
 import {
   ensureGestureReferencePacksLayout,
   listAllGestureReferencePacksRootIds,
 } from './gestureDriveLayout';
 import {
-  driveRowsToPackFiles,
-  listImagesInGesturePackFolder,
+  indexGesturePackFromDrive,
 } from './gesturePackIndex';
 import { clearGestureDriveFolderTombstone } from './gestureDriveTombstones';
 
@@ -141,11 +139,9 @@ export type LinkUnlinkedFoldersResult = {
 type PreparedUnlinkedPackLink = {
   folder: GestureUnlinkedPackFolder;
   pack: GesturePack;
-  packFiles: ReturnType<typeof driveRowsToPackFiles>;
 };
 
 async function prepareUnlinkedPackLinks(
-  accessToken: string,
   folders: GestureUnlinkedPackFolder[],
   now: string,
 ): Promise<PreparedUnlinkedPackLink[]> {
@@ -164,8 +160,7 @@ async function prepareUnlinkedPackLinks(
           source: 'link',
         };
 
-    const images = await listImagesInGesturePackFolder(accessToken, folder.driveFolderId);
-    prepared.push({ folder, pack, packFiles: driveRowsToPackFiles(pack, images) });
+    prepared.push({ folder, pack });
   }
   return prepared;
 }
@@ -180,24 +175,22 @@ export async function linkUnlinkedReferencePackFolders(
   }
 
   const now = new Date().toISOString();
-  const prepared = await prepareUnlinkedPackLinks(accessToken, folders, now);
+  const prepared = await prepareUnlinkedPackLinks(folders, now);
 
-  await gestureDb.transaction('rw', gestureDb.packs, gestureDb.packFiles, async () => {
-    for (const { pack, packFiles } of prepared) {
+  await gestureDb.transaction('rw', gestureDb.packs, async () => {
+    for (const { pack } of prepared) {
       await gestureDb.packs.put(pack);
-      const stale = await gestureDb.packFiles.where('packId').equals(pack.id).toArray();
-      const freshIds = new Set(packFiles.map((file) => file.driveFileId));
-      for (const row of stale) {
-        if (!freshIds.has(row.driveFileId)) await gestureDb.packFiles.delete(row.driveFileId);
-      }
-      await gestureDb.packFiles.bulkPut(packFiles);
     }
   });
 
-  notifyGestureLocalChange();
+  let photoCount = 0;
+  for (const { pack } of prepared) {
+    photoCount += await indexGesturePackFromDrive(accessToken, pack);
+  }
+
   return {
     linkedCount: prepared.length,
-    photoCount: prepared.reduce((sum, row) => sum + row.packFiles.length, 0),
+    photoCount,
     names: prepared.map((row) => row.folder.name),
   };
 }
