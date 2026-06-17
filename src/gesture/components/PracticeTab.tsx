@@ -12,6 +12,7 @@ import PracticeSessionConfigProvider, {
 import { gestureDb } from '../db/gestureDb';
 import { isIncompleteUploadPack } from '../drive/gestureUploadActivity';
 import {
+  countGestureCollectionsPerTag,
   packHasGestureTag,
   packMatchesGestureTagFilters,
 } from '../drive/gesturePackTags';
@@ -114,6 +115,7 @@ export default function PracticeTab({
   );
 
   const allTags = useGestureKnownTags(packs);
+  const tagCounts = useMemo(() => countGestureCollectionsPerTag(packs), [packs]);
 
   const practicePacks = useMemo(
     () =>
@@ -226,6 +228,7 @@ export default function PracticeTab({
       <div className="gesture-tab-panel">
         <GestureTagFilterBar
           tags={allTags}
+          tagCounts={tagCounts}
           activeTags={activeTagFilters}
           onToggleTag={toggleTagFilter}
           onClear={() => onActiveTagFiltersChange([])}
@@ -253,6 +256,7 @@ export default function PracticeTab({
 
         <GestureTagFilterBar
           tags={allTags}
+          tagCounts={tagCounts}
           activeTags={activeTagFilters}
           onToggleTag={toggleTagFilter}
           onClear={() => onActiveTagFiltersChange([])}

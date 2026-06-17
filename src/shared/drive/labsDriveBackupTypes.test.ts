@@ -3,7 +3,42 @@ import {
   assessLabsDriveBackupConflict,
   labsPortfolioLocalChangedSinceIsoBackup,
   shouldPromptBeforePortfolioMerge,
+  shouldPromptPortfolioMerge,
+  LABS_PORTFOLIO_MERGE_PROMPT_POLICY_DEFAULT,
 } from './labsDriveBackupTypes';
+
+describe('shouldPromptPortfolioMerge', () => {
+  const divergedAssessment = assessLabsDriveBackupConflict({
+    syncMeta: { lastBackupExportedAt: '2026-01-01T00:00:00.000Z' },
+    cloudModifiedTime: '2026-01-03',
+    remoteExportedAt: '2026-01-03T00:00:00.000Z',
+    remoteHasContent: true,
+  });
+
+  it('silent_union never prompts', () => {
+    expect(
+      shouldPromptPortfolioMerge({
+        policy: 'silent_union',
+        assessment: divergedAssessment,
+        localChangedSinceLastBackup: true,
+      }),
+    ).toBe(false);
+  });
+
+  it('prompt_when_both_edited prompts when local changed and cloud diverged', () => {
+    expect(
+      shouldPromptPortfolioMerge({
+        policy: 'prompt_when_both_edited',
+        assessment: divergedAssessment,
+        localChangedSinceLastBackup: true,
+      }),
+    ).toBe(true);
+  });
+
+  it('default policy is silent_union', () => {
+    expect(LABS_PORTFOLIO_MERGE_PROMPT_POLICY_DEFAULT).toBe('silent_union');
+  });
+});
 
 describe('shouldPromptBeforePortfolioMerge', () => {
   it('does not prompt when cloud is newer but local unchanged since backup', () => {

@@ -6,6 +6,7 @@ import {
   clearedUploadFields,
   finalizeGesturePackUploadIfComplete,
 } from './gesturePackUpload';
+import { putGesturePackUploadCleared } from './gesturePackUploadProgress';
 
 /** Indexed photos meet the upload ledger — upload flags can clear. */
 export function isGesturePackUploadResolved(
@@ -62,8 +63,8 @@ export async function reconcileStaleGestureUploadPacks(
       continue;
     }
 
-    await gestureDb.packs.put(
-      clearedUploadFields({ ...pack, lastIndexedAt: new Date().toISOString() }),
+    await putGesturePackUploadCleared(pack.id, (latest) =>
+      clearedUploadFields({ ...latest, lastIndexedAt: new Date().toISOString() }),
     );
     await clearUploadManifestForPack(pack.id);
     cleared += 1;

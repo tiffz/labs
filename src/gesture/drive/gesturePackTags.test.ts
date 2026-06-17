@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   collectGestureTagsFromPacks,
+  countGestureCollectionsPerTag,
   normalizeGestureTag,
   normalizeGestureTags,
   packHasGestureTag,
@@ -30,6 +31,17 @@ describe('gesturePackTags', () => {
       basePack({ id: 'p2', tags: ['feet', 'Cats'] }),
     ]);
     expect(tags).toEqual(['cats', 'feet', 'study']);
+  });
+
+  it('counts collections per tag', () => {
+    const counts = countGestureCollectionsPerTag([
+      basePack({ id: 'a', tags: ['cats', 'study'] }),
+      basePack({ id: 'b', tags: ['feet', 'Cats'] }),
+      basePack({ id: 'c', tags: ['cats'] }),
+    ]);
+    expect(counts.get('cats')).toBe(3);
+    expect(counts.get('feet')).toBe(1);
+    expect(counts.get('study')).toBe(1);
   });
 
   it('filters packs with OR semantics', () => {

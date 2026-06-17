@@ -37,7 +37,12 @@ async function findExistingPackForFullDuplicateUpload(
       collectionRootName,
     });
     if (toUpload.length === 0 && skippedDuplicates === images.length) {
-      return pack;
+      const folderTitle = sanitizePackFolderName(collectionRootName);
+      const nameMatches =
+        pack.uploadSourceFolderName === collectionRootName ||
+        pack.name === folderTitle ||
+        pack.name === collectionRootName;
+      if (nameMatches) return pack;
     }
   }
   return null;

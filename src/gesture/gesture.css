@@ -487,10 +487,12 @@ html:has(.gesture-app) {
     minmax(var(--gesture-grid-min), 1fr)
   );
   gap: 1.1rem;
+  align-items: stretch;
 }
 
 .gesture-collection-grid > * {
   min-width: 0;
+  height: 100%;
 }
 
 .gesture-collection-grid--compact {
@@ -838,6 +840,9 @@ html:has(.gesture-app) {
 }
 
 .gesture-tag-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   border: 1px solid var(--gesture-border);
   border-radius: 999px;
   padding: 0.28rem 0.7rem;
@@ -885,6 +890,20 @@ html:has(.gesture-app) {
 .gesture-tag-filter-chip:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--gesture-accent) 45%, transparent);
   outline-offset: 2px;
+}
+
+.gesture-tag-filter-chip-count {
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: color-mix(in srgb, var(--gesture-text-muted) 88%, var(--gesture-ink));
+  opacity: 0.85;
+}
+
+.gesture-tag-filter-chip.is-active .gesture-tag-filter-chip-count {
+  color: color-mix(in srgb, var(--gesture-accent) 72%, var(--gesture-ink));
+  opacity: 1;
 }
 
 .gesture-tag-filter-clear {
@@ -1217,6 +1236,7 @@ html:has(.gesture-app) {
   position: relative;
   display: flex;
   flex-direction: column;
+  height: 100%;
   background: transparent;
   border: none;
   border-radius: var(--gesture-card-radius);
@@ -1330,10 +1350,8 @@ html:has(.gesture-app) {
 
 .gesture-collection-card--selectable .gesture-collection-card-body {
   padding: 0.8rem 0.85rem 0.85rem;
-}
-
-.gesture-collection-card--manage .gesture-collection-card-body {
-  padding: 0.7rem 0.75rem 0.55rem;
+  flex: 1;
+  min-height: 0;
 }
 
 .gesture-collection-card--manage .gesture-collection-card-stats-row {
@@ -1343,6 +1361,8 @@ html:has(.gesture-app) {
 .gesture-collection-card--manage .gesture-collection-card-shell {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  height: 100%;
   border: 1px solid var(--gesture-border);
   border-radius: var(--gesture-card-radius);
   overflow: hidden;
@@ -1380,6 +1400,10 @@ html:has(.gesture-app) {
 
 .gesture-collection-card--manage .gesture-collection-card-body {
   padding: 0.8rem 0.85rem 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .gesture-collection-card-footer {
@@ -1387,7 +1411,8 @@ html:has(.gesture-app) {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.15rem 0.35rem;
-  margin-top: 0.65rem;
+  margin-top: auto;
+  flex-shrink: 0;
   padding: 0.55rem 0.65rem 0.65rem;
   border-top: 1px solid var(--gesture-border);
   background: color-mix(
@@ -1893,6 +1918,11 @@ html:has(.gesture-app) {
   position: relative;
 }
 
+.gesture-practice-panel .gesture-collection-grid--practice {
+  position: relative;
+  z-index: 0;
+}
+
 .gesture-practice-controls {
   padding: 1.25rem 1.35rem;
   margin-bottom: 1.5rem;
@@ -2036,9 +2066,15 @@ html:has(.gesture-app) {
 .gesture-practice-footer {
   position: sticky;
   bottom: 0;
+  z-index: 6;
   margin: 0 -1.35rem;
-  padding: 1.35rem 1.35rem 0.65rem;
-  background: linear-gradient(to top, var(--gesture-bg) 75%, transparent);
+  padding: 1.35rem 1.35rem calc(0.65rem + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(
+    to top,
+    var(--gesture-bg) 70%,
+    color-mix(in srgb, var(--gesture-bg) 96%, transparent) 88%,
+    transparent
+  );
 }
 
 .gesture-app .gesture-enter-btn.MuiButton-root {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { LABS_ENCORE_GOOGLE_IDENTITY_CHANGED_EVENT } from '../../shared/google/encoreGoogleTokenStorage';
 import { readGestureDriveAccessToken } from '../drive/readGestureDriveAccessToken';
 import { GESTURE_PREVIEW_THUMB_WIDTH } from '../media/gestureMediaPolicy';
 import { gesturePreviewResolveTier } from '../media/gesturePreviewResolvePriority';
@@ -34,6 +35,20 @@ export function usePackPreviewUrls(
 
   const [urls, setUrls] = useState<string[]>(() => readUrlsForIds(ids, thumbWidth));
   const [loading, setLoading] = useState(() => ids.some((id) => !peekGesturePreviewUrl(id, thumbWidth)));
+  const [authGeneration, setAuthGeneration] = useState(0);
+
+  useEffect(() => {
+    const bump = () => setAuthGeneration((value) => value + 1);
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === 'encore_google_oauth_v1') bump();
+    };
+    window.addEventListener('storage', onStorage);
+    window.addEventListener(LABS_ENCORE_GOOGLE_IDENTITY_CHANGED_EVENT, bump);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(LABS_ENCORE_GOOGLE_IDENTITY_CHANGED_EVENT, bump);
+    };
+  }, []);
 
   useEffect(() => {
     retainGesturePreviewUrlsForDisplay(ids);
@@ -87,7 +102,7 @@ export function usePackPreviewUrls(
     return () => {
       cancelled = true;
     };
-  }, [fetchEnabled, ids, key, thumbWidth]);
+  }, [authGeneration, fetchEnabled, ids, key, thumbWidth]);
 
   const displayUrls = useMemo(() => {
     void cacheSnapshot;
@@ -102,6 +117,7 @@ export function usePackPreviewUrls(
       const index = ids.indexOf(fileId);
       if (index < 0) return;
       const token = await readGestureDriveAccessToken();
+      if (!token) return;
       const url = await retryGesturePreviewAfterImageError(token, fileId, thumbWidth);
       setUrls((prev) => {
         const next = [...prev];

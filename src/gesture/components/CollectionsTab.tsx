@@ -13,15 +13,16 @@ import DeleteCollectionDialog from '../components/DeleteCollectionDialog';
 import GestureTabLoading from '../components/GestureTabLoading';
 import GestureTagFilterBar from '../components/GestureTagFilterBar';
 import InterruptedMergeBanner from '../components/InterruptedMergeBanner';
+import InterruptedBatchUploadBanner from '../components/InterruptedBatchUploadBanner';
 import InterruptedUploadBanner from '../components/InterruptedUploadBanner';
 import MergeCollectionsDialog from '../components/MergeCollectionsDialog';
 import { canMergeGesturePacks, isPackInvolvedInIncompleteMerge } from '../drive/gestureMergeCollections';
 import { shouldShowMergeRecoveryBanner } from '../drive/gestureMergeActivity';
 import { refreshPackFolder } from '../drive/linkPackFolder';
-import { packMatchesGestureTagFilters } from '../drive/gesturePackTags';
+import { packMatchesGestureTagFilters, countGestureCollectionsPerTag } from '../drive/gesturePackTags';
 import { useCollectionGridSelection } from '../hooks/useCollectionGridSelection';
 import { useGestureKnownTags } from '../hooks/useGestureKnownTags';
-import { shouldShowUploadRecoveryBanner } from '../drive/gestureUploadActivity';
+import { buildUploadActivity, shouldShowUploadRecoveryBanner } from '../drive/gestureUploadActivity';
 import { useGestureCollectionDrop } from '../hooks/useGestureCollectionDrop';
 import { useGestureCollectionUpload } from '../hooks/useGestureCollectionUpload';
 import { useGestureMergeResume } from '../hooks/useGestureMergeResume';
@@ -65,6 +66,8 @@ export default function CollectionsTab({
 
   const interactionDisabled = busy;
   const uploadSessionActive = upload.busy || upload.queuedCount > 0;
+  const uploadActivity =
+    activity ?? (uploadSessionActive ? buildUploadActivity('preparing') : null);
 
   const { packs, packsHydrated } = useGesturePacks();
   const filesByPack = useGesturePackStats();
@@ -94,6 +97,7 @@ export default function CollectionsTab({
   );
 
   const allTags = useGestureKnownTags(packs);
+  const tagCounts = useMemo(() => countGestureCollectionsPerTag(packs), [packs]);
   const deferredNameQuery = useDeferredValue(nameQuery.trim().toLowerCase());
 
   const visiblePacks = useMemo(() => {
@@ -237,7 +241,17 @@ export default function CollectionsTab({
       aria-label="Drop folders or photos to upload"
       {...handlers}
     >
-      {activity ? <CollectionUploadStatus activity={activity} /> : null}
+      {uploadActivity ? <CollectionUploadStatus activity={uploadActivity} /> : null}
+
+      {upload.pendingBatchSession && upload.pendingBatchSession.pendingCount > 0 && !uploadSessionActive ? (
+        <InterruptedBatchUploadBanner
+          session={upload.pendingBatchSession}
+          disabled={interactionDisabled}
+          upload={upload}
+          onDismiss={() => void upload.refreshPendingBatchSession()}
+          onError={onError}
+        />
+      ) : null}
 
       {recoveryPacks.map((pack) => (
         <InterruptedUploadBanner
@@ -294,6 +308,7 @@ export default function CollectionsTab({
 
         <GestureTagFilterBar
           tags={allTags}
+          tagCounts={tagCounts}
           activeTags={activeTagFilters}
           onToggleTag={toggleTagFilter}
           onClear={() => onActiveTagFiltersChange([])}

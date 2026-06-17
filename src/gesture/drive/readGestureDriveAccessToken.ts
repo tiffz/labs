@@ -1,8 +1,6 @@
 import {
-  isPersistedSessionStillFresh,
-  readPersistedGoogleSession,
-} from '../../shared/google/encoreGoogleTokenStorage';
-import { ensureLabsGoogleAccessTokenForDrive } from '../../shared/google/labsGoogleDriveAccess';
+  ensureLabsGoogleAccessTokenForDrive,
+} from '../../shared/google/labsGoogleDriveAccess';
 
 let tokenInFlight: Promise<string | null> | null = null;
 
@@ -14,11 +12,8 @@ export async function readGestureDriveAccessToken(): Promise<string | null> {
     try {
       return await ensureLabsGoogleAccessTokenForDrive({ interactive: false });
     } catch {
-      const session = readPersistedGoogleSession();
-      if (session && isPersistedSessionStillFresh(session)) {
-        return session.accessToken;
-      }
-      return session?.accessToken ?? null;
+      // Never return a clock-fresh but revoked token — that causes 401 storms on preview grids.
+      return null;
     } finally {
       tokenInFlight = null;
     }

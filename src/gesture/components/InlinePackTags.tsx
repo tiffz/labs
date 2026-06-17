@@ -52,6 +52,8 @@ export default function InlinePackTags({
   }, [allTags, localTags]);
 
   useEffect(() => {
+    if (pendingPersistRef.current !== null) return;
+    if (persistTimerRef.current !== null) return;
     setLocalTags(serverTags);
   }, [pack.id, serverTags]);
 
@@ -191,7 +193,8 @@ export default function InlinePackTags({
           disabled={disabled}
           filterOptions={filterTagOptions}
           onInputChange={(_event, nextValue, reason) => {
-            if (reason === 'reset') return;
+            // Ignore empty clears after select; blocking all "reset" breaks the first keystroke in freeSolo.
+            if (reason === 'reset' && nextValue === '') return;
             setInputValue(nextValue);
           }}
           onChange={(_event: SyntheticEvent, value: string | null) => {
@@ -232,19 +235,33 @@ export default function InlinePackTags({
               </li>
             );
           }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              variant="standard"
-              hiddenLabel
-              placeholder="Add tag"
-              className="gesture-pack-tags-inline-input"
-              inputProps={{
-                ...params.inputProps,
-                'aria-label': 'Add collection tag',
-              }}
-            />
-          )}
+          renderInput={(params) => {
+            const { onKeyDown: autocompleteKeyDown, ...inputProps } = params.inputProps;
+            return (
+              <TextField
+                {...params}
+                variant="standard"
+                hiddenLabel
+                placeholder="Add tag"
+                className="gesture-pack-tags-inline-input"
+                inputProps={{
+                  ...inputProps,
+                  'aria-label': 'Add collection tag',
+                  onKeyDown: (event) => {
+                    autocompleteKeyDown?.(event as React.KeyboardEvent<HTMLInputElement>);
+                    if (event.key === 'Enter' && inputValue.trim()) {
+                      event.preventDefault();
+                      commitLockRef.current = true;
+                      addTag(inputValue);
+                      stopAdding();
+                    } else if (event.key === 'Escape') {
+                      stopAdding();
+                    }
+                  },
+                }}
+              />
+            );
+          }}
         />
       ) : (
         <button

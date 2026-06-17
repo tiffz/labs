@@ -6,6 +6,7 @@ import {
   finalizeGesturePackUploadIfComplete,
   uploadFilesToExistingPack,
 } from './gesturePackUpload';
+import { putGesturePackUploadCleared, putGesturePackUploadProgress } from './gesturePackUploadProgress';
 import { clearUploadRecoveryForPack } from './gestureUploadRecovery';
 import {
   countManifestProgress,
@@ -60,11 +61,12 @@ export async function resumePackUpload(
     const { uploaded, total } = countManifestProgress(manifest);
     const totalCount = total || pack.expectedFileCount || uploadedNames.size;
     if (uploaded >= totalCount && totalCount > 0) {
-      const finalized = clearedUploadFields({
-        ...pack,
-        lastIndexedAt: new Date().toISOString(),
-      });
-      await gestureDb.packs.put(finalized);
+      const finalized = await putGesturePackUploadCleared(packId, (latest) =>
+        clearedUploadFields({
+          ...latest,
+          lastIndexedAt: new Date().toISOString(),
+        }),
+      );
       await clearUploadRecoveryForPack(packId);
       return { pack: finalized, newlyUploaded: 0, skipped, skippedDuplicates: 0, total: totalCount };
     }
@@ -76,8 +78,9 @@ export async function resumePackUpload(
   const sourceFolder = inferLocalFolderName(picked);
   let packForUpload = pack;
   if (sourceFolder && !pack.uploadSourceFolderName) {
-    packForUpload = { ...pack, uploadSourceFolderName: sourceFolder };
-    await gestureDb.packs.put(packForUpload);
+    packForUpload = await putGesturePackUploadProgress(packId, {
+      uploadSourceFolderName: sourceFolder,
+    });
   }
 
   const total =

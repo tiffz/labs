@@ -3,6 +3,8 @@ import Typography from '@mui/material/Typography';
 
 type GestureTagFilterBarProps = {
   tags: string[];
+  /** Collections per tag (normalized tag keys). */
+  tagCounts?: ReadonlyMap<string, number>;
   activeTags: string[];
   onToggleTag: (tag: string) => void;
   onClear: () => void;
@@ -21,6 +23,7 @@ type GestureTagFilterBarProps = {
 
 export default function GestureTagFilterBar({
   tags,
+  tagCounts,
   activeTags,
   onToggleTag,
   onClear,
@@ -52,15 +55,20 @@ export default function GestureTagFilterBar({
             <div className="gesture-tag-filter-chips" role="group" aria-label="Filter collections by tag">
               {tags.map((tag) => {
                 const active = activeSet.has(tag);
+                const count = tagCounts?.get(tag) ?? 0;
                 return (
                   <button
                     key={tag}
                     type="button"
                     className={`gesture-tag-filter-chip${active ? ' is-active' : ''}`}
                     aria-pressed={active}
+                    aria-label={`${tag}, ${count} collection${count === 1 ? '' : 's'}`}
                     onClick={() => onToggleTag(tag)}
                   >
-                    {tag}
+                    <span className="gesture-tag-filter-chip-label">{tag}</span>
+                    <span className="gesture-tag-filter-chip-count" aria-hidden="true">
+                      {count}
+                    </span>
                   </button>
                 );
               })}

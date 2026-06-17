@@ -35,6 +35,17 @@ export function collectGestureTagsFromPacks(packs: GesturePack[]): string[] {
   return out.sort((a, b) => a.localeCompare(b));
 }
 
+/** How many collections carry each normalized tag. */
+export function countGestureCollectionsPerTag(packs: GesturePack[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const pack of packs) {
+    for (const tag of normalizeGestureTags(pack.tags ?? [])) {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
 /** OR semantics: empty filters → all packs; otherwise any listed tag on the pack matches. */
 export function packMatchesGestureTagFilters(pack: GesturePack, activeTags: string[]): boolean {
   if (activeTags.length === 0) return true;

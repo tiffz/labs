@@ -169,3 +169,29 @@ export type GestureUploadDirectoryHandleRow = {
   handle: FileSystemDirectoryHandle;
   savedAt: number;
 };
+
+/** Persisted multi-folder upload session (survives tab close). */
+export type GestureUploadBatchSession = {
+  id: string;
+  createdAt: string;
+  status: 'active' | 'completed' | 'dismissed';
+  totalJobs: number;
+  completedJobs: number;
+};
+
+export type GestureUploadBatchJobStatus = 'pending' | 'in_progress' | 'done' | 'failed';
+
+export type GestureUploadBatchJob = {
+  id: string;
+  sessionId: string;
+  sortIndex: number;
+  suggestedFolderName: string;
+  fileCount: number;
+  status: GestureUploadBatchJobStatus;
+  packId?: string;
+};
+
+export type GestureUnlinkedPackFolder = {
+  driveFolderId: string;
+  name: string;
+};

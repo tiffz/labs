@@ -26,8 +26,6 @@ import {
 } from '../db/gestureLocalData';
 import type { GestureSyncPayload } from '../types';
 import {
-  assessGestureDriveBackupConflict,
-  shouldPromptGestureDriveMerge,
   type GestureDriveConflictReason,
 } from '../drive/gestureDriveConflict';
 import {
@@ -214,36 +212,6 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
       }
       const local = await readGestureLocalPayload();
       const syncMetaBefore = readGestureDriveSyncMeta();
-      if (
-        remoteEnvelope &&
-        shouldPromptGestureDriveMerge({
-          syncMeta: syncMetaBefore,
-          cloudModifiedTime: meta.modifiedTime,
-          remoteEnvelope,
-          localPayload: local,
-        })
-      ) {
-        const assessment = assessGestureDriveBackupConflict({
-          syncMeta: syncMetaBefore,
-          cloudModifiedTime: meta.modifiedTime,
-          remoteEnvelope,
-        });
-        setLatestRemoteEnvelope(remoteEnvelope);
-        setConflict({
-          driveModifiedTime: meta.modifiedTime ?? '',
-          remoteExportedAt: remoteEnvelope.exportedAt,
-          remotePackCount: remoteEnvelope.packs.length,
-          localPackCount: local.packs.length,
-          reasons: assessment.reasons,
-          remoteEnvelope,
-          etag: meta.etag,
-          progressFileId: refs.progressFileId,
-        });
-        if (opts?.silent) {
-          setMessage('Drive backup changed on another device. Open your account menu to choose how to merge.');
-        }
-        return { conflictPrompt: true as const };
-      }
       writeGestureDriveSyncMeta({
         ...syncMetaBefore,
         driveAppFolderId: refs.appFolderId,
@@ -299,47 +267,9 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
     setMessage(null);
     setBusy(true);
     try {
-      const token = await ensureLabsGoogleAccessTokenForDrive();
-      const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_GESTURE);
-      const metaBefore = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
+      await ensureLabsGoogleAccessTokenForDrive();
       await snapshotBeforeMerge('manual-backup');
-
-      let remoteEnvelope: GestureDriveEnvelopeV1 | null = null;
-      try {
-        const json = await readLabsDriveProgressJson(token, refs.progressFileId);
-        remoteEnvelope = parseGestureDriveEnvelope(json);
-      } catch {
-        remoteEnvelope = null;
-      }
-
-      const local = await readGestureLocalPayload();
-      if (
-        remoteEnvelope &&
-        shouldPromptGestureDriveMerge({
-          syncMeta: readGestureDriveSyncMeta(),
-          cloudModifiedTime: metaBefore.modifiedTime,
-          remoteEnvelope,
-          localPayload: local,
-        })
-      ) {
-        const assessment = assessGestureDriveBackupConflict({
-          syncMeta: readGestureDriveSyncMeta(),
-          cloudModifiedTime: metaBefore.modifiedTime,
-          remoteEnvelope,
-        });
-        setConflict({
-          driveModifiedTime: metaBefore.modifiedTime ?? '',
-          remoteExportedAt: remoteEnvelope.exportedAt,
-          remotePackCount: remoteEnvelope.packs.length,
-          localPackCount: local.packs.length,
-          reasons: assessment.reasons,
-          remoteEnvelope,
-          etag: metaBefore.etag,
-          progressFileId: refs.progressFileId,
-        });
-        return;
-      }
-
+      await pullFromDriveAndMerge({ silent: true });
       await flushDriveWrite();
       markManualBackupSucceeded();
     } catch (e) {
@@ -347,7 +277,7 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
     } finally {
       setBusy(false);
     }
-  }, [flushDriveWrite, markManualBackupSucceeded, snapshotBeforeMerge]);
+  }, [flushDriveWrite, markManualBackupSucceeded, pullFromDriveAndMerge, snapshotBeforeMerge]);
 
   const cancelConflict = useCallback(() => setConflict(null), []);
 

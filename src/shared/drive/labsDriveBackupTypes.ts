@@ -14,16 +14,44 @@ export interface LabsDriveConflictAssessment {
 }
 
 /**
- * Whether to show the merge/replace dialog before applying a Drive pull.
- * Silent merge is allowed when the cloud looks newer but this device has no local
- * edits since the last backup (merge cannot drop local work).
+ * When to show {@link LabsDriveConflictDialog} before pull/backup.
+ *
+ * - **`silent_union`** (default) — merge in the background; undo snapshots are the
+ *   safety net. Use when app merge is union-based and cannot drop local edits.
+ * - **`prompt_when_both_edited`** — prompt when cloud diverged and local changed since
+ *   last backup. Use only when merge heuristics can hide meaningful differences or
+ *   replace-only is a common intentional choice (Stanza section markers).
+ *
+ * See `docs/LOCAL_FIRST_SYNC.md` § Portfolio merge prompt policy.
+ */
+export type LabsPortfolioMergePromptPolicy = 'silent_union' | 'prompt_when_both_edited';
+
+/** Default for new portfolio backup apps (Gesture, Scales, …). */
+export const LABS_PORTFOLIO_MERGE_PROMPT_POLICY_DEFAULT: LabsPortfolioMergePromptPolicy =
+  'silent_union';
+
+export function shouldPromptPortfolioMerge(params: {
+  policy: LabsPortfolioMergePromptPolicy;
+  assessment: LabsDriveConflictAssessment;
+  localChangedSinceLastBackup: boolean;
+}): boolean {
+  if (params.policy === 'silent_union') return false;
+  if (!params.assessment.needsPrompt) return false;
+  return params.localChangedSinceLastBackup;
+}
+
+/**
+ * @deprecated Prefer {@link shouldPromptPortfolioMerge} with an explicit policy.
+ * Implements `prompt_when_both_edited` (legacy Stanza / Scales parity).
  */
 export function shouldPromptBeforePortfolioMerge(params: {
   assessment: LabsDriveConflictAssessment;
   localChangedSinceLastBackup: boolean;
 }): boolean {
-  if (!params.assessment.needsPrompt) return false;
-  return params.localChangedSinceLastBackup;
+  return shouldPromptPortfolioMerge({
+    policy: 'prompt_when_both_edited',
+    ...params,
+  });
 }
 
 /** Compare a local monotonic clock (ms) to the last exported backup timestamp. */

@@ -50,3 +50,12 @@ export async function hasPersistedUploadDirectoryHandle(packId: string): Promise
   const row = await gestureDb.uploadDirectoryHandles.get(packId);
   return Boolean(row?.handle);
 }
+
+/** Move a persisted picker handle when a batch job id becomes a pack id. */
+export async function migrateUploadDirectoryHandle(fromId: string, toId: string): Promise<void> {
+  if (fromId === toId) return;
+  const row = await gestureDb.uploadDirectoryHandles.get(fromId);
+  if (!row) return;
+  await gestureDb.uploadDirectoryHandles.put({ ...row, packId: toId });
+  await gestureDb.uploadDirectoryHandles.delete(fromId);
+}

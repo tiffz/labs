@@ -1,7 +1,8 @@
 import {
   assessLabsDriveBackupConflict,
+  LABS_PORTFOLIO_MERGE_PROMPT_POLICY_DEFAULT,
   labsPortfolioLocalChangedSinceIsoBackup,
-  shouldPromptBeforePortfolioMerge,
+  shouldPromptPortfolioMerge,
   type LabsDriveConflictAssessment,
   type LabsDriveConflictReason,
 } from '../../shared/drive/labsDriveBackupTypes';
@@ -12,6 +13,9 @@ import { gestureLocalProgressUpdatedAt } from '../db/gestureLocalData';
 
 export type GestureDriveConflictReason = LabsDriveConflictReason;
 export type GestureDriveConflictAssessment = LabsDriveConflictAssessment;
+
+/** Gesture union merge cannot drop local packs or draw history — silent sync default. */
+export const GESTURE_PORTFOLIO_MERGE_PROMPT_POLICY = LABS_PORTFOLIO_MERGE_PROMPT_POLICY_DEFAULT;
 
 export function assessGestureDriveBackupConflict(params: {
   syncMeta: GestureDriveSyncMeta;
@@ -39,7 +43,8 @@ export function shouldPromptGestureDriveMerge(params: {
   const assessment = assessGestureDriveBackupConflict(params);
   const localUpdatedAt = gestureLocalProgressUpdatedAt(params.localPayload);
   const localMs = Date.parse(localUpdatedAt ?? '');
-  return shouldPromptBeforePortfolioMerge({
+  return shouldPromptPortfolioMerge({
+    policy: GESTURE_PORTFOLIO_MERGE_PROMPT_POLICY,
     assessment,
     localChangedSinceLastBackup: labsPortfolioLocalChangedSinceIsoBackup(
       Number.isFinite(localMs) ? localMs : 0,

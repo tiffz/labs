@@ -8,6 +8,7 @@ import {
 } from './gestureLocalFolderUpload';
 import { filterGestureUploadImageFiles } from './gesturePackMetadata';
 import { appendUploadManifest, uploadFilesToExistingPack } from './gesturePackUpload';
+import { putGesturePackUploadProgress } from './gesturePackUploadProgress';
 
 export type AddPhotosToPackResult = {
   pack: GesturePack;
@@ -39,11 +40,9 @@ export async function addPhotosToExistingPack(
   await appendUploadManifest(packId, images);
   notifyGestureLocalChange();
 
-  const packForUpload: GesturePack = {
-    ...pack,
+  const packForUpload = await putGesturePackUploadProgress(packId, {
     expectedFileCount: (pack.expectedFileCount ?? 0) + images.length,
-  };
-  await gestureDb.packs.put(packForUpload);
+  });
 
   const result = await uploadFilesToExistingPack(
     accessToken,

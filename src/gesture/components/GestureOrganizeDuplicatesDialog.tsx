@@ -1,11 +1,15 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Link from '@mui/material/Link';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -15,15 +19,17 @@ import {
 } from '../../shared/google/labsGoogleDriveAccess';
 import { labsDriveFolderUrl } from '../../shared/drive/labsDriveFolderUrl';
 import { applyGestureDuplicateDedup } from '../drive/gestureDuplicateDedup';
+import { linkPackFolderFromInput } from '../drive/linkPackFolder';
+import { linkUnlinkedReferencePackFolders } from '../drive/gestureDiscoverUnlinkedPacks';
 import {
   summarizeDuplicateScan,
   type GestureDuplicateGroup,
-  type GestureDuplicateScanResult,
 } from '../drive/gestureDuplicateDetection';
+import { summarizeUnlinkedFolders, type GestureOrganizeScanResult } from '../drive/gestureOrganizeScan';
 
 type GestureOrganizeDuplicatesDialogProps = {
   open: boolean;
-  scan: GestureDuplicateScanResult | null;
+  scan: GestureOrganizeScanResult | null;
   onClose: () => void;
   onComplete: (message: string) => void;
   onError: (message: string) => void;
@@ -47,28 +53,107 @@ export default function GestureOrganizeDuplicatesDialog({
   onError,
 }: GestureOrganizeDuplicatesDialogProps): React.ReactElement {
   const [busy, setBusy] = useState(false);
+  const [busyAction, setBusyAction] = useState<'link' | 'dedup' | 'paste' | null>(null);
+  const [folderInput, setFolderInput] = useState('');
+  const [dialogError, setDialogError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      setBusy(false);
+      setBusyAction(null);
+      setFolderInput('');
+      setDialogError(null);
+    }
+  }, [open]);
+
+  const duplicateScan = scan?.duplicates ?? null;
+  const unlinkedFolders = useMemo(() => scan?.unlinkedFolders ?? [], [scan?.unlinkedFolders]);
 
   const grouped = useMemo(
-    () => (scan ? groupsByCollection(scan.groups) : new Map<string, GestureDuplicateGroup[]>()),
-    [scan],
+    () =>
+      duplicateScan
+        ? groupsByCollection(duplicateScan.groups)
+        : new Map<string, GestureDuplicateGroup[]>(),
+    [duplicateScan],
   );
 
   const handleClose = () => {
     if (!busy) onClose();
   };
 
-  const handleConfirm = useCallback(async () => {
-    if (!scan || scan.duplicateFileCount === 0) {
+  const finishSuccess = useCallback(
+    (message: string) => {
+      onComplete(message);
       onClose();
-      return;
-    }
+    },
+    [onClose, onComplete],
+  );
+
+  const reportFailure = useCallback(
+    (message: string) => {
+      setDialogError(message);
+      onError(message);
+    },
+    [onError],
+  );
+
+  const handleLinkUnlinked = useCallback(async () => {
+    if (!scan || unlinkedFolders.length === 0) return;
     setBusy(true);
-    onError('');
+    setBusyAction('link');
+    setDialogError(null);
     try {
       const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      const result = await applyGestureDuplicateDedup(token, scan.groups);
+      const result = await linkUnlinkedReferencePackFolders(token, unlinkedFolders);
+      finishSuccess(
+        `Added ${result.linkedCount} collection${result.linkedCount === 1 ? '' : 's'} (${result.photoCount} photo${result.photoCount === 1 ? '' : 's'}).`,
+      );
+    } catch (e) {
+      if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
+        reportFailure(e.message);
+      } else {
+        reportFailure(e instanceof Error ? e.message : 'Could not link folders from Drive.');
+      }
+    } finally {
+      setBusy(false);
+      setBusyAction(null);
+    }
+  }, [finishSuccess, reportFailure, scan, unlinkedFolders]);
+
+  const handlePasteLink = useCallback(async () => {
+    if (!folderInput.trim()) return;
+    setBusy(true);
+    setBusyAction('paste');
+    setDialogError(null);
+    try {
+      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+      const result = await linkPackFolderFromInput(token, folderInput);
+      setFolderInput('');
+      finishSuccess(
+        `Linked “${result.pack.name}” with ${result.imageCount} photo${result.imageCount === 1 ? '' : 's'}.`,
+      );
+    } catch (e) {
+      if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
+        reportFailure(e.message);
+      } else {
+        reportFailure(e instanceof Error ? e.message : 'Could not link folder.');
+      }
+    } finally {
+      setBusy(false);
+      setBusyAction(null);
+    }
+  }, [finishSuccess, folderInput, reportFailure]);
+
+  const handleConfirmDedup = useCallback(async () => {
+    if (!duplicateScan || duplicateScan.duplicateFileCount === 0) return;
+    setBusy(true);
+    setBusyAction('dedup');
+    setDialogError(null);
+    try {
+      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+      const result = await applyGestureDuplicateDedup(token, duplicateScan.groups);
       if (result.trashed === 0 && result.trashErrors > 0) {
-        onError('Could not move duplicates to Drive trash. Try again or remove them in Drive.');
+        reportFailure('Could not move duplicates to Drive trash. Try again or remove them in Drive.');
         return;
       }
       const base = `Moved ${result.trashed} duplicate photo${result.trashed === 1 ? '' : 's'} to Google Drive trash.`;
@@ -76,20 +161,22 @@ export default function GestureOrganizeDuplicatesDialog({
         result.trashErrors > 0
           ? ` ${result.trashErrors} could not be trashed; check Drive manually.`
           : '';
-      onComplete(`${base}${err}`);
-      onClose();
+      finishSuccess(`${base}${err}`);
     } catch (e) {
       if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
-        onError(e.message);
+        reportFailure(e.message);
       } else {
-        onError(e instanceof Error ? e.message : 'Could not organize collections.');
+        reportFailure(e instanceof Error ? e.message : 'Could not organize collections.');
       }
     } finally {
       setBusy(false);
+      setBusyAction(null);
     }
-  }, [onClose, onComplete, onError, scan]);
+  }, [duplicateScan, finishSuccess, reportFailure]);
 
-  const hasDuplicates = (scan?.duplicateFileCount ?? 0) > 0;
+  const hasDuplicates = (duplicateScan?.duplicateFileCount ?? 0) > 0;
+  const hasUnlinked = unlinkedFolders.length > 0;
+  const hasWork = hasDuplicates || hasUnlinked;
 
   return (
     <Dialog
@@ -101,73 +188,168 @@ export default function GestureOrganizeDuplicatesDialog({
     >
       <DialogTitle id="gesture-organize-duplicates-title">Organize collections</DialogTitle>
       <DialogContent>
+        {dialogError ? (
+          <Typography variant="body2" color="error" sx={{ mb: dialogError && scan ? 1.5 : 0 }}>
+            {dialogError}
+          </Typography>
+        ) : null}
         {!scan ? (
           <Typography variant="body2" color="text.secondary">
             Scanning collections…
           </Typography>
-        ) : !hasDuplicates ? (
-          <Typography variant="body2" color="text.secondary">
-            {summarizeDuplicateScan(scan)}
-          </Typography>
-        ) : (
+        ) : !hasWork ? (
           <Stack spacing={2}>
             <Typography variant="body2" color="text.secondary">
-              {summarizeDuplicateScan(scan)} Review below, or open a collection in Drive first. Duplicates move to
-              Drive trash (~30 days) and references here point at the copy we keep.
+              {summarizeUnlinkedFolders(unlinkedFolders)}{' '}
+              {duplicateScan ? summarizeDuplicateScan(duplicateScan) : ''}
             </Typography>
-            {[...grouped.entries()].map(([packId, packGroups]) => {
-              const sample = packGroups[0];
-              if (!sample) return null;
-              const dupCount = packGroups.reduce((sum, g) => sum + g.fileIdsToTrash.length, 0);
-              const folderUrl = labsDriveFolderUrl(sample.driveFolderId);
-              return (
-                <Stack key={packId} spacing={0.75}>
-                  <Stack direction="row" alignItems="baseline" justifyContent="space-between" gap={1} flexWrap="wrap">
-                    <Typography variant="subtitle2">{sample.packName}</Typography>
-                    {folderUrl ? (
-                      <Link
-                        href={folderUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        variant="body2"
-                        sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.35 }}
-                      >
-                        Open in Drive
-                        <OpenInNewIcon sx={{ fontSize: 14 }} aria-hidden />
-                      </Link>
-                    ) : null}
-                  </Stack>
-                  <Typography variant="caption" color="text.secondary">
-                    {dupCount} duplicate{dupCount === 1 ? '' : 's'} in this collection
-                  </Typography>
-                  {packGroups.map((group) => (
-                    <Typography key={group.key} variant="body2" component="div" sx={{ pl: 1, borderLeft: 2, borderColor: 'divider' }}>
-                      <strong>{group.members[0]?.name ?? 'Photo'}</strong>
-                      {' · '}
-                      {group.members.length} copies
-                      {' · '}
-                      keeping {group.canonicalFileId.slice(0, 8)}…
-                    </Typography>
-                  ))}
-                </Stack>
-              );
-            })}
+            <Typography variant="body2" color="text.secondary">
+              Manually added folders must sit directly inside Reference Packs on Drive (not inside another
+              collection). If one is missing, paste its folder link below.
+            </Typography>
+            <TextField
+              label="Drive folder link"
+              placeholder="https://drive.google.com/drive/folders/…"
+              value={folderInput}
+              onChange={(e) => setFolderInput(e.target.value)}
+              fullWidth
+              size="small"
+              disabled={busy}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && folderInput.trim()) void handlePasteLink();
+              }}
+            />
+          </Stack>
+        ) : (
+          <Stack spacing={2.5}>
+            {hasUnlinked ? (
+              <Stack spacing={1}>
+                <Typography variant="body2" color="text.secondary">
+                  {summarizeUnlinkedFolders(unlinkedFolders)} Link them to show up in Collections.
+                </Typography>
+                <List dense disablePadding>
+                  {unlinkedFolders.map((folder) => {
+                    const folderUrl = labsDriveFolderUrl(folder.driveFolderId);
+                    return (
+                      <ListItem key={folder.driveFolderId} disableGutters sx={{ py: 0.25 }}>
+                        <ListItemText
+                          primary={folder.name}
+                          secondary={
+                            folderUrl ? (
+                              <Link
+                                href={folderUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                variant="caption"
+                                sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.35 }}
+                              >
+                                Open in Drive
+                                <OpenInNewIcon sx={{ fontSize: 12 }} aria-hidden />
+                              </Link>
+                            ) : null
+                          }
+                        />
+                      </ListItem>
+                    );
+                  })}
+                </List>
+              </Stack>
+            ) : null}
+
+            {hasDuplicates ? (
+              <Stack spacing={2}>
+                <Typography variant="body2" color="text.secondary">
+                  {summarizeDuplicateScan(duplicateScan!)} Review below, or open a collection in Drive first.
+                  Duplicates move to Drive trash (~30 days) and references here point at the copy we keep.
+                </Typography>
+                {[...grouped.entries()].map(([packId, packGroups]) => {
+                  const sample = packGroups[0];
+                  if (!sample) return null;
+                  const dupCount = packGroups.reduce((sum, g) => sum + g.fileIdsToTrash.length, 0);
+                  const folderUrl = labsDriveFolderUrl(sample.driveFolderId);
+                  return (
+                    <Stack key={packId} spacing={0.75}>
+                      <Stack direction="row" alignItems="baseline" justifyContent="space-between" gap={1} flexWrap="wrap">
+                        <Typography variant="subtitle2">{sample.packName}</Typography>
+                        {folderUrl ? (
+                          <Link
+                            href={folderUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            variant="body2"
+                            sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.35 }}
+                          >
+                            Open in Drive
+                            <OpenInNewIcon sx={{ fontSize: 14 }} aria-hidden />
+                          </Link>
+                        ) : null}
+                      </Stack>
+                      <Typography variant="caption" color="text.secondary">
+                        {dupCount} duplicate{dupCount === 1 ? '' : 's'} in this collection
+                      </Typography>
+                      {packGroups.map((group) => (
+                        <Typography
+                          key={group.key}
+                          variant="body2"
+                          component="div"
+                          sx={{ pl: 1, borderLeft: 2, borderColor: 'divider' }}
+                        >
+                          <strong>{group.members[0]?.name ?? 'Photo'}</strong>
+                          {' · '}
+                          {group.members.length} copies
+                          {' · '}
+                          keeping {group.canonicalFileId.slice(0, 8)}…
+                        </Typography>
+                      ))}
+                    </Stack>
+                  );
+                })}
+              </Stack>
+            ) : duplicateScan ? (
+              <Typography variant="body2" color="text.secondary">
+                {summarizeDuplicateScan(duplicateScan)}
+              </Typography>
+            ) : null}
           </Stack>
         )}
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
+      <DialogActions sx={{ px: 3, pb: 2, flexWrap: 'wrap', gap: 1 }}>
         <Button onClick={handleClose} disabled={busy}>
-          {hasDuplicates ? 'Cancel' : 'Close'}
+          {hasWork ? 'Cancel' : 'Close'}
         </Button>
+        {!hasWork && folderInput.trim() ? (
+          <Button
+            variant="contained"
+            onClick={() => void handlePasteLink()}
+            disabled={busy}
+            startIcon={
+              busyAction === 'paste' ? <CircularProgress size={16} color="inherit" aria-hidden /> : undefined
+            }
+          >
+            {busyAction === 'paste' ? 'Linking…' : 'Link folder'}
+          </Button>
+        ) : null}
+        {hasUnlinked ? (
+          <Button
+            variant="contained"
+            onClick={() => void handleLinkUnlinked()}
+            disabled={busy}
+            startIcon={busyAction === 'link' ? <CircularProgress size={16} color="inherit" aria-hidden /> : undefined}
+          >
+            {busyAction === 'link'
+              ? 'Linking…'
+              : `Link ${unlinkedFolders.length} folder${unlinkedFolders.length === 1 ? '' : 's'}`}
+          </Button>
+        ) : null}
         {hasDuplicates ? (
           <Button
             variant="contained"
             color="error"
-            onClick={() => void handleConfirm()}
+            onClick={() => void handleConfirmDedup()}
             disabled={busy}
-            startIcon={busy ? <CircularProgress size={16} color="inherit" aria-hidden /> : undefined}
+            startIcon={busyAction === 'dedup' ? <CircularProgress size={16} color="inherit" aria-hidden /> : undefined}
           >
-            {busy ? 'Organizing…' : 'Move duplicates to trash'}
+            {busyAction === 'dedup' ? 'Organizing…' : 'Move duplicates to trash'}
           </Button>
         ) : null}
       </DialogActions>

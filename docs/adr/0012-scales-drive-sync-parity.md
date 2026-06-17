@@ -15,7 +15,7 @@ Mirror Stanza’s Drive safety model for Scales:
 1. **Non-destructive merge** (`scalesDriveMerge.ts`) — union exercises by id; keep further stage advancement; union history by timestamp (cap 20).
 2. **Undo snapshots** — localStorage ring (20) before pull, restore, merge, manual backup.
 3. **Auto pull on session start** and **debounced auto-push** on progress saves (gated until successful pull or manual backup).
-4. **Conflict dialog** — merge / replace / cancel on manual backup when cloud is newer.
+4. **Conflict dialog** — only when `STANZA_PORTFOLIO_MERGE_PROMPT_POLICY` (`prompt_when_both_edited`) applies; Gesture/Scales use silent union merge per [`LOCAL_FIRST_SYNC.md`](../../docs/LOCAL_FIRST_SYNC.md).
 5. **`progressUpdatedAt`** on `ScalesProgressData` for merge clocks.
 6. **Restore merges** and runs `normalizeScalesProgressPayload` (migrate + reconcile); resets active session UI.
 

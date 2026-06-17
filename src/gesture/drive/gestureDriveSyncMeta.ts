@@ -4,6 +4,8 @@ export interface GestureDriveSyncMeta {
   lastCloudModifiedTime?: string;
   lastBackupExportedAt?: string;
   driveAppFolderId?: string;
+  /** Canonical Reference Packs folder used for uploads (may differ from siblings on Drive). */
+  referencePacksFolderId?: string;
 }
 
 export function readGestureDriveSyncMeta(): GestureDriveSyncMeta {

@@ -5,6 +5,8 @@ import type {
   GestureMediaCacheRow,
   GesturePack,
   GesturePackFile,
+  GestureUploadBatchJob,
+  GestureUploadBatchSession,
   GestureUploadDirectoryHandleRow,
   GestureUploadManifestFile,
   GestureUploadStagingBlobRow,
@@ -26,6 +28,8 @@ export class GestureDb extends Dexie {
   mediaCache!: EntityTable<GestureMediaCacheRow, 'id'>;
   uploadStagingBlobs!: EntityTable<GestureUploadStagingBlobRow, 'id'>;
   uploadDirectoryHandles!: EntityTable<GestureUploadDirectoryHandleRow, 'packId'>;
+  uploadBatchSessions!: EntityTable<GestureUploadBatchSession, 'id'>;
+  uploadBatchJobs!: EntityTable<GestureUploadBatchJob, 'id'>;
 
   constructor() {
     super('gesture-practice');
@@ -44,6 +48,10 @@ export class GestureDb extends Dexie {
     this.version(4).stores({
       uploadStagingBlobs: 'id, packId, savedAt, [packId+savedAt]',
       uploadDirectoryHandles: 'packId, savedAt',
+    });
+    this.version(5).stores({
+      uploadBatchSessions: 'id, status, createdAt',
+      uploadBatchJobs: 'id, sessionId, status, sortIndex, [sessionId+status]',
     });
   }
 }

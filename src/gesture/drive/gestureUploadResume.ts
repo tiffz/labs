@@ -20,14 +20,15 @@ export async function findResumablePackForUploadJob(
   const candidates = packs.filter((pack) => isIncompleteUploadPack(pack));
   if (candidates.length === 0) return null;
 
-  if (sourceName) {
-    const bySource = candidates.find((pack) => pack.uploadSourceFolderName === sourceName);
-    if (bySource) return bySource;
-    const byName = candidates.find((pack) => pack.name === sourceName);
-    if (byName) return byName;
-  }
+  if (!sourceName) return null;
 
-  return candidates.sort((a, b) => b.linkedAt.localeCompare(a.linkedAt))[0] ?? null;
+  const bySource = candidates.find((pack) => pack.uploadSourceFolderName === sourceName);
+  if (bySource) return bySource;
+
+  const byName = candidates.find((pack) => pack.name === sourceName);
+  if (byName) return byName;
+
+  return null;
 }
 
 export async function canResumeUploadWithoutRepick(packId: string): Promise<boolean> {

@@ -1,7 +1,8 @@
 import {
   assessLabsDriveBackupConflict,
+  LABS_PORTFOLIO_MERGE_PROMPT_POLICY_DEFAULT,
   labsPortfolioLocalChangedSinceIsoBackup,
-  shouldPromptBeforePortfolioMerge,
+  shouldPromptPortfolioMerge,
   type LabsDriveConflictAssessment,
   type LabsDriveConflictReason,
 } from '../../shared/drive/labsDriveBackupTypes';
@@ -11,6 +12,9 @@ import type { ScalesDriveEnvelopeV1 } from './scalesDriveEnvelope';
 
 export type ScalesDriveConflictReason = LabsDriveConflictReason;
 export type ScalesDriveConflictAssessment = LabsDriveConflictAssessment;
+
+/** Per-exercise union merge keeps the furthest stage and unions history — silent sync default. */
+export const SCALES_PORTFOLIO_MERGE_PROMPT_POLICY = LABS_PORTFOLIO_MERGE_PROMPT_POLICY_DEFAULT;
 
 export function assessScalesDriveBackupConflict(params: {
   syncMeta: ScalesDriveSyncMeta;
@@ -38,7 +42,8 @@ export function shouldPromptScalesDriveMerge(params: {
 }): boolean {
   const assessment = assessScalesDriveBackupConflict(params);
   const localMs = Date.parse(params.progress.progressUpdatedAt ?? '');
-  return shouldPromptBeforePortfolioMerge({
+  return shouldPromptPortfolioMerge({
+    policy: SCALES_PORTFOLIO_MERGE_PROMPT_POLICY,
     assessment,
     localChangedSinceLastBackup: labsPortfolioLocalChangedSinceIsoBackup(
       Number.isFinite(localMs) ? localMs : 0,

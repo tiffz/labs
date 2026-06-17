@@ -5489,6 +5489,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsdrivebackuptypes-ts-labs-portfolio-merge-prompt-policy-default",
+    "name": "LABS_PORTFOLIO_MERGE_PROMPT_POLICY_DEFAULT",
+    "path": "src/shared/drive/labsDriveBackupTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Default for new portfolio backup apps (Gesture, Scales, …).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-labsdrivebackuptypes-ts-labsdriveconflictassessment",
     "name": "LabsDriveConflictAssessment",
     "path": "src/shared/drive/labsDriveBackupTypes.ts",
@@ -5547,13 +5562,41 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsdrivebackuptypes-ts-labsportfoliomergepromptpolicy",
+    "name": "LabsPortfolioMergePromptPolicy",
+    "path": "src/shared/drive/labsDriveBackupTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "When to show before pull/backup. - **`silent_union`** (default) — merge in the background; undo snapshots are the safety net. Use when app merge is union-based and cannot drop local edits. - **`prompt_when_both_edited`** — prompt when cloud diverged and local changed since last backup. Use only when merge heuristics can hide meaningful differences or replace-only is a common intentional choice (Stanza section markers). See `docs/LOCAL_FIRST_SYNC.md` § Portfolio merge prompt policy.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-labsdrivebackuptypes-ts-shouldpromptbeforeportfoliomerge",
     "name": "shouldPromptBeforePortfolioMerge",
     "path": "src/shared/drive/labsDriveBackupTypes.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Whether to show the merge/replace dialog before applying a Drive pull. Silent merge is allowed when the cloud looks newer but this device has no local edits since the last backup (merge cannot drop local work).",
+    "description": "Shared Drive backup conflict assessment (Stanza, Scales, future apps). App hooks supply envelope-specific \"has remote content\" checks.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivebackuptypes-ts-shouldpromptportfoliomerge",
+    "name": "shouldPromptPortfolioMerge",
+    "path": "src/shared/drive/labsDriveBackupTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared Drive backup conflict assessment (Stanza, Scales, future apps). App hooks supply envelope-specific \"has remote content\" checks.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

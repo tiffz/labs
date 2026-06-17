@@ -76,60 +76,13 @@ describe('assessScalesDriveBackupConflict', () => {
 });
 
 describe('shouldPromptScalesDriveMerge', () => {
-  it('skips dialog when cloud diverged but local unchanged since backup', () => {
-    expect(
-      shouldPromptScalesDriveMerge({
-        syncMeta: { lastBackupExportedAt: '2026-06-02T00:00:00.000Z' },
-        cloudModifiedTime: '2026-06-03',
-        remoteEnvelope: envelope(),
-        progress: progress({ progressUpdatedAt: '2026-06-01T00:00:00.000Z' }),
-      }),
-    ).toBe(false);
-  });
-
-  it('requires dialog when local edited after last backup and cloud diverged', () => {
+  it('never prompts — silent_union policy', () => {
     expect(
       shouldPromptScalesDriveMerge({
         syncMeta: { lastBackupExportedAt: '2026-06-01T00:00:00.000Z' },
         cloudModifiedTime: '2026-06-03',
         remoteEnvelope: envelope(),
         progress: progress({ progressUpdatedAt: '2026-06-02T00:00:00.000Z' }),
-      }),
-    ).toBe(true);
-  });
-
-  it('requires dialog on first device when local already has edits', () => {
-    expect(
-      shouldPromptScalesDriveMerge({
-        syncMeta: {},
-        cloudModifiedTime: '2026-06-03',
-        remoteEnvelope: envelope(),
-        progress: progress({ progressUpdatedAt: '2026-06-02T00:00:00.000Z' }),
-      }),
-    ).toBe(true);
-  });
-
-  it('allows silent merge on first device when local is still empty', () => {
-    expect(
-      shouldPromptScalesDriveMerge({
-        syncMeta: {},
-        cloudModifiedTime: '2026-06-03',
-        remoteEnvelope: envelope(),
-        progress: progress({ progressUpdatedAt: '' }),
-      }),
-    ).toBe(false);
-  });
-
-  it('does not prompt when cloud matches last seen export', () => {
-    expect(
-      shouldPromptScalesDriveMerge({
-        syncMeta: {
-          lastCloudModifiedTime: '2026-06-03',
-          lastBackupExportedAt: '2026-06-03T00:00:00.000Z',
-        },
-        cloudModifiedTime: '2026-06-03',
-        remoteEnvelope: envelope({ exportedAt: '2026-06-03T00:00:00.000Z' }),
-        progress: progress({ progressUpdatedAt: '2026-06-04T00:00:00.000Z' }),
       }),
     ).toBe(false);
   });

@@ -44,4 +44,24 @@ describe('findResumablePackForUploadJob', () => {
     });
     expect(match).toBeNull();
   });
+
+  it('does not match a different incomplete pack when folder names differ', async () => {
+    await gestureDb.packs.put({
+      id: 'pack-a',
+      driveFolderId: 'folder-a',
+      name: 'Life drawing',
+      linkedAt: '2026-01-02T00:00:00.000Z',
+      lastIndexedAt: '2026-01-02T00:00:00.000Z',
+      uploadStatus: 'incomplete',
+      uploadSourceFolderName: 'Life drawing',
+      expectedFileCount: 100,
+      uploadedFileCount: 40,
+    });
+
+    const match = await findResumablePackForUploadJob({
+      files: [],
+      suggestedFolderName: 'Portrait refs',
+    });
+    expect(match).toBeNull();
+  });
 });

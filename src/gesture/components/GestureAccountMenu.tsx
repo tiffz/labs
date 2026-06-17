@@ -10,15 +10,16 @@ import {
   LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
 import { gestureDb } from '../db/gestureDb';
-import { scanGestureCollectionDuplicates, type GestureDuplicateScanResult } from '../drive/gestureDuplicateDetection';
+import { scanGestureLibraryOrganize, type GestureOrganizeScanResult } from '../drive/gestureOrganizeScan';
 import { useGestureDriveBackupContext } from '../context/GestureDriveBackupContext';
 import GestureOrganizeDuplicatesDialog from './GestureOrganizeDuplicatesDialog';
 
 export default function GestureAccountMenu() {
-  const { googleClientConfigured, backupSlot, driveUi, conflict } = useGestureDriveBackupContext();
+  const { googleClientConfigured, backupSlot, driveUi, conflict, organizeProbeFolderIds } =
+    useGestureDriveBackupContext();
   const [scanBusy, setScanBusy] = useState(false);
   const [organizeOpen, setOrganizeOpen] = useState(false);
-  const [scanResult, setScanResult] = useState<GestureDuplicateScanResult | null>(null);
+  const [scanResult, setScanResult] = useState<GestureOrganizeScanResult | null>(null);
   const [organizeNote, setOrganizeNote] = useState<string | null>(null);
   const [organizeError, setOrganizeError] = useState<string | null>(null);
 
@@ -30,7 +31,9 @@ export default function GestureAccountMenu() {
     try {
       const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
       const packs = await gestureDb.packs.toArray();
-      const result = await scanGestureCollectionDuplicates(token, packs);
+      const result = await scanGestureLibraryOrganize(token, packs, {
+        probeFolderIds: organizeProbeFolderIds,
+      });
       setScanResult(result);
       setOrganizeOpen(true);
     } catch (e) {
@@ -42,7 +45,7 @@ export default function GestureAccountMenu() {
     } finally {
       setScanBusy(false);
     }
-  }, []);
+  }, [organizeProbeFolderIds]);
 
   if (!googleClientConfigured) return null;
 
@@ -107,10 +110,15 @@ export default function GestureAccountMenu() {
       <GestureOrganizeDuplicatesDialog
         open={organizeOpen}
         scan={scanResult}
-        onClose={() => setOrganizeOpen(false)}
+        onClose={() => {
+          setOrganizeOpen(false);
+          setScanResult(null);
+        }}
         onComplete={(message) => {
           setOrganizeNote(message);
           setOrganizeError(null);
+          setOrganizeOpen(false);
+          setScanResult(null);
         }}
         onError={setOrganizeError}
       />

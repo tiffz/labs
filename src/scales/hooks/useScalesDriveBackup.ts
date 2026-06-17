@@ -1,6 +1,6 @@
 /**
  * Drive backup orchestration for Learn Your Scales — mirrors Stanza auto pull/push,
- * merge, conflict UI, and local undo snapshots (ADR 0012).
+ * merge, conflict UI, and local undo snapshots (ADR 0012; silent_union policy).
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -24,11 +24,7 @@ import {
   isEmailAllowedLabsDriveBackup,
 } from '../../shared/google/labsDriveTesterGate';
 import { useLabsEncoreGoogleIdentity } from '../../shared/google/useLabsEncoreGoogleSession';
-import {
-  assessScalesDriveBackupConflict,
-  shouldPromptScalesDriveMerge,
-  type ScalesDriveConflictReason,
-} from '../drive/scalesDriveConflict';
+import { type ScalesDriveConflictReason } from '../drive/scalesDriveConflict';
 import {
   buildScalesDriveEnvelope,
   parseScalesDriveEnvelope,
@@ -192,36 +188,6 @@ export function useScalesDriveBackup({ progress, onMergeProgress }: UseScalesDri
         remoteEnvelope = null;
       }
       const syncMetaBefore = readScalesDriveSyncMeta();
-      if (
-        remoteEnvelope &&
-        shouldPromptScalesDriveMerge({
-          syncMeta: syncMetaBefore,
-          cloudModifiedTime: meta.modifiedTime,
-          remoteEnvelope,
-          progress: progressRef.current,
-        })
-      ) {
-        const assessment = assessScalesDriveBackupConflict({
-          syncMeta: syncMetaBefore,
-          cloudModifiedTime: meta.modifiedTime,
-          remoteEnvelope,
-        });
-        setLatestRemoteEnvelope(remoteEnvelope);
-        setConflict({
-          driveModifiedTime: meta.modifiedTime ?? '',
-          remoteExportedAt: remoteEnvelope.exportedAt,
-          remoteExerciseCount: Object.keys(remoteEnvelope.payload.exercises).length,
-          localExerciseCount: Object.keys(progressRef.current.exercises).length,
-          reasons: assessment.reasons,
-          remoteEnvelope,
-          etag: meta.etag,
-          progressFileId: refs.progressFileId,
-        });
-        if (opts?.silent) {
-          setMessage('Drive backup changed on another device. Open your account menu to choose how to merge.');
-        }
-        return { conflictPrompt: true as const };
-      }
       writeScalesDriveSyncMeta({
         ...syncMetaBefore,
         driveAppFolderId: refs.appFolderId,
@@ -271,47 +237,9 @@ export function useScalesDriveBackup({ progress, onMergeProgress }: UseScalesDri
     setMessage(null);
     setBusy(true);
     try {
-      const token = await ensureLabsGoogleAccessTokenForDrive();
-      const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_SCALES);
-      const metaBefore = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
+      await ensureLabsGoogleAccessTokenForDrive();
       snapshotBeforeMerge('manual-backup');
-
-      let remoteEnvelope: ScalesDriveEnvelopeV1 | null = null;
-      try {
-        const json = await readLabsDriveProgressJson(token, refs.progressFileId);
-        remoteEnvelope = parseScalesDriveEnvelope(json);
-      } catch {
-        remoteEnvelope = null;
-      }
-
-      const assessment = assessScalesDriveBackupConflict({
-        syncMeta: readScalesDriveSyncMeta(),
-        cloudModifiedTime: metaBefore.modifiedTime,
-        remoteEnvelope,
-      });
-
-      if (
-        remoteEnvelope &&
-        shouldPromptScalesDriveMerge({
-          syncMeta: readScalesDriveSyncMeta(),
-          cloudModifiedTime: metaBefore.modifiedTime,
-          remoteEnvelope,
-          progress: progressRef.current,
-        })
-      ) {
-        setConflict({
-          driveModifiedTime: metaBefore.modifiedTime ?? '',
-          remoteExportedAt: remoteEnvelope.exportedAt,
-          remoteExerciseCount: Object.keys(remoteEnvelope.payload.exercises).length,
-          localExerciseCount: Object.keys(progressRef.current.exercises).length,
-          reasons: assessment.reasons,
-          remoteEnvelope,
-          etag: metaBefore.etag,
-          progressFileId: refs.progressFileId,
-        });
-        return;
-      }
-
+      await pullFromDriveAndMerge({ silent: true });
       await flushDriveWrite();
       markManualBackupSucceeded();
     } catch (e) {
@@ -319,7 +247,7 @@ export function useScalesDriveBackup({ progress, onMergeProgress }: UseScalesDri
     } finally {
       setBusy(false);
     }
-  }, [flushDriveWrite, markManualBackupSucceeded, snapshotBeforeMerge]);
+  }, [flushDriveWrite, markManualBackupSucceeded, pullFromDriveAndMerge, snapshotBeforeMerge]);
 
   const cancelConflict = useCallback(() => setConflict(null), []);
 

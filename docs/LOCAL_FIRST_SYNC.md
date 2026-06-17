@@ -18,9 +18,31 @@ No other micro-apps use Drive JSON backup today. Encore also uses Drive for uplo
 1. **Local-first** — Dexie / in-memory progress is the working copy. Apps work offline without Google.
 2. **Background by default** — Session auto-pull, **periodic re-pull while the tab is visible** (every 5 min), debounced auto-push (3 s); no toast on every success.
 3. **Data-loss guards** — Empty devices must not overwrite richer cloud data; undo snapshots before destructive merges; deletions propagate where union-merge would resurrect rows.
-4. **Prompt only when judgment is needed** — Silent merge when heuristics are safe; dialogs when overwrite or per-row choices matter.
-5. **Shared UX for portfolio apps** — Stanza and Scales use [`LabsDriveAccountMenu`](../src/shared/google/LabsDriveAccountMenu.tsx); Encore uses its own account menu with row-level conflict UI.
-6. **No silent OAuth refresh** — ADR 0010/0011; user re-authenticates explicitly when tokens expire.
+4. **Silent merge by default** — Portfolio apps use **`silent_union`** unless merge heuristics can hide meaningful differences (see [Portfolio merge prompt policy](#portfolio-merge-prompt-policy)). Prompt only when user judgment is required; Encore uses row-level review for true simultaneous edits.
+5. **Shared UX for portfolio apps** — Stanza, Scales, and Gesture use [`LabsDriveAccountMenu`](../src/shared/google/LabsDriveAccountMenu.tsx); Encore uses its own account menu with row-level conflict UI.
+6. **No silent OAuth refresh** — ADR 0010/0011; user re-authenticates explicitly when tokens expire (optional BFF refresh per ADR 0014).
+
+## Portfolio merge prompt policy
+
+Shared type: [`LabsPortfolioMergePromptPolicy`](../src/shared/drive/labsDriveBackupTypes.ts). Each app exports a constant in `*DriveConflict.ts` and calls `shouldPromptPortfolioMerge({ policy, assessment, localChangedSinceLastBackup })`.
+
+| Policy                             | When to use                                                                                                                                                     | Apps today                                           |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| **`silent_union`** (default)       | Union merge cannot drop local edits; undo snapshots + Restore are the escape hatch. Auto-pull and manual backup **merge then upload** with no dialog.           | **Gesture**, **Scales**                              |
+| **`prompt_when_both_edited`**      | Cloud diverged **and** local changed since last backup → show [`LabsDriveConflictDialog`](../src/shared/google/LabsDriveConflictDialog.tsx) before pull/backup. | **Stanza** (section markers / richer per-song merge) |
+| **Row-level review** (Encore only) | Local and remote both changed the **same** repertoire row → per-row keep device vs Drive.                                                                       | **Encore**                                           |
+
+**Default for new portfolio apps:** set `LABS_PORTFOLIO_MERGE_PROMPT_POLICY_DEFAULT` (`silent_union`). Diverge only with a one-line comment in `*DriveConflict.ts` explaining why union merge is insufficient.
+
+**Assessment vs prompt:** `assessLabsDriveBackupConflict` still records _divergence_ (`drive_file_newer_than_seen`, etc.) for diagnostics and copy. Prompt policy decides whether divergence blocks the user.
+
+**Manual backup pattern (`silent_union` apps):**
+
+1. Undo snapshot (`manual-backup`)
+2. `pullFromDriveAndMerge({ silent: true })` — merge remote into local
+3. `flushDriveWrite()` — upload merged envelope
+
+**Undo:** Restore → **Undo last sync** (pre-pull snapshot) rolls back a bad merge without needing the conflict dialog.
 
 ## Architecture
 
@@ -69,13 +91,13 @@ App-local code owns envelope schema, merge logic, tombstones (Stanza), and progr
 
 ## Data-loss guards
 
-| Guard                                | Encore                                           | Stanza / Scales                                                            |
-| ------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------------- |
-| Empty device cannot push sparse data | Pull when remote newer; conflict when both dirty | `labsDriveAutoPushAllowed` until pull or manual backup                     |
-| Pre-merge undo                       | `encoreDriveUndoSnapshots` (IDB)                 | Stanza IDB ring; Scales localStorage ring                                  |
-| Deletion propagation                 | Row delete in repertoire push                    | Stanza tombstones in envelope (`deletedDriveSourceFileIds`)                |
-| Simultaneous edits                   | Row-level `bothEdited` dialog                    | Per-song / per-exercise merge heuristics; conflict dialog on manual backup |
-| OAuth token expiry                   | Sync error state in account menu                 | `syncPaused` + shared reconnect copy                                       |
+| Guard                                | Encore                                           | Stanza / Scales / Gesture                                            |
+| ------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------- |
+| Empty device cannot push sparse data | Pull when remote newer; conflict when both dirty | `labsDriveAutoPushAllowed` until pull or manual backup               |
+| Pre-merge undo                       | `encoreDriveUndoSnapshots` (IDB)                 | Stanza IDB ring; Scales localStorage ring; Gesture localStorage ring |
+| Deletion propagation                 | Row delete in repertoire push                    | Stanza/Gesture tombstones in envelope                                |
+| Simultaneous edits                   | Row-level `bothEdited` dialog                    | Stanza: merge prompt; Scales/Gesture: silent union merge             |
+| OAuth token expiry                   | Sync error state in account menu                 | `syncPaused` + shared reconnect copy                                 |
 
 ## Conflict decision tree
 
@@ -84,34 +106,32 @@ App-local code owns envelope schema, merge logic, tombstones (Stanza), and progr
 ```mermaid
 flowchart TD
   Start[Session start or manual backup]
-  AutoPull[Auto-pull on session start]
-  SilentMerge[Silent merge into local store]
-  ManualBackup[Manual Back up clicked]
-  Assess[assessLabsDriveBackupConflict]
+  AutoPull[Auto-pull / pullFromDriveAndMerge]
+  Policy{App merge prompt policy}
+  SilentMerge[Merge remote into local + undo snapshot]
   Dialog[LabsDriveConflictDialog]
   Push[Write progress.json to Drive]
 
   Start --> AutoPull
-  AutoPull --> SilentMerge
+  AutoPull --> Policy
+  Policy -->|silent_union| SilentMerge
+  Policy -->|prompt_when_both_edited + both sides changed| Dialog
+  Policy -->|prompt_when_both_edited + local unchanged| SilentMerge
   SilentMerge --> Push
-
-  ManualBackup --> Assess
-  Assess -->|needsPrompt| Dialog
-  Assess -->|no prompt| Push
   Dialog -->|Merge and upload| Push
   Dialog -->|Use this device only| Push
   Dialog -->|Cancel| Stop[No write]
 ```
 
-**Conflict reasons** (any one triggers prompt on manual backup):
+**Conflict reasons** (recorded by `assessLabsDriveBackupConflict`; prompt only when policy + local-changed say so):
 
 - `drive_file_newer_than_seen` — Drive `modifiedTime` > device `lastCloudModifiedTime`
 - `remote_export_newer_than_last_backup` — envelope `exportedAt` > device `lastBackupExportedAt`
 - `drive_nonempty_first_device` — no prior sync meta but remote has content
 
-Auto-pull **merges silently** when the cloud looks newer but **this device has no local edits since the last backup** (`shouldPromptBeforePortfolioMerge` returns false). If both sides changed, the conflict dialog opens (including on session auto-pull — account menu message points users there).
+**`silent_union` (Gesture, Scales):** auto-pull and manual backup always merge silently when remote exists, then push when appropriate. No blocking dialog.
 
-Manual backup uses the same rule (not merely `assessment.needsPrompt`).
+**`prompt_when_both_edited` (Stanza):** auto-pull merges silently when local unchanged since last backup; otherwise opens the conflict dialog (including blocking auto-pull with an account-menu hint).
 
 ### Encore
 
@@ -128,7 +148,7 @@ See [`src/encore/ARCHITECTURE.md`](../src/encore/ARCHITECTURE.md) § Sync state 
 | --------------- | ----------------------------------------------------------------------------------------------------------------- |
 | Happy path      | Silent auto-pull/push; periodic re-pull every 5 min while tab visible; “Last backup …” in account menu when known |
 | Token expired   | “Sign in again to sync” / “Drive sync paused …” (see `labsDriveSyncMessages.ts`)                                  |
-| Conflict        | Merge primary; replace-only with warning when cloud is richer                                                     |
+| Cloud diverged  | **`silent_union`:** merge in background; optional account-menu note. **Stanza:** dialog when both sides edited.   |
 | Restore         | Drive latest + local undo snapshots ([`LabsDriveRestoreDialog`](../src/shared/google/LabsDriveRestoreDialog.tsx)) |
 | Clear site data | Undo snapshots lost; Drive remains recovery path (restore dialog copy)                                            |
 

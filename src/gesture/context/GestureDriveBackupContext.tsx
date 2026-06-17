@@ -6,11 +6,14 @@ import {
   useMemo,
   type ReactNode,
 } from 'react';
+import { LABS_ENCORE_GOOGLE_IDENTITY_CHANGED_EVENT } from '../../shared/google/encoreGoogleTokenStorage';
 import type { LabsAccountBackupSlotProps } from '../../shared/google/LabsAccountMenu';
 import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from '../../shared/google/labsDriveBackupUiTypes';
 import { getLabsDriveBackupRestrictionHashesFromEnv } from '../../shared/google/labsDriveTesterGate';
 import { formatLabsDriveInstant } from '../../shared/google/formatLabsDriveInstant';
+import { useLabsGoogleSessionRefresh } from '../../shared/session/useLabsGoogleSessionRefresh';
 import { applyGestureMergedPayload } from '../db/gestureLocalData';
+import { resetGestureDriveAccessTokenFlight } from '../drive/readGestureDriveAccessToken';
 import type { GestureSyncPayload } from '../types';
 import {
   gestureGoogleClientConfigured,
@@ -22,6 +25,8 @@ export type GestureDriveBackupContextValue = {
   backupSlot: LabsAccountBackupSlotProps;
   driveUi: LabsDriveBackupUiProps;
   conflict: (LabsDriveConflictUiProps & { dialogTitleId: string }) | null;
+  /** Remote backup pack folder ids — probed during Organize when missing locally. */
+  organizeProbeFolderIds: readonly string[];
 };
 
 const GestureDriveBackupContext = createContext<GestureDriveBackupContextValue | null>(null);
@@ -40,6 +45,11 @@ export function GestureDriveBackupProvider({ children }: { children: ReactNode }
   }, []);
 
   const backup = useGestureDriveBackup({ onMergePayload });
+
+  useLabsGoogleSessionRefresh(() => {
+    resetGestureDriveAccessTokenFlight();
+    window.dispatchEvent(new Event(LABS_ENCORE_GOOGLE_IDENTITY_CHANGED_EVENT));
+  });
 
   const allowlistEmpty = getLabsDriveBackupRestrictionHashesFromEnv().size === 0;
 
@@ -123,14 +133,23 @@ export function GestureDriveBackupProvider({ children }: { children: ReactNode }
     };
   }, [backup]);
 
+  const organizeProbeFolderIds = useMemo((): readonly string[] => {
+    const ids = new Set<string>();
+    for (const pack of backup.latestRemoteEnvelope?.packs ?? []) {
+      if (pack.driveFolderId?.trim()) ids.add(pack.driveFolderId.trim());
+    }
+    return Array.from(ids);
+  }, [backup.latestRemoteEnvelope]);
+
   const value = useMemo(
     (): GestureDriveBackupContextValue => ({
       googleClientConfigured: gestureGoogleClientConfigured(),
       backupSlot,
       driveUi,
       conflict,
+      organizeProbeFolderIds,
     }),
-    [backupSlot, driveUi, conflict],
+    [backupSlot, driveUi, conflict, organizeProbeFolderIds],
   );
 
   return (

@@ -28,6 +28,10 @@ import {
   markManifestFileUploaded,
 } from './gestureUploadManifest';
 import { filterGestureUploadImageFiles } from './gesturePackMetadata';
+import {
+  putGesturePackUploadCleared,
+  putGesturePackUploadProgress,
+} from './gesturePackUploadProgress';
 import { GestureUploadCancelledError, isGestureUploadCancelledError } from './gestureUploadCancellation';
 
 async function assertUploadActive(
@@ -110,11 +114,12 @@ export async function finalizeGesturePackUploadIfComplete(
     return null;
   }
 
-  const cleared = clearedUploadFields({
-    ...pack,
-    lastIndexedAt: new Date().toISOString(),
-  });
-  await gestureDb.packs.put(cleared);
+  const cleared = await putGesturePackUploadCleared(pack.id, (latest) =>
+    clearedUploadFields({
+      ...latest,
+      lastIndexedAt: new Date().toISOString(),
+    }),
+  );
   await clearUploadRecoveryForPack(pack.id);
   notifyGestureLocalChange({ immediate: true });
   return cleared;
@@ -236,13 +241,11 @@ export async function uploadFilesToExistingPack(
     return { pack, uploadedCount: 0, total: 0, skippedDuplicates };
   }
 
-  let current: GesturePack = {
-    ...pack,
+  let current: GesturePack = await putGesturePackUploadProgress(pack.id, {
     uploadStatus: 'uploading',
     expectedFileCount: pack.expectedFileCount ?? images.length,
     uploadedFileCount: pack.uploadedFileCount ?? 0,
-  };
-  await gestureDb.packs.put(current);
+  });
 
   const manifestByPath = new Map(manifest.map((entry) => [entry.relativePath, entry]));
   const packFileByKey = new Map(packFilesExisting.map((row) => [row.name, row]));
@@ -265,8 +268,10 @@ export async function uploadFilesToExistingPack(
   let newlyUploaded = 0;
 
   if (markedSkipped > 0) {
-    current = { ...current, uploadedFileCount: done, expectedFileCount: total };
-    await gestureDb.packs.put(current);
+    current = await putGesturePackUploadProgress(pack.id, {
+      uploadedFileCount: done,
+      expectedFileCount: total,
+    });
   }
 
   onProgress?.(done, total);
@@ -286,7 +291,11 @@ export async function uploadFilesToExistingPack(
     const now = Date.now();
     if (!force && done % 20 !== 0 && now - lastPackProgressWriteAt < 800) return;
     lastPackProgressWriteAt = now;
-    await gestureDb.packs.put(current);
+    current = await putGesturePackUploadProgress(pack.id, {
+      uploadStatus: current.uploadStatus,
+      expectedFileCount: current.expectedFileCount,
+      uploadedFileCount: current.uploadedFileCount,
+    });
   };
 
   const flushPendingPackFiles = async () => {
@@ -370,8 +379,7 @@ export async function uploadFilesToExistingPack(
     const row = await gestureDb.packs.get(pack.id);
     if (row) {
       await flushPackProgress(true);
-      current = { ...current, uploadStatus: 'incomplete' };
-      await gestureDb.packs.put(current);
+      current = await putGesturePackUploadProgress(pack.id, { uploadStatus: 'incomplete' });
       notifyGestureLocalChange({ immediate: true });
     }
     throw e;
@@ -383,16 +391,22 @@ export async function uploadFilesToExistingPack(
   const pendingLeft = manifest.filter((entry) => entry.status === 'pending').length;
 
   if (pendingLeft === 0) {
-    current = clearedUploadFields({ ...current, lastIndexedAt: new Date().toISOString() });
-    await gestureDb.packs.put(current);
+    current = await putGesturePackUploadCleared(pack.id, (latest) =>
+      clearedUploadFields({
+        ...latest,
+        lastIndexedAt: new Date().toISOString(),
+      }),
+    );
     await clearUploadRecoveryForPack(pack.id);
   } else {
     const finalized = await finalizeGesturePackUploadIfComplete(accessToken, current);
     if (finalized) {
       current = finalized;
     } else {
-      current = { ...current, uploadStatus: 'incomplete', lastIndexedAt: new Date().toISOString() };
-      await gestureDb.packs.put(current);
+      current = await putGesturePackUploadProgress(pack.id, {
+        uploadStatus: 'incomplete',
+        lastIndexedAt: new Date().toISOString(),
+      });
     }
   }
 

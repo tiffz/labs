@@ -112,6 +112,8 @@ export type DriveFileListRow = {
   size?: string;
   /** MD5 for uploaded binary files; absent for Google Docs and some native types. */
   md5Checksum?: string;
+  /** When true, the file or folder is in the user's Drive trash. */
+  trashed?: boolean;
 };
 
 /**
@@ -390,6 +392,8 @@ export async function driveGetFileMetadata(
   md5Checksum?: string;
   /** Populated for `application/vnd.google-apps.shortcut` files. */
   shortcutDetails?: { targetId?: string; targetMimeType?: string };
+  /** When true, the file or folder is in the user's Drive trash. */
+  trashed?: boolean;
 }> {
   const path = `/files/${encodeURIComponent(fileId)}`;
   const qs = `?${new URLSearchParams({
@@ -427,6 +431,7 @@ export async function driveGetFileMetadata(
     size?: string;
     md5Checksum?: string;
     shortcutDetails?: { targetId?: string; targetMimeType?: string };
+    trashed?: boolean;
   };
   return { ...data, etag: etagFromDriveResponse(res) };
 }
