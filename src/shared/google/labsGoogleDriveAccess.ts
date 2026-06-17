@@ -50,6 +50,22 @@ export const LABS_GOOGLE_DRIVE_SESSION_SCOPES = [
   'https://www.googleapis.com/auth/youtube.readonly',
 ].join(' ');
 
+/**
+ * Adds `drive.readonly` so apps can download PDFs (or other files) from folders the user pastes
+ * or can already open in Drive. Listing works with `drive.metadata.readonly` alone; `alt=media`
+ * needs read access to file bytes.
+ */
+export const LABS_GOOGLE_DRIVE_READONLY_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
+
+export const LABS_GOOGLE_DRIVE_IMPORT_SCOPES = [
+  LABS_GOOGLE_DRIVE_FILE_SCOPE,
+  'https://www.googleapis.com/auth/drive.metadata.readonly',
+  LABS_GOOGLE_DRIVE_READONLY_SCOPE,
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile',
+  'https://www.googleapis.com/auth/youtube.readonly',
+].join(' ');
+
 function getGoogleClientId(): string {
   return ((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '').trim();
 }
@@ -79,12 +95,43 @@ function labsGoogleOAuthLoginHint(): string | undefined {
 export async function ensureLabsGoogleAccessTokenForDrive(options?: {
   interactive?: boolean;
 }): Promise<string> {
+  return ensureLabsGoogleAccessTokenForDriveScopes(LABS_GOOGLE_DRIVE_SESSION_SCOPES, options);
+}
+
+/**
+ * Token for bulk import from pasted Drive folders (includes {@link LABS_GOOGLE_DRIVE_READONLY_SCOPE}).
+ * Pass `upgradeScopes: true` from a button click when download fails or before the first import.
+ */
+export async function ensureLabsGoogleAccessTokenForDriveImport(options?: {
+  interactive?: boolean;
+  /** When true, skip the cached token and request import scopes via GIS (grants read access). */
+  upgradeScopes?: boolean;
+  skipBff?: boolean;
+}): Promise<string> {
+  return ensureLabsGoogleAccessTokenForDriveScopes(LABS_GOOGLE_DRIVE_IMPORT_SCOPES, {
+    ...options,
+    skipBff: options?.skipBff ?? true,
+    upgradeScopes: options?.upgradeScopes ?? false,
+  });
+}
+
+async function ensureLabsGoogleAccessTokenForDriveScopes(
+  scopes: string,
+  options?: {
+    interactive?: boolean;
+    upgradeScopes?: boolean;
+    /** When true, use GIS directly (same click). Avoids BFF popup → failed bridge → GIS without gesture. */
+    skipBff?: boolean;
+  },
+): Promise<string> {
   const allowInteractive = options?.interactive !== false;
+  const upgradeScopes = options?.upgradeScopes === true;
+  const skipBff = options?.skipBff === true || upgradeScopes;
   const clientId = getGoogleClientId();
   if (!clientId) throw new Error('Google sign-in is not configured for this build.');
 
   const stored = readPersistedGoogleSession();
-  if (stored && isPersistedSessionStillFresh(stored)) {
+  if (!upgradeScopes && stored && isPersistedSessionStillFresh(stored)) {
     try {
       const profile = await fetchGoogleUserProfile(stored.accessToken);
       writePersistedGoogleIdentity({
@@ -93,16 +140,13 @@ export async function ensureLabsGoogleAccessTokenForDrive(options?: {
       });
       return stored.accessToken;
     } catch (e) {
-      // Anything other than an auth rejection (401/403) — network, parser, etc. — surfaces to
-      // the caller. An auth rejection means the persisted token was actually revoked / expired
-      // server-side, so we fall through to the interactive-or-throw path below.
       if (!isLikelyGoogleAuthRejection(e)) throw e;
     }
   }
 
-  if (isLabsGoogleSessionBffEnabled()) {
+  if (isLabsGoogleSessionBffEnabled() && !skipBff) {
     const refreshed = await tryRefreshGoogleAccessTokenViaBff();
-    if (refreshed) return refreshed;
+    if (refreshed && !upgradeScopes) return refreshed;
     if (!allowInteractive) throw new LabsGoogleInteractiveAuthRequiredError();
     try {
       const signedIn = await signInWithGoogleViaBff();
@@ -117,7 +161,7 @@ export async function ensureLabsGoogleAccessTokenForDrive(options?: {
     throw new LabsGoogleInteractiveAuthRequiredError();
   }
 
-  const interactive = await requestGoogleAccessToken(clientId, LABS_GOOGLE_DRIVE_SESSION_SCOPES, {
+  const interactive = await requestGoogleAccessToken(clientId, scopes, {
     loginHint: labsGoogleOAuthLoginHint(),
   });
   const profile = await fetchGoogleUserProfile(interactive.access_token);
@@ -133,7 +177,15 @@ export async function ensureLabsGoogleAccessTokenForDrive(options?: {
  * Clears the cached access token and opens Google sign-in from a user gesture.
  * Keeps the remembered email as a login hint. Use from Account → Sign in again.
  */
-export async function reconnectLabsGoogleDriveSession(): Promise<string> {
+export async function reconnectLabsGoogleDriveSession(options?: {
+  /** Request {@link LABS_GOOGLE_DRIVE_IMPORT_SCOPES} (Zine Box Drive folder import). */
+  importScopes?: boolean;
+}): Promise<string> {
   clearPersistedGoogleSession();
-  return ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+  const scopes = options?.importScopes ? LABS_GOOGLE_DRIVE_IMPORT_SCOPES : LABS_GOOGLE_DRIVE_SESSION_SCOPES;
+  return ensureLabsGoogleAccessTokenForDriveScopes(scopes, {
+    interactive: true,
+    upgradeScopes: Boolean(options?.importScopes),
+    skipBff: true,
+  });
 }

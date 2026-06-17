@@ -114,6 +114,10 @@ export type DriveFileListRow = {
   md5Checksum?: string;
   /** When true, the file or folder is in the user's Drive trash. */
   trashed?: boolean;
+  /** Populated for `application/vnd.google-apps.shortcut` rows from `files.list`. */
+  shortcutDetails?: { targetId?: string; targetMimeType?: string };
+  /** Shared drive id when the row lives on a shared drive. */
+  driveId?: string;
 };
 
 /**
@@ -144,6 +148,8 @@ export async function driveListFiles(
   fields = 'nextPageToken,files(id,name,mimeType,parents,modifiedTime)',
   pageSize = 24,
   pageToken?: string,
+  /** When set, list within this shared drive (more reliable than `allDrives` for drive-owned trees). */
+  driveId?: string,
 ): Promise<{ files?: DriveFileListRow[]; nextPageToken?: string }> {
   // Drive v3 rejects some field masks when comma is followed by a space (`nextPageToken, files(...)` → HTTP 400).
   const fieldsParam = fields
@@ -151,6 +157,7 @@ export async function driveListFiles(
     .map((s) => s.trim())
     .filter(Boolean)
     .join(',');
+  const scopedDriveId = driveId?.trim();
   const query: Record<string, string> = {
     q,
     fields: fieldsParam,
@@ -159,11 +166,12 @@ export async function driveListFiles(
      * My Drive + shared drives: without these, `files.list` can 403/empty-list for folders on
      * shared drives or certain `in parents` queries (breaks in-app Drive browse).
      */
-    corpora: 'allDrives',
+    corpora: scopedDriveId ? 'drive' : 'allDrives',
     includeItemsFromAllDrives: 'true',
     supportsAllDrives: 'true',
     pageSize: String(pageSize),
   };
+  if (scopedDriveId) query.driveId = scopedDriveId;
   if (pageToken) query.pageToken = pageToken;
   return driveGetJson(accessToken, '/files', query);
 }
@@ -392,6 +400,8 @@ export async function driveGetFileMetadata(
   md5Checksum?: string;
   /** Populated for `application/vnd.google-apps.shortcut` files. */
   shortcutDetails?: { targetId?: string; targetMimeType?: string };
+  /** Shared drive id when the file lives on a shared drive. */
+  driveId?: string;
   /** When true, the file or folder is in the user's Drive trash. */
   trashed?: boolean;
 }> {

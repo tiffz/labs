@@ -1,0 +1,250 @@
+/* Riso Lab — misregistered soy ink (restrained stacks — one ghost layer by default) */
+
+[data-zinebox-theme^='riso'] .zinebox-header__title {
+  text-shadow: 2px 2px 0 var(--zinebox-riso-layer-a, transparent);
+}
+
+[data-zinebox-theme^='riso'] .zinebox-pill--active {
+  box-shadow: 2px 2px 0 var(--zinebox-riso-layer-a, transparent);
+}
+
+[data-zinebox-theme^='riso'] .zinebox-cover-card__cover {
+  transform: rotate(-0.35deg);
+  transform-origin: center center;
+}
+
+[data-zinebox-theme^='riso'] .zinebox-cover-card__cover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  background: var(--zinebox-riso-layer-a, transparent);
+  transform: translate(2px, 2px);
+  opacity: 0.13;
+}
+
+[data-zinebox-theme^='riso'] .zinebox-cover-card__cover::after {
+  content: none;
+}
+
+[data-zinebox-theme^='riso']
+  .zinebox-cover-card:hover
+  .zinebox-cover-card__cover,
+[data-zinebox-theme^='riso']
+  .zinebox-cover-card:focus-within
+  .zinebox-cover-card__cover {
+  transform: translateY(-3px) rotate(0.1deg);
+  border-color: color-mix(
+    in srgb,
+    var(--zinebox-accent) 28%,
+    var(--zinebox-border)
+  );
+}
+
+[data-zinebox-theme^='riso'] .zinebox-design-picker {
+  border-style: solid;
+  border-color: var(--zinebox-border);
+  box-shadow: 2px 2px 0 var(--zinebox-riso-layer-a, transparent);
+}
+
+[data-zinebox-theme^='riso'] .zinebox-header {
+  border-bottom-color: color-mix(
+    in srgb,
+    var(--zinebox-riso-layer-a) 22%,
+    var(--zinebox-border)
+  );
+}
+
+[data-zinebox-theme^='riso'] .zinebox-pill {
+  border-color: transparent;
+}
+
+[data-zinebox-theme^='riso'] .zinebox-pill:hover {
+  border-color: var(--zinebox-border);
+  box-shadow: 1px 1px 0 var(--zinebox-riso-layer-a, transparent);
+}
+
+/* ——— per-theme accents ——— */
+
+[data-zinebox-theme='risograph'] .zinebox-cover-card__cover {
+  transform: rotate(-0.6deg);
+}
+
+[data-zinebox-theme='risograph'] .zinebox-cover-card__cover::after {
+  content: '';
+  background: var(--zinebox-riso-layer-b);
+  transform: translate(-2px, -1px);
+  opacity: 0.12;
+}
+
+[data-zinebox-theme='risograph'] .zinebox-header__title {
+  text-shadow:
+    1px 1px 0 var(--zinebox-riso-layer-a),
+    2px 2px 0 var(--zinebox-riso-layer-b);
+}
+
+[data-zinebox-theme='risodrift'] .zinebox-cover-card__cover::after {
+  content: '';
+  background: var(--zinebox-riso-layer-c);
+  transform: translate(-3px, 4px);
+  opacity: 0.18;
+}
+
+[data-zinebox-theme='risodrift'] .zinebox-header__title {
+  text-shadow:
+    2px 1px 0 var(--zinebox-riso-layer-a),
+    3px 3px 0 var(--zinebox-riso-layer-b);
+}
+
+[data-zinebox-theme='risogold'] .zinebox-cover-card__cover {
+  transform: rotate(0.3deg);
+}
+
+[data-zinebox-theme='risogold'] .zinebox-pill--active {
+  background: var(--zinebox-accent);
+  color: #fdfaf4;
+}
+
+[data-zinebox-theme='risofluoro'] .zinebox-pill--active {
+  color: #1a1814;
+  background: #ffea00;
+  border-color: #ff006e;
+}
+
+[data-zinebox-theme='risofluoro'] .zinebox-cover-card__cover::before {
+  opacity: 0.2;
+}
+
+[data-zinebox-theme='risomint'] .zinebox-app {
+  background-image: radial-gradient(
+    circle at 0% 100%,
+    rgba(94, 200, 183, 0.12),
+    transparent 50%
+  );
+}
+
+[data-zinebox-theme='risomidnight'] .zinebox-cover-card__cover::before {
+  mix-blend-mode: screen;
+  opacity: 0.28;
+}
+
+[data-zinebox-theme='risomidnight'] .zinebox-pill--active {
+  box-shadow: 0 0 10px rgba(255, 107, 53, 0.4);
+}
+
+[data-zinebox-theme='risosepia'] .zinebox-cover-card__image {
+  filter: sepia(0.12) contrast(1.05);
+}
+
+[data-zinebox-theme='risoastro'] .zinebox-pill--active {
+  color: #1a1424;
+  background: #ccff00;
+}
+
+/* ——— Riso Pulp (default product skin) ——— */
+
+[data-zinebox-theme='risopulp'] .zinebox-app {
+  background-size:
+    auto,
+    auto,
+    20px 20px,
+    auto;
+}
+
+[data-zinebox-theme='risopulp'] .zinebox-header__title {
+  letter-spacing: 0.06em;
+  text-shadow: 2px 2px 0 rgba(255, 20, 147, 0.45);
+}
+
+[data-zinebox-theme='risopulp'] .zinebox-cover-card__cover {
+  transform: rotate(-0.75deg);
+  transform-origin: center center;
+  border-color: rgba(20, 10, 16, 0.14);
+}
+
+[data-zinebox-theme='risopulp'] .zinebox-cover-card__cover::before {
+  background: #00e5ff;
+  transform: translate(2px, 2px);
+  opacity: 0.1;
+}
+
+[data-zinebox-theme='risopulp']
+  .zinebox-cover-card:hover
+  .zinebox-cover-card__cover,
+[data-zinebox-theme='risopulp']
+  .zinebox-cover-card:focus-within
+  .zinebox-cover-card__cover {
+  transform: translateY(-4px) rotate(-0.2deg);
+  box-shadow: var(--zinebox-shadow-hover);
+}
+
+[data-zinebox-theme='risopulp'] .zinebox-cover-card__source {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--zinebox-accent) 55%, var(--zinebox-muted));
+}
+
+[data-zinebox-theme='risopulp'] .zinebox-pill--active {
+  box-shadow: 2px 2px 0 #00e5ff;
+}
+
+[data-zinebox-theme='risopulp'] .zinebox-pill--active:hover {
+  box-shadow: 3px 2px 0 #00e5ff;
+}
+
+[data-zinebox-theme='risopulp']
+  .zinebox-library-add-panel
+  .MuiButton-contained {
+  box-shadow: 2px 2px 0 #00e5ff;
+}
+
+[data-zinebox-theme='risopulp']
+  .zinebox-library-add-panel
+  .MuiButton-contained:hover {
+  box-shadow: 3px 2px 0 #00e5ff;
+}
+
+[data-zinebox-theme='risopulp'] .zinebox-upload-zone > .MuiBox-root,
+[data-zinebox-theme='risopulp'] .zinebox-library-add-panel [class*='DragDrop'] {
+  box-shadow: 2px 2px 0 rgba(0, 229, 255, 0.35);
+}
+
+[data-zinebox-theme='risopulp'] .zinebox-library-grid {
+  gap: 24px 18px;
+}
+
+[data-zinebox-theme='risopulp'] .zinebox-cover-card__unread-dot {
+  box-shadow: 0 0 0 2px var(--zinebox-surface);
+}
+
+[data-zinebox-theme='risoluxe'] .zinebox-cover-card__cover {
+  transform: none;
+  box-shadow: var(--zinebox-shadow);
+}
+
+[data-zinebox-theme='risoluxe'] .zinebox-cover-card__cover::before {
+  opacity: 0.08;
+}
+
+[data-zinebox-theme='risoluxe'] .zinebox-header__title {
+  text-shadow: none;
+  letter-spacing: 0.04em;
+}
+
+[data-zinebox-theme='risoluxe'] .zinebox-pill--active {
+  background: var(--zinebox-accent);
+  color: #faf7f2;
+  box-shadow: 2px 2px 0 rgba(184, 149, 107, 0.45);
+}
+
+.zinebox-design-picker .MuiListSubheader-root {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 2;
+}

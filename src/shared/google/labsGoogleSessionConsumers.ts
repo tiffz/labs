@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 /** Labs micro-apps on this site that read the shared Google identity (`encore_google_*` keys). */
-export type LabsGoogleSessionConsumerId = 'encore' | 'scales' | 'stanza' | 'gesture';
+export type LabsGoogleSessionConsumerId = 'encore' | 'scales' | 'stanza' | 'gesture' | 'zinebox';
 
 export type LabsGoogleSessionConsumerMeta = {
   id: LabsGoogleSessionConsumerId;
@@ -38,6 +38,12 @@ export const LABS_GOOGLE_SESSION_CONSUMERS: readonly LabsGoogleSessionConsumerMe
     href: '/gesture/',
     blurb: 'Timed drawing practice, Drive backup',
   },
+  {
+    id: 'zinebox',
+    label: 'Zine Box',
+    href: '/zinebox/',
+    blurb: 'Indie comic reader, local library',
+  },
 ] as const;
 
 const STORAGE_KEY = 'labs_google_session_apps_v1';
@@ -50,7 +56,7 @@ function parseTouches(raw: string | null): LabsGoogleSessionTouches {
   try {
     const j = JSON.parse(raw) as Record<string, unknown>;
     const out: LabsGoogleSessionTouches = {};
-    for (const id of ['encore', 'scales', 'stanza', 'gesture'] as const) {
+    for (const id of ['encore', 'scales', 'stanza', 'gesture', 'zinebox'] as const) {
       const v = j[id];
       if (typeof v === 'number' && Number.isFinite(v)) out[id] = v;
     }
@@ -88,6 +94,7 @@ export function getLabsGoogleSessionConsumerIdFromPath(pathname: string): LabsGo
   if (p.startsWith('/scales')) return 'scales';
   if (p.startsWith('/stanza')) return 'stanza';
   if (p.startsWith('/gesture')) return 'gesture';
+  if (p.startsWith('/zinebox')) return 'zinebox';
   return null;
 }
 

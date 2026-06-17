@@ -1,7 +1,8 @@
-/** Matches Encore {@link GOOGLE_SCOPES} and shared {@link LABS_GOOGLE_DRIVE_SESSION_SCOPES}. */
+/** Matches Encore {@link GOOGLE_SCOPES}, shared {@link LABS_GOOGLE_DRIVE_SESSION_SCOPES}, plus read for Zine Box import. */
 export const LABS_GOOGLE_OAUTH_SCOPES = [
   'https://www.googleapis.com/auth/drive.file',
   'https://www.googleapis.com/auth/drive.metadata.readonly',
+  'https://www.googleapis.com/auth/drive.readonly',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
   'https://www.googleapis.com/auth/youtube.readonly',

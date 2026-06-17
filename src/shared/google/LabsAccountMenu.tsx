@@ -65,6 +65,8 @@ export type LabsAccountMenuProps = {
   appId: LabsGoogleSessionConsumerId;
   googleClientConfigured: boolean;
   backup: LabsAccountBackupSlotProps;
+  /** When set, replaces default GIS sign-in (e.g. Zine Box Drive import scopes). */
+  signInWithGoogle?: () => Promise<void>;
   /** Shown under the email line (e.g. explain remembered identity vs live Drive permission). */
   identityCaption?: string;
   appearance?: LabsAccountMenuAppearance;
@@ -155,8 +157,9 @@ function LabsAccountSignInMenu(props: {
   ids: { menu: string; button: string };
   appearance: LabsAccountMenuAppearance;
   tooltipTitle?: string;
+  signInWithGoogle?: () => Promise<void>;
 }): ReactElement {
-  const { ids, appearance, tooltipTitle } = props;
+  const { ids, appearance, tooltipTitle, signInWithGoogle } = props;
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const [busy, setBusy] = useState(false);
@@ -172,7 +175,11 @@ function LabsAccountSignInMenu(props: {
     setBusy(true);
     void (async () => {
       try {
-        await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+        if (signInWithGoogle) {
+          await signInWithGoogle();
+        } else {
+          await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+        }
         close();
       } catch (e) {
         const msg =
@@ -186,7 +193,7 @@ function LabsAccountSignInMenu(props: {
         setBusy(false);
       }
     })();
-  }, [close]);
+  }, [close, signInWithGoogle]);
 
   return (
     <>
@@ -267,24 +274,34 @@ function LabsAccountBackupBlock(props: {
 }) {
   const { backup, alertSurfaceSx, renderBackupButton } = props;
   const [reconnectBusy, setReconnectBusy] = useState(false);
+  const [reconnectError, setReconnectError] = useState<string | null>(null);
   const msgFail = typeof backup.message === 'string' && backupMessageIsFailure(backup.message);
   const msgNeedsSignIn = typeof backup.message === 'string' && backupMessageNeedsSignIn(backup.message);
   const needsSignIn = useLabsGoogleDriveNeedsSignIn(Boolean(backup.identity?.email?.trim()));
   const onSignIn = backup.onSignIn ?? backup.onBackup;
+  const backupOnSignIn = backup.onSignIn;
 
   const handleReconnect = useCallback(() => {
     setReconnectBusy(true);
+    setReconnectError(null);
     void (async () => {
       try {
-        await reconnectLabsGoogleDriveSession();
-        await onSignIn();
-      } catch {
-        /* Apps surface backup.message from their Drive hooks on the next sync attempt. */
+        if (backupOnSignIn) {
+          await backupOnSignIn();
+        } else {
+          await reconnectLabsGoogleDriveSession();
+        }
+      } catch (e) {
+        const msg =
+          e instanceof Error
+            ? e.message
+            : 'Google sign-in did not finish. Try again and allow popups for this site.';
+        setReconnectError(msg);
       } finally {
         setReconnectBusy(false);
       }
     })();
-  }, [onSignIn]);
+  }, [backupOnSignIn]);
 
   if (!backup.testerResolved) {
     return (
@@ -358,6 +375,11 @@ function LabsAccountBackupBlock(props: {
           {reconnectBusy ? 'Opening Google…' : 'Sign in again'}
         </Button>
       ) : null}
+      {reconnectError ? (
+        <Alert severity="error" sx={{ ...alertSurfaceSx, py: 0.5 }}>
+          {reconnectError}
+        </Alert>
+      ) : null}
       {backup.message ? (
         <Alert
           severity={msgFail ? 'error' : msgNeedsSignIn ? 'warning' : 'success'}
@@ -398,7 +420,16 @@ function LabsAccountBackupBlock(props: {
  * entry point (same Encore `localStorage` keys) instead of hiding entirely.
  */
 export function LabsAccountMenu(props: LabsAccountMenuProps) {
-  const { appId, googleClientConfigured, backup, identityCaption, appearance = {}, ids, renderBackupButton } = props;
+  const {
+    appId,
+    googleClientConfigured,
+    backup,
+    signInWithGoogle,
+    identityCaption,
+    appearance = {},
+    ids,
+    renderBackupButton,
+  } = props;
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const sessionTouches = useLabsGoogleSessionTouches();
@@ -420,6 +451,7 @@ export function LabsAccountMenu(props: LabsAccountMenuProps) {
         ids={ids}
         appearance={appearance}
         tooltipTitle={appearance.tooltipTitle ?? 'Sign in with Google'}
+        signInWithGoogle={signInWithGoogle}
       />
     );
   }

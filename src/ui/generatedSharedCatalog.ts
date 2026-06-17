@@ -5022,6 +5022,90 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-drivecollectpdffilesrecursive-ts-drivecollectpdffilesrecursive",
+    "name": "driveCollectPdfFilesRecursive",
+    "path": "src/shared/drive/driveCollectPdfFilesRecursive.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Breadth-first walk: collects PDF files in the root folder and nested subfolders.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-drivecollectpdffilesrecursive-ts-drivecollectpdfsoptions",
+    "name": "DriveCollectPdfsOptions",
+    "path": "src/shared/drive/driveCollectPdfFilesRecursive.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-drivecollectpdffilesrecursive-ts-drivecollectpdfsresult",
+    "name": "DriveCollectPdfsResult",
+    "path": "src/shared/drive/driveCollectPdfFilesRecursive.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-drivecollectpdffilesrecursive-ts-drivepdfdedupekey",
+    "name": "drivePdfDedupeKey",
+    "path": "src/shared/drive/driveCollectPdfFilesRecursive.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Stable key for deduping direct PDF rows and shortcuts to the same target file.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-drivecollectpdffilesrecursive-ts-drivepdfimportcandidate",
+    "name": "DrivePdfImportCandidate",
+    "path": "src/shared/drive/driveCollectPdfFilesRecursive.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-drivecollectpdffilesrecursive-ts-isdrivepdffile",
+    "name": "isDrivePdfFile",
+    "path": "src/shared/drive/driveCollectPdfFilesRecursive.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-drivefetch-ts-drivecreateanyonereaderpermission",
     "name": "driveCreateAnyoneReaderPermission",
     "path": "src/shared/drive/driveFetch.ts",
@@ -5603,6 +5687,38 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsdrivefolderpasteorbrowseblock-tsx-labsdrivefolderpasteorbrowseblock",
+    "name": "LabsDriveFolderPasteOrBrowseBlock",
+    "path": "src/shared/drive/LabsDriveFolderPasteOrBrowseBlock.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Paste a Drive folder URL or id, verify when signed in, open Drive in a new tab. Matches Encore bulk-import folder UX ( ).",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivefolderpasteorbrowseblock-tsx-labsdrivefolderpasteorbrowseblockprops",
+    "name": "LabsDriveFolderPasteOrBrowseBlockProps",
+    "path": "src/shared/drive/LabsDriveFolderPasteOrBrowseBlock.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-labsdrivefolderurl-ts-labsdrivefolderurl",
     "name": "labsDriveFolderUrl",
     "path": "src/shared/drive/labsDriveFolderUrl.ts",
@@ -5775,6 +5891,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsdriveportfoliolayout-ts-labs-drive-app-folder-zinebox",
+    "name": "LABS_DRIVE_APP_FOLDER_ZINEBOX",
+    "path": "src/shared/drive/labsDrivePortfolioLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Portfolio Drive layout for Tiff Zhang Labs micro-apps (separate from Encore's `Encore_App` tree). Requesting `https://www.googleapis.com/auth/drive.file` only (via the app's GIS token request). This app cannot see files created by other apps or the user's personal documents outside what Drive's `drive.file` scope allows — only files the app creates or opens through this flow.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-labsdriveportfoliolayout-ts-labs-drive-progress-file",
     "name": "LABS_DRIVE_PROGRESS_FILE",
     "path": "src/shared/drive/labsDrivePortfolioLayout.ts",
@@ -5931,6 +6062,131 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "id": "src-shared-drive-labsdrivesyncmessages-ts-labsdrivesyncoperation",
     "name": "LabsDriveSyncOperation",
     "path": "src/shared/drive/labsDriveSyncMessages.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-parsedrivefolderurl-ts-isdrivefolderbrowserurl",
+    "name": "isDriveFolderBrowserUrl",
+    "path": "src/shared/drive/parseDriveFolderUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when the URL is a Drive **folder** browser link (not a file).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-parsedrivefolderurl-ts-parsedrivefileidfromurlorid",
+    "name": "parseDriveFileIdFromUrlOrId",
+    "path": "src/shared/drive/parseDriveFolderUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Extract Google Drive file id from common URL shapes or raw id.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-parsedrivefolderurl-ts-parsedrivefolderidfromurlorid",
+    "name": "parseDriveFolderIdFromUrlOrId",
+    "path": "src/shared/drive/parseDriveFolderUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Extract folder id from Drive folder URLs or a raw folder id string.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-parsedrivefolderurl-ts-parsedrivefolderidfromuserinput",
+    "name": "parseDriveFolderIdFromUserInput",
+    "path": "src/shared/drive/parseDriveFolderUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Folder id from multiline paste / URL / raw id. Folder URLs via , then single-line token via .",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-resolvedrivefolderfromuserinput-ts-drive-folder-mime-type",
+    "name": "DRIVE_FOLDER_MIME_TYPE",
+    "path": "src/shared/drive/resolveDriveFolderFromUserInput.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-resolvedrivefolderfromuserinput-ts-resolvedrivefolderfromuserinput",
+    "name": "resolveDriveFolderFromUserInput",
+    "path": "src/shared/drive/resolveDriveFolderFromUserInput.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parse pasted text, then confirm via Drive that the id is a folder (not a file). Follows Drive shortcuts when they point at a folder.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-resolvedrivefolderfromuserinput-ts-resolvedrivefolderfromuserinputerr",
+    "name": "ResolveDriveFolderFromUserInputErr",
+    "path": "src/shared/drive/resolveDriveFolderFromUserInput.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-resolvedrivefolderfromuserinput-ts-resolvedrivefolderfromuserinputok",
+    "name": "ResolveDriveFolderFromUserInputOk",
+    "path": "src/shared/drive/resolveDriveFolderFromUserInput.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-resolvedrivefolderfromuserinput-ts-resolvedrivefolderfromuserinputresult",
+    "name": "ResolveDriveFolderFromUserInputResult",
+    "path": "src/shared/drive/resolveDriveFolderFromUserInput.ts",
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
@@ -6513,6 +6769,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-google-labsgoogledriveaccess-ts-ensurelabsgoogleaccesstokenfordriveimport",
+    "name": "ensureLabsGoogleAccessTokenForDriveImport",
+    "path": "src/shared/google/labsGoogleDriveAccess.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Token for bulk import from pasted Drive folders (includes ). Pass `upgradeScopes: true` from a button click when download fails or before the first import.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-google-labsgoogledriveaccess-ts-labs-google-drive-file-scope",
     "name": "LABS_GOOGLE_DRIVE_FILE_SCOPE",
     "path": "src/shared/google/labsGoogleDriveAccess.ts",
@@ -6520,6 +6789,36 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Minimal scopes for portfolio Drive backup (incremental auth on user action). `drive.file` — files created by this app only, per Google's restricted-scope contract.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsgoogledriveaccess-ts-labs-google-drive-import-scopes",
+    "name": "LABS_GOOGLE_DRIVE_IMPORT_SCOPES",
+    "path": "src/shared/google/labsGoogleDriveAccess.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "User-visible copy when GIS needs a popup from a click (not from automatic page load).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsgoogledriveaccess-ts-labs-google-drive-readonly-scope",
+    "name": "LABS_GOOGLE_DRIVE_READONLY_SCOPE",
+    "path": "src/shared/google/labsGoogleDriveAccess.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Adds `drive.readonly` so apps can download PDFs (or other files) from folders the user pastes or can already open in Drive. Listing works with `drive.metadata.readonly` alone; `alt=media` needs read access to file bytes.",
     "tags": [
       "api"
     ],

@@ -160,6 +160,14 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     notes: 'smoke only',
   },
   {
+    route: '/zinebox/',
+    title: /Zine Box/i,
+    visibleSelector: 'button:has-text("Upload zines")',
+    smoke: true,
+    visual: false,
+    notes: 'smoke only',
+  },
+  {
     route: '/ui/',
     title: /UI Catalog/i,
     visibleSelector: '#root',

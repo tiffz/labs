@@ -1,0 +1,128 @@
+/* Per-theme structural experiments — tokens live in zineboxDesignThemes.ts */
+
+[data-zinebox-theme='risograph'] .zinebox-cover-card__cover {
+  transform: rotate(-0.6deg);
+}
+
+[data-zinebox-theme='risograph']
+  .zinebox-cover-card:hover
+  .zinebox-cover-card__cover {
+  transform: translateY(-3px) rotate(0.2deg);
+}
+
+[data-zinebox-theme='newsprint'] .zinebox-app {
+  background-image: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0.08) 1px,
+    transparent 1px
+  );
+  background-size: 4px 4px;
+}
+
+[data-zinebox-theme='newsprint'] .zinebox-pill--active {
+  color: #141414;
+}
+
+[data-zinebox-theme='xerox'] .zinebox-cover-card__cover {
+  filter: contrast(1.15) grayscale(0.15);
+}
+
+[data-zinebox-theme='xerox'] .zinebox-header__title {
+  letter-spacing: -0.04em;
+}
+
+[data-zinebox-theme='neonbodega'] .zinebox-pill--active {
+  box-shadow: 0 0 14px rgba(255, 43, 214, 0.45);
+}
+
+[data-zinebox-theme='neonbodega'] .zinebox-cover-card__cover {
+  border-color: rgba(0, 245, 255, 0.2);
+}
+
+[data-zinebox-theme='pasteup'] .zinebox-cover-card__cover::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 48px;
+  height: 14px;
+  transform: translateX(-50%) rotate(-2deg);
+  background: rgba(255, 235, 180, 0.75);
+  border: 1px dashed rgba(61, 47, 34, 0.25);
+  pointer-events: none;
+}
+
+[data-zinebox-theme='letterpress'] .zinebox-header__title {
+  letter-spacing: 0.02em;
+}
+
+[data-zinebox-theme='dotmatrix'] .zinebox-pill,
+[data-zinebox-theme='dotmatrix'] .zinebox-header__title {
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.35);
+}
+
+[data-zinebox-theme='candycomic'] .zinebox-cover-card__cover {
+  background-image: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0.12) 1px,
+    transparent 1px
+  );
+  background-size: 5px 5px;
+}
+
+[data-zinebox-theme='candycomic'] .zinebox-stack-card__badge {
+  background: #ff3366;
+  border: 2px solid #0a0a0a;
+  box-shadow: 3px 3px 0 #0a0a0a;
+}
+
+[data-zinebox-theme='voidgallery'] .zinebox-library-grid {
+  gap: 28px 20px;
+}
+
+[data-zinebox-theme='voidgallery'] .zinebox-cover-card__title {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.6875rem;
+}
+
+[data-zinebox-theme='voidgallery'] .zinebox-header {
+  border-bottom-color: rgba(196, 181, 253, 0.2);
+}
+
+.zinebox-design-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: var(--zinebox-radius);
+  border: 1px dashed var(--zinebox-border-strong);
+  background: var(--zinebox-surface);
+}
+
+.zinebox-design-picker__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--zinebox-muted);
+}
+
+.zinebox-design-picker__tagline {
+  flex: 1 1 100%;
+  font-size: 0.75rem;
+  color: var(--zinebox-muted);
+  font-style: italic;
+}
+
+.zinebox-design-picker__select {
+  min-width: 11rem;
+  font-size: 0.8125rem;
+}
+
+.zinebox-design-picker__select .MuiSelect-select {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}

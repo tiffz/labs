@@ -21,7 +21,8 @@ export type AppThemeId =
   | 'encore'
   | 'stanza'
   | 'sight'
-  | 'gesture';
+  | 'gesture'
+  | 'zinebox';
 
 interface AppThemeConfig {
   mode: 'light' | 'dark';
@@ -464,6 +465,19 @@ const THEMES: Record<AppThemeId, Theme> = {
     textSecondary: '#6f6c65',
     divider: 'rgba(47, 51, 44, 0.09)',
     radius: 10,
+    spacingBase: 4,
+  }),
+  zinebox: buildTheme({
+    mode: 'light',
+    fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+    primary: '#ff1493',
+    secondary: '#9c9691',
+    backgroundDefault: '#f8f7f5',
+    backgroundPaper: '#fdfcfb',
+    textPrimary: '#484440',
+    textSecondary: '#9c9691',
+    divider: 'rgba(72, 68, 64, 0.1)',
+    radius: 6,
     spacingBase: 4,
   }),
   encore: createTheme(

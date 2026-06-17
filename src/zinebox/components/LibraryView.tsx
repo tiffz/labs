@@ -1,0 +1,264 @@
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
+import { DndContext } from '@dnd-kit/core';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
+import { mockImportFromDrive } from '../db/mockDriveImport';
+import { importLocalPdfFiles } from '../drive/importLocalPdfs';
+import { useStackDnD } from '../hooks/useStackDnD';
+import { useZineboxCollections, useZineboxComics } from '../hooks/useZineboxComics';
+import { useZineboxLibraryDrop } from '../hooks/useZineboxLibraryDrop';
+import type { ZineboxCollection } from '../types';
+import LocalBatchImportDialog from './LocalBatchImportDialog';
+import LibraryFilterPills from './LibraryFilterPills';
+import LibraryGridView from './LibraryGridView';
+import StackDetailDialog from './StackDetailDialog';
+import ZineboxAppHeader from './ZineboxAppHeader';
+import type { ZineboxLibraryParams } from '../routes/zineboxHash';
+import { collectAllZineboxTags, comicMatchesTagFilter } from '../utils/zineboxTags';
+import { pickRandomUnreadComic } from '../utils/pickRandomUnreadComic';
+
+type LibraryViewProps = {
+  libraryParams: ZineboxLibraryParams;
+  onLibraryParamsChange: (next: Partial<ZineboxLibraryParams>) => void;
+  onOpenComic: (comicId: string) => void;
+};
+
+function shouldRunE2eSeed(): boolean {
+  if (typeof window === 'undefined') return false;
+  return new URLSearchParams(window.location.search).has('e2eSeed');
+}
+
+export default function LibraryView({
+  libraryParams,
+  onLibraryParamsChange,
+  onOpenComic,
+}: LibraryViewProps): React.ReactElement {
+  const { startBlockingJob } = useLabsBlockingJobs();
+  const { comics, comicsHydrated } = useZineboxComics();
+  const { collections, collectionsHydrated } = useZineboxCollections();
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importNotice, setImportNotice] = useState<string | null>(null);
+  const [localBatchFiles, setLocalBatchFiles] = useState<File[] | null>(null);
+  const [activeStack, setActiveStack] = useState<ZineboxCollection | null>(null);
+  const { dndContextProps, dragOverlay } = useStackDnD(comics, collections);
+
+  const hydrated = comicsHydrated && collectionsHydrated;
+  const hasLibrary = comics.length > 0;
+
+  const handleImportFiles = useCallback(async (files: File[]) => {
+    if (files.length === 0) return;
+    const pdfs = files.filter((f) => f.name.toLowerCase().endsWith('.pdf'));
+    if (pdfs.length === 0) {
+      setImportError('No PDF files were found. Try again with .pdf files.');
+      return;
+    }
+    if (pdfs.length > 1) {
+      setImportError(null);
+      setImportNotice(null);
+      setLocalBatchFiles(pdfs);
+      return;
+    }
+    setImporting(true);
+    setImportError(null);
+    setImportNotice(null);
+    const job = startBlockingJob('Importing PDF…');
+    try {
+      const result = await importLocalPdfFiles(pdfs);
+      if (result.imported === 0 && result.skipped > 0) {
+        setImportNotice('That PDF is already in your library.');
+      } else if (result.imported === 0) {
+        setImportError('No PDF files were found. Try again with .pdf files.');
+      }
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : 'Could not import those PDFs.');
+    } finally {
+      job.end();
+      setImporting(false);
+    }
+  }, [startBlockingJob]);
+
+  const { dragActive, handlers: dropHandlers } = useZineboxLibraryDrop({
+    disabled: importing,
+    onFiles: (files) => void handleImportFiles(files),
+  });
+
+  useEffect(() => {
+    if (!hydrated || !shouldRunE2eSeed() || comics.length > 0) return;
+    void mockImportFromDrive();
+  }, [comics.length, hydrated]);
+
+  const comicsById = useMemo(() => new Map(comics.map((c) => [c.id, c])), [comics]);
+
+  const stackedComicIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const collection of collections) {
+      for (const id of collection.itemIds) ids.add(id);
+    }
+    return ids;
+  }, [collections]);
+
+  const sources = useMemo(
+    () => [...new Set(comics.map((c) => c.source))].sort((a, b) => a.localeCompare(b)),
+    [comics],
+  );
+
+  const tags = useMemo(() => collectAllZineboxTags(comics), [comics]);
+
+  const filteredComics = useMemo(() => {
+    return comics.filter((comic) => {
+      if (libraryParams.filter === 'unread' && comic.readStatus !== 'unread') return false;
+      if (libraryParams.source && comic.source !== libraryParams.source) return false;
+      if (libraryParams.tag && !comicMatchesTagFilter(comic, libraryParams.tag)) return false;
+      return true;
+    });
+  }, [comics, libraryParams.filter, libraryParams.source, libraryParams.tag]);
+
+  const unreadComics = useMemo(
+    () => comics.filter((comic) => comic.readStatus === 'unread'),
+    [comics],
+  );
+
+  const handleRandomUnread = useCallback(() => {
+    const picked = pickRandomUnreadComic(unreadComics);
+    if (!picked) return;
+    setImportNotice(null);
+    setImportError(null);
+    onOpenComic(picked.id);
+  }, [onOpenComic, unreadComics]);
+
+  const randomUnreadSlot = useMemo(
+    () => ({
+      disabled: unreadComics.length === 0,
+      onPick: handleRandomUnread,
+    }),
+    [handleRandomUnread, unreadComics.length],
+  );
+
+  const uploadSlot = useMemo(
+    () => ({
+      disabled: importing,
+      tagSuggestions: tags,
+      onLocalFiles: (files: File[]) => void handleImportFiles(files),
+      onDriveImportComplete: setImportNotice,
+      onError: setImportError,
+    }),
+    [handleImportFiles, importing, tags],
+  );
+
+  const shellClassName = [
+    'zinebox-library-shell',
+    dragActive ? 'zinebox-library-shell--drag-active' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const importFeedback =
+    importNotice || importError ? (
+      <div className="zinebox-library-feedback">
+        {importNotice ? (
+          <Alert severity="success" sx={{ py: 0.5 }} onClose={() => setImportNotice(null)}>
+            {importNotice}
+          </Alert>
+        ) : null}
+        {importError ? (
+          <Alert severity="error" sx={{ py: 0.5 }} onClose={() => setImportError(null)}>
+            {importError}
+          </Alert>
+        ) : null}
+      </div>
+    ) : null;
+
+  if (!hydrated) {
+    return (
+      <div className="zinebox-loading" aria-busy="true" aria-label="Loading library">
+        <CircularProgress />
+      </div>
+    );
+  }
+
+  if (!hasLibrary) {
+    return (
+      <div
+        className={shellClassName}
+        data-testid="zinebox-library"
+        {...dropHandlers}
+      >
+        {dragActive ? (
+          <div className="zinebox-drop-overlay" aria-hidden>
+            Drop PDFs to add
+          </div>
+        ) : null}
+
+        <ZineboxAppHeader upload={uploadSlot} />
+        <div className="zinebox-empty__body">
+          <h2>Start your library</h2>
+          <p>Drop PDF zines anywhere on this page, or click Upload zines in the header.</p>
+        </div>
+        {importFeedback}
+        <LocalBatchImportDialog
+          open={localBatchFiles !== null}
+          files={localBatchFiles ?? []}
+          tagSuggestions={tags}
+          onClose={() => setLocalBatchFiles(null)}
+          onComplete={setImportNotice}
+          onError={setImportError}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={shellClassName}
+      data-testid="zinebox-library"
+      {...dropHandlers}
+    >
+      {dragActive ? (
+        <div className="zinebox-drop-overlay" aria-hidden>
+          Drop PDFs to add
+        </div>
+      ) : null}
+
+      <ZineboxAppHeader upload={uploadSlot} randomUnread={randomUnreadSlot} />
+      <LibraryFilterPills
+        params={libraryParams}
+        sources={sources}
+        tags={tags}
+        onChange={onLibraryParamsChange}
+      />
+      {importFeedback}
+
+      <DndContext {...dndContextProps}>
+        <LibraryGridView
+          comics={filteredComics}
+          collections={collections}
+          stackedComicIds={stackedComicIds}
+          comicsById={comicsById}
+          onOpenComic={onOpenComic}
+          onOpenStack={setActiveStack}
+        />
+        {dragOverlay}
+      </DndContext>
+
+      <StackDetailDialog
+        open={activeStack !== null}
+        collection={activeStack}
+        comicsById={comicsById}
+        onClose={() => setActiveStack(null)}
+        onOpenComic={onOpenComic}
+      />
+
+      <LocalBatchImportDialog
+        open={localBatchFiles !== null}
+        files={localBatchFiles ?? []}
+        tagSuggestions={tags}
+        onClose={() => setLocalBatchFiles(null)}
+        onComplete={setImportNotice}
+        onError={setImportError}
+      />
+    </div>
+  );
+}

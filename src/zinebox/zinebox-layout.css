@@ -1,0 +1,27 @@
+.zinebox-app {
+  --app-shell-max-width: 88rem;
+  --app-shell-gutter: 12px;
+  --app-shell-content-width: 100%;
+  --app-shell-scroll-pt: 8px;
+  --app-shell-scroll-pb: 24px;
+  --app-shell-footer-gap: 0;
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+.zinebox-app .app-shell-scroll {
+  overflow-x: clip;
+}
+
+.zinebox-app .app-shell-column,
+.zinebox-app .app-shell-workbench,
+.zinebox-app .app-shell-content {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (min-width: 600px) {
+  .zinebox-app {
+    --app-shell-gutter: 20px;
+  }
+}
