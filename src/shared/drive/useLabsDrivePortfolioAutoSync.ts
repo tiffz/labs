@@ -7,6 +7,11 @@ import {
 } from './labsDrivePortfolioBackupConstants';
 import { formatLabsDriveSyncError } from './labsDriveSyncMessages';
 
+export type LabsDrivePortfolioLocalChangeEvent = {
+  /** Bypass the one-time priming skip (first import / bulk edit should push). */
+  immediate?: boolean;
+};
+
 export type UseLabsDrivePortfolioAutoSyncOptions = {
   enabled: boolean;
   allowAutoPush: () => boolean;
@@ -19,7 +24,7 @@ export type UseLabsDrivePortfolioAutoSyncOptions = {
   /** Optional follow-up after silent auto-pull (e.g. push deduped library). */
   afterSilentAutoPull?: (pullResult: unknown) => Promise<void>;
   /** Subscribe to local data changes; call `onChange` when user edits should trigger debounced push. */
-  subscribeLocalChanges: (onChange: () => void) => () => void;
+  subscribeLocalChanges: (onChange: (event?: LabsDrivePortfolioLocalChangeEvent) => void) => () => void;
 };
 
 /**
@@ -162,11 +167,13 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
     };
 
     let primed = false;
-    const onChange = () => {
+    const onChange = (event?: LabsDrivePortfolioLocalChangeEvent) => {
       if (mergeBusyRef.current()) return;
-      if (!primed) {
-        primed = true;
-        return;
+      if (!event?.immediate) {
+        if (!primed) {
+          primed = true;
+          return;
+        }
       }
       schedule();
     };

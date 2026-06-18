@@ -83,6 +83,16 @@ export async function readLabsDriveProgressJson(
   return driveGetMedia(accessToken, progressFileId);
 }
 
+/** True when `ensureLabsDrivePortfolioProgressLayout` created an empty stub (not app data yet). */
+export function isLabsDrivePortfolioProgressPlaceholder(json: string): boolean {
+  try {
+    const data = JSON.parse(json) as { schemaVersion?: number; _placeholder?: boolean };
+    return data.schemaVersion === 0 || data._placeholder === true;
+  } catch {
+    return false;
+  }
+}
+
 export async function writeLabsDriveProgressJson(
   accessToken: string,
   progressFileId: string,

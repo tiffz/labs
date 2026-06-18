@@ -1,8 +1,11 @@
-type Listener = () => void;
+import type { LabsDrivePortfolioLocalChangeEvent } from '../../shared/drive/useLabsDrivePortfolioAutoSync';
+
+type Listener = (event?: LabsDrivePortfolioLocalChangeEvent) => void;
 
 const listeners = new Set<Listener>();
 
 let notifyTimer: number | null = null;
+let pendingImmediate = false;
 
 const DEFAULT_DEBOUNCE_MS = 750;
 
@@ -11,24 +14,27 @@ export function subscribeZineboxLocalChanges(onChange: Listener): () => void {
   return () => listeners.delete(onChange);
 }
 
-function flushZineboxLocalChange(): void {
+function flushZineboxLocalChange(immediate: boolean): void {
   notifyTimer = null;
-  for (const fn of listeners) fn();
+  pendingImmediate = false;
+  const event: LabsDrivePortfolioLocalChangeEvent | undefined = immediate ? { immediate: true } : undefined;
+  for (const fn of listeners) fn(event);
 }
 
 /** Coalesce rapid Dexie writes into one debounced Drive auto-push. */
 export function notifyZineboxLocalChange(options?: { debounceMs?: number; immediate?: boolean }): void {
   if (options?.immediate) {
+    pendingImmediate = true;
     if (notifyTimer != null) {
       window.clearTimeout(notifyTimer);
       notifyTimer = null;
     }
-    flushZineboxLocalChange();
+    flushZineboxLocalChange(true);
     return;
   }
 
   if (notifyTimer != null) return;
 
   const debounceMs = options?.debounceMs ?? DEFAULT_DEBOUNCE_MS;
-  notifyTimer = window.setTimeout(flushZineboxLocalChange, debounceMs);
+  notifyTimer = window.setTimeout(() => flushZineboxLocalChange(pendingImmediate), debounceMs);
 }

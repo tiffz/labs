@@ -1,6 +1,6 @@
 ---
 name: labs-drive-backup
-description: Implements Labs Google Drive backup, conflict prompts, and LabsDriveAccountMenu integration. Use when editing useStanzaDriveBackup, useScalesDriveBackup, useGestureDriveBackup, drive conflict assessment, or Drive sync UX.
+description: Implements Labs Google Drive backup, conflict prompts, and LabsDriveAccountMenu integration. Use when editing useStanzaDriveBackup, useScalesDriveBackup, useGestureDriveBackup, useZineboxDriveBackup, drive conflict assessment, or Drive sync UX.
 ---
 
 # Labs Drive backup
@@ -13,12 +13,13 @@ description: Implements Labs Google Drive backup, conflict prompts, and LabsDriv
 
 Shared: [`labsDriveBackupTypes.ts`](../../src/shared/drive/labsDriveBackupTypes.ts) — `LabsPortfolioMergePromptPolicy`, `shouldPromptPortfolioMerge`, `LABS_PORTFOLIO_MERGE_PROMPT_POLICY_DEFAULT` (`silent_union`).
 
-| App     | Constant                                | Policy                                                      |
-| ------- | --------------------------------------- | ----------------------------------------------------------- |
-| Gesture | `GESTURE_PORTFOLIO_MERGE_PROMPT_POLICY` | `silent_union`                                              |
-| Scales  | `SCALES_PORTFOLIO_MERGE_PROMPT_POLICY`  | `silent_union`                                              |
-| Stanza  | `STANZA_PORTFOLIO_MERGE_PROMPT_POLICY`  | `prompt_when_both_edited`                                   |
-| Encore  | —                                       | row-level `SyncConflictReviewDialog` (not portfolio policy) |
+| App      | Constant                                | Policy                                                      |
+| -------- | --------------------------------------- | ----------------------------------------------------------- |
+| Gesture  | `GESTURE_PORTFOLIO_MERGE_PROMPT_POLICY` | `silent_union`                                              |
+| Scales   | `SCALES_PORTFOLIO_MERGE_PROMPT_POLICY`  | `silent_union`                                              |
+| Zine Box | `ZINEBOX_PORTFOLIO_MERGE_PROMPT_POLICY` | `silent_union`                                              |
+| Stanza   | `STANZA_PORTFOLIO_MERGE_PROMPT_POLICY`  | `prompt_when_both_edited`                                   |
+| Encore   | —                                       | row-level `SyncConflictReviewDialog` (not portfolio policy) |
 
 **New portfolio app checklist:**
 
@@ -27,6 +28,7 @@ Shared: [`labsDriveBackupTypes.ts`](../../src/shared/drive/labsDriveBackupTypes.
 3. Manual backup: snapshot → pull/merge → `flushDriveWrite` (no dialog for `silent_union`).
 4. Undo snapshots before merge; expose Restore + Undo last sync.
 5. Gate auto-push with `labsDriveAutoPushAllowed`.
+6. Bulk imports: `notify*LocalChange({ immediate: true })` so the first edit is not skipped by auto-sync priming.
 
 Do **not** copy Stanza’s conflict dialog into new apps without an ADR/note explaining why union merge is insufficient.
 
@@ -41,11 +43,12 @@ Do **not** copy Stanza’s conflict dialog into new apps without an ADR/note exp
 
 ## App hooks (inject merge + envelope)
 
-| App     | Hook                                         |
-| ------- | -------------------------------------------- |
-| Stanza  | `src/stanza/hooks/useStanzaDriveBackup.ts`   |
-| Scales  | `src/scales/hooks/useScalesDriveBackup.ts`   |
-| Gesture | `src/gesture/hooks/useGestureDriveBackup.ts` |
+| App      | Hook                                         |
+| -------- | -------------------------------------------- |
+| Stanza   | `src/stanza/hooks/useStanzaDriveBackup.ts`   |
+| Scales   | `src/scales/hooks/useScalesDriveBackup.ts`   |
+| Gesture  | `src/gesture/hooks/useGestureDriveBackup.ts` |
+| Zine Box | `src/zinebox/hooks/useZineboxDriveBackup.ts` |
 
 ## Workflow
 

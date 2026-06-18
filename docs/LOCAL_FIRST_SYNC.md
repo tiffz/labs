@@ -4,12 +4,13 @@ Canonical reference for how Labs micro-apps sync user data with Google Drive. So
 
 ## Apps with Drive sync
 
-| App         | Model                                           | Drive location                                         | Local store         |
-| ----------- | ----------------------------------------------- | ------------------------------------------------------ | ------------------- |
-| **Encore**  | Continuous bidirectional repertoire + Originals | `Encore_App/`                                          | Dexie (`encoreDb`)  |
-| **Stanza**  | Auto pull/push portfolio backup                 | `Tiff Zhang Labs/Stanza/progress.json` + `stem_audio/` | Dexie (`stanzaDb`)  |
-| **Scales**  | Same as Stanza                                  | `Tiff Zhang Labs/LearnYourScales/progress.json`        | Progress reducer    |
-| **Gesture** | Portfolio backup (packs + draw history)         | `Tiff Zhang Labs/Gesture/progress.json`                | Dexie (`gestureDb`) |
+| App          | Model                                             | Drive location                                         | Local store         |
+| ------------ | ------------------------------------------------- | ------------------------------------------------------ | ------------------- |
+| **Encore**   | Continuous bidirectional repertoire + Originals   | `Encore_App/`                                          | Dexie (`encoreDb`)  |
+| **Stanza**   | Auto pull/push portfolio backup                   | `Tiff Zhang Labs/Stanza/progress.json` + `stem_audio/` | Dexie (`stanzaDb`)  |
+| **Scales**   | Same as Stanza                                    | `Tiff Zhang Labs/LearnYourScales/progress.json`        | Progress reducer    |
+| **Gesture**  | Portfolio backup (packs + draw history)           | `Tiff Zhang Labs/Gesture/progress.json`                | Dexie (`gestureDb`) |
+| **Zine Box** | Portfolio backup (comics + stacks + PDF sidecars) | `Tiff Zhang Labs/ZineBox/progress.json` + `comics/`    | Dexie (`zineboxDb`) |
 
 No other micro-apps use Drive JSON backup today. Encore also uses Drive for uploads, picker, public snapshot, and guest reads — separate from the JSON sync loops below.
 
@@ -92,13 +93,13 @@ App-local code owns envelope schema, merge logic, tombstones (Stanza), and progr
 
 ## Data-loss guards
 
-| Guard                                | Encore                                           | Stanza / Scales / Gesture                                            |
-| ------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------- |
-| Empty device cannot push sparse data | Pull when remote newer; conflict when both dirty | `labsDriveAutoPushAllowed` until pull or manual backup               |
-| Pre-merge undo                       | `encoreDriveUndoSnapshots` (IDB)                 | Stanza IDB ring; Scales localStorage ring; Gesture localStorage ring |
-| Deletion propagation                 | Row delete in repertoire push                    | Stanza/Gesture tombstones in envelope                                |
-| Simultaneous edits                   | Row-level `bothEdited` dialog                    | Stanza: merge prompt; Scales/Gesture: silent union merge             |
-| OAuth token expiry                   | Sync error state in account menu                 | `syncPaused` + shared reconnect copy                                 |
+| Guard                                | Encore                                           | Stanza / Scales / Gesture                                                                     |
+| ------------------------------------ | ------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| Empty device cannot push sparse data | Pull when remote newer; conflict when both dirty | `labsDriveAutoPushAllowed` until pull or manual backup                                        |
+| Pre-merge undo                       | `encoreDriveUndoSnapshots` (IDB)                 | Stanza IDB ring; Scales localStorage ring; Gesture localStorage ring                          |
+| Deletion propagation                 | Row delete in repertoire push                    | Stanza/Gesture tombstones in envelope; **Zine Box: open** (union merge can resurrect deletes) |
+| Simultaneous edits                   | Row-level `bothEdited` dialog                    | Stanza: merge prompt; Scales/Gesture: silent union merge                                      |
+| OAuth token expiry                   | Sync error state in account menu                 | `syncPaused` + shared reconnect copy                                                          |
 
 ## Conflict decision tree
 
@@ -190,6 +191,49 @@ When a micro-app needs long-running job UX, **copy Encore’s wiring first** —
 5. **Reference** — Encore: [`EncoreBlockingJobContext.tsx`](../src/encore/context/EncoreBlockingJobContext.tsx), [`EncoreActionsContext.tsx`](../src/encore/context/EncoreActionsContext.tsx) (`reorganizeDriveUploads`). Gesture: [`App.tsx`](../src/gesture/App.tsx), [`GestureAccountMenu.tsx`](../src/gesture/components/GestureAccountMenu.tsx).
 
 **Tests:** [`LabsBlockingJobContext.test.tsx`](../src/shared/jobs/LabsBlockingJobContext.test.tsx), Encore re-exports in [`EncoreBlockingJobContext.test.tsx`](../src/encore/context/EncoreBlockingJobContext.test.tsx).
+
+## Spinning up a new portfolio Drive app
+
+Use this checklist when adding local-first + `Tiff Zhang Labs/{App}/progress.json` backup (Zine Box followed this in 2026).
+
+### Copy from an existing app (recommended: Stanza if you have blob sidecars; Scales if metadata-only)
+
+| Layer     | Shared (reuse)                                                                          | App-local (implement once)                                   |
+| --------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Layout    | `labsDrivePortfolioLayout.ts` — add `LABS_DRIVE_APP_FOLDER_*` constant                  | —                                                            |
+| Lifecycle | `useLabsDrivePortfolioAutoSync.ts`, `labsDriveSyncGuard.ts`, `labsDriveBackupTypes.ts`  | `use*DriveBackup.ts` hook                                    |
+| UI        | `LabsDriveAccountMenu.tsx`, `LabsDriveRestoreDialog.tsx`, `LabsDriveConflictDialog.tsx` | Thin `*AccountMenu.tsx` + optional `*DriveBackupContext.tsx` |
+| Jobs      | `LabsBlockingJobProvider` at app root when uploads/imports exist                        | Wrap sign-in, backup, restore in `withBlockingJob`           |
+| OAuth     | `ensureLabsGoogleAccessTokenForDrive()` (or import scopes helper if folder import)      | App-specific scope wrapper if needed                         |
+
+### App-local modules (mirror naming)
+
+1. `*DriveEnvelope.ts` — `schemaVersion`, `exportedAt`, `app` id, payload arrays
+2. `*DriveMerge.ts` — union merge + per-field heuristics; unit tests required
+3. `*DriveConflict.ts` — export `*_PORTFOLIO_MERGE_PROMPT_POLICY` (`silent_union` unless you need Stanza-style prompts)
+4. `*DriveSyncMeta.ts` — `localStorage` sync meta (cloud modified time, last export)
+5. `*LocalData.ts` — `read/writeLocalPayload` against Dexie or store
+6. Optional `*Drive*Sync.ts` — blob sidecar upload/download (PDFs, stems, photos)
+7. Change bus or Dexie hooks — **must** call `notify*LocalChange({ immediate: true })` on bulk import/first edit so auto-push is not swallowed by the shared priming skip
+
+### Wiring checklist
+
+- [ ] `*DriveBackupProvider` at app root (or account menu if Stanza-style)
+- [ ] `useLabsDrivePortfolioAutoSync({ enabled: testerResolved && testerOk, ... })`
+- [ ] Manual backup: snapshot → silent pull/merge → `flushDriveWrite`
+- [ ] `flushDriveWrite`: upload sidecars → write envelope; **412 etag retry** (pull then rewrite)
+- [ ] Treat `isLabsDrivePortfolioProgressPlaceholder()` as “no backup yet” on pull
+- [ ] Document in this file + app `README.md` § Google sign-in
+- [ ] Add row to [`labs-drive-backup` skill](../.cursor/skills/labs-drive-backup/SKILL.md) app table
+
+### Duplication we should consolidate next (not blocking ship)
+
+| Pattern                    | Today                                                           | Target                                                                  |
+| -------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Portfolio hook boilerplate | ~400 lines × 4 apps                                             | `createLabsPortfolioDriveBackup(config)` factory in `src/shared/drive/` |
+| 412 retry on push          | Stanza + Zine Box only                                          | Shared `flushPortfolioProgressWithRetry`                                |
+| Tombstones                 | Gesture, Stanza                                                 | Template + merge filter helper for new apps with delete UX              |
+| Conflict UI dead code      | Gesture/Scales/Zine Box ship dialog wiring under `silent_union` | Drop prompt UI or switch policy explicitly                              |
 
 ## Stanza ↔ Encore data model
 

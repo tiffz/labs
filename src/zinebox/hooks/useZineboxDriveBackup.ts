@@ -12,10 +12,12 @@ import { useLabsDrivePortfolioAutoSync } from '../../shared/drive/useLabsDrivePo
 import {
   ensureLabsDrivePortfolioProgressLayout,
   getLabsDriveProgressFileMeta,
+  isLabsDrivePortfolioProgressPlaceholder,
   LABS_DRIVE_APP_FOLDER_ZINEBOX,
   readLabsDriveProgressJson,
   writeLabsDriveProgressJson,
 } from '../../shared/drive/labsDrivePortfolioLayout';
+import { DriveHttpError } from '../../shared/drive/driveFetch';
 import { labsDriveFolderUrl } from '../../shared/drive/labsDriveFolderUrl';
 import { ensureZineboxGoogleDriveAccess, signInZineboxGoogleDrive } from '../drive/zineboxGoogleDriveAccess';
 import { isEmailAllowedLabsDriveBackup } from '../../shared/google/labsDriveTesterGate';
@@ -93,6 +95,9 @@ export function useZineboxDriveBackup({ onMergePayload }: UseZineboxDriveBackupO
   const mergeInProgressRef = useRef(false);
   const driveSyncInProgressRef = useRef(false);
   const lastLocalChangeAtRef = useRef(0);
+  const pullFromDriveAndMergeRef = useRef<
+    (opts?: { silent?: boolean }) => Promise<void>
+  >(async () => {});
 
   const allowAutoPush = useCallback(
     () => labsDriveAutoPushAllowed(sessionPullSucceededRef.current, manualBackupSucceededRef.current),
@@ -177,25 +182,37 @@ export function useZineboxDriveBackup({ onMergePayload }: UseZineboxDriveBackupO
       try {
         const token = await ensureZineboxGoogleDriveAccess({ interactive: !opts?.silent });
         const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_ZINEBOX);
-        const localBeforeUpload = await readZineboxLocalPayload();
-        await uploadZineboxPdfsForBackup(token, refs.appFolderId, localBeforeUpload.comics, (label) => {
-          opts?.onUploadLabel?.(label);
-        });
-        const local = await readZineboxLocalPayload();
-        const metaBefore = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
-        const envelope = buildZineboxDriveEnvelope(local);
-        const body = serializeZineboxDriveEnvelope(envelope);
-        await writeLabsDriveProgressJson(token, refs.progressFileId, body, metaBefore.etag);
-        const metaAfter = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
-        writeZineboxDriveSyncMeta({
-          lastCloudModifiedTime: metaAfter.modifiedTime,
-          lastBackupExportedAt: envelope.exportedAt,
-          driveAppFolderId: refs.appFolderId,
-        });
-        setSyncMetaTick((n) => n + 1);
-        setLatestRemoteEnvelope(envelope);
-        if (!opts?.silent) {
-          setMessage('Library saved to Google Drive.');
+        const writeOnce = async () => {
+          const localBeforeUpload = await readZineboxLocalPayload();
+          await uploadZineboxPdfsForBackup(token, refs.appFolderId, localBeforeUpload.comics, (label) => {
+            opts?.onUploadLabel?.(label);
+          });
+          const local = await readZineboxLocalPayload();
+          const metaBefore = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
+          const envelope = buildZineboxDriveEnvelope(local);
+          const body = serializeZineboxDriveEnvelope(envelope);
+          await writeLabsDriveProgressJson(token, refs.progressFileId, body, metaBefore.etag);
+          const metaAfter = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
+          writeZineboxDriveSyncMeta({
+            lastCloudModifiedTime: metaAfter.modifiedTime,
+            lastBackupExportedAt: envelope.exportedAt,
+            driveAppFolderId: refs.appFolderId,
+          });
+          setSyncMetaTick((n) => n + 1);
+          setLatestRemoteEnvelope(envelope);
+          if (!opts?.silent) {
+            setMessage('Library saved to Google Drive.');
+          }
+        };
+        try {
+          await writeOnce();
+        } catch (e) {
+          if (e instanceof DriveHttpError && e.status === 412) {
+            await pullFromDriveAndMergeRef.current({ silent: true });
+            await writeOnce();
+            return;
+          }
+          throw e;
         }
       } finally {
         driveSyncInProgressRef.current = false;
@@ -212,7 +229,9 @@ export function useZineboxDriveBackup({ onMergePayload }: UseZineboxDriveBackupO
       let remoteEnvelope: ZineboxDriveEnvelopeV1 | null = null;
       try {
         const json = await readLabsDriveProgressJson(token, refs.progressFileId);
-        remoteEnvelope = parseZineboxDriveEnvelope(json);
+        if (!isLabsDrivePortfolioProgressPlaceholder(json)) {
+          remoteEnvelope = parseZineboxDriveEnvelope(json);
+        }
       } catch {
         remoteEnvelope = null;
       }
@@ -289,6 +308,7 @@ export function useZineboxDriveBackup({ onMergePayload }: UseZineboxDriveBackupO
     },
     [applyMerged, markPullSucceeded, snapshotBeforeMerge, startBlockingJob],
   );
+  pullFromDriveAndMergeRef.current = pullFromDriveAndMerge;
 
   const onSignIn = useCallback(async () => {
     setMessage(null);
@@ -432,12 +452,12 @@ export function useZineboxDriveBackup({ onMergePayload }: UseZineboxDriveBackupO
     onAutoPullError: handleAutoPullError,
     onAutoPushError: (msg) => setMessage(msg),
     subscribeLocalChanges: (onChange) =>
-      subscribeZineboxLocalChanges(() => {
+      subscribeZineboxLocalChanges((event) => {
         if (mergeInProgressRef.current || driveSyncInProgressRef.current || labsBlockingJobsActive()) {
           return;
         }
         lastLocalChangeAtRef.current = Date.now();
-        onChange();
+        onChange(event);
       }),
   });
 

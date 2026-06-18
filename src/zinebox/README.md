@@ -32,6 +32,8 @@ Both call `ensureZineboxGoogleDriveAccess` in [`drive/zineboxGoogleDriveAccess.t
 
 Do not call `ensureLabsGoogleAccessTokenForDrive` (narrow backup-only scopes) from Zine Box — that split caused a second sign-in prompt for import.
 
+**Cross-device:** Sign in on each browser via the account menu. After you add comics on one device, backup runs automatically within a few seconds (when signed in). On a new device, sign in once to pull metadata and PDFs from `Tiff Zhang Labs/ZineBox/`. If the library looks empty, use **Back up now** on the first device, then **Sign in** / **Sync** on the second.
+
 ## URL params
 
 | Hash         | Params                        | Meaning                          |

@@ -88,7 +88,7 @@ describe('useLabsDrivePortfolioAutoSync', () => {
   });
 
   it('debounces auto-push after the first local change notification', async () => {
-    let onChange: (() => void) | undefined;
+    let onChange: ((event?: { immediate?: boolean }) => void) | undefined;
     const flush = vi.fn().mockResolvedValue(undefined);
     renderHook(() =>
       useLabsDrivePortfolioAutoSync(
@@ -120,8 +120,32 @@ describe('useLabsDrivePortfolioAutoSync', () => {
     expect(flush).toHaveBeenCalledWith({ silent: true });
   });
 
+  it('auto-pushes on the first local change when immediate is set', async () => {
+    let onChange: ((event?: { immediate?: boolean }) => void) | undefined;
+    const flush = vi.fn().mockResolvedValue(undefined);
+    renderHook(() =>
+      useLabsDrivePortfolioAutoSync(
+        baseOptions({
+          flushDriveWrite: flush,
+          subscribeLocalChanges: (cb) => {
+            onChange = cb;
+            return () => {};
+          },
+        }),
+      ),
+    );
+
+    await flushPromises();
+    act(() => onChange?.({ immediate: true }));
+    await act(async () => {
+      vi.advanceTimersByTime(LABS_DRIVE_AUTO_PUSH_DEBOUNCE_MS);
+      await Promise.resolve();
+    });
+    expect(flush).toHaveBeenCalledWith({ silent: true });
+  });
+
   it('blocks auto-push while merge is in progress', async () => {
-    let onChange: (() => void) | undefined;
+    let onChange: ((event?: { immediate?: boolean }) => void) | undefined;
     const flush = vi.fn().mockResolvedValue(undefined);
     renderHook(() =>
       useLabsDrivePortfolioAutoSync(
@@ -147,7 +171,7 @@ describe('useLabsDrivePortfolioAutoSync', () => {
   });
 
   it('respects allowAutoPush gate', async () => {
-    let onChange: (() => void) | undefined;
+    let onChange: ((event?: { immediate?: boolean }) => void) | undefined;
     const flush = vi.fn().mockResolvedValue(undefined);
     renderHook(() =>
       useLabsDrivePortfolioAutoSync(
@@ -173,7 +197,7 @@ describe('useLabsDrivePortfolioAutoSync', () => {
   });
 
   it('notifyAutoPushCompleted allows another debounced push', async () => {
-    let onChange: (() => void) | undefined;
+    let onChange: ((event?: { immediate?: boolean }) => void) | undefined;
     const flush = vi.fn().mockResolvedValue(undefined);
     const { result } = renderHook(() =>
       useLabsDrivePortfolioAutoSync(

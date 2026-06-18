@@ -27,6 +27,8 @@ Proposed durable fixes from session retrospectives **not yet implemented**. Land
 | P2       | `oauth-scope-split`    | Zine Box: single sign-in for Drive folder import (`drive.readonly`) + portfolio backup (`drive.file`) — document split in `src/zinebox/README.md` | Done — `zineboxGoogleDriveAccess.ts`                           |
 | P3       | `test gap`             | E2e smoke pattern: assert library chrome before navigation actions that leave `#/library` (Random → reader)                                       | Done — `e2e/helpers/zineboxLibrary.ts`                         |
 | P2       | `test gap`             | Labs catalog manifest changes → refresh `home-*` visual baselines (document in `REGRESSION_WORKFLOW.md`)                                          | Done — manifest comment + regression doc                       |
+| P2       | `test gap`             | Shared `createLabsPortfolioDriveBackup` factory to cut hook duplication across portfolio apps                                                     | Open — checklist in `LOCAL_FIRST_SYNC.md` § Spinning up        |
+| P2       | `missing invariant`    | Zine Box deletion tombstones in envelope (union merge can resurrect deleted comics cross-device)                                                  | Open                                                           |
 
 ## Completed (archive reference)
 

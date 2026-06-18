@@ -5846,6 +5846,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsdriveportfoliolayout-ts-islabsdriveportfolioprogressplaceholder",
+    "name": "isLabsDrivePortfolioProgressPlaceholder",
+    "path": "src/shared/drive/labsDrivePortfolioLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when `ensureLabsDrivePortfolioProgressLayout` created an empty stub (not app data yet).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-labsdriveportfoliolayout-ts-labs-drive-app-folder-gesture",
     "name": "LABS_DRIVE_APP_FOLDER_GESTURE",
     "path": "src/shared/drive/labsDrivePortfolioLayout.ts",
@@ -6248,6 +6261,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-uselabsdriveportfolioautosync-ts-labsdriveportfoliolocalchangeevent",
+    "name": "LabsDrivePortfolioLocalChangeEvent",
+    "path": "src/shared/drive/useLabsDrivePortfolioAutoSync.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {

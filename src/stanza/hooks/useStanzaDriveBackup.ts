@@ -719,13 +719,14 @@ export function useStanzaDriveBackup() {
       }
     },
     subscribeLocalChanges: (onChange) => {
-      stanzaDb.songs.hook('creating', onChange);
-      stanzaDb.songs.hook('updating', onChange);
-      stanzaDb.songs.hook('deleting', onChange);
+      const dexieListener = () => onChange();
+      stanzaDb.songs.hook('creating', dexieListener);
+      stanzaDb.songs.hook('updating', dexieListener);
+      stanzaDb.songs.hook('deleting', dexieListener);
       return () => {
-        stanzaDb.songs.hook('creating').unsubscribe(onChange);
-        stanzaDb.songs.hook('updating').unsubscribe(onChange);
-        stanzaDb.songs.hook('deleting').unsubscribe(onChange);
+        stanzaDb.songs.hook('creating').unsubscribe(dexieListener);
+        stanzaDb.songs.hook('updating').unsubscribe(dexieListener);
+        stanzaDb.songs.hook('deleting').unsubscribe(dexieListener);
       };
     },
   });

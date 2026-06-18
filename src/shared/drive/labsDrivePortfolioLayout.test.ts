@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isLabsDrivePortfolioProgressPlaceholder,
   LABS_DRIVE_APP_FOLDER_SCALES,
   LABS_DRIVE_APP_FOLDER_STANZA,
   LABS_DRIVE_APP_FOLDER_ZINEBOX,
@@ -14,5 +15,17 @@ describe('labsDrivePortfolioLayout constants', () => {
     expect(LABS_DRIVE_APP_FOLDER_STANZA).toBe('Stanza');
     expect(LABS_DRIVE_APP_FOLDER_ZINEBOX).toBe('ZineBox');
     expect(LABS_DRIVE_PROGRESS_FILE).toBe('progress.json');
+  });
+});
+
+describe('isLabsDrivePortfolioProgressPlaceholder', () => {
+  it('detects layout stub progress.json', () => {
+    const stub = JSON.stringify({ schemaVersion: 0, exportedAt: '2026-01-01T00:00:00.000Z', _placeholder: true });
+    expect(isLabsDrivePortfolioProgressPlaceholder(stub)).toBe(true);
+  });
+
+  it('returns false for app envelopes', () => {
+    const real = JSON.stringify({ schemaVersion: 1, exportedAt: '2026-01-01T00:00:00.000Z', app: 'zinebox' });
+    expect(isLabsDrivePortfolioProgressPlaceholder(real)).toBe(false);
   });
 });
