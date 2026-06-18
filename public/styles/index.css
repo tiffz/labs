@@ -298,6 +298,14 @@ body {
   background-size: 100% 100%;
 }
 
+.app-icon.zinebox {
+  background-color: #0a0a0a;
+  background-image: url('/icons/favicon-zinebox.svg');
+  background-size: 90% 90%;
+  border: 2px solid rgba(255, 20, 147, 0.55);
+  box-shadow: 2px 3px 0 rgba(255, 20, 147, 0.2);
+}
+
 .app-icon.beat {
   background-image: url('/icons/favicon-beat.svg');
 }

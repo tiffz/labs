@@ -114,6 +114,14 @@
       "iconClass": "gesture"
     },
     {
+      "path": "/zinebox/",
+      "title": "Zine Box",
+      "shortDescription": "Local-first indie comic reader with Google Drive backup",
+      "stage": "unlisted",
+      "category": "art",
+      "iconClass": "zinebox"
+    },
+    {
       "path": "/forms/",
       "title": "Form Intersections",
       "shortDescription": "3D visualization for Drawabox form intersections",

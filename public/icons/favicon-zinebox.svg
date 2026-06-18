@@ -1,8 +1,55 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <path d="M 6 2 C 2 2 2 2 2 6 L 2 26 C 2 30 2 30 6 30 L 26 30 C 30 30 30 30 30 26 L 30 6 C 30 2 30 2 26 2 Z" fill="#f8f7f5"/>
-  <rect x="8" y="8" width="16" height="18" rx="1" fill="#fdfcfb" stroke="#c8c4be" stroke-width="1"/>
-  <rect x="10" y="10" width="12" height="14" fill="#fff0f7"/>
-  <rect x="19" y="6" width="5" height="20" fill="#484440" opacity="0.75"/>
-  <rect x="20" y="8" width="3" height="16" fill="#ff1493"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<rect width="32" height="32" rx="4" fill="#0A0A0A"/>
+<rect x="6" y="5" width="20" height="22" fill="#FF1493"/>
+<g fill="#0A0A0A" opacity="0.2">
+<circle cx="8" cy="8" r=".55"/>
+<circle cx="10.2" cy="8" r=".55"/>
+<circle cx="12.4" cy="8" r=".55"/>
+<circle cx="14.600000000000001" cy="8" r=".55"/>
+<circle cx="16.8" cy="8" r=".55"/>
+<circle cx="19" cy="8" r=".55"/>
+<circle cx="21.200000000000003" cy="8" r=".55"/>
+<circle cx="23.400000000000002" cy="8" r=".55"/>
+<circle cx="8" cy="10.2" r=".55"/>
+<circle cx="10.2" cy="10.2" r=".55"/>
+<circle cx="12.4" cy="10.2" r=".55"/>
+<circle cx="14.600000000000001" cy="10.2" r=".55"/>
+<circle cx="16.8" cy="10.2" r=".55"/>
+<circle cx="19" cy="10.2" r=".55"/>
+<circle cx="21.200000000000003" cy="10.2" r=".55"/>
+<circle cx="23.400000000000002" cy="10.2" r=".55"/>
+<circle cx="8" cy="12.4" r=".55"/>
+<circle cx="10.2" cy="12.4" r=".55"/>
+<circle cx="12.4" cy="12.4" r=".55"/>
+<circle cx="14.600000000000001" cy="12.4" r=".55"/>
+<circle cx="16.8" cy="12.4" r=".55"/>
+<circle cx="19" cy="12.4" r=".55"/>
+<circle cx="21.200000000000003" cy="12.4" r=".55"/>
+<circle cx="23.400000000000002" cy="12.4" r=".55"/>
+<circle cx="8" cy="14.600000000000001" r=".55"/>
+<circle cx="10.2" cy="14.600000000000001" r=".55"/>
+<circle cx="12.4" cy="14.600000000000001" r=".55"/>
+<circle cx="14.600000000000001" cy="14.600000000000001" r=".55"/>
+<circle cx="16.8" cy="14.600000000000001" r=".55"/>
+<circle cx="19" cy="14.600000000000001" r=".55"/>
+<circle cx="21.200000000000003" cy="14.600000000000001" r=".55"/>
+<circle cx="23.400000000000002" cy="14.600000000000001" r=".55"/>
+<circle cx="8" cy="16.8" r=".55"/>
+<circle cx="10.2" cy="16.8" r=".55"/>
+<circle cx="12.4" cy="16.8" r=".55"/>
+<circle cx="14.600000000000001" cy="16.8" r=".55"/>
+<circle cx="16.8" cy="16.8" r=".55"/>
+<circle cx="19" cy="16.8" r=".55"/>
+<circle cx="21.200000000000003" cy="16.8" r=".55"/>
+<circle cx="23.400000000000002" cy="16.8" r=".55"/>
+<circle cx="8" cy="19" r=".55"/>
+<circle cx="10.2" cy="19" r=".55"/>
+<circle cx="12.4" cy="19" r=".55"/>
+<circle cx="14.600000000000001" cy="19" r=".55"/>
+<circle cx="16.8" cy="19" r=".55"/>
+<circle cx="19" cy="19" r=".55"/>
+<circle cx="21.200000000000003" cy="19" r=".55"/>
+<circle cx="23.400000000000002" cy="19" r=".55"/>
+</g>
+<text x="16" y="17" text-anchor="middle" dominant-baseline="middle" font-family="Georgia,serif" font-size="13" font-weight="700" fill="#0A0A0A">Z</text>
 </svg>
