@@ -41,6 +41,8 @@ Add a smoke here when a cross-app playback/portal/empty-state bug recurs — pre
     - Mobile viewport baseline
 - Baselines live in: `e2e/visual/apps.visual.spec.ts-snapshots/`
 
+**Labs homepage catalog:** Adding, removing, or reordering apps in `src/labsHome/labsCatalog.manifest.json` changes the `/` route height and tile grid. After `npm run generate:labs-catalog`, refresh `home-desktop.png` and `home-mobile.png` (import Linux CI actuals when possible). Nightly `Run visual regression baselines` fails on drift; main CI visual is advisory.
+
 ### Audio Baselines
 
 - Test file: `src/shared/beat/regression/syntheticAudioGenerator.audio-regression.test.ts`

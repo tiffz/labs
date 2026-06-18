@@ -1,5 +1,5 @@
 {
-  "$schemaComment": "Single source of truth for the Labs app directory on the homepage (src/index.html) and 404 page (src/404.html). Run: npm run generate:labs-catalog. Per-app index.html shells stay separate for critical CSS, theme-color, and cookie consent.",
+  "$schemaComment": "Single source of truth for the Labs app directory on the homepage (src/index.html) and 404 page (src/404.html). Run: npm run generate:labs-catalog. Per-app index.html shells stay separate for critical CSS, theme-color, and cookie consent. When adding/removing/reordering apps, update home visual baselines: npm run test:e2e:visual -g home (nightly CI blocks on drift).",
   "apps": [
     {
       "path": "/drums/",
