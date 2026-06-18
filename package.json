@@ -13,6 +13,7 @@
     "check:ui-copy": "node scripts/check-ui-copy.mjs",
     "check:doc-links": "node scripts/check-doc-links.mjs",
     "check:agent-docs": "sh scripts/validate-agent-docs.sh",
+    "check:knip-config": "node scripts/validate-knip-ignore.mjs",
     "check:css-important": "sh scripts/check-css-important.sh",
     "check:workflows": "sh scripts/check-workflows.sh",
     "prelint": "npm run generate:shared-catalog && npm run generate:labs-catalog",

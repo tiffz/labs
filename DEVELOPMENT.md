@@ -172,7 +172,8 @@ All music apps must ship mobile-first layouts and shared controls that remain us
 
 ### Pre-commit Checks
 
-Tests and linting run automatically before commits. Tests only run if TypeScript/JavaScript files are staged.
+Canonical agent/human gate: [`.cursor/rules/pre-commit-checks.mdc`](../.cursor/rules/pre-commit-checks.mdc) (`npm run presubmit`). Husky runs the same steps on commit.
+
 Import boundaries are always validated via `npm run check:import-boundaries` so presubmit and CI enforce the same boundary guard.
 
 ### Continuous Integration
@@ -239,12 +240,7 @@ npm run test:story:audit     # story generation + placeholder leak audits
 
 ### Pre-commit Hook Behavior
 
-The pre-commit hook intelligently selects test mode:
-
-- **Beat BPM benchmark files changed** → Full tests with benchmarks
-- **Cat/regression files changed** → Standard tests
-- **Other files** → Fast tests only
-- Shared catalog is regenerated and staged automatically before these checks.
+See [`.cursor/rules/pre-commit-checks.mdc`](../.cursor/rules/pre-commit-checks.mdc) for the full presubmit sequence. Husky may select fast vs full Vitest based on staged paths (beat benchmarks, cat regression).
 
 For canonical docs precedence when guidance conflicts, see `docs/SOURCE_OF_TRUTH.md`.
 For rollback procedures, see `docs/ROLLBACK.md`.

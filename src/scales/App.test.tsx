@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { LabsBlockingJobProvider } from '../shared/jobs/LabsBlockingJobContext';
 import App from './App';
 
 // The scales app touches navigator.mediaDevices (via microphone gating) on
@@ -14,7 +15,11 @@ vi.mock('./utils/acousticInput', () => ({
 
 describe('Learn Your Scales App', () => {
   it('renders the main shell without throwing', () => {
-    render(<App />);
+    render(
+      <LabsBlockingJobProvider>
+        <App />
+      </LabsBlockingJobProvider>,
+    );
     expect(screen.getByText(/skip to main content/i)).toBeInTheDocument();
   });
 });

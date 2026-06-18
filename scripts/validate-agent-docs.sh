@@ -92,6 +92,17 @@ for skill_dir in .cursor/skills/labs-*/; do
   fi
 done
 
+echo "== check:agent-docs: nested AGENTS.md in root AGENTS.md =="
+
+for agents_md in src/*/AGENTS.md; do
+  [ -f "$agents_md" ] || continue
+  app_dir=$(dirname "$agents_md")
+  app_name=$(basename "$app_dir")
+  if ! grep -q "${app_dir}/AGENTS.md" AGENTS.md 2>/dev/null; then
+    fail "AGENTS.md § Nested AGENTS.md missing link for ${app_dir}/AGENTS.md"
+  fi
+done
+
 echo "== check:agent-docs: skills-ref validate =="
 
 if command -v npx >/dev/null 2>&1; then

@@ -19,8 +19,16 @@ const APP_SMOKE_SPECS = {
     'e2e/smoke/layout-heuristics-gesture.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/gesture/' },
   ],
-  stanza: [{ file: 'e2e/smoke/app-shells.spec.ts', grep: '/stanza/' }],
+  stanza: [
+    'e2e/smoke/stanza-library.spec.ts',
+    { file: 'e2e/smoke/app-shells.spec.ts', grep: '/stanza/' },
+  ],
   words: [{ file: 'e2e/smoke/app-shells.spec.ts', grep: '/words/' }],
+  zinebox: [
+    'e2e/smoke/zinebox-library.spec.ts',
+    'e2e/smoke/zinebox-drive-import.spec.ts',
+    { file: 'e2e/smoke/app-shells.spec.ts', grep: '/zinebox/' },
+  ],
 };
 
 function gitRef(base) {

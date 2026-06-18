@@ -25,6 +25,9 @@ npm run check:workflows
 echo "== presubmit: lint =="
 npm run lint
 
+echo "== presubmit: knip config comments =="
+npm run check:knip-config
+
 echo "== presubmit: knip =="
 npm run knip
 

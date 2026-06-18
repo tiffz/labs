@@ -3,20 +3,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const APP_DIRS = new Set([
-  'beat',
-  'cats',
-  'chords',
-  'corp',
-  'drums',
-  'forms',
-  'piano',
-  'pitch',
-  'story',
-  'ui',
-  'words',
-  'zines',
-]);
+function listAppDirs(srcRoot: string): Set<string> {
+  return new Set(
+    fs
+      .readdirSync(srcRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && entry.name !== 'shared')
+      .map((entry) => entry.name),
+  );
+}
 
 function collectTsFiles(dir: string, out: string[]): void {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -36,6 +30,7 @@ describe('shared import boundary', () => {
     const thisFileDir = path.dirname(fileURLToPath(import.meta.url));
     const sharedRoot = path.resolve(thisFileDir, '..');
     const srcRoot = path.resolve(sharedRoot, '..');
+    const APP_DIRS = listAppDirs(srcRoot);
     const files: string[] = [];
     collectTsFiles(sharedRoot, files);
 

@@ -30,6 +30,8 @@ Shared: [`labsDriveBackupTypes.ts`](../../src/shared/drive/labsDriveBackupTypes.
 5. Gate auto-push with `labsDriveAutoPushAllowed`.
 6. Bulk imports: `notify*LocalChange({ immediate: true })` so the first edit is not skipped by auto-sync priming.
 
+Portfolio apps should use [`createLabsPortfolioDriveBackup`](../../src/shared/drive/createLabsPortfolioDriveBackup.ts) unless on the allowlist in `labsPortfolioDriveHookGuardrails.test.ts` (Gesture pack upload, Stanza `prompt_when_both_edited`).
+
 Do **not** copy Stanza’s conflict dialog into new apps without an ADR/note explaining why union merge is insufficient.
 
 ## Shared UI

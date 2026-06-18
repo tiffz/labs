@@ -22,7 +22,7 @@ Instructions for AI coding assistants (Cursor, Claude, Codex, Gemini, etc.). [`G
 
 ### Nested `AGENTS.md`
 
-[`src/encore/`](src/encore/AGENTS.md) · [`src/gesture/`](src/gesture/AGENTS.md) · [`src/stanza/`](src/stanza/AGENTS.md) · [`src/shared/`](src/shared/AGENTS.md) · [`src/words/`](src/words/AGENTS.md) · [`src/drums/`](src/drums/AGENTS.md) · [`src/piano/`](src/piano/AGENTS.md) · [`src/chords/`](src/chords/AGENTS.md) · [`src/cats/`](src/cats/AGENTS.md) · [`src/scales/`](src/scales/AGENTS.md) · [`src/sight/`](src/sight/AGENTS.md)
+[`src/encore/`](src/encore/AGENTS.md) · [`src/gesture/`](src/gesture/AGENTS.md) · [`src/stanza/`](src/stanza/AGENTS.md) · [`src/shared/`](src/shared/AGENTS.md) · [`src/words/`](src/words/AGENTS.md) · [`src/drums/`](src/drums/AGENTS.md) · [`src/piano/`](src/piano/AGENTS.md) · [`src/chords/`](src/chords/AGENTS.md) · [`src/cats/`](src/cats/AGENTS.md) · [`src/scales/`](src/scales/AGENTS.md) · [`src/sight/`](src/sight/AGENTS.md) · [`src/zinebox/`](src/zinebox/AGENTS.md)
 
 Apps without nested `AGENTS.md` → app `README.md` + this file.
 
@@ -78,8 +78,12 @@ Presubmit before done: [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre
 | Split work into multiple PRs                       | [`docs/PR_WORKFLOW.md`](docs/PR_WORKFLOW.md) § Splitting                                                                                                                                                                | `labs-split-to-prs`            |
 | Session retrospective / codify learnings           | [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](docs/CONTINUOUS_PROCESS_IMPROVEMENT.md), [`docs/AGENT_INVARIANTS.md`](docs/AGENT_INVARIANTS.md) **(B)**                                                                      | `labs-session-retrospective`   |
 | Agent invariants index                             | [`docs/AGENT_INVARIANTS.md`](docs/AGENT_INVARIANTS.md) **(C)**                                                                                                                                                          | —                              |
-| E2e smoke / dev fixtures                           | [`docs/E2E_SMOKE_CONVENTIONS.md`](docs/E2E_SMOKE_CONVENTIONS.md) **(C)**                                                                                                                                                | —                              |
+| E2e smoke / dev fixtures                           | [`docs/E2E_SMOKE_CONVENTIONS.md`](docs/E2E_SMOKE_CONVENTIONS.md) **(B)**                                                                                                                                                | `labs-e2e-smoke`               |
 | CI path scoping / faster local checks              | [`docs/CI_PATH_SCOPING.md`](docs/CI_PATH_SCOPING.md) **(C)**                                                                                                                                                            | —                              |
+| Zine Box (library, reader, Drive import)           | `src/zinebox/README.md`, `src/zinebox/AGENTS.md`, `src/zinebox/CUJs.md` **(B)**                                                                                                                                         | —                              |
+| Dexie / IndexedDB empty states                     | App `README.md` empty-library section; `docs/LOCAL_FIRST_SYNC.md` when sync-related **(B)**                                                                                                                             | —                              |
+| Blocking jobs (long imports / sync)                | `src/shared/jobs/LabsBlockingJobContext.tsx`, `labsBlockingJobGuardrails.test.ts` **(B)**                                                                                                                               | —                              |
+| Google OAuth / session BFF                         | `docs/adr/` OAuth rows, `src/shared/google/` **(B)**                                                                                                                                                                    | `labs-write-adr`               |
 
 Commands quick reference: root [`README.md`](README.md) and `package.json` scripts.
 
@@ -137,16 +141,13 @@ When a task matches a skill, **read and follow it first** before improvising a w
 
 ### Before declaring a task done
 
-- [ ] Presubmit clean (see `pre-commit-checks.mdc`)
-- [ ] **`npm run presubmit:push` before `git push`** when touching shells, routes, gesture/encore cards, or `e2e/` (see `docs/CI_PATH_SCOPING.md`)
-- [ ] **`npx eslint` on changed files — zero warnings** (see pre-commit rule § ESLint warnings)
+See [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre-commit-checks.mdc) for the full gate (presubmit, eslint on touched files, `presubmit:push` when shells/e2e change). Also:
+
 - [ ] New shared primitive → `SHARED_UI_CONVENTIONS.md` + `/ui/` demo
 - [ ] New app directory → `importBoundaries.test.ts` + `check-import-boundaries.mjs`
-- [ ] New user-visible route / shell wiring → e2e smoke per **`docs/E2E_SMOKE_CONVENTIONS.md`**
-- [ ] Visual baselines updated **intentionally** only (skill `labs-visual-regression`)
-- [ ] Interaction perf / CUJ: update `src/<app>/CUJs.md` + interaction smoke when fixing lag (skill `labs-performance`)
-- [ ] Material architecture → ADR when practical (skill `labs-write-adr`)
-- [ ] **Substantial session → deliver retrospective** (skill `labs-session-retrospective`; not optional)
+- [ ] New journey smoke → `labs-e2e-smoke` skill + `APP_SMOKE_SPECS` when applicable
+- [ ] Interaction perf / CUJ → `src/<app>/CUJs.md` + smoke when fixing lag (`labs-performance`)
+- [ ] Substantial session → deliver retrospective (`labs-session-retrospective`)
 
 ## Repo Map
 

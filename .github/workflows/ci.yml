@@ -224,11 +224,49 @@ jobs:
         path: |
           src/shared/beat/regression/reports/**
 
-    - name: Run tests
+    - name: Detect vitest scope
+      id: vitest-scope
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          BASE_REF="origin/${{ github.base_ref }}"
+        else
+          BASE_REF="${{ github.event.before }}"
+        fi
+        CHANGED="$(git diff --name-only "$BASE_REF" HEAD 2>/dev/null || true)"
+        if echo "$CHANGED" | grep -qE '^(src/shared/|vite\.config|vitest\.config|package|\.github/workflows/)'; then
+          echo "mode=full" >> $GITHUB_OUTPUT
+          echo "Cross-cutting changes — full Vitest"
+        elif [ -z "$CHANGED" ]; then
+          echo "mode=full" >> $GITHUB_OUTPUT
+          echo "No diff — full Vitest"
+        else
+          APP_COUNT="$(echo "$CHANGED" | grep -E '^src/[^/]+/' | cut -d/ -f2 | sort -u | wc -l | tr -d ' ')"
+          if [ "$APP_COUNT" -le 3 ] && [ "$APP_COUNT" -gt 0 ]; then
+            echo "mode=scoped" >> $GITHUB_OUTPUT
+            echo "Narrow app diff — scoped Vitest via run-changed-app-tests.mjs"
+          else
+            echo "mode=full" >> $GITHUB_OUTPUT
+            echo "Multi-app or non-app diff — full Vitest"
+          fi
+        fi
+
+    - name: Run tests (full)
+      if: steps.vitest-scope.outputs.mode == 'full'
       env:
         INCLUDE_BEAT_BENCHMARK: ${{ steps.beat-changes.outputs.beat_changed }}
       # One retry in CI absorbs rare Vitest worker teardown flakes (BroadcastChannel).
       run: npm test -- --retry=1
+
+    - name: Run tests (scoped)
+      if: steps.vitest-scope.outputs.mode == 'scoped'
+      env:
+        INCLUDE_BEAT_BENCHMARK: ${{ steps.beat-changes.outputs.beat_changed }}
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          node scripts/run-changed-app-tests.mjs "origin/${{ github.base_ref }}"
+        else
+          node scripts/run-changed-app-tests.mjs "${{ github.event.before }}"
+        fi
 
   # Coverage runs nightly (nightly-flakiness.yml) — not on every PR/main push.
 

@@ -63,8 +63,10 @@ const config: KnipConfig = {
     'public/**/*.js',
   ],
   ignore: [
+    // Each entry must have a // comment on the line above (enforced by check:knip-config).
     // Public scripts loaded by HTML files
     'public/scripts/analytics.js',
+    // Shared homepage script (loaded by index.html, not bundled)
     'public/scripts/shared.js',
     // Kill-switch service worker deployed to purge stale vite-plugin-pwa SWs
     'public/sw.js',
@@ -78,11 +80,15 @@ const config: KnipConfig = {
     'src/shared/audio/audioPlayer.ts',
     // Shared notation components
     'src/shared/notation/index.ts',
+    // Drum symbol map exported for future notation hosts
     'src/shared/notation/drumSymbols.ts',
     // Deprecated/parked UI & systems (kept for future work but not referenced)
     'src/cats/components/ui/CatFact.tsx',
+    // Parked notification queue UI (not wired in current Cats build)
     'src/cats/components/ui/NotificationQueue.tsx',
+    // Parked notification hook (paired with NotificationQueue)
     'src/cats/hooks/useNotificationSystem.ts',
+    // Parked notification seed data
     'src/cats/data/notificationData.ts',
     // Starter templates (copied into new apps; not imported by the build)
     'src/shared/templates/**',
@@ -92,20 +98,30 @@ const config: KnipConfig = {
     'src/story/kimberly/**/*.ts',
     // Beat finder: deprecated exports kept for API compatibility (shared implementation)
     'src/shared/beat/experimental/fermataDetector.ts',
+    // Experimental tempo-change detector (parked)
     'src/shared/beat/experimental/tempoChangeDetector.ts',
+    // Node audio buffer helper for regression CLI only
     'src/shared/beat/regression/audioBuffer.ts',
+    // BPM accuracy harness (manual benchmark)
     'src/shared/beat/bpmAccuracyTest.ts',
     // Count Me In: analysis/coaching features parked for future development
     'src/count/analysis/RhythmAnalyzer.ts',
+    // Parked timing analysis helpers
     'src/count/analysis/timingAnalysis.ts',
+    // Parked Quiet Count coaching UI
     'src/count/components/QuietCount.tsx',
+    // Parked timing gauge component
     'src/count/components/TimingGauge.tsx',
+    // Parked vocal fatigue guard UI
     'src/count/components/VocalFatigueGuard.tsx',
+    // Parked rhythm analyzer hook
     'src/count/hooks/useRhythmAnalyzer.ts',
     // CI False Positives (Exports used in future/debugging or tests but flagged)
     'src/zines/utils/imageProcessor.ts', // processFiles used in specialized flows
-    'src/zines/utils/pdfGenerator.ts', // getCompressionDescription, downloadPDF
-    'src/zines/utils/spreadOrganizer.ts', // estimateDPI, etc. helper utils
+    // PDF generator helpers used in specialized export flows
+    'src/zines/utils/pdfGenerator.ts',
+    // Spread organizer DPI helpers for future print flows
+    'src/zines/utils/spreadOrganizer.ts',
   ],
   ignoreDependencies: [
     // Spawned from scripts/audit-pipeline.js (not part of the import graph)

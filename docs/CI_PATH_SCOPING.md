@@ -18,13 +18,13 @@ Full merge bar unchanged for cross-cutting changes: presubmit + full CI on `src/
 
 The workflow detects changed paths (PR base or push parent):
 
-| Changed paths                                                                      | Vitest                       | E2e                                                                                               |
-| ---------------------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------- |
-| `src/shared/**`, `vite.config.*`, `playwright.config.*`, `e2e/**`, `package*.json` | Full `npm test`              | Full smoke + playback regressions                                                                 |
-| Single app `src/<app>/**` only                                                     | Full `npm test` (for now)    | Scoped e2e via `run-scoped-e2e.mjs` + always `playback-ui-regressions` if shared playback touched |
-| Docs / `.cursor` only                                                              | Full (cheap relative to e2e) | Full smoke (still fast)                                                                           |
+| Changed paths                                                                   | Vitest                                                      | E2e                                 |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------- |
+| `src/shared/**`, `vite.config.*`, `vitest.config.*`, `package*.json`, workflows | Full `npm test`                                             | Full smoke + playback regressions   |
+| 1–3 apps `src/<app>/**` only (no shared)                                        | Scoped via `run-changed-app-tests.mjs` (≤3 apps; else full) | Scoped e2e via `run-scoped-e2e.mjs` |
+| Docs / `.cursor` only                                                           | Full (cheap relative to e2e)                                | Full smoke (still fast)             |
 
-Vitest remains full until we have a safe per-app project split; biggest win is **agents not polling CI** — see [`PR_WORKFLOW.md`](PR_WORKFLOW.md).
+Vitest scoping mirrors local `npm run test:changed-apps` in CI when the diff touches ≤3 apps and not `src/shared/**`. E2e changes still trigger full smoke via cross-cutting detection in the workflow.
 
 ## Adding an app to scoped e2e map
 

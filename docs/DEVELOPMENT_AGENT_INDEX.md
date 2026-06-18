@@ -21,6 +21,11 @@ Progressive disclosure for coding assistants. Read **only the section** that mat
 | CI / GitHub Actions reliability          | [`docs/CI_RELIABILITY.md`](CI_RELIABILITY.md); `npm run check:workflows` when editing workflows                                                 |
 | Session retrospective / codify learnings | skill `labs-session-retrospective`                                                                                                              |
 | Mid-refactor handoff                     | skill `labs-iteration-handoff`                                                                                                                  |
-| Drive backup / conflict UX               | skill `labs-drive-backup`; `SHARED_UI_CONVENTIONS.md` § Drive                                                                                   |
+| Drive backup / conflict UX               | skill `labs-drive-backup`; `SHARED_UI_CONVENTIONS.md` § Drive; `createLabsPortfolioDriveBackup`                                                 |
+| Dexie live-query empty states            | `docs/AGENT_INVARIANTS.md`; `.cursor/rules/dexie-live-query-empty-states.mdc`                                                                   |
+| Blocking jobs (imports, long sync)       | `src/shared/jobs/LabsBlockingJobContext.tsx`; `labsBlockingJobGuardrails.test.ts`                                                               |
+| Google OAuth / session BFF               | [`docs/adr/0014-google-oauth-session-bff.md`](adr/0014-google-oauth-session-bff.md); `src/shared/google/`                                       |
+| E2e smoke fixtures and scoped map        | [`docs/E2E_SMOKE_CONVENTIONS.md`](E2E_SMOKE_CONVENTIONS.md); skill `labs-e2e-smoke`                                                             |
+| CI path scoping (Vitest + e2e)           | [`docs/CI_PATH_SCOPING.md`](CI_PATH_SCOPING.md); `scripts/run-changed-app-tests.mjs`, `scripts/run-scoped-e2e.mjs`                              |
 
 Human precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). Agent workflow entry: [`AGENTS.md`](../AGENTS.md).

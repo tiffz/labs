@@ -22,5 +22,6 @@ Portable [Agent Skills](https://agentskills.io/home) for Labs workflows. Discove
 | [`labs-dependency-upgrade`](labs-dependency-upgrade/SKILL.md)           | Toolchain / dependency major upgrades                                     |
 | [`labs-ui-design-variations`](labs-ui-design-variations/SKILL.md)       | In-app design theme iterations + live preview selector                    |
 | [`labs-performance`](labs-performance/SKILL.md)                         | CUJ interaction latency, render isolation, perf benchmarks                |
+| [`labs-e2e-smoke`](labs-e2e-smoke/SKILL.md)                             | Playwright journey smokes, fixtures, scoped e2e map                       |
 
 **Maintenance:** Add a row here when creating a skill. Run `npm run check:agent-docs` in presubmit/CI.

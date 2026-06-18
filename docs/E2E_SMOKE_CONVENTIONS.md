@@ -33,6 +33,17 @@ Registry: [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) — update when addi
 - Spec: `e2e/smoke/zinebox-library.spec.ts` — assert upload UI on `#/library`, then separate test for Random → `#/read/`
 - Catches smokes that click navigation actions before library header controls are visible
 
+### Example: Zine Box Drive folder import
+
+- Stubs: `e2e/helpers/zineboxDriveImport.ts` — Google session + minimal Drive folder/PDF mock
+- Spec: `e2e/smoke/zinebox-drive-import.spec.ts` — Review import → blocking job progressbar → success notice
+- Scoped map: `zinebox` entry in `scripts/run-scoped-e2e.mjs`
+
+### Example: Stanza library chrome
+
+- Helper: `e2e/helpers/stanzaLibrary.ts` → `expectStanzaLibraryChrome`
+- Spec: `e2e/smoke/stanza-library.spec.ts` — landing hero + account menu before viewer navigation
+
 ### Example: Gesture upload offline resume
 
 - Fixture: `src/gesture/e2e/gestureE2eSeed.ts` → `seedGestureE2eInterruptedUpload`, `?e2eInterruptedUpload=1` gate in `App.tsx`
