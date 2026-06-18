@@ -5022,6 +5022,34 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-createlabsportfoliodrivebackup-ts-createlabsportfoliodrivebackup",
+    "name": "createLabsPortfolioDriveBackup",
+    "path": "src/shared/drive/createLabsPortfolioDriveBackup.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared portfolio Drive backup hook factory — auto pull/push, merge, conflict, optional undo. App hooks supply envelope/merge/sync-meta callbacks via .",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-createlabsportfoliodrivebackup-ts-uselabsportfoliodrivebackupoptions",
+    "name": "UseLabsPortfolioDriveBackupOptions",
+    "path": "src/shared/drive/createLabsPortfolioDriveBackup.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared portfolio Drive backup hook factory — auto pull/push, merge, conflict, optional undo. App hooks supply envelope/merge/sync-meta callbacks via .",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-drivecollectpdffilesrecursive-ts-drivecollectpdffilesrecursive",
     "name": "driveCollectPdfFilesRecursive",
     "path": "src/shared/drive/driveCollectPdfFilesRecursive.ts",
@@ -6084,6 +6112,105 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfoliodrivebackuptypes-ts-labsportfoliodrivebackupconfig",
+    "name": "LabsPortfolioDriveBackupConfig",
+    "path": "src/shared/drive/labsPortfolioDriveBackupTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfoliodrivebackuptypes-ts-labsportfoliodrivebackupconflictbase",
+    "name": "LabsPortfolioDriveBackupConflictBase",
+    "path": "src/shared/drive/labsPortfolioDriveBackupTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfoliodrivebackuptypes-ts-labsportfoliodrivesyncmeta",
+    "name": "LabsPortfolioDriveSyncMeta",
+    "path": "src/shared/drive/labsPortfolioDriveBackupTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfoliodrivetombstones-ts-labsportfoliotombstone",
+    "name": "LabsPortfolioTombstone",
+    "path": "src/shared/drive/labsPortfolioDriveTombstones.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Generic tombstone list helpers for portfolio Drive apps (union by id, cap, newest wins).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfoliodrivetombstones-ts-mergeportfoliotombstonelists",
+    "name": "mergePortfolioTombstoneLists",
+    "path": "src/shared/drive/labsPortfolioDriveTombstones.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Generic tombstone list helpers for portfolio Drive apps (union by id, cap, newest wins).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfoliodrivetombstones-ts-normalizeportfoliotombstones",
+    "name": "normalizePortfolioTombstones",
+    "path": "src/shared/drive/labsPortfolioDriveTombstones.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Generic tombstone list helpers for portfolio Drive apps (union by id, cap, newest wins).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfoliodrivetombstones-ts-portfoliotombstoneidset",
+    "name": "portfolioTombstoneIdSet",
+    "path": "src/shared/drive/labsPortfolioDriveTombstones.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Generic tombstone list helpers for portfolio Drive apps (union by id, cap, newest wins).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {

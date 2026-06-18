@@ -219,6 +219,7 @@ Use this checklist when adding local-first + `Tiff Zhang Labs/{App}/progress.jso
 ### Wiring checklist
 
 - [ ] `*DriveBackupProvider` at app root (or account menu if Stanza-style)
+- [ ] Portfolio hook: prefer `createLabsPortfolioDriveBackup(config)` + app config module (see Zine Box `zineboxPortfolioDriveBackupConfig.ts`)
 - [ ] `useLabsDrivePortfolioAutoSync({ enabled: testerResolved && testerOk, ... })`
 - [ ] Manual backup: snapshot → silent pull/merge → `flushDriveWrite`
 - [ ] `flushDriveWrite`: upload sidecars → write envelope; **412 etag retry** (pull then rewrite)
@@ -228,12 +229,12 @@ Use this checklist when adding local-first + `Tiff Zhang Labs/{App}/progress.jso
 
 ### Duplication we should consolidate next (not blocking ship)
 
-| Pattern                    | Today                                                           | Target                                                                  |
-| -------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Portfolio hook boilerplate | ~400 lines × 4 apps                                             | `createLabsPortfolioDriveBackup(config)` factory in `src/shared/drive/` |
-| 412 retry on push          | Stanza + Zine Box only                                          | Shared `flushPortfolioProgressWithRetry`                                |
-| Tombstones                 | Gesture, Stanza                                                 | Template + merge filter helper for new apps with delete UX              |
-| Conflict UI dead code      | Gesture/Scales/Zine Box ship dialog wiring under `silent_union` | Drop prompt UI or switch policy explicitly                              |
+| Pattern                    | Today                                                           | Target                                                                              |
+| -------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Portfolio hook boilerplate | ~400 lines × 4 apps                                             | `createLabsPortfolioDriveBackup(config)` in `src/shared/drive/` (Zine Box migrated) |
+| 412 retry on push          | Stanza + Zine Box only                                          | Shared `flushPortfolioProgressWithRetry`                                            |
+| Tombstones                 | Gesture, Stanza, Zine Box                                       | Template + merge filter helper for new apps with delete UX                          |
+| Conflict UI dead code      | Gesture/Scales/Zine Box ship dialog wiring under `silent_union` | Drop prompt UI or switch policy explicitly                                          |
 
 ## Stanza ↔ Encore data model
 

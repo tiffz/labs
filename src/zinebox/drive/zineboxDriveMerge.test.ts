@@ -47,4 +47,20 @@ describe('mergeZineboxSyncPayload', () => {
     expect(report.comicsFromLocalOnly).toBe(1);
     expect(report.comicsFromRemoteOnly).toBe(1);
   });
+
+  it('drops tombstoned comics from union merge', () => {
+    const local = {
+      comics: [],
+      collections: [{ id: 's1', name: 'Stack', itemIds: ['deleted-comic'] }],
+    };
+    const remote = {
+      comics: [comic('deleted-comic', { driveBackupFileId: 'drive-1' })],
+      collections: [],
+    };
+    const { payload } = mergeZineboxSyncPayload(local, remote, {
+      tombstoneComicIds: new Set(['deleted-comic']),
+    });
+    expect(payload.comics).toHaveLength(0);
+    expect(payload.collections.find((c) => c.id === 's1')).toBeUndefined();
+  });
 });

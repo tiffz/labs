@@ -6,7 +6,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import LinearProgress from '@mui/material/LinearProgress';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -188,12 +187,9 @@ export default function DriveFolderImportDialog({
       <DialogTitle id="zinebox-drive-import-title">Review Drive import</DialogTitle>
       <DialogContent>
         {scanBusy ? (
-          <>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              Scanning folder for PDFs…
-            </Typography>
-            <LinearProgress />
-          </>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Scanning folder for PDFs…
+          </Typography>
         ) : null}
 
         {scan && !scanBusy ? (

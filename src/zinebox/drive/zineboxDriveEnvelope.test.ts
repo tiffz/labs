@@ -29,6 +29,15 @@ describe('zineboxDriveEnvelope', () => {
     expect(parsed.comics[0]?.title).toBe('Test zine');
   });
 
+  it('includes deletedComicIds when tombstones are present', () => {
+    const envelope = buildZineboxDriveEnvelope(
+      { comics: [], collections: [] },
+      [{ id: 'deleted-1', removedAt: '2026-01-01T00:00:00.000Z' }],
+    );
+    expect(envelope.deletedComicIds).toHaveLength(1);
+    expect(envelope.deletedComicIds?.[0]?.id).toBe('deleted-1');
+  });
+
   it('rejects backups from other apps', () => {
     const envelope = buildZineboxDriveEnvelope({ comics: [], collections: [] });
     const wrongApp = { ...envelope, app: 'gesture' as typeof ZINEBOX_DRIVE_APP_ID };

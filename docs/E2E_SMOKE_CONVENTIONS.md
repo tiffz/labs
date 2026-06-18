@@ -33,6 +33,12 @@ Registry: [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) — update when addi
 - Spec: `e2e/smoke/zinebox-library.spec.ts` — assert upload UI on `#/library`, then separate test for Random → `#/read/`
 - Catches smokes that click navigation actions before library header controls are visible
 
+### Example: Gesture upload offline resume
+
+- Fixture: `src/gesture/e2e/gestureE2eSeed.ts` → `seedGestureE2eInterruptedUpload`, `?e2eInterruptedUpload=1` gate in `App.tsx`
+- Spec: `e2e/smoke/gesture-upload-offline-resume.spec.ts` — interrupted banner → offline stalls → online completes
+- Stubs: `e2e/helpers/gestureUploadOfflineResume.ts` — persisted Google session + minimal Drive API mock
+
 ### Example: Layout heuristics (padding + contrast)
 
 - Core math: `src/shared/test/layoutHeuristicsCore.ts` (Vitest)

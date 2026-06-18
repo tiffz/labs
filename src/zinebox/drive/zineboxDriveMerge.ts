@@ -61,8 +61,13 @@ function mergeCollection(local: ZineboxCollection, remote: ZineboxCollection): Z
 export function mergeZineboxSyncPayload(
   local: ZineboxSyncPayload,
   remote: ZineboxSyncPayload,
+  options?: { tombstoneComicIds?: ReadonlySet<string> },
 ): { payload: ZineboxSyncPayload; report: ZineboxDriveMergeReport } {
-  const comicIds = new Set([...local.comics.map((c) => c.id), ...remote.comics.map((c) => c.id)]);
+  const tombstoneComicIds = options?.tombstoneComicIds ?? new Set<string>();
+  const comicIds = new Set([
+    ...local.comics.map((c) => c.id),
+    ...remote.comics.map((c) => c.id),
+  ]);
   const localById = new Map(local.comics.map((c) => [c.id, c]));
   const remoteById = new Map(remote.comics.map((c) => [c.id, c]));
   const comics: ZineboxComic[] = [];
@@ -71,6 +76,7 @@ export function mergeZineboxSyncPayload(
   let comicsFromRemoteOnly = 0;
 
   for (const id of comicIds) {
+    if (tombstoneComicIds.has(id)) continue;
     const l = localById.get(id);
     const r = remoteById.get(id);
     if (l && r) {
@@ -101,9 +107,15 @@ export function mergeZineboxSyncPayload(
       collections.push(mergeCollection(l, r));
       collectionsMerged += 1;
     } else if (l) {
-      collections.push(l);
+      const keptItems = l.itemIds.filter((itemId) => !tombstoneComicIds.has(itemId));
+      if (keptItems.length > 0) {
+        collections.push({ ...l, itemIds: keptItems });
+      }
     } else if (r) {
-      collections.push(r);
+      const keptItems = r.itemIds.filter((itemId) => !tombstoneComicIds.has(itemId));
+      if (keptItems.length > 0) {
+        collections.push({ ...r, itemIds: keptItems });
+      }
     }
   }
 

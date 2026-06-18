@@ -4,7 +4,6 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import LinearProgress from '@mui/material/LinearProgress';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -131,12 +130,9 @@ export default function LocalBatchImportDialog({
       <DialogTitle id="zinebox-local-import-title">Review import</DialogTitle>
       <DialogContent>
         {scanBusy ? (
-          <>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              Checking for duplicates…
-            </Typography>
-            <LinearProgress />
-          </>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Checking for duplicates…
+          </Typography>
         ) : null}
 
         {scan && !scanBusy ? (
@@ -183,8 +179,6 @@ export default function LocalBatchImportDialog({
             )}
           </>
         ) : null}
-
-        {busy ? <LinearProgress sx={{ mt: 2 }} /> : null}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={interactionDisabled}>

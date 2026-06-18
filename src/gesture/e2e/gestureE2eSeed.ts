@@ -1,7 +1,10 @@
 import { gestureDb } from '../db/gestureDb';
 import { notifyGestureLocalChange } from '../db/gestureChangeBus';
+import { buildUploadManifestId } from '../drive/gestureUploadManifest';
+import { putStagedUploadBlob } from '../drive/gestureUploadStaging';
 
 export const GESTURE_E2E_PACK_ID = 'e2e-gesture-pack';
+export const GESTURE_E2E_INTERRUPTED_PACK_ID = 'e2e-interrupted-upload';
 export const GESTURE_E2E_COVER_IDS = [
   'e2e-cover-a',
   'e2e-cover-b',
@@ -50,6 +53,54 @@ export async function seedGestureE2eScrollGridFixtures(): Promise<number> {
   await gestureDb.packs.bulkPut(scrollPacks);
   notifyGestureLocalChange({ immediate: true });
   return scrollPacks.length + 1;
+}
+
+/** Dev/e2e fixture — interrupted upload with staged blobs (resume without re-pick). */
+export async function seedGestureE2eInterruptedUpload(): Promise<void> {
+  const packId = GESTURE_E2E_INTERRUPTED_PACK_ID;
+  const now = '2026-01-01T00:00:00.000Z';
+  await gestureDb.delete();
+  await gestureDb.open();
+  await gestureDb.packs.put({
+    id: packId,
+    driveFolderId: 'e2e-interrupted-folder-id',
+    name: 'E2E Interrupted Upload',
+    linkedAt: now,
+    lastIndexedAt: now,
+    uploadStatus: 'incomplete',
+    uploadSourceFolderName: 'E2E Test Folder',
+    expectedFileCount: 2,
+    uploadedFileCount: 0,
+    coverFileIds: [],
+  });
+
+  const files = [
+    { relativePath: 'folder/photo-a.jpg', name: 'photo-a.jpg', lastModified: 1_700_000_000_000 },
+    { relativePath: 'folder/photo-b.jpg', name: 'photo-b.jpg', lastModified: 1_700_000_001_000 },
+  ] as const;
+
+  await gestureDb.uploadManifestFiles.bulkPut(
+    files.map((f) => ({
+      id: buildUploadManifestId(packId, f.relativePath),
+      packId,
+      relativePath: f.relativePath,
+      name: f.name,
+      size: 8,
+      lastModified: f.lastModified,
+      status: 'pending' as const,
+    })),
+  );
+
+  for (const f of files) {
+    const file = new File(['jpeg-data'], f.name, {
+      type: 'image/jpeg',
+      lastModified: f.lastModified,
+    });
+    Object.defineProperty(file, 'webkitRelativePath', { value: f.relativePath, configurable: true });
+    await putStagedUploadBlob(packId, file);
+  }
+
+  notifyGestureLocalChange({ immediate: true });
 }
 
 declare global {

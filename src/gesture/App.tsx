@@ -25,7 +25,8 @@ function GestureAppContent(): React.ReactElement {
   const [debrief, setDebrief] = useState<SessionDebrief | null>(null);
   const [e2eSeedReady, setE2eSeedReady] = useState(() => {
     if (!import.meta.env.DEV) return true;
-    return !new URLSearchParams(window.location.search).has('e2eSeed');
+    const params = new URLSearchParams(window.location.search);
+    return !params.has('e2eSeed') && !params.has('e2eInterruptedUpload');
   });
 
   useEffect(() => {
@@ -35,6 +36,12 @@ function GestureAppContent(): React.ReactElement {
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     const params = new URLSearchParams(window.location.search);
+    if (params.has('e2eInterruptedUpload')) {
+      void import('./e2e/gestureE2eSeed')
+        .then((m) => m.seedGestureE2eInterruptedUpload())
+        .finally(() => setE2eSeedReady(true));
+      return;
+    }
     if (!params.has('e2eSeed')) return;
     const seedScroll = params.has('e2eScrollGrid');
     const run = seedScroll

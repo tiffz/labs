@@ -1,4 +1,5 @@
 import type { ZineboxCollection, ZineboxComic } from '../types';
+import type { ZineboxComicTombstone } from './zineboxDriveTombstones';
 
 export const ZINEBOX_DRIVE_APP_ID = 'zinebox' as const;
 export const ZINEBOX_DRIVE_COMICS_FOLDER = 'comics';
@@ -14,15 +15,21 @@ export interface ZineboxDriveEnvelopeV1 {
   app: typeof ZINEBOX_DRIVE_APP_ID;
   comics: ZineboxComic[];
   collections: ZineboxCollection[];
+  /** Comics removed on any device — prevents union merge from resurrecting deletes. */
+  deletedComicIds?: ZineboxComicTombstone[];
 }
 
-export function buildZineboxDriveEnvelope(payload: ZineboxSyncPayload): ZineboxDriveEnvelopeV1 {
+export function buildZineboxDriveEnvelope(
+  payload: ZineboxSyncPayload,
+  deletedComicIds: readonly ZineboxComicTombstone[] = [],
+): ZineboxDriveEnvelopeV1 {
   return {
     schemaVersion: 1,
     exportedAt: new Date().toISOString(),
     app: ZINEBOX_DRIVE_APP_ID,
     comics: payload.comics,
     collections: payload.collections,
+    deletedComicIds: deletedComicIds.length > 0 ? [...deletedComicIds] : undefined,
   };
 }
 
