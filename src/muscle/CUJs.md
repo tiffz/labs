@@ -28,13 +28,13 @@ Index: [`docs/CRITICAL_USER_JOURNEYS.md`](../../docs/CRITICAL_USER_JOURNEYS.md).
 
 Dev server, hard refresh, `fundamentals` module (smallest GLB) unless noted.
 
-| Step                | Metric                              | Budget (p95)      | Verification                                    |
-| ------------------- | ----------------------------------- | ----------------- | ----------------------------------------------- |
-| Canvas orbit drag   | rAF frame gap during simulated drag | ≤ 20 ms           | `e2e/smoke/muscle-orbit-perf.spec.ts`           |
-| View mode toggle    | click → HUD count updates           | ≤ 400 ms          | `e2e/smoke/muscle-shell.spec.ts`                |
-| Structure hover     | pointer settle → HUD label          | ≤ 50 ms perceived | manual                                          |
-| Module switch       | select module → new GLB visible     | ≤ 3 s             | manual                                          |
-| Torso orbit (heavy) | rAF p95 during drag                 | ≤ 20 ms           | `muscle-orbit-perf` torso case (presubmit:push) |
+| Step                | Metric                              | Budget (p95)            | Verification                                    |
+| ------------------- | ----------------------------------- | ----------------------- | ----------------------------------------------- |
+| Canvas orbit drag   | rAF frame gap during simulated drag | ≤ 20 ms (≤ 35 ms on CI) | `e2e/smoke/muscle-orbit-perf.spec.ts`           |
+| View mode toggle    | click → HUD count updates           | ≤ 400 ms                | `e2e/smoke/muscle-shell.spec.ts`                |
+| Structure hover     | pointer settle → HUD label          | ≤ 50 ms perceived       | manual                                          |
+| Module switch       | select module → new GLB visible     | ≤ 3 s                   | manual                                          |
+| Torso orbit (heavy) | rAF p95 during drag                 | ≤ 20 ms                 | `muscle-orbit-perf` torso case (presubmit:push) |
 
 ### Known traps
 

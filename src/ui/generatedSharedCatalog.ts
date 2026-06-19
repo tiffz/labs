@@ -17128,6 +17128,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-test-muscleorbitperfcore-ts-getmuscleorbitperflimits",
+    "name": "getMuscleOrbitPerfLimits",
+    "path": "src/shared/test/muscleOrbitPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Local dev targets ~60fps; GitHub Actions uses software WebGL and shared CPU.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-test-muscleorbitperfcore-ts-muscleorbitperfsample",
     "name": "MuscleOrbitPerfSample",
     "path": "src/shared/test/muscleOrbitPerfCore.ts",

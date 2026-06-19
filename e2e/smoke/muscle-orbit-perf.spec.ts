@@ -25,7 +25,7 @@ test.describe('Muscle Memory orbit perf', () => {
       timeout: 15_000,
     });
     // Let BVH + shader compile finish before sampling (parallel CI shares CPU).
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2_500);
 
     const sample = await measureMuscleOrbitPerf(page);
     assertMuscleOrbitPerfBudget(sample);
@@ -38,7 +38,7 @@ test.describe('Muscle Memory orbit perf', () => {
 
     const canvas = page.locator('[data-testid="muscle-training-canvas"] canvas');
     await expect(canvas).toBeVisible({ timeout: 15_000 });
-    await page.waitForTimeout(1200);
+    await page.waitForTimeout(2_500);
 
     const sample = await measureMuscleOrbitPerf(page);
     assertMuscleOrbitPerfBudget(sample);

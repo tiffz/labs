@@ -14,6 +14,29 @@ export const ORBIT_MAX_LONG_TASKS = 8;
 
 export const ORBIT_MIN_FRAME_SAMPLES = 20;
 
+/** Local dev targets ~60fps; GitHub Actions uses software WebGL and shared CPU. */
+export function getMuscleOrbitPerfLimits(): {
+  maxFrameMs: number;
+  maxSpikeMs: number;
+  maxLongTasks: number;
+  minFrameSamples: number;
+} {
+  if (typeof process !== 'undefined' && process.env.CI) {
+    return {
+      maxFrameMs: 35,
+      maxSpikeMs: 80,
+      maxLongTasks: 64,
+      minFrameSamples: ORBIT_MIN_FRAME_SAMPLES,
+    };
+  }
+  return {
+    maxFrameMs: ORBIT_MAX_FRAME_MS,
+    maxSpikeMs: ORBIT_MAX_SPIKE_MS,
+    maxLongTasks: ORBIT_MAX_LONG_TASKS,
+    minFrameSamples: ORBIT_MIN_FRAME_SAMPLES,
+  };
+}
+
 export type MuscleOrbitPerfSample = {
   frameSamples: number;
   maxFrameMs: number;

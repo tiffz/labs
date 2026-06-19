@@ -1,9 +1,6 @@
 import type { Page } from '@playwright/test';
 import {
-  ORBIT_MAX_FRAME_MS,
-  ORBIT_MAX_LONG_TASKS,
-  ORBIT_MAX_SPIKE_MS,
-  ORBIT_MIN_FRAME_SAMPLES,
+  getMuscleOrbitPerfLimits,
   type MuscleOrbitPerfSample,
 } from '../../src/shared/test/muscleOrbitPerfCore';
 
@@ -127,22 +124,23 @@ export async function measureMuscleOrbitPerf(page: Page): Promise<MuscleOrbitPer
 }
 
 export function assertMuscleOrbitPerfBudget(sample: MuscleOrbitPerfSample): void {
-  if (sample.frameSamples < ORBIT_MIN_FRAME_SAMPLES) {
-    throw new Error(`only ${sample.frameSamples} frame samples (need ${ORBIT_MIN_FRAME_SAMPLES})`);
+  const limits = getMuscleOrbitPerfLimits();
+  if (sample.frameSamples < limits.minFrameSamples) {
+    throw new Error(`only ${sample.frameSamples} frame samples (need ${limits.minFrameSamples})`);
   }
-  if (sample.maxFrameMs > ORBIT_MAX_SPIKE_MS) {
+  if (sample.maxFrameMs > limits.maxSpikeMs) {
     throw new Error(
-      `max orbit frame ${sample.maxFrameMs.toFixed(1)}ms exceeds spike budget ${ORBIT_MAX_SPIKE_MS}ms`,
+      `max orbit frame ${sample.maxFrameMs.toFixed(1)}ms exceeds spike budget ${limits.maxSpikeMs}ms`,
     );
   }
-  if (sample.p95FrameMs > ORBIT_MAX_FRAME_MS) {
+  if (sample.p95FrameMs > limits.maxFrameMs) {
     throw new Error(
-      `p95 orbit frame ${sample.p95FrameMs.toFixed(1)}ms exceeds budget ${ORBIT_MAX_FRAME_MS}ms`,
+      `p95 orbit frame ${sample.p95FrameMs.toFixed(1)}ms exceeds budget ${limits.maxFrameMs}ms`,
     );
   }
-  if (sample.longTaskCount > ORBIT_MAX_LONG_TASKS) {
+  if (sample.longTaskCount > limits.maxLongTasks) {
     throw new Error(
-      `${sample.longTaskCount} long tasks during orbit exceeds budget ${ORBIT_MAX_LONG_TASKS}`,
+      `${sample.longTaskCount} long tasks during orbit exceeds budget ${limits.maxLongTasks}`,
     );
   }
 }
