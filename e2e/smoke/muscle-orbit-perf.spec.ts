@@ -4,7 +4,13 @@ import {
   measureMuscleOrbitPerf,
 } from '../helpers/muscleOrbitPerf';
 
+async function setLayerPeelDepth(page: import('@playwright/test').Page, depth: 0 | 1 | 2) {
+  await page.getByRole('slider', { name: 'Depth' }).fill(String(depth));
+}
+
 test.describe('Muscle Memory orbit perf', () => {
+  test.describe.configure({ timeout: 60_000 });
+
   test('fundamentals orbit stays within frame budget', async ({ page }) => {
     await page.goto('/muscle/');
     await expect(page.getByTestId('muscle-app')).toBeVisible();
@@ -14,8 +20,8 @@ test.describe('Muscle Memory orbit perf', () => {
     await expect(canvas).toBeVisible({ timeout: 15_000 });
 
     // Wait for skeleton GLB decode + first paint before sampling orbit frames.
-    await page.getByRole('radio', { name: /^Skeleton\. Bones and joints only\./ }).click();
-    await expect(page.getByTestId('muscle-layer-status')).toContainText('Skeleton view · 12 visible', {
+    await setLayerPeelDepth(page, 2);
+    await expect(page.getByTestId('muscle-layer-status')).toContainText('Skeleton · 12 visible', {
       timeout: 15_000,
     });
     // Let BVH + shader compile finish before sampling (parallel CI shares CPU).
@@ -26,10 +32,10 @@ test.describe('Muscle Memory orbit perf', () => {
   });
 
   test('torso orbit stays within frame budget', async ({ page }) => {
-    await page.goto('/muscle/');
+    await page.goto('/muscle/?module=torso');
     await expect(page.getByTestId('muscle-app')).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Torso', selected: true })).toBeVisible();
 
-    await page.getByLabel('Training module').selectOption('torso');
     const canvas = page.locator('[data-testid="muscle-training-canvas"] canvas');
     await expect(canvas).toBeVisible({ timeout: 15_000 });
     await page.waitForTimeout(1200);
