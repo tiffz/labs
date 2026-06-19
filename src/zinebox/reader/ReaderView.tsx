@@ -7,14 +7,22 @@ import { useZineboxComic } from '../hooks/useZineboxComics';
 import type { ZineboxReaderMode, ZineboxSpreadOffset } from '../types';
 import ReaderChrome, { ReaderNavButtons } from './ReaderChrome';
 import {
+  advanceSpreadPage,
   clampPage,
   loadPdfDocument,
   pageFromProgress,
   progressFromPage,
-  renderPdfPageToCanvas,
+  readerProgressPage,
   resolveComicPdfSource,
   spreadPageNumbers,
 } from './pdfRender';
+import {
+  buildPageRenderOptions,
+  createReaderPageCache,
+  displayReaderPage,
+  getReaderPrefetchPages,
+  scheduleReaderPagePrefetch,
+} from './readerPageCache';
 
 type ReaderViewProps = {
   comicId: string;
@@ -25,17 +33,26 @@ type ReaderViewProps = {
   onClose: () => void;
 };
 
-function useDebouncedProgress(comicId: string, page: number, totalPages: number): void {
+function useDebouncedProgress(
+  comicId: string,
+  mode: ZineboxReaderMode,
+  currentPage: number,
+  totalPages: number,
+  spreadOffset: ZineboxSpreadOffset,
+): void {
+  const progressPage = readerProgressPage(mode, currentPage, totalPages, spreadOffset);
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void zineboxDb.comics.update(comicId, {
-        progressPercentage: progressFromPage(page, totalPages),
-        readStatus: page >= totalPages ? 'finished' : page > 1 ? 'in_progress' : 'unread',
+        progressPercentage: progressFromPage(progressPage, totalPages),
+        readStatus:
+          progressPage >= totalPages ? 'finished' : progressPage > 1 ? 'in_progress' : 'unread',
       });
       notifyZineboxLocalChange();
     }, 400);
     return () => window.clearTimeout(timer);
-  }, [comicId, page, totalPages]);
+  }, [comicId, progressPage, totalPages]);
 }
 
 export default function ReaderView({
@@ -55,19 +72,29 @@ export default function ReaderView({
   const spreadRightRef = useRef<HTMLCanvasElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<Awaited<ReturnType<typeof loadPdfDocument>> | null>(null);
+  const pageCacheRef = useRef(createReaderPageCache());
   /** Resume from saved progress once per open — not on every Dexie progress write while reading. */
   const pageSeedKeyRef = useRef<string | null>(null);
 
   const goPrev = useCallback(() => {
-    setCurrentPage((p) => clampPage(p - 1, totalPages));
-  }, [totalPages]);
+    if (mode === 'spread') {
+      setCurrentPage((page) => advanceSpreadPage(page, -1, totalPages, spreadOffset));
+      return;
+    }
+    setCurrentPage((page) => clampPage(page - 1, totalPages));
+  }, [mode, spreadOffset, totalPages]);
 
   const goNext = useCallback(() => {
-    setCurrentPage((p) => clampPage(p + 1, totalPages));
-  }, [totalPages]);
+    if (mode === 'spread') {
+      setCurrentPage((page) => advanceSpreadPage(page, 1, totalPages, spreadOffset));
+      return;
+    }
+    setCurrentPage((page) => clampPage(page + 1, totalPages));
+  }, [mode, spreadOffset, totalPages]);
 
   useEffect(() => {
     pageSeedKeyRef.current = null;
+    pageCacheRef.current.clear();
     let cancelled = false;
     setLoading(true);
     setCurrentPage(1);
@@ -86,6 +113,10 @@ export default function ReaderView({
   }, [comicId]);
 
   useEffect(() => {
+    pageCacheRef.current.clear();
+  }, [mode, spreadOffset]);
+
+  useEffect(() => {
     if (!comicHydrated || !comic || totalPages <= 0) return;
     const seedKey = `${comicId}:${totalPages}`;
     if (pageSeedKeyRef.current === seedKey) return;
@@ -93,7 +124,7 @@ export default function ReaderView({
     setCurrentPage(pageFromProgress(comic.progressPercentage, totalPages));
   }, [comic, comicHydrated, comicId, totalPages]);
 
-  useDebouncedProgress(comicId, currentPage, totalPages);
+  useDebouncedProgress(comicId, mode, currentPage, totalPages, spreadOffset);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -113,17 +144,28 @@ export default function ReaderView({
     const doc = docRef.current;
     if (!doc || loading) return;
 
+    let cancelled = false;
+    const cache = pageCacheRef.current;
+
     void (async () => {
+      const prefetch = (pages: number[], options: ReturnType<typeof buildPageRenderOptions>) => {
+        if (cancelled) return;
+        scheduleReaderPagePrefetch(doc, pages, options, cache);
+      };
+
       if (mode === 'single') {
         const canvas = singleCanvasRef.current;
         if (!canvas) return;
         const container = canvas.parentElement;
         if (!container) return;
-        await renderPdfPageToCanvas(doc, currentPage, canvas, {
-          fit: 'width',
-          containerWidth: container.clientWidth,
-          containerHeight: container.clientHeight,
-        });
+        const options = buildPageRenderOptions(
+          'width',
+          container.clientWidth,
+          container.clientHeight,
+        );
+        await displayReaderPage(doc, currentPage, canvas, options, cache);
+        if (cancelled) return;
+        prefetch(getReaderPrefetchPages(mode, currentPage, totalPages, spreadOffset), options);
         return;
       }
 
@@ -134,18 +176,14 @@ export default function ReaderView({
         const container = leftCanvas?.parentElement;
         if (!leftCanvas || !container) return;
         const halfWidth = Math.floor(container.clientWidth / 2) - 8;
-        await renderPdfPageToCanvas(doc, pages[0] ?? 1, leftCanvas, {
-          fit: 'height',
-          containerWidth: halfWidth,
-          containerHeight: container.clientHeight,
-        });
+        const options = buildPageRenderOptions('contain', halfWidth, container.clientHeight);
+        await displayReaderPage(doc, pages[0] ?? 1, leftCanvas, options, cache);
+        if (cancelled) return;
         if (pages[1] && rightCanvas) {
-          await renderPdfPageToCanvas(doc, pages[1], rightCanvas, {
-            fit: 'height',
-            containerWidth: halfWidth,
-            containerHeight: container.clientHeight,
-          });
+          await displayReaderPage(doc, pages[1], rightCanvas, options, cache);
+          if (cancelled) return;
         }
+        prefetch(getReaderPrefetchPages(mode, currentPage, totalPages, spreadOffset), options);
         return;
       }
 
@@ -153,16 +191,18 @@ export default function ReaderView({
       if (!scrollRoot) return;
       const canvases = scrollRoot.querySelectorAll('canvas');
       const width = scrollRoot.clientWidth;
+      const options = buildPageRenderOptions('width', width, width * 1.4);
       for (let i = 0; i < canvases.length; i += 1) {
         const canvas = canvases[i];
         if (!(canvas instanceof HTMLCanvasElement)) continue;
-        await renderPdfPageToCanvas(doc, i + 1, canvas, {
-          fit: 'width',
-          containerWidth: width,
-          containerHeight: width * 1.4,
-        });
+        await displayReaderPage(doc, i + 1, canvas, options, cache);
+        if (cancelled) return;
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentPage, loading, mode, spreadOffset, totalPages]);
 
   if (!comicHydrated || loading) {
@@ -204,6 +244,7 @@ export default function ReaderView({
           <canvas ref={singleCanvasRef} className="zinebox-reader__canvas" />
           <ReaderNavButtons
             mode={mode}
+            spreadOffset={spreadOffset}
             currentPage={currentPage}
             totalPages={totalPages}
             onPrev={goPrev}
@@ -222,6 +263,7 @@ export default function ReaderView({
           )}
           <ReaderNavButtons
             mode={mode}
+            spreadOffset={spreadOffset}
             currentPage={currentPage}
             totalPages={totalPages}
             onPrev={goPrev}

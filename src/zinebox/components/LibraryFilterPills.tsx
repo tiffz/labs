@@ -32,6 +32,13 @@ export default function LibraryFilterPills({
       >
         Unread
       </button>
+      <button
+        type="button"
+        className={`zinebox-pill${statusActive('read') ? ' zinebox-pill--active' : ''}`}
+        onClick={() => onChange({ filter: 'read', source: null, tag: null })}
+      >
+        Read
+      </button>
       {sources.map((source) => (
         <button
           key={`source:${source}`}

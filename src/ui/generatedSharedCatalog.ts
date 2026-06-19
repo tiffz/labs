@@ -7559,6 +7559,47 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-jobs-labsblockingjobitemprogress-ts-blockingjobitemprogress",
+    "name": "BlockingJobItemProgress",
+    "path": "src/shared/jobs/labsBlockingJobItemProgress.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-jobs-labsblockingjobitemprogress-ts-formatblockingjobitemprogresscaption",
+    "name": "formatBlockingJobItemProgressCaption",
+    "path": "src/shared/jobs/labsBlockingJobItemProgress.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Human-readable counts for snackbar caption under the progress bar.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-jobs-labsblockingjobitemprogress-ts-reportblockingjobitemprogress",
+    "name": "reportBlockingJobItemProgress",
+    "path": "src/shared/jobs/labsBlockingJobItemProgress.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Update blocking-job label + determinate bar for counted work (imports, uploads, batches).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-jobs-labsblockingjobprogressbar-tsx-labsblockingjobprogressbar",
     "name": "LabsBlockingJobProgressBar",
     "path": "src/shared/jobs/LabsBlockingJobProgressBar.tsx",
@@ -16975,6 +17016,107 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Create a synchronous stand-in for a `React.lazy`-loaded component. Use this to neutralize the dynamic-import tax in unit tests where the lazy-load behavior is not under test. ```ts import { synchronousLazyStub } from '../../shared/test/mocks/lazy'; vi.mock('./BeatChart', () => ({ default: synchronousLazyStub<{}>('BeatChart'), })); ``` The returned component renders a minimal DOM node so presence assertions still work. Pass a custom renderer when the surrounding test needs to observe specific markup from the lazy subtree. This helper is intentionally tiny; it exists to make the pattern discoverable and uniform across apps. Long-form migration for story/App.test.tsx, piano/ImportModal.test.tsx, drums/App.test.tsx, and zines/App.test.tsx is tracked in Phase 1 of the codebase-health plan.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-muscleorbitperfcore-ts-formatmuscleorbitperfmessage",
+    "name": "formatMuscleOrbitPerfMessage",
+    "path": "src/shared/test/muscleOrbitPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "~60fps with one missed frame + CI software-WebGL slack.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-muscleorbitperfcore-ts-muscleorbitperfsample",
+    "name": "MuscleOrbitPerfSample",
+    "path": "src/shared/test/muscleOrbitPerfCore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "~60fps with one missed frame + CI software-WebGL slack.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-muscleorbitperfcore-ts-orbit-max-frame-ms",
+    "name": "ORBIT_MAX_FRAME_MS",
+    "path": "src/shared/test/muscleOrbitPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "~60fps with one missed frame + CI software-WebGL slack.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-muscleorbitperfcore-ts-orbit-max-long-tasks",
+    "name": "ORBIT_MAX_LONG_TASKS",
+    "path": "src/shared/test/muscleOrbitPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Long tasks (>50ms) during a short orbit burst should stay rare (parallel CI may inflate).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-muscleorbitperfcore-ts-orbit-max-spike-ms",
+    "name": "ORBIT_MAX_SPIKE_MS",
+    "path": "src/shared/test/muscleOrbitPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Single-frame hitch during parallel CI or shader warm-up — not sustained judder.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-muscleorbitperfcore-ts-orbit-min-frame-samples",
+    "name": "ORBIT_MIN_FRAME_SAMPLES",
+    "path": "src/shared/test/muscleOrbitPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "~60fps with one missed frame + CI software-WebGL slack.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-muscleorbitperfcore-ts-summarizemuscleorbitframes",
+    "name": "summarizeMuscleOrbitFrames",
+    "path": "src/shared/test/muscleOrbitPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "~60fps with one missed frame + CI software-WebGL slack.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

@@ -177,8 +177,9 @@ See [`src/encore/ARCHITECTURE.md`](../src/encore/ARCHITECTURE.md) § Sync state 
 1. **One sticky snackbar** per app shell — do not add a second full-width progress bar in tab content for the same job.
 2. **Do not dim the whole page** for background work — disable only the control that was pressed (or block conflicting actions, e.g. uploads).
 3. **Update the snackbar label** as phases change (`startBlockingJob` → `updateLabel` / `updateProgress`).
-4. **Dialogs** may show a short status line; **progress bar lives in the snackbar**, not duplicated in the dialog body.
-5. **Completion toasts** — optional success/error banner at top (`GestureStatusBanner`, Encore snackbar) after the blocking job ends; the blocking snackbar clears in `finally`.
+4. **Counted work** (imports, uploads, merges) — use `reportBlockingJobItemProgress` from [`labsBlockingJobItemProgress.ts`](../src/shared/jobs/labsBlockingJobItemProgress.ts) so the label reads `Importing 3 of 50…` and the shared snackbar shows **complete · remaining** under the bar. Do not leave a static total-only label while items stream in.
+5. **Dialogs** may show a short status line; **progress bar lives in the snackbar**, not duplicated in the dialog body.
+6. **Completion toasts** — optional success/error banner at top (`GestureStatusBanner`, Encore snackbar) after the blocking job ends; the blocking snackbar clears in `finally`.
 
 ### Adopting in a new app (do not fork)
 

@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ensureZineboxGoogleDriveAccess } from '../drive/zineboxGoogleDriveAccess';
 import { LabsGoogleInteractiveAuthRequiredError } from '../../shared/google/labsGoogleDriveAccess';
 import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
+import { reportBlockingJobItemProgress } from '../../shared/jobs/labsBlockingJobItemProgress';
 import { importScannedDriveFolderPdfs } from '../drive/importDriveFolderPdfs';
 import { formatZineboxDriveImportError } from '../drive/zineboxDriveImportErrors';
 import type { DriveFolderScanResult } from '../drive/scanDriveFolderForImport';
@@ -147,13 +148,16 @@ export default function DriveFolderImportDialog({
     const job = startBlockingJob(`Importing from ${folderName}…`);
     try {
       const result = await importScannedDriveFolderPdfs(token, scan, metadata, (message) => {
-        job.updateLabel(message);
         const match = message.match(/(\d+) of (\d+)/);
         if (match) {
-          const current = Number.parseInt(match[1] ?? '0', 10);
-          const total = Number.parseInt(match[2] ?? '1', 10);
-          if (total > 0) job.updateProgress(current / total);
+          reportBlockingJobItemProgress(job, {
+            current: Number.parseInt(match[1] ?? '0', 10),
+            total: Number.parseInt(match[2] ?? '1', 10),
+            detail: message.split('…').slice(1).join('…').trim() || undefined,
+          });
+          return;
         }
+        job.updateLabel(message);
       });
       if (result.imported === 0 && newCount > 0) {
         onError(formatZineboxDriveImportError(new Error('No PDFs were downloaded.')));

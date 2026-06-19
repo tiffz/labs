@@ -9,6 +9,7 @@ import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
+import { reportBlockingJobItemProgress } from '../../shared/jobs/labsBlockingJobItemProgress';
 import { importLocalPdfFiles } from '../drive/importLocalPdfs';
 import type { LocalFilesScanResult } from '../drive/scanLocalFilesForImport';
 import { scanLocalFilesForImport } from '../drive/scanLocalFilesForImport';
@@ -103,7 +104,10 @@ export default function LocalBatchImportDialog({
 
     const job = startBlockingJob(`Importing ${newCount} PDF${newCount === 1 ? '' : 's'}…`);
     try {
-      const result = await importLocalPdfFiles(scan.files, metadata, { skipDedup: true });
+      const result = await importLocalPdfFiles(scan.files, metadata, {
+        skipDedup: true,
+        onProgress: (progress) => reportBlockingJobItemProgress(job, progress),
+      });
       const skippedNote =
         result.skipped > 0 ? ` Skipped ${result.skipped} already in your library.` : '';
       onComplete(`Added ${result.imported} PDF${result.imported === 1 ? '' : 's'}.${skippedNote}`);

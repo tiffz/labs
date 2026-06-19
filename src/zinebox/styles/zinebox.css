@@ -490,8 +490,21 @@
   line-height: 1;
 }
 
-.zinebox-reader__mode-toggle .zinebox-reader__mode-btn .material-icons {
-  font-size: 20px;
+.zinebox-reader__mode-icon {
+  font-size: 22px;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+.zinebox-reader__mode-icon--selected {
+  font-variation-settings:
+    'FILL' 1,
+    'wght' 500,
+    'GRAD' 0,
+    'opsz' 24;
 }
 
 .zinebox-reader__mode-toggle .zinebox-reader__mode-btn:hover {
@@ -528,8 +541,13 @@
   background: #f8f7f5 !important;
 }
 
-.zinebox-reader__spread-offset-btn .material-icons {
-  font-size: 20px;
+.zinebox-reader__spread-offset-btn .material-symbols-outlined {
+  font-size: 22px;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
 }
 
 .zinebox-reader__nav-layer {
@@ -573,9 +591,9 @@
 }
 
 .zinebox-reader__canvas {
-  max-width: 100%;
-  max-height: 100%;
+  flex: 0 1 auto;
   background: #fff;
+  image-rendering: auto;
 }
 
 .zinebox-reader__canvas--empty {

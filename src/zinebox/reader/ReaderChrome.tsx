@@ -4,7 +4,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 
 import AppTooltip from '../../shared/components/AppTooltip';
 import type { ZineboxReaderMode, ZineboxSpreadOffset } from '../types';
-import { readerModeLabel } from './pdfRender';
+import { formatReaderPageCount, readerModeLabel, spreadNavigationState } from './pdfRender';
 
 const READER_MODES: readonly ZineboxReaderMode[] = ['single', 'spread', 'scroll'];
 
@@ -13,7 +13,7 @@ function readerModeIcon(mode: ZineboxReaderMode): string {
     case 'single':
       return 'crop_portrait';
     case 'spread':
-      return 'view_column';
+      return 'book_2';
     case 'scroll':
       return 'view_stream';
     default:
@@ -50,7 +50,7 @@ export default function ReaderChrome({
         className="zinebox-reader__back"
         size="small"
       >
-        <span className="material-icons" aria-hidden>
+        <span className="material-symbols-outlined" aria-hidden>
           arrow_back
         </span>
       </IconButton>
@@ -59,7 +59,7 @@ export default function ReaderChrome({
         <span className="zinebox-reader__title">{title}</span>
         {totalPages > 0 ? (
           <span className="zinebox-reader__page-count" aria-live="polite">
-            {mode === 'scroll' ? `${totalPages} pages` : `${currentPage} / ${totalPages}`}
+            {formatReaderPageCount(mode, currentPage, totalPages, spreadOffset)}
           </span>
         ) : null}
       </div>
@@ -75,18 +75,25 @@ export default function ReaderChrome({
           aria-label="Reading mode"
           className="zinebox-reader__mode-toggle"
         >
-          {READER_MODES.map((readerMode) => (
-            <ToggleButton
-              key={readerMode}
-              value={readerMode}
-              aria-label={readerModeLabel(readerMode)}
-              className="zinebox-reader__mode-btn"
-            >
-              <span className="material-icons" aria-hidden>
-                {readerModeIcon(readerMode)}
-              </span>
-            </ToggleButton>
-          ))}
+          {READER_MODES.map((readerMode) => {
+            const selected = mode === readerMode;
+            return (
+              <AppTooltip key={readerMode} title={readerModeLabel(readerMode)}>
+                <ToggleButton
+                  value={readerMode}
+                  aria-label={readerModeLabel(readerMode)}
+                  className={`zinebox-reader__mode-btn${selected ? ' zinebox-reader__mode-btn--selected' : ''}`}
+                >
+                  <span
+                    className={`material-symbols-outlined zinebox-reader__mode-icon${selected ? ' zinebox-reader__mode-icon--selected' : ''}`}
+                    aria-hidden
+                  >
+                    {readerModeIcon(readerMode)}
+                  </span>
+                </ToggleButton>
+              </AppTooltip>
+            );
+          })}
         </ToggleButtonGroup>
 
         {mode === 'spread' ? (
@@ -102,8 +109,8 @@ export default function ReaderChrome({
                   : 'zinebox-reader__spread-offset-btn'
               }
             >
-              <span className="material-icons" aria-hidden>
-                filter_1
+              <span className="material-symbols-outlined zinebox-reader__mode-icon" aria-hidden>
+                looks_one
               </span>
             </IconButton>
           </AppTooltip>
@@ -115,6 +122,7 @@ export default function ReaderChrome({
 
 type ReaderNavButtonsProps = {
   mode: ZineboxReaderMode;
+  spreadOffset: ZineboxSpreadOffset;
   currentPage: number;
   totalPages: number;
   onPrev: () => void;
@@ -123,6 +131,7 @@ type ReaderNavButtonsProps = {
 
 export function ReaderNavButtons({
   mode,
+  spreadOffset,
   currentPage,
   totalPages,
   onPrev,
@@ -131,30 +140,32 @@ export function ReaderNavButtons({
   const canPage = mode !== 'scroll' && totalPages > 0;
   if (!canPage) return null;
 
-  const prevDisabled = currentPage <= 1;
-  const nextDisabled = currentPage >= totalPages;
+  const { canPrev, canNext } =
+    mode === 'spread'
+      ? spreadNavigationState(currentPage, totalPages, spreadOffset)
+      : { canPrev: currentPage > 1, canNext: currentPage < totalPages };
 
   return (
     <div className="zinebox-reader__nav-layer">
       <IconButton
         onClick={onPrev}
-        disabled={prevDisabled}
+        disabled={!canPrev}
         aria-label="Previous page"
         className="zinebox-reader__nav zinebox-reader__nav--prev"
         size="large"
       >
-        <span className="material-icons" aria-hidden>
+        <span className="material-symbols-outlined" aria-hidden>
           chevron_left
         </span>
       </IconButton>
       <IconButton
         onClick={onNext}
-        disabled={nextDisabled}
+        disabled={!canNext}
         aria-label="Next page"
         className="zinebox-reader__nav zinebox-reader__nav--next"
         size="large"
       >
-        <span className="material-icons" aria-hidden>
+        <span className="material-symbols-outlined" aria-hidden>
           chevron_right
         </span>
       </IconButton>

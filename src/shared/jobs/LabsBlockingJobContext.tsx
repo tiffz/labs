@@ -15,6 +15,7 @@ import {
 } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import LabsBlockingJobProgressBar from './LabsBlockingJobProgressBar';
+import { formatBlockingJobItemProgressCaption } from './labsBlockingJobItemProgress';
 import './labsBlockingJob.css';
 
 type BlockingJob = {
@@ -170,6 +171,7 @@ export function LabsBlockingJobProvider(props: LabsBlockingJobProviderProps): Re
   const showDeterminate =
     singleProgress != null && singleProgress >= 0 && singleProgress <= 1 && !Number.isNaN(singleProgress);
   const progressPercent = showDeterminate ? singleProgress * 100 : undefined;
+  const progressCaption = formatBlockingJobItemProgressCaption(displayLabel);
   const theme = useTheme();
   const panelShadow = [
     `0 0 0 1px ${alpha(theme.palette.common.black, 0.03)}`,
@@ -227,6 +229,22 @@ export function LabsBlockingJobProvider(props: LabsBlockingJobProviderProps): Re
               determinate={showDeterminate}
               value={progressPercent}
             />
+            {progressCaption ? (
+              <Typography
+                variant="caption"
+                component="p"
+                color="text.secondary"
+                sx={{
+                  m: 0,
+                  lineHeight: 1.45,
+                  fontSize: '0.8125rem',
+                  fontWeight: 500,
+                  letterSpacing: '0.005em',
+                }}
+              >
+                {progressCaption}
+              </Typography>
+            ) : null}
             {hideUnloadCaption ? null : (
               <Typography
                 variant="caption"

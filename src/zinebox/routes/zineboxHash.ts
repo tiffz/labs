@@ -1,11 +1,12 @@
 import type { ZineboxReaderMode, ZineboxSpreadOffset } from '../types';
+import type { ZineboxLibraryReadFilter } from '../utils/zineboxReadFilter';
 
 export type ZineboxRoute =
   | { kind: 'library' }
   | { kind: 'read'; comicId: string };
 
 export type ZineboxLibraryParams = {
-  filter: 'all' | 'unread';
+  filter: ZineboxLibraryReadFilter;
   source: string | null;
   tag: string | null;
 };
@@ -29,7 +30,8 @@ export function parseZineboxHash(hash: string): ZineboxRoute {
 export function parseLibraryParams(search: string): ZineboxLibraryParams {
   const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
   const filterRaw = params.get('filter');
-  const filter: ZineboxLibraryParams['filter'] = filterRaw === 'unread' ? 'unread' : 'all';
+  const filter: ZineboxLibraryParams['filter'] =
+    filterRaw === 'unread' ? 'unread' : filterRaw === 'read' ? 'read' : 'all';
   const source = params.get('source');
   const tag = params.get('tag');
   return {

@@ -6,16 +6,18 @@
  * segment ids come from {@link deriveSegments}.
  *
  * Semantics:
- *   - Manual scrubs (clicks on the track, marker drags, section jumps) are
- *     unaffected. The skip only applies to **forward playback** crossing into
- *     a skipped section.
+ *   - Manual scrubs (clicks on the track, marker drags, explicit section-button
+ *     clicks) land where the user chose, even inside a skipped section.
+ *   - Forward playback, loop wraps, and loop-start / loop-end jump buttons
+ *     resolve through playable anchors so the playhead never rests inside a
+ *     skipped section when the transport is advancing or restarting.
  *   - {@link nextNonSkippedTimeForwardPlayback} returns the time the player
  *     should jump to, or `null` to leave playback alone. Inside a window
  *     `[windowStart, windowEnd]` (loop range or full track), it advances past
  *     any contiguous run of skipped sections that contains `currentTime`.
- *   - If the run extends to or past `windowEnd`, the function returns
- *     `windowStart` (loop modes restart the loop) or `null` (play-through has
- *     nothing left to play; the caller should pause).
+ *   - If the run extends to or past `windowEnd`, the function returns the
+ *     first playable time at `windowStart` (loop modes restart the loop) or
+ *     `null` (play-through has nothing left to play; the caller should pause).
  */
 import type { DerivedSegment } from './segments';
 import { STANZA_TIME_EPS } from './segments';
@@ -25,6 +27,65 @@ export type SkippedSegmentSet = Record<string, true> | undefined;
 export function isSegmentSkipped(seg: DerivedSegment, skipped: SkippedSegmentSet): boolean {
   if (!skipped) return false;
   return skipped[seg.id] === true;
+}
+
+/**
+ * First time in `[windowStart, windowEnd)` that is not inside a skipped section.
+ * Falls back to `windowStart` when every overlapping section is skipped.
+ */
+export function firstPlayableTimeInWindow(
+  segments: DerivedSegment[],
+  skipped: SkippedSegmentSet,
+  windowStart: number,
+  windowEnd: number,
+): number {
+  if (segments.length === 0 || !skipped) return windowStart;
+
+  for (const seg of segments) {
+    if (seg.end <= windowStart + STANZA_TIME_EPS) continue;
+    if (seg.start >= windowEnd - STANZA_TIME_EPS) break;
+    if (!isSegmentSkipped(seg, skipped)) {
+      return Math.max(windowStart, seg.start);
+    }
+  }
+  return windowStart;
+}
+
+/**
+ * Last playable instant before `windowEnd` — end of the last non-skipped section
+ * in the window, minus epsilon so loop-wrap checks still fire correctly.
+ */
+export function lastPlayableTimeInWindow(
+  segments: DerivedSegment[],
+  skipped: SkippedSegmentSet,
+  windowStart: number,
+  windowEnd: number,
+): number {
+  const fallback = Math.max(windowStart, windowEnd - STANZA_TIME_EPS);
+  if (segments.length === 0 || !skipped) return fallback;
+
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const seg = segments[i]!;
+    if (seg.end <= windowStart + STANZA_TIME_EPS) break;
+    if (seg.start >= windowEnd - STANZA_TIME_EPS) continue;
+    if (!isSegmentSkipped(seg, skipped)) {
+      const end = Math.min(seg.end, windowEnd);
+      return Math.max(windowStart, end - STANZA_TIME_EPS);
+    }
+  }
+  return fallback;
+}
+
+export function resolvePlayableWindowAnchors(
+  segments: DerivedSegment[],
+  skipped: SkippedSegmentSet,
+  windowStart: number,
+  windowEnd: number,
+): { start: number; end: number } {
+  return {
+    start: firstPlayableTimeInWindow(segments, skipped, windowStart, windowEnd),
+    end: lastPlayableTimeInWindow(segments, skipped, windowStart, windowEnd),
+  };
 }
 
 /**
@@ -90,9 +151,13 @@ export function nextNonSkippedTimeForwardPlayback(opts: NextNonSkippedTimeOpts):
     if (!isSegmentSkipped(seg, skipped)) {
       // Land at the start of the first non-skipped section, clamped to window.
       const target = Math.max(windowStart, seg.start);
-      return target < windowEnd - STANZA_TIME_EPS ? target : loop ? windowStart : null;
+      return target < windowEnd - STANZA_TIME_EPS
+        ? target
+        : loop
+          ? firstPlayableTimeInWindow(segments, skipped, windowStart, windowEnd)
+          : null;
     }
   }
   // Ran past the end of segments / the window.
-  return loop ? windowStart : null;
+  return loop ? firstPlayableTimeInWindow(segments, skipped, windowStart, windowEnd) : null;
 }

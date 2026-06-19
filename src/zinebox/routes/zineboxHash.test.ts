@@ -34,11 +34,19 @@ describe('zineboxHash', () => {
       source: null,
       tag: null,
     });
+    expect(parseLibraryParams('?filter=read')).toEqual({
+      filter: 'read',
+      source: null,
+      tag: null,
+    });
   });
 
   it('serializes library href', () => {
     expect(zineboxLibraryHref({ filter: 'unread', source: 'Itch.io', tag: null })).toBe(
       '#/library?filter=unread&source=Itch.io',
+    );
+    expect(zineboxLibraryHref({ filter: 'read', source: null, tag: null })).toBe(
+      '#/library?filter=read',
     );
     expect(zineboxLibraryHref({ filter: 'all', source: null, tag: '2024' })).toBe(
       '#/library?tag=2024',

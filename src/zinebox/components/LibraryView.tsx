@@ -17,6 +17,7 @@ import StackDetailDialog from './StackDetailDialog';
 import ZineboxAppHeader from './ZineboxAppHeader';
 import type { ZineboxLibraryParams } from '../routes/zineboxHash';
 import { collectAllZineboxTags, comicMatchesTagFilter } from '../utils/zineboxTags';
+import { comicMatchesReadFilter } from '../utils/zineboxReadFilter';
 import { pickRandomUnreadComic } from '../utils/pickRandomUnreadComic';
 
 type LibraryViewProps = {
@@ -109,7 +110,7 @@ export default function LibraryView({
 
   const filteredComics = useMemo(() => {
     return comics.filter((comic) => {
-      if (libraryParams.filter === 'unread' && comic.readStatus !== 'unread') return false;
+      if (!comicMatchesReadFilter(comic, libraryParams.filter)) return false;
       if (libraryParams.source && comic.source !== libraryParams.source) return false;
       if (libraryParams.tag && !comicMatchesTagFilter(comic, libraryParams.tag)) return false;
       return true;

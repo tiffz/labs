@@ -96,7 +96,7 @@ import {
 import { snapSegmentBoundaryMarkersToBeats, commitSelectionSpanToHullBoundaryMarkers } from '../utils/stanzaBeatGrid';
 import { canPlaceMarkerAtTime, markerTimesEqual } from '../utils/stanzaMarkerSpacing';
 import type { StanzaMarkersChangeContext } from './StanzaTimeline';
-import { isSegmentSkipped, nextNonSkippedTimeForwardPlayback } from '../utils/stanzaSkippedSections';
+import { isSegmentSkipped, nextNonSkippedTimeForwardPlayback, resolvePlayableWindowAnchors } from '../utils/stanzaSkippedSections';
 import { useStanzaLocalPlaybackObjectUrls } from '../hooks/useStanzaLocalPlaybackObjectUrls';
 import {
   stanzaPrimaryLocalBlobKey,
@@ -1876,11 +1876,15 @@ export default function StanzaWorkspace() {
     const d = durationRef.current;
     const mode = loopModeRef.current;
     const span = effectiveSelectionSpanRef.current;
+    const segs = segmentsRef.current;
+    const skipped = skippedBySegmentIdRef.current;
     if (mode === 'loopAll' && d > 0) {
-      if (t < 0 || isPastLoopWrapPoint(t, d)) seekUnified(0, { flushPlaybackState: true });
+      const { start } = resolvePlayableWindowAnchors(segs, skipped, 0, d);
+      if (t < 0 || isPastLoopWrapPoint(t, d)) seekUnified(start, { flushPlaybackState: true });
     } else if (mode === 'loopSelection' && span) {
-      if (t < span.start - 0.05 || isPastLoopWrapPoint(t, span.end)) {
-        seekUnified(span.start, { flushPlaybackState: true });
+      const { start } = resolvePlayableWindowAnchors(segs, skipped, span.start, span.end);
+      if (t < start - 0.05 || isPastLoopWrapPoint(t, span.end)) {
+        seekUnified(start, { flushPlaybackState: true });
       }
     }
     if (isYoutube) {
@@ -1952,16 +1956,22 @@ export default function StanzaWorkspace() {
 
   const handleLoopAtMediaEnd = useCallback(() => {
     const mode = loopModeRef.current;
+    const segs = segmentsRef.current;
+    const skipped = skippedBySegmentIdRef.current;
     if (mode === 'through') return;
     if (mode === 'loopAll') {
-      seekUnified(0, { flushPlaybackState: true });
+      const d = durationRef.current;
+      if (!(d > 0)) return;
+      const { start } = resolvePlayableWindowAnchors(segs, skipped, 0, d);
+      seekUnified(start, { flushPlaybackState: true });
       resumeLoopTransportAfterWrap();
       return;
     }
     if (mode === 'loopSelection') {
       const span = effectiveSelectionSpanRef.current;
       if (span != null && span.end - span.start >= STANZA_MIN_LOOP_SPAN_SEC) {
-        seekUnified(span.start, { flushPlaybackState: true });
+        const { start } = resolvePlayableWindowAnchors(segs, skipped, span.start, span.end);
+        seekUnified(start, { flushPlaybackState: true });
         resumeLoopTransportAfterWrap();
       }
     }
@@ -2106,14 +2116,16 @@ export default function StanzaWorkspace() {
       // 2. Loop-bound enforcement (sub-frame tolerance avoids audibly clipping tails).
       try {
         if (loopMode === 'loopAll' && d > 0 && isPastLoopWrapPoint(tLive, d)) {
-          seekUnifiedRef.current(0, { flushPlaybackState: true });
+          const { start } = resolvePlayableWindowAnchors(segs, skipped, 0, d);
+          seekUnifiedRef.current(start, { flushPlaybackState: true });
           requestAnimationFrame(() => playUnifiedRef.current());
         } else if (loopMode === 'loopSelection' && span) {
+          const { start } = resolvePlayableWindowAnchors(segs, skipped, span.start, span.end);
           if (isPastLoopWrapPoint(tLive, span.end)) {
-            seekUnifiedRef.current(span.start, { flushPlaybackState: true });
+            seekUnifiedRef.current(start, { flushPlaybackState: true });
             requestAnimationFrame(() => playUnifiedRef.current());
-          } else if (tLive < span.start - STANZA_LOOP_WRAP_TOLERANCE_SEC) {
-            seekUnifiedRef.current(span.start, { flushPlaybackState: true });
+          } else if (tLive < start - STANZA_LOOP_WRAP_TOLERANCE_SEC) {
+            seekUnifiedRef.current(start, { flushPlaybackState: true });
           }
         }
       } catch (err) {
@@ -2507,19 +2519,40 @@ export default function StanzaWorkspace() {
   );
 
   const skipToLoopStart = useCallback(() => {
-    if (loopMode === 'through' || loopMode === 'loopAll') userSeekUnified(0);
-    else if (effectiveSelectionSpan) userSeekUnified(effectiveSelectionSpan.start);
-  }, [effectiveSelectionSpan, loopMode, userSeekUnified]);
+    const d = durationRef.current;
+    const skipped = selected?.skippedBySegmentId;
+    if (loopMode === 'through' || loopMode === 'loopAll') {
+      const windowEnd = d > 0 ? d : 0;
+      const { start } = resolvePlayableWindowAnchors(segments, skipped, 0, windowEnd);
+      userSeekUnified(start);
+    } else if (effectiveSelectionSpan) {
+      const { start } = resolvePlayableWindowAnchors(
+        segments,
+        skipped,
+        effectiveSelectionSpan.start,
+        effectiveSelectionSpan.end,
+      );
+      userSeekUnified(start);
+    }
+  }, [effectiveSelectionSpan, loopMode, segments, selected?.skippedBySegmentId, userSeekUnified]);
 
   const skipToLoopEnd = useCallback(() => {
     const d = durationRef.current;
-    if (!(d > 0)) return;
+    const skipped = selected?.skippedBySegmentId;
+    if (!(d > 0) && loopMode !== 'loopSelection') return;
     if (loopMode === 'through' || loopMode === 'loopAll') {
-      userSeekUnified(Math.max(0, d - STANZA_TIME_EPS));
+      const { end } = resolvePlayableWindowAnchors(segments, skipped, 0, d);
+      userSeekUnified(end);
     } else if (effectiveSelectionSpan) {
-      userSeekUnified(Math.max(effectiveSelectionSpan.start, effectiveSelectionSpan.end - STANZA_TIME_EPS));
+      const { end } = resolvePlayableWindowAnchors(
+        segments,
+        skipped,
+        effectiveSelectionSpan.start,
+        effectiveSelectionSpan.end,
+      );
+      userSeekUnified(end);
     }
-  }, [effectiveSelectionSpan, loopMode, userSeekUnified]);
+  }, [effectiveSelectionSpan, loopMode, segments, selected?.skippedBySegmentId, userSeekUnified]);
 
   const metronomeEnabledForPlayback =
     Boolean(selected?.metronomeEnabled) || stanzaBeatAnalysisModalOpen || stanzaTapMetronomePreviewActive;

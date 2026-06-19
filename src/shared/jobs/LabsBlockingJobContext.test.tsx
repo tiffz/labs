@@ -6,7 +6,9 @@ import {
   useLabsBlockingJobs,
   useLabsBlockingJobsVisible,
   type LabsBlockingJobsApi,
+  type LabsBlockingJobHandle,
 } from './LabsBlockingJobContext';
+import { reportBlockingJobItemProgress } from './labsBlockingJobItemProgress';
 
 function CaptureApi(props: { onApi: (api: LabsBlockingJobsApi) => void }) {
   const api = useLabsBlockingJobs();
@@ -129,6 +131,22 @@ describe('LabsBlockingJobProvider', () => {
       resolveFn();
     });
     await waitFor(() => expect(screen.queryByRole('progressbar')).toBeNull());
+  });
+
+  it('shows complete and remaining counts when the label includes item progress', async () => {
+    const { api } = renderProvider();
+    let handle!: LabsBlockingJobHandle;
+    await act(async () => {
+      handle = api.startBlockingJob('Importing 50 PDFs…');
+      reportBlockingJobItemProgress(handle, { current: 12, total: 50, detail: 'zine.pdf' });
+      await Promise.resolve();
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('Importing 12 of 50… zine.pdf');
+    expect(screen.getByText('12 of 50 complete · 38 remaining')).toBeInTheDocument();
+    await act(async () => {
+      handle.end();
+    });
+    await waitFor(() => expect(screen.queryByRole('status')).toBeNull());
   });
 
   it('labsBlockingJobsActive reflects in-flight jobs', async () => {

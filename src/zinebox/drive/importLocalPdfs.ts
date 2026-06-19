@@ -1,3 +1,4 @@
+import type { BlockingJobItemProgress } from '../../shared/jobs/labsBlockingJobItemProgress';
 import { zineboxDb } from '../db/zineboxDb';
 import { notifyZineboxLocalChange } from '../db/zineboxChangeBus';
 import { loadPdfJs } from '../reader/pdfRender';
@@ -52,7 +53,7 @@ export type ImportLocalPdfResult = {
 export async function importLocalPdfFiles(
   files: readonly File[],
   metadata: ZineboxImportBatchMetadata = DEFAULT_ZINEBOX_IMPORT_METADATA,
-  options?: { skipDedup?: boolean },
+  options?: { skipDedup?: boolean; onProgress?: (progress: BlockingJobItemProgress) => void },
 ): Promise<ImportLocalPdfResult> {
   let toImport = files.filter((f) => f.name.toLowerCase().endsWith('.pdf'));
   let skipped = 0;
@@ -64,15 +65,25 @@ export async function importLocalPdfFiles(
     skipped = deduped.skippedLibrary + deduped.skippedBatch;
   }
 
-  const tags = normalizeZineboxTags(metadata.tags);
-  const batchSource = metadata.source.trim() || 'Local';
-  let imported = 0;
-
+  const pending: File[] = [];
   for (const file of toImport) {
     if (options?.skipDedup && isLocalPdfAlreadyImported(file, index)) {
       skipped += 1;
       continue;
     }
+    pending.push(file);
+  }
+
+  const tags = normalizeZineboxTags(metadata.tags);
+  const batchSource = metadata.source.trim() || 'Local';
+  let imported = 0;
+
+  for (const [fileIndex, file] of pending.entries()) {
+    options?.onProgress?.({
+      current: fileIndex + 1,
+      total: pending.length,
+      detail: file.name,
+    });
     const id = `comic-${crypto.randomUUID()}`;
     const coverThumbnailBase64 = await extractPdfCoverThumbnail(file);
     const comic: ZineboxComic = {

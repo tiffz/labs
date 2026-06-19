@@ -50,6 +50,8 @@ Card grid:  per-card thumbnail + name + select — no per-card upload bar unless
 
 Encore/Gesture upload sessions: one `GestureStatusBanner` or tab-level progress; cards show **state icon** only (spinner/check), not full duplicate bars.
 
+**Progress bars with known totals:** always report **current and total** (`3 of 50`) via `reportBlockingJobItemProgress` — the shared blocking-job snackbar derives a **complete · remaining** caption automatically. Indeterminate bars are only for work with unknown totals.
+
 ## Visual weight budget
 
 Per screen, default caps (unless design doc says otherwise):

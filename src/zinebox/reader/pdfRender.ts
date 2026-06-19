@@ -31,24 +31,82 @@ export async function loadPdfDocument(source: string | Uint8Array): Promise<impo
   return doc;
 }
 
+export type PageRenderFit = 'width' | 'height' | 'contain';
+
+export type PageRenderOptions = {
+  fit: PageRenderFit;
+  containerWidth: number;
+  containerHeight: number;
+  pixelRatio?: number;
+};
+
+export type PageRenderLayout = {
+  displayWidth: number;
+  displayHeight: number;
+};
+
+/** Cap DPR for memory; 2× is crisp on most displays. */
+export function readerPixelRatio(): number {
+  if (typeof window === 'undefined') return 1;
+  return Math.min(window.devicePixelRatio || 1, 2);
+}
+
+function fitScale(
+  fit: PageRenderFit,
+  pageWidth: number,
+  pageHeight: number,
+  containerWidth: number,
+  containerHeight: number,
+): number {
+  const scaleW = containerWidth / pageWidth;
+  const scaleH = containerHeight / pageHeight;
+  switch (fit) {
+    case 'width':
+      return scaleW;
+    case 'height':
+      return scaleH;
+    case 'contain':
+    default:
+      return Math.min(scaleW, scaleH);
+  }
+}
+
 export async function renderPdfPageToCanvas(
   doc: import('pdfjs-dist').PDFDocumentProxy,
   pageNumber: number,
   canvas: HTMLCanvasElement,
-  options: { fit: 'width' | 'height'; containerWidth: number; containerHeight: number },
-): Promise<void> {
+  options: PageRenderOptions,
+): Promise<PageRenderLayout> {
+  const pixelRatio = options.pixelRatio ?? readerPixelRatio();
   const page = await doc.getPage(pageNumber);
   const viewportAt1 = page.getViewport({ scale: 1 });
-  const scale =
-    options.fit === 'width'
-      ? options.containerWidth / viewportAt1.width
-      : options.containerHeight / viewportAt1.height;
-  const viewport = page.getViewport({ scale });
+  const displayScale = fitScale(
+    options.fit,
+    viewportAt1.width,
+    viewportAt1.height,
+    options.containerWidth,
+    options.containerHeight,
+  );
+  const renderScale = displayScale * pixelRatio;
+  const viewport = page.getViewport({ scale: renderScale });
   const context = canvas.getContext('2d');
-  if (!context) return;
+  if (!context) {
+    return {
+      displayWidth: viewportAt1.width * displayScale,
+      displayHeight: viewportAt1.height * displayScale,
+    };
+  }
+
+  const displayWidth = viewportAt1.width * displayScale;
+  const displayHeight = viewportAt1.height * displayScale;
+
   canvas.width = Math.floor(viewport.width);
   canvas.height = Math.floor(viewport.height);
+  canvas.style.width = `${displayWidth}px`;
+  canvas.style.height = `${displayHeight}px`;
+
   await page.render({ canvasContext: context, viewport }).promise;
+  return { displayWidth, displayHeight };
 }
 
 export function spreadPageNumbers(
@@ -95,4 +153,58 @@ export function readerModeLabel(mode: ZineboxReaderMode): string {
     default:
       return mode;
   }
+}
+
+export function formatReaderPageCount(
+  mode: ZineboxReaderMode,
+  currentPage: number,
+  totalPages: number,
+  spreadOffset: 0 | 1,
+): string {
+  if (totalPages <= 0) return '';
+  if (mode === 'scroll') return `${totalPages} pages`;
+  if (mode === 'spread') {
+    const pages = spreadPageNumbers(currentPage, totalPages, spreadOffset);
+    if (pages.length === 1) return `${pages[0]} / ${totalPages}`;
+    return `${pages[0]}–${pages[pages.length - 1]} / ${totalPages}`;
+  }
+  return `${currentPage} / ${totalPages}`;
+}
+
+export function advanceSpreadPage(
+  currentPage: number,
+  direction: -1 | 1,
+  totalPages: number,
+  spreadOffset: 0 | 1,
+): number {
+  const visible = spreadPageNumbers(currentPage, totalPages, spreadOffset);
+  if (direction > 0) {
+    const last = visible[visible.length - 1] ?? currentPage;
+    return clampPage(last + 1, totalPages);
+  }
+  const first = visible[0] ?? currentPage;
+  return clampPage(first - 1, totalPages);
+}
+
+export function spreadNavigationState(
+  currentPage: number,
+  totalPages: number,
+  spreadOffset: 0 | 1,
+): { canPrev: boolean; canNext: boolean } {
+  const visible = spreadPageNumbers(currentPage, totalPages, spreadOffset);
+  return {
+    canPrev: (visible[0] ?? 1) > 1,
+    canNext: (visible[visible.length - 1] ?? totalPages) < totalPages,
+  };
+}
+
+export function readerProgressPage(
+  mode: ZineboxReaderMode,
+  currentPage: number,
+  totalPages: number,
+  spreadOffset: 0 | 1,
+): number {
+  if (mode !== 'spread') return currentPage;
+  const visible = spreadPageNumbers(currentPage, totalPages, spreadOffset);
+  return visible[visible.length - 1] ?? currentPage;
 }
