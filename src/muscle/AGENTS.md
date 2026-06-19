@@ -1,0 +1,30 @@
+# Muscle Memory — agent context
+
+Nested **`AGENTS.md`** for `src/muscle/`. Root policy: [`../../AGENTS.md`](../../AGENTS.md).
+
+## Start here
+
+1. [`README.md`](README.md) — modules, modes, assets.
+2. [`DESIGN.md`](DESIGN.md) — Vibrant Academic tokens and 3D states.
+3. [`COPY_STYLE.md`](COPY_STYLE.md) — reps/warmup vocabulary.
+4. [`CUJs.md`](CUJs.md) — orbit perf budgets + verification map.
+5. Asset pipeline: [`tools/muscle-anatomy/README.md`](../../tools/muscle-anatomy/README.md).
+6. Canvas perf rule: [`.cursor/rules/muscle-canvas-perf.mdc`](../../.cursor/rules/muscle-canvas-perf.mdc).
+
+## Pitfalls
+
+- **Layer peel:** `layerDepthView.ts` — slider 0 (all) → 2 (bones/deep only); sidebar **Structure browser** lists nodes by layer.
+- **Z-Anatomy bridge:** `curriculum/zAnatomyBridge.ts` + CSV in `tools/muscle-anatomy/`; curriculum API at `curriculum/index.ts`.
+- **Gatekeeper:** Active Reps disabled until Fundamentals baseline; do not bypass in UI.
+- **Facts vs judgment:** Dexie stores progress; pure functions in `src/muscle/srs/`.
+- **Z-Anatomy license:** CC BY-SA 4.0 — keep [`ATTRIBUTION.md`](ATTRIBUTION.md) updated.
+
+## Tests
+
+- Unit: `npx vitest run src/muscle`
+- Assets: `npm run muscle:validate-assets`
+- Perf guardrails: `canvasPerfGuardrails.test.ts`, `muscleAssetPerfBudget.test.ts`
+- Smoke: `muscle-shell.spec.ts`, `muscle-orbit-perf.spec.ts`, `muscle-study-journey.spec.ts`
+- Dev e2e seed: `?e2eSeed=1` (see `src/muscle/e2e/muscleE2eSeed.ts`)
+- Dev FPS overlay: `/muscle/?perf=1`
+- Manual QA checklist: `docs/MUSCLE_QA.md`

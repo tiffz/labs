@@ -24,6 +24,7 @@ const APP_DIRS = new Set([
   'sight',
   'gesture',
   'zinebox',
+  'muscle',
 ]);
 
 function collectTsFiles(dir: string, out: string[]): void {

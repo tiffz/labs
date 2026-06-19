@@ -125,8 +125,10 @@
     "syllable": "^5.0.1",
     "three": "^0.182.0",
     "three-bvh-csg": "^0.0.17",
+    "three-mesh-bvh": "^0.9.10",
     "vexflow": "^5.0.0",
-    "webmscore": "^1.2.1"
+    "webmscore": "^1.2.1",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",

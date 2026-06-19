@@ -22,7 +22,8 @@ export type AppThemeId =
   | 'stanza'
   | 'sight'
   | 'gesture'
-  | 'zinebox';
+  | 'zinebox'
+  | 'muscle';
 
 interface AppThemeConfig {
   mode: 'light' | 'dark';
@@ -479,6 +480,20 @@ const THEMES: Record<AppThemeId, Theme> = {
     divider: 'rgba(72, 68, 64, 0.1)',
     radius: 6,
     spacingBase: 4,
+  }),
+  muscle: buildTheme({
+    mode: 'light',
+    fontFamily: "'Roboto', system-ui, sans-serif",
+    primary: '#2563eb',
+    secondary: '#d4a017',
+    backgroundDefault: '#f5f0e8',
+    backgroundPaper: '#fffef9',
+    textPrimary: '#1a2744',
+    textSecondary: '#5c6478',
+    divider: 'rgba(26, 39, 68, 0.14)',
+    radius: 8,
+    spacingBase: 4,
+    readable: true,
   }),
   encore: createTheme(
     buildTheme({
