@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import manifest from '../../../public/muscle/models/manifest.json';
+import { muscleModelsManifest as manifest } from '../types/muscleModelsManifest';
 import { getNodesForRegion } from '../curriculum';
 import { curriculumIdsMissingFromManifest } from './muscleRegionCoverage';
 

@@ -36,6 +36,7 @@ Proposed durable fixes from session retrospectives **not yet implemented**. Land
 | P2       | `ux-spec-violation`    | Gesture Drive toast: hide overlap-only “merged overlapping progress” counts (match Zine Box merge report pattern)                                 | Done — `gestureMergeReportHasUserVisibleRemoteChanges`, merge tests             |
 | P2       | `test gap`             | `validate-agent-docs`: skip untracked `src/*/AGENTS.md` and `.mdc` so partial-app WIP does not block unrelated commits                            | Done — `scripts/validate-agent-docs.sh`                                         |
 | P2       | `test gap`             | Zine Box drive import smoke: target blocking-job progressbar, not cover read indicators                                                           | Done — `e2e/smoke/zinebox-drive-import.spec.ts`                                 |
+| P1       | `missing invariant`    | Muscle Memory: commit `public/muscle/models/` with `src/muscle/`; presubmit asset validation + guardrail test                                     | Done — `musclePublicAssetsGuardrails.test.ts`, `muscle:validate-assets`         |
 
 ## Completed (archive reference)
 

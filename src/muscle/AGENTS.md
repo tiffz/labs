@@ -13,6 +13,7 @@ Nested **`AGENTS.md`** for `src/muscle/`. Root policy: [`../../AGENTS.md`](../..
 
 ## Pitfalls
 
+- **Runtime assets:** Commit `public/muscle/models/` (manifest + GLBs) whenever `src/muscle/` ships — typecheck imports the manifest; CI fails if GLBs are missing locally only. Guardrail: `musclePublicAssetsGuardrails.test.ts`, `npm run muscle:validate-assets` (presubmit when app registered).
 - **Layer peel:** `layerDepthView.ts` — slider 0 (all) → 2 (bones/deep only); sidebar **Structure browser** lists nodes by layer.
 - **Z-Anatomy bridge:** `curriculum/zAnatomyBridge.ts` + CSV in `tools/muscle-anatomy/`; curriculum API at `curriculum/index.ts`.
 - **Gatekeeper:** Active Reps disabled until Fundamentals baseline; do not bypass in UI.

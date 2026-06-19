@@ -16,6 +16,7 @@
     "check:knip-config": "node scripts/validate-knip-ignore.mjs",
     "check:css-important": "sh scripts/check-css-important.sh",
     "check:workflows": "sh scripts/check-workflows.sh",
+    "muscle:validate-assets": "node scripts/validate-muscle-assets.mjs",
     "prelint": "npm run generate:shared-catalog && npm run generate:labs-catalog",
     "pretest": "npm run generate:shared-catalog && npm run generate:labs-catalog",
     "prebuild": "npm run generate:shared-catalog && npm run generate:labs-catalog",

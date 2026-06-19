@@ -1,0 +1,296 @@
+{
+  "version": 1,
+  "regions": {
+    "fundamentals": {
+      "region": "fundamentals",
+      "glbUrl": "/muscle/models/fundamentals.glb",
+      "meshes": [
+        {
+          "nodeId": "bone_skull",
+          "meshName": "bone_skull",
+          "triangleCount": 20728
+        },
+        {
+          "nodeId": "bone_sternum",
+          "meshName": "bone_sternum",
+          "triangleCount": 4454
+        },
+        {
+          "nodeId": "bone_pelvis",
+          "meshName": "bone_pelvis",
+          "triangleCount": 3517
+        },
+        {
+          "nodeId": "bone_humerus",
+          "meshName": "bone_humerus",
+          "triangleCount": 4280
+        },
+        {
+          "nodeId": "bone_radius",
+          "meshName": "bone_radius",
+          "triangleCount": 719
+        },
+        {
+          "nodeId": "bone_ulna",
+          "meshName": "bone_ulna",
+          "triangleCount": 875
+        },
+        {
+          "nodeId": "bone_femur",
+          "meshName": "bone_femur",
+          "triangleCount": 3774
+        },
+        {
+          "nodeId": "bone_tibia",
+          "meshName": "bone_tibia",
+          "triangleCount": 1595
+        },
+        {
+          "nodeId": "joint_shoulder",
+          "meshName": "joint_shoulder",
+          "triangleCount": 185
+        },
+        {
+          "nodeId": "joint_elbow",
+          "meshName": "joint_elbow",
+          "triangleCount": 388
+        }
+      ],
+      "procedural": false,
+      "source": "z-anatomy"
+    },
+    "torso": {
+      "region": "torso",
+      "glbUrl": "/muscle/models/torso.glb",
+      "meshes": [
+        {
+          "nodeId": "bone_ribcage",
+          "meshName": "bone_ribcage",
+          "triangleCount": 19327
+        },
+        {
+          "nodeId": "muscle_rectus_abdominis",
+          "meshName": "muscle_rectus_abdominis",
+          "triangleCount": 8242
+        },
+        {
+          "nodeId": "muscle_external_oblique",
+          "meshName": "muscle_external_oblique",
+          "triangleCount": 19432
+        },
+        {
+          "nodeId": "muscle_serratus_anterior",
+          "meshName": "muscle_serratus_anterior",
+          "triangleCount": 10096
+        },
+        {
+          "nodeId": "muscle_latissimus_dorsi",
+          "meshName": "muscle_latissimus_dorsi",
+          "triangleCount": 7700
+        },
+        {
+          "nodeId": "muscle_erector_spinae",
+          "meshName": "muscle_erector_spinae",
+          "triangleCount": 13038
+        },
+        {
+          "nodeId": "muscle_pectoralis_major",
+          "meshName": "muscle_pectoralis_major",
+          "triangleCount": 1697
+        }
+      ],
+      "procedural": false,
+      "source": "z-anatomy"
+    },
+    "shoulder_neck": {
+      "region": "shoulder_neck",
+      "glbUrl": "/muscle/models/shoulder_neck.glb",
+      "meshes": [
+        {
+          "nodeId": "bone_clavicle",
+          "meshName": "bone_clavicle",
+          "triangleCount": 1548
+        },
+        {
+          "nodeId": "bone_scapula",
+          "meshName": "bone_scapula",
+          "triangleCount": 5064
+        },
+        {
+          "nodeId": "muscle_deltoid_anterior",
+          "meshName": "muscle_deltoid_anterior",
+          "triangleCount": 5806
+        },
+        {
+          "nodeId": "muscle_deltoid_lateral",
+          "meshName": "muscle_deltoid_lateral",
+          "triangleCount": 5925
+        },
+        {
+          "nodeId": "muscle_deltoid_posterior",
+          "meshName": "muscle_deltoid_posterior",
+          "triangleCount": 8756
+        },
+        {
+          "nodeId": "muscle_trapezius_upper",
+          "meshName": "muscle_trapezius_upper",
+          "triangleCount": 9190
+        },
+        {
+          "nodeId": "muscle_sternocleidomastoid",
+          "meshName": "muscle_sternocleidomastoid",
+          "triangleCount": 9905
+        },
+        {
+          "nodeId": "joint_sternoclavicular",
+          "meshName": "joint_sternoclavicular",
+          "triangleCount": 14
+        }
+      ],
+      "procedural": false,
+      "source": "z-anatomy"
+    },
+    "arm": {
+      "region": "arm",
+      "glbUrl": "/muscle/models/arm.glb",
+      "meshes": [
+        {
+          "nodeId": "muscle_biceps_brachii",
+          "meshName": "muscle_biceps_brachii",
+          "triangleCount": 7902
+        },
+        {
+          "nodeId": "muscle_triceps_long_head",
+          "meshName": "muscle_triceps_long_head",
+          "triangleCount": 7258
+        },
+        {
+          "nodeId": "muscle_brachialis",
+          "meshName": "muscle_brachialis",
+          "triangleCount": 6954
+        },
+        {
+          "nodeId": "muscle_brachioradialis",
+          "meshName": "muscle_brachioradialis",
+          "triangleCount": 14623
+        },
+        {
+          "nodeId": "muscle_extensor_carpi_radialis",
+          "meshName": "muscle_extensor_carpi_radialis",
+          "triangleCount": 7414
+        },
+        {
+          "nodeId": "muscle_flexor_carpi_radialis",
+          "meshName": "muscle_flexor_carpi_radialis",
+          "triangleCount": 3334
+        }
+      ],
+      "procedural": false,
+      "source": "z-anatomy"
+    },
+    "hand": {
+      "region": "hand",
+      "glbUrl": "/muscle/models/hand.glb",
+      "meshes": [
+        {
+          "nodeId": "bone_metacarpals",
+          "meshName": "bone_metacarpals",
+          "triangleCount": 3290
+        },
+        {
+          "nodeId": "muscle_thenar_eminence",
+          "meshName": "muscle_thenar_eminence",
+          "triangleCount": 652
+        },
+        {
+          "nodeId": "muscle_hypothenar_eminence",
+          "meshName": "muscle_hypothenar_eminence",
+          "triangleCount": 405
+        },
+        {
+          "nodeId": "muscle_flexor_digitorum_superficialis",
+          "meshName": "muscle_flexor_digitorum_superficialis",
+          "triangleCount": 5118
+        },
+        {
+          "nodeId": "muscle_extensor_digitorum",
+          "meshName": "muscle_extensor_digitorum",
+          "triangleCount": 12820
+        }
+      ],
+      "procedural": false,
+      "source": "z-anatomy"
+    },
+    "leg": {
+      "region": "leg",
+      "glbUrl": "/muscle/models/leg.glb",
+      "meshes": [
+        {
+          "nodeId": "bone_patella",
+          "meshName": "bone_patella",
+          "triangleCount": 274
+        },
+        {
+          "nodeId": "muscle_quadriceps_rectus_femoris",
+          "meshName": "muscle_quadriceps_rectus_femoris",
+          "triangleCount": 16552
+        },
+        {
+          "nodeId": "muscle_vastus_lateralis",
+          "meshName": "muscle_vastus_lateralis",
+          "triangleCount": 18711
+        },
+        {
+          "nodeId": "muscle_hamstrings_biceps_femoris",
+          "meshName": "muscle_hamstrings_biceps_femoris",
+          "triangleCount": 14516
+        },
+        {
+          "nodeId": "muscle_gastrocnemius",
+          "meshName": "muscle_gastrocnemius",
+          "triangleCount": 12926
+        },
+        {
+          "nodeId": "muscle_tibialis_anterior",
+          "meshName": "muscle_tibialis_anterior",
+          "triangleCount": 7054
+        }
+      ],
+      "procedural": false,
+      "source": "z-anatomy"
+    },
+    "foot": {
+      "region": "foot",
+      "glbUrl": "/muscle/models/foot.glb",
+      "meshes": [
+        {
+          "nodeId": "bone_calcaneus",
+          "meshName": "bone_calcaneus",
+          "triangleCount": 1398
+        },
+        {
+          "nodeId": "bone_talus",
+          "meshName": "bone_talus",
+          "triangleCount": 1288
+        },
+        {
+          "nodeId": "muscle_abductor_hallucis",
+          "meshName": "muscle_abductor_hallucis",
+          "triangleCount": 3378
+        },
+        {
+          "nodeId": "muscle_extensor_digitorum_brevis",
+          "meshName": "muscle_extensor_digitorum_brevis",
+          "triangleCount": 6370
+        },
+        {
+          "nodeId": "muscle_peroneus_longus",
+          "meshName": "muscle_peroneus_longus",
+          "triangleCount": 11045
+        }
+      ],
+      "procedural": false,
+      "source": "z-anatomy"
+    }
+  }
+}

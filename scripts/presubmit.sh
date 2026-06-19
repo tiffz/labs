@@ -31,6 +31,11 @@ npm run check:knip-config
 echo "== presubmit: knip =="
 npm run knip
 
+if [ -f src/muscle/main.tsx ]; then
+  echo "== presubmit: muscle public assets =="
+  npm run muscle:validate-assets
+fi
+
 echo "== presubmit: typecheck =="
 npm run typecheck
 

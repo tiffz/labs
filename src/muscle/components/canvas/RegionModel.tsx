@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
-import manifest from '../../../../public/muscle/models/manifest.json';
+import { muscleModelsManifest as manifest } from '../../types/muscleModelsManifest';
 import { getNodeById, getNodesForRegion, resolveCurriculumNodeId } from '../../curriculum';
 import { getModuleById } from '../../curriculum/modules';
 import type { MuscleRegion } from '../../types/node';
@@ -85,7 +85,7 @@ interface RegionModelProps {
 
 export default function RegionModel({ region }: RegionModelProps) {
   const mod = getModuleById(region);
-  const entry = manifest.regions[region as keyof typeof manifest.regions];
+  const entry = manifest.regions[region];
   const meshCount = entry?.meshes?.length ?? 0;
   const useProceduralFallback = entry?.source !== 'z-anatomy' && entry?.procedural !== false;
 
