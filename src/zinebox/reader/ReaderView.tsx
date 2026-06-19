@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { zineboxDb } from '../db/zineboxDb';
 import { notifyZineboxLocalChange } from '../db/zineboxChangeBus';
+import { useElementClientSize } from '../hooks/useElementClientSize';
 import { useZineboxComic } from '../hooks/useZineboxComics';
 import type { ZineboxReaderMode, ZineboxSpreadOffset } from '../types';
 import ReaderChrome, { ReaderNavButtons } from './ReaderChrome';
@@ -70,7 +71,9 @@ export default function ReaderView({
   const singleCanvasRef = useRef<HTMLCanvasElement>(null);
   const spreadLeftRef = useRef<HTMLCanvasElement>(null);
   const spreadRightRef = useRef<HTMLCanvasElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { ref: pagedLayoutRef, size: pagedLayoutSize } = useElementClientSize<HTMLDivElement>();
+  const { ref: scrollLayoutRef, element: scrollLayoutElement, size: scrollLayoutSize } =
+    useElementClientSize<HTMLDivElement>();
   const docRef = useRef<Awaited<ReturnType<typeof loadPdfDocument>> | null>(null);
   const pageCacheRef = useRef(createReaderPageCache());
   /** Resume from saved progress once per open — not on every Dexie progress write while reading. */
@@ -144,6 +147,12 @@ export default function ReaderView({
     const doc = docRef.current;
     if (!doc || loading) return;
 
+    const viewportWidth =
+      mode === 'scroll' ? scrollLayoutSize.width : pagedLayoutSize.width;
+    const viewportHeight =
+      mode === 'scroll' ? scrollLayoutSize.height : pagedLayoutSize.height;
+    if (viewportWidth <= 0 || viewportHeight <= 0) return;
+
     let cancelled = false;
     const cache = pageCacheRef.current;
 
@@ -156,13 +165,7 @@ export default function ReaderView({
       if (mode === 'single') {
         const canvas = singleCanvasRef.current;
         if (!canvas) return;
-        const container = canvas.parentElement;
-        if (!container) return;
-        const options = buildPageRenderOptions(
-          'width',
-          container.clientWidth,
-          container.clientHeight,
-        );
+        const options = buildPageRenderOptions('contain', viewportWidth, viewportHeight);
         await displayReaderPage(doc, currentPage, canvas, options, cache);
         if (cancelled) return;
         prefetch(getReaderPrefetchPages(mode, currentPage, totalPages, spreadOffset), options);
@@ -173,10 +176,9 @@ export default function ReaderView({
         const pages = spreadPageNumbers(currentPage, totalPages, spreadOffset);
         const leftCanvas = spreadLeftRef.current;
         const rightCanvas = spreadRightRef.current;
-        const container = leftCanvas?.parentElement;
-        if (!leftCanvas || !container) return;
-        const halfWidth = Math.floor(container.clientWidth / 2) - 8;
-        const options = buildPageRenderOptions('contain', halfWidth, container.clientHeight);
+        if (!leftCanvas) return;
+        const halfWidth = Math.floor(viewportWidth / 2) - 8;
+        const options = buildPageRenderOptions('contain', halfWidth, viewportHeight);
         await displayReaderPage(doc, pages[0] ?? 1, leftCanvas, options, cache);
         if (cancelled) return;
         if (pages[1] && rightCanvas) {
@@ -187,11 +189,10 @@ export default function ReaderView({
         return;
       }
 
-      const scrollRoot = scrollContainerRef.current;
+      const scrollRoot = scrollLayoutElement;
       if (!scrollRoot) return;
       const canvases = scrollRoot.querySelectorAll('canvas');
-      const width = scrollRoot.clientWidth;
-      const options = buildPageRenderOptions('width', width, width * 1.4);
+      const options = buildPageRenderOptions('width', viewportWidth, viewportWidth * 1.4);
       for (let i = 0; i < canvases.length; i += 1) {
         const canvas = canvases[i];
         if (!(canvas instanceof HTMLCanvasElement)) continue;
@@ -203,7 +204,18 @@ export default function ReaderView({
     return () => {
       cancelled = true;
     };
-  }, [currentPage, loading, mode, spreadOffset, totalPages]);
+  }, [
+    currentPage,
+    loading,
+    mode,
+    pagedLayoutSize.height,
+    pagedLayoutSize.width,
+    scrollLayoutElement,
+    scrollLayoutSize.height,
+    scrollLayoutSize.width,
+    spreadOffset,
+    totalPages,
+  ]);
 
   if (!comicHydrated || loading) {
     return (
@@ -240,7 +252,7 @@ export default function ReaderView({
       />
 
       {mode === 'single' ? (
-        <div className="zinebox-reader__single">
+        <div ref={pagedLayoutRef} className="zinebox-reader__single">
           <canvas ref={singleCanvasRef} className="zinebox-reader__canvas" />
           <ReaderNavButtons
             mode={mode}
@@ -254,7 +266,7 @@ export default function ReaderView({
       ) : null}
 
       {mode === 'spread' ? (
-        <div className="zinebox-reader__spread">
+        <div ref={pagedLayoutRef} className="zinebox-reader__spread">
           <canvas ref={spreadLeftRef} className="zinebox-reader__canvas" />
           {spreadPages[1] ? (
             <canvas ref={spreadRightRef} className="zinebox-reader__canvas" />
@@ -273,7 +285,7 @@ export default function ReaderView({
       ) : null}
 
       {mode === 'scroll' ? (
-        <div className="zinebox-reader__scroll" ref={scrollContainerRef}>
+        <div className="zinebox-reader__scroll" ref={scrollLayoutRef}>
           {Array.from({ length: totalPages }, (_, index) => (
             <canvas key={index + 1} className="zinebox-reader__scroll-page" />
           ))}

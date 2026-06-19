@@ -115,10 +115,11 @@ Dev server, hard refresh, `?e2eSeed=1` or normal library.
 
 ### Performance budgets
 
-| Step                     | Metric                            | Budget                                         | Verification                    |
-| ------------------------ | --------------------------------- | ---------------------------------------------- | ------------------------------- |
-| First card strip visible | 2 thumbs loaded (manage)          | ≤ 10 s dev                                     | `gesture-preview-strip.spec.ts` |
-| Sustained scroll         | max frame ≤ 50 ms; ≤ 6 long tasks | `e2e/smoke/gesture-collections-scroll.spec.ts` |
+| Step                     | Metric                            | Budget                                              | Verification                    |
+| ------------------------ | --------------------------------- | --------------------------------------------------- | ------------------------------- |
+| First card strip visible | 2 thumbs loaded (manage)          | ≤ 10 s dev                                          | `gesture-preview-strip.spec.ts` |
+| Sustained scroll         | max frame ≤ 50 ms; ≤ 6 long tasks | `e2e/smoke/gesture-collections-scroll.spec.ts`      |
+| Cold load (Practice tab) | Only near-viewport strips fetch   | `previewFetchEnabled && near` in `PackPreviewStrip` |
 
 ### Automation
 

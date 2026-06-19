@@ -79,12 +79,24 @@ html:has(.labs-debug-dock) .gesture-app {
   min-height: 0;
 }
 
+html:has(.labs-debug-dock) .zinebox-app {
+  box-sizing: border-box;
+  height: calc(100vh - var(--labs-debug-dock-height, 0px));
+  max-height: calc(100vh - var(--labs-debug-dock-height, 0px));
+  min-height: 0;
+}
+
 @supports (height: 100dvh) {
   html:has(.labs-debug-dock) .sight-app,
   html:has(.labs-debug-dock) .scales-app,
   html:has(.labs-debug-dock) .piano-app,
   html:has(.labs-debug-dock) .melodia-app,
   html:has(.labs-debug-dock) .gesture-app {
+    height: calc(100dvh - var(--labs-debug-dock-height, 0px));
+    max-height: calc(100dvh - var(--labs-debug-dock-height, 0px));
+  }
+
+  html:has(.labs-debug-dock) .zinebox-app {
     height: calc(100dvh - var(--labs-debug-dock-height, 0px));
     max-height: calc(100dvh - var(--labs-debug-dock-height, 0px));
   }

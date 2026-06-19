@@ -291,6 +291,7 @@ export default function DriveFolderImportDialog({
           variant="contained"
           onClick={() => void handleImport()}
           disabled={interactionDisabled || !scan || scan.newCount === 0}
+          data-testid="zinebox-drive-import-confirm"
         >
           {importBusy ? 'Starting…' : `Import ${scan?.newCount ?? 0} PDF${scan?.newCount === 1 ? '' : 's'}`}
         </Button>

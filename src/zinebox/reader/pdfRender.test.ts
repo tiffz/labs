@@ -2,10 +2,27 @@ import { describe, expect, it } from 'vitest';
 
 import {
   advanceSpreadPage,
+  computePageFitScale,
   formatReaderPageCount,
   spreadNavigationState,
   spreadPageNumbers,
 } from './pdfRender';
+
+describe('computePageFitScale', () => {
+  it('contain fits tall pages within the viewport height', () => {
+    const pageWidth = 800;
+    const pageHeight = 2400;
+    const containerWidth = 400;
+    const containerHeight = 600;
+
+    const widthScale = computePageFitScale('width', pageWidth, pageHeight, containerWidth, containerHeight);
+    const containScale = computePageFitScale('contain', pageWidth, pageHeight, containerWidth, containerHeight);
+
+    expect(pageHeight * widthScale).toBeGreaterThan(containerHeight);
+    expect(pageHeight * containScale).toBeLessThanOrEqual(containerHeight);
+    expect(pageWidth * containScale).toBeLessThanOrEqual(containerWidth);
+  });
+});
 
 describe('spread reader chrome helpers', () => {
   it('shows a page range in spread mode', () => {

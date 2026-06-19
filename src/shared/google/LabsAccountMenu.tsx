@@ -48,6 +48,8 @@ export type LabsAccountBackupSlotProps = {
   /** Opens GIS sign-in from a user gesture; resumes Drive sync after auth. */
   onSignIn?: () => void;
   lastBackupExportedAt?: string;
+  /** Clears {@link message} after transient success is shown as a toast. */
+  onDismissMessage?: () => void;
   /** Short scope line, e.g. "Markers & YouTube IDs · audio on device" */
   scopeSummary: string;
   /** Optional detail for the info icon beside the scope line. */

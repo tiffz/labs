@@ -64,6 +64,7 @@ export default function GestureAccountMenu() {
         appearance={{
           tooltipTitle: 'Account and Drive backup',
           menuPaperClassName: 'gesture-account-menu',
+          menuPaperSx: { mt: 0 },
         }}
         renderBackupButton={(ctx) => (
           <>

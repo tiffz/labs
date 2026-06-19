@@ -88,8 +88,8 @@ Card metadata edits should feel **light**, not form-heavy:
 ### Account menu
 
 - Class: `gesture-account-menu` on menu paper.
-- Same as surfaces: paper bg, **1px** `--gesture-border-strong`, **no shadow**, radius `0.5rem`.
-- Account icon button: `#gesture-account-menu-button` — minimal border, no offset shadow.
+- **Elevated popover:** brighter frosted paper (`backdrop-filter`), stronger hairline border, inset top highlight, light modal scrim behind — still **no drop shadow** on chrome.
+- Account icon button: `#gesture-account-menu-button` — minimal border; sage wash when open (`aria-expanded`).
 - Labs app links: sage for inactive; **bold ink** for current app.
 - Backup button: contained sage (MUI primary).
 

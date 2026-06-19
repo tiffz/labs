@@ -57,8 +57,12 @@ function progressForStatus(status: ZineboxReadStatus, index: number): number {
   return 0;
 }
 
-export function buildMockComics(): ZineboxComic[] {
-  return TITLES.map((title, index) => {
+export function buildMockComics(count = TITLES.length): ZineboxComic[] {
+  const total = Math.max(1, Math.floor(count));
+  return Array.from({ length: total }, (_, index) => {
+    const baseTitle = TITLES[index % TITLES.length] ?? 'Issue 01 — Sample';
+    const cycle = Math.floor(index / TITLES.length);
+    const title = cycle > 0 ? `${baseTitle} (${cycle + 1})` : baseTitle;
     const source = SOURCES[index % SOURCES.length] ?? 'Shortbox';
     const issueNum = String((index % 12) + 1).padStart(2, '0');
     const readStatus = readStatusForIndex(index);
@@ -77,7 +81,13 @@ export function buildMockComics(): ZineboxComic[] {
   });
 }
 
-export async function mockImportFromDrive(options?: { force?: boolean }): Promise<number> {
+/** Enough grid rows for scroll perf smokes without a real 200+ comic library. */
+export const ZINEBOX_E2E_SCROLL_GRID_COMIC_COUNT = 54;
+
+export async function mockImportFromDrive(options?: {
+  force?: boolean;
+  count?: number;
+}): Promise<number> {
   const existing = await zineboxDb.comics.count();
   if (existing > 0 && !options?.force) return existing;
 
@@ -85,7 +95,7 @@ export async function mockImportFromDrive(options?: { force?: boolean }): Promis
     await zineboxDb.comics.clear();
   }
 
-  const comics = buildMockComics();
+  const comics = buildMockComics(options?.count);
   await zineboxDb.comics.bulkPut(comics);
   return comics.length;
 }

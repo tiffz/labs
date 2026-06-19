@@ -8,9 +8,9 @@ import {
 } from '../media/gesturePreviewImageUrl';
 import { GESTURE_COMPACT_PREVIEW_THUMB_WIDTH } from '../media/gestureMediaPolicy';
 
-const WARMUP_CONCURRENCY = 6;
+const WARMUP_CONCURRENCY = 2;
 /** Cap idle warmup so large libraries defer to viewport-gated card fetches. */
-const WARMUP_MAX_FILE_IDS = 24;
+const WARMUP_MAX_FILE_IDS = 12;
 
 function scheduleIdle(task: () => void): void {
   if (typeof requestIdleCallback === 'function') {

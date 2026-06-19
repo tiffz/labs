@@ -52,6 +52,10 @@ import {
   type StanzaDriveMergeReport,
 } from '../drive/stanzaDriveMerge';
 import {
+  hydrateStanzaLibraryMainMediaFromDrive,
+  syncStanzaLibraryMainMediaToDrive,
+} from '../drive/stanzaDriveMainMediaSync';
+import {
   hydrateStanzaLibraryStemsFromDrive,
   syncStanzaLibraryStemsToDrive,
 } from '../drive/stanzaDriveStemSync';
@@ -161,17 +165,19 @@ async function snapshotLocalLibraryBeforeMerge(
   }
 }
 
-async function tryHydrateLibraryStemsFromDrive(opts?: {
+async function tryHydrateLibraryFromDrive(opts?: {
   interactive?: boolean;
   accessToken?: string;
-}): Promise<number> {
+}): Promise<{ mainMediaSongs: number; stemSongs: number }> {
   try {
     const token =
       opts?.accessToken ??
       (await ensureLabsGoogleAccessTokenForDrive({ interactive: opts?.interactive !== false }));
-    return await hydrateStanzaLibraryStemsFromDrive(token);
+    const mainMediaSongs = await hydrateStanzaLibraryMainMediaFromDrive(token);
+    const stemSongs = await hydrateStanzaLibraryStemsFromDrive(token);
+    return { mainMediaSongs, stemSongs };
   } catch {
-    return 0;
+    return { mainMediaSongs: 0, stemSongs: 0 };
   }
 }
 
@@ -206,7 +212,7 @@ async function mergeRemoteEnvelopeIntoLocal(
   for (const fid of staleTombstoneFileIds) {
     clearStanzaDriveTombstone(fid);
   }
-  await tryHydrateLibraryStemsFromDrive({
+  await tryHydrateLibraryFromDrive({
     accessToken: opts?.accessToken,
     interactive: opts?.hydrateInteractive,
   });
@@ -303,6 +309,7 @@ export function useStanzaDriveBackup() {
     const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: !opts?.silent });
     const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_STANZA);
     const writeOnce = async () => {
+      await syncStanzaLibraryMainMediaToDrive(token, refs.appFolderId);
       await syncStanzaLibraryStemsToDrive(token, refs.appFolderId);
       const metaBefore = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
       const envelope = await buildStanzaDriveEnvelope();
@@ -319,7 +326,7 @@ export function useStanzaDriveBackup() {
       setSyncMetaTick((n) => n + 1);
       setLatestRemoteEnvelope(envelope);
       if (!opts?.silent) {
-        setMessage('Saved to Drive. Main uploads stay on each device until linked from Drive.');
+        setMessage('Saved to Drive.');
       }
     };
     try {
@@ -571,13 +578,23 @@ export function useStanzaDriveBackup() {
         clearStanzaDriveTombstone(fid);
       }
       const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      const hydratedStemSongs = await tryHydrateLibraryStemsFromDrive({
+      const hydrated = await tryHydrateLibraryFromDrive({
         accessToken: token,
         interactive: true,
       });
+      patchStanzaDriveSyncMeta({
+        lastCloudModifiedTime: conflict.driveModifiedTime,
+        lastBackupExportedAt: conflict.remoteEnvelope.exportedAt,
+        lastAutoPullAt: Date.now(),
+      });
+      markPullSucceeded();
+      setLatestRemoteEnvelope(conflict.remoteEnvelope);
       let mergeMsg = `${formatMergeUserMessage(report, 'Merged library (')}, then saved to Drive.`;
-      if (hydratedStemSongs > 0) {
-        mergeMsg += ` Downloaded mix layers for ${hydratedStemSongs} song${hydratedStemSongs === 1 ? '' : 's'}.`;
+      if (hydrated.mainMediaSongs > 0) {
+        mergeMsg += ` Downloaded recordings for ${hydrated.mainMediaSongs} song${hydrated.mainMediaSongs === 1 ? '' : 's'}.`;
+      }
+      if (hydrated.stemSongs > 0) {
+        mergeMsg += ` Downloaded mix layers for ${hydrated.stemSongs} song${hydrated.stemSongs === 1 ? '' : 's'}.`;
       }
       setMessage(mergeMsg);
       setSyncMetaTick((n) => n + 1);
@@ -595,7 +612,7 @@ export function useStanzaDriveBackup() {
     } finally {
       setBusy(false);
     }
-  }, [conflict, flushDriveWrite, formatMergeUserMessage, markManualBackupSucceeded]);
+  }, [conflict, flushDriveWrite, formatMergeUserMessage, markManualBackupSucceeded, markPullSucceeded]);
 
   const openRestorePicker = useCallback(() => {
     setRestoreOpen(true);
@@ -635,7 +652,7 @@ export function useStanzaDriveBackup() {
           clearStanzaDriveTombstone(fid);
         }
         const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-        const hydratedStemSongs = await tryHydrateLibraryStemsFromDrive({
+        const hydrated = await tryHydrateLibraryFromDrive({
           accessToken: token,
           interactive: true,
         });
@@ -646,8 +663,11 @@ export function useStanzaDriveBackup() {
           if (report.markersRecoveredFromLocal > 0) {
             msg += ` Kept your section markers for ${report.markersRecoveredFromLocal} song${report.markersRecoveredFromLocal === 1 ? '' : 's'}.`;
           }
-          if (hydratedStemSongs > 0) {
-            msg += ` Downloaded mix layers for ${hydratedStemSongs} song${hydratedStemSongs === 1 ? '' : 's'}.`;
+          if (hydrated.mainMediaSongs > 0) {
+            msg += ` Downloaded recordings for ${hydrated.mainMediaSongs} song${hydrated.mainMediaSongs === 1 ? '' : 's'}.`;
+          }
+          if (hydrated.stemSongs > 0) {
+            msg += ` Downloaded mix layers for ${hydrated.stemSongs} song${hydrated.stemSongs === 1 ? '' : 's'}.`;
           }
           return msg;
         });
@@ -757,6 +777,7 @@ export function useStanzaDriveBackup() {
     testerResolved,
     busy,
     message: syncPaused && !message ? LABS_DRIVE_SYNC_PAUSED_IDLE_MESSAGE : message,
+    dismissMessage: () => setMessage(null),
     syncPaused,
     retryPullFromDrive,
     onBackup,

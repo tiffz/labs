@@ -6,7 +6,13 @@ import Typography from '@mui/material/Typography';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import { useCallback, useState } from 'react';
 
+import DriveFolderImportDialog from './DriveFolderImportDialog';
 import ZineboxLibraryAddPanel from './ZineboxLibraryAddPanel';
+
+type DriveReviewSession = {
+  folderInput: string;
+  accessToken: string;
+};
 
 type ZineboxUploadMenuProps = {
   disabled?: boolean;
@@ -24,6 +30,7 @@ export default function ZineboxUploadMenu({
   onError,
 }: ZineboxUploadMenuProps): React.ReactElement {
   const [open, setOpen] = useState(false);
+  const [driveReview, setDriveReview] = useState<DriveReviewSession | null>(null);
 
   const handleClose = useCallback(() => setOpen(false), []);
 
@@ -39,9 +46,22 @@ export default function ZineboxUploadMenu({
     (summary: string) => {
       onDriveImportComplete?.(summary);
       setOpen(false);
+      setDriveReview(null);
     },
     [onDriveImportComplete],
   );
+
+  const handleOpenDriveReview = useCallback(
+    (session: DriveReviewSession) => {
+      setDriveReview(session);
+      setOpen(false);
+    },
+    [],
+  );
+
+  const handleDriveReviewClose = useCallback(() => {
+    setDriveReview(null);
+  }, []);
 
   return (
     <>
@@ -71,14 +91,22 @@ export default function ZineboxUploadMenu({
           </Typography>
           <ZineboxLibraryAddPanel
             disabled={disabled}
-            tagSuggestions={tagSuggestions}
             onLocalFiles={handleLocalFiles}
-            onDriveImportComplete={handleDriveImportComplete}
+            onOpenDriveReview={handleOpenDriveReview}
             onError={onError}
-            onDriveReviewOpen={handleClose}
           />
         </DialogContent>
       </Dialog>
+
+      <DriveFolderImportDialog
+        open={driveReview != null}
+        folderInput={driveReview?.folderInput ?? ''}
+        accessToken={driveReview?.accessToken ?? null}
+        tagSuggestions={tagSuggestions}
+        onClose={handleDriveReviewClose}
+        onComplete={handleDriveImportComplete}
+        onError={onError}
+      />
     </>
   );
 }

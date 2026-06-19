@@ -122,6 +122,7 @@ export default function StanzaAccountMenu() {
         allowlistEmpty: getLabsDriveBackupRestrictionHashesFromEnv().size === 0,
         busy: backup.busy,
         message: backup.message,
+        onDismissMessage: backup.dismissMessage,
         onBackup: backup.onBackup,
         onSignIn: backup.onSignIn,
         lastBackupExportedAt: meta.lastBackupExportedAt,

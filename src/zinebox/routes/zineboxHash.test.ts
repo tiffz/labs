@@ -23,33 +23,46 @@ describe('zineboxHash', () => {
       filter: 'unread',
       source: 'Shortbox',
       tag: null,
+      q: null,
     });
     expect(parseLibraryParams('?tag=anthology')).toEqual({
       filter: 'all',
       source: null,
       tag: 'anthology',
+      q: null,
     });
     expect(parseLibraryParams('?view=shelves&filter=unread')).toEqual({
       filter: 'unread',
       source: null,
       tag: null,
+      q: null,
     });
     expect(parseLibraryParams('?filter=read')).toEqual({
       filter: 'read',
       source: null,
       tag: null,
+      q: null,
+    });
+    expect(parseLibraryParams('?q=alive')).toEqual({
+      filter: 'all',
+      source: null,
+      tag: null,
+      q: 'alive',
     });
   });
 
   it('serializes library href', () => {
-    expect(zineboxLibraryHref({ filter: 'unread', source: 'Itch.io', tag: null })).toBe(
+    expect(zineboxLibraryHref({ filter: 'unread', source: 'Itch.io', tag: null, q: null })).toBe(
       '#/library?filter=unread&source=Itch.io',
     );
-    expect(zineboxLibraryHref({ filter: 'read', source: null, tag: null })).toBe(
+    expect(zineboxLibraryHref({ filter: 'read', source: null, tag: null, q: null })).toBe(
       '#/library?filter=read',
     );
-    expect(zineboxLibraryHref({ filter: 'all', source: null, tag: '2024' })).toBe(
+    expect(zineboxLibraryHref({ filter: 'all', source: null, tag: '2024', q: null })).toBe(
       '#/library?tag=2024',
+    );
+    expect(zineboxLibraryHref({ filter: 'all', source: null, tag: null, q: 'moon pool' })).toBe(
+      '#/library?q=moon+pool',
     );
   });
 

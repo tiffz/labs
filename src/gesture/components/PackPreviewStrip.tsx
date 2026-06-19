@@ -25,13 +25,18 @@ function PackPreviewStrip({
   previewFetchEnabled = true,
   thumbWidth = GESTURE_PREVIEW_THUMB_WIDTH,
 }: PackPreviewStripProps): React.ReactElement {
-  const { ref, near } = useNearViewport('240px');
+  const { ref, near } = useNearViewport('120px');
   const previewIds = useMemo(
     () => driveFileIds.slice(0, limit).filter(Boolean),
     [driveFileIds, limit],
   );
-  const fetchEnabled = previewFetchEnabled;
-  const { urls, loading, retryPreview } = usePackPreviewUrls(previewIds, limit, fetchEnabled, thumbWidth);
+  const shouldFetch = previewFetchEnabled && near;
+  const { urls, loading, retryPreview } = usePackPreviewUrls(
+    previewIds,
+    limit,
+    shouldFetch,
+    thumbWidth,
+  );
   const slots = previewIds.length > 0 ? previewIds.length : limit;
 
   useEffect(() => {
@@ -50,7 +55,7 @@ function PackPreviewStrip({
         <PackPreviewCell
           key={previewIds[index] ?? `empty-${index}`}
           url={urls[index] || undefined}
-          loading={!urls[index] && fetchEnabled && loading}
+          loading={!urls[index] && shouldFetch && loading}
           eager={index === 0}
           priority={index === 0 ? 'high' : 'low'}
           onImageError={

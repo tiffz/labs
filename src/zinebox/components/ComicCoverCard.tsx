@@ -1,15 +1,24 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import { memo } from 'react';
 
 import type { ZineboxComic } from '../types';
+import ZineboxCoverReadIndicators from './ZineboxCoverReadIndicators';
+import ZineboxSearchHighlight from './ZineboxSearchHighlight';
+import {
+  summarizeComicCoverRead,
+  zineboxComicOpenAriaLabel,
+} from '../utils/zineboxCoverReadSummary';
 
 type ComicCoverCardProps = {
   comic: ZineboxComic;
+  searchQuery?: string | null;
   onOpen: (comicId: string) => void;
 };
 
-export default function ComicCoverCard({
+export default memo(function ComicCoverCard({
   comic,
+  searchQuery,
   onOpen,
 }: ComicCoverCardProps): React.ReactElement {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -43,17 +52,29 @@ export default function ComicCoverCard({
         type="button"
         className="zinebox-cover-card__button"
         onClick={() => onOpen(comic.id)}
-        aria-label={`Open ${comic.title}`}
+        aria-label={zineboxComicOpenAriaLabel(
+          comic.title,
+          comic.readStatus,
+          comic.progressPercentage,
+        )}
       >
         <div className="zinebox-cover-card__cover">
-          <img src={comic.coverThumbnailBase64} alt="" className="zinebox-cover-card__image" />
-          {comic.readStatus === 'unread' ? (
-            <span className="zinebox-cover-card__unread-dot" aria-hidden />
-          ) : null}
+          <img
+            src={comic.coverThumbnailBase64}
+            alt=""
+            className="zinebox-cover-card__image"
+            loading="lazy"
+            decoding="async"
+          />
+          <ZineboxCoverReadIndicators {...summarizeComicCoverRead(comic)} />
         </div>
-        <p className="zinebox-cover-card__title">{comic.title}</p>
-        <p className="zinebox-cover-card__source">{comic.source}</p>
+        <p className="zinebox-cover-card__title">
+          <ZineboxSearchHighlight text={comic.title} query={searchQuery} />
+        </p>
+        <p className="zinebox-cover-card__source">
+          <ZineboxSearchHighlight text={comic.source} query={searchQuery} />
+        </p>
       </button>
     </article>
   );
-}
+});

@@ -45,3 +45,21 @@ export function labsDriveSyncMessageNeedsSignIn(message: string): boolean {
 export function labsDriveSyncMessageIsFailure(message: string): boolean {
   return /failed|error|403|401|timed out/i.test(message) && !labsDriveSyncMessageNeedsSignIn(message);
 }
+
+/** Success/info copy that belongs in a dismissible toast, not a persistent account-menu alert. */
+export function labsDriveSyncMessageIsTransientSuccess(message: string): boolean {
+  if (labsDriveSyncMessageIsFailure(message)) return false;
+  if (labsDriveSyncMessageNeedsSignIn(message)) return false;
+  if (/open your account menu/i.test(message)) return false;
+  if (/no .* backup on drive yet/i.test(message)) return false;
+  if (/no undo-last-sync/i.test(message)) return false;
+
+  return (
+    /^Synced from Drive/i.test(message) ||
+    /^Already in sync/i.test(message) ||
+    /saved to Google Drive/i.test(message) ||
+    /^Saved to Drive\./i.test(message) ||
+    /^Progress saved/i.test(message) ||
+    /^Organize:/i.test(message)
+  );
+}

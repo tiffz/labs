@@ -11,48 +11,26 @@ import { LabsDriveFolderPasteOrBrowseBlock } from '../../shared/drive/LabsDriveF
 import { ensureZineboxGoogleDriveAccess } from '../drive/zineboxGoogleDriveAccess';
 import { LabsGoogleInteractiveAuthRequiredError } from '../../shared/google/labsGoogleDriveAccess';
 import { useZineboxGoogleAccessToken } from '../hooks/useZineboxGoogleAccessToken';
-import DriveFolderImportDialog from './DriveFolderImportDialog';
 
 type ZineboxLibraryAddPanelProps = {
   disabled?: boolean;
-  tagSuggestions: readonly string[];
   onLocalFiles: (files: File[]) => void;
-  onDriveImportComplete?: (summary: string) => void;
   onError: (message: string | null) => void;
-  /** Close the upload dialog before opening Drive review. */
-  onDriveReviewOpen?: () => void;
+  /** Parent opens Drive review (and typically closes the upload dialog). */
+  onOpenDriveReview: (opts: { folderInput: string; accessToken: string }) => void;
 };
 
 const PDF_ACCEPT = 'application/pdf,.pdf';
 
 export default function ZineboxLibraryAddPanel({
   disabled = false,
-  tagSuggestions,
   onLocalFiles,
-  onDriveImportComplete,
   onError,
-  onDriveReviewOpen,
+  onOpenDriveReview,
 }: ZineboxLibraryAddPanelProps): React.ReactElement {
   const googleAccessToken = useZineboxGoogleAccessToken();
   const [folderInput, setFolderInput] = useState('');
-  const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewBusy, setReviewBusy] = useState(false);
-  const [driveAccessToken, setDriveAccessToken] = useState<string | null>(null);
-
-  const handleReviewClose = useCallback(() => {
-    setReviewOpen(false);
-    setDriveAccessToken(null);
-  }, []);
-
-  const handleDriveImportComplete = useCallback(
-    (summary: string) => {
-      onDriveImportComplete?.(summary);
-      setFolderInput('');
-      setReviewOpen(false);
-      setDriveAccessToken(null);
-    },
-    [onDriveImportComplete],
-  );
 
   const openDriveReview = useCallback(async () => {
     if (!folderInput.trim()) {
@@ -66,9 +44,7 @@ export default function ZineboxLibraryAddPanel({
         interactive: true,
         upgradeScopes: true,
       });
-      setDriveAccessToken(token);
-      onDriveReviewOpen?.();
-      setReviewOpen(true);
+      onOpenDriveReview({ folderInput: folderInput.trim(), accessToken: token });
     } catch (e) {
       if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
         onError('Sign in with Google first (Account menu, top right).');
@@ -78,13 +54,12 @@ export default function ZineboxLibraryAddPanel({
     } finally {
       setReviewBusy(false);
     }
-  }, [folderInput, onDriveReviewOpen, onError]);
+  }, [folderInput, onOpenDriveReview, onError]);
 
   const interactionDisabled = disabled || reviewBusy;
 
   return (
-    <>
-      <div className="zinebox-upload-zone zinebox-library-add-panel" data-testid="zinebox-upload-zone">
+    <div className="zinebox-upload-zone zinebox-library-add-panel" data-testid="zinebox-upload-zone">
         <DragDropFileUpload
           accept={PDF_ACCEPT}
           multiple
@@ -148,16 +123,5 @@ export default function ZineboxLibraryAddPanel({
           }
         />
       </div>
-
-      <DriveFolderImportDialog
-        open={reviewOpen}
-        folderInput={folderInput}
-        accessToken={driveAccessToken}
-        tagSuggestions={tagSuggestions}
-        onClose={handleReviewClose}
-        onComplete={handleDriveImportComplete}
-        onError={onError}
-      />
-    </>
   );
 }

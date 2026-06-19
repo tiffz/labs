@@ -73,8 +73,10 @@ export default function App(): React.ReactElement {
       <div ref={appRef} className="zinebox-app">
         <SkipToMain />
         <main id="main">
-          <AppShellLayout header={null} footer={null}>
-            {showDesignPicker ? <ZineboxDesignThemePicker /> : null}
+          <AppShellLayout
+            header={showDesignPicker && route.kind === 'library' ? <ZineboxDesignThemePicker /> : null}
+            footer={null}
+          >
             {content}
           </AppShellLayout>
         </main>

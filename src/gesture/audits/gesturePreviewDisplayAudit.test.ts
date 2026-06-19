@@ -33,12 +33,11 @@ describe('gesturePreviewDisplayAudit', () => {
     expect(pinsSrc).toContain('revokeObjectURL');
   });
 
-  it('PackPreviewStrip fetches when tab is active; resolve tier boosts only near viewport', () => {
+  it('PackPreviewStrip fetches when tab is active and strip is near viewport', () => {
     const src = readGesture('components/PackPreviewStrip.tsx');
-    expect(src).toContain('const fetchEnabled = previewFetchEnabled');
-    expect(src).not.toMatch(/fetchEnabled\s*=\s*previewFetchEnabled\s*&&\s*near/);
+    expect(src).toContain('const shouldFetch = previewFetchEnabled && near');
     expect(src).toMatch(/previewFetchEnabled\s*&&\s*near/);
-    expect(src).toContain('usePackPreviewUrls(previewIds, limit, fetchEnabled, thumbWidth)');
+    expect(src).toMatch(/usePackPreviewUrls\(\s*previewIds,\s*limit,\s*shouldFetch,\s*thumbWidth/);
   });
 
   it('CollectionsCollectionGrid uses native CSS grid (no fixed-row virtualizer)', () => {

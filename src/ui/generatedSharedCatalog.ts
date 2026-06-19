@@ -3312,6 +3312,57 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-labsfeedbacktoast-tsx-labsfeedbacktoast",
+    "name": "LabsFeedbackToast",
+    "path": "src/shared/components/LabsFeedbackToast.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labsfeedbacktoast-tsx-labsfeedbacktoastprops",
+    "name": "LabsFeedbackToastProps",
+    "path": "src/shared/components/LabsFeedbackToast.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labsfeedbacktoast-tsx-labsfeedbacktoastseverity",
+    "name": "LabsFeedbackToastSeverity",
+    "path": "src/shared/components/LabsFeedbackToast.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-metronometogglebutton-tsx-metronometogglebutton",
     "name": "MetronomeToggleButton",
     "path": "src/shared/components/MetronomeToggleButton.tsx",
@@ -6087,6 +6138,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsdrivesyncmessages-ts-labsdrivesyncmessageistransientsuccess",
+    "name": "labsDriveSyncMessageIsTransientSuccess",
+    "path": "src/shared/drive/labsDriveSyncMessages.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Success/info copy that belongs in a dismissible toast, not a persistent account-menu alert.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-labsdrivesyncmessages-ts-labsdrivesyncmessageneedssignin",
     "name": "labsDriveSyncMessageNeedsSignIn",
     "path": "src/shared/drive/labsDriveSyncMessages.ts",
@@ -6872,6 +6936,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-google-labsdrivesynctoast-tsx-labsdrivesynctoast",
+    "name": "LabsDriveSyncToast",
+    "path": "src/shared/google/LabsDriveSyncToast.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Transient Drive sync success toast (portfolio apps).",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
     "id": "src-shared-google-labsdrivetestergate-ts-getlabsdrivebackuprestrictionhashesfromenv",
     "name": "getLabsDriveBackupRestrictionHashesFromEnv",
     "path": "src/shared/google/labsDriveTesterGate.ts",
@@ -7260,6 +7340,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "GIS TokenClient interface. We rely on the documented surface (`requestAccessToken`) plus the commonly-used mutable `callback` / `error_callback` fields so a single client can be reused across multiple `requestAccessToken` calls without re-running `initTokenClient`. Re-running `initTokenClient` is the documented cause of the `accounts.google.com/gsi/transform` iframe accumulation we saw in user reports — each new client mounts another hidden iframe that GIS does not garbage-collect until the page unloads.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-uselabsdrivesynctoastmessage-ts-uselabsdrivesynctoastmessage",
+    "name": "useLabsDriveSyncToastMessage",
+    "path": "src/shared/google/useLabsDriveSyncToastMessage.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Routes transient Drive sync success copy out of the account menu and into a dismissible toast.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -17204,6 +17297,64 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-zineboxscrollperfcore-ts-formatzineboxscrollperfmessage",
+    "name": "formatZineboxScrollPerfMessage",
+    "path": "src/shared/test/zineboxScrollPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Target ~60fps — allow one missed frame plus scheduler slack on CI.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-zineboxscrollperfcore-ts-zinebox-library-scroll-max-frame-ms",
+    "name": "ZINEBOX_LIBRARY_SCROLL_MAX_FRAME_MS",
+    "path": "src/shared/test/zineboxScrollPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Target ~60fps — allow one missed frame plus scheduler slack on CI.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-zineboxscrollperfcore-ts-zinebox-library-scroll-max-long-tasks",
+    "name": "ZINEBOX_LIBRARY_SCROLL_MAX_LONG_TASKS",
+    "path": "src/shared/test/zineboxScrollPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Long tasks (>50ms) during a short scroll burst should stay rare.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-zineboxscrollperfcore-ts-zineboxscrollperfsample",
+    "name": "ZineboxScrollPerfSample",
+    "path": "src/shared/test/zineboxScrollPerfCore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Target ~60fps — allow one missed frame plus scheduler slack on CI.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {

@@ -318,6 +318,8 @@ export function createLabsPortfolioDriveBackup<
 
     const cancelConflict = useCallback(() => setConflict(null), []);
 
+    const dismissMessage = useCallback(() => setMessage(null), []);
+
     const confirmReplaceDriveOnly = useCallback(async () => {
       if (!conflict) return;
       const job = startBlockingJob('Backing up to Google Drive…');
@@ -458,6 +460,7 @@ export function createLabsPortfolioDriveBackup<
       testerResolved,
       busy: blockingVisible,
       message: syncPaused && !message ? LABS_DRIVE_SYNC_PAUSED_IDLE_MESSAGE : message,
+      dismissMessage,
       syncPaused,
       onBackup,
       onSignIn,

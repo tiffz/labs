@@ -2458,11 +2458,27 @@ html:has(.gesture-app) {
   padding-inline: 1rem;
 }
 
-/* Account menu — Linen flat surface */
+/* Account menu — Linen elevated popover (frosted paper, no offset shadow) */
 .gesture-app #gesture-account-menu-button {
   border: 1px solid var(--gesture-border-strong);
   box-shadow: none;
   background: var(--gesture-card-bg);
+  transition:
+    border-color 180ms var(--gesture-ease-out),
+    background 180ms var(--gesture-ease-out);
+}
+
+.gesture-app #gesture-account-menu-button[aria-expanded='true'] {
+  border-color: color-mix(
+    in srgb,
+    var(--gesture-accent) 55%,
+    var(--gesture-border-strong)
+  );
+  background: color-mix(
+    in srgb,
+    var(--gesture-accent-soft) 36%,
+    var(--gesture-card-bg)
+  );
 }
 
 .gesture-app #gesture-account-menu-button:hover {
@@ -2476,14 +2492,31 @@ html:has(.gesture-app) {
 }
 
 .gesture-app .gesture-account-menu {
-  border: 1px solid var(--gesture-border-strong);
+  --gesture-menu-elevated-bg: color-mix(
+    in srgb,
+    #fff 58%,
+    var(--gesture-card-bg)
+  );
+  isolation: isolate;
+  margin-top: 0.65rem;
+  border: 1px solid
+    color-mix(in srgb, var(--gesture-ink) 14%, var(--gesture-border-strong));
   border-radius: var(--gesture-card-radius);
-  box-shadow: none;
-  background: var(--gesture-card-bg);
+  background: var(--gesture-menu-elevated-bg);
+  backdrop-filter: blur(16px) saturate(1.08);
+  -webkit-backdrop-filter: blur(16px) saturate(1.08);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 78%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--gesture-ink) 5%, transparent);
 }
 
 .gesture-app .gesture-account-menu .MuiDivider-root {
   border-color: var(--gesture-border);
+}
+
+/* Soft scrim behind menus/popovers so floating panels read above the canvas wash. */
+.gesture-app .MuiModal-backdrop {
+  background-color: color-mix(in srgb, var(--gesture-ink) 9%, transparent);
 }
 
 @media (pointer: coarse) {

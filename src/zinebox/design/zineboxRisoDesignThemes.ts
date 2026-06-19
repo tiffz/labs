@@ -50,6 +50,7 @@ function risoTheme(
       '--zinebox-title-transform': 'uppercase',
       '--zinebox-body-font': RISO_BODY,
       '--zinebox-app-bg': appBg,
+      '--zinebox-chrome-bg': surface,
       '--zinebox-cover-border-width': '2px',
       '--zinebox-riso-layer-a': layerA,
       '--zinebox-riso-layer-b': layerB,

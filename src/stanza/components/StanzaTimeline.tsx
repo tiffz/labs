@@ -34,6 +34,7 @@ import RepeatOneIcon from '@mui/icons-material/RepeatOne';
 import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
+import ShuffleOutlinedIcon from '@mui/icons-material/ShuffleOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
@@ -121,6 +122,8 @@ export interface StanzaTimelineProps {
   skippedBySegmentId?: Record<string, true>;
   /** Toggle "skip during playback" for a section by id. */
   onSegmentSkippedChange?: (segmentId: string, next: boolean) => void;
+  /** Jump to a random section and start playback (parent gates on section count). */
+  onPracticeRandomSection?: () => void;
 }
 
 export default function StanzaTimeline({
@@ -164,6 +167,7 @@ export default function StanzaTimeline({
   commitSelectionToBoundariesTitle,
   skippedBySegmentId,
   onSegmentSkippedChange,
+  onPracticeRandomSection,
 }: StanzaTimelineProps) {
   const [dragMarkers, setDragMarkers] = useState<StanzaMarker[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -752,6 +756,22 @@ export default function StanzaTimeline({
                 />
               ) : null}
             </Box>
+            {segments.length >= 2 && onPracticeRandomSection ? (
+              <Box className="stanza-playback-chip">
+                <AppTooltip title="Select a random section and start playback from its start.">
+                  <Button
+                    type="button"
+                    size="small"
+                    variant="text"
+                    className="stanza-playback-chip-text-btn"
+                    startIcon={<ShuffleOutlinedIcon fontSize="small" />}
+                    onClick={onPracticeRandomSection}
+                  >
+                    Practice random
+                  </Button>
+                </AppTooltip>
+              </Box>
+            ) : null}
           </Box>
 
           <Box className="stanza-playback-toolbar-tools">

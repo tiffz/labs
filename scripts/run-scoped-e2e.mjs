@@ -26,6 +26,7 @@ const APP_SMOKE_SPECS = {
   words: [{ file: 'e2e/smoke/app-shells.spec.ts', grep: '/words/' }],
   zinebox: [
     'e2e/smoke/zinebox-library.spec.ts',
+    'e2e/smoke/zinebox-library-scroll.spec.ts',
     'e2e/smoke/zinebox-drive-import.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/zinebox/' },
   ],

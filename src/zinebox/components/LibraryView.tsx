@@ -4,7 +4,7 @@ import { DndContext } from '@dnd-kit/core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
-import { mockImportFromDrive } from '../db/mockDriveImport';
+import { mockImportFromDrive, ZINEBOX_E2E_SCROLL_GRID_COMIC_COUNT } from '../db/mockDriveImport';
 import { importLocalPdfFiles } from '../drive/importLocalPdfs';
 import { useStackDnD } from '../hooks/useStackDnD';
 import { useZineboxCollections, useZineboxComics } from '../hooks/useZineboxComics';
@@ -16,9 +16,13 @@ import LibraryGridView from './LibraryGridView';
 import StackDetailDialog from './StackDetailDialog';
 import ZineboxAppHeader from './ZineboxAppHeader';
 import type { ZineboxLibraryParams } from '../routes/zineboxHash';
-import { collectAllZineboxTags, comicMatchesTagFilter } from '../utils/zineboxTags';
-import { comicMatchesReadFilter } from '../utils/zineboxReadFilter';
+import { collectAllZineboxTags } from '../utils/zineboxTags';
+import {
+  collectionMatchesLibraryFilters,
+  comicMatchesLibraryFilters,
+} from '../utils/zineboxLibraryFilters';
 import { pickRandomUnreadComic } from '../utils/pickRandomUnreadComic';
+import LibrarySearchField from './LibrarySearchField';
 
 type LibraryViewProps = {
   libraryParams: ZineboxLibraryParams;
@@ -29,6 +33,11 @@ type LibraryViewProps = {
 function shouldRunE2eSeed(): boolean {
   if (typeof window === 'undefined') return false;
   return new URLSearchParams(window.location.search).has('e2eSeed');
+}
+
+function shouldRunE2eScrollGridSeed(): boolean {
+  if (typeof window === 'undefined') return false;
+  return new URLSearchParams(window.location.search).has('e2eScrollGrid');
 }
 
 export default function LibraryView({
@@ -88,7 +97,8 @@ export default function LibraryView({
 
   useEffect(() => {
     if (!hydrated || !shouldRunE2eSeed() || comics.length > 0) return;
-    void mockImportFromDrive();
+    const count = shouldRunE2eScrollGridSeed() ? ZINEBOX_E2E_SCROLL_GRID_COMIC_COUNT : undefined;
+    void mockImportFromDrive({ count });
   }, [comics.length, hydrated]);
 
   const comicsById = useMemo(() => new Map(comics.map((c) => [c.id, c])), [comics]);
@@ -109,13 +119,21 @@ export default function LibraryView({
   const tags = useMemo(() => collectAllZineboxTags(comics), [comics]);
 
   const filteredComics = useMemo(() => {
-    return comics.filter((comic) => {
-      if (!comicMatchesReadFilter(comic, libraryParams.filter)) return false;
-      if (libraryParams.source && comic.source !== libraryParams.source) return false;
-      if (libraryParams.tag && !comicMatchesTagFilter(comic, libraryParams.tag)) return false;
-      return true;
-    });
-  }, [comics, libraryParams.filter, libraryParams.source, libraryParams.tag]);
+    return comics.filter((comic) => comicMatchesLibraryFilters(comic, libraryParams));
+  }, [comics, libraryParams]);
+
+  const filteredCollections = useMemo(() => {
+    return collections.filter((collection) =>
+      collectionMatchesLibraryFilters(collection, comicsById, libraryParams),
+    );
+  }, [collections, comicsById, libraryParams]);
+
+  const handleSearchChange = useCallback(
+    (q: string | null) => {
+      onLibraryParamsChange({ q });
+    },
+    [onLibraryParamsChange],
+  );
 
   const unreadComics = useMemo(
     () => comics.filter((comic) => comic.readStatus === 'unread'),
@@ -183,7 +201,7 @@ export default function LibraryView({
   if (!hasLibrary) {
     return (
       <div
-        className={shellClassName}
+        className={`${shellClassName} zinebox-library-page`}
         data-testid="zinebox-library"
         {...dropHandlers}
       >
@@ -193,12 +211,18 @@ export default function LibraryView({
           </div>
         ) : null}
 
-        <ZineboxAppHeader upload={uploadSlot} />
-        <div className="zinebox-empty__body">
-          <h2>Start your library</h2>
-          <p>Drop PDF zines anywhere on this page, or click Upload zines in the header.</p>
+        <div className="zinebox-library-sticky">
+          <div className="zinebox-library-sticky__inner">
+            <ZineboxAppHeader upload={uploadSlot} />
+          </div>
         </div>
-        {importFeedback}
+        <div className="zinebox-library-body zinebox-library-body--empty">
+          <div className="zinebox-empty__body">
+            <h2>Start your library</h2>
+            <p>Drop PDF zines anywhere on this page, or click Upload zines in the header.</p>
+          </div>
+          {importFeedback}
+        </div>
         <LocalBatchImportDialog
           open={localBatchFiles !== null}
           files={localBatchFiles ?? []}
@@ -211,9 +235,13 @@ export default function LibraryView({
     );
   }
 
+  const searchField = (
+    <LibrarySearchField value={libraryParams.q ?? ''} onChange={handleSearchChange} />
+  );
+
   return (
     <div
-      className={shellClassName}
+      className={`${shellClassName} zinebox-library-page`}
       data-testid="zinebox-library"
       {...dropHandlers}
     >
@@ -223,26 +251,38 @@ export default function LibraryView({
         </div>
       ) : null}
 
-      <ZineboxAppHeader upload={uploadSlot} randomUnread={randomUnreadSlot} />
-      <LibraryFilterPills
-        params={libraryParams}
-        sources={sources}
-        tags={tags}
-        onChange={onLibraryParamsChange}
-      />
-      {importFeedback}
+      <div className="zinebox-library-sticky">
+        <div className="zinebox-library-sticky__inner">
+          <ZineboxAppHeader
+            upload={uploadSlot}
+            randomUnread={randomUnreadSlot}
+            search={searchField}
+          />
+          <LibraryFilterPills
+            params={libraryParams}
+            sources={sources}
+            tags={tags}
+            onChange={onLibraryParamsChange}
+          />
+        </div>
+      </div>
 
-      <DndContext {...dndContextProps}>
-        <LibraryGridView
-          comics={filteredComics}
-          collections={collections}
-          stackedComicIds={stackedComicIds}
-          comicsById={comicsById}
-          onOpenComic={onOpenComic}
-          onOpenStack={setActiveStack}
-        />
-        {dragOverlay}
-      </DndContext>
+      <div className="zinebox-library-body">
+        {importFeedback}
+
+        <DndContext {...dndContextProps}>
+          <LibraryGridView
+            comics={filteredComics}
+            collections={filteredCollections}
+            stackedComicIds={stackedComicIds}
+            comicsById={comicsById}
+            searchQuery={libraryParams.q}
+            onOpenComic={onOpenComic}
+            onOpenStack={setActiveStack}
+          />
+          {dragOverlay}
+        </DndContext>
+      </div>
 
       <StackDetailDialog
         open={activeStack !== null}
@@ -250,6 +290,7 @@ export default function LibraryView({
         comicsById={comicsById}
         onClose={() => setActiveStack(null)}
         onOpenComic={onOpenComic}
+        onCollectionChange={setActiveStack}
       />
 
       <LocalBatchImportDialog

@@ -8,41 +8,8 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 
-import { sortComicIdsNatural } from '../collections/naturalSortComics';
-import { zineboxDb } from '../db/zineboxDb';
-import { notifyZineboxLocalChange } from '../db/zineboxChangeBus';
+import { appendComicToStack, createStackFromComics } from '../collections/stackMutations';
 import type { ZineboxCollection, ZineboxComic } from '../types';
-
-function newCollectionId(): string {
-  return `stack-${crypto.randomUUID()}`;
-}
-
-async function createStackFromComics(
-  comics: ZineboxComic[],
-  comicsById: ReadonlyMap<string, ZineboxComic>,
-): Promise<void> {
-  const itemIds = comics.map((c) => c.id);
-  const customSortOrder = sortComicIdsNatural(comicsById, itemIds);
-  const name = `Stack · ${comics[0]?.title ?? 'Collection'}`;
-  const collection: ZineboxCollection = {
-    id: newCollectionId(),
-    name,
-    itemIds,
-    customSortOrder,
-  };
-  await zineboxDb.collections.put(collection);
-}
-
-async function appendComicToStack(
-  collection: ZineboxCollection,
-  comicId: string,
-  comicsById: ReadonlyMap<string, ZineboxComic>,
-): Promise<void> {
-  if (collection.itemIds.includes(comicId)) return;
-  const itemIds = [...collection.itemIds, comicId];
-  const customSortOrder = sortComicIdsNatural(comicsById, itemIds);
-  await zineboxDb.collections.update(collection.id, { itemIds, customSortOrder });
-}
 
 export function useStackDnD(
   comics: ZineboxComic[],
@@ -94,14 +61,12 @@ export function useStackDnD(
       const overStack = collectionsById.get(overId);
       if (overStack) {
         await appendComicToStack(overStack, activeId, comicsById);
-        notifyZineboxLocalChange();
         return;
       }
 
       const overComic = comicsById.get(overId);
       if (!overComic) return;
       await createStackFromComics([activeComicItem, overComic], comicsById);
-      notifyZineboxLocalChange();
     },
     [collectionsById, comicsById],
   );

@@ -4,22 +4,23 @@
 
 ## Tokens (`--zinebox-*` in `styles/zinebox.css`)
 
-| Token                    | Value                | Use                                     |
-| ------------------------ | -------------------- | --------------------------------------- |
-| `--zinebox-paper`        | `#f8f7f5`            | App background                          |
-| `--zinebox-surface`      | `#fdfcfb`            | Cards, upload zone                      |
-| `--zinebox-ink`          | `#484440`            | Primary text (warm grey, not black)     |
-| `--zinebox-muted`        | `#9c9691`            | Secondary text, inactive pills          |
-| `--zinebox-accent`       | `#ff1493`            | Active pills, badges, unread dot, focus |
-| `--zinebox-accent-soft`  | `#fff0f7`            | Hover wash, stack peek edges            |
-| `--zinebox-border`       | `rgba(72,68,64,0.1)` | Hairline borders                        |
-| `--zinebox-shadow`       | soft offset shadow   | Covers at rest                          |
-| `--zinebox-shadow-hover` | offset + pink ring   | Cover hover                             |
+| Token                    | Value                | Use                                           |
+| ------------------------ | -------------------- | --------------------------------------------- |
+| `--zinebox-paper`        | `#f8f7f5`            | App background                                |
+| `--zinebox-surface`      | `#fdfcfb`            | Cards, upload zone                            |
+| `--zinebox-ink`          | `#484440`            | Primary text (warm grey, not black)           |
+| `--zinebox-muted`        | `#9c9691`            | Secondary text, inactive pills                |
+| `--zinebox-accent`       | `#ff1493`            | Active pills, unread dot, progress bar, focus |
+| `--zinebox-accent-soft`  | `#fff0f7`            | Hover wash, stack peek edges                  |
+| `--zinebox-border`       | `rgba(72,68,64,0.1)` | Hairline borders                              |
+| `--zinebox-shadow`       | soft offset shadow   | Covers at rest                                |
+| `--zinebox-shadow-hover` | offset + pink ring   | Cover hover                                   |
 
 ## Surfaces
 
 - **Covers:** hairline border, light cel offset; hover lifts with pink-tinted ring (not full hot-pink border)
-- **Stacks:** pink-tinted rear pages; **hot pink** issue-count badge
+- **Stacks:** pink-tinted rear pages; **neutral issue-count badge** (layers icon + count, bottom-left)
+- **Read status on covers:** unread = pink dot (top-right); in progress = thin pink progress bar (bottom edge); finished = clean cover
 - **Filter pills:** ghost inactive; **hot pink fill** when active
 - **View toggle:** muted until selected → pink text on blush background
 - **Upload:** neutral dashed zone; pink copy on drag overlay

@@ -5,6 +5,7 @@ import { stanzaSongPracticeCustomizationScore } from './stanzaSongCustomizationS
 import {
   mergeStanzaRicherSongMetadata,
   mergeStanzaRicherSongMetadataWithReport,
+  resolveDriveSourceFileIdForMerge,
 } from './stanzaSongMetadataMerge';
 
 function song(p: Partial<StanzaSong> & Pick<StanzaSong, 'id' | 'title' | 'updatedAt'>): StanzaSong {
@@ -32,6 +33,30 @@ describe('stanzaSongPracticeCustomizationScore', () => {
       ],
     });
     expect(stanzaSongPracticeCustomizationScore(s)).toBeGreaterThan(0);
+  });
+});
+
+describe('resolveDriveSourceFileIdForMerge', () => {
+  it('adopts remote Drive link when local row has metadata only', () => {
+    expect(
+      resolveDriveSourceFileIdForMerge(
+        { ytId: null, driveSourceFileId: undefined, localAudioBlob: undefined },
+        { driveSourceFileId: 'drive-main-1' },
+      ),
+    ).toBe('drive-main-1');
+  });
+
+  it('keeps local Drive link when bytes are already on device', () => {
+    expect(
+      resolveDriveSourceFileIdForMerge(
+        {
+          ytId: null,
+          driveSourceFileId: 'local-file',
+          localAudioBlob: new Blob(['x'], { type: 'audio/mpeg' }),
+        },
+        { driveSourceFileId: 'remote-file' },
+      ),
+    ).toBe('local-file');
   });
 });
 

@@ -18,16 +18,17 @@ Labs optimizes **interaction + sustained** as heavily as load — SPAs with Dexi
 
 ## Agent invariants (React / SPA)
 
-| Invariant                                     | Why                                                        | Enforcement                                                                         |
-| --------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| **Isolate config state from heavy grids**     | Timer/radio/checkbox must not re-render N preview cards    | Context + `memo` grid; see Gesture `PracticeSessionControls`                        |
-| **No random/shuffle work on every keystroke** | `Math.random()` queue rebuild → prefetch restart           | Shuffle at session start only for warmup paths                                      |
-| **Debounce persistence, not UI**              | localStorage/Drive writes must not disable controls        | Optimistic UI + background persist                                                  |
-| **Stable memo props**                         | Inline `() => fn(id)` breaks memo                          | Stable callbacks; custom comparators ignore callback identity when safe             |
-| **Dexie live query ≠ render storm**           | `useLiveQuery` updates should not rebuild unrelated UI     | Narrow subscriptions; defer heavy derived work                                      |
-| **Media display tier**                        | Preview grids ≠ session blobs                              | `GESTURE_MEDIA_STABILITY.md`, gesture media tests                                   |
-| **Gesture Collections scroll**                | Visible cards stay painted; thumbs load near viewport only | `PackPreviewStrip` + `useWindowVirtualizer`; no `content-visibility: auto` on cards |
-| **Measure CUJ budgets**                       | “Feels slow” needs a number                                | App `CUJs.md` + `e2e/smoke/*interaction*.spec.ts`                                   |
+| Invariant                                     | Why                                                        | Enforcement                                                                          |
+| --------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **Isolate config state from heavy grids**     | Timer/radio/checkbox must not re-render N preview cards    | Context + `memo` grid; see Gesture `PracticeSessionControls`                         |
+| **No random/shuffle work on every keystroke** | `Math.random()` queue rebuild → prefetch restart           | Shuffle at session start only for warmup paths                                       |
+| **Debounce persistence, not UI**              | localStorage/Drive writes must not disable controls        | Optimistic UI + background persist                                                   |
+| **Stable memo props**                         | Inline `() => fn(id)` breaks memo                          | Stable callbacks; custom comparators ignore callback identity when safe              |
+| **Dexie live query ≠ render storm**           | `useLiveQuery` updates should not rebuild unrelated UI     | Narrow subscriptions; defer heavy derived work                                       |
+| **Media display tier**                        | Preview grids ≠ session blobs                              | `GESTURE_MEDIA_STABILITY.md`, gesture media tests                                    |
+| **Gesture Collections scroll**                | Visible cards stay painted; thumbs load near viewport only | `PackPreviewStrip` + `useWindowVirtualizer`; no `content-visibility: auto` on cards  |
+| **Measure CUJ budgets**                       | “Feels slow” needs a number                                | App `CUJs.md` + `e2e/smoke/*interaction*.spec.ts`                                    |
+| **Viewport-gated media (grids)**              | Only fetch/decode thumbs for rows near the viewport        | Tab active **and** `useNearViewport` per card strip; idle warmup is best-effort only |
 
 Indexed in [`docs/AGENT_INVARIANTS.md`](AGENT_INVARIANTS.md).
 
@@ -39,7 +40,7 @@ Reuse in retrospectives ([`CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCES
 - `main-thread-jank` — O(n) sort/shuffle/index on every interaction (large n)
 - `warmup-storm` — prefetch/queue rebuild retriggers on unrelated config changes
 - `revoked-blob-display` — media cache lifecycle (see `GESTURE_MEDIA_STABILITY.md`)
-- `test gap` — Vitest passes but interaction latency untested
+- `gpu-fill` — dense GLB + PBR → decimate in Blender export; Lambert in runtime
 
 ## Tooling matrix
 
@@ -79,6 +80,31 @@ Do **not** add Lighthouse CI for every app — use CUJ smokes first; trace audit
 6. Update CUJ budget row if numbers changed.
 
 Full steps: skill **`labs-performance`**.
+
+## Reusable patterns (copy to new apps)
+
+Document fixes here when they generalize beyond one app. Root cause labels: [`CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCESS_IMPROVEMENT.md).
+
+### Viewport-gated thumbnail grids (Gesture)
+
+**Problem:** Cold load mounts every grid card; each strip resolves 2–4 Drive thumbs → network + decode storm → scroll jank (`warmup-storm`, `main-thread-jank`).
+
+**Architecture:**
+
+1. **Two gates:** `tabActive && nearViewport` before any preview network I/O (`PackPreviewStrip` → `usePackPreviewUrls(..., shouldFetch)`).
+2. **Shared `IntersectionObserver`** per root margin (`gestureNearViewportObserver`) — one observer for N cards.
+3. **Global resolve budget:** capped concurrent preview resolves + tier queue (visible strips = tier 0).
+4. **Coalesce React cache notifications** — batch preview cache listener bumps to one `requestAnimationFrame` per frame (`gesturePreviewImageUrl`).
+5. **Progressive strip paint** — update each cell URL as it resolves; don’t wait for the whole strip.
+6. **Idle warmup is optional** — small cap, low concurrency, collections tab only; must not compete with visible rows.
+
+**Verify:** `e2e/smoke/gesture-collections-scroll.spec.ts`, `gesturePreviewDisplayAudit.test.ts`, CUJ-003 in `src/gesture/CUJs.md`.
+
+### Config state vs heavy grids (all apps)
+
+**Problem:** Radio/checkbox in parent re-renders N preview cards (`render-cascade`).
+
+**Fix:** Context provider or memoized grid; stable handler maps; interaction smoke on the control.
 
 ## Related
 

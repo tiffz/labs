@@ -9,7 +9,7 @@ Local-first indie comic and digital zine **reader**. PDFs live in IndexedDB; por
 - **Empty library by default** — add PDFs via drop zone, file picker, or Google Drive folder (local IndexedDB)
 - **Google Drive** — one sign-in for portfolio backup and folder import (see [Google sign-in](#google-sign-in) below)
 - Library: **grid** view, source/read-status/unread filter pills
-- **Stacks:** drag one comic onto another to group issues
+- **Stacks:** drag one comic onto another to group issues, or use **Organize** in the account menu (Drive backup row) for duplicate and series suggestions. Open a stack to remove issues with the unlink icon.
 - **Reader:** full-screen PDF.js canvas with single / spread / scroll modes
 - **Random:** header button opens a random unread zine
 
@@ -40,6 +40,7 @@ Do not call `ensureLabsGoogleAccessTokenForDrive` (narrow backup-only scopes) fr
 | ------------ | ----------------------------- | -------------------------------- |
 | `#/library`  | `filter=unread`               | Unread only                      |
 |              | `filter=read`                 | Started or finished              |
+|              | `q=alive`                     | Search titles, filenames, tags   |
 |              | `source=Shortbox`             | Source filter                    |
 |              | `tag=anthology`               | Tag filter                       |
 | `#/read/:id` | `mode=single\|spread\|scroll` | Reading mode                     |

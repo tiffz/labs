@@ -1,8 +1,12 @@
+import { useMemo } from 'react';
 import type { SxProps, Theme } from '@mui/material/styles';
+import { labsDriveSyncMessageIsTransientSuccess } from '../drive/labsDriveSyncMessages';
 import { LabsAccountMenu, type LabsAccountMenuProps } from './LabsAccountMenu';
 import LabsDriveBackupActionRow from './LabsDriveBackupActionRow';
 import LabsDriveConflictDialog from './LabsDriveConflictDialog';
 import LabsDriveRestoreDialog from './LabsDriveRestoreDialog';
+import LabsDriveSyncToast from './LabsDriveSyncToast';
+import { useLabsDriveSyncToastMessage } from './useLabsDriveSyncToastMessage';
 import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from './labsDriveBackupUiTypes';
 
 export type LabsDriveAccountMenuProps = Omit<LabsAccountMenuProps, 'renderBackupButton'> & {
@@ -14,6 +18,8 @@ export type LabsDriveAccountMenuProps = Omit<LabsAccountMenuProps, 'renderBackup
   backupActionVariant?: 'google-outlined' | 'contained';
   googleButtonClassName?: string;
   googleButtonSx?: SxProps<Theme>;
+  /** App shell renders {@link LabsFeedbackToast} (e.g. Zine Box sticky header). */
+  hideSyncToast?: boolean;
 };
 
 /**
@@ -28,8 +34,23 @@ export function LabsDriveAccountMenu(props: LabsDriveAccountMenuProps) {
     backupActionVariant = 'contained',
     googleButtonClassName,
     googleButtonSx,
+    backup,
+    hideSyncToast = false,
     ...menuProps
   } = props;
+
+  const { toastMessage, clearToast } = useLabsDriveSyncToastMessage(backup.message, backup.onDismissMessage);
+
+  const backupForMenu = useMemo(
+    () => ({
+      ...backup,
+      message:
+        backup.message && labsDriveSyncMessageIsTransientSuccess(backup.message)
+          ? null
+          : backup.message,
+    }),
+    [backup],
+  );
 
   const defaultBackupRow = ({
     disabled,
@@ -63,9 +84,16 @@ export function LabsDriveAccountMenu(props: LabsDriveAccountMenuProps) {
 
   return (
     <>
-      <LabsAccountMenu {...menuProps} renderBackupButton={renderBackupButton ?? defaultBackupRow} />
+      <LabsAccountMenu
+        {...menuProps}
+        backup={backupForMenu}
+        renderBackupButton={renderBackupButton ?? defaultBackupRow}
+      />
       <LabsDriveRestoreDialog {...drive} />
       {conflict ? <LabsDriveConflictDialog open {...conflict} /> : null}
+      {hideSyncToast ? null : (
+        <LabsDriveSyncToast message={toastMessage} onClose={clearToast} />
+      )}
     </>
   );
 }

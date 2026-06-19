@@ -9,6 +9,7 @@ export type ZineboxLibraryParams = {
   filter: ZineboxLibraryReadFilter;
   source: string | null;
   tag: string | null;
+  q: string | null;
 };
 
 export type ZineboxReaderParams = {
@@ -34,10 +35,12 @@ export function parseLibraryParams(search: string): ZineboxLibraryParams {
     filterRaw === 'unread' ? 'unread' : filterRaw === 'read' ? 'read' : 'all';
   const source = params.get('source');
   const tag = params.get('tag');
+  const qRaw = params.get('q');
   return {
     filter,
     source: source && source.length > 0 ? source : null,
     tag: tag && tag.length > 0 ? tag : null,
+    q: qRaw && qRaw.trim().length > 0 ? qRaw.trim() : null,
   };
 }
 
@@ -55,6 +58,7 @@ export function zineboxLibraryHref(params: ZineboxLibraryParams): string {
   if (params.filter !== 'all') qs.set('filter', params.filter);
   if (params.source) qs.set('source', params.source);
   if (params.tag) qs.set('tag', params.tag);
+  if (params.q) qs.set('q', params.q);
   const query = qs.toString();
   return query ? `#/library?${query}` : '#/library';
 }

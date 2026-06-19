@@ -410,12 +410,15 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
     gestureDriveFolderUrl(lastMeta.driveAppFolderId) ??
     labsDriveFolderUrl(lastMeta.driveAppFolderId);
 
+  const dismissMessage = useCallback(() => setMessage(null), []);
+
   return {
     identity,
     testerOk,
     testerResolved,
     busy: blockingVisible,
     message: syncPaused && !message ? LABS_DRIVE_SYNC_PAUSED_IDLE_MESSAGE : message,
+    dismissMessage,
     syncPaused,
     conflict,
     restoreOpen,

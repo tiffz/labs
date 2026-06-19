@@ -24,7 +24,7 @@ const inflight = new Map<string, Promise<string>>();
 const cacheVersions = new Map<string, number>();
 const idListeners = new Map<string, Set<() => void>>();
 
-const MAX_CONCURRENT_PREVIEW_RESOLVES = 4;
+const MAX_CONCURRENT_PREVIEW_RESOLVES = 3;
 let activePreviewResolves = 0;
 
 type PreviewResolveWaiter = {
@@ -58,9 +58,24 @@ function releasePreviewResolveSlot(): void {
   if (next) next.resume();
 }
 
+const pendingPreviewNotifyIds = new Set<string>();
+let previewNotifyRaf = 0;
+
+function flushPreviewCacheNotifications(): void {
+  previewNotifyRaf = 0;
+  if (pendingPreviewNotifyIds.size === 0) return;
+  const ids = [...pendingPreviewNotifyIds];
+  pendingPreviewNotifyIds.clear();
+  for (const id of ids) {
+    cacheVersions.set(id, (cacheVersions.get(id) ?? 0) + 1);
+    idListeners.get(id)?.forEach((listener) => listener());
+  }
+}
+
 function notifyPreviewCache(fileId: string): void {
-  cacheVersions.set(fileId, (cacheVersions.get(fileId) ?? 0) + 1);
-  idListeners.get(fileId)?.forEach((listener) => listener());
+  pendingPreviewNotifyIds.add(fileId);
+  if (previewNotifyRaf !== 0) return;
+  previewNotifyRaf = requestAnimationFrame(flushPreviewCacheNotifications);
 }
 
 export function subscribeGesturePreviewCacheForIds(

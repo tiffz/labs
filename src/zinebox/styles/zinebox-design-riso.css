@@ -8,6 +8,32 @@
   box-shadow: 2px 2px 0 var(--zinebox-riso-layer-a, transparent);
 }
 
+/* Library chrome — softer misregister so pills/search do not bleed a cyan rule below the bar. */
+[data-zinebox-theme^='riso']
+  .zinebox-library-sticky
+  .zinebox-library-search__field {
+  box-shadow: 1px 1px 0
+    color-mix(in srgb, var(--zinebox-riso-layer-a) 38%, transparent);
+}
+
+[data-zinebox-theme^='riso']
+  .zinebox-library-sticky
+  .zinebox-library-search:focus-within
+  .zinebox-library-search__field {
+  box-shadow:
+    1px 1px 0 color-mix(in srgb, var(--zinebox-riso-layer-a) 38%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--zinebox-accent) 16%, transparent);
+}
+
+[data-zinebox-theme^='riso'] .zinebox-library-sticky .zinebox-pill--active {
+  box-shadow: 1px 1px 0
+    color-mix(in srgb, var(--zinebox-riso-layer-a) 42%, transparent);
+}
+
+[data-zinebox-theme^='riso'] .zinebox-library-sticky .zinebox-pill:hover {
+  box-shadow: none;
+}
+
 [data-zinebox-theme^='riso'] .zinebox-cover-card__cover {
   transform: rotate(-0.35deg);
   transform-origin: center center;
@@ -47,6 +73,18 @@
   border-style: solid;
   border-color: var(--zinebox-border);
   box-shadow: 2px 2px 0 var(--zinebox-riso-layer-a, transparent);
+}
+
+[data-zinebox-theme^='riso'] .zinebox-library-search__field {
+  box-shadow: 2px 2px 0 var(--zinebox-riso-layer-a, transparent);
+}
+
+[data-zinebox-theme^='riso']
+  .zinebox-library-search:focus-within
+  .zinebox-library-search__field {
+  box-shadow:
+    2px 2px 0 var(--zinebox-riso-layer-a, transparent),
+    var(--zinebox-shadow-hover);
 }
 
 [data-zinebox-theme^='riso'] .zinebox-header {

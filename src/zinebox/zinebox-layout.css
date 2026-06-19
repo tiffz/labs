@@ -2,15 +2,66 @@
   --app-shell-max-width: 88rem;
   --app-shell-gutter: 12px;
   --app-shell-content-width: 100%;
-  --app-shell-scroll-pt: 8px;
+  --app-shell-scroll-pt: 0;
   --app-shell-scroll-pb: 24px;
   --app-shell-footer-gap: 0;
-  overflow-x: clip;
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--labs-debug-dock-height, 0px));
+  max-height: calc(100dvh - var(--labs-debug-dock-height, 0px));
+  min-height: 0;
   max-width: 100%;
+  overflow: hidden;
 }
 
+.zinebox-app > main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.zinebox-app .app-shell-root {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.zinebox-app .app-shell-column {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+.zinebox-app .app-shell-workbench {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Library chrome is fixed; only the grid scrolls (see zinebox-library-body). */
 .zinebox-app .app-shell-scroll {
-  overflow-x: clip;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.zinebox-app .app-shell-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .zinebox-app .app-shell-column,

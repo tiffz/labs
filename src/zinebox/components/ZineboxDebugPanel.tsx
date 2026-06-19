@@ -42,7 +42,7 @@ export default function ZineboxDebugPanel(): React.ReactElement {
     setBusy(true);
     try {
       await clearZineboxLocalData();
-      navigateZineboxHash(zineboxLibraryHref({ filter: 'all', source: null, tag: null }));
+      navigateZineboxHash(zineboxLibraryHref({ filter: 'all', source: null, tag: null, q: null }));
     } finally {
       setBusy(false);
     }

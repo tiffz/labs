@@ -251,6 +251,16 @@ Each app implements a hook/context that returns:
 
 Wire Stanza via `useStanzaDriveBackup`; Scales via `ScalesDriveBackupProvider` (`driveUi`). Do not duplicate restore dialogs or Drive link rows in app menus.
 
+### Transient success toasts (`LabsFeedbackToast`)
+
+After a blocking job finishes, **brief success copy** (e.g. `Synced from Drive (merged 218 comics).`) belongs in a **bottom-center dismissible toast**, not a banner over the app header or a filled MUI alert in the account menu.
+
+- **Component:** [`LabsFeedbackToast`](./components/LabsFeedbackToast.tsx) — paper panel, severity icon circle, matches [`LabsBlockingJobContext`](./jobs/LabsBlockingJobContext.tsx) elevation and placement.
+- **Drive hook:** [`useLabsDriveSyncToastMessage`](./google/useLabsDriveSyncToastMessage.ts) — filters transient sync copy via [`labsDriveSyncMessageIsTransientSuccess`](../drive/labsDriveSyncMessages.ts).
+- **Default wiring:** `LabsDriveAccountMenu` renders [`LabsDriveSyncToast`](./google/LabsDriveSyncToast.tsx) (thin wrapper). Apps with sticky headers (Zine Box) set `hideSyncToast` and mount one toast at the **app shell** (see `ZineboxDriveBackupProvider`).
+- **Errors / sign-in prompts** stay in the account menu alert slot — do not toast those.
+- **Long-running work** still uses the blocking-job snackbar only; do not duplicate progress UI.
+
 ## Related Docs
 
 - [Music Input Token Contracts](./components/music/THEMING_DECISIONS.md)

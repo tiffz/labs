@@ -14,8 +14,8 @@ Nested **`AGENTS.md`**. Root: [`../../AGENTS.md`](../../AGENTS.md).
 - **Drive OAuth:** `drive/zineboxGoogleDriveAccess.ts` — one GIS prompt for backup + folder import (do not use `ensureLabsGoogleAccessTokenForDrive` here)
 - **MVP PDF:** shared stub at `/zinebox/fixtures/sample-comic.pdf`
 - **Mock import:** `db/mockDriveImport.ts` — 20 seeded comics, idempotent
-- **Stacks:** `@dnd-kit/core` drag-to-group; `collections/naturalSortComics.ts`
-- **Reader:** `pdfjs-dist` canvas render (not react-pdf)
+- **Stacks:** manual drag-to-group only (no import autostack). Drive merge unions stack membership by stack id but honors `removedStackMemberships` / `deletedStackIds` tombstones so unlinks stick across sync. `removeComicFromStack` in `collections/stackMutations.ts`.
+- **Reader:** `pdfjs-dist` canvas render (not react-pdf); single/spread use **contain** fit; toolbar uses `@mui/icons-material`
 
 ## Pitfalls
 

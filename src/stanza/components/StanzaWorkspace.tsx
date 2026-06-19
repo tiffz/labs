@@ -78,6 +78,7 @@ import {
   sanitizeStanzaMarkers,
   STANZA_TIME_EPS,
 } from '../utils/segments';
+import { pickRandomSectionIndex } from '../utils/pickRandomSectionIndex';
 import {
   applySectionSelectionExtend,
   computeLoopHull,
@@ -2244,6 +2245,20 @@ export default function StanzaWorkspace() {
     [segmentSelectionAnchor, segments, userSeekUnified],
   );
 
+  const practiceRandomSection = useCallback(() => {
+    const segs = segmentsRef.current;
+    const idx = pickRandomSectionIndex(segs.length);
+    if (idx == null) return;
+    const seg = segs[idx];
+    if (!seg) return;
+    setLastClickedSegmentIndex(idx);
+    setSegmentSelectionAnchor(idx);
+    setSelectedSegmentIndices([idx]);
+    lastUserEnteredSectionIdRef.current = seg.id;
+    userSeekUnified(seg.start, { flushPlaybackState: true });
+    requestAnimationFrame(() => playUnifiedRef.current());
+  }, [userSeekUnified]);
+
   const clearSegmentSelection = useCallback(() => {
     setSelectedSegmentIndices([]);
     setSegmentSelectionAnchor(null);
@@ -3275,6 +3290,7 @@ export default function StanzaWorkspace() {
                   onPause={pauseUnified}
                   onSeek={userSeekUnified}
                   onSelectSegments={handleSelectSegments}
+                  onPracticeRandomSection={practiceRandomSection}
                   onMarkersChange={(m, ctx) => void commitMarkers(m, ctx)}
                   onDeleteMarker={deleteMarkerById}
                   onRenameSectionFromLabel={renameSectionFromLabel}

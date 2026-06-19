@@ -4,13 +4,16 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useState,
   type ReactNode,
 } from 'react';
+import LabsFeedbackToast from '../../shared/components/LabsFeedbackToast';
 import { LABS_ENCORE_GOOGLE_IDENTITY_CHANGED_EVENT } from '../../shared/google/encoreGoogleTokenStorage';
 import type { LabsAccountBackupSlotProps } from '../../shared/google/LabsAccountMenu';
 import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from '../../shared/google/labsDriveBackupUiTypes';
 import { getLabsDriveBackupRestrictionHashesFromEnv } from '../../shared/google/labsDriveTesterGate';
 import { formatLabsDriveInstant } from '../../shared/google/formatLabsDriveInstant';
+import { useLabsDriveSyncToastMessage } from '../../shared/google/useLabsDriveSyncToastMessage';
 import { useLabsGoogleSessionRefresh } from '../../shared/session/useLabsGoogleSessionRefresh';
 import { writeZineboxLocalPayload } from '../drive/zineboxLocalData';
 import type { ZineboxSyncPayload } from '../drive/zineboxDriveEnvelope';
@@ -24,6 +27,8 @@ export type ZineboxDriveBackupContextValue = {
   backupSlot: LabsAccountBackupSlotProps;
   driveUi: LabsDriveBackupUiProps;
   conflict: (LabsDriveConflictUiProps & { dialogTitleId: string }) | null;
+  /** Brief success copy at the bottom of the shell (Drive sync, organize, etc.). */
+  notifyAppToast: (message: string) => void;
 };
 
 const ZineboxDriveBackupContext = createContext<ZineboxDriveBackupContextValue | null>(null);
@@ -37,11 +42,27 @@ export function useZineboxDriveBackupContext(): ZineboxDriveBackupContextValue {
 }
 
 export function ZineboxDriveBackupProvider({ children }: { children: ReactNode }) {
+  const [appToast, setAppToast] = useState<string | null>(null);
+  const notifyAppToast = useCallback((message: string) => {
+    setAppToast(message);
+  }, []);
+
   const onMergePayload = useCallback(async (payload: ZineboxSyncPayload) => {
     await writeZineboxLocalPayload(payload);
   }, []);
 
   const backup = useZineboxDriveBackup({ onMergePayload });
+
+  const { toastMessage: driveSyncToast, clearToast: clearDriveSyncToast } = useLabsDriveSyncToastMessage(
+    backup.message,
+    backup.dismissMessage,
+  );
+
+  const toastMessage = appToast ?? driveSyncToast;
+  const clearToast = useCallback(() => {
+    setAppToast(null);
+    clearDriveSyncToast();
+  }, [clearDriveSyncToast]);
 
   useLabsGoogleSessionRefresh(() => {
     window.dispatchEvent(new Event(LABS_ENCORE_GOOGLE_IDENTITY_CHANGED_EVENT));
@@ -100,6 +121,7 @@ export function ZineboxDriveBackupProvider({ children }: { children: ReactNode }
       allowlistEmpty,
       busy: backup.busy,
       message: backup.message,
+      onDismissMessage: backup.dismissMessage,
       onBackup: backup.onBackup,
       onSignIn: backup.syncPaused ? backup.retryPullFromDrive : backup.onSignIn,
       lastBackupExportedAt: backup.lastMeta.lastBackupExportedAt,
@@ -135,11 +157,15 @@ export function ZineboxDriveBackupProvider({ children }: { children: ReactNode }
       backupSlot,
       driveUi,
       conflict,
+      notifyAppToast,
     }),
-    [backupSlot, driveUi, conflict],
+    [backupSlot, driveUi, conflict, notifyAppToast],
   );
 
   return (
-    <ZineboxDriveBackupContext.Provider value={value}>{children}</ZineboxDriveBackupContext.Provider>
+    <ZineboxDriveBackupContext.Provider value={value}>
+      {children}
+      <LabsFeedbackToast message={toastMessage} severity="success" onClose={clearToast} />
+    </ZineboxDriveBackupContext.Provider>
   );
 }

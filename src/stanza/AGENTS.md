@@ -17,3 +17,22 @@ Nested **`AGENTS.md`** for Stanza. Root policy: [`../../AGENTS.md`](../../AGENTS
 ## Tests
 
 - Layout smoke: `e2e/stanza-viewer-layout.spec.ts`
+- Drive sync unit: `stanzaDriveMainMediaSync.test.ts`, `stanzaDriveStemSync.test.ts`, `stanzaDriveMerge.test.ts`
+
+## Drive sync checklist (agents)
+
+When changing Stanza backup / restore:
+
+1. **Every blob tier needs upload + hydrate** — mirror `stem_audio/` (`stanzaDriveStemSync.ts`) and `main_audio/` (`stanzaDriveMainMediaSync.ts`). Metadata-only rows without bytes are a sync bug.
+2. **Merge paths must hydrate** — auto-pull, conflict merge, and undo restore call `hydrateStanzaLibraryMainMediaFromDrive` + stems (see `useStanzaDriveBackup.ts`).
+3. **Push before envelope** — `flushDriveWrite` uploads main media and stems before writing `progress.json`.
+4. **Conflict merge must `markPullSucceeded()`** — otherwise auto-push stays gated on a fresh device.
+5. **README + envelope comments** stay aligned with on-disk folders (`main_audio/`, `stem_audio/`).
+
+Rule: `.cursor/rules/stanza-drive-sync.mdc`
+
+## Viewer layout checklist (agents)
+
+1. Song viewer layout is **CSS-only** — see `LAYOUT.md` and `stanza-viewer-layout.css`.
+2. E2e asserts horizontal alignment and that the media stack sits above the library footer (`e2e/stanza-viewer-layout.spec.ts`).
+3. **Never** cap the library panel with `max-height: *vh` + viewport lock — it obscures the video (see `.cursor/rules/stanza-viewer-layout.mdc`).

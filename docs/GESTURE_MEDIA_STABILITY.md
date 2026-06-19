@@ -21,7 +21,7 @@ Canonical tier policy: [`src/gesture/media/gestureMediaPolicy.ts`](../../src/ges
 3. **Blob owner** — `gestureMediaCache` for session/offline bytes; preview pins for grid fallback only.
 4. **No eviction refetch loop** — LRU eviction in `gestureMediaCache` must not subscribe preview UI hooks to re-hydrate/re-fetch en masse.
 5. **Preview I/O tier** — thumbnail https before `alt=media`; cap concurrent preview resolves (see `gesturePreviewImageUrl.ts`).
-6. **Tab-active fetch** — active tab enables the preview pipeline (`previewFetchEnabled`); **viewport intersection** (`useNearViewport`) selects which strips may hit the network. Cache hits still render when off-screen.
+6. **Tab-active fetch** — active tab enables the preview pipeline (`previewFetchEnabled`); **viewport intersection** (`useNearViewport`) gates network I/O per strip (`shouldFetch = previewFetchEnabled && near`). Cache hits still render when off-screen. See [`docs/PERFORMANCE.md`](../docs/PERFORMANCE.md) § Viewport-gated thumbnail grids.
 7. **Resolve priority** — visible strip ids resolve first (`gesturePreviewResolvePriority.ts`); pinned blob revoke is delayed ~45s on scroll-away so scroll-back stays warm.
 
 Indexed in [`docs/AGENT_INVARIANTS.md`](AGENT_INVARIANTS.md).

@@ -103,6 +103,7 @@ export function ScalesDriveBackupProvider({ children }: { children: ReactNode })
       allowlistEmpty,
       busy: backup.busy,
       message: backup.message,
+      onDismissMessage: backup.dismissMessage,
       onBackup: backup.onBackup,
       onSignIn: backup.syncPaused ? backup.retryPullFromDrive : backup.onSignIn,
       lastBackupExportedAt: backup.lastMeta.lastBackupExportedAt,

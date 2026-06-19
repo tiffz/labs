@@ -1,0 +1,61 @@
+/*
+ * Dismissible success/info toast — pairs with LabsBlockingJobContext snackbar (see LOCAL_FIRST_SYNC.md).
+ * Bottom-center; stacks above the blocking-job panel when both are visible.
+ */
+
+.labs-feedback-toast-snackbar.MuiSnackbar-root {
+  z-index: 1390;
+}
+
+.labs-feedback-toast-panel {
+  width: 100%;
+}
+
+.labs-feedback-toast-panel__row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  column-gap: 12px;
+}
+
+.labs-feedback-toast-panel__icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+}
+
+.labs-feedback-toast-panel__message {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+}
+
+.labs-feedback-toast-panel__dismiss.MuiIconButton-root {
+  flex-shrink: 0;
+  align-self: center;
+  margin: 0 -4px 0 0;
+  color: inherit;
+  opacity: 0.62;
+}
+
+.labs-feedback-toast-panel__dismiss.MuiIconButton-root:hover {
+  opacity: 1;
+  background: rgb(0 0 0 / 0.04);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .labs-feedback-toast-snackbar .MuiSnackbarContent-root,
+  .labs-feedback-toast-snackbar .MuiPaper-root {
+    transition: none !important;
+  }
+}

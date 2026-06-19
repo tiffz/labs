@@ -71,6 +71,20 @@ function fitScale(
   }
 }
 
+/** Exported for unit tests and layout helpers. */
+export function computePageFitScale(
+  fit: PageRenderFit,
+  pageWidth: number,
+  pageHeight: number,
+  containerWidth: number,
+  containerHeight: number,
+): number {
+  if (pageWidth <= 0 || pageHeight <= 0 || containerWidth <= 0 || containerHeight <= 0) {
+    return 1;
+  }
+  return fitScale(fit, pageWidth, pageHeight, containerWidth, containerHeight);
+}
+
 export async function renderPdfPageToCanvas(
   doc: import('pdfjs-dist').PDFDocumentProxy,
   pageNumber: number,

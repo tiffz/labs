@@ -17,7 +17,8 @@ export default function LibraryFilterPills({
     params.filter === filter && !params.source && !params.tag;
 
   return (
-    <div className="zinebox-filter-pills" role="toolbar" aria-label="Library filters">
+    <div className="zinebox-filter-pills-wrap">
+      <div className="zinebox-filter-pills" role="toolbar" aria-label="Library filters">
       <button
         type="button"
         className={`zinebox-pill${statusActive('all') ? ' zinebox-pill--active' : ''}`}
@@ -59,6 +60,7 @@ export default function LibraryFilterPills({
           #{tag}
         </button>
       ))}
+      </div>
     </div>
   );
 }

@@ -21,17 +21,20 @@ type ZineboxRandomUnreadProps = {
 type ZineboxAppHeaderProps = {
   upload: ZineboxUploadSlotProps;
   randomUnread?: ZineboxRandomUnreadProps;
+  search?: React.ReactNode;
 };
 
 export default function ZineboxAppHeader({
   upload,
   randomUnread,
+  search,
 }: ZineboxAppHeaderProps): React.ReactElement {
   return (
     <header className="zinebox-header">
       <div className="zinebox-header__brand">
         <h1 className="zinebox-header__title">Zine Box</h1>
       </div>
+      {search ? <div className="zinebox-header__search">{search}</div> : null}
       <div className="zinebox-header__actions">
         {randomUnread ? (
           <AppTooltip

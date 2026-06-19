@@ -6,6 +6,12 @@ import {
   zineboxTombstoneComicIdsFromRemote,
 } from './deleteZineboxComic';
 import {
+  zineboxDeletedStackTombstonesForEnvelope,
+  zineboxDeletedStackIdsFromRemote,
+  zineboxRemovedStackMembershipIdsFromRemote,
+  zineboxStackMembershipRemovalTombstonesForEnvelope,
+} from './zineboxDriveStackTombstones';
+import {
   assessZineboxDriveBackupConflict,
   shouldPromptZineboxDriveMerge,
   type ZineboxDriveConflictReason,
@@ -21,6 +27,7 @@ import {
 import {
   formatZineboxDriveMergeReport,
   mergeZineboxSyncPayload,
+  zineboxMergeReportHasUserVisibleRemoteChanges,
   type ZineboxDriveMergeReport,
 } from './zineboxDriveMerge';
 import { downloadMissingZineboxPdfs, uploadZineboxPdfsForBackup } from './zineboxDrivePdfSync';
@@ -61,18 +68,33 @@ export const zineboxPortfolioDriveBackupConfig: LabsPortfolioDriveBackupConfig<
     await signInZineboxGoogleDrive();
   },
   readLocalPayload: readZineboxLocalPayload,
-  buildEnvelope: (local) => buildZineboxDriveEnvelope(local, zineboxComicTombstonesForEnvelope()),
+  buildEnvelope: (local) =>
+    buildZineboxDriveEnvelope(local, zineboxComicTombstonesForEnvelope(), {
+      deletedStackIds: zineboxDeletedStackTombstonesForEnvelope(),
+      removedStackMemberships: zineboxStackMembershipRemovalTombstonesForEnvelope(),
+    }),
   serializeEnvelope: serializeZineboxDriveEnvelope,
   parseEnvelope: parseZineboxDriveEnvelope,
   envelopeToPayload,
   mergePayload: (local, remote, options) => {
-    const tombstoneComicIds = options?.remoteEnvelope
-      ? zineboxTombstoneComicIdsFromRemote(options.remoteEnvelope.deletedComicIds)
+    const remoteEnvelope = options?.remoteEnvelope;
+    const tombstoneComicIds = remoteEnvelope
+      ? zineboxTombstoneComicIdsFromRemote(remoteEnvelope.deletedComicIds)
       : undefined;
-    return mergeZineboxSyncPayload(local, remote, { tombstoneComicIds });
+    const deletedStackIds = remoteEnvelope
+      ? zineboxDeletedStackIdsFromRemote(remoteEnvelope.deletedStackIds)
+      : undefined;
+    const removedStackMemberships = remoteEnvelope
+      ? zineboxRemovedStackMembershipIdsFromRemote(remoteEnvelope.removedStackMemberships)
+      : undefined;
+    return mergeZineboxSyncPayload(local, remote, {
+      tombstoneComicIds,
+      deletedStackIds,
+      removedStackMemberships,
+    });
   },
   formatMergeReport: formatZineboxDriveMergeReport,
-  mergeReportHasRemoteChanges: (report) => report.comicsFromRemoteOnly + report.comicsMerged > 0,
+  mergeReportHasRemoteChanges: zineboxMergeReportHasUserVisibleRemoteChanges,
   shouldPromptMerge: shouldPromptZineboxDriveMerge,
   assessConflict: assessZineboxDriveBackupConflict,
   buildConflictState: ({ meta, refs, remoteEnvelope, local, reasons }) => ({

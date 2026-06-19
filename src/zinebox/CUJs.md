@@ -21,12 +21,19 @@ UX sketch skill: [`labs-ux-journey`](../../.cursor/skills/labs-ux-journey/SKILL.
 - Library header and upload entry points visible before navigation actions.
 - Reader opens at `#/read/<id>` without blank spread.
 
+### Performance budgets
+
+| Step                             | Budget                            | Verification                               |
+| -------------------------------- | --------------------------------- | ------------------------------------------ |
+| Scroll library grid (54+ covers) | p95 frame ≤ 50 ms, ≤ 8 long tasks | `e2e/smoke/zinebox-library-scroll.spec.ts` |
+
 ### Automation
 
-| Type   | Artifact                            |
-| ------ | ----------------------------------- |
-| Smoke  | `e2e/smoke/zinebox-library.spec.ts` |
-| Helper | `e2e/helpers/zineboxLibrary.ts`     |
+| Type   | Artifact                                   |
+| ------ | ------------------------------------------ |
+| Smoke  | `e2e/smoke/zinebox-library.spec.ts`        |
+| Scroll | `e2e/smoke/zinebox-library-scroll.spec.ts` |
+| Helper | `e2e/helpers/zineboxLibrary.ts`            |
 
 ---
 

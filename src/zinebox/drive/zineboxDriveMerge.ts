@@ -1,10 +1,14 @@
 import type { ZineboxCollection, ZineboxComic, ZineboxReadStatus } from '../types';
 import type { ZineboxSyncPayload } from './zineboxDriveEnvelope';
+import { stackMembershipTombstoneId } from './zineboxDriveStackTombstones';
 
 export type ZineboxDriveMergeReport = {
+  /** Overlap count (diagnostics only — not user-facing). */
   comicsMerged: number;
   comicsFromLocalOnly: number;
   comicsFromRemoteOnly: number;
+  /** Comics that existed locally but changed because Drive had newer metadata/progress. */
+  comicsUpdatedFromRemote: number;
   collectionsMerged: number;
 };
 
@@ -28,6 +32,28 @@ function mergeTags(a: readonly string[] | undefined, b: readonly string[] | unde
   return merged.length > 0 ? merged : undefined;
 }
 
+function tagsKey(tags: readonly string[] | undefined): string {
+  return [...(tags ?? [])].sort().join('\0');
+}
+
+/** True when merge applied remote fields the local copy did not already have. */
+function comicChangedByMerge(local: ZineboxComic, merged: ZineboxComic): boolean {
+  return (
+    local.progressPercentage !== merged.progressPercentage ||
+    local.readStatus !== merged.readStatus ||
+    tagsKey(local.tags) !== tagsKey(merged.tags) ||
+    (!local.title.trim() && local.title !== merged.title) ||
+    (!local.coverThumbnailBase64 && local.coverThumbnailBase64 !== merged.coverThumbnailBase64) ||
+    (local.driveBackupFileId ?? null) !== (merged.driveBackupFileId ?? null) ||
+    (local.driveFileId ?? null) !== (merged.driveFileId ?? null) ||
+    (local.driveMediaFileId ?? null) !== (merged.driveMediaFileId ?? null) ||
+    (local.contentMd5 ?? null) !== (merged.contentMd5 ?? null) ||
+    (local.fileSizeBytes ?? null) !== (merged.fileSizeBytes ?? null) ||
+    (local.filename ?? null) !== (merged.filename ?? null) ||
+    (local.storageKind ?? null) !== (merged.storageKind ?? null)
+  );
+}
+
 function mergeComic(local: ZineboxComic, remote: ZineboxComic): ZineboxComic {
   const preferLocalTitle = local.title.trim().length > 0;
   return {
@@ -48,8 +74,15 @@ function mergeComic(local: ZineboxComic, remote: ZineboxComic): ZineboxComic {
   };
 }
 
-function mergeCollection(local: ZineboxCollection, remote: ZineboxCollection): ZineboxCollection {
-  const itemIds = [...new Set([...local.itemIds, ...remote.itemIds])];
+function mergeCollection(
+  local: ZineboxCollection,
+  remote: ZineboxCollection,
+  removedStackMemberships: ReadonlySet<string>,
+): ZineboxCollection {
+  const stackId = local.id;
+  const isRemoved = (comicId: string) =>
+    removedStackMemberships.has(stackMembershipTombstoneId(stackId, comicId));
+  const itemIds = [...new Set([...local.itemIds, ...remote.itemIds])].filter((id) => !isRemoved(id));
   return {
     id: local.id,
     name: local.name.trim() ? local.name : remote.name,
@@ -61,9 +94,15 @@ function mergeCollection(local: ZineboxCollection, remote: ZineboxCollection): Z
 export function mergeZineboxSyncPayload(
   local: ZineboxSyncPayload,
   remote: ZineboxSyncPayload,
-  options?: { tombstoneComicIds?: ReadonlySet<string> },
+  options?: {
+    tombstoneComicIds?: ReadonlySet<string>;
+    deletedStackIds?: ReadonlySet<string>;
+    removedStackMemberships?: ReadonlySet<string>;
+  },
 ): { payload: ZineboxSyncPayload; report: ZineboxDriveMergeReport } {
   const tombstoneComicIds = options?.tombstoneComicIds ?? new Set<string>();
+  const deletedStackIds = options?.deletedStackIds ?? new Set<string>();
+  const removedStackMemberships = options?.removedStackMemberships ?? new Set<string>();
   const comicIds = new Set([
     ...local.comics.map((c) => c.id),
     ...remote.comics.map((c) => c.id),
@@ -74,14 +113,19 @@ export function mergeZineboxSyncPayload(
   let comicsMerged = 0;
   let comicsFromLocalOnly = 0;
   let comicsFromRemoteOnly = 0;
+  let comicsUpdatedFromRemote = 0;
 
   for (const id of comicIds) {
     if (tombstoneComicIds.has(id)) continue;
     const l = localById.get(id);
     const r = remoteById.get(id);
     if (l && r) {
-      comics.push(mergeComic(l, r));
+      const mergedComic = mergeComic(l, r);
+      comics.push(mergedComic);
       comicsMerged += 1;
+      if (comicChangedByMerge(l, mergedComic)) {
+        comicsUpdatedFromRemote += 1;
+      }
     } else if (l) {
       comics.push(l);
       comicsFromLocalOnly += 1;
@@ -101,10 +145,11 @@ export function mergeZineboxSyncPayload(
   let collectionsMerged = 0;
 
   for (const id of collectionIds) {
+    if (deletedStackIds.has(id)) continue;
     const l = localCollections.get(id);
     const r = remoteCollections.get(id);
     if (l && r) {
-      collections.push(mergeCollection(l, r));
+      collections.push(mergeCollection(l, r, removedStackMemberships));
       collectionsMerged += 1;
     } else if (l) {
       const keptItems = l.itemIds.filter((itemId) => !tombstoneComicIds.has(itemId));
@@ -125,9 +170,17 @@ export function mergeZineboxSyncPayload(
       comicsMerged,
       comicsFromLocalOnly,
       comicsFromRemoteOnly,
+      comicsUpdatedFromRemote,
       collectionsMerged,
     },
   };
+}
+
+/** Whether a silent auto-pull should toast — only when Drive added or changed something here. */
+export function zineboxMergeReportHasUserVisibleRemoteChanges(
+  report: ZineboxDriveMergeReport,
+): boolean {
+  return report.comicsFromRemoteOnly > 0 || report.comicsUpdatedFromRemote > 0;
 }
 
 export function formatZineboxDriveMergeReport(report: ZineboxDriveMergeReport): string {
@@ -137,8 +190,10 @@ export function formatZineboxDriveMergeReport(report: ZineboxDriveMergeReport): 
       `added ${report.comicsFromRemoteOnly} comic${report.comicsFromRemoteOnly === 1 ? '' : 's'} from Drive`,
     );
   }
-  if (report.comicsMerged > 0) {
-    parts.push(`merged ${report.comicsMerged} comic${report.comicsMerged === 1 ? '' : 's'}`);
+  if (report.comicsUpdatedFromRemote > 0) {
+    parts.push(
+      `updated ${report.comicsUpdatedFromRemote} comic${report.comicsUpdatedFromRemote === 1 ? '' : 's'} from Drive`,
+    );
   }
   if (report.comicsFromLocalOnly > 0) {
     parts.push(`kept ${report.comicsFromLocalOnly} local-only`);

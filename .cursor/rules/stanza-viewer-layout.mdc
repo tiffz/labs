@@ -17,4 +17,6 @@ globs:
 
 4. **No `mx: auto` on `.stanza-viewer-body-grid` alone** — misaligns library vs timeline.
 
-5. **After layout changes** — Browser-check at ~1100px width; optional e2e: `e2e/stanza-viewer-layout.spec.ts`. See [`src/stanza/LAYOUT.md`](../../src/stanza/LAYOUT.md).
+5. **After layout changes** — Browser-check at ~1100px width; e2e: `e2e/stanza-viewer-layout.spec.ts`. See [`src/stanza/LAYOUT.md`](../../src/stanza/LAYOUT.md).
+
+6. **Do not viewport-lock the song viewer** — Pinning `.stanza-app` to `100dvh` with a capped library footer steals space from the video. Library stays a natural-height footer below `.stanza-viewer-scroll`; page scroll is OK when the workbench is tall.

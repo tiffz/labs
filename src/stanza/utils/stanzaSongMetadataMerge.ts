@@ -9,6 +9,18 @@ import {
 
 type MergeSide = StanzaSong | StanzaSongDriveRow;
 
+/** When this device has metadata only, adopt Drive's main-recording link so hydration can run. */
+export function resolveDriveSourceFileIdForMerge(
+  local: Pick<StanzaSong, 'ytId' | 'driveSourceFileId' | 'localAudioBlob'>,
+  remote: Pick<StanzaSongDriveRow, 'driveSourceFileId'>,
+): string | undefined {
+  const localId = local.driveSourceFileId?.trim();
+  const remoteId = remote.driveSourceFileId?.trim();
+  if (local.ytId) return localId;
+  if (local.localAudioBlob?.size) return localId ?? remoteId;
+  return remoteId ?? localId;
+}
+
 function mergePracticeStats(local: StanzaSong, remote: MergeSide): StanzaSong['stats'] {
   const localScore = stanzaSongPracticeCustomizationScore(local);
   const remoteScore = stanzaSongPracticeCustomizationScore(remote);
@@ -112,11 +124,13 @@ export function mergeStanzaRicherSongMetadataWithReport(
   const metronomeSongCalibration = mergePracticeMetronomeSongCalibration(local, remote);
 
   const title = local.updatedAt >= remote.updatedAt ? local.title : remote.title;
+  const driveSourceFileId = resolveDriveSourceFileIdForMerge(local, remote);
 
   return {
     song: {
       ...local,
       title,
+      driveSourceFileId,
       markers,
       stats,
       metronomeBySegmentId,

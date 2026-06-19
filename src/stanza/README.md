@@ -24,8 +24,9 @@ play a drum groove that follows the metronome BPM.
 - **Drive restore:** `progress.json` syncs section markers, BPM, mix, and skip flags.
   **Sync architecture:** [`docs/LOCAL_FIRST_SYNC.md`](../../docs/LOCAL_FIRST_SYNC.md).
   **Mix layers (stems)** upload to `stem_audio/` on backup and re-download after restore.
-  The **main recording** is not in that JSON; Drive-linked songs (`?df=` / Encore uploads)
-  re-download when you open them on a new device (same Google account).
+  **Main recordings** (local uploads) upload to `main_audio/` on backup; each row's
+  `driveSourceFileId` in `progress.json` links the bytes. Drive-linked songs from Encore
+  (`?df=`) re-download when you open them on a new device (same Google account).
 
 ## Architecture
 

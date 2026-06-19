@@ -1,18 +1,29 @@
 import { useDroppable } from '@dnd-kit/core';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 
 import { sortComicIdsNatural } from '../collections/naturalSortComics';
 import type { ZineboxCollection, ZineboxComic } from '../types';
+import {
+  summarizeStackCoverRead,
+  zineboxStackIssueCountLabel,
+} from '../utils/zineboxCoverReadSummary';
+import ZineboxCoverReadIndicators from './ZineboxCoverReadIndicators';
+import ZineboxStackIssueBadge from './ZineboxStackIssueBadge';
+import ZineboxSearchHighlight from './ZineboxSearchHighlight';
+
+const MAX_STACK_PREVIEW_COVERS = 3;
 
 type StackCoverCardProps = {
   collection: ZineboxCollection;
   comicsById: ReadonlyMap<string, ZineboxComic>;
+  searchQuery?: string | null;
   onOpenStack: (collection: ZineboxCollection) => void;
 };
 
-export default function StackCoverCard({
+export default memo(function StackCoverCard({
   collection,
   comicsById,
+  searchQuery,
   onOpenStack,
 }: StackCoverCardProps): React.ReactElement {
   const { setNodeRef, isOver } = useDroppable({ id: collection.id });
@@ -22,8 +33,20 @@ export default function StackCoverCard({
     [collection.customSortOrder, collection.itemIds, comicsById],
   );
 
-  const primaryComic = comicsById.get(sortedIds[0] ?? '');
+  const previewIds = useMemo(() => {
+    const ids = sortedIds.slice(0, MAX_STACK_PREVIEW_COVERS);
+    return ids.length > 0 ? ids : collection.itemIds.slice(0, MAX_STACK_PREVIEW_COVERS);
+  }, [collection.itemIds, sortedIds]);
+
   const count = collection.itemIds.length;
+  const stackComics = useMemo(
+    () =>
+      collection.itemIds
+        .map((id) => comicsById.get(id))
+        .filter((comic): comic is ZineboxComic => comic != null),
+    [collection.itemIds, comicsById],
+  );
+  const readSummary = useMemo(() => summarizeStackCoverRead(stackComics), [stackComics]);
 
   return (
     <article
@@ -39,26 +62,47 @@ export default function StackCoverCard({
         type="button"
         className="zinebox-stack-card__button"
         onClick={() => onOpenStack(collection)}
-        aria-label={`Open stack ${collection.name}, ${count} issues`}
+        aria-label={`Open stack ${collection.name}, ${zineboxStackIssueCountLabel(count)}`}
       >
         <div className="zinebox-stack-card__pile">
-          <div className="zinebox-stack-card__edge zinebox-stack-card__edge--back" aria-hidden />
-          <div className="zinebox-stack-card__edge zinebox-stack-card__edge--mid" aria-hidden />
-          <div className="zinebox-stack-card__cover">
-            {primaryComic ? (
-              <img
-                src={primaryComic.coverThumbnailBase64}
-                alt=""
-                className="zinebox-cover-card__image"
-              />
-            ) : (
+          {previewIds.length > 0 ? (
+            previewIds.map((comicId, index) => {
+              const comic = comicsById.get(comicId);
+              const layer = previewIds.length - 1 - index;
+              return (
+                <div
+                  key={comicId}
+                  className={`zinebox-stack-card__layer zinebox-stack-card__layer--${layer}`}
+                  aria-hidden={index > 0}
+                >
+                  {comic ? (
+                    <img
+                      src={comic.coverThumbnailBase64}
+                      alt=""
+                      className="zinebox-cover-card__image"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div className="zinebox-stack-card__placeholder" />
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <div className="zinebox-stack-card__layer zinebox-stack-card__layer--0">
               <div className="zinebox-stack-card__placeholder" aria-hidden />
-            )}
-            <span className="zinebox-stack-card__badge">{count}</span>
+            </div>
+          )}
+          <div className="zinebox-stack-card__front">
+            <ZineboxStackIssueBadge count={count} />
+            <ZineboxCoverReadIndicators {...readSummary} />
           </div>
         </div>
-        <p className="zinebox-cover-card__title">{collection.name}</p>
+        <p className="zinebox-cover-card__title">
+          <ZineboxSearchHighlight text={collection.name} query={searchQuery} />
+        </p>
       </button>
     </article>
   );
-}
+});

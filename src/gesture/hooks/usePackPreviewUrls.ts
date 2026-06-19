@@ -93,9 +93,14 @@ export function usePackPreviewUrls(
         const url =
           cached[index] || (await resolveGesturePreviewImageUrl(token, id, thumbWidth));
         resolvedById.set(id, url);
+        if (cancelled) break;
+        setUrls((prev) => {
+          const next = prev.length === ids.length ? [...prev] : ids.map(() => '');
+          next[index] = url;
+          return next;
+        });
       }
       if (cancelled) return;
-      setUrls(ids.map((id) => resolvedById.get(id) ?? ''));
       setLoading(false);
     })();
 

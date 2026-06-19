@@ -35,17 +35,19 @@ test.describe('Stanza viewer layout alignment', () => {
 
     const edges = await page.evaluate((tolerance) => {
       const workbench = document.querySelector('.stanza-viewer-workbench');
+      const mainColumn = document.querySelector('.stanza-viewer-main-column');
       const library = document.querySelector('.stanza-library-panel');
       const playback = document.querySelector('.stanza-playback-stack');
-      if (!workbench || !library || !playback) return { ok: false, reason: 'missing nodes' };
+      if (!workbench || !mainColumn || !library || !playback) return { ok: false, reason: 'missing nodes' };
       const wb = workbench.getBoundingClientRect();
+      const mc = mainColumn.getBoundingClientRect();
       const lib = library.getBoundingClientRect();
       const pb = playback.getBoundingClientRect();
       const drift = {
         libLeft: Math.abs(lib.left - wb.left),
         libRight: Math.abs(lib.right - wb.right),
-        pbLeft: Math.abs(pb.left - wb.left),
-        pbRight: Math.abs(pb.right - wb.right),
+        pbLeft: Math.abs(pb.left - mc.left),
+        pbRight: Math.abs(pb.right - mc.right),
       };
       const ok =
         drift.libLeft <= tolerance &&
@@ -56,5 +58,20 @@ test.describe('Stanza viewer layout alignment', () => {
     }, EDGE_TOLERANCE_PX);
 
     expect(edges.ok, JSON.stringify(edges)).toBe(true);
+
+    const stackAboveLibrary = await page.evaluate(() => {
+      const playback = document.querySelector('.stanza-playback-stack');
+      const library = document.querySelector('.stanza-library-panel');
+      if (!playback || !library) return { ok: false, reason: 'missing nodes' };
+      const playbackRect = playback.getBoundingClientRect();
+      const libraryRect = library.getBoundingClientRect();
+      return {
+        ok: playbackRect.bottom <= libraryRect.top + 4,
+        playbackBottom: playbackRect.bottom,
+        libraryTop: libraryRect.top,
+      };
+    });
+
+    expect(stackAboveLibrary.ok, JSON.stringify(stackAboveLibrary)).toBe(true);
   });
 });

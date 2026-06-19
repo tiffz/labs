@@ -1,3 +1,10 @@
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import LooksOneOutlinedIcon from '@mui/icons-material/LooksOneOutlined';
+import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import ViewStreamOutlinedIcon from '@mui/icons-material/ViewStreamOutlined';
 import IconButton from '@mui/material/IconButton';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
@@ -8,18 +15,13 @@ import { formatReaderPageCount, readerModeLabel, spreadNavigationState } from '.
 
 const READER_MODES: readonly ZineboxReaderMode[] = ['single', 'spread', 'scroll'];
 
-function readerModeIcon(mode: ZineboxReaderMode): string {
-  switch (mode) {
-    case 'single':
-      return 'crop_portrait';
-    case 'spread':
-      return 'book_2';
-    case 'scroll':
-      return 'view_stream';
-    default:
-      return 'menu_book';
-  }
-}
+const READER_MODE_ICONS = {
+  single: ArticleOutlinedIcon,
+  spread: MenuBookOutlinedIcon,
+  scroll: ViewStreamOutlinedIcon,
+} as const satisfies Record<ZineboxReaderMode, typeof ArticleOutlinedIcon>;
+
+const READER_TOOLBAR_ICON_SX = { fontSize: 20 } as const;
 
 type ReaderChromeProps = {
   title: string;
@@ -50,9 +52,7 @@ export default function ReaderChrome({
         className="zinebox-reader__back"
         size="small"
       >
-        <span className="material-symbols-outlined" aria-hidden>
-          arrow_back
-        </span>
+        <ArrowBackIcon sx={READER_TOOLBAR_ICON_SX} />
       </IconButton>
 
       <div className="zinebox-reader__header-main">
@@ -76,20 +76,15 @@ export default function ReaderChrome({
           className="zinebox-reader__mode-toggle"
         >
           {READER_MODES.map((readerMode) => {
-            const selected = mode === readerMode;
+            const Icon = READER_MODE_ICONS[readerMode];
             return (
               <AppTooltip key={readerMode} title={readerModeLabel(readerMode)}>
                 <ToggleButton
                   value={readerMode}
                   aria-label={readerModeLabel(readerMode)}
-                  className={`zinebox-reader__mode-btn${selected ? ' zinebox-reader__mode-btn--selected' : ''}`}
+                  className="zinebox-reader__mode-btn"
                 >
-                  <span
-                    className={`material-symbols-outlined zinebox-reader__mode-icon${selected ? ' zinebox-reader__mode-icon--selected' : ''}`}
-                    aria-hidden
-                  >
-                    {readerModeIcon(readerMode)}
-                  </span>
+                  <Icon sx={READER_TOOLBAR_ICON_SX} />
                 </ToggleButton>
               </AppTooltip>
             );
@@ -109,9 +104,7 @@ export default function ReaderChrome({
                   : 'zinebox-reader__spread-offset-btn'
               }
             >
-              <span className="material-symbols-outlined zinebox-reader__mode-icon" aria-hidden>
-                looks_one
-              </span>
+              <LooksOneOutlinedIcon sx={READER_TOOLBAR_ICON_SX} />
             </IconButton>
           </AppTooltip>
         ) : null}
@@ -154,9 +147,7 @@ export function ReaderNavButtons({
         className="zinebox-reader__nav zinebox-reader__nav--prev"
         size="large"
       >
-        <span className="material-symbols-outlined" aria-hidden>
-          chevron_left
-        </span>
+        <ChevronLeftIcon />
       </IconButton>
       <IconButton
         onClick={onNext}
@@ -165,9 +156,7 @@ export function ReaderNavButtons({
         className="zinebox-reader__nav zinebox-reader__nav--next"
         size="large"
       >
-        <span className="material-symbols-outlined" aria-hidden>
-          chevron_right
-        </span>
+        <ChevronRightIcon />
       </IconButton>
     </div>
   );

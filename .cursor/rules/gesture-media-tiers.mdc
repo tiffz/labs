@@ -39,7 +39,7 @@ Network resolution order (when https not cached):
 - **Blob URL owner:** `gestureMediaCache` only — preview https cache must not retain revoked `blob:` URLs.
 - **No `fetch()` on lh3 / thumbnail URLs** — CORS blocks; use `<img>` / `probeImageUrlLoads`.
 - **Display-ready:** session pipeline decodes one photo at a time (`gestureSessionPhotoPipeline`).
-- **Tab-active fetch:** `usePackPreviewUrls(..., previewFetchEnabled)` — do not gate network on intersection observer alone.
+- **Tab-active fetch:** `usePackPreviewUrls(..., previewFetchEnabled)` — tab visibility gates all network; **`previewFetchEnabled && near`** gates each strip (see `PackPreviewStrip`).
 
 ## Regression tests (run when touching this rule’s globs)
 

@@ -70,9 +70,9 @@
   background-size: 5px 5px;
 }
 
-[data-zinebox-theme='candycomic'] .zinebox-stack-card__badge {
-  background: #ff3366;
-  border: 2px solid #0a0a0a;
+[data-zinebox-theme='candycomic'] .zinebox-stack-card__issue-badge {
+  background: #0a0a0a;
+  border: 2px solid #ff3366;
   box-shadow: 3px 3px 0 #0a0a0a;
 }
 
@@ -95,8 +95,13 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 12px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--app-shell-max-width, 88rem);
+  margin-inline: auto;
   margin-bottom: 16px;
   padding: 10px 14px;
+  padding-inline: max(14px, var(--app-shell-gutter, 12px));
   border-radius: var(--zinebox-radius);
   border: 1px dashed var(--zinebox-border-strong);
   background: var(--zinebox-surface);
