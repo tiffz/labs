@@ -1,13 +1,8 @@
 /* Per-theme structural experiments — tokens live in zineboxDesignThemes.ts */
 
 [data-zinebox-theme='risograph'] .zinebox-cover-card__cover {
-  transform: rotate(-0.6deg);
-}
-
-[data-zinebox-theme='risograph']
-  .zinebox-cover-card:hover
-  .zinebox-cover-card__cover {
-  transform: translateY(-3px) rotate(0.2deg);
+  --zinebox-cover-tilt: -0.6deg;
+  --zinebox-cover-tilt-hover: 0.2deg;
 }
 
 [data-zinebox-theme='newsprint'] .zinebox-app {

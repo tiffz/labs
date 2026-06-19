@@ -4,24 +4,28 @@
 
 ## Tokens (`--zinebox-*` in `styles/zinebox.css`)
 
-| Token                    | Value                | Use                                           |
-| ------------------------ | -------------------- | --------------------------------------------- |
-| `--zinebox-paper`        | `#f8f7f5`            | App background                                |
-| `--zinebox-surface`      | `#fdfcfb`            | Cards, upload zone                            |
-| `--zinebox-ink`          | `#484440`            | Primary text (warm grey, not black)           |
-| `--zinebox-muted`        | `#9c9691`            | Secondary text, inactive pills                |
-| `--zinebox-accent`       | `#ff1493`            | Active pills, unread dot, progress bar, focus |
-| `--zinebox-accent-soft`  | `#fff0f7`            | Hover wash, stack peek edges                  |
-| `--zinebox-border`       | `rgba(72,68,64,0.1)` | Hairline borders                              |
-| `--zinebox-shadow`       | soft offset shadow   | Covers at rest                                |
-| `--zinebox-shadow-hover` | offset + pink ring   | Cover hover                                   |
+| Token                          | Value                | Use                                                              |
+| ------------------------------ | -------------------- | ---------------------------------------------------------------- |
+| `--zinebox-paper`              | `#f8f7f5`            | App background                                                   |
+| `--zinebox-surface`            | `#fdfcfb`            | Cards, upload zone                                               |
+| `--zinebox-ink`                | `#484440`            | Primary text (warm grey, not black)                              |
+| `--zinebox-muted`              | `#9c9691`            | Secondary text, inactive pills                                   |
+| `--zinebox-accent`             | `#ff1493`            | Active pills, unread dot, progress bar, focus                    |
+| `--zinebox-accent-soft`        | `#fff0f7`            | Hover wash, stack peek edges                                     |
+| `--zinebox-border`             | `rgba(72,68,64,0.1)` | Hairline borders                                                 |
+| `--zinebox-shadow-subtle`      | light offset shadow  | Search field only (quiet chrome)                                 |
+| `--zinebox-shadow-cover`       | cel offset shadow    | Hot Stack covers; Riso uses cyan shelf plate (`4px 2px` on Pulp) |
+| `--zinebox-shadow-cover-hover` | lift + ring          | Cover hover                                                      |
+| `--zinebox-shadow-pill`        | pill offset          | Filter chip hover                                                |
+| `--zinebox-shadow-pill-active` | stronger offset      | Active filter chip                                               |
 
 ## Surfaces
 
-- **Covers:** hairline border, light cel offset; hover lifts with pink-tinted ring (not full hot-pink border)
+- **Covers (Riso):** solid cyan **shelf plate** (`::before` on card, offset right) — box-shadow alone is hidden by grid overlap; shelf uses reserved padding
 - **Stacks:** pink-tinted rear pages; **neutral issue-count badge** (layers icon + count, bottom-left)
 - **Read status on covers:** unread = pink dot (top-right); in progress = thin pink progress bar (bottom edge); finished = clean cover
-- **Filter pills:** ghost inactive; **hot pink fill** when active
+- **Filter pills:** ghost inactive; hot pink fill when active; offset shadow on hover/active
+- **Search:** quiet `--zinebox-shadow-subtle` — lighter than shelf cards
 - **View toggle:** muted until selected → pink text on blush background
 - **Upload:** neutral dashed zone; pink copy on drag overlay
 - **Reader:** warm charcoal fullscreen; MUI primary drives HUD accents

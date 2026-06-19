@@ -1,5 +1,44 @@
 /* Riso Lab — misregistered soy ink (restrained stacks — one ghost layer by default) */
 
+[data-zinebox-theme^='riso'] .zinebox-cover-card,
+[data-zinebox-theme^='riso'] .zinebox-stack-card {
+  position: relative;
+  --zinebox-riso-shelf-space: 6px;
+  --zinebox-riso-shelf-tilt: 0.3deg;
+  --zinebox-riso-shelf-tilt-hover: -0.45deg;
+  /* Reserve space so the cyan shelf is not painted over by the next grid column. */
+  padding-right: var(--zinebox-riso-shelf-space);
+  padding-bottom: 4px;
+  /* Room for cover-only lift without clipping the first grid row. */
+  padding-top: var(--zinebox-cover-hover-lift, 4px);
+}
+
+[data-zinebox-theme^='riso'] .zinebox-cover-card::before,
+[data-zinebox-theme^='riso'] .zinebox-stack-card::before {
+  content: '';
+  position: absolute;
+  top: var(--zinebox-cover-hover-lift, 4px);
+  left: 0;
+  width: calc(100% - var(--zinebox-riso-shelf-space));
+  aspect-ratio: var(--zinebox-cover-ratio);
+  border-radius: var(--zinebox-radius);
+  background: var(--zinebox-riso-layer-a, #00e5ff);
+  transform: translate(
+      var(--zinebox-riso-shelf-x, 4px),
+      var(--zinebox-riso-shelf-y, 2px)
+    )
+    rotate(var(--zinebox-riso-shelf-tilt, 0.3deg));
+  transform-origin: 50% 92%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-zinebox-theme^='riso'] .zinebox-cover-card__button,
+[data-zinebox-theme^='riso'] .zinebox-stack-card__button {
+  position: relative;
+  z-index: 1;
+}
+
 [data-zinebox-theme^='riso'] .zinebox-header__title {
   text-shadow: 2px 2px 0 var(--zinebox-riso-layer-a, transparent);
 }
@@ -8,12 +47,14 @@
   box-shadow: 2px 2px 0 var(--zinebox-riso-layer-a, transparent);
 }
 
-/* Library chrome — softer misregister so pills/search do not bleed a cyan rule below the bar. */
+/* Library chrome — keep search soft; pills/covers keep full riso offset. */
 [data-zinebox-theme^='riso']
   .zinebox-library-sticky
   .zinebox-library-search__field {
-  box-shadow: 1px 1px 0
-    color-mix(in srgb, var(--zinebox-riso-layer-a) 38%, transparent);
+  box-shadow: var(
+    --zinebox-shadow-subtle,
+    1px 1px 0 color-mix(in srgb, var(--zinebox-riso-layer-a) 38%, transparent)
+  );
 }
 
 [data-zinebox-theme^='riso']
@@ -21,22 +62,90 @@
   .zinebox-library-search:focus-within
   .zinebox-library-search__field {
   box-shadow:
-    1px 1px 0 color-mix(in srgb, var(--zinebox-riso-layer-a) 38%, transparent),
+    var(
+      --zinebox-shadow-subtle,
+      1px 1px 0 color-mix(in srgb, var(--zinebox-riso-layer-a) 38%, transparent)
+    ),
     0 0 0 1px color-mix(in srgb, var(--zinebox-accent) 16%, transparent);
 }
 
-[data-zinebox-theme^='riso'] .zinebox-library-sticky .zinebox-pill--active {
-  box-shadow: 1px 1px 0
-    color-mix(in srgb, var(--zinebox-riso-layer-a) 42%, transparent);
+[data-zinebox-theme^='riso'] .zinebox-cover-card__cover,
+[data-zinebox-theme^='riso'] .zinebox-stack-card__layer {
+  box-shadow: none;
 }
 
-[data-zinebox-theme^='riso'] .zinebox-library-sticky .zinebox-pill:hover {
+[data-zinebox-theme^='riso']
+  .zinebox-cover-card:hover
+  .zinebox-cover-card__cover,
+[data-zinebox-theme^='riso']
+  .zinebox-cover-card:focus-within
+  .zinebox-cover-card__cover,
+[data-zinebox-theme^='riso']
+  .zinebox-stack-card:hover
+  .zinebox-stack-card__layer,
+[data-zinebox-theme^='riso']
+  .zinebox-stack-card:focus-within
+  .zinebox-stack-card__layer {
   box-shadow: none;
 }
 
 [data-zinebox-theme^='riso'] .zinebox-cover-card__cover {
-  transform: rotate(-0.35deg);
-  transform-origin: center center;
+  --zinebox-cover-tilt: -0.35deg;
+  --zinebox-cover-tilt-hover: 0.4deg;
+  transform-origin: 50% 92%;
+}
+
+[data-zinebox-theme^='riso'] .zinebox-stack-card__pile {
+  transform-origin: 50% 92%;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-zinebox-theme^='riso'] .zinebox-cover-card::before,
+  [data-zinebox-theme^='riso'] .zinebox-stack-card::before {
+    transition: transform 180ms cubic-bezier(0.34, 1.12, 0.64, 1);
+  }
+
+  [data-zinebox-theme^='riso'] .zinebox-cover-card__cover,
+  [data-zinebox-theme^='riso'] .zinebox-stack-card__pile {
+    transition:
+      transform 180ms cubic-bezier(0.34, 1.12, 0.64, 1),
+      border-color 160ms ease;
+  }
+
+  [data-zinebox-theme^='riso'] .zinebox-cover-card:hover::before,
+  [data-zinebox-theme^='riso'] .zinebox-cover-card:focus-within::before,
+  [data-zinebox-theme^='riso'] .zinebox-stack-card:hover::before,
+  [data-zinebox-theme^='riso'] .zinebox-stack-card:focus-within::before {
+    transform: translate(
+        var(--zinebox-riso-shelf-x, 4px),
+        var(--zinebox-riso-shelf-y, 2px)
+      )
+      rotate(var(--zinebox-riso-shelf-tilt-hover, -0.45deg));
+  }
+
+  [data-zinebox-theme^='riso']
+    .zinebox-stack-card:hover
+    .zinebox-stack-card__pile,
+  [data-zinebox-theme^='riso']
+    .zinebox-stack-card:focus-within
+    .zinebox-stack-card__pile {
+    transform: translateY(calc(-1 * var(--zinebox-cover-hover-lift, 4px)))
+      rotate(var(--zinebox-cover-tilt-hover, 0.4deg));
+  }
+
+  [data-zinebox-theme^='riso']
+    .zinebox-stack-card:hover
+    .zinebox-stack-card__layer--0,
+  [data-zinebox-theme^='riso']
+    .zinebox-stack-card:focus-within
+    .zinebox-stack-card__layer--0 {
+    transform: translate(0, 0) rotate(0deg);
+    border-color: color-mix(
+      in srgb,
+      var(--zinebox-accent) 28%,
+      var(--zinebox-border)
+    );
+  }
 }
 
 [data-zinebox-theme^='riso'] .zinebox-cover-card__cover::before {
@@ -47,8 +156,8 @@
   pointer-events: none;
   mix-blend-mode: multiply;
   background: var(--zinebox-riso-layer-a, transparent);
-  transform: translate(2px, 2px);
-  opacity: 0.13;
+  transform: translate(3px, 2px);
+  opacity: 0.08;
 }
 
 [data-zinebox-theme^='riso'] .zinebox-cover-card__cover::after {
@@ -61,7 +170,6 @@
 [data-zinebox-theme^='riso']
   .zinebox-cover-card:focus-within
   .zinebox-cover-card__cover {
-  transform: translateY(-3px) rotate(0.1deg);
   border-color: color-mix(
     in srgb,
     var(--zinebox-accent) 28%,
@@ -76,15 +184,21 @@
 }
 
 [data-zinebox-theme^='riso'] .zinebox-library-search__field {
-  box-shadow: 2px 2px 0 var(--zinebox-riso-layer-a, transparent);
+  box-shadow: var(
+    --zinebox-shadow-subtle,
+    2px 2px 0 var(--zinebox-riso-layer-a, transparent)
+  );
 }
 
 [data-zinebox-theme^='riso']
   .zinebox-library-search:focus-within
   .zinebox-library-search__field {
   box-shadow:
-    2px 2px 0 var(--zinebox-riso-layer-a, transparent),
-    var(--zinebox-shadow-hover);
+    var(
+      --zinebox-shadow-subtle,
+      2px 2px 0 var(--zinebox-riso-layer-a, transparent)
+    ),
+    0 0 0 1px color-mix(in srgb, var(--zinebox-accent) 16%, transparent);
 }
 
 [data-zinebox-theme^='riso'] .zinebox-header {
@@ -107,7 +221,8 @@
 /* ——— per-theme accents ——— */
 
 [data-zinebox-theme='risograph'] .zinebox-cover-card__cover {
-  transform: rotate(-0.6deg);
+  --zinebox-cover-tilt: -0.6deg;
+  --zinebox-cover-tilt-hover: 0.2deg;
 }
 
 [data-zinebox-theme='risograph'] .zinebox-cover-card__cover::after {
@@ -137,7 +252,7 @@
 }
 
 [data-zinebox-theme='risogold'] .zinebox-cover-card__cover {
-  transform: rotate(0.3deg);
+  --zinebox-cover-tilt: 0.3deg;
 }
 
 [data-zinebox-theme='risogold'] .zinebox-pill--active {
@@ -196,26 +311,26 @@
   text-shadow: 2px 2px 0 rgba(255, 20, 147, 0.45);
 }
 
+[data-zinebox-theme='risopulp'] .zinebox-cover-card,
+[data-zinebox-theme='risopulp'] .zinebox-stack-card {
+  --zinebox-riso-shelf-tilt: 0.35deg;
+  --zinebox-riso-shelf-tilt-hover: -0.5deg;
+}
+
+[data-zinebox-theme='risopulp'] .zinebox-cover-card::before,
+[data-zinebox-theme='risopulp'] .zinebox-stack-card::before {
+  --zinebox-riso-shelf-x: 4px;
+  --zinebox-riso-shelf-y: 2px;
+}
+
 [data-zinebox-theme='risopulp'] .zinebox-cover-card__cover {
-  transform: rotate(-0.75deg);
-  transform-origin: center center;
+  --zinebox-cover-tilt: -0.75deg;
+  --zinebox-cover-tilt-hover: 0.45deg;
   border-color: rgba(20, 10, 16, 0.14);
 }
 
 [data-zinebox-theme='risopulp'] .zinebox-cover-card__cover::before {
-  background: #00e5ff;
-  transform: translate(2px, 2px);
-  opacity: 0.1;
-}
-
-[data-zinebox-theme='risopulp']
-  .zinebox-cover-card:hover
-  .zinebox-cover-card__cover,
-[data-zinebox-theme='risopulp']
-  .zinebox-cover-card:focus-within
-  .zinebox-cover-card__cover {
-  transform: translateY(-4px) rotate(-0.2deg);
-  box-shadow: var(--zinebox-shadow-hover);
+  opacity: 0.07;
 }
 
 [data-zinebox-theme='risopulp'] .zinebox-cover-card__source {
@@ -261,7 +376,7 @@
 
 [data-zinebox-theme='risoluxe'] .zinebox-cover-card__cover {
   transform: none;
-  box-shadow: var(--zinebox-shadow);
+  box-shadow: var(--zinebox-shadow-cover, var(--zinebox-shadow));
 }
 
 [data-zinebox-theme='risoluxe'] .zinebox-cover-card__cover::before {

@@ -36,9 +36,15 @@ const ZINEBOX_CLASSIC_DESIGN_THEMES: readonly ZineboxDesignTheme[] = [
       '--zinebox-accent-soft': '#fff0f7',
       '--zinebox-border': 'rgba(72, 68, 64, 0.1)',
       '--zinebox-border-strong': 'rgba(72, 68, 64, 0.18)',
-      '--zinebox-shadow': '2px 3px 0 rgba(72, 68, 64, 0.07)',
+      '--zinebox-shadow-subtle': '2px 2px 0 rgba(72, 68, 64, 0.06)',
+      '--zinebox-shadow': '3px 3px 0 rgba(72, 68, 64, 0.13)',
       '--zinebox-shadow-hover':
-        '3px 4px 0 rgba(72, 68, 64, 0.06), 0 0 0 1px rgba(255, 20, 147, 0.14)',
+        '4px 4px 0 rgba(72, 68, 64, 0.11), 0 0 0 1px rgba(255, 20, 147, 0.14)',
+      '--zinebox-shadow-cover': '4px 5px 0 rgba(48, 44, 40, 0.22)',
+      '--zinebox-shadow-cover-hover':
+        '5px 7px 0 rgba(48, 44, 40, 0.2), 0 0 0 1px rgba(255, 20, 147, 0.16)',
+      '--zinebox-shadow-pill': '2px 2px 0 rgba(72, 68, 64, 0.1)',
+      '--zinebox-shadow-pill-active': '2px 3px 0 rgba(72, 68, 64, 0.15)',
       '--zinebox-radius': '6px',
       '--zinebox-title-font': "'Inter', system-ui, sans-serif",
       '--zinebox-title-weight': '500',
