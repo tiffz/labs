@@ -78,6 +78,9 @@ echo "== check:agent-docs: cursor rules index =="
 rules_readme=".cursor/rules/README.md"
 for mdc in .cursor/rules/*.mdc; do
   base=$(basename "$mdc")
+  if ! git ls-files --error-unmatch "$mdc" >/dev/null 2>&1; then
+    continue
+  fi
   if ! grep -q "${base}" "$rules_readme" 2>/dev/null; then
     fail "${rules_readme} missing entry for ${base}"
   fi
@@ -96,6 +99,9 @@ echo "== check:agent-docs: nested AGENTS.md in root AGENTS.md =="
 
 for agents_md in src/*/AGENTS.md; do
   [ -f "$agents_md" ] || continue
+  if ! git ls-files --error-unmatch "$agents_md" >/dev/null 2>&1; then
+    continue
+  fi
   app_dir=$(dirname "$agents_md")
   app_name=$(basename "$app_dir")
   if ! grep -q "${app_dir}/AGENTS.md" AGENTS.md 2>/dev/null; then

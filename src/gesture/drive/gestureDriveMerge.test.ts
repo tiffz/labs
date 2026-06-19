@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { mergeGestureSyncPayload } from './gestureDriveMerge';
+import {
+  formatGestureDriveMergeReport,
+  gestureMergeReportHasUserVisibleRemoteChanges,
+  mergeGestureSyncPayload,
+} from './gestureDriveMerge';
 
 describe('mergeGestureSyncPayload', () => {
   it('merges draw history by file id', () => {
@@ -255,5 +259,59 @@ describe('mergeGestureSyncPayload', () => {
       { tombstonedFolderIds: new Set(['folder-a']) },
     );
     expect(payload.packs).toHaveLength(0);
+  });
+
+  it('does not toast overlap-only merge as user-visible remote changes', () => {
+    const payload = {
+      packs: [
+        {
+          id: 'same-id',
+          driveFolderId: 'folder-a',
+          name: 'Hands',
+          linkedAt: '2026-01-01T00:00:00.000Z',
+          lastIndexedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      packFiles: [],
+      drawHistory: [],
+    };
+    const { report } = mergeGestureSyncPayload(payload, payload);
+    expect(report.packsMerged).toBe(1);
+    expect(report.packsUpdatedFromRemote).toBe(0);
+    expect(formatGestureDriveMergeReport(report)).toBe('already in sync');
+    expect(gestureMergeReportHasUserVisibleRemoteChanges(report)).toBe(false);
+  });
+
+  it('reports pack metadata updated from Drive', () => {
+    const local = {
+      packs: [
+        {
+          id: 'local-id',
+          driveFolderId: 'folder-a',
+          name: 'Hands local',
+          linkedAt: '2026-01-01T00:00:00.000Z',
+          lastIndexedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+      packFiles: [],
+      drawHistory: [],
+    };
+    const remote = {
+      packs: [
+        {
+          id: 'remote-id',
+          driveFolderId: 'folder-a',
+          name: 'Hands remote',
+          linkedAt: '2026-01-01T00:00:00.000Z',
+          lastIndexedAt: '2026-01-03T00:00:00.000Z',
+        },
+      ],
+      packFiles: [],
+      drawHistory: [],
+    };
+    const { report } = mergeGestureSyncPayload(local, remote);
+    expect(report.packsUpdatedFromRemote).toBe(1);
+    expect(formatGestureDriveMergeReport(report)).toBe('updated 1 pack from Drive');
+    expect(gestureMergeReportHasUserVisibleRemoteChanges(report)).toBe(true);
   });
 });

@@ -7,16 +7,59 @@ export type GestureDriveMergeOptions = {
 };
 
 export type GestureDriveMergeReport = {
+  /** Overlap counts (diagnostics only — not user-facing). */
   packsMerged: number;
   packsFromRemoteOnly: number;
   packsSkippedTombstone: number;
+  /** Packs that existed locally but changed because Drive had newer metadata. */
+  packsUpdatedFromRemote: number;
   packFilesMerged: number;
   packFilesFromRemoteOnly: number;
   packFilesSkippedTombstone: number;
+  packFilesUpdatedFromRemote: number;
   historyMerged: number;
   historyFromRemoteOnly: number;
   historySkippedTombstone: number;
+  historyUpdatedFromRemote: number;
 };
+
+function tagsKey(tags: readonly string[] | undefined): string {
+  return [...(tags ?? [])].sort().join('\0');
+}
+
+function packChangedByMerge(local: GesturePack, merged: GesturePack): boolean {
+  return (
+    local.name !== merged.name ||
+    local.lastIndexedAt !== merged.lastIndexedAt ||
+    local.linkedAt !== merged.linkedAt ||
+    (local.source ?? null) !== (merged.source ?? null) ||
+    (local.sourceUrl ?? null) !== (merged.sourceUrl ?? null) ||
+    (local.subject ?? null) !== (merged.subject ?? null) ||
+    (local.notes ?? null) !== (merged.notes ?? null) ||
+    tagsKey(local.tags) !== tagsKey(merged.tags) ||
+    (local.photoIndexCount ?? 0) !== (merged.photoIndexCount ?? 0) ||
+    tagsKey(local.coverFileIds) !== tagsKey(merged.coverFileIds)
+  );
+}
+
+function packFileChangedByMerge(local: GesturePackFile, merged: GesturePackFile): boolean {
+  return (
+    local.packId !== merged.packId ||
+    local.name !== merged.name ||
+    (local.mimeType ?? null) !== (merged.mimeType ?? null) ||
+    (local.modifiedTime ?? null) !== (merged.modifiedTime ?? null)
+  );
+}
+
+function historyChangedByMerge(local: GestureDrawRecord, merged: GestureDrawRecord): boolean {
+  return (
+    local.totalMs !== merged.totalMs ||
+    local.sessionCount !== merged.sessionCount ||
+    local.firstDrawnAt !== merged.firstDrawnAt ||
+    local.lastDrawnAt !== merged.lastDrawnAt ||
+    local.packId !== merged.packId
+  );
+}
 
 function mergeDrawRecord(local: GestureDrawRecord, remote: GestureDrawRecord): GestureDrawRecord {
   return {
@@ -66,7 +109,7 @@ function mergePackFiles(
   mergedPacks: GesturePack[],
   remotePacks: GesturePack[],
   tombstonedFileIds: ReadonlySet<string>,
-): { rows: GesturePackFile[]; merged: number; fromRemoteOnly: number; skippedTombstone: number } {
+): { rows: GesturePackFile[]; merged: number; fromRemoteOnly: number; skippedTombstone: number; updatedFromRemote: number } {
   const folderToMergedId = new Map(mergedPacks.map((p) => [p.driveFolderId, p.id]));
   const localPackIdToFolder = new Map(localPacks.map((p) => [p.id, p.driveFolderId]));
   const remotePackIdToFolder = new Map(remotePacks.map((p) => [p.id, p.driveFolderId]));
@@ -76,6 +119,7 @@ function mergePackFiles(
   let merged = 0;
   let fromRemoteOnly = 0;
   let skippedTombstone = 0;
+  let updatedFromRemote = 0;
 
   for (const file of local) {
     if (tombstonedFileIds.has(file.driveFileId)) {
@@ -105,7 +149,11 @@ function mergePackFiles(
     const existing = byFileId.get(row.driveFileId);
     if (existing) {
       const keepRemote = (row.modifiedTime ?? '') >= (existing.modifiedTime ?? '');
-      byFileId.set(row.driveFileId, keepRemote ? row : existing);
+      const next = keepRemote ? row : existing;
+      byFileId.set(row.driveFileId, next);
+      if (packFileChangedByMerge(existing, next) && keepRemote) {
+        updatedFromRemote += 1;
+      }
       merged += 1;
     } else {
       byFileId.set(row.driveFileId, row);
@@ -113,7 +161,7 @@ function mergePackFiles(
     }
   }
 
-  return { rows: [...byFileId.values()], merged, fromRemoteOnly, skippedTombstone };
+  return { rows: [...byFileId.values()], merged, fromRemoteOnly, skippedTombstone, updatedFromRemote };
 }
 
 export function mergeGestureSyncPayload(
@@ -140,9 +188,12 @@ export function mergeGestureSyncPayload(
         packFilesMerged: 0,
         packFilesFromRemoteOnly: 0,
         packFilesSkippedTombstone: local.packFiles.length - packFiles.length,
+        packFilesUpdatedFromRemote: 0,
         historyMerged: 0,
         historyFromRemoteOnly: 0,
         historySkippedTombstone: local.drawHistory.length - drawHistory.length,
+        historyUpdatedFromRemote: 0,
+        packsUpdatedFromRemote: 0,
       },
     };
   }
@@ -158,6 +209,7 @@ export function mergeGestureSyncPayload(
   }
   let packsMerged = 0;
   let packsFromRemoteOnly = 0;
+  let packsUpdatedFromRemote = 0;
   for (const remotePack of remote.packs) {
     if (tombstonedFolderIds.has(remotePack.driveFolderId)) {
       packsSkippedTombstone += 1;
@@ -165,8 +217,12 @@ export function mergeGestureSyncPayload(
     }
     const localPack = packByFolder.get(remotePack.driveFolderId);
     if (localPack) {
-      packByFolder.set(remotePack.driveFolderId, mergePack(localPack, remotePack));
+      const mergedPack = mergePack(localPack, remotePack);
+      packByFolder.set(remotePack.driveFolderId, mergedPack);
       packsMerged += 1;
+      if (packChangedByMerge(localPack, mergedPack)) {
+        packsUpdatedFromRemote += 1;
+      }
     } else {
       packByFolder.set(remotePack.driveFolderId, stripEphemeralUploadFields(remotePack));
       packsFromRemoteOnly += 1;
@@ -194,6 +250,7 @@ export function mergeGestureSyncPayload(
   }
   let historyMerged = 0;
   let historyFromRemoteOnly = 0;
+  let historyUpdatedFromRemote = 0;
   for (const remoteRow of remote.drawHistory) {
     if (tombstonedFileIds.has(remoteRow.driveFileId)) {
       historySkippedTombstone += 1;
@@ -201,8 +258,12 @@ export function mergeGestureSyncPayload(
     }
     const localRow = historyByFile.get(remoteRow.driveFileId);
     if (localRow) {
-      historyByFile.set(remoteRow.driveFileId, mergeDrawRecord(localRow, remoteRow));
+      const mergedRow = mergeDrawRecord(localRow, remoteRow);
+      historyByFile.set(remoteRow.driveFileId, mergedRow);
       historyMerged += 1;
+      if (historyChangedByMerge(localRow, mergedRow)) {
+        historyUpdatedFromRemote += 1;
+      }
     } else {
       historyByFile.set(remoteRow.driveFileId, remoteRow);
       historyFromRemoteOnly += 1;
@@ -219,14 +280,31 @@ export function mergeGestureSyncPayload(
       packsMerged,
       packsFromRemoteOnly,
       packsSkippedTombstone,
+      packsUpdatedFromRemote,
       packFilesMerged: packFileMerge.merged,
       packFilesFromRemoteOnly: packFileMerge.fromRemoteOnly,
       packFilesSkippedTombstone: packFileMerge.skippedTombstone,
+      packFilesUpdatedFromRemote: packFileMerge.updatedFromRemote,
       historyMerged,
       historyFromRemoteOnly,
       historySkippedTombstone,
+      historyUpdatedFromRemote,
     },
   };
+}
+
+/** Whether a silent auto-pull should toast — only when Drive added or changed something here. */
+export function gestureMergeReportHasUserVisibleRemoteChanges(
+  report: GestureDriveMergeReport,
+): boolean {
+  return (
+    report.packsFromRemoteOnly > 0 ||
+    report.packFilesFromRemoteOnly > 0 ||
+    report.historyFromRemoteOnly > 0 ||
+    report.packsUpdatedFromRemote > 0 ||
+    report.packFilesUpdatedFromRemote > 0 ||
+    report.historyUpdatedFromRemote > 0
+  );
 }
 
 export function formatGestureDriveMergeReport(report: GestureDriveMergeReport): string {
@@ -234,20 +312,28 @@ export function formatGestureDriveMergeReport(report: GestureDriveMergeReport): 
   if (report.packsFromRemoteOnly > 0) {
     parts.push(`added ${report.packsFromRemoteOnly} pack${report.packsFromRemoteOnly === 1 ? '' : 's'} from Drive`);
   }
+  if (report.packsUpdatedFromRemote > 0) {
+    parts.push(
+      `updated ${report.packsUpdatedFromRemote} pack${report.packsUpdatedFromRemote === 1 ? '' : 's'} from Drive`,
+    );
+  }
   if (report.packFilesFromRemoteOnly > 0) {
     parts.push(
       `added ${report.packFilesFromRemoteOnly} photo index row${report.packFilesFromRemoteOnly === 1 ? '' : 's'}`,
     );
   }
+  if (report.packFilesUpdatedFromRemote > 0) {
+    parts.push(
+      `updated ${report.packFilesUpdatedFromRemote} photo index row${report.packFilesUpdatedFromRemote === 1 ? '' : 's'} from Drive`,
+    );
+  }
   if (report.historyFromRemoteOnly > 0) {
     parts.push(`added ${report.historyFromRemoteOnly} drawn photo${report.historyFromRemoteOnly === 1 ? '' : 's'}`);
   }
-  if (
-    report.packsMerged > 0 ||
-    report.packFilesMerged > 0 ||
-    report.historyMerged > 0
-  ) {
-    parts.push('merged overlapping progress');
+  if (report.historyUpdatedFromRemote > 0) {
+    parts.push(
+      `updated ${report.historyUpdatedFromRemote} drawn photo${report.historyUpdatedFromRemote === 1 ? '' : 's'} from Drive`,
+    );
   }
   return parts.length > 0 ? parts.join(', ') : 'already in sync';
 }

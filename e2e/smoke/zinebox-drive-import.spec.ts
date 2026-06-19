@@ -33,7 +33,9 @@ test.describe('Zine Box Drive folder import', () => {
 
     await page.getByTestId('zinebox-drive-import-confirm').click();
 
-    await expect(page.getByRole('progressbar')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('progressbar', { name: /Importing/i })).toBeVisible({
+      timeout: 15000,
+    });
     await expect(page.getByText(/Added 1 PDF/i)).toBeVisible({ timeout: 30000 });
   });
 });

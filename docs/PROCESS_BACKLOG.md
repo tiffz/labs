@@ -32,6 +32,10 @@ Proposed durable fixes from session retrospectives **not yet implemented**. Land
 | P1       | `missing invariant`    | Stanza Drive blob tiers: every syncable blob needs upload+hydrate pair (`main_audio/` like `stem_audio/`)                                         | Done — `stanzaDriveMainMediaSync.ts`, `stanza-drive-sync.mdc`, AGENTS checklist |
 | P2       | `test gap`             | Stanza viewer e2e: playback stack must sit above library footer (not full workbench width on desktop)                                             | Done — `e2e/stanza-viewer-layout.spec.ts`                                       |
 | P2       | `ux-spec-violation`    | Stanza viewer: forbid viewport lock + library `max-height: *vh` (obscures video) — see `stanza-viewer-layout.mdc`                                 | Done — reverted bad lock; e2e media-above-library guard                         |
+| P1       | `missing invariant`    | Union merge must not resurrect stack membership removals — codify in `LOCAL_FIRST_SYNC.md` + merge tests                                          | Done — `LOCAL_FIRST_SYNC.md` § Union merge; `zineboxDriveStackTombstones.ts`    |
+| P2       | `ux-spec-violation`    | Gesture Drive toast: hide overlap-only “merged overlapping progress” counts (match Zine Box merge report pattern)                                 | Done — `gestureMergeReportHasUserVisibleRemoteChanges`, merge tests             |
+| P2       | `test gap`             | `validate-agent-docs`: skip untracked `src/*/AGENTS.md` and `.mdc` so partial-app WIP does not block unrelated commits                            | Done — `scripts/validate-agent-docs.sh`                                         |
+| P2       | `test gap`             | Zine Box drive import smoke: target blocking-job progressbar, not cover read indicators                                                           | Done — `e2e/smoke/zinebox-drive-import.spec.ts`                                 |
 
 ## Completed (archive reference)
 

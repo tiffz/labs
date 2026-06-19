@@ -38,6 +38,7 @@ import {
 } from '../drive/gestureDriveEnvelope';
 import {
   formatGestureDriveMergeReport,
+  gestureMergeReportHasUserVisibleRemoteChanges,
   mergeGestureSyncPayload,
 } from '../drive/gestureDriveMerge';
 import { prepareGestureDriveMerge } from '../drive/prepareGestureDriveMerge';
@@ -235,13 +236,14 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
         mergeOptions,
       );
       const reportText = formatGestureDriveMergeReport(report);
+      const hasVisibleRemoteChanges = gestureMergeReportHasUserVisibleRemoteChanges(report);
       await applyMerged(
         merged,
         opts?.silent
-          ? report.packsFromRemoteOnly + report.historyFromRemoteOnly > 0
+          ? hasVisibleRemoteChanges
             ? `Synced from Drive (${reportText}).`
             : null
-          : reportText
+          : hasVisibleRemoteChanges
             ? `Synced from Drive (${reportText}).`
             : 'Already in sync with Drive.',
         token,

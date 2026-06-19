@@ -36,7 +36,7 @@ Registry: [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) — update when addi
 ### Example: Zine Box Drive folder import
 
 - Stubs: `e2e/helpers/zineboxDriveImport.ts` — Google session + minimal Drive folder/PDF mock
-- Spec: `e2e/smoke/zinebox-drive-import.spec.ts` — Review import → blocking job progressbar → success notice
+- Spec: `e2e/smoke/zinebox-drive-import.spec.ts` — Review import → blocking job progressbar (`getByRole('progressbar', { name: /Importing/i })`) → success notice
 - Scoped map: `zinebox` entry in `scripts/run-scoped-e2e.mjs`
 
 ### Example: Stanza library chrome

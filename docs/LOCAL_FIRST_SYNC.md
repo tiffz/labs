@@ -89,17 +89,44 @@ flowchart TB
 | [`labsDriveBackupUiTypes.ts`](../src/shared/google/labsDriveBackupUiTypes.ts)                      | UI prop types for restore/conflict dialogs            |
 | [`LabsDriveAccountMenu.tsx`](../src/shared/google/LabsDriveAccountMenu.tsx)                        | Account menu + restore + conflict shell               |
 
-App-local code owns envelope schema, merge logic, tombstones (Stanza), and progress subscriptions (Scales).
+App-local code owns envelope schema, merge logic, tombstones, and progress subscriptions (Scales).
+
+### Union merge must not resurrect removals
+
+Portfolio apps default to **silent union merge**: local and remote rows are combined by stable id (comic id, pack folder id, stack id, etc.). Without extra guards, a removal on one device can reappear after auto-pull because the other side still lists the row.
+
+| Removal type           | App                                                | Envelope / local tombstone                                                     | Merge filter                                                                      |
+| ---------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| Delete entity          | Zine Box comics, Gesture packs/files, Stanza songs | `deletedIds` / folder or file tombstones                                       | Skip tombstoned ids when unioning                                                 |
+| Remove from collection | **Zine Box stack unlink**                          | `removedStackMemberships` (`stackId::comicId`) in envelope + localStorage ring | Filter `itemIds` in `mergeCollection` — **do not** union remote `itemIds` back in |
+
+**Checklist when adding delete or “remove from group” UX:**
+
+1. Record tombstone on user action (local ring + next push envelope field).
+2. Honor tombstones in merge **before** unioning membership lists or entity maps.
+3. Regression test: local removal → merge with remote that still includes the row → row stays removed.
+4. Toast copy: report **adds** and **remote updates** only — overlap counts (`*Merged`) are diagnostics, not user-facing (see [Merge report copy](#merge-report-copy)).
+
+Implementation: Zine Box [`zineboxDriveStackTombstones.ts`](../src/zinebox/drive/zineboxDriveStackTombstones.ts), comic tombstones, [`zineboxDriveMerge.ts`](../src/zinebox/drive/zineboxDriveMerge.ts).
+
+### Merge report copy
+
+Auto-pull toasts and account-menu success copy must reflect **user-visible remote changes** only:
+
+- **Show:** rows added from Drive, rows updated because remote had newer metadata/progress.
+- **Hide:** overlap counts (“merged N comics”, “merged overlapping progress”) when nothing actually changed on this device.
+
+Each app exposes `*MergeReportHasUserVisibleRemoteChanges(report)` beside `format*DriveMergeReport`. Shared transient toast routing: [`useLabsDriveSyncToastMessage`](../src/shared/google/useLabsDriveSyncToastMessage.ts).
 
 ## Data-loss guards
 
-| Guard                                | Encore                                           | Stanza / Scales / Gesture                                                                     |
-| ------------------------------------ | ------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| Empty device cannot push sparse data | Pull when remote newer; conflict when both dirty | `labsDriveAutoPushAllowed` until pull or manual backup                                        |
-| Pre-merge undo                       | `encoreDriveUndoSnapshots` (IDB)                 | Stanza IDB ring; Scales localStorage ring; Gesture localStorage ring                          |
-| Deletion propagation                 | Row delete in repertoire push                    | Stanza/Gesture tombstones in envelope; **Zine Box: open** (union merge can resurrect deletes) |
-| Simultaneous edits                   | Row-level `bothEdited` dialog                    | Stanza: merge prompt; Scales/Gesture: silent union merge                                      |
-| OAuth token expiry                   | Sync error state in account menu                 | `syncPaused` + shared reconnect copy                                                          |
+| Guard                                | Encore                                           | Stanza / Scales / Gesture                                                           |
+| ------------------------------------ | ------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| Empty device cannot push sparse data | Pull when remote newer; conflict when both dirty | `labsDriveAutoPushAllowed` until pull or manual backup                              |
+| Pre-merge undo                       | `encoreDriveUndoSnapshots` (IDB)                 | Stanza IDB ring; Scales localStorage ring; Gesture localStorage ring                |
+| Deletion propagation                 | Row delete in repertoire push                    | Stanza/Gesture tombstones in envelope; Zine Box comic + stack membership tombstones |
+| Simultaneous edits                   | Row-level `bothEdited` dialog                    | Stanza: merge prompt; Scales/Gesture: silent union merge                            |
+| OAuth token expiry                   | Sync error state in account menu                 | `syncPaused` + shared reconnect copy                                                |
 
 ## Conflict decision tree
 
