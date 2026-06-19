@@ -168,6 +168,14 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     notes: 'smoke only',
   },
   {
+    route: '/muscle/',
+    title: /Muscle Memory/i,
+    visibleSelector: '[data-testid="muscle-app"]',
+    smoke: true,
+    visual: false,
+    notes: 'WIP — shell + study journey + orbit perf smokes',
+  },
+  {
     route: '/ui/',
     title: /UI Catalog/i,
     visibleSelector: '#root',

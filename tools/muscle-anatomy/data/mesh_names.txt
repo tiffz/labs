@@ -1,0 +1,2567 @@
+10th rib.l
+10th rib.r
+11-Upper medial incisor.l
+11-Upper medial incisor.r
+11th rib.l
+11th rib.r
+12-Upper lateral incisor.l
+12-Upper lateral incisor.r
+12th rib.l
+12th rib.r
+13-Upper canine.l
+13-Upper canine.r
+14-Upper first premolar.l
+14-Upper first premolar.r
+15-Upper second premolar.l
+15-Upper second premolar.r
+16-Upper first molar.l
+16-Upper first molar.r
+17-Upper second molar.l
+17-Upper second molar.r
+1st costal cartilage.l
+1st costal cartilage.r
+1st metacarpal bone.r
+1st metacarpal bone.r.001
+1st metacarpal bone.r.002
+1st metacarpal bone.r.005
+1st metatarsal bone.l
+1st metatarsal bone.r
+1st metatarsal bone.r.001
+1st metatarsal bone.r.003
+1st rib.l
+1st rib.r
+2d costal cartilage.l
+2d costal cartilage.r
+2d metacarpal bone.r
+2d metacarpal bone.r.001
+2d metacarpal bone.r.002
+2d metacarpal bone.r.004
+2d metatarsal bone.l
+2d metatarsal bone.r
+2d rib.l
+2d rib.r
+31-Lower medial incisor.l
+31-Lower medial incisor.r
+32-Lower lateral incisor.l
+32-Lower lateral incisor.r
+33-Lower canine.l
+33-Lower canine.r
+34-Lower first premolar.l
+34-Lower first premolar.r
+35-Lower second premolar.l
+35-Lower second premolar.r
+36-Lower first molar.l
+36-Lower first molar.r
+37-Lower second molar.l
+37-Lower second molar.r
+3d costal cartilage.l
+3d costal cartilage.r
+3d metacarpal bone.r
+3d metacarpal bone.r.001
+3d metacarpal bone.r.002
+3d metacarpal bone.r.004
+3rd metatarsal bone.l
+3rd metatarsal bone.r
+3rd rib.l
+3rd rib.r
+4th costal cartilage.l
+4th costal cartilage.r
+4th metacarpal bone.r
+4th metacarpal bone.r.001
+4th metacarpal bone.r.002
+4th metacarpal bone.r.003
+4th metatarsal bone.l
+4th metatarsal bone.r
+4th rib.l
+4th rib.r
+5th costal cartilage.l
+5th costal cartilage.r
+5th metacarpal bone.r
+5th metacarpal bone.r.001
+5th metacarpal bone.r.002
+5th metacarpal bone.r.003
+5th metatarsal bone.l
+5th metatarsal bone.r
+5th rib.l
+5th rib.r
+6th costal cartilage.l
+6th costal cartilage.r
+6th rib.l
+6th rib.r
+7th costal cartilage.l
+7th costal cartilage.r
+7th rib.l
+7th rib.r
+8th rib.l
+8th rib.r
+9th rib.l
+9th rib.r
+?.l
+?.r
+???????
+Abdominal aorta
+Abdominal part of pectoralis major muscle.l
+Abdominal part of pectoralis major muscle.r
+Abdominal part of pectoralis major muscle.r.001
+Abdominal part of pectoralis major muscle.r.002
+Abduction
+Abductor digiti minimi of foot on 5th proximal phalanx.l
+Abductor digiti minimi of foot on 5th proximal phalanx.r
+Abductor digiti minimi of foot.l
+Abductor digiti minimi of foot.r
+Abductor digiti minimi-Insertion.l
+Abductor digiti minimi-Insertion.r
+Abductor digiti minimi.l
+Abductor digiti minimi.r
+Abductor digiti minimi.r.001
+Abductor digiti minimi.r.002
+Abductor hallucis on medial process of calcaneal tuberosity
+Abductor hallucis on medial process of calcaneal tuberosity.001
+Abductor hallucis on medial process of calcaneal tuberosity.002
+Abductor hallucis on medial process of calcaneal tuberosity.r
+Abductor hallucis on proximal phalanx of 1st finger.l
+Abductor hallucis on proximal phalanx of 1st finger.r
+Abductor hallucis.l
+Abductor hallucis.r
+Abductor pollicis brevis.l
+Abductor pollicis brevis.r
+Abductor pollicis brevis.r.001
+Abductor pollicis brevis.r.002
+Abductor pollicis longus-Insertion.l
+Abductor pollicis longus-Insertion.r
+Abductor pollicis longus-Radioulnar insertion.l
+Abductor pollicis longus-Radioulnar insertion.r
+Accessory hemi-azygos vein
+Acromial branch of thoraco-acromial artery.l
+Acromial branch of thoraco-acromial artery.r
+Acromial head of deltoid muscle-Scapular insertion.l
+Acromial head of deltoid muscle-Scapular insertion.r
+Acromial part of deltoid muscle.l
+Acromial part of deltoid muscle.r
+Acromial part of deltoid muscle.r.001
+Acromial part of deltoid muscle.r.002
+Acromioclavicular joint's capsule*.l
+Acromioclavicular joint's capsule*.r
+Acromioclavicular ligament.l
+Acromioclavicular ligament.r
+Adduction
+Adductor brevis.l
+Adductor brevis.r
+Adductor longus on medial surface of femur.l
+Adductor longus on medial surface of femur.r
+Adductor longus-Pubic insertion.l
+Adductor longus-Pubic insertion.r
+Adductor longus.l
+Adductor longus.r
+Adductor magnus on medial lip of linea aspera.l
+Adductor magnus on medial lip of linea aspera.r
+Adductor magnus-Ischiatic insertion.l
+Adductor magnus-Ischiatic insertion.r
+Adductor magnus.l
+Adductor magnus.r
+Adductor minimus.l
+Adductor minimus.r
+Adductor pollicis brevis-Ending.l
+Adductor pollicis brevis-Ending.r
+Adductor pollicis brevis-Insertion.r
+Adductor pollicis brevis-Insertion.r.001
+Adductor pollicis brevis-Insertion.r.002
+Adductor pollicis brevis-Insertion.r.003
+Adductor pollicis longus.l
+Adductor pollicis longus.r
+Adductor pollicis longus.r.001
+Adductor pollicis longus.r.002
+Ampulla of lacrimal canaliculus.l
+Ampulla of lacrimal canaliculus.r
+Amygdaloid body.l.001
+Amygdaloid body.r.001
+Anal region.l
+Anal region.r
+Anconeus muscle-Humeral insertion.l
+Anconeus muscle-Humeral insertion.r
+Anconeus muscle-Ulnar insertion.l
+Anconeus muscle-Ulnar insertion.r
+Anconeus muscle.l
+Anconeus muscle.r
+Anconeus muscle.r.001
+Anconeus muscle.r.002
+Angle of mouth.l
+Angle of mouth.r
+Annular ligament of radius.l
+Annular ligament of radius.r
+Anterior belly of digastric muscle.l
+Anterior belly of digastric muscle.r
+Anterior branch of renal artery.l
+Anterior branch of renal artery.l.001
+Anterior branch of renal artery.r
+Anterior cerebral artery.l
+Anterior cerebral artery.r
+Anterior circumflex humeral artery.l
+Anterior circumflex humeral artery.r
+Anterior circumflex humeral vein.l
+Anterior circumflex humeral vein.r
+Anterior commissure.001
+Anterior communicating artery
+Anterior ethmoidal artery.l
+Anterior ethmoidal artery.r
+Anterior inferior cerebellar artery.l
+Anterior inferior cerebellar artery.r
+Anterior inferior pancreaticoduodenal artery
+Anterior lateral segment of liver (VI)
+Anterior medial segment of liver (V)
+Anterior notch of auricle.l
+Anterior notch of auricle.r
+Anterior papillary muscle of right ventricle
+Anterior region of ankle.l
+Anterior region of ankle.r
+Anterior region of arm.l
+Anterior region of arm.r
+Anterior region of elbow.l
+Anterior region of elbow.r
+Anterior region of forearm.l
+Anterior region of forearm.r
+Anterior region of knee.l
+Anterior region of knee.r
+Anterior region of leg.l
+Anterior region of leg.r
+Anterior region of thigh.l
+Anterior region of thigh.r
+Anterior region of wrist.l
+Anterior region of wrist.r
+Anterior semilunar leaflet of pulmonary valve
+Anterior spinal artery.l
+Anterior spinal artery.r
+Anterior sternoclavicular ligament.l
+Anterior sternoclavicular ligament.r
+Anterior tibial artery.l
+Anterior tibial artery.r
+Anterior tibial veins.l
+Anterior tibial veins.r
+Anterolateral central arteries.l
+Anterolateral central arteries.r
+Antihelix.l
+Antihelix.r
+Antitragus.l
+Antitragus.r
+Aortic arch
+Apex of auricle.l
+Apex of auricle.r
+Apex of nose.l
+Apex of nose.r
+Apical segmental bronchus of right lung (BI)
+Appendicular artery
+Aqueduct of midbrain (Cerebral aqueduct)
+Arcuate artery.l
+Arcuate artery.r
+Articular capsule of elbow.l
+Articular capsule of elbow.r
+Articular capsule of glenohumeral joint.l
+Articular capsule of glenohumeral joint.r
+Articular capsule of glenohumeral joint.r.001
+Articular capsule of sternoclavicular joint*.l
+Articular capsule of sternoclavicular joint*.r
+Articular capsule of wrist.l
+Articular capsule of wrist.r
+Articular capsules of distal interphalangeal joints*.l
+Articular capsules of distal interphalangeal joints*.r
+Articular capsules of metacarpophalangeal joints*.l
+Articular capsules of metacarpophalangeal joints*.r
+Articular capsules of metacarpophalangeal joints*.r.001
+Articular capsules of metacarpophalangeal joints*.r.003
+Articular capsules of proximal interphalangeal joints*.l
+Articular capsules of proximal interphalangeal joints*.r
+Articular cartilages of humerus.l
+Articular cartilages of humerus.l.001
+Articular disc of acromioclavicular joint.l
+Articular disc of acromioclavicular joint.r
+Articular disc of distal radio-ulnar joint.l
+Articular disc of distal radio-ulnar joint.r
+Articular disc of sternoclavicular joint.l
+Articular disc of sternoclavicular joint.r
+Articular surface of scapula.l
+Ascending aorta
+Ascending aorta.001
+Ascending branch of left colic artery
+Ascending colon
+Ascending part of trapezius muscle-Acromial insertion.l
+Ascending part of trapezius muscle-Acromial insertion.r
+Ascending part of trapezius muscle-Clavicular insertion.l
+Ascending part of trapezius muscle-Clavicular insertion.r
+Ascending part of trapezius muscle-Spinal insertion.l
+Ascending part of trapezius muscle-Spinal insertion.r
+Ascending part of trapezius muscle.l
+Ascending part of trapezius muscle.r
+Ascending part of trapezius muscle.r.001
+Ascending part of trapezius muscle.r.002
+Auricular region.l
+Auricular region.r
+Auricular tubercle.l
+Auricular tubercle.r
+Axillary artery.l
+Axillary artery.r
+Axillary vein.l
+Axillary vein.r
+Azygos vein
+Basilar artery
+Basilic vein.l
+Basilic vein.r
+Biceps brachii muscle-Radial insertion.l
+Biceps brachii muscle-Radial insertion.r
+Bladder
+Body of sternum
+Brachial artery.l
+Brachial artery.r
+Brachial vein.l
+Brachial vein.r
+Brachialis anterior muscle-Humeral insertion.l
+Brachialis anterior muscle-Humeral insertion.r
+Brachialis muscle-Ulnar insertion.l
+Brachialis muscle-Ulnar insertion.r
+Brachialis muscle.l
+Brachialis muscle.r
+Brachialis muscle.r.001
+Brachialis muscle.r.002
+Brachiocephalic trunk
+Brachioradialis muscle.l
+Brachioradialis muscle.r
+Brachioradialis muscle.r.001
+Brachioradialis muscle.r.002
+Bracioradialis muscle-Humeral insertion.l
+Bracioradialis muscle-Humeral insertion.r
+Bronchi
+Buccal region.l
+Buccal region.r
+Bucinator.l
+Bucinator.r
+Button
+C1
+C2
+C3
+C4
+C5
+C6
+C7
+Calcaneal branches of fibular artery.l
+Calcaneal branches of fibular artery.r
+Calcaneal branches of posterior tibial artery.l
+Calcaneal branches of posterior tibial artery.r
+Calcaneal tendon.l
+Calcaneal tendon.r
+Calcaneus.l
+Calcaneus.r
+Callosomarginal artery.l
+Callosomarginal artery.r
+Capitate bone.r
+Capitate bone.r.001
+Capitate bone.r.002
+Capitate bone.r.003
+Capitohamate interosseus ligament.l
+Capitohamate interosseus ligament.r
+Carotid triangle.l
+Carotid triangle.r
+Caudate nucleus.l.001
+Caudate nucleus.r.001
+Cavernous sinus.l
+Cavernous sinus.l.001
+Cavernous sinus.r
+Cavity of concha.l
+Cavity of concha.r
+Central canal.001
+Central retinal artery.l
+Central retinal artery.r
+Cephalic vein.l
+Cephalic vein.r
+Cerebellum.l.001
+Cerebellum.r.001
+Choroid plexus.l.001
+Choroid plexus.r.001
+Ciliary ganglion.l
+Ciliary ganglion.r
+Cingulate gyrus.l.001
+Cingulate gyrus.r.001
+Circumduction
+Circumflex artery of heart
+Circumflex fibular branch of posterior tibial artery.l
+Circumflex fibular branch of posterior tibial artery.r
+Circumflex scapular artery.l
+Circumflex scapular artery.r
+Circumflex scapular vein.l
+Circumflex scapular vein.r
+Clavicle.r
+Clavicle.r.001
+Clavicle.r.002
+Clavicle.r.003
+Clavicle.r.004
+Clavicle.r.005
+Clavicle.r.006
+Clavicle.r.007
+Clavicle.r.008
+Clavicle.r.009
+Clavicle.r.016
+Clavicular head of pectoralis major muscle.l
+Clavicular head of pectoralis major muscle.r
+Clavicular head of pectoralis major muscle.r.001
+Clavicular head of pectoralis major muscle.r.002
+Clavicular part of deltoid muscle-Clavicular insertion.l
+Clavicular part of deltoid muscle-Clavicular insertion.r
+Clavicular part of deltoid muscle.l
+Clavicular part of deltoid muscle.r
+Clavicular part of deltoid muscle.r.001
+Clavicular part of deltoid muscle.r.002
+Coccygeus muscle.l
+Coccygeus muscle.r
+Colic branch of ileocolic artery
+Collateral interphalangeal ligaments of hand.l
+Collateral interphalangeal ligaments of hand.r
+Collateral metacarpophalangeal ligaments.l
+Collateral metacarpophalangeal ligaments.r
+Common extensor tendon.l
+Common extensor tendon.r
+Common flexor tendon.l
+Common flexor tendon.r
+Common iliac artery.l
+Common iliac artery.l.001
+Common iliac artery.r
+Common iliac vein.l
+Common iliac vein.l.001
+Common iliac vein.r
+Common palmar digital arteries.l
+Common palmar digital arteries.r
+Common plantar digital arteries.l
+Common plantar digital arteries.r
+Common tendinous ring.r
+Concha of auricle.l
+Concha of auricle.r
+Conoid ligament.l
+Conoid ligament.r
+Coraco-acromial ligament.l
+Coraco-acromial ligament.r
+Coracobrachialis muscle.l
+Coracobrachialis muscle.r
+Coracobrachialis muscle.r.001
+Coracobrachialis muscle.r.002
+Coracohumeral ligament.l
+Coracohumeral ligament.r
+Coracoradialis muscle-Humeral insertion.l
+Coracoradialis muscle-Humeral insertion.r
+Cornea.r.001
+Coronal planes
+Coronary sinus
+Corpus callosum.001
+Corpus cavernosum of penis
+Corpus cavernosum of penis.001
+Corpus spongiosum of penis
+Corrugator supercilii.l
+Corrugator supercilii.r
+Costoclavicular ligament.l
+Costoclavicular ligament.r
+Crura of antihelix.l
+Crura of antihelix.r
+Cubital fossa.l
+Cubital fossa.r
+Cuboid bone.l
+Cuboid bone.r
+Cymba conchae.l
+Cymba conchae.r
+Deep artery of penis.l
+Deep artery of penis.r
+Deep brachial artery.l
+Deep brachial artery.r
+Deep branch of transverse cervical artery.l
+Deep branch of transverse cervical artery.r
+Deep cervical artery.l
+Deep cervical artery.r
+Deep dorsal vein of penis
+Deep femoral artery.l
+Deep femoral artery.r
+Deep femoral vein.l
+Deep femoral vein.r
+Deep head of flexor pollicis brevis on 1st metacarpal bone
+Deep head of flexor pollicis brevis on 1st metacarpal bone.001
+Deep head of flexor pollicis brevis on tubercle of trapeziu
+Deep head of flexor pollicis brevis on tubercle of trapezium
+Deep head of flexor pollicis brevis.l
+Deep head of flexor pollicis brevis.r
+Deep head of flexor pollicis brevis.r.001
+Deep head of flexor pollicis brevis.r.002
+Deep head of prontaor teres muscle.l
+Deep head of prontaor teres muscle.r
+Deep head of prontaor teres muscle.r.001
+Deep head of prontaor teres muscle.r.002
+Deep palmar arch.l
+Deep palmar arch.r
+Deep part of masseter.l
+Deep part of masseter.r
+Deep plantar artery.l
+Deep plantar artery.r
+Deep transverse metacarpal ligament.l
+Deep transverse metacarpal ligament.r
+Deep venous palmar arch.l
+Deep venous palmar arch.r
+Deltoid branch of thoraco-acromial artery.l
+Deltoid branch of thoraco-acromial artery.r
+Deltoid muscle-Humeral insertion.l
+Deltoid muscle-Humeral insertion.r
+Deltoid region.l
+Deltoid region.r
+Deltopectoral triangle.l
+Deltopectoral triangle.r
+Depressor anguli oris.l
+Depressor anguli oris.r
+Depressor labii superioris.l
+Depressor labii superioris.r
+Depressor septi nasi.l
+Depressor septi nasi.r
+Descending branch of left colic artery
+Descending branch of left colic artery?
+Descending colon
+Descending part of trapezius muscle.l
+Descending part of trapezius muscle.r
+Descending part of trapezius muscle.r.001
+Descending part of trapezius muscle.r.002
+Diaphragm
+Distal
+Distal phalanx of 1st finger of foot.l
+Distal phalanx of 1st finger of foot.r
+Distal phalanx of 1st finger.r
+Distal phalanx of 1st finger.r.001
+Distal phalanx of 1st finger.r.002
+Distal phalanx of 1st finger.r.004
+Distal phalanx of 2d finger of foot.l
+Distal phalanx of 2d finger of foot.r
+Distal phalanx of 2d finger.r
+Distal phalanx of 2d finger.r.001
+Distal phalanx of 2d finger.r.002
+Distal phalanx of 2d finger.r.004
+Distal phalanx of 3d finger.r
+Distal phalanx of 3d finger.r.001
+Distal phalanx of 3d finger.r.002
+Distal phalanx of 3d finger.r.003
+Distal phalanx of 3rd finger of foot.l
+Distal phalanx of 3rd finger of foot.r
+Distal phalanx of 4th finger of foot.l
+Distal phalanx of 4th finger of foot.r
+Distal phalanx of 4th finger.r
+Distal phalanx of 4th finger.r.001
+Distal phalanx of 4th finger.r.002
+Distal phalanx of 4th finger.r.003
+Distal phalanx of 5th finger of foot.l
+Distal phalanx of 5th finger of foot.r
+Distal phalanx of 5th finger.r
+Distal phalanx of 5th finger.r.001
+Distal phalanx of 5th finger.r.002
+Distal phalanx of 5th finger.r.003
+Distal phalanx of hand-1st finger.l
+Distal phalanx of hand-1st finger.r.002
+Dorsal
+Dorsal artery of penis.l
+Dorsal artery of penis.r
+Dorsal carpal branch of radial artery.l
+Dorsal carpal branch of radial artery.r
+Dorsal carpal branch of ulnar artery.l
+Dorsal carpal branch of ulnar artery.r
+Dorsal carpometacarpal ligaments.l
+Dorsal carpometacarpal ligaments.r
+Dorsal digital arteries of foot.l
+Dorsal digital arteries of foot.r
+Dorsal digital veins of foot.l
+Dorsal digital veins of foot.r
+Dorsal digital veins of hand.l
+Dorsal digital veins of hand.r
+Dorsal intercarpal ligaments.l
+Dorsal intercarpal ligaments.r
+Dorsal interossei muscles of foot.l
+Dorsal interossei muscles of foot.r
+Dorsal interosseus muscles d 3d metacarpal bone.l
+Dorsal interosseus muscles d 3d metacarpal bone.r
+Dorsal interosseus muscles of 1st metacarpal bone.l
+Dorsal interosseus muscles of 1st metacarpal bone.r
+Dorsal interosseus muscles of 2d metacarpal bone.l
+Dorsal interosseus muscles of 2d metacarpal bone.r
+Dorsal interosseus muscles of 4th metacarpal bone.l
+Dorsal interosseus muscles of 4th metacarpal bone.r
+Dorsal interosseus musclesof 5th metacarpal bone.l
+Dorsal interosseus musclesof 5th metacarpal bone.r
+Dorsal metacarpal arteries.l
+Dorsal metacarpal arteries.r
+Dorsal metacarpal ligaments.l
+Dorsal metacarpal ligaments.r
+Dorsal metatarsal veins of foot.l
+Dorsal metatarsal veins of foot.r
+Dorsal parts of lateral intertransversarii lumborum muscles.l
+Dorsal parts of lateral intertransversarii lumborum muscles.r
+Dorsal radio-ulnar ligament.l
+Dorsal radio-ulnar ligament.r
+Dorsal radiocarpal ligament.l
+Dorsal radiocarpal ligament.r
+Dorsal scaphotriquetral ligament.l
+Dorsal scaphotriquetral ligament.r
+Dorsal surface of digits of hand.l
+Dorsal surface of digits of hand.r
+Dorsal surfaces of digits of foot.l
+Dorsal surfaces of digits of foot.r
+Dorsal ulnocarpal ligament.l
+Dorsal ulnocarpal ligament.r
+Dorsal venous arch of foot.l
+Dorsal venous arch of foot.r
+Dorsal venous network of hand.l
+Dorsal venous network of hand.r
+Dorsalis pedis artery.l
+Dorsalis pedis artery.r
+Dorsum of foot.l
+Dorsum of foot.r
+Dorsum of hand.l
+Dorsum of hand.r
+Dorsum of nose.l
+Dorsum of nose.r
+Ductus deferens.l.001
+Ductus deferens.r
+Ductus deferens.r.001
+Duodenum
+Eminencia conchae.l
+Eminencia conchae.r
+Eminencia fossae triangularis.l
+Eminencia fossae triangularis.r
+Eminencia scaphae.l
+Eminencia scaphae.r
+Epicranial aponeurosis
+Epididymis.l
+Epididymis.l.001
+Epididymis.r
+Epididymis.r.001
+Epigastric region.l
+Epigastric region.r
+Epiglottis
+Epiphysis
+Erector spinae muscles-Iliac insertions.l
+Erector spinae muscles-Iliac insertions.r
+Ethmoid bone
+Extensor carpi radialis brevis.l
+Extensor carpi radialis brevis.r
+Extensor carpi radialis brevis.r.001
+Extensor carpi radialis brevis.r.002
+Extensor carpi radialis longus muscle-Humeral insertion.l
+Extensor carpi radialis longus muscle-Humeral insertion.r
+Extensor carpi radialis longus.l
+Extensor carpi radialis longus.r
+Extensor carpi radialis longus.r.001
+Extensor carpi radialis longus.r.002
+Extensor carpi ulnaris-Ulnar insertion.l
+Extensor carpi ulnaris-Ulnar insertion.r
+Extensor digiti minimi.l
+Extensor digiti minimi.r
+Extensor digiti minimi.r.001
+Extensor digiti minimi.r.002
+Extensor digitorum brevis.l
+Extensor digitorum brevis.r
+Extensor digitorum longus & brevis on 2d distal phalanx.l
+Extensor digitorum longus & brevis on 2d distal phalanx.r
+Extensor digitorum longus & brevis on 2d middle phalanx.l
+Extensor digitorum longus & brevis on 2d middle phalanx.r
+Extensor digitorum longus & brevis on 3d distal phalanx.l
+Extensor digitorum longus & brevis on 3d distal phalanx.r
+Extensor digitorum longus & brevis on 3d middle phalanx.l
+Extensor digitorum longus & brevis on 3d middle phalanx.r
+Extensor digitorum longus & brevis on 4th distal phalanx.l
+Extensor digitorum longus & brevis on 4th distal phalanx.r
+Extensor digitorum longus & brevis on 4th middle phalanx.l
+Extensor digitorum longus & brevis on 4th middle phalanx.r
+Extensor digitorum longus on fibula and interosseus membran
+Extensor digitorum longus on fibula and interosseus membrane.r
+Extensor digitorum longus on lat. surf of lat.condyle.l
+Extensor digitorum longus on lat. surf of lat.condyle.r
+Extensor digitorum longus.l
+Extensor digitorum longus.r
+Extensor digitorum on 5th distal phalanx.l
+Extensor digitorum on 5th distal phalanx.r
+Extensor digitorum on 5th middle phalanx.l
+Extensor digitorum on 5th middle phalanx.r
+Extensor digitorum&Extensor indicis-proximal phalanx.l
+Extensor digitorum&Extensor indicis-proximal phalanx.r
+Extensor digitorum-distal phalanx-2d finger.l
+Extensor digitorum-distal phalanx-2d finger.r
+Extensor digitorum-middle phalanx-2d finger.l
+Extensor digitorum-middle phalanx-2d finger.r
+Extensor digitorum-middle phalanx-3d finger.l
+Extensor digitorum-middle phalanx-3d finger.r
+Extensor digitorum-middle phalanx-4th finger.l
+Extensor digitorum-middle phalanx-4th finger.r
+Extensor digitorum-middle phalanx-5th finger.l
+Extensor digitorum-middle phalanx-5th finger.r
+Extensor digitorum-proximal phalanx-3d finger.l
+Extensor digitorum-proximal phalanx-3d finger.r
+Extensor digitorum-proximal phalanx-4th finger.l
+Extensor digitorum-proximal phalanx-4th finger.r
+Extensor digitorum-proximal phalanx-5th finger.l
+Extensor digitorum-proximal phalanx-5th finger.r
+Extensor digitorum.l
+Extensor digitorum.r
+Extensor digitorum.r.001
+Extensor digitorum.r.002
+Extensor hallucis brevis on dorsal surface of calcaneus.l
+Extensor hallucis brevis on dorsal surface of calcaneus.r
+Extensor hallucis brevis.l
+Extensor hallucis brevis.r
+Extensor hallucis longus on fibula and interosseus membrane
+Extensor hallucis longus on fibula and interosseus membrane.r
+Extensor hallucis longus.l
+Extensor hallucis longus.r
+Extensor indicis-Ulnar insertion.l
+Extensor indicis-Ulnar insertion.r
+Extensor indicis.l
+Extensor indicis.r
+Extensor indicis.r.001
+Extensor indicis.r.002
+Extensor pollicis brevis-Ulnar insertion.l
+Extensor pollicis brevis-Ulnar insertion.r
+Extensor pollicis brevis.l
+Extensor pollicis brevis.r
+Extensor pollicis brevis.r.001
+Extensor pollicis brevis.r.002
+Extensor pollicis longus-Ulnar insertion.l
+Extensor pollicis longus-Ulnar insertion.r
+Extensor pollicis longus.l
+Extensor pollicis longus.r
+Extensor pollicis longus.r.001
+Extensor pollicis longus.r.002
+Extensor radialis brevis-Insertion.l
+Extensor radialis brevis-Insertion.r
+Extensor radialis longus-Insertion.l
+Extensor radialis longus-Insertion.r
+External Abdominal Oblique
+External Abdominal Oblique.001
+External abdominal oblique muscle-Iliac insertion.l
+External abdominal oblique muscle-Iliac insertion.r
+External abdominal oblique.r
+External abdominal oblique.r.001
+External anal sphincter.l
+External anal sphincter.r
+External iliac artery.l
+External iliac artery.l.001
+External iliac artery.r
+External iliac vein.l
+External iliac vein.l.001
+External iliac vein.r
+External intercostal muscles.l
+External intercostal muscles.r
+Eyebrow(hair).l
+Eyebrow(hair).r
+Eyebrow.l
+Eyebrow.r
+Fascia lata.l
+Fascia lata.r
+Femoral artery.l
+Femoral artery.r
+Femoral triangle.r
+Femoral triangle.r.001
+Femoral vein.l
+Femoral vein.r
+Femur.l
+Femur.r
+Femur.r.001
+Femur.r.002
+Femur.r.003
+Femur.r.016
+Fibrous loop for intermediate digastric tendon*.l
+Fibrous loop for intermediate digastric tendon*.r
+Fibula.l
+Fibula.r
+Fibular
+Fibular artery.l
+Fibular artery.r
+Fibular veins.l
+Fibular veins.r
+Fibularis brevis on lateral side of fibula.l
+Fibularis brevis on lateral side of fibula.r
+Fibularis brevis on tuberosity of fifth metatarsal bone.l
+Fibularis brevis on tuberosity of fifth metatarsal bone.r
+Fibularis brevis.l
+Fibularis brevis.r
+Fibularis longus on lateral side of fibula.l
+Fibularis longus on lateral side of fibula.r
+Fibularis longus.l
+Fibularis longus.r
+Fibularis tertius on tuberosity of fifth metatarsal bone.l
+Fibularis tertius on tuberosity of fifth metatarsal bone.r
+Fibularis tertius-Origin
+Fibularis tertius-Origin.001
+Fibularis tertius.l
+Fibularis tertius.r
+First posterior intercostal artery.l
+First posterior intercostal artery.r
+Flexor carpi radialis.l
+Flexor carpi radialis.r
+Flexor carpi radialis.r.001
+Flexor carpi radialis.r.002
+Flexor carpi ulnaris-Insertion.l
+Flexor carpi ulnaris-Insertion.r
+Flexor digiti minimi of foot on 5th proximal phalanx.l
+Flexor digiti minimi of foot on 5th proximal phalanx.r
+Flexor digiti minimi of foot.l
+Flexor digiti minimi of foot.r
+Flexor digiti minimi of hand.l
+Flexor digiti minimi of hand.r
+Flexor digiti minimi of hand.r.001
+Flexor digiti minimi of hand.r.002
+Flexor digiti minimi on base of 5th proximal phalanx.l
+Flexor digiti minimi on base of 5th proximal phalanx.r
+Flexor digiti minimi-Insertion.l
+Flexor digiti minimi-Insertion.r
+Flexor digitorum brevis on 2d medial phalanx.l
+Flexor digitorum brevis on 2d medial phalanx.r
+Flexor digitorum brevis on 3d medial phalanx.l
+Flexor digitorum brevis on 3d medial phalanx.r
+Flexor digitorum brevis on 5th medial phalanx.l
+Flexor digitorum brevis on 5th medial phalanx.r
+Flexor digitorum brevis on medial process of calcaneal tube
+Flexor digitorum brevis on medial process of calcaneal tubero.r
+Flexor digitorum brevis.l
+Flexor digitorum brevis.r
+Flexor digitorum longus on 1st distal phalanx.l
+Flexor digitorum longus on 1st distal phalanx.r
+Flexor digitorum longus on 2d distal phalanx.l
+Flexor digitorum longus on 2d distal phalanx.r
+Flexor digitorum longus on 3d distal phalanx.l
+Flexor digitorum longus on 3d distal phalanx.r
+Flexor digitorum longus on 4th distal phalanx.l
+Flexor digitorum longus on 4th distal phalanx.r
+Flexor digitorum longus on 5th distal phalanx.l
+Flexor digitorum longus on 5th distal phalanx.r
+Flexor digitorum longus on medial third of post. tibial sur
+Flexor digitorum longus on medial third of post. tibial surf.r
+Flexor digitorum longus.l
+Flexor digitorum longus.r
+Flexor digitorum profundus on distal phalanx of 1st finger.
+Flexor digitorum profundus on distal phalanx of 1st finger.r
+Flexor digitorum profundus on distal phalanx of 2d finger.l
+Flexor digitorum profundus on distal phalanx of 2d finger.r
+Flexor digitorum profundus on distal phalanx of 3d finger.l
+Flexor digitorum profundus on distal phalanx of 3d finger.r
+Flexor digitorum profundus on distal phalanx of 4th finger.
+Flexor digitorum profundus on distal phalanx of 4th finger.r
+Flexor digitorum profundus on distal phalanx of 5th finger.
+Flexor digitorum profundus on distal phalanx of 5th finger.r
+Flexor digitorum profundus.l
+Flexor digitorum profundus.r
+Flexor digitorum profundus.r.001
+Flexor digitorum profundus.r.002
+Flexor digitorum superficialis-Radial insertion.l
+Flexor digitorum superficialis-Radial insertion.r
+Flexor digitorum superficialis-middle phalanx of 2d finger.
+Flexor digitorum superficialis-middle phalanx of 2d finger.r
+Flexor digitorum superficialis-middle phalanx of 3d finger.
+Flexor digitorum superficialis-middle phalanx of 3d finger.r
+Flexor digitorum superficialis-middle phalanx of 4th finger
+Flexor digitorum superficialis-middle phalanx of 4th finger.r
+Flexor digitorum superficialis-middle phalanx of 5th finger
+Flexor digitorum superficialis-middle phalanx of 5th finger.r
+Flexor digitorum superficialis.l
+Flexor digitorum superficialis.r
+Flexor digitorum superficialis.r.001
+Flexor digitorum superficialis.r.002
+Flexor hallucis longus on post. fibular surf.l
+Flexor hallucis longus on post. fibular surf.r
+Flexor hallucis longus.l
+Flexor hallucis longus.r
+Flexor pollicis longus-Radial insertion.l
+Flexor pollicis longus-Radial insertion.r
+Flexor pollicis longus-Ulnar insertion.l
+Flexor pollicis longus-Ulnar insertion.r
+Flexor pollicis longus.l
+Flexor pollicis longus.r
+Flexor pollicis longus.r.001
+Flexor pollicis longus.r.002
+Flexor retinaculum of wrist.l
+Flexor retinaculum of wrist.r
+Flexor retinaculum of wrist.r.001
+Flexor retinaculum of wrist.r.002
+Fornix.l.001
+Fornix.r.001
+Fossa antihelica.l
+Fossa antihelica.r
+Fourth ventricle.001
+Frame-Grab
+Free taenia
+Frontal bone
+Frontal branches of callosomarginal artery.l
+Frontal branches of callosomarginal artery.r
+Frontal branches of middle cerebral artery.l
+Frontal branches of middle cerebral artery.r
+Frontal region.l
+Frontal region.r
+Frontalis.l
+Frontalis.r
+Gallbladder
+Gastroduodenal artery
+Genicular veins.l
+Genicular veins.r
+Geniohyoid muscle.l
+Geniohyoid muscle.r
+Gingiva (inferior)
+Gingiva (superior)
+Gingiva of lower jaw
+Gingiva of upper jaw
+Glans penis
+Glans penis'
+Glenoid labrum.r
+Glenoid labrum.r.001
+Globus pallidus.l
+Globus pallidus.r
+Gluteal fold.l
+Gluteal fold.r
+Gluteal region.l
+Gluteal region.r
+Gluteus maximus ending on gluteal surface.l
+Gluteus maximus ending on gluteal surface.r
+Gluteus maximus muscle-Iliac insertion.l
+Gluteus maximus muscle-Iliac insertion.r
+Gluteus maximus muscle.l
+Gluteus maximus muscle.r
+Gluteus medius muscle-Iliac insertion.l
+Gluteus medius muscle-Iliac insertion.r
+Gluteus medius muscle.l
+Gluteus medius muscle.r
+Gluteus medius on greater trochanter.l
+Gluteus medius on greater trochanter.l.001
+Gluteus minimus muscle-Iliac insertion.l
+Gluteus minimus muscle-Iliac insertion.r
+Gluteus minimus muscle.l
+Gluteus minimus muscle.r
+Gracilis muscle-Pubic insertion.l
+Gracilis muscle-Pubic insertion.r
+Gracilis muscle.l
+Gracilis muscle.r
+Gracilis on 'patte d'oie'.l
+Gracilis on 'patte d'oie'.r
+Great cardiac vein
+Great saphenous vein.l
+Great saphenous vein.r
+Greater subclavian fossa.l
+Greater subclavian fossa.r
+Habenula.001
+Hair
+Hallucial eminence.l
+Hallucial eminence.r
+Hamate bone.r
+Hamate bone.r.001
+Hamate bone.r.002
+Hamate bone.r.004
+Heart
+Heel region.l
+Heel region.r
+Helix.l
+Helix.r
+Hemi-azygos vein
+Hip bone.l
+Hip bone.r
+Hip region.l
+Hip region.r
+Hippocampal commissure.001
+Hippocampus.l.001
+Hippocampus.r.001
+Humeral head of extensor carpi ulnaris-Insertion.l
+Humeral head of extensor carpi ulnaris-Insertion.r
+Humeral head of extensor carpi ulnaris.l
+Humeral head of extensor carpi ulnaris.r
+Humeral head of extensor carpi ulnaris.r.001
+Humeral head of extensor carpi ulnaris.r.002
+Humeral head of flexor carpi ulnaris.l
+Humeral head of flexor carpi ulnaris.r
+Humeral head of flexor carpi ulnaris.r.001
+Humeral head of flexor carpi ulnaris.r.002
+Humerus.l
+Humerus.r
+Humerus.r.001
+Humerus.r.002
+Humerus.r.003
+Humerus.r.004
+Humerus.r.005
+Humerus.r.006
+Humerus.r.007
+Humerus.r.008
+Humerus.r.009
+Humerus.r.010
+Humerus.r.011
+Humerus.r.012
+Humerus.r.013
+Humerus.r.014
+Humerus.r.015
+Humerus.r.016
+Humerus.r.017
+Humerus.r.018
+Humerus.r.019
+Humerus.r.020
+Humerus.r.021
+Humerus.r.022
+Humerus.r.027
+Humerus.r.043
+Humerus.r.065
+Hyoid bone
+Hypochondriac region.l
+Hypochondriac region.r
+Hypogastric region.l
+Hypogastric region.r
+Hypophysis.001
+Hypothalamus.l
+Hypothalamus.r
+Hypothenar eminence.l
+Hypothenar eminence.r
+Ileal branch of ileocolic artery
+Ileocolic artery
+Iliacus muscle.l
+Iliacus muscle.r
+Iliococcygeus muscle.r
+Iliococcygeus muscle.r.001
+Iliocostalis colli muscle.l
+Iliocostalis colli muscle.r
+Iliocostalis lumborum muscle.l
+Iliocostalis lumborum muscle.r
+Iliocostalis thoracis muscle.l
+Iliocostalis thoracis muscle.r
+Iliolumbar ligament.r
+Iliolumbar vein.l
+Iliolumbar vein.r
+Iliopsoas ending on the lesser trochanter.l
+Iliopsoas ending on the lesser trochanter.r
+Inferior colliculus.l.001
+Inferior colliculus.r.001
+Inferior epigastric artery.l
+Inferior epigastric artery.r
+Inferior epigastric vein.l
+Inferior epigastric vein.r
+Inferior frontal gyrus.l.001
+Inferior frontal gyrus.r.001
+Inferior gemellus muscle-Ischiatic insertion.l
+Inferior gemellus muscle-Ischiatic insertion.r
+Inferior gemellus muscle.l
+Inferior gemellus muscle.r
+Inferior glenohumeral ligament.l
+Inferior glenohumeral ligament.r
+Inferior gluteal veins.l
+Inferior gluteal veins.r
+Inferior head of lateral pterygoid muscle.l
+Inferior head of lateral pterygoid muscle.r
+Inferior leaflet of right atrioventricular valve
+Inferior lobe of left lung
+Inferior lobe of right lung
+Inferior medial genicular artery.l
+Inferior medial genicular artery.r
+Inferior mesenteric artery.001
+Inferior nasal concha bone.l
+Inferior nasal concha bone.r
+Inferior oblique muscle.r
+Inferior papillary muscle of left ventricle
+Inferior papillary muscle of right ventricle
+Inferior parietal lobule.l.001
+Inferior parietal lobule.r.001
+Inferior phrenic artery
+Inferior pubic ligament.r
+Inferior rectus muscle.r
+Inferior suprarenal artery.l
+Inferior suprarenal artery.l.001
+Inferior suprarenal artery.r
+Inferior tarsus.r
+Inferior temporal gyrus.l
+Inferior temporal gyrus.r.004
+Inferior thyroid artery.l
+Inferior thyroid artery.r
+Inferior transverse scapular ligament.l
+Inferior transverse scapular ligament.r
+Inferior ulnar collateral artery.l
+Inferior ulnar collateral artery.r
+Inferior vena cava'
+Inferior vena cava.001
+Infraclavicular fossa.l
+Infraclavicular fossa.r
+Inframammary region.l
+Inframammary region.r
+Infraorbital region.l
+Infraorbital region.r
+Infrascapular region.l
+Infrascapular region.r
+Infraspinatus muscle-Humeral insertion.l
+Infraspinatus muscle-Humeral insertion.r
+Infraspinatus muscle-Scapular insertion.l
+Infraspinatus muscle-Scapular insertion.r
+Infraspinatus muscle.l
+Infraspinatus muscle.r
+Infraspinatus muscle.r.001
+Infraspinatus muscle.r.002
+Inguinal ligament.l
+Inguinal ligament.r
+Inguinal region.l
+Inguinal region.r
+Innermost intercostal muscles.l
+Innermost intercostal muscles.r
+Insula.l.001
+Insula.r.001
+Insular branches of middle cerebral artery.l
+Insular branches of middle cerebral artery.r
+Intercapitular veins of foot.l
+Intercapitular veins of foot.r
+Interclavicular ligament.l
+Interclavicular ligament.r
+Intercostal arteries.l
+Intercostal arteries.r
+Intercostal veins.r
+Intermediate cuneiform bone.l
+Intermediate cuneiform bone.r
+Internal abdominal oblique muscle-Iliac insertion.l
+Internal abdominal oblique muscle-Iliac insertion.r
+Internal abdominal oblique.l
+Internal abdominal oblique.r
+Internal capsule.l
+Internal capsule.r
+Internal carotid artery.l
+Internal carotid artery.r
+Internal iliac artery.l
+Internal iliac artery.r
+Internal iliac vein.l
+Internal iliac vein.r
+Internal intercosatlis muscles.l
+Internal intercosatlis muscles.r
+Internal pudendal artery.l
+Internal pudendal artery.r
+Internal pudendal vein.l
+Internal pudendal vein.r
+Internal thoracic artery.l
+Internal thoracic artery.r
+Internal thoracic veins.l
+Internal thoracic veins.r
+Interosseus membrane of forearm.l
+Interosseus membrane of forearm.l.001
+Interosseus membrane of forearm.r
+Interosseus membrane of forearm.r.001
+Interosseus membrane of forearm.r.002
+Interosseus membrane of forearm.r.003
+Interosseus membrane of leg.l
+Interosseus membrane of leg.r
+Interosseus membrane of leg.r.001
+Interosseus metacarpal ligaments.l
+Interosseus metacarpal ligaments.r
+Interpeduncular fossa.l
+Interpeduncular fossa.r
+Interpubic disc.l
+Interpubic disc.r
+Interscapular region*.l
+Interscapular region*.r
+Interspinales colli muscles.l
+Interspinales colli muscles.r
+Interspinales lumborum muscles.l
+Interspinales lumborum muscles.r
+Interspinales thoracis muscle.l
+Interspinales thoracis muscle.r
+Intertragic incisure.l
+Intertragic incisure.r
+Intervertebral disc C2-C3
+Intervertebral disc C3-C4
+Intervertebral disc C4-C5
+Intervertebral disc C5-C6
+Intervertebral disc C6-C7
+Intervertebral disc C7-T1
+Intervertebral disc L1-L2
+Intervertebral disc L2-L3
+Intervertebral disc L3-L4
+Intervertebral disc L4-L5
+Intervertebral disc L5-S1
+Intervertebral disc T1-T2
+Intervertebral disc T10-T11
+Intervertebral disc T11-T12
+Intervertebral disc T12-L1
+Intervertebral disc T2-T3
+Intervertebral disc T3-T4
+Intervertebral disc T4-T5
+Intervertebral disc T5-T6
+Intervertebral disc T6-T7
+Intervertebral disc T7-T8
+Intervertebral disc T8-T9
+Intervertebral disc T9-T10
+Intrarenal arteries of left kidney
+Intrarenal arteries of right kidney
+Intrarenal veins of left kidney
+Intrarenal veins of right kidney
+Kidney.l
+Kidney.r
+L1
+L2
+L3
+L4
+L5
+LAcrimal bone.l
+LAcrimal bone.r
+Label
+Label.001
+Label.002
+Label.003
+Labial commissure.l
+Labial commissure.r
+Lacrimal artery.l
+Lacrimal artery.r
+Lacrimal canaliculus.l
+Lacrimal canaliculus.r
+Lacrimal gland.l
+Lacrimal gland.r
+Lacrimal sac.l
+Lacrimal sac.r
+Lateral bicipital groove.l
+Lateral bicipital groove.r
+Lateral border of foot.l
+Lateral border of foot.r
+Lateral border of forearm.l
+Lateral border of forearm.r
+Lateral cervical region.l
+Lateral cervical region.r
+Lateral circumflex femoral artery.l
+Lateral circumflex femoral artery.r
+Lateral circumflex femoral veins.l
+Lateral circumflex femoral veins.r
+Lateral cuneiform bone.l
+Lateral cuneiform bone.r
+Lateral geniculate body.l.001
+Lateral geniculate body.r.001
+Lateral head of flexor hallucis brevis on 1st metatarsal ba
+Lateral head of flexor hallucis brevis on 1st metatarsal base.r
+Lateral head of flexor hallucis brevis on medial cuneiform.
+Lateral head of flexor hallucis brevis on medial cuneiform..001
+Lateral head of flexor hallucis brevis on medial cuneiform..002
+Lateral head of flexor hallucis brevis on medial cuneiform.r
+Lateral head of flexor hallucis brevis on prox. phal. of 1s
+Lateral head of flexor hallucis brevis on prox. phal. of 1st.r
+Lateral head of flexor hallucis brevis.l
+Lateral head of flexor hallucis brevis.r
+Lateral head of gastrocnemius on lat. supracondylar tubercl
+Lateral head of gastrocnemius on lat. supracondylar tubercle.r
+Lateral head of gastrocnemius.l
+Lateral head of gastrocnemius.r
+Lateral head of triceps brachii muscle.l
+Lateral head of triceps brachii muscle.r
+Lateral head of triceps brachii muscle.r.001
+Lateral head of triceps brachii muscle.r.002
+Lateral head of triceps brachii-Humeral insertion.l
+Lateral head of triceps brachii-Humeral insertion.r
+Lateral malleola*.l
+Lateral malleola*.r
+Lateral occipital artery.l
+Lateral occipital artery.r
+Lateral plantar artery.l
+Lateral plantar artery.r
+Lateral plantar vein.l
+Lateral plantar vein.r
+Lateral pontine branches of basilar artery.l
+Lateral pontine branches of basilar artery.r
+Lateral rectus muscle.r
+Lateral region of abdomen.l
+Lateral region of abdomen.r
+Lateral region of thorax.l
+Lateral region of thorax.r
+Lateral retromalleolar region.l
+Lateral retromalleolar region.r
+Lateral rotation
+Lateral sacral veins.l
+Lateral sacral veins.r
+Lateral tarsal artery.l
+Lateral tarsal artery.r
+Lateral thoracic artery.l
+Lateral thoracic artery.l.001
+Lateral thoracic artery.r
+Lateral thoracic vein.r
+Lateral ventricle.l.001
+Lateral ventricle.r.001
+Latissimus dorsi muscle'.l
+Latissimus dorsi muscle'.r
+Latissimus dorsi muscle.l
+Latissimus dorsi muscle.l.001
+Latissimus dorsi muscle.r
+Latissimus dorsi muscle.r.004
+Latissimus dorsi on apex of the scapula.r
+Latissimus dorsi on apex of the scapula.r.001
+Latissimus dorsi-Iliac insertion.l
+Latissimus dorsi-Iliac insertion.r
+Left anterior lateral segment of liver (III)
+Left ascending lumbal vein
+Left brachiocephalic vein
+Left colic artery
+Left common carotid artery
+Left coronary artery
+Left coronary artery.l
+Left coronary leaflet
+Left inferior lobar bronchus
+Left internal jugular vein
+Left lobe of thymus
+Left medial segment of liver
+Left parietal bone
+Left posterior lateral segment of liver (II)
+Left renal artery.001
+Left renal vein.001
+Left semilunar leaflet of pulmonary valve
+Left semilunar leaflet of pulmonary valve.001
+Left subclavian artery
+Left subcostal vein
+Left testicular vein
+Lesser supraclavicular fossa.l
+Lesser supraclavicular fossa.r
+Levator anguli oris.l
+Levator anguli oris.r
+Levator ani-Pubic and ischiatic insertions.l
+Levator ani-Pubic and ischiatic insertions.r
+Levator labii superioris.l
+Levator labii superioris.r
+Levator nasolabialis.l
+Levator nasolabialis.r
+Levator palpebrae superioris.r
+Levator scapulae-Scapular insertion.l
+Levator scapulae-Scapular insertion.r
+Levator scapulae.l
+Levator scapulae.r
+Levator scapulae.r.001
+Levator scapulae.r.002
+Levatores breves costarum.l
+Levatores breves costarum.r
+Levatores longi costarum.l
+Levatores longi costarum.r
+Linea alba
+Lobule of auricle.l
+Lobule of auricle.r
+Long head of biceps brachii muscle.l
+Long head of biceps brachii muscle.r
+Long head of biceps brachii muscle.r.001
+Long head of biceps brachii muscle.r.002
+Long head of biceps brachii.l
+Long head of biceps brachii.r
+Long head of biceps brachii.r.001
+Long head of biceps brachii.r.002
+Long head of biceps femoris muscle-Ischiatic insertion.l
+Long head of biceps femoris muscle-Ischiatic insertion.r
+Long head of biceps femoris muscle.l
+Long head of biceps femoris muscle.r
+Long head of biceps femoris on fibular head.l
+Long head of biceps femoris on fibular head.r
+Long plantar ligament on 1st metatarsal base.l
+Long plantar ligament on 1st metatarsal base.r
+Long plantar ligament on 2d metatarsal base.l
+Long plantar ligament on 2d metatarsal base.r
+Long plantar ligament on 3rd metatarsal base.l
+Long plantar ligament on 3rd metatarsal base.r
+Long plantar ligament on 4th metatarsal base.l
+Long plantar ligament on 4th metatarsal base.r
+Long plantar ligament.l
+Long plantar ligament.r
+Long posterior ciliary arteries.l
+Long posterior ciliary arteries.r
+Longissimus capitis.l
+Longissimus capitis.r
+Longissimus colli muscle.l
+Longissimus colli muscle.r
+Longissimus thoracis muscle.l
+Longissimus thoracis muscle.r
+Longissimus thoracis.r
+Longissimus thoracis.r.002
+Longus capitis muscle.l
+Longus capitis muscle.r
+Longus colli muscle.l
+Longus colli muscle.r
+Lumbar arteries.l
+Lumbar arteries.r
+Lumbar region.l
+Lumbar region.r
+Lumbar veins.l
+Lumbar veins.r
+Lumbrical muscles of foot.l
+Lumbrical muscles of foot.r
+Lumbricals muscles of hand.l
+Lumbricals muscles of hand.r
+Lumbricals muscles of hand.r.001
+Lumbricals muscles of hand.r.002
+Lunate bone.r
+Lunate bone.r.001
+Lunate bone.r.002
+Lunate bone.r.003
+Lunotriquetral interosseus ligament.l
+Lunotriquetral interosseus ligament.r
+Main bronchus.l
+Main bronchus.r
+Male urethra
+Mamillary body.l.001
+Mamillary body.r.001
+Mamillary line.l
+Mamillary line.r
+Mammary region.l
+Mammary region.r
+Mandible
+Manubrium
+Marginal artery
+Mastoid region.l
+Mastoid region.r
+Maxilla.l
+Maxilla.r
+Medial bicipital groove.l
+Medial bicipital groove.r
+Medial border of foot.l
+Medial border of foot.r
+Medial border of forearm.l
+Medial border of forearm.r
+Medial circumflex femoral artery.l
+Medial circumflex femoral artery.r
+Medial circumflex femoral veins.l
+Medial circumflex femoral veins.r
+Medial cuneiform bone.l
+Medial cuneiform bone.r
+Medial cuneiform bone.r.001
+Medial cuneiform bone.r.003
+Medial geniculate body.l.001
+Medial geniculate body.r.001
+Medial head of biceps brachii muscle.l
+Medial head of biceps brachii muscle.r
+Medial head of biceps brachii muscle.r.001
+Medial head of biceps brachii muscle.r.002
+Medial head of flexor hallucis brevis on prox phal of 1st.l
+Medial head of flexor hallucis brevis on prox phal of 1st.r
+Medial head of flexor hallucis brevis.l
+Medial head of flexor hallucis brevis.r
+Medial head of gastrocnemius on med. supracondylar tubercle
+Medial head of gastrocnemius on med. supracondylar tubercle.r
+Medial head of gastrocnemius.l
+Medial head of gastrocnemius.r
+Medial head of triceps brachii-Humeral insertion.l
+Medial head of triceps brachii-Humeral insertion.r
+Medial malleola*.l
+Medial malleola*.r
+Medial occipital artery.l
+Medial occipital artery.r
+Medial palpebral arteries.l
+Medial palpebral arteries.r
+Medial plantar artery.l
+Medial plantar artery.r
+Medial plantar veins.l
+Medial plantar veins.r
+Medial pontine branches of basilar artery.l
+Medial pontine branches of basilar artery.r
+Medial pterygoid muscle.l
+Medial pterygoid muscle.r
+Medial rectus muscle.r
+Medial retromalleolar region.l
+Medial retromalleolar region.r
+Medial rotation
+Median antebrachial vein.l
+Median antebrachial vein.r
+Median cubital vein.l
+Median cubital vein.r
+Median plane
+Median sacral artery
+Medulla oblongata.l.001
+Medulla oblongata.r.001
+Mental region.l
+Mental region.r
+Mentalis muscle.l
+Mentalis muscle.r
+Mentolabial sulcus.l
+Mentolabial sulcus.r
+Meso-appendix
+Mesocolic taenia
+Mesocolon
+Metatarsal region.l
+Metatarsal region.r
+Midbrain.l
+Midbrain.r
+Midclavicular line.l
+Midclavicular line.r
+Middle cardiac vein
+Middle cerebral artery.l
+Middle cerebral artery.r
+Middle colic vein
+Middle collateral artery.l
+Middle collateral artery.r
+Middle frontal gyrus.l.001
+Middle frontal gyrus.r.001
+Middle genicular artery.l
+Middle genicular artery.r
+Middle glenohumeral ligament.l
+Middle glenohumeral ligament.r
+Middle lobe of right lung
+Middle phalanx of 2d finger of foot.l
+Middle phalanx of 2d finger of foot.r
+Middle phalanx of 2d finger.r
+Middle phalanx of 2d finger.r.001
+Middle phalanx of 2d finger.r.002
+Middle phalanx of 2d finger.r.004
+Middle phalanx of 3rd finger of foot.l
+Middle phalanx of 3rd finger of foot.r
+Middle phalanx of 3rd finger.r
+Middle phalanx of 3rd finger.r.001
+Middle phalanx of 3rd finger.r.002
+Middle phalanx of 3rd finger.r.004
+Middle phalanx of 4th finger of foot.l
+Middle phalanx of 4th finger of foot.r
+Middle phalanx of 4th finger of foot.r.002
+Middle phalanx of 4th finger of foot.r.003
+Middle phalanx of 4th finger.r
+Middle phalanx of 4th finger.r.001
+Middle phalanx of 4th finger.r.002
+Middle phalanx of 4th finger.r.004
+Middle phalanx of 5th finger of foot.l
+Middle phalanx of 5th finger of foot.r
+Middle phalanx of 5th finger.r
+Middle phalanx of 5th finger.r.001
+Middle phalanx of 5th finger.r.002
+Middle phalanx of 5th finger.r.004
+Middle temporal gyrus.l.001
+Middle temporal gyrus.r.001
+Multifidus colli muscle.l
+Multifidus colli muscle.r
+Multifidus lumborum.l
+Multifidus lumborum.r
+Multifidus thoracis.l
+Multifidus thoracis.r
+Muscular arteries.l
+Muscular arteries.r
+Muscular triangle.l
+Muscular triangle.r
+Musculophrenic artery.l
+Musculophrenic artery.r
+Musculophrenic veins.l
+Musculophrenic veins.r
+Mylohyoid muscle.l
+Mylohyoid muscle.r
+Nasal bone.l
+Nasal bone.r
+Nasal cartilages.001
+Nasal cartilages.l
+Nasal cartilages.l.001
+Nasal cartilages.r
+Nasal cartilages.r.001
+Nasal region.l
+Nasal region.r
+Nasalis muscle.l
+Nasalis muscle.r
+Nasolabial sulcus.l
+Nasolabial sulcus.r
+Nasolacrimal duct.l
+Nasolacrimal duct.r
+Navicular bone.l
+Navicular bone.r
+Non-coronary leaflet
+Oblique cord.l
+Oblique cord.r
+Oblique head of adductor hallucis on 3rd metatarsal base.l
+Oblique head of adductor hallucis on 3rd metatarsal base.r
+Oblique head of adductor hallucis on cuboid bone.l
+Oblique head of adductor hallucis on cuboid bone.r
+Oblique head of adductor hallucis.l
+Oblique head of adductor hallucis.r
+Oblique head of adductor policis brevis.l
+Oblique head of adductor policis brevis.r
+Oblique head of adductor policis brevis.r.001
+Oblique head of adductor policis brevis.r.002
+Obliquus inferior capitis muscle.l
+Obliquus inferior capitis muscle.r
+Obliquus superior capitis muscle.l
+Obliquus superior capitis muscle.r
+Obturator externus on obturator membrane.r
+Obturator externus.l
+Obturator externus.r
+Obturator internus-Pelvic insertion.l
+Obturator internus-Pelvic insertion.r
+Obturator internus.l
+Obturator internus.r
+Obturator membrane.r
+Occipital bone
+Occipital lobe.l.001
+Occipital lobe.r.001
+Occipital region.l
+Occipital region.r
+Occipitalis.l
+Occipitalis.r
+Occipitotemporal gyri.l
+Occipitotemporal gyri.r
+Oesophagus
+Oesophagus.001
+Olfactory nerve (I).l
+Olfactory nerve (I).r
+Omental taenia
+Omohyoid muscle.l
+Omohyoid muscle.r
+Ophtalmic artery.l
+Ophtalmic artery.r
+Opponens digiti minimi of foot on 5th metatarsal bone.l
+Opponens digiti minimi of foot on 5th metatarsal bone.r
+Opponens digiti minimi of foot.l
+Opponens digiti minimi of foot.r
+Opponens digiti minimi of hand.l
+Opponens digiti minimi of hand.r
+Opponens digiti minimi of hand.r.001
+Opponens digiti minimi of hand.r.002
+Opponens digiti minimi on tubercle of hamate bone.l
+Opponens digiti minimi on tubercle of hamate bone.r
+Opponens pollicis muscle.l
+Opponens pollicis muscle.r
+Opponens pollicis muscle.r.001
+Opponens pollicis muscle.r.002
+Optic chiasm.l
+Optic chiasm.l.001
+Optic chiasm.r
+Optic nerve (II).l
+Optic nerve (II).r
+Optic tract.l.001
+Optic tract.r.001
+Oral region.l
+Oral region.r
+Orbicularis oris
+Orbital part of inferior frontal gyrus.l
+Orbital part of inferior frontal gyrus.r
+Orbital part of orbicularis oculi.l
+Orbital part of orbicularis oculi.r
+Orbital region.l
+Orbital region.r
+Orbitofrontal branches of anterior cerebral artery.l
+Orbitofrontal branches of anterior cerebral artery.r
+Orbitofrontal branches of middle cerebral artery.l
+Orbitofrontal branches of middle cerebral artery.r
+Origin of articularis genus.l
+Origin of articularis genus.r
+Origin of psoas minor on Iliac fossa.l
+Origin of psoas minor on Iliac fossa.r
+Origin of vastus intermedius.l
+Origin of vastus intermedius.r
+Origin of vastus lateralis.l
+Origin of vastus lateralis.r
+Origin of vastus medialis.l
+Origin of vastus medialis.r
+Palatine bone.l
+Palatine bone.r
+Palm.l
+Palm.r
+Palmar
+Palmar capitohamate ligament.l
+Palmar capitohamate ligament.r
+Palmar carpometacarpal ligaments.l
+Palmar carpometacarpal ligaments.r
+Palmar digital veins.l
+Palmar digital veins.r
+Palmar interossei muscles of hand.l
+Palmar interossei muscles of hand.r
+Palmar interossei muscles of hand.r.001
+Palmar interossei muscles of hand.r.002
+Palmar interphalangeal ligaments.l
+Palmar interphalangeal ligaments.r
+Palmar lunotriquetral ligament.l
+Palmar lunotriquetral ligament.r
+Palmar metacarpal arteries.l
+Palmar metacarpal arteries.r
+Palmar metacarpal ligaments.l
+Palmar metacarpal ligaments.r
+Palmar radio-ulnar ligament.l
+Palmar radio-ulnar ligament.r
+Palmar scaphotriquetral ligament.l
+Palmar scaphotriquetral ligament.r
+Palmar surface of digits of hand.l
+Palmar surface of digits of hand.r
+Palmar trapezoideocapitate ligament.l
+Palmar trapezoideocapitate ligament.r
+Palmaris longus muscle.l
+Palmaris longus muscle.r
+Palmaris longus muscle.r.001
+Palmaris longus muscle.r.002
+Palpebral part of orbicularis oculi.l
+Palpebral part of orbicularis oculi.r
+Pancreas
+Pancreatic duct
+Parahippocampal gyrus.l
+Parahippocampal gyrus.r
+Paramedian plane
+Parasternal line.l
+Parasternal line.r
+Parietal bone.r
+Parietal branches of middle cerebral artery.l
+Parietal branches of middle cerebral artery.r
+Parietal region.l
+Parietal region.r
+Parieto-occipital artery.l
+Parieto-occipital artery.r
+Parotidomassetereic region.l
+Parotidomassetereic region.r
+Patella.l
+Patella.r
+Patellar anastomosis.l
+Patellar anastomosis.r
+Patellar tendon on anterior tibial tuberosity.l
+Patellar tendon on anterior tibial tuberosity.r
+Patellar tendon on apex of patella.l
+Patellar tendon on apex of patella.r
+Pectineus muscle on medial surface od femur.l
+Pectineus muscle on medial surface od femur.r
+Pectineus muscle-Pubic insertion.l
+Pectineus muscle-Pubic insertion.r
+Pectineus muscle.l
+Pectineus muscle.r
+Pectoral branches of thoraco-acromial artery.l
+Pectoral branches of thoraco-acromial artery.r
+Pectoral region.l
+Pectoral region.r
+Pectoralis major muscle-Clavicular insertion.l
+Pectoralis major muscle-Clavicular insertion.r
+Pectoralis major muscle-Humeral insertion.l
+Pectoralis major muscle-Humeral insertion.r
+Pectoralis minor muscle.l
+Pectoralis minor muscle.r
+Pectoralis minor muscle.r.001
+Pectoralis minor muscle.r.002
+Perforating branch of posterior interosseus artery.l
+Perforating branch of posterior interosseus artery.r
+Perforating branches of plantar metatarsal arteries.l
+Perforating branches of plantar metatarsal arteries.r
+Perforating femoral arteries.l
+Perforating femoral arteries.r
+Perforating femoral veins.l
+Perforating femoral veins.r
+Pericallosal artery.l
+Pericallosal artery.r
+Philtrum.l
+Philtrum.r
+Piriformis muscle.l
+Piriformis muscle.r
+Pisiform bone.r
+Pisiform bone.r.001
+Pisiform bone.r.002
+Pisiform bone.r.003
+Pisiform bone.r.005
+Pisohamate ligament.l
+Pisohamate ligament.r
+Pisometacarpal ligament.l
+Pisometacarpal ligament.r
+Pisotriquetral ligament.l
+Pisotriquetral ligament.r
+Plane
+Plane.001
+Plane.002
+Plantar
+Plantar arch.l
+Plantar arch.r
+Plantar digital veins.l
+Plantar digital veins.r
+Plantar interossei muscles on 3rd metatarsal bone.l
+Plantar interossei muscles on 3rd metatarsal bone.r
+Plantar interossei muscles on 4th metatarsal bone.l
+Plantar interossei muscles on 4th metatarsal bone.r
+Plantar interossei muscles on 5th metatarsal bone.l
+Plantar interossei muscles on 5th metatarsal bone.r
+Plantar interossei muscles.l
+Plantar interossei muscles.r
+Plantar metatarsal arteries.l
+Plantar metatarsal arteries.r
+Plantar metatarsal veins.l
+Plantar metatarsal veins.r
+Plantar surfaces of digits of foot.l
+Plantar surfaces of digits of foot.r
+Plantar venous arch.l
+Plantar venous arch.r
+Plantaris muscle medially to the lateral gastrocnemius orig
+Plantaris muscle medially to the lateral gastrocnemius origin.r
+Plantaris muscle.l
+Plantaris muscle.r
+Platysma.l
+Platysma.r
+Pons.l.001
+Pons.r.001
+Popliteal artery.l
+Popliteal artery.r
+Popliteal fossa.l
+Popliteal fossa.r
+Popliteal vein.l
+Popliteal vein.r
+Popliteus above oblique line of tibia.l
+Popliteus above oblique line of tibia.r
+Popliteus muscle in the groove for popliteus muscle.l
+Popliteus muscle in the groove for popliteus muscle.r
+Popliteus muscle.l
+Popliteus muscle.r
+Postcentral gyrus.l.001
+Postcentral gyrus.r.001
+Posterior auricular groove.l
+Posterior auricular groove.r
+Posterior belly of digastric muscle.l
+Posterior belly of digastric muscle.r
+Posterior branch of renal artery.l
+Posterior branch of renal artery.r
+Posterior branch of ulnar recurrent artery.l
+Posterior branch of ulnar recurrent artery.r
+Posterior cerebral artery.l
+Posterior cerebral artery.r
+Posterior cervical region.l
+Posterior cervical region.r
+Posterior circumflex humeral artery.l
+Posterior circumflex humeral artery.r
+Posterior circumflex humeral vein.l
+Posterior circumflex humeral vein.r
+Posterior commissure.001
+Posterior communicating artery.l
+Posterior communicating artery.r
+Posterior ethmoidal artery.l
+Posterior ethmoidal artery.r
+Posterior inferior cereballar artery.l
+Posterior inferior cereballar artery.r
+Posterior interosseus artery.l
+Posterior interosseus artery.r
+Posterior lateral segment of liver (VII)
+Posterior leaflet of left atrioventricular valve
+Posterior medial segment of liver (VIII)
+Posterior region of arm.l
+Posterior region of arm.r
+Posterior region of elbow.l
+Posterior region of elbow.r
+Posterior region of forearm.l
+Posterior region of forearm.r
+Posterior region of knee.l
+Posterior region of knee.r
+Posterior region of leg.l
+Posterior region of leg.r
+Posterior region of thigh.l
+Posterior region of thigh.r
+Posterior region of wrist.l
+Posterior region of wrist.r
+Posterior segment of liver (I)
+Posterior sternoclavicular ligament.l
+Posterior sternoclavicular ligament.r
+Posterior tibial artery.l
+Posterior tibial artery.r
+Posterior tibial veins.l
+Posterior tibial veins.r
+Potserior branch of renal artery.l
+Precentral gyrus.l.001
+Precentral gyrus.r.001
+Presternal region.l
+Presternal region.r
+Procerus.l
+Procerus.r
+Pronator quadratus-Radial insertions.l
+Pronator quadratus-Radial insertions.r
+Pronator quadratus-Ulnar insertion.l
+Pronator quadratus-Ulnar insertion.r
+Pronator quadratus.l
+Pronator quadratus.r
+Pronator quadratus.r.001
+Pronator quadratus.r.002
+Pronator teres muscle-Humeral insertion.l
+Pronator teres muscle-Humeral insertion.r
+Pronator teres-Radial insertion.l
+Pronator teres-Radial insertion.r
+Pronator teres-Ulnar insertion.l
+Pronator teres-Ulnar insertion.r
+Proper palmar digital arteries.l
+Proper palmar digital arteries.r
+Proper plantar digital arteries.l
+Proper plantar digital arteries.r
+Prostate
+Prostate.001
+Proximal
+Proximal phalanx of 1st finger of foot.l
+Proximal phalanx of 1st finger of foot.r
+Proximal phalanx of 1st finger of foot.r.001
+Proximal phalanx of 1st finger of foot.r.003
+Proximal phalanx of 1st finger.r
+Proximal phalanx of 1st finger.r.001
+Proximal phalanx of 1st finger.r.002
+Proximal phalanx of 1st finger.r.004
+Proximal phalanx of 2d finger of foot.l
+Proximal phalanx of 2d finger of foot.r
+Proximal phalanx of 2d finger.r
+Proximal phalanx of 2d finger.r.001
+Proximal phalanx of 2d finger.r.002
+Proximal phalanx of 2d finger.r.003
+Proximal phalanx of 3rd finger of foot.l
+Proximal phalanx of 3rd finger of foot.r
+Proximal phalanx of 3rd finger of foot.r.001
+Proximal phalanx of 3rd finger of foot.r.003
+Proximal phalanx of 3rd finger.r
+Proximal phalanx of 3rd finger.r.001
+Proximal phalanx of 3rd finger.r.002
+Proximal phalanx of 3rd finger.r.003
+Proximal phalanx of 4th finger of foot.l
+Proximal phalanx of 4th finger of foot.r
+Proximal phalanx of 4th finger of foot.r.001
+Proximal phalanx of 4th finger of foot.r.003
+Proximal phalanx of 4th finger.r
+Proximal phalanx of 4th finger.r.001
+Proximal phalanx of 4th finger.r.002
+Proximal phalanx of 4th finger.r.003
+Proximal phalanx of 5th finger of foot.l
+Proximal phalanx of 5th finger of foot.r
+Proximal phalanx of 5th finger of foot.r.001
+Proximal phalanx of 5th finger of foot.r.003
+Proximal phalanx of 5th finger.r
+Proximal phalanx of 5th finger.r.001
+Proximal phalanx of 5th finger.r.002
+Proximal phalanx of 5th finger.r.003
+Proximal phalanx of 5th finger.r.004
+Proximal phalanx of 5th finger.r.005
+Proximal phalanx of hand-1st finger.l
+Proximal phalanx of hand-1st finger.r.002
+Psoas muscle.l
+Psoas muscle.r
+Pubic hair
+Pubic symphysis.l
+Pubic symphysis.r
+Pubococcygeus muscle.l
+Pubococcygeus muscle.r
+Puborectalis muscle.l
+Puborectalis muscle.r
+Putamen.l.001
+Putamen.r.001
+Pyramidalis muscle.l
+Pyramidalis muscle.r
+Quadrate ligament.l
+Quadrate ligament.r
+Quadratus femoris ending on quadrate tubercle.l
+Quadratus femoris ending on quadrate tubercle.r
+Quadratus femoris muscle.l
+Quadratus femoris muscle.r
+Quadratus femoris-Ischiatic insertion.l
+Quadratus femoris-Ischiatic insertion.r
+Quadratus lumborum muscle.l
+Quadratus lumborum muscle.r
+Quadratus plantae muscle on plantar surface of calcaneus.l
+Quadratus plantae muscle on plantar surface of calcaneus.r
+Quadratus plantae muscle.l
+Quadratus plantae muscle.r
+Quadriceps femoris on base of patella.l
+Quadriceps femoris on base of patella.r
+Radial
+Radial artery.l
+Radial artery.r
+Radial collateral artery.l
+Radial collateral artery.r
+Radial collateral ligament of wrist joint.l
+Radial collateral ligament of wrist joint.r
+Radial collateral ligament.l
+Radial collateral ligament.r
+Radial foveola.l
+Radial foveola.r
+Radial head of flexor digitorum superficialis.l
+Radial head of flexor digitorum superficialis.r
+Radial head of flexor digitorum superficialis.r.001
+Radial head of flexor digitorum superficialis.r.002
+Radial veins.l
+Radial veins.r
+Radiate carpal ligament.l
+Radiate carpal ligament.r
+Radiocapitate ligament.l
+Radiocapitate ligament.r
+Radioscaphocapitate ligament.l
+Radioscaphocapitate ligament.r
+Radius.r
+Radius.r.001
+Radius.r.002
+Radius.r.003
+Radius.r.004
+Radius.r.005
+Radius.r.006
+Radius.r.007
+Radius.r.008
+Radius.r.009
+Radius.r.010
+Radius.r.011
+Radius.r.022
+Radius.r.026
+Radius.r.028
+Radius.r.032
+Rectus abdominis muscle.l
+Rectus abdominis muscle.r
+Rectus anterior capitis muscle.l
+Rectus anterior capitis muscle.r
+Rectus femoris muscle-Iliac insertion.l
+Rectus femoris muscle-Iliac insertion.r
+Rectus femoris muscle.l
+Rectus femoris muscle.r
+Rectus lateralis capitis muscle.l
+Rectus lateralis capitis muscle.r
+Rectus posterior major capitis muscle.l
+Rectus posterior major capitis muscle.r
+Rectus posterior minor capitis muscle.l
+Rectus posterior minor capitis muscle.r
+Recurrent interosseus artery.l
+Recurrent interosseus artery.r
+Renal artery.l
+Renal artery.r
+Rhomboid major muscle-Scapular insertion.l
+Rhomboid major muscle-Scapular insertion.r
+Rhomboid major muscle.l
+Rhomboid major muscle.r
+Rhomboid major muscle.r.001
+Rhomboid major muscle.r.002
+Rhomboid minor muscle-Scapular insertion.l
+Rhomboid minor muscle-Scapular insertion.r
+Rhomboid minor muscle.l
+Rhomboid minor muscle.r
+Rhomboid minor muscle.r.001
+Rhomboid minor muscle.r.002
+Right ascending lumbar vein
+Right brachiocephalic vein
+Right colic artery
+Right colic vein
+Right common carotid artery
+Right coronary artery
+Right coronary leaflet
+Right gastro-omental vein
+Right internal jugular vein
+Right lobe of thymus
+Right renal vein.001
+Right semilunar leaflet of pulmonary valve
+Right subclavian artery
+Right subcostal vein
+Right superior phrenic vein
+Right testicular artery
+Right testicular vein
+Risorius.l
+Risorius.r
+Root of the nose.l
+Root of the nose.r
+Sacral region.l
+Sacral region.r
+Sacrospinous ligament.r
+Sacrotuberous ligament.r
+Sacrum
+Sartorius muscle on upper anterior iliac spine.l
+Sartorius muscle on upper anterior iliac spine.r
+Sartorius muscle.l
+Sartorius muscle.r
+Sartorius on 'patte d'oie'.l
+Sartorius on 'patte d'oie'.r
+Scalene anterior muscle.l
+Scalene anterior muscle.r
+Scalenus anterior and medius.l
+Scalenus anterior and medius.r
+Scalenus posterior.l
+Scalenus posterior.r
+Scapha.l
+Scapha.r
+Scaphocapitate ligament.l
+Scaphocapitate ligament.r
+Scaphoid bone.r
+Scaphoid bone.r.001
+Scaphoid bone.r.002
+Scaphoid bone.r.003
+Scapholunate interosseus ligament.l
+Scapholunate interosseus ligament.r
+Scaphotrapeziotrapezoidal ligament.l
+Scaphotrapeziotrapezoidal ligament.r
+Scapula.r
+Scapula.r.001
+Scapula.r.002
+Scapula.r.003
+Scapula.r.004
+Scapula.r.005
+Scapula.r.006
+Scapula.r.007
+Scapula.r.008
+Scapula.r.009
+Scapula.r.010
+Scapula.r.011
+Scapula.r.012
+Scapula.r.013
+Scapula.r.014
+Scapula.r.015
+Scapula.r.016
+Scapula.r.017
+Scapula.r.018
+Scapula.r.019
+Scapula.r.020
+Scapula.r.021
+Scapula.r.023
+Scapula.r.024
+Scapula.r.025
+Scapula.r.026
+Scapula.r.027
+Scapula.r.028
+Scapula.r.029
+Scapula.r.036
+Scapula.r.037
+Scapula.r.038
+Scapula.r.039
+Scapula.r.040
+Scapula.r.042
+Scapular head of deltoid muscle-Scapular insertion.l
+Scapular head of deltoid muscle-Scapular insertion.r
+Scapular part of deltoid uscle.l
+Scapular part of deltoid uscle.r
+Scapular part of deltoid uscle.r.001
+Scapular part of deltoid uscle.r.002
+Scapular region.l
+Scapular region.r
+Sclera.r.001
+Second posterior intercostal artery.l
+Second posterior intercostal artery.r
+Semimembranosus muscle-Ischiatic insertion.l
+Semimembranosus muscle-Ischiatic insertion.r
+Semimembranosus muscle.l
+Semimembranosus muscle.r
+Semimembranosus on posterior surf. of med. condyle.l
+Semimembranosus on posterior surf. of med. condyle.r
+Seminal gland'.l
+Seminal gland.l
+Seminal gland.r
+Seminal gland.r.001
+Semispinalis colli muscle.l
+Semispinalis colli muscle.r
+Semispinalis thoracis.l
+Semispinalis thoracis.r
+Semitendinosus muscle-Isciatic insertion.l
+Semitendinosus muscle-Isciatic insertion.r
+Semitendinosus muscle.l
+Semitendinosus muscle.r
+Semitendinosus on 'patte d'oie'.l
+Semitendinosus on 'patte d'oie'.r
+Septal branches?
+Septal leaflet of right atrioventricular valve
+Septal nuclei.001
+Septal papillary muscle of right ventricle
+Septum pellucidum.001
+Serratus anterior muscle-Scapular insertion.l
+Serratus anterior muscle-Scapular insertion.r
+Serratus anterior muscle.l
+Serratus anterior muscle.r
+Serratus posterior inferior muscle.l
+Serratus posterior inferior muscle.r
+Serratus posterior superior muscle.l
+Serratus posterior superior muscle.r
+Sesamoid bones of foot.r
+Sesamoid bones of foot.r.001
+Sesamoid bones of foot.r.002
+Sesamoid bones of foot.r.003
+Sesamoid bones of foot.r.004
+Sesamoid bones of foot.r.005
+Short ciliary nerves.l
+Short ciliary nerves.r
+Short head of biceps brachii.l
+Short head of biceps brachii.r
+Short head of biceps brachii.r.001
+Short head of biceps brachii.r.002
+Short head of biceps femoris muscle.l
+Short head of biceps femoris muscle.r
+Short head of biceps femoris on lateral lip of linea aspera
+Short head of biceps femoris on lateral lip of linea aspera.r
+Short posterior ciliary arteries
+Short posterior ciliary arteries.l
+Short posterior ciliary arteries.r
+Sigmoid arteries
+Sigmoid colon.001
+Sigmoid veins
+Skin-eraser
+Small intestine
+Small saphenous vein.l
+Small saphenous vein.r
+Sole.l
+Sole.r
+Solear on solear crest on fibular head.l
+Solear on solear crest on fibular head.r
+Solear on solear crest on oblique line.l
+Solear on solear crest on oblique line.r
+Soleus muscle.l
+Soleus muscle.r
+Sphenoid bone.l
+Spinalis capitis muscle.l
+Spinalis capitis muscle.r
+Spinalis colli muscle.l
+Spinalis colli muscle.r
+Spinalis thoracis muscle.l
+Spinalis thoracis muscle.r
+Spleen.001
+Splenic artery.001
+Splenic vein.001
+Splenius capitis muscle.l
+Splenius capitis muscle.r
+Splenius colli muscle.l
+Splenius colli muscle.r
+Sternal line.l
+Sternal line.r
+Sternocleidomastoid muscle-Clavicular insertion.l
+Sternocleidomastoid muscle-Clavicular insertion.r
+Sternocleidomastoid muscle.l
+Sternocleidomastoid muscle.r
+Sternocleidomastoid muscle.r.001
+Sternocleidomastoid muscle.r.002
+Sternocleidomastoid region.l
+Sternocleidomastoid region.r
+Sternocostal head of pectoralis major muscle.l
+Sternocostal head of pectoralis major muscle.r
+Sternocostal head of pectoralis major muscle.r.001
+Sternocostal head of pectoralis major muscle.r.002
+Sternohyoid muscle.l
+Sternohyoid muscle.r
+Sternothyroid muscle.l
+Sternothyroid muscle.r
+Stomach.001
+Stria medullaris thalami.r.001
+Stria terminalis.l.001
+Stria terminalis.r.001
+Stylohyoid muscle.l
+Stylohyoid muscle.r
+Subclavian vein.l
+Subclavian vein.r
+Subclavius muscle-Clavicular insertion.l
+Subclavius muscle-Clavicular insertion.r
+Subclavius muscle.l
+Subclavius muscle.r
+Subclavius muscle.r.001
+Subclavius muscle.r.002
+Sublingual gland.l
+Sublingual gland.r
+Submandibular gland.l
+Submandibular gland.r
+Submandibular triangle.l
+Submandibular triangle.r
+Submental region.l
+Submental region.r
+Subscapular artery.l
+Subscapular artery.r
+Subscapular muscle.l
+Subscapular muscle.r
+Subscapular muscle.r.001
+Subscapular muscle.r.002
+Subscapularis muscle-Humeral insertion.l
+Subscapularis muscle-Humeral insertion.r
+Subscapularis muscle-Scapular insertion.l
+Subscapularis muscle-Scapular insertion.r
+Sucostal artery.l
+Sucostal artery.r
+Superficial branch of medial plantar artery.l
+Superficial branch of medial plantar artery.r
+Superficial branch of transverse cervical artery.l
+Superficial branch of transverse cervical artery.r
+Superficial dorsal veins of penis
+Superficial epigastric artery.l
+Superficial epigastric artery.r
+Superficial epigastric vein.l
+Superficial epigastric vein.r
+Superficial head of flexor pollicis brevis.l
+Superficial head of flexor pollicis brevis.r
+Superficial head of flexor pollicis brevis.r.001
+Superficial head of flexor pollicis brevis.r.002
+Superficial head of pronator teres muscle.l
+Superficial head of pronator teres muscle.r
+Superficial head of pronator teres muscle.r.001
+Superficial head of pronator teres muscle.r.002
+Superficial palmar arch.l
+Superficial palmar arch.r
+Superficial part of masseter.l
+Superficial part of masseter.r
+Superficial venous palmar arch.l
+Superficial venous palmar arch.r
+Superior cerebellar artery.l
+Superior cerebellar artery.r
+Superior cerebellar peduncle.l.001
+Superior cerebellar peduncle.r.001
+Superior colliculus.l.001
+Superior colliculus.r.001
+Superior epigastric artery.l
+Superior epigastric artery.r
+Superior frontal gyrus.l.001
+Superior frontal gyrus.r.001
+Superior gemellus muscle-Ischiatic insertion.l
+Superior gemellus muscle-Ischiatic insertion.r
+Superior gemellus muscle.l
+Superior gemellus muscle.r
+Superior glenohumeral ligament.l
+Superior glenohumeral ligament.r
+Superior gluteal veins.l
+Superior gluteal veins.r
+Superior head of lateral pterygoid muscle.l
+Superior head of lateral pterygoid muscle.r
+Superior lateral genicular artery.l
+Superior lateral genicular artery.r
+Superior left lobar bronchus
+Superior lobe of left lung
+Superior lobe of right lung
+Superior medial genicular artery.l
+Superior medial genicular artery.r
+Superior mesenteric artery.001
+Superior mesenteric vein
+Superior oblique muscle.r
+Superior parietal lobule.l
+Superior parietal lobule.l.001
+Superior phrenic arteries
+Superior pubic ligament.r
+Superior rectus muscle.r
+Superior tarsus.r
+Superior temporal gyrus.l.001
+Superior temporal gyrus.r.001
+Superior transverse scapular ligament.l
+Superior transverse scapular ligament.r
+Superior ulnar collateral artery.l
+Superior ulnar collateral artery.r
+Superior vena cava
+Superior vena cava.001
+Supinator-Radial insertion.l
+Supinator-Radial insertion.r
+Supinator-Ulnar insertion.l
+Supinator-Ulnar insertion.r
+Supinator.l
+Supinator.r
+Supinator.r.001
+Supinator.r.002
+Supra-orbital artery.l
+Supra-orbital artery.r
+Supramarginal gyrus.l
+Supramarginal gyrus.r
+Suprarenal gland.l
+Suprarenal gland.r
+Suprascapular artery.l
+Suprascapular artery.r
+Suprascapular vein.l
+Suprascapular vein.r
+Supraspinatus muscle-Humeral insertion.l
+Supraspinatus muscle-Humeral insertion.r
+Supraspinatus muscle-Scapular insertion.l
+Supraspinatus muscle-Scapular insertion.r
+Supraspinatus muscle.l
+Supraspinatus muscle.r
+Supraspinatus muscle.r.001
+Supraspinatus muscle.r.002
+Supratrochlear artery.l
+Supratrochlear artery.r
+Supreme intercostal artery.l
+Supreme intercostal artery.r
+Suspensory ligament of eyeball.l
+Suspensory ligament of eyeball.r
+T1
+T10
+T11
+T12
+T2
+T3
+T4
+T5
+T6
+T7
+T8
+T9
+Talus.l
+Talus.r
+Temporal bone.l
+Temporal bone.r
+Temporal branches of middle cerebral artery.l
+Temporal branches of middle cerebral artery.r
+Temporal operculum.l.001
+Temporal operculum.r.001
+Temporal region.l
+Temporal region.r
+Temporalis muscle.l
+Temporalis muscle.r
+Temporoparietalis muscle.l
+Temporoparietalis muscle.r
+Tensor fasciae latae on upper anterior iliac spine.l
+Tensor fasciae latae on upper anterior iliac spine.r
+Tensor fasciae latae.l
+Tensor fasciae latae.r
+Tentorium cerebelli.l
+Tentorium cerebelli.r
+Teres major muscle-Humeral insertion.l
+Teres major muscle-Humeral insertion.r
+Teres major muscle-Scapular insertion.l
+Teres major muscle-Scapular insertion.r
+Teres major muscle.l
+Teres major muscle.r
+Teres major muscle.r.001
+Teres major muscle.r.002
+Teres minor muscle-Humeral insertion.l
+Teres minor muscle-Humeral insertion.r
+Teres minor muscle-Scapular insertion.l
+Teres minor muscle-Scapular insertion.r
+Teres minor muscle.l
+Teres minor muscle.r
+Teres minor muscle.r.001
+Teres minor muscle.r.002
+Testicle.l
+Testicle.r
+Testis.l
+Testis.r
+Thalamus.l.001
+Thalamus.r.001
+Thenar eminence.l
+Thenar eminence.r
+Third ventricle.001
+Thoracic aorta
+Thoraco-acromial artery.l
+Thoraco-acromial artery.r
+Thoracodorsal artery.l
+Thoracodorsal artery.r
+Thoracodorsal vein.l
+Thoracodorsal vein.r
+Thyrocervical trunk.l
+Thyrocervical trunk.r
+Thyrohyoid muscle.l
+Thyrohyoid muscle.r
+Thyroid cartilage
+Tibia.l
+Tibia.r
+Tibial
+Tibialis anterior muscle.l
+Tibialis anterior muscle.r
+Tibialis anterior on lateral surface of tibia.l
+Tibialis anterior on lateral surface of tibia.r
+Tibialis posterior muscle.l
+Tibialis posterior muscle.r
+Tibialis posterior on post. surface of interosseus membrane
+Tibialis posterior on post. surface of interosseus membrane.
+Tongue
+Trachea
+Trachea.001
+Tragus.l
+Tragus.r
+Transverse abdominal muscle-Iliac insertion.l
+Transverse abdominal muscle-Iliac insertion.r
+Transverse cervical artery.l
+Transverse cervical artery.r
+Transverse colon
+Transverse head of adductor hallucis on 3rd metatarsal head
+Transverse head of adductor hallucis on 3rd metatarsal head.r
+Transverse head of adductor hallucis on 4th metatarsal head
+Transverse head of adductor hallucis on 4th metatarsal head.r
+Transverse head of adductor hallucis on 5th metatarsal head
+Transverse head of adductor hallucis on 5th metatarsal head.r
+Transverse head of adductor hallucis.l
+Transverse head of adductor hallucis.r
+Transverse head of adductor pollicis brevis.l
+Transverse head of adductor pollicis brevis.r
+Transverse head of adductor pollicis brevis.r.001
+Transverse head of pollicis brevis.r.001
+Transverse humeral ligament.l
+Transverse humeral ligament.r
+Transverse part of trapezius muscle.l
+Transverse part of trapezius muscle.r
+Transverse part of trapezius muscle.r.001
+Transverse part of trapezius muscle.r.002
+Transverse planes.002
+Transversus abdominis muscle.l
+Transversus abdominis muscle.r
+Transversus thoracis muscle.l
+Transversus thoracis muscle.r
+Trapeziotrapezoidal interosseus ligament.l
+Trapeziotrapezoidal interosseus ligament.r
+Trapezium bone.r
+Trapezium bone.r.001
+Trapezium bone.r.002
+Trapezium bone.r.003
+Trapezoid bone.r
+Trapezoid bone.r.001
+Trapezoid bone.r.002
+Trapezoid bone.r.003
+Trapezoid ligament.l
+Trapezoid ligament.r
+Trapezoideocapitate interosseus ligament.l
+Trapezoideocapitate interosseus ligament.r
+Triangle of auscultation.l
+Triangle of auscultation.r
+Triangular fossa.l
+Triangular fossa.r
+Triceps brachii-Ulnar insertion.l
+Triceps brachii-Ulnar insertion.r
+Triceps surae on calcaneal tuberosity.l
+Triceps surae on calcaneal tuberosity.r
+Triquetrocapitate ligament.l
+Triquetrocapitate ligament.r
+Triquetrohamate ligament.l
+Triquetrohamate ligament.r
+Triquetrum bone.r
+Triquetrum bone.r.001
+Triquetrum bone.r.002
+Triquetrum bone.r.003
+Trochlea of superior oblique muscle.r
+Tubercle of upper lip.l
+Tubercle of upper lip.r
+Ulna.r
+Ulna.r.001
+Ulna.r.002
+Ulna.r.003
+Ulna.r.004
+Ulna.r.005
+Ulna.r.006
+Ulna.r.007
+Ulna.r.008
+Ulna.r.010
+Ulna.r.013
+Ulnar
+Ulnar artery.l
+Ulnar artery.r
+Ulnar collateral ligament of wrist joint.l
+Ulnar collateral ligament of wrist joint.r
+Ulnar collateral ligament.l
+Ulnar collateral ligament.r
+Ulnar head of extensor carpi ulnaris.l
+Ulnar head of extensor carpi ulnaris.r
+Ulnar head of extensor carpi ulnaris.r.001
+Ulnar head of extensor carpi ulnaris.r.002
+Ulnar head of flexor carpi ulnaris-Ulnar insertion.l
+Ulnar head of flexor carpi ulnaris-Ulnar insertion.r
+Ulnar head of flexor carpi ulnaris.l
+Ulnar head of flexor carpi ulnaris.r
+Ulnar head of flexor carpi ulnaris.r.001
+Ulnar head of flexor carpi ulnaris.r.002
+Ulnar recurrent artery.l
+Ulnar recurrent artery.r
+Ulnar veins.l
+Ulnar veins.r
+Ulnocapitate ligament.l
+Ulnocapitate ligament.r
+Ulnolunate ligament.l
+Ulnolunate ligament.r
+Ulnopisiform ligament.l
+Ulnopisiform ligament.r
+Ulnotriquetral ligament.l
+Ulnotriquetral ligament.r
+Umbilical region.l
+Umbilical region.r
+Umbilicus.l
+Umbilicus.r
+Ureter.l
+Ureter.r
+Urethra
+Urinary bladder
+Urogenital region.l
+Urogenital region.r
+Uvula of palate
+Vastus intermedius muscle.l
+Vastus intermedius muscle.r
+Vastus lateralis muscle.l
+Vastus lateralis muscle.r
+Vastus medialis muscle.l
+Vastus medialis muscle.r
+Ventral
+Ventral parts of lateral intertransversarii lumborum muscles.l
+Ventral parts of lateral intertransversarii lumborum muscles.r
+Vermiform appendix
+Vertebral artery.l
+Vertebral artery.r
+Vertebral region.l
+Vertebral region.r
+Vertex.l
+Vertex.r
+Vomer
+White matter of telencephalon.l
+White matter of telencephalon.r
+Xiphoid process
+Zygomatic bone.l
+Zygomatic bone.r
+Zygomatic region.l
+Zygomatic region.r
+Zygomaticus major muscle.l
+Zygomaticus major muscle.r
+Zygomaticus minor muscle.l
+Zygomaticus minor muscle.r
+[Right posterolateral branch]
+dorsal interossei muscles of hand.l
+dorsal interossei muscles of hand.r
+dorsal interossei muscles of hand.r.001
+dorsal interossei muscles of hand.r.002
+grp1.110
+grp1.112
+grp1.1709
+grp1.1726
+grp1.1914
+grp1.2003
+septal branches of inferior interventricular artery
+tendinous arch of levator ani.l
+tendinous arch of levator ani.r
+Blender 4.4.3 (hash 802179c51ccc built 2025-04-29 14:25:11)
+Read blend: "/Users/tiff/Code/labs [second checkout]/tools/muscle-anatomy/data/Z-Anatomy.blend"
+Read blend: "/Users/tiff/Code/labs [second checkout]/tools/muscle-anatomy/data/Z-Anatomy.blend"
+
+Blender quit

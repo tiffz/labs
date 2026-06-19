@@ -30,6 +30,12 @@ const APP_SMOKE_SPECS = {
     'e2e/smoke/zinebox-drive-import.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/zinebox/' },
   ],
+  muscle: [
+    'e2e/smoke/muscle-shell.spec.ts',
+    'e2e/smoke/muscle-study-journey.spec.ts',
+    'e2e/smoke/muscle-orbit-perf.spec.ts',
+    { file: 'e2e/smoke/app-shells.spec.ts', grep: '/muscle/' },
+  ],
 };
 
 function gitRef(base) {

@@ -12,7 +12,9 @@ description: Adds a new Labs micro-app with Vite entry, SPA shell guardrails, an
 3. Register in **`vite.config.ts`** multi-page inputs (if not auto-picked up)
 4. Register in **`src/shared/importBoundaries.test.ts`** and **`scripts/check-import-boundaries.mjs`**
 5. Add route to [`e2e/routeRegistry.ts`](../../e2e/routeRegistry.ts) with `smoke: true` when boot-stable
-6. Run **`npm run presubmit`** — `spaGuardrails.test.ts` must pass
+6. **Public runtime assets** — if the app imports from `public/<app>/`, commit those files in the **same PR** as `src/<app>/` (manifest, media, favicon). Add `npm run <app>:validate-assets` + guardrail test when assets are required for typecheck/boot. See Muscle Memory: `musclePublicAssetsGuardrails.test.ts`, `muscle:validate-assets`.
+7. **E2e smokes** — dedicated specs in `e2e/smoke/<app>-*.spec.ts`; register in `APP_SMOKE_SPECS` ([`scripts/run-scoped-e2e.mjs`](../../scripts/run-scoped-e2e.mjs)) for scoped CI.
+8. Run **`npm run presubmit`** — `spaGuardrails.test.ts` must pass
 
 ## Rules
 

@@ -19,6 +19,7 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | [`encore-performance-ux.mdc`](encore-performance-ux.mdc)                     | performance components, editor           | `src/encore/PERFORMANCE_UX.md`             | —                            |
 | [`gesture-linen-design.mdc`](gesture-linen-design.mdc)                       | `gesture/**`                             | `src/gesture/DESIGN.md`                    | —                            |
 | [`gesture-media-tiers.mdc`](gesture-media-tiers.mdc)                         | Gesture media / preview / session        | `src/gesture/AGENTS.md` § Media tiers      | —                            |
+| [`muscle-canvas-perf.mdc`](muscle-canvas-perf.mdc)                           | `muscle/components/canvas/**`            | `src/muscle/CUJs.md` CUJ-001               | `labs-performance`           |
 | [`dexie-live-query-empty-states.mdc`](dexie-live-query-empty-states.mdc)     | Dexie `useLiveQuery` surfaces            | `resolveDexieLiveQuery.ts`, Encore library | —                            |
 | [`stanza-viewer-layout.mdc`](stanza-viewer-layout.mdc)                       | `stanza/**`                              | `stanza/LAYOUT.md`                         | —                            |
 | [`stanza-drive-sync.mdc`](stanza-drive-sync.mdc)                             | `stanza/drive/**`, backup hook           | `stanza/AGENTS.md` § Drive sync            | —                            |

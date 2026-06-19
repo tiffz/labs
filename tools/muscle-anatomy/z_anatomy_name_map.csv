@@ -1,0 +1,57 @@
+z_anatomy_name,node_id,region
+Frontal bone,bone_skull,fundamentals
+Occipital bone,bone_skull,fundamentals
+Parietal bone.r,bone_skull,fundamentals
+Body of sternum,bone_sternum,fundamentals
+Hip bone.r,bone_pelvis,fundamentals
+Humerus.r,bone_humerus,fundamentals
+Radius.r,bone_radius,fundamentals
+Ulna.r,bone_ulna,fundamentals
+Femur.r,bone_femur,fundamentals
+Tibia.r,bone_tibia,fundamentals
+Articular capsule of glenohumeral joint.r,joint_shoulder,fundamentals
+Articular capsule of elbow.r,joint_elbow,fundamentals
+5th rib.r,bone_ribcage,torso
+6th rib.r,bone_ribcage,torso
+Rectus abdominis muscle.r,muscle_rectus_abdominis,torso
+External abdominal oblique.r,muscle_external_oblique,torso
+Serratus anterior muscle.r,muscle_serratus_anterior,torso
+Latissimus dorsi muscle.r,muscle_latissimus_dorsi,torso
+Longissimus thoracis muscle.r,muscle_erector_spinae,torso
+Clavicular head of pectoralis major muscle.r,muscle_pectoralis_major,torso
+Sternocostal head of pectoralis major muscle.r,muscle_pectoralis_major,torso
+Clavicle.r,bone_clavicle,shoulder_neck
+Scapula.r,bone_scapula,shoulder_neck
+Clavicular part of deltoid muscle.r,muscle_deltoid_anterior,shoulder_neck
+Acromial part of deltoid muscle.r,muscle_deltoid_lateral,shoulder_neck
+Scapular part of deltoid uscle.r,muscle_deltoid_posterior,shoulder_neck
+Ascending part of trapezius muscle.r,muscle_trapezius_upper,shoulder_neck
+Sternocleidomastoid muscle.r,muscle_sternocleidomastoid,shoulder_neck
+Articular capsule of sternoclavicular joint*.r,joint_sternoclavicular,shoulder_neck
+Long head of biceps brachii muscle.r,muscle_biceps_brachii,arm
+Lateral head of triceps brachii muscle.r,muscle_triceps_long_head,arm
+Brachialis muscle.r,muscle_brachialis,arm
+Brachioradialis muscle.r,muscle_brachioradialis,arm
+Extensor carpi radialis longus.r,muscle_extensor_carpi_radialis,arm
+Flexor carpi radialis.r,muscle_flexor_carpi_radialis,arm
+1st metacarpal bone.r,bone_metacarpals,hand
+2d metacarpal bone.r,bone_metacarpals,hand
+3d metacarpal bone.r,bone_metacarpals,hand
+4th metacarpal bone.r,bone_metacarpals,hand
+5th metacarpal bone.r,bone_metacarpals,hand
+Thenar eminence.r,muscle_thenar_eminence,hand
+Hypothenar eminence.r,muscle_hypothenar_eminence,hand
+Flexor digitorum superficialis.r,muscle_flexor_digitorum_superficialis,hand
+Extensor digitorum.r,muscle_extensor_digitorum,hand
+Patella.r,bone_patella,leg
+Rectus femoris muscle.r,muscle_quadriceps_rectus_femoris,leg
+Vastus lateralis muscle.r,muscle_vastus_lateralis,leg
+Long head of biceps femoris muscle.r,muscle_hamstrings_biceps_femoris,leg
+Medial head of gastrocnemius.r,muscle_gastrocnemius,leg
+Lateral head of gastrocnemius.r,muscle_gastrocnemius,leg
+Tibialis anterior muscle.r,muscle_tibialis_anterior,leg
+Calcaneus.r,bone_calcaneus,foot
+Talus.r,bone_talus,foot
+Abductor hallucis.r,muscle_abductor_hallucis,foot
+Extensor digitorum brevis.r,muscle_extensor_digitorum_brevis,foot
+Fibularis longus.r,muscle_peroneus_longus,foot

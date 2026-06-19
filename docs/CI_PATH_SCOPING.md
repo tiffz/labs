@@ -31,9 +31,11 @@ Vitest scoping mirrors local `npm run test:changed-apps` in CI when the diff tou
 Edit [`scripts/run-scoped-e2e.mjs`](../scripts/run-scoped-e2e.mjs) `APP_SMOKE_SPECS`:
 
 ```javascript
-gesture: [
-  'e2e/smoke/gesture-preview-strip.spec.ts',
-  { grep: '/gesture/', file: 'e2e/smoke/app-shells.spec.ts' },
+muscle: [
+  'e2e/smoke/muscle-shell.spec.ts',
+  'e2e/smoke/muscle-study-journey.spec.ts',
+  'e2e/smoke/muscle-orbit-perf.spec.ts',
+  { grep: '/muscle/', file: 'e2e/smoke/app-shells.spec.ts' },
 ],
 ```
 

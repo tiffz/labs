@@ -17,6 +17,8 @@
     "check:css-important": "sh scripts/check-css-important.sh",
     "check:workflows": "sh scripts/check-workflows.sh",
     "muscle:validate-assets": "node scripts/validate-muscle-assets.mjs",
+    "muscle:export-glbs": "node scripts/export-muscle-procedural-glbs.mjs",
+    "muscle:export-z-anatomy": "node scripts/export-muscle-z-anatomy-glbs.mjs",
     "prelint": "npm run generate:shared-catalog && npm run generate:labs-catalog",
     "pretest": "npm run generate:shared-catalog && npm run generate:labs-catalog",
     "prebuild": "npm run generate:shared-catalog && npm run generate:labs-catalog",
