@@ -946,6 +946,12 @@ function reducer(state: ScalesState, action: Action): ScalesState {
     case 'REPLACE_PROGRESS_FROM_CLOUD': {
       const normalized = normalizeScalesProgressPayload(action.progress);
       saveProgress(normalized);
+      if (state.screen === 'session' && state.sessionPlan && state.activeExercise) {
+        return {
+          ...state,
+          progress: normalized,
+        };
+      }
       clearSessionSnapshot();
       return {
         ...state,

@@ -8,7 +8,7 @@ export const DRILL_STUCK_AT = 8;
 export const DRILL_SNOOZE_BY = 4;
 /** Regular auto-loop "Try going back?" — consecutive rough runs before prompt. */
 export const REGULAR_STUCK_AT = 8;
-/** Jump-coaching modal only after this many finished attempts on the stage. */
+/** Jump-coaching + stepping-stone modals only after this many finished attempts on the stage. */
 export const REGULAR_STUCK_MIN_ATTEMPTS_FOR_JUMP = 4;
 /** How long the free-tempo "Nice. ready to start" overlay stays before scored playback. */
 export const FREE_TEMPO_WARMUP_UI_MS = 2200;

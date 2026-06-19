@@ -44,9 +44,15 @@ export function ScalesDriveBackupProvider({ children }: { children: ReactNode })
     [dispatch],
   );
 
+  const shouldDeferAutoPull = useCallback(
+    () => state.screen === 'session',
+    [state.screen],
+  );
+
   const backup = useScalesDriveBackup({
     progress: state.progress,
     onMergeProgress,
+    shouldDeferAutoPull,
   });
 
   const allowlistEmpty = getLabsDriveBackupRestrictionHashesFromEnv().size === 0;

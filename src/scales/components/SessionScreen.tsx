@@ -586,10 +586,30 @@ export default function SessionScreen() {
     setDrillSnoozedUntil(DRILL_STUCK_AT);
     setAttemptsThisStage(0);
     setRegularSnoozedUntil(REGULAR_STUCK_AT);
-    setRegularRoughBaseline(0);
     lastCountedResultRef.current = null;
     setTimedDryRunReady(false);
     dwellBadgeSnapshotRef.current = null;
+
+    let roughBaselineAtEntry = 0;
+    if (activeExercise) {
+      const found = findExercise(activeExercise.exerciseId);
+      const stages = found?.exercise.stages ?? [];
+      const stageIdx = stages.findIndex((s) => s.id === activeExercise.stageId);
+      const stage = stageIdx >= 0 ? stages[stageIdx] : null;
+      if (found && stage) {
+        const exerciseProgress = getExerciseProgress(state.progress, activeExercise.exerciseId);
+        roughBaselineAtEntry = consecutiveRoughRunsOnStage(
+          exerciseProgress.history,
+          activeExercise.stageId,
+          found.exercise.kind,
+          stage,
+          stageIdx === stages.length - 1,
+        );
+      }
+    }
+    setRegularRoughBaseline(roughBaselineAtEntry);
+    // Intentionally omit state.progress — baseline is fixed at stage entry, not after each run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stage identity only
   }, [activeExercise?.exerciseId, activeExercise?.stageId]);
 
   // Sticky boundary / "level cleared" must not carry across stages: after
@@ -685,22 +705,6 @@ export default function SessionScreen() {
       : 0;
   const _consecutiveRoughSch = effectiveConsecutiveRough(_rawConsecutiveRoughSch, regularRoughBaseline);
 
-  const _stuckFallbackStageSch =
-    _hasFallbackStageForScheduler && _currentStageIdxForScheduler > 0
-      ? _allStagesForScheduler[_currentStageIdxForScheduler - 1]
-      : null;
-  const _jumpCoachingSch =
-    Boolean(
-      _curStageSch
-        && _stuckFallbackStageSch
-        && _exerciseDefForScheduler
-        && getNewCliffConceptKeys(
-          _curStageSch,
-          _stuckFallbackStageSch,
-          _exerciseDefForScheduler.exercise,
-        ).length > 0,
-    );
-
   const _baseRegularStuckSch =
     Boolean(
       activeExercise
@@ -724,7 +728,7 @@ export default function SessionScreen() {
 
   const isRegularStuckGatedForScheduler = Boolean(
     _baseRegularStuckSch
-      && (!_jumpCoachingSch || attemptsThisStage >= REGULAR_STUCK_MIN_ATTEMPTS_FOR_JUMP),
+      && attemptsThisStage >= REGULAR_STUCK_MIN_ATTEMPTS_FOR_JUMP,
   );
 
   // The scheduler treats a non-advancing result as "keep looping". Sticky
@@ -1440,7 +1444,7 @@ export default function SessionScreen() {
   });
   const regularStuckGated = Boolean(
     baseRegularStuckGated
-      && (!regularStuckJumpCoaching || attemptsThisStage >= REGULAR_STUCK_MIN_ATTEMPTS_FOR_JUMP),
+      && attemptsThisStage >= REGULAR_STUCK_MIN_ATTEMPTS_FOR_JUMP,
   );
   const stuckVisible = isDrillStuck || regularStuckGated;
   const attemptsOnLevelLabel = attemptsThisStage === 1

@@ -60,6 +60,25 @@ describe('effectiveConsecutiveRough', () => {
     expect(effectiveConsecutiveRough(10, 9)).toBe(1);
     expect(effectiveConsecutiveRough(3, 0)).toBe(3);
   });
+
+  it('supports stage-entry baseline so prior visit rough streaks do not nag immediately', () => {
+    const roughFromPriorVisits = 8;
+    const baselineAtStageEntry = roughFromPriorVisits;
+    const afterOneNewRoughRun = roughFromPriorVisits + 1;
+    expect(effectiveConsecutiveRough(afterOneNewRoughRun, baselineAtStageEntry)).toBe(1);
+    expect(
+      isRegularStuck({
+        drillState: 'inactive',
+        passedThisExercise: false,
+        attemptsThisStage: 1,
+        consecutiveRoughOnStage: effectiveConsecutiveRough(afterOneNewRoughRun, baselineAtStageEntry),
+        cleanStreak: 0,
+        requiredRuns: 3,
+        hasFallbackStage: true,
+        snoozedUntil: 8,
+      }),
+    ).toBe(false);
+  });
 });
 
 describe('isRegularStuck', () => {

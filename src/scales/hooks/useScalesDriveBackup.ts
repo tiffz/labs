@@ -21,17 +21,24 @@ export type { ScalesDriveBackupConflictState };
 export type UseScalesDriveBackupOptions = {
   progress: ScalesProgressData;
   onMergeProgress: (progress: ScalesProgressData) => void;
+  /** Skip silent Drive auto-pull while the learner is mid-session. */
+  shouldDeferAutoPull?: () => boolean;
 };
 
 const useScalesPortfolioDriveBackup = createLabsPortfolioDriveBackup(scalesPortfolioDriveBackupConfig);
 
-export function useScalesDriveBackup({ progress, onMergeProgress }: UseScalesDriveBackupOptions) {
+export function useScalesDriveBackup({
+  progress,
+  onMergeProgress,
+  shouldDeferAutoPull,
+}: UseScalesDriveBackupOptions) {
   setScalesPortfolioDriveProgress(progress);
 
   const backup = useScalesPortfolioDriveBackup({
     onMergePayload: async (merged) => {
       onMergeProgress(merged);
     },
+    shouldDeferAutoPull,
   });
 
   return {

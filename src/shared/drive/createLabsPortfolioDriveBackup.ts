@@ -33,6 +33,8 @@ import {
 
 export type UseLabsPortfolioDriveBackupOptions<TPayload> = {
   onMergePayload: (payload: TPayload) => Promise<void>;
+  /** When true, skip silent auto-pull (e.g. active practice session). */
+  shouldDeferAutoPull?: () => boolean;
 };
 
 export function createLabsPortfolioDriveBackup<
@@ -45,6 +47,7 @@ export function createLabsPortfolioDriveBackup<
 >(config: LabsPortfolioDriveBackupConfig<TEnvelope, TPayload, TMergeReport, TConflictReason, TConflictState, TUndoSnapshot>) {
   return function useLabsPortfolioDriveBackup({
     onMergePayload,
+    shouldDeferAutoPull,
   }: UseLabsPortfolioDriveBackupOptions<TPayload>) {
     const identity = useLabsEncoreGoogleIdentity();
     const { withBlockingJob, startBlockingJob } = useLabsBlockingJobs();
@@ -423,6 +426,9 @@ export function createLabsPortfolioDriveBackup<
       }
     }, [pullFromDriveAndMerge, withBlockingJob]);
 
+    const deferPullRef = useRef(shouldDeferAutoPull);
+    deferPullRef.current = shouldDeferAutoPull;
+
     const handleAutoPullError = useCallback((msg: string) => {
       setMessage(msg);
       setSyncPaused(true);
@@ -437,6 +443,7 @@ export function createLabsPortfolioDriveBackup<
         mergeInProgressRef.current || driveSyncInProgressRef.current || labsBlockingJobsActive(),
       onAutoPullError: handleAutoPullError,
       onAutoPushError: (msg) => setMessage(msg),
+      shouldDeferAutoPull: () => deferPullRef.current?.() ?? false,
       subscribeLocalChanges: (onChange) =>
         config.subscribeLocalChanges((event) => {
           if (mergeInProgressRef.current || driveSyncInProgressRef.current || labsBlockingJobsActive()) {

@@ -23,6 +23,8 @@ export type UseLabsDrivePortfolioAutoSyncOptions = {
   onAutoPushError: (message: string) => void;
   /** Optional follow-up after silent auto-pull (e.g. push deduped library). */
   afterSilentAutoPull?: (pullResult: unknown) => Promise<void>;
+  /** When true, skip silent auto-pull (e.g. active practice session). */
+  shouldDeferAutoPull?: () => boolean;
   /** Subscribe to local data changes; call `onChange` when user edits should trigger debounced push. */
   subscribeLocalChanges: (onChange: (event?: LabsDrivePortfolioLocalChangeEvent) => void) => () => void;
 };
@@ -44,6 +46,7 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
     onAutoPullError,
     onAutoPushError,
     afterSilentAutoPull,
+    shouldDeferAutoPull,
     subscribeLocalChanges,
   } = options;
 
@@ -66,10 +69,13 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
   allowPushRef.current = allowAutoPush;
   const mergeBusyRef = useRef(isMergeInProgress);
   mergeBusyRef.current = isMergeInProgress;
+  const deferPullRef = useRef(shouldDeferAutoPull);
+  deferPullRef.current = shouldDeferAutoPull;
   const onAutoPullErrorRef = useRef(onAutoPullError);
   onAutoPullErrorRef.current = onAutoPullError;
 
   const runSilentPull = useCallback(async () => {
+    if (deferPullRef.current?.()) return;
     if (pullInFlightRef.current || mergeBusyRef.current()) return;
     pullInFlightRef.current = true;
     try {
