@@ -1,8 +1,9 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { CameraPreset } from '../../types/node';
+import { useMuscleStore } from '../../store/useMuscleStore';
 
 interface QuizCameraRigProps {
   preset: CameraPreset | null;
@@ -11,11 +12,25 @@ interface QuizCameraRigProps {
 
 export default function QuizCameraRig({ preset, animate }: QuizCameraRigProps) {
   const { camera, invalidate } = useThree();
+  const stageCenter = useMuscleStore((s) => s.anatomyStageCenter);
+  const activeModuleId = useMuscleStore((s) => s.activeModuleId);
+  const bodyView = useMuscleStore((s) => s.bodyView);
+  const cameraResetNonce = useMuscleStore((s) => s.cameraResetNonce);
   const controlsRef = useRef<{ target: THREE.Vector3; update: () => void; enabled: boolean } | null>(
     null,
   );
   const goalPos = useMemo(() => new THREE.Vector3(), []);
   const goalTarget = useMemo(() => new THREE.Vector3(), []);
+
+  useEffect(() => {
+    camera.position.set(0, stageCenter[1] + 0.075, 2.85);
+    goalTarget.set(stageCenter[0], stageCenter[1], stageCenter[2]);
+    if (controlsRef.current) {
+      controlsRef.current.target.copy(goalTarget);
+      controlsRef.current.update();
+    }
+    invalidate();
+  }, [activeModuleId, bodyView, camera, cameraResetNonce, goalTarget, invalidate, stageCenter]);
 
   useFrame((_, delta) => {
     let needsInvalidate = false;
@@ -44,7 +59,7 @@ export default function QuizCameraRig({ preset, animate }: QuizCameraRigProps) {
     <OrbitControls
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- drei OrbitControls ref typing varies by version
       ref={controlsRef as any}
-      target={[0, 0.875, 0]}
+      target={stageCenter}
       enableDamping
       dampingFactor={0.08}
       rotateSpeed={0.9}

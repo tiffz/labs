@@ -7,7 +7,7 @@ async function setLayerPeelDepth(page: import('@playwright/test').Page, depth: 0
 
 test.describe('Muscle Memory study journey', () => {
   test('fundamentals warmup shows skeleton peel count', async ({ page }) => {
-    await page.goto('/muscle/');
+    await page.goto('/muscle/?module=fundamentals');
     await expect(page.getByTestId('muscle-app')).toBeVisible();
     await expect(page.getByTestId('muscle-training-canvas')).toBeVisible();
 
@@ -30,10 +30,18 @@ test.describe('Muscle Memory study journey', () => {
   });
 
   test('warmup selects first structure and shows drawing notes', async ({ page }) => {
-    await page.goto('/muscle/');
+    await page.goto('/muscle/?module=fundamentals');
     await expect(page.getByTestId('muscle-workout-panel')).toBeVisible();
+    await page.getByRole('button', { name: 'B Skull' }).click();
     await expect(page.getByRole('heading', { name: 'Skull', level: 2 })).toBeVisible();
     await expect(page.getByText(/Why it matters:/i)).toBeVisible();
+  });
+
+  test('full body tab loads atlas view', async ({ page }) => {
+    await page.goto('/muscle/');
+    await expect(page.getByRole('tab', { name: 'Full body', selected: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Full body', level: 1 })).toBeVisible();
+    await expect(page.getByTestId('muscle-layer-status')).toContainText('All layers');
   });
 });
 

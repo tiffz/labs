@@ -7,6 +7,9 @@ export type MuscleRegion =
   | 'leg'
   | 'foot';
 
+/** Canvas can show one Proko module or the combined atlas. */
+export type BodyView = 'region' | 'full_body';
+
 export type MuscleNodeType = 'bone' | 'muscle' | 'joint';
 
 export type JointType =
@@ -38,6 +41,8 @@ export interface MuscleMemoryNode {
   insertionBoneId?: string;
   subcutaneousLandmarks?: string[];
   primitiveShape: PrimitiveShape;
+  /** When true, only shown in Full body atlas — excluded from module study decks. */
+  atlasOnly?: boolean;
   artisticContext: ArtisticContext;
   /** Optional layout hint for procedural / robo-skelly placement. */
   layout?: {

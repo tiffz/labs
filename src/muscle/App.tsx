@@ -27,7 +27,9 @@ export default function App() {
   useEffect(() => {
     if (!hydrated) return;
     const moduleId = readModuleFromSearch();
-    if (moduleId) setActiveModule(moduleId);
+    if (moduleId) {
+      setActiveModule(moduleId);
+    }
   }, [hydrated, setActiveModule]);
 
   if (!hydrated) {

@@ -1,6 +1,7 @@
+import FaceRetouchingNaturalOutlinedIcon from '@mui/icons-material/FaceRetouchingNaturalOutlined';
 import { useMemo } from 'react';
 import {
-  countVisibleRegionNodesAtPeel,
+  countVisibleNodesForView,
   LAYER_PEEL_STOPS,
   layerPeelDepthLabel,
   type LayerPeelDepth,
@@ -13,16 +14,19 @@ type LayerDepthControlProps = {
 };
 
 export default function LayerDepthControl({ variant = 'panel' }: LayerDepthControlProps) {
+  const bodyView = useMuscleStore((s) => s.bodyView);
   const activeModuleId = useMuscleStore((s) => s.activeModuleId);
   const layerPeelDepth = useMuscleStore((s) => s.layerPeelDepth);
+  const showSkinLayer = useMuscleStore((s) => s.showSkinLayer);
   const setLayerPeelDepth = useMuscleStore((s) => s.setLayerPeelDepth);
+  const toggleSkinLayer = useMuscleStore((s) => s.toggleSkinLayer);
 
   const visibleNodeCount = useMemo(
-    () => countVisibleRegionNodesAtPeel(activeModuleId, layerPeelDepth),
-    [activeModuleId, layerPeelDepth],
+    () => countVisibleNodesForView(bodyView, activeModuleId, layerPeelDepth),
+    [activeModuleId, bodyView, layerPeelDepth],
   );
 
-  const activeStop = LAYER_PEEL_STOPS[layerPeelDepth];
+  const skinAvailable = bodyView === 'full_body' && layerPeelDepth === 0;
 
   return (
     <div
@@ -34,8 +38,20 @@ export default function LayerDepthControl({ variant = 'panel' }: LayerDepthContr
           Depth
         </span>
         <span className="muscle-layer-peel__count">
-          {layerPeelDepthLabel(layerPeelDepth)} · {visibleNodeCount} visible
+          {layerPeelDepthLabel(layerPeelDepth)} · {visibleNodeCount}
         </span>
+        {skinAvailable ? (
+          <button
+            type="button"
+            className={`muscle-layer-peel__skin-btn${showSkinLayer ? ' is-active' : ''}`}
+            onClick={toggleSkinLayer}
+            aria-pressed={showSkinLayer}
+            aria-label={showSkinLayer ? 'Hide skin layer' : 'Show skin layer'}
+            title={showSkinLayer ? 'Hide skin' : 'Show skin'}
+          >
+            <FaceRetouchingNaturalOutlinedIcon fontSize="inherit" aria-hidden />
+          </button>
+        ) : null}
       </div>
       <input
         type="range"
@@ -66,9 +82,7 @@ export default function LayerDepthControl({ variant = 'panel' }: LayerDepthContr
             );
           })}
         </div>
-      ) : (
-        <p className="muscle-layer-peel__canvas-hint">{activeStop?.hint}</p>
-      )}
+      ) : null}
     </div>
   );
 }

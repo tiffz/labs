@@ -7,6 +7,8 @@ export type OriginalsWriteLyricsEditorProps = {
   onChange: (next: string) => void;
   onImportPastedChart?: (raw: string) => PastedChartImportSummary;
   minRows?: number;
+  /** When false, the field grows with content and the page scroll region scrolls. */
+  fillViewportHeight?: boolean;
 };
 
 export function OriginalsWriteLyricsEditor({
@@ -14,6 +16,7 @@ export function OriginalsWriteLyricsEditor({
   onChange,
   onImportPastedChart,
   minRows = 12,
+  fillViewportHeight = true,
 }: OriginalsWriteLyricsEditorProps): ReactElement {
   return (
     <OriginalsWriteMode
@@ -21,6 +24,7 @@ export function OriginalsWriteLyricsEditor({
       onChange={onChange}
       onImportPastedChart={onImportPastedChart}
       minRows={minRows}
+      fillViewportHeight={fillViewportHeight}
     />
   );
 }

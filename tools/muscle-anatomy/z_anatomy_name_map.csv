@@ -20,6 +20,7 @@ Latissimus dorsi muscle.r,muscle_latissimus_dorsi,torso
 Longissimus thoracis muscle.r,muscle_erector_spinae,torso
 Clavicular head of pectoralis major muscle.r,muscle_pectoralis_major,torso
 Sternocostal head of pectoralis major muscle.r,muscle_pectoralis_major,torso
+Abdominal part of pectoralis major muscle.r,muscle_pectoralis_major,torso
 Clavicle.r,bone_clavicle,shoulder_neck
 Scapula.r,bone_scapula,shoulder_neck
 Clavicular part of deltoid muscle.r,muscle_deltoid_anterior,shoulder_neck
@@ -54,4 +55,87 @@ Calcaneus.r,bone_calcaneus,foot
 Talus.r,bone_talus,foot
 Abductor hallucis.r,muscle_abductor_hallucis,foot
 Extensor digitorum brevis.r,muscle_extensor_digitorum_brevis,foot
+Gluteus maximus muscle.r,muscle_gluteus_maximus,atlas_supplement
+Gluteus medius muscle.r,muscle_gluteus_medius,atlas_supplement
+Soleus muscle.r,muscle_soleus,atlas_supplement
+Vastus medialis muscle.r,muscle_vastus_medialis,atlas_supplement
+Gracilis muscle.r,muscle_gracilis,atlas_supplement
+Adductor longus on medial surface of femur.r,muscle_adductor_longus,atlas_supplement
+Semitendinosus muscle.r,muscle_semitendinosus,atlas_supplement
+Semimembranosus muscle.r,muscle_semimembranosus,atlas_supplement
+Sartorius muscle.r,muscle_sartorius,atlas_supplement
+Tensor fasciae latae.r,muscle_tensor_fasciae_latae,atlas_supplement
+Teres major muscle.r,muscle_teres_major,atlas_supplement
+Infraspinatus muscle.r,muscle_infraspinatus,atlas_supplement
+Supraspinatus muscle.r,muscle_supraspinatus,atlas_supplement
+Rhomboid major muscle.r,muscle_rhomboid_major,atlas_supplement
+Splenius capitis muscle.r,muscle_splenius_capitis,atlas_supplement
+Omohyoid muscle.r,muscle_omohyoid,atlas_supplement
 Fibularis longus.r,muscle_peroneus_longus,foot
+Mandible,bone_mandible,atlas_head_face
+Maxilla.r,bone_maxilla,atlas_head_face
+Nasal bone.r,bone_nasal,atlas_head_face
+Zygomatic bone.r,bone_zygomatic,atlas_head_face
+Hyoid bone,bone_hyoid,atlas_head_face
+Frontalis.r,muscle_frontalis,atlas_head_face
+Superficial part of masseter.r,muscle_masseter,atlas_head_face
+Deep part of masseter.r,muscle_masseter,atlas_head_face
+Temporalis muscle.r,muscle_temporalis,atlas_head_face
+Platysma.r,muscle_platysma,atlas_head_face
+Zygomaticus major muscle.r,muscle_zygomaticus_major,atlas_head_face
+Zygomaticus minor muscle.r,muscle_zygomaticus_minor,atlas_head_face
+Orbicularis oris,muscle_orbicularis_oris,atlas_head_face
+Palpebral part of orbicularis oculi.r,muscle_orbicularis_oculi,atlas_head_face
+Orbital part of orbicularis oculi.r,muscle_orbicularis_oculi,atlas_head_face
+Mentalis muscle.r,muscle_mentalis,atlas_head_face
+Nasalis muscle.r,muscle_nasalis,atlas_head_face
+Depressor anguli oris.r,muscle_depressor_anguli_oris,atlas_head_face
+Levator labii superioris.r,muscle_levator_labii_superioris,atlas_head_face
+Risorius.r,muscle_risorius,atlas_head_face
+Bucinator.r,muscle_bucinator,atlas_head_face
+Corrugator supercilii.r,muscle_corrugator_supercilii,atlas_head_face
+Depressor labii superioris.r,muscle_depressor_labii_superioris,atlas_head_face
+Depressor septi nasi.r,muscle_depressor_septi_nasi,atlas_head_face
+Levator anguli oris.r,muscle_levator_anguli_oris,atlas_head_face
+Levator nasolabialis.r,muscle_levator_nasolabialis,atlas_head_face
+Procerus.r,muscle_procerus,atlas_head_face
+Frontal region.r,skin_envelope,atlas_skin
+Zygomatic region.r,skin_envelope,atlas_skin
+Nasal region.r,skin_envelope,atlas_skin
+Orbital region.r,skin_envelope,atlas_skin
+Infraorbital region.r,skin_envelope,atlas_skin
+Buccal region.r,skin_envelope,atlas_skin
+Oral region.r,skin_envelope,atlas_skin
+Mental region.r,skin_envelope,atlas_skin
+Submental region.r,skin_envelope,atlas_skin
+Auricular region.r,skin_envelope,atlas_skin
+Temporal region.r,skin_envelope,atlas_skin
+Occipital region.r,skin_envelope,atlas_skin
+Parietal region.r,skin_envelope,atlas_skin
+Mastoid region.r,skin_envelope,atlas_skin
+Parotidomassetereic region.r,skin_envelope,atlas_skin
+Posterior cervical region.r,skin_envelope,atlas_skin
+Lateral cervical region.r,skin_envelope,atlas_skin
+Sternocleidomastoid region.r,skin_envelope,atlas_skin
+Presternal region.r,skin_envelope,atlas_skin
+Pectoral region.r,skin_envelope,atlas_skin
+Deltoid region.r,skin_envelope,atlas_skin
+Inframammary region.r,skin_envelope,atlas_skin
+Epigastric region.r,skin_envelope,atlas_skin
+Umbilical region.r,skin_envelope,atlas_skin
+Hypogastric region.r,skin_envelope,atlas_skin
+Inguinal region.r,skin_envelope,atlas_skin
+Hypochondriac region.r,skin_envelope,atlas_skin
+Lumbar region.r,skin_envelope,atlas_skin
+Sacral region.r,skin_envelope,atlas_skin
+Gluteal region.r,skin_envelope,atlas_skin
+Hip region.r,skin_envelope,atlas_skin
+Infrascapular region.r,skin_envelope,atlas_skin
+Scapular region.r,skin_envelope,atlas_skin
+Vertebral region.r,skin_envelope,atlas_skin
+Lateral retromalleolar region.r,skin_envelope,atlas_skin
+Medial retromalleolar region.r,skin_envelope,atlas_skin
+Heel region.r,skin_envelope,atlas_skin
+Metatarsal region.r,skin_envelope,atlas_skin
+Urogenital region.r,skin_envelope,atlas_skin
+Anal region.r,skin_envelope,atlas_skin

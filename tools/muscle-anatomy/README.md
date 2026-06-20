@@ -30,11 +30,11 @@ Artist-facing nodes live in `src/muscle/curriculum/nodes/*.ts` (`MuscleMemoryNod
 
 Edit [`z_anatomy_name_map.csv`](z_anatomy_name_map.csv):
 
-| Column           | Purpose                                                 |
-| ---------------- | ------------------------------------------------------- |
-| `z_anatomy_name` | Object name in the Blender file                         |
-| `node_id`        | `MuscleMemoryNode.id` in `src/muscle/curriculum/nodes/` |
-| `region`         | Module bucket (`fundamentals`, `torso`, …)              |
+| Column           | Purpose                                                                                                          |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `z_anatomy_name` | Object name in the Blender file **exactly** (including Z-Anatomy typos, e.g. `Scapular part of deltoid uscle.r`) |
+| `node_id`        | `MuscleMemoryNode.id` in `src/muscle/curriculum/nodes/`                                                          |
+| `region`         | Module bucket (`fundamentals`, `torso`, …)                                                                       |
 
 ## Download source (once)
 
@@ -67,8 +67,14 @@ This writes `public/muscle/models/{region}.glb` and updates `manifest.json` from
 
 Outputs:
 
-- `public/muscle/models/{region}.glb`
-- Updated `public/muscle/models/manifest.json`
+- `public/muscle/models/{region}.glb` — **plain GLB, no Draco** (Three.js loads without a decoder)
+- Updated `public/muscle/models/manifest.json` (includes `assetRevision` hash for GLB cache busting)
+
+After export:
+
+```bash
+npm run muscle:sync-bridge   # regenerate zAnatomyBridge.ts from CSV
+```
 
 ## Validate against curriculum
 

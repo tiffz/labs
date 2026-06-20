@@ -12,6 +12,7 @@ import {
 import type { LayerPeelDepth } from '../layerDepthView';
 import { defaultLayerPeelForModule } from '../layerDepthView';
 import type {
+  BodyView,
   MuscleRegion,
   QuizState,
   WorkoutMode,
@@ -22,24 +23,35 @@ export interface MuscleStoreState {
   hydrated: boolean;
   saveError: string | null;
   mode: WorkoutMode;
+  bodyView: BodyView;
   activeModuleId: MuscleRegion;
   selectedNodeId: string | null;
+  /** When set, non-focused structures fade for emphasis (warmup exploration). */
+  focusedNodeId: string | null;
   hoveredNodeId: string | null;
   layerPeelDepth: LayerPeelDepth;
-  roboSkelly: boolean;
-  subcutaneousGlow: boolean;
+  /** OrbitControls target — updated when a region GLB loads. */
+  anatomyStageCenter: [number, number, number];
+  /** Increment to snap the camera back to the default study framing. */
+  cameraResetNonce: number;
+  /** Full-body Z-Anatomy skin envelope overlay. */
+  showSkinLayer: boolean;
   progressByNode: Map<string, WorkoutProgress>;
   deckQueue: string[];
   deckIndex: number;
   quiz: QuizState;
   init: () => Promise<void>;
   setMode: (mode: WorkoutMode) => void;
+  setBodyView: (view: BodyView) => void;
   setActiveModule: (moduleId: MuscleRegion) => void;
   selectNode: (nodeId: string | null) => void;
+  focusStructure: (nodeId: string | null) => void;
+  clearFocus: () => void;
+  resetCameraView: () => void;
   setHoveredNodeId: (nodeId: string | null) => void;
   setLayerPeelDepth: (depth: LayerPeelDepth) => void;
-  toggleRoboSkelly: () => void;
-  toggleSubcutaneousGlow: () => void;
+  setAnatomyStageCenter: (center: [number, number, number]) => void;
+  toggleSkinLayer: () => void;
   startActiveSession: () => void;
   submitAnswer: (nodeId: string) => Promise<void>;
   submitMultipleChoice: (nodeId: string) => Promise<void>;
@@ -119,12 +131,15 @@ export const useMuscleStore = create<MuscleStoreState>((set, get) => ({
   hydrated: false,
   saveError: null,
   mode: 'warmup',
-  activeModuleId: 'fundamentals',
+  bodyView: 'full_body',
+  activeModuleId: 'torso',
   selectedNodeId: null,
+  focusedNodeId: null,
   hoveredNodeId: null,
   layerPeelDepth: defaultLayerPeelForModule(),
-  roboSkelly: false,
-  subcutaneousGlow: false,
+  anatomyStageCenter: [0, 0.875, 0],
+  cameraResetNonce: 0,
+  showSkinLayer: true,
   progressByNode: new Map(),
   deckQueue: [],
   deckIndex: 0,
@@ -139,10 +154,7 @@ export const useMuscleStore = create<MuscleStoreState>((set, get) => ({
       }
     }
     const progressByNode = await loadAllProgress();
-    const activeModuleId = get().activeModuleId;
-    const selectedNodeId =
-      get().selectedNodeId ?? getNodesForRegion(activeModuleId)[0]?.id ?? null;
-    set({ progressByNode, hydrated: true, selectedNodeId });
+    set({ progressByNode, hydrated: true });
   },
 
   setMode: (mode) => {
@@ -152,12 +164,13 @@ export const useMuscleStore = create<MuscleStoreState>((set, get) => ({
   },
 
   setActiveModule: (moduleId) => {
-    const nodes = getNodesForRegion(moduleId);
     flushHoverImmediate(set, null);
     set({
+      bodyView: 'region',
       activeModuleId: moduleId,
       layerPeelDepth: defaultLayerPeelForModule(),
-      selectedNodeId: nodes[0]?.id ?? null,
+      selectedNodeId: null,
+      focusedNodeId: null,
       deckQueue: [],
       deckIndex: 0,
       quiz: emptyQuiz(),
@@ -167,7 +180,26 @@ export const useMuscleStore = create<MuscleStoreState>((set, get) => ({
     }
   },
 
+  setBodyView: (view) => {
+    flushHoverImmediate(set, null);
+    set({
+      bodyView: view,
+      layerPeelDepth: defaultLayerPeelForModule(),
+      selectedNodeId: null,
+      focusedNodeId: null,
+      deckQueue: [],
+      deckIndex: 0,
+      quiz: emptyQuiz(),
+    });
+  },
+
   selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
+
+  focusStructure: (nodeId) => set({ focusedNodeId: nodeId, selectedNodeId: nodeId }),
+
+  clearFocus: () => set({ focusedNodeId: null }),
+
+  resetCameraView: () => set((s) => ({ cameraResetNonce: s.cameraResetNonce + 1 })),
 
   setHoveredNodeId: (nodeId) => {
     pendingHoverId = nodeId;
@@ -176,9 +208,9 @@ export const useMuscleStore = create<MuscleStoreState>((set, get) => ({
 
   setLayerPeelDepth: (depth) => set({ layerPeelDepth: depth }),
 
-  toggleRoboSkelly: () => set((s) => ({ roboSkelly: !s.roboSkelly })),
+  setAnatomyStageCenter: (center) => set({ anatomyStageCenter: center }),
 
-  toggleSubcutaneousGlow: () => set((s) => ({ subcutaneousGlow: !s.subcutaneousGlow })),
+  toggleSkinLayer: () => set((s) => ({ showSkinLayer: !s.showSkinLayer })),
 
   startActiveSession: () => {
     const { activeModuleId, progressByNode } = get();

@@ -12,14 +12,13 @@ test.describe('Muscle Memory orbit perf', () => {
   test.describe.configure({ timeout: 60_000 });
 
   test('fundamentals orbit stays within frame budget', async ({ page }) => {
-    await page.goto('/muscle/');
+    await page.goto('/muscle/?module=fundamentals');
     await expect(page.getByTestId('muscle-app')).toBeVisible();
     await expect(page.getByTestId('muscle-training-canvas')).toBeVisible();
 
     const canvas = page.locator('[data-testid="muscle-training-canvas"] canvas');
     await expect(canvas).toBeVisible({ timeout: 15_000 });
 
-    // Wait for skeleton GLB decode + first paint before sampling orbit frames.
     await setLayerPeelDepth(page, 2);
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Skeleton · 12 visible', {
       timeout: 15_000,

@@ -1,5 +1,5 @@
-import { getNodesForRegion } from './curriculum';
-import type { MuscleMemoryNode, MuscleRegion } from './types/node';
+import { getNodesForRegion, ALL_NODES } from './curriculum';
+import type { BodyView, MuscleMemoryNode, MuscleRegion } from './types/node';
 
 /** Peel index: higher values hide superficial layers (Proko-style depth study). */
 export type LayerPeelDepth = 0 | 1 | 2;
@@ -48,6 +48,11 @@ export function defaultLayerPeelForModule(): LayerPeelDepth {
   return 0;
 }
 
+export function getNodesForView(bodyView: BodyView, region: MuscleRegion): MuscleMemoryNode[] {
+  if (bodyView === 'full_body') return ALL_NODES;
+  return getNodesForRegion(region);
+}
+
 export function countVisibleRegionNodesAtPeel(
   region: MuscleRegion,
   peelDepth: LayerPeelDepth,
@@ -57,6 +62,16 @@ export function countVisibleRegionNodesAtPeel(
     if (nodeIds && !nodeIds.has(node.id)) return false;
     return isNodeVisibleAtPeelDepth(node, peelDepth);
   }).length;
+}
+
+export function countVisibleNodesForView(
+  bodyView: BodyView,
+  region: MuscleRegion,
+  peelDepth: LayerPeelDepth,
+): number {
+  return getNodesForView(bodyView, region).filter((node) =>
+    isNodeVisibleAtPeelDepth(node, peelDepth),
+  ).length;
 }
 
 export function groupNodesByLayerDepth(

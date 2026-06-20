@@ -24,27 +24,27 @@ function GlbAnatomyMeshComponent({ mesh, node }: GlbAnatomyMeshProps) {
   const flags = useAnatomyMeshFlags(node.id, node);
   const { handleClick, handlePointerOver, handlePointerOut } = useAnatomyMeshInteraction(node.id);
   const material = useMemo(
-    () => acquireAnatomyMaterial(flags.visualState, flags.roboSkelly),
-    [flags.roboSkelly, flags.visualState],
+    () => acquireAnatomyMaterial(flags.visualState, false),
+    [flags.visualState],
   );
 
   useEffect(() => {
     const base = baseColorForNode(node);
     material.color.set(colorForVisualState(base, flags.visualState));
-    material.wireframe = flags.roboSkelly;
-    material.transparent = flags.visualState === 'faded' || flags.roboSkelly;
-    material.opacity = opacityForState(flags.visualState, flags.roboSkelly, {
+    material.wireframe = false;
+    material.transparent = flags.visualState === 'faded';
+    material.opacity = opacityForState(flags.visualState, false, {
       exploration: mode === 'warmup',
     });
     const emissive = emissiveForState(flags.visualState);
     material.emissive.set(emissive.color);
     material.emissiveIntensity = emissive.intensity;
     material.needsUpdate = true;
-  }, [flags.roboSkelly, flags.visualState, material, mode, node]);
+  }, [flags.visualState, material, mode, node]);
 
   useLayoutEffect(() => {
     if (flags.visible) invalidate();
-  }, [flags.roboSkelly, flags.visible, flags.visualState, invalidate, material, node]);
+  }, [flags.visible, flags.visualState, invalidate, material, node]);
 
   if (!flags.visible) return null;
 
@@ -58,7 +58,7 @@ function GlbAnatomyMeshComponent({ mesh, node }: GlbAnatomyMeshProps) {
       scale={mesh.scale}
       onPointerOver={(e) => {
         e.stopPropagation();
-        handlePointerOver();
+        handlePointerOver(e);
       }}
       onPointerOut={(e) => {
         e.stopPropagation();
@@ -66,7 +66,7 @@ function GlbAnatomyMeshComponent({ mesh, node }: GlbAnatomyMeshProps) {
       }}
       onClick={(e) => {
         e.stopPropagation();
-        handleClick();
+        handleClick(e);
       }}
     />
   );

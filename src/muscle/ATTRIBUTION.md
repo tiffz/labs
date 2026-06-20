@@ -19,4 +19,4 @@ Modified mesh data exported from this pipeline inherits **CC BY-SA 4.0**. Do not
 
 ## In-app
 
-Credits link target: `/muscle/` README and this file. Add an in-app **Credits** entry when a settings panel ships.
+Panel footer and [`ATTRIBUTION.md`](ATTRIBUTION.md) credit **Z-Anatomy** (CC BY-SA 4.0) with a link to the source repository.

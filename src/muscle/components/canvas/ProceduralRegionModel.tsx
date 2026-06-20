@@ -13,7 +13,6 @@ function ProceduralAnatomyMesh({ node }: { node: MuscleMemoryNode }) {
     <AnatomyMesh
       node={node}
       flags={flags}
-      roboSkelly={flags.roboSkelly}
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
       onClick={handleClick}

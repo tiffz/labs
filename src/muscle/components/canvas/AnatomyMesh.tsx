@@ -1,6 +1,6 @@
 import { Outlines } from '@react-three/drei';
 import { useLayoutEffect, useMemo } from 'react';
-import { useThree } from '@react-three/fiber';
+import { useThree, type ThreeEvent } from '@react-three/fiber';
 import { BoxGeometry, CylinderGeometry, SphereGeometry } from 'three';
 import { useMuscleStore } from '../../store/useMuscleStore';
 import type { MeshRenderFlags } from './meshState';
@@ -34,16 +34,14 @@ function geometryForShape(shape: PrimitiveShape) {
 interface AnatomyMeshProps {
   node: MuscleMemoryNode;
   flags: MeshRenderFlags;
-  roboSkelly: boolean;
-  onPointerOver: () => void;
+  onPointerOver: (event: ThreeEvent<PointerEvent>) => void;
   onPointerOut: () => void;
-  onClick: () => void;
+  onClick: (event: ThreeEvent<MouseEvent>) => void;
 }
 
 export default function AnatomyMesh({
   node,
   flags,
-  roboSkelly,
   onPointerOver,
   onPointerOut,
   onClick,
@@ -58,17 +56,14 @@ export default function AnatomyMesh({
 
   const base = baseColorForNode(node);
   const color = colorForVisualState(base, flags.visualState);
-  const opacity = opacityForState(flags.visualState, roboSkelly, { exploration: mode === 'warmup' });
+  const opacity = opacityForState(flags.visualState, false, { exploration: mode === 'warmup' });
   const emissive = emissiveForState(flags.visualState);
   const outlineColor =
-    flags.showSubcutaneous && flags.visualState === 'default'
-      ? ANATOMY_COLORS.subcutaneous
-      : flags.visualState === 'highlight'
-        ? ANATOMY_COLORS.highlight
-        : outlineColorForState(flags.visualState);
+    flags.visualState === 'highlight'
+      ? ANATOMY_COLORS.highlight
+      : outlineColorForState(flags.visualState);
   const showOutline =
-    shouldShowOutline(flags.visualState, flags.showSubcutaneous) ||
-    flags.visualState === 'highlight';
+    shouldShowOutline(flags.visualState, false) || flags.visualState === 'highlight';
 
   useLayoutEffect(() => {
     if (flags.visible) invalidate();
@@ -76,32 +71,26 @@ export default function AnatomyMesh({
     color,
     emissive.color,
     emissive.intensity,
-    flags.showSubcutaneous,
     flags.visible,
     flags.visualState,
     invalidate,
     mode,
     opacity,
-    roboSkelly,
     showOutline,
   ]);
 
   if (!flags.visible) return null;
-
-  const scale = roboSkelly
-    ? ([layout.scale[0] * 0.9, layout.scale[1] * 0.9, layout.scale[2] * 0.9] as [number, number, number])
-    : layout.scale;
 
   return (
     <mesh
       name={node.id}
       position={layout.position}
       rotation={layout.rotation ?? [0, 0, 0]}
-      scale={scale}
+      scale={layout.scale}
       geometry={geometry}
       onPointerOver={(e) => {
         e.stopPropagation();
-        onPointerOver();
+        onPointerOver(e);
       }}
       onPointerOut={(e) => {
         e.stopPropagation();
@@ -109,7 +98,7 @@ export default function AnatomyMesh({
       }}
       onClick={(e) => {
         e.stopPropagation();
-        onClick();
+        onClick(e);
       }}
     >
       {/* eslint-disable react/no-unknown-property -- @react-three/fiber maps to three.js */}
@@ -119,13 +108,12 @@ export default function AnatomyMesh({
         opacity={opacity}
         emissive={emissive.color}
         emissiveIntensity={emissive.intensity}
-        wireframe={roboSkelly}
         roughness={0.65}
-        metalness={roboSkelly ? 0.1 : 0.02}
+        metalness={0.02}
       />
       {showOutline && outlineColor ? (
         <Outlines
-          thickness={flags.showSubcutaneous ? 0.018 : flags.visualState === 'highlight' ? 0.014 : 0.01}
+          thickness={flags.visualState === 'highlight' ? 0.014 : 0.01}
           color={outlineColor}
           screenspace
         />

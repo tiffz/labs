@@ -4,13 +4,11 @@ import { useMuscleStore } from '../../store/useMuscleStore';
 import { isNodeVisibleAtPeelDepth } from '../../layerDepthView';
 import { buildMeshFlags, resolveMeshVisualState, type MeshRenderFlags } from './meshState';
 
-export type AnatomyMeshFlags = MeshRenderFlags & { roboSkelly: boolean };
+export type AnatomyMeshFlags = MeshRenderFlags;
 
 const HIDDEN_FLAGS: AnatomyMeshFlags = {
   visible: false,
   visualState: 'default',
-  showSubcutaneous: false,
-  roboSkelly: false,
 };
 
 export function useAnatomyMeshFlags(
@@ -20,22 +18,19 @@ export function useAnatomyMeshFlags(
   return useMuscleStore(
     useShallow((state) => {
       if (!node || !isNodeVisibleAtPeelDepth(node, state.layerPeelDepth)) {
-        return { ...HIDDEN_FLAGS, roboSkelly: state.roboSkelly };
+        return HIDDEN_FLAGS;
       }
 
       const visualState = resolveMeshVisualState({
         nodeId,
-        selectedNodeId: state.selectedNodeId,
+        focusedNodeId: state.focusedNodeId,
         hoveredNodeId: state.hoveredNodeId,
         quizTargetId: state.quiz.targetNodeId,
         quizFeedback: state.quiz.feedback,
         mode: state.mode,
       });
 
-      return {
-        ...buildMeshFlags(node, visualState, state.subcutaneousGlow),
-        roboSkelly: state.roboSkelly,
-      };
+      return buildMeshFlags(node, visualState);
     }),
   );
 }

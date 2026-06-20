@@ -14,8 +14,5 @@ test.describe('Muscle Memory shell', () => {
 
     await page.getByRole('slider', { name: 'Depth' }).fill('1');
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Under the skin');
-
-    await page.getByText('Study overlays').click();
-    await page.getByText('Robo-Skelly').click();
   });
 });

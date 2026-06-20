@@ -2,9 +2,12 @@ import type { MuscleMemoryNode } from '../../types/node';
 import type { MeshVisualState } from './meshState';
 
 export const ANATOMY_COLORS = {
-  muscle: '#c9a87a',
-  bone: '#f5efe6',
-  joint: '#b8c4d4',
+  /** Rose-coral — between dusty pink and terra cotta; reads clearly against skin. */
+  muscle: '#b87a82',
+  bone: '#faf6f0',
+  joint: '#c5d0de',
+  /** Warm living skin tone for the envelope. */
+  skin: '#e4b896',
   faded: '#6b7280',
   highlight: '#2563eb',
   hover: '#f5f0e8',
@@ -60,7 +63,7 @@ export function opacityForState(
   wireframe: boolean,
   options?: { exploration?: boolean },
 ): number {
-  if (state === 'faded') return options?.exploration ? 0.58 : 0.22;
+  if (state === 'faded') return options?.exploration ? 0.42 : 0.22;
   return wireframe ? 0.88 : 1;
 }
 

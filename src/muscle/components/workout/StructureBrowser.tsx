@@ -1,6 +1,6 @@
 import { useMemo, type ReactElement } from 'react';
-import { getNodesForRegion } from '../../curriculum';
 import {
+  getNodesForView,
   groupNodesByLayerDepth,
   isNodeVisibleAtPeelDepth,
   LAYER_DEPTH_LABELS,
@@ -18,11 +18,14 @@ function typeAbbrev(type: MuscleMemoryNode['type']): string {
 
 function StructureRow({ node }: { node: MuscleMemoryNode }) {
   const selectedNodeId = useMuscleStore((s) => s.selectedNodeId);
+  const focusedNodeId = useMuscleStore((s) => s.focusedNodeId);
   const hoveredNodeId = useMuscleStore((s) => s.hoveredNodeId);
+  const mode = useMuscleStore((s) => s.mode);
+  const focusStructure = useMuscleStore((s) => s.focusStructure);
   const selectNode = useMuscleStore((s) => s.selectNode);
   const setHoveredNodeId = useMuscleStore((s) => s.setHoveredNodeId);
 
-  const active = selectedNodeId === node.id;
+  const active = focusedNodeId === node.id || selectedNodeId === node.id;
   const hovered = hoveredNodeId === node.id;
 
   return (
@@ -36,7 +39,10 @@ function StructureRow({ node }: { node: MuscleMemoryNode }) {
         .filter(Boolean)
         .join(' ')}
       aria-current={active ? 'true' : undefined}
-      onClick={() => selectNode(node.id)}
+      onClick={() => {
+        if (mode === 'warmup') focusStructure(node.id);
+        else selectNode(node.id);
+      }}
       onMouseEnter={() => setHoveredNodeId(node.id)}
       onMouseLeave={() => setHoveredNodeId(null)}
       onFocus={() => setHoveredNodeId(node.id)}
@@ -56,15 +62,16 @@ function StructureRow({ node }: { node: MuscleMemoryNode }) {
 }
 
 export default function StructureBrowser({ embedded = false }: { embedded?: boolean }): ReactElement {
+  const bodyView = useMuscleStore((s) => s.bodyView);
   const activeModuleId = useMuscleStore((s) => s.activeModuleId);
   const layerPeelDepth = useMuscleStore((s) => s.layerPeelDepth);
 
   const grouped = useMemo(() => {
-    const nodes = getNodesForRegion(activeModuleId).filter((node) =>
+    const nodes = getNodesForView(bodyView, activeModuleId).filter((node) =>
       isNodeVisibleAtPeelDepth(node, layerPeelDepth),
     );
     return groupNodesByLayerDepth(nodes, layerPeelDepth);
-  }, [activeModuleId, layerPeelDepth]);
+  }, [activeModuleId, bodyView, layerPeelDepth]);
 
   return (
     <section

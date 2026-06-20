@@ -7,6 +7,7 @@ export function curriculumIdsMissingFromManifest(
   manifestNodeIds: ReadonlySet<string>,
 ): string[] {
   return getNodesForRegion(region)
+    .filter((node) => !node.atlasOnly)
     .map((node) => node.id)
     .filter((id) => !manifestNodeIds.has(id));
 }

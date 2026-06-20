@@ -11,18 +11,17 @@ export type MeshVisualState =
 export interface MeshRenderFlags {
   visible: boolean;
   visualState: MeshVisualState;
-  showSubcutaneous: boolean;
 }
 
 export function resolveMeshVisualState(params: {
   nodeId: string;
-  selectedNodeId: string | null;
+  focusedNodeId: string | null;
   hoveredNodeId: string | null;
   quizTargetId: string | null;
   quizFeedback: 'idle' | 'correct' | 'incorrect';
   mode: 'warmup' | 'active';
 }): MeshVisualState {
-  const { nodeId, selectedNodeId, hoveredNodeId, quizTargetId, quizFeedback, mode } = params;
+  const { nodeId, focusedNodeId, hoveredNodeId, quizTargetId, quizFeedback, mode } = params;
 
   if (mode === 'active' && quizTargetId === nodeId) {
     if (quizFeedback === 'correct') return 'correct';
@@ -31,9 +30,9 @@ export function resolveMeshVisualState(params: {
   }
 
   if (hoveredNodeId === nodeId) return 'hover';
-  if (selectedNodeId === nodeId) return 'highlight';
+  if (focusedNodeId === nodeId) return 'highlight';
 
-  if (mode === 'warmup' && selectedNodeId && selectedNodeId !== nodeId) {
+  if (mode === 'warmup' && focusedNodeId && focusedNodeId !== nodeId) {
     return 'faded';
   }
 
@@ -44,18 +43,12 @@ export function resolveMeshVisualState(params: {
   return 'default';
 }
 
-export function hasSubcutaneousLandmark(node: MuscleMemoryNode): boolean {
-  return Boolean(node.subcutaneousLandmarks && node.subcutaneousLandmarks.length > 0);
-}
-
 export function buildMeshFlags(
-  node: MuscleMemoryNode,
+  _node: MuscleMemoryNode,
   visualState: MeshVisualState,
-  subcutaneousGlow: boolean,
 ): MeshRenderFlags {
   return {
     visible: true,
     visualState,
-    showSubcutaneous: subcutaneousGlow && hasSubcutaneousLandmark(node),
   };
 }

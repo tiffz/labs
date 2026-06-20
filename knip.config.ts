@@ -59,6 +59,7 @@ const config: KnipConfig = {
     // Muscle Memory asset export CLIs (not imported by app bundle)
     'scripts/export-muscle-procedural-glbs.mjs',
     'scripts/export-muscle-z-anatomy-glbs.mjs',
+    'scripts/sync-muscle-z-anatomy-bridge.mjs',
     // Story app: loaded only via import() in App.tsx; treat as entries so Knip does not flag exports.
     'src/story/components/BeatChart.tsx',
     'src/story/components/FixedStoryHeader.tsx',

@@ -8,6 +8,7 @@ Base path: `/muscle/`.
 
 | Module          | Focus                              |
 | --------------- | ---------------------------------- |
+| **Full body**   | Atlas — all regions, layer peel    |
 | Fundamentals    | Core bones and joints (gatekeeper) |
 | Torso           | Chest, abs, back surface forms     |
 | Shoulder & neck | Deltoids, clavicle, scapula, neck  |
@@ -27,7 +28,7 @@ Modules stay locked until Fundamentals bones/joints hit baseline reps. See `src/
 
 ## 3D assets
 
-Region GLBs live under `public/muscle/models/` (lazy-loaded per module). Curriculum nodes missing from a region export render as **procedural placeholders** alongside the GLB (e.g. hip/knee joints in Fundamentals until exported).
+Region GLBs live under `public/muscle/models/` (lazy-loaded per module). Z-Anatomy exports render real meshes only — curriculum nodes missing from a region GLB (e.g. hip/knee joint capsules) stay in the structure list but do not get procedural placeholder shapes mixed into the scene.
 
 Pipeline: [`tools/muscle-anatomy/README.md`](../../tools/muscle-anatomy/README.md).
 

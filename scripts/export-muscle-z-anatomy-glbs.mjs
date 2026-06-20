@@ -19,7 +19,7 @@ const blenderCandidates = [
 
 const blender = blenderCandidates.find((candidate) => candidate !== 'blender' && fs.existsSync(candidate)) ?? 'blender';
 
-const regions = ['fundamentals', 'torso', 'shoulder_neck', 'arm', 'hand', 'leg', 'foot'];
+const regions = ['fundamentals', 'torso', 'shoulder_neck', 'arm', 'hand', 'leg', 'foot', 'atlas_supplement', 'atlas_head_face', 'atlas_skin', 'atlas_complete'];
 
 if (!fs.existsSync(blend)) {
   console.error('Missing Z-Anatomy blend file:', blend);
@@ -29,7 +29,11 @@ if (!fs.existsSync(blend)) {
 
 console.log(`Using Blender: ${blender}`);
 
-for (const region of regions) {
+  for (const region of regions) {
+  const exportArgs =
+    region === 'atlas_complete'
+      ? ['--ratio', '0.15', '--max-tris', '10000', '--max-region-tris', '400000']
+      : ['--ratio', '0.2', '--max-tris', '25000', '--max-region-tris', '80000'];
   console.log(`\n=== Exporting ${region} ===`);
   const result = spawnSync(
     blender,
@@ -43,12 +47,7 @@ for (const region of regions) {
       region,
       '--blend',
       blend,
-      '--ratio',
-      '0.2',
-      '--max-tris',
-      '25000',
-      '--max-region-tris',
-      '80000',
+      ...exportArgs,
     ],
     { stdio: 'inherit', cwd: root },
   );
@@ -59,4 +58,8 @@ for (const region of regions) {
 
 console.log('\nRunning muscle:validate-assets…');
 const validate = spawnSync('npm', ['run', 'muscle:validate-assets'], { stdio: 'inherit', cwd: root, shell: true });
-process.exit(validate.status ?? 0);
+if (validate.status !== 0) process.exit(validate.status ?? 1);
+
+console.log('\nSyncing zAnatomyBridge.ts from CSV…');
+const bridge = spawnSync('npm', ['run', 'muscle:sync-bridge'], { stdio: 'inherit', cwd: root, shell: true });
+process.exit(bridge.status ?? 0);

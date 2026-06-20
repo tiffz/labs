@@ -8,6 +8,7 @@ export type OriginalsWriteModeProps = {
   /** When paste looks like an external chart, import sections + chords instead of plain text. */
   onImportPastedChart?: (raw: string) => PastedChartImportSummary;
   minRows?: number;
+  fillViewportHeight?: boolean;
 };
 
 export function OriginalsWriteMode({
@@ -15,6 +16,7 @@ export function OriginalsWriteMode({
   onChange,
   onImportPastedChart,
   minRows = 12,
+  fillViewportHeight = true,
 }: OriginalsWriteModeProps): ReactElement {
   const handlePaste = (event: ClipboardEvent<HTMLDivElement>) => {
     const raw = event.clipboardData.getData('text/plain');
@@ -36,13 +38,12 @@ export function OriginalsWriteMode({
       placeholder={'[Verse 1]\nWrite lyrics here…'}
       inputProps={{ 'aria-label': 'Lyrics chart' }}
       sx={{
-        flex: 1,
-        minHeight: 0,
+        ...(fillViewportHeight ? { flex: 1, minHeight: 0 } : {}),
         '& .MuiInputBase-root': {
           alignItems: 'stretch',
           fontSize: '1rem',
           lineHeight: 1.65,
-          height: 1,
+          ...(fillViewportHeight ? { height: 1 } : {}),
         },
       }}
     />

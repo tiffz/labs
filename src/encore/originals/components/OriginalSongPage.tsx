@@ -135,6 +135,7 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
   };
 
   const chordsPaintScroll = mode === 'write' && workflowStage === 'chords';
+  const pageScrollIntegrated = true;
 
   const songHeader = (
     <OriginalsSongHeader
@@ -157,6 +158,7 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
     <OriginalsSongWorkspace
       song={activeSong}
       integratedPageScroll={chordsPaintScroll}
+      pageScrollIntegrated={pageScrollIntegrated}
       onWorkflowStageChange={setWorkflowStage}
       onChartChange={onChartChange}
       onSongChange={(patch) => update(patch)}
@@ -172,31 +174,29 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
         minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
-        overflow: chordsPaintScroll ? 'hidden' : undefined,
+        overflow: 'hidden',
         px: encoreScreenPaddingX,
         pt: encorePagePaddingTop,
         pb: { xs: 4, sm: 5 },
         ...encoreMaxWidthPage,
       }}
     >
-      {mode === 'write' ? (
-        chordsPaintScroll ? (
-          <Box className="in-scroll-region encore-originals-chords-page-scroll">
-            <Box className="in-scroll-region__band">{songHeader}</Box>
-            {writeWorkspace}
-          </Box>
+      <Box
+        className={[
+          'in-scroll-region',
+          chordsPaintScroll ? 'encore-originals-chords-page-scroll' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        sx={{ flex: 1, minHeight: 0 }}
+      >
+        <Box className="in-scroll-region__band">{songHeader}</Box>
+        {mode === 'write' ? (
+          writeWorkspace
         ) : (
-          <>
-            {songHeader}
-            {writeWorkspace}
-          </>
-        )
-      ) : (
-        <>
-          {songHeader}
           <OriginalsSongViewMode song={activeSong} onEdit={() => setMode('write')} onSongChange={update} />
-        </>
-      )}
+        )}
+      </Box>
 
       <OriginalsPdfImportDialog
         open={pdfOpen}

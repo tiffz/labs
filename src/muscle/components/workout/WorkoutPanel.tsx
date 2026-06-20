@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { getNodeById } from '../../curriculum';
 import { getModuleById } from '../../curriculum/modules';
-import { countVisibleRegionNodesAtPeel } from '../../layerDepthView';
+import { countVisibleNodesForView } from '../../layerDepthView';
 import { useMuscleStore, useSelectedNode } from '../../store/useMuscleStore';
 import { useModuleMastery } from '../../store/useModuleMastery';
 import ModuleRegionTabs from './ModuleRegionTabs';
@@ -169,16 +169,18 @@ function ProgressBar() {
 }
 
 export default function WorkoutPanel() {
+  const bodyView = useMuscleStore((s) => s.bodyView);
   const activeModuleId = useMuscleStore((s) => s.activeModuleId);
   const layerPeelDepth = useMuscleStore((s) => s.layerPeelDepth);
   const saveError = useMuscleStore((s) => s.saveError);
   const lockReasonText = useMuscleStore((s) => s.getLockReason());
   const activeRepsAllowed = useMuscleStore((s) => s.isActiveRepsAllowed());
   const module = getModuleById(activeModuleId);
+  const panelTitle = bodyView === 'full_body' ? 'Full body' : module.label;
 
   const structureCount = useMemo(
-    () => countVisibleRegionNodesAtPeel(activeModuleId, layerPeelDepth),
-    [activeModuleId, layerPeelDepth],
+    () => countVisibleNodesForView(bodyView, activeModuleId, layerPeelDepth),
+    [activeModuleId, bodyView, layerPeelDepth],
   );
 
   return (
@@ -187,13 +189,13 @@ export default function WorkoutPanel() {
         <header className="muscle-workout-panel__header">
           <div>
             <p className="muscle-workout-panel__eyebrow">Muscle Memory</p>
-            <h1 className="muscle-workout-panel__title">{module.label}</h1>
+            <h1 className="muscle-workout-panel__title">{panelTitle}</h1>
           </div>
         </header>
 
         <ModuleRegionTabs />
 
-        {!activeRepsAllowed && lockReasonText && (
+        {!activeRepsAllowed && bodyView === 'region' && lockReasonText && (
           <p className="muscle-lock-banner" role="status">{lockReasonText}</p>
         )}
         {saveError && <p className="muscle-save-error" role="alert">{saveError}</p>}
@@ -211,6 +213,13 @@ export default function WorkoutPanel() {
       </div>
 
       <footer className="muscle-workout-panel__footer">
+        <p className="muscle-attribution">
+          Anatomy model by{' '}
+          <a href="https://github.com/Z-Anatomy/Models-of-human-anatomy" rel="noopener noreferrer">
+            Z-Anatomy
+          </a>{' '}
+          (CC BY-SA 4.0)
+        </p>
         <ProgressBar />
       </footer>
     </aside>

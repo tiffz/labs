@@ -4,14 +4,25 @@ import type { MuscleRegion } from '../../types/node';
 
 export default function ModuleRegionTabs(): React.ReactElement {
   const modules = useModuleOptions();
+  const bodyView = useMuscleStore((s) => s.bodyView);
   const activeModuleId = useMuscleStore((s) => s.activeModuleId);
+  const setBodyView = useMuscleStore((s) => s.setBodyView);
   const setActiveModule = useMuscleStore((s) => s.setActiveModule);
   const progressByNode = useMuscleStore((s) => s.progressByNode);
 
   return (
     <div className="muscle-region-tabs" role="tablist" aria-label="Proko study regions">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={bodyView === 'full_body'}
+        className={`muscle-region-tabs__tab${bodyView === 'full_body' ? ' is-active' : ''}`}
+        onClick={() => setBodyView('full_body')}
+      >
+        <span className="muscle-region-tabs__label">Full body</span>
+      </button>
       {modules.map((mod) => {
-        const active = mod.id === activeModuleId;
+        const active = bodyView === 'region' && mod.id === activeModuleId;
         const unlocked = isModuleUnlocked(mod.id, progressByNode);
         return (
           <button

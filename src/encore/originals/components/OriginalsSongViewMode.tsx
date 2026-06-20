@@ -116,7 +116,7 @@ export function OriginalsSongViewMode({
   };
 
   return (
-    <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', pb: 4 }}>
+    <Box sx={{ pb: 4 }}>
       <Stack spacing={3} sx={{ maxWidth: encoreMaxWidthPage, mx: 'auto', width: 1 }}>
         <Paper
           elevation={0}

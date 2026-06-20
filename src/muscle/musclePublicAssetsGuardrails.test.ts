@@ -27,6 +27,9 @@ describe('muscle public runtime assets', () => {
       expect(entry.glbUrl, `${region} missing glbUrl`).toBeTruthy();
       const glbPath = path.join(REPO_ROOT, 'public', entry.glbUrl!.replace(/^\//, ''));
       expect(fs.existsSync(glbPath), `${region} missing file ${entry.glbUrl}`).toBe(true);
+
+      const sizeKb = fs.statSync(glbPath).size / 1024;
+      expect(sizeKb, `${region} GLB looks empty (${sizeKb.toFixed(1)} KB)`).toBeGreaterThan(50);
     }
   });
 });

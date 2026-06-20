@@ -52,6 +52,8 @@ export type OriginalsSongWorkspaceProps = {
   song: EncoreOriginalSong;
   /** Chords stage: stepper + sticky chrome are direct children of the page scroll region. */
   integratedPageScroll?: boolean;
+  /** Lyrics / brainstorm stages: workspace grows with content inside the page scroll region. */
+  pageScrollIntegrated?: boolean;
   onWorkflowStageChange?: (stage: OriginalsWorkflowStage) => void;
   onChartChange: (chordPro: string) => void;
   onSongChange: (patch: Partial<EncoreOriginalSong>) => void;
@@ -61,6 +63,7 @@ export type OriginalsSongWorkspaceProps = {
 export function OriginalsSongWorkspace({
   song,
   integratedPageScroll = false,
+  pageScrollIntegrated = false,
   onWorkflowStageChange,
   onChartChange,
   onSongChange,
@@ -148,6 +151,7 @@ export function OriginalsSongWorkspace({
   const isChords = stage === 'chords';
   const isWrite = stage === 'write';
   const chordsIntegratedScroll = isChords && integratedPageScroll;
+  const growsWithPageScroll = pageScrollIntegrated && !chordsIntegratedScroll;
   const showStageTitleBand = Boolean(stageCaption) || isBrainstorm;
   /** Chords keeps “Mark complete” on the stage toolbar only (saves a band of height). */
   const showMarkCompleteRow = !showStageTitleBand && !isChords;
@@ -166,18 +170,29 @@ export function OriginalsSongWorkspace({
       sx={
         chordsIntegratedScroll
           ? { display: 'contents' }
-          : {
-              flex: 1,
-              minHeight: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              borderRadius: encoreRadius,
-              border: 1,
-              borderColor: encoreHairline,
-              boxShadow: encoreShadowSurface,
-              bgcolor: 'background.paper',
-              overflow: 'hidden',
-            }
+          : growsWithPageScroll
+            ? {
+                flexShrink: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                borderRadius: encoreRadius,
+                border: 1,
+                borderColor: encoreHairline,
+                boxShadow: encoreShadowSurface,
+                bgcolor: 'background.paper',
+              }
+            : {
+                flex: 1,
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                borderRadius: encoreRadius,
+                border: 1,
+                borderColor: encoreHairline,
+                boxShadow: encoreShadowSurface,
+                bgcolor: 'background.paper',
+                overflow: 'hidden',
+              }
       }
     >
       {!isChords ? (
@@ -278,14 +293,22 @@ export function OriginalsSongWorkspace({
         sx={
           chordsIntegratedScroll
             ? { display: 'contents' }
-            : {
-                flex: 1,
-                minHeight: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                px: isBrainstorm || isChords ? 0 : encoreSurfaceContentPad,
-                py: isBrainstorm || isChords ? 0 : encoreSurfaceContentPad,
-              }
+            : growsWithPageScroll
+              ? {
+                  flexShrink: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  px: isBrainstorm || isChords ? 0 : encoreSurfaceContentPad,
+                  py: isBrainstorm || isChords ? 0 : encoreSurfaceContentPad,
+                }
+              : {
+                  flex: 1,
+                  minHeight: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  px: isBrainstorm || isChords ? 0 : encoreSurfaceContentPad,
+                  py: isBrainstorm || isChords ? 0 : encoreSurfaceContentPad,
+                }
         }
       >
         {stage === 'brainstorm' ? (
@@ -302,6 +325,7 @@ export function OriginalsSongWorkspace({
               onChange={chart.onWriteChange}
               onImportPastedChart={onImportPastedChart}
               minRows={12}
+              fillViewportHeight={!growsWithPageScroll}
             />
             <Snackbar
               open={Boolean(chartPasteSnack)}

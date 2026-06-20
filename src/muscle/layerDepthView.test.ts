@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { getNodesForRegion } from './curriculum';
 import {
+  countVisibleNodesForView,
   countVisibleRegionNodesAtPeel,
   isNodeVisibleAtPeelDepth,
 } from './layerDepthView';
@@ -25,5 +26,11 @@ describe('layerDepthView', () => {
     const skeleton = countVisibleRegionNodesAtPeel('torso', 2);
     expect(skeleton).toBeLessThan(all);
     expect(skeleton).toBeGreaterThan(0);
+  });
+
+  it('counts all curriculum nodes in full body view', () => {
+    const fullBody = countVisibleNodesForView('full_body', 'torso', 0);
+    const torsoOnly = countVisibleRegionNodesAtPeel('torso', 0);
+    expect(fullBody).toBeGreaterThan(torsoOnly);
   });
 });
