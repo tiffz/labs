@@ -1,5 +1,6 @@
 import { createDefaultSection, createSectionId, type SongSection } from './songSections';
-import { parseChordProToChartLayout, type SectionType } from './chordPro/chordChartLayout';
+import { type SectionType } from './chordPro/chordChartLayout';
+import { chartDocumentToChartLayout } from './lyrics/lyricsToChartLayout';
 import { encodeBase64UrlUtf8 } from '../utils/base64Url';
 
 function mapSectionType(type: SectionType): SongSection['type'] {
@@ -13,7 +14,7 @@ export function chartLayoutToWordsSections(
   chordProDocument: string,
   songKey: string,
 ): { sections: SongSection[]; songKey: string } {
-  const layout = parseChordProToChartLayout(chordProDocument);
+  const layout = chartDocumentToChartLayout(chordProDocument);
   const sections: SongSection[] = layout.sections.map((sec) => {
     const lyrics = sec.lines
       .map((l) => l.text)

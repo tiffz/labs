@@ -520,19 +520,13 @@
         {
           "nodeId": "skin_envelope",
           "meshName": "skin_envelope",
-          "triangleCount": 25699,
+          "triangleCount": 25618,
           "atlasKind": "skin"
         },
         {
-          "nodeId": "skin_hand_digits",
-          "meshName": "skin_hand_digits",
-          "triangleCount": 8081,
-          "atlasKind": "skin"
-        },
-        {
-          "nodeId": "skin_foot_digits",
-          "meshName": "skin_foot_digits",
-          "triangleCount": 5940,
+          "nodeId": "eye_globes",
+          "meshName": "eye_globes",
+          "triangleCount": 1999,
           "atlasKind": "skin"
         }
       ],
@@ -3925,5 +3919,5 @@
       "source": "z-anatomy"
     }
   },
-  "assetRevision": "44613e207ca0"
+  "assetRevision": "3fa1bce8e8af"
 }

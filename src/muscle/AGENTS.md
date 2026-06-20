@@ -8,7 +8,7 @@ Nested **`AGENTS.md`** for `src/muscle/`. Root policy: [`../../AGENTS.md`](../..
 2. [`DESIGN.md`](DESIGN.md) — Vibrant Academic tokens and 3D states.
 3. [`COPY_STYLE.md`](COPY_STYLE.md) — reps/warmup vocabulary.
 4. [`CUJs.md`](CUJs.md) — orbit perf budgets + verification map.
-5. Asset pipeline: [`tools/muscle-anatomy/README.md`](../../tools/muscle-anatomy/README.md).
+5. Asset pipeline: [`tools/muscle-anatomy/README.md`](../../tools/muscle-anatomy/README.md) — skill **`labs-muscle-anatomy-export`** for export → validate → visual checklist.
 6. Canvas perf rule: [`.cursor/rules/muscle-canvas-perf.mdc`](../../.cursor/rules/muscle-canvas-perf.mdc).
 
 ## Pitfalls

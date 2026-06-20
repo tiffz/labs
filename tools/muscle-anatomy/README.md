@@ -42,6 +42,20 @@ Place the Zenodo / Z-Anatomy template blend at `tools/muscle-anatomy/data/Z-Anat
 
 ## Export all regions
 
+Prefer the full pipeline (audit → export → validate → sync → visual checklist):
+
+```bash
+npm run muscle:export-pipeline
+```
+
+Single region:
+
+```bash
+npm run muscle:export-pipeline -- --region atlas_skin
+```
+
+Legacy all-regions export (validate + sync only at end):
+
 ```bash
 npm run muscle:export-z-anatomy
 ```

@@ -211,15 +211,64 @@ def _is_eminence_skin_patch(obj) -> bool:
     }
 
 
+_BRIDGE_SKIN_BASES = (
+    'Deltopectoral triangle',
+    'Femoral triangle',
+    'Carotid triangle',
+    'Muscular triangle',
+    'Submandibular triangle',
+)
+
+# Named skin surfaces in Z-Anatomy that omit " region" in the object name.
+_AUXILIARY_SKIN_BASES = (
+    'Palm',
+    'Dorsum of hand',
+    'Dorsum of foot',
+    'Dorsum of nose',
+    'Cubital fossa',
+    'Popliteal fossa',
+    'Infraclavicular fossa',
+    'Lateral border of foot',
+    'Medial border of foot',
+    'Lateral border of forearm',
+    'Medial border of forearm',
+    'Dorsal surface of digits of hand',
+    'Palmar surface of digits of hand',
+    'Dorsal surfaces of digits of foot',
+    'Plantar surfaces of digits of foot',
+)
+
+_EYE_GLOBE_BASES = (
+    'Sclera',
+    'Cornea',
+)
+
+
 def _is_bridge_skin_patch(obj) -> bool:
     """Small Z-Anatomy patches that bridge gaps between named skin regions."""
     if obj.type != 'MESH' or obj.name.endswith('.l'):
         return False
     if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
         return False
-    return obj.name in {
-        'Deltopectoral triangle.r',
-    }
+    return any(obj.name.startswith(f'{base}.r') for base in _BRIDGE_SKIN_BASES)
+
+
+def _is_auxiliary_skin_patch(obj) -> bool:
+    """Non-'region' skin surfaces (palm, dorsum, fossae, digit borders)."""
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    return any(obj.name.startswith(f'{base}.r') for base in _AUXILIARY_SKIN_BASES)
+
+
+def _is_eye_globe_patch(obj) -> bool:
+    """Sclera + cornea for the reference skin half."""
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    return any(obj.name.startswith(f'{base}.r') for base in _EYE_GLOBE_BASES)
 
 
 def _is_body_skin_patch(obj) -> bool:
@@ -230,10 +279,19 @@ def _is_body_skin_patch(obj) -> bool:
     )
 
 
+def _is_any_skin_patch(obj) -> bool:
+    """All Z-Anatomy skin surfaces — one unified envelope (no inter-mesh seams)."""
+    return (
+        _is_body_skin_patch(obj)
+        or _is_hand_digit_skin_patch(obj)
+        or _is_foot_digit_skin_patch(obj)
+        or _is_auxiliary_skin_patch(obj)
+    )
+
+
 SKIN_GROUP_SPECS: tuple[tuple[str, object], ...] = (
-    ('skin_envelope', _is_body_skin_patch),
-    ('skin_hand_digits', _is_hand_digit_skin_patch),
-    ('skin_foot_digits', _is_foot_digit_skin_patch),
+    ('skin_envelope', _is_any_skin_patch),
+    ('eye_globes', _is_eye_globe_patch),
 )
 
 
@@ -313,22 +371,35 @@ def join_meshes(objects: list) -> object | None:
     return view_layer.objects.active
 
 
-def thicken_skin_envelope(obj, thickness: float = 0.004) -> None:
-    """Slight outward solidify to overlap inter-region skin gaps."""
+def shade_smooth_mesh(obj) -> None:
+    if obj.type != 'MESH':
+        return
+    mesh = obj.data
+    for poly in mesh.polygons:
+        poly.use_smooth = True
+    mesh.update()
+
+
+def weld_skin_mesh(obj, merge_dist: float = 0.001) -> None:
+    """Weld nearby patch vertices and smooth normals — avoids SOLIDIFY seam ridges."""
     if obj.type != 'MESH' or not obj.data.vertices:
         return
 
     view_layer = bpy.context.view_layer
     ensure_mesh_single_user(obj)
-    mod = obj.modifiers.new('SkinThicken', 'SOLIDIFY')
-    mod.thickness = thickness
-    mod.offset = 1
-    mod.use_even_offset = True
     bpy.ops.object.select_all(action='DESELECT')
     obj.hide_set(False)
     obj.select_set(True)
     view_layer.objects.active = obj
-    bpy.ops.object.modifier_apply(modifier=mod.name)
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+    try:
+        bpy.ops.mesh.merge_by_distance(threshold=merge_dist)
+    except AttributeError:
+        bpy.ops.mesh.remove_doubles(threshold=merge_dist)
+    bpy.ops.mesh.delete_loose(use_verts=True, use_edges=True, use_faces=False)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    shade_smooth_mesh(obj)
 
 
 def ensure_mesh_single_user(obj) -> None:
@@ -767,9 +838,8 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
         bpy.ops.wm.open_mainfile(filepath=str(blend))
 
     per_mesh_cap = {
-        'skin_envelope': min(max(max_tris, 32_000), 32_000),
-        'skin_hand_digits': min(max(max_tris, 9_000), 9_000),
-        'skin_foot_digits': min(max(max_tris, 7_000), 7_000),
+        'skin_envelope': min(max(max_tris, 48_000), 48_000),
+        'eye_globes': min(max(max_tris, 2_000), 2_000),
     }
 
     exported: list[tuple[str, object, int]] = []
@@ -791,7 +861,9 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
         merged['nodeId'] = mesh_id
         ensure_mesh_single_user(merged)
         if mesh_id == 'skin_envelope':
-            thicken_skin_envelope(merged)
+            weld_skin_mesh(merged)
+        elif mesh_id == 'eye_globes':
+            shade_smooth_mesh(merged)
         cap = per_mesh_cap.get(mesh_id, max_tris)
         apply_decimate_to_cap(merged, ratio, cap)
         bake_mesh_world_transform(merged)

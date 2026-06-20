@@ -47,6 +47,7 @@ ${rows.map((r) => `  { zAnatomyName: ${JSON.stringify(r.zAnatomyName)}, nodeId: 
 
 export const SKIN_OVERLAY_MESH_IDS = new Set([
   'skin_envelope',
+  'eye_globes',
   'skin_face',
   'skin_limbs',
   'skin_torso',

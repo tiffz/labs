@@ -157,8 +157,9 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
         }
         try {
           await pullChangedOriginalsShards(token);
+          await pushOriginalsDirtyShards(token);
         } catch {
-          /* originals pull is best-effort on full sync */
+          /* originals sync is best-effort on full sync */
         }
         setSyncState('idle');
         setConflict(null);

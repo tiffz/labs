@@ -19,6 +19,7 @@ const reportPath = path.join(root, 'tools/muscle-anatomy/data/export-audit-repor
 const ATLAS_REGIONS = ['atlas_complete', 'atlas_head_face', 'atlas_supplement', 'atlas_skin'];
 const SKIN_IDS = new Set([
   'skin_envelope',
+  'eye_globes',
   'skin_face',
   'skin_limbs',
   'skin_torso',

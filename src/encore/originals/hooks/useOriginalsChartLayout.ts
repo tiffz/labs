@@ -12,10 +12,16 @@ import {
   upsertChordAtIndex,
   type ChartLayout,
 } from '../../../shared/music/chordPro/chordChartLayout';
+import { parseChordProSectionHeader } from '../../../shared/music/chordPro/chordProText';
 import {
   importPastedChartFromClipboard,
   type PastedChartImportSummary,
 } from '../../../shared/music/chordPro/pastedChartImport';
+import { looksLikeFullSongLyrics } from '../../../shared/music/lyricSectionParser';
+import {
+  chartDocumentToChartLayout,
+  chartLayoutFromPlainLyrics,
+} from '../../../shared/music/lyrics/lyricsToChartLayout';
 import type { ChordInteractionTarget, WordInteractionTarget } from '../chartInteractionTypes';
 import { FULL_STRUCTURAL_BLUEPRINT } from '../originalsStructurePresets';
 
@@ -26,7 +32,7 @@ function initialLayout(chordPro: string): ChartLayout {
   if (!trimmed) {
     return parseChordProToChartLayout(FULL_STRUCTURAL_BLUEPRINT);
   }
-  return parseChordProToChartLayout(chordPro);
+  return chartDocumentToChartLayout(chordPro);
 }
 
 export type UseOriginalsChartLayoutResult = {
@@ -77,7 +83,15 @@ export function useOriginalsChartLayout(
 
   const onWriteChange = useCallback(
     (doc: string) => {
-      commitLayout(parseWriteDocumentToLayout(doc, layout));
+      const hasExplicitHeaders = doc
+        .split('\n')
+        .some((line) => parseChordProSectionHeader(line.trim()));
+      let next = parseWriteDocumentToLayout(doc, layout);
+      if (!hasExplicitHeaders && looksLikeFullSongLyrics(doc)) {
+        const inferred = chartLayoutFromPlainLyrics(doc);
+        if (inferred.sections.length > 1) next = inferred;
+      }
+      commitLayout(next);
     },
     [commitLayout, layout],
   );

@@ -10343,6 +10343,97 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-lyrics-lyricstochartlayout-ts-chartdocumenttochartlayout",
+    "name": "chartDocumentToChartLayout",
+    "path": "src/shared/music/lyrics/lyricsToChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "ChordPro when present; otherwise infer sections from plain lyric paragraphs.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-lyrics-lyricstochartlayout-ts-chartlayoutfromplainlyrics",
+    "name": "chartLayoutFromPlainLyrics",
+    "path": "src/shared/music/lyrics/lyricsToChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Infer multi-section chart layout from plain lyrics (paragraph breaks, chorus repeats).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-lyrics-lyricstochartlayout-ts-parsedlyricsectionstochartlayout",
+    "name": "parsedLyricSectionsToChartLayout",
+    "path": "src/shared/music/lyrics/lyricsToChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Turn Words-style section drafts into Encore chart layout (no chords).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-lyrics-pastedlyricsimport-ts-importplainlyricsfromclipboard",
+    "name": "importPlainLyricsFromClipboard",
+    "path": "src/shared/music/lyrics/pastedLyricsImport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Parse pasted plain lyrics into a structured chart (sections + inferred chorus/bridge).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-lyrics-pastedlyricsimport-ts-lookslikeplainlyricspaste",
+    "name": "looksLikePlainLyricsPaste",
+    "path": "src/shared/music/lyrics/pastedLyricsImport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Plain lyrics with paragraph breaks (caller should skip chord-chart pastes first).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-lyrics-pastedlyricsimport-ts-pastedlyricsimportsummary",
+    "name": "PastedLyricsImportSummary",
+    "path": "src/shared/music/lyrics/pastedLyricsImport.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-lyricsectionparser-ts-lookslikefullsonglyrics",
     "name": "looksLikeFullSongLyrics",
     "path": "src/shared/music/lyricSectionParser.ts",

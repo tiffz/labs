@@ -9,6 +9,7 @@ import {
 import GlbAnatomyMesh from './GlbAnatomyMesh';
 import GlbAtlasMirrorMesh from './GlbAtlasMirrorMesh';
 import SkinEnvelopeLayer from './SkinEnvelopeLayer';
+import EyeGlobesLayer from './EyeGlobesLayer';
 import { mergeFullBodyMeshes, useExtremityModuleMeshes } from './useExtremityModuleMeshes';
 import { useCurriculumDetailMeshes } from './useCurriculumDetailMeshes';
 import { useAtlasCompleteMeshes } from './useAtlasCompleteMeshes';
@@ -52,8 +53,12 @@ export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionMode
   return (
     <>
       <SkinEnvelopeLayer layout={groupLayout} half="reference" visible />
+      <EyeGlobesLayer layout={groupLayout} half="reference" visible />
       {showSkinLayer && layerPeelDepth === 0 ? (
-        <SkinEnvelopeLayer layout={groupLayout} half="study" visible />
+        <>
+          <SkinEnvelopeLayer layout={groupLayout} half="study" visible />
+          <EyeGlobesLayer layout={groupLayout} half="study" visible />
+        </>
       ) : null}
       <AnatomyHalfGroup half="reference" layout={groupLayout}>
         {meshes.map((mesh) => {

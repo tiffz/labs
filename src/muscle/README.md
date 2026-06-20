@@ -46,6 +46,7 @@ Pipeline: [`tools/muscle-anatomy/README.md`](../../tools/muscle-anatomy/README.m
 npm run dev          # http://localhost:5173/muscle/
 npx vitest run src/muscle
 npm run muscle:validate-assets
+npm run muscle:export-pipeline   # Z-Anatomy export workflow (see labs-muscle-anatomy-export skill)
 npm run presubmit
 ```
 

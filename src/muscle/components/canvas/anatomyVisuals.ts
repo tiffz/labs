@@ -8,6 +8,8 @@ export const ANATOMY_COLORS = {
   joint: '#c5d0de',
   /** Warm living skin tone for the envelope. */
   skin: '#e4b896',
+  /** Sclera / cornea — slightly lighter than skin. */
+  eyeGlobe: '#f4f0ea',
   faded: '#6b7280',
   highlight: '#2563eb',
   hover: '#f5f0e8',

@@ -9,6 +9,7 @@ import {
   type SongSection,
 } from './chordChartLayout';
 import { isChordProSectionHeaderLine, parseChordProSectionHeader } from './chordProText';
+import { importPlainLyricsFromClipboard } from '../lyrics/pastedLyricsImport';
 
 /**
  * Chord symbol token — roots, qualities, slash bass, parenthetical extensions.
@@ -361,12 +362,24 @@ export function importPastedChartFromClipboard(raw: string): PastedChartImportSu
 
   const { text: chartText, excerpted } = extractChartPortionForImport(trimmed);
   if (!looksLikePastedChart(chartText)) {
+    const lyricsImport = importPlainLyricsFromClipboard(trimmed);
+    if (lyricsImport.ok && lyricsImport.layout) {
+      return {
+        ok: true,
+        excerpted: false,
+        sectionCount: lyricsImport.sectionCount,
+        lineCount: lyricsImport.lineCount,
+        message: lyricsImport.message,
+        notifyUser: lyricsImport.notifyUser,
+        layout: lyricsImport.layout,
+      };
+    }
     return {
       ok: false,
       excerpted: false,
       sectionCount: 0,
       lineCount: 0,
-      message: 'Paste kept as plain text (no chord chart detected).',
+      message: 'Paste kept as plain text (no chart or sectioned lyrics detected).',
       notifyUser: false,
     };
   }

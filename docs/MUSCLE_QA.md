@@ -11,6 +11,20 @@ npx playwright test e2e/smoke/muscle-shell.spec.ts e2e/smoke/muscle-orbit-perf.s
 npm run presubmit
 ```
 
+## Full-body atlas (Z-Anatomy export)
+
+After changing `atlas_skin`, `atlas_complete`, or skin export predicates — **hard refresh** `/muscle/` then verify:
+
+| Area            | What to check                                                                        |
+| --------------- | ------------------------------------------------------------------------------------ |
+| Sagittal split  | Muscles on study (+X) side; skin mirrored on reference side; figure not a thin slice |
+| Skin continuity | No Frankenstein stitch ridges; palm, elbow, knee, neck/shoulder, face, ankles        |
+| Eye globes      | Orbital sockets filled (not hollow dark voids)                                       |
+| Layer peel      | Depth 0 + skin toggle — semi-transparent study skin over muscles                     |
+| Performance     | ~10 s orbit without sustained judder                                                 |
+
+Pipeline: skill **`labs-muscle-anatomy-export`** or `npm run muscle:export-pipeline`.
+
 ## LLM / browser QA protocol
 
 1. **Hard refresh** `/muscle/` (Cmd+Shift+R) after canvas or GLB changes — HMR can hide stale `useGLTF` cache bugs.

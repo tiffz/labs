@@ -8,12 +8,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const MAX_MESH_TRIS = 25_000;
-const MAX_SKIN_ENVELOPE_TRIS = 32_000;
+const MAX_SKIN_ENVELOPE_TRIS = 48_000;
 const MAX_REGION_TRIS = 80_000;
 const ATLAS_REGION_TRIS = 120_000;
 const ATLAS_COMPLETE_REGION_TRIS = 400_000;
 const OVERLAY_NODE_IDS = new Set([
   'skin_envelope',
+  'eye_globes',
   'skin_face',
   'skin_limbs',
   'skin_torso',
