@@ -8,7 +8,7 @@ import TextField from '@mui/material/TextField';
 import Tooltip, { tooltipClasses, type TooltipProps } from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
-import { useCallback, useEffect, useState, type ReactElement, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type FocusEvent, type MutableRefObject, type ReactElement, type ReactNode } from 'react';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
 import { fetchSpotifyTrack } from '../spotify/spotifyApi';
 import type { EncoreMediaSource } from '../types';
@@ -101,12 +101,19 @@ type DeferredHoverCardEditFields = {
   onNotesChange?: (value: string) => void;
 };
 
+function isFocusMovingWithinHoverCardEdits(event: FocusEvent<HTMLElement>): boolean {
+  const root = event.currentTarget.closest('[data-encore-hover-card-edits]');
+  const related = event.relatedTarget;
+  return related instanceof Node && Boolean(root?.contains(related));
+}
+
 function useDeferredHoverCardEdits(fields: DeferredHoverCardEditFields) {
   const { nickname, onNicknameChange, notes, onNotesChange } = fields;
   const [nicknameDraft, setNicknameDraft] = useState(nickname ?? '');
   const [notesDraft, setNotesDraft] = useState(notes ?? '');
   const [nicknameEditing, setNicknameEditing] = useState(false);
   const [notesEditing, setNotesEditing] = useState(false);
+  const editingRef = useRef(false);
 
   useEffect(() => {
     if (!nicknameEditing) setNicknameDraft(nickname ?? '');
@@ -115,6 +122,10 @@ function useDeferredHoverCardEdits(fields: DeferredHoverCardEditFields) {
   useEffect(() => {
     if (!notesEditing) setNotesDraft(notes ?? '');
   }, [notes, notesEditing]);
+
+  useEffect(() => {
+    editingRef.current = nicknameEditing || notesEditing;
+  }, [nicknameEditing, notesEditing]);
 
   const commitNickname = useCallback(() => {
     if (!onNicknameChange) return;
@@ -137,21 +148,34 @@ function useDeferredHoverCardEdits(fields: DeferredHoverCardEditFields) {
 
   return {
     popperPinned,
+    editingRef,
     commitAll,
     nicknameField: onNicknameChange
       ? {
           value: nicknameDraft,
           onChange: setNicknameDraft,
-          onFocus: () => setNicknameEditing(true),
-          onBlur: commitNickname,
+          onFocus: () => {
+            editingRef.current = true;
+            setNicknameEditing(true);
+          },
+          onBlur: (event: FocusEvent<HTMLElement>) => {
+            if (isFocusMovingWithinHoverCardEdits(event)) return;
+            commitNickname();
+          },
         }
       : null,
     notesField: onNotesChange
       ? {
           value: notesDraft,
           onChange: setNotesDraft,
-          onFocus: () => setNotesEditing(true),
-          onBlur: commitNotes,
+          onFocus: () => {
+            editingRef.current = true;
+            setNotesEditing(true);
+          },
+          onBlur: (event: FocusEvent<HTMLElement>) => {
+            if (isFocusMovingWithinHoverCardEdits(event)) return;
+            commitNotes();
+          },
         }
       : null,
   };
@@ -167,8 +191,15 @@ function EncoreHoverCardResourceEditFields(props: {
 
   return (
     <Box
+      data-encore-hover-card-edits
       sx={{ mt: 1.25, pt: 1, borderTop: 1, borderColor: 'divider' }}
-      onPointerDown={(e) => e.stopPropagation()}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+      }}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
     >
       {nicknameField ? (
         <TextField
@@ -199,6 +230,21 @@ function EncoreHoverCardResourceEditFields(props: {
         />
       ) : null}
     </Box>
+  );
+}
+
+function useHoverCardCloseHandler(
+  editingRef: MutableRefObject<boolean>,
+  commitAll: () => void,
+  setOpen: (open: boolean) => void,
+) {
+  return useCallback(
+    () => {
+      if (editingRef.current) return;
+      commitAll();
+      setOpen(false);
+    },
+    [commitAll, editingRef, setOpen],
   );
 }
 
@@ -287,10 +333,7 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
     onNotesChange: onResourceNotesChange,
   });
 
-  const handleClose = () => {
-    resourceEdits.commitAll();
-    setOpen(false);
-  };
+  const handleClose = useHoverCardCloseHandler(resourceEdits.editingRef, resourceEdits.commitAll, setOpen);
 
   useEffect(() => {
     if (!open) return;
@@ -394,10 +437,11 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
       arrow={false}
       enterDelay={280}
       enterNextDelay={120}
-      leaveDelay={140}
+      leaveDelay={resourceEdits.popperPinned ? 900 : 220}
       open={open}
       onOpen={() => setOpen(true)}
       onClose={handleClose}
+      disableFocusListener
       // Tooltip's default `disableInteractive` is false, so the mouse can move from trigger into
       // the tooltip without closing it. Keeping it interactive is what makes this read as a hover
       // *card* rather than a pure tooltip.
@@ -472,10 +516,7 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
     onNotesChange: onResourceNotesChange,
   });
 
-  const handleClose = () => {
-    resourceEdits.commitAll();
-    setOpen(false);
-  };
+  const handleClose = useHoverCardCloseHandler(resourceEdits.editingRef, resourceEdits.commitAll, setOpen);
 
   const handleDownload = async () => {
     if (!onDownload || downloading || downloadDisabled) return;
@@ -553,10 +594,11 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
       arrow={false}
       enterDelay={280}
       enterNextDelay={120}
-      leaveDelay={140}
+      leaveDelay={resourceEdits.popperPinned ? 900 : 220}
       open={open}
       onOpen={() => setOpen(true)}
       onClose={handleClose}
+      disableFocusListener
       disableInteractive={false}
       slotProps={hoverCardPopperSlotProps(resourceEdits.popperPinned)}
     >

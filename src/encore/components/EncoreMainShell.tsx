@@ -16,6 +16,7 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
 } from 'react';
@@ -219,6 +220,11 @@ export function EncoreMainShell(): React.ReactElement {
     library: false,
     performances: false,
   });
+  /** Set when a child calls laidOut before the shell overlay enters `waiting` (effect ordering on cold load). */
+  const heavyTabLaidOutPendingRef = useRef<Record<HeavyListTabKey, boolean>>({
+    library: false,
+    performances: false,
+  });
 
   useLayoutEffect(() => {
     const s = listSectionFromRoute(route);
@@ -236,7 +242,14 @@ export function EncoreMainShell(): React.ReactElement {
       setHeavyListTabOverlay({ kind: 'none' });
       return;
     }
-    setHeavyListTabOverlay({ kind: 'waiting', tab: heavyTab, since: performance.now(), laidOut: false });
+    const laidOutAlready = heavyTabLaidOutPendingRef.current[heavyTab];
+    if (laidOutAlready) heavyTabLaidOutPendingRef.current[heavyTab] = false;
+    setHeavyListTabOverlay({
+      kind: 'waiting',
+      tab: heavyTab,
+      since: performance.now(),
+      laidOut: laidOutAlready,
+    });
     const failsafe = window.setTimeout(() => {
       setHeavyListTabOverlay((cur) =>
         cur.kind === 'waiting' && cur.tab === heavyTab ? { kind: 'none' } : cur,
@@ -260,8 +273,12 @@ export function EncoreMainShell(): React.ReactElement {
 
   const markHeavyListTabLaidOut = useCallback((tab: HeavyListTabKey) => {
     setHeavyListTabOverlay((cur) => {
-      if (cur.kind !== 'waiting' || cur.tab !== tab) return cur;
-      return { ...cur, laidOut: true };
+      if (cur.kind === 'waiting' && cur.tab === tab) {
+        heavyTabLaidOutPendingRef.current[tab] = false;
+        return cur.laidOut ? cur : { ...cur, laidOut: true };
+      }
+      heavyTabLaidOutPendingRef.current[tab] = true;
+      return cur;
     });
   }, []);
 
@@ -273,7 +290,15 @@ export function EncoreMainShell(): React.ReactElement {
     markHeavyListTabLaidOut('performances');
   }, [markHeavyListTabLaidOut]);
 
-  const showHeavyListTabPlaceholder = heavyListTabOverlay.kind === 'waiting';
+  const showHeavyListTabPlaceholder =
+    heavyListTabOverlay.kind === 'waiting' &&
+    !onEditorRoute &&
+    listSection === heavyListTabOverlay.tab;
+
+  const libraryPanelHiddenByOverlay =
+    showHeavyListTabPlaceholder && heavyListTabOverlay.tab === 'library';
+  const performancesPanelHiddenByOverlay =
+    showHeavyListTabPlaceholder && heavyListTabOverlay.tab === 'performances';
 
   return (
     <LabsKeyboardShortcutsHost sections={encoreKeyboardShortcutSections} theme="encore">
@@ -507,6 +532,7 @@ export function EncoreMainShell(): React.ReactElement {
                 width: 1,
                 display: !onEditorRoute && listSection === 'library' ? 'flex' : 'none',
                 flexDirection: 'column',
+                visibility: libraryPanelHiddenByOverlay ? 'hidden' : 'visible',
               }}
               aria-hidden={onEditorRoute || listSection !== 'library'}
             >
@@ -539,7 +565,9 @@ export function EncoreMainShell(): React.ReactElement {
               }}
               aria-hidden={onEditorRoute || listSection !== 'originals'}
             >
-              <OriginalsLibraryScreen />
+              <OriginalsLibraryScreen
+                listActive={!onEditorRoute && listSection === 'originals'}
+              />
             </Box>
           ) : null}
           {listSectionVisited.performances ? (
@@ -558,6 +586,7 @@ export function EncoreMainShell(): React.ReactElement {
                 width: 1,
                 display: !onEditorRoute && listSection === 'performances' ? 'flex' : 'none',
                 flexDirection: 'column',
+                visibility: performancesPanelHiddenByOverlay ? 'hidden' : 'visible',
               }}
               aria-hidden={onEditorRoute || listSection !== 'performances'}
             >

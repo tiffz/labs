@@ -1,6 +1,7 @@
 import type { EncoreFilterFieldConfig } from '../ui/EncoreFilterChipBar';
 import type { EncoreMilestoneDefinition, EncorePerformance, EncoreSong } from '../types';
 import { ENCORE_FILTER_SENTINEL } from '../utils/encoreFilterSentinels';
+import { encoreDateRangeFilterField } from '../utils/encoreFilterFieldHelpers';
 import { ENCORE_PERFORMANCE_KEY_OPTIONS } from './performanceKeys';
 import { collectAllSongTags } from './songTags';
 
@@ -153,6 +154,7 @@ export function buildLibraryRepertoireFilterFieldDefs(opts: {
       ],
     },
     { id: 'venue', label: 'Venue', options: venueOpts, supportsExclude: true },
+    encoreDateRangeFilterField('perfDate', 'Performance date'),
     { id: 'tags', label: 'Tags', options: tagOpts, supportsExclude: true },
     { id: 'artist', label: 'Artist', options: artistOpts, supportsExclude: true },
     { id: 'perfKey', label: 'Key', options: keyOpts, supportsExclude: true },

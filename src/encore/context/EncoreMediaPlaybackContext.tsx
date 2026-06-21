@@ -40,11 +40,16 @@ import {
   type EncoreSpotifyEmbedController,
 } from '../media/encoreSpotifyEmbed';
 import {
+  encoreMediaPlaybackQueueAdvance,
+  type EncoreMediaPlaybackQueueSnapshot,
+} from '../media/encoreMediaPlaybackQueue';
+import {
   EncoreMediaPlaybackAdjustmentStore,
 } from '../media/encoreMediaPlaybackAdjustments';
 import {
-  EncoreMediaPlaybackContext,
-  type EncoreMediaPlaybackContextValue,
+  EncoreMediaPlaybackControlsContext,
+  EncoreMediaTransportContext,
+  type EncoreMediaPlaybackControlsValue,
   type OriginalsPlaybackTarget,
 } from './encoreMediaPlaybackContextStore';
 
@@ -118,6 +123,18 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
   const transposeMirrorRef = useRef<MediaTransposeMirror | null>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
   const webAudioMirrorRef = useRef(false);
+  const queueRef = useRef<EncoreMediaPlaybackTarget[]>([]);
+  const queueIndexRef = useRef(0);
+  const advancingQueueRef = useRef(false);
+  const [queueTick, setQueueTick] = useState(0);
+
+  const bumpQueue = useCallback(() => setQueueTick((t) => t + 1), []);
+
+  const clearQueueState = useCallback(() => {
+    queueRef.current = [];
+    queueIndexRef.current = 0;
+    bumpQueue();
+  }, [bumpQueue]);
 
   const persistAdjustmentsForPlaybackId = useCallback((playbackId: string) => {
     adjustmentsByPlaybackIdRef.current.save(playbackId, {
@@ -137,7 +154,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
     setLoopEnabledState(next.loopEnabled);
   }, []);
 
-  const stopPlayback = useCallback(() => {
+  const resetPlaybackToIdle = useCallback(() => {
     if (target?.playbackId) {
       persistAdjustmentsForPlaybackId(target.playbackId);
     }
@@ -168,16 +185,13 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
     });
   }, [persistAdjustmentsForPlaybackId, target?.playbackId]);
 
-  const playMedia = useCallback(
+  const stopPlayback = useCallback(() => {
+    clearQueueState();
+    resetPlaybackToIdle();
+  }, [clearQueueState, resetPlaybackToIdle]);
+
+  const startMedia = useCallback(
     (next: EncoreMediaPlaybackTarget) => {
-      if (
-        target?.playbackId === next.playbackId &&
-        phase !== 'idle' &&
-        phase !== 'error'
-      ) {
-        stopPlayback();
-        return;
-      }
       if (target?.playbackId) {
         persistAdjustmentsForPlaybackId(target.playbackId);
       }
@@ -200,7 +214,53 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       setTransport(EMPTY_TRANSPORT);
       setYoutubePlayerErrorCode(null);
     },
-    [applyAdjustmentsForPlaybackId, persistAdjustmentsForPlaybackId, phase, stopPlayback, target],
+    [applyAdjustmentsForPlaybackId, persistAdjustmentsForPlaybackId, target?.playbackId],
+  );
+
+  const tryAdvanceQueue = useCallback(() => {
+    const { nextIndex, nextItem, exhausted } = encoreMediaPlaybackQueueAdvance(
+      queueRef.current,
+      queueIndexRef.current,
+    );
+    if (exhausted || !nextItem) {
+      clearQueueState();
+      resetPlaybackToIdle();
+      return;
+    }
+    queueIndexRef.current = nextIndex;
+    bumpQueue();
+    advancingQueueRef.current = true;
+    startMedia(nextItem);
+  }, [bumpQueue, clearQueueState, resetPlaybackToIdle, startMedia]);
+
+  const playMedia = useCallback(
+    (next: EncoreMediaPlaybackTarget) => {
+      if (
+        target?.playbackId === next.playbackId &&
+        phase !== 'idle' &&
+        phase !== 'error'
+      ) {
+        stopPlayback();
+        return;
+      }
+      if (!advancingQueueRef.current) {
+        clearQueueState();
+      }
+      advancingQueueRef.current = false;
+      startMedia(next);
+    },
+    [clearQueueState, phase, startMedia, stopPlayback, target?.playbackId],
+  );
+
+  const playMediaQueue = useCallback(
+    (items: EncoreMediaPlaybackTarget[]) => {
+      if (items.length === 0) return;
+      queueRef.current = items;
+      queueIndexRef.current = 0;
+      bumpQueue();
+      startMedia(items[0]!);
+    },
+    [bumpQueue, startMedia],
   );
 
   const playTake = useCallback(
@@ -209,6 +269,19 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
     },
     [playMedia],
   );
+
+  const playTakeQueue = useCallback(
+    (targets: OriginalsPlaybackTarget[]) => {
+      playMediaQueue(targets.map(originalsTargetToMediaTarget));
+    },
+    [playMediaQueue],
+  );
+
+  const playbackQueue = useMemo((): EncoreMediaPlaybackQueueSnapshot | null => {
+    void queueTick;
+    if (queueRef.current.length <= 1) return null;
+    return { items: [...queueRef.current], index: queueIndexRef.current };
+  }, [queueTick]);
 
   useEffect(() => {
     if (!target) return;
@@ -482,7 +555,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
     };
     const onEnded = () => {
       if (loopEnabled) return;
-      stopPlayback();
+      tryAdvanceQueue();
     };
     const onTimeUpdate = () => {
       if (transposeSemitones === 0) return;
@@ -498,7 +571,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       media.removeEventListener('ended', onEnded);
       media.removeEventListener('timeupdate', onTimeUpdate);
     };
-  }, [loopEnabled, stopPlayback, syncTransposeMirror, transposeSemitones, objectUrl]);
+  }, [loopEnabled, tryAdvanceQueue, syncTransposeMirror, transposeSemitones, objectUrl]);
 
   useEffect(() => {
     const controller = youtubeControllerRef.current;
@@ -527,8 +600,8 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       });
       return;
     }
-    stopPlayback();
-  }, [stopPlayback]);
+    tryAdvanceQueue();
+  }, [tryAdvanceQueue]);
 
   const handleYoutubePlayerError = useCallback((errorCode: number) => {
     const videoId = target?.kind === 'youtube' ? target.youtubeVideoId?.trim() : undefined;
@@ -668,7 +741,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
 
   const audioRef = mediaRef as RefObject<HTMLAudioElement | null>;
 
-  const value = useMemo<EncoreMediaPlaybackContextValue>(
+  const controlsValue = useMemo<EncoreMediaPlaybackControlsValue>(
     () => ({
       target,
       phase,
@@ -676,7 +749,6 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       objectUrl,
       mediaRef,
       audioRef,
-      transport,
       playbackRate,
       transposeSemitones,
       loopEnabled,
@@ -684,6 +756,8 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       setTransposeSemitones,
       setLoopEnabled,
       playMedia,
+      playMediaQueue,
+      playbackQueue,
       stopPlayback,
       togglePlayPause,
       seekTo,
@@ -697,6 +771,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       isActiveMedia,
       isLoadingMedia,
       playTake,
+      playTakeQueue,
       isPlayingTake,
       isLoadingTake,
       registerYoutubeController,
@@ -707,7 +782,6 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       phase,
       errorMessage,
       objectUrl,
-      transport,
       playbackRate,
       transposeSemitones,
       loopEnabled,
@@ -715,6 +789,8 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       setTransposeSemitones,
       setLoopEnabled,
       playMedia,
+      playMediaQueue,
+      playbackQueue,
       stopPlayback,
       togglePlayPause,
       seekTo,
@@ -728,6 +804,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       isActiveMedia,
       isLoadingMedia,
       playTake,
+      playTakeQueue,
       isPlayingTake,
       isLoadingTake,
       registerYoutubeController,
@@ -736,6 +813,8 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
     ],
   );
 
+  const transportValue = useMemo(() => ({ transport }), [transport]);
+
   return (
     <>
       <div ref={spotifyHostRef} className="encore-spotify-embed-host" aria-hidden hidden />
@@ -743,7 +822,11 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
         /* eslint-disable-next-line jsx-a11y/media-has-caption -- user-provided practice audio */
         <audio ref={mediaRef as RefObject<HTMLAudioElement>} className="encore-media-playback-media-hidden" aria-hidden />
       ) : null}
-      <EncoreMediaPlaybackContext.Provider value={value}>{children}</EncoreMediaPlaybackContext.Provider>
+      <EncoreMediaPlaybackControlsContext.Provider value={controlsValue}>
+        <EncoreMediaTransportContext.Provider value={transportValue}>
+          {children}
+        </EncoreMediaTransportContext.Provider>
+      </EncoreMediaPlaybackControlsContext.Provider>
     </>
   );
 }

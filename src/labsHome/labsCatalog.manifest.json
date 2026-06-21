@@ -74,6 +74,14 @@
       "iconClass": "melodia"
     },
     {
+      "path": "/midi/",
+      "title": "Midi Scratchpad",
+      "shortDescription": "Always-listening piano loop capture with dual-layer notation and riff guide mode",
+      "stage": "unlisted",
+      "category": "music",
+      "iconClass": "piano"
+    },
+    {
       "path": "/agility/",
       "title": "Vocal Agility Trainer",
       "shortDescription": "Metronome subdivision drills with timing heatmaps and twelve optional palettes",

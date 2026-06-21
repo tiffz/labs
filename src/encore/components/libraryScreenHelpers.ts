@@ -9,7 +9,8 @@ import {
   withEncoreMrtTrailingSpacer,
 } from './encoreMrtColumnOrder';
 
-export const REPERTOIRE_FILTER_PINNED = ['performed', 'practicing', 'venue'] as const;
+/** Default filter chips — shown on first visit and not removable (no ×). */
+export const REPERTOIRE_FILTER_PINNED = ['performed', 'practicing', 'venue', 'perfDate'] as const;
 
 export type RepertoireViewMode = 'table' | 'grid';
 
@@ -20,6 +21,9 @@ export const REPERTOIRE_FILTER_EMPTY: Record<string, string[]> = {
   tags: [],
   artist: [],
   perfKey: [],
+  perfDateAfter: [],
+  perfDateBefore: [],
+  perfYear: [],
   assetRefs: [],
   assetBacking: [],
   assetSpotify: [],

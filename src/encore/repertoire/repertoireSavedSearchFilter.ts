@@ -1,6 +1,12 @@
 import type { EncoreMilestoneDefinition, EncorePerformance, EncoreSong } from '../types';
 import { ENCORE_FILTER_SENTINEL } from '../utils/encoreFilterSentinels';
 import {
+  encoreDateInRange,
+  encoreDateRangeFromCalendarYear,
+  encoreDateRangeFromFilterRecord,
+  isEncoreDateRangeActive,
+} from '../utils/encoreDateRangeFilter';
+import {
   countBackingTracks,
   countChartAttachments,
   countReferenceTracks,
@@ -32,6 +38,13 @@ export function normalizeSavedSearchFilterValues(raw: Record<string, string[]> |
   for (const k of Object.keys(REPERTOIRE_FILTER_EMPTY) as (keyof typeof REPERTOIRE_FILTER_EMPTY)[]) {
     const arr = raw[k];
     if (Array.isArray(arr)) base[k] = arr.filter((x) => typeof x === 'string');
+  }
+  const legacyYear = base.perfYear?.[0];
+  if (legacyYear && !base.perfDateAfter?.[0] && !base.perfDateBefore?.[0]) {
+    const migrated = encoreDateRangeFromCalendarYear(legacyYear);
+    if (migrated.after) base.perfDateAfter = [migrated.after];
+    if (migrated.before) base.perfDateBefore = [migrated.before];
+    base.perfYear = [];
   }
   return base;
 }
@@ -80,6 +93,11 @@ export function filterSongsByRepertoireSavedSearchBundle(
   const assetCharts = repertoireFilterValues.assetCharts?.[0];
   const assetTakes = repertoireFilterValues.assetTakes?.[0];
   const performedSel = repertoireFilterValues.performed[0];
+  const perfYearFilter = repertoireFilterValues.perfYear?.[0];
+  let perfDateRange = encoreDateRangeFromFilterRecord(repertoireFilterValues, 'perfDate');
+  if (!isEncoreDateRangeActive(perfDateRange) && perfYearFilter) {
+    perfDateRange = encoreDateRangeFromCalendarYear(perfYearFilter);
+  }
   const perfPresence =
     performedSel === 'with' ? 'with' : performedSel === 'none' ? 'none' : 'all';
   const practicingSel = repertoireFilterValues.practicing[0];
@@ -170,6 +188,12 @@ export function filterSongsByRepertoireSavedSearchBundle(
   else if (assetCharts === 'without') list = list.filter((s) => countChartAttachments(s) === 0);
   if (assetTakes === 'with') list = list.filter((s) => countTakeAttachments(s) > 0);
   else if (assetTakes === 'without') list = list.filter((s) => countTakeAttachments(s) === 0);
+
+  if (isEncoreDateRangeActive(perfDateRange)) {
+    list = list.filter((s) =>
+      (perfBySong.get(s.id) ?? []).some((p) => encoreDateInRange(p.date, perfDateRange)),
+    );
+  }
 
   if (milestoneWhich.length > 0) {
     list = list.filter((s) => {

@@ -1,3 +1,4 @@
+import HeadphonesOutlinedIcon from '@mui/icons-material/HeadphonesOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -15,6 +16,8 @@ export type PerformancesBulkSelectionBarProps = {
   bulkOverflowAnchor: HTMLElement | null;
   onBulkOverflowAnchorChange: (el: HTMLElement | null) => void;
   onClearRowSelection: () => void;
+  onPlaySelected?: () => void;
+  playSelectedDisabled?: boolean;
   onOpenBulkVenue: () => void;
   onOpenBulkAccompaniment: () => void;
   onOpenBulkDelete: () => void;
@@ -26,6 +29,8 @@ export function PerformancesBulkSelectionBar(props: PerformancesBulkSelectionBar
     bulkOverflowAnchor,
     onBulkOverflowAnchorChange,
     onClearRowSelection,
+    onPlaySelected,
+    playSelectedDisabled = false,
     onOpenBulkVenue,
     onOpenBulkAccompaniment,
     onOpenBulkDelete,
@@ -56,6 +61,18 @@ export function PerformancesBulkSelectionBar(props: PerformancesBulkSelectionBar
       <Typography variant="body2" sx={{ fontWeight: 700 }}>
         {selectedCount} selected
       </Typography>
+      {onPlaySelected ? (
+        <Button
+          size="small"
+          variant="contained"
+          startIcon={<HeadphonesOutlinedIcon />}
+          disabled={playSelectedDisabled}
+          onClick={onPlaySelected}
+          sx={{ textTransform: 'none' }}
+        >
+          Play selected
+        </Button>
+      ) : null}
       <Button size="small" variant="outlined" onClick={onOpenBulkVenue}>
         Set venue…
       </Button>

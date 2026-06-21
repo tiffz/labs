@@ -24,6 +24,7 @@ import {
   encoreMediaPlaybackSupportsTranspose,
 } from '../media/encorePlayableMedia';
 import { EncoreMediaPlaybackTransport } from './EncoreMediaPlaybackTransport';
+import { EncoreMediaPlaybackQueueChip } from './EncoreMediaPlaybackQueueChip';
 
 function ToolsChipDivider(): ReactElement {
   return <span className="encore-media-playback-chip-divider" aria-hidden />;
@@ -114,6 +115,7 @@ export function EncoreMediaPlaybackBar(): ReactElement | null {
             {subtitle}
           </Typography>
         </Box>
+        <EncoreMediaPlaybackQueueChip />
       </Box>
 
       {showTransport ? (

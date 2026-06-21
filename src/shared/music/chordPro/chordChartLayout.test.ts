@@ -41,22 +41,43 @@ describe('chordChartLayout', () => {
     expect(next[0]?.charIndex).toBe(12);
   });
 
-  it('drops chords inside an edited span', () => {
+  it('moves chords to a replaced word at the same slot', () => {
     const next = reconcileChordsAfterTextChange(
       [
         { id: '1', chordName: 'C', charIndex: 0 },
-        { id: '2', chordName: 'G', charIndex: 3 },
+        { id: '2', chordName: 'G', charIndex: 4 },
       ],
       'abc def',
       'xyz def',
     );
-    expect(next).toEqual([expect.objectContaining({ chordName: 'G', charIndex: 3 })]);
+    expect(next.map((c) => [c.chordName, c.charIndex])).toEqual([
+      ['C', 0],
+      ['G', 4],
+    ]);
   });
 
   it('separates sections with a blank line in write documents', () => {
     const layout = parseChordProToChartLayout(`[Verse 1]\nLine one\n\n[Chorus]\nHook`);
     expect(layoutToWriteDocument(layout)).toBe(`[Verse 1]
 Line one
+
+[Chorus]
+Hook`);
+  });
+
+  it('preserves multiple blank lines between sections in write documents', () => {
+    const layout = parseWriteDocumentToLayout(
+      `[Verse 1]
+Line one
+
+
+[Chorus]
+Hook`,
+      parseChordProToChartLayout(''),
+    );
+    expect(layoutToWriteDocument(layout)).toBe(`[Verse 1]
+Line one
+
 
 [Chorus]
 Hook`);

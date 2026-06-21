@@ -4,6 +4,7 @@ import {
   chartLayoutToPlaybackSequence,
   chartPlaybackMeasureDurationMs,
   estimateChartPlaybackDurationMs,
+  estimateChartPlaybackMeasureCount,
   formatChartPlaybackDuration,
 } from './chartPlaybackSequence';
 import type { ChartLayout } from './chordChartLayout';
@@ -88,7 +89,7 @@ describe('chartPlaybackSequence', () => {
     expect(chartPlaybackMeasureDurationMs(120)).toBe(2000);
   });
 
-  it('estimates playback duration from playable steps and tempo', () => {
+  it('estimates playback duration from measure heuristics and tempo', () => {
     const layout: ChartLayout = {
       sections: [
         {
@@ -110,8 +111,37 @@ describe('chartPlaybackSequence', () => {
         },
       ],
     };
-    expect(estimateChartPlaybackDurationMs(layout, 120)).toBe(8000);
-    expect(formatChartPlaybackDuration(8000)).toBe('0:08');
+    expect(estimateChartPlaybackMeasureCount(layout)).toBe(2);
+    expect(estimateChartPlaybackDurationMs(layout, 120)).toBe(4000);
+    expect(formatChartPlaybackDuration(4000)).toBe('0:04');
+  });
+
+  it('uses one measure for short lyric lines when estimating duration', () => {
+    const layout: ChartLayout = {
+      sections: [
+        {
+          sectionId: 'v1',
+          type: 'Verse',
+          header: 'Verse 1',
+          lines: [
+            {
+              lineId: 'l1',
+              text: 'Kept on driving',
+              chords: [{ id: 'c1', chordName: 'F', charIndex: 0 }],
+            },
+            {
+              lineId: 'l2',
+              text: 'The house I left behind',
+              chords: [
+                { id: 'c2', chordName: 'Am', charIndex: 0 },
+                { id: 'c3', chordName: 'C', charIndex: 18 },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    expect(estimateChartPlaybackMeasureCount(layout)).toBe(3);
   });
 
   it('ignores lines with unparseable chords when estimating duration', () => {

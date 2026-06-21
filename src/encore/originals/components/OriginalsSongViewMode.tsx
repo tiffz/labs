@@ -1,26 +1,21 @@
-import HeadphonesOutlinedIcon from '@mui/icons-material/HeadphonesOutlined';
-import StopCircleOutlinedIcon from '@mui/icons-material/StopCircleOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { alpha, useTheme } from '@mui/material/styles';
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useTheme } from '@mui/material/styles';
+import { useCallback, useMemo, type ReactElement } from 'react';
 import { parseChordProToChartLayout } from '../../../shared/music/chordPro/chordChartLayout';
 import {
   estimateChartPlaybackDurationMs,
   formatChartPlaybackDuration,
 } from '../../../shared/music/chordPro/chartPlaybackSequence';
-import { chartLayoutToAsciiExport } from '../../../shared/music/chordChartAsciiExport';
-import { layoutToWriteDocument } from '../../../shared/music/chordPro/chordChartLayout';
 import { richTextPlainText } from '../../../shared/utils/richTextContent';
-import { EncoreStaticResourceHoverCard } from '../../components/EncoreStreamingHoverCard';
 import { EncoreResourceLinksPanel } from '../../components/EncoreResourceLinksPanel';
-import { EncoreMediaLinkRow } from '../../ui/EncoreMediaLinkRow';
+import { EncoreBpmChip } from '../../ui/EncoreBpmChip';
+import { EncoreKeyChip } from '../../ui/EncoreKeyChip';
+import { InlineChipDate } from '../../ui/InlineEditChip';
 import { useEncoreAuth } from '../../context/EncoreAuthContext';
 import {
   encoreResourceDownloadDisabled,
@@ -28,22 +23,40 @@ import {
   triggerEncoreResourceDownload,
 } from '../../drive/encoreResourceDownload';
 import { encoreMaxWidthPage } from '../../theme/encoreUiTokens';
+import { encorePageSectionGap } from '../../theme/encoreM3Layout';
 import { useEncoreOriginalsPlayback } from '../context/EncoreOriginalsPlaybackContext';
-import { isStageComplete } from '../originalsWorkflowCompletion';
-import { ORIGINALS_WORKFLOW_STAGES, workflowStageShortLabel } from '../originalsWorkflowStages';
-import { originalTakeListenHint } from '../originalsTakeDisplay';
-import { hasOriginalTakeBlob, originalTakeBlobKey } from '../originalTakeLocalAudio';
-import { preferredOriginalTake, type EncoreOriginalSong, type OriginalAudioTake } from '../types';
+import { useOriginalTakePlayable } from '../hooks/useOriginalTakePlayable';
+import { originalsLyricsChartTexts } from '../originalsLyricsChartTexts';
+import {
+  formatOriginalStageSummary,
+  inferredWorkflowStage,
+  isOriginalDemoReady,
+} from '../originalsWorkflowCompletion';
+import { workflowStageShortLabel, type OriginalsWorkflowStage } from '../originalsWorkflowStages';
+import { originalTakeBlobKey } from '../originalTakeLocalAudio';
+import { originalSongStartedDate, type EncoreOriginalSong, type OriginalAudioTake } from '../types';
+import {
+  originalsLibraryStageChipSx,
+  originalsSongHeroPaperSx,
+  originalsSongMetaChipRowSx,
+} from '../originalsLibraryUi';
+import { OriginalsCopyChartButtons } from './OriginalsCopyChartButtons';
+import { OriginalsLyricsChartPanel } from './OriginalsLyricsChartPanel';
+import { OriginalsSongListenCard } from './OriginalsSongListenCard';
+import { OriginalsTakesStage } from './OriginalsTakesStage';
+import { OriginalsViewSection } from './OriginalsViewSection';
 
 export type OriginalsSongViewModeProps = {
   song: EncoreOriginalSong;
   onEdit: () => void;
+  onEditStage: (stage: OriginalsWorkflowStage) => void;
   onSongChange: (patch: Partial<EncoreOriginalSong>) => void;
 };
 
 export function OriginalsSongViewMode({
   song,
   onEdit,
+  onEditStage,
   onSongChange,
 }: OriginalsSongViewModeProps): ReactElement {
   const theme = useTheme();
@@ -52,42 +65,19 @@ export function OriginalsSongViewMode({
     () => parseChordProToChartLayout(song.lyricsAndChords),
     [song.lyricsAndChords],
   );
-  const writeDoc = layoutToWriteDocument(chartLayout);
-  const ascii = chartLayoutToAsciiExport(chartLayout);
   const playbackDurationLabel = useMemo(() => {
     const durationMs = estimateChartPlaybackDurationMs(chartLayout, song.tempo);
     if (durationMs <= 0) return null;
     return formatChartPlaybackDuration(durationMs);
   }, [chartLayout, song.tempo]);
   const brainstormPlain = richTextPlainText(song.brainstormHtml);
-  const preferredTake = preferredOriginalTake(song);
-  const [localAudioIds, setLocalAudioIds] = useState<Set<string>>(() => new Set());
+  const chartTexts = useMemo(() => originalsLyricsChartTexts(song.lyricsAndChords), [song.lyricsAndChords]);
+  const hasLyricsSection = Boolean(chartTexts.lyrics || chartTexts.chordChart);
+  const demoReady = isOriginalDemoReady(song);
+  const currentStage = inferredWorkflowStage(song);
+  const { playbackTake, canPlayPlaybackTake } = useOriginalTakePlayable(song, true);
   const { playTake, stopPlayback, isPlayingTake, isLoadingTake, phase, errorMessage, target } =
     useEncoreOriginalsPlayback();
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const found = new Set<string>();
-      await Promise.all(
-        song.takes.map(async (t) => {
-          if (t.hasLocalAudio || (await hasOriginalTakeBlob(song.id, t.id))) {
-            found.add(t.id);
-          }
-        }),
-      );
-      if (!cancelled) setLocalAudioIds(found);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [song.id, song.takes]);
-
-  const takeIsPlayable = useCallback(
-    (take: OriginalAudioTake) =>
-      Boolean(take.driveFileId?.trim()) || take.hasLocalAudio === true || localAudioIds.has(take.id),
-    [localAudioIds],
-  );
 
   const playOriginalTake = useCallback(
     (take: OriginalAudioTake) => {
@@ -103,131 +93,135 @@ export function OriginalsSongViewMode({
     },
     [playTake, song.id, song.title],
   );
-  const preferredIsPlaying = preferredTake ? isPlayingTake(song.id, preferredTake.id) : false;
-  const preferredIsLoading = preferredTake ? isLoadingTake(song.id, preferredTake.id) : false;
-  const canPlayPreferred = preferredTake ? takeIsPlayable(preferredTake) : false;
+
+  const preferredIsPlaying = playbackTake ? isPlayingTake(song.id, playbackTake.id) : false;
+  const preferredIsLoading = playbackTake ? isLoadingTake(song.id, playbackTake.id) : false;
   const playbackErrorForPreferred =
-    preferredTake &&
-    target?.playbackId === `original-take:${song.id}:${preferredTake.id}` &&
+    playbackTake &&
+    target?.playbackId === `original-take:${song.id}:${playbackTake.id}` &&
     phase === 'error'
       ? errorMessage
       : null;
 
+  const downloadTarget = playbackTake ? encoreResourceDownloadTargetFromTake(playbackTake) : null;
+  const downloadGate = encoreResourceDownloadDisabled(
+    { driveFileId: playbackTake?.driveFileId },
+    googleAccessToken,
+  );
+
   const onPreferredPlayClick = () => {
-    if (!preferredTake || !canPlayPreferred) return;
-    if (preferredIsPlaying) {
-      stopPlayback();
-      return;
-    }
-    playOriginalTake(preferredTake);
+    if (!playbackTake || !canPlayPlaybackTake) return;
+    if (preferredIsPlaying) stopPlayback();
+    else playOriginalTake(playbackTake);
   };
 
-  const updateTake = (takeId: string, patch: Partial<OriginalAudioTake>) => {
-    onSongChange({
-      takes: song.takes.map((t) => (t.id === takeId ? { ...t, ...patch } : t)),
-    });
-  };
+  const onTakesChange = useCallback(
+    (next: EncoreOriginalSong) => {
+      onSongChange({ takes: next.takes, mainTakeId: next.mainTakeId });
+    },
+    [onSongChange],
+  );
+
+  const copyButtons =
+    hasLyricsSection && (chartTexts.lyrics || chartTexts.chordChart) ? (
+      <OriginalsCopyChartButtons lyrics={chartTexts.lyrics} chordChart={chartTexts.chordChart} />
+    ) : null;
 
   return (
-    <Box sx={{ pb: 4 }}>
-      <Stack spacing={3} sx={{ maxWidth: encoreMaxWidthPage, mx: 'auto', width: 1 }}>
-        <Paper
-          elevation={0}
-          sx={(theme) => ({
-            p: { xs: 2, md: 3 },
-            borderRadius: 2,
-            border: 1,
-            borderColor: 'divider',
-            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.06)} 0%, ${alpha(theme.palette.background.paper, 1)} 55%)`,
-          })}
-        >
-          <Stack direction="row" spacing={2} alignItems="flex-start">
+    <Box>
+      <Stack spacing={encorePageSectionGap} sx={{ maxWidth: encoreMaxWidthPage, mx: 'auto', width: 1 }}>
+        <Paper elevation={0} sx={originalsSongHeroPaperSx(theme)}>
+          <Stack direction="row" spacing={2} alignItems="flex-start" useFlexGap>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="overline" color="text.secondary">
+              <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1.2, display: 'block' }}>
                 Original
               </Typography>
-              <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.15, mb: 1 }}>
+              <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.15, mt: 0.5, mb: 1 }}>
                 {song.title.trim() || 'Untitled original'}
               </Typography>
-              <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-                <Chip size="small" label={`Key ${song.key}`} />
-                <Chip size="small" label={`${song.tempo} BPM`} variant="outlined" />
+              <Stack
+                direction="row"
+                spacing={0.75}
+                useFlexGap
+                flexWrap="wrap"
+                alignItems="center"
+                sx={originalsSongMetaChipRowSx()}
+              >
+                <EncoreKeyChip
+                  value={song.key}
+                  placeholder="Set key"
+                  displayMode="compact"
+                  onChange={(next) => onSongChange({ key: next })}
+                />
+                <EncoreBpmChip value={song.tempo} onChange={(next) => onSongChange({ tempo: next })} />
                 {playbackDurationLabel ? (
-                  <Tooltip title="Estimated chord playback length">
-                    <Chip size="small" label={`~${playbackDurationLabel}`} variant="outlined" />
-                  </Tooltip>
+                  <Chip size="small" label={`~${playbackDurationLabel}`} variant="outlined" />
                 ) : null}
+                <InlineChipDate
+                  value={originalSongStartedDate(song)}
+                  placeholder="Started writing"
+                  ariaLabel="Started writing date"
+                  onChange={(d) => onSongChange({ startedAt: d ?? undefined })}
+                />
                 {song.takes.length > 0 ? (
-                  <Chip size="small" label={`${song.takes.length} take${song.takes.length === 1 ? '' : 's'}`} variant="outlined" />
+                  <Chip
+                    size="small"
+                    label={`${song.takes.length} take${song.takes.length === 1 ? '' : 's'}`}
+                    variant="outlined"
+                  />
                 ) : null}
               </Stack>
-              {preferredTake ? (
-                <Stack
-                  direction="row"
-                  spacing={1.5}
-                  useFlexGap
-                  flexWrap="wrap"
-                  alignItems="center"
-                  sx={{ mt: 1.75 }}
-                >
-                  {canPlayPreferred ? (
+              {playbackTake ? (
+                <OriginalsSongListenCard
+                  take={playbackTake}
+                  isPreferred={song.mainTakeId === playbackTake.id}
+                  canPlay={canPlayPlaybackTake}
+                  isPlaying={preferredIsPlaying}
+                  isLoading={preferredIsLoading}
+                  errorMessage={playbackErrorForPreferred}
+                  downloadDisabled={downloadGate.disabled}
+                  downloadDisabledReason={downloadGate.reason}
+                  onPlayToggle={onPreferredPlayClick}
+                  onDownload={() => {
+                    if (downloadTarget) {
+                      void triggerEncoreResourceDownload(downloadTarget, googleAccessToken);
+                    }
+                  }}
+                />
+              ) : null}
+              <Box sx={{ mt: 1 }}>
+                {demoReady ? (
+                  <Chip
+                    size="small"
+                    label="Demo ready"
+                    variant="outlined"
+                    sx={originalsLibraryStageChipSx(true, theme)}
+                  />
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+                    {formatOriginalStageSummary(song)} · Continue{' '}
                     <Button
-                      variant="outlined"
-                      size="medium"
-                      onClick={onPreferredPlayClick}
-                      disabled={preferredIsLoading}
-                      startIcon={
-                        preferredIsLoading ? (
-                          <CircularProgress size={16} color="inherit" />
-                        ) : preferredIsPlaying ? (
-                          <StopCircleOutlinedIcon />
-                        ) : (
-                          <HeadphonesOutlinedIcon />
-                        )
-                      }
+                      variant="text"
+                      size="small"
+                      onClick={() => onEditStage(currentStage)}
                       sx={{
                         textTransform: 'none',
                         fontWeight: 600,
-                        borderColor: alpha(theme.palette.primary.main, 0.35),
-                        color: 'primary.main',
-                        bgcolor: alpha(theme.palette.primary.main, 0.04),
-                        px: 1.75,
-                        '&:hover': {
-                          borderColor: 'primary.main',
-                          bgcolor: alpha(theme.palette.primary.main, 0.09),
-                        },
+                        minWidth: 0,
+                        p: 0,
+                        verticalAlign: 'baseline',
+                        fontSize: 'inherit',
+                        lineHeight: 'inherit',
                       }}
                     >
-                      {preferredIsLoading ? 'Loading…' : preferredIsPlaying ? 'Stop' : 'Listen'}
+                      {workflowStageShortLabel(currentStage)}
                     </Button>
-                  ) : (
-                    <Tooltip title="Sign in to Google to play this take in Encore">
-                      <span>
-                        <Button
-                          variant="outlined"
-                          size="medium"
-                          disabled
-                          startIcon={<HeadphonesOutlinedIcon />}
-                          sx={{ textTransform: 'none', fontWeight: 600 }}
-                        >
-                          Listen
-                        </Button>
-                      </span>
-                    </Tooltip>
-                  )}
-                  <Typography
-                    variant="caption"
-                    color={playbackErrorForPreferred ? 'error' : 'text.secondary'}
-                    sx={{ lineHeight: 1.35, flex: '1 1 12rem', minWidth: 0 }}
-                  >
-                    {playbackErrorForPreferred ??
-                      originalTakeListenHint(preferredTake, song.mainTakeId === preferredTake.id)}
                   </Typography>
-                </Stack>
-              ) : null}
+                )}
+              </Box>
             </Box>
             <Button
-              variant={preferredTake ? 'outlined' : 'contained'}
+              variant={playbackTake ? 'outlined' : 'contained'}
               size="medium"
               onClick={onEdit}
               sx={{ textTransform: 'none', fontWeight: 600, flexShrink: 0 }}
@@ -235,24 +229,28 @@ export function OriginalsSongViewMode({
               Write
             </Button>
           </Stack>
-          <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap" sx={{ mt: 2 }}>
-            {ORIGINALS_WORKFLOW_STAGES.map((s) => (
-              <Chip
-                key={s.id}
-                size="small"
-                label={workflowStageShortLabel(s.id)}
-                color={isStageComplete(song, s.id) ? 'primary' : 'default'}
-                variant={isStageComplete(song, s.id) ? 'filled' : 'outlined'}
-              />
-            ))}
-          </Stack>
         </Paper>
 
-        {brainstormPlain || (song.brainstormResources?.length ?? 0) > 0 ? (
-          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-              Brainstorm
+        <OriginalsViewSection title="Demo takes" onEdit={() => onEditStage('takes')}>
+          <OriginalsTakesStage song={song} onChange={onTakesChange} subtleAddZone />
+        </OriginalsViewSection>
+
+        <OriginalsViewSection
+          title="Lyrics & chart"
+          trailing={copyButtons}
+          onEdit={() => onEditStage('write')}
+        >
+          {hasLyricsSection ? (
+            <OriginalsLyricsChartPanel lyricsAndChords={song.lyricsAndChords} />
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+              No lyrics or chart yet. Edit to start writing.
             </Typography>
+          )}
+        </OriginalsViewSection>
+
+        {brainstormPlain || (song.brainstormResources?.length ?? 0) > 0 ? (
+          <OriginalsViewSection title="Brainstorm" onEdit={() => onEditStage('brainstorm')}>
             {brainstormPlain ? (
               <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>
                 {brainstormPlain}
@@ -270,95 +268,14 @@ export function OriginalsSongViewMode({
                 />
               </Box>
             ) : null}
-          </Paper>
-        ) : null}
-
-        {writeDoc.trim() ? (
-          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-              Lyrics
+          </OriginalsViewSection>
+        ) : (
+          <OriginalsViewSection title="Brainstorm" onEdit={() => onEditStage('brainstorm')}>
+            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+              No brainstorm notes yet. Edit to capture ideas.
             </Typography>
-            <Typography
-              component="pre"
-              variant="body1"
-              sx={{ fontFamily: 'inherit', whiteSpace: 'pre-wrap', m: 0, lineHeight: 1.65 }}
-            >
-              {writeDoc}
-            </Typography>
-          </Paper>
-        ) : null}
-
-        {ascii.trim() ? (
-          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-              Chord chart
-            </Typography>
-            <Typography
-              component="pre"
-              variant="body2"
-              sx={{ fontFamily: 'ui-monospace, monospace', whiteSpace: 'pre-wrap', m: 0, lineHeight: 1.5 }}
-            >
-              {ascii}
-            </Typography>
-          </Paper>
-        ) : null}
-
-        {song.takes.length > 0 ? (
-          <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-              Demo takes
-            </Typography>
-            <Stack spacing={0.75} alignItems="flex-start">
-              {song.takes.map((t) => {
-                const openUrl = t.driveFileId
-                  ? `https://drive.google.com/file/d/${encodeURIComponent(t.driveFileId)}/view`
-                  : undefined;
-                const downloadTarget = encoreResourceDownloadTargetFromTake(t);
-                const downloadGate = encoreResourceDownloadDisabled(
-                  { driveFileId: t.driveFileId },
-                  googleAccessToken,
-                );
-                return (
-                  <EncoreStaticResourceHoverCard
-                    key={t.id}
-                    title={t.label}
-                    subtitle="Demo take"
-                    editNickname={t.label}
-                    onEditNicknameChange={(value) => updateTake(t.id, { label: value.trim() || t.label })}
-                    resourceNotes={t.notes ?? ''}
-                    onResourceNotesChange={(value) => updateTake(t.id, { notes: value.trim() || undefined })}
-                    onPlay={() => {
-                      if (!takeIsPlayable(t)) return;
-                      playOriginalTake(t);
-                    }}
-                    isPlaying={isPlayingTake(song.id, t.id)}
-                    playDisabled={!takeIsPlayable(t)}
-                    playDisabledReason={
-                      takeIsPlayable(t)
-                        ? undefined
-                        : 'Re-open this song in Record takes and choose the audio file again'
-                    }
-                    {...(downloadTarget
-                      ? {
-                          onDownload: () => triggerEncoreResourceDownload(downloadTarget, googleAccessToken),
-                          downloadDisabled: downloadGate.disabled,
-                          downloadDisabledReason: downloadGate.reason,
-                        }
-                      : {})}
-                  >
-                    <EncoreMediaLinkRow
-                      slot="reference"
-                      isPrimary={song.mainTakeId === t.id}
-                      caption={t.label}
-                      openUrl={openUrl}
-                      openAriaLabel={`Open ${t.label}`}
-                    />
-                  </EncoreStaticResourceHoverCard>
-                );
-              })}
-            </Stack>
-          </Paper>
-        ) : null}
+          </OriginalsViewSection>
+        )}
       </Stack>
     </Box>
   );

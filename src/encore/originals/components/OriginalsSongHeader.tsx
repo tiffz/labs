@@ -30,7 +30,6 @@ export type OriginalsSongHeaderProps = {
   /** Tighter spacing when the header lives inside the chords scroll column. */
   compact?: boolean;
   onRestoreSnapshot: (snap: OriginalSongSnapshot) => void;
-  onImportPdf: () => void;
   onDelete: () => void;
 };
 
@@ -41,7 +40,6 @@ export function OriginalsSongHeader({
   onChange,
   compact = false,
   onRestoreSnapshot,
-  onImportPdf,
   onDelete,
 }: OriginalsSongHeaderProps): ReactElement {
   const theme = useTheme();
@@ -171,14 +169,6 @@ export function OriginalsSongHeader({
       </Menu>
 
       <Menu anchorEl={moreAnchor} open={Boolean(moreAnchor)} onClose={() => setMoreAnchor(null)}>
-        <MenuItem
-          onClick={() => {
-            setMoreAnchor(null);
-            onImportPdf();
-          }}
-        >
-          Import PDF
-        </MenuItem>
         <MenuItem
           onClick={() => {
             setMoreAnchor(null);

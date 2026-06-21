@@ -168,4 +168,35 @@ But I love how the moon calls the wolves and pulls the tide`);
     expect(bridge?.lines[0]?.chords[0]?.chordName).toBe('Ab');
     expect(bridge?.lines[0]?.chords[0]?.charIndex).toBe(0);
   });
+
+  it('does not treat [Chorus] / [Bridge] headers as inline ChordPro', () => {
+    const chart = `[Verse]
+Am                         F
+  The lawns aren't    quite so pretty
+C                            G
+  Just an hour north   of the city
+
+[Chorus]
+F                          C
+And we were just surviving
+G              Am
+    As you kept on driving
+
+[Bridge]
+Dm                                 Am
+Can you love a home that's haunted?`;
+
+    expect(looksLikePastedChart(chart)).toBe(true);
+    const layout = parsePastedChartToChartLayout(chart);
+    expect(layout.sections.map((s) => s.header)).toEqual(['Verse', 'Chorus', 'Bridge']);
+    const verseFirst = layout.sections[0]?.lines[0];
+    expect(verseFirst?.text).toContain('lawns');
+    expect(verseFirst?.chords.map((c) => c.chordName)).toEqual(['Am', 'F']);
+    const fOnQuite = verseFirst?.chords.find((c) => c.chordName === 'F');
+    expect(fOnQuite?.charIndex).toBe(verseFirst!.text.indexOf('quite'));
+    const imported = importPastedChartFromClipboard(chart);
+    expect(imported.ok).toBe(true);
+    expect(imported.notifyUser).toBe(true);
+    expect(imported.sectionCount).toBe(3);
+  });
 });

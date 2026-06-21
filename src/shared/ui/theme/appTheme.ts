@@ -18,6 +18,7 @@ export type AppThemeId =
   | 'story'
   | 'zines'
   | 'agility'
+  | 'midi'
   | 'encore'
   | 'stanza'
   | 'sight'
@@ -388,6 +389,20 @@ const THEMES: Record<AppThemeId, Theme> = {
     textSecondary: '#57534e',
     divider: 'rgba(41, 37, 36, 0.14)',
     radius: 4,
+    spacingBase: 5,
+    readable: true,
+  }),
+  midi: buildTheme({
+    mode: 'light',
+    fontFamily: "'Inter', 'SF Pro Text', system-ui, sans-serif",
+    primary: '#ff4499',
+    secondary: '#7c3aed',
+    backgroundDefault: '#fff8fb',
+    backgroundPaper: '#ffffff',
+    textPrimary: '#2d1b3d',
+    textSecondary: '#6b5b7a',
+    divider: 'rgba(255, 68, 153, 0.16)',
+    radius: 14,
     spacingBase: 5,
     readable: true,
   }),

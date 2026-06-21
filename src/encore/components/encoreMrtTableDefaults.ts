@@ -272,3 +272,102 @@ const BULK_IMPORT_REVIEW = Object.freeze({
 export function encoreMrtBulkImportReviewOptions<TData extends MRT_RowData>(): Partial<MRT_TableOptions<TData>> {
   return BULK_IMPORT_REVIEW as Partial<MRT_TableOptions<TData>>;
 }
+
+/**
+ * Originals library: fixed column set that fills page width without horizontal scroll.
+ * Header sort affordances match repertoire tables (visible on hover).
+ */
+const ORIGINALS_LIBRARY_TABLE = Object.freeze({
+  ...CLIENT_LIST_BASE,
+  enableStickyHeader: false,
+  layoutMode: 'semantic',
+  enableRowVirtualization: true,
+  rowVirtualizerOptions: { overscan: 8 },
+  memoMode: 'cells',
+  muiTableProps: {
+    sx: { tableLayout: 'fixed', width: '100%', minWidth: 0 },
+  },
+  muiTablePaperProps: {
+    ...CLIENT_LIST_BASE.muiTablePaperProps,
+    sx: {
+      ...((CLIENT_LIST_BASE.muiTablePaperProps as { sx?: object } | undefined)?.sx ?? {}),
+      maxWidth: '100%',
+      minWidth: 0,
+      overflow: 'hidden',
+    },
+  },
+  muiTableContainerProps: {
+    sx: {
+      bgcolor: 'background.paper',
+      maxWidth: '100%',
+      minWidth: 0,
+      overflowX: 'auto',
+      overflowY: 'visible',
+    },
+  },
+  muiTableHeadCellProps: {
+    ...CLIENT_LIST_BASE.muiTableHeadCellProps,
+    sx: {
+      ...((CLIENT_LIST_BASE.muiTableHeadCellProps as { sx?: object } | undefined)?.sx ?? {}),
+      minWidth: 0,
+      verticalAlign: 'middle',
+      '& .Mui-TableHeadCell-Content': {
+        alignItems: 'center',
+        width: '100%',
+        minWidth: 0,
+        minHeight: 40,
+      },
+      '& .Mui-TableHeadCell-Content-Labels': {
+        flex: '1 1 auto',
+        minWidth: 0,
+        width: '100%',
+        alignItems: 'center',
+      },
+      '& .Mui-TableHeadCell-Content-Wrapper': {
+        flex: '1 1 0%',
+        minWidth: 0,
+        width: 'auto',
+        maxWidth: '100%',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+      },
+      '& .Mui-TableHeadCell-Content-Actions .MuiIconButton-root': {
+        opacity: '0 !important',
+        transition: 'opacity 120ms ease',
+      },
+      '&:hover .Mui-TableHeadCell-Content-Actions .MuiIconButton-root, &:focus-within .Mui-TableHeadCell-Content-Actions .MuiIconButton-root':
+        {
+          opacity: '1 !important',
+        },
+      '& .Mui-TableHeadCell-Content-Labels .MuiTableSortLabel-root': {
+        opacity: '0 !important',
+        transition: 'opacity 120ms ease',
+        flex: '0 0 auto',
+      },
+      '&:hover .Mui-TableHeadCell-Content-Labels .MuiTableSortLabel-root, &:focus-within .Mui-TableHeadCell-Content-Labels .MuiTableSortLabel-root':
+        {
+          opacity: '1 !important',
+        },
+      '&[data-sort]': {
+        color: 'text.primary',
+      },
+      '&[data-sort] .encore-mrt-col-header': {
+        fontWeight: 800,
+      },
+    },
+  },
+  muiTableBodyCellProps: {
+    ...CLIENT_LIST_BASE.muiTableBodyCellProps,
+    sx: {
+      ...((CLIENT_LIST_BASE.muiTableBodyCellProps as { sx?: object } | undefined)?.sx ?? {}),
+      minWidth: 0,
+      overflow: 'hidden',
+      wordBreak: 'break-word',
+      overflowWrap: 'anywhere',
+    },
+  },
+} as const) as Partial<MRT_TableOptions<MRT_RowData>>;
+
+export function encoreMrtOriginalsLibraryTableOptions<TData extends MRT_RowData>(): Partial<MRT_TableOptions<TData>> {
+  return ORIGINALS_LIBRARY_TABLE as Partial<MRT_TableOptions<TData>>;
+}

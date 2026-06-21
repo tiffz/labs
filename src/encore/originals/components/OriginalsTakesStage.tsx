@@ -28,6 +28,8 @@ const AUDIO_ACCEPT = 'audio/*,.mp3,.m4a,.wav,.webm';
 export type OriginalsTakesStageProps = {
   song: EncoreOriginalSong;
   onChange: (next: EncoreOriginalSong) => void;
+  /** When true, show a subtle add strip below existing takes (view page default). */
+  subtleAddZone?: boolean;
 };
 
 function takeIsPlayable(take: OriginalAudioTake, localAudioIds: ReadonlySet<string>): boolean {
@@ -103,7 +105,54 @@ async function buildTakeFromFile(
   return take;
 }
 
-export function OriginalsTakesStage({ song, onChange }: OriginalsTakesStageProps): ReactElement {
+function TakeAddZone({
+  hasTakes,
+  subtle,
+  uploading,
+  onFiles,
+}: {
+  hasTakes: boolean;
+  subtle: boolean;
+  uploading: boolean;
+  onFiles: (files: File[]) => void;
+}): ReactElement {
+  if (subtle) {
+    return (
+      <DragDropFileUpload
+        accept={AUDIO_ACCEPT}
+        tone="soft"
+        inline
+        compact
+        expandOnDrag
+        multiple
+        disabled={uploading}
+        minHeight={hasTakes ? 40 : 72}
+        label={hasTakes ? 'Drop audio or click to add a take' : 'Drop audio files or click to upload'}
+        helperText={hasTakes ? undefined : 'MP3, M4A, WAV, or WebM'}
+        onFiles={onFiles}
+        sx={{ width: 1, maxWidth: 520 }}
+      />
+    );
+  }
+
+  return (
+    <DragDropFileUpload
+      accept={AUDIO_ACCEPT}
+      compact={hasTakes}
+      multiple
+      disabled={uploading}
+      label={hasTakes ? 'Add take' : 'Upload takes'}
+      helperText={hasTakes ? undefined : 'Drop one or more audio files'}
+      onFiles={onFiles}
+    />
+  );
+}
+
+export function OriginalsTakesStage({
+  song,
+  onChange,
+  subtleAddZone = false,
+}: OriginalsTakesStageProps): ReactElement {
   const { googleAccessToken } = useEncoreAuth();
   const { uploadWithDuplicateCheck, registerUploadedDriveFile } = useEncoreDriveUploadDedup();
   const { playTake, isPlayingTake, stopPlayback } = useEncoreOriginalsPlayback();
@@ -212,9 +261,14 @@ export function OriginalsTakesStage({ song, onChange }: OriginalsTakesStageProps
   );
 
   const hasTakes = song.takes.length > 0;
+  const onAddFiles = useCallback((files: File[]) => void addTakes(files), [addTakes]);
+
+  const addZone = (
+    <TakeAddZone hasTakes={hasTakes} subtle={subtleAddZone} uploading={uploading} onFiles={onAddFiles} />
+  );
 
   return (
-    <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
+    <Stack spacing={1.5} sx={{ flex: 1, minHeight: 0 }}>
       <input
         ref={replaceInputRef}
         type="file"
@@ -229,22 +283,9 @@ export function OriginalsTakesStage({ song, onChange }: OriginalsTakesStageProps
           void replaceTakeFile(takeId, file);
         }}
       />
-      <DragDropFileUpload
-        accept={AUDIO_ACCEPT}
-        compact={hasTakes}
-        multiple
-        disabled={uploading}
-        label={hasTakes ? 'Add take' : 'Upload takes'}
-        helperText={hasTakes ? undefined : 'Drop one or more audio files'}
-        onFiles={(files: File[]) => {
-          void addTakes(files);
-        }}
-      />
+      {!subtleAddZone ? addZone : null}
       {hasTakes ? (
         <Stack spacing={0.75} alignItems="flex-start">
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-            Takes
-          </Typography>
           {song.takes.map((t) => {
             const playable = takeIsPlayable(t, localAudioIds);
             const openUrl = t.driveFileId
@@ -320,7 +361,12 @@ export function OriginalsTakesStage({ song, onChange }: OriginalsTakesStageProps
             );
           })}
         </Stack>
+      ) : subtleAddZone ? (
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+          No demo takes yet.
+        </Typography>
       ) : null}
+      {subtleAddZone ? addZone : null}
     </Stack>
   );
 }

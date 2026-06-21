@@ -1,165 +1,255 @@
 /* eslint-disable react/prop-types -- MRT Cell render props are typed via MRT_ColumnDef */
+import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
-import { useMaterialReactTable, type MRT_ColumnDef } from 'material-react-table';
-import { useMemo, type ReactElement } from 'react';
+import { useMaterialReactTable, type MRT_ColumnDef, type MRT_RowSelectionState } from 'material-react-table';
+import { useCallback, useMemo, type Dispatch, type ReactElement, type SetStateAction } from 'react';
+import { MRT_ROW_SELECT_COL } from '../../components/encoreMrtColumnOrder';
 import { chordProLyricSnippet } from '../../../shared/music/chordPro/chordProText';
 import { EncoreMrtTableShell, ENCORE_MRT_CLICKABLE_ROW_SX } from '../../components/EncoreMrtTableShell';
 import { formatShortDate } from '../../components/libraryScreenHelpers';
-import { encoreMrtRepertoireTableOptions } from '../../components/encoreMrtTableDefaults';
-import { navigateEncore } from '../../routes/encoreAppHash';
+import { encoreMrtOriginalsLibraryTableOptions } from '../../components/encoreMrtTableDefaults';
+import { EncoreBpmChip } from '../../ui/EncoreBpmChip';
+import { EncoreKeyChip } from '../../ui/EncoreKeyChip';
 import { EncoreMrtColumnHeader } from '../../ui/EncoreMrtColumnHeader';
 import { HighlightedText } from '../../ui/HighlightedText';
-import type { EncoreOriginalSong } from '../types';
-import { formatOriginalStageSummary, inferredWorkflowStage } from '../originalsWorkflowCompletion';
-import { workflowStageShortLabel } from '../originalsWorkflowStages';
+import { InlineChipDate } from '../../ui/InlineEditChip';
+import { originalSongStartedDate, type EncoreOriginalSong } from '../types';
+import { navigateToOriginalFromLibrary } from '../originalsLibraryNavigation';
+import {
+  isOriginalDemoReady,
+  originalsLibraryStageLabel,
+  originalsLibraryStageProgressDetail,
+  originalsLibraryStageSortKey,
+} from '../originalsWorkflowCompletion';
+import type { OriginalsGridTakePlaybackState } from './OriginalsLibraryGridCard';
+import {
+  OriginalsTablePlayCell,
+  OriginalsTableStageCell,
+  OriginalsTableTakesCell,
+} from './OriginalsLibraryTableCells';
+import { OriginalsLyricsHoverCard } from './OriginalsLyricsHoverCard';
 
-function dateCell(iso: string): ReactElement {
+function ReadOnlyDateChip({ iso }: { iso: string }): ReactElement {
   return (
-    <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-      {formatShortDate(iso)}
-    </Typography>
+    <Chip
+      size="small"
+      label={formatShortDate(iso)}
+      variant="outlined"
+      sx={{
+        fontVariantNumeric: 'tabular-nums',
+        fontWeight: 600,
+        color: 'text.primary',
+        borderStyle: 'solid',
+        maxWidth: '100%',
+      }}
+    />
   );
 }
 
 export type OriginalsLibraryMrtTableProps = {
   rows: EncoreOriginalSong[];
   search: string;
+  listActive: boolean;
+  onSaveSong: (song: EncoreOriginalSong) => void;
+  onPlayTake: (song: EncoreOriginalSong) => void;
+  onStopTake: () => void;
+  takePlaybackBySongId: ReadonlyMap<string, OriginalsGridTakePlaybackState>;
+  rowSelection: MRT_RowSelectionState;
+  onRowSelectionChange: Dispatch<SetStateAction<MRT_RowSelectionState>>;
 };
 
-export function OriginalsLibraryMrtTable({ rows, search }: OriginalsLibraryMrtTableProps): ReactElement {
+export function OriginalsLibraryMrtTable({
+  rows,
+  search,
+  listActive,
+  onSaveSong,
+  onPlayTake,
+  onStopTake,
+  takePlaybackBySongId,
+  rowSelection,
+  onRowSelectionChange,
+}: OriginalsLibraryMrtTableProps): ReactElement {
   const theme = useTheme();
+
+  const patchSong = useCallback(
+    (song: EncoreOriginalSong, patch: Partial<EncoreOriginalSong>) => {
+      onSaveSong({ ...song, ...patch });
+    },
+    [onSaveSong],
+  );
 
   const columns = useMemo<MRT_ColumnDef<EncoreOriginalSong>[]>(
     () => [
       {
         accessorKey: 'title',
         header: 'Title',
-        minSize: 160,
-        size: 220,
+        minSize: 100,
+        size: 160,
+        grow: 2,
         Header: ({ column }) => <EncoreMrtColumnHeader label="Title" column={column} />,
-        Cell: ({ row }) => (
-          <Typography variant="body2" sx={{ fontWeight: 600, minWidth: 0 }}>
-            <HighlightedText
-              text={row.original.title.trim() || 'Untitled'}
-              highlight={search}
-              component="span"
-              variant="inherit"
-            />
-          </Typography>
-        ),
+        Cell: ({ row }) => {
+          const song = row.original;
+          const playback = takePlaybackBySongId.get(song.id) ?? 'idle';
+          return (
+            <Stack direction="row" alignItems="center" spacing={0.75} sx={{ minWidth: 0, width: 1 }}>
+              <Typography variant="body2" noWrap sx={{ fontWeight: 600, minWidth: 0, flex: 1 }}>
+                <HighlightedText
+                  text={song.title.trim() || 'Untitled'}
+                  highlight={search}
+                  component="span"
+                  variant="inherit"
+                />
+              </Typography>
+              <OriginalsTablePlayCell
+                song={song}
+                listActive={listActive}
+                playback={playback}
+                onPlayTake={onPlayTake}
+                onStopTake={onStopTake}
+              />
+            </Stack>
+          );
+        },
       },
       {
         id: 'stage',
         header: 'Stage',
-        minSize: 120,
-        size: 132,
-        accessorFn: (row) => workflowStageShortLabel(inferredWorkflowStage(row)),
+        minSize: 92,
+        size: 108,
+        accessorFn: (row) => originalsLibraryStageSortKey(row),
         Header: ({ column }) => <EncoreMrtColumnHeader label="Stage" column={column} />,
         Cell: ({ row }) => (
-          <Chip size="small" label={workflowStageShortLabel(inferredWorkflowStage(row.original))} variant="outlined" />
-        ),
-      },
-      {
-        id: 'progress',
-        header: 'Progress',
-        minSize: 100,
-        size: 112,
-        accessorFn: (row) => formatOriginalStageSummary(row),
-        Header: ({ column }) => <EncoreMrtColumnHeader label="Progress" column={column} />,
-        Cell: ({ row }) => (
-          <Typography variant="body2" color="text.secondary">
-            {formatOriginalStageSummary(row.original)}
-          </Typography>
+          <OriginalsTableStageCell
+            label={originalsLibraryStageLabel(row.original)}
+            progressDetail={originalsLibraryStageProgressDetail(row.original)}
+            demoReady={isOriginalDemoReady(row.original)}
+          />
         ),
       },
       {
         accessorKey: 'key',
         header: 'Key',
-        minSize: 56,
-        size: 64,
-        maxSize: 72,
+        minSize: 64,
+        size: 72,
         Header: ({ column }) => <EncoreMrtColumnHeader label="Key" column={column} />,
+        Cell: ({ row }) => (
+          <Box onClick={(e) => e.stopPropagation()} sx={{ minWidth: 0 }}>
+            <EncoreKeyChip
+              value={row.original.key}
+              placeholder="Set key"
+              displayMode="compact"
+              onChange={(next) => patchSong(row.original, { key: next })}
+            />
+          </Box>
+        ),
       },
       {
         accessorKey: 'tempo',
         header: 'BPM',
-        minSize: 56,
-        size: 64,
-        maxSize: 72,
+        minSize: 60,
+        size: 68,
         Header: ({ column }) => <EncoreMrtColumnHeader label="BPM" column={column} />,
-        Cell: ({ cell }) => (
-          <Typography variant="body2" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-            {cell.getValue<number>()}
-          </Typography>
+        Cell: ({ row }) => (
+          <Box onClick={(e) => e.stopPropagation()} sx={{ minWidth: 0 }}>
+            <EncoreBpmChip
+              value={row.original.tempo}
+              onChange={(next) => patchSong(row.original, { tempo: next })}
+            />
+          </Box>
         ),
       },
       {
         id: 'takes',
         header: 'Takes',
-        minSize: 72,
-        size: 80,
-        maxSize: 88,
+        minSize: 52,
+        size: 60,
         accessorFn: (row) => row.takes.length,
         Header: ({ column }) => <EncoreMrtColumnHeader label="Takes" column={column} />,
-        Cell: ({ cell }) => (
-          <Typography variant="body2" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-            {cell.getValue<number>()}
-          </Typography>
-        ),
+        Cell: ({ row }) => <OriginalsTableTakesCell song={row.original} listActive={listActive} />,
       },
       {
         id: 'snippet',
         header: 'Lyrics',
-        minSize: 180,
+        minSize: 140,
         size: 260,
+        grow: 2,
         accessorFn: (row) => chordProLyricSnippet(row.lyricsAndChords, 120),
         Header: ({ column }) => <EncoreMrtColumnHeader label="Lyrics" column={column} />,
         Cell: ({ row }) => {
-          const snippet = chordProLyricSnippet(row.original.lyricsAndChords, 120) || '-';
+          const snippet = chordProLyricSnippet(row.original.lyricsAndChords, 120) || '–';
           return (
-            <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 320 }}>
-              <HighlightedText text={snippet} highlight={search} component="span" variant="inherit" />
-            </Typography>
+            <OriginalsLyricsHoverCard songId={row.original.id} lyricsAndChords={row.original.lyricsAndChords}>
+              <Typography variant="body2" color="text.secondary" noWrap sx={{ minWidth: 0, width: 1 }}>
+                <HighlightedText text={snippet} highlight={search} component="span" variant="inherit" />
+              </Typography>
+            </OriginalsLyricsHoverCard>
           );
         },
       },
       {
-        accessorKey: 'createdAt',
+        id: 'startedAt',
         header: 'Started',
-        minSize: 108,
-        size: 120,
+        minSize: 100,
+        size: 112,
+        accessorFn: (row) => originalSongStartedDate(row),
         Header: ({ column }) => <EncoreMrtColumnHeader label="Started" column={column} />,
-        Cell: ({ row }) => dateCell(row.original.createdAt),
+        Cell: ({ row }) => (
+          <Box onClick={(e) => e.stopPropagation()} sx={{ minWidth: 0 }}>
+            <InlineChipDate
+              value={row.original.startedAt ?? originalSongStartedDate(row.original)}
+              placeholder="Started writing"
+              onChange={(next) => patchSong(row.original, { startedAt: next ?? undefined })}
+            />
+          </Box>
+        ),
       },
       {
         accessorKey: 'updatedAt',
         header: 'Updated',
-        minSize: 108,
-        size: 120,
+        minSize: 100,
+        size: 112,
         Header: ({ column }) => <EncoreMrtColumnHeader label="Updated" column={column} />,
-        Cell: ({ row }) => dateCell(row.original.updatedAt),
+        Cell: ({ row }) => <ReadOnlyDateChip iso={row.original.updatedAt} />,
       },
     ],
-    [search],
+    [listActive, onPlayTake, onStopTake, patchSong, search, takePlaybackBySongId],
   );
 
   const mrtTheme = useMemo(() => ({ baseBackgroundColor: theme.palette.background.paper }), [theme.palette.background.paper]);
 
+  const displayColumnDefOptions = useMemo(
+    () =>
+      ({
+        [MRT_ROW_SELECT_COL]: {
+          size: 44,
+          minSize: 40,
+          maxSize: 48,
+          muiTableHeadCellProps: { sx: { px: 0.75, py: 1.25, verticalAlign: 'middle' } },
+          muiTableBodyCellProps: { sx: { px: 0.75, py: 1.25, verticalAlign: 'middle' } },
+        },
+      }) as const,
+    [],
+  );
+
   const table = useMaterialReactTable({
-    ...encoreMrtRepertoireTableOptions<EncoreOriginalSong>(),
+    ...encoreMrtOriginalsLibraryTableOptions<EncoreOriginalSong>(),
     columns,
     data: rows,
     getRowId: (row) => row.id,
-    state: { globalFilter: search },
+    enableRowSelection: true,
+    onRowSelectionChange: onRowSelectionChange,
+    displayColumnDefOptions,
+    state: { globalFilter: search, rowSelection },
     mrtTheme,
     initialState: {
       density: 'compact',
       sorting: [{ id: 'updatedAt', desc: true }],
     },
     muiTableBodyRowProps: ({ row }) => ({
-      onClick: () => navigateEncore({ kind: 'original', id: row.original.id }),
+      onClick: () => navigateToOriginalFromLibrary(row.original),
       sx: ENCORE_MRT_CLICKABLE_ROW_SX,
     }),
   });

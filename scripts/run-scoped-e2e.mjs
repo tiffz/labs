@@ -36,6 +36,7 @@ const APP_SMOKE_SPECS = {
     'e2e/smoke/muscle-orbit-perf.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/muscle/' },
   ],
+  midi: [{ file: 'e2e/smoke/app-shells.spec.ts', grep: '/midi/' }],
 };
 
 function gitRef(base) {

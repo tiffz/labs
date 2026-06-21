@@ -17,6 +17,7 @@ import {
   type EncoreFilterFieldConfig,
 } from '../../ui/EncoreFilterChipBar';
 import { EncoreMrtColumnsSettingsButton } from '../../ui/EncoreMrtColumnsSettingsButton';
+import type { EncoreDateRangeFilterValue } from '../../utils/encoreDateRangeFilter';
 import { EncoreToolbarRow } from '../../ui/EncoreToolbarRow';
 import type { PerformancesViewMode, PerfMrtRow } from '../performancesScreenHelpers';
 
@@ -35,6 +36,7 @@ export type PerformancesListToolbarProps = {
   visiblePerfFilterIds: string[];
   perfFilterValues: Record<string, string[]>;
   onPerfFilterChange: (fieldId: string, next: string[]) => void;
+  onPerfDateRangeChange: (fieldId: string, next: EncoreDateRangeFilterValue) => void;
   perfAddableFilterFields: EncoreFilterFieldConfig[];
   onVisiblePerfFilterIdsChange: (ids: string[]) => void;
   defaultPinnedFieldIds: readonly string[];
@@ -57,6 +59,7 @@ export function PerformancesListToolbar(props: PerformancesListToolbarProps): Re
     visiblePerfFilterIds,
     perfFilterValues,
     onPerfFilterChange,
+    onPerfDateRangeChange,
     perfAddableFilterFields,
     onVisiblePerfFilterIdsChange,
     defaultPinnedFieldIds,
@@ -93,6 +96,7 @@ export function PerformancesListToolbar(props: PerformancesListToolbarProps): Re
               visibleFieldIds={visiblePerfFilterIds}
               values={perfFilterValues}
               onChange={onPerfFilterChange}
+              onDateRangeChange={onPerfDateRangeChange}
               addableFields={perfAddableFilterFields}
               onVisibleFieldIdsChange={onVisiblePerfFilterIdsChange}
               defaultPinnedFieldIds={[...defaultPinnedFieldIds]}

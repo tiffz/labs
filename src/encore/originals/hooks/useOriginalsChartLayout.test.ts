@@ -5,7 +5,7 @@ import {
   serializeChartLayoutToChordPro,
   tokenizeLyricLine,
 } from '../../../shared/music/chordPro/chordChartLayout';
-import { useOriginalsChartLayout } from './useOriginalsChartLayout';
+import { ORIGINALS_WRITE_RECONCILE_DEBOUNCE_MS, useOriginalsChartLayout } from './useOriginalsChartLayout';
 
 function layoutWithTwoChordsOnAround(): string {
   return serializeChartLayoutToChordPro(parseChordProToChartLayout('[Verse 1]\n[Bb][Eb]around here'));
@@ -77,5 +77,48 @@ describe('useOriginalsChartLayout', () => {
     expect(moved?.charIndex).toBe(hereStart);
     expect(eb?.charIndex).toBe(aroundStart);
     expect(onChange).toHaveBeenCalled();
+  });
+
+  it('defers chord reconciliation until flush after transient lyric edits', () => {
+    vi.useFakeTimers();
+    const onChange = vi.fn();
+    const initial = serializeChartLayoutToChordPro(
+      parseChordProToChartLayout(`[Verse 1]\n[C]Hello pretty world`),
+    );
+    const { result } = renderHook(() => useOriginalsChartLayout(initial, onChange, 'C'));
+
+    act(() => {
+      result.current.onWriteChange('[Verse 1]\nHello world');
+    });
+    expect(result.current.layout.sections[0]?.lines[0]?.chords).toHaveLength(1);
+
+    act(() => {
+      result.current.onWriteChange('[Verse 1]\nHello pretty world');
+    });
+    expect(result.current.layout.sections[0]?.lines[0]?.chords).toHaveLength(1);
+
+    act(() => {
+      result.current.flushWriteReconcile();
+    });
+    expect(result.current.layout.sections[0]?.lines[0]?.chords[0]?.chordName).toBe('C');
+    vi.useRealTimers();
+  });
+
+  it('reconciles chords after debounce idle', () => {
+    vi.useFakeTimers();
+    const onChange = vi.fn();
+    const initial = serializeChartLayoutToChordPro(
+      parseChordProToChartLayout(`[Verse 1]\n[C]Hello pretty world`),
+    );
+    const { result } = renderHook(() => useOriginalsChartLayout(initial, onChange, 'C'));
+
+    act(() => {
+      result.current.onWriteChange('[Verse 1]\nHello beautiful world');
+    });
+    act(() => {
+      vi.advanceTimersByTime(ORIGINALS_WRITE_RECONCILE_DEBOUNCE_MS + 1);
+    });
+    expect(result.current.layout.sections[0]?.lines[0]?.chords[0]?.chordName).toBe('C');
+    vi.useRealTimers();
   });
 });

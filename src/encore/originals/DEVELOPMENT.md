@@ -6,7 +6,21 @@ Chord chart **data model and import**: [`src/shared/music/chordPro/chordChartLay
 
 ## Chord paint editor (Chords stage)
 
-Entry: `OriginalSongPage` keeps `OriginalsSongHeader` at page level for most write stages. **Add chords** uses Encore shell `height: 100dvh` + a page `.in-scroll-region` so the title and stepper scroll away. `OriginalsSongWorkspace` sets `display: contents` (`integratedPageScroll`) so the stepper band, `.in-scroll-region__sticky-surface` (playback + palette), and chart are **direct scroll children**. **Palette gestalt**: `.encore-originals-chord-palette-pick` groups preset chips + Custom segment + Clear (same task: arm a chord); `.encore-originals-chord-palette-display` is separated by a vertical rule with a “Show” label for the A–G / I–V notation toggle (view preference, not chord selection). **Chord playback**: `OriginalChordPlayback` uses shared `useChartChordPlayback` + `ChordPlaybackSettingsPanel` (styled voicings via `getChordHitsForStyle`, instruments via `createInstrumentForSoundType`, optional drums via `scheduleDrumMeasure`). Settings persist in `sessionStorage` under `encore-originals-chord-playback-settings`. **Demo takes** (view + write): `EncoreStaticResourceHoverCard` exposes nickname, notes, play, and download via `encoreResourceDownload`.
+Entry: `OriginalSongPage` keeps `OriginalsSongHeader` at page level for most write stages. **View mode** and non-chords write stages scroll with the Encore shell `#main.in-scroll-region` (no nested page scroller). **Add chords** alone uses Encore shell `height: 100dvh` + a page `.in-scroll-region` so the title and stepper scroll away. `OriginalsSongWorkspace` sets `display: contents` (`integratedPageScroll`) so the stepper band, `.in-scroll-region__sticky-surface` (playback + palette), and chart are **direct scroll children**. **Palette gestalt**: `.encore-originals-chord-palette-pick` groups preset chips + Custom segment + Clear (same task: arm a chord); `.encore-originals-chord-palette-display` is separated by a vertical rule with a “Show” label for the A–G / I–V notation toggle (view preference, not chord selection). **Chord playback**: `OriginalChordPlayback` uses shared `useChartChordPlayback` + `ChordPlaybackSettingsPanel` (styled voicings via `getChordHitsForStyle`, instruments via `createInstrumentForSoundType`, optional drums via `scheduleDrumMeasure`). Settings persist in `sessionStorage` under `encore-originals-chord-playback-settings`. **Demo takes** (view + write): `EncoreStaticResourceHoverCard` exposes nickname, notes, play, and download via `encoreResourceDownload`.
+
+## Originals library list
+
+- **Table + grid** share row selection state; bulk **Play selected** chains preferred demo takes through `playTakeQueue` → `EncoreMediaPlaybackContext.playMediaQueue`.
+- **Table scroll**: originals MRT uses the shell scroll region (no nested `maxHeight` on the table container). Chips use `maxWidth: 100%` + label ellipsis so columns shrink instead of clipping.
+- **Hover preview**: `OriginalsLyricsHoverCard` keeps copy/edit actions in a sticky footer inside the tooltip.
+
+## Playback queue (Encore-wide)
+
+Multi-select play (Originals library, Performances table) sets a queue on `EncoreMediaPlaybackProvider`. Natural end advances; user **Stop** clears the queue. UI: `EncoreMediaPlaybackQueueChip` on the playback bar (`2 / 5` + popover list). Pure advance helper: [`media/encoreMediaPlaybackQueue.ts`](../media/encoreMediaPlaybackQueue.ts).
+
+## Song references (planned)
+
+For formatted charts, PDFs, and other non-take files attached to an original, prefer the section label **Song references** (parallel to repertoire **Practice references**). Alternate names: **Source materials**, **Chart & references**. Model as drive/local attachments on `EncoreOriginalSong`, surfaced in the Record takes / write workflow — not implemented yet.
 
 State hook: [`hooks/useOriginalsChartLayout.ts`](hooks/useOriginalsChartLayout.ts). Interaction types: [`chartInteractionTypes.ts`](chartInteractionTypes.ts).
 
@@ -60,4 +74,5 @@ Repo-wide Knip may still report unrelated unused exports; fix any new ones you i
 | Paint hook                  | `hooks/useOriginalsChartLayout.test.ts`          |
 | Click-outside / Text nodes  | `components/OriginalsPaintChordsEditor.test.tsx` |
 | DOM helper                  | `shared/dom/resolveEventTargetElement.test.ts`   |
+| Playback queue              | `media/encoreMediaPlaybackQueue.test.ts`         |
 | E2E smoke                   | `e2e/encore-originals-chord-paint.spec.ts`       |

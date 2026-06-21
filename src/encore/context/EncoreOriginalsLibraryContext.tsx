@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useMemo, type ReactElement, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useRef, type ReactElement, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { encoreDb } from '../db/encoreDb';
 import { normalizeEncoreOriginalSong, type EncoreOriginalSong } from '../originals/types';
@@ -17,17 +17,28 @@ export interface EncoreOriginalsLibraryContextValue {
 const EncoreOriginalsLibraryContext = createContext<EncoreOriginalsLibraryContextValue | null>(null);
 const EMPTY: EncoreOriginalSong[] = [];
 
+function originalsListSignature(rows: EncoreOriginalSong[]): string {
+  return rows.map((row) => `${row.id}:${row.updatedAt}`).join('|');
+}
+
 export function EncoreOriginalsLibraryProvider({ children }: { children: ReactNode }): ReactElement {
   const raw = useLiveQuery(() => encoreDb.originals.orderBy('updatedAt').reverse().toArray(), [], undefined);
-  const originals = useMemo(
-    () =>
-      (raw ?? EMPTY).map((row) =>
-        normalizeEncoreOriginalSong(
-          row as EncoreOriginalSong & { tags?: string[]; status?: string; brainstormMarkdown?: string },
-        ),
+  const stableOriginalsRef = useRef<EncoreOriginalSong[]>(EMPTY);
+  const stableSignatureRef = useRef('');
+  const originals = useMemo(() => {
+    const next = (raw ?? EMPTY).map((row) =>
+      normalizeEncoreOriginalSong(
+        row as EncoreOriginalSong & { tags?: string[]; status?: string; brainstormMarkdown?: string },
       ),
-    [raw],
-  );
+    );
+    const signature = originalsListSignature(next);
+    if (signature === stableSignatureRef.current) {
+      return stableOriginalsRef.current;
+    }
+    stableSignatureRef.current = signature;
+    stableOriginalsRef.current = next;
+    return next;
+  }, [raw]);
   const value = useMemo(
     () => ({
       originals,

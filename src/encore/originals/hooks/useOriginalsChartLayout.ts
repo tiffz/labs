@@ -28,12 +28,27 @@ import { FULL_STRUCTURAL_BLUEPRINT } from '../originalsStructurePresets';
 
 export type { ChordInteractionTarget, WordInteractionTarget } from '../chartInteractionTypes';
 
+/** Delay chord reconciliation while the user is still typing in Write mode. */
+export const ORIGINALS_WRITE_RECONCILE_DEBOUNCE_MS = 800;
+
 function initialLayout(chordPro: string): ChartLayout {
   const trimmed = chordPro.trim();
   if (!trimmed) {
     return parseChordProToChartLayout(FULL_STRUCTURAL_BLUEPRINT);
   }
   return chartDocumentToChartLayout(chordPro);
+}
+
+function layoutFromWriteDocument(doc: string, previous: ChartLayout): ChartLayout {
+  const hasExplicitHeaders = doc
+    .split('\n')
+    .some((line) => parseChordProSectionHeader(line.trim()));
+  let next = parseWriteDocumentToLayout(doc, previous);
+  if (!hasExplicitHeaders && looksLikeFullSongLyrics(doc)) {
+    const inferred = chartLayoutFromPlainLyrics(doc);
+    if (inferred.sections.length > 1) next = inferred;
+  }
+  return next;
 }
 
 export type UseOriginalsChartLayoutResult = {
@@ -44,6 +59,8 @@ export type UseOriginalsChartLayoutResult = {
   selectedChord: ChordInteractionTarget | null;
   selectedWord: WordInteractionTarget | null;
   onWriteChange: (doc: string) => void;
+  /** Apply pending write edits to chord markers (call when leaving Write or on debounce). */
+  flushWriteReconcile: () => void;
   onImportPastedChart: (raw: string) => PastedChartImportSummary;
   onStamp: (sectionId: string, lineId: string, charIndex: number) => void;
   onRemoveChord: (sectionId: string, lineId: string, chordId: string) => void;
@@ -61,20 +78,32 @@ export function useOriginalsChartLayout(
   songKey: string,
 ): UseOriginalsChartLayoutResult {
   const [layout, setLayout] = useState<ChartLayout>(() => initialLayout(value));
+  const [writeDraft, setWriteDraft] = useState(() => layoutToWriteDocument(initialLayout(value)));
   const [armedChord, setArmedChord] = useState<string | null>(null);
   const [selectedChord, setSelectedChord] = useState<ChordInteractionTarget | null>(null);
   const [selectedWord, setSelectedWord] = useState<WordInteractionTarget | null>(null);
   const externalValueRef = useRef(value);
+  const layoutRef = useRef(layout);
+  const writeDraftRef = useRef(writeDraft);
+  const writeReconcileTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  layoutRef.current = layout;
+  writeDraftRef.current = writeDraft;
 
   useEffect(() => {
     if (value === externalValueRef.current) return;
     externalValueRef.current = value;
-    setLayout(initialLayout(value));
+    const nextLayout = initialLayout(value);
+    setLayout(nextLayout);
+    setWriteDraft(layoutToWriteDocument(nextLayout));
   }, [value]);
 
   const commitLayout = useCallback(
-    (next: ChartLayout) => {
+    (next: ChartLayout, opts?: { syncWriteDraft?: boolean }) => {
       setLayout(next);
+      if (opts?.syncWriteDraft !== false) {
+        setWriteDraft(layoutToWriteDocument(next));
+      }
       const chordPro = serializeChartLayoutToChordPro(next);
       externalValueRef.current = chordPro;
       onChange(chordPro);
@@ -82,32 +111,51 @@ export function useOriginalsChartLayout(
     [onChange],
   );
 
-  const writeDocument = layoutToWriteDocument(layout);
+  const cancelWriteReconcileTimer = useCallback(() => {
+    if (writeReconcileTimerRef.current) {
+      clearTimeout(writeReconcileTimerRef.current);
+      writeReconcileTimerRef.current = null;
+    }
+  }, []);
+
+  const flushWriteReconcile = useCallback(() => {
+    cancelWriteReconcileTimer();
+    const doc = writeDraftRef.current;
+    const prev = layoutRef.current;
+    if (doc === layoutToWriteDocument(prev)) return;
+    const next = layoutFromWriteDocument(doc, prev);
+    commitLayout(next);
+  }, [cancelWriteReconcileTimer, commitLayout]);
+
+  useEffect(() => () => cancelWriteReconcileTimer(), [cancelWriteReconcileTimer]);
+
+  const scheduleWriteReconcile = useCallback(() => {
+    cancelWriteReconcileTimer();
+    writeReconcileTimerRef.current = setTimeout(() => {
+      writeReconcileTimerRef.current = null;
+      flushWriteReconcile();
+    }, ORIGINALS_WRITE_RECONCILE_DEBOUNCE_MS);
+  }, [cancelWriteReconcileTimer, flushWriteReconcile]);
 
   const onWriteChange = useCallback(
     (doc: string) => {
-      const hasExplicitHeaders = doc
-        .split('\n')
-        .some((line) => parseChordProSectionHeader(line.trim()));
-      let next = parseWriteDocumentToLayout(doc, layout);
-      if (!hasExplicitHeaders && looksLikeFullSongLyrics(doc)) {
-        const inferred = chartLayoutFromPlainLyrics(doc);
-        if (inferred.sections.length > 1) next = inferred;
-      }
-      commitLayout(next);
+      writeDraftRef.current = doc;
+      setWriteDraft(doc);
+      scheduleWriteReconcile();
     },
-    [commitLayout, layout],
+    [scheduleWriteReconcile],
   );
 
   const onImportPastedChart = useCallback(
     (raw: string): PastedChartImportSummary => {
+      cancelWriteReconcileTimer();
       const result = importPastedChartFromClipboard(raw);
       if (result.ok && result.layout) {
         commitLayout(result.layout);
       }
       return result;
     },
-    [commitLayout],
+    [cancelWriteReconcileTimer, commitLayout],
   );
 
   const onClearSelection = useCallback(() => {
@@ -240,12 +288,13 @@ export function useOriginalsChartLayout(
 
   return {
     layout,
-    writeDocument,
+    writeDocument: writeDraft,
     armedChord,
     setArmedChord,
     selectedChord,
     selectedWord,
     onWriteChange,
+    flushWriteReconcile,
     onImportPastedChart,
     onStamp,
     onRemoveChord,

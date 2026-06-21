@@ -25,13 +25,25 @@ import {
   type ReactElement,
 } from 'react';
 import { encoreExcludeTone } from '../theme/encoreUiTokens';
+import {
+  encoreDateRangeFromFilterRecord,
+  isEncoreDateRangeActive,
+  summarizeEncoreDateRange,
+  type EncoreDateRangeFilterValue,
+} from '../utils/encoreDateRangeFilter';
+import { isEncoreDateRangeFilterField } from '../utils/encoreFilterFieldHelpers';
+import { EncoreDateRangeFilterMenu } from './EncoreDateRangeFilterMenu';
 
 export type EncoreFilterOption = { value: string; label: string };
+
+export type EncoreFilterFieldKind = 'options' | 'dateRange';
 
 export type EncoreFilterFieldConfig = {
   id: string;
   /** Short label on the chip before the colon */
   label: string;
+  /** Defaults to `options` (multi/single select menu). `dateRange` uses `${id}After` / `${id}Before` value keys. */
+  kind?: EncoreFilterFieldKind;
   options: EncoreFilterOption[];
   /** At most one value from options (e.g. performed / status). */
   exclusive?: boolean;
@@ -52,6 +64,8 @@ export type EncoreFilterChipBarProps = {
   /** Selected values per field id (empty array = no filter / “all” for exclusive). */
   values: Record<string, string[]>;
   onChange: (fieldId: string, nextValues: string[]) => void;
+  /** Required when any field uses `kind: 'dateRange'`. */
+  onDateRangeChange?: (fieldId: string, next: EncoreDateRangeFilterValue) => void;
   /**
    * Field ids whose selected values are treated as **exclude / NOT IN** instead of
    * include / OR. Only meaningful for fields with {@link EncoreFilterFieldConfig['supportsExclude']}.
@@ -98,6 +112,7 @@ export const EncoreFilterChipBar = forwardRef<EncoreFilterChipBarHandle, EncoreF
       visibleFieldIds,
       values,
       onChange,
+      onDateRangeChange,
       excludedFieldIds,
       onExcludedFieldIdsChange,
       addableFields,
@@ -111,6 +126,7 @@ export const EncoreFilterChipBar = forwardRef<EncoreFilterChipBarHandle, EncoreF
     const excludedSet = useMemo(() => new Set(excludedFieldIds ?? []), [excludedFieldIds]);
 
     const [menu, setMenu] = useState<{ fieldId: string; anchor: HTMLElement } | null>(null);
+    const [dateRangeMenu, setDateRangeMenu] = useState<{ fieldId: string; anchor: HTMLElement } | null>(null);
     const [addMenuAnchor, setAddMenuAnchor] = useState<HTMLElement | null>(null);
 
     const setFieldExcluded = useCallback(
@@ -124,8 +140,14 @@ export const EncoreFilterChipBar = forwardRef<EncoreFilterChipBarHandle, EncoreF
       [excludedFieldIds, onExcludedFieldIdsChange],
     );
 
-    const openMenu = useCallback((fieldId: string, anchor: HTMLElement) => {
+    const openOptionsMenu = useCallback((fieldId: string, anchor: HTMLElement) => {
+      setDateRangeMenu(null);
       setMenu({ fieldId, anchor });
+    }, []);
+
+    const openDateRangeMenu = useCallback((fieldId: string, anchor: HTMLElement) => {
+      setMenu(null);
+      setDateRangeMenu({ fieldId, anchor });
     }, []);
 
     useImperativeHandle(
@@ -133,15 +155,24 @@ export const EncoreFilterChipBar = forwardRef<EncoreFilterChipBarHandle, EncoreF
       () => ({
         openFieldMenu: (fieldId, anchorEl) => {
           if (!anchorEl) return;
-          if (!fieldById.has(fieldId)) return;
-          openMenu(fieldId, anchorEl);
+          const field = fieldById.get(fieldId);
+          if (!field) return;
+          if (isEncoreDateRangeFilterField(field)) {
+            openDateRangeMenu(fieldId, anchorEl);
+            return;
+          }
+          openOptionsMenu(fieldId, anchorEl);
         },
       }),
-      [fieldById, openMenu],
+      [fieldById, openDateRangeMenu, openOptionsMenu],
     );
 
     const closeMenu = useCallback(() => {
       setMenu(null);
+    }, []);
+
+    const closeDateRangeMenu = useCallback(() => {
+      setDateRangeMenu(null);
     }, []);
 
     const activeField = menu ? fieldById.get(menu.fieldId) : undefined;
@@ -178,13 +209,27 @@ export const EncoreFilterChipBar = forwardRef<EncoreFilterChipBarHandle, EncoreF
     const removeFieldChip = useCallback(
       (id: string) => {
         if (!onVisibleFieldIdsChange) return;
+        const field = fieldById.get(id);
         onVisibleFieldIdsChange(visibleFieldIds.filter((x) => x !== id));
-        onChange(id, []);
+        if (field && isEncoreDateRangeFilterField(field)) {
+          onDateRangeChange?.(id, {});
+        } else {
+          onChange(id, []);
+        }
         if (onExcludedFieldIdsChange && excludedSet.has(id)) {
           onExcludedFieldIdsChange((excludedFieldIds ?? []).filter((x) => x !== id));
         }
       },
-      [excludedFieldIds, excludedSet, onChange, onExcludedFieldIdsChange, onVisibleFieldIdsChange, visibleFieldIds],
+      [
+        excludedFieldIds,
+        excludedSet,
+        fieldById,
+        onChange,
+        onDateRangeChange,
+        onExcludedFieldIdsChange,
+        onVisibleFieldIdsChange,
+        visibleFieldIds,
+      ],
     );
 
     const notYetAdded = useMemo(
@@ -198,6 +243,38 @@ export const EncoreFilterChipBar = forwardRef<EncoreFilterChipBarHandle, EncoreF
           {visibleFieldIds.map((fid) => {
             const field = fieldById.get(fid);
             if (!field) return null;
+
+            if (isEncoreDateRangeFilterField(field)) {
+              const range = encoreDateRangeFromFilterRecord(values, fid);
+              const active = isEncoreDateRangeActive(range);
+              const summary = summarizeEncoreDateRange(range);
+              const label = active ? `${field.label}: ${summary}` : field.label;
+              return (
+                <Chip
+                  key={fid}
+                  size="small"
+                  label={label}
+                  onClick={(e) => openDateRangeMenu(fid, e.currentTarget)}
+                  onDelete={
+                    onVisibleFieldIdsChange && !defaultPinnedFieldIds.includes(fid)
+                      ? (e) => {
+                          e.stopPropagation();
+                          removeFieldChip(fid);
+                        }
+                      : undefined
+                  }
+                  deleteIcon={
+                    onVisibleFieldIdsChange && !defaultPinnedFieldIds.includes(fid) ? (
+                      <CloseIcon sx={{ fontSize: 16 }} aria-hidden />
+                    ) : undefined
+                  }
+                  variant={active ? 'filled' : 'outlined'}
+                  color={active ? 'primary' : 'default'}
+                  sx={{ fontWeight: 600 }}
+                />
+              );
+            }
+
             const sel = values[fid] ?? [];
             const isExcluded = excludedSet.has(fid) && sel.length > 0 && Boolean(field.supportsExclude);
             const summary = summarizeField(field, sel, isExcluded);
@@ -208,7 +285,7 @@ export const EncoreFilterChipBar = forwardRef<EncoreFilterChipBarHandle, EncoreF
                 size="small"
                 icon={isExcluded ? <BlockIcon sx={{ fontSize: 14 }} /> : undefined}
                 label={label}
-                onClick={(e) => openMenu(fid, e.currentTarget)}
+                onClick={(e) => openOptionsMenu(fid, e.currentTarget)}
                 onDelete={
                   onVisibleFieldIdsChange && !defaultPinnedFieldIds.includes(fid)
                     ? (e) => {
@@ -446,6 +523,21 @@ export const EncoreFilterChipBar = forwardRef<EncoreFilterChipBarHandle, EncoreF
             );
           })() : null}
         </Menu>
+
+        {dateRangeMenu && onDateRangeChange ? (() => {
+          const field = fieldById.get(dateRangeMenu.fieldId);
+          if (!field || !isEncoreDateRangeFilterField(field)) return null;
+          const range = encoreDateRangeFromFilterRecord(values, dateRangeMenu.fieldId);
+          return (
+            <EncoreDateRangeFilterMenu
+              anchorEl={dateRangeMenu.anchor}
+              open
+              onClose={closeDateRangeMenu}
+              value={range}
+              onChange={(next) => onDateRangeChange(dateRangeMenu.fieldId, next)}
+            />
+          );
+        })() : null}
       </Stack>
     );
   },

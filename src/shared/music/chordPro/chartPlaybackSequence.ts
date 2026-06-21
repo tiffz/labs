@@ -1,5 +1,5 @@
 import { parseChordSymbol } from '../chordMatcher';
-import { tokenizeLyricLine, type ChartLayout, type ChordMarker, type LyricLine } from './chordChartLayout';
+import { tokenizeLyricLine, snapChordColumnToCharIndex, type ChartLayout, type ChordMarker, type LyricLine } from './chordChartLayout';
 
 /** Assume 4/4: each lyric line spans two measures; one chord change per measure. */
 export const CHART_PLAYBACK_MEASURES_PER_LINE = 2;
@@ -94,11 +94,49 @@ export function chartLayoutToPlayablePlaybackSteps(layout: ChartLayout): ChartPl
   return chartLayoutToPlaybackSequence(layout).filter((step) => parseChordSymbol(step.chordName));
 }
 
+function distinctChordAnchors(line: LyricLine): number {
+  const anchors = new Set(
+    line.chords.map((c) => snapChordColumnToCharIndex(c.charIndex, line.text)),
+  );
+  return anchors.size;
+}
+
+function lineHasPlayableChords(line: LyricLine): boolean {
+  return line.chords.some((c) => parseChordSymbol(c.chordName));
+}
+
+/**
+ * Heuristic measure count for duration display (not necessarily identical to paint playback).
+ * Short / chord-only lines often get one measure in real performance; longer lines with two
+ * chord changes use two.
+ */
+export function estimateMeasuresForLine(line: LyricLine): number {
+  if (!lineHasPlaybackContent(line)) return 0;
+  if (line.chords.length > 0 && !lineHasPlayableChords(line)) return 0;
+  const words = wordTokens(line.text);
+  const anchors = distinctChordAnchors(line);
+  if (words.length === 0) return anchors > 0 ? 1 : 0;
+  if (words.length <= 4) return 1;
+  if (anchors >= 2) return CHART_PLAYBACK_MEASURES_PER_LINE;
+  return 1;
+}
+
+/** Total measures for duration estimate at the given layout. */
+export function estimateChartPlaybackMeasureCount(layout: ChartLayout): number {
+  let measures = 0;
+  for (const section of layout.sections) {
+    for (const line of section.lines) {
+      measures += estimateMeasuresForLine(line);
+    }
+  }
+  return measures;
+}
+
 /** Total chord-playback duration in ms at the given tempo. */
 export function estimateChartPlaybackDurationMs(layout: ChartLayout, tempo: number): number {
-  const stepCount = chartLayoutToPlayablePlaybackSteps(layout).length;
-  if (stepCount === 0 || tempo <= 0) return 0;
-  return stepCount * chartPlaybackMeasureDurationMs(tempo);
+  const measureCount = estimateChartPlaybackMeasureCount(layout);
+  if (measureCount === 0 || tempo <= 0) return 0;
+  return measureCount * chartPlaybackMeasureDurationMs(tempo);
 }
 
 /** Format playback duration as `m:ss` (rounded to whole seconds). */

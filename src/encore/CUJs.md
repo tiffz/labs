@@ -129,3 +129,32 @@ Dev server, hard refresh.
 | ------------ | -------------------------------------------- |
 | Unit         | `components/performance/*.test.tsx`          |
 | Layout smoke | `e2e/smoke/layout-heuristics-encore.spec.ts` |
+
+---
+
+## CUJ-005: Browse Originals library (grid)
+
+**Primary goal:** Scan demos and open an original quickly.  
+**Persona:** Songwriter reviewing drafts in `#/originals`.
+
+### Steps
+
+1. Open **Originals** from the shell.
+2. Switch **grid view** (optional).
+3. Play preferred demo from a card; download or open the song.
+
+### Success criteria
+
+- Grid cards expose play + download without opening the song detail page.
+- Multi-select **Play selected** queues preferred takes sequentially.
+
+### Performance budgets
+
+| Step           | Metric              | Budget (p95) | Verification   |
+| -------------- | ------------------- | ------------ | -------------- |
+| Originals list | route → first paint | ≤ 3 s        | manual / smoke |
+| Grid play tap  | click → audio start | ≤ 1 s        | manual         |
+
+### Write-mode chord reconcile
+
+Lyric edits defer chord realignment until **800 ms idle** or leaving Write (`ORIGINALS_WRITE_RECONCILE_DEBOUNCE_MS` in `useOriginalsChartLayout.ts`).

@@ -26,6 +26,7 @@ import {
   type EncoreFilterFieldConfig,
 } from '../../ui/EncoreFilterChipBar';
 import { EncoreMrtColumnsSettingsButton } from '../../ui/EncoreMrtColumnsSettingsButton';
+import type { EncoreDateRangeFilterValue } from '../../utils/encoreDateRangeFilter';
 import { EncoreToolbarRow } from '../../ui/EncoreToolbarRow';
 import type { EncoreRepertoireMrtRow } from './libraryRepertoireMrtRowTypes';
 import type { RepertoireViewMode } from '../libraryScreenHelpers';
@@ -41,6 +42,7 @@ export type LibraryRepertoireFiltersPanelProps = {
   visibleRepertoireFilterIds: string[];
   repertoireFilterValues: Record<string, string[]>;
   onRepertoireFilterChange: (fieldId: string, next: string[]) => void;
+  onRepertoireDateRangeChange: (fieldId: string, next: EncoreDateRangeFilterValue) => void;
   excludedRepertoireFilterIds: string[];
   onExcludedRepertoireFilterIdsChange: (next: string[]) => void;
   repertoireAddableFilterFields: EncoreFilterFieldConfig[];
@@ -69,6 +71,7 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
     visibleRepertoireFilterIds,
     repertoireFilterValues,
     onRepertoireFilterChange,
+    onRepertoireDateRangeChange,
     excludedRepertoireFilterIds,
     onExcludedRepertoireFilterIdsChange,
     repertoireAddableFilterFields,
@@ -202,20 +205,23 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
           </Stack>
         </EncoreToolbarRow>
 
-        <EncoreFilterChipBar
-          ref={repertoireFilterBarRef}
-          fields={repertoireFilterFieldDefs}
-          visibleFieldIds={visibleRepertoireFilterIds}
-          values={repertoireFilterValues}
-          onChange={onRepertoireFilterChange}
-          excludedFieldIds={excludedRepertoireFilterIds}
-          onExcludedFieldIdsChange={onExcludedRepertoireFilterIdsChange}
-          addableFields={repertoireAddableFilterFields}
-          onVisibleFieldIdsChange={onVisibleRepertoireFilterIdsChange}
-          defaultPinnedFieldIds={[...defaultPinnedFieldIds]}
-          hasActiveFilters={hasActiveFilters}
-          onClearAll={onClearAllFilters}
-        />
+        <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1} useFlexGap>
+          <EncoreFilterChipBar
+            ref={repertoireFilterBarRef}
+            fields={repertoireFilterFieldDefs}
+            visibleFieldIds={visibleRepertoireFilterIds}
+            values={repertoireFilterValues}
+            onChange={onRepertoireFilterChange}
+            onDateRangeChange={onRepertoireDateRangeChange}
+            excludedFieldIds={excludedRepertoireFilterIds}
+            onExcludedFieldIdsChange={onExcludedRepertoireFilterIdsChange}
+            addableFields={repertoireAddableFilterFields}
+            onVisibleFieldIdsChange={onVisibleRepertoireFilterIdsChange}
+            defaultPinnedFieldIds={[...defaultPinnedFieldIds]}
+            hasActiveFilters={hasActiveFilters}
+            onClearAll={onClearAllFilters}
+          />
+        </Stack>
         <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="space-between" gap={1} useFlexGap>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, minWidth: 0 }}>
             Showing {repertoireSongsCount} of {songsCount} {songsCount === 1 ? 'song' : 'songs'}

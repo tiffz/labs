@@ -83,6 +83,8 @@ import {
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
 import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
+import { performanceVideoPlaybackTarget } from '../utils/performancePlaybackTarget';
+import { useEncoreMediaPlayback } from '../context/encoreMediaPlaybackContextStore';
 import { LibrarySongPickerDialog } from './LibrarySongPickerDialog';
 import { BulkPerformanceImportDialog } from './BulkPerformanceImportDialog';
 import { BulkScoreImportDialog } from './BulkScoreImportDialog';
@@ -117,8 +119,18 @@ import { InlineChipDate, InlineChipMultiSelect, InlineChipSelect } from '../ui/I
 import { type EncoreFilterChipBarHandle, type EncoreFilterFieldConfig } from '../ui/EncoreFilterChipBar';
 import { EncoreMrtColumnHeader } from '../ui/EncoreMrtColumnHeader';
 import { ENCORE_FILTER_SENTINEL } from '../utils/encoreFilterSentinels';
+import {
+  encoreDateInRange,
+  encoreDateRangeFromCalendarYear,
+  encoreDateRangeFromFilterRecord,
+  encoreDateRangeToFilterRecord,
+  isEncoreDateRangeActive,
+  type EncoreDateRangeFilterValue,
+} from '../utils/encoreDateRangeFilter';
+import { encoreDateRangeFilterField, patchEncoreFilterDateRange } from '../utils/encoreFilterFieldHelpers';
 import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
 import { useDebouncedString } from '../utils/useDebouncedString';
+import { useEncoreHeavyListTabLaidOut } from '../utils/useEncoreHeavyListTabLaidOut';
 import { HighlightedText } from '../ui/HighlightedText';
 import {
   buildExtendedPerformanceInsights,
@@ -137,7 +149,7 @@ import {
 
 const VIEW_STORAGE_KEY = 'encore.performances.view';
 
-const PERFORMANCES_FILTER_PINNED = ['venue', 'accompaniment'] as const;
+const PERFORMANCES_FILTER_PINNED = ['venue', 'accompaniment', 'perfDate'] as const;
 
 function PerfSongColumnCell({ row }: { row: MRT_Row<PerfMrtRow> }): ReactElement {
   const highlight = useContext(EncoreMrtSearchHighlightContext);
@@ -218,7 +230,7 @@ export function PerformancesScreen(props?: {
   const { heavyListTabActive = true, onHeavyTabLaidOut } = props ?? {};
   const theme = useTheme();
   const { googleAccessToken, spotifyLinked } = useEncoreAuth();
-  const { songs, songsHydrated, performances } = useEncoreLibraryTables();
+  const { songs, songsHydrated, performances, performancesHydrated } = useEncoreLibraryTables();
   const { repertoireExtras, effectiveDisplayName } = useEncoreLibraryExtras();
   const {
     savePerformance,
@@ -228,22 +240,16 @@ export function PerformancesScreen(props?: {
     bulkDeletePerformances,
     saveRepertoireExtras,
   } = useEncoreActions();
-  const heavyListTabPrevActiveRef = useRef(false);
-  useEffect(() => {
-    if (!heavyListTabActive) {
-      heavyListTabPrevActiveRef.current = false;
-      return;
-    }
-    if (!heavyListTabPrevActiveRef.current) {
-      onHeavyTabLaidOut?.();
-    }
-    heavyListTabPrevActiveRef.current = true;
-  }, [heavyListTabActive, onHeavyTabLaidOut]);
+  const { playMediaQueue } = useEncoreMediaPlayback();
+  useEncoreHeavyListTabLaidOut(
+    heavyListTabActive,
+    songsHydrated && performancesHydrated,
+    onHeavyTabLaidOut,
+  );
 
   /** Skip rebuilding heavy lists while this tab is keep-alive hidden (Dexie still updates elsewhere). */
   const venueOptionsCacheRef = useRef<string[]>([]);
   const perfVenueFilterOptionsCacheRef = useRef<string[]>([]);
-  const performanceYearOptionsCacheRef = useRef<string[]>([]);
   const songByIdCacheRef = useRef(new Map<string, EncoreSong>());
   const perfMrtDataCacheRef = useRef<PerfMrtRow[]>([]);
   const perfFilterFieldDefsCacheRef = useRef<EncoreFilterFieldConfig[]>([]);
@@ -256,7 +262,8 @@ export function PerformancesScreen(props?: {
   const [perfFilterValues, setPerfFilterValues] = useState<Record<string, string[]>>(() => ({
     venue: [],
     accompaniment: [],
-    year: [],
+    perfDateAfter: [],
+    perfDateBefore: [],
     song: [],
   }));
   const [visiblePerfFilterIds, setVisiblePerfFilterIds] = useState<string[]>([
@@ -402,18 +409,6 @@ export function PerformancesScreen(props?: {
     return next;
   }, [heavyListTabActive, venueOptions, performances]);
 
-  const performanceYearOptions = useMemo(() => {
-    if (!heavyListTabActive) return performanceYearOptionsCacheRef.current;
-    const ys = new Set<string>();
-    for (const p of performances) {
-      const y = p.date.slice(0, 4);
-      if (/^\d{4}$/.test(y)) ys.add(y);
-    }
-    const next = [...ys].sort((a, b) => b.localeCompare(a));
-    performanceYearOptionsCacheRef.current = next;
-    return next;
-  }, [heavyListTabActive, performances]);
-
   const songById = useMemo(() => {
     if (!heavyListTabActive) return songByIdCacheRef.current;
     const next = new Map(songs.map((s) => [s.id, s] as const));
@@ -432,8 +427,8 @@ export function PerformancesScreen(props?: {
     if (!heavyListTabActive) return perfMrtDataCacheRef.current;
     const venueChipFilters = perfFilterValues.venue ?? [];
     const accompanimentChipFilters = perfFilterValues.accompaniment ?? [];
-    const yearChipFilters = perfFilterValues.year ?? [];
     const songChipFilters = perfFilterValues.song ?? [];
+    const perfDateRange = encoreDateRangeFromFilterRecord(perfFilterValues, 'perfDate');
     const q = debouncedQuery.trim().toLowerCase();
     const all = performances.map((p) => {
       const song = songById.get(p.songId) ?? null;
@@ -479,18 +474,8 @@ export function PerformancesScreen(props?: {
         return matchConcrete;
       });
     }
-    if (yearChipFilters.length > 0) {
-      const blankYear = yearChipFilters.includes(ENCORE_FILTER_SENTINEL.blankYear);
-      const concreteYears = yearChipFilters.filter((y) => y !== ENCORE_FILTER_SENTINEL.blankYear);
-      rows = rows.filter((r) => {
-        const head = r.date.slice(0, 4);
-        const missingYear = !/^\d{4}$/.test(head);
-        const matchBlank = blankYear && missingYear;
-        const matchConcrete = concreteYears.length > 0 && concreteYears.some((y) => r.date.startsWith(y));
-        if (blankYear && concreteYears.length === 0) return missingYear;
-        if (blankYear && concreteYears.length > 0) return matchBlank || matchConcrete;
-        return matchConcrete;
-      });
+    if (isEncoreDateRangeActive(perfDateRange)) {
+      rows = rows.filter((r) => encoreDateInRange(r.date, perfDateRange));
     }
     if (!q) {
       perfMrtDataCacheRef.current = rows;
@@ -507,10 +492,7 @@ export function PerformancesScreen(props?: {
     performances,
     songById,
     debouncedQuery,
-    perfFilterValues.song,
-    perfFilterValues.venue,
-    perfFilterValues.accompaniment,
-    perfFilterValues.year,
+    perfFilterValues,
   ]);
 
   const perfFilterFieldDefs = useMemo((): EncoreFilterFieldConfig[] => {
@@ -523,14 +505,10 @@ export function PerformancesScreen(props?: {
       { value: ENCORE_FILTER_SENTINEL.blankAccompaniment, label: 'Not set' },
       ...ENCORE_ACCOMPANIMENT_TAGS.map((t) => ({ value: t, label: t })),
     ];
-    const yearOpts = [
-      { value: ENCORE_FILTER_SENTINEL.blankYear, label: 'Year not set' },
-      ...performanceYearOptions.map((y) => ({ value: y, label: y })),
-    ];
     const next: EncoreFilterFieldConfig[] = [
       { id: 'venue', label: 'Venue', options: venueOpts },
       { id: 'accompaniment', label: 'Accompaniment', options: accOpts },
-      { id: 'year', label: 'Year', options: yearOpts },
+      encoreDateRangeFilterField('perfDate', 'Date'),
       {
         id: 'song',
         label: 'Song',
@@ -539,27 +517,36 @@ export function PerformancesScreen(props?: {
     ];
     perfFilterFieldDefsCacheRef.current = next;
     return next;
-  }, [heavyListTabActive, perfVenueFilterOptions, performanceYearOptions]);
+  }, [heavyListTabActive, perfVenueFilterOptions]);
 
   const perfAddableFilterFields = useMemo(() => {
     const pinned = new Set<string>(PERFORMANCES_FILTER_PINNED);
     return perfFilterFieldDefs.filter((f) => !pinned.has(f.id));
   }, [perfFilterFieldDefs]);
 
+  const perfDateRange = useMemo(
+    () => encoreDateRangeFromFilterRecord(perfFilterValues, 'perfDate'),
+    [perfFilterValues],
+  );
+
   const hasPerfChipFilters = Boolean(
     (perfFilterValues.venue ?? []).length > 0 ||
       (perfFilterValues.accompaniment ?? []).length > 0 ||
-      (perfFilterValues.year ?? []).length > 0 ||
+      isEncoreDateRangeActive(perfDateRange) ||
       (perfFilterValues.song ?? []).length > 0,
   );
 
   const clearPerfFilters = useCallback(() => {
-    setPerfFilterValues({ venue: [], accompaniment: [], year: [], song: [] });
+    setPerfFilterValues({ venue: [], accompaniment: [], perfDateAfter: [], perfDateBefore: [], song: [] });
     setVisiblePerfFilterIds([...PERFORMANCES_FILTER_PINNED]);
   }, []);
 
   const onPerfFilterChange = useCallback((fieldId: string, nextValues: string[]) => {
     setPerfFilterValues((prev) => ({ ...prev, [fieldId]: nextValues }));
+  }, []);
+
+  const onPerfDateRangeChange = useCallback((fieldId: string, range: EncoreDateRangeFilterValue) => {
+    setPerfFilterValues((prev) => patchEncoreFilterDateRange(prev, fieldId, range));
   }, []);
 
   const focusVenueFilter = useCallback((venueName: string) => {
@@ -572,8 +559,12 @@ export function PerformancesScreen(props?: {
 
   const focusYearFilter = useCallback((year: string) => {
     if (!/^\d{4}$/.test(year)) return;
-    setPerfFilterValues((prev) => ({ ...prev, year: [year] }));
-    setVisiblePerfFilterIds((ids) => (ids.includes('year') ? ids : [...ids, 'year']));
+    const range = encoreDateRangeFromCalendarYear(year);
+    setPerfFilterValues((prev) => ({
+      ...prev,
+      ...encoreDateRangeToFilterRecord('perfDate', range),
+    }));
+    setVisiblePerfFilterIds((ids) => (ids.includes('perfDate') ? ids : [...ids, 'perfDate']));
     navigateEncore({ kind: 'performances', tab: 'list' });
   }, []);
 
@@ -583,6 +574,25 @@ export function PerformancesScreen(props?: {
     () => new Set(Object.keys(rowSelection).filter((id) => rowSelection[id])),
     [rowSelection],
   );
+
+  const selectedPerformancePlayTargets = useMemo(
+    () =>
+      data
+        .filter((row) => selectedPerfIds.has(row.perf.id))
+        .map((row) =>
+          performanceVideoPlaybackTarget(row.perf, undefined, {
+            songTitle: songById.get(row.perf.songId)?.title ?? row.songLabel,
+            venue: row.venue,
+          }),
+        )
+        .filter((target): target is NonNullable<typeof target> => target != null),
+    [data, selectedPerfIds, songById],
+  );
+
+  const onPlaySelectedPerformances = useCallback(() => {
+    if (selectedPerformancePlayTargets.length === 0) return;
+    playMediaQueue(selectedPerformancePlayTargets);
+  }, [playMediaQueue, selectedPerformancePlayTargets]);
 
   const applyBulkVenue = useCallback(async () => {
     const v = bulkVenueDraft.trim();
@@ -711,7 +721,7 @@ export function PerformancesScreen(props?: {
     {
       accessorKey: 'date',
       header: 'Date',
-      meta: { encoreFilterFieldId: 'year' },
+      meta: { encoreFilterFieldId: 'perfDate' },
       Header: ({ column }) => (
         <EncoreMrtColumnHeader label="Date" column={column} filterBarRef={perfFilterBarRef} />
       ),
@@ -1182,6 +1192,7 @@ export function PerformancesScreen(props?: {
               visiblePerfFilterIds={visiblePerfFilterIds}
               perfFilterValues={perfFilterValues}
               onPerfFilterChange={onPerfFilterChange}
+              onPerfDateRangeChange={onPerfDateRangeChange}
               perfAddableFilterFields={perfAddableFilterFields}
               onVisiblePerfFilterIdsChange={setVisiblePerfFilterIds}
               defaultPinnedFieldIds={PERFORMANCES_FILTER_PINNED}
@@ -1197,6 +1208,8 @@ export function PerformancesScreen(props?: {
                 bulkOverflowAnchor={bulkOverflowAnchor}
                 onBulkOverflowAnchorChange={setBulkOverflowAnchor}
                 onClearRowSelection={() => setRowSelection({})}
+                onPlaySelected={onPlaySelectedPerformances}
+                playSelectedDisabled={selectedPerformancePlayTargets.length === 0}
                 onOpenBulkVenue={() => setBulkVenueOpen(true)}
                 onOpenBulkAccompaniment={() => {
                   setBulkAccDraft([]);

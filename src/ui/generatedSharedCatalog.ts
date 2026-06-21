@@ -588,6 +588,414 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-metronome-gridbuilder-ts-buildsubdivisiongrid",
+    "name": "buildSubdivisionGrid",
+    "path": "src/shared/audio/metronome/gridBuilder.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-gridbuilder-ts-gridbuilderparams",
+    "name": "GridBuilderParams",
+    "path": "src/shared/audio/metronome/gridBuilder.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-gridbuilder-ts-subdivgridentry",
+    "name": "SubdivGridEntry",
+    "path": "src/shared/audio/metronome/gridBuilder.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomeengine-ts-metronomeengine",
+    "name": "MetronomeEngine",
+    "path": "src/shared/audio/metronome/MetronomeEngine.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Sample-accurate metronome engine using the Web Audio API look-ahead scheduling pattern. Decoupled from React — communicates via callbacks. Supports three simultaneous sound sources: human voice samples, the shared labs click.mp3, and drum sounds (dum/tak/ka), each with independent gain control and per-channel muting.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-syllablemap-ts-syllableentry",
+    "name": "SyllableEntry",
+    "path": "src/shared/audio/metronome/syllableMap.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-syllablemap-ts-syllableforposition",
+    "name": "syllableForPosition",
+    "path": "src/shared/audio/metronome/syllableMap.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Unified counting-mode syllable mapping for a single box inside a beat group.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-syllablemap-ts-takadimilabelforposition",
+    "name": "takadimiLabelForPosition",
+    "path": "src/shared/audio/metronome/syllableMap.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Takadimi-mode label for a single box inside a beat group. Uses standard takadimi patterns for L=1..4, cycles for larger groups.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-beatcallback",
+    "name": "BeatCallback",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-beatevent",
+    "name": "BeatEvent",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-beatinfo",
+    "name": "BeatInfo",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-eighthbaseslotspereighth",
+    "name": "eighthBaseSlotsPerEighth",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Grid slots per eighth note for /8 meters.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-getdefaultsubdivisionlevel",
+    "name": "getDefaultSubdivisionLevel",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-getsubdivisionoptions",
+    "name": "getSubdivisionOptions",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-isswinglevel",
+    "name": "isSwingLevel",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-metronomeconfig",
+    "name": "MetronomeConfig",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-quietcountconfig",
+    "name": "QuietCountConfig",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-slotsperbeat",
+    "name": "slotsPerBeat",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Number of grid slots produced per quarter-note beat (for /4 meters). swing8 uses 3 slots per beat (triplet grid) where the middle slot is silent — this visually shows the \"long-short\" swing feel.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-subdivisionchannel",
+    "name": "SubdivisionChannel",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-subdivisionlevel",
+    "name": "SubdivisionLevel",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-subdivisiontype",
+    "name": "SubdivisionType",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-subdivisionvolumes",
+    "name": "SubdivisionVolumes",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-subdivoption",
+    "name": "SubdivOption",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-voice-subdiv-min-dur",
+    "name": "VOICE_SUBDIV_MIN_DUR",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Minimum subdivision slot duration (seconds) for voicing subdivision syllables. Below this, only beat numbers are voiced to maintain clarity.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-voicemanifest",
+    "name": "VoiceManifest",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-voicemode",
+    "name": "VoiceMode",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-voicepackloader-ts-voicepackloader",
+    "name": "VoicePackLoader",
+    "path": "src/shared/audio/metronome/voicePackLoader.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-metronomeplayer-ts-metronomecallback",
     "name": "MetronomeCallback",
     "path": "src/shared/audio/metronomePlayer.ts",
@@ -9418,6 +9826,36 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-estimatechartplaybackmeasurecount",
+    "name": "estimateChartPlaybackMeasureCount",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Total measures for duration estimate at the given layout.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-estimatemeasuresforline",
+    "name": "estimateMeasuresForLine",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Heuristic measure count for duration display (not necessarily identical to paint playback). Short / chord-only lines often get one measure in real performance; longer lines with two chord changes use two.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordpro-chartplaybacksequence-ts-formatchartplaybackduration",
     "name": "formatChartPlaybackDuration",
     "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
@@ -9525,6 +9963,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-linetextsimilarity",
+    "name": "lineTextSimilarity",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordpro-chordchartlayout-ts-linetoken",
     "name": "LineToken",
     "path": "src/shared/music/chordPro/chordChartLayout.ts",
@@ -9554,6 +10007,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordchartlayout-ts-matchwritelinestoprevious",
+    "name": "matchWriteLinesToPrevious",
+    "path": "src/shared/music/chordPro/chordChartLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -9623,12 +10091,12 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "music-core",
-    "description": "Shift chord indices after a single-line text edit (prefix/suffix diff).",
+    "description": "Structured chord chart layout (ChordPro ↔ sections/lines/markers). - **Placement:** `ChordMarker.charIndex` is a position in `LyricLine.text` (often a word token start). - **Identity:** `ChordMarker.id` is stable for select/edit; multiple markers may share one `charIndex`. - **Paint:** `tokenizeLyricLine`, `groupChordsByTokenStart`, `snapChordColumnToCharIndex` align UI and paste import. - **Edits:** prefer `*ById` helpers; `upsertChordAtIndex` replaces all chords at an index. Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.",
     "tags": [
       "music"
     ],
     "appsUsing": [],
-    "exportType": "function",
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -9781,6 +10249,82 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordlyricreconcile-ts-alignwordtokeneditscript",
+    "name": "alignWordTokenEditScript",
+    "path": "src/shared/music/chordPro/chordLyricReconcile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Word-level edit script (Levenshtein backtrace).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordlyricreconcile-ts-linetextsimilarity",
+    "name": "lineTextSimilarity",
+    "path": "src/shared/music/chordPro/chordLyricReconcile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Fraction of words preserved or replaced in place (not deleted).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordlyricreconcile-ts-matchwritelinestoprevious",
+    "name": "matchWriteLinesToPrevious",
+    "path": "src/shared/music/chordPro/chordLyricReconcile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Pair write-mode lyric lines with previous section lines for chord carry-over.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordlyricreconcile-ts-reconcilechordsaftertextchange",
+    "name": "reconcileChordsAfterTextChange",
+    "path": "src/shared/music/chordPro/chordLyricReconcile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Keep chord markers on the best matching lyric words after a line edit. Uses word-level alignment so synonym swaps and typos keep chords on the same slot.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordlyricreconcile-ts-wordalignop",
+    "name": "WordAlignOp",
+    "path": "src/shared/music/chordPro/chordLyricReconcile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {

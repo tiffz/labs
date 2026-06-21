@@ -7,6 +7,7 @@ import type {
   EncoreMediaPlaybackPhase,
   EncoreMediaPlaybackTarget,
 } from '../media/encorePlayableMedia';
+import type { EncoreMediaPlaybackQueueSnapshot } from '../media/encoreMediaPlaybackQueue';
 
 export type OriginalsPlaybackTarget = {
   songId: string;
@@ -17,12 +18,6 @@ export type OriginalsPlaybackTarget = {
   /** IndexedDB key `${songId}:${takeId}` when playing from a local Originals take cache. */
   localTakeKey?: string;
   mimeType?: string;
-};
-
-type EncoreMediaTransportState = {
-  currentTime: number;
-  duration: number;
-  isPlaying: boolean;
 };
 
 export type EncoreMediaPlaybackContextValue = {
@@ -39,6 +34,8 @@ export type EncoreMediaPlaybackContextValue = {
   setTransposeSemitones: (semitones: number) => void;
   setLoopEnabled: (enabled: boolean) => void;
   playMedia: (target: EncoreMediaPlaybackTarget) => void;
+  playMediaQueue: (targets: EncoreMediaPlaybackTarget[]) => void;
+  playbackQueue: EncoreMediaPlaybackQueueSnapshot | null;
   stopPlayback: () => void;
   togglePlayPause: () => void;
   seekTo: (seconds: number) => void;
@@ -53,6 +50,7 @@ export type EncoreMediaPlaybackContextValue = {
   isLoadingMedia: (playbackId: string) => boolean;
   /** Originals takes compatibility */
   playTake: (target: OriginalsPlaybackTarget) => void;
+  playTakeQueue: (targets: OriginalsPlaybackTarget[]) => void;
   isPlayingTake: (songId: string, takeId: string) => boolean;
   isLoadingTake: (songId: string, takeId: string) => boolean;
   /** @deprecated Prefer {@link mediaRef}. */
@@ -61,22 +59,53 @@ export type EncoreMediaPlaybackContextValue = {
   youtubeVideoId: string | null;
 };
 
+type EncoreMediaTransportState = {
+  currentTime: number;
+  duration: number;
+  isPlaying: boolean;
+};
+
+export type EncoreMediaTransportContextValue = {
+  transport: EncoreMediaTransportState;
+};
+
+/** Control plane only — omits {@link EncoreMediaPlaybackContextValue.transport} so list cards avoid timeupdate re-renders. */
+export type EncoreMediaPlaybackControlsValue = Omit<EncoreMediaPlaybackContextValue, 'transport'>;
+
 /** Stable context ref — keep in this file so Vite HMR on the provider does not recreate the context. */
 export const EncoreMediaPlaybackContext = createContext<EncoreMediaPlaybackContextValue | null>(null);
 
-export function useEncoreMediaPlayback(): EncoreMediaPlaybackContextValue {
-  const ctx = useContext(EncoreMediaPlaybackContext);
+export const EncoreMediaPlaybackControlsContext = createContext<EncoreMediaPlaybackControlsValue | null>(null);
+
+export const EncoreMediaTransportContext = createContext<EncoreMediaTransportContextValue | null>(null);
+
+export function useEncoreMediaPlaybackControls(): EncoreMediaPlaybackControlsValue {
+  const ctx = useContext(EncoreMediaPlaybackControlsContext);
   if (!ctx) {
-    throw new Error('useEncoreMediaPlayback must be used within EncoreMediaPlaybackProvider');
+    throw new Error('useEncoreMediaPlaybackControls must be used within EncoreMediaPlaybackProvider');
   }
   return ctx;
 }
 
+export function useEncoreMediaTransport(): EncoreMediaTransportContextValue {
+  const ctx = useContext(EncoreMediaTransportContext);
+  if (!ctx) {
+    throw new Error('useEncoreMediaTransport must be used within EncoreMediaPlaybackProvider');
+  }
+  return ctx;
+}
+
+export function useEncoreMediaPlayback(): EncoreMediaPlaybackContextValue {
+  const controls = useEncoreMediaPlaybackControls();
+  const { transport } = useEncoreMediaTransport();
+  return { ...controls, transport };
+}
+
 export function useEncoreOriginalsPlayback(): Pick<
   EncoreMediaPlaybackContextValue,
-  'target' | 'phase' | 'errorMessage' | 'objectUrl' | 'audioRef' | 'playTake' | 'stopPlayback' | 'isPlayingTake' | 'isLoadingTake'
+  'target' | 'phase' | 'errorMessage' | 'objectUrl' | 'audioRef' | 'playTake' | 'playTakeQueue' | 'playbackQueue' | 'stopPlayback' | 'isPlayingTake' | 'isLoadingTake'
 > {
-  const ctx = useEncoreMediaPlayback();
+  const ctx = useEncoreMediaPlaybackControls();
   return {
     target: ctx.target,
     phase: ctx.phase,
@@ -84,6 +113,8 @@ export function useEncoreOriginalsPlayback(): Pick<
     objectUrl: ctx.objectUrl,
     audioRef: ctx.audioRef,
     playTake: ctx.playTake,
+    playTakeQueue: ctx.playTakeQueue,
+    playbackQueue: ctx.playbackQueue,
     stopPlayback: ctx.stopPlayback,
     isPlayingTake: ctx.isPlayingTake,
     isLoadingTake: ctx.isLoadingTake,

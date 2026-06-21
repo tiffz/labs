@@ -1,5 +1,6 @@
 import { FULL_STRUCTURAL_BLUEPRINT } from './originalsStructurePresets';
 import { plainOrHtmlToEditorHtml } from '../../shared/utils/richTextContent';
+import { calendarDateFromIsoTimestamp } from '../import/guessIsoDateFromFreeText';
 import type { EncoreMiscResource } from '../types';
 import type { OriginalsWorkflowStage } from './originalsWorkflowStages';
 
@@ -58,8 +59,20 @@ export interface EncoreOriginalSong {
    * When absent, matching section types inherit the first section's progression visually.
    */
   sectionProgressionOverrides?: Record<string, string>;
+  /**
+   * Local calendar day (YYYY-MM-DD) when songwriting began — may predate {@link EncoreOriginalSong.createdAt}.
+   * When unset, UI falls back to the date the song was added to Encore.
+   */
+  startedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Effective started-writing date for display and sorting. */
+export function originalSongStartedDate(song: EncoreOriginalSong): string {
+  const explicit = song.startedAt?.trim();
+  if (explicit && /^\d{4}-\d{2}-\d{2}$/.test(explicit)) return explicit;
+  return calendarDateFromIsoTimestamp(song.createdAt);
 }
 
 export const ORIGINALS_DEFAULT_TEMPO = 80;
@@ -76,6 +89,7 @@ export function createBlankOriginalSong(now = new Date().toISOString()): EncoreO
     takes: [],
     mainTakeId: null,
     history: [],
+    startedAt: calendarDateFromIsoTimestamp(now),
     createdAt: now,
     updatedAt: now,
   };
@@ -114,8 +128,17 @@ export function normalizeEncoreOriginalSong(raw: LegacyOriginalRow): EncoreOrigi
   };
 }
 
-/** Preferred demo take when {@link EncoreOriginalSong.mainTakeId} is set. */
+/** Preferred demo take — main take when set, otherwise the first recorded take. */
 export function preferredOriginalTake(song: EncoreOriginalSong): OriginalAudioTake | null {
-  if (!song.mainTakeId) return null;
-  return song.takes.find((t) => t.id === song.mainTakeId) ?? null;
+  if (song.takes.length === 0) return null;
+  if (song.mainTakeId) {
+    const main = song.takes.find((t) => t.id === song.mainTakeId);
+    if (main) return main;
+  }
+  return song.takes[0] ?? null;
+}
+
+/** Synchronous check for Drive id or persisted local-audio flag (IndexedDB probe is async). */
+export function originalTakeHasPlayableSource(take: OriginalAudioTake): boolean {
+  return Boolean(take.driveFileId?.trim()) || take.hasLocalAudio === true;
 }

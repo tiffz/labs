@@ -1,9 +1,10 @@
-import type { ReactElement } from 'react';
+import { useRef, type ReactElement } from 'react';
 import { EncoreResourceLinksPanel } from '../../components/EncoreResourceLinksPanel';
 import {
+  addResourceFromUrl,
   createResourceFromLocalFile,
-  createResourceFromUrl,
 } from '../../repertoire/encoreResourceLinks';
+import { scheduleEncoreResourceLabelEnrichment } from '../../repertoire/encoreResourceLinkMeta';
 import type { EncoreMiscResource } from '../../types';
 
 const BRAINSTORM_FILE_ACCEPT = '.pdf,.txt,.md,.doc,.docx,application/pdf,text/*';
@@ -20,16 +21,26 @@ export function OriginalsBrainstormResources({
   variant = 'default',
 }: OriginalsBrainstormResourcesProps): ReactElement {
   const isSidebar = variant === 'sidebar';
+  const resourcesRef = useRef(resources);
+  resourcesRef.current = resources;
 
   const onAddLink = (url: string, label: string) => {
-    const resource = createResourceFromUrl(url, label || undefined);
-    if (!resource) return;
-    onChange([...resources, resource]);
+    const added = addResourceFromUrl(resourcesRef.current, url, label || undefined);
+    if (!added) return;
+    onChange(added.next);
+    if (!label.trim()) {
+      scheduleEncoreResourceLabelEnrichment(
+        url,
+        added.added.id,
+        () => resourcesRef.current,
+        onChange,
+      );
+    }
   };
 
   const onUploadFiles = (files: File[]) => {
     if (files.length === 0) return;
-    onChange([...resources, ...files.map(createResourceFromLocalFile)]);
+    onChange([...resourcesRef.current, ...files.map(createResourceFromLocalFile)]);
   };
 
   return (

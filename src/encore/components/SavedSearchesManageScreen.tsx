@@ -12,6 +12,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import type { EncoreRepertoireSavedSearch } from '../types';
+import { useEncoreHeavyListTabLaidOut } from '../utils/useEncoreHeavyListTabLaidOut';
 import { useEncoreActions, useEncoreLibraryExtras, useEncoreLibraryTables } from '../context/EncoreContext';
 import { useEncoreRepertoirePlaylist } from '../context/EncoreRepertoirePlaylistContext';
 import { navigateEncore } from '../routes/encoreAppHash';
@@ -286,7 +287,7 @@ export function SavedSearchesManageScreen(props?: {
   onHeavyTabLaidOut?: () => void;
 }): ReactElement {
   const { onHeavyTabLaidOut } = props ?? {};
-  const { songs, performances } = useEncoreLibraryTables();
+  const { songs, performances, songsHydrated } = useEncoreLibraryTables();
   const { repertoireExtras, effectiveDisplayName } = useEncoreLibraryExtras();
   const { saveRepertoireExtras } = useEncoreActions();
   const { clientIdConfigured, syncError, dismissSyncError } = useEncoreRepertoirePlaylist();
@@ -296,12 +297,7 @@ export function SavedSearchesManageScreen(props?: {
 
   const savedSearches = repertoireExtras.repertoireSavedSearches ?? [];
 
-  const laidOutRef = useRef(false);
-  useEffect(() => {
-    if (laidOutRef.current) return;
-    laidOutRef.current = true;
-    onHeavyTabLaidOut?.();
-  }, [onHeavyTabLaidOut]);
+  useEncoreHeavyListTabLaidOut(true, songsHydrated, onHeavyTabLaidOut);
 
   const filterFieldDefs = useMemo(
     () =>

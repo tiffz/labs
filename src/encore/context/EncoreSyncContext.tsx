@@ -76,6 +76,16 @@ function waitForNextPaint(): Promise<void> {
   });
 }
 
+function waitForIdle(timeoutMs = 1200): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(() => resolve(), { timeout: timeoutMs });
+      return;
+    }
+    window.setTimeout(resolve, Math.min(timeoutMs, 400));
+  });
+}
+
 export function EncoreSyncProvider({ children }: { children: ReactNode }): ReactElement {
   const { googleAccessToken } = useEncoreAuth();
   const libraryReady = useEncoreLibraryReady();
@@ -186,6 +196,7 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
     const tokenAtSchedule = googleAccessToken;
     void (async () => {
       await waitForNextPaint();
+      await waitForIdle();
       if (googleAccessTokenRef.current !== tokenAtSchedule) return;
       await runSync();
     })();

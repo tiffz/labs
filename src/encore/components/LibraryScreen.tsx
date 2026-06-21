@@ -138,6 +138,13 @@ import type { EncoreRepertoireMrtRow } from './libraryScreen/libraryRepertoireMr
 import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
 import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
 import { useDebouncedString } from '../utils/useDebouncedString';
+import {
+  encoreDateRangeFromFilterRecord,
+  isEncoreDateRangeActive,
+  type EncoreDateRangeFilterValue,
+} from '../utils/encoreDateRangeFilter';
+import { patchEncoreFilterDateRange } from '../utils/encoreFilterFieldHelpers';
+import { useEncoreHeavyListTabLaidOut } from '../utils/useEncoreHeavyListTabLaidOut';
 import { ENCORE_FILTER_SENTINEL } from '../utils/encoreFilterSentinels';
 import { HighlightedText } from '../ui/HighlightedText';
 import {
@@ -684,17 +691,11 @@ export function LibraryScreen(props?: {
     deletePerformance,
   } = useEncoreActions();
   const { withBlockingJob } = useEncoreBlockingJobs();
-  const heavyListTabPrevActiveRef = useRef(false);
-  useEffect(() => {
-    if (!heavyListTabActive) {
-      heavyListTabPrevActiveRef.current = false;
-      return;
-    }
-    if (!heavyListTabPrevActiveRef.current) {
-      onHeavyTabLaidOut?.();
-    }
-    heavyListTabPrevActiveRef.current = true;
-  }, [heavyListTabActive, onHeavyTabLaidOut]);
+  useEncoreHeavyListTabLaidOut(
+    heavyListTabActive,
+    songsHydrated,
+    onHeavyTabLaidOut,
+  );
 
   /** While this tab is keep-alive hidden, skip rebuilding heavy derived data (Dexie still updates elsewhere). */
   const libraryStatsCacheRef = useRef({ topVenues: [] as [string, number][], totalPerf: 0 });
@@ -886,6 +887,11 @@ export function LibraryScreen(props?: {
     excludedRepertoireFilterIds,
   ]);
 
+  const perfDateRange = useMemo(
+    () => encoreDateRangeFromFilterRecord(repertoireFilterValues, 'perfDate'),
+    [repertoireFilterValues],
+  );
+
   const hasActiveFilters = Boolean(
     searchQuery.trim() ||
       perfPresence !== 'all' ||
@@ -895,6 +901,7 @@ export function LibraryScreen(props?: {
       (repertoireFilterValues.tags ?? []).length > 0 ||
       (repertoireFilterValues.artist ?? []).length > 0 ||
       (repertoireFilterValues.perfKey ?? []).length > 0 ||
+      isEncoreDateRangeActive(perfDateRange) ||
       (repertoireFilterValues.assetRefs ?? []).length > 0 ||
       (repertoireFilterValues.assetBacking ?? []).length > 0 ||
       (repertoireFilterValues.assetSpotify ?? []).length > 0 ||
@@ -966,6 +973,10 @@ export function LibraryScreen(props?: {
 
   const onRepertoireFilterChange = useCallback((fieldId: string, nextValues: string[]) => {
     setRepertoireFilterValues((prev) => ({ ...prev, [fieldId]: nextValues }));
+  }, []);
+
+  const onRepertoireDateRangeChange = useCallback((fieldId: string, range: EncoreDateRangeFilterValue) => {
+    setRepertoireFilterValues((prev) => patchEncoreFilterDateRange(prev, fieldId, range));
   }, []);
 
   const applyExclusiveRepertoireFilter = useCallback((fieldId: string, value: string) => {
@@ -1702,6 +1713,7 @@ export function LibraryScreen(props?: {
       {
         accessorKey: 'lastIso',
         header: 'Last performed',
+        meta: { encoreFilterFieldId: 'perfDate' },
         Header: ({ column }) => (
           <EncoreMrtColumnHeader label="Last performed" column={column} filterBarRef={repertoireFilterBarRef} />
         ),
@@ -2121,6 +2133,7 @@ export function LibraryScreen(props?: {
         visibleRepertoireFilterIds={visibleRepertoireFilterIds}
         repertoireFilterValues={repertoireFilterValues}
         onRepertoireFilterChange={onRepertoireFilterChange}
+        onRepertoireDateRangeChange={onRepertoireDateRangeChange}
         excludedRepertoireFilterIds={excludedRepertoireFilterIds}
         onExcludedRepertoireFilterIdsChange={setExcludedRepertoireFilterIds}
         repertoireAddableFilterFields={repertoireAddableFilterFields}

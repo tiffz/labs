@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { MetronomeConfig, BeatEvent } from './types';
-import { createMockAudioContext } from '../../shared/audio/__test__/mockAudioContext';
-import type { MockAudioContext } from '../../shared/audio/__test__/mockAudioContext';
+import { createMockAudioContext } from '../__test__/mockAudioContext';
+import type { MockAudioContext } from '../__test__/mockAudioContext';
 
 const fakeBuffer = {
   duration: 0.3,

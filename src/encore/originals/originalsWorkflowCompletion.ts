@@ -1,7 +1,7 @@
 import { parseChordProToChartLayout } from '../../shared/music/chordPro/chordChartLayout';
 import { isRichTextEmpty } from '../../shared/utils/richTextContent';
 import type { EncoreOriginalSong } from './types';
-import { ORIGINALS_WORKFLOW_STAGES, type OriginalsWorkflowStage } from './originalsWorkflowStages';
+import { ORIGINALS_WORKFLOW_STAGES, type OriginalsWorkflowStage, workflowStageShortLabel } from './originalsWorkflowStages';
 
 function hasSubstantialLyrics(chordPro: string): boolean {
   const layout = parseChordProToChartLayout(chordPro);
@@ -33,7 +33,12 @@ export function isStageComplete(song: EncoreOriginalSong, stage: OriginalsWorkfl
   return isStageHeuristicallyComplete(song, stage);
 }
 
-/** First incomplete stage, or the last stage when everything is done. */
+/** All workflow stages complete — song has lyrics, chords, and at least one demo take. */
+export function isOriginalDemoReady(song: EncoreOriginalSong): boolean {
+  return ORIGINALS_WORKFLOW_STAGES.every((step) => isStageComplete(song, step.id));
+}
+
+/** First incomplete stage, or `takes` when everything is done (use {@link isOriginalDemoReady} for display). */
 export function inferredWorkflowStage(song: EncoreOriginalSong): OriginalsWorkflowStage {
   for (const step of ORIGINALS_WORKFLOW_STAGES) {
     if (!isStageComplete(song, step.id)) return step.id;
@@ -56,6 +61,23 @@ export function toggleStageCompletion(
 }
 
 export function formatOriginalStageSummary(song: EncoreOriginalSong): string {
+  if (isOriginalDemoReady(song)) return 'Demo ready';
   const done = ORIGINALS_WORKFLOW_STAGES.filter((s) => isStageComplete(song, s.id)).length;
   return `${done}/${ORIGINALS_WORKFLOW_STAGES.length} stages`;
+}
+
+/** Stage label for library surfaces — current in-progress step, or Demo ready when complete. */
+export function originalsLibraryStageLabel(song: EncoreOriginalSong): string {
+  if (isOriginalDemoReady(song)) return 'Demo ready';
+  return workflowStageShortLabel(inferredWorkflowStage(song));
+}
+
+/** Secondary progress line for library stage column (`3/4 stages`), or null when demo-ready. */
+export function originalsLibraryStageProgressDetail(song: EncoreOriginalSong): string | null {
+  if (isOriginalDemoReady(song)) return null;
+  return formatOriginalStageSummary(song);
+}
+
+export function originalsLibraryStageSortKey(song: EncoreOriginalSong): number {
+  return ORIGINALS_WORKFLOW_STAGES.filter((s) => isStageComplete(song, s.id)).length;
 }

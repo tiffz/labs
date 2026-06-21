@@ -50,6 +50,8 @@ function readChordNotation(songId: string): ChordNotationMode {
 
 export type OriginalsSongWorkspaceProps = {
   song: EncoreOriginalSong;
+  /** When set (e.g. from view-mode section Edit), opens write workspace at this stage. */
+  initialWorkflowStage?: OriginalsWorkflowStage;
   /** Chords stage: stepper + sticky chrome are direct children of the page scroll region. */
   integratedPageScroll?: boolean;
   /** Lyrics / brainstorm stages: workspace grows with content inside the page scroll region. */
@@ -64,6 +66,7 @@ export type OriginalsSongWorkspaceProps = {
 
 export function OriginalsSongWorkspace({
   song,
+  initialWorkflowStage,
   integratedPageScroll = false,
   pageScrollIntegrated = false,
   onWorkflowStageChange,
@@ -73,7 +76,9 @@ export function OriginalsSongWorkspace({
   onPersist,
 }: OriginalsSongWorkspaceProps): ReactElement {
   const theme = useTheme();
-  const [stage, setStage] = useState<OriginalsWorkflowStage>(() => readPersistedWorkflowStage(song.id, song));
+  const [stage, setStage] = useState<OriginalsWorkflowStage>(
+    () => initialWorkflowStage ?? readPersistedWorkflowStage(song.id, song),
+  );
   const [chartPasteSnack, setChartPasteSnack] = useState<string | null>(null);
   const [chordNotation, setChordNotation] = useState<ChordNotationMode>(() => readChordNotation(song.id));
   const [activePlaybackStep, setActivePlaybackStep] = useState<ChartPlaybackStep | null>(null);
@@ -135,6 +140,9 @@ export function OriginalsSongWorkspace({
   const onStageChange = useCallback(
     (next: OriginalsWorkflowStage) => {
       if (next !== stage) {
+        if (stage === 'write') {
+          chart.flushWriteReconcile();
+        }
         onBeforeWorkflowStageChange?.();
       }
       setStage(next);
@@ -145,6 +153,13 @@ export function OriginalsSongWorkspace({
     },
     [chart, onBeforeWorkflowStageChange, stage],
   );
+
+  useEffect(() => {
+    const flush = chart.flushWriteReconcile;
+    return () => {
+      flush();
+    };
+  }, [chart.flushWriteReconcile]);
 
   const onToggleStageComplete = useCallback(() => {
     void onPersist(toggleStageCompletion(song, stage));

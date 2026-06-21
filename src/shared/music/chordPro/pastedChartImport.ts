@@ -133,12 +133,15 @@ function looksLikeLyricLine(line: string): boolean {
 }
 
 function overlayChordsOnLyric(chordLine: string, lyricLine: string): LyricLine {
-  const text = lyricLine.trim();
-  const chords = assignChordCharIndicesFromColumns(extractChordTokens(chordLine), text).map(
+  // Preserve leading spaces on the lyric line — they are part of the monospace column grid.
+  const lyricAlign = lyricLine.trimEnd();
+  const leadingTrim = lyricAlign.length - lyricAlign.trimStart().length;
+  const text = lyricAlign.trim();
+  const chords = assignChordCharIndicesFromColumns(extractChordTokens(chordLine), lyricAlign).map(
     ({ chord, charIndex }) => ({
       id: crypto.randomUUID(),
       chordName: chord,
-      charIndex,
+      charIndex: Math.max(0, charIndex - leadingTrim),
     }),
   );
   chords.sort((a, b) => a.charIndex - b.charIndex || a.chordName.localeCompare(b.chordName));
@@ -178,10 +181,19 @@ function parseInlineChordProLine(line: string): LyricLine {
   return { lineId: newLineId(), text, chords };
 }
 
+function lineHasInlineChordProTokens(line: string): boolean {
+  for (const match of line.matchAll(/\[([^\]]+)\]/g)) {
+    if (chordTokenMatches((match[1] ?? '').trim())) return true;
+  }
+  return false;
+}
+
 function looksLikeInlineChordPro(text: string): boolean {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  const hasBracketHeader = lines.some((l) => INLINE_CHORD_PRO_HEADER_RE.test(l));
-  const hasInlineChords = lines.some((l) => /\[[A-G][^\]]*\]/.test(l));
+  const hasBracketHeader = lines.some(
+    (l) => INLINE_CHORD_PRO_HEADER_RE.test(l) || parsePlainSectionHeader(l) !== null,
+  );
+  const hasInlineChords = lines.some((l) => lineHasInlineChordProTokens(l));
   return hasBracketHeader && hasInlineChords;
 }
 

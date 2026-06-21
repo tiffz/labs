@@ -9,6 +9,9 @@
  * Fixtures: `./fixtures.ts` (`MEET_ME_MOON_PASTE`). Tests: `pastedChartImport.test.ts`, `chordChartLayout.test.ts`.
  */
 import { parseChordProLine, parseChordProSectionHeader, parseChordProSections } from './chordProText';
+import { matchWriteLinesToPrevious, reconcileChordsAfterTextChange } from './chordLyricReconcile';
+
+export { reconcileChordsAfterTextChange, lineTextSimilarity, matchWriteLinesToPrevious } from './chordLyricReconcile';
 
 export type SectionType = 'Verse' | 'Chorus' | 'Bridge' | 'Intro' | 'Outro' | 'Other';
 
@@ -112,10 +115,9 @@ export function assignChordCharIndicesFromColumns(
   pairs: Array<{ chord: string; column: number }>,
   lyricText: string,
 ): Array<{ chord: string; charIndex: number }> {
-  const text = lyricText.trim();
   return pairs.map(({ chord, column }) => ({
     chord,
-    charIndex: text.length === 0 ? column : snapChordColumnToCharIndex(column, text),
+    charIndex: lyricText.length === 0 ? column : snapChordColumnToCharIndex(column, lyricText),
   }));
 }
 
@@ -247,9 +249,11 @@ export function layoutToWriteDocument(layout: ChartLayout): string {
     for (const line of section.lines) {
       sectionLines.push(line.text);
     }
-    blocks.push(trimTrailingEmptySectionLines(sectionLines, section.header ? 1 : 0).join('\n'));
+    // Preserve intentional blank lines within sections; join sections with a single newline
+    // so spacing the user typed round-trips without collapsing extra line breaks.
+    blocks.push(sectionLines.join('\n'));
   }
-  return blocks.join('\n\n').replace(/\n{3,}/g, '\n\n').trimEnd();
+  return blocks.join('\n').trimEnd();
 }
 
 function splitWriteDocumentSections(writeDoc: string): Array<{ header: string; bodyLines: string[] }> {
@@ -273,35 +277,6 @@ function splitWriteDocumentSections(writeDoc: string): Array<{ header: string; b
   return out;
 }
 
-/** Shift chord indices after a single-line text edit (prefix/suffix diff). */
-export function reconcileChordsAfterTextChange(
-  chords: ChordMarker[],
-  oldText: string,
-  newText: string,
-): ChordMarker[] {
-  if (oldText === newText) return chords;
-
-  let start = 0;
-  while (start < oldText.length && start < newText.length && oldText[start] === newText[start]) {
-    start += 1;
-  }
-  let oldEnd = oldText.length;
-  let newEnd = newText.length;
-  while (oldEnd > start && newEnd > start && oldText[oldEnd - 1] === newText[newEnd - 1]) {
-    oldEnd -= 1;
-    newEnd -= 1;
-  }
-
-  const delta = newEnd - start - (oldEnd - start);
-
-  return chords
-    .filter((c) => c.charIndex < start || c.charIndex >= oldEnd)
-    .map((c) => ({
-      ...c,
-      charIndex: c.charIndex >= start ? c.charIndex + delta : c.charIndex,
-    }));
-}
-
 /** Apply Write Mode edits while preserving chord markers via index reconciliation. */
 export function parseWriteDocumentToLayout(writeDoc: string, previous: ChartLayout): ChartLayout {
   const parsedSections = splitWriteDocumentSections(writeDoc);
@@ -312,17 +287,18 @@ export function parseWriteDocumentToLayout(writeDoc: string, previous: ChartLayo
       parsedSections.length === 1
         ? block.header
         : block.header || prevSection?.header || `Section ${secIdx + 1}`;
-    const lines: LyricLine[] = block.bodyLines.map((text, lineIdx) => {
-      const prevLine = prevSection?.lines[lineIdx];
-      if (prevLine) {
-        return {
-          lineId: prevLine.lineId,
-          text,
-          chords: reconcileChordsAfterTextChange(prevLine.chords, prevLine.text, text),
-        };
-      }
-      return { lineId: newLineId(), text, chords: [] };
-    });
+    const lines: LyricLine[] = matchWriteLinesToPrevious(prevSection?.lines ?? [], block.bodyLines).map(
+      ({ text, prevLine }) => {
+        if (prevLine) {
+          return {
+            lineId: prevLine.lineId,
+            text,
+            chords: reconcileChordsAfterTextChange(prevLine.chords, prevLine.text, text),
+          };
+        }
+        return { lineId: newLineId(), text, chords: [] };
+      },
+    );
 
     if (lines.length === 0) lines.push(emptyLine());
 

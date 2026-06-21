@@ -10,11 +10,10 @@ import { encorePagePaddingTop, encoreScreenPaddingX } from '../../theme/encoreM3
 import { takePendingOriginalDraft } from '../pendingOriginalDraft';
 import { mergeIdleChartSnapshot, restoreOriginalFromSnapshot } from '../originalsSnapshot';
 import { createBlankOriginalSong, type EncoreOriginalSong } from '../types';
-import { OriginalsPdfImportDialog } from './OriginalsPdfImportDialog';
 import { OriginalsSongHeader, type OriginalsPageMode } from './OriginalsSongHeader';
 import { OriginalsSongViewMode } from './OriginalsSongViewMode';
 import { OriginalsSongWorkspace } from './OriginalsSongWorkspace';
-import { readPersistedWorkflowStage } from '../originalsWorkflowStagePersistence';
+import { readPersistedWorkflowStage, persistWorkflowStage } from '../originalsWorkflowStagePersistence';
 import type { OriginalsWorkflowStage } from '../originalsWorkflowStages';
 
 export type OriginalSongPageProps = {
@@ -48,7 +47,6 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
   const { saveOriginal, deleteOriginal } = useEncoreOriginalsActions();
   const [draft, setDraft] = useState<EncoreOriginalSong | null>(() => initialDraftForRoute(id, isNew));
   const [mode, setMode] = useState<OriginalsPageMode>(() => readPageMode(id));
-  const [pdfOpen, setPdfOpen] = useState(false);
   const [workflowStage, setWorkflowStage] = useState<OriginalsWorkflowStage>(() =>
     draft ? readPersistedWorkflowStage(draft.id, draft) : 'brainstorm',
   );
@@ -177,6 +175,15 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
     [scheduleIdleSnapshot, update],
   );
 
+  const onEditStage = useCallback(
+    (stage: OriginalsWorkflowStage) => {
+      persistWorkflowStage(id, stage);
+      setWorkflowStage(stage);
+      setMode('write');
+    },
+    [id],
+  );
+
   const activeSong = draft ?? (live.status === 'ok' ? live.song : null);
 
   if (!activeSong) {
@@ -210,7 +217,6 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
       onChange={update}
       compact={chordsPaintScroll}
       onRestoreSnapshot={(snap) => void persist(restoreOriginalFromSnapshot(activeSong, snap))}
-      onImportPdf={() => setPdfOpen(true)}
       onDelete={async () => {
         if (!window.confirm('Delete this original?')) return;
         await deleteOriginal(activeSong.id);
@@ -221,7 +227,9 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
 
   const writeWorkspace = (
     <OriginalsSongWorkspace
+      key={`${activeSong.id}-${workflowStage}`}
       song={activeSong}
+      initialWorkflowStage={workflowStage}
       integratedPageScroll={chordsPaintScroll}
       pageScrollIntegrated={pageScrollIntegrated}
       onWorkflowStageChange={setWorkflowStage}
@@ -236,43 +244,40 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
     <Box
       className="encore-originals-print-root"
       sx={{
-        flex: 1,
-        minHeight: 0,
+        flex: chordsPaintScroll ? 1 : undefined,
+        minHeight: chordsPaintScroll ? 0 : undefined,
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
+        overflow: chordsPaintScroll ? 'hidden' : undefined,
         px: encoreScreenPaddingX,
         pt: encorePagePaddingTop,
         pb: { xs: 4, sm: 5 },
         ...encoreMaxWidthPage,
       }}
     >
-      <Box
-        className={[
-          'in-scroll-region',
-          chordsPaintScroll ? 'encore-originals-chords-page-scroll' : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
-        sx={{ flex: 1, minHeight: 0 }}
-      >
-        <Box className="in-scroll-region__band">{songHeader}</Box>
-        {mode === 'write' ? (
-          writeWorkspace
-        ) : (
-          <OriginalsSongViewMode song={activeSong} onEdit={() => setMode('write')} onSongChange={update} />
-        )}
-      </Box>
-
-      <OriginalsPdfImportDialog
-        open={pdfOpen}
-        onClose={() => setPdfOpen(false)}
-        onImported={(chart) => {
-          onChartChange(chart);
-          setPdfOpen(false);
-          setMode('write');
-        }}
-      />
+      {chordsPaintScroll ? (
+        <Box
+          className="in-scroll-region encore-originals-chords-page-scroll"
+          sx={{ flex: 1, minHeight: 0 }}
+        >
+          <Box className="in-scroll-region__band">{songHeader}</Box>
+          {writeWorkspace}
+        </Box>
+      ) : (
+        <>
+          {songHeader}
+          {mode === 'write' ? (
+            writeWorkspace
+          ) : (
+            <OriginalsSongViewMode
+              song={activeSong}
+              onEdit={() => setMode('write')}
+              onEditStage={onEditStage}
+              onSongChange={update}
+            />
+          )}
+        </>
+      )}
     </Box>
   );
 }

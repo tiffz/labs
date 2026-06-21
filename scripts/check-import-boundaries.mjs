@@ -24,6 +24,7 @@ const APP_DIRS = new Set([
   'gesture',
   'zinebox',
   'muscle',
+  'midi',
 ]);
 
 function collectTsFiles(dir, out) {

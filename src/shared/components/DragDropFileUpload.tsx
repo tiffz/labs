@@ -38,6 +38,8 @@ export interface DragDropFileUploadProps {
   minHeight?: number;
   /** Dense row-style target (smaller icon and padding). */
   compact?: boolean;
+  /** Grows taller while the user is dragging files over the zone. */
+  expandOnDrag?: boolean;
   /** Horizontal icon + label, left-aligned — for split upload / link strips. */
   inline?: boolean;
   /** `brand`: Encore primary gradient (bulk import). `soft`: fuchsia-forward inline strip (performance editor). `neutral`: grey inset (legacy). */
@@ -58,12 +60,12 @@ export function DragDropFileUpload(props: DragDropFileUploadProps): React.ReactE
     helperText,
     minHeight: minHeightProp,
     compact = false,
+    expandOnDrag = false,
     inline = false,
     tone = 'brand',
     ariaLabel,
     sx: sxProp,
   } = props;
-  const minHeight = minHeightProp ?? (inline ? 44 : compact ? 56 : 160);
   const theme = useTheme();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const inputId = useId();
@@ -85,6 +87,11 @@ export function DragDropFileUpload(props: DragDropFileUploadProps): React.ReactE
     stopPropagation: true,
     onDrop: (e) => handleSelected(e.dataTransfer.files),
   });
+
+  const defaultMinHeight = inline ? 44 : compact ? 56 : 160;
+  const resolvedMinHeight = minHeightProp ?? defaultMinHeight;
+  const minHeight =
+    expandOnDrag && dragActive ? Math.max(resolvedMinHeight, inline ? 96 : 112) : resolvedMinHeight;
 
   const openPicker = useCallback(() => {
     if (disabled) return;

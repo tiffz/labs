@@ -1,4 +1,4 @@
-import type { TimeSignature } from '../../shared/rhythm/types';
+import type { TimeSignature } from '../../rhythm/types';
 import type { SubdivisionType, SubdivisionLevel, VoiceMode } from './types';
 import { eighthBaseSlotsPerEighth, slotsPerBeat } from './types';
 import { syllableForPosition, takadimiLabelForPosition } from './syllableMap';

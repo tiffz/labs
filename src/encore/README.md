@@ -194,9 +194,9 @@ Intentionally excluded:
 - `runSync()` runs after sign-in / token restore (once `libraryReady`, after a paint deferral) and when the user retries Drive sync. It uses **`withBlockingJob(..., { silent: true })`** and passes progress into `runInitialSyncIfPossible` for optional future UI. The result also includes a row-level `analysis` (`localOnly` / `remoteOnly` / `bothEdited`); when `bothEdited.length === 0` the sync silently auto-merges and surfaces a brief snackbar via `EncoreSyncContext.lastSilentMerge`. Otherwise the `<SyncConflictReviewDialog>` opens with only the overlapping rows for per-row resolution.
 - `scheduleBackgroundSync()` fires after most local writes: **500ms debounce**, then a **serialized** silent blocking job. When `VITE_ENCORE_SHARDED_SYNC=1` it first runs the one-shot migration into the per-row layout, drains the `dirtySync` table via `pushDirtyShards`, and then re-emits the legacy `repertoire_data.json` as a safety net. With the flag off it pushes the monolithic file only. Failures set `syncState` / `syncMessage`.
 
-### List screen performance (Library, Performances)
+### List screen performance (Library, Performances, Originals)
 
-Keep MRT tables scroll-friendly: stable row/cell `sx`, debounced search feeding `data`, complete `columns` memo dependencies, and avoid zebra rows if paint cost matters. See [`ARCHITECTURE.md`](ARCHITECTURE.md) § Client performance guardrails.
+Keep MRT tables scroll-friendly: stable row/cell `sx`, debounced search feeding `data`, complete `columns` memo dependencies, and avoid zebra rows if paint cost matters. **Originals** uses the same keep-alive tab pattern as Library/Performances: skip filter rebuilds when the tab is hidden (`listActive`), debounce search (~220ms), and stabilize the Dexie `originals` array ref when row ids/`updatedAt` are unchanged. Grid cards receive playback state from the list parent (not per-card context) and defer IndexedDB `hasOriginalTakeBlob` probes until the card is near the viewport. **Media playback** splits control plane vs transport (`EncoreMediaPlaybackControlsContext` / `EncoreMediaTransportContext`) so `timeupdate` does not re-render list/grid cards. Initial Drive sync waits for first paint plus an idle callback before blocking work. See [`ARCHITECTURE.md`](ARCHITECTURE.md) § Client performance guardrails.
 
 ### `EncoreMediaLink[]` model
 

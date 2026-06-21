@@ -51,6 +51,7 @@ const MULTI_APP_INPUTS = {
   gesture: resolve(__dirname, 'src/gesture/index.html'),
   zinebox: resolve(__dirname, 'src/zinebox/index.html'),
   muscle: resolve(__dirname, 'src/muscle/index.html'),
+  midi: resolve(__dirname, 'src/midi/index.html'),
 } as const;
 
 const SRC_ROOT = resolve(__dirname, 'src');

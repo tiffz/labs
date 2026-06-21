@@ -96,6 +96,14 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     notes: 'smoke only',
   },
   {
+    route: '/midi/',
+    title: /Midi Scratchpad/i,
+    visibleSelector: '#main',
+    smoke: true,
+    visual: false,
+    notes: 'smoke only',
+  },
+  {
     route: '/piano/',
     title: /Piano Practice/i,
     visibleSelector: '#root',
