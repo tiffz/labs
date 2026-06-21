@@ -1,7 +1,7 @@
 import { parseRhythm } from '../../shared/rhythm/rhythmParser';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import type { ChordStyleId } from '../../shared/music/chordStyleOptions';
-import type { Key } from '../../shared/music/chordTypes';
+import type { SongKey } from '../../shared/music/songKeyFormat';
 import type { SyllableHit } from './prosodyEngine';
 import type { EffectiveSection, SectionRenderPlan } from './wordsSectionPlans';
 
@@ -73,7 +73,7 @@ export function buildAsciiChordChartExportText(
   sectionDisplayNames: string[],
   sectionRenderPlans: SectionRenderPlan[],
   chordLabelsByMeasure: Map<number, string>,
-  songKey: Key,
+  songKey: SongKey,
   sixteenthsPerMeasure: number
 ): string {
   return effectiveSections

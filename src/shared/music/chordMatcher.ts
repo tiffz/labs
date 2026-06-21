@@ -43,14 +43,17 @@ export function parseChordSymbol(symbol: string): ParsedChord | null {
   const trimmed = symbol.trim();
   if (!trimmed) return null;
 
-  let rootLen = 1;
-  if (trimmed.length > 1 && (trimmed[1] === '#' || trimmed[1] === 'b')) rootLen = 2;
+  const slashIdx = trimmed.indexOf('/');
+  const core = slashIdx >= 0 ? trimmed.slice(0, slashIdx) : trimmed;
 
-  const root = trimmed.slice(0, rootLen);
+  let rootLen = 1;
+  if (core.length > 1 && (core[1] === '#' || core[1] === 'b')) rootLen = 2;
+
+  const root = core.slice(0, rootLen);
   const rootPc = NOTE_TO_PC[root];
   if (rootPc === undefined) return null;
 
-  const qualityStr = trimmed.slice(rootLen);
+  const qualityStr = core.slice(rootLen);
 
   const intervals = QUALITY_INTERVALS[qualityStr] ?? QUALITY_INTERVALS[''];
 

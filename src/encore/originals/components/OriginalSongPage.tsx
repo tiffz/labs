@@ -8,7 +8,7 @@ import { navigateEncore } from '../../routes/encoreAppHash';
 import { encoreMaxWidthPage } from '../../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../../theme/encoreM3Layout';
 import { takePendingOriginalDraft } from '../pendingOriginalDraft';
-import { appendOriginalChartSnapshot, restoreOriginalFromSnapshot } from '../originalsSnapshot';
+import { mergeIdleChartSnapshot, restoreOriginalFromSnapshot } from '../originalsSnapshot';
 import { createBlankOriginalSong, type EncoreOriginalSong } from '../types';
 import { OriginalsPdfImportDialog } from './OriginalsPdfImportDialog';
 import { OriginalsSongHeader, type OriginalsPageMode } from './OriginalsSongHeader';
@@ -54,6 +54,10 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
   );
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const persistedNewRef = useRef(false);
+  const latestChartRef = useRef('');
+  const saveChainRef = useRef(Promise.resolve());
+  /** Bind draft from Dexie once per song id; later live updates must not clobber in-flight edits. */
+  const hydratedOriginalIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isNew || !draft || persistedNewRef.current) return;
@@ -66,8 +70,16 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
 
   useEffect(() => {
     if (isNew) return;
-    if (live.status === 'ok') setDraft(live.song);
-    else if (live.status === 'missing') setDraft(null);
+    if (live.status === 'missing') {
+      hydratedOriginalIdRef.current = null;
+      setDraft(null);
+      return;
+    }
+    if (live.status !== 'ok') return;
+    // Re-bind when the route id changes; Dexie live updates for the same row do not reset draft.
+    if (hydratedOriginalIdRef.current === live.song.id) return;
+    hydratedOriginalIdRef.current = live.song.id;
+    setDraft(live.song);
   }, [isNew, live]);
 
   useEffect(() => {
@@ -82,24 +94,87 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
     if (draft) setWorkflowStage(readPersistedWorkflowStage(draft.id, draft));
   }, [draft?.id, draft]);
 
-  const persist = useCallback(
-    async (next: EncoreOriginalSong, opts?: { silentUndo?: boolean }) => {
-      setDraft(next);
-      await saveOriginal(next, opts);
+  useEffect(() => {
+    if (draft) latestChartRef.current = draft.lyricsAndChords;
+  }, [draft]);
+
+  const enqueueSave = useCallback(
+    (next: EncoreOriginalSong, opts?: { silentUndo?: boolean }) => {
+      saveChainRef.current = saveChainRef.current
+        .catch(() => undefined)
+        .then(() => saveOriginal(next, opts));
+      return saveChainRef.current;
     },
     [saveOriginal],
   );
 
+  const persist = useCallback(
+    (next: EncoreOriginalSong, opts?: { silentUndo?: boolean }) => {
+      setDraft(next);
+      latestChartRef.current = next.lyricsAndChords;
+      void enqueueSave(next, opts);
+    },
+    [enqueueSave],
+  );
+
+  const cancelIdleSnapshot = useCallback(() => {
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+  }, []);
+
+  const runIdleSnapshot = useCallback(
+    (chart: string) => {
+      setDraft((prev) => {
+        if (!prev) return prev;
+        const merged = mergeIdleChartSnapshot(prev, chart);
+        if (!merged) return prev;
+        void enqueueSave(merged, { silentUndo: true });
+        return merged;
+      });
+    },
+    [enqueueSave],
+  );
+
   const scheduleIdleSnapshot = useCallback(
     (chart: string) => {
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      cancelIdleSnapshot();
       idleTimerRef.current = setTimeout(() => {
-        if (!draft) return;
-        const withHist = appendOriginalChartSnapshot(draft, chart);
-        if (withHist.history !== draft.history) void persist(withHist, { silentUndo: true });
+        idleTimerRef.current = null;
+        runIdleSnapshot(chart);
       }, 3000);
     },
-    [draft, persist],
+    [cancelIdleSnapshot, runIdleSnapshot],
+  );
+
+  const flushIdleSnapshot = useCallback(() => {
+    cancelIdleSnapshot();
+    runIdleSnapshot(latestChartRef.current);
+  }, [cancelIdleSnapshot, runIdleSnapshot]);
+
+  useEffect(() => () => cancelIdleSnapshot(), [cancelIdleSnapshot]);
+
+  const update = useCallback(
+    (patch: Partial<EncoreOriginalSong>) => {
+      setDraft((prev) => {
+        if (!prev) return prev;
+        const next = { ...prev, ...patch, updatedAt: new Date().toISOString() };
+        latestChartRef.current = next.lyricsAndChords;
+        void enqueueSave(next, { silentUndo: true });
+        return next;
+      });
+    },
+    [enqueueSave],
+  );
+
+  const onChartChange = useCallback(
+    (lyricsAndChords: string) => {
+      latestChartRef.current = lyricsAndChords;
+      update({ lyricsAndChords });
+      scheduleIdleSnapshot(lyricsAndChords);
+    },
+    [scheduleIdleSnapshot, update],
   );
 
   const activeSong = draft ?? (live.status === 'ok' ? live.song : null);
@@ -123,16 +198,6 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
       </Box>
     );
   }
-
-  const update = (patch: Partial<EncoreOriginalSong>) => {
-    const next = { ...activeSong, ...patch, updatedAt: new Date().toISOString() };
-    void persist(next, { silentUndo: true });
-  };
-
-  const onChartChange = (lyricsAndChords: string) => {
-    update({ lyricsAndChords });
-    scheduleIdleSnapshot(lyricsAndChords);
-  };
 
   const chordsPaintScroll = mode === 'write' && workflowStage === 'chords';
   const pageScrollIntegrated = true;
@@ -160,6 +225,7 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
       integratedPageScroll={chordsPaintScroll}
       pageScrollIntegrated={pageScrollIntegrated}
       onWorkflowStageChange={setWorkflowStage}
+      onBeforeWorkflowStageChange={flushIdleSnapshot}
       onChartChange={onChartChange}
       onSongChange={(patch) => update(patch)}
       onPersist={(next) => persist(next)}

@@ -14,7 +14,7 @@ function layoutWithTwoChordsOnAround(): string {
 describe('useOriginalsChartLayout', () => {
   it('toggles selection by chordId when two chords share a word', () => {
     const onChange = vi.fn();
-    const { result } = renderHook(() => useOriginalsChartLayout(layoutWithTwoChordsOnAround(), onChange));
+    const { result } = renderHook(() => useOriginalsChartLayout(layoutWithTwoChordsOnAround(), onChange, 'Bb'));
 
     const section = result.current.layout.sections[0]!;
     const line = section.lines[0]!;
@@ -49,7 +49,7 @@ describe('useOriginalsChartLayout', () => {
 
   it('moves selected chord to another word using snapped token indices', () => {
     const onChange = vi.fn();
-    const { result } = renderHook(() => useOriginalsChartLayout(layoutWithTwoChordsOnAround(), onChange));
+    const { result } = renderHook(() => useOriginalsChartLayout(layoutWithTwoChordsOnAround(), onChange, 'Bb'));
 
     const section = result.current.layout.sections[0]!;
     const line = section.lines[0]!;

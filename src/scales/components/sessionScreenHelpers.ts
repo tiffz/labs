@@ -1,4 +1,4 @@
-import { formatDwellCleanRunsSubline } from '../progress/store';
+import { formatDwellCleanRunsSubline, formatDwellPerfectRunsSubline } from '../progress/store';
 import type { RunOutcomeTier } from '../progress/store';
 import type { PracticeRecord } from '../progress/types';
 import type { SessionExercise } from '../curriculum/types';
@@ -97,12 +97,19 @@ export function computeDwellToastCopy(params: {
     inDrill
       ? `${percent}% · ${streakNumerator}/${streakDenominator}`
       : streakDenominator > 0
-        ? formatDwellCleanRunsSubline(
-          percent,
-          streakNumerator,
-          streakDenominator,
-          onAdvancementStage ? 'advancement' : 'stage',
-        )
+        ? (onAdvancementStage
+          ? formatDwellPerfectRunsSubline(
+            percent,
+            streakNumerator,
+            streakDenominator,
+            'advancement',
+          )
+          : formatDwellCleanRunsSubline(
+            percent,
+            streakNumerator,
+            streakDenominator,
+            'stage',
+          ))
         : `${percent}%`;
 
   return {

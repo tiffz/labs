@@ -73,7 +73,15 @@ export function playbackFieldSelectMenuClass(
 export function resolvePlaybackFieldSelectAppearance(
   appearance: string,
 ): PlaybackFieldSelectAppearance {
-  return appearance === 'encore' ? 'encore' : 'default';
+  if (
+    appearance === 'encore' ||
+    appearance === 'words' ||
+    appearance === 'chords' ||
+    appearance === 'piano'
+  ) {
+    return appearance;
+  }
+  return 'default';
 }
 
 /** Forward wheel events on an invisible backdrop to the page scroll container. */

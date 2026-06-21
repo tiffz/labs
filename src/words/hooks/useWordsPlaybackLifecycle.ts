@@ -1,4 +1,10 @@
 import { useEffect, useRef } from 'react';
+import type { SongSection } from '../../shared/music/songSections';
+import {
+  getCompatibleStylingStrategies,
+  isStrategyCompatibleWithTimeSignature,
+} from '../../shared/music/chordStylingCompatibility';
+import type { TimeSignature } from '../../shared/rhythm/types';
 import { createAppAnalytics } from '../../shared/utils/analytics';
 
 const wordsAnalytics = createAppAnalytics('words');
@@ -23,9 +29,9 @@ export function useWordsKeyboardShortcuts(params: {
   setSoundMenuOpen: (open: boolean) => void;
   setOpenSectionSettingsId: (id: string | null) => void;
   setSectionRandomizeMenuId: (id: string | null) => void;
+  setSectionChorusLinkMenuId: (id: string | null) => void;
   setRandomizeMenuOpen: (open: boolean) => void;
   setExportMenuOpen: (open: boolean) => void;
-  undoSectionsChange: () => boolean;
 }): void {
   const paramsRef = useRef(params);
   paramsRef.current = params;
@@ -38,6 +44,7 @@ export function useWordsKeyboardShortcuts(params: {
         p.setSoundMenuOpen(false);
         p.setOpenSectionSettingsId(null);
         p.setSectionRandomizeMenuId(null);
+        p.setSectionChorusLinkMenuId(null);
         p.setRandomizeMenuOpen(false);
         p.setExportMenuOpen(false);
         return;
@@ -56,18 +63,6 @@ export function useWordsKeyboardShortcuts(params: {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
-
-  useEffect(() => {
-    const onUndoChange = (event: KeyboardEvent) => {
-      if ((!event.ctrlKey && !event.metaKey) || event.shiftKey) return;
-      if (event.key.toLowerCase() !== 'z') return;
-      if (isEditableTarget(event.target as HTMLElement | null)) return;
-      if (!paramsRef.current.undoSectionsChange()) return;
-      event.preventDefault();
-    };
-    window.addEventListener('keydown', onUndoChange);
-    return () => window.removeEventListener('keydown', onUndoChange);
   }, []);
 }
 
@@ -127,9 +122,9 @@ export function useWordsPlaybackLifecycle(params: {
 }
 
 export function useWordsTimeSignatureTemplateReset(params: {
-  timeSignature: import('../../shared/rhythm/types').TimeSignature;
+  timeSignature: TimeSignature;
   templatePresets: Array<{ notation: string }>;
-  setSections: React.Dispatch<React.SetStateAction<import('../../shared/music/songSections').SongSection[]>>;
+  applySectionsChange: (transform: (previous: SongSection[]) => SongSection[]) => void;
   setBackingBeatNotation: (notation: string) => void;
 }): void {
   const prevTimeSignatureRef = useRef(params.timeSignature);
@@ -144,10 +139,16 @@ export function useWordsTimeSignatureTemplateReset(params: {
     }
     const newDefault = params.templatePresets[0]?.notation ?? '';
     if (!newDefault) return;
-    params.setSections((previous) =>
+    params.applySectionsChange((previous) =>
       previous.map((section) => ({
         ...section,
         templateNotation: newDefault,
+        chordStyleId: isStrategyCompatibleWithTimeSignature(
+          section.chordStyleId,
+          params.timeSignature
+        )
+          ? section.chordStyleId
+          : (getCompatibleStylingStrategies(params.timeSignature)[0] ?? 'simple'),
       }))
     );
     params.setBackingBeatNotation(newDefault);

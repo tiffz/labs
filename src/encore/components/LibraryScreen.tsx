@@ -100,10 +100,9 @@ import {
   normalizeSavedSearchFilterValues,
 } from '../repertoire/repertoireSavedSearchFilter';
 import { buildLibraryRepertoireFilterFieldDefs } from '../repertoire/buildLibraryRepertoireFilterFieldDefs';
-import { ENCORE_PERFORMANCE_KEY_OPTIONS } from '../repertoire/performanceKeys';
 import { collectAllSongTags, normalizeSongTags } from '../repertoire/songTags';
 import { withPracticingToggle } from '../repertoire/practicingToggle';
-import { InlineChipSelect } from '../ui/InlineEditChip';
+import { EncoreKeyChip } from '../ui/EncoreKeyChip';
 import { InlineSongTagsCell } from '../ui/InlineSongTagsCell';
 import { encoreMrtRepertoireTableOptions } from './encoreMrtTableDefaults';
 import {
@@ -1277,16 +1276,14 @@ export function LibraryScreen(props?: {
           return (
             <Stack direction="row" alignItems="center" spacing={0.25} sx={ENCORE_ROW_HOVER_ACTIONS_SX}>
               <Box sx={{ flex: 1, minWidth: 0 }} onClick={(e) => e.stopPropagation()}>
-                <InlineChipSelect<string>
-                  value={song.performanceKey ?? null}
-                  options={ENCORE_PERFORMANCE_KEY_OPTIONS}
-                  freeSolo
-                  clearable
+                <EncoreKeyChip
+                  value={song.performanceKey}
                   placeholder="Set key"
-                  onChange={(v) => {
+                  clearable
+                  onChange={(next) => {
                     void saveSong({
                       ...song,
-                      performanceKey: v ?? undefined,
+                      performanceKey: next.trim() || undefined,
                       updatedAt: new Date().toISOString(),
                     });
                   }}

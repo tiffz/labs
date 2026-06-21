@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
 import type { RefObject } from 'react';
 import { primeAudioContext } from '../../shared/playback/audioContextLifecycle';
-import { ALL_KEYS } from '../../shared/music/randomization';
-import type { Key } from '../../shared/music/chordTypes';
+import type { SongKey } from '../../shared/music/songKeyFormat';
+import { randomSongKey } from '../../shared/music/songKeyFormat';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import type { SampledPianoLoadState } from '../../shared/music/sampledPianoLoadState';
 import type { SoundType } from '../../shared/music/soundOptions';
 import type { WordsPlaybackRailProps } from '../components/WordsPlaybackRail';
-import { clampBpm, pickRandom } from '../utils/appRhythmHelpers';
+import { clampBpm } from '../utils/appRhythmHelpers';
 import {
   BACKING_FALLBACK_TEMPLATE,
   TIME_SIGNATURE_OPTIONS,
@@ -21,8 +21,8 @@ export function useWordsPlaybackRailProps(params: {
   chordAudioContextRef: RefObject<AudioContext | null>;
   bpm: number;
   setBpm: React.Dispatch<React.SetStateAction<number>>;
-  songKey: Key;
-  setSongKey: React.Dispatch<React.SetStateAction<Key>>;
+  songKey: SongKey;
+  setSongKey: React.Dispatch<React.SetStateAction<SongKey>>;
   timeSignature: TimeSignature;
   setTimeSignature: React.Dispatch<React.SetStateAction<TimeSignature>>;
   metronomeEnabled: boolean;
@@ -142,7 +142,7 @@ export function useWordsPlaybackRailProps(params: {
       onRandomizeBpm: () => setBpm(clampBpm(Math.round(80 + Math.random() * 70))),
       songKey,
       onKeyChange: (next) => setSongKey(next),
-      onRandomizeKey: () => setSongKey(pickRandom(ALL_KEYS)),
+      onRandomizeKey: () => setSongKey(randomSongKey()),
       timeSignature,
       timeSignatureOptions: TIME_SIGNATURE_OPTIONS,
       onTimeSignatureChange: setTimeSignature,

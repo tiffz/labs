@@ -29,7 +29,7 @@ function makeState(): ChordProgressionState {
 
 describe('ManualControls progression input', () => {
   const openProgressionEditor = () => {
-    return screen.getByPlaceholderText('I–V–vi–IV or C–G–Am–F');
+    return screen.getByPlaceholderText('I–V–vi–IV or Dm → Bbmaj7/D → Gm/D');
   };
 
   it('applies custom chord-symbol progression on Enter', () => {

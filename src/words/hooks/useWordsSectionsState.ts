@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
-import { parseProgressionText } from '../../shared/music/chordProgressionText';
 import {
   createDefaultSection,
   findPreviousChorus,
@@ -11,55 +10,110 @@ import {
   looksLikeFullSongLyrics,
   type ParsedLyricSectionDraft,
 } from '../../shared/music/lyricSectionParser';
-import type { Key } from '../../shared/music/chordTypes';
+import type { SongKey } from '../../shared/music/songKeyFormat';
 import {
   cloneSectionsSnapshot,
   normalizeSectionsSnapshot,
 } from '../utils/sectionSnapshot';
 import {
+  applyLinkAllChorusLyrics,
+  applyLinkAllChorusTemplates,
+  applyUnlinkAllChorusLyrics,
+  applyUnlinkAllChorusTemplates,
+} from '../utils/wordsChorusLinking';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
+import type { LabsUndoCommit } from '../../shared/undo/labsUndoStack';
+import {
+  cloneWordsDocumentSnapshot,
+  type WordsDocumentSnapshot,
+} from '../utils/wordsDocumentSnapshot';
+import {
   DEFAULT_SECTIONS,
   DEFAULT_SONG_KEY,
-  MAX_UNDO_HISTORY,
   SECTION_CREATE_DEFAULTS,
 } from '../utils/wordsAppDefaults';
 
 export function useWordsSectionsState() {
+  const { push, isReplayingRef } = useLabsUndo();
   const [sections, setSections] = useState<SongSection[]>(DEFAULT_SECTIONS);
-  const [songKey, setSongKey] = useState<Key>(DEFAULT_SONG_KEY);
+  const [songKey, setSongKey] = useState<SongKey>(DEFAULT_SONG_KEY);
   const [lyricImportOpen, setLyricImportOpen] = useState(false);
   const [lyricImportText, setLyricImportText] = useState('');
-  const undoHistoryRef = useRef<Array<{ sections: SongSection[]; songKey: Key }>>(
-    []
-  );
-  const songKeyRef = useRef<Key>(songKey);
+  const sectionsRef = useRef(sections);
+  const songKeyRef = useRef<SongKey>(songKey);
+
+  useEffect(() => {
+    sectionsRef.current = sections;
+  }, [sections]);
 
   useEffect(() => {
     songKeyRef.current = songKey;
   }, [songKey]);
 
-  const pushUndoSnapshot = useCallback(
-    (sectionsSnapshot: SongSection[], songKeySnapshot: Key) => {
-      undoHistoryRef.current.push({
-        sections: cloneSectionsSnapshot(sectionsSnapshot),
-        songKey: songKeySnapshot,
+  const pushDocumentUndo = useCallback(
+    (before: WordsDocumentSnapshot, after: WordsDocumentSnapshot) => {
+      if (isReplayingRef.current) return;
+      const beforeClone = cloneWordsDocumentSnapshot(before);
+      const afterClone = cloneWordsDocumentSnapshot(after);
+      push({
+        undo: () => {
+          isReplayingRef.current = true;
+          setSections(
+            normalizeSectionsSnapshot(cloneSectionsSnapshot(beforeClone.sections))
+          );
+          setSongKey(beforeClone.songKey);
+          isReplayingRef.current = false;
+        },
+        redo: () => {
+          isReplayingRef.current = true;
+          setSections(
+            normalizeSectionsSnapshot(cloneSectionsSnapshot(afterClone.sections))
+          );
+          setSongKey(afterClone.songKey);
+          isReplayingRef.current = false;
+        },
       });
-      if (undoHistoryRef.current.length > MAX_UNDO_HISTORY) {
-        undoHistoryRef.current.shift();
-      }
     },
-    []
+    [push, isReplayingRef]
+  );
+
+  const pushManualUndo = useCallback(
+    (commit: LabsUndoCommit) => {
+      if (!isReplayingRef.current) push(commit);
+    },
+    [push, isReplayingRef]
+  );
+
+  const applyDocumentChange = useCallback(
+    (transform: (previous: WordsDocumentSnapshot) => WordsDocumentSnapshot | null) => {
+      const previous: WordsDocumentSnapshot = {
+        sections: sectionsRef.current,
+        songKey: songKeyRef.current,
+      };
+      const result = transform(previous);
+      if (!result) return;
+      const nextSections = normalizeSectionsSnapshot(result.sections);
+      if (nextSections === previous.sections && result.songKey === previous.songKey) {
+        return;
+      }
+      pushDocumentUndo(previous, {
+        sections: nextSections,
+        songKey: result.songKey,
+      });
+      setSections(nextSections);
+      setSongKey(result.songKey);
+    },
+    [pushDocumentUndo]
   );
 
   const applySectionsChange = useCallback(
     (transform: (previous: SongSection[]) => SongSection[]) => {
-      setSections((previous) => {
-        const next = normalizeSectionsSnapshot(transform(previous));
-        if (next === previous) return previous;
-        pushUndoSnapshot(previous, songKeyRef.current);
-        return next;
-      });
+      applyDocumentChange((previous) => ({
+        sections: transform(previous.sections),
+        songKey: previous.songKey,
+      }));
     },
-    [pushUndoSnapshot]
+    [applyDocumentChange]
   );
 
   const updateSection = useCallback(
@@ -170,18 +224,25 @@ export function useWordsSectionsState() {
     [applySectionsChange]
   );
 
-  const setSectionChordProgression = useCallback(
+  const previewSectionChordProgression = useCallback((sectionId: string, input: string) => {
+    setSections((previous) =>
+      previous.map((section) =>
+        section.id === sectionId ? { ...section, chordProgressionInput: input } : section
+      )
+    );
+  }, []);
+
+  const commitSectionChordProgression = useCallback(
     (sectionId: string, input: string) => {
-      updateSection(sectionId, (section) => ({
-        ...section,
-        chordProgressionInput: input,
-      }));
-      const parsed = parseProgressionText(input, songKeyRef.current);
-      if (parsed.isValid && parsed.format === 'chord' && parsed.inferredKey) {
-        setSongKey(parsed.inferredKey);
-      }
+      const section = sectionsRef.current.find((candidate) => candidate.id === sectionId);
+      if (!section || section.chordProgressionInput === input) return;
+      applySectionsChange((previous) =>
+        previous.map((entry) =>
+          entry.id === sectionId ? { ...entry, chordProgressionInput: input } : entry
+        )
+      );
     },
-    [updateSection]
+    [applySectionsChange]
   );
 
   const openLyricImport = useCallback((rawText: string) => {
@@ -227,13 +288,21 @@ export function useWordsSectionsState() {
     [openLyricImport]
   );
 
-  const undoSectionsChange = useCallback(() => {
-    const snapshot = undoHistoryRef.current.pop();
-    if (!snapshot) return false;
-    setSections(normalizeSectionsSnapshot(cloneSectionsSnapshot(snapshot.sections)));
-    setSongKey(snapshot.songKey);
-    return true;
-  }, []);
+  const linkAllChorusLyrics = useCallback(() => {
+    applySectionsChange(applyLinkAllChorusLyrics);
+  }, [applySectionsChange]);
+
+  const unlinkAllChorusLyrics = useCallback(() => {
+    applySectionsChange(applyUnlinkAllChorusLyrics);
+  }, [applySectionsChange]);
+
+  const linkAllChorusTemplates = useCallback(() => {
+    applySectionsChange(applyLinkAllChorusTemplates);
+  }, [applySectionsChange]);
+
+  const unlinkAllChorusTemplates = useCallback(() => {
+    applySectionsChange(applyUnlinkAllChorusTemplates);
+  }, [applySectionsChange]);
 
   return {
     sections,
@@ -244,17 +313,23 @@ export function useWordsSectionsState() {
     setLyricImportOpen,
     lyricImportText,
     applySectionsChange,
+    applyDocumentChange,
+    pushManualUndo,
     updateSection,
     updateSectionLyrics,
     updateSectionTemplateNotation,
     addSection,
     removeSection,
     moveSection,
-    setSectionChordProgression,
+    previewSectionChordProgression,
+    commitSectionChordProgression,
     openLyricImport,
     applyLyricImport,
     handleSectionLyricsPaste,
-    undoSectionsChange,
+    linkAllChorusLyrics,
+    unlinkAllChorusLyrics,
+    linkAllChorusTemplates,
+    unlinkAllChorusTemplates,
   };
 }
 

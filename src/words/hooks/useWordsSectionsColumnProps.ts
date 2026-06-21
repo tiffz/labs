@@ -13,6 +13,7 @@ type SectionColumnContext = Pick<
   | 'openSectionSettingsId'
   | 'sectionSettingsPosition'
   | 'sectionRandomizeMenuId'
+  | 'sectionChorusLinkMenuId'
   | 'activeSectionLoopId'
   | 'isPlaying'
   | 'defaultTemplateNotation'
@@ -27,8 +28,10 @@ export function useWordsSectionsColumnProps(
   refs: {
     sectionSettingsMenuRef: RefObject<HTMLDivElement | null>;
     sectionRandomizeMenuRef: RefObject<HTMLDivElement | null>;
+    sectionChorusLinkMenuRef: RefObject<HTMLDivElement | null>;
     sectionSettingsAnchorRefs: RefObject<Map<string, HTMLDivElement>>;
     sectionRandomizeAnchorRefs: RefObject<Map<string, HTMLDivElement>>;
+    sectionChorusLinkAnchorRefs: RefObject<Map<string, HTMLDivElement>>;
   },
   sectionsState: Pick<
     WordsSectionsState,
@@ -39,9 +42,14 @@ export function useWordsSectionsColumnProps(
     | 'addSection'
     | 'removeSection'
     | 'moveSection'
-    | 'setSectionChordProgression'
+    | 'previewSectionChordProgression'
+    | 'commitSectionChordProgression'
     | 'openLyricImport'
     | 'handleSectionLyricsPaste'
+    | 'linkAllChorusLyrics'
+    | 'unlinkAllChorusLyrics'
+    | 'linkAllChorusTemplates'
+    | 'unlinkAllChorusTemplates'
   >,
   actions: {
     applyRandomization: (mode: RandomizeMode, sectionId?: string) => void;
@@ -52,6 +60,7 @@ export function useWordsSectionsColumnProps(
     stopPlaybackImmediately: () => void;
     setOpenSectionSettingsId: React.Dispatch<React.SetStateAction<string | null>>;
     setSectionRandomizeMenuId: React.Dispatch<React.SetStateAction<string | null>>;
+    setSectionChorusLinkMenuId: React.Dispatch<React.SetStateAction<string | null>>;
     setGenerationMenuOpen: (open: boolean) => void;
     setSoundMenuOpen: (open: boolean) => void;
     setExportMenuOpen: (open: boolean) => void;
@@ -66,9 +75,14 @@ export function useWordsSectionsColumnProps(
     addSection,
     removeSection,
     moveSection,
-    setSectionChordProgression,
+    previewSectionChordProgression,
+    commitSectionChordProgression,
     openLyricImport,
     handleSectionLyricsPaste,
+    linkAllChorusLyrics,
+    unlinkAllChorusLyrics,
+    linkAllChorusTemplates,
+    unlinkAllChorusTemplates,
   } = sectionsState;
 
   return useMemo(
@@ -76,13 +90,16 @@ export function useWordsSectionsColumnProps(
       ...context,
       sectionSettingsMenuRef: refs.sectionSettingsMenuRef,
       sectionRandomizeMenuRef: refs.sectionRandomizeMenuRef,
+      sectionChorusLinkMenuRef: refs.sectionChorusLinkMenuRef,
       sectionSettingsAnchorRefs: refs.sectionSettingsAnchorRefs,
       sectionRandomizeAnchorRefs: refs.sectionRandomizeAnchorRefs,
+      sectionChorusLinkAnchorRefs: refs.sectionChorusLinkAnchorRefs,
       onToggleSectionSettings: (sectionId: string) =>
         actions.setOpenSectionSettingsId((previous) => {
           actions.setGenerationMenuOpen(false);
           actions.setSoundMenuOpen(false);
           actions.setExportMenuOpen(false);
+          actions.setSectionChorusLinkMenuId(null);
           return previous === sectionId ? null : sectionId;
         }),
       onSectionTypeChange: (sectionId, nextType) =>
@@ -121,6 +138,13 @@ export function useWordsSectionsColumnProps(
         actions.setSectionRandomizeMenuId((previous) =>
           previous === sectionId ? null : sectionId
         ),
+      onToggleSectionChorusLinkMenu: (sectionId) =>
+        actions.setSectionChorusLinkMenuId((previous) => {
+          actions.setOpenSectionSettingsId(null);
+          actions.setSectionRandomizeMenuId(null);
+          return previous === sectionId ? null : sectionId;
+        }),
+      onCloseSectionChorusLinkMenu: () => actions.setSectionChorusLinkMenuId(null),
       onScrollSectionIntoNotation: actions.scrollSectionIntoNotationView,
       onMoveSection: moveSection,
       onRemoveSection: (sectionId) => {
@@ -132,10 +156,14 @@ export function useWordsSectionsColumnProps(
             if (context.openSectionSettingsId === sectionId) {
               actions.setOpenSectionSettingsId(null);
             }
+            if (context.sectionChorusLinkMenuId === sectionId) {
+              actions.setSectionChorusLinkMenuId(null);
+            }
           }
         );
       },
-      onSectionChordProgressionChange: setSectionChordProgression,
+      onSectionChordProgressionPreview: previewSectionChordProgression,
+      onSectionChordProgressionCommit: commitSectionChordProgression,
       onRandomizeSectionChords: actions.randomizeChordProgression,
       onSectionChordStyleChange: (sectionId, styleId) =>
         updateSection(sectionId, (previousSection) => ({
@@ -154,13 +182,19 @@ export function useWordsSectionsColumnProps(
         openLyricImport(
           sections.map((section) => section.lyrics).filter(Boolean).join('\n\n')
         ),
+      onLinkAllChorusLyrics: linkAllChorusLyrics,
+      onUnlinkAllChorusLyrics: unlinkAllChorusLyrics,
+      onLinkAllChorusTemplates: linkAllChorusTemplates,
+      onUnlinkAllChorusTemplates: unlinkAllChorusTemplates,
     }),
     [
       context,
       refs.sectionSettingsMenuRef,
       refs.sectionRandomizeMenuRef,
+      refs.sectionChorusLinkMenuRef,
       refs.sectionSettingsAnchorRefs,
       refs.sectionRandomizeAnchorRefs,
+      refs.sectionChorusLinkAnchorRefs,
       sections,
       updateSection,
       updateSectionLyrics,
@@ -168,9 +202,14 @@ export function useWordsSectionsColumnProps(
       addSection,
       removeSection,
       moveSection,
-      setSectionChordProgression,
+      previewSectionChordProgression,
+      commitSectionChordProgression,
       openLyricImport,
       handleSectionLyricsPaste,
+      linkAllChorusLyrics,
+      unlinkAllChorusLyrics,
+      linkAllChorusTemplates,
+      unlinkAllChorusTemplates,
       actions,
     ]
   );

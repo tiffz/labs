@@ -55,6 +55,8 @@ export type OriginalsSongWorkspaceProps = {
   /** Lyrics / brainstorm stages: workspace grows with content inside the page scroll region. */
   pageScrollIntegrated?: boolean;
   onWorkflowStageChange?: (stage: OriginalsWorkflowStage) => void;
+  /** Flush pending chart/history autosave before switching workflow tabs. */
+  onBeforeWorkflowStageChange?: () => void;
   onChartChange: (chordPro: string) => void;
   onSongChange: (patch: Partial<EncoreOriginalSong>) => void;
   onPersist: (next: EncoreOriginalSong) => void | Promise<void>;
@@ -65,6 +67,7 @@ export function OriginalsSongWorkspace({
   integratedPageScroll = false,
   pageScrollIntegrated = false,
   onWorkflowStageChange,
+  onBeforeWorkflowStageChange,
   onChartChange,
   onSongChange,
   onPersist,
@@ -74,7 +77,7 @@ export function OriginalsSongWorkspace({
   const [chartPasteSnack, setChartPasteSnack] = useState<string | null>(null);
   const [chordNotation, setChordNotation] = useState<ChordNotationMode>(() => readChordNotation(song.id));
   const [activePlaybackStep, setActivePlaybackStep] = useState<ChartPlaybackStep | null>(null);
-  const chart = useOriginalsChartLayout(song.lyricsAndChords, onChartChange);
+  const chart = useOriginalsChartLayout(song.lyricsAndChords, onChartChange, song.key);
 
   const onImportPastedChart = useCallback(
     (raw: string) => {
@@ -131,13 +134,16 @@ export function OriginalsSongWorkspace({
 
   const onStageChange = useCallback(
     (next: OriginalsWorkflowStage) => {
+      if (next !== stage) {
+        onBeforeWorkflowStageChange?.();
+      }
       setStage(next);
       if (next !== 'chords') {
         chart.setArmedChord(null);
         chart.onClearSelection();
       }
     },
-    [chart],
+    [chart, onBeforeWorkflowStageChange, stage],
   );
 
   const onToggleStageComplete = useCallback(() => {
@@ -397,6 +403,7 @@ export function OriginalsSongWorkspace({
                   chart.onSelectWord({ sectionId, lineId, charIndex })
                 }
                 onDeleteSelected={onDeleteSelectedChord}
+                onApplySectionProgression={chart.onApplySectionProgression}
               />
             </Box>
           </>

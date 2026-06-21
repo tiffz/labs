@@ -1,11 +1,12 @@
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import type { ReactElement, ReactNode } from 'react';
 import type { ChartLayout } from '../../../../shared/music/chordPro/chordChartLayout';
+import type { ApplySectionProgressionResult } from '../../../../shared/music/chordPro/applySectionProgression';
 import type { ChartPlaybackStep } from '../../../../shared/music/chordPro/chartPlaybackSequence';
 import type { ChordNotationMode } from '../../../../shared/music/chordSymbolDisplay';
 import type { ChordInteractionTarget, WordInteractionTarget } from '../../chartInteractionTypes';
 import { OriginalsPaintLine } from './OriginalsPaintLine';
+import { OriginalsPaintSectionHeading } from './OriginalsPaintSectionHeading';
 
 export type OriginalsPaintModeProps = {
   layout: ChartLayout;
@@ -16,6 +17,7 @@ export type OriginalsPaintModeProps = {
   selectedWord: WordInteractionTarget | null;
   activePlaybackStep: ChartPlaybackStep | null;
   scrollHeader?: ReactNode;
+  onApplySectionProgression: (sectionId: string, progression: string) => ApplySectionProgressionResult;
   onStamp: (sectionId: string, lineId: string, charIndex: number) => void;
   onSelectChord: (sectionId: string, lineId: string, charIndex: number, chordId: string) => void;
   onSelectWord: (sectionId: string, lineId: string, charIndex: number) => void;
@@ -30,6 +32,7 @@ export function OriginalsPaintMode({
   selectedWord,
   activePlaybackStep,
   scrollHeader,
+  onApplySectionProgression,
   onStamp,
   onSelectChord,
   onSelectWord,
@@ -41,16 +44,7 @@ export function OriginalsPaintMode({
         <Box className="encore-originals-paint-scroll encore-originals-paint-scroll--columns">
         {layout.sections.map((section) => (
           <Box key={section.sectionId} className="encore-originals-paint-section">
-            {section.header ? (
-              <Typography
-                component="h3"
-                variant="overline"
-                className="encore-originals-paint-section-heading"
-                sx={{ display: 'block', fontWeight: 700, letterSpacing: 0.6, mb: 0.2, color: 'text.secondary', fontSize: '0.65rem', lineHeight: 1.2 }}
-              >
-                {section.header}
-              </Typography>
-            ) : null}
+            <OriginalsPaintSectionHeading section={section} onApply={onApplySectionProgression} />
             {section.lines.map((line) => (
               <OriginalsPaintLine
                 key={line.lineId}

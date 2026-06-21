@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import type { ChordStyleId } from '../../shared/music/chordStyleOptions';
-import type { Chord as TheoryChord, ChordQuality } from '../../shared/music/chordTypes';
 import { generateVoicing } from '../../shared/music/chordVoicing';
+import { chordSymbolToTheoryChord } from '../../shared/music/chordSymbolToTheoryChord';
 import { getChordHitsForStyle } from '../../shared/music/chordStyleHits';
 import { midiToFrequency } from '../../shared/music/noteMath';
 import type { SoundType } from '../../shared/music/soundOptions';
@@ -19,7 +19,6 @@ import {
 } from '../../shared/playback/instruments';
 import { parseRhythm } from '../../shared/rhythm/rhythmParser';
 import type { TimeSignature } from '../../shared/rhythm/types';
-import { CHORD_PARSE_REGEX } from '../utils/wordsAppDefaults';
 
 export type WordsChordPlaybackRefs = {
   chordAudioContextRef: RefObject<AudioContext | null>;
@@ -107,30 +106,8 @@ export function useWordsChordPlayback(params: {
     const chordToken = chordLabelsByMeasure.get(measureIndex) ?? '';
     if (!chordToken) return;
 
-    const parsed = chordToken.match(CHORD_PARSE_REGEX);
-    if (!parsed) return;
-    const root = parsed[1] ?? 'C';
-    const suffix = (parsed[2] ?? '').toLowerCase();
-    const qualityBySuffix: Record<string, ChordQuality> = {
-      '': 'major',
-      m: 'minor',
-      dim: 'diminished',
-      aug: 'augmented',
-      sus2: 'sus2',
-      sus4: 'sus4',
-      '7': 'dominant7',
-      maj7: 'major7',
-      m7: 'minor7',
-    };
-    const quality = qualityBySuffix[suffix];
-    if (!quality) return;
-    const normalizedRoot = `${root[0]?.toUpperCase() ?? 'C'}${root.slice(1)}`;
-    const chord: TheoryChord = {
-      root: normalizedRoot,
-      quality,
-      inversion: 0,
-      octave: 4,
-    };
+    const chord = chordSymbolToTheoryChord(chordToken);
+    if (!chord) return;
 
     const ensureInstrument = async (): Promise<{
       ctx: AudioContext;

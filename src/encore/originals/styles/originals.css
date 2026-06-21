@@ -40,13 +40,16 @@
   flex-shrink: 0;
 }
 
-.encore-originals-chords-meta .encore-originals-key-input .shared-key-shell {
-  width: auto;
-  min-width: 3.75rem;
-  --key-shell-height: 30px;
-  --key-border: color-mix(in srgb, #7c3aed 22%, #e9d5ff);
-  --key-bg: #fff;
-  --key-radius: 0.45rem;
+.encore-originals-chords-meta .encore-originals-key-chip .MuiChip-root {
+  height: 30px;
+  border-radius: 0.45rem;
+  border-color: color-mix(in srgb, #7c3aed 22%, #e9d5ff);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.encore-originals-chords-meta .encore-originals-key-chip .MuiChip-label {
+  padding-inline: 0.45rem;
 }
 
 .encore-originals-chords-meta .encore-originals-bpm-inline .shared-bpm-shell {
@@ -591,7 +594,149 @@
 
 .encore-originals-paint-section {
   break-inside: avoid;
-  margin-bottom: 0.45rem;
+  margin-bottom: 1.35rem;
+}
+
+.encore-originals-workspace--chords
+  .encore-originals-paint-line
+  + .encore-originals-paint-line {
+  margin-top: 0.12rem;
+}
+
+.encore-originals-section-progression-menu {
+  min-width: min(18rem, calc(100vw - 32px));
+  max-width: min(22rem, calc(100vw - 32px));
+  border: 1px solid color-mix(in srgb, #7c3aed 14%, #e9d5ff);
+  border-radius: 0.625rem;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(76, 29, 149, 0.12);
+}
+
+.encore-originals-section-progression-menu-inner {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.65rem 0.7rem 0.7rem;
+}
+
+.encore-originals-section-progression-menu-header {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.encore-originals-section-progression-menu-title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.encore-originals-section-progression-menu-lede {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.encore-originals-section-progression-menu-field {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.encore-originals-section-progression-menu-field-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.encore-originals-section-progression-menu-field input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 2rem;
+  border: 1px solid color-mix(in srgb, #7c3aed 22%, #e9d5ff);
+  border-radius: 0.45rem;
+  padding: 0.35rem 0.55rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: #0f172a;
+  background: #fff;
+}
+
+.encore-originals-section-progression-menu-field input:focus {
+  outline: none;
+  border-color: rgba(124, 58, 237, 0.52);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1);
+}
+
+.encore-originals-section-progression-menu-error {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #b45309;
+}
+
+.encore-originals-section-progression-menu-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.encore-originals-section-progression-cancel {
+  text-transform: none;
+  font-weight: 600;
+}
+
+.encore-originals-section-progression-apply {
+  text-transform: none;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.encore-originals-paint-section-heading-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin: 0 0 0.35rem;
+  padding: 0.12rem 0.28rem 0.12rem 0;
+  border: 0;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: rgba(15, 23, 42, 0.58);
+  font: inherit;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.encore-originals-paint-section-heading-trigger:hover,
+.encore-originals-paint-section-heading-trigger.is-open {
+  color: rgba(109, 40, 217, 0.92);
+  background: color-mix(in srgb, #f5f3ff 72%, transparent);
+}
+
+.encore-originals-paint-section-heading-trigger:focus-visible {
+  outline: 2px solid rgba(124, 58, 237, 0.42);
+  outline-offset: 2px;
+}
+
+.encore-originals-paint-section-heading-chevron {
+  font-size: 0.95rem;
+  opacity: 0.55;
+  transition: transform 120ms ease;
+}
+
+.encore-originals-paint-section-heading-trigger.is-open
+  .encore-originals-paint-section-heading-chevron {
+  transform: rotate(180deg);
+  opacity: 0.85;
 }
 
 @media (min-width: 960px) {

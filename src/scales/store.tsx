@@ -12,6 +12,7 @@ import {
   markOnboardingSeen,
   markGuidanceIntroduced,
   stageAdvancementGateMet,
+  clearPendingRegressNotice,
 } from './progress/store';
 import { findExercise } from './curriculum/tiers';
 import { planSession } from './curriculum/sessionPlanner';
@@ -208,6 +209,7 @@ type Action =
   | { type: 'CLEAR_PIANO_ADVANCE_SHORTCUTS' }
   | { type: 'LOAD_STAGE'; exercise: SessionExercise; score: PianoScore }
   | { type: 'MARK_ONBOARDING_SEEN' }
+  | { type: 'CLEAR_REGRESS_NOTICE'; exerciseId: string }
   | { type: 'MARK_GUIDANCE_INTRODUCED'; stage: Stage; exercise: ExerciseDefinition }
   /** Tester-only: replace local progress from Google Drive restore. */
   | { type: 'REPLACE_PROGRESS_FROM_CLOUD'; progress: ScalesProgressData };
@@ -636,8 +638,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
       // `currentStageId !== stageId` check therefore missed fluent-gate / last-
       // level completions and kept the auto-loop + boundary UI stuck off.
       const curriculumAdvanced =
-        afterProgress.currentStageId !== beforeProgress.currentStageId
-        || (afterProgress.completedStageId ?? null) !== (beforeProgress.completedStageId ?? null);
+        (afterProgress.completedStageId ?? null) !== (beforeProgress.completedStageId ?? null);
 
       // Review slots often target an earlier stage (stale/shaky refresh). Hitting
       // 3/3 there must still end the auto-loop even when `currentStageId` does not move.
@@ -928,6 +929,13 @@ function reducer(state: ScalesState, action: Action): ScalesState {
 
     case 'MARK_ONBOARDING_SEEN': {
       const next = markOnboardingSeen(state.progress);
+      if (next === state.progress) return state;
+      saveProgress(next);
+      return { ...state, progress: next };
+    }
+
+    case 'CLEAR_REGRESS_NOTICE': {
+      const next = clearPendingRegressNotice(state.progress, action.exerciseId);
       if (next === state.progress) return state;
       saveProgress(next);
       return { ...state, progress: next };

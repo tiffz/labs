@@ -6,7 +6,8 @@ import {
   computeCompletionPadMeasures,
 } from '../../shared/music/chordProgressionCompletion';
 import type { ChordStyleId } from '../../shared/music/chordStyleOptions';
-import type { Key } from '../../shared/music/chordTypes';
+import type { SongKey } from '../../shared/music/songKeyFormat';
+import { songKeyToTonic } from '../../shared/music/chordTheory';
 import type { SongSection } from '../../shared/music/songSections';
 import {
   generateWordRhythm,
@@ -65,10 +66,10 @@ export function buildEffectiveSections(sections: SongSection[]): EffectiveSectio
 
 export function buildSectionProgressions(
   effectiveSections: EffectiveSection[],
-  songKey: Key
+  songKey: SongKey
 ) {
   return effectiveSections.map((section) => {
-    const parsed = parseProgressionText(section.chordProgressionInput, songKey);
+    const parsed = parseProgressionText(section.chordProgressionInput, songKeyToTonic(songKey));
     if (parsed.format !== 'empty' && parsed.tokens.length < 2) {
       return { ...parsed, isValid: false, format: 'invalid' as const };
     }
@@ -152,7 +153,7 @@ export function buildChordLabelsByMeasure(
   parsedMeasureCount: number,
   sectionRenderPlans: SectionRenderPlan[],
   sectionProgressions: ReturnType<typeof buildSectionProgressions>,
-  songKey: Key
+  songKey: SongKey
 ): Map<number, string> {
   const labels = new Map<number, string>();
   if (parsedMeasureCount === 0) return labels;

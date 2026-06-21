@@ -4,7 +4,10 @@ import RhythmDisplay from './components/RhythmDisplay';
 import NotePalette, { type NotePaletteHandle } from './components/NotePalette';
 import PlaybackControls from './components/PlaybackControls';
 import RhythmInfoCard from './components/RhythmInfoCard';
-import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
+import {
+  LabsKeyboardShortcutsHost,
+  drumsKeyboardShortcutSections,
+} from '../shared/keyboardShortcuts';
 import RhythmSequencer from './components/RhythmSequencer';
 import CollapsibleSection from './components/CollapsibleSection';
 // UniversalTomInput removed
@@ -50,7 +53,6 @@ const App: React.FC = () => {
 
   const [bpm, setBpm] = useState<number>(initialState.bpm);
   const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(initialState.metronomeEnabled || false);
-  const [showKeyboardHelp, setShowKeyboardHelp] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showShareFeedback, setShowShareFeedback] = useState<boolean>(false);
   const [shareFeedbackPosition, setShareFeedbackPosition] = useState<{ top: number; left: number } | null>(null);
@@ -471,14 +473,6 @@ const App: React.FC = () => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const modKeyPressed = isMac ? e.metaKey : e.ctrlKey;
 
-      // Help menu - always available (check for Shift+/ which produces ?, or direct ? key)
-      // Check this BEFORE checking if user is typing so it works even in input fields
-      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
-        e.preventDefault();
-        setShowKeyboardHelp(prev => !prev);
-        return;
-      }
-
       // Check if user is typing in an input field
       const isTyping = e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
@@ -542,9 +536,10 @@ const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, handlePlay, handleStop, undo, redo, handleRandomize, setShowKeyboardHelp, selection, handleDeleteSelection, clearSelection, notation]);
+  }, [isPlaying, handlePlay, handleStop, undo, redo, handleRandomize, selection, handleDeleteSelection, clearSelection, notation]);
 
   return (
+    <LabsKeyboardShortcutsHost sections={drumsKeyboardShortcutSections} theme="drums">
     <div className="app-layout">
       <SkipToMain />
       {/* Main content area */}
@@ -662,10 +657,6 @@ const App: React.FC = () => {
           onRequestNotationFocus={handleRequestNotationFocus}
         />
       </aside>
-      <KeyboardShortcutsHelp
-        isOpen={showKeyboardHelp}
-        onClose={() => setShowKeyboardHelp(false)}
-      />
 
       {/* Share feedback toast */}
       {drumsDebugMode && (
@@ -710,6 +701,7 @@ const App: React.FC = () => {
         </div>
       )}
     </div>
+    </LabsKeyboardShortcutsHost>
   );
 };
 

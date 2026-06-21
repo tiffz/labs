@@ -4,6 +4,7 @@ import {
   extractChordSymbolsFromText,
   isChordProSectionHeaderLine,
   parseChordProLine,
+  parseChordProSectionHeader,
   parseChordProSections,
   semitonesBetweenKeys,
   transposeChordProDocument,
@@ -49,5 +50,18 @@ describe('chordProText', () => {
   it('detects section headers', () => {
     expect(isChordProSectionHeaderLine('[Verse 1]')).toBe(true);
     expect(isChordProSectionHeaderLine('plain line')).toBe(false);
+    expect(isChordProSectionHeaderLine('[Dm]')).toBe(false);
+    expect(isChordProSectionHeaderLine('[Cmaj7]')).toBe(false);
+    expect(parseChordProSectionHeader('[Dm]')).toBeNull();
+  });
+
+  it('does not split on standalone chord-only lines after a section header', () => {
+    const doc = `[Chorus]
+[Dm]
+Let it crash, let it pour.`;
+    const sections = parseChordProSections(doc);
+    expect(sections).toHaveLength(1);
+    expect(sections[0]?.header).toBe('Chorus');
+    expect(sections[0]?.lines).toEqual(['[Dm]', 'Let it crash, let it pour.']);
   });
 });

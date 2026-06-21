@@ -1,5 +1,6 @@
 import { CHORD_STYLE_OPTIONS } from '../../shared/music/chordStyleOptions';
-import type { Key } from '../../shared/music/chordTypes';
+import type { SongKey } from '../../shared/music/songKeyFormat';
+import { songKeyToTonic } from '../../shared/music/chordTheory';
 import { getRandomPopularChordProgressionInKey } from '../../shared/music/randomChordProgression';
 import type { SongSection } from '../../shared/music/songSections';
 import { getTemplateSyncopationScore, pickRandom } from './appRhythmHelpers';
@@ -25,7 +26,7 @@ export function applyRandomizationTransform(
   params: {
     mode: RandomizeMode;
     sectionId?: string;
-    nextKey: Key;
+    nextKey: SongKey;
     templateNotationPool: string[];
   }
 ): SongSection[] {
@@ -38,12 +39,13 @@ export function applyRandomizationTransform(
   );
   if (targetIds.size === 0) return previous;
 
-  const verseBaseProgression = getRandomPopularChordProgressionInKey(nextKey).display;
+  const progressionKey = songKeyToTonic(nextKey);
+  const verseBaseProgression = getRandomPopularChordProgressionInKey(progressionKey).display;
   const chorusProgression =
     Math.random() < 0.68
       ? verseBaseProgression
-      : getRandomPopularChordProgressionInKey(nextKey).display;
-  let bridgeProgression = getRandomPopularChordProgressionInKey(nextKey).display;
+      : getRandomPopularChordProgressionInKey(progressionKey).display;
+  let bridgeProgression = getRandomPopularChordProgressionInKey(progressionKey).display;
   for (let attempts = 0; attempts < 4; attempts += 1) {
     if (
       bridgeProgression !== verseBaseProgression &&
@@ -51,7 +53,7 @@ export function applyRandomizationTransform(
     ) {
       break;
     }
-    bridgeProgression = getRandomPopularChordProgressionInKey(nextKey).display;
+    bridgeProgression = getRandomPopularChordProgressionInKey(progressionKey).display;
   }
   const verseTemplate = pickRandom(templateNotationPool);
   const chorusTemplate =
@@ -67,8 +69,7 @@ export function applyRandomizationTransform(
     const shouldRerollPhrasing =
       mode === 'phrasing' || mode === 'rhythm' || mode === 'everything';
     const shouldRerollChords = mode === 'chords' || mode === 'everything';
-    const shouldRerollGroove =
-      mode === 'groove' || mode === 'rhythm' || mode === 'everything';
+    const shouldRerollGroove = mode === 'rhythm' || mode === 'everything';
     const sectionProgression =
       section.type === 'bridge'
         ? bridgeProgression

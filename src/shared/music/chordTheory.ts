@@ -3,6 +3,7 @@
  */
 
 import type { Chord, ChordQuality, Key, RomanNumeral } from './chordTypes';
+import { parseSongKey } from './songKeyFormat';
 import { NOTE_TO_PITCH_CLASS, spellPitchClass } from './theory/pitchClass';
 
 export type HarmonicMode = 'major' | 'minor';
@@ -28,11 +29,20 @@ const MAJOR_SCALE_INTERVALS = [0, 2, 4, 5, 7, 9, 11] as const;
 const MINOR_SCALE_INTERVALS = [0, 2, 3, 5, 7, 8, 10] as const;
 
 export function harmonicModeFromSongKey(songKey: string): HarmonicMode {
-  return songKey.endsWith('m') ? 'minor' : 'major';
+  return parseSongKey(songKey).mode;
 }
 
 export function songKeyToTonic(songKey: string): Key {
-  return songKey.replace(/m$/, '') as Key;
+  return parseSongKey(songKey).root as Key;
+}
+
+/** Resolve roman numerals in a full song key string (root + major/minor). */
+export function progressionToChordsInSongKey(
+  progression: RomanNumeral[],
+  songKey: string,
+): Chord[] {
+  const { root, mode } = parseSongKey(songKey);
+  return progressionToChords(progression, root as Key, mode);
 }
 
 export function getScalePitchClasses(key: Key, mode: HarmonicMode = 'major'): number[] {

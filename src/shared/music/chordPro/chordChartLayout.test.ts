@@ -4,6 +4,7 @@ import { parsePastedChartToChartLayout } from './pastedChartImport';
 import {
   assignChordCharIndicesFromColumns,
   groupChordsByTokenStart,
+  layoutToWriteDocument,
   moveChordById,
   parseChordProToChartLayout,
   parseWriteDocumentToLayout,
@@ -19,6 +20,7 @@ describe('chordChartLayout', () => {
   it('round-trips ChordPro through layout', () => {
     const doc = `[Verse 1]
 [Fm]I'm not like [Bb]you
+
 [Chorus]
 [C]Hook line`;
     const layout = parseChordProToChartLayout(doc);
@@ -51,6 +53,15 @@ describe('chordChartLayout', () => {
     expect(next).toEqual([expect.objectContaining({ chordName: 'G', charIndex: 3 })]);
   });
 
+  it('separates sections with a blank line in write documents', () => {
+    const layout = parseChordProToChartLayout(`[Verse 1]\nLine one\n\n[Chorus]\nHook`);
+    expect(layoutToWriteDocument(layout)).toBe(`[Verse 1]
+Line one
+
+[Chorus]
+Hook`);
+  });
+
   it('preserves chords when write document changes lyrics only', () => {
     const layout = parseChordProToChartLayout(`[Verse 1]\n[C]Hello`);
     const writeDoc = `[Verse 1]\nHello there`;
@@ -68,6 +79,32 @@ describe('chordChartLayout', () => {
 Ab     Bb
 [Instrumental]`);
     expect(serializeChartLayoutToChordPro(layout)).toContain('[Instrumental]\n[Ab][Bb]');
+  });
+
+  it('does not treat chord-only lines as new sections on round-trip', () => {
+    const layout = parseChordProToChartLayout(`[Chorus]
+[F]Let it crash, let it pour.`);
+    const withLeadingChordOnly: typeof layout = {
+      sections: [
+        {
+          ...layout.sections[0]!,
+          lines: [
+            {
+              lineId: 'chord-only',
+              text: '',
+              chords: [{ id: 'c1', chordName: 'Dm', charIndex: 0 }],
+            },
+            ...layout.sections[0]!.lines,
+          ],
+        },
+      ],
+    };
+    const serialized = serializeChartLayoutToChordPro(withLeadingChordOnly);
+    expect(serialized).toContain('[Dm]');
+    const roundTripped = parseChordProToChartLayout(serialized);
+    expect(roundTripped.sections).toHaveLength(1);
+    expect(roundTripped.sections[0]?.header).toBe('Chorus');
+    expect(roundTripped.sections[0]?.lines[0]?.chords[0]?.chordName).toBe('Dm');
   });
 
   it('allows removing the only section header in write mode', () => {

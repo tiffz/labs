@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { AudioPlayer } from '../../shared/audio/audioPlayer';
 import { buildEffectiveAuxiliaryDrumGain } from '../../shared/music/playbackVolumeMix';
 import { CHORD_STYLE_OPTIONS } from '../../shared/music/chordStyleOptions';
-import { ALL_KEYS } from '../../shared/music/randomization';
+import { randomSongKey, type SongKey } from '../../shared/music/songKeyFormat';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import {
   clampBpm,
@@ -15,23 +15,39 @@ import {
   buildTemplateNotationPool,
   type TemplatePresetOption,
 } from '../utils/wordsTemplateHelpers';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import type { WordsSectionsState } from './useWordsSectionsState';
+import {
+  cloneWordsDocumentSnapshot,
+  type WordsDocumentSnapshot,
+} from '../utils/wordsDocumentSnapshot';
+import { normalizeSectionsSnapshot, cloneSectionsSnapshot } from '../utils/sectionSnapshot';
 
 export function useWordsRandomization(params: {
   sectionsState: Pick<
     WordsSectionsState,
-    'sections' | 'songKey' | 'setSongKey' | 'applySectionsChange' | 'updateSection'
+    | 'sections'
+    | 'songKey'
+    | 'setSongKey'
+    | 'setSections'
+    | 'applySectionsChange'
+    | 'pushManualUndo'
+    | 'updateSection'
   >;
   setBpm: React.Dispatch<React.SetStateAction<number>>;
+  bpm: number;
   timeSignature: TimeSignature;
   templatePresets: TemplatePresetOption[];
 }) {
-  const { sectionsState, setBpm, timeSignature, templatePresets } = params;
+  const { sectionsState, setBpm, bpm, timeSignature, templatePresets } = params;
+  const { isReplayingRef } = useLabsUndo();
   const {
     sections,
     songKey,
     setSongKey,
+    setSections,
     applySectionsChange,
+    pushManualUndo,
     updateSection,
   } = sectionsState;
 
@@ -42,11 +58,51 @@ export function useWordsRandomization(params: {
 
   const applyRandomization = useCallback(
     (mode: RandomizeMode, sectionId?: string) => {
-      const nextKey = mode === 'everything' ? pickRandom(ALL_KEYS) : songKey;
+      const nextKey: SongKey = mode === 'everything' ? randomSongKey() : songKey;
+      const nextBpm =
+        mode === 'everything' ? clampBpm(Math.round(80 + Math.random() * 70)) : bpm;
+
       if (mode === 'everything') {
-        setBpm(clampBpm(Math.round(80 + Math.random() * 70)));
+        const before: WordsDocumentSnapshot = { sections, songKey, bpm };
+        const nextSections = applyRandomizationTransform(sections, {
+          mode,
+          sectionId,
+          nextKey,
+          templateNotationPool,
+        });
+        const after: WordsDocumentSnapshot = {
+          sections: nextSections,
+          songKey: nextKey,
+          bpm: nextBpm,
+        };
+        const beforeClone = cloneWordsDocumentSnapshot(before);
+        const afterClone = cloneWordsDocumentSnapshot(after);
+        pushManualUndo({
+          undo: () => {
+            isReplayingRef.current = true;
+            setSections(
+              normalizeSectionsSnapshot(cloneSectionsSnapshot(beforeClone.sections))
+            );
+            setSongKey(beforeClone.songKey);
+            setBpm(beforeClone.bpm ?? bpm);
+            isReplayingRef.current = false;
+          },
+          redo: () => {
+            isReplayingRef.current = true;
+            setSections(
+              normalizeSectionsSnapshot(cloneSectionsSnapshot(afterClone.sections))
+            );
+            setSongKey(afterClone.songKey);
+            setBpm(afterClone.bpm ?? bpm);
+            isReplayingRef.current = false;
+          },
+        });
+        setSections(normalizeSectionsSnapshot(cloneSectionsSnapshot(nextSections)));
         setSongKey(nextKey);
+        setBpm(nextBpm);
+        return;
       }
+
       applySectionsChange((previous) =>
         applyRandomizationTransform(previous, {
           mode,
@@ -56,7 +112,18 @@ export function useWordsRandomization(params: {
         })
       );
     },
-    [songKey, setBpm, setSongKey, applySectionsChange, templateNotationPool]
+    [
+      songKey,
+      bpm,
+      sections,
+      setBpm,
+      setSongKey,
+      setSections,
+      applySectionsChange,
+      pushManualUndo,
+      templateNotationPool,
+      isReplayingRef,
+    ]
   );
 
   const randomizeChordProgression = useCallback(

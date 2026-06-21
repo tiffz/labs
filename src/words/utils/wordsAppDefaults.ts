@@ -8,7 +8,7 @@ import {
 import { mergePartialGenerationSettings } from './generationSettingsCodec';
 import { getRhythmTemplatePresets } from '../../shared/rhythm/presetDatabase';
 import { createDefaultSection, type SongSection } from '../../shared/music/songSections';
-import type { Key } from '../../shared/music/chordTypes';
+import type { SongKey } from '../../shared/music/songKeyFormat';
 import { DRUM_SAMPLE_URLS } from '../../shared/audio/drumSampleUrls';
 
 export const DEFAULT_LYRICS = `Sunrise on the shoreline
@@ -23,6 +23,7 @@ export const TIME_SIGNATURE_OPTIONS: Array<
   Pick<TimeSignature, 'numerator' | 'denominator'>
 > = [
   { numerator: 4, denominator: 4 },
+  { numerator: 3, denominator: 4 },
   { numerator: 6, denominator: 8 },
 ];
 
@@ -56,7 +57,7 @@ export const DEFAULT_WORD_RESULT: WordRhythmResult = generateWordRhythm(DEFAULT_
   generationSettings: APP_DEFAULT_GENERATION_SETTINGS,
 });
 
-export const DEFAULT_SONG_KEY: Key = 'C';
+export const DEFAULT_SONG_KEY: SongKey = 'C';
 
 export const DEFAULT_SECTIONS: SongSection[] = [
   {
@@ -77,8 +78,6 @@ So you can come and dance with me`,
     templateNotation: 'D--KD-T-D--KD-T-',
   },
 ];
-
-export const CHORD_PARSE_REGEX = /^([A-G](?:#|b)?)(maj7|m7|m|7|sus2|sus4|dim|aug)?$/i;
 
 export const URL_PARAM_LYRICS = 'l';
 export const URL_PARAM_PATTERN = 'pat';
@@ -102,5 +101,3 @@ export const URL_HISTORY_REPLACE_DEBOUNCE_PARAMS = new Set<string>([
   URL_PARAM_DRUMS_VOLUME,
   URL_PARAM_CHORD_VOLUME,
 ]);
-
-export const MAX_UNDO_HISTORY = 120;

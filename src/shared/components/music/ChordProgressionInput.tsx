@@ -1,8 +1,9 @@
 import React, { useMemo, useRef, useState } from 'react';
 import AnchoredPopover from '../AnchoredPopover';
 import type { Key } from '../../music/chordTypes';
-import { progressionToChords } from '../../music/chordTheory';
+import { progressionToChordsInSongKey, songKeyToTonic } from '../../music/chordTheory';
 import { COMMON_CHORD_PROGRESSIONS, type CommonChordProgression } from '../../music/commonChordProgressions';
+import { normalizeProgressionSeparators } from '../../music/chordProgressionSeparators';
 import { parseProgressionText } from '../../music/chordProgressionText';
 import './chordProgressionInput.css';
 
@@ -13,7 +14,7 @@ interface ChordProgressionInputProps {
   onSelectPreset?: (index: number) => void;
   selectedPresetIndex?: number | null;
   presets?: CommonChordProgression[];
-  keyContext?: Key;
+  keyContext?: string;
   showResolvedForKey?: boolean;
   keyAware?: boolean;
   inferKey?: boolean;
@@ -44,19 +45,15 @@ const QUALITY_SUFFIX: Record<string, string> = {
   minor7: 'm7',
 };
 
-function progressionToChordLabel(progression: CommonChordProgression, key: Key): string {
-  const chords = progressionToChords(progression.progression, key);
+function progressionToChordLabel(progression: CommonChordProgression, songKey: string): string {
+  const chords = progressionToChordsInSongKey(progression.progression, songKey);
   return chords
     .map((chord) => `${chord.root}${QUALITY_SUFFIX[chord.quality] ?? ''}`)
     .join('–');
 }
 
 function normalizeProgressionText(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '')
-    .replace(/[–—−-]/g, '-');
+  return normalizeProgressionSeparators(value).toLowerCase().replace(/\s+/g, '');
 }
 
 /**
@@ -73,7 +70,7 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
   showResolvedForKey = false,
   keyAware = true,
   inferKey = true,
-  placeholder = 'I–V–vi–IV or C–G–Am–F',
+  placeholder = 'I–V–vi–IV or Dm → Bbmaj7/D → Gm/D',
   className,
   inputClassName,
   dropdownClassName,
@@ -91,8 +88,14 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
   const anchorRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const dropdownInputRef = useRef<HTMLInputElement | null>(null);
+  const latestValueRef = useRef(value);
+  latestValueRef.current = value;
   const parsed = useMemo(
-    () => parseProgressionText(value, keyContext ?? 'C', { keyAware, inferKey }),
+    () =>
+      parseProgressionText(value, (keyContext ? songKeyToTonic(keyContext) : 'C') as Key, {
+        keyAware,
+        inferKey,
+      }),
     [inferKey, keyAware, keyContext, value],
   );
   const resolvedKey = keyContext ?? parsed.inferredKey ?? null;
@@ -125,7 +128,11 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
   }, [presets, selectedPresetIndex, value]);
 
   const commit = () => {
-    onCommit?.(value);
+    onCommit?.(latestValueRef.current);
+  };
+  const preview = (next: string) => {
+    latestValueRef.current = next;
+    onChange(next);
   };
   const useInputInDropdown = inputInDropdown && menuMode === 'popover';
   const showPopoverInput = menuMode === 'popover' && (useInputInDropdown || showInputInPopover);
@@ -168,7 +175,7 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
             onFocus={() => {
               if (menuMode === 'popover') openMenu();
             }}
-            onChange={(event) => onChange(event.target.value)}
+            onChange={(event) => preview(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
                 event.preventDefault();
@@ -212,7 +219,7 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
                 type="text"
                 className={['shared-chord-progression-text', inputClassName].filter(Boolean).join(' ')}
                 value={value}
-                onChange={(event) => onChange(event.target.value)}
+                onChange={(event) => preview(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') {
                     event.preventDefault();
@@ -252,9 +259,11 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
                     onClick={() => {
                       if (disabled) return;
                       if (presetIndex >= 0) {
+                        const next = preset.progression.join('–');
                         onSelectPreset?.(presetIndex);
                         if (!onSelectPreset) {
-                          onChange(preset.progression.join('–'));
+                          preview(next);
+                          onCommit?.(next);
                         }
                       }
                       setOpen(false);
@@ -312,9 +321,11 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
                     onClick={() => {
                       if (disabled) return;
                       if (presetIndex >= 0) {
+                        const next = preset.progression.join('–');
                         onSelectPreset?.(presetIndex);
                         if (!onSelectPreset) {
-                          onChange(preset.progression.join('–'));
+                          preview(next);
+                          onCommit?.(next);
                         }
                       }
                     }}

@@ -6,7 +6,10 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, BarlineType, Dot } from 'vexflow';
 import type { ChordProgressionState } from '../types';
-import { progressionToChords } from '../../shared/music/chordTheory';
+import { progressionToChordsInSongKey, harmonicModeFromSongKey, songKeyToTonic } from '../../shared/music/chordTheory';
+import type { Chord } from '../../shared/music/chordTypes';
+import { transposeMusicKey } from '../../shared/music/musicInputConstants';
+import type { Key } from '../types';
 import { generateVoicing } from '../../shared/music/chordVoicing';
 import { generateStyledChordNotes } from '../utils/chordStyling';
 import { getKeySignature } from '../utils/keySignature';
@@ -30,7 +33,7 @@ interface ChordScoreRendererProps {
   isPlaying?: boolean;
 }
 
-function formatChordName(chord: ReturnType<typeof progressionToChords>[number]): string {
+function formatChordName(chord: Chord): string {
   let name = chord.root;
   const qualityMap: Record<string, string> = {
     'minor': 'm',
@@ -55,6 +58,20 @@ function normalizeKeyForVexFlow(key: string): string {
     'G#': 'Ab',
   };
   return keyMap[key] || key;
+}
+
+function vexFlowKeyLabel(songKey: string): string {
+  const tonic = songKeyToTonic(songKey);
+  const normalized = normalizeKeyForVexFlow(tonic);
+  return harmonicModeFromSongKey(songKey) === 'minor' ? `${normalized}m` : normalized;
+}
+
+function keySignatureForSongKey(songKey: string): ReturnType<typeof getKeySignature> {
+  const tonic = songKeyToTonic(songKey) as Key;
+  if (harmonicModeFromSongKey(songKey) === 'minor') {
+    return getKeySignature(transposeMusicKey(tonic, 3) as Key);
+  }
+  return getKeySignature(tonic);
 }
 
 function notesToStaveNote(
@@ -169,7 +186,7 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
     prevHighlightedRef.current.clear();
 
     try {
-      const chords = progressionToChords(state.progression.progression, state.key);
+      const chords = progressionToChordsInSongKey(state.progression.progression, state.key);
       
       if (chords.length === 0) {
         console.warn('No chords to render');
@@ -244,8 +261,8 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
       
       const scaleFactor = 1 / finalScale;
       
-      const normalizedKey = normalizeKeyForVexFlow(state.key);
-      const keySig = getKeySignature(state.key);
+      const normalizedKey = vexFlowKeyLabel(state.key);
+      const keySig = keySignatureForSongKey(state.key);
       
       let lastTrebleStaveGlobal: Stave | null = null;
       let lastBassStaveGlobal: Stave | null = null;

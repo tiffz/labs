@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import type { RefObject } from 'react';
 import { openMonospaceChartPrintWindow } from '../../shared/music/chordChartPrintExport';
 import { createAppAnalytics } from '../../shared/utils/analytics';
-import type { Key } from '../../shared/music/chordTypes';
+import type { SongKey } from '../../shared/music/songKeyFormat';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import type { ExportSourceAdapter } from '../../shared/music/exportTypes';
 import type { ChordStyleId } from '../../shared/music/chordStyleOptions';
@@ -46,7 +46,7 @@ export function useWordsNotationPanelProps(params: {
   sectionDisplayNames: string[];
   parsedMeasureCount: number;
   notationSectionRefs: RefObject<Map<string, HTMLElement>>;
-  songKey: Key;
+  songKey: SongKey;
   metronomeEnabled: boolean;
   autoFollowPlayback: boolean;
   notation: string;

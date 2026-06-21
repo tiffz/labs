@@ -86,4 +86,11 @@ describe('chord progression text parsing', () => {
     expect(parsed.romanNumeralDisplay).toEqual(['I/3', 'V/7', 'vi/1']);
     expect(parsed.chordSymbols).toEqual(['C/E', 'G/B', 'Am/C']);
   });
+
+  it('parses arrow-separated slash-chord progressions', () => {
+    const parsed = parseProgressionText('Dm → Bbmaj7/D → Gm/D → Asus4', 'D');
+    expect(parsed.isValid).toBe(true);
+    expect(parsed.format).toBe('chord');
+    expect(parsed.chordSymbols).toEqual(['Dm', 'Bbmaj7/D', 'Gm/D', 'Asus4']);
+  });
 });

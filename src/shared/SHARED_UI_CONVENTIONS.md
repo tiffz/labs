@@ -212,6 +212,15 @@ When wiring `appearance="words|chords|piano|encore"` on `PlaybackSoundSelect`, `
 4. **Nested z-index** — Words menus inside section dropdowns: pass `menuZIndex={PLAYBACK_FIELD_SELECT_WORDS_Z_INDEX}` when the host panel sits above default popovers.
 5. **UI catalog** — demo the **open menu** per skin under `/ui`, not just the closed trigger; `playbackFieldSelect.test.ts` guards the appearance → menu mapping.
 
+### Song key picker (`KeyInput`)
+
+Use shared **`KeyInput`** (`src/shared/components/music/KeyInput.tsx`) for any major/minor song-key control. Do not ship app-local key grids or autocomplete lists.
+
+- **Default** — 12-key grid + **major / minor** toggle; `modeFormat="short"` emits `C` / `Cm`, `modeFormat="long"` emits `C major` / `C minor` (Encore repertoire, Stanza pitch rail).
+- **`clearable`** — optional clear control for nullable fields (Encore `performanceKey`).
+- **App theming** — pass `className` + `dropdownClassName` (see `stanza-key-dropdown`, `encore-repertoire-key-dropdown`, `words-key-dropdown` in app CSS).
+- **Transpose helpers** — `transposeSongKey` / `formatSongKeyDisplay` in `songKeyFormat.ts` preserve quality when shifting pitch.
+
 ## Popover Primitive
 
 Apps historically re-specified MUI `Popover`'s `anchorOrigin`, `transformOrigin`, and `slotProps.paper.className` at every call site, which drifted over time. Use `AnchoredPopover` (`src/shared/components/AnchoredPopover.tsx`) for any new popover or menu surface.

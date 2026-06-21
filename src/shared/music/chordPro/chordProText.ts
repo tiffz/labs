@@ -3,6 +3,21 @@ const CHORD_TOKEN_RE = /\[([^\]]+)\]/g;
 
 const SECTION_HEADER_RE = /^\s*\[([^\]]+)\]\s*$/;
 
+/** Bracket labels that are song structure, not chord symbols. */
+const STRUCTURAL_SECTION_LABEL_RE =
+  /^(verse|chorus|bridge|intro|outro|pre[\s-]?chorus|hook|tag|refrain|instrumental|solo|interlude|breakdown|drop)(?:\s+\d+)?$/i;
+
+/** Inline chord symbol when the whole line is a single bracket token, e.g. `[Dm]`. */
+const CHORD_SYMBOL_ONLY_RE =
+  /^[A-G](?:#|b)?(?:maj|min|m|M|dim|aug|sus2|sus4|add2|add9|m7|maj7|7|9|11|13|6|\+)?(?:\([^)]+\))?(?:\/[A-G](?:#|b)?)?$/;
+
+function bracketContentLooksLikeChordSymbol(inner: string): boolean {
+  const trimmed = inner.trim();
+  if (!trimmed) return false;
+  if (STRUCTURAL_SECTION_LABEL_RE.test(trimmed)) return false;
+  return CHORD_SYMBOL_ONLY_RE.test(trimmed);
+}
+
 export interface ChordProSegment {
   kind: 'chord' | 'text';
   value: string;
@@ -39,12 +54,14 @@ export function chordProLyricSnippet(text: string, maxLen = 60): string {
 }
 
 export function isChordProSectionHeaderLine(line: string): boolean {
-  return SECTION_HEADER_RE.test(line.trim());
+  return parseChordProSectionHeader(line) !== null;
 }
 
 export function parseChordProSectionHeader(line: string): string | null {
   const m = line.trim().match(SECTION_HEADER_RE);
-  return m?.[1]?.trim() ?? null;
+  const inner = m?.[1]?.trim();
+  if (!inner || bracketContentLooksLikeChordSymbol(inner)) return null;
+  return inner;
 }
 
 /** Section type key for inheritance, e.g. `Verse 1` → `Verse`. */

@@ -1,5 +1,6 @@
 import Box from '@mui/material/Box';
 import { useEffect, type ReactElement, type ReactNode } from 'react';
+import type { ApplySectionProgressionResult } from '../../../shared/music/chordPro/applySectionProgression';
 import type { ChartLayout } from '../../../shared/music/chordPro/chordChartLayout';
 import type { ChartPlaybackStep } from '../../../shared/music/chordPro/chartPlaybackSequence';
 import type { ChordNotationMode } from '../../../shared/music/chordSymbolDisplay';
@@ -23,6 +24,7 @@ export type OriginalsPaintChordsEditorProps = {
   onSelectChord: (sectionId: string, lineId: string, charIndex: number, chordId: string) => void;
   onSelectWord: (sectionId: string, lineId: string, charIndex: number) => void;
   onDeleteSelected: () => void;
+  onApplySectionProgression: (sectionId: string, progression: string) => ApplySectionProgressionResult;
 };
 
 export function OriginalsPaintChordsEditor({
@@ -40,6 +42,7 @@ export function OriginalsPaintChordsEditor({
   onSelectChord,
   onSelectWord,
   onDeleteSelected,
+  onApplySectionProgression,
 }: OriginalsPaintChordsEditorProps): ReactElement {
   useEffect(() => {
     const hasSelection = Boolean(selectedChord || selectedWord || armedChord);
@@ -50,7 +53,7 @@ export function OriginalsPaintChordsEditor({
         isPointerInsideSelector(e, 'input, textarea, [contenteditable="true"]') ||
         isPointerInsideSelector(
           e,
-          '.encore-originals-chord-badge, .encore-originals-lyric-token, .encore-originals-chord-palette, .encore-originals-chord-palette-pick, .encore-originals-chord-palette-display, .encore-originals-chords-toolbar, .encore-originals-chords-playback-bar',
+          '.encore-originals-chord-badge, .encore-originals-lyric-token, .encore-originals-chord-palette, .encore-originals-chord-palette-pick, .encore-originals-chord-palette-display, .encore-originals-chords-toolbar, .encore-originals-chords-playback-bar, .encore-originals-section-progression-menu',
         )
       ) {
         return;
@@ -95,6 +98,7 @@ export function OriginalsPaintChordsEditor({
         onStamp={onStamp}
         onSelectChord={onSelectChord}
         onSelectWord={onSelectWord}
+        onApplySectionProgression={onApplySectionProgression}
       />
     </Box>
   );

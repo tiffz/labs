@@ -11,6 +11,7 @@ Nested **`AGENTS.md`** for Words. Root policy: [`../../AGENTS.md`](../../AGENTS.
 
 ## Pitfalls
 
+- **Undo:** wrap in `LabsUndoProvider` (`main.tsx`); route section mutations through `useWordsSectionsState` (`applySectionsChange` / `applyDocumentChange`). Undo/redo are **hotkey-only** (no header buttons); document in `wordsKeyboardShortcutSections()`. See [`../shared/undo/README.md`](../shared/undo/README.md) and [`../shared/keyboardShortcuts/`](../shared/keyboardShortcuts/).
 - **Playback / notation:** `.cursor/rules/playback-ui-regressions.mdc` + skill `labs-playback-bugfix` (do not duplicate cross-app playback rules here).
 - **Words-specific:** routes through shared drums stack — extend in-app for lyric/section semantics only; do not fork scheduling/lifecycle.
 - **Notation redraw:** re-apply highlight state immediately after SVG rebuild (`VexLyricScore`).

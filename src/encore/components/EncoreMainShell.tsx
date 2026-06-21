@@ -42,6 +42,10 @@ import { OriginalSongPage as OriginalSongPageBase } from '../originals/component
 import { EncoreMediaPlaybackBar } from '../components/EncoreMediaPlaybackBar';
 import { EncoreMediaPlaybackYoutubeFloat } from '../components/EncoreMediaPlaybackYoutubeFloat';
 import { EncoreMediaPlaybackDriveVideoFloat } from '../components/EncoreMediaPlaybackDriveVideoFloat';
+import {
+  LabsKeyboardShortcutsHost,
+  encoreKeyboardShortcutSections,
+} from '../../shared/keyboardShortcuts';
 
 /** Eager imports: Encore’s main surfaces are one cohesive shell; avoiding `React.lazy` removes Suspense + chunk latency on tab and song navigation for a modest bundle cost. */
 const LibraryScreen = memo(LibraryScreenBase);
@@ -272,6 +276,7 @@ export function EncoreMainShell(): React.ReactElement {
   const showHeavyListTabPlaceholder = heavyListTabOverlay.kind === 'waiting';
 
   return (
+    <LabsKeyboardShortcutsHost sections={encoreKeyboardShortcutSections} theme="encore">
     <EncoreAppShell>
       <AppBar
         position="sticky"
@@ -702,5 +707,6 @@ export function EncoreMainShell(): React.ReactElement {
         </Alert>
       </Snackbar>
     </EncoreAppShell>
+    </LabsKeyboardShortcutsHost>
   );
 }

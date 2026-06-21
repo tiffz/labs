@@ -38,9 +38,11 @@ import type { PracticeRecord } from '../progress/types';
 import {
   getExerciseProgress,
   getAdvancementCriteria,
-  formatAdvancementCleanRunsLabel,
+  formatAdvancementPerfectRunsLabel,
   getCleanRunStreak,
+  getOverlearningUiState,
   isPracticingAdvancementStage,
+  OVERLEARN_MIN_STREAK,
   runOutcomeTier,
   consecutiveRoughRunsOnStage,
   type RunOutcomeTier,
@@ -683,10 +685,12 @@ export default function SessionScreen() {
   const _exerciseProgressSch = activeExercise && loaded
     ? getExerciseProgress(state.progress, activeExercise.exerciseId)
     : null;
-  const _cleanStreakSch =
-    _exerciseProgressSch && activeExercise
-      ? getCleanRunStreak(_exerciseProgressSch, activeExercise.stageId)
-      : 0;
+  const _overlearnSch = _exerciseProgressSch && _curStageSch
+    && isPracticingAdvancementStage(_exerciseProgressSch, _exerciseProgressSch.currentStageId)
+    ? getOverlearningUiState(_exerciseProgressSch, _exerciseProgressSch.currentStageId)
+    : null;
+  const _requiredPerfectSch = _overlearnSch?.requiredPerfectStreak ?? OVERLEARN_MIN_STREAK;
+  const _cleanStreakSch = _overlearnSch?.perfectStreak ?? 0;
 
   const _rawConsecutiveRoughSch =
     activeExercise
@@ -717,7 +721,7 @@ export default function SessionScreen() {
           attemptsThisStage,
           consecutiveRoughOnStage: _consecutiveRoughSch,
           cleanStreak: _cleanStreakSch,
-          requiredRuns: _advCritSch.runs,
+          requiredRuns: _requiredPerfectSch,
           hasFallbackStage: _hasFallbackStageForScheduler,
           snoozedUntil: regularSnoozedUntil,
           stageId: activeExercise.stageId,
@@ -1336,13 +1340,28 @@ export default function SessionScreen() {
   const practicingAdvancementStage = Boolean(
     currentStage && isPracticingAdvancementStage(exerciseProgress, currentStage.id),
   );
+  const overlearnState = currentStage && practicingAdvancementStage
+    ? getOverlearningUiState(exerciseProgress, currentStage.id)
+    : {
+      attemptCount: 0,
+      requiredPerfectStreak: null,
+      perfectStreak: 0,
+      unlocked: false,
+    };
+  const requiredPerfectRuns = overlearnState.requiredPerfectStreak ?? OVERLEARN_MIN_STREAK;
   const rawCleanStreak = currentStage ? getCleanRunStreak(exerciseProgress, currentStage.id) : 0;
-  /** Streak toward the advancement gate (0 when reviewing an earlier level). */
-  const cleanStreak = practicingAdvancementStage ? rawCleanStreak : 0;
-  const cleanRunsProgressLabel = formatAdvancementCleanRunsLabel(
-    cleanStreak,
-    advancementCriteria.runs,
+  /** Perfect-run streak toward overlearning gate (0 when reviewing an earlier level). */
+  const perfectStreak = practicingAdvancementStage ? overlearnState.perfectStreak : 0;
+  const cleanStreak = perfectStreak;
+  const perfectRunsProgressLabel = formatAdvancementPerfectRunsLabel(
+    perfectStreak,
+    requiredPerfectRuns,
   );
+  const advancementChipLabel = overlearnState.unlocked
+    ? `${perfectRunsProgressLabel} perfect in a row to advance`
+    : overlearnState.attemptCount > 0
+      ? `Attempt ${overlearnState.attemptCount + 1} · first perfect sets your target`
+      : 'First perfect run sets your practice target';
 
   const scaleHowToText = stageInfo
     ? resolveHandGuidance(stageInfo.exercise, activeExercise.hand)
@@ -1353,8 +1372,9 @@ export default function SessionScreen() {
 
   const showCleanStreakChipPreStart = !isFreeTempo
     && !!currentStage
-    && cleanStreak > 0
-    && cleanStreak < advancementCriteria.runs;
+    && overlearnState.unlocked
+    && perfectStreak > 0
+    && perfectStreak < requiredPerfectRuns;
   const competingPreStartScore = (stageInfo?.stage.description?.trim() ? 1 : 0)
     + (scaleHowToText ? 1 : 0)
     + (stageInfo?.exercise.helpUrl ? 1 : 0)
@@ -1365,7 +1385,6 @@ export default function SessionScreen() {
       competingContentScore: competingPreStartScore,
     })
     : null;
-  const cleanThresholdPct = Math.round(advancementCriteria.threshold * 100);
   const lastRunPracticeRecord: PracticeRecord | null = buildLastRunPracticeRecord(
     lastExerciseResult,
     activeExercise,
@@ -1375,11 +1394,6 @@ export default function SessionScreen() {
     ? runOutcomeTier(lastRunPracticeRecord, exerciseDef.exercise.kind, currentStage, isFinalStage)
     : 'rough';
   const lastWasClean = Boolean(lastExerciseResult && lastRunOutcomeTier === 'clean');
-  const pentascaleTempoStage = Boolean(
-    currentStage?.useTempo
-    && exerciseDef
-    && isPentascaleKind(exerciseDef.exercise.kind),
-  );
 
   // Adaptive coaching: when the most recent run scored sub-fluent and we
   // can't yet diagnose with stuck-detection, surface a one-line hint that
@@ -1435,7 +1449,7 @@ export default function SessionScreen() {
     attemptsThisStage,
     consecutiveRoughOnStage,
     cleanStreak,
-    requiredRuns: advancementCriteria.runs,
+    requiredRuns: requiredPerfectRuns,
     hasFallbackStage,
     snoozedUntil: regularSnoozedUntil,
     stageId: activeExercise.stageId,
@@ -1524,7 +1538,7 @@ export default function SessionScreen() {
       drillStreak,
       cleanStreak,
       displayRunStreak: practicingAdvancementStage ? cleanStreak : rawCleanStreak,
-      requiredRuns: advancementCriteria.runs,
+      requiredRuns: requiredPerfectRuns,
       practicingAdvancementStage,
       lastWasClean: snapTier === 'clean',
       lastRunOutcomeTier: snapTier,
@@ -1538,6 +1552,16 @@ export default function SessionScreen() {
     && dwellBadgeSnapshotRef.current !== null;
 
   const stuckDialogOpen = Boolean((hasResult && stuckVisible) || stuckDialogDebugOnly);
+  const regressNotice = exerciseProgress.pendingRegressNotice;
+  const regressTargetStage = regressNotice
+    ? allStages.find(s => s.id === regressNotice.toStageId)
+    : null;
+  const dismissRegressNotice = () => {
+    if (regressTargetStage) {
+      goToStage(regressTargetStage.id);
+    }
+    dispatch({ type: 'CLEAR_REGRESS_NOTICE', exerciseId: activeExercise.exerciseId });
+  };
   const stuckShowDrillCopy = stuckDialogDebugOnly
     ? helpPreview === 'stuck_drill'
     : isDrillStuck;
@@ -1632,11 +1656,7 @@ export default function SessionScreen() {
                 header row does not jump; hidden visually while running. */}
             {currentStage && (
               <Chip
-                label={
-                  isFreeTempo
-                    ? `Clear ${advancementCriteria.runs} in a row to advance`
-                    : `Clear ${advancementCriteria.runs} in a row at ${cleanThresholdPct}% to advance`
-                }
+                label={advancementChipLabel}
                 size="small"
                 color="success"
                 variant="outlined"
@@ -1834,16 +1854,18 @@ export default function SessionScreen() {
               </Box>
               <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                 <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, lineHeight: 1.2 }}>
-                  {`Clean runs: ${cleanRunsProgressLabel}`}
+                  {overlearnState.unlocked
+                    ? `Perfect runs: ${perfectRunsProgressLabel}`
+                    : `Attempts: ${overlearnState.attemptCount}`}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.25 }}>
-                  {lastWasClean
-                    ? (pentascaleTempoStage
-                      ? `Need ${advancementCriteria.runs} clean runs in a row (right notes, at most one early or late).`
-                      : `Need ${advancementCriteria.runs} in a row at ${cleanThresholdPct}% to advance.`)
-                    : (pentascaleTempoStage
-                      ? 'Streak reset. Right notes with at most one early or late counts as clean.'
-                      : `Streak reset. Aim for ${cleanThresholdPct}% to count.`)}
+                  {overlearnState.unlocked
+                    ? (lastExerciseResult && lastExerciseResult.accuracy >= 1
+                      ? `Need ${requiredPerfectRuns} perfect runs in a row to advance.`
+                      : 'Streak reset. Every note must be pitch- and timing-perfect.')
+                    : (lastExerciseResult && lastExerciseResult.accuracy >= 1
+                      ? `Your target is ${requiredPerfectRuns} perfect runs in a row.`
+                      : 'Land one perfect run to unlock your practice target.')}
                 </Typography>
               </Box>
             </Box>
@@ -1932,13 +1954,13 @@ export default function SessionScreen() {
               the user returns mid-streak we surface that explicitly so
               they don't think they're starting over. Only relevant on
               tempo stages with a real streak gate. */}
-          {!isFreeTempo && currentStage && cleanStreak > 0 && cleanStreak < advancementCriteria.runs && (
+          {!isFreeTempo && currentStage && overlearnState.unlocked && perfectStreak > 0 && perfectStreak < requiredPerfectRuns && (
             <Box sx={{ mt: hasExerciseHistory ? 0.75 : 1.5 }}>
               <Chip
                 size="small"
                 color="success"
                 variant="outlined"
-                label={`${cleanRunsProgressLabel} clean runs already · ${advancementCriteria.runs - cleanStreak} more to advance`}
+                label={`${perfectRunsProgressLabel} perfect already · ${requiredPerfectRuns - perfectStreak} more to advance`}
               />
             </Box>
           )}
@@ -2043,7 +2065,7 @@ export default function SessionScreen() {
             ? (inDrill ? drillStreak : (practicingAdvancementStage ? cleanStreak : rawCleanStreak))
             : (inDrill ? snap!.drillStreak : snap!.displayRunStreak);
           const streakDenominator = live
-            ? dwellStreakDenominator(inDrill, advancementCriteria.runs)
+            ? dwellStreakDenominator(inDrill, requiredPerfectRuns)
             : dwellStreakDenominator(inDrill, snap!.requiredRuns);
           const wasClean = live ? lastWasClean : snap!.lastWasClean;
           const outcomeTier = live ? lastRunOutcomeTier : snap!.lastRunOutcomeTier;
@@ -2460,6 +2482,55 @@ export default function SessionScreen() {
                 </Stack>
               )}
             </Box>
+          </DialogContent>
+        </Dialog>
+        <Dialog
+          open={regressNotice != null}
+          onClose={(_event, reason) => {
+            if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') return;
+            dismissRegressNotice();
+          }}
+          aria-labelledby="regress-notice-title"
+          maxWidth={false}
+          fullWidth
+          scroll="paper"
+          sx={{ zIndex: 2001 }}
+          slotProps={{
+            backdrop: { sx: { bgcolor: 'rgba(0, 0, 0, 0.32)' } },
+            paper: {
+              elevation: 3,
+              sx: (theme: Theme) => ({
+                maxWidth: 440,
+                width: '100%',
+                borderRadius: '28px',
+                overflow: 'hidden',
+                mx: 2,
+                boxShadow: theme.shadows[8],
+              }),
+            },
+          }}
+        >
+          <DialogContent sx={{ p: { xs: 6, sm: 8 }, textAlign: 'center' }}>
+            <Typography
+              id="regress-notice-title"
+              component="h2"
+              sx={{ fontSize: '1.25rem', fontWeight: 500, mb: 2 }}
+            >
+              Stepped back for more practice
+            </Typography>
+            <Typography sx={{ fontSize: '0.875rem', lineHeight: 1.55, color: 'text.secondary', mb: 4 }}>
+              {regressTargetStage
+                ? `This level needs more foundation. Practice Level ${regressTargetStage.stageNumber} until a perfect run feels reachable.`
+                : 'This level needs more foundation. Try an earlier level until a perfect run feels reachable.'}
+            </Typography>
+            <Button
+              variant="contained"
+              disableElevation
+              onClick={dismissRegressNotice}
+              sx={{ textTransform: 'none', borderRadius: '999px', minWidth: 120 }}
+            >
+              Got it
+            </Button>
           </DialogContent>
         </Dialog>
         {countInBeat !== null && (

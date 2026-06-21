@@ -5,15 +5,15 @@ import { renderMidiEventsToAudioBuffer } from '../../shared/music/midiAudioRende
 import type { ParsedRhythm } from '../../shared/rhythm/types';
 import type { ChordStyleId } from '../../shared/music/chordStyleOptions';
 import { generateVoicing } from '../../shared/music/chordVoicing';
-import type { Chord as TheoryChord, ChordQuality, Key, TimeSignature } from '../../shared/music/chordTypes';
+import { chordSymbolToTheoryChord } from '../../shared/music/chordSymbolToTheoryChord';
+import type { TimeSignature } from '../../shared/music/chordTypes';
+import type { SongKey } from '../../shared/music/songKeyFormat';
 import { getChordHitsForStyle } from '../../shared/music/chordStyleHits';
-
-const CHORD_PARSE_REGEX = /^([A-G](?:#|b)?)(maj7|m7|m|7|sus2|sus4|dim|aug)?$/i;
 
 interface CreateWordsExportAdapterOptions {
   parsedRhythm: ParsedRhythm;
   bpm: number;
-  songKey: Key;
+  songKey: SongKey;
   timeSignature: TimeSignature;
   chordLabelsByMeasure: Map<number, string>;
   chordStyleByMeasure: Map<number, ChordStyleId>;
@@ -23,7 +23,7 @@ function buildPianoMidiEvents(
   parsedRhythm: ParsedRhythm,
   chordLabelsByMeasure: Map<number, string>,
   chordStyleByMeasure: Map<number, ChordStyleId>,
-  songKey: Key,
+  songKey: SongKey,
   timeSignature: TimeSignature,
   loopCount: number
 ): MidiNoteEvent[] {
@@ -33,17 +33,6 @@ function buildPianoMidiEvents(
     measure.notes.reduce((acc, note) => acc + note.durationInSixteenths * 120, 0)
   ), 0);
   const events: MidiNoteEvent[] = [];
-  const qualityBySuffix: Record<string, ChordQuality> = {
-    '': 'major',
-    m: 'minor',
-    dim: 'diminished',
-    aug: 'augmented',
-    sus2: 'sus2',
-    sus4: 'sus4',
-    '7': 'dominant7',
-    maj7: 'major7',
-    m7: 'minor7',
-  };
 
   for (let loopIndex = 0; loopIndex < loopCount; loopIndex += 1) {
     let tickCursor = loopIndex * singleLoopTicks;
@@ -53,18 +42,8 @@ function buildPianoMidiEvents(
         measure.notes.reduce((sum, note) => sum + note.durationInSixteenths * 120, 0)
       );
       const chordToken = chordLabelsByMeasure.get(measureIndex) ?? songKey;
-      const parsed = chordToken.match(CHORD_PARSE_REGEX);
-      if (parsed) {
-        const root = parsed[1] ?? 'C';
-        const suffix = (parsed[2] ?? '').toLowerCase();
-        const quality = qualityBySuffix[suffix];
-        if (quality) {
-          const chord: TheoryChord = {
-            root: `${root[0]?.toUpperCase() ?? 'C'}${root.slice(1)}`,
-            quality,
-            inversion: 0,
-            octave: 4,
-          };
+      const chord = chordSymbolToTheoryChord(chordToken);
+      if (chord) {
           const treble = generateVoicing(
             chord,
             { useInversions: false, useOpenVoicings: true, randomizeOctaves: false },
@@ -101,7 +80,6 @@ function buildPianoMidiEvents(
               });
             });
           });
-        }
       }
       tickCursor += measureTicks;
     });

@@ -27,7 +27,7 @@ export type {
 
 export interface ChordProgressionState {
   progression: ChordProgressionConfig;
-  key: Key;
+  key: string;
   tempo: number; // BPM
   timeSignature: TimeSignature;
   stylingStrategy: ChordStylingStrategy;

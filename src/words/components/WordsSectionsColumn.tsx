@@ -1,6 +1,6 @@
 import type { RefObject } from 'react';
 import type { TimeSignature } from '../../shared/rhythm/types';
-import type { Key } from '../../shared/music/chordTypes';
+import type { SongKey } from '../../shared/music/songKeyFormat';
 import type { SongSection, SongSectionType } from '../../shared/music/songSections';
 import type { SectionSettingsPosition } from '../hooks/useSectionSettingsPortalPosition';
 import type { RandomizeMode } from '../utils/randomizeModes';
@@ -19,17 +19,20 @@ export type WordsSectionsColumnProps = {
   openSectionSettingsId: string | null;
   sectionSettingsPosition: SectionSettingsPosition | null;
   sectionRandomizeMenuId: string | null;
+  sectionChorusLinkMenuId: string | null;
   activeSectionLoopId: string | null;
   isPlaying: boolean;
   defaultTemplateNotation: string;
-  songKey: Key;
+  songKey: SongKey;
   bpm: number;
   timeSignature: TimeSignature;
   metronomeEnabled: boolean;
   sectionSettingsMenuRef: RefObject<HTMLDivElement | null>;
   sectionRandomizeMenuRef: RefObject<HTMLDivElement | null>;
+  sectionChorusLinkMenuRef: RefObject<HTMLDivElement | null>;
   sectionSettingsAnchorRefs: RefObject<Map<string, HTMLDivElement>>;
   sectionRandomizeAnchorRefs: RefObject<Map<string, HTMLDivElement>>;
+  sectionChorusLinkAnchorRefs: RefObject<Map<string, HTMLDivElement>>;
   onToggleSectionSettings: (sectionId: string) => void;
   onSectionTypeChange: (sectionId: string, type: SongSectionType) => void;
   onToggleChorusLyricsLink: (sectionId: string) => void;
@@ -40,10 +43,13 @@ export type WordsSectionsColumnProps = {
   onSectionRandomizeSelect: (sectionId: string, mode: RandomizeMode) => void;
   onCloseSectionRandomizeMenu: () => void;
   onToggleSectionRandomizeMenu: (sectionId: string) => void;
+  onToggleSectionChorusLinkMenu: (sectionId: string) => void;
+  onCloseSectionChorusLinkMenu: () => void;
   onScrollSectionIntoNotation: (sectionId: string) => void;
   onMoveSection: (sectionId: string, delta: -1 | 1) => void;
   onRemoveSection: (sectionId: string) => void;
-  onSectionChordProgressionChange: (sectionId: string, value: string) => void;
+  onSectionChordProgressionPreview: (sectionId: string, value: string) => void;
+  onSectionChordProgressionCommit: (sectionId: string, value: string) => void;
   onRandomizeSectionChords: (sectionId: string) => void;
   onSectionChordStyleChange: (sectionId: string, styleId: string) => void;
   onRandomizeSectionChordStyle: (sectionId: string) => void;
@@ -51,6 +57,10 @@ export type WordsSectionsColumnProps = {
   onSectionTemplateNotationChange: (sectionId: string, notation: string) => void;
   onAddSection: (type: SongSectionType) => void;
   onImportLyrics: () => void;
+  onLinkAllChorusLyrics: () => void;
+  onUnlinkAllChorusLyrics: () => void;
+  onLinkAllChorusTemplates: () => void;
+  onUnlinkAllChorusTemplates: () => void;
 };
 
 export default function WordsSectionsColumn({
@@ -61,6 +71,7 @@ export default function WordsSectionsColumn({
   openSectionSettingsId,
   sectionSettingsPosition,
   sectionRandomizeMenuId,
+  sectionChorusLinkMenuId,
   activeSectionLoopId,
   isPlaying,
   defaultTemplateNotation,
@@ -70,8 +81,10 @@ export default function WordsSectionsColumn({
   metronomeEnabled,
   sectionSettingsMenuRef,
   sectionRandomizeMenuRef,
+  sectionChorusLinkMenuRef,
   sectionSettingsAnchorRefs,
   sectionRandomizeAnchorRefs,
+  sectionChorusLinkAnchorRefs,
   onToggleSectionSettings,
   onSectionTypeChange,
   onToggleChorusLyricsLink,
@@ -82,10 +95,13 @@ export default function WordsSectionsColumn({
   onSectionRandomizeSelect,
   onCloseSectionRandomizeMenu,
   onToggleSectionRandomizeMenu,
+  onToggleSectionChorusLinkMenu,
+  onCloseSectionChorusLinkMenu,
   onScrollSectionIntoNotation,
   onMoveSection,
   onRemoveSection,
-  onSectionChordProgressionChange,
+  onSectionChordProgressionPreview,
+  onSectionChordProgressionCommit,
   onRandomizeSectionChords,
   onSectionChordStyleChange,
   onRandomizeSectionChordStyle,
@@ -93,6 +109,10 @@ export default function WordsSectionsColumn({
   onSectionTemplateNotationChange,
   onAddSection,
   onImportLyrics,
+  onLinkAllChorusLyrics,
+  onUnlinkAllChorusLyrics,
+  onLinkAllChorusTemplates,
+  onUnlinkAllChorusTemplates,
 }: WordsSectionsColumnProps) {
   return (
     <article ref={columnRef} className="words-sections-column">
@@ -109,16 +129,20 @@ export default function WordsSectionsColumn({
             <WordsSectionCard
               key={section.id}
               section={section}
+              sections={sections}
               effectiveLyrics={effectiveSection.effectiveLyrics}
               sectionDisplayName={sectionDisplayName}
               isSettingsOpen={openSectionSettingsId === section.id}
               settingsPosition={sectionSettingsPosition}
               isLoopActive={isPlaying && activeSectionLoopId === section.id}
               isRandomizeMenuOpen={sectionRandomizeMenuId === section.id}
+              isChorusLinkMenuOpen={sectionChorusLinkMenuId === section.id}
               randomizeAnchorEl={sectionRandomizeAnchorRefs.current?.get(section.id) ?? null}
+              chorusLinkAnchorEl={sectionChorusLinkAnchorRefs.current?.get(section.id) ?? null}
               defaultTemplateNotation={defaultTemplateNotation}
               settingsMenuRef={sectionSettingsMenuRef}
               randomizeMenuRef={sectionRandomizeMenuRef}
+              chorusLinkMenuRef={sectionChorusLinkMenuRef}
               settingsAnchorRef={(element) => {
                 if (element) sectionSettingsAnchorRefs.current?.set(section.id, element);
                 else sectionSettingsAnchorRefs.current?.delete(section.id);
@@ -127,8 +151,14 @@ export default function WordsSectionsColumn({
                 if (element) sectionRandomizeAnchorRefs.current?.set(section.id, element);
                 else sectionRandomizeAnchorRefs.current?.delete(section.id);
               }}
+              chorusLinkAnchorRef={(element) => {
+                if (element) sectionChorusLinkAnchorRefs.current?.set(section.id, element);
+                else sectionChorusLinkAnchorRefs.current?.delete(section.id);
+              }}
               onToggleSettings={() => onToggleSectionSettings(section.id)}
               onTypeChange={(type) => onSectionTypeChange(section.id, type)}
+              onToggleChorusLinkMenu={() => onToggleSectionChorusLinkMenu(section.id)}
+              onCloseChorusLinkMenu={onCloseSectionChorusLinkMenu}
               onToggleChorusLyricsLink={() => onToggleChorusLyricsLink(section.id)}
               onLyricsChange={(lyrics) => onSectionLyricsChange(section.id, lyrics)}
               onLyricsPaste={onSectionLyricsPaste}
@@ -141,12 +171,20 @@ export default function WordsSectionsColumn({
               onMoveUp={() => onMoveSection(section.id, -1)}
               onMoveDown={() => onMoveSection(section.id, 1)}
               onRemove={() => onRemoveSection(section.id)}
-              onChordProgressionChange={(value) => onSectionChordProgressionChange(section.id, value)}
+              onChordProgressionPreview={(value) =>
+                onSectionChordProgressionPreview(section.id, value)
+              }
+              onChordProgressionCommit={(value) =>
+                onSectionChordProgressionCommit(section.id, value)
+              }
               onRandomizeChords={() => onRandomizeSectionChords(section.id)}
               onChordStyleChange={(styleId) => onSectionChordStyleChange(section.id, styleId)}
               onRandomizeChordStyle={() => onRandomizeSectionChordStyle(section.id)}
-              onToggleChorusLyricsLinkInSettings={() => onToggleChorusLyricsLink(section.id)}
               onToggleChorusTemplateLink={() => onToggleChorusTemplateLink(section.id)}
+              onLinkAllChorusLyrics={onLinkAllChorusLyrics}
+              onUnlinkAllChorusLyrics={onUnlinkAllChorusLyrics}
+              onLinkAllChorusTemplates={onLinkAllChorusTemplates}
+              onUnlinkAllChorusTemplates={onUnlinkAllChorusTemplates}
               onTemplateNotationChange={(notation) =>
                 onSectionTemplateNotationChange(section.id, notation)
               }

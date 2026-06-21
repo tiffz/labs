@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography';
 import AppTooltip from '../../../shared/components/AppTooltip';
 import KeyInput from '../../../shared/components/music/KeyInput';
 import { NumericStepperField } from '../../../shared/components/music/NumericStepperField';
-import type { MusicKey } from '../../../shared/music/musicInputConstants';
+import type { SongKey } from '../../../shared/music/songKeyFormat';
 import type { StanzaSong } from '../../db/stanzaDb';
 import StanzaPlaybackTransformChip from '../StanzaPlaybackTransformChip';
 
@@ -20,7 +20,7 @@ export interface StanzaPracticePitchSectionProps {
   keyDetectError: string | null;
   onDismissKeyDetectError: () => void;
   onDetectOriginalKey: () => void | Promise<void>;
-  onOriginalKeyChange: (key: MusicKey | undefined) => void;
+  onOriginalKeyChange: (key: SongKey | undefined) => void;
   transposeDraftSemitones: number;
   transposeInputStr: string;
   transposeStepperEditing: boolean;
@@ -75,8 +75,11 @@ export default function StanzaPracticePitchSection({
             className="shared-key-input"
             value={selected.localOriginalKey}
             placeholder="Unknown"
+            modeFormat="long"
             dropdownClassName="stanza-key-dropdown"
-            onChange={onOriginalKeyChange}
+            onChange={(next) =>
+              onOriginalKeyChange(next.trim() ? (next as SongKey) : undefined)
+            }
             trailingActions={
               <AppTooltip title={stanzaAnalysisDisabledReason ?? 'Detect key from the uploaded recording'}>
                 <span>

@@ -44,6 +44,10 @@ import type { RandomizeMode } from './utils/randomizeModes';
 import { getNotationScrollContainer } from './utils/scrollOwner';
 import SkipToMain from '../shared/components/SkipToMain';
 import {
+  LabsKeyboardShortcutsHost,
+  wordsKeyboardShortcutSections,
+} from '../shared/keyboardShortcuts';
+import {
   APP_DEFAULT_GENERATION_SETTINGS,
   BACKING_FALLBACK_TEMPLATE,
   DEFAULT_TIME_SIGNATURE,
@@ -62,7 +66,6 @@ const App: React.FC = () => {
     setLyricImportOpen,
     lyricImportText,
     applyLyricImport,
-    undoSectionsChange,
   } = sectionsState;
 
   const [notation, setNotation] = useState<string>(DEFAULT_WORD_RESULT.notation);
@@ -75,6 +78,7 @@ const App: React.FC = () => {
   const [randomizeMenuOpen, setRandomizeMenuOpen] = useState<boolean>(false);
   const [selectedRandomizeMode, setSelectedRandomizeMode] = useState<RandomizeMode>('phrasing');
   const [sectionRandomizeMenuId, setSectionRandomizeMenuId] = useState<string | null>(null);
+  const [sectionChorusLinkMenuId, setSectionChorusLinkMenuId] = useState<string | null>(null);
   const [drumsVolume, setDrumsVolume] = useState<number>(100);
   const [masterVolume, setMasterVolume] = useState<number>(100);
   const [masterMuted, setMasterMuted] = useState<boolean>(false);
@@ -113,6 +117,8 @@ const App: React.FC = () => {
   const exportButtonRef = useRef<HTMLButtonElement | null>(null);
   const sectionRandomizeAnchorRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const sectionRandomizeMenuRef = useRef<HTMLDivElement | null>(null);
+  const sectionChorusLinkAnchorRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const sectionChorusLinkMenuRef = useRef<HTMLDivElement | null>(null);
   const sectionSettingsAnchorRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const sectionSettingsMenuRef = useRef<HTMLDivElement | null>(null);
   const sectionsColumnRef = useRef<HTMLElement | null>(null);
@@ -156,6 +162,7 @@ const App: React.FC = () => {
   } = useWordsRandomization({
     sectionsState,
     setBpm,
+    bpm,
     timeSignature,
     templatePresets: songModel.templatePresets,
   });
@@ -225,6 +232,7 @@ const App: React.FC = () => {
       stopPlaybackImmediately,
       setOpenSectionSettingsId,
       setSectionRandomizeMenuId,
+      setSectionChorusLinkMenuId,
       setGenerationMenuOpen,
       setSoundMenuOpen,
       setExportMenuOpen,
@@ -249,6 +257,7 @@ const App: React.FC = () => {
       openSectionSettingsId,
       sectionSettingsPosition,
       sectionRandomizeMenuId,
+      sectionChorusLinkMenuId,
       activeSectionLoopId,
       isPlaying,
       defaultTemplateNotation: APP_DEFAULT_GENERATION_SETTINGS.templateNotation ?? '',
@@ -260,8 +269,10 @@ const App: React.FC = () => {
     {
       sectionSettingsMenuRef,
       sectionRandomizeMenuRef,
+      sectionChorusLinkMenuRef,
       sectionSettingsAnchorRefs,
       sectionRandomizeAnchorRefs,
+      sectionChorusLinkAnchorRefs,
     },
     sectionsState,
     sectionColumnActions
@@ -391,7 +402,7 @@ const App: React.FC = () => {
   useWordsTimeSignatureTemplateReset({
     timeSignature,
     templatePresets: songModel.templatePresets,
-    setSections,
+    applySectionsChange: sectionsState.applySectionsChange,
     setBackingBeatNotation,
   });
 
@@ -434,6 +445,7 @@ const App: React.FC = () => {
       soundButtonRef,
       sectionSettingsMenuRef,
       sectionRandomizeMenuRef,
+      sectionChorusLinkMenuRef,
       exportButtonRef,
       randomizeButtonRef,
     },
@@ -442,6 +454,7 @@ const App: React.FC = () => {
       setSoundMenuOpen,
       setOpenSectionSettingsId,
       setSectionRandomizeMenuId,
+      setSectionChorusLinkMenuId,
       setExportMenuOpen,
       setRandomizeMenuOpen,
     }
@@ -497,12 +510,13 @@ const App: React.FC = () => {
     setSoundMenuOpen,
     setOpenSectionSettingsId,
     setSectionRandomizeMenuId,
+    setSectionChorusLinkMenuId,
     setRandomizeMenuOpen,
     setExportMenuOpen,
-    undoSectionsChange,
   });
 
   return (
+    <LabsKeyboardShortcutsHost sections={wordsKeyboardShortcutSections} theme="words">
     <div className="words-page">
       <SkipToMain />
       <header className="words-header">
@@ -563,6 +577,7 @@ const App: React.FC = () => {
         onApply={applyLyricImport}
       />
     </div>
+    </LabsKeyboardShortcutsHost>
   );
 };
 

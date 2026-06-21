@@ -170,7 +170,7 @@ export function mergeScalesProgress(
   const currentTierId = remoteTierIdx > localTierIdx ? remote.currentTierId : local.currentTierId;
 
   const progress = normalizeScalesProgressPayload({
-    version: 3,
+    version: 4,
     exercises,
     currentTierId,
     seenOnboarding: local.seenOnboarding || remote.seenOnboarding,

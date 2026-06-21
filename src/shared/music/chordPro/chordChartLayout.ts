@@ -212,32 +212,44 @@ function serializeLineToChordPro(line: LyricLine): string {
   return out;
 }
 
+function trimTrailingEmptySectionLines(lines: string[], headerLineCount: number): string[] {
+  const out = [...lines];
+  while (out.length > headerLineCount && out[out.length - 1] === '') {
+    out.pop();
+  }
+  return out;
+}
+
 /** Serialize structured layout back to ChordPro for Drive / IndexedDB storage. */
 export function serializeChartLayoutToChordPro(layout: ChartLayout): string {
   const blocks: string[] = [];
   for (const section of layout.sections) {
+    const sectionLines: string[] = [];
     if (section.header) {
-      blocks.push(`[${section.header}]`);
+      sectionLines.push(`[${section.header}]`);
     }
     for (const line of section.lines) {
-      blocks.push(serializeLineToChordPro(line));
+      sectionLines.push(serializeLineToChordPro(line));
     }
+    blocks.push(trimTrailingEmptySectionLines(sectionLines, section.header ? 1 : 0).join('\n'));
   }
-  return blocks.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd();
+  return blocks.join('\n\n').replace(/\n{3,}/g, '\n\n').trimEnd();
 }
 
 /** Plain-text document for Write Mode (headers + lyrics, no chord tokens). */
 export function layoutToWriteDocument(layout: ChartLayout): string {
   const blocks: string[] = [];
   for (const section of layout.sections) {
+    const sectionLines: string[] = [];
     if (section.header) {
-      blocks.push(`[${section.header}]`);
+      sectionLines.push(`[${section.header}]`);
     }
     for (const line of section.lines) {
-      blocks.push(line.text);
+      sectionLines.push(line.text);
     }
+    blocks.push(trimTrailingEmptySectionLines(sectionLines, section.header ? 1 : 0).join('\n'));
   }
-  return blocks.join('\n').replace(/\n{3,}/g, '\n\n');
+  return blocks.join('\n\n').replace(/\n{3,}/g, '\n\n').trimEnd();
 }
 
 function splitWriteDocumentSections(writeDoc: string): Array<{ header: string; bodyLines: string[] }> {

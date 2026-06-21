@@ -1,6 +1,7 @@
 import '../shared/ui/fonts/appFonts';
 import ReactDOM from 'react-dom/client';
 import { ThemeProvider } from '@mui/material/styles';
+import { LabsUndoProvider } from '../shared/undo/LabsUndoContext';
 import { installServerLogger } from '../shared/utils/serverLogger';
 import { getAppTheme } from '../shared/ui/theme/appTheme';
 import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstrap';
@@ -12,7 +13,9 @@ installServerLogger('WORDS');
 initMaterialIconRuntime();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <ThemeProvider theme={getAppTheme('words')}>
-    <App />
-  </ThemeProvider>
+  <LabsUndoProvider>
+    <ThemeProvider theme={getAppTheme('words')}>
+      <App />
+    </ThemeProvider>
+  </LabsUndoProvider>
 );

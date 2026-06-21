@@ -177,8 +177,22 @@ export function buildStages(exerciseId: string): Stage[] {
       octaves: 1,
     },
     {
-      id: `${exerciseId}-s12`,
+      id: `${exerciseId}-s11m`,
       stageNumber: 12,
+      label: 'Both hands,  triplets (moderate)',
+      description:
+        'Bridge tempo between slow triplets and full speed. Keep 1 + a even before you push to 72.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 64,
+      useMetronome: true,
+      subdivision: 'triplet',
+      mutePlayback: true,
+      octaves: 1,
+    },
+    {
+      id: `${exerciseId}-s12`,
+      stageNumber: 13,
       label: 'Both hands,  triplet subdivision',
       description: 'Triplets at tempo - beat one anchors each group.',
       hand: 'both',
@@ -191,7 +205,7 @@ export function buildStages(exerciseId: string): Stage[] {
     },
     {
       id: `${exerciseId}-s13`,
-      stageNumber: 13,
+      stageNumber: 14,
       label: 'Both hands,  sixteenth notes (slow)',
       description: 'Sixteenths, slow - four relaxed notes per beat.',
       hand: 'both',
@@ -204,7 +218,7 @@ export function buildStages(exerciseId: string): Stage[] {
     },
     {
       id: `${exerciseId}-s14`,
-      stageNumber: 14,
+      stageNumber: 15,
       label: 'Both hands,  sixteenth note subdivision',
       description: 'Sixteenths at full subdivision speed.',
       hand: 'both',
@@ -230,7 +244,7 @@ export function buildStages(exerciseId: string): Stage[] {
     // s14a..s14e for the same reason.
     {
       id: `${exerciseId}-s14a`,
-      stageNumber: 15,
+      stageNumber: 16,
       label: 'Right hand, 2 octaves, free tempo',
       description: 'Two octaves, RH, free tempo - extra thumb-under at the octave.',
       hand: 'right',
@@ -243,7 +257,7 @@ export function buildStages(exerciseId: string): Stage[] {
     },
     {
       id: `${exerciseId}-s14b`,
-      stageNumber: 16,
+      stageNumber: 17,
       label: 'Left hand, 2 octaves, free tempo',
       description: 'Same with the left hand. Chant "under 3, under 4, under 3" out loud if it helps lock the pattern in.',
       hand: 'left',
@@ -256,7 +270,7 @@ export function buildStages(exerciseId: string): Stage[] {
     },
     {
       id: `${exerciseId}-s14c`,
-      stageNumber: 17,
+      stageNumber: 18,
       label: 'Right hand, 2 octaves, slow tempo',
       description: 'RH two octaves with click - smooth the boundary.',
       hand: 'right',
@@ -269,7 +283,7 @@ export function buildStages(exerciseId: string): Stage[] {
     },
     {
       id: `${exerciseId}-s14d`,
-      stageNumber: 18,
+      stageNumber: 19,
       label: 'Left hand, 2 octaves, slow tempo',
       description: 'LH two octaves with click.',
       hand: 'left',
@@ -282,7 +296,7 @@ export function buildStages(exerciseId: string): Stage[] {
     },
     {
       id: `${exerciseId}-s14e`,
-      stageNumber: 19,
+      stageNumber: 20,
       label: 'Both hands, 2 octaves, slow tempo',
       description: 'BH two octaves, slow - shared crossings as checkpoints.',
       hand: 'both',
@@ -295,7 +309,7 @@ export function buildStages(exerciseId: string): Stage[] {
     },
     {
       id: `${exerciseId}-s15`,
-      stageNumber: 20,
+      stageNumber: 21,
       label: 'Both hands, 2 octaves, moderate tempo',
       description: 'BH two octaves, moderate tempo, guide off.',
       hand: 'both',
@@ -308,7 +322,7 @@ export function buildStages(exerciseId: string): Stage[] {
     },
     {
       id: `${exerciseId}-s16`,
-      stageNumber: 21,
+      stageNumber: 22,
       label: 'Both hands, 2 octaves, eighths',
       description: 'BH two octaves, eighth notes.',
       hand: 'both',
@@ -321,7 +335,7 @@ export function buildStages(exerciseId: string): Stage[] {
     },
     {
       id: `${exerciseId}-s17`,
-      stageNumber: 22,
+      stageNumber: 23,
       label: 'Both hands, 2 octaves, triplets',
       description: 'BH two octaves, triplets.',
       hand: 'both',
@@ -334,7 +348,7 @@ export function buildStages(exerciseId: string): Stage[] {
     },
     {
       id: `${exerciseId}-s18`,
-      stageNumber: 23,
+      stageNumber: 24,
       label: 'Both hands, 2 octaves, sixteenths',
       description: 'Mastery gate: BH two octaves, sixteenths, from memory.',
       hand: 'both',
@@ -355,7 +369,8 @@ export function buildStages(exerciseId: string): Stage[] {
  *     only (`subdivision: 'none'` on tempo stages), ending at the fluent gate.
  *   - **p8e:** first metronome **subdivision** pass: both-hands **eighth** notes
  *     at the slow click (two notes per beat).
- *   - **p8–p9:** both-hands **triplet** then **sixteenth** at the slow click.
+ *   - **p8–p8t:** both-hands **triplet** slow then moderate tempo.
+ *   - **p9:** both-hands **sixteenth** at the slow click.
  *
  * Stage id **`p8e`** is used (not reusing `p8`) so saved progress that already
  * points at triplet work on `…-p8` stays valid.
@@ -487,8 +502,22 @@ export function buildPentascaleStages(exerciseId: string): Stage[] {
       octaves: 1,
     },
     {
-      id: `${exerciseId}-p9`,
+      id: `${exerciseId}-p8t`,
       stageNumber: 10,
+      label: 'Both hands,  triplets (moderate)',
+      description:
+        'Triplets at a working tempo before sixteenths. Keep 1 + a even on every beat.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 72,
+      useMetronome: true,
+      subdivision: 'triplet',
+      mutePlayback: false,
+      octaves: 1,
+    },
+    {
+      id: `${exerciseId}-p9`,
+      stageNumber: 11,
       label: 'Both hands,  slow tempo (sixteenths)',
       description:
         'Four notes per click at a slow tempo. Keep the four taps inside each beat even; add speed only when that feels easy.',

@@ -6,7 +6,6 @@
 import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import type {
   ChordProgressionState,
-  Key,
   TimeSignature,
   LockedOptions,
   RomanNumeral,
@@ -22,6 +21,7 @@ import {
 import { getCompatibleStylingStrategies } from '../utils/stylingCompatibility';
 import OptionChip from './OptionChip';
 import ChordStylePreview from './ChordStylePreview';
+import { songKeyToTonic } from '../../shared/music/chordTheory';
 import { parseProgressionText } from '../../shared/music/chordProgressionText';
 import AppTooltip from '../../shared/components/AppTooltip';
 import DiceIcon from '../../shared/components/DiceIcon';
@@ -113,10 +113,10 @@ const ManualControls: React.FC<ManualControlsProps> = ({
     const normalizedInput = presetByName
       ? presetByName.progression.join('–')
       : trimmed;
-    const parsed = parseProgressionText(normalizedInput, state.key);
+    const parsed = parseProgressionText(normalizedInput, songKeyToTonic(state.key));
     if (!parsed.isValid || parsed.tokens.length < 1) {
       setCustomProgressionError(
-        'Use I–V–vi–IV or C–G–Am–F with at least 1 chord.'
+        'Use I–V–vi–IV or chord symbols (e.g. Dm → Bbmaj7/D) with at least 1 chord.'
       );
       setCustomProgressionWarning('');
       return;
@@ -215,7 +215,7 @@ const ManualControls: React.FC<ManualControlsProps> = ({
                   setCustomProgressionWarning('');
                   onStateChange({ progression: preset });
                 }}
-                keyContext={state.key}
+                keyContext={songKeyToTonic(state.key)}
                 showResolvedForKey
                 className="option-chip-inline-progression"
                 inputClassName="option-chip-inline-input"
@@ -275,7 +275,7 @@ const ManualControls: React.FC<ManualControlsProps> = ({
             <div className={`chords-key-shell ${lockedOptions.key ? 'locked' : ''}`}>
               <KeyInput
                 value={state.key}
-                onChange={(next) => onStateChange({ key: next as Key })}
+                onChange={(next) => onStateChange({ key: next })}
                 disabled={lockedOptions.key}
                 className="chords-key-input"
                 dropdownClassName="chords-key-dropdown"

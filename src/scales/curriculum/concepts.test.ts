@@ -41,6 +41,19 @@ describe('stuck jump vs incremental (concept diffs)', () => {
     expect(added).not.toContain('moderateTempo');
   });
 
+  it('treats p8 → p8t as incremental (moderate tempo only)', () => {
+    const p8 = pentascaleAStages.find(s => s.id.endsWith('-p8') && !s.id.endsWith('-p8e'))!;
+    const p8t = pentascaleAStages.find(s => s.id.endsWith('-p8t'))!;
+    expect(getNewCliffConceptKeys(p8t, p8, pentExercise)).toEqual([]);
+  });
+
+  it('treats p8t → p9 as a jump (sixteenths newly active)', () => {
+    const p8t = pentascaleAStages.find(s => s.id.endsWith('-p8t'))!;
+    const p9 = pentascaleAStages.find(s => s.id.endsWith('-p9'))!;
+    const added = getNewCliffConceptKeys(p9, p8t, pentExercise);
+    expect(added).toContain('sixteenths');
+  });
+
   it('treats p6 → p7 as incremental (only moderate tempo added)', () => {
     const p6 = pentascaleAStages.find(s => s.stageNumber === 6)!;
     const p7 = pentascaleAStages.find(s => s.stageNumber === 7)!;

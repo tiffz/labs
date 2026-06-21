@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import type { Key } from '../../shared/music/chordTypes';
+import type { SongKey } from '../../shared/music/songKeyFormat';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import type { ExportSourceAdapter } from '../../shared/music/exportTypes';
 import VexLyricScore from './VexLyricScore';
@@ -29,7 +29,7 @@ export type WordsNotationPanelProps = {
   notationSectionBlocks: NotationSectionBlock[];
   notationSectionRefs: RefObject<Map<string, HTMLElement>>;
   timeSignature: TimeSignature;
-  songKey: Key;
+  songKey: SongKey;
   metronomeEnabled: boolean;
   autoFollowPlayback: boolean;
   isPlaying: boolean;

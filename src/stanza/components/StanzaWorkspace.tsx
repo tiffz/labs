@@ -148,7 +148,7 @@ import { primeStanzaMetronomeAudio, useStanzaMetronomeSync } from '../hooks/useS
 import { useStanzaMetronomePersistence } from '../hooks/useStanzaMetronomePersistence';
 import DrumAccompaniment from '../../shared/components/music/DrumAccompaniment';
 import type { MusicKey } from '../../shared/music/musicInputConstants';
-import { transposeMusicKey } from '../../shared/music/musicInputConstants';
+import { transposeSongKey, formatSongKeyDisplay } from '../../shared/music/songKeyFormat';
 import { useStanzaLocalStemMixer } from '../hooks/useStanzaLocalStemMixer';
 import { useStanzaSongKeyDetection } from '../hooks/useStanzaSongAnalysis';
 import { StanzaLocalTransposeMirror } from '../audio/stanzaLocalTransposeMirror';
@@ -2683,14 +2683,14 @@ export default function StanzaWorkspace() {
 
   const playbackMusicKey = useMemo(() => {
     if (!selected?.localOriginalKey) return null;
-    return transposeMusicKey(selected.localOriginalKey, transposeDraftSemitones);
+    return transposeSongKey(selected.localOriginalKey, transposeDraftSemitones);
   }, [selected?.localOriginalKey, transposeDraftSemitones]);
 
   const showPlaybackKeyChip = Boolean(selected?.localOriginalKey && playbackMusicKey);
   const playbackKeyChipLabel = showPlaybackKeyChip
     ? transposeDraftSemitones === 0
-      ? `Playback key: ${playbackMusicKey}`
-      : `Playback key: ${playbackMusicKey} (${transposeDraftSemitones >= 0 ? '+' : ''}${transposeDraftSemitones})`
+      ? `Playback key: ${formatSongKeyDisplay(playbackMusicKey!)}`
+      : `Playback key: ${formatSongKeyDisplay(playbackMusicKey!)} (${transposeDraftSemitones >= 0 ? '+' : ''}${transposeDraftSemitones})`
     : '';
 
   // Surface the "set BPM" hint on the metronome strip itself when the toggle is on but no usable

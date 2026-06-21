@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { applyProgressionToChartSection, type ApplySectionProgressionResult } from '../../../shared/music/chordPro/applySectionProgression';
 import {
   layoutToWriteDocument,
   moveChordById,
@@ -51,11 +52,13 @@ export type UseOriginalsChartLayoutResult = {
   onSelectChord: (target: ChordInteractionTarget) => void;
   onSelectWord: (target: WordInteractionTarget) => void;
   onClearSelection: () => void;
+  onApplySectionProgression: (sectionId: string, progression: string) => ApplySectionProgressionResult;
 };
 
 export function useOriginalsChartLayout(
   value: string,
   onChange: (chordPro: string) => void,
+  songKey: string,
 ): UseOriginalsChartLayoutResult {
   const [layout, setLayout] = useState<ChartLayout>(() => initialLayout(value));
   const [armedChord, setArmedChord] = useState<string | null>(null);
@@ -217,6 +220,24 @@ export function useOriginalsChartLayout(
     [commitLayout, layout, selectedChord, selectedWord],
   );
 
+  const onApplySectionProgression = useCallback(
+    (sectionId: string, progression: string): ApplySectionProgressionResult => {
+      const { layout: next, result } = applyProgressionToChartSection(
+        layout,
+        sectionId,
+        progression,
+        songKey,
+      );
+      if (result.ok) {
+        commitLayout(next);
+        onClearSelection();
+        setArmedChord(null);
+      }
+      return result;
+    },
+    [commitLayout, layout, onClearSelection, songKey],
+  );
+
   return {
     layout,
     writeDocument,
@@ -233,5 +254,6 @@ export function useOriginalsChartLayout(
     onSelectChord,
     onSelectWord,
     onClearSelection,
+    onApplySectionProgression,
   };
 }

@@ -17,6 +17,20 @@ export function appendOriginalChartSnapshot(
   return { ...song, history };
 }
 
+/**
+ * Idle history append must always carry {@link lyricsAndChords} forward.
+ * Callers must not spread a stale draft body when scheduling delayed saves.
+ */
+export function mergeIdleChartSnapshot(
+  song: EncoreOriginalSong,
+  lyricsAndChords: string,
+): EncoreOriginalSong | null {
+  const synced = { ...song, lyricsAndChords };
+  const withHist = appendOriginalChartSnapshot(synced, lyricsAndChords);
+  if (withHist.history === song.history) return null;
+  return withHist;
+}
+
 export function restoreOriginalFromSnapshot(
   song: EncoreOriginalSong,
   snapshot: OriginalSongSnapshot,

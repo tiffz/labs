@@ -21,7 +21,7 @@ import type { SoundType } from '../shared/music/soundOptions';
 import DrumNotationMini, { type NotationStyle } from '../shared/notation/DrumNotationMini';
 import { COMMON_CHORD_PROGRESSIONS } from '../shared/music/commonChordProgressions';
 import { CHORD_STYLE_OPTIONS, type ChordStyleId } from '../shared/music/chordStyleOptions';
-import { ALL_KEYS, type MusicKey } from '../shared/music/musicInputConstants';
+import { ALL_KEYS } from '../shared/music/musicInputConstants';
 import { parseRhythm } from '../shared/rhythm';
 import { getRhythmTemplatePresets } from '../shared/rhythm/presetDatabase';
 import {
@@ -434,8 +434,8 @@ function KeyMultiDemo({
   values,
   onChange,
 }: {
-  values: Record<KeySurface, MusicKey>;
-  onChange: (surface: KeySurface, next: MusicKey) => void;
+  values: Record<KeySurface, string>;
+  onChange: (surface: KeySurface, next: string) => void;
 }) {
   return (
     <div className="ui-variant-grid">
@@ -456,7 +456,7 @@ function KeyMultiDemo({
                     className="ui-words-inline-dice-button ui-words-icon-tooltip"
                     aria-label="Randomize key"
                     onClick={() => {
-                      const next = ALL_KEYS[Math.floor(Math.random() * ALL_KEYS.length)] as MusicKey;
+                      const next = ALL_KEYS[Math.floor(Math.random() * ALL_KEYS.length)]!;
                       onChange(appearance, next);
                     }}
                   >
@@ -502,7 +502,7 @@ function ProgressionMultiDemo({
 }: {
   values: Record<Appearance, string>;
   onChange: (appearance: Appearance, next: string) => void;
-  keys: Record<KeySurface, MusicKey>;
+  keys: Record<KeySurface, string>;
 }) {
   return (
     <div className="ui-variant-grid">
@@ -957,8 +957,8 @@ function DemoPanel({
   entry: SharedCatalogEntry;
   bpmBySurface: Record<BpmSurface, number>;
   setBpmBySurface: Dispatch<SetStateAction<Record<BpmSurface, number>>>;
-  keyBySurface: Record<KeySurface, MusicKey>;
-  setKeyBySurface: Dispatch<SetStateAction<Record<KeySurface, MusicKey>>>;
+  keyBySurface: Record<KeySurface, string>;
+  setKeyBySurface: Dispatch<SetStateAction<Record<KeySurface, string>>>;
   progressionByAppearance: Record<Appearance, string>;
   setProgressionByAppearance: Dispatch<SetStateAction<Record<Appearance, string>>>;
   styleByAppearance: Record<Appearance, ChordStyleId>;
@@ -1100,7 +1100,7 @@ function App() {
     chords: 120,
     drums: 100,
   });
-  const [keyBySurface, setKeyBySurface] = useState<Record<KeySurface, MusicKey>>({
+  const [keyBySurface, setKeyBySurface] = useState<Record<KeySurface, string>>({
     default: 'C',
     piano: 'F',
     words: 'G',

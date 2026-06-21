@@ -3,6 +3,7 @@ import {
   getAdvancementCriteria,
   formatAdvancementCleanRunsLabel,
   formatDwellCleanRunsSubline,
+  formatDwellPerfectRunsSubline,
   getCleanRunStreak,
   stageAdvancementGateMet,
   isPracticingAdvancementStage,
@@ -11,7 +12,11 @@ import {
   loadProgress,
   saveProgress,
   markOnboardingSeen,
+  runMeetsPerfectBar,
   runMeetsCleanBar,
+  updateStageMasteryOnRecord,
+  resolveRegressTargetStage,
+  OVERLEARN_REGRESS_WITHOUT_FIRST_PERFECT,
   consecutiveRoughRunsOnStage,
   getCombinedMajorScaleMastery,
   findPentascaleMajorSibling,
@@ -28,7 +33,7 @@ function fresh(): ScalesProgressData {
   // expectations across cases.
   localStorage.clear();
   return {
-    version: 3,
+    version: 4,
     exercises: {},
     currentTierId: 'tier-1',
     seenOnboarding: false,
@@ -37,15 +42,41 @@ function fresh(): ScalesProgressData {
   };
 }
 
+/** Record consecutive perfect runs until the current stage clears (overlearning gate). */
+function completeCurrentStageWithPerfectRuns(
+  data: ScalesProgressData,
+  exerciseId: string,
+  stageId: string,
+  startT = 100,
+): ScalesProgressData {
+  let d = data;
+  let t = startT;
+  for (let guard = 0; guard < 12; guard++) {
+    const before = getExerciseProgress(d, exerciseId);
+    d = recordPractice(d, record(stageId, 1.0, t++, exerciseId));
+    const after = getExerciseProgress(d, exerciseId);
+    if (after.completedStageId === stageId && after.currentStageId !== before.currentStageId) {
+      return d;
+    }
+    if (after.currentStageId !== before.currentStageId) return d;
+  }
+  return d;
+}
+
 function exerciseStages() {
   const found = findExercise(EXERCISE_ID);
   if (!found) throw new Error(`Test fixture broken: ${EXERCISE_ID} not found`);
   return found.exercise.stages;
 }
 
-function record(stageId: string, accuracy: number, t: number = Date.now()): PracticeRecord {
+function record(
+  stageId: string,
+  accuracy: number,
+  t: number = Date.now(),
+  exerciseId: string = EXERCISE_ID,
+): PracticeRecord {
   return {
-    exerciseId: EXERCISE_ID,
+    exerciseId,
     stageId,
     timestamp: t,
     accuracy,
@@ -122,6 +153,12 @@ describe('formatDwellCleanRunsSubline', () => {
   it('labels run progress explicitly (not note counts)', () => {
     expect(formatDwellCleanRunsSubline(89, 2, 3, 'advancement')).toBe('89% · 2/3 clean runs');
     expect(formatDwellCleanRunsSubline(89, 11, 3, 'stage')).toBe('89% · 3/3 on this level');
+  });
+});
+
+describe('formatDwellPerfectRunsSubline', () => {
+  it('labels perfect-run progress explicitly', () => {
+    expect(formatDwellPerfectRunsSubline(100, 2, 4, 'advancement')).toBe('100% · 2/4 perfect runs');
   });
 });
 
@@ -252,10 +289,9 @@ describe('recordPractice advancement', () => {
     expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBeNull();
   });
 
-  it('advances a tempo stage after 3 runs ≥ 90%', () => {
+  it('advances a tempo stage after overlearning perfect streak', () => {
     let data = fresh();
     const stages = exerciseStages();
-    // Start at s3 (a tempo stage) by manually advancing past free-tempo.
     data.exercises[EXERCISE_ID] = {
       exerciseId: EXERCISE_ID,
       completedStageId: stages[1].id,
@@ -264,19 +300,20 @@ describe('recordPractice advancement', () => {
       needsReview: false,
       reviewStageId: null,
       lastPracticedAt: null,
+      stageMastery: {},
     };
 
     data = recordPractice(data, record(stages[2].id, 0.92, 100));
     data = recordPractice(data, record(stages[2].id, 0.91, 200));
     expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(stages[1].id);
 
-    data = recordPractice(data, record(stages[2].id, 0.95, 300));
+    data = completeCurrentStageWithPerfectRuns(data, EXERCISE_ID, stages[2].id, 300);
     const after = getExerciseProgress(data, EXERCISE_ID);
     expect(after.completedStageId).toBe(stages[2].id);
     expect(after.currentStageId).toBe(stages[3].id);
   });
 
-  it('does not advance when a different stage breaks the same-stage prefix (even with older clean runs)', () => {
+  it('does not advance when a different stage breaks the same-stage prefix (even with older perfect runs)', () => {
     let data = fresh();
     const stages = exerciseStages();
     const s2 = stages[1];
@@ -291,19 +328,16 @@ describe('recordPractice advancement', () => {
       lastPracticedAt: null,
     };
 
-    data = recordPractice(data, record(s3.id, 0.95, 100));
-    data = recordPractice(data, record(s2.id, 0.95, 200));
-    data = recordPractice(data, record(s3.id, 0.95, 300));
-    data = recordPractice(data, record(s3.id, 0.95, 400));
-    expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(s2.id);
-
-    data = recordPractice(data, record(s3.id, 0.95, 500));
+    data = recordPractice(data, record(s3.id, 1.0, 100));
+    data = recordPractice(data, record(s2.id, 1.0, 200));
+    data = recordPractice(data, record(s3.id, 1.0, 300));
+    data = recordPractice(data, record(s3.id, 1.0, 400));
     const after = getExerciseProgress(data, EXERCISE_ID);
     expect(after.completedStageId).toBe(s3.id);
     expect(after.currentStageId).toBe(stages[3].id);
   });
 
-  it('does not advance a tempo stage when one of the last 3 runs falls below 90%', () => {
+  it('does not advance until required perfect streak is met', () => {
     let data = fresh();
     const stages = exerciseStages();
     data.exercises[EXERCISE_ID] = {
@@ -316,19 +350,16 @@ describe('recordPractice advancement', () => {
       lastPracticedAt: null,
     };
 
-    data = recordPractice(data, record(stages[2].id, 0.95, 100));
+    data = recordPractice(data, record(stages[2].id, 1.0, 100));
     data = recordPractice(data, record(stages[2].id, 0.85, 200));
-    data = recordPractice(data, record(stages[2].id, 0.95, 300));
-    // Last 3 include the 0.85 → still below the 90% bar.
     expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(stages[1].id);
 
-    // Two more clean runs flush the stale 0.85 out of the trailing window.
-    data = recordPractice(data, record(stages[2].id, 0.95, 400));
-    data = recordPractice(data, record(stages[2].id, 0.95, 500));
+    data = recordPractice(data, record(stages[2].id, 1.0, 300));
+    data = recordPractice(data, record(stages[2].id, 1.0, 400));
     expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(stages[2].id);
   });
 
-  it('advances a subdivision stage at 85% (looser than the 90% global bar)', () => {
+  it('advances a subdivision stage with perfect runs (overlearning gate)', () => {
     let data = fresh();
     const stages = exerciseStages();
     const s9 = stages.find(s => s.id.endsWith('-s9'))!;
@@ -343,13 +374,11 @@ describe('recordPractice advancement', () => {
       lastPracticedAt: null,
     };
 
-    data = recordPractice(data, record(s9.id, 0.86, 100));
-    data = recordPractice(data, record(s9.id, 0.87, 200));
-    data = recordPractice(data, record(s9.id, 0.85, 300));
+    data = completeCurrentStageWithPerfectRuns(data, EXERCISE_ID, s9.id, 100);
     expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(s9.id);
   });
 
-  it('treats cross-session history as part of the same 3-in-a-row window', () => {
+  it('treats cross-session history as part of the same overlearning streak', () => {
     // Regression: the user can pass a stage by completing a clean run at
     // the end of one session and two more in the next. History persists
     // in localStorage, so yesterday's clean run is the first member of
@@ -373,31 +402,16 @@ describe('recordPractice advancement', () => {
     const today = Date.now();
 
     // Day 1: one clean run.
-    data = recordPractice(data, record(stages[2].id, 0.95, yesterday));
+    data = recordPractice(data, record(stages[2].id, 1.0, yesterday));
     expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(stages[1].id);
 
-    // Day 2: a second clean run still doesn't advance — only 2 in window.
-    data = recordPractice(data, record(stages[2].id, 0.95, today));
-    expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(stages[1].id);
-
-    // Day 2: third clean run completes the cross-session streak — advance.
-    data = recordPractice(data, record(stages[2].id, 0.95, today + 1000));
+    data = recordPractice(data, record(stages[2].id, 1.0, today));
     const after = getExerciseProgress(data, EXERCISE_ID);
     expect(after.completedStageId).toBe(stages[2].id);
     expect(after.currentStageId).toBe(stages[3].id);
   });
 
-  it('streak-off-by-one regression: 1 record -> streak=1, 2 records -> no advance', () => {
-    // Before the SessionScreen finishedRef guard, every natural-completion
-    // run would dispatch FINISH_EXERCISE twice, append two identical
-    // PracticeRecords, and the slice(0, 3) advancement window would see
-    // [r, r, r2] after only TWO real attempts — the user-reported "2/3
-    // streak after the first clean run" and the "advanced after 3 passes
-    // period not 3 in a row" issues are the same defect. This test is at
-    // the store layer (not the dispatch layer where the actual fix lives)
-    // but it's a backstop: even if the guard regresses, N real attempts
-    // -> N history records -> the streak/advance math stays honest.
-    // Anything different means upstream is double-recording.
+  it('streak-off-by-one regression: two perfect records advance when overlearning target is 2', () => {
     let data = fresh();
     const stages = exerciseStages();
     data.exercises[EXERCISE_ID] = {
@@ -410,24 +424,17 @@ describe('recordPractice advancement', () => {
       lastPracticedAt: null,
     };
 
-    // Single 95% run -> exactly 1 history record, exactly 1 clean run.
-    // This is the exact case the user reported as "shows 2/3 instead of
-    // 1/3 after the first clean run".
-    data = recordPractice(data, record(stages[2].id, 0.95, 100));
+    data = recordPractice(data, record(stages[2].id, 1.0, 100));
     let after = getExerciseProgress(data, EXERCISE_ID);
     expect(after.history).toHaveLength(1);
-    expect(getCleanRunStreak(after, stages[2].id)).toBe(1);
+    expect(after.stageMastery?.[stages[2].id]?.currentPerfectStreak).toBe(1);
     expect(after.completedStageId).toBe(stages[1].id);
 
-    // Two 95% runs -> 2 history records, streak=2, still NOT advanced.
-    // (Pre-fix this would have been 4 records and the slice(0, 3) gate
-    // would have triggered advancement here.)
-    data = recordPractice(data, record(stages[2].id, 0.95, 200));
+    data = recordPractice(data, record(stages[2].id, 1.0, 200));
     after = getExerciseProgress(data, EXERCISE_ID);
     expect(after.history).toHaveLength(2);
-    expect(getCleanRunStreak(after, stages[2].id)).toBe(2);
-    expect(after.completedStageId).toBe(stages[1].id);
-    expect(after.currentStageId).toBe(stages[2].id);
+    expect(after.completedStageId).toBe(stages[2].id);
+    expect(after.currentStageId).toBe(stages[3].id);
   });
 
   it('does not flag needsReview when a drill record dips below the shaky threshold', () => {
@@ -488,11 +495,10 @@ describe('recordPractice advancement', () => {
     expect(after.reviewStageId).toBe(stages[2].id);
   });
 
-  it('keeps the strict 90% bar on the final mastery-gate stage', () => {
+  it('clears the final mastery-gate stage with consecutive perfect runs', () => {
     let data = fresh();
     const stages = exerciseStages();
     const last = stages[stages.length - 1];
-    // Park progress at the final stage.
     data.exercises[EXERCISE_ID] = {
       exerciseId: EXERCISE_ID,
       completedStageId: stages[stages.length - 2].id,
@@ -503,16 +509,12 @@ describe('recordPractice advancement', () => {
       lastPracticedAt: null,
     };
 
-    // 3 clean runs at 86% — would have advanced any other 2-octave stage.
     data = recordPractice(data, record(last.id, 0.86, 100));
     data = recordPractice(data, record(last.id, 0.86, 200));
     data = recordPractice(data, record(last.id, 0.86, 300));
     expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(stages[stages.length - 2].id);
 
-    // Same 3 runs at 90% clear the gate.
-    data = recordPractice(data, record(last.id, 0.9, 400));
-    data = recordPractice(data, record(last.id, 0.9, 500));
-    data = recordPractice(data, record(last.id, 0.9, 600));
+    data = completeCurrentStageWithPerfectRuns(data, EXERCISE_ID, last.id, 400);
     expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(last.id);
   });
 });
@@ -590,20 +592,24 @@ describe('pentascale tempo clean bar', () => {
     expect(getCleanRunStreak(progress, stageId)).toBe(2);
   });
 
-  it('stageAdvancementGateMet is true after three consecutive cleans on that stage', () => {
+  it('stageAdvancementGateMet is true when overlearning streak is satisfied', () => {
     const stageId = p4.id;
     const progress: ExerciseProgress = {
       exerciseId: PENTA_ID,
       completedStageId: penta.exercise.stages[2].id,
       currentStageId: p4.id,
-      history: [
-        pentascaleTimedRecord(stageId, { perfect: 8, early: 1, t: 300 }),
-        pentascaleTimedRecord(stageId, { perfect: 8, late: 1, t: 200 }),
-        pentascaleTimedRecord(stageId, { perfect: 8, early: 1, t: 100 }),
-      ],
+      history: [],
       needsReview: false,
       reviewStageId: null,
       lastPracticedAt: null,
+      stageMastery: {
+        [stageId]: {
+          attemptCount: 2,
+          firstPerfectAtAttempt: 1,
+          requiredPerfectStreak: 2,
+          currentPerfectStreak: 2,
+        },
+      },
     };
     expect(
       stageAdvancementGateMet(progress, stageId, 'pentascale-major', p4, false),
@@ -632,7 +638,7 @@ describe('pentascale tempo clean bar', () => {
     expect(after.completedStageId).toBe(p3.id);
   });
 
-  it('advances pentascale metronome stage after three timing-lenient cleans', () => {
+  it('advances pentascale metronome stage after overlearning perfect streak', () => {
     let data = fresh();
     const stages = penta.exercise.stages;
     const p3 = stages[2];
@@ -644,12 +650,9 @@ describe('pentascale tempo clean bar', () => {
       needsReview: false,
       reviewStageId: null,
       lastPracticedAt: null,
+      stageMastery: {},
     };
-    data = recordPractice(data, pentascaleTimedRecord(p4.id, { perfect: 8, early: 1, t: 100 }));
-    data = recordPractice(data, pentascaleTimedRecord(p4.id, { perfect: 8, late: 1, t: 200 }));
-    expect(getExerciseProgress(data, PENTA_ID).completedStageId).toBe(p3.id);
-
-    data = recordPractice(data, pentascaleTimedRecord(p4.id, { perfect: 8, early: 1, t: 300 }));
+    data = completeCurrentStageWithPerfectRuns(data, PENTA_ID, p4.id, 100);
     const after = getExerciseProgress(data, PENTA_ID);
     expect(after.completedStageId).toBe(p4.id);
     expect(after.currentStageId).toBe(stages[p4Idx + 1].id);
@@ -679,10 +682,17 @@ describe('pentascale tempo clean bar', () => {
     });
     data = recordPractice(data, warmup(10));
     data = recordPractice(data, warmup(20));
-    data = recordPractice(data, pentascaleTimedRecord(p4.id, { perfect: 8, early: 1, t: 100 }));
+    data = recordPractice(data, {
+      exerciseId: PENTA_ID,
+      stageId: p4.id,
+      timestamp: 100,
+      accuracy: 1,
+      noteCount: 9,
+      correctCount: 9,
+    });
     const ep = getExerciseProgress(data, PENTA_ID);
     expect(ep.completedStageId).toBe(p3.id);
-    expect(getCleanRunStreak(ep, p4.id)).toBe(1);
+    expect(ep.stageMastery?.[p4.id]?.currentPerfectStreak).toBe(1);
   });
 
   it('clears pentascale final stage (last level) while currentStageId stays there', () => {
@@ -700,13 +710,11 @@ describe('pentascale tempo clean bar', () => {
       reviewStageId: null,
       lastPracticedAt: null,
     };
-    data = recordPractice(data, pentascaleTimedRecord(last.id, { perfect: 10, early: 1, t: 100 }));
-    data = recordPractice(data, pentascaleTimedRecord(last.id, { perfect: 10, late: 1, t: 200 }));
     let ep = getExerciseProgress(data, PENTA_ID);
     expect(ep.completedStageId).toBe(prev.id);
     expect(ep.currentStageId).toBe(last.id);
 
-    data = recordPractice(data, pentascaleTimedRecord(last.id, { perfect: 10, early: 1, t: 300 }));
+    data = completeCurrentStageWithPerfectRuns(data, PENTA_ID, last.id, 100);
     ep = getExerciseProgress(data, PENTA_ID);
     expect(ep.completedStageId).toBe(last.id);
     expect(ep.currentStageId).toBe(last.id);
@@ -756,7 +764,8 @@ describe('Tier-0 pentascale spiral stage shapes', () => {
   it('ramps eighth → triplet → sixteenth after the fluent gate', () => {
     const a = findExercise('A-pentascale-major')!;
     expect(a.exercise.stages.some(s => s.id.endsWith('-p8e'))).toBe(true);
-    expect(a.exercise.stages.some(s => s.id.endsWith('-p8'))).toBe(true);
+    expect(a.exercise.stages.some(s => s.id.endsWith('-p8t'))).toBe(true);
+    expect(a.exercise.stages.find(s => s.id.endsWith('-p8t'))?.bpm).toBe(72);
     expect(a.exercise.stages.some(s => s.id.endsWith('-p9'))).toBe(true);
     expect(a.exercise.stages.find(s => s.id.endsWith('-p8e'))?.subdivision).toBe('eighth');
     expect(a.exercise.stages.find(s => s.id.endsWith('-p8') && !s.id.endsWith('-p8e'))?.subdivision).toBe(
@@ -796,6 +805,34 @@ describe('reconcileProgressToCurriculum via loadProgress', () => {
     const loaded = loadProgress();
     expect(loaded.exercises['A-pentascale-major']!.currentStageId).toBe(p8e.id);
     expect(loaded.exercises['A-pentascale-major']!.completedStageId).toBe(p7.id);
+  });
+
+  it('redirects just-cleared s11 learners onto moderate triplet ramp', () => {
+    const major = findExercise('C-major-scale')!;
+    const s11 = major.exercise.stages.find(s => s.id.endsWith('-s11'))!;
+    const s11m = major.exercise.stages.find(s => s.id.endsWith('-s11m'))!;
+    const s12 = major.exercise.stages.find(s => s.id.endsWith('-s12'))!;
+    expect(s11m).toBeDefined();
+    localStorage.setItem('scales-progress', JSON.stringify({
+      version: 3,
+      currentTierId: 'tier-1',
+      exercises: {
+        'C-major-scale': {
+          exerciseId: 'C-major-scale',
+          completedStageId: s11.id,
+          currentStageId: s12!.id,
+          history: [],
+          needsReview: false,
+          reviewStageId: null,
+          lastPracticedAt: null,
+        },
+      },
+      seenOnboarding: true,
+      introducedConcepts: {},
+      introducedExerciseHands: {},
+    }));
+    const loaded = loadProgress();
+    expect(loaded.exercises['C-major-scale']!.currentStageId).toBe(s11m!.id);
   });
 });
 
@@ -841,9 +878,9 @@ describe('consecutiveRoughRunsOnStage', () => {
 describe('loadProgress migrations', () => {
   beforeEach(() => localStorage.clear());
 
-  it('returns a fresh v3 record when storage is empty', () => {
+  it('returns a fresh v4 record when storage is empty', () => {
     const loaded = loadProgress();
-    expect(loaded.version).toBe(3);
+    expect(loaded.version).toBe(4);
     expect(loaded.seenOnboarding).toBe(false);
     expect(loaded.exercises).toEqual({});
     expect(loaded.introducedConcepts).toEqual({});
@@ -881,7 +918,7 @@ describe('loadProgress migrations', () => {
     localStorage.setItem('scales-progress', JSON.stringify(v1Payload));
 
     const migrated = loadProgress();
-    expect(migrated.version).toBe(3);
+    expect(migrated.version).toBe(4);
     expect(migrated.currentTierId).toBe('tier-2');
     expect(migrated.seenOnboarding).toBe(false);
     const ex = migrated.exercises['C-major-scale'];
@@ -901,7 +938,7 @@ describe('loadProgress migrations', () => {
     localStorage.setItem('scales-progress', JSON.stringify(v2Payload));
 
     const loaded = loadProgress();
-    expect(loaded.version).toBe(3);
+    expect(loaded.version).toBe(4);
     expect(loaded.seenOnboarding).toBe(true);
     expect(loaded.introducedConcepts).toEqual({});
     expect(loaded.introducedExerciseHands).toEqual({});
@@ -938,7 +975,7 @@ describe('loadProgress migrations', () => {
     localStorage.setItem('scales-progress', JSON.stringify(v2Payload));
 
     const loaded = loadProgress();
-    expect(loaded.version).toBe(3);
+    expect(loaded.version).toBe(4);
     expect(loaded.introducedConcepts.freeTempo).toBe(true);
     expect(loaded.introducedConcepts.metronome).toBe(true);
     expect(loaded.introducedConcepts.handsTogether).toBe(true);
@@ -987,7 +1024,7 @@ describe('loadProgress migrations', () => {
     localStorage.setItem('scales-progress', JSON.stringify(v2Payload));
 
     const loaded = loadProgress();
-    expect(loaded.version).toBe(3);
+    expect(loaded.version).toBe(4);
     // All single-octave concepts should be set.
     expect(loaded.introducedConcepts.freeTempo).toBe(true);
     expect(loaded.introducedConcepts.metronome).toBe(true);
@@ -1034,7 +1071,7 @@ describe('loadProgress migrations', () => {
     };
     localStorage.setItem('scales-progress', JSON.stringify(futurePayload));
     const loaded = loadProgress();
-    expect(loaded.version).toBe(3);
+    expect(loaded.version).toBe(4);
     expect(loaded.currentTierId).not.toBe('tier-9');
     expect(loaded.seenOnboarding).toBe(false);
   });
@@ -1042,7 +1079,7 @@ describe('loadProgress migrations', () => {
   it('returns a fresh default when the stored payload is corrupted', () => {
     localStorage.setItem('scales-progress', '{not valid json');
     const loaded = loadProgress();
-    expect(loaded.version).toBe(3);
+    expect(loaded.version).toBe(4);
     expect(loaded.exercises).toEqual({});
   });
 
@@ -1081,7 +1118,7 @@ describe('combined major scale + pentascale mastery', () => {
     const penta = findExercise('C-pentascale-major')!.exercise;
     const lastPentaStageId = penta.stages[penta.stages.length - 1]!.id;
     const data: ScalesProgressData = {
-      version: 3,
+      version: 4,
       currentTierId: 'tier-1',
       exercises: {
         'C-pentascale-major': {
@@ -1106,5 +1143,62 @@ describe('combined major scale + pentascale mastery', () => {
     expect(c.started).toBe(true);
     expect(c.levelsDone).toBe(penta.stages.length);
     expect(c.totalLevels).toBe(penta.stages.length + major.stages.length);
+  });
+});
+
+describe('overlearning', () => {
+  it('runMeetsPerfectBar requires accuracy >= 1', () => {
+    expect(runMeetsPerfectBar(record(`${EXERCISE_ID}-s3`, 1.0))).toBe(true);
+    expect(runMeetsPerfectBar(record(`${EXERCISE_ID}-s3`, 0.99))).toBe(false);
+  });
+
+  it('clamps required streak between 2 and 5 based on first perfect attempt', () => {
+    let progress: ExerciseProgress = {
+      exerciseId: EXERCISE_ID,
+      completedStageId: null,
+      currentStageId: `${EXERCISE_ID}-s3`,
+      history: [],
+      needsReview: false,
+      reviewStageId: null,
+      lastPracticedAt: null,
+    };
+    const stageId = `${EXERCISE_ID}-s3`;
+    for (let i = 0; i < 6; i++) {
+      const u = updateStageMasteryOnRecord(progress, record(stageId, 0.8, i), stageId);
+      progress = { ...progress, stageMastery: u.stageMastery };
+    }
+    const u = updateStageMasteryOnRecord(progress, record(stageId, 1.0, 99), stageId);
+    progress = { ...progress, stageMastery: u.stageMastery };
+    expect(progress.stageMastery?.[stageId]?.firstPerfectAtAttempt).toBe(7);
+    expect(progress.stageMastery?.[stageId]?.requiredPerfectStreak).toBe(5);
+  });
+
+  it('auto-regresses after ten attempts without a perfect run', () => {
+    let data = fresh();
+    const stages = exerciseStages();
+    const s3 = stages[2];
+    data.exercises[EXERCISE_ID] = {
+      exerciseId: EXERCISE_ID,
+      completedStageId: stages[1].id,
+      currentStageId: s3.id,
+      history: [],
+      needsReview: false,
+      reviewStageId: null,
+      lastPracticedAt: null,
+      stageMastery: {},
+    };
+    for (let t = 0; t < OVERLEARN_REGRESS_WITHOUT_FIRST_PERFECT; t++) {
+      data = recordPractice(data, record(s3.id, 0.85, t));
+    }
+    const after = getExerciseProgress(data, EXERCISE_ID);
+    expect(after.currentStageId).toBe(stages[1].id);
+    expect(after.pendingRegressNotice?.fromStageId).toBe(s3.id);
+  });
+
+  it('resolveRegressTargetStage prefers s11m when regressing from s12', () => {
+    const stages = exerciseStages();
+    const s12Idx = stages.findIndex(s => s.id.endsWith('-s12'));
+    const target = resolveRegressTargetStage(stages, s12Idx);
+    expect(target?.id.endsWith('-s11m')).toBe(true);
   });
 });

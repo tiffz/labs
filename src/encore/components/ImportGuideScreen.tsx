@@ -1,10 +1,13 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import KeyboardIcon from '@mui/icons-material/Keyboard';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { ReactElement } from 'react';
+import { useLabsKeyboardShortcutsOpen } from '../../shared/keyboardShortcuts/useLabsKeyboardShortcutsOpen';
+import { labsModifierKeyLabel } from '../../shared/keyboardShortcuts/labsKeyboardShortcutLabels';
 import { encoreAppHref } from '../routes/encoreAppHash';
 import { encoreHairline } from '../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
@@ -69,6 +72,9 @@ function Mono(props: { children: string }): ReactElement {
 }
 
 export function ImportGuideScreen(): ReactElement {
+  const openShortcuts = useLabsKeyboardShortcutsOpen();
+  const modLabel = labsModifierKeyLabel();
+
   return (
     <Box
       sx={{
@@ -108,11 +114,23 @@ export function ImportGuideScreen(): ReactElement {
           Import guide
         </Typography>
 
-        <Typography component="p" sx={{ ...articleLeadSx, mb: 4 }}>
+        <Typography component="p" sx={{ ...articleLeadSx, mb: 2 }}>
           How to name files and arrange Drive folders so imports line up with your library. Encore uses titles,
           artists, ids, and the rules below to suggest matches. Use each import&apos;s review step before you save,
           then open a few songs if anything still looks off.
         </Typography>
+
+        {openShortcuts ? (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<KeyboardIcon fontSize="small" />}
+            onClick={openShortcuts}
+            sx={{ textTransform: 'none', mb: 3 }}
+          >
+            Keyboard shortcuts ({modLabel}+?)
+          </Button>
+        ) : null}
 
         <Box component="article">
           <Typography component="h2" variant="h6" sx={sectionTitleSx}>

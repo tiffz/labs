@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import type { Key } from '../../shared/music/chordTypes';
+import type { SongKey } from '../../shared/music/songKeyFormat';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import AppTooltip from '../../shared/components/AppTooltip';
 import BpmInput from '../../shared/components/music/BpmInput';
@@ -14,8 +14,8 @@ export type WordsPlaybackRailProps = {
   bpm: number;
   onBpmChange: (bpm: number) => void;
   onRandomizeBpm: () => void;
-  songKey: Key;
-  onKeyChange: (key: Key) => void;
+  songKey: SongKey;
+  onKeyChange: (key: SongKey) => void;
   onRandomizeKey: () => void;
   timeSignature: TimeSignature;
   timeSignatureOptions: Array<Pick<TimeSignature, 'numerator' | 'denominator'>>;
@@ -80,7 +80,7 @@ export default function WordsPlaybackRail({
         key
         <KeyInput
           value={songKey}
-          onChange={(next) => onKeyChange(next as Key)}
+          onChange={(next) => onKeyChange(next)}
           className="words-key-input"
           dropdownClassName="words-key-dropdown"
           trailingActions={

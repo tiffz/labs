@@ -9,6 +9,7 @@ export type WordsMenuDismissRefs = {
   soundButtonRef: RefObject<HTMLButtonElement | null>;
   sectionSettingsMenuRef: RefObject<HTMLDivElement | null>;
   sectionRandomizeMenuRef: RefObject<HTMLDivElement | null>;
+  sectionChorusLinkMenuRef: RefObject<HTMLDivElement | null>;
   exportButtonRef: RefObject<HTMLButtonElement | null>;
   randomizeButtonRef: RefObject<HTMLDivElement | null>;
 };
@@ -18,6 +19,7 @@ export type WordsMenuDismissActions = {
   setSoundMenuOpen: (open: boolean) => void;
   setOpenSectionSettingsId: (id: string | null) => void;
   setSectionRandomizeMenuId: (id: string | null) => void;
+  setSectionChorusLinkMenuId: (id: string | null) => void;
   setExportMenuOpen: (open: boolean) => void;
   setRandomizeMenuOpen: (open: boolean) => void;
 };
@@ -58,6 +60,13 @@ export function useWordsMenuDismiss(
       const inSectionRandomizeMenu = refs.sectionRandomizeMenuRef.current?.contains(target);
       if (!inSectionRandomizeAnchor && !inSectionRandomizeMenu) {
         actions.setSectionRandomizeMenuId(null);
+      }
+      const inSectionChorusLinkAnchor =
+        target instanceof Element &&
+        target.closest('.words-section-chorus-link-anchor');
+      const inSectionChorusLinkMenu = refs.sectionChorusLinkMenuRef.current?.contains(target);
+      if (!inSectionChorusLinkAnchor && !inSectionChorusLinkMenu) {
+        actions.setSectionChorusLinkMenuId(null);
       }
       const inExportButton = refs.exportButtonRef.current?.contains(target);
       if (!inExportButton) {

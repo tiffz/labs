@@ -3869,7 +3869,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "Reusable key-preset menu shown inside `KeyInput` popovers.",
+    "description": "No JSDoc summary provided.",
     "tags": [
       "components",
       "music",
@@ -3882,7 +3882,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "ui",
       "words"
     ],
-    "exportType": "const",
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -3892,7 +3892,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "Menu contract for selecting one key from a normalized key set.",
+    "description": "No JSDoc summary provided.",
     "tags": [
       "components",
       "music",
@@ -3905,7 +3905,161 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "ui",
       "words"
     ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-keyinput-tsx-keymodetoggle",
+    "name": "KeyModeToggle",
+    "path": "src/shared/components/music/KeyInput.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-keyinput-tsx-keymodetoggleprops",
+    "name": "KeyModeToggleProps",
+    "path": "src/shared/components/music/KeyInput.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-keyinputmenuparts-tsx-keyinputmenu",
+    "name": "KeyInputMenu",
+    "path": "src/shared/components/music/KeyInputMenuParts.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-keyinputmenuparts-tsx-keyinputmenuprops",
+    "name": "KeyInputMenuProps",
+    "path": "src/shared/components/music/KeyInputMenuParts.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-keyinputmenuparts-tsx-keymodetoggle",
+    "name": "KeyModeToggle",
+    "path": "src/shared/components/music/KeyInputMenuParts.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-keyinputmenuparts-tsx-keymodetoggleprops",
+    "name": "KeyModeToggleProps",
+    "path": "src/shared/components/music/KeyInputMenuParts.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-keyinputpicker-tsx-keyinputpicker",
+    "name": "KeyInputPicker",
+    "path": "src/shared/components/music/KeyInputPicker.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared major/minor key grid popover (used by full `KeyInput` and chip triggers).",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-keyinputpicker-tsx-keyinputpickerprops",
+    "name": "KeyInputPickerProps",
+    "path": "src/shared/components/music/KeyInputPicker.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {
@@ -7709,6 +7863,674 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-drumskeyboardshortcutsections",
+    "name": "drumsKeyboardShortcutSections",
+    "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Drums — mirrors existing in-app shortcuts.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-encorekeyboardshortcutsections",
+    "name": "encoreKeyboardShortcutSections",
+    "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Encore — undo/redo via LabsUndoProvider; originals chord paint shortcuts.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-keyboard-shortcuts-audit-apps",
+    "name": "KEYBOARD_SHORTCUTS_AUDIT_APPS",
+    "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Audit note: add app-specific sections here as shortcuts are documented.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-keyboardshortcutsauditstatus",
+    "name": "keyboardShortcutsAuditStatus",
+    "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared undo / redo entries for apps using .",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-labscommoneditingshortcutsection",
+    "name": "labsCommonEditingShortcutSection",
+    "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared undo / redo entries for apps using .",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-labscommonhelpshortcutsection",
+    "name": "labsCommonHelpShortcutSection",
+    "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared undo / redo entries for apps using .",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-labskeyboardshortcutshelpentry",
+    "name": "labsKeyboardShortcutsHelpEntry",
+    "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared undo / redo entries for apps using .",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-labsundoredoshortcutentries",
+    "name": "labsUndoRedoShortcutEntries",
+    "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared undo / redo entries for apps using .",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-wordskeyboardshortcutsections",
+    "name": "wordsKeyboardShortcutSections",
+    "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Words in Rhythm — documented shortcuts (hotkey-only undo/redo via shared provider).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-drumskeyboardshortcutsections",
+    "name": "drumsKeyboardShortcutSections",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-encorekeyboardshortcutsections",
+    "name": "encoreKeyboardShortcutSections",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-formatshortcutkeytoken",
+    "name": "formatShortcutKeyToken",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-iskeyboardshortcutshelpevent",
+    "name": "isKeyboardShortcutsHelpEvent",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-keyboard-shortcuts-audit-apps",
+    "name": "KEYBOARD_SHORTCUTS_AUDIT_APPS",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-keyboardshortcutsauditstatus",
+    "name": "keyboardShortcutsAuditStatus",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-labscommoneditingshortcutsection",
+    "name": "labsCommonEditingShortcutSection",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-labscommonhelpshortcutsection",
+    "name": "labsCommonHelpShortcutSection",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-labsismacplatform",
+    "name": "labsIsMacPlatform",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-labskeyboardshortcutentry",
+    "name": "LabsKeyboardShortcutEntry",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-labskeyboardshortcutsdialog",
+    "name": "LabsKeyboardShortcutsDialog",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-labskeyboardshortcutsection",
+    "name": "LabsKeyboardShortcutSection",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-labskeyboardshortcutshelpentry",
+    "name": "labsKeyboardShortcutsHelpEntry",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-labskeyboardshortcutshost",
+    "name": "LabsKeyboardShortcutsHost",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-labskeyboardshortcutstheme",
+    "name": "LabsKeyboardShortcutsTheme",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-labsmodifierkeylabel",
+    "name": "labsModifierKeyLabel",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-labsundoredoshortcutentries",
+    "name": "labsUndoRedoShortcutEntries",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-uselabskeyboardshortcutshelp",
+    "name": "useLabsKeyboardShortcutsHelp",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-uselabskeyboardshortcutsopen",
+    "name": "useLabsKeyboardShortcutsOpen",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-wordskeyboardshortcutsections",
+    "name": "wordsKeyboardShortcutSections",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-labskeyboardshortcutlabels-ts-formatshortcutkeytoken",
+    "name": "formatShortcutKeyToken",
+    "path": "src/shared/keyboardShortcuts/labsKeyboardShortcutLabels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style display label for a shortcut token.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-labskeyboardshortcutlabels-ts-iskeyboardshortcutshelpevent",
+    "name": "isKeyboardShortcutsHelpEvent",
+    "path": "src/shared/keyboardShortcuts/labsKeyboardShortcutLabels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Returns true when the event matches the keyboard shortcuts help chord.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-labskeyboardshortcutlabels-ts-labsismacplatform",
+    "name": "labsIsMacPlatform",
+    "path": "src/shared/keyboardShortcuts/labsKeyboardShortcutLabels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Platform modifier label for keyboard help (`Cmd` on macOS, `Ctrl` elsewhere).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-labskeyboardshortcutlabels-ts-labsmodifierkeylabel",
+    "name": "labsModifierKeyLabel",
+    "path": "src/shared/keyboardShortcuts/labsKeyboardShortcutLabels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Platform modifier label for keyboard help (`Cmd` on macOS, `Ctrl` elsewhere).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-labskeyboardshortcutsdialog-tsx-labskeyboardshortcutsdialog",
+    "name": "LabsKeyboardShortcutsDialog",
+    "path": "src/shared/keyboardShortcuts/LabsKeyboardShortcutsDialog.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-labskeyboardshortcutsdialog-tsx-labskeyboardshortcutsdialogprops",
+    "name": "LabsKeyboardShortcutsDialogProps",
+    "path": "src/shared/keyboardShortcuts/LabsKeyboardShortcutsDialog.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-labskeyboardshortcutshost-tsx-labskeyboardshortcutshost",
+    "name": "LabsKeyboardShortcutsHost",
+    "path": "src/shared/keyboardShortcuts/LabsKeyboardShortcutsHost.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Mount once per app shell — wires Ctrl/Cmd+? (and ? when not typing) plus optional menu triggers.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-labskeyboardshortcutshost-tsx-labskeyboardshortcutshostprops",
+    "name": "LabsKeyboardShortcutsHostProps",
+    "path": "src/shared/keyboardShortcuts/LabsKeyboardShortcutsHost.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-labskeyboardshortcutshostcontext-ts-labskeyboardshortcutshostcontext",
+    "name": "LabsKeyboardShortcutsHostContext",
+    "path": "src/shared/keyboardShortcuts/LabsKeyboardShortcutsHostContext.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-labskeyboardshortcutshostcontext-ts-labskeyboardshortcutshostcontextvalue",
+    "name": "LabsKeyboardShortcutsHostContextValue",
+    "path": "src/shared/keyboardShortcuts/LabsKeyboardShortcutsHostContext.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-types-ts-labskeyboardshortcutentry",
+    "name": "LabsKeyboardShortcutEntry",
+    "path": "src/shared/keyboardShortcuts/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-types-ts-labskeyboardshortcutsection",
+    "name": "LabsKeyboardShortcutSection",
+    "path": "src/shared/keyboardShortcuts/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-types-ts-labskeyboardshortcutstheme",
+    "name": "LabsKeyboardShortcutsTheme",
+    "path": "src/shared/keyboardShortcuts/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-uselabskeyboardshortcutshelp-ts-uselabskeyboardshortcutshelp",
+    "name": "useLabsKeyboardShortcutsHelp",
+    "path": "src/shared/keyboardShortcuts/useLabsKeyboardShortcutsHelp.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Opens keyboard shortcuts help on Ctrl/Cmd + ? (and Shift+/ on US layouts). Also opens on ? alone when focus is not in a text field (GitHub-style).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-uselabskeyboardshortcutsopen-ts-uselabskeyboardshortcutsopen",
+    "name": "useLabsKeyboardShortcutsOpen",
+    "path": "src/shared/keyboardShortcuts/useLabsKeyboardShortcutsOpen.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-layout-appshelllayout-tsx-appshelllayout",
     "name": "AppShellLayout",
     "path": "src/shared/layout/AppShellLayout.tsx",
@@ -8341,6 +9163,67 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "ui"
     ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-applysectionprogression-ts-applyprogressiontochartsection",
+    "name": "applyProgressionToChartSection",
+    "path": "src/shared/music/chordPro/applySectionProgression.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Map one chord per lyric line in a section, looping the progression as needed. Each line gets a single chord at the first word (column 0 when the line is empty).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-applysectionprogression-ts-applysectionprogressionresult",
+    "name": "ApplySectionProgressionResult",
+    "path": "src/shared/music/chordPro/applySectionProgression.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-applysectionprogression-ts-countsectionprogressionlines",
+    "name": "countSectionProgressionLines",
+    "path": "src/shared/music/chordPro/applySectionProgression.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-applysectionprogression-ts-linereceivessectionprogression",
+    "name": "lineReceivesSectionProgression",
+    "path": "src/shared/music/chordPro/applySectionProgression.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Lines that receive one chord when applying a section progression (lyric or chord-only).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -9113,6 +9996,87 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordprogressionseparators-ts-chord-progression-separator-examples",
+    "name": "CHORD_PROGRESSION_SEPARATOR_EXAMPLES",
+    "path": "src/shared/music/chordProgressionSeparators.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Human-readable separator examples for placeholders and errors.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordprogressionseparators-ts-joinprogressiontokens",
+    "name": "joinProgressionTokens",
+    "path": "src/shared/music/chordProgressionSeparators.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Canonicalize separators to en-dash for display/export.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordprogressionseparators-ts-normalizeprogressionseparators",
+    "name": "normalizeProgressionSeparators",
+    "path": "src/shared/music/chordProgressionSeparators.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Normalize arbitrary separators to en-dash (for preset lookup / fuzzy match).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordprogressionseparators-ts-splitprogressioninput",
+    "name": "splitProgressionInput",
+    "path": "src/shared/music/chordProgressionSeparators.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Split a progression string into chord or roman tokens.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordprogressiontext-ts-chord-progression-separator-examples",
+    "name": "CHORD_PROGRESSION_SEPARATOR_EXAMPLES",
+    "path": "src/shared/music/chordProgressionText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordprogressiontext-ts-inferkeyfromchordsymbols",
     "name": "inferKeyFromChordSymbols",
     "path": "src/shared/music/chordProgressionText.ts",
@@ -9129,6 +10093,44 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordprogressiontext-ts-joinprogressiontokens",
+    "name": "joinProgressionTokens",
+    "path": "src/shared/music/chordProgressionText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordprogressiontext-ts-normalizeprogressionseparators",
+    "name": "normalizeProgressionSeparators",
+    "path": "src/shared/music/chordProgressionText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -9227,6 +10229,25 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordprogressiontext-ts-splitprogressioninput",
+    "name": "splitProgressionInput",
+    "path": "src/shared/music/chordProgressionText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
+    ],
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -9336,7 +10357,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
-      "piano"
+      "piano",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -9353,7 +10375,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
-      "piano"
+      "piano",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -9561,7 +10584,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "music"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -9578,7 +10603,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano"
+      "piano",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -9597,7 +10623,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano"
+      "piano",
+      "words"
     ],
     "exportType": "type",
     "demoId": null
@@ -9615,7 +10642,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano"
+      "piano",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -9633,7 +10661,27 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano"
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordtheory-ts-progressiontochordsinsongkey",
+    "name": "progressionToChordsInSongKey",
+    "path": "src/shared/music/chordTheory.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Resolve roman numerals in a full song key string (root + major/minor).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -9651,7 +10699,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano"
+      "piano",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -9669,7 +10718,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "chords",
-      "piano"
+      "piano",
+      "words"
     ],
     "exportType": "function",
     "demoId": null
@@ -10975,6 +12025,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano",
       "ui"
     ],
@@ -10994,6 +12045,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano",
       "ui"
     ],
@@ -11013,6 +12065,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano",
       "ui"
     ],
@@ -11032,6 +12085,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano",
       "ui"
     ],
@@ -11051,6 +12105,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano",
       "ui"
     ],
@@ -11070,6 +12125,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "chords",
       "piano",
       "ui"
     ],
@@ -11088,6 +12144,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "chords",
       "piano",
       "ui"
     ],
@@ -11810,8 +12867,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "chords",
-      "words"
+      "chords"
     ],
     "exportType": "const",
     "demoId": null
@@ -12502,6 +13558,143 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "piano"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-songkeyformat-ts-formatsongkey",
+    "name": "formatSongKey",
+    "path": "src/shared/music/songKeyFormat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Song key with optional mode (`C`, `Cm`, `D major`, `D minor`, …).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-songkeyformat-ts-formatsongkeybuttonlabel",
+    "name": "formatSongKeyButtonLabel",
+    "path": "src/shared/music/songKeyFormat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Compact label for toolbar buttons (`D maj`, `D min`).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-songkeyformat-ts-formatsongkeydisplay",
+    "name": "formatSongKeyDisplay",
+    "path": "src/shared/music/songKeyFormat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Human-readable key label for chips and summaries.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-songkeyformat-ts-isvalidsongkey",
+    "name": "isValidSongKey",
+    "path": "src/shared/music/songKeyFormat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Song key with optional mode (`C`, `Cm`, `D major`, `D minor`, …).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-songkeyformat-ts-parsesongkey",
+    "name": "parseSongKey",
+    "path": "src/shared/music/songKeyFormat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Song key with optional mode (`C`, `Cm`, `D major`, `D minor`, …).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-songkeyformat-ts-randomsongkey",
+    "name": "randomSongKey",
+    "path": "src/shared/music/songKeyFormat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Song key with optional mode (`C`, `Cm`, `D major`, `D minor`, …).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-songkeyformat-ts-songkey",
+    "name": "SongKey",
+    "path": "src/shared/music/songKeyFormat.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Song key with optional mode (`C`, `Cm`, `D major`, `D minor`, …).",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-songkeyformat-ts-transposesongkey",
+    "name": "transposeSongKey",
+    "path": "src/shared/music/songKeyFormat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Transpose a song key by semitones while preserving major/minor quality.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -17629,7 +18822,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "named",
     "demoId": null
   },
@@ -17645,7 +18840,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -17661,7 +18858,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17676,7 +18875,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "react"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17747,7 +18948,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "owner": "shared-core",
     "description": "Combine many small commits into a single undo entry. Pass an async function that receives a `queue`; call `queue.push({ undo, redo })` for each individual mutation as it commits. After the function resolves, the collected entries are folded into a single commit on the stack so the user undoes them as one action. Order semantics: - On undo, individual commits are reversed in *reverse* order (LIFO), so the last write is undone first. This matches a sequential redo of the original operations. - On redo, individual commits are replayed in their original (FIFO) order. If the function throws, partial entries are *not* committed (caller is responsible for any compensating cleanup). If the function pushes zero entries, nothing is added to the stack.",
     "tags": [],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17760,7 +18963,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "owner": "shared-core",
     "description": "No JSDoc summary provided.",
     "tags": [],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17775,7 +18980,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -17790,7 +18997,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -17805,7 +19014,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -17820,7 +19031,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "type",
     "demoId": null
   },

@@ -5,11 +5,18 @@ import {
   NOTE_TO_PITCH_CLASS,
   spellRootForKey,
 } from './theory/pitchClass';
+import { splitProgressionInput } from './chordProgressionSeparators';
 
-const PROGRESSION_SEPARATOR_REGEX = /\s*(?:[–—-]|,)\s*/;
+export { splitProgressionInput, normalizeProgressionSeparators, joinProgressionTokens, CHORD_PROGRESSION_SEPARATOR_EXAMPLES } from './chordProgressionSeparators';
+
 const ROMAN_TOKEN_REGEX = /^(?:I|II|III|IV|V|VI|VII|i|ii|iii|iv|v|vi|vii)$/;
-const CHORD_TOKEN_REGEX =
-  /^[A-G](?:#|b)?(?:m|maj7|m7|7|sus|sus2|sus4|dim|aug)?(?:\/[A-G](?:#|b)?)?$/i;
+const CHORD_SYMBOL_SUFFIX =
+  '(maj7|m7|min7|min|maj|m|M|7|sus|sus2|sus4|dim|dim7|aug|6|m6|9|m9|add9)?';
+const CHORD_SYMBOL_PARSE_RE = new RegExp(
+  `^([A-G](?:#|b)?)${CHORD_SYMBOL_SUFFIX}(?:\\/([A-G](?:#|b)?))?$`,
+  'i',
+);
+const CHORD_TOKEN_REGEX = CHORD_SYMBOL_PARSE_RE;
 
 const MAJOR_DIATONIC_QUALITY_BY_DEGREE: Record<number, ChordQuality[]> = {
   1: ['major', 'major7'],
@@ -68,11 +75,7 @@ export interface ParseProgressionTextOptions {
 }
 
 function tokenizeProgressionInput(input: string): string[] {
-  return input
-    .trim()
-    .split(PROGRESSION_SEPARATOR_REGEX)
-    .map((token) => token.trim())
-    .filter(Boolean);
+  return splitProgressionInput(input);
 }
 
 function spellRoot(root: string, key: Key): string {
@@ -85,9 +88,7 @@ function buildChordSymbolPreservingSpelling(token: ParsedChordToken): string {
 }
 
 export function parseChordSymbolToken(token: string): ParsedChordToken | null {
-  const match = token.match(
-    /^([A-G](?:#|b)?)(maj7|m7|m|7|sus|sus2|sus4|dim|aug)?(?:\/([A-G](?:#|b)?))?$/i
-  );
+  const match = token.match(CHORD_SYMBOL_PARSE_RE);
   if (!match) return null;
   const root = `${match[1]?.[0]?.toUpperCase() ?? 'C'}${(match[1] ?? '').slice(1)}`;
   const suffix = (match[2] ?? '').toLowerCase();
@@ -98,7 +99,11 @@ export function parseChordSymbolToken(token: string): ParsedChordToken | null {
   const qualityBySuffix: Record<string, ChordQuality> = {
     '': 'major',
     m: 'minor',
+    min: 'minor',
+    M: 'major',
+    maj: 'major',
     dim: 'diminished',
+    dim7: 'diminished',
     aug: 'augmented',
     sus2: 'sus2',
     sus4: 'sus4',
@@ -106,6 +111,12 @@ export function parseChordSymbolToken(token: string): ParsedChordToken | null {
     '7': 'dominant7',
     maj7: 'major7',
     m7: 'minor7',
+    min7: 'minor7',
+    '6': 'major',
+    m6: 'minor',
+    '9': 'dominant7',
+    m9: 'minor7',
+    add9: 'major',
   };
   const quality = qualityBySuffix[suffix];
   if (!quality) return null;

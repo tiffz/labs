@@ -4,6 +4,8 @@ import type {
   PracticeRecord,
   IntroducedConcepts,
   IntroducedHands,
+  StageMasteryState,
+  PendingRegressNotice,
 } from './types';
 import { TIERS, findExercise, isPentascaleKind } from '../curriculum/tiers';
 import type { ExerciseDefinition, ExerciseKind, Stage } from '../curriculum/types';
@@ -13,6 +15,13 @@ const STORAGE_KEY = 'scales-progress';
 const MAX_HISTORY_PER_EXERCISE = 20;
 const REVIEW_ACCURACY_THRESHOLD = 0.7;
 const STALE_DAYS = 5;
+
+/** Minimum consecutive perfect runs after first-perfect unlock. */
+export const OVERLEARN_MIN_STREAK = 2;
+/** Cap on required perfect streak (attempts to first perfect). */
+export const OVERLEARN_MAX_STREAK = 5;
+/** Auto-regress when this many attempts pass without any perfect run. */
+export const OVERLEARN_REGRESS_WITHOUT_FIRST_PERFECT = 10;
 
 const progressSaveListeners = new Set<() => void>();
 
@@ -80,6 +89,179 @@ export function formatDwellCleanRunsSubline(
 ): string {
   const runs = formatAdvancementCleanRunsLabel(streak, requiredRuns);
   const suffix = scope === 'advancement' ? 'clean runs' : 'on this level';
+  return `${percent}% · ${runs} ${suffix}`;
+}
+
+/** Label for overlearning UI chips, e.g. `2/4` perfect runs. */
+export function formatAdvancementPerfectRunsLabel(streak: number, requiredRuns: number): string {
+  return formatAdvancementCleanRunsLabel(streak, requiredRuns);
+}
+
+/** Whether a run is pitch- and timing-perfect (same bar as drill mode). */
+export function runMeetsPerfectBar(record: PracticeRecord): boolean {
+  return record.accuracy >= 1;
+}
+
+function emptyStageMastery(): StageMasteryState {
+  return {
+    attemptCount: 0,
+    firstPerfectAtAttempt: null,
+    requiredPerfectStreak: null,
+    currentPerfectStreak: 0,
+  };
+}
+
+export function getStageMasteryState(
+  progress: ExerciseProgress,
+  stageId: string,
+): StageMasteryState {
+  return progress.stageMastery?.[stageId] ?? emptyStageMastery();
+}
+
+function clampOverlearnStreak(attemptsToFirstPerfect: number): number {
+  return Math.min(
+    OVERLEARN_MAX_STREAK,
+    Math.max(OVERLEARN_MIN_STREAK, attemptsToFirstPerfect),
+  );
+}
+
+export function shouldAutoRegressStage(mastery: StageMasteryState): boolean {
+  return (
+    mastery.firstPerfectAtAttempt == null
+    && mastery.attemptCount >= OVERLEARN_REGRESS_WITHOUT_FIRST_PERFECT
+  );
+}
+
+/**
+ * Previous curriculum stage; from s12 prefers s11m when present.
+ */
+export function resolveRegressTargetStage(
+  stages: readonly Stage[],
+  currentIdx: number,
+): Stage | null {
+  if (currentIdx <= 0) return null;
+  const current = stages[currentIdx];
+  if (current?.id.endsWith('-s12')) {
+    const moderate = stages.find(s => s.id.endsWith('-s11m'));
+    if (moderate) return moderate;
+  }
+  return stages[currentIdx - 1] ?? null;
+}
+
+function applyMidInsertCurriculumRedirects(
+  stages: readonly Stage[],
+  completedStageId: string | null,
+  currentStageId: string,
+): string {
+  if (completedStageId == null) return currentStageId;
+  if (
+    currentStageId.endsWith('-s12')
+    && completedStageId.endsWith('-s11')
+    && stages.some(s => s.id.endsWith('-s11m'))
+  ) {
+    const moderate = stages.find(s => s.id.endsWith('-s11m'));
+    if (moderate) return moderate.id;
+  }
+  if (
+    currentStageId.endsWith('-p9')
+    && completedStageId.endsWith('-p8')
+    && stages.some(s => s.id.endsWith('-p8t'))
+  ) {
+    const moderate = stages.find(s => s.id.endsWith('-p8t'));
+    if (moderate) return moderate.id;
+  }
+  return currentStageId;
+}
+
+/**
+ * Update overlearning counters after a meaningful run on the current stage.
+ */
+export function updateStageMasteryOnRecord(
+  progress: ExerciseProgress,
+  record: PracticeRecord,
+  stageId: string,
+): { stageMastery: Record<string, StageMasteryState>; shouldRegress: boolean } {
+  const prev = getStageMasteryState(progress, stageId);
+  const isPerfect = runMeetsPerfectBar(record);
+  const attemptCount = prev.attemptCount + 1;
+
+  let firstPerfectAtAttempt = prev.firstPerfectAtAttempt;
+  let requiredPerfectStreak = prev.requiredPerfectStreak;
+  let currentPerfectStreak = prev.currentPerfectStreak;
+
+  if (isPerfect) {
+    if (firstPerfectAtAttempt == null) {
+      firstPerfectAtAttempt = attemptCount;
+      requiredPerfectStreak = clampOverlearnStreak(attemptCount);
+      currentPerfectStreak = 1;
+    } else {
+      currentPerfectStreak = prev.currentPerfectStreak + 1;
+    }
+  } else if (firstPerfectAtAttempt != null) {
+    currentPerfectStreak = 0;
+  }
+
+  const next: StageMasteryState = {
+    attemptCount,
+    firstPerfectAtAttempt,
+    requiredPerfectStreak,
+    currentPerfectStreak,
+  };
+
+  const stageMastery = {
+    ...(progress.stageMastery ?? {}),
+    [stageId]: next,
+  };
+
+  return {
+    stageMastery,
+    shouldRegress: shouldAutoRegressStage(next),
+  };
+}
+
+export function clearPendingRegressNotice(
+  data: ScalesProgressData,
+  exerciseId: string,
+): ScalesProgressData {
+  const ep = data.exercises[exerciseId];
+  if (!ep?.pendingRegressNotice) return data;
+  const rest = { ...ep };
+  delete rest.pendingRegressNotice;
+  return {
+    ...data,
+    exercises: {
+      ...data.exercises,
+      [exerciseId]: rest,
+    },
+  };
+}
+
+export function getOverlearningUiState(
+  progress: ExerciseProgress,
+  stageId: string,
+): {
+  attemptCount: number;
+  requiredPerfectStreak: number | null;
+  perfectStreak: number;
+  unlocked: boolean;
+} {
+  const mastery = getStageMasteryState(progress, stageId);
+  return {
+    attemptCount: mastery.attemptCount,
+    requiredPerfectStreak: mastery.requiredPerfectStreak,
+    perfectStreak: mastery.requiredPerfectStreak != null ? mastery.currentPerfectStreak : 0,
+    unlocked: mastery.requiredPerfectStreak != null,
+  };
+}
+
+export function formatDwellPerfectRunsSubline(
+  percent: number,
+  streak: number,
+  requiredRuns: number,
+  scope: 'advancement' | 'stage',
+): string {
+  const runs = formatAdvancementPerfectRunsLabel(streak, requiredRuns);
+  const suffix = scope === 'advancement' ? 'perfect runs' : 'on this level';
   return `${percent}% · ${runs} ${suffix}`;
 }
 
@@ -251,7 +433,7 @@ export interface ReviewEntry {
 
 function defaultProgress(): ScalesProgressData {
   return {
-    version: 3,
+    version: 4,
     exercises: {},
     currentTierId: TIERS[0].id,
     seenOnboarding: false,
@@ -261,7 +443,9 @@ function defaultProgress(): ScalesProgressData {
   };
 }
 
-function defaultProgressUpdatedAt(data: ScalesProgressData): string {
+function defaultProgressUpdatedAt(data: {
+  exercises: Record<string, ExerciseProgress>;
+}): string {
   let maxTs = 0;
   for (const ep of Object.values(data.exercises)) {
     for (const r of ep.history) {
@@ -375,13 +559,29 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
       seenOnboarding: false,
     };
     const { introducedConcepts, introducedExerciseHands } = backfillIntroductions(exercises);
-    return { ...v2, introducedConcepts, introducedExerciseHands };
+    return {
+      ...v2,
+      version: 4,
+      introducedConcepts,
+      introducedExerciseHands,
+      exercises: Object.fromEntries(
+        Object.entries(exercises).map(([id, ep]) => [
+          id,
+          { ...ep, stageMastery: ep.stageMastery ?? {} },
+        ]),
+      ),
+    };
   }
   if (data.version === 2) {
     const { introducedConcepts, introducedExerciseHands } = backfillIntroductions(exercises);
     return {
-      version: 3,
-      exercises,
+      version: 4,
+      exercises: Object.fromEntries(
+        Object.entries(exercises).map(([id, ep]) => [
+          id,
+          { ...ep, stageMastery: ep.stageMastery ?? {} },
+        ]),
+      ),
       currentTierId,
       seenOnboarding: data.seenOnboarding === true,
       introducedConcepts,
@@ -399,9 +599,53 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
       data.introducedExerciseHands && typeof data.introducedExerciseHands === 'object'
         ? (data.introducedExerciseHands as Record<string, IntroducedHands>)
         : {};
-    const base = {
+    const v3Base = {
       version: 3 as const,
       exercises,
+      currentTierId,
+      seenOnboarding: data.seenOnboarding === true,
+      introducedConcepts,
+      introducedExerciseHands,
+    };
+    const v3: ScalesProgressData = {
+      ...v3Base,
+      version: 4,
+      progressUpdatedAt:
+        typeof (data as { progressUpdatedAt?: unknown }).progressUpdatedAt === 'string'
+          ? (data as { progressUpdatedAt: string }).progressUpdatedAt
+          : defaultProgressUpdatedAt({ exercises }),
+      exercises: Object.fromEntries(
+        Object.entries(exercises).map(([id, ep]) => [
+          id,
+          {
+            ...ep,
+            stageMastery: ep.stageMastery ?? {},
+          },
+        ]),
+      ),
+    };
+    return v3;
+  }
+  if (data.version === 4) {
+    const introducedConcepts =
+      data.introducedConcepts && typeof data.introducedConcepts === 'object'
+        ? (data.introducedConcepts as IntroducedConcepts)
+        : {};
+    const introducedExerciseHands =
+      data.introducedExerciseHands && typeof data.introducedExerciseHands === 'object'
+        ? (data.introducedExerciseHands as Record<string, IntroducedHands>)
+        : {};
+    const base = {
+      version: 4 as const,
+      exercises: Object.fromEntries(
+        Object.entries(exercises).map(([id, ep]) => [
+          id,
+          {
+            ...ep,
+            stageMastery: ep.stageMastery ?? {},
+          },
+        ]),
+      ),
       currentTierId,
       seenOnboarding: data.seenOnboarding === true,
       introducedConcepts,
@@ -511,6 +755,16 @@ export function reconcileProgressToCurriculum(data: ScalesProgressData): ScalesP
       currentStageId = stages[0].id;
     }
 
+    const redirected = applyMidInsertCurriculumRedirects(
+      stages,
+      completedStageId,
+      currentStageId,
+    );
+    if (redirected !== currentStageId) {
+      currentStageId = redirected;
+      dirty = true;
+    }
+
     const compIdx = completedStageId != null
       ? stages.findIndex(s => s.id === completedStageId)
       : -1;
@@ -567,6 +821,7 @@ export function getExerciseProgress(
     needsReview: false,
     reviewStageId: null,
     lastPracticedAt: null,
+    stageMastery: {},
   };
 }
 
@@ -717,14 +972,12 @@ export function stageAdvancementGateMet(
   stage: Stage,
   isFinalStage: boolean,
 ): boolean {
-  const { runs } = getAdvancementCriteria(stage, isFinalStage, exerciseKind);
-  const meaningfulOnStage = consecutiveStageRecords(progress.history, stageId)
-    .filter(recordCountsTowardAdvancementStreak);
-  const recentForStage = meaningfulOnStage.slice(0, runs);
-  return (
-    recentForStage.length >= runs &&
-    recentForStage.every(r => runMeetsCleanBar(r, exerciseKind, stage, isFinalStage))
-  );
+  void exerciseKind;
+  void stage;
+  void isFinalStage;
+  const mastery = getStageMasteryState(progress, stageId);
+  if (mastery.requiredPerfectStreak == null) return false;
+  return mastery.currentPerfectStreak >= mastery.requiredPerfectStreak;
 }
 
 /**
@@ -740,31 +993,78 @@ export function recordPractice(
   const found = findExercise(record.exerciseId);
   let newCompletedStageId = progress.completedStageId;
   let newCurrentStageId = progress.currentStageId;
+  let stageMastery = progress.stageMastery ?? {};
+  let pendingRegressNotice: PendingRegressNotice | null | undefined =
+    progress.pendingRegressNotice ?? null;
 
   const progressAfterRecord: ExerciseProgress = {
     ...progress,
     history: updatedHistory,
   };
 
-  if (found && record.stageId === progress.currentStageId) {
-    const stages = found.exercise.stages;
-    const currentIdx = stages.findIndex(s => s.id === record.stageId);
-    const stage = currentIdx >= 0 ? stages[currentIdx] : null;
+  if (found && recordCountsTowardAdvancementStreak(record)) {
+    if (record.stageId !== progress.currentStageId) {
+      const currentId = progress.currentStageId;
+      const currentMastery = getStageMasteryState(
+        { ...progressAfterRecord, stageMastery },
+        currentId,
+      );
+      if (currentMastery.requiredPerfectStreak != null && currentMastery.currentPerfectStreak > 0) {
+        stageMastery = {
+          ...stageMastery,
+          [currentId]: {
+            ...currentMastery,
+            currentPerfectStreak: 0,
+          },
+        };
+      }
+    }
 
-    if (stage) {
-      const isFinalStage = currentIdx === stages.length - 1;
-      if (
-        stageAdvancementGateMet(
-          progressAfterRecord,
-          record.stageId,
-          found.exercise.kind,
-          stage,
-          isFinalStage,
-        )
-      ) {
-        newCompletedStageId = record.stageId;
-        if (currentIdx >= 0 && currentIdx < stages.length - 1) {
-          newCurrentStageId = stages[currentIdx + 1].id;
+    const masteryUpdate = updateStageMasteryOnRecord(
+      { ...progressAfterRecord, stageMastery },
+      record,
+      record.stageId,
+    );
+    stageMastery = masteryUpdate.stageMastery;
+
+    if (record.stageId === progress.currentStageId) {
+      const stages = found.exercise.stages;
+      const currentIdx = stages.findIndex(s => s.id === record.stageId);
+      const stage = currentIdx >= 0 ? stages[currentIdx] : null;
+
+      if (stage && masteryUpdate.shouldRegress && currentIdx > 0) {
+        const target = resolveRegressTargetStage(stages, currentIdx);
+        if (target) {
+          pendingRegressNotice = {
+            fromStageId: record.stageId,
+            toStageId: target.id,
+          };
+          newCurrentStageId = target.id;
+          stageMastery = { ...stageMastery };
+          delete stageMastery[record.stageId];
+        }
+      } else if (stage) {
+        const isFinalStage = currentIdx === stages.length - 1;
+        const withMastery: ExerciseProgress = {
+          ...progressAfterRecord,
+          stageMastery,
+        };
+        if (
+          stageAdvancementGateMet(
+            withMastery,
+            record.stageId,
+            found.exercise.kind,
+            stage,
+            isFinalStage,
+          )
+        ) {
+          newCompletedStageId = record.stageId;
+          if (currentIdx >= 0 && currentIdx < stages.length - 1) {
+            newCurrentStageId = stages[currentIdx + 1]!.id;
+          }
+          stageMastery = { ...stageMastery };
+          delete stageMastery[record.stageId];
+          pendingRegressNotice = null;
         }
       }
     }
@@ -808,6 +1108,8 @@ export function recordPractice(
     needsReview,
     reviewStageId,
     lastPracticedAt: new Date(record.timestamp).toISOString(),
+    stageMastery,
+    ...(pendingRegressNotice != null ? { pendingRegressNotice } : {}),
   };
 
   const newExercises = { ...data.exercises, [record.exerciseId]: updatedProgress };

@@ -1,12 +1,22 @@
 import React, { useMemo, useRef, useState } from 'react';
-import AnchoredPopover from '../AnchoredPopover';
 import { DISPLAY_KEYS_12, type MusicKey } from '../../music/musicInputConstants';
+import type { HarmonicMode } from '../../music/chordTheory';
+import {
+  formatSongKey,
+  formatSongKeyButtonLabel,
+  formatSongKeyDisplay,
+  parseSongKey,
+  randomSongKey,
+} from '../../music/songKeyFormat';
+import { KeyInputPicker } from './KeyInputPicker';
+export { KeyInputMenu, KeyModeToggle } from './KeyInputMenuParts';
+export type { KeyInputMenuProps, KeyModeToggleProps } from './KeyInputMenuParts';
 import './keyInput.css';
 
 const ENHARMONIC_TO_DISPLAY: Record<string, MusicKey> = {
   'C#': 'Db',
   'D#': 'Eb',
-  'Gb': 'F#',
+  Gb: 'F#',
   'G#': 'Ab',
   'A#': 'Bb',
 };
@@ -30,66 +40,27 @@ function normalizeToDisplayKey(key: MusicKey): MusicKey {
   return ENHARMONIC_TO_DISPLAY[key] ?? key;
 }
 
-/**
- * Menu contract for selecting one key from a normalized key set.
- */
-export interface KeyInputMenuProps {
-  value: MusicKey;
-  onSelect: (next: MusicKey) => void;
-  keys?: ReadonlyArray<MusicKey>;
-  className?: string;
-  itemClassName?: string;
-}
-
-/**
- * Reusable key-preset menu shown inside `KeyInput` popovers.
- */
-export const KeyInputMenu: React.FC<KeyInputMenuProps> = ({
-  value,
-  onSelect,
-  keys = DISPLAY_KEYS_12,
-  className,
-  itemClassName,
-}) => {
-  const active = normalizeToDisplayKey(value);
-  return (
-    <div className={['shared-key-grid', className].filter(Boolean).join(' ')}>
-      {keys.map((key) => (
-        <button
-          key={key}
-          type="button"
-          className={[
-            'shared-key-grid-item',
-            itemClassName,
-            normalizeToDisplayKey(key) === active ? 'active' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => onSelect(key)}
-        >
-          {key}
-        </button>
-      ))}
-    </div>
-  );
-};
-
 interface KeyInputProps {
-  value?: MusicKey;
+  value?: string;
   /** Shown when `value` is unset (e.g. "Unknown"). */
   placeholder?: string;
-  onChange: (next: MusicKey) => void;
+  onChange: (next: string) => void;
   className?: string;
   disabled?: boolean;
   showRandomize?: boolean;
   showStepButtons?: boolean;
+  /** When true (default), picker includes major/minor quality. */
+  showMode?: boolean;
+  /** Output style for `onChange` when `showMode` is true. */
+  modeFormat?: 'short' | 'long';
   trailingActions?: React.ReactNode;
   menuKeys?: ReadonlyArray<MusicKey>;
   dropdownClassName?: string;
   dropdownOffsetPx?: number;
   menuClassName?: string;
   menuItemClassName?: string;
+  /** When true, show a clear control that emits an empty string. */
+  clearable?: boolean;
 }
 
 /**
@@ -103,20 +74,36 @@ const KeyInput: React.FC<KeyInputProps> = ({
   disabled = false,
   showRandomize = false,
   showStepButtons = false,
+  showMode = true,
+  modeFormat = 'short',
   trailingActions,
   menuKeys = DISPLAY_KEYS_12,
   dropdownClassName,
   dropdownOffsetPx,
   menuClassName,
   menuItemClassName,
+  clearable = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement | null>(null);
-  const hasValue = value != null;
-  const selectedDisplay = useMemo(
-    () => (hasValue ? normalizeToDisplayKey(value) : null),
+  const hasValue = value != null && value.trim().length > 0;
+  const parsed = useMemo(
+    () => (hasValue ? parseSongKey(value) : { root: 'C' as MusicKey, mode: 'major' as HarmonicMode }),
     [hasValue, value],
   );
+  const selectedDisplay = useMemo(
+    () => (hasValue ? normalizeToDisplayKey(parsed.root) : null),
+    [hasValue, parsed.root],
+  );
+  const buttonLabel = useMemo(() => {
+    if (!hasValue) return null;
+    if (showMode && modeFormat === 'long') return formatSongKeyDisplay(value!);
+    return showMode ? formatSongKeyButtonLabel(value!) : selectedDisplay;
+  }, [hasValue, modeFormat, showMode, value, selectedDisplay]);
+
+  const emitKey = (root: MusicKey, mode: HarmonicMode): void => {
+    onChange(showMode ? formatSongKey(root, mode, modeFormat) : root);
+  };
 
   const stepKey = (delta: number): void => {
     if (!hasValue) return;
@@ -124,7 +111,7 @@ const KeyInput: React.FC<KeyInputProps> = ({
     if (index === -1) return;
     const wrappedIndex =
       (index + delta + DISPLAY_STEP_ORDER.length) % DISPLAY_STEP_ORDER.length;
-    onChange(DISPLAY_STEP_ORDER[wrappedIndex]);
+    emitKey(DISPLAY_STEP_ORDER[wrappedIndex]!, parsed.mode);
   };
 
   return (
@@ -146,10 +133,25 @@ const KeyInput: React.FC<KeyInputProps> = ({
                 .filter(Boolean)
                 .join(' ')}
             >
-              {selectedDisplay ?? placeholder ?? '-'}
+              {buttonLabel ?? placeholder ?? '-'}
             </span>
             <span className="material-symbols-outlined">expand_more</span>
           </button>
+        {clearable && hasValue ? (
+          <button
+            type="button"
+            className="shared-key-clear-btn"
+            onClick={() => {
+              if (disabled) return;
+              onChange('');
+              setIsOpen(false);
+            }}
+            aria-label="Clear key"
+            disabled={disabled}
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        ) : null}
         {showStepButtons && (
           <div className="shared-key-steps" role="group" aria-label="Adjust key by semitone">
             <button
@@ -178,6 +180,10 @@ const KeyInput: React.FC<KeyInputProps> = ({
             className="shared-key-inline-action"
             onClick={() => {
               if (disabled) return;
+              if (showMode) {
+                onChange(randomSongKey(modeFormat));
+                return;
+              }
               const randomKey = menuKeys[Math.floor(Math.random() * menuKeys.length)];
               onChange(randomKey);
             }}
@@ -188,37 +194,20 @@ const KeyInput: React.FC<KeyInputProps> = ({
         )}
         {trailingActions}
       </div>
-      <AnchoredPopover
+      <KeyInputPicker
         open={Boolean(isOpen && anchorRef.current && !disabled)}
         anchorEl={anchorRef.current}
         onClose={() => setIsOpen(false)}
-        disableAutoFocus
-        disableEnforceFocus
-        disableRestoreFocus
-        placement="bottom-start"
-        paperClassName={['shared-key-dropdown', dropdownClassName].filter(Boolean).join(' ')}
-        slotProps={{
-          paper: {
-            style:
-              dropdownOffsetPx !== undefined
-                ? { marginTop: `${dropdownOffsetPx}px` }
-                : undefined,
-          },
-        }}
-      >
-        <div className="shared-key-dropdown-list">
-          <KeyInputMenu
-            value={value ?? 'C'}
-            onSelect={(next) => {
-              onChange(next);
-              setIsOpen(false);
-            }}
-            keys={menuKeys}
-            className={menuClassName}
-            itemClassName={menuItemClassName}
-          />
-        </div>
-      </AnchoredPopover>
+        value={value}
+        onChange={onChange}
+        showMode={showMode}
+        modeFormat={modeFormat}
+        menuKeys={menuKeys}
+        dropdownClassName={dropdownClassName}
+        dropdownOffsetPx={dropdownOffsetPx}
+        menuClassName={menuClassName}
+        menuItemClassName={menuItemClassName}
+      />
       </div>
     </div>
   );

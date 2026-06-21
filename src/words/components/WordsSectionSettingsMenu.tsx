@@ -2,7 +2,7 @@ import type { RefObject } from 'react';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import type { ChordStyleId } from '../../shared/music/chordStyleOptions';
 import { CHORD_STYLE_OPTIONS } from '../../shared/music/chordStyleOptions';
-import type { Key } from '../../shared/music/chordTypes';
+import type { SongKey } from '../../shared/music/songKeyFormat';
 import type { SongSection } from '../../shared/music/songSections';
 import AppTooltip from '../../shared/components/AppTooltip';
 import DiceIcon from '../../shared/components/DiceIcon';
@@ -22,17 +22,16 @@ export type WordsSectionSettingsMenuProps = {
   section: SongSection;
   menuRef: RefObject<HTMLDivElement | null>;
   position: SectionSettingsPosition;
-  songKey: Key;
+  songKey: SongKey;
   bpm: number;
   timeSignature: TimeSignature;
   metronomeEnabled: boolean;
   defaultTemplateNotation: string;
-  onChordProgressionChange: (value: string) => void;
+  onChordProgressionPreview: (value: string) => void;
+  onChordProgressionCommit: (value: string) => void;
   onRandomizeChords: () => void;
   onChordStyleChange: (styleId: ChordStyleId) => void;
   onRandomizeChordStyle: () => void;
-  onToggleChorusLyricsLink: () => void;
-  onToggleChorusTemplateLink: () => void;
   onTemplateNotationChange: (notation: string) => void;
 };
 
@@ -45,12 +44,11 @@ export default function WordsSectionSettingsMenu({
   timeSignature,
   metronomeEnabled,
   defaultTemplateNotation,
-  onChordProgressionChange,
+  onChordProgressionPreview,
+  onChordProgressionCommit,
   onRandomizeChords,
   onChordStyleChange,
   onRandomizeChordStyle,
-  onToggleChorusLyricsLink,
-  onToggleChorusTemplateLink,
   onTemplateNotationChange,
 }: WordsSectionSettingsMenuProps) {
   const templateNotation = section.templateNotation || defaultTemplateNotation;
@@ -75,8 +73,8 @@ export default function WordsSectionSettingsMenu({
         <div className="words-chord-input-with-action">
           <ChordProgressionInput
             value={section.chordProgressionInput}
-            onChange={onChordProgressionChange}
-            onCommit={onChordProgressionChange}
+            onChange={onChordProgressionPreview}
+            onCommit={onChordProgressionCommit}
             keyContext={songKey}
             showResolvedForKey
             className="words-section-chord-input"
@@ -110,7 +108,8 @@ export default function WordsSectionSettingsMenu({
             triggerClassName="words-select-inline words-chord-style-select"
             dropdownClassName="words-section-style-dropdown"
             appearance="words"
-            menuColumns={2}
+            menuColumns={3}
+            timeSignature={timeSignature}
           />
           <AppTooltip title="Randomize chord style">
             <button
@@ -124,57 +123,6 @@ export default function WordsSectionSettingsMenu({
           </AppTooltip>
         </div>
       </label>
-      {section.type === 'chorus' ? (
-        <div className="words-chorus-link-controls">
-          <strong>chorus linking</strong>
-          <div className="words-chorus-link-row">
-            <AppTooltip
-              title={
-                section.linkedToPreviousChorusLyrics
-                  ? 'Lyrics are linked: editing one linked chorus updates all linked chorus lyrics.'
-                  : 'Lyrics are unlinked: this chorus keeps its own lyrics.'
-              }
-            >
-              <button
-                type="button"
-                className={`words-button words-button-icon words-link-toggle words-link-toggle-chorus words-icon-tooltip${
-                  section.linkedToPreviousChorusLyrics ? ' is-linked' : ' is-unlinked'
-                }`}
-                onClick={onToggleChorusLyricsLink}
-                aria-label="Toggle chorus lyrics linking"
-              >
-                <span className="material-symbols-outlined">
-                  {section.linkedToPreviousChorusLyrics ? 'link' : 'link_off'}
-                </span>
-              </button>
-            </AppTooltip>
-            <span>lyrics link</span>
-          </div>
-          <div className="words-chorus-link-row">
-            <AppTooltip
-              title={
-                section.linkedToPreviousChorusTemplate
-                  ? 'Rhythm template is linked across linked choruses.'
-                  : 'Rhythm template is unlinked for this chorus.'
-              }
-            >
-              <button
-                type="button"
-                className={`words-button words-button-icon words-link-toggle words-icon-tooltip${
-                  section.linkedToPreviousChorusTemplate ? ' is-linked' : ' is-unlinked'
-                }`}
-                onClick={onToggleChorusTemplateLink}
-                aria-label="Toggle chorus rhythm template linking"
-              >
-                <span className="material-symbols-outlined">
-                  {section.linkedToPreviousChorusTemplate ? 'link' : 'link_off'}
-                </span>
-              </button>
-            </AppTooltip>
-            <span>template link</span>
-          </div>
-        </div>
-      ) : null}
       <label className="words-slider-row words-chord-row">
         rhythm template
         <div className="words-chord-input-with-action">

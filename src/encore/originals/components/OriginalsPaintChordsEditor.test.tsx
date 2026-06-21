@@ -32,6 +32,7 @@ describe('OriginalsPaintChordsEditor', () => {
         onSelectChord={vi.fn()}
         onSelectWord={vi.fn()}
         onDeleteSelected={vi.fn()}
+        onApplySectionProgression={vi.fn(() => ({ ok: true, chordCount: 1, lineCount: 1 }))}
       />,
     );
 

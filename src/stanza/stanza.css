@@ -1768,6 +1768,34 @@ button.stanza-library-card {
   color: #b81268;
 }
 
+.stanza-key-dropdown .shared-key-mode-toggle {
+  margin-top: 0.45rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(49, 43, 38, 0.1);
+}
+
+.stanza-key-dropdown .shared-key-mode-toggle-btn {
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  min-height: 1.85rem;
+  border-radius: 8px;
+  border-color: rgba(49, 43, 38, 0.1);
+  background: rgba(255, 255, 255, 0.88);
+  color: #2a2622;
+}
+
+.stanza-key-dropdown .shared-key-mode-toggle-btn:hover {
+  border-color: rgba(232, 72, 160, 0.35);
+  background: rgba(232, 72, 160, 0.08);
+}
+
+.stanza-key-dropdown .shared-key-mode-toggle-btn.active {
+  border-color: rgba(232, 72, 160, 0.45);
+  background: rgba(232, 72, 160, 0.14);
+  color: #b81268;
+}
+
 /* Automatic tempo modal (portaled): paper is outside .stanza-app, no ancestor prefix. */
 .stanza-tempo-preview-dialog-paper.MuiPaper-root {
   border-radius: 16px;

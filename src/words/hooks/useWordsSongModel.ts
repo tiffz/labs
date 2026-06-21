@@ -5,7 +5,7 @@ import {
   buildEffectiveChannelGain,
   buildEffectiveDrumPlaybackSettings,
 } from '../../shared/music/playbackVolumeMix';
-import type { Key } from '../../shared/music/chordTypes';
+import type { SongKey } from '../../shared/music/songKeyFormat';
 import type { SongSection } from '../../shared/music/songSections';
 import { createWordsExportAdapter } from '../utils/exportAdapter';
 import type { WordRhythmGenerationSettings, WordRhythmResult } from '../utils/prosodyEngine';
@@ -38,7 +38,7 @@ import {
 
 export function useWordsSongModel(params: {
   sections: SongSection[];
-  songKey: Key;
+  songKey: SongKey;
   notation: string;
   setNotation: React.Dispatch<React.SetStateAction<string>>;
   timeSignature: TimeSignature;

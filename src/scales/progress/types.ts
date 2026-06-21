@@ -36,6 +36,20 @@ export interface PracticeRecord {
   purpose?: 'normal' | 'drill' | 'warmup' | 'review';
 }
 
+/** Per-stage overlearning counters (attempts-to-first-perfect → N perfect streak). */
+export interface StageMasteryState {
+  attemptCount: number;
+  firstPerfectAtAttempt: number | null;
+  requiredPerfectStreak: number | null;
+  currentPerfectStreak: number;
+}
+
+/** One-shot notice after auto-regress from an overwhelming stage. */
+export interface PendingRegressNotice {
+  fromStageId: string;
+  toStageId: string;
+}
+
 export interface ExerciseProgress {
   exerciseId: string;
   /** The highest stage the user has completed (passed advancement threshold). */
@@ -55,6 +69,13 @@ export interface ExerciseProgress {
   reviewStageId: string | null;
   /** ISO timestamp of last practice. */
   lastPracticedAt: string | null;
+  /**
+   * Overlearning state keyed by stage id. Populated as the learner works
+   * each stage; cleared when auto-regress abandons a stage.
+   */
+  stageMastery?: Record<string, StageMasteryState>;
+  /** Set when auto-regress moves {@link currentStageId} backward; UI clears after shown. */
+  pendingRegressNotice?: PendingRegressNotice | null;
 }
 
 /**
@@ -119,7 +140,7 @@ export interface IntroducedHands {
 }
 
 export interface ScalesProgressData {
-  version: 3;
+  version: 4;
   exercises: Record<string, ExerciseProgress>;
   /** The tier the user is currently working through. */
   currentTierId: string;

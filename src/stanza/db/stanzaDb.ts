@@ -1,7 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 
 import type { PersistedAnalysisBundle } from '../../shared/beat/analysisVersion';
-import type { MusicKey } from '../../shared/music/musicInputConstants';
+import type { SongKey } from '../../shared/music/songKeyFormat';
 
 export interface StanzaMarker {
   /** Stable key for segment ids and drag; assigned on save if missing. */
@@ -82,7 +82,8 @@ export interface StanzaSong {
   /** User pitch shift for uploaded audio only (−12…+12 semitones); uses decoded-buffer detune (main + stems when layered). */
   localTransposeSemitones?: number;
   /** Detected or user-selected original key for local uploads (pitch class only). */
-  localOriginalKey?: MusicKey;
+  /** User-set key for pitch shift / playback display (`C major`, `Am`, …). */
+  localOriginalKey?: SongKey;
   /** Which timing target the Practice rail is editing (default: song; see ADR 0008). */
   metronomeTimingScope?: StanzaMetronomeTimingScope;
   /** User preference: attempt synced clicks while playing (requires tempo calibration). */

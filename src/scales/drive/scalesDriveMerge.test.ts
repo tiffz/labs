@@ -4,7 +4,7 @@ import { mergeScalesProgress } from './scalesDriveMerge';
 
 function baseProgress(overrides: Partial<ScalesProgressData> = {}): ScalesProgressData {
   return {
-    version: 3,
+    version: 4,
     exercises: {},
     currentTierId: 'beginner',
     seenOnboarding: false,
@@ -87,7 +87,7 @@ describe('mergeScalesProgress', () => {
   it('normalizes unknown remote payload through migration pipeline', () => {
     const local = baseProgress();
     const remote = {
-      version: 3,
+      version: 4,
       currentTierId: 'beginner',
       exercises: {},
       seenOnboarding: true,

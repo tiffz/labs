@@ -55,11 +55,10 @@ import { SongMilestoneChecklist } from './SongMilestoneChecklist';
 import { SpotifyBrandIcon } from './EncoreBrandIcon';
 import { songWithSyncedLegacyDriveIds } from '../utils/songAttachments';
 import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
-import { ENCORE_PERFORMANCE_KEY_OPTIONS } from '../repertoire/performanceKeys';
 import { collectAllSongTags, normalizeSongTags } from '../repertoire/songTags';
+import { EncoreKeyChip } from '../ui/EncoreKeyChip';
 import { ensureSongHasDerivedMediaLinks } from '../repertoire/songMediaLinks';
 import { withPracticingToggle } from '../repertoire/practicingToggle';
-import { InlineChipSelect } from '../ui/InlineEditChip';
 import { InlineSongTagsCell } from '../ui/InlineSongTagsCell';
 import { renderSpotifyTrackAutocompleteOption } from '../ui/renderSpotifyTrackAutocompleteOption';
 import { SongMediaUploadIntentDialog } from './song/SongMediaUploadIntentDialog';
@@ -790,13 +789,13 @@ export function SongPage(props: {
           >
             Key
           </Typography>
-          <InlineChipSelect<string>
-            value={draft.performanceKey ?? null}
-            options={ENCORE_PERFORMANCE_KEY_OPTIONS}
-            freeSolo
-            clearable
+          <EncoreKeyChip
+            value={draft.performanceKey}
             placeholder="Set key"
-            onChange={(v) => setDraft((d) => (d ? { ...d, performanceKey: v ?? undefined } : d))}
+            clearable
+            onChange={(next) =>
+              setDraft((d) => (d ? { ...d, performanceKey: next.trim() || undefined } : d))
+            }
           />
           <FormControlLabel
             sx={{ alignItems: 'center', m: 0, ml: { xs: 0, sm: 'auto' } }}

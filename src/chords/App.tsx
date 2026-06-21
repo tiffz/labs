@@ -6,7 +6,7 @@ import IconButton from '@mui/material/IconButton';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import type { ChordProgressionState, LockedOptions } from './types';
 import { randomChordProgression, randomKey, randomTimeSignature, randomTempo, randomStylingStrategy } from './utils/randomization';
-import { progressionToChords } from '../shared/music/chordTheory';
+import { progressionToChordsInSongKey } from '../shared/music/chordTheory';
 import { generateVoicing } from '../shared/music/chordVoicing';
 import { generateStyledChordNotes, type StyledChordNotes } from './utils/chordStyling';
 import { getPlaybackEngine, disposePlaybackEngine, type ActiveNotes } from './utils/playback';
@@ -131,7 +131,7 @@ const App: React.FC = () => {
 
   // Helper function to generate styled chords
   const generateExpandedStyledChords = useCallback((currentState: ChordProgressionState): StyledChordNotes[] => {
-    const chords = progressionToChords(currentState.progression.progression, currentState.key);
+    const chords = progressionToChordsInSongKey(currentState.progression.progression, currentState.key);
     const trebleVoicings = chords.map(chord => generateVoicing(chord, currentState.voicingOptions, 'treble'));
     const bassVoicings = chords.map(chord => generateVoicing(chord, currentState.voicingOptions, 'bass'));
     

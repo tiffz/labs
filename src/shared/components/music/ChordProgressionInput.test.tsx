@@ -20,7 +20,7 @@ describe('ChordProgressionInput', () => {
       />
     );
 
-    const input = screen.getByPlaceholderText('I–V–vi–IV or C–G–Am–F');
+    const input = screen.getByPlaceholderText('I–V–vi–IV or Dm → Bbmaj7/D → Gm/D');
     fireEvent.focus(input);
 
     expect(document.querySelector('.test-prog-dropdown')).toBeTruthy();

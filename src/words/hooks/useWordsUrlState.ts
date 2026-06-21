@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import { SOUND_OPTIONS, type SoundType } from '../../shared/music/soundOptions';
-import type { Key } from '../../shared/music/chordTypes';
-import { ALL_KEYS } from '../../shared/music/randomization';
+import type { SongKey } from '../../shared/music/songKeyFormat';
+import { isValidSongKey } from '../../shared/music/songKeyFormat';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import type { SongSection } from '../../shared/music/songSections';
 import {
@@ -45,7 +45,7 @@ import {
 
 export type WordsUrlStateSetters = {
   setSections: React.Dispatch<React.SetStateAction<SongSection[]>>;
-  setSongKey: React.Dispatch<React.SetStateAction<Key>>;
+  setSongKey: React.Dispatch<React.SetStateAction<SongKey>>;
   setBpm: React.Dispatch<React.SetStateAction<number>>;
   setNotation: React.Dispatch<React.SetStateAction<string>>;
   setTimeSignature: React.Dispatch<React.SetStateAction<TimeSignature>>;
@@ -62,7 +62,7 @@ export type WordsUrlStateSetters = {
 export function useWordsUrlState(
   state: {
     sections: SongSection[];
-    songKey: Key;
+    songKey: SongKey;
     notation: string;
     bpm: number;
     timeSignature: TimeSignature;
@@ -105,10 +105,10 @@ export function useWordsUrlState(
         if (decodedSections) {
           try {
             const parsed = JSON.parse(decodedSections) as {
-              songKey?: Key;
+              songKey?: SongKey;
               sections?: SongSection[];
             };
-            if (parsed.songKey && ALL_KEYS.includes(parsed.songKey)) {
+            if (parsed.songKey && isValidSongKey(parsed.songKey)) {
               settersRef.current.setSongKey(parsed.songKey);
             }
             if (Array.isArray(parsed.sections) && parsed.sections.length > 0) {
@@ -189,8 +189,8 @@ export function useWordsUrlState(
       ) {
         settersRef.current.setChordVolume(chordVolumeParam);
       }
-      if (chordKeyParam && ALL_KEYS.includes(chordKeyParam as Key)) {
-        settersRef.current.setSongKey(chordKeyParam as Key);
+      if (chordKeyParam && isValidSongKey(chordKeyParam)) {
+        settersRef.current.setSongKey(chordKeyParam);
       }
   }, []);
 

@@ -1,8 +1,7 @@
 import Stack from '@mui/material/Stack';
 import type { ReactElement } from 'react';
 import BpmInput from '../../../shared/components/music/BpmInput';
-import KeyInput from '../../../shared/components/music/KeyInput';
-import type { MusicKey } from '../../../shared/music/musicInputConstants';
+import { EncoreKeyChip } from '../../ui/EncoreKeyChip';
 import type { EncoreOriginalSong } from '../types';
 
 export type OriginalsChordsStageMetaProps = {
@@ -20,10 +19,12 @@ export function OriginalsChordsStageMeta({ song, onChange }: OriginalsChordsStag
       useFlexGap
       className="encore-originals-chords-meta"
     >
-      <KeyInput
-        value={song.key as MusicKey}
+      <EncoreKeyChip
+        value={song.key}
+        placeholder="Key"
+        displayMode="compact"
         onChange={(next) => onChange({ key: next })}
-        className="encore-originals-key-input"
+        className="encore-originals-key-chip"
       />
       <BpmInput
         value={song.tempo}
