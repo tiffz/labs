@@ -30,6 +30,7 @@ describe('createWordsExportAdapter', () => {
       timeSignature: { numerator: 4, denominator: 4 },
       chordLabelsByMeasure: new Map([[0, 'C']]),
       chordStyleByMeasure: new Map([[0, 'simple']]),
+      exportFileName: 'Test Song - Words Song',
     });
     expect(adapter.supportsFormat('midi')).toBe(true);
     expect(adapter.supportsFormat('wav')).toBe(true);
@@ -46,6 +47,7 @@ describe('createWordsExportAdapter', () => {
       timeSignature: { numerator: 4, denominator: 4 },
       chordLabelsByMeasure: new Map([[0, 'C']]),
       chordStyleByMeasure: new Map([[0, 'simple']]),
+      exportFileName: 'Test Song - Words Song',
     });
 
     const midi = await adapter.renderMidi?.({ loopCount: 1, selectedStemIds: [] });

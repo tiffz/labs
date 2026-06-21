@@ -5,6 +5,13 @@ async function setLayerPeelDepth(page: import('@playwright/test').Page, depth: 0
   await slider.fill(String(depth));
 }
 
+async function openStructureBrowser(page: import('@playwright/test').Page): Promise<void> {
+  const details = page.locator('.muscle-structure-browser-details');
+  await details.evaluate((element) => {
+    (element as HTMLDetailsElement).open = true;
+  });
+}
+
 test.describe('Muscle Memory study journey', () => {
   test('fundamentals warmup shows skeleton peel count', async ({ page }) => {
     await page.goto('/muscle/?module=fundamentals');
@@ -32,6 +39,7 @@ test.describe('Muscle Memory study journey', () => {
   test('warmup selects first structure and shows drawing notes', async ({ page }) => {
     await page.goto('/muscle/?module=fundamentals');
     await expect(page.getByTestId('muscle-workout-panel')).toBeVisible();
+    await openStructureBrowser(page);
     await page.getByRole('button', { name: 'B Skull' }).click();
     await expect(page.getByRole('heading', { name: 'Skull', level: 2 })).toBeVisible();
     await expect(page.getByText(/Why it matters:/i)).toBeVisible();

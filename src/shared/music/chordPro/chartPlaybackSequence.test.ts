@@ -3,6 +3,8 @@ import {
   CHART_PLAYBACK_MEASURES_PER_LINE,
   chartLayoutToPlaybackSequence,
   chartPlaybackMeasureDurationMs,
+  estimateChartPlaybackDurationMs,
+  formatChartPlaybackDuration,
 } from './chartPlaybackSequence';
 import type { ChartLayout } from './chordChartLayout';
 
@@ -84,5 +86,51 @@ describe('chartPlaybackSequence', () => {
 
   it('computes measure duration from tempo', () => {
     expect(chartPlaybackMeasureDurationMs(120)).toBe(2000);
+  });
+
+  it('estimates playback duration from playable steps and tempo', () => {
+    const layout: ChartLayout = {
+      sections: [
+        {
+          sectionId: 'v1',
+          type: 'Verse',
+          header: 'Verse 1',
+          lines: [
+            {
+              lineId: 'l1',
+              text: 'Hello world',
+              chords: [{ id: 'c1', chordName: 'C', charIndex: 0 }],
+            },
+            {
+              lineId: 'l2',
+              text: 'Second line',
+              chords: [{ id: 'c2', chordName: 'G', charIndex: 0 }],
+            },
+          ],
+        },
+      ],
+    };
+    expect(estimateChartPlaybackDurationMs(layout, 120)).toBe(8000);
+    expect(formatChartPlaybackDuration(8000)).toBe('0:08');
+  });
+
+  it('ignores lines with unparseable chords when estimating duration', () => {
+    const layout: ChartLayout = {
+      sections: [
+        {
+          sectionId: 'v1',
+          type: 'Verse',
+          header: 'Verse 1',
+          lines: [
+            {
+              lineId: 'l1',
+              text: 'Hello',
+              chords: [{ id: 'c1', chordName: 'NotAChord', charIndex: 0 }],
+            },
+          ],
+        },
+      ],
+    };
+    expect(estimateChartPlaybackDurationMs(layout, 120)).toBe(0);
   });
 });

@@ -1,7 +1,26 @@
+import {
+  buildChordChartDownloadFileName,
+  sanitizeLabsDownloadFileStem,
+} from '../utils/labsDownloadFileName';
 import type { TwoColumnChartExport } from './chordChartTwoColumnExport';
 
 const CHORD_LINE_TOKEN_RE =
   /^[A-G](?:#|b)?(?:maj|min|m|M|dim|aug|sus2|sus4|add2|add9|m7|maj7|7|9|11|13|6|\+|\([^)]+\))?(?:\/[A-G](?:#|b)?)?$/i;
+
+export type ChartPrintExportOptions = {
+  /** Visible H1 in the print view */
+  displayTitle: string;
+  /** Browser Save-as-PDF suggested name (no extension) */
+  suggestedFileName: string;
+};
+
+export function buildChartPrintExportOptions(songTitle: string): ChartPrintExportOptions {
+  const displayTitle = sanitizeLabsDownloadFileStem(songTitle.trim()) || 'Untitled';
+  return {
+    displayTitle,
+    suggestedFileName: buildChordChartDownloadFileName(songTitle),
+  };
+}
 
 function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -76,30 +95,13 @@ const PRINT_STYLES = `
   }
 `;
 
-function buildPrintDocumentHtml(bodyHtml: string, title: string): string {
-  const safeTitle = title.replace(/</g, '');
+function buildPrintDocumentHtml(bodyHtml: string, documentTitle: string): string {
+  const safeTitle = documentTitle.replace(/</g, '');
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${safeTitle}</title>
 <style>${PRINT_STYLES}</style></head><body>${bodyHtml}</body></html>`;
 }
 
-/** Open a print-friendly view for a chord chart (Save as PDF via browser print). */
-export function openMonospaceChartPrintWindow(
-  exportData: TwoColumnChartExport | string,
-  title: string,
-): void {
-  const single = typeof exportData === 'string' ? exportData : exportData.single;
-  if (!single.trim()) return;
-
-  const twoColumn =
-    typeof exportData === 'string' ? null : exportData.right.trim() ? exportData : null;
-
-  const safeTitle = escapeHtml(title.trim() || 'Chord chart');
-  const bodyHtml = twoColumn
-    ? `<article class="chart"><h1 class="title">${safeTitle}</h1><div class="cols"><div class="col">${asciiChartTextToPrintHtml(twoColumn.left)}</div><div class="col">${asciiChartTextToPrintHtml(twoColumn.right)}</div></div></article>`
-    : `<article class="chart"><h1 class="title">${safeTitle}</h1><div class="content">${asciiChartTextToPrintHtml(single)}</div></article>`;
-
-  const html = buildPrintDocumentHtml(bodyHtml, title.trim() || 'Chord chart');
-
+function openPrintHtmlInHiddenIframe(html: string, onPrint: (win: Window) => void): void {
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
   iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
@@ -121,8 +123,7 @@ export function openMonospaceChartPrintWindow(
   };
 
   const triggerPrint = () => {
-    win.focus();
-    win.print();
+    onPrint(win);
     win.addEventListener('afterprint', cleanup, { once: true });
     window.setTimeout(cleanup, 60_000);
   };
@@ -132,4 +133,55 @@ export function openMonospaceChartPrintWindow(
   } else {
     iframe.onload = () => window.setTimeout(triggerPrint, 150);
   }
+}
+
+/** Open a print-friendly view for a chord chart (Save as PDF via browser print). */
+export function openMonospaceChartPrintWindow(
+  exportData: TwoColumnChartExport | string,
+  titleOrOptions: string | ChartPrintExportOptions,
+): void {
+  const single = typeof exportData === 'string' ? exportData : exportData.single;
+  if (!single.trim()) return;
+
+  const options =
+    typeof titleOrOptions === 'string'
+      ? buildChartPrintExportOptions(titleOrOptions)
+      : titleOrOptions;
+
+  const twoColumn =
+    typeof exportData === 'string' ? null : exportData.right.trim() ? exportData : null;
+
+  const safeTitle = escapeHtml(options.displayTitle);
+  const bodyHtml = twoColumn
+    ? `<article class="chart"><h1 class="title">${safeTitle}</h1><div class="cols"><div class="col">${asciiChartTextToPrintHtml(twoColumn.left)}</div><div class="col">${asciiChartTextToPrintHtml(twoColumn.right)}</div></div></article>`
+    : `<article class="chart"><h1 class="title">${safeTitle}</h1><div class="content">${asciiChartTextToPrintHtml(single)}</div></article>`;
+
+  const html = buildPrintDocumentHtml(bodyHtml, options.suggestedFileName);
+  const printWin = window.open('about:blank', '_blank', 'noopener,noreferrer');
+
+  if (printWin) {
+    printWin.document.open();
+    printWin.document.write(html);
+    printWin.document.close();
+    printWin.document.title = options.suggestedFileName;
+
+    const triggerPrint = () => {
+      printWin.focus();
+      printWin.print();
+      printWin.addEventListener('afterprint', () => printWin.close(), { once: true });
+    };
+
+    if (printWin.document.readyState === 'complete') {
+      window.setTimeout(triggerPrint, 150);
+    } else {
+      printWin.onload = () => window.setTimeout(triggerPrint, 150);
+    }
+    return;
+  }
+
+  openPrintHtmlInHiddenIframe(html, (win) => {
+    win.document.title = options.suggestedFileName;
+    win.focus();
+    win.print();
+  });
 }

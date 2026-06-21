@@ -3,10 +3,42 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceSpreadPage,
   computePageFitScale,
+  detectWideSpreadPageNumbers,
   formatReaderPageCount,
   spreadNavigationState,
   spreadPageNumbers,
+  type PdfPageDimensions,
 } from './pdfRender';
+
+function portraitPage(width: number, height: number): PdfPageDimensions {
+  return { width, height };
+}
+
+function landscapeSpread(width: number, height: number): PdfPageDimensions {
+  return { width, height };
+}
+
+describe('wide spread detection', () => {
+  it('flags pages much wider than portrait singles', () => {
+    const dimensions: PdfPageDimensions[] = [
+      portraitPage(400, 600),
+      portraitPage(410, 600),
+      landscapeSpread(820, 600),
+      portraitPage(405, 600),
+    ];
+    expect([...detectWideSpreadPageNumbers(dimensions)]).toEqual([3]);
+  });
+
+  it('shows a built-in spread alone instead of pairing with its neighbor', () => {
+    const wide = new Set([3]);
+    expect(spreadPageNumbers(2, 148, 0, wide)).toEqual([2]);
+    expect(spreadPageNumbers(3, 148, 0, wide)).toEqual([3]);
+    expect(formatReaderPageCount('spread', 2, 148, 0, wide)).toBe('2 / 148');
+    expect(formatReaderPageCount('spread', 3, 148, 0, wide)).toBe('3 / 148');
+    expect(advanceSpreadPage(2, 1, 148, 0, wide)).toBe(3);
+    expect(advanceSpreadPage(3, -1, 148, 0, wide)).toBe(2);
+  });
+});
 
 describe('computePageFitScale', () => {
   it('contain fits tall pages within the viewport height', () => {

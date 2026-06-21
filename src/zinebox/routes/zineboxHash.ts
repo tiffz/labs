@@ -17,15 +17,57 @@ export type ZineboxReaderParams = {
   spreadOffset: ZineboxSpreadOffset;
 };
 
+/** Strip an accidental `?mode=…` suffix embedded in a copied read URL path segment. */
+export function normalizeZineboxReadComicId(raw: string): string {
+  const decoded = decodeURIComponent(raw.trim());
+  const queryIndex = decoded.indexOf('?');
+  return queryIndex >= 0 ? decoded.slice(0, queryIndex) : decoded;
+}
+
+/** Hash query string — supports normal `#/read/id?mode=spread` and malformed `%3Fmode%3Dspread` in the id. */
+export function extractZineboxHashSearch(hash: string): string {
+  const withoutHash = hash.replace(/^#/, '');
+  const literalQueryIndex = withoutHash.indexOf('?');
+  if (literalQueryIndex >= 0) {
+    return withoutHash.slice(literalQueryIndex);
+  }
+  const path = withoutHash.startsWith('/') ? withoutHash : `/${withoutHash}`;
+  const segs = path.split('/').filter(Boolean);
+  if (segs[0] === 'read' && segs[1]) {
+    const decoded = decodeURIComponent(segs[1]);
+    const embedded = decoded.indexOf('?');
+    if (embedded >= 0) return decoded.slice(embedded);
+  }
+  return '';
+}
+
 export function parseZineboxHash(hash: string): ZineboxRoute {
   const raw = hash.replace(/^#/, '').trim();
   if (!raw) return { kind: 'library' };
   const path = raw.startsWith('/') ? raw : `/${raw}`;
   const segs = path.split('/').filter(Boolean);
   if (segs[0] === 'read' && segs[1]) {
-    return { kind: 'read', comicId: decodeURIComponent(segs[1]) };
+    return { kind: 'read', comicId: normalizeZineboxReadComicId(segs[1]) };
   }
   return { kind: 'library' };
+}
+
+/** Rewrite double-encoded read links to canonical `#/read/<id>?mode=…` form. */
+export function canonicalizeZineboxReadHash(hash: string, readerParams: ZineboxReaderParams): string | null {
+  const raw = hash.replace(/^#/, '').trim();
+  if (!raw) return null;
+  const path = raw.startsWith('/') ? raw : `/${raw}`;
+  const segs = path.split('/').filter(Boolean);
+  if (segs[0] !== 'read' || !segs[1]) return null;
+
+  const comicId = normalizeZineboxReadComicId(segs[1]);
+  const embeddedSearch = extractZineboxHashSearch(hash);
+  const mergedParams =
+    embeddedSearch.length > 0
+      ? { ...readerParams, ...parseReaderParams(embeddedSearch) }
+      : readerParams;
+  const canonical = zineboxReadHref(comicId, mergedParams);
+  return canonical === hash ? null : canonical;
 }
 
 export function parseLibraryParams(search: string): ZineboxLibraryParams {

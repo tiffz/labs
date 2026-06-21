@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import type { RefObject } from 'react';
-import { openMonospaceChartPrintWindow } from '../../shared/music/chordChartPrintExport';
+import { openMonospaceChartPrintWindow, type ChartPrintExportOptions } from '../../shared/music/chordChartPrintExport';
 import { createAppAnalytics } from '../../shared/utils/analytics';
 import type { SongKey } from '../../shared/music/songKeyFormat';
 import type { TimeSignature } from '../../shared/rhythm/types';
@@ -29,6 +29,7 @@ export function useWordsNotationPanelProps(params: {
   exportAdapter: ExportSourceAdapter;
   lyricsExportText: string;
   asciiChordChartExportText: string;
+  chartPrintExportOptions: ChartPrintExportOptions;
   sectionRenderPlans: SectionRenderPlan[];
   timeSignature: TimeSignature;
   hitMap: Map<string, SyllableHit>;
@@ -69,6 +70,7 @@ export function useWordsNotationPanelProps(params: {
     exportAdapter,
     lyricsExportText,
     asciiChordChartExportText,
+    chartPrintExportOptions,
     sectionRenderPlans,
     timeSignature,
     hitMap,
@@ -153,7 +155,7 @@ export function useWordsNotationPanelProps(params: {
         setExportMenuOpen(false);
       },
       onDownloadPdf: () => {
-        openMonospaceChartPrintWindow(asciiChordChartExportText, 'Chord chart');
+        openMonospaceChartPrintWindow(asciiChordChartExportText, chartPrintExportOptions);
         setExportMenuOpen(false);
       },
       onOpenSharedExport: () => {
@@ -201,6 +203,7 @@ export function useWordsNotationPanelProps(params: {
       copyText,
       lyricsExportText,
       asciiChordChartExportText,
+      chartPrintExportOptions,
     ]
   );
 }

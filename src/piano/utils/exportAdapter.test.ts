@@ -33,6 +33,7 @@ const TEST_SCORE: PianoScore = {
 describe('createPianoExportAdapter', () => {
   it('supports MIDI and audio export formats', () => {
     const adapter = createPianoExportAdapter(TEST_SCORE);
+    expect(adapter.fileBaseName).toBe('Test Score - Piano Score');
     expect(adapter.supportsFormat('midi')).toBe(true);
     expect(adapter.supportsFormat('wav')).toBe(true);
     expect(adapter.supportsFormat('mp3')).toBe(true);

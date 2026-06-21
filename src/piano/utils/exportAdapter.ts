@@ -1,3 +1,4 @@
+import { buildLabsDownloadFileName } from '../../shared/utils/labsDownloadFileName';
 import type { PianoScore } from '../types';
 import type { ExportSourceAdapter } from '../../shared/music/exportTypes';
 import { durationToBeats } from '../types';
@@ -10,15 +11,11 @@ export function createPianoExportAdapter(score: PianoScore): ExportSourceAdapter
     label: part.name || part.id,
     defaultSelected: true,
   }));
-  const fileBaseName = (score.title || 'piano-score')
-    .replace(/[^a-z0-9-_]+/gi, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-    .toLowerCase();
+  const fileBaseName = buildLabsDownloadFileName([score.title.trim() || 'Untitled', 'Piano Score']);
   return {
     id: 'piano',
     title: 'Export Piano Score',
-    fileBaseName: fileBaseName || 'piano-score',
+    fileBaseName,
     stems: stemDefs,
     defaultFormat: 'wav',
     supportsFormat: (format) => ['midi', 'wav', 'mp3', 'ogg', 'flac'].includes(format),

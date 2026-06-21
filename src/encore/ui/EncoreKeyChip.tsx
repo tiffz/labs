@@ -29,7 +29,7 @@ export function EncoreKeyChip({
   displayMode = 'full',
   modeFormat = 'long',
   className,
-  dropdownClassName = 'encore-repertoire-key-dropdown',
+  dropdownClassName = 'encore-repertoire-floating-menu encore-repertoire-key-dropdown',
 }: EncoreKeyChipProps): ReactElement {
   const anchorRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);

@@ -1,4 +1,3 @@
-import Button from '@mui/material/Button';
 import { useRef, useState, type MouseEvent, type ReactElement } from 'react';
 import AnchoredPopover from '../../../../shared/components/AnchoredPopover';
 import type { SongSection } from '../../../../shared/music/chordPro/chordChartLayout';
@@ -78,7 +77,10 @@ export function OriginalsPaintSectionHeading({
         anchorEl={anchorRef.current}
         onClose={close}
         placement="bottom-start"
-        paperClassName="encore-originals-section-progression-menu"
+        disableAutoFocus
+        disableEnforceFocus
+        disableRestoreFocus
+        paperClassName="encore-repertoire-floating-menu encore-originals-section-progression-menu"
         slotProps={{
           paper: {
             onMouseDown: (event: MouseEvent<HTMLDivElement>) => event.stopPropagation(),
@@ -119,18 +121,21 @@ export function OriginalsPaintSectionHeading({
             </p>
           ) : null}
           <div className="encore-originals-section-progression-menu-actions">
-            <Button size="small" variant="text" onClick={close} className="encore-originals-section-progression-cancel">
+            <button
+              type="button"
+              onClick={close}
+              className="encore-originals-section-progression-cancel"
+            >
               Cancel
-            </Button>
-            <Button
-              size="small"
-              variant="contained"
+            </button>
+            <button
+              type="button"
               disabled={!progression.trim()}
               onClick={apply}
               className="encore-originals-section-progression-apply"
             >
               Apply to section
-            </Button>
+            </button>
           </div>
         </div>
       </AnchoredPopover>

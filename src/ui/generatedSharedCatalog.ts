@@ -8881,6 +8881,41 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordchartprintexport-ts-buildchartprintexportoptions",
+    "name": "buildChartPrintExportOptions",
+    "path": "src/shared/music/chordChartPrintExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordchartprintexport-ts-chartprintexportoptions",
+    "name": "ChartPrintExportOptions",
+    "path": "src/shared/music/chordChartPrintExport.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordchartprintexport-ts-isasciichartchordline",
     "name": "isAsciiChartChordLine",
     "path": "src/shared/music/chordChartPrintExport.ts",
@@ -9260,6 +9295,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-chartlayouttoplayableplaybacksteps",
+    "name": "chartLayoutToPlayablePlaybackSteps",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Playback steps with parseable chord symbols — matches `useChartChordPlayback`.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordpro-chartplaybacksequence-ts-chartlayouttoplaybacksequence",
     "name": "chartLayoutToPlaybackSequence",
     "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
@@ -9303,6 +9353,36 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-estimatechartplaybackdurationms",
+    "name": "estimateChartPlaybackDurationMs",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Total chord-playback duration in ms at the given tempo.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-formatchartplaybackduration",
+    "name": "formatChartPlaybackDuration",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Format playback duration as `m:ss` (rounded to whole seconds).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -19214,6 +19294,86 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "utils"
     ],
     "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsdownloadfilename-ts-buildchordchartdownloadfilename",
+    "name": "buildChordChartDownloadFileName",
+    "path": "src/shared/utils/labsDownloadFileName.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsdownloadfilename-ts-buildlabsdownloadfilename",
+    "name": "buildLabsDownloadFileName",
+    "path": "src/shared/utils/labsDownloadFileName.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Build a human-readable download filename from ordered parts joined with ` - `. Example: `buildLabsDownloadFileName(['A Thousand Castles', 'Chord Chart'], 'pdf')` → `A Thousand Castles - Chord Chart.pdf`",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsdownloadfilename-ts-labsdownloadfilenamewithextension",
+    "name": "labsDownloadFileNameWithExtension",
+    "path": "src/shared/utils/labsDownloadFileName.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Append an extension to an already-built stem (no part joining).",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsdownloadfilename-ts-sanitizelabsdownloadfilestem",
+    "name": "sanitizeLabsDownloadFileStem",
+    "path": "src/shared/utils/labsDownloadFileName.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Strip characters illegal in cross-platform download filenames; keep readable spacing.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },

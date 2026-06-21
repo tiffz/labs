@@ -9,8 +9,12 @@ import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { parseChordProToChartLayout } from '../../../shared/music/chordPro/chordChartLayout';
+import {
+  estimateChartPlaybackDurationMs,
+  formatChartPlaybackDuration,
+} from '../../../shared/music/chordPro/chartPlaybackSequence';
 import { chartLayoutToAsciiExport } from '../../../shared/music/chordChartAsciiExport';
 import { layoutToWriteDocument } from '../../../shared/music/chordPro/chordChartLayout';
 import { richTextPlainText } from '../../../shared/utils/richTextContent';
@@ -44,8 +48,17 @@ export function OriginalsSongViewMode({
 }: OriginalsSongViewModeProps): ReactElement {
   const theme = useTheme();
   const { googleAccessToken } = useEncoreAuth();
-  const writeDoc = layoutToWriteDocument(parseChordProToChartLayout(song.lyricsAndChords));
-  const ascii = chartLayoutToAsciiExport(parseChordProToChartLayout(song.lyricsAndChords));
+  const chartLayout = useMemo(
+    () => parseChordProToChartLayout(song.lyricsAndChords),
+    [song.lyricsAndChords],
+  );
+  const writeDoc = layoutToWriteDocument(chartLayout);
+  const ascii = chartLayoutToAsciiExport(chartLayout);
+  const playbackDurationLabel = useMemo(() => {
+    const durationMs = estimateChartPlaybackDurationMs(chartLayout, song.tempo);
+    if (durationMs <= 0) return null;
+    return formatChartPlaybackDuration(durationMs);
+  }, [chartLayout, song.tempo]);
   const brainstormPlain = richTextPlainText(song.brainstormHtml);
   const preferredTake = preferredOriginalTake(song);
   const [localAudioIds, setLocalAudioIds] = useState<Set<string>>(() => new Set());
@@ -139,6 +152,11 @@ export function OriginalsSongViewMode({
               <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
                 <Chip size="small" label={`Key ${song.key}`} />
                 <Chip size="small" label={`${song.tempo} BPM`} variant="outlined" />
+                {playbackDurationLabel ? (
+                  <Tooltip title="Estimated chord playback length">
+                    <Chip size="small" label={`~${playbackDurationLabel}`} variant="outlined" />
+                  </Tooltip>
+                ) : null}
                 {song.takes.length > 0 ? (
                   <Chip size="small" label={`${song.takes.length} take${song.takes.length === 1 ? '' : 's'}`} variant="outlined" />
                 ) : null}

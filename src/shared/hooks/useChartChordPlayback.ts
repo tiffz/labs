@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChartLayout } from '../music/chordPro/chordChartLayout';
 import {
-  chartLayoutToPlaybackSequence,
+  chartLayoutToPlayablePlaybackSteps,
   chartPlaybackMeasureDurationMs,
   type ChartPlaybackStep,
 } from '../music/chordPro/chartPlaybackSequence';
-import { parseChordSymbol } from '../music/chordMatcher';
 import {
   CHART_CHORD_PLAYBACK_TIME_SIGNATURE,
   effectiveChordPlaybackVelocity,
@@ -72,10 +71,7 @@ export function useChartChordPlayback({
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
-  const steps = useMemo(
-    () => chartLayoutToPlaybackSequence(layout).filter((step) => parseChordSymbol(step.chordName)),
-    [layout],
-  );
+  const steps = useMemo(() => chartLayoutToPlayablePlaybackSteps(layout), [layout]);
 
   const updateSettings = useCallback(
     (patch: Partial<ChordPlaybackSettings>) => {

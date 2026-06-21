@@ -29,6 +29,7 @@ type ReaderChromeProps = {
   spreadOffset: ZineboxSpreadOffset;
   currentPage: number;
   totalPages: number;
+  wideSpreadPages: ReadonlySet<number>;
   onModeChange: (mode: ZineboxReaderMode) => void;
   onSpreadOffsetChange: (offset: ZineboxSpreadOffset) => void;
   onClose: () => void;
@@ -40,6 +41,7 @@ export default function ReaderChrome({
   spreadOffset,
   currentPage,
   totalPages,
+  wideSpreadPages,
   onModeChange,
   onSpreadOffsetChange,
   onClose,
@@ -59,7 +61,7 @@ export default function ReaderChrome({
         <span className="zinebox-reader__title">{title}</span>
         {totalPages > 0 ? (
           <span className="zinebox-reader__page-count" aria-live="polite">
-            {formatReaderPageCount(mode, currentPage, totalPages, spreadOffset)}
+            {formatReaderPageCount(mode, currentPage, totalPages, spreadOffset, wideSpreadPages)}
           </span>
         ) : null}
       </div>
@@ -118,6 +120,7 @@ type ReaderNavButtonsProps = {
   spreadOffset: ZineboxSpreadOffset;
   currentPage: number;
   totalPages: number;
+  wideSpreadPages: ReadonlySet<number>;
   onPrev: () => void;
   onNext: () => void;
 };
@@ -127,6 +130,7 @@ export function ReaderNavButtons({
   spreadOffset,
   currentPage,
   totalPages,
+  wideSpreadPages,
   onPrev,
   onNext,
 }: ReaderNavButtonsProps): React.ReactElement | null {
@@ -135,7 +139,7 @@ export function ReaderNavButtons({
 
   const { canPrev, canNext } =
     mode === 'spread'
-      ? spreadNavigationState(currentPage, totalPages, spreadOffset)
+      ? spreadNavigationState(currentPage, totalPages, spreadOffset, wideSpreadPages)
       : { canPrev: currentPage > 1, canNext: currentPage < totalPages };
 
   return (

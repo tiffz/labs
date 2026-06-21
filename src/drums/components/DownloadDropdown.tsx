@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import type { ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
-import { renderRhythmAudio, exportAudioBuffer, calculateRhythmDuration, formatDuration } from '../utils/audioExport';
+import { exportAudioBuffer, calculateRhythmDuration, formatDuration, renderRhythmAudio } from '../utils/audioExport';
+import { buildDrumsAudioDownloadFileName } from '../utils/exportAdapter';
+import { labsDownloadFileNameWithExtension } from '../../shared/utils/labsDownloadFileName';
 
 interface DownloadDropdownProps {
   rhythm: ParsedRhythm;
@@ -82,13 +84,12 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
       // Convert to selected format
       const blob = await exportAudioBuffer(audioBuffer, format);
       
-      // Create download link with filename based on notation
-      const cleanNotation = notation.replace(/[\s\n]/g, '').substring(0, 50); // Remove spaces/newlines and truncate
-      const filename = cleanNotation || 'rhythm';
+      // Create download link with a readable filename
+      const filename = buildDrumsAudioDownloadFileName(notation);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${filename}.${format}`;
+      a.download = labsDownloadFileNameWithExtension(filename, format);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

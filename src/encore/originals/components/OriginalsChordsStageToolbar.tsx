@@ -48,7 +48,7 @@ export function OriginalsChordsStageToolbar({
         rowGap: 0.4,
       }}
     >
-      <OriginalsChordsStageMeta song={song} onChange={onSongChange} />
+      <OriginalsChordsStageMeta song={song} layout={layout} onChange={onSongChange} />
       <OriginalsChordPlaybackBar
         layout={layout}
         tempo={song.tempo}

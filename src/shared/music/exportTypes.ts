@@ -52,6 +52,7 @@ export type MidiRenderPayload = Uint8Array;
 export interface ExportSourceAdapter {
   id: string;
   title: string;
+  /** Human-readable download stem — use {@link buildLabsDownloadFileName} (e.g. `Song Title - Audio`). */
   fileBaseName: string;
   stems: ExportStem[];
   defaultFormat?: ExportFormat;

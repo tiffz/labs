@@ -27,6 +27,7 @@ import AppTooltip from '../shared/components/AppTooltip';
 import { PlaybackVolumeRow } from '../shared/components/music/PlaybackVolumeRow';
 import SharedExportPopover from '../shared/components/music/SharedExportPopover';
 import type { ExportSourceAdapter } from '../shared/music/exportTypes';
+import { buildLabsDownloadFileName } from '../shared/utils/labsDownloadFileName';
 import { buildSingleTrackMidi, type MidiNoteEvent } from '../shared/music/midiBuilder';
 import { renderMidiEventsToAudioBuffer } from '../shared/music/midiAudioRender';
 import { CLICK_SAMPLE_URL } from '../shared/audio/drumSampleUrls';
@@ -153,7 +154,7 @@ const App: React.FC = () => {
   const exportAdapter = useMemo<ExportSourceAdapter>(() => ({
     id: 'chords',
     title: 'Export Chord Progression',
-    fileBaseName: 'chords-progression',
+    fileBaseName: buildLabsDownloadFileName([state.key, state.progression.name, 'Chord Progression']),
     stems: [
       { id: 'treble', label: 'Treble', defaultSelected: true },
       { id: 'bass', label: 'Bass', defaultSelected: true },

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  canonicalizeZineboxReadHash,
+  extractZineboxHashSearch,
+  normalizeZineboxReadComicId,
   parseLibraryParams,
   parseReaderParams,
   parseZineboxHash,
@@ -16,6 +19,27 @@ describe('zineboxHash', () => {
 
   it('parses read route', () => {
     expect(parseZineboxHash('#/read/comic-1')).toEqual({ kind: 'read', comicId: 'comic-1' });
+  });
+
+  it('strips embedded reader query accidentally copied into the comic id segment', () => {
+    const malformed =
+      '#/read/comic-9e4ac876-9b3b-41c6-b78d-8a5c8e00acbe%3Fmode%3Dspread';
+    expect(parseZineboxHash(malformed)).toEqual({
+      kind: 'read',
+      comicId: 'comic-9e4ac876-9b3b-41c6-b78d-8a5c8e00acbe',
+    });
+    expect(extractZineboxHashSearch(malformed)).toBe('?mode=spread');
+    expect(parseReaderParams(extractZineboxHashSearch(malformed))).toEqual({
+      mode: 'spread',
+      spreadOffset: 0,
+    });
+    expect(
+      canonicalizeZineboxReadHash(malformed, { mode: 'single', spreadOffset: 0 }),
+    ).toBe('#/read/comic-9e4ac876-9b3b-41c6-b78d-8a5c8e00acbe?mode=spread');
+  });
+
+  it('normalizeZineboxReadComicId leaves plain ids unchanged', () => {
+    expect(normalizeZineboxReadComicId('comic-1')).toBe('comic-1');
   });
 
   it('parses library params', () => {

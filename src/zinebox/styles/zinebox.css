@@ -960,6 +960,15 @@
   width: 100%;
 }
 
+.zinebox-reader__spread--wide-solo {
+  padding-inline: 16px;
+}
+
+.zinebox-reader__spread--wide-solo .zinebox-reader__canvas {
+  flex: 1 1 auto;
+  max-width: min(100%, 1200px);
+}
+
 .zinebox-reader__canvas {
   flex: 0 1 auto;
   max-width: 100%;

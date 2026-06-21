@@ -1,3 +1,4 @@
+import { parseChordSymbol } from '../chordMatcher';
 import { tokenizeLyricLine, type ChartLayout, type ChordMarker, type LyricLine } from './chordChartLayout';
 
 /** Assume 4/4: each lyric line spans two measures; one chord change per measure. */
@@ -86,4 +87,24 @@ export function chartLayoutToPlaybackSequence(layout: ChartLayout): ChartPlaybac
 export function chartPlaybackMeasureDurationMs(tempo: number): number {
   const beatMs = 60_000 / tempo;
   return beatMs * CHART_PLAYBACK_BEATS_PER_MEASURE;
+}
+
+/** Playback steps with parseable chord symbols — matches `useChartChordPlayback`. */
+export function chartLayoutToPlayablePlaybackSteps(layout: ChartLayout): ChartPlaybackStep[] {
+  return chartLayoutToPlaybackSequence(layout).filter((step) => parseChordSymbol(step.chordName));
+}
+
+/** Total chord-playback duration in ms at the given tempo. */
+export function estimateChartPlaybackDurationMs(layout: ChartLayout, tempo: number): number {
+  const stepCount = chartLayoutToPlayablePlaybackSteps(layout).length;
+  if (stepCount === 0 || tempo <= 0) return 0;
+  return stepCount * chartPlaybackMeasureDurationMs(tempo);
+}
+
+/** Format playback duration as `m:ss` (rounded to whole seconds). */
+export function formatChartPlaybackDuration(durationMs: number): string {
+  const wholeSeconds = Math.round(Math.max(0, durationMs) / 1000);
+  const minutes = Math.floor(wholeSeconds / 60);
+  const remaining = wholeSeconds % 60;
+  return `${minutes}:${String(remaining).padStart(2, '0')}`;
 }

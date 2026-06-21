@@ -24,6 +24,7 @@ import {
   buildAsciiChordChartExportText,
   buildLyricsExportText,
 } from '../utils/wordsChordExportText';
+import { buildWordsAudioExportFileName, buildWordsChartExportOptions } from '../utils/wordsExportFileName';
 import {
   buildBackingPatternRhythm,
   buildBackingTemplateMeasureMap,
@@ -188,8 +189,13 @@ export function useWordsSongModel(params: {
         timeSignature,
         chordLabelsByMeasure,
         chordStyleByMeasure,
+        exportFileName: buildWordsAudioExportFileName(sections, songKey),
       }),
-    [parsedRhythm, bpm, songKey, timeSignature, chordLabelsByMeasure, chordStyleByMeasure]
+    [parsedRhythm, bpm, songKey, timeSignature, chordLabelsByMeasure, chordStyleByMeasure, sections]
+  );
+  const chartPrintExportOptions = useMemo(
+    () => buildWordsChartExportOptions(sections),
+    [sections]
   );
   const effectivePlaybackSettings = useMemo(
     () =>
@@ -284,6 +290,7 @@ export function useWordsSongModel(params: {
     darbukaEditUrl,
     lyricsExportText,
     asciiChordChartExportText,
+    chartPrintExportOptions,
     scoreMeasureCount,
     estimatedSongDuration,
     sixteenthsPerMeasure,

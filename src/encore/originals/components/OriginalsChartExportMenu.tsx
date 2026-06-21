@@ -12,7 +12,7 @@ import Tooltip from '@mui/material/Tooltip';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { chartLayoutToTwoColumnExport } from '../../../shared/music/chordChartTwoColumnExport';
 import { copyTextToClipboard } from '../../../shared/music/chordChartAsciiExport';
-import { openMonospaceChartPrintWindow } from '../../../shared/music/chordChartPrintExport';
+import { buildChartPrintExportOptions, openMonospaceChartPrintWindow } from '../../../shared/music/chordChartPrintExport';
 import { useEncoreAuth } from '../../context/EncoreAuthContext';
 import { useEncoreBlockingJobs } from '../../context/EncoreBlockingJobContext';
 import type { EncoreOriginalSong } from '../types';
@@ -44,7 +44,7 @@ export function OriginalsChartExportMenu({ song, layout, onPersist }: OriginalsC
   };
 
   const onPdf = () => {
-    openMonospaceChartPrintWindow(exportData, song.title.trim() || 'Chord chart');
+    openMonospaceChartPrintWindow(exportData, buildChartPrintExportOptions(song.title));
     setAnchor(null);
   };
 

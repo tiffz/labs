@@ -1,3 +1,4 @@
+import { buildLabsDownloadFileName } from '../../shared/utils/labsDownloadFileName';
 import {
   docsCreateBlankDocument,
   docsReplaceBodyTwoColumnPlainTextTable,
@@ -10,8 +11,7 @@ import { ensureOriginalsDriveLayout } from './drive/originalsSharded';
 import type { EncoreOriginalSong } from './types';
 
 export function originalChartGoogleDocTitle(song: EncoreOriginalSong): string {
-  const title = song.title.trim() || 'Untitled original';
-  return `${title} — chord chart`;
+  return buildLabsDownloadFileName([song.title.trim() || 'Untitled', 'Chord Chart']);
 }
 
 export function googleDocEditUrl(documentId: string): string {

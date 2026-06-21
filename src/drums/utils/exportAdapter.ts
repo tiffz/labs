@@ -1,9 +1,12 @@
+import { buildLabsDownloadFileName } from '../../shared/utils/labsDownloadFileName';
 import type { ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import type { ExportSourceAdapter } from '../../shared/music/exportTypes';
 import { calculateRhythmDuration, renderRhythmAudio } from './audioExport';
 import { buildDrumMidiEventsFromParsedRhythm } from '../../shared/music/drumRhythmMidiEvents';
 import { buildSingleTrackMidi } from '../../shared/music/midiBuilder';
+
+import { recognizeRhythm } from './rhythmRecognition';
 
 interface CreateDrumsExportAdapterOptions {
   rhythm: ParsedRhythm;
@@ -13,6 +16,12 @@ interface CreateDrumsExportAdapterOptions {
   notation: string;
 }
 
+export function buildDrumsAudioDownloadFileName(notation: string): string {
+  const rhythmMatch = recognizeRhythm(notation);
+  const rhythmLabel = rhythmMatch?.rhythm.name ?? 'Custom Rhythm';
+  return buildLabsDownloadFileName([rhythmLabel, 'Darbuka Rhythm']);
+}
+
 export function createDrumsExportAdapter({
   rhythm,
   bpm,
@@ -20,11 +29,10 @@ export function createDrumsExportAdapter({
   metronomeEnabled,
   notation,
 }: CreateDrumsExportAdapterOptions): ExportSourceAdapter {
-  const cleanNotation = notation.replace(/[\s\n]/g, '').slice(0, 48) || 'drums-rhythm';
   return {
     id: 'drums',
     title: 'Export Rhythm',
-    fileBaseName: cleanNotation,
+    fileBaseName: buildDrumsAudioDownloadFileName(notation),
     defaultFormat: 'wav',
     stems: [{ id: 'drums', label: 'Drums', defaultSelected: true }],
     supportsFormat: (format) => ['wav', 'mp3', 'ogg', 'flac', 'midi'].includes(format),

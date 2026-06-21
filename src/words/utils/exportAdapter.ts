@@ -17,6 +17,7 @@ interface CreateWordsExportAdapterOptions {
   timeSignature: TimeSignature;
   chordLabelsByMeasure: Map<number, string>;
   chordStyleByMeasure: Map<number, ChordStyleId>;
+  exportFileName: string;
 }
 
 function buildPianoMidiEvents(
@@ -94,11 +95,12 @@ export function createWordsExportAdapter({
   timeSignature,
   chordLabelsByMeasure,
   chordStyleByMeasure,
+  exportFileName,
 }: CreateWordsExportAdapterOptions): ExportSourceAdapter {
   return {
     id: 'words',
     title: 'Export Song',
-    fileBaseName: 'words-song',
+    fileBaseName: exportFileName,
     stems: [
       { id: 'piano', label: 'Piano', defaultSelected: true },
       { id: 'drums', label: 'Drums', defaultSelected: true },

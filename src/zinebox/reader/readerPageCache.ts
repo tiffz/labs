@@ -141,6 +141,7 @@ export function getReaderPrefetchPages(
   currentPage: number,
   totalPages: number,
   spreadOffset: ZineboxSpreadOffset,
+  wideSpreadPages?: ReadonlySet<number>,
 ): number[] {
   const pages = new Set<number>();
   const add = (page: number) => {
@@ -156,7 +157,7 @@ export function getReaderPrefetchPages(
 
   if (mode === 'spread') {
     for (const delta of [-2, -1, 1, 2]) {
-      for (const page of spreadPageNumbers(currentPage + delta, totalPages, spreadOffset)) {
+      for (const page of spreadPageNumbers(currentPage + delta, totalPages, spreadOffset, wideSpreadPages)) {
         add(page);
       }
     }

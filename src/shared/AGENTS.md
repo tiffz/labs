@@ -14,7 +14,7 @@ Nested **`AGENTS.md`** for `src/shared/`. Root policy: [`../../AGENTS.md`](../..
 
 - **Only cross-app reuse** lives here — apps must not import each other.
 - New shared components → document in `SHARED_UI_CONVENTIONS.md` and demo under **`/ui/`** (`src/ui/` catalog).
-- Register new consumers in `importBoundaries.test.ts` when adding app-facing APIs.
+- **Download filenames:** use [`utils/labsDownloadFileName.ts`](utils/labsDownloadFileName.ts) (`buildLabsDownloadFileName`) for every user-facing export — readable `Title - Kind.ext` stems, not app ids or raw notation slugs. Print/PDF chord charts: `buildChartPrintExportOptions` / `buildChordChartDownloadFileName`.
 
 ## Tests worth knowing
 

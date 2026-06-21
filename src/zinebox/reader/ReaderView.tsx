@@ -4,13 +4,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { zineboxDb } from '../db/zineboxDb';
 import { notifyZineboxLocalChange } from '../db/zineboxChangeBus';
 import { useElementClientSize } from '../hooks/useElementClientSize';
+import { useZineboxGoogleAccessToken } from '../hooks/useZineboxGoogleAccessToken';
 import { useZineboxComic } from '../hooks/useZineboxComics';
 import type { ZineboxReaderMode, ZineboxSpreadOffset } from '../types';
 import ReaderChrome, { ReaderNavButtons } from './ReaderChrome';
 import {
   advanceSpreadPage,
   clampPage,
+  ComicPdfUnavailableError,
+  detectWideSpreadPageNumbers,
   loadPdfDocument,
+  loadPdfPageDimensions,
   pageFromProgress,
   progressFromPage,
   readerProgressPage,
@@ -40,8 +44,9 @@ function useDebouncedProgress(
   currentPage: number,
   totalPages: number,
   spreadOffset: ZineboxSpreadOffset,
+  wideSpreadPages: ReadonlySet<number>,
 ): void {
-  const progressPage = readerProgressPage(mode, currentPage, totalPages, spreadOffset);
+  const progressPage = readerProgressPage(mode, currentPage, totalPages, spreadOffset, wideSpreadPages);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -65,9 +70,12 @@ export default function ReaderView({
   onClose,
 }: ReaderViewProps): React.ReactElement {
   const { comic, comicHydrated } = useZineboxComic(comicId);
+  const googleAccessToken = useZineboxGoogleAccessToken();
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [wideSpreadPages, setWideSpreadPages] = useState<ReadonlySet<number>>(() => new Set());
   const [loading, setLoading] = useState(true);
+  const [pdfError, setPdfError] = useState<'missing-blob' | 'missing-comic' | null>(null);
   const singleCanvasRef = useRef<HTMLCanvasElement>(null);
   const spreadLeftRef = useRef<HTMLCanvasElement>(null);
   const spreadRightRef = useRef<HTMLCanvasElement>(null);
@@ -81,39 +89,55 @@ export default function ReaderView({
 
   const goPrev = useCallback(() => {
     if (mode === 'spread') {
-      setCurrentPage((page) => advanceSpreadPage(page, -1, totalPages, spreadOffset));
+      setCurrentPage((page) => advanceSpreadPage(page, -1, totalPages, spreadOffset, wideSpreadPages));
       return;
     }
     setCurrentPage((page) => clampPage(page - 1, totalPages));
-  }, [mode, spreadOffset, totalPages]);
+  }, [mode, spreadOffset, totalPages, wideSpreadPages]);
 
   const goNext = useCallback(() => {
     if (mode === 'spread') {
-      setCurrentPage((page) => advanceSpreadPage(page, 1, totalPages, spreadOffset));
+      setCurrentPage((page) => advanceSpreadPage(page, 1, totalPages, spreadOffset, wideSpreadPages));
       return;
     }
     setCurrentPage((page) => clampPage(page + 1, totalPages));
-  }, [mode, spreadOffset, totalPages]);
+  }, [mode, spreadOffset, totalPages, wideSpreadPages]);
 
   useEffect(() => {
     pageSeedKeyRef.current = null;
     pageCacheRef.current.clear();
     let cancelled = false;
     setLoading(true);
+    setPdfError(null);
     setCurrentPage(1);
     setTotalPages(0);
+    setWideSpreadPages(new Set());
     void (async () => {
-      const source = await resolveComicPdfSource(comicId);
-      const doc = await loadPdfDocument(source);
-      if (cancelled) return;
-      docRef.current = doc;
-      setTotalPages(doc.numPages);
-      setLoading(false);
+      try {
+        const source = await resolveComicPdfSource(comicId, { accessToken: googleAccessToken });
+        const doc = await loadPdfDocument(source);
+        if (cancelled) return;
+        docRef.current = doc;
+        const dimensions = await loadPdfPageDimensions(doc);
+        if (cancelled) return;
+        setWideSpreadPages(detectWideSpreadPageNumbers(dimensions));
+        setTotalPages(doc.numPages);
+        setPdfError(null);
+        setLoading(false);
+      } catch (error) {
+        if (cancelled) return;
+        if (error instanceof ComicPdfUnavailableError) {
+          setPdfError(error.reason);
+        } else {
+          setPdfError('missing-blob');
+        }
+        setLoading(false);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [comicId]);
+  }, [comicId, googleAccessToken]);
 
   useEffect(() => {
     pageCacheRef.current.clear();
@@ -127,7 +151,7 @@ export default function ReaderView({
     setCurrentPage(pageFromProgress(comic.progressPercentage, totalPages));
   }, [comic, comicHydrated, comicId, totalPages]);
 
-  useDebouncedProgress(comicId, mode, currentPage, totalPages, spreadOffset);
+  useDebouncedProgress(comicId, mode, currentPage, totalPages, spreadOffset, wideSpreadPages);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -168,24 +192,31 @@ export default function ReaderView({
         const options = buildPageRenderOptions('contain', viewportWidth, viewportHeight);
         await displayReaderPage(doc, currentPage, canvas, options, cache);
         if (cancelled) return;
-        prefetch(getReaderPrefetchPages(mode, currentPage, totalPages, spreadOffset), options);
+        prefetch(getReaderPrefetchPages(mode, currentPage, totalPages, spreadOffset, wideSpreadPages), options);
         return;
       }
 
       if (mode === 'spread') {
-        const pages = spreadPageNumbers(currentPage, totalPages, spreadOffset);
+        const pages = spreadPageNumbers(currentPage, totalPages, spreadOffset, wideSpreadPages);
         const leftCanvas = spreadLeftRef.current;
         const rightCanvas = spreadRightRef.current;
         if (!leftCanvas) return;
-        const halfWidth = Math.floor(viewportWidth / 2) - 8;
-        const options = buildPageRenderOptions('contain', halfWidth, viewportHeight);
+        const wideSolo = pages.length === 1 && wideSpreadPages.has(pages[0]!);
+        const pageWidth = wideSolo ? viewportWidth - 32 : Math.floor(viewportWidth / 2) - 8;
+        const options = buildPageRenderOptions('contain', pageWidth, viewportHeight);
         await displayReaderPage(doc, pages[0] ?? 1, leftCanvas, options, cache);
         if (cancelled) return;
-        if (pages[1] && rightCanvas) {
+        if (!wideSolo && pages[1] && rightCanvas) {
           await displayReaderPage(doc, pages[1], rightCanvas, options, cache);
           if (cancelled) return;
+        } else if (rightCanvas) {
+          const context = rightCanvas.getContext('2d');
+          rightCanvas.width = 0;
+          rightCanvas.height = 0;
+          rightCanvas.removeAttribute('style');
+          context?.clearRect(0, 0, 0, 0);
         }
-        prefetch(getReaderPrefetchPages(mode, currentPage, totalPages, spreadOffset), options);
+        prefetch(getReaderPrefetchPages(mode, currentPage, totalPages, spreadOffset, wideSpreadPages), options);
         return;
       }
 
@@ -215,6 +246,7 @@ export default function ReaderView({
     scrollLayoutSize.width,
     spreadOffset,
     totalPages,
+    wideSpreadPages,
   ]);
 
   if (!comicHydrated || loading) {
@@ -225,7 +257,7 @@ export default function ReaderView({
     );
   }
 
-  if (!comic) {
+  if (!comic || pdfError === 'missing-comic') {
     return (
       <div className="zinebox-reader zinebox-reader--missing">
         <p>Comic not found.</p>
@@ -236,7 +268,27 @@ export default function ReaderView({
     );
   }
 
-  const spreadPages = spreadPageNumbers(currentPage, totalPages, spreadOffset);
+  if (pdfError === 'missing-blob') {
+    return (
+      <div className="zinebox-reader zinebox-reader--missing">
+        <p>
+          <strong>{comic.title}</strong> is in your library, but its PDF is not stored on this device yet.
+        </p>
+        <p>
+          {googleAccessToken
+            ? 'Sign in worked. Try Account menu → Back up now / Sync, or re-import the PDF from your device.'
+            : 'Sign in with Google (Account menu) to pull it from Drive backup, or re-import the PDF from your device.'}
+        </p>
+        <button type="button" className="zinebox-btn zinebox-btn--primary" onClick={onClose}>
+          Back to library
+        </button>
+      </div>
+    );
+  }
+
+  const spreadPages = spreadPageNumbers(currentPage, totalPages, spreadOffset, wideSpreadPages);
+  const wideSoloSpread =
+    mode === 'spread' && spreadPages.length === 1 && wideSpreadPages.has(spreadPages[0]!);
 
   return (
     <div className="zinebox-reader">
@@ -246,6 +298,7 @@ export default function ReaderView({
         spreadOffset={spreadOffset}
         currentPage={currentPage}
         totalPages={totalPages}
+        wideSpreadPages={wideSpreadPages}
         onModeChange={onModeChange}
         onSpreadOffsetChange={onSpreadOffsetChange}
         onClose={onClose}
@@ -259,6 +312,7 @@ export default function ReaderView({
             spreadOffset={spreadOffset}
             currentPage={currentPage}
             totalPages={totalPages}
+            wideSpreadPages={wideSpreadPages}
             onPrev={goPrev}
             onNext={goNext}
           />
@@ -266,18 +320,26 @@ export default function ReaderView({
       ) : null}
 
       {mode === 'spread' ? (
-        <div ref={pagedLayoutRef} className="zinebox-reader__spread">
+        <div
+          ref={pagedLayoutRef}
+          className={
+            wideSoloSpread
+              ? 'zinebox-reader__spread zinebox-reader__spread--wide-solo'
+              : 'zinebox-reader__spread'
+          }
+        >
           <canvas ref={spreadLeftRef} className="zinebox-reader__canvas" />
-          {spreadPages[1] ? (
+          {!wideSoloSpread && spreadPages[1] ? (
             <canvas ref={spreadRightRef} className="zinebox-reader__canvas" />
-          ) : (
+          ) : !wideSoloSpread ? (
             <div className="zinebox-reader__canvas zinebox-reader__canvas--empty" aria-hidden />
-          )}
+          ) : null}
           <ReaderNavButtons
             mode={mode}
             spreadOffset={spreadOffset}
             currentPage={currentPage}
             totalPages={totalPages}
+            wideSpreadPages={wideSpreadPages}
             onPrev={goPrev}
             onNext={goNext}
           />

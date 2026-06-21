@@ -34,6 +34,8 @@ Do not call `ensureLabsGoogleAccessTokenForDrive` (narrow backup-only scopes) fr
 
 **Cross-device:** Sign in on each browser via the account menu. After you add comics on one device, backup runs automatically within a few seconds (when signed in). On a new device, sign in once to pull metadata and PDFs from `Tiff Zhang Labs/ZineBox/`. If the library looks empty, use **Back up now** on the first device, then **Sign in** / **Sync** on the second.
 
+**Dev vs production:** `http://127.0.0.1:5173/zinebox/` and `https://labs.tiffzhang.com/zinebox/` are different origins — each has its own IndexedDB. Uploading or reading on production does **not** populate local dev storage (and vice versa) unless both browsers are signed into the same Google account and Drive backup has uploaded PDF sidecars from the source device. Local dev is not “synced with prod” by default.
+
 ## URL params
 
 | Hash         | Params                        | Meaning                          |

@@ -354,6 +354,7 @@ const App: React.FC = () => {
     exportAdapter: songModel.exportAdapter,
     lyricsExportText: songModel.lyricsExportText,
     asciiChordChartExportText: songModel.asciiChordChartExportText,
+    chartPrintExportOptions: songModel.chartPrintExportOptions,
     sectionRenderPlans: songModel.sectionRenderPlans,
     timeSignature,
     hitMap: songModel.hitMap,

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { throttledReplaceState } from '../../shared/utils/urlHistory';
 import {
+  canonicalizeZineboxReadHash,
+  extractZineboxHashSearch,
   parseLibraryParams,
   parseReaderParams,
   parseZineboxHash,
@@ -17,17 +19,11 @@ function readRouteFromWindow(): ZineboxRoute {
 }
 
 function readLibraryParamsFromWindow(): ZineboxLibraryParams {
-  const hash = window.location.hash.replace(/^#/, '');
-  const queryIndex = hash.indexOf('?');
-  const search = queryIndex >= 0 ? hash.slice(queryIndex) : '';
-  return parseLibraryParams(search);
+  return parseLibraryParams(extractZineboxHashSearch(window.location.hash));
 }
 
 function readReaderParamsFromWindow(): ZineboxReaderParams {
-  const hash = window.location.hash.replace(/^#/, '');
-  const queryIndex = hash.indexOf('?');
-  const search = queryIndex >= 0 ? hash.slice(queryIndex) : '';
-  return parseReaderParams(search);
+  return parseReaderParams(extractZineboxHashSearch(window.location.hash));
 }
 
 export function useZineboxUrlState(): {
@@ -46,6 +42,14 @@ export function useZineboxUrlState(): {
   const [readerParams, setReaderParamsState] = useState<ZineboxReaderParams>(
     readReaderParamsFromWindow,
   );
+
+  useEffect(() => {
+    const readerParamsFromUrl = readReaderParamsFromWindow();
+    const repaired = canonicalizeZineboxReadHash(window.location.hash, readerParamsFromUrl);
+    if (repaired) {
+      throttledReplaceState(`${window.location.pathname}${window.location.search}${repaired}`);
+    }
+  }, []);
 
   useEffect(() => {
     const onHashChange = () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asciiChartTextToPrintHtml, isAsciiChartChordLine } from './chordChartPrintExport';
+import { asciiChartTextToPrintHtml, buildChartPrintExportOptions, isAsciiChartChordLine } from './chordChartPrintExport';
 
 describe('chordChartPrintExport', () => {
   it('detects chord-only ASCII lines', () => {
@@ -9,6 +9,13 @@ describe('chordChartPrintExport', () => {
     expect(isAsciiChartChordLine('[Verse 1]')).toBe(false);
     expect(isAsciiChartChordLine("I'm not like you")).toBe(false);
     expect(isAsciiChartChordLine('Instrumental chords: Ab  Bb')).toBe(false);
+  });
+
+  it('builds print export options from a song title', () => {
+    expect(buildChartPrintExportOptions('A Thousand Castles')).toEqual({
+      displayTitle: 'A Thousand Castles',
+      suggestedFileName: 'A Thousand Castles - Chord Chart',
+    });
   });
 
   it('bolds chord lines in print HTML', () => {

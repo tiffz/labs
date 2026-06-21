@@ -1,28 +1,14 @@
+import { buildLabsDownloadFileName, labsDownloadFileNameWithExtension, sanitizeLabsDownloadFileStem } from '../utils/labsDownloadFileName';
 import { encodeAudioBuffer } from './audioCodecs';
 import { EXPORT_FORMATS, type ExportExecutionRequest, type ExportExecutionResult, type ExportFormat } from './exportTypes';
+import { triggerBlobDownload } from '../utils/triggerBlobDownload';
 
 function extensionForFormat(format: ExportFormat): string {
   return EXPORT_FORMATS.find((item) => item.id === format)?.extension ?? format;
 }
 
-function sanitizeBaseName(value: string): string {
-  return value
-    .trim()
-    .replace(/[^a-z0-9-_]+/gi, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-    .toLowerCase() || 'export';
-}
-
-function triggerDownload(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = fileName;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+function exportFileStem(adapter: ExportExecutionRequest['adapter']): string {
+  return sanitizeLabsDownloadFileStem(adapter.fileBaseName || adapter.title || adapter.id) || 'Export';
 }
 
 async function downloadAudioBlob(
@@ -32,7 +18,7 @@ async function downloadAudioBlob(
   mp3BitrateKbps: number
 ): Promise<void> {
   const blob = await encodeAudioBuffer(buffer, format, { mp3BitrateKbps });
-  triggerDownload(blob, fileName);
+  triggerBlobDownload(blob, fileName);
 }
 
 export async function executeExport(
@@ -50,7 +36,7 @@ export async function executeExport(
     ? selectedStemIds
     : adapter.stems.filter((stem) => stem.defaultSelected !== false).map((stem) => stem.id);
   const downloadedFiles: string[] = [];
-  const base = sanitizeBaseName(adapter.fileBaseName || adapter.title || adapter.id);
+  const base = exportFileStem(adapter);
   const ext = extensionForFormat(format);
 
   if (format === 'midi') {
@@ -59,8 +45,8 @@ export async function executeExport(
     }
     const bytes = await adapter.renderMidi({ loopCount, selectedStemIds: stemIds });
     const blob = new Blob([bytes], { type: 'audio/midi' });
-    const fileName = `${base}.${ext}`;
-    triggerDownload(blob, fileName);
+    const fileName = labsDownloadFileNameWithExtension(base, ext);
+    triggerBlobDownload(blob, fileName);
     downloadedFiles.push(fileName);
     return { downloadedFiles };
   }
@@ -79,7 +65,12 @@ export async function executeExport(
     for (const stemId of stemIds) {
       const stemBuffer = rendered.stems[stemId];
       if (!stemBuffer) continue;
-      const fileName = `${base}-${sanitizeBaseName(stemId)}.${ext}`;
+      const stemLabel =
+        adapter.stems.find((stem) => stem.id === stemId)?.label ?? stemId;
+      const fileName = labsDownloadFileNameWithExtension(
+        buildLabsDownloadFileName([base, stemLabel]),
+        ext,
+      );
       await downloadAudioBlob(stemBuffer, format, fileName, quality.mp3BitrateKbps);
       downloadedFiles.push(fileName);
     }
@@ -91,7 +82,7 @@ export async function executeExport(
   if (!rendered.mix) {
     throw new Error('No mixed audio data was returned for export.');
   }
-  const mixName = `${base}.${ext}`;
+  const mixName = labsDownloadFileNameWithExtension(base, ext);
   await downloadAudioBlob(rendered.mix, format, mixName, quality.mp3BitrateKbps);
   downloadedFiles.push(mixName);
   return { downloadedFiles };
