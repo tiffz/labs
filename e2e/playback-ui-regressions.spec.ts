@@ -32,8 +32,14 @@ async function seedEncoreOriginalWithChords(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Write lyrics' }).click();
   const lyricsChart = page.getByLabel('Lyrics chart');
   await expect(lyricsChart).toBeVisible({ timeout: 10_000 });
-  await lyricsChart.fill('[Verse 1]\n[Bb]around here\n');
+  // Write mode preserves plain lyrics only — inline `[Bb]` tokens are not chord markers until paint.
+  await lyricsChart.fill('[Verse 1]\naround here\n');
   await page.getByRole('button', { name: 'Add chords' }).click();
+  await expect(page.getByRole('toolbar', { name: 'Chord palette' })).toBeVisible({
+    timeout: 10_000,
+  });
+  await page.getByRole('group', { name: 'Triads' }).getByRole('button', { name: 'C', exact: true }).click();
+  await page.getByRole('button', { name: 'around', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible({
     timeout: 10_000,
   });
