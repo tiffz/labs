@@ -1,6 +1,19 @@
 import type { ChartLayout, LyricLine } from './chordPro/chordChartLayout';
 import { alignChordsOverLyricLine, chartLayoutToAsciiExport } from './chordChartAsciiExport';
 
+const CHORD_LINE_TOKEN_RE =
+  /^[A-G](?:#|b)?(?:maj|min|m|M|dim|aug|sus2|sus4|add2|add9|m7|maj7|7|9|11|13|6|\+|\([^)]+\))?(?:\/[A-G](?:#|b)?)?$/i;
+
+/** True when every whitespace-separated token on the line is a chord symbol. */
+export function isAsciiChartChordLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  if (/^\[[^\]]+\]$/.test(trimmed)) return false;
+  const tokens = trimmed.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return false;
+  return tokens.every((token) => CHORD_LINE_TOKEN_RE.test(token));
+}
+
 function chordTokensForLine(line: LyricLine): string[] {
   return [...line.chords]
     .sort((a, b) => a.charIndex - b.charIndex)
@@ -59,6 +72,22 @@ export function boldSectionHeaderSpans(text: string): Array<{ start: number; end
   let offset = 0;
   for (const line of text.split('\n')) {
     if (line.startsWith('[') && line.includes(']')) {
+      spans.push({ start: offset, end: offset + line.length });
+    }
+    offset += line.length + 1;
+  }
+  return spans;
+}
+
+/** UTF-16 half-open ranges for section headers and chord-only lines (Google Docs bold). */
+export function boldAsciiChartExportSpans(text: string): Array<{ start: number; end: number }> {
+  const spans: Array<{ start: number; end: number }> = [];
+  let offset = 0;
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    const boldLine =
+      (trimmed.startsWith('[') && trimmed.includes(']')) || isAsciiChartChordLine(line);
+    if (boldLine) {
       spans.push({ start: offset, end: offset + line.length });
     }
     offset += line.length + 1;

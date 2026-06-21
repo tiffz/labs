@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { asciiChartTextToPrintHtml, buildChartPrintExportOptions, isAsciiChartChordLine } from './chordChartPrintExport';
+import {
+  asciiChartTextToPrintHtml,
+  buildChartPrintExportOptions,
+  buildChartPrintHeaderHtml,
+  isAsciiChartChordLine,
+} from './chordChartPrintExport';
 
 describe('chordChartPrintExport', () => {
   it('detects chord-only ASCII lines', () => {
@@ -23,5 +28,14 @@ describe('chordChartPrintExport', () => {
     expect(html).toContain('class="chart-line section-header"');
     expect(html).toContain('class="chart-line chord-line"');
     expect(html).toContain('class="chart-line">Hello&nbsp;world</div>');
+  });
+
+  it('includes optional subtitle in print header HTML', () => {
+    const html = buildChartPrintHeaderHtml({
+      ...buildChartPrintExportOptions('My Song'),
+      subtitle: 'Key: C maj · 80 BPM',
+    });
+    expect(html).toContain('<h1 class="title">My Song</h1>');
+    expect(html).toContain('<p class="subtitle">Key: C maj · 80 BPM</p>');
   });
 });

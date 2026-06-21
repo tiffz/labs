@@ -8898,6 +8898,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordchartprintexport-ts-buildchartprintheaderhtml",
+    "name": "buildChartPrintHeaderHtml",
+    "path": "src/shared/music/chordChartPrintExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordchartprintexport-ts-chartprintexportoptions",
     "name": "ChartPrintExportOptions",
     "path": "src/shared/music/chordChartPrintExport.ts",
@@ -8922,14 +8939,14 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "music-core",
-    "description": "True when every whitespace-separated token on the line is a chord symbol.",
+    "description": "No JSDoc summary provided.",
     "tags": [
       "music"
     ],
     "appsUsing": [
       "words"
     ],
-    "exportType": "function",
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -8946,6 +8963,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "words"
     ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordcharttwocolumnexport-ts-boldasciichartexportspans",
+    "name": "boldAsciiChartExportSpans",
+    "path": "src/shared/music/chordChartTwoColumnExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "UTF-16 half-open ranges for section headers and chord-only lines (Google Docs bold).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -8972,6 +9004,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "music-core",
     "description": "Split chart sections across two columns for print / Google Docs export.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordcharttwocolumnexport-ts-isasciichartchordline",
+    "name": "isAsciiChartChordLine",
+    "path": "src/shared/music/chordChartTwoColumnExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "True when every whitespace-separated token on the line is a chord symbol.",
     "tags": [
       "music"
     ],

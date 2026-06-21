@@ -1,8 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { chartLayoutToTwoColumnExport } from './chordChartTwoColumnExport';
+import {
+  boldAsciiChartExportSpans,
+  chartLayoutToTwoColumnExport,
+  isAsciiChartChordLine,
+} from './chordChartTwoColumnExport';
 import type { ChartLayout } from './chordPro/chordChartLayout';
 
 describe('chordChartTwoColumnExport', () => {
+  it('detects chord-only ASCII lines', () => {
+    expect(isAsciiChartChordLine('Fm                    Bb')).toBe(true);
+    expect(isAsciiChartChordLine('[Verse 1]')).toBe(false);
+  });
+
+  it('bolds section headers and chord lines for Google Docs export', () => {
+    const text = '[Verse 1]\nFm      Bb\nHello world';
+    const spans = boldAsciiChartExportSpans(text);
+    expect(spans).toEqual([
+      { start: 0, end: 9 },
+      { start: 10, end: 20 },
+    ]);
+  });
+
   it('splits sections across left and right columns', () => {
     const layout: ChartLayout = {
       sections: [

@@ -2,17 +2,18 @@ import {
   buildChordChartDownloadFileName,
   sanitizeLabsDownloadFileStem,
 } from '../utils/labsDownloadFileName';
-import type { TwoColumnChartExport } from './chordChartTwoColumnExport';
-
-const CHORD_LINE_TOKEN_RE =
-  /^[A-G](?:#|b)?(?:maj|min|m|M|dim|aug|sus2|sus4|add2|add9|m7|maj7|7|9|11|13|6|\+|\([^)]+\))?(?:\/[A-G](?:#|b)?)?$/i;
+import { isAsciiChartChordLine, type TwoColumnChartExport } from './chordChartTwoColumnExport';
 
 export type ChartPrintExportOptions = {
   /** Visible H1 in the print view */
   displayTitle: string;
+  /** Optional line under the title (e.g. key + tempo) */
+  subtitle?: string;
   /** Browser Save-as-PDF suggested name (no extension) */
   suggestedFileName: string;
 };
+
+export { isAsciiChartChordLine };
 
 export function buildChartPrintExportOptions(songTitle: string): ChartPrintExportOptions {
   const displayTitle = sanitizeLabsDownloadFileStem(songTitle.trim()) || 'Untitled';
@@ -28,16 +29,6 @@ function escapeHtml(text: string): string {
 
 function escapeHtmlPreservingSpaces(text: string): string {
   return escapeHtml(text).replace(/ /g, '&nbsp;');
-}
-
-/** True when every whitespace-separated token on the line is a chord symbol. */
-export function isAsciiChartChordLine(line: string): boolean {
-  const trimmed = line.trim();
-  if (!trimmed) return false;
-  if (/^\[[^\]]+\]$/.test(trimmed)) return false;
-  const tokens = trimmed.split(/\s+/).filter(Boolean);
-  if (tokens.length === 0) return false;
-  return tokens.every((token) => CHORD_LINE_TOKEN_RE.test(token));
 }
 
 function chartLineClass(line: string): string {
@@ -58,7 +49,7 @@ export function asciiChartTextToPrintHtml(text: string): string {
 }
 
 const PRINT_STYLES = `
-  @page { margin: 0; size: letter portrait; }
+  @page { margin: 0; size: letter landscape; }
   html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", Courier, monospace;
@@ -66,16 +57,25 @@ const PRINT_STYLES = `
     line-height: 1.35;
     color: #111;
     margin: 0;
-    padding: 0.75in;
+    padding: 0.6in 0.75in;
     box-sizing: border-box;
     min-height: 100vh;
   }
   .chart { margin: 0; }
+  .chart-header { margin: 0 0 0.85rem; }
   .title {
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    font-size: 13pt;
-    font-weight: 700;
-    margin: 0 0 0.85rem;
+    font-size: 20pt;
+    font-weight: 400;
+    margin: 0;
+    line-height: 1.2;
+  }
+  .subtitle {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 12pt;
+    font-weight: 400;
+    color: #444;
+    margin: 0.35rem 0 0;
     line-height: 1.25;
   }
   .chart-line {
@@ -91,9 +91,17 @@ const PRINT_STYLES = `
   .cols { display: flex; gap: 1.5rem; align-items: flex-start; }
   .col { flex: 1; min-width: 0; }
   @media print {
-    body { padding: 0.75in; }
+    body { padding: 0.6in 0.75in; }
   }
 `;
+
+export function buildChartPrintHeaderHtml(options: ChartPrintExportOptions): string {
+  const safeTitle = escapeHtml(options.displayTitle);
+  const subtitleHtml = options.subtitle?.trim()
+    ? `<p class="subtitle">${escapeHtml(options.subtitle.trim())}</p>`
+    : '';
+  return `<header class="chart-header"><h1 class="title">${safeTitle}</h1>${subtitleHtml}</header>`;
+}
 
 function buildPrintDocumentHtml(bodyHtml: string, documentTitle: string): string {
   const safeTitle = documentTitle.replace(/</g, '');
@@ -151,10 +159,10 @@ export function openMonospaceChartPrintWindow(
   const twoColumn =
     typeof exportData === 'string' ? null : exportData.right.trim() ? exportData : null;
 
-  const safeTitle = escapeHtml(options.displayTitle);
+  const headerHtml = buildChartPrintHeaderHtml(options);
   const bodyHtml = twoColumn
-    ? `<article class="chart"><h1 class="title">${safeTitle}</h1><div class="cols"><div class="col">${asciiChartTextToPrintHtml(twoColumn.left)}</div><div class="col">${asciiChartTextToPrintHtml(twoColumn.right)}</div></div></article>`
-    : `<article class="chart"><h1 class="title">${safeTitle}</h1><div class="content">${asciiChartTextToPrintHtml(single)}</div></article>`;
+    ? `<article class="chart">${headerHtml}<div class="cols"><div class="col">${asciiChartTextToPrintHtml(twoColumn.left)}</div><div class="col">${asciiChartTextToPrintHtml(twoColumn.right)}</div></div></article>`
+    : `<article class="chart">${headerHtml}<div class="content">${asciiChartTextToPrintHtml(single)}</div></article>`;
 
   const html = buildPrintDocumentHtml(bodyHtml, options.suggestedFileName);
   const printWin = window.open('about:blank', '_blank', 'noopener,noreferrer');

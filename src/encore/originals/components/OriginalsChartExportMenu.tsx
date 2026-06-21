@@ -15,6 +15,7 @@ import { copyTextToClipboard } from '../../../shared/music/chordChartAsciiExport
 import { buildChartPrintExportOptions, openMonospaceChartPrintWindow } from '../../../shared/music/chordChartPrintExport';
 import { useEncoreAuth } from '../../context/EncoreAuthContext';
 import { useEncoreBlockingJobs } from '../../context/EncoreBlockingJobContext';
+import { originalChartExportSubtitle } from '../originalsChartGoogleDocExport';
 import type { EncoreOriginalSong } from '../types';
 import type { ChartLayout } from '../../../shared/music/chordPro/chordChartLayout';
 
@@ -44,7 +45,10 @@ export function OriginalsChartExportMenu({ song, layout, onPersist }: OriginalsC
   };
 
   const onPdf = () => {
-    openMonospaceChartPrintWindow(exportData, buildChartPrintExportOptions(song.title));
+    openMonospaceChartPrintWindow(exportData, {
+      ...buildChartPrintExportOptions(song.title),
+      subtitle: originalChartExportSubtitle(song),
+    });
     setAnchor(null);
   };
 

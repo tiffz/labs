@@ -4,7 +4,7 @@ import {
   docsReplaceBodyTwoColumnPlainTextTable,
 } from '../practice/googleDocsExerciseExport';
 import { sanitizeTextForGoogleDocsInsert } from '../practice/encorePracticeExerciseExport';
-import { boldSectionHeaderSpans, chartLayoutToTwoColumnExport } from '../../shared/music/chordChartTwoColumnExport';
+import { boldAsciiChartExportSpans, chartLayoutToTwoColumnExport } from '../../shared/music/chordChartTwoColumnExport';
 import { parseChordProToChartLayout } from '../../shared/music/chordPro/chordChartLayout';
 import { driveGetFileMetadata, driveMoveFile } from '../drive/driveFetch';
 import { ensureOriginalsDriveLayout } from './drive/originalsSharded';
@@ -12,6 +12,14 @@ import type { EncoreOriginalSong } from './types';
 
 export function originalChartGoogleDocTitle(song: EncoreOriginalSong): string {
   return buildLabsDownloadFileName([song.title.trim() || 'Untitled', 'Chord Chart']);
+}
+
+export function originalChartExportDisplayTitle(song: EncoreOriginalSong): string {
+  return song.title.trim() || 'Untitled original';
+}
+
+export function originalChartExportSubtitle(song: EncoreOriginalSong): string {
+  return `Key: ${song.key} · ${song.tempo} BPM`;
 }
 
 export function googleDocEditUrl(documentId: string): string {
@@ -36,16 +44,17 @@ function buildTwoColumnGoogleDocCells(song: EncoreOriginalSong): {
 } {
   const layout = parseChordProToChartLayout(song.lyricsAndChords);
   const { left, right } = chartLayoutToTwoColumnExport(layout);
-  const title = song.title.trim() || 'Untitled original';
-  const preamble = `${sanitizeTextForGoogleDocsInsert(title)}\n${sanitizeTextForGoogleDocsInsert(`Key: ${song.key} · ${song.tempo} BPM`)}\n\n`;
+  const title = originalChartExportDisplayTitle(song);
+  const subtitle = originalChartExportSubtitle(song);
+  const preamble = `${sanitizeTextForGoogleDocsInsert(title)}\n${sanitizeTextForGoogleDocsInsert(subtitle)}\n\n`;
   const safeLeft = sanitizeTextForGoogleDocsInsert(left);
   const safeRight = sanitizeTextForGoogleDocsInsert(right);
   return {
     preamble,
     leftCell: safeLeft,
     rightCell: safeRight,
-    leftBold: boldSectionHeaderSpans(safeLeft),
-    rightBold: boldSectionHeaderSpans(safeRight),
+    leftBold: boldAsciiChartExportSpans(safeLeft),
+    rightBold: boldAsciiChartExportSpans(safeRight),
   };
 }
 

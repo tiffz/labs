@@ -690,14 +690,31 @@ export async function docsReplaceBodyTwoColumnPlainTextTable(
         text: preamble,
       },
     },
-    {
-      insertTable: {
-        rows: 1,
-        columns: 2,
-        endOfSegmentLocation: tabId ? { segmentId: '', tabId } : { segmentId: '' },
-      },
-    },
   ]);
+
+  const layoutAfterPreamble = await docsGetDocumentRecord(accessToken, documentId);
+  const paraRanges = preambleParagraphRangesBeforeFirstTable(layoutAfterPreamble);
+  const preambleStyleAndTable: unknown[] = [];
+  const n = Math.min(paraRanges.length, GOOGLE_DOC_PREAMBLE_PARAGRAPH_STYLES.length);
+  for (let i = 0; i < n; i += 1) {
+    const r = paraRanges[i]!;
+    preambleStyleAndTable.push({
+      updateParagraphStyle: {
+        range: docsContentRange(r.s, r.e, tabId),
+        paragraphStyle: { namedStyleType: GOOGLE_DOC_PREAMBLE_PARAGRAPH_STYLES[i]! },
+        fields: 'namedStyleType',
+      },
+    });
+  }
+  preambleStyleAndTable.push({
+    insertTable: {
+      rows: 1,
+      columns: 2,
+      endOfSegmentLocation: tabId ? { segmentId: '', tabId } : { segmentId: '' },
+    },
+  });
+
+  await docsBatchUpdate(accessToken, documentId, preambleStyleAndTable);
 
   const layoutAfterTable = await docsGetDocumentRecord(accessToken, documentId);
   const placed = findFirstTableInBody(documentBodyContent(layoutAfterTable));
