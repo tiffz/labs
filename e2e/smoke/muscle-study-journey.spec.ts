@@ -47,9 +47,11 @@ test.describe('Muscle Memory study journey', () => {
 
   test('full body tab loads atlas view', async ({ page }) => {
     await page.goto('/muscle/');
+    await expect(page.getByTestId('muscle-app')).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Full body', selected: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Full body', level: 1 })).toBeVisible();
-    await expect(page.getByTestId('muscle-layer-status')).toContainText('All layers');
+    await expect(page.getByTestId('muscle-training-canvas')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('muscle-layer-status')).toContainText('All layers', { timeout: 15_000 });
   });
 });
 

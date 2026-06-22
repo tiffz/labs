@@ -17,6 +17,8 @@ Track known flaky tests so they get fixed or quarantined — not masked with ret
 | ---------------------------------------------- | -------------------------------------- | ----- | -------- | ------------------------------------------------------------------------ |
 | `e2e/smoke/encore-originals-bulk-play.spec.ts` | Grid view hid `tbody`; Dexie seed race | agent | resolved | `gotoEncoreOriginalsQueue` helper + force table in dev seed (2026-06-22) |
 
+| `e2e/smoke/muscle-study-journey.spec.ts` | `muscle-layer-status` slow under parallel GLB load | agent | resolved | Wait for canvas before layer status (2026-06-22) |
+
 ### Resolved (archive)
 
 | File / spec                        | Symptom                                              | Fixed in                                |
