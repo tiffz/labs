@@ -13,9 +13,9 @@ Track known flaky tests so they get fixed or quarantined — not masked with ret
 
 ## Registry
 
-| File / spec                                    | Symptom                                       | Owner | Status     | Fix / notes                                              |
-| ---------------------------------------------- | --------------------------------------------- | ----- | ---------- | -------------------------------------------------------- |
-| `e2e/smoke/encore-originals-bulk-play.spec.ts` | Dexie seed rows slow to hydrate on cold start | agent | monitoring | Wait for `tbody tr` count before row checks (2026-06-22) |
+| File / spec                                    | Symptom                                | Owner | Status   | Fix / notes                                                              |
+| ---------------------------------------------- | -------------------------------------- | ----- | -------- | ------------------------------------------------------------------------ |
+| `e2e/smoke/encore-originals-bulk-play.spec.ts` | Grid view hid `tbody`; Dexie seed race | agent | resolved | `gotoEncoreOriginalsQueue` helper + force table in dev seed (2026-06-22) |
 
 ### Resolved (archive)
 

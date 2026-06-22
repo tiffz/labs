@@ -95,6 +95,7 @@ const OriginalsLibraryScreenBody = memo(function OriginalsLibraryScreenBody({
       ? new URLSearchParams(window.location.hash.split('?')[1] ?? '')
       : new URLSearchParams();
     if (!params.has('e2eOriginalsQueue') && !hashQuery.has('e2eOriginalsQueue')) return;
+    setViewMode('table');
     void seedOriginalsQueueE2e();
   }, []);
 

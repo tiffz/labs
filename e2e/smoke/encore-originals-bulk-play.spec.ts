@@ -1,14 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { enterEncoreApp } from '../helpers/enterEncoreApp';
+import { gotoEncoreOriginalsQueue } from '../helpers/encoreOriginalsQueue';
 
 test.describe('Encore Originals library bulk play', () => {
   test('table row selection and queue chip', async ({ page }) => {
     await enterEncoreApp(page);
-    await page.goto('/encore/#/originals?e2eOriginalsQueue=1');
-    await expect(page.getByRole('heading', { name: 'Originals' })).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('tbody tr')).toHaveCount(2, { timeout: 20_000 });
-    await expect(page.getByText('E2E Queue A')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText('E2E Queue B')).toBeVisible();
+    await gotoEncoreOriginalsQueue(page);
 
     const rowCheckboxes = page.locator('tbody input[type="checkbox"]');
     await expect(rowCheckboxes.first()).toBeVisible({ timeout: 10_000 });
