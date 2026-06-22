@@ -4,12 +4,12 @@ import {
   formatFocusAxisValue,
   matchFocusAxes,
 } from '../oklchAxisFocus';
-import type { ColorState } from '../types';
+import type { ColorState, ContextualLocks } from '../types';
 
 interface MatchAxisReadoutProps {
   target: ColorState;
   input: ColorState;
-  locked: { hue: boolean; chroma: boolean };
+  locked: ContextualLocks;
   passed: boolean;
 }
 

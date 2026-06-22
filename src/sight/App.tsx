@@ -8,9 +8,10 @@ import CurriculumMapPhase from './phases/CurriculumMapPhase';
 import PracticePhase from './phases/PracticePhase';
 import SandboxPhase from './phases/SandboxPhase';
 import { parseSandboxLevelFromHash } from './debug/parseSandboxLevel';
+import { profilePeakLevel } from './levels';
 import { updateFocusAfterSession } from './progress/diagnostics';
 import { pickPracticeChallenge } from './session/practiceChallenge';
-import { clearLegacySessionStorage, ensureProfileMigrated, readProfile, writeProfile } from './storage';
+import { clearLegacySessionStorage, beginPracticeAtLevel, ensureProfileMigrated, readProfile, writeProfile } from './storage';
 import type { PracticeRound, SightProfile } from './types';
 
 const analytics = createAppAnalytics('sight');
@@ -29,7 +30,6 @@ export default function App(): React.ReactElement {
   const [phase, setPhase] = useState<AppPhase>(() => resolveInitialPhase(debug));
   const [profile, setProfile] = useState<SightProfile>(() => readProfile());
   const [practiceRound, setPracticeRound] = useState<PracticeRound | null>(null);
-  const [practiceReviewMode, setPracticeReviewMode] = useState(false);
   const [simulatePass, setSimulatePass] = useState<boolean | null>(null);
   const [sandboxLevel, setSandboxLevel] = useState<number | undefined>(() =>
     typeof window !== 'undefined' ? parseSandboxLevelFromHash() : undefined,
@@ -62,23 +62,24 @@ export default function App(): React.ReactElement {
   const startPractice = useCallback((practiceLevel?: number) => {
     const current = readProfile();
     const level = practiceLevel ?? current.level;
-    const round = pickPracticeChallenge(current, 0, level);
-    const cleared = { ...current, dailyQueue: null };
+    const profileForSession =
+      practiceLevel !== undefined ? beginPracticeAtLevel(level) : current;
+    const round = pickPracticeChallenge(profileForSession, 0, level);
+    const cleared = { ...profileForSession, dailyQueue: null };
     writeProfile(cleared);
     setProfile(cleared);
     setPracticeRound(round);
-    setPracticeReviewMode(level < current.level);
     setPhase('practice');
     analytics.trackEvent('sight_practice_start', {
-      level,
-      profileLevel: current.level,
-      review: level < current.level,
+      level: round.level,
+      profileLevel: profileForSession.level,
+      peakLevel: profileForSession.peakLevel,
+      restudy: round.level < profilePeakLevel(profileForSession),
     });
   }, []);
 
   const exitPractice = useCallback(() => {
     setPracticeRound(null);
-    setPracticeReviewMode(false);
     const latest = updateFocusAfterSession(readProfile());
     writeProfile(latest);
     setProfile(latest);
@@ -87,7 +88,6 @@ export default function App(): React.ReactElement {
 
   const goHome = useCallback(() => {
     setPracticeRound(null);
-    setPracticeReviewMode(false);
     setPhase('home');
   }, []);
 
@@ -105,7 +105,6 @@ export default function App(): React.ReactElement {
       <PracticePhase
         profile={profile}
         initialRound={practiceRound}
-        reviewMode={practiceReviewMode}
         onProfileChange={setProfile}
         onExit={exitPractice}
         simulatePass={debug ? simulatePass : null}

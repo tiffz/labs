@@ -19,7 +19,7 @@ import AnchorPivotView from '../modules/anchorPivot/AnchorPivotView';
 import { scoreAnchorPivotReveal } from '../modules/anchorPivot/anchorPivotLogic';
 import MunsellSliceView from '../modules/munsellSlice/MunsellSliceView';
 import YotCastView from '../modules/yotCast/YotCastView';
-import { getLevelConfig, MAX_LEVEL } from '../levels';
+import { getLevelConfig, MAX_LEVEL, profilePeakLevel } from '../levels';
 import { buildRepRecord, appendRepToProfile, shouldCountTowardLevelAdvance } from '../progress/recordRep';
 import type { RepPurpose } from '../progress/types';
 import { deformMask } from '../scoring/gamutOverlap';
@@ -32,14 +32,13 @@ import {
   challengeSupportsSubmitShortcut,
 } from '../session/sightPracticeKeyboard';
 import { pickPracticeChallenge, recordChallengeResult, PASSES_TO_ADVANCE } from '../session/practiceChallenge';
-import { readProfile, writeProfile } from '../storage';
+import { readProfile, writeProfile, beginPracticeAtLevel, skipToLevel } from '../storage';
 import type { ColorState, PracticeReveal, PracticeRound, SightChallenge, SightProfile } from '../types';
 import type { WheelPoint } from '../scoring/gamutOverlap';
 
 interface PracticePhaseProps {
   profile: SightProfile;
   initialRound: PracticeRound;
-  reviewMode: boolean;
   onProfileChange: (profile: SightProfile) => void;
   onExit: () => void;
   simulatePass: boolean | null;
@@ -97,7 +96,6 @@ function useChallengeState(challenge: SightChallenge) {
 export default function PracticePhase({
   profile,
   initialRound,
-  reviewMode,
   onProfileChange,
   onExit,
   simulatePass,
@@ -107,13 +105,13 @@ export default function PracticePhase({
   const [sessionLevel, setSessionLevel] = useState(initialRound.level);
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { challenge, level } = round;
-  const isReviewSession = reviewMode;
+  const peakLevel = profilePeakLevel(profile);
   const canGoPrevLevel = sessionLevel > 1;
-  const canGoNextLevel = sessionLevel < profile.level;
+  const canGoNextLevel = sessionLevel < peakLevel;
   const state = useChallengeState(challenge);
   const { reset: resetChallengeState } = state;
   const awaitingFeedback = reveal !== null;
-  const repPurpose: RepPurpose = reviewMode ? 'practice' : 'curriculum';
+  const repPurpose: RepPurpose = 'curriculum';
 
   const clearAdvanceTimer = useCallback(() => {
     if (advanceTimerRef.current !== null) {
@@ -134,8 +132,8 @@ export default function PracticePhase({
     (targetLevel: number) => {
       clearAdvanceTimer();
       const currentProfile = readProfile();
-      const maxLevel = currentProfile.level;
-      const clamped = Math.max(1, Math.min(maxLevel, Math.floor(targetLevel)));
+      const peak = profilePeakLevel(currentProfile);
+      const clamped = Math.max(1, Math.min(peak, Math.floor(targetLevel)));
       const nextRound = pickPracticeChallenge(currentProfile, 0, clamped);
       setSessionLevel(clamped);
       resetChallengeState(nextRound.challenge);
@@ -146,16 +144,24 @@ export default function PracticePhase({
   );
 
   const loadNextChallenge = useCallback(() => {
-    const targetLevel = reviewMode ? sessionLevel : readProfile().level;
-    loadChallengeAtLevel(targetLevel);
-  }, [loadChallengeAtLevel, reviewMode, sessionLevel]);
+    loadChallengeAtLevel(readProfile().level);
+  }, [loadChallengeAtLevel]);
 
   const goToAdjacentLevel = useCallback(
     (delta: -1 | 1) => {
       if (awaitingFeedback) return;
-      loadChallengeAtLevel(sessionLevel + delta);
+      const target = sessionLevel + delta;
+      const current = readProfile();
+      let updated = current;
+      if (delta > 0 && target > current.level) {
+        updated = skipToLevel(target);
+      } else if (delta < 0 || target !== current.level) {
+        updated = beginPracticeAtLevel(target);
+      }
+      onProfileChange(updated);
+      loadChallengeAtLevel(target);
     },
-    [awaitingFeedback, loadChallengeAtLevel, sessionLevel],
+    [awaitingFeedback, loadChallengeAtLevel, onProfileChange, sessionLevel],
   );
 
   const scheduleAutoAdvance = useCallback(
@@ -178,7 +184,7 @@ export default function PracticePhase({
       const prev = readProfile();
       const rep = buildRepRecord({ round, reveal: nextReveal, purpose: repPurpose, passed });
       let updated = appendRepToProfile(prev, rep);
-      if (shouldCountTowardLevelAdvance(repPurpose, reviewMode)) {
+      if (shouldCountTowardLevelAdvance(repPurpose)) {
         updated = recordChallengeResult(updated, passed, {
           challengeLevel: sessionLevel,
         });
@@ -187,13 +193,13 @@ export default function PracticePhase({
       }
       writeProfile(updated);
       onProfileChange(updated);
-      if (!reviewMode && updated.level > prev.level) {
+      if (updated.level > prev.level) {
         setSessionLevel(updated.level);
       }
       setReveal(nextReveal);
       scheduleAutoAdvance(nextReveal);
     },
-    [onProfileChange, repPurpose, reviewMode, round, scheduleAutoAdvance, sessionLevel],
+    [onProfileChange, repPurpose, round, scheduleAutoAdvance, sessionLevel],
   );
 
   const handleComparePick = (side: 'left' | 'right') => {
@@ -330,11 +336,12 @@ export default function PracticePhase({
     return () => window.removeEventListener('keydown', onKey);
   }, [awaitingFeedback, skipToNext, challenge]);
 
-  const progressLabel = isReviewSession
-    ? `Review · level ${sessionLevel}`
-    : profile.level < MAX_LEVEL
+  const progressLabel =
+    profile.level < MAX_LEVEL
       ? `${profile.passesAtLevel}/${PASSES_TO_ADVANCE} passes to level ${profile.level + 1}`
       : 'Max level';
+  const skipAheadHint =
+    profile.level < peakLevel ? ` · Level ${peakLevel} available →` : '';
 
   const isTapAnswer =
     challenge.kind === 'compare' ||
@@ -442,8 +449,7 @@ export default function PracticePhase({
             <span className="sight-level-nav__arrow sight-level-nav__arrow--placeholder" aria-hidden />
           )}
           <span className="sight-practice-label">
-            {isReviewSession ? 'Review' : 'Level'} {sessionLevel} ·{' '}
-            {getLevelConfig(sessionLevel).label}
+            Level {sessionLevel} · {getLevelConfig(sessionLevel).label}
           </span>
           {canGoNextLevel ? (
             <button
@@ -451,7 +457,11 @@ export default function PracticePhase({
               className="sight-level-nav__arrow"
               onClick={() => goToAdjacentLevel(1)}
               disabled={awaitingFeedback}
-              aria-label={`Next level (${sessionLevel + 1})`}
+              aria-label={
+                sessionLevel + 1 > profile.level
+                  ? `Skip ahead to level ${sessionLevel + 1}`
+                  : `Next level (${sessionLevel + 1})`
+              }
             >
               <span className="material-symbols-outlined" aria-hidden>
                 chevron_right
@@ -482,7 +492,7 @@ export default function PracticePhase({
         onSkipAdvance={skipToNext}
         awaitingFeedback={awaitingFeedback}
         hideSubmit={isTapAnswer}
-        progressHint={progressLabel}
+        progressHint={`${progressLabel}${skipAheadHint}`}
       />
     </div>
   );

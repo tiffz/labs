@@ -6,6 +6,36 @@ import { getLevelConfig } from '../../levels';
 import { calculatePerceptualScore, colorStateToHex } from '../../scoring/perceptualScore';
 import type { ColorState, ContextualChallenge, PracticeReveal } from '../../types';
 
+function contextualMatchTitle(challenge: ContextualChallenge): string {
+  if (challenge.display === 'adjacent') return 'Match the swatches';
+  if (challenge.display === 'flat') return 'Match the swatch';
+  const { locked } = challenge;
+  if (locked.lightness && !locked.chroma && locked.hue) return 'Match the saturation in context';
+  if (!locked.lightness && !locked.chroma && locked.hue) return 'Match value and saturation in context';
+  if (locked.lightness && locked.chroma && !locked.hue) return 'Match the hue in context';
+  return 'Match the swatch on neutral gray';
+}
+
+function contextualMatchHint(challenge: ContextualChallenge): string {
+  if (challenge.display === 'adjacent') {
+    return 'Both swatches sit on the same gray. Adjust lightness until they match, then submit.';
+  }
+  if (challenge.display === 'flat') {
+    return 'Target on gray above. Adjust lightness in the preview, then submit.';
+  }
+  const { locked } = challenge;
+  if (locked.lightness && !locked.chroma && locked.hue) {
+    return 'The field shifts how vivid the target reads. Adjust chroma only, then submit.';
+  }
+  if (!locked.lightness && !locked.chroma && locked.hue) {
+    return 'Match lightness and chroma together. Hue stays fixed, then submit.';
+  }
+  if (locked.lightness && locked.chroma && !locked.hue) {
+    return 'Value and saturation are set. Adjust hue until the swatch matches, then submit.';
+  }
+  return 'Adjust the sliders, then submit. Your score appears after you submit.';
+}
+
 interface ContextualMatcherViewProps {
   challenge: ContextualChallenge;
   level: number;
@@ -90,11 +120,7 @@ export default function ContextualMatcherView({
       </div>
       <div className="sight-control-zone">
         <Typography variant="subtitle2">
-          {isAdjacent
-            ? 'Match the swatches'
-            : isFlat
-              ? 'Match the swatch'
-              : 'Match the swatch on neutral gray'}
+          {contextualMatchTitle(challenge)}
         </Typography>
         <OklchSliders
           value={input}
@@ -107,17 +133,9 @@ export default function ContextualMatcherView({
             ΔE <strong>{live.deltaE.toFixed(2)}</strong> · Accuracy{' '}
             <strong>{Math.round(live.accuracyRating)}%</strong>
           </p>
-        ) : isAdjacent ? (
-          <Typography variant="body2" color="text.secondary">
-            Both swatches sit on the same gray. Adjust lightness until they match, then submit.
-          </Typography>
-        ) : isFlat ? (
-          <Typography variant="body2" color="text.secondary">
-            Target on gray above. Adjust lightness in the preview, then submit.
-          </Typography>
         ) : (
           <Typography variant="body2" color="text.secondary">
-            Adjust the sliders, then submit. Your score appears after you submit.
+            {contextualMatchHint(challenge)}
           </Typography>
         )}
       </div>

@@ -19366,7 +19366,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Hash/tab route switches — CI runners vary; keep generous vs DEFAULT_INTERACTION_BUDGET_MS.",
+    "description": "Hash/tab route switches — CI runners are slower than local dev (often ~900–1200ms on cold heavy tabs).",
     "tags": [
       "api"
     ],

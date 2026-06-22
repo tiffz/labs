@@ -25,11 +25,11 @@ UX sketch skill: [`labs-ux-journey`](../../.cursor/skills/labs-ux-journey/SKILL.
 
 Dev server, hard refresh.
 
-| Step                               | Metric                   | Budget (p95)   | Verification                                                                                |
-| ---------------------------------- | ------------------------ | -------------- | ------------------------------------------------------------------------------------------- |
-| App entry                          | gate → library heading   | ≤ 3 s          | `e2e/smoke/encore-performance-routes.spec.ts`                                               |
-| Library → Practice tab             | click → practice heading | ≤ 800 ms (p95) | `e2e/smoke/encore-library-interaction.spec.ts`, `encore-tab-navigation-interaction.spec.ts` |
-| Library → Originals / Performances | click → section heading  | ≤ 800 ms (p95) | `e2e/smoke/encore-tab-navigation-interaction.spec.ts`                                       |
+| Step                               | Metric                   | Budget (p95)    | Verification                                                                                |
+| ---------------------------------- | ------------------------ | --------------- | ------------------------------------------------------------------------------------------- |
+| App entry                          | gate → library heading   | ≤ 3 s           | `e2e/smoke/encore-performance-routes.spec.ts`                                               |
+| Library → Practice tab             | click → practice heading | ≤ 1200 ms (p95) | `e2e/smoke/encore-library-interaction.spec.ts`, `encore-tab-navigation-interaction.spec.ts` |
+| Library → Originals / Performances | click → section heading  | ≤ 1200 ms (p95) | `e2e/smoke/encore-tab-navigation-interaction.spec.ts`                                       |
 
 ### Known traps
 

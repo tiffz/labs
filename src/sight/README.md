@@ -4,14 +4,14 @@ Perceptual color training in Oklch space: isolated flashcards, Albers relational
 
 Base path: `/sight/`.
 
-## Curriculum (28 levels)
+## Curriculum (30 levels)
 
-See [CURRICULUM.md](./CURRICULUM.md). Phases: isolated flashcards (1–7), Albers relational (8–11), calibration (12–18), gamut + harmony pivot (19–22), Albers equalizer (23–24), Munsell slice (25–26), Yot cast (27–28).
+See [CURRICULUM.md](./CURRICULUM.md). Phases: isolated flashcards (1–7), Albers relational (8–11), calibration (12–20), gamut + harmony pivot (21–24), Albers equalizer (25–26), Munsell slice (27–28), Yot cast (29–30).
 
 ## Practice flow
 
-- Home follows a **Learn Your Scales–style layout**: hero **Practice** button, current-section progress bars, readable skill tiles, and a **curriculum map** for all 28 levels.
-- **Review** any unlocked level from the map; review does not advance the ladder.
+- Home follows a **Learn Your Scales–style layout**: hero **Practice** button, current-section progress bars, readable skill tiles, and a **curriculum map** for all 30 levels.
+- **Review** any unlocked level from the map; passes count toward that level’s gate. Use the level chevron or footer hint to skip back to your peak level.
 - **Focus hints** may appear when diagnostics detect a pattern (e.g. warm-background value reads); adaptive data still updates in the background.
 - After submit or tap, compact feedback and auto-advance; daily sessions end with a short summary.
 
@@ -34,7 +34,7 @@ Debug mode uses shared [`LabsDebugDock`](../shared/components/LabsDebugDock.tsx)
 
 `/sight/?debug#sandbox`
 
-- Seed, Regen, curriculum level picker (all 28 levels + legacy compare)
+- Seed, Regen, curriculum level picker (all 30 levels + legacy compare)
 - Live metrics visible in sandbox only
 - Telemetry panel with ground-truth values
 

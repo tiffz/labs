@@ -2,13 +2,13 @@ import type { ReactElement } from 'react';
 import Slider from '@mui/material/Slider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import type { ColorState } from '../types';
+import type { ColorState, ContextualLocks } from '../types';
 import { clampColorState, colorStateToHex } from '../scoring/perceptualScore';
 
 interface OklchSlidersProps {
   value: ColorState;
   onChange: (next: ColorState) => void;
-  locked: { hue: boolean; chroma: boolean };
+  locked: ContextualLocks;
   showHex?: boolean;
   disabled?: boolean;
 }
@@ -45,7 +45,7 @@ export default function OklchSliders({
           step={0.005}
           value={value.l}
           onChange={(_, v) => set({ l: v as number })}
-          disabled={disabled}
+          disabled={disabled || locked.lightness}
           aria-label="Lightness"
         />
       </div>

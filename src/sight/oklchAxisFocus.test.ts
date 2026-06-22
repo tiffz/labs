@@ -19,8 +19,10 @@ describe('oklchAxisFocus', () => {
   });
 
   it('matchFocusAxes follows slider locks', () => {
-    expect(matchFocusAxes({ hue: true, chroma: true })).toEqual(['l']);
-    expect(matchFocusAxes({ hue: true, chroma: false })).toEqual(['l', 'c']);
-    expect(matchFocusAxes({ hue: false, chroma: false })).toEqual(['l', 'c', 'h']);
+    expect(matchFocusAxes({ lightness: false, chroma: true, hue: true })).toEqual(['l']);
+    expect(matchFocusAxes({ lightness: true, chroma: false, hue: true })).toEqual(['c']);
+    expect(matchFocusAxes({ lightness: false, chroma: false, hue: true })).toEqual(['l', 'c']);
+    expect(matchFocusAxes({ lightness: true, chroma: true, hue: false })).toEqual(['h']);
+    expect(matchFocusAxes({ lightness: false, chroma: false, hue: false })).toEqual(['l', 'c', 'h']);
   });
 });

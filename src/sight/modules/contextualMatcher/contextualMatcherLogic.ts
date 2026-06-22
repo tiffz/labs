@@ -3,18 +3,37 @@ import { calculatePerceptualScore, clampColorState } from '../../scoring/percept
 import type { ColorState, ContextualChallenge } from '../../types';
 
 export function initialContextualInput(challenge: ContextualChallenge): ColorState {
+  const { target, locked } = challenge;
+
   if (challenge.display === 'adjacent' && challenge.startLightnessDelta !== undefined) {
     return clampColorState({
-      h: challenge.locked.hue ? challenge.target.h : 0,
-      c: challenge.locked.chroma ? challenge.target.c : 0.08,
-      l: challenge.target.l + challenge.startLightnessDelta,
+      h: locked.hue ? target.h : 0,
+      c: locked.chroma ? target.c : 0.08,
+      l: target.l + challenge.startLightnessDelta,
     });
   }
-  return {
-    h: challenge.locked.hue ? challenge.target.h : 0,
-    c: challenge.locked.chroma ? challenge.target.c : 0.08,
-    l: 0.5,
-  };
+
+  if (challenge.startChromaDelta !== undefined) {
+    return clampColorState({
+      h: target.h,
+      l: target.l,
+      c: target.c + challenge.startChromaDelta,
+    });
+  }
+
+  if (challenge.startHueDelta !== undefined) {
+    return clampColorState({
+      h: (target.h + challenge.startHueDelta + 360) % 360,
+      l: target.l,
+      c: target.c,
+    });
+  }
+
+  return clampColorState({
+    h: locked.hue ? target.h : 0,
+    c: locked.chroma ? target.c : 0.08,
+    l: locked.lightness ? target.l : 0.5,
+  });
 }
 
 export function scoreContextual(

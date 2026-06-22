@@ -1,4 +1,4 @@
-import { CURRICULUM_SCHEMA_VERSION, MAX_LEVEL } from './levels';
+import { CURRICULUM_SCHEMA_VERSION, MAX_LEVEL, profilePeakLevel } from './levels';
 import { defaultSkillMatrix, PROFILE_PROGRESS_SCHEMA_VERSION } from './progress/types';
 import { PASSES_TO_ADVANCE } from './session/practiceChallenge';
 import type { SightProfile } from './types';
@@ -54,12 +54,19 @@ function migrateLevel(level: number, schemaVersion: number | undefined): number 
     if (migrated >= 5) migrated += 7;
   }
 
+  if (schemaVersion === undefined || schemaVersion < 7) {
+    const beforeV7 = migrated;
+    if (beforeV7 >= 15) migrated += 1;
+    if (beforeV7 >= 16) migrated += 1;
+  }
+
   return Math.max(1, Math.min(MAX_LEVEL, migrated));
 }
 
 export function defaultProfile(): SightProfile {
   return {
     level: 1,
+    peakLevel: 1,
     challengesCompleted: 0,
     passesAtLevel: 0,
     schemaVersion: CURRICULUM_SCHEMA_VERSION,
@@ -75,9 +82,13 @@ function normalizeProfile(parsed: Partial<SightProfile> & { sessionsCompleted?: 
   const rawLevel = Math.max(1, Math.floor(parsed.level ?? 1));
   const level = migrateLevel(rawLevel, schemaVersion);
   const levelChangedByMigration = level !== rawLevel;
+  const rawPeak = Math.max(1, Math.floor(parsed.peakLevel ?? rawLevel));
+  const migratedPeak = migrateLevel(rawPeak, schemaVersion);
+  const peakLevel = Math.max(level, migratedPeak);
 
   return {
     level,
+    peakLevel,
     challengesCompleted: Math.max(
       0,
       Math.floor(parsed.challengesCompleted ?? parsed.sessionsCompleted ?? 0),
@@ -152,12 +163,47 @@ export function resetProfile(): SightProfile {
 export function setProfileLevel(level: number): SightProfile {
   const clamped = Math.max(1, Math.min(MAX_LEVEL, Math.floor(level)));
   const current = readProfile();
+  const peakLevel = Math.max(profilePeakLevel(current), clamped);
   const profile: SightProfile = {
     ...current,
     level: clamped,
+    peakLevel,
     passesAtLevel: 0,
     schemaVersion: CURRICULUM_SCHEMA_VERSION,
     skillMatrix: defaultSkillMatrix(clamped),
+  };
+  writeProfile(profile);
+  return profile;
+}
+
+/** Start working toward a level at or below peak; resets the pass counter for that level. */
+export function beginPracticeAtLevel(level: number): SightProfile {
+  const current = readProfile();
+  const peak = profilePeakLevel(current);
+  const clamped = Math.max(1, Math.min(peak, Math.floor(level)));
+  const profile: SightProfile = {
+    ...current,
+    level: clamped,
+    peakLevel: peak,
+    passesAtLevel: 0,
+  };
+  writeProfile(profile);
+  return profile;
+}
+
+/** Jump to a higher unlocked level without completing the pass gate. */
+export function skipToLevel(level: number): SightProfile {
+  const current = readProfile();
+  const peak = profilePeakLevel(current);
+  const clamped = Math.max(1, Math.min(peak, Math.floor(level)));
+  if (clamped <= current.level) {
+    return beginPracticeAtLevel(clamped);
+  }
+  const profile: SightProfile = {
+    ...current,
+    level: clamped,
+    peakLevel: peak,
+    passesAtLevel: 0,
   };
   writeProfile(profile);
   return profile;
@@ -171,7 +217,12 @@ export function bumpPassesAtLevel(delta = 1): SightProfile {
     level += 1;
     passesAtLevel = 0;
   }
-  const profile: SightProfile = { ...current, level, passesAtLevel };
+  const profile: SightProfile = {
+    ...current,
+    level,
+    passesAtLevel,
+    peakLevel: Math.max(profilePeakLevel(current), level),
+  };
   writeProfile(profile);
   return profile;
 }
@@ -183,6 +234,7 @@ export function completeCurrentLevel(): SightProfile {
     ...current,
     level: current.level + 1,
     passesAtLevel: 0,
+    peakLevel: Math.max(profilePeakLevel(current), current.level + 1),
   };
   writeProfile(profile);
   return profile;

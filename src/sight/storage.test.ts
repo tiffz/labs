@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { CURRICULUM_SCHEMA_VERSION, MAX_LEVEL } from './levels';
 import { defaultSkillMatrix } from './progress/types';
 import {
+  beginPracticeAtLevel,
   ensureProfileMigrated,
   readProfile,
   resetProfile,
   setProfileLevel,
+  skipToLevel,
   writeProfile,
 } from './storage';
 import type { SightProfile } from './types';
@@ -40,6 +42,12 @@ function migrateLevel(level: number, schemaVersion: number | undefined): number 
     if (migrated >= 5) migrated += 7;
   }
 
+  if (schemaVersion === undefined || schemaVersion < 7) {
+    const beforeV7 = migrated;
+    if (beforeV7 >= 15) migrated += 1;
+    if (beforeV7 >= 16) migrated += 1;
+  }
+
   return Math.max(1, Math.min(MAX_LEVEL, migrated));
 }
 
@@ -52,12 +60,25 @@ describe('profile level migration', () => {
     expect(migrateLevel(4, undefined)).toBe(14);
   });
 
-  it('bumps schema v3 level 12 to calibration lab 19', () => {
-    expect(migrateLevel(12, 3)).toBe(19);
+  it('bumps schema v3 level 12 through v4 and v7 calibration insertions', () => {
+    // v3 already applied at save time: 12 → +7 (v4) → 19 → +2 (v7) → 21
+    expect(migrateLevel(12, 3)).toBe(21);
   });
 
-  it('bumps schema v3 level 13 to gamut level 20', () => {
-    expect(migrateLevel(13, 3)).toBe(20);
+  it('bumps schema v3 level 13 through v4 and v7 calibration insertions', () => {
+    expect(migrateLevel(13, 3)).toBe(22);
+  });
+
+  it('maps schema v6 level 15 to value + saturation at 16', () => {
+    expect(migrateLevel(15, 6)).toBe(16);
+  });
+
+  it('maps schema v6 level 16 to full match at 18', () => {
+    expect(migrateLevel(16, 6)).toBe(18);
+  });
+
+  it('maps schema v6 level 17 to bridge at 19', () => {
+    expect(migrateLevel(17, 6)).toBe(19);
   });
 
   it('leaves level unchanged when schema is current', () => {
@@ -98,17 +119,17 @@ describe('storage profile persistence', () => {
     );
 
     const profile = ensureProfileMigrated();
-    expect(profile.level).toBe(19);
+    expect(profile.level).toBe(21);
     expect(profile.passesAtLevel).toBe(0);
     expect(profile.schemaVersion).toBe(CURRICULUM_SCHEMA_VERSION);
 
     const stored = JSON.parse(localStorage.getItem('sight:profile')!);
-    expect(stored.level).toBe(19);
+    expect(stored.level).toBe(21);
     expect(stored.passesAtLevel).toBe(0);
     expect(stored.schemaVersion).toBe(CURRICULUM_SCHEMA_VERSION);
   });
 
-  it('resets passesAtLevel when schema v3 level 13 jumps to 20', () => {
+  it('resets passesAtLevel when schema v3 level 13 jumps to 22', () => {
     localStorage.setItem(
       'sight:profile',
       JSON.stringify({
@@ -122,7 +143,7 @@ describe('storage profile persistence', () => {
     );
 
     const profile = ensureProfileMigrated();
-    expect(profile.level).toBe(20);
+    expect(profile.level).toBe(22);
     expect(profile.passesAtLevel).toBe(0);
   });
 
@@ -144,9 +165,26 @@ describe('storage profile persistence', () => {
   });
 
   it('setProfileLevel clamps and clears passes', () => {
-    seedProfile({ level: 5, passesAtLevel: 4 });
+    seedProfile({ level: 5, peakLevel: 5, passesAtLevel: 4 });
     const profile = setProfileLevel(21);
     expect(profile.level).toBe(21);
+    expect(profile.peakLevel).toBe(21);
+    expect(profile.passesAtLevel).toBe(0);
+  });
+
+  it('beginPracticeAtLevel sets working level and preserves peak', () => {
+    seedProfile({ level: 16, peakLevel: 16, passesAtLevel: 4 });
+    const profile = beginPracticeAtLevel(15);
+    expect(profile.level).toBe(15);
+    expect(profile.peakLevel).toBe(16);
+    expect(profile.passesAtLevel).toBe(0);
+  });
+
+  it('skipToLevel jumps ahead without pass gate', () => {
+    seedProfile({ level: 15, peakLevel: 16, passesAtLevel: 2 });
+    const profile = skipToLevel(16);
+    expect(profile.level).toBe(16);
+    expect(profile.peakLevel).toBe(16);
     expect(profile.passesAtLevel).toBe(0);
   });
 });

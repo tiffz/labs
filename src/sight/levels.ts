@@ -1,11 +1,11 @@
-import type { LevelConfig } from './types';
+import type { LevelConfig, SightProfile } from './types';
 
-export const CURRICULUM_SCHEMA_VERSION = 6;
+export const CURRICULUM_SCHEMA_VERSION = 7;
 
 /**
- * Six-phase curriculum (28 levels):
- * 1–7 isolated, 8–11 Albers relational, 12–18 calibration, 19–20 gamut,
- * 21–22 harmony wheel, 23–24 subtractive equalizer, 25–26 Munsell slice, 27–28 atmospheric cast.
+ * Seven-phase curriculum (30 levels):
+ * 1–7 isolated, 8–11 Albers relational, 12–20 calibration, 21–22 gamut,
+ * 23–24 harmony wheel, 25–26 subtractive equalizer, 27–28 Munsell slice, 29–30 atmospheric cast.
  */
 export const LEVEL_TABLE: LevelConfig[] = [
   {
@@ -124,12 +124,28 @@ export const LEVEL_TABLE: LevelConfig[] = [
     level: 15,
     module: 'contextual',
     phase: 'calibration',
+    label: 'Saturation in context',
+    contextualProfile: 'chromaLocked',
+    maxDeltaE: 4.5,
+  },
+  {
+    level: 16,
+    module: 'contextual',
+    phase: 'calibration',
     label: 'Value + saturation',
     contextualProfile: 'hueLocked',
     maxDeltaE: 4.0,
   },
   {
-    level: 16,
+    level: 17,
+    module: 'contextual',
+    phase: 'calibration',
+    label: 'Hue in context',
+    contextualProfile: 'lightnessChromaLocked',
+    maxDeltaE: 3.75,
+  },
+  {
+    level: 18,
     module: 'contextual',
     phase: 'calibration',
     label: 'Full match',
@@ -137,7 +153,7 @@ export const LEVEL_TABLE: LevelConfig[] = [
     maxDeltaE: 3.5,
   },
   {
-    level: 17,
+    level: 19,
     module: 'bridge',
     phase: 'calibration',
     label: 'Single-axis bridge',
@@ -145,7 +161,7 @@ export const LEVEL_TABLE: LevelConfig[] = [
     maxBridgeVariancePct: 6,
   },
   {
-    level: 18,
+    level: 20,
     module: 'bridge',
     phase: 'calibration',
     label: 'Warm–cool bridge',
@@ -153,7 +169,7 @@ export const LEVEL_TABLE: LevelConfig[] = [
     maxBridgeVariancePct: 4,
   },
   {
-    level: 19,
+    level: 21,
     module: 'gamut',
     phase: 'harmony',
     label: 'Wide gamut mask',
@@ -161,7 +177,7 @@ export const LEVEL_TABLE: LevelConfig[] = [
     minGamutOverlapPct: 72,
   },
   {
-    level: 20,
+    level: 22,
     module: 'gamut',
     phase: 'harmony',
     label: 'Compressed gamut',
@@ -169,51 +185,51 @@ export const LEVEL_TABLE: LevelConfig[] = [
     minGamutOverlapPct: 78,
   },
   {
-    level: 21,
+    level: 23,
     module: 'anchor-pivot',
     phase: 'harmony',
     label: 'Complementary pivot',
   },
   {
-    level: 22,
+    level: 24,
     module: 'anchor-pivot',
     phase: 'harmony',
     label: 'Split & triadic pivot',
   },
   {
-    level: 23,
+    level: 25,
     module: 'albers-equalizer',
     phase: 'subtractive',
     label: 'Warm–cool equalizer',
     maxDeltaE: 4,
   },
   {
-    level: 24,
+    level: 26,
     module: 'albers-equalizer',
     phase: 'subtractive',
     label: 'Saturation equalizer',
     maxDeltaE: 3.5,
   },
   {
-    level: 25,
+    level: 27,
     module: 'munsell-slice',
     phase: 'dimensional',
     label: 'Value slice outlier',
   },
   {
-    level: 26,
+    level: 28,
     module: 'munsell-slice',
     phase: 'dimensional',
     label: 'Chroma slice outlier',
   },
   {
-    level: 27,
+    level: 29,
     module: 'yot-cast',
     phase: 'atmospheric',
     label: 'Light cast · scenes',
   },
   {
-    level: 28,
+    level: 30,
     module: 'yot-cast',
     phase: 'atmospheric',
     label: 'Light cast · tricky',
@@ -227,6 +243,12 @@ export function getLevelConfig(level: number): LevelConfig {
   return LEVEL_TABLE[clamped - 1]!;
 }
 
+export function profilePeakLevel(profile: Pick<SightProfile, 'level' | 'peakLevel'>): number {
+  const peak = Math.floor(profile.peakLevel ?? profile.level);
+  return Math.max(profile.level, Math.max(1, Math.min(LEVEL_TABLE.length, peak)));
+}
+
+/** @deprecated Prefer `profilePeakLevel(profile)` — number-only callers treat level as peak. */
 export function maxUnlockedLevel(profileLevel: number): number {
   return Math.max(1, Math.min(LEVEL_TABLE.length, Math.floor(profileLevel)));
 }

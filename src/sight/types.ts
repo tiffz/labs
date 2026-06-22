@@ -57,8 +57,17 @@ export type ContextualProfile =
   | 'adjacentFlat'
   | 'flatNeutral'
   | 'valueLocked'
+  | 'chromaLocked'
   | 'hueLocked'
+  | 'lightnessChromaLocked'
   | 'full';
+
+/** Which Oklch sliders are fixed for a contextual match drill. */
+export interface ContextualLocks {
+  lightness: boolean;
+  chroma: boolean;
+  hue: boolean;
+}
 
 export type BridgeProfile = 'singleAxis' | 'warmCool';
 
@@ -124,9 +133,11 @@ export interface ContextualChallenge {
   seed: number;
   target: ColorState;
   background: ColorState;
-  locked: { hue: boolean; chroma: boolean };
+  locked: ContextualLocks;
   display: 'adjacent' | 'flat' | 'contextual';
   startLightnessDelta?: number;
+  startChromaDelta?: number;
+  startHueDelta?: number;
 }
 
 export interface BridgeChallenge {
@@ -212,7 +223,10 @@ export interface PracticeRound {
 }
 
 export interface SightProfile {
+  /** Level the learner is working toward (pass gate applies here). */
   level: number;
+  /** Highest level unlocked; may be above `level` when revisiting earlier levels. */
+  peakLevel?: number;
   challengesCompleted: number;
   passesAtLevel: number;
   schemaVersion?: number;

@@ -40,11 +40,11 @@ describe('pickPracticeChallenge', () => {
     }
   });
 
-  it('returns bridge challenges at level 17', () => {
+  it('returns bridge challenges at level 19', () => {
     const round = pickPracticeChallenge(
-      testProfile({ level: 17, challengesCompleted: 10, passesAtLevel: 2 }),
+      testProfile({ level: 19, challengesCompleted: 10, passesAtLevel: 2 }),
       7,
-      17,
+      19,
     );
     expect(round.challenge.kind).toBe('bridge');
   });
@@ -68,12 +68,31 @@ describe('pickPracticeChallenge', () => {
     expect(round.challenge.kind).toBe('flashcard-isolated');
   });
 
-  it('does not advance profile when reviewing a lower level', () => {
-    const profile = testProfile({ level: 12, challengesCompleted: 10, passesAtLevel: 6 });
+  it('does not advance profile when challenge is below working level', () => {
+    const profile = testProfile({ level: 12, peakLevel: 12, challengesCompleted: 10, passesAtLevel: 6 });
     const updated = recordChallengeResult(profile, true, { challengeLevel: 3 });
     expect(updated.level).toBe(12);
     expect(updated.passesAtLevel).toBe(6);
     expect(updated.challengesCompleted).toBe(11);
+  });
+
+  it('counts passes when restudying at the working level below peak', () => {
+    const profile = testProfile({ level: 15, peakLevel: 16, passesAtLevel: 2 });
+    const updated = recordChallengeResult(profile, true, { challengeLevel: 15 });
+    expect(updated.level).toBe(15);
+    expect(updated.passesAtLevel).toBe(3);
+  });
+
+  it('advances to peak after pass gate when restudying', () => {
+    const profile = testProfile({
+      level: 15,
+      peakLevel: 16,
+      passesAtLevel: PASSES_TO_ADVANCE - 1,
+    });
+    const updated = recordChallengeResult(profile, true, { challengeLevel: 15 });
+    expect(updated.level).toBe(16);
+    expect(updated.peakLevel).toBe(16);
+    expect(updated.passesAtLevel).toBe(0);
   });
 
   it('advances profile when passing at current level', () => {
@@ -86,7 +105,7 @@ describe('pickPracticeChallenge', () => {
     expect(updated.passesAtLevel).toBe(0);
   });
 
-  it('challengeCountsTowardProgress is false for review levels', () => {
+  it('challengeCountsTowardProgress is false for stale session below working level', () => {
     expect(challengeCountsTowardProgress(12, 3)).toBe(false);
     expect(challengeCountsTowardProgress(12, 12)).toBe(true);
   });

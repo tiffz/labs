@@ -50,21 +50,22 @@ Dev server, hard refresh, **no** `?debug`.
 
 ---
 
-## CUJ-002: Curriculum map review
+## CUJ-002: Curriculum map restudy
 
-**Primary goal:** Open map, practice a prior level without advancing ladder.  
-**Persona:** Learner reviewing an unlocked level.
+**Primary goal:** Open map, practice a prior level with the full pass gate, optionally skip back to peak.  
+**Persona:** Learner revisiting an unlocked level (e.g. saturation in context at 15).
 
 ### Steps
 
-1. Home → **Curriculum map** (or map entry from home).
-2. Select an unlocked level → **Practice**.
-3. Complete reps; confirm review does not change `profile.level`.
+1. Home → **Exercises**.
+2. Select an unlocked level below your peak → practice starts at that level with `0/7` passes.
+3. Complete reps; confirm passes increment and level advances only after 7 passes (or use → chevron / footer hint to skip ahead to peak).
 
 ### Success criteria
 
 - Map navigates without blank flash.
-- Review session labeled “Review” in header.
+- Practice footer shows pass progress (not “Review only”).
+- Skip-ahead chevron visible when peak &gt; working level.
 
 ### Performance budgets
 

@@ -4,7 +4,7 @@ import ButtonBase from '@mui/material/ButtonBase';
 import Typography from '@mui/material/Typography';
 import { shellSx, TYPE } from '../components/landing/sightLandingStyles';
 import { curriculumSections, levelStatus, type LevelStatus } from '../curriculum/curriculumSections';
-import { MAX_LEVEL } from '../levels';
+import { MAX_LEVEL, profilePeakLevel } from '../levels';
 import { PASSES_TO_ADVANCE } from '../session/practiceChallenge';
 import type { SightProfile } from '../types';
 
@@ -28,6 +28,7 @@ export default function CurriculumMapPhase({
   onPracticeLevel,
 }: CurriculumMapPhaseProps): React.ReactElement {
   const sections = curriculumSections();
+  const peak = profilePeakLevel(profile);
 
   return (
     <Box className="sight-landing sight-landing--map" sx={{ ...shellSx, maxWidth: 480 }}>
@@ -52,6 +53,12 @@ export default function CurriculumMapPhase({
       </Typography>
       <Typography sx={{ ...TYPE.caption, color: 'text.secondary', mb: { xs: 8, md: 10 }, lineHeight: 1.6 }}>
         Level {profile.level} of {MAX_LEVEL}
+        {peak > profile.level && (
+          <>
+            <br />
+            Peak level {peak}
+          </>
+        )}
         {profile.level < MAX_LEVEL && (
           <>
             <br />
@@ -63,7 +70,7 @@ export default function CurriculumMapPhase({
       <Box sx={{ display: 'flex', flexDirection: 'column' }}>
         {sections.map((section, sectionIdx) => {
           const done = section.levels.filter(
-            (l) => levelStatus(profile.level, l.level) === 'complete',
+            (l) => levelStatus(profile.level, l.level, peak) === 'complete',
           ).length;
 
           return (
@@ -102,7 +109,7 @@ export default function CurriculumMapPhase({
 
               <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
                 {section.levels.map((row, rowIdx) => {
-                  const status = levelStatus(profile.level, row.level);
+                  const status = levelStatus(profile.level, row.level, peak);
                   const unlocked = status !== 'locked';
                   const isCurrent = status === 'current';
 

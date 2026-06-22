@@ -47,8 +47,14 @@ export function curriculumSections(): CurriculumSection[] {
 
 export type LevelStatus = 'locked' | 'current' | 'complete';
 
-export function levelStatus(profileLevel: number, level: number): LevelStatus {
+export function levelStatus(
+  profileLevel: number,
+  level: number,
+  peakLevel?: number,
+): LevelStatus {
+  const peak = peakLevel ?? profileLevel;
+  if (level > peak) return 'locked';
   if (level < profileLevel) return 'complete';
   if (level === profileLevel) return 'current';
-  return 'locked';
+  return 'complete';
 }

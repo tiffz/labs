@@ -7,7 +7,7 @@ import { generateGamutChallenge } from '../generators/gamutLandscape';
 import { generateMunsellSliceChallenge } from '../generators/munsellSlice';
 import { createRng, randomSeed } from '../generators/rng';
 import { generateYotCastChallenge } from '../generators/yotCast';
-import { getLevelConfig, maxUnlockedLevel, MAX_LEVEL } from '../levels';
+import { getLevelConfig, profilePeakLevel, MAX_LEVEL } from '../levels';
 import type { PracticeGenConstraints } from '../progress/types';
 import type { PracticeRound, SightChallenge, SightProfile } from '../types';
 
@@ -43,7 +43,7 @@ export function pickPracticeChallenge(
   practiceLevel?: number,
   options?: PickPracticeOptions,
 ): PracticeRound {
-  const maxLevel = maxUnlockedLevel(profile.level);
+  const maxLevel = profilePeakLevel(profile);
   const rng = createRng(randomSeed() + salt);
 
   let level: number;
@@ -93,10 +93,12 @@ export function recordChallengeResult(
     next.passesAtLevel >= PASSES_TO_ADVANCE &&
     profile.level < MAX_LEVEL
   ) {
+    const newLevel = profile.level + 1;
     return {
       ...next,
-      level: profile.level + 1,
+      level: newLevel,
       passesAtLevel: 0,
+      peakLevel: Math.max(profilePeakLevel(profile), newLevel),
     };
   }
 

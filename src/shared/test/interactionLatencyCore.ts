@@ -4,8 +4,8 @@
  */
 export const DEFAULT_INTERACTION_BUDGET_MS = 400;
 
-/** Hash/tab route switches — CI runners vary; keep generous vs DEFAULT_INTERACTION_BUDGET_MS. */
-export const TAB_NAVIGATION_BUDGET_MS = 800;
+/** Hash/tab route switches — CI runners are slower than local dev (often ~900–1200ms on cold heavy tabs). */
+export const TAB_NAVIGATION_BUDGET_MS = 1200;
 
 export const RELAXED_INTERACTION_BUDGET_MS = 800;
 

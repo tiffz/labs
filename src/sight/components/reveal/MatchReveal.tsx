@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import MatchAxisReadout from '../MatchAxisReadout';
 import CompactVerdict from './CompactVerdict';
-import type { ColorState } from '../../types';
+import type { ColorState, ContextualLocks } from '../../types';
 
 export interface MatchRevealProps {
   target: ColorState;
@@ -11,7 +11,7 @@ export interface MatchRevealProps {
   passed: boolean;
   accuracyRating: number;
   deltaE: number;
-  locked: { hue: boolean; chroma: boolean };
+  locked: ContextualLocks;
   /**
    * Side-by-side intro: start with gap and borders, then animate flush so the
    * user can see how close the colors really are.

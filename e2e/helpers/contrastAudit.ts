@@ -130,6 +130,7 @@ export function runContrastAuditInBrowser(opts: ContrastAuditPageOptions): Contr
 
     const el = walker.currentNode.parentElement;
     if (!el || !root.contains(el) || !isVisible(el)) continue;
+    if (el.closest('[aria-hidden="true"]')) continue;
 
     const style = window.getComputedStyle(el);
     const fg = parseColor(style.color);

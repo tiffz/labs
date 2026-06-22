@@ -86,7 +86,7 @@ export default function BrokenBridgeView({
           <OklchSliders
             value={userSteps[selectedSlot]!}
             onChange={updateSlot}
-            locked={{ hue: false, chroma: false }}
+            locked={{ hue: false, chroma: false, lightness: false }}
           />
         ) : (
           <Typography variant="body2" color="text.secondary">

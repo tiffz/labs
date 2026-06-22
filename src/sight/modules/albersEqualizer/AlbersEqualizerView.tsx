@@ -51,7 +51,7 @@ export default function AlbersEqualizerView({
         <OklchSliders
           value={input}
           onChange={onInputChange}
-          locked={{ hue: true, chroma: false }}
+          locked={{ hue: true, chroma: false, lightness: false }}
           showHex
         />
       )}

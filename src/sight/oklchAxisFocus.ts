@@ -1,5 +1,5 @@
 import { formatOklchChannels } from './formatOklch';
-import type { ColorState, CompareAxis, IsolatedAxis } from './types';
+import type { ColorState, CompareAxis, ContextualLocks, IsolatedAxis } from './types';
 
 export type OklchFocusAxis = 'l' | 'c' | 'h';
 
@@ -14,10 +14,12 @@ export function isolatedFocusAxis(axis: IsolatedAxis): OklchFocusAxis {
 }
 
 /** Axes the user could adjust for this contextual match level. */
-export function matchFocusAxes(locked: { hue: boolean; chroma: boolean }): OklchFocusAxis[] {
-  if (locked.hue && locked.chroma) return ['l'];
-  if (locked.hue) return ['l', 'c'];
-  return ['l', 'c', 'h'];
+export function matchFocusAxes(locked: ContextualLocks): OklchFocusAxis[] {
+  const axes: OklchFocusAxis[] = [];
+  if (!locked.lightness) axes.push('l');
+  if (!locked.chroma) axes.push('c');
+  if (!locked.hue) axes.push('h');
+  return axes;
 }
 
 export function focusAxisShortLabel(focus: OklchFocusAxis): string {

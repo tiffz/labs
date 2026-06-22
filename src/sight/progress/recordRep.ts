@@ -41,7 +41,6 @@ export function appendRepToProfile(
   return { ...profile, recentReps, skillMatrix };
 }
 
-export function shouldCountTowardLevelAdvance(purpose: RepPurpose, reviewMode: boolean): boolean {
-  if (reviewMode) return false;
+export function shouldCountTowardLevelAdvance(purpose: RepPurpose): boolean {
   return purpose === 'curriculum' || purpose === 'practice';
 }

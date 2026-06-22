@@ -10,7 +10,7 @@ Defers to [docs/USER_COPY_STYLE.md](../../docs/USER_COPY_STYLE.md).
 ## Labels
 
 - **Practice** — primary CTA on home at your current level.
-- **Practice level** — dropdown on home when level &gt; 1; earlier levels labeled “(review)”. Review hint: passes do not change level progress.
+- **Practice level** — pick any unlocked level from **Exercises**; passes count toward that level’s 7-pass gate. Footer shows skip-ahead when your peak is above the working level.
 - Level navigation — low-key chevrons beside the level label (`aria-label` only: “Previous level (N)”, “Next level (N)”).
 - After feedback, the next question loads automatically. **Continue** or tap the exercise to continue. **Enter** or **Space** also continues after feedback, and submits slider/match drills when focus is not on a slider.
 - Compare drills use a single canvas (no side panel); do not add “tap below” or “next challenge” coaching copy.
@@ -20,7 +20,10 @@ Defers to [docs/USER_COPY_STYLE.md](../../docs/USER_COPY_STYLE.md).
 - **Glossary terms** in prompts use a dotted underline. Hover or tap for a short definition (`SightTerm` + `AppTooltip`). Do not repeat the full definition in the prompt line.
 - **Question help** (help icon beside the prompt) appears when a drill needs extra context (Albers induction, vivid-on-gray). Keep help in the tooltip, not a second paragraph above the canvas.
 - Level 6 (flat match): **Match the swatch** — target on gray; adjust lightness in the slider preview, then submit.
-- Level 7+: **Match the swatch on neutral gray** when the target sits in a contrasting field.
+- Level 15: **Match the saturation in context** — chroma slider only.
+- Level 16: **Match value and saturation in context** — lightness + chroma; hue locked.
+- Level 17: **Match the hue in context** — hue slider only.
+- Level 18+: **Match the swatch on neutral gray** / full match when all sliders are open.
 - **Exit** — leave practice without implying an incomplete run.
 - Reveal labels: **Target**, **Your match**, **Reference**, **Yours**.
 - Verdict: **Pass** / **Not yet** / **Correct** / **Not quite** (compare).

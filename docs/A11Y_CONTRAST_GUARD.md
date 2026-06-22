@@ -35,7 +35,7 @@ Drive the UI into the **worst states** (error reveal, empty state, footer hints)
 ## Limits (not a full contrast linter)
 
 - Resolves **solid** computed `color` / ancestor `background-color` only (no gradients, images, or text over swatches).
-- Does not evaluate icon fonts unless they expose text nodes.
+- Does not evaluate **decorative** nodes (`aria-hidden="true"`), including Material icon ligatures.
 - Cannot replace manual review for charts, color patches, or decorative overlays.
 
 For deeper audits, use browser DevTools Accessibility tree or `@axe-core/playwright` on critical routes (optional; not in default presubmit today).
