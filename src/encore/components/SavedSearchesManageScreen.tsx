@@ -1,5 +1,6 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import { LabsListLoadingState } from '../../shared/components/LabsListLoadingState';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -288,7 +289,7 @@ export function SavedSearchesManageScreen(props?: {
 }): ReactElement {
   const { onHeavyTabLaidOut } = props ?? {};
   const { songs, performances, songsHydrated } = useEncoreLibraryTables();
-  const { repertoireExtras, effectiveDisplayName } = useEncoreLibraryExtras();
+  const { repertoireExtras, effectiveDisplayName, extrasHydrated } = useEncoreLibraryExtras();
   const { saveRepertoireExtras } = useEncoreActions();
   const { clientIdConfigured, syncError, dismissSyncError } = useEncoreRepertoirePlaylist();
 
@@ -380,7 +381,9 @@ export function SavedSearchesManageScreen(props?: {
             </Stack>
           ) : null}
 
-          {savedSearches.length === 0 ? (
+          {!extrasHydrated ? (
+            <LabsListLoadingState label="Loading saved searches" variant="skeleton" />
+          ) : savedSearches.length === 0 ? (
             <Paper
               variant="outlined"
               sx={{

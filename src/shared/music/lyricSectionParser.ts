@@ -1,4 +1,5 @@
 import type { SongSectionType } from './songSections';
+import { stripSectionHeaderAnnotation } from './chordPro/chordProText';
 
 export interface ParsedLyricSectionDraft {
   type: SongSectionType;
@@ -59,7 +60,7 @@ function splitByExplicitHeaders(input: string): ParsedLyricSectionDraft[] {
   };
 
   lines.forEach((line) => {
-    const match = line.match(HEADER_REGEX);
+    const match = stripSectionHeaderAnnotation(line).match(HEADER_REGEX);
     if (match) {
       flush();
       currentType = sectionTypeFromHeader(match[1] ?? '');
@@ -92,7 +93,7 @@ export function looksLikeFullSongLyrics(input: string): boolean {
   if (!trimmed) return false;
   const explicitHeaderCount = trimmed
     .split(/\r?\n/)
-    .filter((line) => HEADER_REGEX.test(line)).length;
+    .filter((line) => HEADER_REGEX.test(stripSectionHeaderAnnotation(line))).length;
   if (explicitHeaderCount >= 2) return true;
   const blocks = trimmed.split(/\n\s*\n+/).filter((block) => block.trim().length > 0);
   if (blocks.length >= 3) return true;

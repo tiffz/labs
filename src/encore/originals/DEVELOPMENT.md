@@ -10,8 +10,10 @@ Entry: `OriginalSongPage` keeps `OriginalsSongHeader` at page level for most wri
 
 ## Originals library list
 
-- **Table + grid** share row selection state; bulk **Play selected** chains preferred demo takes through `playTakeQueue` → `EncoreMediaPlaybackContext.playMediaQueue`.
-- **Table scroll**: originals MRT uses the shell scroll region (no nested `maxHeight` on the table container). Chips use `maxWidth: 100%` + label ellipsis so columns shrink instead of clipping.
+- **Table + song dashboard** share row selection state; bulk **Play selected** chains preferred demo takes through `playTakeQueue` → `EncoreMediaPlaybackContext.playMediaQueue`.
+- **Table** — browse metadata, inline edit key/BPM/dates, lyrics snippet.
+- **Song dashboard** (`grid` view mode) — Practice-style master–detail aligned with `PracticeScreen`: shared rail/panel shells (`originalsDashboardUi`), queue rail with **To finish** / **Finished** groups, flat sections inside one panel (hairline dividers, no card-in-card). Primary CTA: **Continue · {stage}** or **Open song** when demo-ready. Shared `OriginalsWorkflowStepper`, preview band (copy + listen), song files, lyrics/chart preview.
+- **Table scroll**: originals MRT scrolls inside `calc(100dvh - 22rem)` — offset covers Encore app bar plus Originals page chrome (header, search, filters, list toolbar). Encore shell is `100dvh` / `overflow: hidden`, so the table needs its own bounded scroll region (same class of fix as repertoire, with a larger offset than `220px`). Chips use `maxWidth: 100%` + label ellipsis so columns shrink instead of clipping.
 - **Hover preview**: `OriginalsLyricsHoverCard` keeps copy/edit actions in a sticky footer inside the tooltip.
 
 ## Playback queue (Encore-wide)

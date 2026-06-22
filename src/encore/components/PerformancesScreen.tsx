@@ -10,7 +10,7 @@ import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import QueueMusicIcon from '@mui/icons-material/QueueMusic';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
+import { LabsListLoadingState } from '../../shared/components/LabsListLoadingState';
 import Chip from '@mui/material/Chip';
 import Card from '@mui/material/Card';
 import Paper from '@mui/material/Paper';
@@ -1181,11 +1181,9 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
               />
             ) : null}
 
-      {!songsHydrated && performances.length === 0 ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }} aria-busy="true" aria-label="Loading library">
-          <CircularProgress />
-        </Box>
-      ) : performances.length === 0 && songsHydrated && songs.length === 0 ? (
+      {!songsHydrated || !performancesHydrated ? (
+        <LabsListLoadingState label="Loading performances" />
+      ) : performances.length === 0 && songs.length === 0 ? (
         <Stack spacing={1.5} sx={{ py: 4, maxWidth: 520 }}>
           <Typography color="text.secondary" sx={{ lineHeight: 1.6 }}>
             Nothing here yet. Add songs from Repertoire first, then log a performance from a song page or tap{' '}

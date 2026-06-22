@@ -2,14 +2,18 @@ import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useMemo, type ReactElement } from 'react';
-import BpmInput from '../../../shared/components/music/BpmInput';
 import type { ChartLayout } from '../../../shared/music/chordPro/chordChartLayout';
 import {
   estimateChartPlaybackDurationMs,
   formatChartPlaybackDuration,
 } from '../../../shared/music/chordPro/chartPlaybackSequence';
+import { EncoreBpmChip } from '../../ui/EncoreBpmChip';
 import { EncoreKeyChip } from '../../ui/EncoreKeyChip';
+import { EncoreTimeSignatureChip } from '../../ui/EncoreTimeSignatureChip';
 import type { EncoreOriginalSong } from '../types';
+import { originalSongTimeSignature } from '../types';
+
+const META_CHIP_CLASS = 'encore-originals-meta-chip';
 
 export type OriginalsChordsStageMetaProps = {
   song: EncoreOriginalSong;
@@ -42,19 +46,19 @@ export function OriginalsChordsStageMeta({
         placeholder="Key"
         displayMode="compact"
         onChange={(next) => onChange({ key: next })}
-        className="encore-originals-key-chip"
+        className={META_CHIP_CLASS}
       />
-      <BpmInput
+      <EncoreTimeSignatureChip
+        value={originalSongTimeSignature(song)}
+        onChange={(next) => onChange({ timeSignature: next })}
+        className={META_CHIP_CLASS}
+      />
+      <EncoreBpmChip
         value={song.tempo}
-        onChange={(next) => onChange({ tempo: Math.round(next) })}
+        onChange={(next) => onChange({ tempo: next })}
         min={40}
         max={200}
-        layout="inline"
-        showRandomize={false}
-        showRateActions={false}
-        showPresetDropdown
-        dropdownClassName="encore-repertoire-floating-menu encore-originals-bpm-dropdown"
-        className="encore-originals-bpm-inline"
+        className={META_CHIP_CLASS}
       />
       {playbackDurationLabel ? (
         <Tooltip title="Estimated chord playback length">

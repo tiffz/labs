@@ -6,14 +6,19 @@ function stageStorageKey(songId: string): string {
   return `encore-originals-workflow-stage:${songId}`;
 }
 
-export function readPersistedWorkflowStage(songId: string, song: EncoreOriginalSong): OriginalsWorkflowStage {
+/** Session-only read — used before song draft is hydrated. */
+export function readSessionWorkflowStage(songId: string): OriginalsWorkflowStage | null {
   try {
     const raw = sessionStorage.getItem(stageStorageKey(songId));
     if (raw === 'brainstorm' || raw === 'write' || raw === 'chords' || raw === 'takes') return raw;
   } catch {
     /* ignore */
   }
-  return inferredWorkflowStage(song);
+  return null;
+}
+
+export function readPersistedWorkflowStage(songId: string, song: EncoreOriginalSong): OriginalsWorkflowStage {
+  return readSessionWorkflowStage(songId) ?? inferredWorkflowStage(song);
 }
 
 export function persistWorkflowStage(songId: string, stage: OriginalsWorkflowStage): void {

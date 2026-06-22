@@ -13,6 +13,7 @@ import {
 } from '../../../shared/music/chordPro/chartPlaybackSequence';
 import { EncoreBpmChip } from '../../ui/EncoreBpmChip';
 import { EncoreKeyChip } from '../../ui/EncoreKeyChip';
+import { EncoreTimeSignatureChip } from '../../ui/EncoreTimeSignatureChip';
 import { InlineChipDate } from '../../ui/InlineEditChip';
 import { useEncoreAuth } from '../../context/EncoreAuthContext';
 import {
@@ -32,7 +33,7 @@ import {
 } from '../originalsWorkflowCompletion';
 import { workflowStageShortLabel, type OriginalsWorkflowStage } from '../originalsWorkflowStages';
 import { originalTakeBlobKey } from '../originalTakeLocalAudio';
-import { originalSongStartedDate, type EncoreOriginalSong, type OriginalAudioTake } from '../types';
+import { originalSongStartedDate, originalSongTimeSignature, type EncoreOriginalSong, type OriginalAudioTake } from '../types';
 import {
   originalsLibraryStageChipSx,
   originalsSongHeroPaperSx,
@@ -154,6 +155,10 @@ export function OriginalsSongViewMode({
                   placeholder="Set key"
                   displayMode="compact"
                   onChange={(next) => onSongChange({ key: next })}
+                />
+                <EncoreTimeSignatureChip
+                  value={originalSongTimeSignature(song)}
+                  onChange={(next) => onSongChange({ timeSignature: next })}
                 />
                 <EncoreBpmChip value={song.tempo} onChange={(next) => onSongChange({ tempo: next })} />
                 {playbackDurationLabel ? (

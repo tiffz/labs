@@ -8,15 +8,14 @@ import {
   type LyricLine,
   type SongSection,
 } from './chordChartLayout';
-import { isChordProSectionHeaderLine, parseChordProSectionHeader } from './chordProText';
+import { isChordProSectionHeaderLine, parseChordProSectionHeader, stripSectionHeaderAnnotation } from './chordProText';
 import { importPlainLyricsFromClipboard } from '../lyrics/pastedLyricsImport';
+import {
+  CHORD_SYMBOL_TOKEN_GLOBAL_RE,
+  CHORD_SYMBOL_TOKEN_RE,
+} from '../chordSymbolTokenPattern';
 
-/**
- * Chord symbol token — roots, qualities, slash bass, parenthetical extensions.
- * Intentionally permissive so pasted charts preserve symbols the playback engine may not parse.
- */
-const CHORD_TOKEN_RE =
-  /[A-G](?:#|b)?(?:maj|min|m|M|dim|aug|sus2|sus4|add2|add9|m7|maj7|7|9|11|13|6|\+)?(?:\([^)]+\))?(?:\/[A-G](?:#|b)?)?/g;
+const CHORD_TOKEN_RE = CHORD_SYMBOL_TOKEN_GLOBAL_RE;
 
 const SECTION_HEADER_RE =
   /^\s*\[?\s*(verse|chorus|bridge|intro|outro|pre[\s-]?chorus|hook|tag|refrain|instrumental|solo|interlude|breakdown|drop)(?:\s+\d+)?\s*\]?\s*[:-]?\s*$/i;
@@ -80,11 +79,12 @@ function sectionLabelFromTypeKey(typeKey: string): string {
 function parsePlainSectionHeader(line: string): string | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
-  if (isChordProSectionHeaderLine(trimmed)) {
-    return normalizeSectionHeader(parseChordProSectionHeader(trimmed) ?? trimmed);
+  const normalized = stripSectionHeaderAnnotation(trimmed);
+  if (isChordProSectionHeaderLine(normalized)) {
+    return normalizeSectionHeader(parseChordProSectionHeader(normalized) ?? normalized);
   }
-  if (SECTION_HEADER_RE.test(trimmed)) {
-    return normalizeSectionHeader(trimmed);
+  if (SECTION_HEADER_RE.test(normalized)) {
+    return normalizeSectionHeader(normalized);
   }
   return null;
 }
@@ -92,9 +92,7 @@ function parsePlainSectionHeader(line: string): string | null {
 function chordTokenMatches(token: string): boolean {
   if (!token || token.length > 24) return false;
   if (!/^[A-G]/.test(token)) return false;
-  return /^[A-G](?:#|b)?(?:maj|min|m|M|dim|aug|sus2|sus4|add2|add9|m7|maj7|7|9|11|13|6|\+)?(?:\([^)]+\))?(?:\/[A-G](?:#|b)?)?$/.test(
-    token,
-  );
+  return CHORD_SYMBOL_TOKEN_RE.test(token);
 }
 
 function extractChordTokens(line: string): Array<{ chord: string; column: number }> {

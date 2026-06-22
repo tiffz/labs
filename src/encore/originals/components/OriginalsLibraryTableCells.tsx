@@ -17,7 +17,7 @@ import {
 import { useOriginalTakePlayable } from '../hooks/useOriginalTakePlayable';
 import { originalsLibraryStageChipSx } from '../originalsLibraryUi';
 import type { EncoreOriginalSong } from '../types';
-import type { OriginalsGridTakePlaybackState } from './OriginalsLibraryGridCard';
+import type { OriginalsGridTakePlaybackState } from './OriginalsLibraryList';
 
 export type OriginalsTablePlayCellProps = {
   song: EncoreOriginalSong;

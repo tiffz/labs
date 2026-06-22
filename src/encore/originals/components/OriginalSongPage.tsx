@@ -13,7 +13,7 @@ import { createBlankOriginalSong, type EncoreOriginalSong } from '../types';
 import { OriginalsSongHeader, type OriginalsPageMode } from './OriginalsSongHeader';
 import { OriginalsSongViewMode } from './OriginalsSongViewMode';
 import { OriginalsSongWorkspace } from './OriginalsSongWorkspace';
-import { readPersistedWorkflowStage, persistWorkflowStage } from '../originalsWorkflowStagePersistence';
+import { readPersistedWorkflowStage, persistWorkflowStage, readSessionWorkflowStage } from '../originalsWorkflowStagePersistence';
 import type { OriginalsWorkflowStage } from '../originalsWorkflowStages';
 
 export type OriginalSongPageProps = {
@@ -47,8 +47,8 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
   const { saveOriginal, deleteOriginal } = useEncoreOriginalsActions();
   const [draft, setDraft] = useState<EncoreOriginalSong | null>(() => initialDraftForRoute(id, isNew));
   const [mode, setMode] = useState<OriginalsPageMode>(() => readPageMode(id));
-  const [workflowStage, setWorkflowStage] = useState<OriginalsWorkflowStage>(() =>
-    draft ? readPersistedWorkflowStage(draft.id, draft) : 'brainstorm',
+  const [workflowStage, setWorkflowStage] = useState<OriginalsWorkflowStage>(
+    () => readSessionWorkflowStage(id) ?? 'brainstorm',
   );
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const persistedNewRef = useRef(false);
@@ -81,6 +81,13 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
   }, [isNew, live]);
 
   useEffect(() => {
+    setMode(readPageMode(id));
+    const stored = readSessionWorkflowStage(id);
+    if (stored) setWorkflowStage(stored);
+    hydratedOriginalIdRef.current = null;
+  }, [id]);
+
+  useEffect(() => {
     try {
       sessionStorage.setItem(pageModeStorageKey(id), mode);
     } catch {
@@ -89,7 +96,8 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
   }, [id, mode]);
 
   useEffect(() => {
-    if (draft) setWorkflowStage(readPersistedWorkflowStage(draft.id, draft));
+    if (!draft) return;
+    setWorkflowStage(readPersistedWorkflowStage(draft.id, draft));
   }, [draft?.id, draft]);
 
   useEffect(() => {

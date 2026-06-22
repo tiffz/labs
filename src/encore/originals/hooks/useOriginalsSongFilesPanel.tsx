@@ -23,7 +23,7 @@ import {
   encoreResourceDownloadTargetFromTake,
   triggerEncoreResourceDownload,
 } from '../../drive/encoreResourceDownload';
-import { driveUploadFileResumable } from '../../drive/driveFetch';
+import { uploadOriginalSongReference } from '../originalsReferenceUpload';
 import { inferMediaMimeType } from '../../../shared/drive/inferMediaMimeType';
 import {
   addResourceFromUrl,
@@ -35,7 +35,6 @@ import { shouldEncoreMediaHubHighlightDrag } from '../../components/song/encoreD
 import { encoreMediaHubAddButtonSx, practiceResourceChipFieldSx } from '../../theme/encoreUiTokens';
 import type { EncoreMiscResource } from '../../types';
 import { useEncoreOriginalsPlayback } from '../context/EncoreOriginalsPlaybackContext';
-import { ensureOriginalsDriveLayout } from '../drive/originalsSharded';
 import {
   buildOriginalTakeFromFile,
   uploadOriginalTakeToDrive,
@@ -46,10 +45,6 @@ import {
   originalTakeBlobKey,
   saveOriginalTakeBlob,
 } from '../originalTakeLocalAudio';
-import {
-  appendSongReference,
-  appendSongReferenceFromDriveFile,
-} from '../originalsResourceLinks';
 import {
   eligibleOriginalsSlotsForDragDataTransfer,
   originalsFileDragRelevant,
@@ -287,39 +282,12 @@ export function useOriginalsSongFilesPanel({
   const uploadReferenceFile = useCallback(
     async (file: File) => {
       if (readOnly) return;
-      if (!googleAccessToken) {
-        applySong(appendSongReference(songRef.current, createResourceFromLocalFile(file)));
-        return;
-      }
-      const indexLabel = `${songRef.current.title.trim() || 'Original'} · Reference`;
-      const driveFileId = await uploadWithDuplicateCheck({
-        file,
-        uploadNew: async () => {
-          const layout = await ensureOriginalsDriveLayout(googleAccessToken);
-          const ext = file.name.includes('.') ? file.name.split('.').pop() : 'dat';
-          const name = `ref-${crypto.randomUUID()}.${ext ?? 'dat'}`;
-          const created = await driveUploadFileResumable(
-            googleAccessToken,
-            file,
-            [layout.referencesFolderId],
-            name,
-          );
-          await registerUploadedDriveFile(created.id, indexLabel);
-          return created.id;
-        },
-        reuseExisting: async (id) => {
-          await registerUploadedDriveFile(id, indexLabel);
-          return id;
-        },
+      const next = await uploadOriginalSongReference(songRef.current, file, {
+        googleAccessToken,
+        uploadWithDuplicateCheck,
+        registerUploadedDriveFile,
       });
-      if (driveFileId) {
-        applySong(
-          appendSongReferenceFromDriveFile(songRef.current, driveFileId, {
-            label: file.name,
-            mimeType: inferMediaMimeType(file),
-          }),
-        );
-      }
+      applySong(next);
     },
     [applySong, googleAccessToken, readOnly, registerUploadedDriveFile, uploadWithDuplicateCheck],
   );

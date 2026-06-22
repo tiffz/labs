@@ -8,6 +8,7 @@ import {
 } from './pastedChartImport';
 import { serializeChartLayoutToChordPro } from './chordChartLayout';
 import { MEET_ME_AROUND_LYRIC, MEET_ME_MOON_PASTE } from './fixtures';
+import { GEORGIA_COAST_PASTE } from './georgiaCoastPaste.fixture';
 
 const MEET_ME_MOON = MEET_ME_MOON_PASTE;
 
@@ -48,6 +49,8 @@ describe('pastedChartImport', () => {
     expect(isChordOnlyLine('Fm                    Bb')).toBe(true);
     expect(isChordOnlyLine('Ab     Bb')).toBe(true);
     expect(isChordOnlyLine('Bb/Ab')).toBe(true);
+    expect(isChordOnlyLine('F                                   Csus')).toBe(true);
+    expect(isChordOnlyLine('Am                      Gsus7              C/E')).toBe(true);
     expect(isChordOnlyLine("I'm not like you")).toBe(false);
   });
 
@@ -250,5 +253,46 @@ Your voice stayed when we were grown`;
     expect(imported.ok).toBe(true);
     expect(imported.sectionCount).toBe(4);
     expect(imported.lineCount).toBeGreaterThan(8);
+  });
+
+  it('parses annotated section headers (Starts on G3) without treating markers as chords', () => {
+    expect(looksLikePastedChart(GEORGIA_COAST_PASTE)).toBe(true);
+    const layout = parsePastedChartToChartLayout(GEORGIA_COAST_PASTE);
+    expect(layout.sections.map((s) => s.header)).toEqual([
+      'Verse 1',
+      'Instrumental',
+      'Chorus 1',
+      'Verse 2',
+      'Chorus 2',
+      'Bridge',
+      'Chorus 3',
+      'Instrumental',
+      'Outro',
+    ]);
+
+    const verse1 = layout.sections[0]!;
+    expect(verse1.lines.some((l) => l.text.includes('[Verse 1]'))).toBe(false);
+    expect(verse1.lines.some((l) => l.chords.some((c) => c.chordName === 'Verse 1'))).toBe(false);
+    expect(verse1.lines[0]?.text).toContain('90 degrees');
+    expect(verse1.lines[0]?.chords.map((c) => c.chordName)).toEqual(['C', 'G']);
+    expect(verse1.lines[1]?.text).toContain('Brings me back');
+    expect(verse1.lines[1]?.chords.map((c) => c.chordName)).toEqual(['F', 'Csus']);
+    expect(verse1.lines[2]?.chords.map((c) => c.chordName)).toEqual(['C', 'G']);
+    expect(verse1.lines[3]?.chords.map((c) => c.chordName)).toEqual(['F', 'Csus', 'C']);
+
+    const verse2 = layout.sections.find((s) => s.header === 'Verse 2')!;
+    const thunderLine = verse2.lines.find((l) => l.text.includes('thunder cracked'));
+    expect(thunderLine?.chords.map((c) => c.chordName)).toEqual(['Am', 'Gsus7', 'C/E']);
+
+    const outro = layout.sections.find((s) => s.header === 'Outro')!;
+    expect(outro.lines[0]?.text).toContain('90 degrees');
+    expect(outro.lines[0]?.chords.map((c) => c.chordName)).toEqual(['Csus', 'Gsus']);
+    expect(outro.lines[1]?.text).toContain('hills and Bay');
+    expect(outro.lines[1]?.chords.map((c) => c.chordName)).toEqual(['Fsus', 'Csus']);
+    expect(outro.lines[2]?.chords.map((c) => c.chordName).sort()).toEqual(['Am', 'C', 'F', 'G']);
+
+    const imported = importPastedChartFromClipboard(GEORGIA_COAST_PASTE);
+    expect(imported.ok).toBe(true);
+    expect(imported.sectionCount).toBe(9);
   });
 });

@@ -12,6 +12,10 @@ This document defines default conventions for shared UI so apps stay naturally a
 
 Multi-panel apps (header + scrollable main + optional footer) should use [`layout/AppShellLayout.tsx`](./layout/AppShellLayout.tsx) and [`layout/app-shell-layout.css`](./layout/app-shell-layout.css). Copy [`templates/app-main.starter.tsx`](./templates/app-main.starter.tsx) and [`templates/app-layout.starter.css`](./templates/app-layout.starter.css) for new apps. See [`layout/README.md`](./layout/README.md) and Stanza [`LAYOUT.md`](../stanza/LAYOUT.md).
 
+## Async list loading vs empty
+
+While data is still loading (IndexedDB live query not emitted, fetch in flight, etc.), **do not** show empty-state copy (`Nothing here yet`, `None yet`). Use [`components/LabsListLoadingState.tsx`](./components/LabsListLoadingState.tsx) (spinner + “Loading …” or skeleton rows) until the source exposes a hydrated/ready signal. Empty states belong only after loading completes with zero rows.
+
 ## Theme Contract (Default)
 
 All music apps and `/ui` should publish the same semantic contract, then map app identity into these variables:

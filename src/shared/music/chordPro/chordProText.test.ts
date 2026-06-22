@@ -49,10 +49,12 @@ describe('chordProText', () => {
 
   it('detects section headers', () => {
     expect(isChordProSectionHeaderLine('[Verse 1]')).toBe(true);
+    expect(isChordProSectionHeaderLine('[Verse 1] - Starts on G3')).toBe(true);
     expect(isChordProSectionHeaderLine('plain line')).toBe(false);
     expect(isChordProSectionHeaderLine('[Dm]')).toBe(false);
     expect(isChordProSectionHeaderLine('[Cmaj7]')).toBe(false);
     expect(parseChordProSectionHeader('[Dm]')).toBeNull();
+    expect(parseChordProSectionHeader('[Verse 1] - Starts on G3')).toBe('Verse 1');
   });
 
   it('does not split on standalone chord-only lines after a section header', () => {

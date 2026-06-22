@@ -8,7 +8,8 @@ import { boldAsciiChartExportSpans, chartLayoutToTwoColumnExport } from '../../s
 import { parseChordProToChartLayout } from '../../shared/music/chordPro/chordChartLayout';
 import { driveGetFileMetadata, driveMoveFile } from '../drive/driveFetch';
 import { ensureOriginalsDriveLayout } from './drive/originalsSharded';
-import type { EncoreOriginalSong } from './types';
+import { formatTimeSignatureDisplay } from '../../shared/music/timeSignaturePresets';
+import { originalSongTimeSignature, type EncoreOriginalSong } from './types';
 
 export function originalChartGoogleDocTitle(song: EncoreOriginalSong): string {
   return buildLabsDownloadFileName([song.title.trim() || 'Untitled', 'Chord Chart']);
@@ -19,7 +20,7 @@ export function originalChartExportDisplayTitle(song: EncoreOriginalSong): strin
 }
 
 export function originalChartExportSubtitle(song: EncoreOriginalSong): string {
-  return `Key: ${song.key} · ${song.tempo} BPM`;
+  return `Key: ${song.key} · ${formatTimeSignatureDisplay(originalSongTimeSignature(song))} · ${song.tempo} BPM`;
 }
 
 export function googleDocEditUrl(documentId: string): string {

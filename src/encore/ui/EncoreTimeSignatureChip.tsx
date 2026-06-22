@@ -2,30 +2,28 @@ import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Menu from '@mui/material/Menu';
 import { useRef, useState, type ReactElement } from 'react';
-import BpmInput from '../../shared/components/music/BpmInput';
+import type { TimeSignature } from '../../shared/rhythm/types';
+import { formatTimeSignatureDisplay } from '../../shared/music/timeSignaturePresets';
+import TimeSignatureInput from '../../shared/components/music/TimeSignatureInput';
 
-export type EncoreBpmChipProps = {
-  value: number;
-  onChange: (next: number) => void;
+export type EncoreTimeSignatureChipProps = {
+  value: TimeSignature;
+  onChange: (next: TimeSignature) => void;
   disabled?: boolean;
   size?: 'small' | 'medium';
-  min?: number;
-  max?: number;
   className?: string;
   dropdownClassName?: string;
 };
 
-/** Encore tempo chip — MUI Chip shell + shared {@link BpmInput} menu. */
-export function EncoreBpmChip({
+/** Encore meter chip — MUI Chip shell + shared {@link TimeSignatureInput} menu. */
+export function EncoreTimeSignatureChip({
   value,
   onChange,
   disabled = false,
   size = 'small',
-  min = 40,
-  max = 200,
   className,
-  dropdownClassName = 'encore-repertoire-floating-menu encore-originals-bpm-dropdown',
-}: EncoreBpmChipProps): ReactElement {
+  dropdownClassName = 'encore-repertoire-floating-menu encore-originals-meter-dropdown',
+}: EncoreTimeSignatureChipProps): ReactElement {
   const anchorRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -42,8 +40,8 @@ export function EncoreBpmChip({
           size={size}
           clickable
           disabled={disabled}
-          label={`${value} BPM`}
-          aria-label="Change tempo"
+          label={formatTimeSignatureDisplay(value)}
+          aria-label="Change time signature"
           variant="outlined"
           onClick={() => !disabled && setOpen(true)}
           sx={{
@@ -63,18 +61,26 @@ export function EncoreBpmChip({
         anchorEl={anchorRef.current}
         open={open}
         onClose={() => setOpen(false)}
-        slotProps={{ paper: { sx: { mt: 0.5, p: 1.5, width: 300, maxWidth: '95vw' } } }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 0.5,
+              p: 0,
+              overflow: 'visible',
+              background: 'transparent',
+              boxShadow: 'none',
+              border: 0,
+            },
+          },
+        }}
       >
-        <BpmInput
-          value={value}
-          onChange={(next) => onChange(Math.round(next))}
-          min={min}
-          max={max}
+        <TimeSignatureInput
           layout="block"
-          showRandomize={false}
-          showRateActions={false}
-          showPresetDropdown
+          value={value}
           dropdownClassName={dropdownClassName}
+          onChange={(next) => {
+            onChange(next);
+          }}
         />
       </Menu>
     </>

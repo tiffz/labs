@@ -13,10 +13,11 @@ import { formatShortDate } from '../../components/libraryScreenHelpers';
 import { encoreMrtOriginalsLibraryTableOptions } from '../../components/encoreMrtTableDefaults';
 import { EncoreBpmChip } from '../../ui/EncoreBpmChip';
 import { EncoreKeyChip } from '../../ui/EncoreKeyChip';
+import { EncoreTimeSignatureChip } from '../../ui/EncoreTimeSignatureChip';
 import { EncoreMrtColumnHeader } from '../../ui/EncoreMrtColumnHeader';
 import { HighlightedText } from '../../ui/HighlightedText';
 import { InlineChipDate } from '../../ui/InlineEditChip';
-import { originalSongStartedDate, type EncoreOriginalSong } from '../types';
+import { originalSongStartedDate, originalSongTimeSignature, type EncoreOriginalSong } from '../types';
 import { navigateToOriginalFromLibrary } from '../originalsLibraryNavigation';
 import {
   isOriginalDemoReady,
@@ -24,7 +25,7 @@ import {
   originalsLibraryStageProgressDetail,
   originalsLibraryStageSortKey,
 } from '../originalsWorkflowCompletion';
-import type { OriginalsGridTakePlaybackState } from './OriginalsLibraryGridCard';
+import type { OriginalsGridTakePlaybackState } from './OriginalsLibraryList';
 import {
   OriginalsTablePlayCell,
   OriginalsTableStageCell,
@@ -147,6 +148,22 @@ export function OriginalsLibraryMrtTable({
         ),
       },
       {
+        id: 'timeSignature',
+        header: 'Meter',
+        minSize: 56,
+        size: 64,
+        accessorFn: (row) => `${originalSongTimeSignature(row).numerator}/${originalSongTimeSignature(row).denominator}`,
+        Header: ({ column }) => <EncoreMrtColumnHeader label="Meter" column={column} />,
+        Cell: ({ row }) => (
+          <Box onClick={(e) => e.stopPropagation()} sx={{ minWidth: 0 }}>
+            <EncoreTimeSignatureChip
+              value={originalSongTimeSignature(row.original)}
+              onChange={(next) => patchSong(row.original, { timeSignature: next })}
+            />
+          </Box>
+        ),
+      },
+      {
         accessorKey: 'tempo',
         header: 'BPM',
         minSize: 60,
@@ -254,5 +271,17 @@ export function OriginalsLibraryMrtTable({
     }),
   });
 
-  return <EncoreMrtTableShell table={table} searchHighlight={search} />;
+  return (
+    <EncoreMrtTableShell
+      table={table}
+      searchHighlight={search}
+      sx={{
+        height: '100%',
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        '& .MuiPaper-root': { height: '100%', minHeight: 0 },
+      }}
+    />
+  );
 }

@@ -175,3 +175,50 @@
 .encore-originals-bpm-dropdown .shared-bpm-preset-chip.active {
   border-color: color-mix(in srgb, #6d28d9 56%, #a5b4fc);
 }
+
+/* Encore originals meter menu — same shell as BPM/key pickers. */
+.encore-originals-meter-dropdown.shared-bpm-dropdown,
+.encore-originals-meter-dropdown.shared-time-sig-dropdown {
+  --bpm-focus: #7c3aed;
+  --bpm-dropdown-bg: rgba(255, 255, 255, 0.98);
+  --bpm-dropdown-border: rgba(124, 58, 237, 0.14);
+  --bpm-chip-radius: 0.5rem;
+  --bpm-chip-min-width: 0;
+  --bpm-chip-height: 1.85rem;
+  --bpm-chip-bg: #ffffff;
+  --bpm-chip-border: color-mix(in srgb, #818cf8 28%, #c7d2fe);
+  --bpm-chip-hover-bg: color-mix(in srgb, #ede9fe 36%, #ffffff);
+  --bpm-chip-active-bg: color-mix(in srgb, #ddd6fe 42%, #ffffff);
+  --bpm-chip-active-text: #5b21b6;
+  --bpm-dropdown-list-padding: 0.55rem;
+  --bpm-presets-section-padding: 0.45rem 0 0.08rem;
+  --bpm-presets-row-padding: 0;
+  min-width: min(17.5rem, calc(100vw - 24px));
+  max-width: min(20rem, calc(100vw - 24px));
+}
+
+.encore-originals-meter-dropdown .shared-bpm-presets-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.32rem;
+}
+
+.encore-originals-meter-dropdown .shared-bpm-preset-chip {
+  min-width: 0;
+  font-size: 0.8125rem;
+  border-radius: 0.5rem;
+  padding: 0.34rem 0.35rem;
+}
+
+.encore-originals-meter-dropdown .shared-bpm-preset-chip:hover {
+  transform: none;
+  border-color: color-mix(in srgb, #7c3aed 42%, #c4b5fd);
+}
+
+.encore-originals-meter-dropdown .shared-bpm-preset-chip.active {
+  border-color: color-mix(in srgb, #6d28d9 56%, #a5b4fc);
+}
+
+.encore-originals-meter-dropdown .shared-time-sig-preview {
+  border-color: color-mix(in srgb, #818cf8 20%, #e9d5ff);
+  background: color-mix(in srgb, #faf5ff 52%, #ffffff);
+}

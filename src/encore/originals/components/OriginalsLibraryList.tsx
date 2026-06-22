@@ -1,21 +1,21 @@
-import HeadphonesOutlinedIcon from '@mui/icons-material/HeadphonesOutlined';
 import Box from '@mui/material/Box';
+import HeadphonesOutlinedIcon from '@mui/icons-material/HeadphonesOutlined';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { MRT_RowSelectionState } from 'material-react-table';
 import { useCallback, useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import { ENCORE_ORIGINALS_TABLE_SCROLL_HEIGHT } from '../../components/encoreMrtTableDefaults';
 import type { RepertoireViewMode } from '../../components/libraryScreenHelpers';
 import type { EncoreMediaPlaybackPhase } from '../../media/encorePlayableMedia';
 import type { OriginalsPlaybackTarget } from '../../context/encoreMediaPlaybackContextStore';
 import { useEncoreOriginalsPlayback } from '../context/EncoreOriginalsPlaybackContext';
 import { originalTakeBlobKey } from '../originalTakeLocalAudio';
 import { originalTakeHasPlayableSource, preferredOriginalTake, type EncoreOriginalSong } from '../types';
-import {
-  OriginalsLibraryGridCard,
-  type OriginalsGridTakePlaybackState,
-} from './OriginalsLibraryGridCard';
+import { OriginalsSongDashboardView } from './OriginalsSongDashboardView';
 import { OriginalsLibraryMrtTable } from './OriginalsLibraryMrtTable';
+
+export type OriginalsGridTakePlaybackState = 'idle' | 'loading' | 'playing' | 'error';
 
 function buildTakeTarget(song: EncoreOriginalSong): OriginalsPlaybackTarget | null {
   const preferred = preferredOriginalTake(song);
@@ -60,7 +60,7 @@ export type OriginalsLibraryListProps = {
   toolbarTrailing?: ReactNode;
 };
 
-/** Table or grid list for the Originals library. */
+/** Table or song-dashboard list for the Originals library. */
 export function OriginalsLibraryList({
   rows,
   search,
@@ -77,15 +77,6 @@ export function OriginalsLibraryList({
     () => new Set(Object.keys(rowSelection).filter((id) => rowSelection[id])),
     [rowSelection],
   );
-
-  const toggleSelect = useCallback((songId: string) => {
-    setRowSelection((prev) => {
-      const next = { ...prev };
-      if (next[songId]) delete next[songId];
-      else next[songId] = true;
-      return next;
-    });
-  }, []);
 
   const onPlaySelected = useCallback(() => {
     const targets = rows
@@ -166,40 +157,32 @@ export function OriginalsLibraryList({
       </Stack>
 
       {viewMode === 'table' ? (
-        <OriginalsLibraryMrtTable
+        <Box
+          sx={{
+            height: ENCORE_ORIGINALS_TABLE_SCROLL_HEIGHT,
+            minHeight: 240,
+            minWidth: 0,
+          }}
+        >
+          <OriginalsLibraryMrtTable
+            rows={rows}
+            search={search}
+            listActive={listActive}
+            onSaveSong={onSaveSong}
+            onPlayTake={onPlayTake}
+            onStopTake={stopPlayback}
+            takePlaybackBySongId={playbackBySongId}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
+          />
+        </Box>
+      ) : (
+        <OriginalsSongDashboardView
           rows={rows}
           search={search}
           listActive={listActive}
           onSaveSong={onSaveSong}
-          onPlayTake={onPlayTake}
-          onStopTake={stopPlayback}
-          takePlaybackBySongId={playbackBySongId}
-          rowSelection={rowSelection}
-          onRowSelectionChange={setRowSelection}
         />
-      ) : (
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 260px), 1fr))',
-            gap: { xs: 2, sm: 2.5 },
-          }}
-        >
-          {rows.map((song) => (
-            <OriginalsLibraryGridCard
-              key={song.id}
-              song={song}
-              search={search}
-              selected={selectedIds.has(song.id)}
-              listActive={listActive}
-              takePlayback={playbackBySongId.get(song.id) ?? 'idle'}
-              onToggleSelect={toggleSelect}
-              onSaveSong={onSaveSong}
-              onPlayTake={onPlayTake}
-              onStopTake={stopPlayback}
-            />
-          ))}
-        </Box>
       )}
     </>
   );

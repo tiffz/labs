@@ -35,52 +35,22 @@
   border-style: dashed;
 }
 
-/* Key + tempo controls on the Add Chords stage only. */
+/* Key, meter, and tempo chips on the Add Chords toolbar — one shared shell. */
 .encore-originals-chords-meta {
   flex-shrink: 0;
 }
 
-.encore-originals-chords-meta .encore-originals-key-chip .MuiChip-root {
+.encore-originals-chords-meta .encore-originals-meta-chip .MuiChip-root {
   height: 30px;
   border-radius: 0.45rem;
   border-color: color-mix(in srgb, #7c3aed 22%, #e9d5ff);
   font-size: 0.8125rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.encore-originals-chords-meta .encore-originals-key-chip .MuiChip-label {
-  padding-inline: 0.45rem;
-}
-
-.encore-originals-chords-meta .encore-originals-bpm-inline .shared-bpm-shell {
-  --bpm-shell-height: 30px;
-  --bpm-shell-radius: 0.45rem;
-  --bpm-stepper-min-width: 0;
-  --bpm-border: color-mix(in srgb, #7c3aed 22%, #e9d5ff);
-  --bpm-bg: #fff;
-  padding: 0 0.1rem 0 0.18rem;
-}
-
-.encore-originals-chords-meta .encore-originals-bpm-inline .shared-bpm-stepper {
-  flex: 0 0 auto;
-  min-width: 0;
-  border-right: 0;
-  padding-right: 0;
-}
-
-.encore-originals-chords-meta .encore-originals-bpm-inline .shared-bpm-value {
-  flex: 0 0 auto;
-  width: 3.25ch;
-  min-width: 3.25ch;
-  max-width: 3.25ch;
-  text-align: center;
-  padding: 0;
-  font-size: 0.8125rem;
-}
-
-.encore-originals-chords-meta .encore-originals-bpm-inline .shared-bpm-arrows {
-  width: 14px;
-  margin-left: 0;
+.encore-originals-chords-meta .encore-originals-meta-chip .MuiChip-label {
+  padding-inline: 0.55rem;
 }
 
 .encore-originals-chords-toolbar .encore-originals-chords-actions {
@@ -540,6 +510,11 @@
 .encore-originals-workflow-stepper {
   max-width: 52rem;
   margin-inline: auto;
+}
+
+.encore-originals-dashboard-workflow .encore-originals-workflow-stepper {
+  max-width: none;
+  margin-inline: 0;
 }
 
 @media (max-width: 899px) {

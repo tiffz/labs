@@ -3771,6 +3771,40 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-labslistloadingstate-tsx-labslistloadingstate",
+    "name": "LabsListLoadingState",
+    "path": "src/shared/components/LabsListLoadingState.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Distinct loading affordance for list and table screens — use while async/local DB data is still resolving. Do not reuse empty-state copy or “Nothing here yet” patterns.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labslistloadingstate-tsx-labslistloadingstateprops",
+    "name": "LabsListLoadingStateProps",
+    "path": "src/shared/components/LabsListLoadingState.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-metronometogglebutton-tsx-metronometogglebutton",
     "name": "MetronomeToggleButton",
     "path": "src/shared/components/MetronomeToggleButton.tsx",
@@ -5100,6 +5134,42 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-timesignatureinput-tsx-timesignatureinput",
+    "name": "TimeSignatureInput",
+    "path": "src/shared/components/music/TimeSignatureInput.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared meter picker — preset grid plus custom numerator/denominator and optional asymmetric grouping.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-timesignatureinput-tsx-timesignatureinputprops",
+    "name": "TimeSignatureInputProps",
+    "path": "src/shared/components/music/TimeSignatureInput.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {
@@ -10465,6 +10535,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordpro-chordprotext-ts-section-header-starts-on-annotation-re",
+    "name": "SECTION_HEADER_STARTS_ON_ANNOTATION_RE",
+    "path": "src/shared/music/chordPro/chordProText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Optional trailing key hint on pasted section headers, e.g. `[Verse 1] - Starts on G3`.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordpro-chordprotext-ts-semitonesbetweenkeys",
     "name": "semitonesBetweenKeys",
     "path": "src/shared/music/chordPro/chordProText.ts",
@@ -10487,6 +10573,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "music-core",
     "description": "Remove all `[...]` chord tokens for lyrics-only view.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chordprotext-ts-stripsectionheaderannotation",
+    "name": "stripSectionHeaderAnnotation",
+    "path": "src/shared/music/chordPro/chordProText.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Matches inline ChordPro chord tokens like `[Fm]`, `[Bbmaj7]`, `[C/E]`.",
     "tags": [
       "music"
     ],
@@ -10533,6 +10634,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "music-core",
     "description": "Shared chord-chart fixtures for unit tests (import layout, paint, multi-chord words). Canonical source for “Meet Me on the Moon” paste regressions — see `pastedChartImport.test.ts`.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-georgiacoastpaste-fixture-ts-georgia-coast-paste",
+    "name": "GEORGIA_COAST_PASTE",
+    "path": "src/shared/music/chordPro/georgiaCoastPaste.fixture.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Chord-over-lyrics paste with annotated section headers (Starts on G3, etc.).",
     "tags": [
       "music",
       "api"
@@ -10593,7 +10710,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "music-core",
-    "description": "Chord symbol token — roots, qualities, slash bass, parenthetical extensions. Intentionally permissive so pasted charts preserve symbols the playback engine may not parse.",
+    "description": "No JSDoc summary provided.",
     "tags": [
       "music"
     ],
@@ -10623,7 +10740,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "music-core",
-    "description": "Chord symbol token — roots, qualities, slash bass, parenthetical extensions. Intentionally permissive so pasted charts preserve symbols the playback engine may not parse.",
+    "description": "No JSDoc summary provided.",
     "tags": [
       "music",
       "api"
@@ -11242,6 +11359,54 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordsymboltokenpattern-ts-chord-symbol-token-global-re",
+    "name": "CHORD_SYMBOL_TOKEN_GLOBAL_RE",
+    "path": "src/shared/music/chordSymbolTokenPattern.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Global — finds chord tokens in a chord-only line.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordsymboltokenpattern-ts-chord-symbol-token-re",
+    "name": "CHORD_SYMBOL_TOKEN_RE",
+    "path": "src/shared/music/chordSymbolTokenPattern.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Anchored — validates a single chord token.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordsymboltokenpattern-ts-chord-symbol-token-re-i",
+    "name": "CHORD_SYMBOL_TOKEN_RE_I",
+    "path": "src/shared/music/chordSymbolTokenPattern.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Case-insensitive anchored variant (two-column export).",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
     "demoId": null
   },
   {
@@ -14689,6 +14854,192 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [
       "piano"
     ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-timesignaturepresets-ts-common-time-signature-presets",
+    "name": "COMMON_TIME_SIGNATURE_PRESETS",
+    "path": "src/shared/music/timeSignaturePresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Common meters — mirrors Drums / Count presets; asymmetric entries include default groupings.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-timesignaturepresets-ts-default-time-signature",
+    "name": "DEFAULT_TIME_SIGNATURE",
+    "path": "src/shared/music/timeSignaturePresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-timesignaturepresets-ts-formattimesignaturedisplay",
+    "name": "formatTimeSignatureDisplay",
+    "path": "src/shared/music/timeSignaturePresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-timesignaturepresets-ts-formattimesignatureforwordsurl",
+    "name": "formatTimeSignatureForWordsUrl",
+    "path": "src/shared/music/timeSignaturePresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-timesignaturepresets-ts-ispresettimesignature",
+    "name": "isPresetTimeSignature",
+    "path": "src/shared/music/timeSignaturePresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-timesignaturepresets-ts-normalizetimesignature",
+    "name": "normalizeTimeSignature",
+    "path": "src/shared/music/timeSignaturePresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Coerce partial / legacy rows to a valid meter (defaults to 4/4).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-timesignaturepresets-ts-time-signature-denominators",
+    "name": "TIME_SIGNATURE_DENOMINATORS",
+    "path": "src/shared/music/timeSignaturePresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-timesignaturepresets-ts-time-signature-numerator-max",
+    "name": "TIME_SIGNATURE_NUMERATOR_MAX",
+    "path": "src/shared/music/timeSignaturePresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-timesignaturepresets-ts-time-signature-numerator-min",
+    "name": "TIME_SIGNATURE_NUMERATOR_MIN",
+    "path": "src/shared/music/timeSignaturePresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-timesignaturepresets-ts-timesignaturegroupingkey",
+    "name": "timeSignatureGroupingKey",
+    "path": "src/shared/music/timeSignaturePresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-timesignaturepresets-ts-timesignaturepreset",
+    "name": "TimeSignaturePreset",
+    "path": "src/shared/music/timeSignaturePresets.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-timesignaturepresets-ts-timesignaturesequal",
+    "name": "timeSignaturesEqual",
+    "path": "src/shared/music/timeSignaturePresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },

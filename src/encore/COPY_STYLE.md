@@ -34,6 +34,14 @@ Use these exact strings unless you have a strong reason not to. Consistency here
 - **Originals library empty:** `Nothing here yet. Add an original from the toolbar.`
 - Don't use "There are no…" or "You haven't…"; both bury the lede. Don't use "No X yet." for screen-level empties; reserve "None yet." for inline lists.
 
+### Loading states (not empty)
+
+While Dexie or Drive data is still resolving, **never** show empty-state copy (`Nothing here yet`, `None yet`, `No saved venues yet`, etc.). Gate on `*Hydrated` flags from library contexts (`songsHydrated`, `originalsHydrated`, `extrasHydrated`, …) or `{ status: 'loading' }` for single-row reads.
+
+- Use shared [`LabsListLoadingState`](../../shared/components/LabsListLoadingState.tsx): skeleton rows for list/table screens, spinner + `Loading …` caption for simpler panels.
+- Visible copy pattern: `Loading library…`, `Loading originals…`, `Loading performances…` — name **what** is loading, not that the library is empty.
+- Heavy Repertoire / Performances first visits also use shell [`EncoreHeavyListTabPlaceholder`](components/EncoreHeavyListTabPlaceholder.tsx) until the tab body paints.
+
 ### Primary-star affordance on media-link rows
 
 Use the helper in [`ui/EncoreMediaLinkRow.tsx`](ui/EncoreMediaLinkRow.tsx) to keep the tooltip and aria-label in sync. Canonical strings:

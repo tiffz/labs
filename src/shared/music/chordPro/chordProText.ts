@@ -7,9 +7,18 @@ const SECTION_HEADER_RE = /^\s*\[([^\]]+)\]\s*$/;
 const STRUCTURAL_SECTION_LABEL_RE =
   /^(verse|chorus|bridge|intro|outro|pre[\s-]?chorus|hook|tag|refrain|instrumental|solo|interlude|breakdown|drop)(?:\s+\d+)?$/i;
 
+/** Optional trailing key hint on pasted section headers, e.g. `[Verse 1] - Starts on G3`. */
+export const SECTION_HEADER_STARTS_ON_ANNOTATION_RE =
+  /\s*[-–—]\s*Starts on\s+[A-G](?:#|b)?\d?\s*$/i;
+
+export function stripSectionHeaderAnnotation(line: string): string {
+  return line.trim().replace(SECTION_HEADER_STARTS_ON_ANNOTATION_RE, '').trim();
+}
+
+import { CHORD_SYMBOL_TOKEN_RE } from '../chordSymbolTokenPattern';
+
 /** Inline chord symbol when the whole line is a single bracket token, e.g. `[Dm]`. */
-const CHORD_SYMBOL_ONLY_RE =
-  /^[A-G](?:#|b)?(?:maj|min|m|M|dim|aug|sus2|sus4|add2|add9|m7|maj7|7|9|11|13|6|\+)?(?:\([^)]+\))?(?:\/[A-G](?:#|b)?)?$/;
+const CHORD_SYMBOL_ONLY_RE = CHORD_SYMBOL_TOKEN_RE;
 
 function bracketContentLooksLikeChordSymbol(inner: string): boolean {
   const trimmed = inner.trim();
@@ -58,7 +67,7 @@ export function isChordProSectionHeaderLine(line: string): boolean {
 }
 
 export function parseChordProSectionHeader(line: string): string | null {
-  const m = line.trim().match(SECTION_HEADER_RE);
+  const m = stripSectionHeaderAnnotation(line).match(SECTION_HEADER_RE);
   const inner = m?.[1]?.trim();
   if (!inner || bracketContentLooksLikeChordSymbol(inner)) return null;
   return inner;

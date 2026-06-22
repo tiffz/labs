@@ -1,6 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
+import ViewSidebarOutlinedIcon from '@mui/icons-material/ViewSidebarOutlined';
 import ViewListIcon from '@mui/icons-material/ViewList';
-import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
@@ -9,6 +9,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { LabsListLoadingState } from '../../../shared/components/LabsListLoadingState';
 import { chordProLyricSnippet } from '../../../shared/music/chordPro/chordProText';
 import type { RepertoireViewMode } from '../../components/libraryScreenHelpers';
 import type { EncoreOriginalsActionsContextValue } from '../../context/EncoreOriginalsActionsContext';
@@ -29,6 +30,7 @@ import {
   encoreTabBodyPropsAreEqual,
   useEncoreTabFrozenSnapshot,
 } from '../../utils/useEncoreTabFrozenSnapshot';
+import { useEncoreHeavyListTabLaidOut } from '../../utils/useEncoreHeavyListTabLaidOut';
 import { navigateEncore } from '../../routes/encoreAppHash';
 import { buildOriginalsFilterFieldDefs } from '../buildOriginalsFilterFieldDefs';
 import { stashPendingOriginalDraft } from '../pendingOriginalDraft';
@@ -63,12 +65,14 @@ export type OriginalsLibraryScreenProps = {
 type OriginalsLibraryScreenBodyProps = OriginalsLibraryScreenProps & {
   tabActive: boolean;
   originals: EncoreOriginalSong[];
+  originalsHydrated: boolean;
   saveOriginal: EncoreOriginalsActionsContextValue['saveOriginal'];
 };
 
 const OriginalsLibraryScreenBody = memo(function OriginalsLibraryScreenBody({
   tabActive,
   originals,
+  originalsHydrated,
   saveOriginal,
   onListLaidOut,
 }: OriginalsLibraryScreenBodyProps): ReactElement {
@@ -79,9 +83,7 @@ const OriginalsLibraryScreenBody = memo(function OriginalsLibraryScreenBody({
   const filteredCacheRef = useRef<EncoreOriginalSong[]>([]);
   const debouncedSearch = useDebouncedString(search, 220);
 
-  useEffect(() => {
-    onListLaidOut?.();
-  }, [onListLaidOut]);
+  useEncoreHeavyListTabLaidOut(tabActive, originalsHydrated, onListLaidOut);
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
@@ -152,9 +154,9 @@ const OriginalsLibraryScreenBody = memo(function OriginalsLibraryScreenBody({
           <ViewListIcon fontSize="small" />
         </ToggleButton>
       </Tooltip>
-      <Tooltip title="Grid view">
-        <ToggleButton value="grid" aria-label="Grid view">
-          <ViewModuleIcon fontSize="small" />
+      <Tooltip title="Song dashboard">
+        <ToggleButton value="grid" aria-label="Song dashboard">
+          <ViewSidebarOutlinedIcon fontSize="small" />
         </ToggleButton>
       </Tooltip>
     </ToggleButtonGroup>
@@ -163,39 +165,37 @@ const OriginalsLibraryScreenBody = memo(function OriginalsLibraryScreenBody({
   return (
     <Box
       sx={{
-        flex: 1,
-        minHeight: 0,
-        display: 'flex',
-        flexDirection: 'column',
         px: encoreScreenPaddingX,
         pt: encorePagePaddingTop,
         pb: { xs: 10, md: 5 },
         ...encoreMaxWidthPage,
       }}
     >
-      <EncorePageHeader
-        title="Originals"
-        description="Your songwriting drafts. brainstorm, chart, demo takes, and exports. Stored locally and backed up to Google Drive."
-        actions={
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            disabled={creating}
-            onClick={() => void startNewOriginal()}
-          >
-            New Original
-          </Button>
-        }
-      />
+      <Box sx={{ flexShrink: 0 }}>
+        <EncorePageHeader
+          title="Originals"
+          description="Your songwriting drafts. brainstorm, chart, demo takes, and exports. Stored locally and backed up to Google Drive."
+          actions={
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              disabled={creating}
+              onClick={() => void startNewOriginal()}
+            >
+              New Original
+            </Button>
+          }
+        />
+      </Box>
       <TextField
         size="small"
         placeholder="Search titles and lyrics…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        sx={{ mt: 2, maxWidth: 400 }}
+        sx={{ mt: 2, maxWidth: 400, flexShrink: 0 }}
         inputProps={{ 'aria-label': 'Search originals' }}
       />
-      <Box sx={{ mt: 1.5, mb: 0.5 }}>
+      <Box sx={{ mt: 1.5, mb: 0.5, flexShrink: 0 }}>
         <EncoreFilterChipBar
           fields={filterFields}
           visibleFieldIds={['key', 'started', 'updated']}
@@ -212,9 +212,13 @@ const OriginalsLibraryScreenBody = memo(function OriginalsLibraryScreenBody({
           onClearAll={() => setFilterValues({ ...ORIGINALS_FILTER_EMPTY })}
         />
       </Box>
-      {filtered.length === 0 ? (
+      {!originalsHydrated ? (
+        <LabsListLoadingState label="Loading originals" variant="skeleton" sx={{ mt: 2 }} />
+      ) : filtered.length === 0 ? (
         <Typography color="text.secondary" sx={{ mt: 2 }}>
-          Nothing here yet. Add an original from the toolbar.
+          {originals.length === 0
+            ? 'Nothing here yet. Add an original from the toolbar.'
+            : 'No matches. Clear filters or try a shorter search.'}
         </Typography>
       ) : (
         <OriginalsLibraryList
@@ -234,11 +238,12 @@ export function OriginalsLibraryScreen({
   listActive = true,
   onListLaidOut,
 }: OriginalsLibraryScreenProps): ReactElement {
-  const { originals } = useEncoreOriginalsLibrary();
+  const { originals, originalsHydrated } = useEncoreOriginalsLibrary();
   const { saveOriginal } = useEncoreOriginalsActions();
   const bodyProps = useEncoreTabFrozenSnapshot(listActive, {
     tabActive: listActive,
     originals,
+    originalsHydrated,
     saveOriginal,
     onListLaidOut,
   });

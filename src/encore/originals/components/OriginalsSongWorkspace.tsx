@@ -85,6 +85,12 @@ export function OriginalsSongWorkspace({
   const chart = useOriginalsChartLayout(song.lyricsAndChords, onChartChange, song.key);
 
   useEffect(() => {
+    if (initialWorkflowStage != null && initialWorkflowStage !== stage) {
+      setStage(initialWorkflowStage);
+    }
+  }, [initialWorkflowStage, stage]);
+
+  useEffect(() => {
     try {
       sessionStorage.setItem(chordNotationStorageKey(song.id), chordNotation);
     } catch {

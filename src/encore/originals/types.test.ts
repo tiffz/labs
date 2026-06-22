@@ -55,4 +55,12 @@ describe('normalizeEncoreOriginalSong', () => {
     });
     expect(song.songReferences).toEqual([]);
   });
+
+  it('defaults timeSignature to 4/4', () => {
+    const song = normalizeEncoreOriginalSong({
+      ...createBlankOriginalSong(),
+      timeSignature: undefined,
+    });
+    expect(song.timeSignature).toEqual({ numerator: 4, denominator: 4 });
+  });
 });

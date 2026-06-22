@@ -1,8 +1,8 @@
 import type { ChartLayout, LyricLine } from './chordPro/chordChartLayout';
 import { alignChordsOverLyricLine, chartLayoutToAsciiExport } from './chordChartAsciiExport';
+import { CHORD_SYMBOL_TOKEN_RE_I } from './chordSymbolTokenPattern';
 
-const CHORD_LINE_TOKEN_RE =
-  /^[A-G](?:#|b)?(?:maj|min|m|M|dim|aug|sus2|sus4|add2|add9|m7|maj7|7|9|11|13|6|\+|\([^)]+\))?(?:\/[A-G](?:#|b)?)?$/i;
+const CHORD_LINE_TOKEN_RE = CHORD_SYMBOL_TOKEN_RE_I;
 
 /** True when every whitespace-separated token on the line is a chord symbol. */
 export function isAsciiChartChordLine(line: string): boolean {

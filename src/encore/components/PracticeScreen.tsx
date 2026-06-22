@@ -5,7 +5,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
+import { LabsListLoadingState } from '../../shared/components/LabsListLoadingState';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import ListItem from '@mui/material/ListItem';
@@ -753,13 +753,7 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
       </Paper>
 
       {!songsHydrated ? (
-        <Box
-          sx={{ display: 'flex', justifyContent: 'center', py: 8 }}
-          aria-busy="true"
-          aria-label="Loading practice list"
-        >
-          <CircularProgress />
-        </Box>
+        <LabsListLoadingState label="Loading practice list" variant="skeleton" />
       ) : practicingSongs.length === 0 ? (
         <Stack spacing={1.5} sx={{ py: 1, mb: 2, alignItems: 'flex-start' }}>
           <Typography color="text.secondary" sx={{ lineHeight: 1.6 }}>

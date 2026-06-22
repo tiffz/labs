@@ -1,6 +1,8 @@
 import { FULL_STRUCTURAL_BLUEPRINT } from './originalsStructurePresets';
 import { plainOrHtmlToEditorHtml } from '../../shared/utils/richTextContent';
 import { calendarDateFromIsoTimestamp } from '../import/guessIsoDateFromFreeText';
+import { DEFAULT_TIME_SIGNATURE, normalizeTimeSignature } from '../../shared/music/timeSignaturePresets';
+import type { TimeSignature } from '../../shared/rhythm/types';
 import type { EncoreMiscResource } from '../types';
 import type { OriginalsWorkflowStage } from './originalsWorkflowStages';
 
@@ -40,6 +42,8 @@ export interface EncoreOriginalSong {
   title: string;
   key: string;
   tempo: number;
+  /** Meter for chart playback, export, and Words handoff (defaults to 4/4). */
+  timeSignature?: TimeSignature;
   /** TipTap HTML for the brainstorm stage. */
   brainstormHtml?: string;
   /** Uploaded links and reference files for brainstorming. */
@@ -78,7 +82,12 @@ export function originalSongStartedDate(song: EncoreOriginalSong): string {
 }
 
 export const ORIGINALS_DEFAULT_TEMPO = 80;
+export const ORIGINALS_DEFAULT_TIME_SIGNATURE = DEFAULT_TIME_SIGNATURE;
 export const ORIGINALS_HISTORY_MAX = 50;
+
+export function originalSongTimeSignature(song: EncoreOriginalSong): TimeSignature {
+  return normalizeTimeSignature(song.timeSignature);
+}
 
 export function createBlankOriginalSong(now = new Date().toISOString()): EncoreOriginalSong {
   return {
@@ -86,6 +95,7 @@ export function createBlankOriginalSong(now = new Date().toISOString()): EncoreO
     title: '',
     key: 'C',
     tempo: ORIGINALS_DEFAULT_TEMPO,
+    timeSignature: { ...ORIGINALS_DEFAULT_TIME_SIGNATURE },
     lyricsAndChords: FULL_STRUCTURAL_BLUEPRINT,
     brainstormResources: [],
     songReferences: [],
@@ -129,6 +139,7 @@ export function normalizeEncoreOriginalSong(raw: LegacyOriginalRow): EncoreOrigi
     brainstormResources: song.brainstormResources ?? [],
     songReferences: song.songReferences ?? [],
     stageCompletion: song.stageCompletion ?? {},
+    timeSignature: normalizeTimeSignature(song.timeSignature),
   };
 }
 

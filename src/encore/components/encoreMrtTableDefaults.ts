@@ -274,6 +274,13 @@ export function encoreMrtBulkImportReviewOptions<TData extends MRT_RowData>(): P
 }
 
 /**
+ * Viewport offset for Originals table nested scroll: app bar + page header, search,
+ * filters, list toolbar, and shell padding. Encore shell is 100dvh overflow hidden, so
+ * the table must scroll inside a bounded region — not rely on #main page scroll.
+ */
+export const ENCORE_ORIGINALS_TABLE_SCROLL_HEIGHT = 'calc(100dvh - 22rem)';
+
+/**
  * Originals library: fixed column set that fills page width without horizontal scroll.
  * Header sort affordances match repertoire tables (visible on hover).
  */
@@ -294,6 +301,9 @@ const ORIGINALS_LIBRARY_TABLE = Object.freeze({
       maxWidth: '100%',
       minWidth: 0,
       overflow: 'hidden',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
     },
   },
   muiTableContainerProps: {
@@ -301,8 +311,12 @@ const ORIGINALS_LIBRARY_TABLE = Object.freeze({
       bgcolor: 'background.paper',
       maxWidth: '100%',
       minWidth: 0,
+      height: '100%',
+      maxHeight: '100%',
       overflowX: 'auto',
-      overflowY: 'visible',
+      overflowY: 'auto',
+      overscrollBehavior: 'contain',
+      WebkitOverflowScrolling: 'touch',
     },
   },
   muiTableHeadCellProps: {

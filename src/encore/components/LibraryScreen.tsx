@@ -13,7 +13,7 @@ import QueueMusicIcon from '@mui/icons-material/QueueMusic';
 import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
+import { LabsListLoadingState } from '../../shared/components/LabsListLoadingState';
 import Link from '@mui/material/Link';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -2157,15 +2157,9 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
       />
 
       {!songsHydrated ? (
-        <Box
-          sx={{ display: 'flex', justifyContent: 'center', py: 8 }}
-          aria-busy="true"
-          aria-label="Loading library"
-        >
-          <CircularProgress />
-        </Box>
-      ) : null}
-
+        <LabsListLoadingState label="Loading library" variant="skeleton" />
+      ) : (
+        <>
       <LibraryRepertoireFiltersPanel
         songsCount={songs.length}
         repertoireSongsCount={repertoireSongs.length}
@@ -2305,6 +2299,8 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
           })}
         />
       ) : null}
+        </>
+      )}
 
       <Menu
         anchorEl={menuAnchor?.el ?? null}

@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import { Fragment, type ReactElement } from 'react';
-import { isStageComplete } from '../originalsWorkflowCompletion';
+import { inferredWorkflowStage, isOriginalDemoReady, isStageComplete } from '../originalsWorkflowCompletion';
 import type { EncoreOriginalSong } from '../types';
 import {
   ORIGINALS_WORKFLOW_STAGES,
@@ -17,6 +17,11 @@ export type OriginalsWorkflowStepperProps = {
   song: EncoreOriginalSong;
   stage: OriginalsWorkflowStage;
   onStageChange: (stage: OriginalsWorkflowStage) => void;
+  /**
+   * Dashboard/read-only surfaces: emphasize the first incomplete stage only.
+   * Edit workspace: omit (highlights the stage you are editing).
+   */
+  highlightNextIncomplete?: boolean;
 };
 
 type StepColumnProps = {
@@ -135,7 +140,14 @@ export function OriginalsWorkflowStepper({
   song,
   stage,
   onStageChange,
+  highlightNextIncomplete = false,
 }: OriginalsWorkflowStepperProps): ReactElement {
+  const emphasisStage = highlightNextIncomplete
+    ? isOriginalDemoReady(song)
+      ? null
+      : inferredWorkflowStage(song)
+    : stage;
+
   return (
     <Box
       role="group"
@@ -149,7 +161,7 @@ export function OriginalsWorkflowStepper({
     >
       {ORIGINALS_WORKFLOW_STAGES.map((step, index) => {
         const completed = isStageComplete(song, step.id);
-        const active = step.id === stage;
+        const active = emphasisStage !== null && step.id === emphasisStage;
         const prevStep = index > 0 ? ORIGINALS_WORKFLOW_STAGES[index - 1] : null;
         const connectorComplete = prevStep ? isStageComplete(song, prevStep.id) : false;
 

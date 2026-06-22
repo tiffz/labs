@@ -23,6 +23,10 @@ export type OriginalsSongListenCardProps = {
   downloadDisabledReason?: string;
   onPlayToggle: () => void;
   onDownload: () => void;
+  /** Dashboard preview band — omit default top margin. */
+  disableTopMargin?: boolean;
+  /** Inside preview band — flat row, no nested card chrome. */
+  embedded?: boolean;
 };
 
 const outlinedActionSx = {
@@ -45,6 +49,8 @@ export function OriginalsSongListenCard({
   downloadDisabledReason,
   onPlayToggle,
   onDownload,
+  disableTopMargin = false,
+  embedded = false,
 }: OriginalsSongListenCardProps): ReactElement {
   const theme = useTheme();
   const takeName = originalTakeDisplayName(take.label);
@@ -56,13 +62,13 @@ export function OriginalsSongListenCard({
       spacing={1.5}
       useFlexGap
       sx={{
-        mt: 2,
-        p: 1.5,
-        borderRadius: 1.5,
-        border: 1,
-        borderColor: alpha(theme.palette.primary.main, 0.14),
-        bgcolor: alpha(theme.palette.primary.main, 0.04),
-        maxWidth: 440,
+        mt: disableTopMargin ? 0 : 2,
+        p: embedded ? 0 : 1.5,
+        borderRadius: embedded ? 0 : 1.5,
+        border: embedded ? 0 : 1,
+        borderColor: embedded ? 'transparent' : alpha(theme.palette.primary.main, 0.14),
+        bgcolor: embedded ? 'transparent' : alpha(theme.palette.primary.main, 0.04),
+        maxWidth: disableTopMargin || embedded ? 'none' : 440,
       }}
     >
       <Stack direction="row" alignItems="center" spacing={1} useFlexGap sx={{ flexShrink: 0 }}>
