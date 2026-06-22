@@ -43,6 +43,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:changed-apps": "node scripts/run-changed-app-tests.mjs",
+    "test:staged": "node scripts/run-staged-tests.mjs",
     "test:e2e:scoped": "node scripts/run-scoped-e2e.mjs",
     "test:e2e:smoke": "playwright test \"e2e/smoke/.*\\.spec\\.ts$\"",
     "test:e2e:interaction": "playwright test \"e2e/smoke/.*interaction.*\\.spec\\.ts$\"",

@@ -21,6 +21,7 @@ import {
   useState,
   type DragEvent,
   type ReactElement,
+  type ReactNode,
 } from 'react';
 import { resourceLinkOpenUrl } from '../repertoire/encoreResourceLinks';
 import { encoreMediaHubAddButtonSx, encoreRadius, practiceResourceChipFieldSx } from '../theme/encoreUiTokens';
@@ -78,6 +79,8 @@ export type EncoreResourceLinksPanelProps = {
   fillHeight?: boolean;
   /** View-only: list resources without add, upload, or drop. */
   readOnly?: boolean;
+  /** Renders before resource chips (practice-list / hub layouts). */
+  prepend?: ReactNode;
 };
 
 export function EncoreResourceLinksPanel({
@@ -95,6 +98,7 @@ export function EncoreResourceLinksPanel({
   className,
   fillHeight = false,
   readOnly = false,
+  prepend,
 }: EncoreResourceLinksPanelProps): ReactElement {
   const theme = useTheme();
   const { googleAccessToken } = useEncoreAuth();
@@ -367,6 +371,7 @@ export function EncoreResourceLinksPanel({
             .filter(Boolean)
             .join(' ')}
         >
+          {prepend}
           {resources.map(renderResourceRow)}
           {addButton}
         </Stack>

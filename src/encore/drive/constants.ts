@@ -25,3 +25,4 @@ export const ENCORE_ORIGINALS_FOLDER = 'Originals';
 export const ENCORE_ORIGINALS_MANIFEST_FILE = 'originals_manifest.json';
 export const ENCORE_ORIGINALS_SHARD_SONG_FOLDER = 'song';
 export const ENCORE_ORIGINALS_AUDIO_FOLDER = 'audio';
+export const ENCORE_ORIGINALS_REFERENCES_FOLDER = 'references';

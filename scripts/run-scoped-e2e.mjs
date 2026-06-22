@@ -10,6 +10,8 @@ import { existsSync } from 'node:fs';
 const APP_SMOKE_SPECS = {
   encore: [
     'e2e/smoke/encore-performance-routes.spec.ts',
+    'e2e/smoke/encore-originals-bulk-play.spec.ts',
+    'e2e/smoke/encore-originals-brainstorm-chip.spec.ts',
     'e2e/smoke/layout-heuristics-encore.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/encore/' },
   ],

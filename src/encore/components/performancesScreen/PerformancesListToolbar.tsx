@@ -29,7 +29,7 @@ export type PerformancesListToolbarProps = {
   hasActivePerfFilters: boolean;
   viewMode: PerformancesViewMode;
   onViewModeChange: (next: PerformancesViewMode) => void;
-  table: MRT_TableInstance<PerfMrtRow>;
+  table: MRT_TableInstance<PerfMrtRow> | null;
   onResetTableLayout: () => void;
   perfFilterBarRef: RefObject<EncoreFilterChipBarHandle | null>;
   perfFilterFieldDefs: EncoreFilterFieldConfig[];
@@ -110,11 +110,13 @@ export function PerformancesListToolbar(props: PerformancesListToolbarProps): Re
                 {hasActivePerfFilters || query.trim() ? ' · search or filters applied' : ''}
               </Typography>
               <Stack direction="row" alignItems="center" gap={2.5} sx={{ flexShrink: 0 }}>
-                <EncoreMrtColumnsSettingsButton
-                  show={viewMode === 'table'}
-                  table={table}
-                  onResetLayout={onResetTableLayout}
-                />
+                {table ? (
+                  <EncoreMrtColumnsSettingsButton
+                    show={viewMode === 'table'}
+                    table={table}
+                    onResetLayout={onResetTableLayout}
+                  />
+                ) : null}
                 <ToggleButtonGroup
                   exclusive
                   size="small"

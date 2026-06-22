@@ -37,6 +37,7 @@ import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import {
+  memo,
   useCallback,
   useContext,
   useEffect,
@@ -47,11 +48,11 @@ import {
   type ReactElement,
 } from 'react';
 import {
-  MaterialReactTable,
   useMaterialReactTable,
   type MRT_ColumnDef,
   type MRT_Row,
   type MRT_RowSelectionState,
+  type MRT_TableInstance,
 } from 'material-react-table';
 import {
   ENCORE_ACCOMPANIMENT_TAGS,
@@ -72,6 +73,10 @@ import {
   useEncoreLibraryExtras,
   useEncoreLibraryTables,
 } from '../context/EncoreContext';
+import type { EncoreActionsContextValue } from '../context/EncoreActionsContext';
+import type { RepertoireExtrasRow } from '../db/encoreDb';
+import { useEncoreMediaPlayback } from '../context/encoreMediaPlaybackContextStore';
+import type { EncoreMediaPlaybackContextValue } from '../context/encoreMediaPlaybackContextStore';
 import {
   encoreDialogActionsSx,
   encoreDialogContentSx,
@@ -84,7 +89,6 @@ import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Lay
 import { EncorePageHeader } from '../ui/EncorePageHeader';
 import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
 import { performanceVideoPlaybackTarget } from '../utils/performancePlaybackTarget';
-import { useEncoreMediaPlayback } from '../context/encoreMediaPlaybackContextStore';
 import { LibrarySongPickerDialog } from './LibrarySongPickerDialog';
 import { BulkPerformanceImportDialog } from './BulkPerformanceImportDialog';
 import { BulkScoreImportDialog } from './BulkScoreImportDialog';
@@ -93,11 +97,8 @@ import { PerformanceEditorDialog } from './PerformanceEditorDialog';
 import { PerformancesWrappedScreen } from './PerformancesWrappedScreen';
 import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
 import { PerformanceVideoThumb } from './PerformanceVideoThumb';
-import { encoreMrtRepertoireTableOptions } from './encoreMrtTableDefaults';
 import {
   LEGACY_MRT_ACTIONS_DATA_COL,
-  MRT_ROW_SELECT_COL,
-  MRT_ROW_SPACER_COL,
   ensureEncoreMrtRowActionsInOrder,
   ensureEncoreMrtSelectLeading,
   migrateEncoreMrtColumnOrderIds,
@@ -109,7 +110,6 @@ import {
   type PerformancesViewMode,
   type PerfMrtRow,
   formatPerformanceNotesLine,
-  getPerfRowId,
   normalizePerformancesTableSorting,
   normalizePerfVenueLabel,
   perfMrtColumnId,
@@ -131,6 +131,10 @@ import { encoreDateRangeFilterField, patchEncoreFilterDateRange } from '../utils
 import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
 import { useDebouncedString } from '../utils/useDebouncedString';
 import { useEncoreHeavyListTabLaidOut } from '../utils/useEncoreHeavyListTabLaidOut';
+import {
+  encoreTabBodyPropsAreEqual,
+  useEncoreTabFrozenSnapshot,
+} from '../utils/useEncoreTabFrozenSnapshot';
 import { HighlightedText } from '../ui/HighlightedText';
 import {
   buildExtendedPerformanceInsights,
@@ -141,6 +145,7 @@ import {
 import AppTooltip from '../../shared/components/AppTooltip';
 import { EncoreMrtSearchHighlightContext } from './encoreMrtSearchHighlightContext';
 import { PerformancesBulkSelectionBar } from './performancesScreen/PerformancesBulkSelectionBar';
+import { PerformancesMrtTableView } from './performancesScreen/PerformancesMrtTableView';
 import { PerformancesListToolbar } from './performancesScreen/PerformancesListToolbar';
 import {
   getPerformancesSubTabSnapshot,
@@ -223,24 +228,50 @@ function PerfSongColumnCell({ row }: { row: MRT_Row<PerfMrtRow> }): ReactElement
   );
 }
 
-export function PerformancesScreen(props?: {
+export type PerformancesScreenProps = {
   heavyListTabActive?: boolean;
   onHeavyTabLaidOut?: () => void;
-}): ReactElement {
-  const { heavyListTabActive = true, onHeavyTabLaidOut } = props ?? {};
+};
+
+type PerformancesScreenBodyProps = PerformancesScreenProps & {
+  tabActive: boolean;
+  googleAccessToken: string | null;
+  spotifyLinked: boolean;
+  songs: EncoreSong[];
+  songsHydrated: boolean;
+  performances: EncorePerformance[];
+  performancesHydrated: boolean;
+  repertoireExtras: RepertoireExtrasRow;
+  effectiveDisplayName: string | null;
+  savePerformance: EncoreActionsContextValue['savePerformance'];
+  deletePerformance: EncoreActionsContextValue['deletePerformance'];
+  saveSong: EncoreActionsContextValue['saveSong'];
+  bulkSavePerformances: EncoreActionsContextValue['bulkSavePerformances'];
+  bulkDeletePerformances: EncoreActionsContextValue['bulkDeletePerformances'];
+  saveRepertoireExtras: EncoreActionsContextValue['saveRepertoireExtras'];
+  playMediaQueue: EncoreMediaPlaybackContextValue['playMediaQueue'];
+};
+
+const PerformancesScreenBody = memo(function PerformancesScreenBody({
+  tabActive: heavyListTabActive,
+  onHeavyTabLaidOut,
+  googleAccessToken,
+  spotifyLinked,
+  songs,
+  songsHydrated,
+  performances,
+  performancesHydrated,
+  repertoireExtras,
+  effectiveDisplayName,
+  savePerformance,
+  deletePerformance,
+  saveSong,
+  bulkSavePerformances,
+  bulkDeletePerformances,
+  saveRepertoireExtras,
+  playMediaQueue,
+}: PerformancesScreenBodyProps): ReactElement {
   const theme = useTheme();
-  const { googleAccessToken, spotifyLinked } = useEncoreAuth();
-  const { songs, songsHydrated, performances, performancesHydrated } = useEncoreLibraryTables();
-  const { repertoireExtras, effectiveDisplayName } = useEncoreLibraryExtras();
-  const {
-    savePerformance,
-    deletePerformance,
-    saveSong,
-    bulkSavePerformances,
-    bulkDeletePerformances,
-    saveRepertoireExtras,
-  } = useEncoreActions();
-  const { playMediaQueue } = useEncoreMediaPlayback();
   useEncoreHeavyListTabLaidOut(
     heavyListTabActive,
     songsHydrated && performancesHydrated,
@@ -255,6 +286,7 @@ export function PerformancesScreen(props?: {
   const perfFilterFieldDefsCacheRef = useRef<EncoreFilterFieldConfig[]>([]);
   const perfDashboardStatsCacheRef = useRef<PerformanceDashboardStats | null>(null);
   const perfExtendedInsightsCacheRef = useRef<ExtendedPerformanceInsights | null>(null);
+  const perfColumnsCacheRef = useRef<MRT_ColumnDef<PerfMrtRow>[]>([]);
   const hasAnyPerformanceVideoLinkCacheRef = useRef(false);
 
   const [query, setQuery] = useState('');
@@ -278,6 +310,10 @@ export function PerformancesScreen(props?: {
     if (typeof window === 'undefined') return 'table';
     return window.localStorage.getItem(VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'table';
   });
+  const [perfMrtTable, setPerfMrtTable] = useState<MRT_TableInstance<PerfMrtRow> | null>(null);
+  const handlePerfMrtTableReady = useCallback((next: MRT_TableInstance<PerfMrtRow>) => {
+    setPerfMrtTable(next);
+  }, []);
   const [rowSelection, setRowSelection] = useState<MRT_RowSelectionState>({});
   const [bulkVenueOpen, setBulkVenueOpen] = useState(false);
   const [bulkVenueDraft, setBulkVenueDraft] = useState('');
@@ -672,7 +708,9 @@ export function PerformancesScreen(props?: {
     return next;
   }, [heavyListTabActive, performances, songById, performanceDashboardStats]);
 
-  const columns = useMemo<MRT_ColumnDef<PerfMrtRow>[]>(() => [
+  const columns = useMemo<MRT_ColumnDef<PerfMrtRow>[]>(() => {
+    if (!heavyListTabActive) return perfColumnsCacheRef.current;
+    const next: MRT_ColumnDef<PerfMrtRow>[] = [
     {
       id: 'video',
       header: 'Video',
@@ -795,7 +833,10 @@ export function PerformancesScreen(props?: {
         />
       ),
     },
-  ], [googleAccessToken, venueOptions, updatePerformance]);
+  ];
+    perfColumnsCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, googleAccessToken, venueOptions, updatePerformance]);
 
   const perfTableBodyRowSx = useMemo(
     () => ({
@@ -809,36 +850,11 @@ export function PerformancesScreen(props?: {
     [columns],
   );
 
-  const perfMrtBaseOptions = encoreMrtRepertoireTableOptions<PerfMrtRow>();
   const perfMrtTheme = useMemo(
     () => ({ baseBackgroundColor: theme.palette.background.paper }),
     [theme.palette.background.paper],
   );
-  const perfDisplayColumnDefOptions = useMemo(
-    () =>
-      ({
-        [MRT_ROW_SELECT_COL]: {
-          enableColumnOrdering: false,
-          size: 44,
-          minSize: 40,
-          maxSize: 56,
-          muiTableHeadCellProps: { sx: { px: 1, py: 1.25, verticalAlign: 'middle' } },
-          muiTableBodyCellProps: { sx: { px: 1, py: 1.25, verticalAlign: 'middle' } },
-        },
-        [MRT_ROW_SPACER_COL]: { enableColumnOrdering: false },
-        'mrt-row-actions': {
-          header: '',
-          size: 48,
-          minSize: 44,
-          maxSize: 56,
-          enableHiding: false,
-          enableColumnActions: false,
-          muiTableHeadCellProps: { sx: { textAlign: 'right' } },
-          muiTableBodyCellProps: { sx: { textAlign: 'right' } },
-        },
-      }) as const,
-    [],
-  );
+
   const perfMrtState = useMemo(
     () => ({
       rowSelection,
@@ -886,61 +902,6 @@ export function PerformancesScreen(props?: {
       });
     },
     [persistPerformancesTablePrefs],
-  );
-  const perfBodyRowProps = useMemo(() => ({ sx: perfTableBodyRowSx }), [perfTableBodyRowSx]);
-  const perfInitialState = useMemo(() => ({ density: 'compact' as const }), []);
-
-  const renderPerfRowActions = useCallback(
-    ({ row }: { row: MRT_Row<PerfMrtRow> }) => (
-      <IconButton size="small" aria-label="Edit performance" onClick={() => openEdit(row.original.perf)}>
-        <EditIcon fontSize="small" />
-      </IconButton>
-    ),
-    [openEdit],
-  );
-
-  const table = useMaterialReactTable<PerfMrtRow>(
-    useMemo(
-      () => ({
-        columns,
-        data,
-        getRowId: getPerfRowId,
-        ...perfMrtBaseOptions,
-        enableColumnFilters: false,
-        enableHiding: true,
-        enableColumnActions: false,
-        enableColumnOrdering: true,
-        displayColumnDefOptions: perfDisplayColumnDefOptions,
-        enableRowActions: true,
-        positionActionsColumn: 'last',
-        renderRowActions: renderPerfRowActions,
-        enableRowSelection: viewMode === 'table',
-        onRowSelectionChange: setRowSelection,
-        state: perfMrtState,
-        onColumnVisibilityChange: handlePerfColumnVisibilityChange,
-        onColumnOrderChange: handlePerfColumnOrderChange,
-        onSortingChange: handlePerfSortingChange,
-        mrtTheme: perfMrtTheme,
-        muiTableBodyRowProps: perfBodyRowProps,
-        initialState: perfInitialState,
-      }),
-      [
-        columns,
-        data,
-        perfMrtBaseOptions,
-        perfDisplayColumnDefOptions,
-        renderPerfRowActions,
-        viewMode,
-        setRowSelection,
-        perfMrtState,
-        handlePerfColumnVisibilityChange,
-        handlePerfColumnOrderChange,
-        handlePerfSortingChange,
-        perfMrtTheme,
-        perfBodyRowProps,
-        perfInitialState,
-      ],
-    ),
   );
 
   const performancesHeaderStackPb =
@@ -1185,7 +1146,7 @@ export function PerformancesScreen(props?: {
               hasActivePerfFilters={hasActivePerfFilters}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
-              table={table}
+              table={perfMrtTable}
               onResetTableLayout={resetPerformancesTableLayout}
               perfFilterBarRef={perfFilterBarRef}
               perfFilterFieldDefs={perfFilterFieldDefs}
@@ -1293,13 +1254,25 @@ export function PerformancesScreen(props?: {
             </Button>
           </Stack>
         </Paper>
-      ) : viewMode === 'table' ? (
-        <Box sx={{ mt: 2 }}>
-          <EncoreMrtSearchHighlightContext.Provider value={debouncedQuery}>
-            <MaterialReactTable table={table} />
-          </EncoreMrtSearchHighlightContext.Provider>
-        </Box>
-      ) : (
+      ) : heavyListTabActive && viewMode === 'table' ? (
+        <PerformancesMrtTableView
+          columns={columns}
+          data={data}
+          searchHighlight={debouncedQuery}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
+          columnVisibility={perfColVis}
+          columnOrder={perfMrtState.columnOrder}
+          sorting={perfSorting}
+          onColumnVisibilityChange={handlePerfColumnVisibilityChange}
+          onColumnOrderChange={handlePerfColumnOrderChange}
+          onSortingChange={handlePerfSortingChange}
+          mrtTheme={perfMrtTheme}
+          bodyRowSx={perfTableBodyRowSx}
+          onEditPerformance={openEdit}
+          onTableReady={handlePerfMrtTableReady}
+        />
+      ) : viewMode === 'table' ? null : (
         <Box
           sx={{
             mt: 2,
@@ -1654,4 +1627,40 @@ export function PerformancesScreen(props?: {
       </Dialog>
     </>
   );
+}, encoreTabBodyPropsAreEqual);
+
+export function PerformancesScreen(props?: PerformancesScreenProps): ReactElement {
+  const tabActive = props?.heavyListTabActive ?? true;
+  const { googleAccessToken, spotifyLinked } = useEncoreAuth();
+  const { songs, songsHydrated, performances, performancesHydrated } = useEncoreLibraryTables();
+  const { repertoireExtras, effectiveDisplayName } = useEncoreLibraryExtras();
+  const {
+    savePerformance,
+    deletePerformance,
+    saveSong,
+    bulkSavePerformances,
+    bulkDeletePerformances,
+    saveRepertoireExtras,
+  } = useEncoreActions();
+  const { playMediaQueue } = useEncoreMediaPlayback();
+  const bodyProps = useEncoreTabFrozenSnapshot(tabActive, {
+    tabActive,
+    onHeavyTabLaidOut: props?.onHeavyTabLaidOut,
+    googleAccessToken,
+    spotifyLinked,
+    songs,
+    songsHydrated,
+    performances,
+    performancesHydrated,
+    repertoireExtras,
+    effectiveDisplayName,
+    savePerformance,
+    deletePerformance,
+    saveSong,
+    bulkSavePerformances,
+    bulkDeletePerformances,
+    saveRepertoireExtras,
+    playMediaQueue,
+  });
+  return <PerformancesScreenBody {...bodyProps} />;
 }

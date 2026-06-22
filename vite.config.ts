@@ -24,6 +24,7 @@ const BUILD_VERSION = `${Date.now()}-${randomBytes(4).toString('hex')}`;
 
 const INCLUDE_BEAT_BENCHMARK =
   process.env.INCLUDE_BEAT_BENCHMARK === 'true' && process.env.FAST_TESTS !== 'true';
+const RUN_INTEGRATION_TESTS = process.env.RUN_INTEGRATION_TESTS === 'true';
 const IS_TEST = process.env.VITEST === 'true';
 const SKIP_DEPLOY_PLUGINS = IS_TEST;
 
@@ -1157,6 +1158,7 @@ export default defineConfig({
       ...(process.env.FAST_TESTS === 'true' ? [
         '**/*{regression,audit,stress,benchmark}*.test.{ts,tsx}',
         '**/*{Regression,Audit,Stress,Benchmark}*.test.{ts,tsx}',
+        ...(RUN_INTEGRATION_TESTS ? [] : ['**/*.integration.test.{ts,tsx}']),
         '**/HeartSpawningService.test.ts',
       ] : []),
     ],

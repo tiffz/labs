@@ -38,7 +38,10 @@ import {
 import { getSyncMeta } from '../db/encoreDb';
 import { driveFolderWebUrl } from '../drive/driveWebUrls';
 import { ENCORE_ROOT_FOLDER } from '../drive/constants';
-import { useEncore, type SyncUiState } from '../context/EncoreContext';
+import { type SyncUiState, useEncoreLibraryExtras } from '../context/EncoreContext';
+import { useEncoreAuth } from '../context/EncoreAuthContext';
+import { useEncoreActions } from '../context/useEncoreActions';
+import { useEncoreSync } from '../context/useEncoreSync';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
 import { fetchSpotifyCurrentUserSummary, type SpotifyCurrentUserSummary } from '../spotify/spotifyApi';
 import { encoreHairline, encoreShadowLift } from '../theme/encoreUiTokens';
@@ -341,10 +344,9 @@ export function EncoreAccountMenu(props: {
   syncMessage: string | null;
 }): ReactElement {
   const { syncState, syncMessage } = props;
+  const { effectiveDisplayName } = useEncoreLibraryExtras();
   const {
     displayName,
-    effectiveDisplayName,
-    setOwnerDisplayName,
     googleAccessToken,
     googleEmail,
     googleSessionExpired,
@@ -358,9 +360,9 @@ export function EncoreAccountMenu(props: {
     connectSpotify,
     disconnectSpotify,
     reauthorizeSpotify,
-    reorganizeDriveUploads,
-    retryDriveSync,
-  } = useEncore();
+  } = useEncoreAuth();
+  const { reorganizeDriveUploads, setOwnerDisplayName } = useEncoreActions();
+  const { retryDriveSync } = useEncoreSync();
 
   const [reorganizing, setReorganizing] = useState(false);
   const [driveRetryBusy, setDriveRetryBusy] = useState(false);

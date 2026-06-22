@@ -32,10 +32,21 @@ const files = changedFiles(baseRef);
 
 const apps = new Set();
 let shared = false;
+let beatOnly = true;
 for (const f of files) {
   if (f.startsWith('src/shared/')) shared = true;
+  if (!f.startsWith('src/shared/beat/')) beatOnly = false;
   const m = f.match(/^src\/([^/]+)\//);
   if (m && m[1] !== 'shared') apps.add(m[1]);
+}
+
+if (beatOnly && files.length > 0) {
+  console.log('test:changed-apps: beat folder only — scoped beat tests (+ integration)');
+  execSync('npx vitest run src/shared/beat', {
+    stdio: 'inherit',
+    env: { ...process.env, FAST_TESTS: 'true', RUN_INTEGRATION_TESTS: 'true' },
+  });
+  process.exit(0);
 }
 
 if (shared || apps.size === 0 || apps.size > 3) {

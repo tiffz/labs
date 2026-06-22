@@ -5,7 +5,9 @@ export type PracticeResourceGroupId = SongMediaUploadSlot;
 
 /** One section in the unified practice resources panel. */
 export type PracticeResourceGroup = {
-  id: PracticeResourceGroupId;
+  id: string;
+  /** DOM anchor; defaults to repertoire meta or {@link PracticeResourceGroup.id}. */
+  anchorId?: string;
   title: string;
   subheader: string;
   itemCount: number;
@@ -46,16 +48,19 @@ export const PRACTICE_RESOURCE_GROUP_META: Record<
   },
 };
 
-/** Drag-and-drop upload targets for practice resource groups. */
-export type SongPageMediaHubFileDropConfig = {
+/** Drag-and-drop upload targets for resource group panels (repertoire + Originals). */
+export type ResourceGroupsFileDropConfig<T extends string = string> = {
   /** File drag active anywhere on the song page (from outside the page). */
   globalFileDragActive: boolean;
   /** Hub section currently receiving pointer during a file drag. */
-  hoveredSlot: SongMediaUploadSlot | null;
+  hoveredSlot: T | null;
   /** Slots that accept the current drag payload; omit or null = all slots. */
-  eligibleSlots?: Set<SongMediaUploadSlot> | null;
-  onMediaSlotDragEnter: (slot: SongMediaUploadSlot, e: DragEvent<HTMLElement>) => void;
-  onMediaSlotDragLeave: (slot: SongMediaUploadSlot, e: DragEvent<HTMLElement>) => void;
-  onMediaSlotDragOver: (slot: SongMediaUploadSlot, e: DragEvent<HTMLElement>) => void;
-  onMediaSlotDrop: (slot: SongMediaUploadSlot, e: DragEvent<HTMLElement>) => void;
+  eligibleSlots?: Set<T> | null;
+  onMediaSlotDragEnter: (slot: T, e: DragEvent<HTMLElement>) => void;
+  onMediaSlotDragLeave: (slot: T, e: DragEvent<HTMLElement>) => void;
+  onMediaSlotDragOver: (slot: T, e: DragEvent<HTMLElement>) => void;
+  onMediaSlotDrop: (slot: T, e: DragEvent<HTMLElement>) => void;
 };
+
+/** @deprecated Use {@link ResourceGroupsFileDropConfig} */
+export type SongPageMediaHubFileDropConfig = ResourceGroupsFileDropConfig<SongMediaUploadSlot>;

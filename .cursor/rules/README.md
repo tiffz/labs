@@ -6,6 +6,7 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | ---------------------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------ | ---------------------------- |
 | [`visual-regression-agent.mdc`](visual-regression-agent.mdc)                 | `e2e/visual/**`, visual baseline scripts | `docs/VISUAL_REGRESSION_AGENT.md`          | `labs-visual-regression`     |
 | [`pre-commit-checks.mdc`](pre-commit-checks.mdc)                             | **Always**                               | `npm run presubmit`                        | —                            |
+| [`flaky-tests.mdc`](flaky-tests.mdc)                                         | `**/*.test.ts`, Vitest config            | `docs/FLAKY_TESTS.md`                      | —                            |
 | [`ux-journey-mandatory.mdc`](ux-journey-mandatory.mdc)                       | **Always**                               | `docs/UX_AGENT_GUIDE.md`                   | `labs-ux-journey`            |
 | [`shared-ui-first.mdc`](shared-ui-first.mdc)                                 | `src/**/components/**`, `App.tsx`        | `SHARED_UI_CONVENTIONS.md`, `/ui/`         | —                            |
 | [`user-copy.mdc`](user-copy.mdc)                                             | `src/**/*.tsx`                           | `docs/USER_COPY_STYLE.md`                  | —                            |
@@ -17,6 +18,8 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | [`inline-drum-ux.mdc`](inline-drum-ux.mdc)                                   | inline drum hosts, DrumAccompaniment     | `SHARED_UI_CONVENTIONS.md` § Inline drums  | —                            |
 | [`encore-originals-chord-paint.mdc`](encore-originals-chord-paint.mdc)       | `encore/originals/**`, `chordPro/**`     | `originals/DEVELOPMENT.md`                 | —                            |
 | [`encore-performance-ux.mdc`](encore-performance-ux.mdc)                     | performance components, editor           | `src/encore/PERFORMANCE_UX.md`             | —                            |
+| [`encore-list-tab-performance.mdc`](encore-list-tab-performance.mdc)         | Encore keep-alive list tabs              | `src/encore/README.md` § List performance  | `labs-performance`           |
+| [`encore-originals-layout.mdc`](encore-originals-layout.mdc)                 | `encore/originals/**`                    | `originals/DEVELOPMENT.md`                 | —                            |
 | [`gesture-linen-design.mdc`](gesture-linen-design.mdc)                       | `gesture/**`                             | `src/gesture/DESIGN.md`                    | —                            |
 | [`gesture-media-tiers.mdc`](gesture-media-tiers.mdc)                         | Gesture media / preview / session        | `src/gesture/AGENTS.md` § Media tiers      | —                            |
 | [`muscle-canvas-perf.mdc`](muscle-canvas-perf.mdc)                           | `muscle/components/canvas/**`            | `src/muscle/CUJs.md` CUJ-001               | `labs-performance`           |

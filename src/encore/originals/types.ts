@@ -44,6 +44,8 @@ export interface EncoreOriginalSong {
   brainstormHtml?: string;
   /** Uploaded links and reference files for brainstorming. */
   brainstormResources?: EncoreMiscResource[];
+  /** Charts, PDFs, and other reference files for writing and recording. */
+  songReferences?: EncoreMiscResource[];
   /** Inline ChordPro, e.g. `[Fm]I'm not like [Bb]you`. */
   lyricsAndChords: string;
   takes: OriginalAudioTake[];
@@ -86,6 +88,7 @@ export function createBlankOriginalSong(now = new Date().toISOString()): EncoreO
     tempo: ORIGINALS_DEFAULT_TEMPO,
     lyricsAndChords: FULL_STRUCTURAL_BLUEPRINT,
     brainstormResources: [],
+    songReferences: [],
     takes: [],
     mainTakeId: null,
     history: [],
@@ -124,6 +127,7 @@ export function normalizeEncoreOriginalSong(raw: LegacyOriginalRow): EncoreOrigi
     ...song,
     brainstormHtml: brainstormHtml || undefined,
     brainstormResources: song.brainstormResources ?? [],
+    songReferences: song.songReferences ?? [],
     stageCompletion: song.stageCompletion ?? {},
   };
 }

@@ -30,5 +30,5 @@ Nested **`AGENTS.md`** for Project Encore. Root policy: [`../../AGENTS.md`](../.
 - Chord paint: `e2e/encore-originals-chord-paint.spec.ts`
 - Playback UI: `e2e/playback-ui-regressions.spec.ts`
 - Performance routes: `e2e/smoke/encore-performance-routes.spec.ts` (via `npm run test:e2e:smoke`)
-- Library tab latency: `e2e/smoke/encore-library-interaction.spec.ts` (CUJ-001)
+- Library tab latency: `e2e/smoke/encore-library-interaction.spec.ts`, `e2e/smoke/encore-tab-navigation-interaction.spec.ts` (CUJ-001)
 - Performance video UX (unit): `components/performance/*.test.tsx`, `utils/performanceVideoModel.test.ts`, `utils/performancePlaybackTarget.test.ts`, `drive/guestSnapshotLoadError.test.ts`

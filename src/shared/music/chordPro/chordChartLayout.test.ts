@@ -75,9 +75,9 @@ Line one
 Hook`,
       parseChordProToChartLayout(''),
     );
+    // Inter-section spacing normalizes to a single blank line; intra-section blanks round-trip.
     expect(layoutToWriteDocument(layout)).toBe(`[Verse 1]
 Line one
-
 
 [Chorus]
 Hook`);

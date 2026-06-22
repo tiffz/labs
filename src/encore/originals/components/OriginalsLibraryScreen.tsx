@@ -8,10 +8,12 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { chordProLyricSnippet } from '../../../shared/music/chordPro/chordProText';
 import type { RepertoireViewMode } from '../../components/libraryScreenHelpers';
-import { useEncoreOriginals } from '../../context/EncoreOriginalsActionsContext';
+import type { EncoreOriginalsActionsContextValue } from '../../context/EncoreOriginalsActionsContext';
+import { useEncoreOriginalsActions } from '../../context/EncoreOriginalsActionsContext';
+import { useEncoreOriginalsLibrary } from '../../context/EncoreOriginalsLibraryContext';
 import { EncoreFilterChipBar } from '../../ui/EncoreFilterChipBar';
 import { EncorePageHeader } from '../../ui/EncorePageHeader';
 import { encoreMaxWidthPage } from '../../theme/encoreUiTokens';
@@ -23,11 +25,16 @@ import {
   isEncoreDateRangeActive,
 } from '../../utils/encoreDateRangeFilter';
 import { patchEncoreFilterDateRange } from '../../utils/encoreFilterFieldHelpers';
+import {
+  encoreTabBodyPropsAreEqual,
+  useEncoreTabFrozenSnapshot,
+} from '../../utils/useEncoreTabFrozenSnapshot';
 import { navigateEncore } from '../../routes/encoreAppHash';
 import { buildOriginalsFilterFieldDefs } from '../buildOriginalsFilterFieldDefs';
 import { stashPendingOriginalDraft } from '../pendingOriginalDraft';
 import { createBlankOriginalSong, originalSongStartedDate, type EncoreOriginalSong } from '../types';
 import { OriginalsLibraryList } from './OriginalsLibraryList';
+import { seedOriginalsQueueE2e } from '../e2eSeedOriginalsQueue';
 
 const ORIGINALS_VIEW_STORAGE_KEY = 'encore.originals.libraryView';
 
@@ -53,11 +60,18 @@ export type OriginalsLibraryScreenProps = {
   onListLaidOut?: () => void;
 };
 
-export function OriginalsLibraryScreen({
-  listActive = true,
+type OriginalsLibraryScreenBodyProps = OriginalsLibraryScreenProps & {
+  tabActive: boolean;
+  originals: EncoreOriginalSong[];
+  saveOriginal: EncoreOriginalsActionsContextValue['saveOriginal'];
+};
+
+const OriginalsLibraryScreenBody = memo(function OriginalsLibraryScreenBody({
+  tabActive,
+  originals,
+  saveOriginal,
   onListLaidOut,
-}: OriginalsLibraryScreenProps): ReactElement {
-  const { originals, saveOriginal } = useEncoreOriginals();
+}: OriginalsLibraryScreenBodyProps): ReactElement {
   const [search, setSearch] = useState('');
   const [filterValues, setFilterValues] = useState<Record<string, string[]>>(() => ({ ...ORIGINALS_FILTER_EMPTY }));
   const [viewMode, setViewMode] = useState<RepertoireViewMode>(() => readViewMode());
@@ -70,6 +84,16 @@ export function OriginalsLibraryScreen({
   }, [onListLaidOut]);
 
   useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const params = new URLSearchParams(window.location.search);
+    const hashQuery = window.location.hash.includes('?')
+      ? new URLSearchParams(window.location.hash.split('?')[1] ?? '')
+      : new URLSearchParams();
+    if (!params.has('e2eOriginalsQueue') && !hashQuery.has('e2eOriginalsQueue')) return;
+    void seedOriginalsQueueE2e();
+  }, []);
+
+  useEffect(() => {
     try {
       window.localStorage.setItem(ORIGINALS_VIEW_STORAGE_KEY, viewMode);
     } catch {
@@ -80,7 +104,7 @@ export function OriginalsLibraryScreen({
   const filterFields = useMemo(() => buildOriginalsFilterFieldDefs(originals), [originals]);
 
   const filtered = useMemo(() => {
-    if (!listActive) return filteredCacheRef.current;
+    if (!tabActive) return filteredCacheRef.current;
     const q = debouncedSearch.trim().toLowerCase();
     const keyFilter = filterValues.key?.[0];
     const startedRange = encoreDateRangeFromFilterRecord(filterValues, 'started');
@@ -95,7 +119,7 @@ export function OriginalsLibraryScreen({
     });
     filteredCacheRef.current = next;
     return next;
-  }, [debouncedSearch, filterValues, listActive, originals]);
+  }, [debouncedSearch, filterValues, tabActive, originals]);
 
   const saveSongInline = useCallback(
     (song: EncoreOriginalSong) => {
@@ -196,7 +220,7 @@ export function OriginalsLibraryScreen({
         <OriginalsLibraryList
           rows={filtered}
           search={debouncedSearch}
-          listActive={listActive}
+          listActive={tabActive}
           viewMode={viewMode}
           onSaveSong={saveSongInline}
           toolbarTrailing={viewToggle}
@@ -204,4 +228,19 @@ export function OriginalsLibraryScreen({
       )}
     </Box>
   );
+}, encoreTabBodyPropsAreEqual);
+
+export function OriginalsLibraryScreen({
+  listActive = true,
+  onListLaidOut,
+}: OriginalsLibraryScreenProps): ReactElement {
+  const { originals } = useEncoreOriginalsLibrary();
+  const { saveOriginal } = useEncoreOriginalsActions();
+  const bodyProps = useEncoreTabFrozenSnapshot(listActive, {
+    tabActive: listActive,
+    originals,
+    saveOriginal,
+    onListLaidOut,
+  });
+  return <OriginalsLibraryScreenBody {...bodyProps} listActive={listActive} />;
 }

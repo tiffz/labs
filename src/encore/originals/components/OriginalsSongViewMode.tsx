@@ -11,8 +11,6 @@ import {
   estimateChartPlaybackDurationMs,
   formatChartPlaybackDuration,
 } from '../../../shared/music/chordPro/chartPlaybackSequence';
-import { richTextPlainText } from '../../../shared/utils/richTextContent';
-import { EncoreResourceLinksPanel } from '../../components/EncoreResourceLinksPanel';
 import { EncoreBpmChip } from '../../ui/EncoreBpmChip';
 import { EncoreKeyChip } from '../../ui/EncoreKeyChip';
 import { InlineChipDate } from '../../ui/InlineEditChip';
@@ -43,7 +41,7 @@ import {
 import { OriginalsCopyChartButtons } from './OriginalsCopyChartButtons';
 import { OriginalsLyricsChartPanel } from './OriginalsLyricsChartPanel';
 import { OriginalsSongListenCard } from './OriginalsSongListenCard';
-import { OriginalsTakesStage } from './OriginalsTakesStage';
+import { OriginalsSongFilesPanel } from './OriginalsSongFilesPanel';
 import { OriginalsViewSection } from './OriginalsViewSection';
 
 export type OriginalsSongViewModeProps = {
@@ -70,7 +68,6 @@ export function OriginalsSongViewMode({
     if (durationMs <= 0) return null;
     return formatChartPlaybackDuration(durationMs);
   }, [chartLayout, song.tempo]);
-  const brainstormPlain = richTextPlainText(song.brainstormHtml);
   const chartTexts = useMemo(() => originalsLyricsChartTexts(song.lyricsAndChords), [song.lyricsAndChords]);
   const hasLyricsSection = Boolean(chartTexts.lyrics || chartTexts.chordChart);
   const demoReady = isOriginalDemoReady(song);
@@ -115,9 +112,14 @@ export function OriginalsSongViewMode({
     else playOriginalTake(playbackTake);
   };
 
-  const onTakesChange = useCallback(
+  const onSongFilesChange = useCallback(
     (next: EncoreOriginalSong) => {
-      onSongChange({ takes: next.takes, mainTakeId: next.mainTakeId });
+      onSongChange({
+        takes: next.takes,
+        mainTakeId: next.mainTakeId,
+        songReferences: next.songReferences,
+        brainstormResources: next.brainstormResources,
+      });
     },
     [onSongChange],
   );
@@ -231,8 +233,12 @@ export function OriginalsSongViewMode({
           </Stack>
         </Paper>
 
-        <OriginalsViewSection title="Demo takes" onEdit={() => onEditStage('takes')}>
-          <OriginalsTakesStage song={song} onChange={onTakesChange} subtleAddZone />
+        <OriginalsViewSection title="Song files" onEdit={() => onEditStage('takes')}>
+          <OriginalsSongFilesPanel
+            song={song}
+            onChange={onSongFilesChange}
+            onOpenBrainstorm={() => onEditStage('brainstorm')}
+          />
         </OriginalsViewSection>
 
         <OriginalsViewSection
@@ -249,33 +255,6 @@ export function OriginalsSongViewMode({
           )}
         </OriginalsViewSection>
 
-        {brainstormPlain || (song.brainstormResources?.length ?? 0) > 0 ? (
-          <OriginalsViewSection title="Brainstorm" onEdit={() => onEditStage('brainstorm')}>
-            {brainstormPlain ? (
-              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.65 }}>
-                {brainstormPlain}
-              </Typography>
-            ) : null}
-            {(song.brainstormResources?.length ?? 0) > 0 ? (
-              <Box sx={{ mt: brainstormPlain ? 1.5 : 0 }}>
-                <EncoreResourceLinksPanel
-                  resources={song.brainstormResources!}
-                  onChange={() => {}}
-                  onAddLink={() => {}}
-                  onUploadFiles={() => {}}
-                  readOnly
-                  emptyHint=""
-                />
-              </Box>
-            ) : null}
-          </OriginalsViewSection>
-        ) : (
-          <OriginalsViewSection title="Brainstorm" onEdit={() => onEditStage('brainstorm')}>
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-              No brainstorm notes yet. Edit to capture ideas.
-            </Typography>
-          </OriginalsViewSection>
-        )}
       </Stack>
     </Box>
   );

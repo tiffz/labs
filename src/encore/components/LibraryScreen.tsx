@@ -49,6 +49,7 @@ import {
   memo,
   useCallback,
   useContext,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -71,6 +72,8 @@ import {
   useEncoreLibraryExtras,
   useEncoreLibraryTables,
 } from '../context/EncoreContext';
+import type { EncoreActionsContextValue } from '../context/EncoreActionsContext';
+import type { RepertoireExtrasRow } from '../db/encoreDb';
 import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
 import { fetchSpotifyTrack, spotifyTrackTitleAndArtist } from '../spotify/spotifyApi';
@@ -145,6 +148,10 @@ import {
 } from '../utils/encoreDateRangeFilter';
 import { patchEncoreFilterDateRange } from '../utils/encoreFilterFieldHelpers';
 import { useEncoreHeavyListTabLaidOut } from '../utils/useEncoreHeavyListTabLaidOut';
+import {
+  encoreTabBodyPropsAreEqual,
+  useEncoreTabFrozenSnapshot,
+} from '../utils/useEncoreTabFrozenSnapshot';
 import { ENCORE_FILTER_SENTINEL } from '../utils/encoreFilterSentinels';
 import { HighlightedText } from '../ui/HighlightedText';
 import {
@@ -669,28 +676,56 @@ const RepertoireGridCard = memo(function RepertoireGridCard(props: RepertoireGri
   );
 });
 
-export function LibraryScreen(props?: {
+export type LibraryScreenProps = {
   /** When false, this screen is keep-alive mounted but not the visible list tab. */
   heavyListTabActive?: boolean;
   /** Signals the shell that the heavy list surface has laid out (min placeholder time may still apply). */
   onHeavyTabLaidOut?: () => void;
-}): React.ReactElement {
-  const { heavyListTabActive = true, onHeavyTabLaidOut } = props ?? {};
+};
+
+type LibraryScreenBodyProps = LibraryScreenProps & {
+  tabActive: boolean;
+  googleAccessToken: string | null;
+  spotifyLinked: boolean;
+  connectSpotify: () => Promise<void>;
+  songs: EncoreSong[];
+  songsHydrated: boolean;
+  performances: EncorePerformance[];
+  repertoireExtras: RepertoireExtrasRow;
+  effectiveDisplayName: string | null;
+  saveRepertoireExtras: EncoreActionsContextValue['saveRepertoireExtras'];
+  saveSong: EncoreActionsContextValue['saveSong'];
+  deleteSong: EncoreActionsContextValue['deleteSong'];
+  bulkSaveSongs: EncoreActionsContextValue['bulkSaveSongs'];
+  bulkDeleteSongs: EncoreActionsContextValue['bulkDeleteSongs'];
+  bulkSavePerformances: EncoreActionsContextValue['bulkSavePerformances'];
+  savePerformance: EncoreActionsContextValue['savePerformance'];
+  deletePerformance: EncoreActionsContextValue['deletePerformance'];
+  withBlockingJob: ReturnType<typeof useEncoreBlockingJobs>['withBlockingJob'];
+};
+
+const LibraryScreenBody = memo(function LibraryScreenBody({
+  tabActive: heavyListTabActive,
+  onHeavyTabLaidOut,
+  googleAccessToken,
+  spotifyLinked,
+  connectSpotify,
+  songs,
+  songsHydrated,
+  performances,
+  repertoireExtras,
+  effectiveDisplayName,
+  saveRepertoireExtras,
+  saveSong,
+  deleteSong,
+  bulkSaveSongs,
+  bulkDeleteSongs,
+  bulkSavePerformances,
+  savePerformance,
+  deletePerformance,
+  withBlockingJob,
+}: LibraryScreenBodyProps): React.ReactElement {
   const theme = useTheme();
-  const { googleAccessToken, spotifyLinked, connectSpotify } = useEncoreAuth();
-  const { songs, songsHydrated, performances } = useEncoreLibraryTables();
-  const { repertoireExtras, effectiveDisplayName } = useEncoreLibraryExtras();
-  const {
-    saveRepertoireExtras,
-    saveSong,
-    deleteSong,
-    bulkSaveSongs,
-    bulkDeleteSongs,
-    bulkSavePerformances,
-    savePerformance,
-    deletePerformance,
-  } = useEncoreActions();
-  const { withBlockingJob } = useEncoreBlockingJobs();
   useEncoreHeavyListTabLaidOut(
     heavyListTabActive,
     songsHydrated,
@@ -704,6 +739,7 @@ export function LibraryScreen(props?: {
   const repertoireSongsCacheRef = useRef<EncoreSong[]>([]);
   const repertoireFilterFieldDefsCacheRef = useRef<EncoreFilterFieldConfig[]>([]);
   const repertoireTableDataCacheRef = useRef<EncoreRepertoireMrtRow[]>([]);
+  const repertoireColumnsCacheRef = useRef<MRT_ColumnDef<EncoreRepertoireMrtRow>[]>([]);
 
   const spotifyClientId = (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ?? '';
   const [importOpen, setImportOpen] = useState(false);
@@ -1184,7 +1220,9 @@ export function LibraryScreen(props?: {
   }, [tableData, selectedSongIds, spotifyClientId, withBlockingJob, bulkSaveSongs]);
 
   const columns = useMemo<MRT_ColumnDef<EncoreRepertoireMrtRow>[]>(
-    () => [
+    () => {
+      if (!heavyListTabActive) return repertoireColumnsCacheRef.current;
+      const next: MRT_ColumnDef<EncoreRepertoireMrtRow>[] = [
       {
         id: 'art',
         header: '',
@@ -1760,8 +1798,11 @@ export function LibraryScreen(props?: {
           );
         },
       },
-    ],
-    [theme, saveSong, tagFilterOptions, openSongResources, milestoneWhichFieldOptions, applyExclusiveRepertoireFilter],
+    ];
+      repertoireColumnsCacheRef.current = next;
+      return next;
+    },
+    [heavyListTabActive, theme, saveSong, tagFilterOptions, openSongResources, milestoneWhichFieldOptions, applyExclusiveRepertoireFilter],
   );
 
   const repDefaultColumnOrder = useMemo(
@@ -1876,11 +1917,14 @@ export function LibraryScreen(props?: {
     [],
   );
 
+  const deferredTableData = useDeferredValue(tableData);
+  const deferredColumns = useDeferredValue(columns);
+
   const table = useMaterialReactTable<EncoreRepertoireMrtRow>(
     useMemo(
       () => ({
-        columns,
-        data: tableData,
+        columns: deferredColumns,
+        data: deferredTableData,
         getRowId: getRepertoireRowId,
         ...repertoireMrtBaseOptions,
         defaultColumn: REPERTOIRE_MRT_DEFAULT_COLUMN,
@@ -1904,8 +1948,8 @@ export function LibraryScreen(props?: {
         initialState: repertoireInitialState,
       }),
       [
-        columns,
-        tableData,
+        deferredColumns,
+        deferredTableData,
         repertoireMrtBaseOptions,
         repertoireMrtTheme,
         repertoireDisplayColumnDefOptions,
@@ -2544,4 +2588,44 @@ export function LibraryScreen(props?: {
       </Snackbar>
     </Box>
   );
+}, encoreTabBodyPropsAreEqual);
+
+export function LibraryScreen(props?: LibraryScreenProps): React.ReactElement {
+  const tabActive = props?.heavyListTabActive ?? true;
+  const { googleAccessToken, spotifyLinked, connectSpotify } = useEncoreAuth();
+  const { songs, songsHydrated, performances } = useEncoreLibraryTables();
+  const { repertoireExtras, effectiveDisplayName } = useEncoreLibraryExtras();
+  const {
+    saveRepertoireExtras,
+    saveSong,
+    deleteSong,
+    bulkSaveSongs,
+    bulkDeleteSongs,
+    bulkSavePerformances,
+    savePerformance,
+    deletePerformance,
+  } = useEncoreActions();
+  const { withBlockingJob } = useEncoreBlockingJobs();
+  const bodyProps = useEncoreTabFrozenSnapshot(tabActive, {
+    tabActive,
+    onHeavyTabLaidOut: props?.onHeavyTabLaidOut,
+    googleAccessToken,
+    spotifyLinked,
+    connectSpotify,
+    songs,
+    songsHydrated,
+    performances,
+    repertoireExtras,
+    effectiveDisplayName,
+    saveRepertoireExtras,
+    saveSong,
+    deleteSong,
+    bulkSaveSongs,
+    bulkDeleteSongs,
+    bulkSavePerformances,
+    savePerformance,
+    deletePerformance,
+    withBlockingJob,
+  });
+  return <LibraryScreenBody {...bodyProps} />;
 }

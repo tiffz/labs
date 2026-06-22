@@ -199,4 +199,56 @@ Can you love a home that's haunted?`;
     expect(imported.notifyUser).toBe(true);
     expect(imported.sectionCount).toBe(3);
   });
+
+  it('parses V-C-V-C-B-C chart with slash chords and minor variants (kindness-style paste)', () => {
+    const chart = `[Verse]
+G                         C
+You ever know a child
+           D                          G
+With a loveless mom and dad?
+  Em                A7
+It may seem a little wild
+       C                        D
+But such a life might not be so bad
+
+[Chorus]
+G                                                   A7
+Cause you showed me kindness isn't rare
+C                                Cm
+Treated us stray kids like your own
+
+[Bridge]
+G                            C/G
+Oh, there's money and there's fame
+       D/G                                C/G
+But family's the kind of thing you can't just buy
+
+[Chorus]
+G                                                   A7
+And even when you were no longer here
+C               Cm                              G
+Your voice stayed when we were grown`;
+
+    expect(looksLikePastedChart(chart)).toBe(true);
+    const layout = parsePastedChartToChartLayout(chart);
+    expect(layout.sections.map((s) => s.header)).toEqual(['Verse', 'Chorus', 'Bridge', 'Chorus']);
+
+    const verse = layout.sections[0]!;
+    expect(verse.lines[0]?.text).toContain('You ever know a child');
+    expect(verse.lines[0]?.chords.map((c) => c.chordName)).toEqual(['G', 'C']);
+    const momLine = verse.lines.find((l) => l.text.includes('loveless mom'));
+    expect(momLine?.chords.some((c) => c.chordName === 'D')).toBe(true);
+
+    const bridge = layout.sections.find((s) => s.header === 'Bridge')!;
+    expect(bridge.lines[0]?.chords.some((c) => c.chordName === 'C/G')).toBe(true);
+    expect(bridge.lines[1]?.chords.some((c) => c.chordName === 'D/G')).toBe(true);
+
+    const chorus = layout.sections[1]!;
+    expect(chorus.lines[1]?.chords.some((c) => c.chordName === 'Cm')).toBe(true);
+
+    const imported = importPastedChartFromClipboard(chart);
+    expect(imported.ok).toBe(true);
+    expect(imported.sectionCount).toBe(4);
+    expect(imported.lineCount).toBeGreaterThan(8);
+  });
 });

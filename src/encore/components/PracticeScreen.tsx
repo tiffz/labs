@@ -16,9 +16,17 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, memo, type DragEvent as ReactDragEvent } from 'react';
 import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
-import { useEncore } from '../context/EncoreContext';
+import { useEncoreAuth } from '../context/EncoreAuthContext';
+import { useEncoreActions } from '../context/useEncoreActions';
+import type { EncoreActionsContextValue } from '../context/EncoreActionsContext';
+import type { RepertoireExtrasRow } from '../db/encoreDb';
+import { useEncoreLibraryExtras, useEncoreLibraryTables } from '../context/EncoreContext';
+import {
+  encoreTabBodyPropsAreEqual,
+  useEncoreTabFrozenSnapshot,
+} from '../utils/useEncoreTabFrozenSnapshot';
 import { mergeSongWithImport } from '../import/findExistingSongForImport';
 import { readSpotifyToken } from '../spotify/pkce';
 import { encoreAppHref, navigateEncore } from '../routes/encoreAppHash';
@@ -59,8 +67,8 @@ import { SongMilestoneChecklist } from './SongMilestoneChecklist';
 import { EncoreSpotifyPlaylistImportReviewDialog } from './EncoreSpotifyPlaylistImportReviewDialog';
 import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
 import { songAutosaveDirty } from './song/songPageHelpers';
+import { PracticeSongMediaResources } from './practiceScreen/PracticeSongMediaResources';
 import { PracticeResourcesPanel } from './song/PracticeResourcesPanel';
-import { useSongPageMediaHub } from './song/useSongPageMediaHub';
 import type { SongMediaUploadSlot } from './song/songMediaUploadSlot';
 import {
   dragPayloadRelevantToMediaHub,
@@ -88,43 +96,66 @@ const LEARNING_PLAYLIST_HELP_CONTENT = (
 );
 
 export type PracticeScreenProps = {
+  /** When false, this screen is keep-alive mounted but not the visible list tab. */
+  practiceTabActive?: boolean;
   /** When true, {@link songIdFromPracticeHash} is synchronized from the URL into the focused song. */
   practiceHashActive?: boolean;
   /** Song id from `#/practice/<id>` when the Practice tab route is active. */
   songIdFromPracticeHash?: string;
 };
 
-export function PracticeScreen({
+type PracticeScreenBodyProps = PracticeScreenProps & {
+  tabActive: boolean;
+  songs: EncoreSong[];
+  songsHydrated: boolean;
+  performances: EncorePerformance[];
+  repertoireExtras: RepertoireExtrasRow;
+  effectiveDisplayName: string | null;
+  saveSong: EncoreActionsContextValue['saveSong'];
+  savePerformance: EncoreActionsContextValue['savePerformance'];
+  deletePerformance: EncoreActionsContextValue['deletePerformance'];
+  saveRepertoireExtras: EncoreActionsContextValue['saveRepertoireExtras'];
+  spotifyLinked: boolean;
+  googleAccessToken: string | null;
+  signInWithGoogle: () => Promise<void>;
+  withBlockingJob: ReturnType<typeof useEncoreBlockingJobs>['withBlockingJob'];
+};
+
+const PracticeScreenBody = memo(function PracticeScreenBody({
+  tabActive: practiceTabActive,
   practiceHashActive = false,
   songIdFromPracticeHash,
-}: PracticeScreenProps = {}): React.ReactElement {
+  songs,
+  songsHydrated,
+  performances,
+  repertoireExtras,
+  effectiveDisplayName,
+  saveSong,
+  savePerformance,
+  deletePerformance,
+  saveRepertoireExtras,
+  spotifyLinked,
+  googleAccessToken,
+  signInWithGoogle,
+  withBlockingJob,
+}: PracticeScreenBodyProps): React.ReactElement {
   const theme = useTheme();
-  const {
-    songs,
-    songsHydrated,
-    saveSong,
-    savePerformance,
-    deletePerformance,
-    performances,
-    repertoireExtras,
-    saveRepertoireExtras,
-    spotifyLinked,
-    effectiveDisplayName,
-    googleAccessToken,
-    signInWithGoogle,
-  } = useEncore();
-  const { withBlockingJob } = useEncoreBlockingJobs();
+
+  const practicingSongsCacheRef = useRef<EncoreSong[]>([]);
+  const venueOptionsCacheRef = useRef<string[]>([]);
+  const panelSongPerformancesCacheRef = useRef<EncorePerformance[]>([]);
 
   const clientId =
     (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ?? '';
 
-  const practicingSongs = useMemo(
-    () =>
-      songs
-        .filter((s) => Boolean(s.practicing))
-        .sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })),
-    [songs],
-  );
+  const practicingSongs = useMemo(() => {
+    if (!practiceTabActive) return practicingSongsCacheRef.current;
+    const next = songs
+      .filter((s) => Boolean(s.practicing))
+      .sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
+    practicingSongsCacheRef.current = next;
+    return next;
+  }, [practiceTabActive, songs]);
 
   const [playlistField, setPlaylistField] = useState('');
   useEffect(() => {
@@ -170,6 +201,7 @@ export function PracticeScreen({
   );
 
   const venueOptions = useMemo(() => {
+    if (!practiceTabActive) return venueOptionsCacheRef.current;
     const s = new Set<string>();
     for (const v of repertoireExtras.venueCatalog) {
       const t = v.trim();
@@ -179,15 +211,20 @@ export function PracticeScreen({
       const t = p.venueTag.trim();
       if (t) s.add(t);
     }
-    return [...s];
-  }, [repertoireExtras.venueCatalog, performances]);
+    const next = [...s];
+    venueOptionsCacheRef.current = next;
+    return next;
+  }, [practiceTabActive, repertoireExtras.venueCatalog, performances]);
 
   const panelSongPerformances = useMemo(() => {
     if (!panelSong) return [];
-    return performances
+    if (!practiceTabActive) return panelSongPerformancesCacheRef.current;
+    const next = performances
       .filter((p) => p.songId === panelSong.id)
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [panelSong, performances]);
+    panelSongPerformancesCacheRef.current = next;
+    return next;
+  }, [panelSong, performances, practiceTabActive]);
 
   const panelPerformanceVenueBreakdown = useMemo(() => {
     const m = new Map<string, number>();
@@ -360,24 +397,18 @@ export function PracticeScreen({
     [saveSong, mergeJournalForPracticeSave],
   );
 
-  const mediaHub = useSongPageMediaHub({
-    draft: practiceMediaDraft,
-    setDraft: setPracticeMediaDraft,
-    isNew: false,
-    routeKind: 'song',
-    routeSongId: practiceMediaDraft?.id ?? null,
-    songs,
-    googleAccessToken,
-    signInWithGoogle,
-    spotifyLinked,
-    driveUploadFolderOverrides: repertoireExtras.driveUploadFolderOverrides,
-    persistAfterMetadataRefresh: persistPracticeMediaNow,
-  });
-
-  const { uploadFilesToMediaSlot } = mediaHub;
+  const uploadFilesToMediaSlotRef = useRef<(slot: SongMediaUploadSlot, files: File[]) => Promise<void>>(
+    async () => {},
+  );
+  const handlePracticeUploadReady = useCallback(
+    (upload: (slot: SongMediaUploadSlot, files: File[]) => Promise<void>) => {
+      uploadFilesToMediaSlotRef.current = upload;
+    },
+    [],
+  );
 
   useEffect(() => {
-    if (!practiceMediaDraft) return;
+    if (!practiceTabActive || !practiceMediaDraft) return;
     const mergedNext = mergeJournalForPracticeSave(practiceMediaDraft);
     const mergedPrev = lastPracticeMediaSavedRef.current
       ? mergeJournalForPracticeSave(lastPracticeMediaSavedRef.current)
@@ -394,10 +425,10 @@ export function PracticeScreen({
       })();
     }, 550);
     return () => clearTimeout(t);
-  }, [practiceMediaDraft, persistPracticeMediaNow, mergeJournalForPracticeSave]);
+  }, [practiceTabActive, practiceMediaDraft, persistPracticeMediaNow, mergeJournalForPracticeSave]);
 
   useEffect(() => {
-    if (!practiceMediaDraft) {
+    if (!practiceTabActive || !practiceMediaDraft) {
       practiceFileDragDepthRef.current = 0;
       setPracticeFileDragActive(false);
       setPracticeHoveredMediaSlot(null);
@@ -457,7 +488,7 @@ export function PracticeScreen({
       document.removeEventListener('drop', onDrop, true);
       document.removeEventListener('dragover', onDragOver);
     };
-  }, [practiceMediaDraft, perfOpen]);
+  }, [practiceTabActive, practiceMediaDraft, perfOpen]);
 
   const onPracticeMediaSlotDragOver = useCallback(
     (slot: SongMediaUploadSlot, e: ReactDragEvent<HTMLElement>) => {
@@ -495,7 +526,7 @@ export function PracticeScreen({
         if (files.length === 0) return;
         e.preventDefault();
         e.stopPropagation();
-        void uploadFilesToMediaSlot(slot, files);
+        void uploadFilesToMediaSlotRef.current(slot, files);
         return;
       }
       if (hasPotentialUrlPayload(e.dataTransfer)) {
@@ -512,7 +543,7 @@ export function PracticeScreen({
         });
       }
     },
-    [practiceMediaDragEligibleSlots, uploadFilesToMediaSlot, persistPracticeMediaNow],
+    [practiceMediaDragEligibleSlots, persistPracticeMediaNow],
   );
 
   const practiceMediaHubFileDrop = useMemo(
@@ -1003,10 +1034,22 @@ export function PracticeScreen({
                     >
                       Practice resources
                     </Typography>
-                    <PracticeResourcesPanel
-                      groups={mediaHub.resourceGroups}
-                      fileDrop={practiceMediaHubFileDrop}
-                    />
+                    {practiceTabActive && practiceMediaDraft ? (
+                      <PracticeSongMediaResources
+                        draft={practiceMediaDraft}
+                        setDraft={setPracticeMediaDraft}
+                        songs={songs}
+                        googleAccessToken={googleAccessToken}
+                        signInWithGoogle={signInWithGoogle}
+                        spotifyLinked={spotifyLinked}
+                        driveUploadFolderOverrides={repertoireExtras.driveUploadFolderOverrides}
+                        persistAfterMetadataRefresh={persistPracticeMediaNow}
+                        fileDrop={practiceMediaHubFileDrop}
+                        onUploadReady={handlePracticeUploadReady}
+                      />
+                    ) : (
+                      <PracticeResourcesPanel groups={[]} fileDrop={practiceMediaHubFileDrop} />
+                    )}
                   </Box>
 
                   <Box
@@ -1176,5 +1219,40 @@ export function PracticeScreen({
         />
       ) : null}
     </Box>
+  );
+}, encoreTabBodyPropsAreEqual);
+
+export function PracticeScreen({
+  practiceTabActive = true,
+  practiceHashActive = false,
+  songIdFromPracticeHash,
+}: PracticeScreenProps = {}): React.ReactElement {
+  const { songs, songsHydrated, performances } = useEncoreLibraryTables();
+  const { repertoireExtras, effectiveDisplayName } = useEncoreLibraryExtras();
+  const { saveSong, savePerformance, deletePerformance, saveRepertoireExtras } = useEncoreActions();
+  const { spotifyLinked, googleAccessToken, signInWithGoogle } = useEncoreAuth();
+  const { withBlockingJob } = useEncoreBlockingJobs();
+  const frozen = useEncoreTabFrozenSnapshot(practiceTabActive, {
+    tabActive: practiceTabActive,
+    songs,
+    songsHydrated,
+    performances,
+    repertoireExtras,
+    effectiveDisplayName,
+    saveSong,
+    savePerformance,
+    deletePerformance,
+    saveRepertoireExtras,
+    spotifyLinked,
+    googleAccessToken,
+    signInWithGoogle,
+    withBlockingJob,
+  });
+  return (
+    <PracticeScreenBody
+      {...frozen}
+      practiceHashActive={practiceHashActive}
+      songIdFromPracticeHash={songIdFromPracticeHash}
+    />
   );
 }

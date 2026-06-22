@@ -4,24 +4,25 @@ import type { ReactElement } from 'react';
 import { RichTextEditor } from '../../../shared/components/RichTextEditor';
 import { encoreSurfaceContentPad, encoreSurfacePadX } from '../../theme/encoreM3Layout';
 import { encoreHairline } from '../../theme/encoreUiTokens';
-import type { EncoreMiscResource } from '../../types';
-import { OriginalsBrainstormResources } from './OriginalsBrainstormResources';
+import type { EncoreOriginalSong } from '../types';
+import { OriginalsSongFilesPanel } from './OriginalsSongFilesPanel';
 
 export type OriginalsBrainstormStageProps = {
-  value: string;
-  onChange: (html: string) => void;
-  resources: EncoreMiscResource[];
-  onResourcesChange: (resources: EncoreMiscResource[]) => void;
+  song: EncoreOriginalSong;
+  onBrainstormHtmlChange: (html: string) => void;
+  onSongChange: (next: EncoreOriginalSong) => void;
+  /** When paste looks like a chord chart, import to lyrics/chords instead of brainstorm text. */
+  onPastePlainTextChart?: (raw: string) => boolean;
 };
 
 /** 256dp sidebar — 32 × 8dp grid unit. */
 const sidebarWidth = 256;
 
 export function OriginalsBrainstormStage({
-  value,
-  onChange,
-  resources,
-  onResourcesChange,
+  song,
+  onBrainstormHtmlChange,
+  onSongChange,
+  onPastePlainTextChart,
 }: OriginalsBrainstormStageProps): ReactElement {
   const theme = useTheme();
 
@@ -51,9 +52,10 @@ export function OriginalsBrainstormStage({
       >
         <RichTextEditor
           className="shared-rich-text-editor--fill shared-rich-text-editor--canvas"
-          value={value}
-          onChange={onChange}
-          placeholder="Capture themes, titles, rough lines, anything that sparks the song…"
+          value={song.brainstormHtml ?? ''}
+          onChange={onBrainstormHtmlChange}
+          onPastePlainText={onPastePlainTextChart}
+          placeholder="Capture themes, titles, rough lines… Paste a formatted chord chart to import sections and chords."
           aria-label="Song brainstorm"
           sx={{
             flex: 1,
@@ -80,19 +82,22 @@ export function OriginalsBrainstormStage({
           display: 'flex',
           flexDirection: 'column',
           minHeight: 0,
-          maxHeight: { xs: 300, md: 'none' },
+          maxHeight: { xs: 360, md: 'none' },
           borderLeft: { md: 1 },
           borderTop: { xs: 1, md: 0 },
           borderColor: encoreHairline,
           px: encoreSurfacePadX,
           py: encoreSurfaceContentPad,
           bgcolor: alpha(theme.palette.background.default, 0.35),
+          overflowY: { md: 'auto' },
         }}
       >
-        <OriginalsBrainstormResources
-          variant="sidebar"
-          resources={resources}
-          onChange={onResourcesChange}
+        <OriginalsSongFilesPanel
+          song={song}
+          onChange={onSongChange}
+          onOpenBrainstorm={() => {
+            document.querySelector('.encore-originals-brainstorm-canvas')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }}
         />
       </Box>
     </Box>

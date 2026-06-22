@@ -346,6 +346,9 @@ export const STANDARD_BPM_TEST_CASES: BpmTestCase[] = [
   { id: 'core-95', name: '95 BPM Drums', config: { bpm: 95, duration: 30, type: 'drumPattern', seed: 9501 }, expectedBpm: 95, tolerance: 2 },
   { id: 'core-98', name: '98 BPM Mixed', config: { bpm: 98, duration: 30, type: 'mixed', seed: 9801 }, expectedBpm: 98, tolerance: 2 },
   { id: 'core-102', name: '102 BPM Drums', config: { bpm: 102, duration: 30, type: 'drumPattern', seed: 10201 }, expectedBpm: 102, tolerance: 2 },
+  { id: 'short-120-8', name: '120 BPM Drums (8s)', config: { bpm: 120, duration: 8, type: 'drumPattern', seed: 12001 }, expectedBpm: 120, tolerance: 5 },
+  { id: 'short-120-12', name: '120 BPM Drums (12s)', config: { bpm: 120, duration: 12, type: 'drumPattern', seed: 12002 }, expectedBpm: 120, tolerance: 5 },
+  { id: 'short-150-15', name: '150 BPM Drums (15s)', config: { bpm: 150, duration: 15, type: 'drumPattern', seed: 15001 }, expectedBpm: 150, tolerance: 5 },
   
   // Fractional BPMs (precision test in core range)
   { id: 'frac-72.5', name: '72.5 BPM', config: { bpm: 72.5, duration: 30, type: 'mixed', seed: 72501 }, expectedBpm: 72.5, tolerance: 1 },

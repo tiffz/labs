@@ -11,11 +11,11 @@ Before telling the user a task is done — and **before suggesting `git commit`*
 npm run presubmit
 ```
 
-That runs, in order: `check:import-boundaries`, `lint`, `knip`, `typecheck`, and `test:fast` (matching `.husky/pre-commit`).
+That runs, in order: `check:import-boundaries`, `lint`, `knip`, `typecheck`, and **`test:changed-apps`** (scoped Vitest vs `main` when ≤3 apps and no shared diff — otherwise `test:fast`). The Husky pre-commit hook uses **`test:staged`** (scoped to **staged** files) for faster commits.
 
-If you only changed a few files, you may run subsets while iterating, but **always finish with `npm run presubmit`** so Knip and the full fast test suite are not missed. Knip scans the whole project, not just staged files; unused new files fail the hook even when ESLint passes.
+If you only changed a few files, you may run subsets while iterating (`npx vitest run src/<app>`, `npm run test:staged`), but **always finish with `npm run presubmit`** so Knip and the appropriate Vitest scope are not missed. Knip scans the whole project, not just staged files; unused new files fail the hook even when ESLint passes.
 
-Before **`git push`**, run **`npm run presubmit:push`** (presubmit + full e2e smoke). Husky pre-commit only runs presubmit; CI runs e2e smokes **before** Vitest and will fail on stale Playwright specs even when presubmit is green. Optional: `export LABS_PRESUBMIT_PUSH=1` to run `presubmit:push` from `.husky/pre-push`.
+Before **`git push`**, run **`npm run presubmit:push`** (presubmit + full e2e smoke). For a final Vitest confidence pass before merge, run **`npm run test:fast`** or **`npm test`** when you touched `src/shared/**`. See [`docs/CI_PATH_SCOPING.md`](../../docs/CI_PATH_SCOPING.md) and [`docs/FLAKY_TESTS.md`](../../docs/FLAKY_TESTS.md).
 
 Minimum per-file checks when touching TypeScript:
 
@@ -39,6 +39,10 @@ If any check fails on code you touched, fix it before finishing.
    Aim for **zero warnings** in changed files. Repo-wide warning cleanup is welcome when small; do not scope-creep large unrelated refactors.
 
 Do not defer lint hygiene with "pre-existing errors in unrelated files can be ignored" for files in your diff.
+
+## Flaky tests
+
+If a test fails once and passes on retry, **fix it** — do not re-run presubmit until the root cause is addressed. See [`.cursor/rules/flaky-tests.mdc`](flaky-tests.mdc) and [`docs/FLAKY_TESTS.md`](../../docs/FLAKY_TESTS.md).
 
 ## Shell / provider / route wiring
 

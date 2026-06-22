@@ -18,9 +18,26 @@ Entry: `OriginalSongPage` keeps `OriginalsSongHeader` at page level for most wri
 
 Multi-select play (Originals library, Performances table) sets a queue on `EncoreMediaPlaybackProvider`. Natural end advances; user **Stop** clears the queue. UI: `EncoreMediaPlaybackQueueChip` on the playback bar (`2 / 5` + popover list). Pure advance helper: [`media/encoreMediaPlaybackQueue.ts`](../media/encoreMediaPlaybackQueue.ts).
 
-## Song references (planned)
+## Song files (unified resources)
 
-For formatted charts, PDFs, and other non-take files attached to an original, prefer the section label **Song references** (parallel to repertoire **Practice references**). Alternate names: **Source materials**, **Chart & references**. Model as drive/local attachments on `EncoreOriginalSong`, surfaced in the Record takes / write workflow — not implemented yet.
+Demo takes, writing references, and brainstorm files share one panel — same UX as repertoire **Practice resources** (`PracticeResourcesPanel` + per-group drag targets).
+
+- **Data:** `takes` / `mainTakeId`, `songReferences`, `brainstormResources` on `EncoreOriginalSong` (references shape matches repertoire misc resources).
+- **Drive:** takes → `Encore_App/Originals/audio/`; references → `Encore_App/Originals/references/`; brainstorm files stay local-first until Drive upload is added.
+- **UI:** `OriginalsSongFilesPanel` on **Record takes**, **Song view** (“Song files”), and **Brainstorm** sidebar (same list, synced). The built-in **Brainstorm notes** doc (`brainstormHtml`) always appears as the first chip in the Brainstorm group — source **Encore**, undeletable; click opens the brainstorm editor.
+- **Virtual vs stored brainstorm assets:** `brainstormHtml` is the Encore rich-text doc (virtual row in the panel, not an `EncoreMiscResource`). `brainstormResources` holds uploaded files and pasted links only. **Do not** duplicate `brainstormHtml` as a misc resource row or Drive file; the chip is rendered by `OriginalsBrainstormDocChip`, not persisted in `brainstormResources`.
+- **Drop routing:** audio → Demo takes (+ References); docs/PDF → References + Brainstorm; URLs → References or Brainstorm groups.
+
+## Chord chart paste import
+
+Paste on **Write lyrics** or **Brainstorm** (formatted `[Verse]` / chord-over-lyrics columns). On success, Encore imports sections + chord positions and switches to **Add chords**. Implementation: [`pastedChartImport.ts`](../../shared/music/chordPro/pastedChartImport.ts); regressions in [`pastedChartImport.test.ts`](../../shared/music/chordPro/pastedChartImport.test.ts).
+
+## Song view layout (spacing + scroll)
+
+- View mode + non-chords write: shell `#main.in-scroll-region` scroll only (no nested page scroller).
+- Section stack: `encorePageSectionGap` in `OriginalsSongViewMode`.
+- Surfaces: `encoreSurfaceContentPad` / tokens in [`encoreM3Layout.ts`](../theme/encoreM3Layout.ts).
+- Agent rule: [`.cursor/rules/encore-originals-layout.mdc`](../../.cursor/rules/encore-originals-layout.mdc).
 
 State hook: [`hooks/useOriginalsChartLayout.ts`](hooks/useOriginalsChartLayout.ts). Interaction types: [`chartInteractionTypes.ts`](chartInteractionTypes.ts).
 
@@ -67,12 +84,12 @@ Repo-wide Knip may still report unrelated unused exports; fix any new ones you i
 
 ## Tests map
 
-| Area                        | File                                             |
-| --------------------------- | ------------------------------------------------ |
-| Layout / move / multi-chord | `chordChartLayout.test.ts`                       |
-| Paste import                | `pastedChartImport.test.ts`                      |
-| Paint hook                  | `hooks/useOriginalsChartLayout.test.ts`          |
-| Click-outside / Text nodes  | `components/OriginalsPaintChordsEditor.test.tsx` |
-| DOM helper                  | `shared/dom/resolveEventTargetElement.test.ts`   |
-| Playback queue              | `media/encoreMediaPlaybackQueue.test.ts`         |
-| E2E smoke                   | `e2e/encore-originals-chord-paint.spec.ts`       |
+| Area                        | File                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------ |
+| Layout / move / multi-chord | `chordChartLayout.test.ts`                                                                 |
+| Paste import                | `pastedChartImport.test.ts`                                                                |
+| Paint hook                  | `hooks/useOriginalsChartLayout.test.ts`                                                    |
+| Click-outside / Text nodes  | `components/OriginalsPaintChordsEditor.test.tsx`                                           |
+| DOM helper                  | `shared/dom/resolveEventTargetElement.test.ts`                                             |
+| Playback queue              | `media/encoreMediaPlaybackQueue.test.ts`                                                   |
+| E2E smoke                   | `e2e/smoke/encore-originals-bulk-play.spec.ts`, `e2e/encore-originals-chord-paint.spec.ts` |

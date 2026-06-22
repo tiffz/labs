@@ -23,6 +23,7 @@ import {
   ENCORE_ORIGINALS_AUDIO_FOLDER,
   ENCORE_ORIGINALS_FOLDER,
   ENCORE_ORIGINALS_MANIFEST_FILE,
+  ENCORE_ORIGINALS_REFERENCES_FOLDER,
   ENCORE_ORIGINALS_SHARD_SONG_FOLDER,
 } from '../../drive/constants';
 import { normalizeEncoreOriginalSong, type EncoreOriginalSong } from '../types';
@@ -43,6 +44,7 @@ export interface OriginalsDriveLayout {
   originalsFolderId: string;
   songFolderId: string;
   audioFolderId: string;
+  referencesFolderId: string;
   manifestFileId: string;
 }
 
@@ -91,10 +93,16 @@ export async function ensureOriginalsDriveLayout(accessToken: string): Promise<O
       ENCORE_ORIGINALS_AUDIO_FOLDER,
       meta.originalsFolderId,
     );
+    const referencesFolderId = await ensureSubfolder(
+      accessToken,
+      ENCORE_ORIGINALS_REFERENCES_FOLDER,
+      meta.originalsFolderId,
+    );
     return {
       originalsFolderId: meta.originalsFolderId,
       songFolderId,
       audioFolderId,
+      referencesFolderId,
       manifestFileId: meta.originalsManifestFileId,
     };
   }
@@ -105,9 +113,10 @@ export async function ensureOriginalsDriveLayout(accessToken: string): Promise<O
     ENCORE_ORIGINALS_FOLDER,
     base.rootFolderId,
   );
-  const [songFolderId, audioFolderId] = await Promise.all([
+  const [songFolderId, audioFolderId, referencesFolderId] = await Promise.all([
     ensureSubfolder(accessToken, ENCORE_ORIGINALS_SHARD_SONG_FOLDER, originalsFolderId),
     ensureSubfolder(accessToken, ENCORE_ORIGINALS_AUDIO_FOLDER, originalsFolderId),
+    ensureSubfolder(accessToken, ENCORE_ORIGINALS_REFERENCES_FOLDER, originalsFolderId),
   ]);
 
   const manifestList = await driveListFiles(
@@ -130,7 +139,7 @@ export async function ensureOriginalsDriveLayout(accessToken: string): Promise<O
     originalsManifestFileId: manifestFileId,
   });
 
-  return { originalsFolderId, songFolderId, audioFolderId, manifestFileId };
+  return { originalsFolderId, songFolderId, audioFolderId, referencesFolderId, manifestFileId };
 }
 
 async function readManifest(accessToken: string, manifestFileId: string): Promise<OriginalsManifest> {

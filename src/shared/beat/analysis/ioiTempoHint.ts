@@ -43,19 +43,36 @@ function strongestQuarterBpmFromHistogram(
  * Returns null when there is not enough evidence.
  */
 export function inferQuarterNoteBpmFromOnsets(onsets: number[]): number | null {
-  if (onsets.length < 20) return null;
-
   const sorted = [...onsets].sort((a, b) => a - b);
   const end = sorted[sorted.length - 1];
-  const stable = sorted.filter((t) => t >= 5 && t <= Math.max(60, end - 5));
-  if (stable.length < 20) return null;
+  const start = sorted[0];
+  const duration = end - start;
+  const shortClip = duration < 15;
+
+  if (shortClip) {
+    if (onsets.length < 8) return null;
+  } else if (onsets.length < 20) {
+    return null;
+  }
+
+  let stable: number[];
+  if (shortClip) {
+    const edgeSkip = Math.min(2, Math.max(0.25, duration * 0.08));
+    stable = sorted.filter((t) => t >= start + edgeSkip && t <= end - edgeSkip);
+  } else {
+    stable = sorted.filter((t) => t >= 5 && t <= Math.max(60, end - 5));
+  }
+
+  const minOnsets = shortClip ? 8 : 20;
+  if (stable.length < minOnsets) return null;
 
   const iois: number[] = [];
   for (let i = 1; i < stable.length; i++) {
     const ioi = stable[i] - stable[i - 1];
     if (ioi >= 0.12 && ioi <= 1.2) iois.push(ioi);
   }
-  if (iois.length < 12) return null;
+  const minIois = shortClip ? 6 : 12;
+  if (iois.length < minIois) return null;
 
   const eighthPeaks = buildIoiHistogram(iois, 0.15, 0.48, 0.02);
   const quarterPeaks = buildIoiHistogram(iois, 0.28, 1.05, 0.02);
@@ -84,7 +101,8 @@ export function inferQuarterNoteBpmFromOnsets(onsets: number[]): number | null {
   const runnerUp = candidates[1];
 
   // Require a meaningful peak; when two agree within ~4%, average them.
-  if (top.count < 8) return null;
+  const minPeakCount = shortClip ? 4 : 8;
+  if (top.count < minPeakCount) return null;
   if (runnerUp && Math.abs(top.bpm - runnerUp.bpm) / top.bpm < 0.04) {
     return Math.round(((top.bpm + runnerUp.bpm) / 2) * 100) / 100;
   }

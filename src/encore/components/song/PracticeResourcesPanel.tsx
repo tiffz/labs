@@ -10,33 +10,41 @@ import {
   practiceResourceSectionLabelSx,
   practiceResourceSectionMetaSx,
 } from '../../theme/encoreUiTokens';
-import type { SongPageMediaHubFileDropConfig } from './practiceResourceGroups';
 import {
   PRACTICE_RESOURCE_GROUP_META,
   type PracticeResourceGroup,
+  type PracticeResourceGroupId,
+  type ResourceGroupsFileDropConfig,
 } from './practiceResourceGroups';
 
-export type PracticeResourcesPanelProps = {
+export type PracticeResourcesPanelProps<T extends string = string> = {
   groups: PracticeResourceGroup[];
-  fileDrop?: SongPageMediaHubFileDropConfig;
+  fileDrop?: ResourceGroupsFileDropConfig<T>;
+  /** Accessible name when not repertoire practice resources. */
+  ariaLabel?: string;
 };
 
-function PracticeResourceGroupSection(props: {
+function PracticeResourceGroupSection<T extends string>(props: {
   group: PracticeResourceGroup;
-  fileDrop?: SongPageMediaHubFileDropConfig;
+  fileDrop?: ResourceGroupsFileDropConfig<T>;
 }): ReactElement {
   const theme = useTheme();
   const { group, fileDrop } = props;
-  const meta = PRACTICE_RESOURCE_GROUP_META[group.id];
+  const slotId = group.id as T;
+  const repertoireMeta =
+    group.id in PRACTICE_RESOURCE_GROUP_META
+      ? PRACTICE_RESOURCE_GROUP_META[group.id as PracticeResourceGroupId]
+      : null;
+  const anchorId = group.anchorId ?? repertoireMeta?.anchorId ?? group.id;
   const isEmpty = group.itemCount === 0;
 
   const dropHighlight = (() => {
     if (!fileDrop?.globalFileDragActive) return {};
     const elig = fileDrop.eligibleSlots;
-    if (elig && !elig.has(group.id)) {
+    if (elig && !elig.has(slotId)) {
       return { opacity: 0.4, pointerEvents: 'none' as const };
     }
-    const active = fileDrop.hoveredSlot === group.id;
+    const active = fileDrop.hoveredSlot === slotId;
     return {
       outline: `1px dashed ${alpha(theme.palette.primary.main, active ? 0.45 : 0.18)}`,
       outlineOffset: 1,
@@ -46,15 +54,15 @@ function PracticeResourceGroupSection(props: {
   })();
 
   const onDragEnter = fileDrop
-    ? (e: DragEvent<HTMLElement>) => fileDrop.onMediaSlotDragEnter(group.id, e)
+    ? (e: DragEvent<HTMLElement>) => fileDrop.onMediaSlotDragEnter(slotId, e)
     : undefined;
   const onDragLeave = fileDrop
-    ? (e: DragEvent<HTMLElement>) => fileDrop.onMediaSlotDragLeave(group.id, e)
+    ? (e: DragEvent<HTMLElement>) => fileDrop.onMediaSlotDragLeave(slotId, e)
     : undefined;
   const onDragOver = fileDrop
-    ? (e: DragEvent<HTMLElement>) => fileDrop.onMediaSlotDragOver(group.id, e)
+    ? (e: DragEvent<HTMLElement>) => fileDrop.onMediaSlotDragOver(slotId, e)
     : undefined;
-  const onDrop = fileDrop ? (e: DragEvent<HTMLElement>) => fileDrop.onMediaSlotDrop(group.id, e) : undefined;
+  const onDrop = fileDrop ? (e: DragEvent<HTMLElement>) => fileDrop.onMediaSlotDrop(slotId, e) : undefined;
 
   const metaLine = isEmpty ? group.subheader : String(group.itemCount);
   const metaTooltip =
@@ -84,9 +92,9 @@ function PracticeResourceGroupSection(props: {
 
   return (
     <Box
-      id={meta.anchorId}
+      id={anchorId}
       component="section"
-      aria-labelledby={`${meta.anchorId}-heading`}
+      aria-labelledby={`${anchorId}-heading`}
       onDragEnter={onDragEnter}
       onDragLeave={onDragLeave}
       onDragOver={onDragOver}
@@ -99,7 +107,7 @@ function PracticeResourceGroupSection(props: {
         ...dropHighlight,
       }}
     >
-      <Box id={`${meta.anchorId}-heading`} sx={practiceResourceSectionLabelRailSx}>
+      <Box id={`${anchorId}-heading`} sx={practiceResourceSectionLabelRailSx}>
         <Typography component="span" sx={practiceResourceSectionLabelSx}>
           {group.title}
         </Typography>
@@ -109,7 +117,7 @@ function PracticeResourceGroupSection(props: {
           metaTypography
         )}
       </Box>
-      <Box id={`${meta.anchorId}-body`} sx={{ minWidth: 0 }}>
+      <Box id={`${anchorId}-body`} sx={{ minWidth: 0 }}>
         {group.body}
         {group.footer ? (
           <Box sx={{ pt: 0.375, color: 'text.secondary', '& .MuiTypography-root': { lineHeight: 1.45 } }}>
@@ -124,15 +132,17 @@ function PracticeResourceGroupSection(props: {
 /**
  * Unified practice resources inspector: always-visible dense sections with chip fields.
  */
-export function PracticeResourcesPanel(props: PracticeResourcesPanelProps): ReactElement {
-  const { groups, fileDrop } = props;
+export function PracticeResourcesPanel<T extends string = string>(
+  props: PracticeResourcesPanelProps<T>,
+): ReactElement {
+  const { groups, fileDrop, ariaLabel = 'Practice resources' } = props;
 
   return (
     <Box
       className="encore-practice-resources-panel"
       component="div"
       role="group"
-      aria-label="Practice resources"
+      aria-label={ariaLabel}
       sx={{
         width: 1,
         minWidth: 0,
@@ -153,7 +163,7 @@ export function PracticeResourcesPanel(props: PracticeResourcesPanelProps): Reac
               : undefined
           }
         >
-          <PracticeResourceGroupSection group={group} fileDrop={fileDrop} />
+          <PracticeResourceGroupSection<T> group={group} fileDrop={fileDrop} />
         </Box>
       ))}
     </Box>

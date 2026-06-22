@@ -199,18 +199,23 @@ Production rollback is available through `.github/workflows/rollback.yml` (manua
 
 The test suite is optimized for different development scenarios:
 
-| Mode       | Command                   | Duration | Use Case              |
-| ---------- | ------------------------- | -------- | --------------------- |
-| Standard   | `npm test`                | ~25s     | CI, full validation   |
-| Fast       | `npm run test:fast`       | ~17s     | Development iteration |
-| Full       | `npm run test:full`       | ~3min    | Includes benchmarks   |
-| Watch      | `npm run test:watch`      | -        | TDD workflow          |
-| Watch Fast | `npm run test:watch:fast` | -        | Fast TDD workflow     |
+| Mode       | Command                     | Duration (approx) | Use Case                |
+| ---------- | --------------------------- | ----------------- | ----------------------- |
+| Staged     | `npm run test:staged`       | ~5–30s            | Husky pre-commit        |
+| Changed    | `npm run test:changed-apps` | ~5–30s scoped     | Presubmit / narrow PR   |
+| Fast       | `npm run test:fast`         | ~3 min            | Full local fast suite   |
+| Standard   | `npm test`                  | ~3 min+           | CI, full validation     |
+| Full       | `npm run test:full`         | ~5 min            | Includes BPM benchmarks |
+| Watch      | `npm run test:watch`        | -                 | TDD workflow            |
+| Watch Fast | `npm run test:watch:fast`   | -                 | Fast TDD workflow       |
 
-**Fast mode** (`FAST_TESTS=true`, used by presubmit) excludes files whose names contain:
+**Fast mode** (`FAST_TESTS=true`) excludes files whose names contain:
 
-- `regression`, `audit`, `stress`, or `benchmark` (e.g. `generationQualityAudit.test.ts`, `*.audio-regression.test.ts`)
+- `regression`, `audit`, `stress`, or `benchmark`
+- `integration` (e.g. Essentia WASM short-clip BPM tests)
 - `HeartSpawningService.test.ts` — complex animation timing
+
+Flaky-test patterns and fixes: [`docs/FLAKY_TESTS.md`](docs/FLAKY_TESTS.md).
 
 **High-ROI fast smokes** (always in presubmit):
 

@@ -249,11 +249,9 @@ export function layoutToWriteDocument(layout: ChartLayout): string {
     for (const line of section.lines) {
       sectionLines.push(line.text);
     }
-    // Preserve intentional blank lines within sections; join sections with a single newline
-    // so spacing the user typed round-trips without collapsing extra line breaks.
-    blocks.push(sectionLines.join('\n'));
+    blocks.push(trimTrailingEmptySectionLines(sectionLines, section.header ? 1 : 0).join('\n'));
   }
-  return blocks.join('\n').trimEnd();
+  return blocks.join('\n\n').trimEnd();
 }
 
 function splitWriteDocumentSections(writeDoc: string): Array<{ header: string; bodyLines: string[] }> {

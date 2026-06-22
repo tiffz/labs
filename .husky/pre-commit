@@ -80,7 +80,7 @@ else
     echo "Cat/regression files changed, running full tests..."
     npm test
   else
-    echo "Running fast tests (excluding slow regression tests)..."
-    npm run test:fast
+    echo "Running staged tests (scoped to changed apps when possible)..."
+    npm run test:staged
   fi
 fi

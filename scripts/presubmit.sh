@@ -39,8 +39,8 @@ fi
 echo "== presubmit: typecheck =="
 npm run typecheck
 
-echo "== presubmit: test:fast =="
-npm run test:fast
+echo "== presubmit: test:changed-apps (scoped Vitest vs main) =="
+npm run test:changed-apps
 
 echo "== presubmit: css parse (when *.css changed) =="
 node scripts/presubmit-css-if-needed.mjs

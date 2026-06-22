@@ -84,17 +84,6 @@ export function OriginalsSongWorkspace({
   const [activePlaybackStep, setActivePlaybackStep] = useState<ChartPlaybackStep | null>(null);
   const chart = useOriginalsChartLayout(song.lyricsAndChords, onChartChange, song.key);
 
-  const onImportPastedChart = useCallback(
-    (raw: string) => {
-      const result = chart.onImportPastedChart(raw);
-      if (result.notifyUser) {
-        setChartPasteSnack(result.message);
-      }
-      return result;
-    },
-    [chart],
-  );
-
   useEffect(() => {
     try {
       sessionStorage.setItem(chordNotationStorageKey(song.id), chordNotation);
@@ -152,6 +141,25 @@ export function OriginalsSongWorkspace({
       }
     },
     [chart, onBeforeWorkflowStageChange, stage],
+  );
+
+  const onImportPastedChart = useCallback(
+    (raw: string) => {
+      const result = chart.onImportPastedChart(raw);
+      if (result.ok) {
+        onStageChange('chords');
+      }
+      if (result.notifyUser) {
+        setChartPasteSnack(result.message);
+      }
+      return result;
+    },
+    [chart, onStageChange],
+  );
+
+  const onPastePlainTextChart = useCallback(
+    (raw: string) => onImportPastedChart(raw).ok,
+    [onImportPastedChart],
   );
 
   useEffect(() => {
@@ -334,27 +342,19 @@ export function OriginalsSongWorkspace({
       >
         {stage === 'brainstorm' ? (
           <OriginalsBrainstormStage
-            value={song.brainstormHtml ?? ''}
-            onChange={(brainstormHtml) => onSongChange({ brainstormHtml })}
-            resources={song.brainstormResources ?? []}
-            onResourcesChange={(brainstormResources) => onSongChange({ brainstormResources })}
+            song={song}
+            onBrainstormHtmlChange={(brainstormHtml) => onSongChange({ brainstormHtml })}
+            onSongChange={(next) => void onPersist(next)}
+            onPastePlainTextChart={onPastePlainTextChart}
           />
         ) : stage === 'write' ? (
-          <>
-            <OriginalsWriteLyricsEditor
-              value={chart.writeDocument}
-              onChange={chart.onWriteChange}
-              onImportPastedChart={onImportPastedChart}
-              minRows={12}
-              fillViewportHeight={!growsWithPageScroll}
-            />
-            <Snackbar
-              open={Boolean(chartPasteSnack)}
-              autoHideDuration={chartPasteSnack?.includes('left out') ? 7000 : 4500}
-              message={chartPasteSnack ?? ''}
-              onClose={() => setChartPasteSnack(null)}
-            />
-          </>
+          <OriginalsWriteLyricsEditor
+            value={chart.writeDocument}
+            onChange={chart.onWriteChange}
+            onImportPastedChart={onImportPastedChart}
+            minRows={12}
+            fillViewportHeight={!growsWithPageScroll}
+          />
         ) : stage === 'chords' ? (
           <>
             <Box
@@ -423,9 +423,19 @@ export function OriginalsSongWorkspace({
             </Box>
           </>
         ) : (
-          <OriginalsTakesStage song={song} onChange={(next) => void onPersist(next)} />
+          <OriginalsTakesStage
+            song={song}
+            onChange={(next) => void onPersist(next)}
+            onOpenBrainstorm={() => onStageChange('brainstorm')}
+          />
         )}
       </Box>
+      <Snackbar
+        open={Boolean(chartPasteSnack)}
+        autoHideDuration={chartPasteSnack?.includes('left out') ? 7000 : 4500}
+        message={chartPasteSnack ?? ''}
+        onClose={() => setChartPasteSnack(null)}
+      />
     </Box>
   );
 }

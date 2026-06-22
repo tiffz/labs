@@ -71,8 +71,12 @@ export type EncoreMediaLinkRowProps = {
   onMakePrimary?: () => void;
   /** External open URL; renders an "Open" icon button when non-empty. */
   openUrl?: string;
-  /** aria-label for the open icon (defaults to a generic source-derived label). */
+  /** When set (and no `openUrl`), the icon + caption strip is a button with link styling. */
+  onStripClick?: () => void;
+  /** aria-label for strip open / click (defaults to a generic source-derived label). */
   openAriaLabel?: string;
+  /** Optional icon before the caption (e.g. Encore favicon for built-in resources). */
+  stripLeading?: ReactNode;
   /** Callback to remove the link/attachment. Omit to hide the affordance. */
   onRemove?: () => void;
   /** Optional trailing slot content (e.g. song info source marker). Inserted before the actions. */
@@ -107,7 +111,9 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
     isPrimary,
     onMakePrimary,
     openUrl,
+    onStripClick,
     openAriaLabel,
+    stripLeading,
     onRemove,
     trailing,
     hoverStripWrapper,
@@ -210,6 +216,7 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
 
   const stripBody = (
     <>
+      {stripLeading}
       {source === 'spotify' ? (
         <SpotifyBrandIcon sx={hubBrandIconSx} aria-hidden />
       ) : source === 'youtube' ? (
@@ -243,6 +250,24 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
       {...encoreExternalToolLinkProps}
       aria-label={openAriaLabel ?? 'Open link'}
       sx={stripLinkSx}
+    >
+      {stripBody}
+    </Box>
+  ) : onStripClick ? (
+    <Box
+      component="button"
+      type="button"
+      onClick={onStripClick}
+      aria-label={openAriaLabel ?? 'Open'}
+      sx={{
+        ...stripLinkSx,
+        border: 0,
+        p: 0,
+        m: 0,
+        bgcolor: 'transparent',
+        font: 'inherit',
+        textAlign: 'left',
+      }}
     >
       {stripBody}
     </Box>

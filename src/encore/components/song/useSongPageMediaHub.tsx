@@ -187,6 +187,8 @@ export type UseSongPageMediaHubArgs = {
   /** Optional Drive folder ids for new uploads (Repertoire settings). */
   driveUploadFolderOverrides?: EncoreDriveUploadFolderOverrides | null;
   persistAfterMetadataRefresh?: (song: EncoreSong) => Promise<void>;
+  /** When false, skip building heavy resource group JSX (keep-alive hidden Practice tab). */
+  hubActive?: boolean;
 };
 
 export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMediaHubBundle {
@@ -202,6 +204,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     spotifyLinked,
     driveUploadFolderOverrides = null,
     persistAfterMetadataRefresh,
+    hubActive = true,
   } = props;
   const { withBlockingJob } = useEncoreBlockingJobs();
   const { uploadWithDuplicateCheck, registerUploadedDriveFile } = useEncoreDriveUploadDedup();
@@ -258,13 +261,15 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
   }, []);
 
   useEffect(() => {
+    if (!hubActive) return;
     if (!draft) return;
     setSpotifyQuery(`${draft.title} ${draft.artist}`.trim());
     setSpotifyCatalogSwapOpen(false);
     // Intentionally key off song id only: avoid resetting the Spotify search field on every title/artist keystroke.
-  }, [draft?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- reset when navigating between songs, not on each draft field edit
+  }, [hubActive, draft?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- reset when navigating between songs, not on each draft field edit
 
   useEffect(() => {
+    if (!hubActive) return;
     if (!googleAccessToken) {
       setDriveUploadLayout(null);
       return;
@@ -277,7 +282,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
         setDriveUploadLayout(null);
       }
     })();
-  }, [googleAccessToken]);
+  }, [googleAccessToken, hubActive]);
 
   const chartUploadFolderId = useMemo(
     () =>
@@ -368,6 +373,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
   ]);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (!hubActive) return;
     if (searchTimer.current) clearTimeout(searchTimer.current);
     if (!spotifyLinked || !clientId) {
       setSpotifyOptions([]);
@@ -401,9 +407,10 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     return () => {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
-  }, [spotifySearchListQuery, spotifyLinked, clientId]);
+  }, [spotifySearchListQuery, spotifyLinked, clientId, hubActive]);
   const bootstrappedSearchRef = useRef<string | null>(null);
   useEffect(() => {
+    if (!hubActive) return;
     if (isNew || !spotifyLinked || !clientId || routeKind !== 'song') return;
     const s = routeSongId ? songs.find((x) => x.id === routeSongId) : undefined;
     if (!s) return;
@@ -425,7 +432,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
         setSpotifyLoading(false);
       }
     })();
-  }, [routeKind, routeSongId, songs, isNew, spotifyLinked, clientId]);
+  }, [routeKind, routeSongId, songs, isNew, spotifyLinked, clientId, hubActive]);
   const applySpotifyDataSourceFromTrack = useCallback((t: SpotifySearchTrack) => {
     setSpotifyCatalogSwapOpen(false);
     setDraft((d) => {
@@ -926,6 +933,20 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       applySpotifyDataSourceFromTrack,
       resolveSpotifyDataSourcePaste,
       uploadFilesToMediaSlot: async () => {},
+    };
+  }
+
+  if (!hubActive) {
+    return {
+      catalogStrip: null,
+      spotifyAlerts: null,
+      resourceGroups: [],
+      searchWebFooter: null,
+      spotifyOptions,
+      spotifyLoading,
+      applySpotifyDataSourceFromTrack,
+      resolveSpotifyDataSourcePaste,
+      uploadFilesToMediaSlot,
     };
   }
 

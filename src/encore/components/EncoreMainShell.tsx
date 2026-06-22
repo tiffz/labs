@@ -12,6 +12,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import useScrollTrigger from '@mui/material/useScrollTrigger';
 import {
   memo,
+  startTransition,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -19,6 +20,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type MouseEvent as ReactMouseEvent,
 } from 'react';
 import type { EncoreAppRoute } from '../routes/encoreAppHash';
 import { encoreAppHref, navigateEncore, parseEncoreAppHash } from '../routes/encoreAppHash';
@@ -108,12 +110,18 @@ function initialListSectionVisited(route: EncoreAppRoute): Record<EncoreMainList
   return next;
 }
 
+function encorePrimaryTabNavigate(e: ReactMouseEvent, route: EncoreAppRoute): void {
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+  e.preventDefault();
+  startTransition(() => navigateEncore(route));
+}
+
 function readInitialRoute(): EncoreAppRoute {
   return parseEncoreAppHash(typeof window !== 'undefined' ? window.location.hash : '');
 }
 
 /** Minimum time the grey list-tab placeholder stays up on a tab’s **first** visit so cold load reads as intentional. */
-const HEAVY_TAB_OVERLAY_MIN_MS = 160;
+const HEAVY_TAB_OVERLAY_MIN_MS = 48;
 const HEAVY_TAB_OVERLAY_FAILSAFE_MS = 2800;
 
 type HeavyListTabKey = 'library' | 'performances';
@@ -220,6 +228,8 @@ export function EncoreMainShell(): React.ReactElement {
     library: false,
     performances: false,
   });
+  const heavyListTabSessionWarmedRef = useRef(heavyListTabSessionWarmed);
+  heavyListTabSessionWarmedRef.current = heavyListTabSessionWarmed;
   /** Set when a child calls laidOut before the shell overlay enters `waiting` (effect ordering on cold load). */
   const heavyTabLaidOutPendingRef = useRef<Record<HeavyListTabKey, boolean>>({
     library: false,
@@ -238,7 +248,7 @@ export function EncoreMainShell(): React.ReactElement {
       setHeavyListTabOverlay({ kind: 'none' });
       return;
     }
-    if (heavyListTabSessionWarmed[heavyTab]) {
+    if (heavyListTabSessionWarmedRef.current[heavyTab]) {
       setHeavyListTabOverlay({ kind: 'none' });
       return;
     }
@@ -257,7 +267,7 @@ export function EncoreMainShell(): React.ReactElement {
       setHeavyListTabSessionWarmed((w) => (w[heavyTab] ? w : { ...w, [heavyTab]: true }));
     }, HEAVY_TAB_OVERLAY_FAILSAFE_MS);
     return () => window.clearTimeout(failsafe);
-  }, [route, onEditorRoute, heavyListTabSessionWarmed]);
+  }, [route, onEditorRoute]);
 
   useEffect(() => {
     if (heavyListTabOverlay.kind !== 'waiting' || !heavyListTabOverlay.laidOut) return;
@@ -445,6 +455,7 @@ export function EncoreMainShell(): React.ReactElement {
                 label="Repertoire"
                 component="a"
                 href={encoreAppHref({ kind: 'library' })}
+                onClick={(e) => encorePrimaryTabNavigate(e, { kind: 'library' })}
                 id="encore-tab-repertoire"
                 aria-controls={onSongRoute ? 'encore-panel-song' : 'encore-panel-repertoire'}
               />
@@ -452,6 +463,7 @@ export function EncoreMainShell(): React.ReactElement {
                 label="Originals"
                 component="a"
                 href={encoreAppHref({ kind: 'originals' })}
+                onClick={(e) => encorePrimaryTabNavigate(e, { kind: 'originals' })}
                 id="encore-tab-originals"
                 aria-controls={onOriginalRoute ? 'encore-panel-original' : 'encore-panel-originals'}
               />
@@ -459,6 +471,7 @@ export function EncoreMainShell(): React.ReactElement {
                 label="Performances"
                 component="a"
                 href={encoreAppHref({ kind: 'performances' })}
+                onClick={(e) => encorePrimaryTabNavigate(e, { kind: 'performances' })}
                 id="encore-tab-performances"
                 aria-controls="encore-panel-performances"
               />
@@ -466,6 +479,7 @@ export function EncoreMainShell(): React.ReactElement {
                 label="Practice"
                 component="a"
                 href={encoreAppHref({ kind: 'practice' })}
+                onClick={(e) => encorePrimaryTabNavigate(e, { kind: 'practice' })}
                 id="encore-tab-practice"
                 aria-controls="encore-panel-practice"
               />
@@ -533,6 +547,7 @@ export function EncoreMainShell(): React.ReactElement {
                 display: !onEditorRoute && listSection === 'library' ? 'flex' : 'none',
                 flexDirection: 'column',
                 visibility: libraryPanelHiddenByOverlay ? 'hidden' : 'visible',
+                contentVisibility: !onEditorRoute && listSection === 'library' ? 'visible' : 'hidden',
               }}
               aria-hidden={onEditorRoute || listSection !== 'library'}
             >
@@ -562,6 +577,7 @@ export function EncoreMainShell(): React.ReactElement {
                 width: 1,
                 display: !onEditorRoute && listSection === 'originals' ? 'flex' : 'none',
                 flexDirection: 'column',
+                contentVisibility: !onEditorRoute && listSection === 'originals' ? 'visible' : 'hidden',
               }}
               aria-hidden={onEditorRoute || listSection !== 'originals'}
             >
@@ -587,6 +603,7 @@ export function EncoreMainShell(): React.ReactElement {
                 display: !onEditorRoute && listSection === 'performances' ? 'flex' : 'none',
                 flexDirection: 'column',
                 visibility: performancesPanelHiddenByOverlay ? 'hidden' : 'visible',
+                contentVisibility: !onEditorRoute && listSection === 'performances' ? 'visible' : 'hidden',
               }}
               aria-hidden={onEditorRoute || listSection !== 'performances'}
             >
@@ -610,10 +627,12 @@ export function EncoreMainShell(): React.ReactElement {
                 width: 1,
                 display: !onEditorRoute && listSection === 'practice' ? 'flex' : 'none',
                 flexDirection: 'column',
+                contentVisibility: !onEditorRoute && listSection === 'practice' ? 'visible' : 'hidden',
               }}
               aria-hidden={onEditorRoute || listSection !== 'practice'}
             >
               <PracticeScreen
+                practiceTabActive={!onEditorRoute && listSection === 'practice'}
                 practiceHashActive={route.kind === 'practice'}
                 songIdFromPracticeHash={route.kind === 'practice' ? route.songId : undefined}
               />

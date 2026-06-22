@@ -38,6 +38,18 @@ describe('inferQuarterNoteBpmFromOnsets', () => {
     expect(bpm!).toBeLessThan(74);
   });
 
+  it('infers quarter-note BPM from short 120 BPM drum hits (Stanza-sized slice)', () => {
+    const onsets: number[] = [];
+    const eighthInterval = 60 / 120 / 2;
+    for (let t = 0.5; t < 8; t += eighthInterval) {
+      onsets.push(t);
+    }
+    const bpm = inferQuarterNoteBpmFromOnsets(onsets);
+    expect(bpm).not.toBeNull();
+    expect(bpm!).toBeGreaterThan(115);
+    expect(bpm!).toBeLessThan(125);
+  });
+
   it('returns null for sparse onsets', () => {
     expect(inferQuarterNoteBpmFromOnsets([0, 2, 4])).toBeNull();
   });

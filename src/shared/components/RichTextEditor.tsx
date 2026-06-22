@@ -32,6 +32,8 @@ export type RichTextEditorProps = {
   readOnly?: boolean;
   /** Shown when the document is empty (TipTap placeholder). */
   placeholder?: string;
+  /** When this returns true, default paste is cancelled (e.g. chord chart import). */
+  onPastePlainText?: (text: string) => boolean;
   'aria-label': string;
   className?: string;
   sx?: SxProps<Theme>;
@@ -46,6 +48,7 @@ function RichTextEditorInner({
   onChange,
   readOnly = false,
   placeholder,
+  onPastePlainText,
   'aria-label': ariaLabel,
   className,
   sx,
@@ -53,6 +56,8 @@ function RichTextEditorInner({
   const [linkAnchor, setLinkAnchor] = useState<HTMLElement | null>(null);
   const [linkDraft, setLinkDraft] = useState('');
   const linkHoverPopoverRef = useRef<HTMLDivElement | null>(null);
+  const onPastePlainTextRef = useRef(onPastePlainText);
+  onPastePlainTextRef.current = onPastePlainText;
 
   const extensions = useMemo(
     () => [
@@ -84,6 +89,18 @@ function RichTextEditorInner({
           'aria-label': ariaLabel,
           spellcheck: 'true',
           class: 'shared-rich-text-surface',
+        },
+        handlePaste: (_view, event) => {
+          if (readOnly) return false;
+          const handler = onPastePlainTextRef.current;
+          if (!handler) return false;
+          const raw = event.clipboardData?.getData('text/plain') ?? '';
+          if (!raw.trim()) return false;
+          if (handler(raw)) {
+            event.preventDefault();
+            return true;
+          }
+          return false;
         },
         handleClick: (view, _pos, event) => {
           const target = event.target;

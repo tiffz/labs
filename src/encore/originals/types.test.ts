@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createBlankOriginalSong, originalSongStartedDate, originalTakeHasPlayableSource, preferredOriginalTake } from './types';
+import { createBlankOriginalSong, normalizeEncoreOriginalSong, originalSongStartedDate, originalTakeHasPlayableSource, preferredOriginalTake } from './types';
 
 describe('originalSongStartedDate', () => {
   it('uses explicit startedAt when set', () => {
@@ -44,5 +44,15 @@ describe('preferredOriginalTake', () => {
     expect(originalTakeHasPlayableSource({ id: 'a', label: 'A', driveFileId: 'x', mimeType: 'audio/mpeg' })).toBe(true);
     expect(originalTakeHasPlayableSource({ id: 'b', label: 'B', mimeType: 'audio/mpeg', hasLocalAudio: true })).toBe(true);
     expect(originalTakeHasPlayableSource({ id: 'c', label: 'C', mimeType: 'audio/mpeg' })).toBe(false);
+  });
+});
+
+describe('normalizeEncoreOriginalSong', () => {
+  it('defaults songReferences to an empty array', () => {
+    const song = normalizeEncoreOriginalSong({
+      ...createBlankOriginalSong(),
+      songReferences: undefined,
+    });
+    expect(song.songReferences).toEqual([]);
   });
 });

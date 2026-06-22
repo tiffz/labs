@@ -6,13 +6,15 @@ Full merge bar unchanged for cross-cutting changes: presubmit + full CI on `src/
 
 ## Local (agents)
 
-| Command                           | When                                                        |
-| --------------------------------- | ----------------------------------------------------------- |
-| `npm run presubmit`               | Always before commit                                        |
-| `npm run presubmit:push`          | Before **push** — adds full e2e smoke (matches CI test job) |
-| `npm run test:changed-apps`       | After edits; runs Vitest for apps touched in diff vs `main` |
-| `node scripts/run-scoped-e2e.mjs` | Faster e2e when only one app changed                        |
-| `npm run test:e2e:smoke`          | Shell/provider wiring, or before merge when unsure          |
+| Command                           | When                                                       |
+| --------------------------------- | ---------------------------------------------------------- |
+| `npm run presubmit`               | Before declaring done / before commit (agent gate)         |
+| `npm run test:staged`             | Same as Husky pre-commit Vitest (staged files only)        |
+| `npm run test:changed-apps`       | Presubmit Vitest scope vs `main` (≤3 apps → app-only)      |
+| `npm run test:fast`               | Full fast suite (~3 min); before merge when shared touched |
+| `npm run presubmit:push`          | Before **push** — presubmit + full e2e smoke               |
+| `node scripts/run-scoped-e2e.mjs` | Faster e2e when only one app changed                       |
+| `npm run test:e2e:smoke`          | Shell/provider wiring, or before merge when unsure         |
 
 ## CI behavior
 
