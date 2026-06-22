@@ -5,9 +5,11 @@ export function originalsLibraryStageChipSx(demoReady: boolean, theme: Theme) {
   return {
     height: 24,
     fontWeight: 600,
-    color: demoReady ? 'primary.main' : 'text.secondary',
+    color: demoReady ? 'primary.main' : 'text.primary',
     borderColor: demoReady ? alpha(theme.palette.primary.main, 0.45) : theme.palette.divider,
-    bgcolor: demoReady ? alpha(theme.palette.primary.main, 0.06) : 'transparent',
+    bgcolor: demoReady
+      ? alpha(theme.palette.primary.main, 0.06)
+      : alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.08 : 0.04),
   };
 }
 

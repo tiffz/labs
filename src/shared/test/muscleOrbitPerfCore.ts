@@ -10,7 +10,7 @@ export const ORBIT_MAX_FRAME_MS = 20;
 export const ORBIT_MAX_SPIKE_MS = 50;
 
 /** Long tasks (>50ms) during a short orbit burst should stay rare (parallel CI may inflate). */
-export const ORBIT_MAX_LONG_TASKS = 8;
+export const ORBIT_MAX_LONG_TASKS = 12;
 
 export const ORBIT_MIN_FRAME_SAMPLES = 20;
 

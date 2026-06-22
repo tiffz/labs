@@ -27,7 +27,7 @@ import { HighlightedText } from '../../ui/HighlightedText';
 import { encoreHairline } from '../../theme/encoreUiTokens';
 import { useOriginalTakePlayable } from '../hooks/useOriginalTakePlayable';
 import { navigateToOriginalFromLibrary } from '../originalsLibraryNavigation';
-import { isOriginalDemoReady, originalsLibraryStageLabel } from '../originalsWorkflowCompletion';
+import { isOriginalDemoReady, originalsLibraryStageLabel, originalsLibraryStageProgressDetail } from '../originalsWorkflowCompletion';
 import { originalsLibraryStageChipSx } from '../originalsLibraryUi';
 import type { EncoreOriginalSong } from '../types';
 
@@ -62,6 +62,8 @@ export const OriginalsLibraryGridCard = memo(function OriginalsLibraryGridCard({
   const title = song.title.trim() || 'Untitled';
   const demoReady = isOriginalDemoReady(song);
   const stageLabel = originalsLibraryStageLabel(song);
+  const stageProgress = originalsLibraryStageProgressDetail(song);
+  const stageChipLabel = stageProgress ? `${stageLabel} · ${stageProgress}` : stageLabel;
   const lyricSnippet = chordProLyricSnippet(song.lyricsAndChords, 96);
   const isPlaying = takePlayback === 'playing';
   const isLoading = takePlayback === 'loading';
@@ -123,7 +125,7 @@ export const OriginalsLibraryGridCard = memo(function OriginalsLibraryGridCard({
         <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1}>
           <Chip
             size="small"
-            label={stageLabel}
+            label={stageChipLabel}
             variant="outlined"
             sx={{ ...originalsLibraryStageChipSx(demoReady, theme), maxWidth: 'calc(100% - 36px)' }}
           />

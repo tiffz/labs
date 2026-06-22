@@ -86,24 +86,18 @@ export function OriginalsTableStageCell({
   progressDetail,
   demoReady,
 }: OriginalsTableStageCellProps): ReactElement {
+  const chipLabel = progressDetail ? `${label} · ${progressDetail}` : label;
   return (
-    <Stack spacing={0.25} sx={{ minWidth: 0 }}>
-      <Chip
-        size="small"
-        label={label}
-        variant="outlined"
-        sx={(theme) => ({
-          maxWidth: '100%',
-          ...originalsLibraryStageChipSx(demoReady, theme),
-          '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
-        })}
-      />
-      {progressDetail ? (
-        <Typography variant="caption" color="text.secondary" noWrap>
-          {progressDetail}
-        </Typography>
-      ) : null}
-    </Stack>
+    <Chip
+      size="small"
+      label={chipLabel}
+      variant="outlined"
+      sx={(theme) => ({
+        maxWidth: '100%',
+        ...originalsLibraryStageChipSx(demoReady, theme),
+        '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+      })}
+    />
   );
 }
 

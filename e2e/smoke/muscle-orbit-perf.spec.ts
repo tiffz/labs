@@ -37,6 +37,10 @@ test.describe('Muscle Memory orbit perf', () => {
 
     const canvas = page.locator('[data-testid="muscle-training-canvas"] canvas');
     await expect(canvas).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('muscle-layer-status')).toContainText('visible', { timeout: 15_000 });
+
+    await setLayerPeelDepth(page, 2);
+    await expect(page.getByTestId('muscle-layer-status')).toContainText('Skeleton', { timeout: 15_000 });
     await page.waitForTimeout(2_500);
 
     const sample = await measureMuscleOrbitPerf(page);

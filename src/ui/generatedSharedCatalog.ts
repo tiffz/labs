@@ -19281,6 +19281,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-test-zineboxscrollperfcore-ts-getzineboxscrollperflimits",
+    "name": "getZineboxScrollPerfLimits",
+    "path": "src/shared/test/zineboxScrollPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Local dev targets ~60fps; GitHub Actions uses shared CPU and software rendering.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-test-zineboxscrollperfcore-ts-zinebox-library-scroll-max-frame-ms",
     "name": "ZINEBOX_LIBRARY_SCROLL_MAX_FRAME_MS",
     "path": "src/shared/test/zineboxScrollPerfCore.ts",
@@ -19303,6 +19316,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Long tasks (>50ms) during a short scroll burst should stay rare.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-zineboxscrollperfcore-ts-zinebox-library-scroll-max-spike-ms",
+    "name": "ZINEBOX_LIBRARY_SCROLL_MAX_SPIKE_MS",
+    "path": "src/shared/test/zineboxScrollPerfCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Single-frame hitch during parallel CI or image decode — not sustained judder.",
     "tags": [
       "api"
     ],
