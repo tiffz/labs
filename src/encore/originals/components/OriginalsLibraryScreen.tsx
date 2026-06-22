@@ -90,7 +90,6 @@ const OriginalsLibraryScreenBody = memo(function OriginalsLibraryScreenBody({
 
   useEffect(() => {
     if (!isE2eOriginalsQueueRoute()) return;
-    setViewMode('table');
     void seedOriginalsQueueE2e();
   }, []);
 
