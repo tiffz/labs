@@ -13,12 +13,14 @@ import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstr
 import { EncoreProvider } from './context/EncoreContext';
 import App from './App';
 import { syncEncoreGuestShareRobotsFromHash } from './seo/guestShareRobots';
+import { exposeOriginalsQueueE2eSeed } from './originals/e2eSeedOriginalsQueue';
 import './styles/encore.css';
 import './originals/styles/originals.css';
 
 installServerLogger('ENCORE');
 installLabsCrashHandlers('encore');
 initMaterialIconRuntime();
+exposeOriginalsQueueE2eSeed();
 
 syncEncoreGuestShareRobotsFromHash();
 window.addEventListener('hashchange', syncEncoreGuestShareRobotsFromHash);

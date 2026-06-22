@@ -39,7 +39,7 @@ import { buildOriginalsFilterFieldDefs } from '../buildOriginalsFilterFieldDefs'
 import { stashPendingOriginalDraft } from '../pendingOriginalDraft';
 import { createBlankOriginalSong, originalSongStartedDate, type EncoreOriginalSong } from '../types';
 import { OriginalsLibraryList } from './OriginalsLibraryList';
-import { seedOriginalsQueueE2e } from '../e2eSeedOriginalsQueue';
+import { seedOriginalsQueueE2e, E2E_ORIGINALS_QUEUE_A_ID, isE2eOriginalsQueueRoute } from '../e2eSeedOriginalsQueue';
 
 const ORIGINALS_VIEW_STORAGE_KEY = 'encore.originals.libraryView';
 
@@ -89,12 +89,7 @@ const OriginalsLibraryScreenBody = memo(function OriginalsLibraryScreenBody({
   useEncoreHeavyListTabLaidOut(tabActive, originalsHydrated, onListLaidOut);
 
   useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    const params = new URLSearchParams(window.location.search);
-    const hashQuery = window.location.hash.includes('?')
-      ? new URLSearchParams(window.location.hash.split('?')[1] ?? '')
-      : new URLSearchParams();
-    if (!params.has('e2eOriginalsQueue') && !hashQuery.has('e2eOriginalsQueue')) return;
+    if (!isE2eOriginalsQueueRoute()) return;
     setViewMode('table');
     void seedOriginalsQueueE2e();
   }, []);
@@ -166,6 +161,11 @@ const OriginalsLibraryScreenBody = memo(function OriginalsLibraryScreenBody({
     </ToggleButtonGroup>
   );
 
+  const awaitingE2eSeed =
+    isE2eOriginalsQueueRoute() &&
+    originalsHydrated &&
+    !originals.some((song) => song.id === E2E_ORIGINALS_QUEUE_A_ID);
+
   return (
     <Box
       sx={{
@@ -226,7 +226,7 @@ const OriginalsLibraryScreenBody = memo(function OriginalsLibraryScreenBody({
           onClearAll={() => setFilterValues({ ...ORIGINALS_FILTER_EMPTY })}
         />
       </Box>
-      {!originalsHydrated ? (
+      {!originalsHydrated || awaitingE2eSeed ? (
         <LabsListLoadingState label="Loading originals" variant="skeleton" sx={{ mt: 2 }} />
       ) : filtered.length === 0 ? (
         <Typography color="text.secondary" sx={{ mt: 2 }}>

@@ -4,6 +4,29 @@ import type { EncoreOriginalSong } from './types';
 const E2E_SONG_A = 'e2e-originals-queue-a';
 const E2E_SONG_B = 'e2e-originals-queue-b';
 
+export const E2E_ORIGINALS_QUEUE_A_ID = E2E_SONG_A;
+
+export function isE2eOriginalsQueueRoute(): boolean {
+  if (!import.meta.env.DEV || typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  const hashQuery = window.location.hash.includes('?')
+    ? new URLSearchParams(window.location.hash.split('?')[1] ?? '')
+    : new URLSearchParams();
+  return params.has('e2eOriginalsQueue') || hashQuery.has('e2eOriginalsQueue');
+}
+
+declare global {
+  interface Window {
+    __labsSeedOriginalsQueueE2e?: () => Promise<void>;
+  }
+}
+
+/** Playwright smokes call this after navigation for a deterministic Dexie seed. */
+export function exposeOriginalsQueueE2eSeed(): void {
+  if (!import.meta.env.DEV || typeof window === 'undefined') return;
+  window.__labsSeedOriginalsQueueE2e = seedOriginalsQueueE2e;
+}
+
 function seedSong(id: string, title: string, takeId: string, now: string): EncoreOriginalSong {
   return {
     id,
