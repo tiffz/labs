@@ -1815,6 +1815,45 @@
     border-radius: 0.5rem;
   }
 
+  .staff-container--loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 150px;
+  }
+
+  .staff-loading-placeholder {
+    width: min(100%, 420px);
+    height: 72px;
+    border-radius: 0.5rem;
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--app-border, #e5e7eb) 55%, transparent) 0%,
+      color-mix(in srgb, var(--app-border, #e5e7eb) 25%, transparent) 50%,
+      color-mix(in srgb, var(--app-border, #e5e7eb) 55%, transparent) 100%
+    );
+    background-size: 200% 100%;
+    animation: drums-staff-shimmer 1.2s ease-in-out infinite;
+  }
+
+  @keyframes drums-staff-shimmer {
+    0% {
+      background-position: 100% 0;
+    }
+    100% {
+      background-position: -100% 0;
+    }
+  }
+
+  .palette-pattern-fallback {
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--app-text-secondary, #4b5563);
+  }
+
   .vexflow-container {
     min-height: 80px;
     width: auto; /* Auto width to allow content to determine size */

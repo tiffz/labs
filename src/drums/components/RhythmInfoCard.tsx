@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import type { RhythmDefinition } from '../utils/rhythmRecognition';
 import type { TimeSignature } from '../types';
-import SimpleVexFlowNote from './SimpleVexFlowNote';
 import { RHYTHM_DATABASE } from '../data/rhythmDatabase';
+
+const SimpleVexFlowNote = lazy(() => import('./SimpleVexFlowNote'));
 
 interface RhythmInfoCardProps {
   rhythm: RhythmDefinition;
@@ -50,6 +51,17 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [isExpanded, setIsExpanded] = useState(!isMobile);
+  const [vexMiniReady, setVexMiniReady] = useState(false);
+
+  useEffect(() => {
+    const enable = () => setVexMiniReady(true);
+    if (typeof requestIdleCallback !== 'undefined') {
+      const id = requestIdleCallback(enable, { timeout: 2000 });
+      return () => cancelIdleCallback(id);
+    }
+    const timer = window.setTimeout(enable, 50);
+    return () => window.clearTimeout(timer);
+  }, []);
   const relatedRhythms = (rhythm.relatedRhythmIds ?? [])
     .map((id) => RHYTHM_DATABASE[id])
     .filter((candidate): candidate is RhythmDefinition => Boolean(candidate));
@@ -114,12 +126,18 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
                   type="button"
                   disabled={isCurrent}
                 >
-                  <SimpleVexFlowNote 
-                    pattern={variation.notation} 
-                    width={120}
-                    height={70}
-                    timeSignature={variation.timeSignature ?? rhythm.timeSignature}
-                  />
+                  {vexMiniReady ? (
+                    <Suspense fallback={<span className="palette-pattern-fallback">{variation.notation}</span>}>
+                      <SimpleVexFlowNote
+                        pattern={variation.notation}
+                        width={120}
+                        height={70}
+                        timeSignature={variation.timeSignature ?? rhythm.timeSignature}
+                      />
+                    </Suspense>
+                  ) : (
+                    <span className="palette-pattern-fallback">{variation.notation}</span>
+                  )}
                   {variation.note && (
                     <span className="rhythm-variation-note">{variation.note}</span>
                   )}

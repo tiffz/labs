@@ -21,4 +21,5 @@ Nested context for Sight. Root policy: [`../../AGENTS.md`](../../AGENTS.md).
 
 - Unit: `src/sight/**/*.test.ts`
 - Interaction: `e2e/smoke/sight-practice-interaction.spec.ts` (CUJ-001)
+- Contrast: `e2e/smoke/layout-heuristics-sight.spec.ts` + token tests in `contrastAuditCore.test.ts`
 - Performance skill: `labs-performance` when touching practice layout or tap latency

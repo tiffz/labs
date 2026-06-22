@@ -25,6 +25,12 @@ import type { RepPurpose } from '../progress/types';
 import { deformMask } from '../scoring/gamutOverlap';
 import { colorStateToHex } from '../scoring/perceptualScore';
 import { autoAdvanceDelayMs } from '../session/practiceAutoAdvance';
+import { applySightLeftRightArrowKey } from '../session/sightLeftRightKeyboard';
+import {
+  applySightAdvanceKey,
+  applySightSubmitKey,
+  challengeSupportsSubmitShortcut,
+} from '../session/sightPracticeKeyboard';
 import { pickPracticeChallenge, recordChallengeResult, PASSES_TO_ADVANCE } from '../session/practiceChallenge';
 import { readProfile, writeProfile } from '../storage';
 import type { ColorState, PracticeReveal, PracticeRound, SightChallenge, SightProfile } from '../types';
@@ -282,17 +288,47 @@ export default function PracticePhase({
     loadNextChallenge();
   }, [awaitingFeedback, loadNextChallenge]);
 
+  const keyboardHandlersRef = useRef({
+    handleSubmit,
+    handleComparePick,
+    handleIsolatedPick,
+    handleAlbersSide,
+    handleAlbersBinary,
+  });
+  keyboardHandlersRef.current = {
+    handleSubmit,
+    handleComparePick,
+    handleIsolatedPick,
+    handleAlbersSide,
+    handleAlbersBinary,
+  };
+
   useEffect(() => {
-    if (!awaitingFeedback) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Enter' && e.key !== ' ') return;
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      e.preventDefault();
-      skipToNext();
+      const handlers = keyboardHandlersRef.current;
+      if (applySightAdvanceKey(e, awaitingFeedback, skipToNext)) return;
+      if (
+        applySightSubmitKey(
+          e,
+          !awaitingFeedback && challengeSupportsSubmitShortcut(challenge),
+          () => handlers.handleSubmit(),
+        )
+      ) {
+        return;
+      }
+
+      applySightLeftRightArrowKey(e, challenge, {
+        onPickSide: (side) => {
+          if (challenge.kind === 'compare') handlers.handleComparePick(side);
+          else if (challenge.kind === 'flashcard-isolated') handlers.handleIsolatedPick(side);
+          else if (challenge.kind === 'flashcard-albers') handlers.handleAlbersSide(side);
+        },
+        onPickAlbersBinary: handlers.handleAlbersBinary,
+      });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [awaitingFeedback, skipToNext]);
+  }, [awaitingFeedback, skipToNext, challenge]);
 
   const progressLabel = isReviewSession
     ? `Review · level ${sessionLevel}`

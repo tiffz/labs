@@ -13,6 +13,18 @@ import './styles/drums.css'
 installServerLogger('DRUMS');
 initMaterialIconRuntime();
 
+// Warm the VexFlow chunk after first paint so the staff loads without blocking input.
+if (typeof window !== 'undefined') {
+  const prefetchVexFlow = () => {
+    void import('./components/VexFlowRenderer');
+  };
+  if (typeof requestIdleCallback !== 'undefined') {
+    requestIdleCallback(prefetchVexFlow, { timeout: 2500 });
+  } else {
+    window.setTimeout(prefetchVexFlow, 100);
+  }
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <ThemeProvider theme={getAppTheme('drums')}>
     <App />

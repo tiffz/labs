@@ -1,7 +1,8 @@
-import Typography from '@mui/material/Typography';
 import { CompareAxisReadout } from '../../components/CompareAxisReadout';
 import CompactVerdict from '../../components/reveal/CompactVerdict';
 import FlashcardProofStrip from '../../components/reveal/FlashcardProofStrip';
+import SightPrompt from '../../components/SightPrompt';
+import { questionHelpForIsolated } from '../../copy/sightTerms';
 import { isolatedFocusAxis } from '../../oklchAxisFocus';
 import { isolatedPrompt } from '../../generators/isolatedFlashcard';
 import { colorStateToHex } from '../../scoring/perceptualScore';
@@ -42,9 +43,10 @@ export default function IsolatedFlashcardView({
     <div className="sight-workspace sight-workspace--single">
       <div className="sight-canvas-zone">
         <div className="sight-compare-stage sight-neutral-panel">
-          <Typography variant="subtitle2" component="p" className="sight-compare-prompt">
-            {isolatedPrompt(challenge.axis)}
-          </Typography>
+          <SightPrompt
+            text={isolatedPrompt(challenge.axis)}
+            questionHelp={questionHelpForIsolated(challenge.axis)}
+          />
           <div
             className="sight-compare-swatches"
             role="group"

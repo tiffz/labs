@@ -2,7 +2,6 @@ import { buildLabsDownloadFileName } from '../../shared/utils/labsDownloadFileNa
 import type { ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import type { ExportSourceAdapter } from '../../shared/music/exportTypes';
-import { calculateRhythmDuration, renderRhythmAudio } from './audioExport';
 import { buildDrumMidiEventsFromParsedRhythm } from '../../shared/music/drumRhythmMidiEvents';
 import { buildSingleTrackMidi } from '../../shared/music/midiBuilder';
 
@@ -14,6 +13,17 @@ interface CreateDrumsExportAdapterOptions {
   playbackSettings: PlaybackSettings;
   metronomeEnabled: boolean;
   notation: string;
+}
+
+function estimateRhythmDurationSeconds(rhythm: ParsedRhythm, bpm: number): number {
+  const msPerSixteenth = (60000 / bpm) / 4;
+  let totalMs = 0;
+  for (const measure of rhythm.measures) {
+    for (const note of measure.notes) {
+      totalMs += note.durationInSixteenths * msPerSixteenth;
+    }
+  }
+  return totalMs / 1000;
 }
 
 export function buildDrumsAudioDownloadFileName(notation: string): string {
@@ -38,9 +48,10 @@ export function createDrumsExportAdapter({
     supportsFormat: (format) => ['wav', 'mp3', 'ogg', 'flac', 'midi'].includes(format),
     estimateDurationSeconds: (loopCount) => {
       if (!rhythm.isValid || rhythm.measures.length === 0) return 0;
-      return calculateRhythmDuration(rhythm, bpm) * loopCount;
+      return estimateRhythmDurationSeconds(rhythm, bpm) * loopCount;
     },
     renderAudio: async ({ loopCount }) => {
+      const { renderRhythmAudio } = await import('./audioExport');
       const mix = await renderRhythmAudio(
         rhythm,
         bpm,

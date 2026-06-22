@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { RhythmDefinition } from '../utils/rhythmRecognition';
 import RhythmInfoCard from './RhythmInfoCard';
 
@@ -10,7 +10,19 @@ vi.mock('./SimpleVexFlowNote', () => ({
 }));
 
 describe('RhythmInfoCard', () => {
-  it('uses explicit variation time signatures for previews and selection', () => {
+  beforeEach(() => {
+    simpleVexFlowNoteMock.mockClear();
+    vi.stubGlobal(
+      'requestIdleCallback',
+      (callback: IdleRequestCallback) => {
+        callback({ didTimeout: false, timeRemaining: () => 50 } as IdleDeadline);
+        return 1;
+      }
+    );
+    vi.stubGlobal('cancelIdleCallback', vi.fn());
+  });
+
+  it('uses explicit variation time signatures for previews and selection', async () => {
     const rhythm: RhythmDefinition = {
       id: 'test-rhythm',
       name: 'Test Rhythm',
@@ -42,7 +54,9 @@ describe('RhythmInfoCard', () => {
       />
     );
 
-    expect(simpleVexFlowNoteMock).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(simpleVexFlowNoteMock).toHaveBeenCalled();
+    });
     const firstPreviewProps = simpleVexFlowNoteMock.mock.calls[0]?.[0] as
       | {
           timeSignature?: { numerator: number; denominator: number };

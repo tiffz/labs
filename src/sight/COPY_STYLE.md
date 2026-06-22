@@ -12,10 +12,13 @@ Defers to [docs/USER_COPY_STYLE.md](../../docs/USER_COPY_STYLE.md).
 - **Practice** — primary CTA on home at your current level.
 - **Practice level** — dropdown on home when level &gt; 1; earlier levels labeled “(review)”. Review hint: passes do not change level progress.
 - Level navigation — low-key chevrons beside the level label (`aria-label` only: “Previous level (N)”, “Next level (N)”).
-- After feedback, the next question loads automatically. **Continue** or tap the exercise to skip the wait. Compare drills use a single canvas (no side panel); do not add “tap below” or “next challenge” coaching copy.
+- After feedback, the next question loads automatically. **Continue** or tap the exercise to continue. **Enter** or **Space** also continues after feedback, and submits slider/match drills when focus is not on a slider.
+- Compare drills use a single canvas (no side panel); do not add “tap below” or “next challenge” coaching copy.
 - Level 5 (adjacent match): **Match the swatches** — target and yours side by side on the same gray; adjust lightness until they match.
 - Albers flashcard choices (**Same** / **Different**, **Left** / **Right**): equal outlined buttons, not primary vs secondary.
 - Flashcard prompts: **swatch** (isolated/compare on gray) or **inner square** (Albers fields); **lighter**, **darker**, **warmer**, **cooler**, **more vivid** / **less vivid** — not “target” or “saturated”.
+- **Glossary terms** in prompts use a dotted underline. Hover or tap for a short definition (`SightTerm` + `AppTooltip`). Do not repeat the full definition in the prompt line.
+- **Question help** (help icon beside the prompt) appears when a drill needs extra context (Albers induction, vivid-on-gray). Keep help in the tooltip, not a second paragraph above the canvas.
 - Level 6 (flat match): **Match the swatch** — target on gray; adjust lightness in the slider preview, then submit.
 - Level 7+: **Match the swatch on neutral gray** when the target sits in a contrasting field.
 - **Exit** — leave practice without implying an incomplete run.

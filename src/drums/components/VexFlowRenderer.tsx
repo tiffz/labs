@@ -8,6 +8,13 @@ import { computeDropPreview } from '../utils/dropPreview';
 import { getCurrentDraggedPattern } from './NotePalette';
 import { buildNotationFromSelection } from '../utils/notationHelpers';
 import { scrollPlaybackTarget, type PlaybackAutoScrollState } from '../../shared/utils/playbackAutoScroll';
+import {
+  applyDrumsPlaybackHighlights,
+  clearDrumsPlaybackHighlights,
+} from '../utils/drumsPlaybackHighlight';
+import type { NoteSelectionState } from './VexFlowRendererTypes';
+
+export type { NoteSelectionState } from './VexFlowRendererTypes';
 
 /**
  * Checks if a measure is at the start of a section repeat
@@ -159,12 +166,6 @@ interface SelectionRect {
 }
 
 /** Selection state for notes */
-export interface NoteSelectionState {
-  startCharPosition: number | null;
-  endCharPosition: number | null;
-  isSelecting: boolean;
-}
-
 interface VexFlowRendererProps {
   rhythm: ParsedRhythm;
   currentNote?: { measureIndex: number; noteIndex: number; repeatIteration?: number; maxRepeats?: number } | null;
@@ -1156,124 +1157,13 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         }
       }
 
-      // Draw custom symbols and highlighting using stored StaveNote references
+      // Draw custom drum symbols (playback highlight is a separate effect — no full re-layout).
       const svgElement = containerRef.current?.querySelector('svg');
       if (svgElement) {
-        // First, check if we're playing a simile measure and determine source measure highlighting
-        let sourceMeasureToHighlight: number | null = null;
-        let sourceNoteIndex: number | null = null;
-
-        // Reset all repeat counters (hide them when not active)
-        const allCounters = svgElement.querySelectorAll('.repeat-counter');
-        allCounters.forEach(c => c.textContent = '');
-
-        // HIGHLIGHTING LOGIC FOR REPEATS AND SIMILES
-        if (currentNote) {
-
-          // 1. Handle Section Repeat Dots Highlighting
-          // Logic: If we are INSIDE a section repeat, we need to highlight the dots at the END of the section.
-          // The `currentNote.repeatIteration` tells us which iteration we are on.
-
-          let repeatEndMeasureIndex = -1;
-
-          // Check if current measure is part of a section repeat
-          // Iterate through all repeats to find one that contains the current measure
-          if (rhythm.repeats) {
-            for (const repeat of rhythm.repeats) {
-              if (repeat.type === 'section' &&
-                currentNote.measureIndex >= repeat.startMeasure &&
-                currentNote.measureIndex <= repeat.endMeasure) {
-                repeatEndMeasureIndex = repeat.endMeasure;
-                break; // found the container section
-              }
-            }
-          }
-
-          // If we found a containing section, update the indicator at the end of it
-          if (repeatEndMeasureIndex !== -1 && currentNote.repeatIteration !== undefined) {
-            const repeatDotsGroup = svgElement.querySelector(`.repeat-dots-group[data-measure-index="${repeatEndMeasureIndex}"]`);
-
-            if (repeatDotsGroup) {
-              const textCounter = repeatDotsGroup.querySelector('.repeat-counter');
-              if (textCounter) {
-                textCounter.textContent = `(${currentNote.repeatIteration + 1})`;
-                textCounter.setAttribute('fill', '#ef4444');
-                (textCounter as SVGElement).style.fill = '#ef4444'; // Force via style also
-              } else {
-                const dots = repeatDotsGroup.querySelectorAll('.repeat-dot');
-                dots.forEach((dot) => {
-                  const index = parseInt(dot.getAttribute('data-index') || '0');
-                  const dotEl = dot as SVGElement;
-                  if (index <= currentNote.repeatIteration!) {
-                    dotEl.setAttribute('fill', '#ef4444');
-                  } else {
-                    dotEl.setAttribute('fill', '#000000');
-                  }
-                });
-              }
-            }
-
-
-          }
-
-
-          const currentMeasureRepeatInfo = getMeasureRepeatInfo(currentNote.measureIndex, rhythm.repeats);
-          if (currentMeasureRepeatInfo?.isSimile) {
-            // This is a simile measure - highlight both the simile symbol AND the source note
-            sourceMeasureToHighlight = currentMeasureRepeatInfo.sourceMeasure;
-            sourceNoteIndex = currentNote.noteIndex;
-
-            // Highlight the simile symbol
-            const simileGroup = simileGroupsRef.current.get(currentNote.measureIndex);
-            if (simileGroup) {
-              // Highlight dots
-              simileGroup.querySelectorAll('.simile-dot').forEach((dot) => {
-                const el = dot as SVGElement;
-                el.setAttribute('fill', '#ef4444');
-                el.style.fill = '#ef4444'; // Reinforce with style
-              });
-              // Highlight line
-              simileGroup.querySelectorAll('.simile-line').forEach((line) => {
-                const el = line as SVGElement;
-                el.setAttribute('stroke', '#ef4444');
-                el.style.stroke = '#ef4444'; // Reinforce with style
-              });
-            }
-          }
-        }
-
-        allStaveNoteRefs.forEach(({ staveNote, stave, measureIndex, noteIndex, note }) => {
-          // Highlight current note with red
-          // Also highlight source note when playing a simile measure
-          const isCurrentNote = currentNote &&
-            currentNote.measureIndex === measureIndex &&
-            currentNote.noteIndex === noteIndex;
-
-          const isSourceNote = sourceMeasureToHighlight !== null &&
-            measureIndex === sourceMeasureToHighlight &&
-            noteIndex === sourceNoteIndex;
-
-          if (isCurrentNote || isSourceNote) {
-            // Highlight the notehead in red
-            const noteheadElements = staveNote.getSVGElement()?.querySelectorAll('.vf-notehead, path[class*="notehead"], ellipse[class*="notehead"]');
-            noteheadElements?.forEach((el) => {
-              (el as SVGElement).style.fill = '#ef4444';
-              (el as SVGElement).style.stroke = '#ef4444';
-            });
-
-            // Highlight the stem in red
-            const stemElements = staveNote.getSVGElement()?.querySelectorAll('.vf-stem, path[class*="stem"], line[class*="stem"]');
-            stemElements?.forEach((el) => {
-              (el as SVGElement).style.stroke = '#ef4444';
-            });
-          }
-
+        allStaveNoteRefs.forEach(({ staveNote, stave, note }) => {
           if (note && note.sound !== 'rest') {
-            // Get the note's x position using VexFlow's API
-            const noteX = staveNote.getAbsoluteX() + 10; // Center offset
-            const noteY = stave.getYForLine(2); // Middle line
-
-            // Draw custom drum symbol using shared utility
+            const noteX = staveNote.getAbsoluteX() + 10;
+            const noteY = stave.getYForLine(2);
             drawDrumSymbol(svgElement, noteX, noteY, note.sound);
           }
         });
@@ -1573,7 +1463,24 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     // Preview rendering is handled in a separate useEffect below
     // Note: notation, timeSignature, and onDropPattern are used for drag/drop but don't need to trigger re-renders
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rhythm, currentNote, metronomeEnabled, containerWidth, selection, compactMode]);
+  }, [rhythm, metronomeEnabled, containerWidth, selection, compactMode]);
+
+  // Playback note highlight — DOM-only updates so playhead does not re-layout the staff.
+  useEffect(() => {
+    const svgElement = containerRef.current?.querySelector('svg');
+    if (!svgElement || allStaveNoteRefsRef.current.length === 0) return;
+
+    clearDrumsPlaybackHighlights(svgElement, allStaveNoteRefsRef.current, simileGroupsRef.current);
+    if (currentNote) {
+      applyDrumsPlaybackHighlights(
+        svgElement,
+        currentNote,
+        rhythm,
+        allStaveNoteRefsRef.current,
+        simileGroupsRef.current,
+      );
+    }
+  }, [currentNote, rhythm]);
 
   // Separate effect to update metronome dot highlighting
   useEffect(() => {

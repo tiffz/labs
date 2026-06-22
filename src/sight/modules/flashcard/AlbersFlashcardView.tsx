@@ -1,7 +1,8 @@
 import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
 import CompactVerdict from '../../components/reveal/CompactVerdict';
 import AlbersInductionReveal from '../../components/reveal/AlbersInductionReveal';
+import SightPrompt from '../../components/SightPrompt';
+import { questionHelpForAlbers } from '../../copy/sightTerms';
 import { albersPrompt } from '../../generators/albersFlashcard';
 import { colorStateToHex } from '../../scoring/perceptualScore';
 import type { AlbersFlashcardChallenge, PracticeReveal } from '../../types';
@@ -30,9 +31,10 @@ export default function AlbersFlashcardView({
     <div className="sight-workspace sight-workspace--single">
       <div className="sight-canvas-zone">
         <div className="sight-albers-stage sight-neutral-panel">
-          <Typography variant="subtitle2" component="p" className="sight-compare-prompt">
-            {albersPrompt(challenge.question)}
-          </Typography>
+          <SightPrompt
+            text={albersPrompt(challenge.question)}
+            questionHelp={questionHelpForAlbers(challenge.question)}
+          />
           <div className="sight-albers-fields" role="group" aria-label={albersPrompt(challenge.question)}>
             {(['left', 'right'] as const).map((side) => {
               const field = challenge[side];

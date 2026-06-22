@@ -1,11 +1,12 @@
-import React, { useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
-import SimpleVexFlowNote from './SimpleVexFlowNote';
+import React, { useState, useRef, useCallback, forwardRef, useImperativeHandle, lazy, Suspense, useEffect } from 'react';
 import { parsePatternToNotes } from '../utils/notationHelpers';
 import { audioPlayer } from '../../shared/rhythm/drumAudioPlayer';
 import { COMMON_PATTERNS } from '../data/commonPatterns';
 import { getPatternDuration } from '../utils/dragAndDrop';
 import type { TimeSignature } from '../types';
 import AppTooltip from '../../shared/components/AppTooltip';
+
+const SimpleVexFlowNote = lazy(() => import('./SimpleVexFlowNote'));
 
 /** Selection state for notes */
 interface SelectionState {
@@ -113,6 +114,17 @@ const NotePalette = forwardRef<NotePaletteHandle, NotePaletteProps>(({
   onRequestNotationFocus,
 }, ref) => {
   const [soundPreviewEnabled, setSoundPreviewEnabled] = useState(false);
+  const [vexMiniReady, setVexMiniReady] = useState(false);
+
+  useEffect(() => {
+    const enable = () => setVexMiniReady(true);
+    if (typeof requestIdleCallback !== 'undefined') {
+      const id = requestIdleCallback(enable, { timeout: 2000 });
+      return () => cancelIdleCallback(id);
+    }
+    const timer = window.setTimeout(enable, 50);
+    return () => window.clearTimeout(timer);
+  }, []);
   
   // Keyboard navigation state for single notes grid (row, col)
   const [gridFocus, setGridFocus] = useState<{ row: number; col: number }>({ row: 0, col: 0 });
@@ -630,7 +642,13 @@ const NotePalette = forwardRef<NotePaletteHandle, NotePaletteProps>(({
               tabIndex={isFocused ? 0 : -1}
               aria-label={`Pattern ${pattern}, ${durationLabel}${isDisabled ? ', disabled' : ''}`}
             >
-              <SimpleVexFlowNote pattern={pattern} width={85} height={60} />
+              {vexMiniReady ? (
+                <Suspense fallback={<span className="palette-pattern-fallback">{pattern}</span>}>
+                  <SimpleVexFlowNote pattern={pattern} width={85} height={60} />
+                </Suspense>
+              ) : (
+                <span className="palette-pattern-fallback">{pattern}</span>
+              )}
             </button>
           );
         })}

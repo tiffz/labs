@@ -98,7 +98,7 @@ export const OriginalsSongDashboardRail = memo(function OriginalsSongDashboardRa
     <Paper component="aside" elevation={0} sx={originalsDashboardRailPaperSx(theme)}>
       <Stack direction="row" alignItems="baseline" justifyContent="space-between" gap={1}>
         <Typography variant="caption" sx={originalsDashboardRailGroupLabelSx()}>
-          To finish ({pendingRows.length})
+          Drafts ({pendingRows.length})
         </Typography>
         <Typography variant="caption" color="text.disabled" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
           {rows.length} total

@@ -19065,6 +19065,148 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-test-contrastauditcore-ts-contrast-audit-defaults",
+    "name": "CONTRAST_AUDIT_DEFAULTS",
+    "path": "src/shared/test/contrastAuditCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "WCAG contrast audit helpers — Vitest + e2e (browser fn must stay self-contained).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-contrastauditcore-ts-contrastauditfailure",
+    "name": "ContrastAuditFailure",
+    "path": "src/shared/test/contrastAuditCore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "WCAG contrast audit helpers — Vitest + e2e (browser fn must stay self-contained).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-contrastauditcore-ts-contrastauditresult",
+    "name": "ContrastAuditResult",
+    "path": "src/shared/test/contrastAuditCore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "WCAG contrast audit helpers — Vitest + e2e (browser fn must stay self-contained).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-contrastauditcore-ts-contrastauditsuccess",
+    "name": "ContrastAuditSuccess",
+    "path": "src/shared/test/contrastAuditCore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "WCAG contrast audit helpers — Vitest + e2e (browser fn must stay self-contained).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-contrastauditcore-ts-contrastratio",
+    "name": "contrastRatio",
+    "path": "src/shared/test/contrastAuditCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "WCAG contrast audit helpers — Vitest + e2e (browser fn must stay self-contained).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-contrastauditcore-ts-contrastviolation",
+    "name": "ContrastViolation",
+    "path": "src/shared/test/contrastAuditCore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "WCAG contrast audit helpers — Vitest + e2e (browser fn must stay self-contained).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-contrastauditcore-ts-layout-heuristic-defaults",
+    "name": "LAYOUT_HEURISTIC_DEFAULTS",
+    "path": "src/shared/test/contrastAuditCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "WCAG contrast audit helpers — Vitest + e2e (browser fn must stay self-contained).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-contrastauditcore-ts-parsecsscolortorgb",
+    "name": "parseCssColorToRgb",
+    "path": "src/shared/test/contrastAuditCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "WCAG contrast audit helpers — Vitest + e2e (browser fn must stay self-contained).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-contrastauditcore-ts-relativeluminance",
+    "name": "relativeLuminance",
+    "path": "src/shared/test/contrastAuditCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "WCAG contrast audit helpers — Vitest + e2e (browser fn must stay self-contained).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-contrastauditcore-ts-requiredcontrastratio",
+    "name": "requiredContrastRatio",
+    "path": "src/shared/test/contrastAuditCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "WCAG contrast audit helpers — Vitest + e2e (browser fn must stay self-contained).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-test-deterministicrandom-ts-createseededrandom",
     "name": "createSeededRandom",
     "path": "src/shared/test/deterministicRandom.ts",

@@ -18,13 +18,29 @@ test.describe('Sight practice interaction', () => {
     });
     expect(loadMs).toBeLessThanOrEqual(RELAXED_INTERACTION_BUDGET_MS);
 
-    const swatch = page.getByRole('button', { name: /swatch/i }).first();
+    const swatch = page.getByRole('button', { name: /^(Left|Right) swatch$/i }).first();
     await expect(swatch).toBeVisible({ timeout: 5_000 });
 
     const tapMs = await measureClickUntil(page, swatch, async () => {
       await expect(page.locator('.sight-compare-verdict--visible')).toBeVisible({ timeout: 3_000 });
     });
     expect(tapMs).toBeLessThanOrEqual(DEFAULT_INTERACTION_BUDGET_MS);
+  });
+
+  test('practice prompts expose glossary terms', async ({ page }) => {
+    await page.goto('/sight/');
+    await page.getByRole('button', { name: /^practice$/i }).click();
+    await expect(page.locator('.sight-practice-body')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.sight-term').first()).toBeVisible({ timeout: 5_000 });
+  });
+
+  test('left and right arrow keys submit swatch answers', async ({ page }) => {
+    await page.goto('/sight/');
+    await page.getByRole('button', { name: /^practice$/i }).click();
+    await expect(page.getByRole('button', { name: /^(Left|Right) swatch$/i }).first()).toBeVisible({ timeout: 10_000 });
+
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.locator('.sight-compare-verdict--visible')).toBeVisible({ timeout: 3_000 });
   });
 
   test('practice footer pins to viewport bottom', async ({ page }) => {

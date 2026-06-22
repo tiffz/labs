@@ -1,7 +1,8 @@
-import Typography from '@mui/material/Typography';
 import CompareOklchReveal from '../../components/CompareOklchReveal';
 import CompactVerdict from '../../components/reveal/CompactVerdict';
+import SightPrompt from '../../components/SightPrompt';
 import { comparePrompt } from '../../generators/compare';
+import { questionHelpForCompare } from '../../copy/sightTerms';
 import { colorStateToHex } from '../../scoring/perceptualScore';
 import type { CompareChallenge, PracticeReveal } from '../../types';
 
@@ -40,9 +41,10 @@ export default function CompareView({
     <div className="sight-workspace sight-workspace--single">
       <div className="sight-canvas-zone">
         <div className="sight-compare-stage sight-neutral-panel">
-          <Typography variant="subtitle2" component="p" className="sight-compare-prompt">
-            {comparePrompt(challenge.axis)}
-          </Typography>
+          <SightPrompt
+            text={comparePrompt(challenge.axis)}
+            questionHelp={questionHelpForCompare(challenge.axis)}
+          />
           <div className="sight-compare-swatches" role="group" aria-label={comparePrompt(challenge.axis)}>
             <button
               type="button"

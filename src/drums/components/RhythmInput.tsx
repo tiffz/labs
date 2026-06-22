@@ -1,14 +1,17 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, lazy, Suspense, useMemo } from 'react';
 import type { TimeSignature, ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import { } from '../utils/timeSignatureUtils';
 import RhythmPresets from './RhythmPresets';
 import SharedExportPopover from '../../shared/components/music/SharedExportPopover';
-import { TabImportWizard } from './TabImportWizard';
 import { detectTabType, isTab, type TabType } from '../utils/tabDetector';
 import { formatRhythm } from '../utils/formatting';
 import AppTooltip from '../../shared/components/AppTooltip';
 import { createDrumsExportAdapter } from '../utils/exportAdapter';
+
+const TabImportWizard = lazy(() =>
+  import('./TabImportWizard').then((m) => ({ default: m.TabImportWizard })),
+);
 
 interface RhythmInputProps {
   notation: string;
@@ -391,15 +394,17 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
       </div>
 
       {/* Tab Import Wizard (supports drum and guitar tabs) */}
-      {showTabImportModal && (
-        <TabImportWizard
-          isOpen={showTabImportModal}
-          onClose={handleTabCancel}
-          onImport={(notation) => handleTabImport(notation)}
-          rawTabText={pastedTabText}
-          initialTabType={pastedTabType}
-        />
-      )}
+      {showTabImportModal ? (
+        <Suspense fallback={null}>
+          <TabImportWizard
+            isOpen={showTabImportModal}
+            onClose={handleTabCancel}
+            onImport={(notation) => handleTabImport(notation)}
+            rawTabText={pastedTabText}
+            initialTabType={pastedTabType}
+          />
+        </Suspense>
+      ) : null}
     </div>
   );
 };

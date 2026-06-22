@@ -62,7 +62,9 @@ Registry: [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) — update when addi
 
 - Core math: `src/shared/test/layoutHeuristicsCore.ts` (Vitest)
 - Browser check: `e2e/helpers/layoutHeuristics.ts` → `runLayoutHeuristicsInBrowser`
-- Specs: `e2e/smoke/layout-heuristics-gesture.spec.ts`, `layout-heuristics-encore.spec.ts`
+- **DOM text audit:** `e2e/helpers/contrastAudit.ts` → `runContrastAuditInBrowser` (all visible text under a root)
+- Specs: `e2e/smoke/layout-heuristics-gesture.spec.ts`, `layout-heuristics-encore.spec.ts`, `layout-heuristics-sight.spec.ts`
+- Policy: [`docs/A11Y_CONTRAST_GUARD.md`](A11Y_CONTRAST_GUARD.md)
 - Catches `ux-spec-violation`: content flush to container edges, muted text below WCAG 4.5:1
 
 ### Example: Interaction latency (CUJ step)

@@ -14,7 +14,7 @@ export function parseCssColorToRgb(color: string): [number, number, number] | nu
 
   const rgba = trimmed.match(/^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/i);
   if (rgba) {
-    if (Number(rgba[4]) < 0.05) return null;
+    if (Number(rgba[4]) < 0.5) return null;
     return [Number(rgba[1]), Number(rgba[2]), Number(rgba[3])];
   }
 

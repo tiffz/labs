@@ -1,7 +1,17 @@
-import { forwardRef } from 'react';
+import { forwardRef, lazy, Suspense, type ReactElement } from 'react';
 import type { ParsedRhythm, TimeSignature } from '../types';
-import VexFlowRenderer, { type NoteSelectionState } from './VexFlowRenderer';
+import type { NoteSelectionState } from './VexFlowRendererTypes';
 import CollapsibleSection from './CollapsibleSection';
+
+const VexFlowRenderer = lazy(() => import('./VexFlowRenderer'));
+
+function StaffLoadingPlaceholder(): ReactElement {
+  return (
+    <div className="staff-container staff-container--loading" aria-busy="true" aria-label="Loading notation">
+      <div className="staff-loading-placeholder" />
+    </div>
+  );
+}
 
 interface RhythmDisplayProps {
   rhythm: ParsedRhythm;
@@ -68,21 +78,23 @@ const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({
         )}
 
         <div className="staff-container" style={{ minHeight: '150px' }}>
-          <VexFlowRenderer
-            rhythm={rhythm}
-            currentNote={currentNote}
-            metronomeEnabled={metronomeEnabled}
-            currentMetronomeBeat={currentMetronomeBeat}
-            onDropPattern={onDropPattern}
-            notation={notation}
-            timeSignature={timeSignature}
-            selection={selection}
-            onSelectionChange={onSelectionChange}
-            onMoveSelection={onMoveSelection}
-            onDeleteSelection={onDeleteSelection}
-            onRequestPaletteFocus={onRequestPaletteFocus}
-            autoScrollDuringPlayback={autoScrollDuringPlayback}
-          />
+          <Suspense fallback={<StaffLoadingPlaceholder />}>
+            <VexFlowRenderer
+              rhythm={rhythm}
+              currentNote={currentNote}
+              metronomeEnabled={metronomeEnabled}
+              currentMetronomeBeat={currentMetronomeBeat}
+              onDropPattern={onDropPattern}
+              notation={notation}
+              timeSignature={timeSignature}
+              selection={selection}
+              onSelectionChange={onSelectionChange}
+              onMoveSelection={onMoveSelection}
+              onDeleteSelection={onDeleteSelection}
+              onRequestPaletteFocus={onRequestPaletteFocus}
+              autoScrollDuringPlayback={autoScrollDuringPlayback}
+            />
+          </Suspense>
         </div>
       </CollapsibleSection>
     </div>

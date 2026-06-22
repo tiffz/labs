@@ -23,6 +23,7 @@ Agent UX workflow: [`docs/UX_AGENT_GUIDE.md`](docs/UX_AGENT_GUIDE.md) + skill `l
 - Use MUI primitives for complex interaction surfaces (`Dialog`, `Menu`, `Popover`, `Autocomplete`, `Select`).
 - Preserve app-specific identity through theme tokens, not custom focus/interaction mechanics.
 - Keyboard access, visible focus states, and semantic labeling are required in touched UI code.
+- **Contrast guardrails:** token pair tests + optional Playwright DOM audit — see [`docs/A11Y_CONTRAST_GUARD.md`](docs/A11Y_CONTRAST_GUARD.md).
 
 ### HTML entry points
 

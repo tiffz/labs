@@ -1,8 +1,10 @@
 import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
 import ViewSidebarOutlinedIcon from '@mui/icons-material/ViewSidebarOutlined';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import InputAdornment from '@mui/material/InputAdornment';
 import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
@@ -17,6 +19,7 @@ import { useEncoreOriginalsActions } from '../../context/EncoreOriginalsActionsC
 import { useEncoreOriginalsLibrary } from '../../context/EncoreOriginalsLibraryContext';
 import { EncoreFilterChipBar } from '../../ui/EncoreFilterChipBar';
 import { EncorePageHeader } from '../../ui/EncorePageHeader';
+import { EncoreToolbarRow } from '../../ui/EncoreToolbarRow';
 import { encoreMaxWidthPage } from '../../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../../theme/encoreM3Layout';
 import { useDebouncedString } from '../../utils/useDebouncedString';
@@ -187,14 +190,24 @@ const OriginalsLibraryScreenBody = memo(function OriginalsLibraryScreenBody({
           }
         />
       </Box>
-      <TextField
-        size="small"
-        placeholder="Search titles and lyrics…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{ mt: 2, maxWidth: 400, flexShrink: 0 }}
-        inputProps={{ 'aria-label': 'Search originals' }}
-      />
+      <EncoreToolbarRow sx={{ mt: 2, mb: 0 }}>
+        <TextField
+          size="small"
+          fullWidth
+          placeholder="Search titles and lyrics…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          inputProps={{ 'aria-label': 'Search originals' }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" color="action" aria-hidden />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ maxWidth: { sm: 560 } }}
+        />
+      </EncoreToolbarRow>
       <Box sx={{ mt: 1.5, mb: 0.5, flexShrink: 0 }}>
         <EncoreFilterChipBar
           fields={filterFields}
