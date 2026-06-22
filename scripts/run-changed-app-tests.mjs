@@ -28,6 +28,9 @@ function changedFiles(baseRef) {
 }
 
 const baseRef = gitRef(process.argv[2]);
+const extraArgsIndex = process.argv.indexOf('--');
+const vitestExtraArgs =
+  extraArgsIndex >= 0 ? process.argv.slice(extraArgsIndex + 1).join(' ') : '';
 const files = changedFiles(baseRef);
 
 const apps = new Set();
@@ -51,13 +54,13 @@ if (beatOnly && files.length > 0) {
 
 if (shared || apps.size === 0 || apps.size > 3) {
   console.log('test:changed-apps: running test:fast (shared or broad diff)');
-  execSync('npm run test:fast', { stdio: 'inherit' });
+  execSync(`npm run test:fast -- ${vitestExtraArgs}`.trim(), { stdio: 'inherit' });
   process.exit(0);
 }
 
 for (const app of apps) {
   console.log(`test:changed-apps: vitest src/${app}`);
-  execSync(`npx vitest run "src/${app}"`, { stdio: 'inherit' });
+  execSync(`npx vitest run "src/${app}" ${vitestExtraArgs}`.trim(), { stdio: 'inherit' });
 }
 
 console.log('test:changed-apps: ok');

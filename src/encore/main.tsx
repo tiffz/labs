@@ -6,6 +6,8 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { installServerLogger } from '../shared/utils/serverLogger';
+import { installLabsCrashHandlers } from '../shared/utils/labsCrashLog';
+import LabsErrorBoundary from '../shared/components/LabsErrorBoundary';
 import { getAppTheme } from '../shared/ui/theme/appTheme';
 import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstrap';
 import { EncoreProvider } from './context/EncoreContext';
@@ -15,20 +17,23 @@ import './styles/encore.css';
 import './originals/styles/originals.css';
 
 installServerLogger('ENCORE');
+installLabsCrashHandlers('encore');
 initMaterialIconRuntime();
 
 syncEncoreGuestShareRobotsFromHash();
 window.addEventListener('hashchange', syncEncoreGuestShareRobotsFromHash);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ThemeProvider theme={getAppTheme('encore')}>
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <CssBaseline />
-        <EncoreProvider>
-          <App />
-        </EncoreProvider>
-      </LocalizationProvider>
-    </ThemeProvider>
-  </React.StrictMode>
+  <LabsErrorBoundary appId="encore">
+    <React.StrictMode>
+      <ThemeProvider theme={getAppTheme('encore')}>
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <CssBaseline />
+          <EncoreProvider>
+            <App />
+          </EncoreProvider>
+        </LocalizationProvider>
+      </ThemeProvider>
+    </React.StrictMode>
+  </LabsErrorBoundary>,
 );

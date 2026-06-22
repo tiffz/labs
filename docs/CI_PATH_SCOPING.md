@@ -6,25 +6,39 @@ Full merge bar unchanged for cross-cutting changes: presubmit + full CI on `src/
 
 ## Local (agents)
 
-| Command                           | When                                                       |
-| --------------------------------- | ---------------------------------------------------------- |
-| `npm run presubmit`               | Before declaring done / before commit (agent gate)         |
-| `npm run test:staged`             | Same as Husky pre-commit Vitest (staged files only)        |
-| `npm run test:changed-apps`       | Presubmit Vitest scope vs `main` (≤3 apps → app-only)      |
-| `npm run test:fast`               | Full fast suite (~3 min); before merge when shared touched |
-| `npm run presubmit:push`          | Before **push** — presubmit + full e2e smoke               |
-| `node scripts/run-scoped-e2e.mjs` | Faster e2e when only one app changed                       |
-| `npm run test:e2e:smoke`          | Shell/provider wiring, or before merge when unsure         |
+| Command                           | When                                                         |
+| --------------------------------- | ------------------------------------------------------------ |
+| `npm run presubmit`               | Before declaring done — build + scoped Vitest + scoped e2e   |
+| `npm run test:staged`             | Husky pre-commit Vitest (staged files only)                  |
+| `npm run test:changed-apps`       | Presubmit Vitest scope vs `main` (≤3 apps → app-only)        |
+| `npm run verify:layout`           | After layout/CSS on primary surfaces (mandatory in UX skill) |
+| `npm run test:fast`               | Full fast suite (~3 min); before merge when shared touched   |
+| `npm run presubmit:push`          | Before **push** — presubmit + full e2e smoke (default hook)  |
+| `node scripts/run-scoped-e2e.mjs` | Faster e2e when only one app changed                         |
+| `npm run report:ci-health`        | Weekly CI success rate baseline                              |
+| `npm run report:test-duration`    | Quarterly test ROI audit                                     |
+
+## Time budgets (targets)
+
+| Gate                       | Target   |
+| -------------------------- | -------- |
+| Pre-commit (`test:staged`) | ≤ 90s    |
+| Presubmit                  | ≤ 8 min  |
+| CI (scoped PR)             | ≤ 12 min |
+| CI (cross-cutting)         | ≤ 20 min |
+| Nightly                    | ≤ 45 min |
+
+See [`docs/TEST_STRATEGY.md`](TEST_STRATEGY.md) and [`docs/ENGINEERING_HEALTH.md`](ENGINEERING_HEALTH.md).
 
 ## CI behavior
 
 The workflow detects changed paths (PR base or push parent):
 
-| Changed paths                                                                   | Vitest                                                      | E2e                                 |
-| ------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------- |
-| `src/shared/**`, `vite.config.*`, `vitest.config.*`, `package*.json`, workflows | Full `npm test`                                             | Full smoke + playback regressions   |
-| 1–3 apps `src/<app>/**` only (no shared)                                        | Scoped via `run-changed-app-tests.mjs` (≤3 apps; else full) | Scoped e2e via `run-scoped-e2e.mjs` |
-| Docs / `.cursor` only                                                           | Full (cheap relative to e2e)                                | Full smoke (still fast)             |
+| Changed paths                                                                   | Vitest                                                     | E2e                                           |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------- |
+| `src/shared/**`, `vite.config.*`, `vitest.config.*`, `package*.json`, workflows | Full `npm test`                                            | Full smoke + playback regressions             |
+| 1–3 apps `src/<app>/**` only (no shared)                                        | Scoped via `run-changed-app-tests.mjs` (`--retry=1` in CI) | Scoped e2e via `run-scoped-e2e.mjs` (≤3 apps) |
+| Docs / `.cursor` only                                                           | Full (cheap relative to e2e)                               | Full smoke (still fast)                       |
 
 Vitest scoping mirrors local `npm run test:changed-apps` in CI when the diff touches ≤3 apps and not `src/shared/**`. E2e changes still trigger full smoke via cross-cutting detection in the workflow.
 

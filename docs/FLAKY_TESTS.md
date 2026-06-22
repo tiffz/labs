@@ -37,7 +37,17 @@ Pattern documented in [`STYLE_GUIDE.md`](../STYLE_GUIDE.md). Reference implement
 | Regression / audit / stress / benchmark | in filename                     | Full `npm test`, CI, nightly       |
 | BPM benchmark                           | `bpmDetectionBenchmark.test.ts` | `INCLUDE_BEAT_BENCHMARK=true` only |
 
+| Quarantined (fix in 7 days) | `*.flaky.test.ts` or `@flaky` in title | Excluded from `test:fast`; row in [`FLAKY_TEST_REGISTRY.md`](FLAKY_TEST_REGISTRY.md) |
+
 Add new **slow** tests using these conventions so pre-commit stays fast.
+
+## Quarantine policy
+
+1. Rename to `*.flaky.test.ts` or tag `@flaky` in the test title.
+2. Add a row to [`FLAKY_TEST_REGISTRY.md`](FLAKY_TEST_REGISTRY.md) with a **7-day fix deadline**.
+3. Do **not** rely on Playwright retries (`playwright.config.ts` uses `retries: 0`).
+4. Vitest CI may use `--retry=1` only for documented worker-teardown class until eliminated.
+5. After deadline: fix root cause or delete the test.
 
 ## Agent checklist when a test flakes
 

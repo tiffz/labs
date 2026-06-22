@@ -1,5 +1,7 @@
 @layer shared-base;
 
+/* data-labs-scroll-lock-ok: full-viewport editor — intentional body overflow lock */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

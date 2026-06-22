@@ -39,10 +39,11 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 | Invariant                                                   | Enforcement                                                                                                        |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | Zero ESLint **warnings** on touched files                   | `pre-commit-checks.mdc`                                                                                            |
-| Presubmit before done                                       | `npm run presubmit`                                                                                                |
-| Presubmit + e2e smoke before **push**                       | `npm run presubmit:push` (or `LABS_PRESUBMIT_PUSH=1` hook)                                                         |
-| Shell / provider / route changes → `npm run build`          | `pre-commit-checks.mdc`                                                                                            |
-| CSS changes → vite build (PostCSS parse)                    | `scripts/presubmit-css-if-needed.mjs` in presubmit                                                                 |
+| Presubmit before done (build + scoped e2e + scoped Vitest)  | `npm run presubmit`, `scripts/presubmit.sh`                                                                        |
+| Presubmit + full e2e smoke before **push**                  | `npm run presubmit:push`, `.husky/pre-push` (default-on; `LABS_SKIP_PRESUBMIT_PUSH=1` to skip)                     |
+| App render errors → recovery UI                             | `LabsErrorBoundary` in every `main.tsx`, `spaGuardrails.test.ts`                                                   |
+| Local crash log on uncaught errors                          | `labsCrashLog.ts`, ADR 0016                                                                                        |
+| Layout/CSS changes → `npm run verify:layout`                | `labs-ux-journey` step 5, `scripts/run-scoped-layout-heuristics.mjs`                                               |
 | Muscle app registered → commit `public/muscle/` with source | `musclePublicAssetsGuardrails.test.ts`, `muscle:validate-assets` in presubmit                                      |
 | New user-visible route → smoke spec                         | [`docs/E2E_SMOKE_CONVENTIONS.md`](E2E_SMOKE_CONVENTIONS.md)                                                        |
 | Layout padding/contrast on Encore/Gesture home surfaces     | `layout-heuristics-*.spec.ts`                                                                                      |

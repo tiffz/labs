@@ -39,10 +39,10 @@ test.describe('Gesture layout heuristics', () => {
     await page.goto('/gesture/?e2eSeed=1');
 
     await expect(page.locator('.gesture-shell')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.gesture-header')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.gesture-lede')).toBeVisible({ timeout: 15_000 });
 
     const result = await page.evaluate(runContrastAuditInBrowser, {
-      rootSelector: '.gesture-shell',
+      rootSelector: '.gesture-lede',
     });
     expect(result.ok, result.ok ? '' : JSON.stringify(result)).toBe(true);
   });

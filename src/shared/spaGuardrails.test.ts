@@ -189,6 +189,15 @@ describe('React StrictMode policy', () => {
     const source = fs.readFileSync(file, 'utf8');
     const hasStrictMode = /<(React\.)?StrictMode\b/.test(source);
 
+    it('wraps root render in LabsErrorBoundary', () => {
+      expect(source).toMatch(/LabsErrorBoundary/);
+      expect(source).toMatch(new RegExp(`appId=["']${app}["']`));
+    });
+
+    it('installs Labs crash handlers', () => {
+      expect(source).toMatch(/installLabsCrashHandlers\(/);
+    });
+
     if (STRICT_MODE_OPT_OUT.has(app)) {
       it('is on the StrictMode opt-out list (grandfathered)', () => {
         expect(hasStrictMode).toBe(false);
@@ -198,5 +207,38 @@ describe('React StrictMode policy', () => {
         expect(hasStrictMode).toBe(true);
       });
     }
+  });
+});
+
+describe('Global scroll lock guardrails', () => {
+  const cssFiles: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === 'node_modules') continue;
+        walk(full);
+        continue;
+      }
+      if (entry.name.endsWith('.css')) cssFiles.push(full);
+    }
+  };
+  walk(SRC_ROOT);
+
+  const offenders = cssFiles.filter((file) => {
+    const css = fs.readFileSync(file, 'utf8');
+    const locksHtmlBody =
+      /(?:^|[,{}\s])html\s*,\s*body\s*\{[^}]*overflow\s*:\s*hidden/i.test(css) ||
+      /(?:^|[,{}\s])html\s*\{[^}]*overflow\s*:\s*hidden/i.test(css) ||
+      /(?:^|[,{}\s])body\s*\{[^}]*overflow\s*:\s*hidden/i.test(css);
+    if (!locksHtmlBody) return false;
+    return !css.includes('data-labs-scroll-lock-ok');
+  });
+
+  it('does not lock document scroll without data-labs-scroll-lock-ok opt-out', () => {
+    expect(
+      offenders.map((f) => path.relative(REPO_ROOT, f)),
+      'Use data-labs-scroll-lock-ok on html/body when intentional scroll lock is required',
+    ).toEqual([]);
   });
 });

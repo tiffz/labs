@@ -58,6 +58,7 @@ Answer before coding:
 
 ### 5. Verify
 
+- [ ] **`npm run verify:layout`** when layout/CSS changed on primary surfaces (mandatory before done)
 - [ ] Screenshot / browser snapshot for changed route when UI is user-visible
 - [ ] Add or extend e2e smoke if invariant is testable (see [`docs/E2E_SMOKE_CONVENTIONS.md`](../../docs/E2E_SMOKE_CONVENTIONS.md))
 - [ ] If grid + controls on same screen → read [`docs/PERFORMANCE.md`](../../docs/PERFORMANCE.md); consider CUJ row + interaction smoke

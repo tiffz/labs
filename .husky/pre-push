@@ -1,6 +1,5 @@
 #!/usr/bin/env sh
-
-# Non-blocking catalog reminders (unchanged).
+# Non-blocking catalog reminders.
 if ! npm run check:shared-catalog >/dev/null 2>&1; then
   echo "Shared catalog is out of date (non-blocking): run 'npm run generate:shared-catalog' when convenient."
 fi
@@ -8,17 +7,12 @@ if ! npm run check:labs-catalog >/dev/null 2>&1; then
   echo "Labs homepage catalog is out of date (non-blocking): run 'npm run generate:labs-catalog' when convenient."
 fi
 
-# Opt-in full pre-push gate (presubmit + e2e smoke). Matches CI test job smoke step.
-#   export LABS_PRESUBMIT_PUSH=1
-# Skip with LABS_SKIP_PRESUBMIT_PUSH=1 when you intentionally need a fast push.
+# Full pre-push gate (presubmit + e2e smoke). Matches CI test job smoke step.
+# Skip with LABS_SKIP_PRESUBMIT_PUSH=1 for emergency fast push only.
 if [ "$LABS_SKIP_PRESUBMIT_PUSH" = "1" ]; then
   echo "pre-push: skipped presubmit:push (LABS_SKIP_PRESUBMIT_PUSH=1)"
   exit 0
 fi
 
-if [ "$LABS_PRESUBMIT_PUSH" = "1" ]; then
-  echo "pre-push: running presubmit:push (LABS_PRESUBMIT_PUSH=1)…"
-  npm run presubmit:push
-else
-  echo "pre-push: tip — run npm run presubmit:push before push (or export LABS_PRESUBMIT_PUSH=1 to enforce here)."
-fi
+echo "pre-push: running presubmit:push…"
+npm run presubmit:push

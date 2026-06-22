@@ -74,6 +74,9 @@ Bucket-specific values should be expressed via variables, not one-off per-compon
   - `grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))` for demo cards by default
 - Prefer tokenized max widths for control groups (`--control-max-width`) rather than repeating literal widths across apps.
 - Avoid 1-2px local nudges unless there is a measured visual regression that cannot be solved by a bucket variable.
+- **Large lists (>50 items):** window virtualizer or viewport-gated media fetch — see `docs/PERFORMANCE.md` (Gesture Collections pattern).
+- **Horizontal overflow:** wide tables in `[data-labs-allow-horizontal-scroll]` hosts only — not page shells.
+- **Document scroll lock:** `data-labs-scroll-lock-ok` on `html`/`body` when intentional (zen/fullscreen modes).
 
 ## Design Principles
 

@@ -60,7 +60,8 @@ Skill: **`labs-babysit-pr`**. When adding checks, prefer extending `ci.yml` `tes
 | Story `App.test.tsx` flake on CI                              | Same — cold dynamic imports vs 10s cap                                       | Fixed via preload + explicit test timeout                                  |
 | E2e smoke parse error                                         | Syntax error in imported TS                                                  | Fix source; run smoke locally                                              |
 | Visual step warning, job green                                | Expected — visual is advisory on cross-cutting diffs                         | Inspect artifact; update baselines intentionally or fix nightly visual job |
-| Workflow red after push but newer push exists                 | Cancelled superseded run                                                     | Check latest run on `main`                                                 |
+| Workflow red after push but newer push exists                 | Cancelled superseded run (GitHub shows red)                                  | Check **latest** run on branch — not cancelled rows                        |
+| Playwright flake masked by retry                              | Historical policy drift                                                      | `playwright.config.ts` uses `retries: 0` — fix root cause per FLAKY_TESTS  |
 
 ## Related
 

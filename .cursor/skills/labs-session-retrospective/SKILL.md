@@ -33,6 +33,14 @@ Always-on reminder: [`.cursor/rules/session-retrospective-mandatory.mdc`](../rul
 ```markdown
 ## Session retrospective
 
+### Quantitative (when available)
+
+| Metric                          | Value                          |
+| ------------------------------- | ------------------------------ |
+| Human UX correction rounds      | …                              |
+| Presubmit failures before green | …                              |
+| CI success rate (30d)           | Run `npm run report:ci-health` |
+
 ### Human intervention / extra iterations
 
 - …

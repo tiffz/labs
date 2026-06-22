@@ -124,7 +124,7 @@ jobs:
           echo "No diff — full e2e smoke"
         else
           APP_COUNT="$(echo "$CHANGED" | grep -E '^src/[^/]+/' | cut -d/ -f2 | sort -u | wc -l | tr -d ' ')"
-          if [ "$APP_COUNT" -le 2 ] && [ "$APP_COUNT" -gt 0 ]; then
+          if [ "$APP_COUNT" -le 3 ] && [ "$APP_COUNT" -gt 0 ]; then
             echo "mode=scoped" >> $GITHUB_OUTPUT
             echo "Single-app diff — scoped e2e via run-scoped-e2e.mjs"
           else
@@ -263,9 +263,9 @@ jobs:
         INCLUDE_BEAT_BENCHMARK: ${{ steps.beat-changes.outputs.beat_changed }}
       run: |
         if [ "${{ github.event_name }}" = "pull_request" ]; then
-          node scripts/run-changed-app-tests.mjs "origin/${{ github.base_ref }}"
+          node scripts/run-changed-app-tests.mjs "origin/${{ github.base_ref }}" -- --retry=1
         else
-          node scripts/run-changed-app-tests.mjs "${{ github.event.before }}"
+          node scripts/run-changed-app-tests.mjs "${{ github.event.before }}" -- --retry=1
         fi
 
   # Coverage runs nightly (nightly-flakiness.yml) — not on every PR/main push.

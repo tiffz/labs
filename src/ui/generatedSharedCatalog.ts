@@ -3720,6 +3720,62 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-labserrorboundary-tsx-labserrorboundary",
+    "name": "LabsErrorBoundary",
+    "path": "src/shared/components/LabsErrorBoundary.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared render-error boundary for Labs micro-apps. Recovery: Try again (clear boundary) or Reload (full page).",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "piano",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labserrorboundary-tsx-labserrorboundaryprops",
+    "name": "LabsErrorBoundaryProps",
+    "path": "src/shared/components/LabsErrorBoundary.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "piano",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-labsfeedbacktoast-tsx-labsfeedbacktoast",
     "name": "LabsFeedbackToast",
     "path": "src/shared/components/LabsFeedbackToast.tsx",
@@ -20491,6 +20547,137 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "utils"
     ],
     "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labscrashlog-ts-appendlabscrashlogentry",
+    "name": "appendLabsCrashLogEntry",
+    "path": "src/shared/utils/labsCrashLog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Production telemetry deferred — see docs/adr/0014-client-crash-telemetry.md",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "piano",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labscrashlog-ts-exportlabscrashlogjson",
+    "name": "exportLabsCrashLogJson",
+    "path": "src/shared/utils/labsCrashLog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Production telemetry deferred — see docs/adr/0014-client-crash-telemetry.md",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "piano",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labscrashlog-ts-installlabscrashhandlers",
+    "name": "installLabsCrashHandlers",
+    "path": "src/shared/utils/labsCrashLog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Production telemetry deferred — see docs/adr/0014-client-crash-telemetry.md",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "piano",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labscrashlog-ts-labscrashlogentry",
+    "name": "LabsCrashLogEntry",
+    "path": "src/shared/utils/labsCrashLog.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Production telemetry deferred — see docs/adr/0014-client-crash-telemetry.md",
+    "tags": [
+      "utils",
+      "api"
+    ],
+    "appsUsing": [
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "piano",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labscrashlog-ts-readlabscrashlogentries",
+    "name": "readLabsCrashLogEntries",
+    "path": "src/shared/utils/labsCrashLog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Production telemetry deferred — see docs/adr/0014-client-crash-telemetry.md",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "piano",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
     "exportType": "function",
     "demoId": null
   },

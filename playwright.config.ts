@@ -13,7 +13,7 @@ export default defineConfig({
     'e2e/**/*.spec.ts',
   ],
   timeout: 30_000,
-  retries: process.env.CI ? 1 : 0,
+  retries: 0,
   expect: {
     toHaveScreenshot: {
       animations: 'disabled',

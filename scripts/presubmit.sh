@@ -39,10 +39,13 @@ fi
 echo "== presubmit: typecheck =="
 npm run typecheck
 
+echo "== presubmit: production build =="
+npm run build
+
 echo "== presubmit: test:changed-apps (scoped Vitest vs main) =="
 npm run test:changed-apps
 
-echo "== presubmit: css parse (when *.css changed) =="
-node scripts/presubmit-css-if-needed.mjs
+echo "== presubmit: scoped e2e smoke =="
+npm run test:e2e:scoped
 
 echo "presubmit: all checks passed"

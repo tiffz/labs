@@ -2,6 +2,8 @@ import '../shared/ui/fonts/appFonts';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { installServerLogger } from '../shared/utils/serverLogger';
+import { installLabsCrashHandlers } from '../shared/utils/labsCrashLog';
+import LabsErrorBoundary from '../shared/components/LabsErrorBoundary';
 import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstrap';
 import { LabsBlockingJobProvider } from '../shared/jobs/LabsBlockingJobContext';
 import '../shared/layout/app-shell-layout.css';
@@ -13,14 +15,17 @@ import App from './App';
 import { ZineboxDesignThemeProvider } from './context/ZineboxDesignThemeContext';
 
 installServerLogger('ZINEBOX');
+installLabsCrashHandlers('zinebox');
 initMaterialIconRuntime();
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ZineboxDesignThemeProvider>
-      <LabsBlockingJobProvider unloadCaption="Keep this tab open. Closing it can cancel an import in progress.">
-        <App />
-      </LabsBlockingJobProvider>
-    </ZineboxDesignThemeProvider>
-  </StrictMode>,
+  <LabsErrorBoundary appId="zinebox">
+    <StrictMode>
+      <ZineboxDesignThemeProvider>
+        <LabsBlockingJobProvider unloadCaption="Keep this tab open. Closing it can cancel an import in progress.">
+          <App />
+        </LabsBlockingJobProvider>
+      </ZineboxDesignThemeProvider>
+    </StrictMode>
+  </LabsErrorBoundary>,
 );

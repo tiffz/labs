@@ -1160,6 +1160,7 @@ export default defineConfig({
         '**/*{Regression,Audit,Stress,Benchmark}*.test.{ts,tsx}',
         ...(RUN_INTEGRATION_TESTS ? [] : ['**/*.integration.test.{ts,tsx}']),
         '**/HeartSpawningService.test.ts',
+        '**/*.flaky.test.{ts,tsx}',
       ] : []),
     ],
     testTimeout: 10000, // 10 seconds max per test (reduced from 30s)

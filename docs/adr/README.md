@@ -45,3 +45,4 @@ Skip an ADR for routine features, one-off UI tweaks, or purely internal refactor
 | [0013](./0013-stanza-subsumes-find-the-beat.md)                           | Stanza subsumes Find the Beat; optional analysis layers and library migration         |
 | [0014](./0014-google-oauth-session-bff.md)                                | Google OAuth session BFF on Cloudflare Workers (refresh server-side; no GIS silent)   |
 | [0015](./0015-muscle-memory-local-first-anatomy.md)                       | Muscle Memory: local-first anatomy training, Dexie SRS, region GLB assets             |
+| [0016](./0016-client-crash-telemetry.md)                                  | Client crash telemetry: local-first Phase 1; production beacon deferred (free tier)   |

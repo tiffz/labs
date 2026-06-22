@@ -11,11 +11,11 @@ Before telling the user a task is done — and **before suggesting `git commit`*
 npm run presubmit
 ```
 
-That runs, in order: `check:import-boundaries`, `lint`, `knip`, `typecheck`, and **`test:changed-apps`** (scoped Vitest vs `main` when ≤3 apps and no shared diff — otherwise `test:fast`). The Husky pre-commit hook uses **`test:staged`** (scoped to **staged** files) for faster commits.
+That runs, in order: import boundaries, ui-copy, doc-links, agent-docs, css-important, workflows, lint, knip, typecheck, **`npm run build`**, **`test:changed-apps`**, **`test:e2e:scoped`**. The Husky pre-commit hook uses **`test:staged`** (scoped to **staged** files) for faster commits.
 
-If you only changed a few files, you may run subsets while iterating (`npx vitest run src/<app>`, `npm run test:staged`), but **always finish with `npm run presubmit`** so Knip and the appropriate Vitest scope are not missed. Knip scans the whole project, not just staged files; unused new files fail the hook even when ESLint passes.
+If you only changed a few files, you may run subsets while iterating (`npx vitest run src/<app>`, `npm run test:staged`, `npm run verify:layout`), but **always finish with `npm run presubmit`** so Knip, build, and scoped e2e are not missed.
 
-Before **`git push`**, run **`npm run presubmit:push`** (presubmit + full e2e smoke). For a final Vitest confidence pass before merge, run **`npm run test:fast`** or **`npm test`** when you touched `src/shared/**`. See [`docs/CI_PATH_SCOPING.md`](../../docs/CI_PATH_SCOPING.md) and [`docs/FLAKY_TESTS.md`](../../docs/FLAKY_TESTS.md).
+Before **`git push`**, **`npm run presubmit:push`** runs automatically via `.husky/pre-push` (skip with `LABS_SKIP_PRESUBMIT_PUSH=1`). For a final Vitest confidence pass before merge, run **`npm run test:fast`** or **`npm test`** when you touched `src/shared/**`. See [`docs/CI_PATH_SCOPING.md`](../../docs/CI_PATH_SCOPING.md) and [`docs/FLAKY_TESTS.md`](../../docs/FLAKY_TESTS.md).
 
 Minimum per-file checks when touching TypeScript:
 
@@ -46,10 +46,11 @@ If a test fails once and passes on retry, **fix it** — do not re-run presubmit
 
 ## Shell / provider / route wiring
 
-Presubmit does **not** run `vite build`. When you touch app shells, React context providers, hash routing, or Vite entry HTML:
+Presubmit **always runs `npm run build`** and scoped e2e. When you touch app shells, React context providers, hash routing, or Vite entry HTML:
 
-1. Run **`npm run build`** locally before commit (CI runs build; catch bundling issues early).
+1. Run **`npm run presubmit`** locally before done (catches CI build/e2e failures early).
 2. For Encore performance list/editor UI, run **`npm run test:e2e:smoke`** (includes `e2e/smoke/encore-performance-routes.spec.ts`) or hard-refresh `#/library` and `#/practice` in dev — HMR can hide provider wiring bugs.
 3. For Gesture preview strips / media cache, run **`npm run test:e2e:smoke`** (`e2e/smoke/gesture-preview-strip.spec.ts`) or hard-refresh `#/gesture/` — HMR can hide cache-layer bugs. See [`docs/GESTURE_MEDIA_STABILITY.md`](../../docs/GESTURE_MEDIA_STABILITY.md).
 4. For new/major UI, run skill **`labs-ux-journey`** — **post journey sketch in chat before coding** (rule `ux-journey-mandatory.mdc`).
-5. Locally after app-scoped edits: **`npm run test:changed-apps`** and **`node scripts/run-scoped-e2e.mjs`** (see `docs/CI_PATH_SCOPING.md`).
+5. Layout/CSS changes → **`npm run verify:layout`** before done.
+6. Locally after app-scoped edits: **`npm run test:changed-apps`** and **`node scripts/run-scoped-e2e.mjs`** (see `docs/CI_PATH_SCOPING.md`).
