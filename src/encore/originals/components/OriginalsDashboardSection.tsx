@@ -32,7 +32,7 @@ export function OriginalsDashboardSection({
         </Typography>
         {action ? <Box sx={{ flexShrink: 0 }}>{action}</Box> : null}
       </Box>
-      {children}
+      {children ? <Box sx={{ minWidth: 0, maxWidth: '100%' }}>{children}</Box> : null}
     </Box>
   );
 }

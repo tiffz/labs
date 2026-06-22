@@ -11,7 +11,8 @@ See [CURRICULUM.md](./CURRICULUM.md). Phases: isolated flashcards (1–7), Alber
 ## Practice flow
 
 - Home follows a **Learn Your Scales–style layout**: hero **Practice** button, current-section progress bars, readable skill tiles, and a **curriculum map** for all 30 levels.
-- **Review** any unlocked level from the map; passes count toward that level’s gate. Use the level chevron or footer hint to skip back to your peak level.
+- **Keyboard:** arrow keys pick swatches; Enter/Space submits or continues. **Ctrl/Cmd + ?** opens shortcuts help.
+- **Restudy** any unlocked level from **Exercises**; passes count toward that level’s gate. Use the level chevron or footer hint to skip back to your peak level.
 - **Focus hints** may appear when diagnostics detect a pattern (e.g. warm-background value reads); adaptive data still updates in the background.
 - After submit or tap, compact feedback and auto-advance; daily sessions end with a short summary.
 

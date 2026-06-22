@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { stubGestureDriveThumbnailImages } from '../helpers/gesturePreviewFixtures';
 import { runLayoutHeuristicsInBrowser } from '../helpers/layoutHeuristics';
+import { runContrastAuditInBrowser } from '../helpers/contrastAudit';
 
 /**
  * Catches “obvious bad” layout: cramped shell padding and unreadable muted copy.
@@ -30,6 +31,19 @@ test.describe('Gesture layout heuristics', () => {
       mutedTextSelector: '.gesture-lede',
     });
 
+    expect(result.ok, result.ok ? '' : JSON.stringify(result)).toBe(true);
+  });
+
+  test('practice shell text meets contrast guard', async ({ page }) => {
+    await stubGestureDriveThumbnailImages(page);
+    await page.goto('/gesture/?e2eSeed=1');
+
+    await expect(page.locator('.gesture-shell')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.gesture-header')).toBeVisible({ timeout: 15_000 });
+
+    const result = await page.evaluate(runContrastAuditInBrowser, {
+      rootSelector: '.gesture-shell',
+    });
     expect(result.ok, result.ok ? '' : JSON.stringify(result)).toBe(true);
   });
 });

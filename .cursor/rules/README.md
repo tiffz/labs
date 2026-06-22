@@ -12,6 +12,7 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | [`user-copy.mdc`](user-copy.mdc)                                             | `src/**/*.tsx`                           | `docs/USER_COPY_STYLE.md`                  | —                            |
 | [`app-entry-html.mdc`](app-entry-html.mdc)                                   | `src/**/index.html`                      | `app-index.starter.html`                   | —                            |
 | [`spa-css-conventions.mdc`](spa-css-conventions.mdc)                         | `**/*.css`                               | `STYLE_GUIDE.md`                           | —                            |
+| [`layout-no-horizontal-scroll.mdc`](layout-no-horizontal-scroll.mdc)         | `src/**/*.tsx`, `src/**/*.css`, e2e      | `docs/E2E_SMOKE_CONVENTIONS.md`            | —                            |
 | [`react-a11y.mdc`](react-a11y.mdc)                                           | `**/*.tsx`                               | `STYLE_GUIDE.md`, `spaGuardrails.test.ts`  | —                            |
 | [`architecture-decisions.mdc`](architecture-decisions.mdc)                   | ADR/routing/hosting paths                | `docs/adr/README.md`                       | `labs-write-adr`             |
 | [`playback-ui-regressions.mdc`](playback-ui-regressions.mdc)                 | playback, notation, renderers            | `PLAYBACK_HOOK_PATTERN.md`                 | `labs-playback-bugfix`       |

@@ -67,6 +67,13 @@ Registry: [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) — update when addi
 - Policy: [`docs/A11Y_CONTRAST_GUARD.md`](A11Y_CONTRAST_GUARD.md)
 - Catches `ux-spec-violation`: content flush to container edges, muted text below WCAG 4.5:1
 
+### Example: Horizontal scroll guard
+
+- Core math: `src/shared/test/horizontalScrollHeuristicCore.ts` (Vitest)
+- Browser check: `e2e/helpers/horizontalScrollHeuristic.ts` → `runHorizontalScrollHeuristicInBrowser`
+- Specs: extend `layout-heuristics-encore.spec.ts` (Originals song dashboard + `main#main`)
+- Agent rule: `.cursor/rules/layout-no-horizontal-scroll.mdc` — fix page/panel horizontal scroll on sight; use `data-labs-allow-horizontal-scroll` only for intentional wide regions (tables, notation strips)
+
 ### Example: Interaction latency (CUJ step)
 
 - CUJ doc: `src/<app>/CUJs.md` — steps + budgets

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
 import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
+import { LabsKeyboardShortcutsHost, sightKeyboardShortcutSections } from '../shared/keyboardShortcuts';
 import { createAppAnalytics } from '../shared/utils/analytics';
 import SightDebugPanel from './components/SightDebugPanel';
 import HomePhase from './phases/HomePhase';
@@ -129,22 +130,24 @@ export default function App(): React.ReactElement {
   }
 
   return (
-    <div className="sight-app">
-      <SkipToMain />
-      <main id="main" className="sight-main">
-        {main}
-      </main>
-      {debug && (
-        <SightDebugPanel
-          profile={profile}
-          phase={phase}
-          simulatePass={simulatePass}
-          onProfileChange={setProfile}
-          onOpenSandbox={openSandbox}
-          onStartPractice={startPractice}
-          onGoHome={goHome}
-        />
-      )}
-    </div>
+    <LabsKeyboardShortcutsHost sections={sightKeyboardShortcutSections} theme="sight">
+      <div className="sight-app">
+        <SkipToMain />
+        <main id="main" className="sight-main">
+          {main}
+        </main>
+        {debug && (
+          <SightDebugPanel
+            profile={profile}
+            phase={phase}
+            simulatePass={simulatePass}
+            onProfileChange={setProfile}
+            onOpenSandbox={openSandbox}
+            onStartPractice={startPractice}
+            onGoHome={goHome}
+          />
+        )}
+      </div>
+    </LabsKeyboardShortcutsHost>
   );
 }

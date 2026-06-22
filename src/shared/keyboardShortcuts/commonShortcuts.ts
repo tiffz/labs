@@ -76,6 +76,22 @@ export function drumsKeyboardShortcutSections(): LabsKeyboardShortcutSection[] {
   ];
 }
 
+/** Documented Color Sight practice shortcuts (see PracticePhase keyboard handlers). */
+export function sightKeyboardShortcutSections(): LabsKeyboardShortcutSection[] {
+  return [
+    {
+      title: 'Practice',
+      shortcuts: [
+        { id: 'pick-left', label: 'Pick left swatch or side', keys: ['ArrowLeft'] },
+        { id: 'pick-right', label: 'Pick right swatch or side', keys: ['ArrowRight'] },
+        { id: 'submit-enter', label: 'Submit match or continue after feedback', keys: ['Enter'] },
+        { id: 'submit-space', label: 'Submit match or continue (alternate)', keys: ['Space'] },
+      ],
+    },
+    labsCommonHelpShortcutSection(),
+  ];
+}
+
 /** Encore — undo/redo via LabsUndoProvider; originals chord paint shortcuts. */
 export function encoreKeyboardShortcutSections(): LabsKeyboardShortcutSection[] {
   return [
@@ -97,6 +113,7 @@ export const KEYBOARD_SHORTCUTS_AUDIT_APPS = [
   'drums',
   'stanza',
   'encore',
+  'sight',
   'scales',
   'cats',
   'corp',
@@ -114,6 +131,7 @@ export function keyboardShortcutsAuditStatus(): Record<
     drums: 'documented',
     stanza: 'partial',
     encore: 'partial',
+    sight: 'documented',
     scales: 'partial',
     cats: 'pending',
     corp: 'pending',

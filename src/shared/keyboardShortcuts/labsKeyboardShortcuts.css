@@ -30,6 +30,15 @@
   --labs-kbd-accent-soft: rgba(124, 58, 237, 0.1);
 }
 
+.labs-kbd-shortcuts-overlay--sight {
+  --labs-kbd-accent: #a78bfa;
+  --labs-kbd-accent-soft: rgba(167, 139, 250, 0.15);
+  --labs-kbd-surface: #1a1a1e;
+  --labs-kbd-text: #e4e4e7;
+  --labs-kbd-muted: #a1a1aa;
+  --labs-kbd-border: color-mix(in srgb, var(--labs-kbd-accent) 24%, #2e2e34);
+}
+
 .labs-kbd-shortcuts-dialog {
   width: min(520px, calc(100vw - 32px));
   max-height: min(80vh, 640px);

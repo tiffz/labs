@@ -25,6 +25,9 @@ export function originalsDashboardPanelPaperSx(theme: Theme) {
     boxShadow: encoreShadowSurface,
     bgcolor: theme.palette.background.paper,
     minHeight: { md: 360 },
+    minWidth: 0,
+    maxWidth: '100%',
+    overflowX: 'clip',
   };
 }
 

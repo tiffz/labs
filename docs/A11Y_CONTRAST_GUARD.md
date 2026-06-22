@@ -8,7 +8,7 @@ Labs catches **obvious unreadable text** with automated checks, not a full desig
 | -------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | **Token unit tests**       | Design token pairs drift below WCAG AA                                 | `src/shared/test/contrastAuditCore.test.ts` (+ app-specific rows) |
 | **Single-sample e2e**      | One known muted selector on a route                                    | `e2e/helpers/layoutHeuristics.ts` → Gesture, Encore smokes        |
-| **DOM text audit e2e**     | Any visible text node under a root with computed fg/bg below threshold | `e2e/helpers/contrastAudit.ts` → `runContrastAuditInBrowser`      |
+| **DOM text audit e2e**     | Any visible text node under a root with computed fg/bg below threshold | `e2e/helpers/contrastAudit.ts` → Sight, Encore, Gesture smokes    |
 | **Component a11y (JSDOM)** | Roles, labels, axe rules where mounted                                 | `src/shared/test/a11y.ts` + `jest-axe` in Vitest                  |
 
 ## When to add a contrast smoke

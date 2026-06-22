@@ -20,5 +20,9 @@ test.describe('Encore Originals library bulk play', () => {
     await expect(
       page.getByRole('button', { name: /Playback queue, item 1 of 2/i }),
     ).toBeVisible({ timeout: 10_000 });
+
+    await page.getByRole('button', { name: /Playback queue, item 1 of 2/i }).click();
+    await expect(page.getByRole('heading', { name: 'Queue', level: 2 })).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Playback queue' })).toBeVisible();
   });
 });

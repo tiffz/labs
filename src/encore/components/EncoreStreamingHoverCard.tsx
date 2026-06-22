@@ -197,7 +197,7 @@ function EncoreHoverCardResourceEditFields(props: {
         e.stopPropagation();
       }}
       onMouseDown={(e) => {
-        e.preventDefault();
+        // Do not preventDefault — it blocks TextField focus and makes nickname/notes feel "locked".
         e.stopPropagation();
       }}
     >

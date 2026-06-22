@@ -10,13 +10,14 @@ export type OriginalsPaintLineProps = {
   line: LyricLine;
   songKey: string;
   notation: ChordNotationMode;
-  armedChord: string | null;
+  readOnly?: boolean;
+  armedChord?: string | null;
   activePlaybackStep: ChartPlaybackStep | null;
-  selectedChordId: string | null;
-  selectedWordCharIndex: number | null;
-  onStamp: (charIndex: number) => void;
-  onSelectChord: (charIndex: number, chordId: string) => void;
-  onSelectWord: (charIndex: number) => void;
+  selectedChordId?: string | null;
+  selectedWordCharIndex?: number | null;
+  onStamp?: (charIndex: number) => void;
+  onSelectChord?: (charIndex: number, chordId: string) => void;
+  onSelectWord?: (charIndex: number) => void;
 };
 
 function tokenIsHighlighted(charIndex: number, step: ChartPlaybackStep | null): boolean {
@@ -28,6 +29,7 @@ function ChordSlot({
   chords,
   songKey,
   notation,
+  readOnly,
   activePlaybackStep,
   selectedChordId,
   onSelectChord,
@@ -35,9 +37,10 @@ function ChordSlot({
   chords: ChordMarker[];
   songKey: string;
   notation: ChordNotationMode;
+  readOnly?: boolean;
   activePlaybackStep: ChartPlaybackStep | null;
   selectedChordId: string | null;
-  onSelectChord: (charIndex: number, chordId: string) => void;
+  onSelectChord?: (charIndex: number, chordId: string) => void;
 }): ReactElement {
   if (chords.length === 0) {
     return <Box component="span" sx={{ display: 'inline-block', height: '1.25rem' }} />;
@@ -50,9 +53,10 @@ function ChordSlot({
           chord={chord}
           songKey={songKey}
           notation={notation}
+          readOnly={readOnly}
           isPlaying={activePlaybackStep?.markerId === chord.id}
           isSelected={selectedChordId === chord.id}
-          onSelect={() => onSelectChord(chord.charIndex, chord.id)}
+          onSelect={() => onSelectChord?.(chord.charIndex, chord.id)}
         />
       ))}
     </Box>
@@ -63,6 +67,7 @@ function ChordBadge({
   chord,
   songKey,
   notation,
+  readOnly = false,
   isPlaying,
   isSelected,
   onSelect,
@@ -70,26 +75,37 @@ function ChordBadge({
   chord: ChordMarker;
   songKey: string;
   notation: ChordNotationMode;
+  readOnly?: boolean;
   isPlaying: boolean;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect?: () => void;
 }): ReactElement {
   const label = formatChordForDisplay(chord.chordName, songKey, notation);
+  const className = [
+    'encore-originals-chord-badge',
+    isPlaying ? 'encore-originals-chord-badge--playing' : '',
+    isSelected ? 'encore-originals-chord-badge--selected' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  if (readOnly) {
+    return (
+      <span className={className} aria-label={`Chord ${label}`}>
+        {label}
+      </span>
+    );
+  }
+
   return (
     <button
       type="button"
-      className={[
-        'encore-originals-chord-badge',
-        isPlaying ? 'encore-originals-chord-badge--playing' : '',
-        isSelected ? 'encore-originals-chord-badge--selected' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')}
+      className={className}
       aria-label={`Chord ${label}. Click to select.`}
       aria-pressed={isSelected}
       onClick={(e) => {
         e.stopPropagation();
-        onSelect();
+        onSelect?.();
       }}
     >
       {label}
@@ -101,17 +117,18 @@ export function OriginalsPaintLine({
   line,
   songKey,
   notation,
-  armedChord,
+  readOnly = false,
+  armedChord = null,
   activePlaybackStep,
-  selectedChordId,
-  selectedWordCharIndex,
+  selectedChordId = null,
+  selectedWordCharIndex = null,
   onStamp,
   onSelectChord,
   onSelectWord,
 }: OriginalsPaintLineProps): ReactElement {
   const tokens = tokenizeLyricLine(line.text);
   const chordMap = groupChordsByTokenStart(line);
-  const hasChordSelection = selectedChordId !== null;
+  const hasChordSelection = !readOnly && selectedChordId !== null;
 
   if (!line.text.trim()) {
     if (line.chords.length === 0) {
@@ -129,9 +146,10 @@ export function OriginalsPaintLine({
               chord={chord}
               songKey={songKey}
               notation={notation}
+              readOnly={readOnly}
               isPlaying={activePlaybackStep?.markerId === chord.id}
               isSelected={selectedChordId === chord.id}
-              onSelect={() => onSelectChord(chord.charIndex, chord.id)}
+              onSelect={() => onSelectChord?.(chord.charIndex, chord.id)}
             />
           ))}
         </Box>
@@ -155,6 +173,7 @@ export function OriginalsPaintLine({
                 chords={chords}
                 songKey={songKey}
                 notation={notation}
+                readOnly={readOnly}
                 activePlaybackStep={activePlaybackStep}
                 selectedChordId={selectedChordId}
                 onSelectChord={onSelectChord}
@@ -176,23 +195,40 @@ export function OriginalsPaintLine({
           }
           const isPlayback = tokenIsHighlighted(tok.start, activePlaybackStep);
           const isMoveTarget = hasChordSelection && !armedChord;
-          const isWordSelected = selectedWordCharIndex === tok.start;
+          const isWordSelected = !readOnly && selectedWordCharIndex === tok.start;
+          const tokenClassName =
+            isMoveTarget
+              ? 'encore-originals-lyric-token encore-originals-lyric-token--move'
+              : isWordSelected
+                ? 'encore-originals-lyric-token encore-originals-lyric-token--word-selected'
+                : isPlayback
+                  ? 'encore-originals-lyric-token encore-originals-lyric-token--playback'
+                  : armedChord
+                    ? 'encore-originals-lyric-token encore-originals-lyric-token--armed'
+                    : 'encore-originals-lyric-token';
+
+          if (readOnly) {
+            return (
+              <Box
+                key={`t-${tok.start}`}
+                component="span"
+                className={tokenClassName}
+                sx={{
+                  background: hasChord ? 'rgba(236, 72, 153, 0.08)' : 'transparent',
+                  borderRadius: 0.5,
+                }}
+              >
+                {tok.token}
+              </Box>
+            );
+          }
+
           return (
             <Box
               key={`t-${tok.start}`}
               component="button"
               type="button"
-              className={
-                isMoveTarget
-                  ? 'encore-originals-lyric-token encore-originals-lyric-token--move'
-                  : isWordSelected
-                    ? 'encore-originals-lyric-token encore-originals-lyric-token--word-selected'
-                    : isPlayback
-                      ? 'encore-originals-lyric-token encore-originals-lyric-token--playback'
-                      : armedChord
-                        ? 'encore-originals-lyric-token encore-originals-lyric-token--armed'
-                        : 'encore-originals-lyric-token'
-              }
+              className={tokenClassName}
               sx={{
                 border: 0,
                 background: hasChord ? 'rgba(236, 72, 153, 0.08)' : 'transparent',
@@ -203,10 +239,10 @@ export function OriginalsPaintLine({
               }}
               onClick={() => {
                 if (armedChord || hasChordSelection) {
-                  onStamp(tok.start);
+                  onStamp?.(tok.start);
                   return;
                 }
-                onSelectWord(tok.start);
+                onSelectWord?.(tok.start);
               }}
             >
               {tok.token}

@@ -8447,6 +8447,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-sightkeyboardshortcutsections",
+    "name": "sightKeyboardShortcutSections",
+    "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Documented Color Sight practice shortcuts (see PracticePhase keyboard handlers).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-wordskeyboardshortcutsections",
     "name": "wordsKeyboardShortcutSections",
     "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
@@ -8730,6 +8743,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-keyboardshortcuts-index-ts-labsundoredoshortcutentries",
     "name": "labsUndoRedoShortcutEntries",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-sightkeyboardshortcutsections",
+    "name": "sightKeyboardShortcutSections",
     "path": "src/shared/keyboardShortcuts/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -19301,6 +19330,62 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-horizontalscrollheuristiccore-ts-elementoverflowshorizontally",
+    "name": "elementOverflowsHorizontally",
+    "path": "src/shared/test/horizontalScrollHeuristicCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when an element is wider than its layout box (ignores tolerance).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-horizontalscrollheuristiccore-ts-evaluatehorizontalscrolloverflow",
+    "name": "evaluateHorizontalScrollOverflow",
+    "path": "src/shared/test/horizontalScrollHeuristicCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pure horizontal overflow math — keep in sync with e2e/helpers/horizontalScrollHeuristic.ts",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-horizontalscrollheuristiccore-ts-horizontal-scroll-heuristic-defaults",
+    "name": "HORIZONTAL_SCROLL_HEURISTIC_DEFAULTS",
+    "path": "src/shared/test/horizontalScrollHeuristicCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pure horizontal overflow math — keep in sync with e2e/helpers/horizontalScrollHeuristic.ts",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-horizontalscrollheuristiccore-ts-horizontalscrolloverflowresult",
+    "name": "HorizontalScrollOverflowResult",
+    "path": "src/shared/test/horizontalScrollHeuristicCore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pure horizontal overflow math — keep in sync with e2e/helpers/horizontalScrollHeuristic.ts",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {

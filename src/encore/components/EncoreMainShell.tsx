@@ -310,6 +310,43 @@ export function EncoreMainShell(): React.ReactElement {
   const performancesPanelHiddenByOverlay =
     showHeavyListTabPlaceholder && heavyListTabOverlay.tab === 'performances';
 
+  /** Warm adjacent list tabs during idle time so tab switches feel instant. */
+  useEffect(() => {
+    if (onEditorRoute || !listSection) return;
+    const prefetch: EncoreMainListSection[] =
+      listSection === 'library'
+        ? ['originals', 'performances', 'practice']
+        : listSection === 'originals' || listSection === 'practice'
+          ? ['performances']
+          : [];
+    if (prefetch.length === 0) return;
+
+    let cancelled = false;
+    const run = () => {
+      if (cancelled) return;
+      setListSectionVisited((prev) => {
+        let next = prev;
+        for (const key of prefetch) {
+          if (!next[key]) next = { ...next, [key]: true };
+        }
+        return next === prev ? prev : next;
+      });
+    };
+
+    if (typeof requestIdleCallback !== 'undefined') {
+      const id = requestIdleCallback(run, { timeout: 2000 });
+      return () => {
+        cancelled = true;
+        cancelIdleCallback(id);
+      };
+    }
+    const id = window.setTimeout(run, 150);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+  }, [listSection, onEditorRoute]);
+
   return (
     <LabsKeyboardShortcutsHost sections={encoreKeyboardShortcutSections} theme="encore">
     <EncoreAppShell>

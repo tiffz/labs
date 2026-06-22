@@ -177,12 +177,14 @@ export function OriginalsLibraryList({
           />
         </Box>
       ) : (
-        <OriginalsSongDashboardView
-          rows={rows}
-          search={search}
-          listActive={listActive}
-          onSaveSong={onSaveSong}
-        />
+        <Box sx={{ minWidth: 0, maxWidth: '100%', overflowX: 'clip' }}>
+          <OriginalsSongDashboardView
+            rows={rows}
+            search={search}
+            listActive={listActive}
+            onSaveSong={onSaveSong}
+          />
+        </Box>
       )}
     </>
   );

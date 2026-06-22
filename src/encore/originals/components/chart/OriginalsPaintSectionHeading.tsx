@@ -8,7 +8,8 @@ import {
 
 export type OriginalsPaintSectionHeadingProps = {
   section: SongSection;
-  onApply: (sectionId: string, progression: string) => ApplySectionProgressionResult;
+  readOnly?: boolean;
+  onApply?: (sectionId: string, progression: string) => ApplySectionProgressionResult;
 };
 
 /**
@@ -17,6 +18,7 @@ export type OriginalsPaintSectionHeadingProps = {
  */
 export function OriginalsPaintSectionHeading({
   section,
+  readOnly = false,
   onApply,
 }: OriginalsPaintSectionHeadingProps): ReactElement {
   const anchorRef = useRef<HTMLButtonElement | null>(null);
@@ -26,6 +28,15 @@ export function OriginalsPaintSectionHeading({
   const [error, setError] = useState<string | null>(null);
 
   const label = section.header?.trim() || section.type;
+
+  if (readOnly) {
+    return (
+      <div className="encore-originals-paint-section-heading-static">
+        <span className="encore-originals-paint-section-heading-label">{label}</span>
+      </div>
+    );
+  }
+
   const progressionLineCount = countSectionProgressionLines(section);
   const lineWord = progressionLineCount === 1 ? 'line' : 'lines';
 
@@ -35,6 +46,7 @@ export function OriginalsPaintSectionHeading({
   };
 
   const apply = () => {
+    if (!onApply) return;
     const result = onApply(section.sectionId, progression);
     if (!result.ok) {
       if (result.reason === 'empty') setError('Paste a chord progression first.');

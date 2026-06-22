@@ -1,12 +1,12 @@
 /** The Gesture Room — Linen design tokens (canonical). See DESIGN.md. */
 
 export const GESTURE_LINEN_MUI = {
-  primary: '#5f8566',
+  primary: '#4a6f51',
   secondary: '#9a958d',
   backgroundDefault: '#e8e4dc',
   backgroundPaper: '#f7f5f1',
   textPrimary: '#2f332c',
-  textSecondary: '#6f6c65',
+  textSecondary: '#595650',
   divider: 'rgba(47, 51, 44, 0.09)',
   shapeRadius: 10,
 } as const;

@@ -43,6 +43,7 @@ import {
   encoreMediaPlaybackQueueAdvance,
   type EncoreMediaPlaybackQueueSnapshot,
 } from '../media/encoreMediaPlaybackQueue';
+import { originalTakeDisplayName } from '../originals/originalsTakeDisplay';
 import {
   EncoreMediaPlaybackAdjustmentStore,
 } from '../media/encoreMediaPlaybackAdjustments';
@@ -76,7 +77,7 @@ function originalsTargetToMediaTarget(target: OriginalsPlaybackTarget): EncoreMe
     playbackId: originalsTakePlaybackId(target.songId, target.takeId),
     kind: encoreDrivePlaybackKind(resolvedMime) ?? 'drive-audio',
     title: target.songTitle,
-    subtitle: target.takeLabel,
+    subtitle: originalTakeDisplayName(target.takeLabel),
     driveFileId: driveFileId || undefined,
     localTakeKey: localTakeKey || undefined,
     mimeType: resolvedMime !== 'application/octet-stream' ? resolvedMime : target.mimeType,
@@ -127,8 +128,11 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
   const queueIndexRef = useRef(0);
   const advancingQueueRef = useRef(false);
   const [queueTick, setQueueTick] = useState(0);
+  const durationByPlaybackIdRef = useRef(new Map<string, number>());
+  const [durationCacheTick, setDurationCacheTick] = useState(0);
 
   const bumpQueue = useCallback(() => setQueueTick((t) => t + 1), []);
+  const bumpDurationCache = useCallback(() => setDurationCacheTick((t) => t + 1), []);
 
   const clearQueueState = useCallback(() => {
     queueRef.current = [];
@@ -263,6 +267,21 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
     [bumpQueue, startMedia],
   );
 
+  const playQueueAtIndex = useCallback(
+    (index: number) => {
+      const items = queueRef.current;
+      if (index < 0 || index >= items.length) return;
+      if (index === queueIndexRef.current && target?.playbackId === items[index]?.playbackId) {
+        return;
+      }
+      queueIndexRef.current = index;
+      bumpQueue();
+      advancingQueueRef.current = true;
+      startMedia(items[index]!);
+    },
+    [bumpQueue, startMedia, target?.playbackId],
+  );
+
   const playTake = useCallback(
     (next: OriginalsPlaybackTarget) => {
       playMedia(originalsTargetToMediaTarget(next));
@@ -282,6 +301,18 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
     if (queueRef.current.length <= 1) return null;
     return { items: [...queueRef.current], index: queueIndexRef.current };
   }, [queueTick]);
+
+  const knownPlaybackDurationSec = useCallback(
+    (playbackId: string): number | undefined => {
+      void durationCacheTick;
+      if (target?.playbackId === playbackId && transport.duration > 0) {
+        return transport.duration;
+      }
+      const cached = durationByPlaybackIdRef.current.get(playbackId);
+      return cached && cached > 0 ? cached : undefined;
+    },
+    [durationCacheTick, target?.playbackId, transport.duration],
+  );
 
   useEffect(() => {
     if (!target) return;
@@ -502,9 +533,18 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
     if (!media || target?.kind === 'youtube' || target?.kind === 'spotify') return;
 
     const syncTransportFromMedia = () => {
+      const duration =
+        Number.isFinite(media.duration) && media.duration > 0 ? media.duration : 0;
+      if (target?.playbackId && duration > 0) {
+        const prev = durationByPlaybackIdRef.current.get(target.playbackId);
+        if (prev !== duration) {
+          durationByPlaybackIdRef.current.set(target.playbackId, duration);
+          bumpDurationCache();
+        }
+      }
       setTransport({
         currentTime: Number.isFinite(media.currentTime) ? media.currentTime : 0,
-        duration: Number.isFinite(media.duration) && media.duration > 0 ? media.duration : 0,
+        duration,
         isPlaying: !media.paused && !media.ended,
       });
     };
@@ -526,7 +566,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       media.removeEventListener('ended', syncTransportFromMedia);
       media.removeEventListener('seeked', syncTransportFromMedia);
     };
-  }, [objectUrl, target?.kind, phase]);
+  }, [objectUrl, target?.kind, target?.playbackId, phase, bumpDurationCache]);
 
   useEffect(() => {
     const media = mediaRef.current;
@@ -757,7 +797,9 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       setLoopEnabled,
       playMedia,
       playMediaQueue,
+      playQueueAtIndex,
       playbackQueue,
+      knownPlaybackDurationSec,
       stopPlayback,
       togglePlayPause,
       seekTo,
@@ -790,7 +832,9 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       setLoopEnabled,
       playMedia,
       playMediaQueue,
+      playQueueAtIndex,
       playbackQueue,
+      knownPlaybackDurationSec,
       stopPlayback,
       togglePlayPause,
       seekTo,

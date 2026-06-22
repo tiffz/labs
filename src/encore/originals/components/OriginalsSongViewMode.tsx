@@ -252,7 +252,12 @@ export function OriginalsSongViewMode({
           onEdit={() => onEditStage('write')}
         >
           {hasLyricsSection ? (
-            <OriginalsLyricsChartPanel lyricsAndChords={song.lyricsAndChords} />
+            <OriginalsLyricsChartPanel
+              lyricsAndChords={song.lyricsAndChords}
+              songId={song.id}
+              songKey={song.key}
+              tempo={song.tempo}
+            />
           ) : (
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
               No lyrics or chart yet. Edit to start writing.

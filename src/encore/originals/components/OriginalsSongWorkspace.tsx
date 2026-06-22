@@ -8,13 +8,13 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import type { ChartPlaybackStep } from '../../../shared/music/chordPro/chartPlaybackSequence';
-import type { ChordNotationMode } from '../../../shared/music/chordSymbolDisplay';
 import {
   encoreSurfaceBandPadY,
   encoreSurfaceContentPad,
   encoreSurfacePadX,
 } from '../../theme/encoreM3Layout';
 import { encoreHairline, encoreRadius, encoreShadowSurface } from '../../theme/encoreUiTokens';
+import { useOriginalsChordNotation } from '../hooks/useOriginalsChordNotation';
 import { useOriginalsChartLayout } from '../hooks/useOriginalsChartLayout';
 import {
   isStageComplete,
@@ -33,20 +33,6 @@ import { OriginalsPaintChordsEditor } from './OriginalsPaintChordsEditor';
 import { OriginalsTakesStage } from './OriginalsTakesStage';
 import { OriginalsWorkflowStepper } from './OriginalsWorkflowStepper';
 import { OriginalsWriteLyricsEditor } from './OriginalsWriteLyricsEditor';
-
-function chordNotationStorageKey(songId: string): string {
-  return `encore-originals-chord-notation:${songId}`;
-}
-
-function readChordNotation(songId: string): ChordNotationMode {
-  try {
-    const raw = sessionStorage.getItem(chordNotationStorageKey(songId));
-    if (raw === 'roman' || raw === 'letters') return raw;
-  } catch {
-    /* ignore */
-  }
-  return 'letters';
-}
 
 export type OriginalsSongWorkspaceProps = {
   song: EncoreOriginalSong;
@@ -80,7 +66,7 @@ export function OriginalsSongWorkspace({
     () => initialWorkflowStage ?? readPersistedWorkflowStage(song.id, song),
   );
   const [chartPasteSnack, setChartPasteSnack] = useState<string | null>(null);
-  const [chordNotation, setChordNotation] = useState<ChordNotationMode>(() => readChordNotation(song.id));
+  const { notation: chordNotation, setNotation: setChordNotation } = useOriginalsChordNotation(song.id);
   const [activePlaybackStep, setActivePlaybackStep] = useState<ChartPlaybackStep | null>(null);
   const chart = useOriginalsChartLayout(song.lyricsAndChords, onChartChange, song.key);
 
@@ -89,14 +75,6 @@ export function OriginalsSongWorkspace({
       setStage(initialWorkflowStage);
     }
   }, [initialWorkflowStage, stage]);
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(chordNotationStorageKey(song.id), chordNotation);
-    } catch {
-      /* ignore */
-    }
-  }, [chordNotation, song.id]);
 
   useEffect(() => {
     onWorkflowStageChange?.(stage);

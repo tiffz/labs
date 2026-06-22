@@ -12,4 +12,4 @@ export type LabsKeyboardShortcutSection = {
   shortcuts: readonly LabsKeyboardShortcutEntry[];
 };
 
-export type LabsKeyboardShortcutsTheme = 'default' | 'words' | 'drums' | 'encore' | 'stanza';
+export type LabsKeyboardShortcutsTheme = 'default' | 'words' | 'drums' | 'encore' | 'stanza' | 'sight';

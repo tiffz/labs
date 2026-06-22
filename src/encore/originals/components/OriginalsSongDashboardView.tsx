@@ -75,6 +75,9 @@ export function OriginalsSongDashboardView({
         gridTemplateColumns: { xs: '1fr', md: 'minmax(220px, 30%) minmax(0, 1fr)' },
         gap: encorePageSectionGap,
         alignItems: 'flex-start',
+        minWidth: 0,
+        maxWidth: '100%',
+        overflowX: 'clip',
       }}
     >
       <Box sx={{ minWidth: 0 }}>

@@ -35,7 +35,11 @@ export type EncoreMediaPlaybackContextValue = {
   setLoopEnabled: (enabled: boolean) => void;
   playMedia: (target: EncoreMediaPlaybackTarget) => void;
   playMediaQueue: (targets: EncoreMediaPlaybackTarget[]) => void;
+  /** Jump to a specific item in the active queue without clearing it. */
+  playQueueAtIndex: (index: number) => void;
   playbackQueue: EncoreMediaPlaybackQueueSnapshot | null;
+  /** Known total length in seconds (from loaded media metadata), when available. */
+  knownPlaybackDurationSec: (playbackId: string) => number | undefined;
   stopPlayback: () => void;
   togglePlayPause: () => void;
   seekTo: (seconds: number) => void;

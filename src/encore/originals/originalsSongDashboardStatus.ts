@@ -28,7 +28,6 @@ export type OriginalsSongDashboardStatus = {
   hasBrainstormDoc: boolean;
   startedLabel: string;
   updatedLabel: string;
-  startedUsesFallback: boolean;
   /** True when updated calendar day is before started calendar day. */
   updatedBeforeStarted: boolean;
   missingChartFile: boolean;
@@ -67,7 +66,6 @@ export function buildOriginalSongDashboardStatus(song: EncoreOriginalSong): Orig
   const hasBrainstormDoc = hasOriginalBrainstormDoc(song);
 
   const startedIso = originalSongStartedDate(song);
-  const startedUsesFallback = !song.startedAt?.trim();
   const updatedCalendar = calendarDateFromIsoTimestamp(song.updatedAt);
   const startedCalendar = startedIso;
 
@@ -86,7 +84,6 @@ export function buildOriginalSongDashboardStatus(song: EncoreOriginalSong): Orig
     hasBrainstormDoc,
     startedLabel: formatShortDate(startedIso),
     updatedLabel: formatShortDate(song.updatedAt),
-    startedUsesFallback,
     updatedBeforeStarted: updatedCalendar < startedCalendar,
     missingChartFile: !hasChartFile,
     missingDemoTake: !hasDemoTake,

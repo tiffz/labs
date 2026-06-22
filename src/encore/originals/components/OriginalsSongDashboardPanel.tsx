@@ -261,11 +261,6 @@ export const OriginalsSongDashboardPanel = memo(function OriginalsSongDashboardP
               sx={{ height: 28, borderColor: 'divider' }}
             />
           </Stack>
-          {status.startedUsesFallback ? (
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.75, display: 'block', lineHeight: 1.45 }}>
-              Started date uses the day this song was added to Encore.
-            </Typography>
-          ) : null}
           {status.updatedBeforeStarted ? (
             <Stack direction="row" alignItems="center" spacing={0.5} sx={{ color: 'warning.main', mt: 0.75 }}>
               <WarningAmberOutlinedIcon sx={{ fontSize: 16 }} aria-hidden />
@@ -281,14 +276,21 @@ export const OriginalsSongDashboardPanel = memo(function OriginalsSongDashboardP
             <OriginalsSongFilesPanel
               song={song}
               onChange={onSongChange}
-              onOpenBrainstorm={() => navigateToOriginalFromLibrary(song)}
+              onOpenBrainstorm={() => navigateToOriginalStageEdit(song.id, 'brainstorm')}
             />
           ) : null}
         </OriginalsDashboardSection>
 
         {hasLyricsSection ? (
           <OriginalsDashboardSection title="Lyrics & chart">
-            <OriginalsLyricsChartPanel lyricsAndChords={song.lyricsAndChords} />
+            <OriginalsLyricsChartPanel
+              lyricsAndChords={song.lyricsAndChords}
+              songId={song.id}
+              songKey={song.key}
+              tempo={song.tempo}
+              compactPlayback
+              embedded
+            />
           </OriginalsDashboardSection>
         ) : null}
       </Stack>

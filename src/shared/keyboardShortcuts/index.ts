@@ -23,6 +23,7 @@ export {
   labsCommonHelpShortcutSection,
   labsKeyboardShortcutsHelpEntry,
   labsUndoRedoShortcutEntries,
+  sightKeyboardShortcutSections,
   wordsKeyboardShortcutSections,
 } from './commonShortcuts';
 export {
