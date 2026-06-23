@@ -179,7 +179,12 @@ jobs:
 
     - name: Run e2e smoke tests (scoped)
       if: steps.e2e-scope.outputs.mode == 'scoped'
-      run: node scripts/run-scoped-e2e.mjs
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          node scripts/run-scoped-e2e.mjs "origin/${{ github.base_ref }}"
+        else
+          node scripts/run-scoped-e2e.mjs "${{ github.event.before }}"
+        fi
 
     - name: Run playback UI regression smokes
       if: steps.e2e-scope.outputs.mode == 'full'

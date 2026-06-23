@@ -2,12 +2,16 @@ import { test, expect } from '@playwright/test';
 import { runHorizontalScrollHeuristicInBrowser } from '../helpers/horizontalScrollHeuristic';
 import { runLayoutHeuristicsInBrowser } from '../helpers/layoutHeuristics';
 import { runContrastAuditInBrowser } from '../helpers/contrastAudit';
+import { expectStanzaLibraryChrome } from '../helpers/stanzaLibrary';
 
 test.describe('Stanza layout heuristics', () => {
-  test('library main has padding and readable copy', async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/stanza/');
-    await expect(page.locator('main#main')).toBeVisible({ timeout: 15_000 });
+    await expectStanzaLibraryChrome(page);
+  });
+
+  test('library main has padding and readable copy', async ({ page }) => {
 
     const result = await page.evaluate(runLayoutHeuristicsInBrowser, {
       containerSelector: 'main#main',
@@ -18,10 +22,6 @@ test.describe('Stanza layout heuristics', () => {
   });
 
   test('library main has no horizontal overflow', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto('/stanza/');
-    await expect(page.locator('main#main')).toBeVisible({ timeout: 15_000 });
-
     const result = await page.evaluate(runHorizontalScrollHeuristicInBrowser, {
       rootSelector: 'main#main',
     });
@@ -29,10 +29,6 @@ test.describe('Stanza layout heuristics', () => {
   });
 
   test('library main text meets contrast guard', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto('/stanza/');
-    await expect(page.locator('main#main')).toBeVisible({ timeout: 15_000 });
-
     const result = await page.evaluate(runContrastAuditInBrowser, {
       rootSelector: 'main#main',
     });
