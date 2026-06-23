@@ -4,6 +4,7 @@ import type { Mesh } from 'three';
 import type { MuscleMemoryNode } from '../../types/node';
 import { baseColorForNode } from './anatomyVisuals';
 import { acquireAnatomyMaterial } from './anatomyMaterialPool';
+import { useAnatomyMeshFlags } from './useAnatomyMeshFlags';
 
 type GlbAtlasMirrorMeshProps = {
   mesh: Mesh;
@@ -16,9 +17,11 @@ type GlbAtlasMirrorMeshProps = {
 export default function GlbAtlasMirrorMesh({ mesh, node }: GlbAtlasMirrorMeshProps) {
   const { invalidate } = useThree();
   const mirrorRef = useRef<Mesh>(null);
+  const flags = useAnatomyMeshFlags(node.id, node);
   const material = useMemo(() => acquireAnatomyMaterial('default', false), []);
 
   useLayoutEffect(() => {
+    if (!flags.visible) return;
     const mirror = mirrorRef.current;
     if (mirror) {
       mirror.raycast = () => undefined;
@@ -30,7 +33,9 @@ export default function GlbAtlasMirrorMesh({ mesh, node }: GlbAtlasMirrorMeshPro
     material.emissiveIntensity = 0;
     material.needsUpdate = true;
     invalidate();
-  }, [invalidate, material, node]);
+  }, [flags.visible, invalidate, material, node]);
+
+  if (!flags.visible) return null;
 
   return <mesh ref={mirrorRef} geometry={mesh.geometry} material={material} />;
 }

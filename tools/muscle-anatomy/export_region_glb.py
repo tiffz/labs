@@ -311,19 +311,40 @@ def _is_skin_neck_shoulder_patch(obj) -> bool:
     if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
         return False
     lower = obj.name.lower()
-    if 'interscapular region' in lower:
-        return True
     if not _is_region_skin_patch(obj):
         return False
     neck_shoulder_tokens = (
-        'posterior cervical',
         'lateral cervical',
         'sternocleidomastoid region',
+    )
+    return any(token in lower for token in neck_shoulder_tokens)
+
+
+def _is_skin_back_torso_patch(obj) -> bool:
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    lower = obj.name.lower()
+    if 'interscapular region' in lower:
+        return True
+    if _is_fold_skin_patch(obj):
+        return True
+    if not _is_region_skin_patch(obj):
+        return False
+    back_tokens = (
+        'gluteal region',
+        'lumbar region',
+        'sacral region',
+        'vertebral region',
         'infrascapular region',
         'scapular region',
         'deltoid region',
+        'posterior cervical',
+        'occipital region',
+        'parietal region',
     )
-    return any(token in lower for token in neck_shoulder_tokens)
+    return any(token in lower for token in back_tokens)
 
 
 def _is_skin_hand_detail_patch(obj) -> bool:
@@ -371,6 +392,7 @@ def _is_skin_body_envelope_patch(obj) -> bool:
     return not (
         _is_skin_face_detail_patch(obj)
         or _is_skin_neck_shoulder_patch(obj)
+        or _is_skin_back_torso_patch(obj)
         or _is_skin_hand_detail_patch(obj)
         or _is_skin_foot_detail_patch(obj)
     )
@@ -380,18 +402,20 @@ SKIN_MESH_TRI_CAPS: dict[str, int] = {
     'skin_envelope': 44_000,
     'skin_face': 12_000,
     'skin_neck_shoulder': 8_000,
+    'skin_back': 14_000,
     'skin_hand_digits': 10_000,
     'skin_foot_digits': 10_000,
     'eye_globes': 2_000,
 }
 
 SKIN_DETAIL_MESH_IDS = frozenset(
-    {'skin_face', 'skin_neck_shoulder', 'skin_hand_digits', 'skin_foot_digits'},
+    {'skin_face', 'skin_neck_shoulder', 'skin_back', 'skin_hand_digits', 'skin_foot_digits'},
 )
 
 SKIN_GROUP_SPECS: tuple[tuple[str, object], ...] = (
     ('skin_face', _is_skin_face_detail_patch),
     ('skin_neck_shoulder', _is_skin_neck_shoulder_patch),
+    ('skin_back', _is_skin_back_torso_patch),
     ('skin_hand_digits', _is_skin_hand_detail_patch),
     ('skin_foot_digits', _is_skin_foot_detail_patch),
     ('skin_envelope', _is_skin_body_envelope_patch),

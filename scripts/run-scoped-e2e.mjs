@@ -3,6 +3,9 @@
  * Run Playwright smokes scoped to apps changed vs merge base.
  * Usage: node scripts/run-scoped-e2e.mjs [base-ref]
  * Default base: origin/main or HEAD~1
+ *
+ * CI push: must pass "${{ github.event.before }}" — bare default on main = empty diff = full smoke.
+ * Guard: src/shared/ciScopeGuardrails.test.ts
  */
 import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';

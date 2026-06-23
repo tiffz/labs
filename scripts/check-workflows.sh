@@ -35,4 +35,20 @@ if [ "$MISSING_CONCURRENCY" -ne 0 ]; then
   exit 1
 fi
 
-echo "check:workflows: ok (single Pages deploy path)"
+CI_YML="$WORKFLOW_DIR/ci.yml"
+if [ ! -f "$CI_YML" ]; then
+  echo "check:workflows: missing $CI_YML"
+  exit 1
+fi
+
+if ! grep -q 'run-scoped-e2e.mjs "${{ github.event.before }}"' "$CI_YML"; then
+  echo "check:workflows: ci.yml must pass github.event.before to run-scoped-e2e on push"
+  exit 1
+fi
+
+if ! grep -q 'run-scoped-e2e.mjs "origin/${{ github.base_ref }}"' "$CI_YML"; then
+  echo "check:workflows: ci.yml must pass origin/base_ref to run-scoped-e2e on pull_request"
+  exit 1
+fi
+
+echo "check:workflows: ok (single Pages deploy path, scoped e2e base-ref parity)"

@@ -1,8 +1,8 @@
 import { getNodesForRegion, ALL_NODES } from './curriculum';
 import type { BodyView, MuscleLayerDepth, MuscleMemoryNode, MuscleRegion } from './types/node';
 
-/** Peel index: higher values hide superficial layers (Proko-style depth study). */
-export type LayerPeelDepth = 0 | 1 | 2 | 3;
+/** Discrete peel stops on the depth slider (notched — no in-between states). */
+export type LayerPeelDepth = 0 | 1 | 2 | 3 | 4;
 
 export const LAYER_PEEL_STOPS: ReadonlyArray<{
   depth: LayerPeelDepth;
@@ -11,21 +11,26 @@ export const LAYER_PEEL_STOPS: ReadonlyArray<{
 }> = [
   {
     depth: 0,
-    label: 'All layers',
-    hint: 'Surface muscles through skeleton together',
+    label: 'Full figure',
+    hint: 'Skin, muscles, and skeleton together',
   },
   {
     depth: 1,
     label: 'Under the skin',
-    hint: 'Hide superficial muscles; show intermediate, deep, and bones',
+    hint: 'All muscles and bones — skin removed',
   },
   {
     depth: 2,
-    label: 'Deep muscles',
-    hint: 'Hide superficial and intermediate; show deep muscles and skeleton',
+    label: 'Below surface',
+    hint: 'Hide superficial muscles; keep intermediate, deep, and bones',
   },
   {
     depth: 3,
+    label: 'Deep muscles',
+    hint: 'Hide superficial and intermediate; deep muscles and skeleton',
+  },
+  {
+    depth: 4,
     label: 'Skeleton',
     hint: 'Bones and joints only',
   },
@@ -39,15 +44,31 @@ export const LAYER_DEPTH_LABELS: Record<MuscleLayerDepth, string> = {
 };
 
 export function layerPeelDepthLabel(peel: LayerPeelDepth): string {
-  return LAYER_PEEL_STOPS.find((stop) => stop.depth === peel)?.label ?? 'All layers';
+  return LAYER_PEEL_STOPS.find((stop) => stop.depth === peel)?.label ?? 'Full figure';
 }
 
-/** Show nodes at or below the selected peel (3 = skeleton only). */
+/** Minimum anatomical layerDepth visible at this peel (null = all muscle/bone nodes). */
+export function muscleLayerThresholdForPeel(peelDepth: LayerPeelDepth): MuscleLayerDepth | null {
+  if (peelDepth <= 1) return null;
+  return (peelDepth - 1) as MuscleLayerDepth;
+}
+
+/** Study-half skin shows only on the full-figure stop when the skin toggle is on. */
+export function isStudySkinVisibleAtPeel(
+  peelDepth: LayerPeelDepth,
+  showSkinLayer: boolean,
+): boolean {
+  return peelDepth === 0 && showSkinLayer;
+}
+
+/** Show nodes at or below the selected peel (4 = skeleton only). */
 export function isNodeVisibleAtPeelDepth(
   node: MuscleMemoryNode,
   peelDepth: LayerPeelDepth,
 ): boolean {
-  return node.layerDepth >= peelDepth;
+  const threshold = muscleLayerThresholdForPeel(peelDepth);
+  if (threshold === null) return true;
+  return node.layerDepth >= threshold;
 }
 
 export function defaultLayerPeelForModule(): LayerPeelDepth {

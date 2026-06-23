@@ -239,14 +239,37 @@ body {
   color: var(--muscle-cream);
 }
 
+.muscle-layer-peel__slider-wrap {
+  position: relative;
+  display: grid;
+  gap: 0.25rem;
+}
+
 .muscle-layer-peel__slider {
   width: 100%;
   accent-color: var(--muscle-navy);
 }
 
+.muscle-layer-peel__notches {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.15rem;
+  padding: 0 0.35rem;
+}
+
+.muscle-layer-peel__notch {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: rgba(26, 39, 68, 0.18);
+}
+
+.muscle-layer-peel__notch.is-active {
+  background: var(--muscle-navy);
+}
+
 .muscle-layer-peel__stops {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.35rem;
 }
 

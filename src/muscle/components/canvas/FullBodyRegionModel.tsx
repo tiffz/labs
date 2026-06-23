@@ -14,6 +14,7 @@ import { mergeFullBodyMeshes, useExtremityModuleMeshes } from './useExtremityMod
 import { useCurriculumDetailMeshes } from './useCurriculumDetailMeshes';
 import { useAtlasCompleteMeshes } from './useAtlasCompleteMeshes';
 import { useHeadFaceAtlasMeshes } from './useHeadFaceAtlasMeshes';
+import { isStudySkinVisibleAtPeel } from '../../layerDepthView';
 import { useMuscleStore } from '../../store/useMuscleStore';
 
 interface FullBodyRegionModelProps {
@@ -54,7 +55,7 @@ export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionMode
     <>
       <SkinEnvelopeLayer layout={groupLayout} half="reference" visible />
       <EyeGlobesLayer layout={groupLayout} half="reference" visible />
-      {showSkinLayer && layerPeelDepth === 0 ? (
+      {isStudySkinVisibleAtPeel(layerPeelDepth, showSkinLayer) ? (
         <>
           <SkinEnvelopeLayer layout={groupLayout} half="study" visible />
           <EyeGlobesLayer layout={groupLayout} half="study" visible />

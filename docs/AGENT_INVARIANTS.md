@@ -40,6 +40,7 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | Zero ESLint **warnings** on touched files                   | `pre-commit-checks.mdc`                                                                                            |
 | Presubmit before done (build + scoped e2e + scoped Vitest)  | `npm run presubmit`, `scripts/presubmit.sh`                                                                        |
+| CI scoped e2e/Vitest use same merge base on push            | `ciScopeGuardrails.test.ts`, `npm run check:workflows`                                                             |
 | Presubmit + full e2e smoke before **push**                  | `npm run presubmit:push`, `.husky/pre-push` (default-on; `LABS_SKIP_PRESUBMIT_PUSH=1` to skip)                     |
 | App render errors → recovery UI                             | `LabsErrorBoundary` in every `main.tsx`, `spaGuardrails.test.ts`                                                   |
 | Local crash log on uncaught errors                          | `labsCrashLog.ts`, ADR 0016                                                                                        |

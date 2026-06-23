@@ -53,6 +53,10 @@ The workflow detects changed paths (PR base or push parent):
 
 Vitest scoping mirrors local `npm run test:changed-apps` in CI when the diff touches ≤3 apps and not `src/shared/**`. E2e changes still trigger full smoke via cross-cutting detection in the workflow.
 
+**Push parity:** On `push` to `main`, scoped e2e **must** receive `${{ github.event.before }}` as the merge base (same as scoped Vitest). Calling `node scripts/run-scoped-e2e.mjs` with no argument defaults to `origin/main` (= `HEAD` on push) and silently runs **full smoke** — see `ciScopeGuardrails.test.ts`.
+
+**Workflow / e2e-only commits:** Touching `.github/workflows/` or `e2e/**` forces **full** smoke in CI even for single-app muscle/encore diffs. Expect unrelated perf/layout flakes; fix root cause or use scoped paths in a follow-up commit.
+
 ## Adding an app to scoped e2e map
 
 Edit [`scripts/run-scoped-e2e.mjs`](../scripts/run-scoped-e2e.mjs) `APP_SMOKE_SPECS`:

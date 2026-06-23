@@ -6,6 +6,7 @@ export const MUSCLE_MAX_SKIN_ENVELOPE_TRIANGLES = 44_000;
 export const MUSCLE_SKIN_OVERLAY_CAPS: Readonly<Record<string, number>> = {
   skin_face: 12_000,
   skin_neck_shoulder: 8_000,
+  skin_back: 14_000,
   skin_hand_digits: 10_000,
   skin_foot_digits: 10_000,
   eye_globes: 2_000,

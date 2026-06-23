@@ -14,7 +14,7 @@ Nested **`AGENTS.md`** for `src/muscle/`. Root policy: [`../../AGENTS.md`](../..
 ## Pitfalls
 
 - **Runtime assets:** Commit `public/muscle/models/` (manifest + GLBs) whenever `src/muscle/` ships — typecheck imports the manifest; CI fails if GLBs are missing locally only. Guardrail: `musclePublicAssetsGuardrails.test.ts`, `npm run muscle:validate-assets` (presubmit when app registered).
-- **Layer peel:** `layerDepthView.ts` — slider 0 (all) → 3 (skeleton); superficial / intermediate / deep / bone layers; sidebar **Structure browser** lists nodes by layer.
+- **Layer peel:** `layerDepthView.ts` — five notched stops: full figure → under skin (all muscles) → below surface → deep → skeleton; sidebar **Structure browser** lists nodes by layer.
 - **Z-Anatomy bridge:** `curriculum/zAnatomyBridge.ts` + CSV in `tools/muscle-anatomy/`; curriculum API at `curriculum/index.ts`.
 - **Gatekeeper:** Active Reps disabled until Fundamentals baseline; do not bypass in UI.
 - **Facts vs judgment:** Dexie stores progress; pure functions in `src/muscle/srs/`.

@@ -50,27 +50,29 @@ Proposed durable fixes from session retrospectives **not yet implemented**. Land
 
 ## Ongoing operations (not one-shot code)
 
-| Item                      | Owner / cadence                                   | Notes                                                                                         |
-| ------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| CI success 75% → 90%      | Weekly — `weekly-engineering-health.yml` + triage | `npm run report:ci-health -- --fail-below 90`; fix e2e flakes as they appear                  |
-| Knip unused exports (~32) | Per-symbol audit when touching a module           | Remaining rows are Gesture/Drive/shared test helpers — avoid bulk delete                      |
-| Crash beacon production   | One-time deploy + Pages env                       | `workers/labs-crash-beacon/` — create KV, `wrangler deploy`, set `VITE_LABS_CRASH_BEACON_URL` |
+| Item                      | Owner / cadence                                   | Notes                                                                                                               |
+| ------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| CI success 75% → 90%      | Weekly — `weekly-engineering-health.yml` + triage | `npm run report:ci-health -- --fail-below 90`; fix e2e flakes as they appear                                        |
+| Sight LCP advisory flake  | When touching layout-advisory                     | `layout-advisory.spec.ts` sight LCP failed at 3428ms vs 3000ms under parallel presubmit — warmup or CI-aware budget |
+| Knip unused exports (~32) | Per-symbol audit when touching a module           | Remaining rows are Gesture/Drive/shared test helpers — avoid bulk delete                                            |
+| Crash beacon production   | One-time deploy + Pages env                       | `workers/labs-crash-beacon/` — create KV, `wrangler deploy`, set `VITE_LABS_CRASH_BEACON_URL`                       |
 
 ## Completed (archive reference)
 
-| Session                                      | Landed in                                                                                                                                              |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Gesture blocking-job snackbar churn          | `LOCAL_FIRST_SYNC.md` § Adopting in a new app (do not fork); shared `src/shared/jobs/` module                                                          |
-| Gesture inline tags + registry               | `InlinePackTags.tsx`, `gestureTagRegistry.ts`, `useGestureKnownTags`, `DESIGN.md` § Inline collection metadata                                         |
-| Performance / CUJ process                    | `docs/PERFORMANCE.md`, `docs/CRITICAL_USER_JOURNEYS.md`, `labs-performance`, interaction smokes (Gesture, Encore, Sight)                               |
-| Sight debug layout regression                | `sight.css` always-on viewport calc, `CUJs.md`, `sight-practice-interaction.spec.ts`                                                                   |
-| Sight Albers perceived pedagogy              | `MIN_INDUCED_DELTAS`, `AlbersInductionReveal`, `PERCEIVED_TEMPERATURE_INDUCTION` diagnostic                                                            |
-| UX journey hard gate                         | `ux-journey-mandatory.mdc`, `labs-ux-journey` skill                                                                                                    |
-| Layout heuristic smokes                      | `layout-heuristics-gesture.spec.ts`, `layout-heuristics-encore.spec.ts`, `layoutHeuristicsCore.ts`                                                     |
-| Mark done (Gesture zen)                      | `ZenSessionPhase.tsx` checkmark + `drawHistory` on early complete                                                                                      |
-| Dexie empty flash                            | `resolveDexieLiveQuery`, `dexie-live-query-empty-states.mdc`                                                                                           |
-| ESLint warning drift                         | `pre-commit-checks.mdc` zero-warning policy                                                                                                            |
-| Vitest teardown noise                        | Removed aggressive `clearTimeout` loop in `setupTests.ts`                                                                                              |
-| Agent process index                          | `AGENT_INVARIANTS.md`, retrospective skill upgrade, PR template                                                                                        |
-| CI presubmit parity + Gesture grid perf      | `presubmit:push`, `presubmit-css-if-needed.mjs`, `GesturePackStatsProvider`, grid scroll opts                                                          |
-| Gesture collections perf + upload resilience | `gesture-collections-scroll.spec.ts`, upload handle/staging (Dexie v4), `gestureUploadNetwork.ts`, `gestureDriveTombstones.ts`, preview pipeline fixes |
+| Session                                           | Landed in                                                                                                                                              |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Gesture blocking-job snackbar churn               | `LOCAL_FIRST_SYNC.md` § Adopting in a new app (do not fork); shared `src/shared/jobs/` module                                                          |
+| Gesture inline tags + registry                    | `InlinePackTags.tsx`, `gestureTagRegistry.ts`, `useGestureKnownTags`, `DESIGN.md` § Inline collection metadata                                         |
+| Performance / CUJ process                         | `docs/PERFORMANCE.md`, `docs/CRITICAL_USER_JOURNEYS.md`, `labs-performance`, interaction smokes (Gesture, Encore, Sight)                               |
+| Sight debug layout regression                     | `sight.css` always-on viewport calc, `CUJs.md`, `sight-practice-interaction.spec.ts`                                                                   |
+| Sight Albers perceived pedagogy                   | `MIN_INDUCED_DELTAS`, `AlbersInductionReveal`, `PERCEIVED_TEMPERATURE_INDUCTION` diagnostic                                                            |
+| UX journey hard gate                              | `ux-journey-mandatory.mdc`, `labs-ux-journey` skill                                                                                                    |
+| Layout heuristic smokes                           | `layout-heuristics-gesture.spec.ts`, `layout-heuristics-encore.spec.ts`, `layoutHeuristicsCore.ts`                                                     |
+| Mark done (Gesture zen)                           | `ZenSessionPhase.tsx` checkmark + `drawHistory` on early complete                                                                                      |
+| Dexie empty flash                                 | `resolveDexieLiveQuery`, `dexie-live-query-empty-states.mdc`                                                                                           |
+| ESLint warning drift                              | `pre-commit-checks.mdc` zero-warning policy                                                                                                            |
+| Vitest teardown noise                             | Removed aggressive `clearTimeout` loop in `setupTests.ts`                                                                                              |
+| Agent process index                               | `AGENT_INVARIANTS.md`, retrospective skill upgrade, PR template                                                                                        |
+| CI presubmit parity + Gesture grid perf           | `presubmit:push`, `presubmit-css-if-needed.mjs`, `GesturePackStatsProvider`, grid scroll opts                                                          |
+| CI scoped e2e push base ref + layout/words flakes | `ciScopeGuardrails.test.ts`, `check-workflows.sh`, Stanza layout helper, Words warmup budget (2026-06-23)                                              |
+| Gesture collections perf + upload resilience      | `gesture-collections-scroll.spec.ts`, upload handle/staging (Dexie v4), `gestureUploadNetwork.ts`, `gestureDriveTombstones.ts`, preview pipeline fixes |

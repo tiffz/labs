@@ -566,7 +566,13 @@
         {
           "nodeId": "skin_neck_shoulder",
           "meshName": "skin_neck_shoulder",
-          "triangleCount": 7891,
+          "triangleCount": 1101,
+          "atlasKind": "skin"
+        },
+        {
+          "nodeId": "skin_back",
+          "meshName": "skin_back",
+          "triangleCount": 7738,
           "atlasKind": "skin"
         },
         {
@@ -3968,5 +3974,5 @@
       "source": "z-anatomy"
     }
   },
-  "assetRevision": "acebe0b6dea4"
+  "assetRevision": "d2de751ac59c"
 }

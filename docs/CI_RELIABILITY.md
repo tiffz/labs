@@ -51,17 +51,20 @@ Skill: **`labs-babysit-pr`**. When adding checks, prefer extending `ci.yml` `tes
 
 ## Failure triage
 
-| Symptom                                                       | Likely cause                                                                 | Fix                                                                        |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `in progress deployment` on **deploy**                        | Two deploys raced (historical) or external Pages activity                    | Deploy job auto-retries once after 90s; confirm single deploy path         |
-| Gesture collections scroll perf flake (50.1ms on 50ms budget) | Scroll perf helper counted intentional `stepDelayMs` pacing in frame samples | Fixed measurement in `e2e/helpers/gestureScrollPerf.ts`                    |
-| Knip / lint / typecheck failed                                | Real regression                                                              | Fix code                                                                   |
-| Vitest timeout at 10s on lazy-import test                     | `findBy*` timeout > `testTimeout`                                            | Preload in `beforeAll`; raise `it` timeout — see `docs/FLAKY_TESTS.md`     |
-| Story `App.test.tsx` flake on CI                              | Same — cold dynamic imports vs 10s cap                                       | Fixed via preload + explicit test timeout                                  |
-| E2e smoke parse error                                         | Syntax error in imported TS                                                  | Fix source; run smoke locally                                              |
-| Visual step warning, job green                                | Expected — visual is advisory on cross-cutting diffs                         | Inspect artifact; update baselines intentionally or fix nightly visual job |
-| Workflow red after push but newer push exists                 | Cancelled superseded run (GitHub shows red)                                  | Check **latest** run on branch — not cancelled rows                        |
-| Playwright flake masked by retry                              | Historical policy drift                                                      | `playwright.config.ts` uses `retries: 0` — fix root cause per FLAKY_TESTS  |
+| Symptom                                                         | Likely cause                                                                 | Fix                                                                                       |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `in progress deployment` on **deploy**                          | Two deploys raced (historical) or external Pages activity                    | Deploy job auto-retries once after 90s; confirm single deploy path                        |
+| Gesture collections scroll perf flake (50.1ms on 50ms budget)   | Scroll perf helper counted intentional `stepDelayMs` pacing in frame samples | Fixed measurement in `e2e/helpers/gestureScrollPerf.ts`                                   |
+| Knip / lint / typecheck failed                                  | Real regression                                                              | Fix code                                                                                  |
+| Vitest timeout at 10s on lazy-import test                       | `findBy*` timeout > `testTimeout`                                            | Preload in `beforeAll`; raise `it` timeout — see `docs/FLAKY_TESTS.md`                    |
+| Story `App.test.tsx` flake on CI                                | Same — cold dynamic imports vs 10s cap                                       | Fixed via preload + explicit test timeout                                                 |
+| E2e smoke parse error                                           | Syntax error in imported TS                                                  | Fix source; run smoke locally                                                             |
+| Visual step warning, job green                                  | Expected — visual is advisory on cross-cutting diffs                         | Inspect artifact; update baselines intentionally or fix nightly visual job                |
+| Workflow red after push but newer push exists                   | Cancelled superseded run (GitHub shows red)                                  | Check **latest** run on branch — not cancelled rows                                       |
+| Playwright flake masked by retry                                | Historical policy drift                                                      | `playwright.config.ts` uses `retries: 0` — fix root cause per FLAKY_TESTS                 |
+| Scoped e2e on push runs full smoke (87 tests)                   | `run-scoped-e2e.mjs` called without merge base; empty diff vs `origin/main`  | Pass `${{ github.event.before }}` in `ci.yml`; guard: `ciScopeGuardrails.test.ts`         |
+| Layout heuristics `missing content node` on CI                  | Smoke waited for `main#main` only, not headings                              | Wait for app chrome helper before `page.evaluate` (Stanza: `expectStanzaLibraryChrome`)   |
+| Interaction budget flake (~450ms vs 400ms) under parallel smoke | Cold first interaction + 4 workers on shared CI runner                       | Warmup action + `RELAXED_INTERACTION_BUDGET_MS`; see `words-practice-interaction.spec.ts` |
 
 ## Related
 

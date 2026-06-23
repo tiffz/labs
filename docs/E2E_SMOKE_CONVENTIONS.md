@@ -43,6 +43,7 @@ Registry: [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) — update when addi
 
 - Helper: `e2e/helpers/stanzaLibrary.ts` → `expectStanzaLibraryChrome`
 - Spec: `e2e/smoke/stanza-library.spec.ts` — landing hero + account menu before viewer navigation
+- Layout heuristics: `e2e/smoke/layout-heuristics-stanza.spec.ts` — same helper in `beforeEach` before padding/contrast evaluate (avoids CI race on `h1`/`h2`)
 
 ### Example: Gesture upload offline resume
 

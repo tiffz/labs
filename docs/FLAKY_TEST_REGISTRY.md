@@ -19,6 +19,12 @@ Track known flaky tests so they get fixed or quarantined — not masked with ret
 
 | `e2e/smoke/muscle-study-journey.spec.ts` | `muscle-layer-status` slow under parallel GLB load | agent | resolved | Wait for canvas before layer status (2026-06-22) |
 
+| `e2e/smoke/layout-heuristics-stanza.spec.ts` | `missing content node` — headings not mounted when `main#main` visible | agent | resolved | `expectStanzaLibraryChrome` in `beforeEach` (2026-06-23) |
+
+| `e2e/smoke/words-practice-interaction.spec.ts` | 448ms vs 400ms budget under parallel full smoke | agent | resolved | Warmup click + `RELAXED_INTERACTION_BUDGET_MS` (2026-06-23) |
+
+| CI scoped e2e on push | Scoped mode ran full smoke (Stanza/Words flakes) | agent | resolved | Pass `github.event.before` to `run-scoped-e2e.mjs`; `ciScopeGuardrails.test.ts` (2026-06-23) |
+
 ### Resolved (archive)
 
 | File / spec                        | Symptom                                              | Fixed in                                |
