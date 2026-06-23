@@ -27,7 +27,7 @@ function mockBeatAnalysisBundle(): PersistedAnalysisBundle {
       bpm: 120,
       confidence: 0.9,
       confidenceLevel: 'high',
-      beats: [0, 0.5, 1],
+      beats: [],
       musicStartTime: 0,
       musicEndTime: 180,
       offset: 0.1,

@@ -15,7 +15,7 @@ import { detectGapsForResync, detectGapOnsets, type GapWithResync } from './gapF
 import { runQuickBpmAccuracyTest, formatBpmAccuracyReport } from './bpmAccuracyTest';
 import { analyzeTempoVariation } from './sectionalTempoAnalyzer';
 import { detectOnsets } from './analysis/onsets';
-import { alignBeatGridToDownbeat } from '../audio/downbeatAlignment';
+import { alignBeatGridToDownbeat, resolveBeatOneAnchorTime } from '../audio/downbeatAlignment';
 import { devLog } from '../utils/devLog';
 import { getEssentia } from './essentiaSingleton';
 
@@ -407,32 +407,35 @@ export async function analyzeBeat(
     }
   }
 
-  // Align beat grid to the first actual downbeat
-  // This handles songs with pickup notes (like "La Isla Bonita")
+  // Re-phase Beat 1 near music start. Essentia beat ticks often land on the
+  // correct BPM but the wrong grid phase (sometimes many seconds into the track).
   reportProgress('Aligning beat grid', 52);
   await yieldToMainThread();
-  
+
   let alignedMusicStartTime = musicStartTime;
   try {
-    const alignment = alignBeatGridToDownbeat(
+    const currentBeatOne = beats.length > 0 ? beats[0] : musicStartTime;
+    const resolution = resolveBeatOneAnchorTime(
       audioBuffer,
       finalBpm,
       musicStartTime,
-      4 // beatsPerMeasure (assume 4/4 for now)
+      currentBeatOne,
+      4,
     );
-    
-    if (alignment.confidence >= 0.4) {
-      alignedMusicStartTime = alignment.alignedStartTime;
-      
-      if (alignment.hasPickup) {
+
+    if (resolution.realigned || resolution.confidence >= 0.4) {
+      alignedMusicStartTime = resolution.beatOneTime;
+
+      if (resolution.hasPickup) {
         warnings.push('Detected pickup notes - beat 1 adjusted');
+      } else if (resolution.realigned && currentBeatOne > musicStartTime + 60 / finalBpm) {
+        warnings.push('Beat 1 re-aligned to opening onsets (tempo grid phase was late)');
       }
-      
-      // If alignment changed significantly, regenerate beats from new start
-      if (Math.abs(alignedMusicStartTime - musicStartTime) > 0.1) {
-        devLog(`[BeatAnalyzer] Adjusted music start from ${musicStartTime.toFixed(3)}s to ${alignedMusicStartTime.toFixed(3)}s for downbeat alignment`);
-        
-        // Regenerate beat grid from aligned start
+
+      if (Math.abs(alignedMusicStartTime - currentBeatOne) > 0.02) {
+        devLog(
+          `[BeatAnalyzer] Beat 1 adjusted from ${currentBeatOne.toFixed(3)}s to ${alignedMusicStartTime.toFixed(3)}s`,
+        );
         const beatInterval = 60 / finalBpm;
         beats = [];
         let beatTime = alignedMusicStartTime;
@@ -440,7 +443,20 @@ export async function analyzeBeat(
           beats.push(beatTime);
           beatTime += beatInterval;
         }
-        offset = alignedMusicStartTime;
+      }
+    } else {
+      // Legacy pickup-only path when phase is already near music start.
+      const alignment = alignBeatGridToDownbeat(audioBuffer, finalBpm, musicStartTime, 4);
+      if (alignment.confidence >= 0.4 && alignment.hasPickup) {
+        alignedMusicStartTime = alignment.alignedStartTime;
+        warnings.push('Detected pickup notes - beat 1 adjusted');
+        const beatInterval = 60 / finalBpm;
+        beats = [];
+        let beatTime = alignedMusicStartTime;
+        while (beatTime < audioBuffer.duration) {
+          beats.push(beatTime);
+          beatTime += beatInterval;
+        }
       }
     }
   } catch (err) {
@@ -527,12 +543,15 @@ export async function analyzeBeat(
     });
   }
 
+  const beatOneTime = beats.length > 0 ? beats[0] : alignedMusicStartTime;
+  offset = beatOneTime - alignedMusicStartTime;
+
   return {
     bpm: finalBpm,
     confidence,
     confidenceLevel,
     beats,
-    musicStartTime: alignedMusicStartTime, // Use aligned time for proper beat 1 placement
+    musicStartTime: alignedMusicStartTime,
     musicEndTime,
     offset,
     warnings,

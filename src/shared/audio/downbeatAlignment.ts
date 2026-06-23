@@ -148,95 +148,143 @@ function calculateAlignmentScore(
   return alignmentRatio * 0.7 + normalizedEnergyBonus * 0.3;
 }
 
+export interface BeatOneAnchorResolution {
+  /** Absolute media time (seconds) for Beat 1. */
+  beatOneTime: number;
+  confidence: number;
+  hasPickup: boolean;
+  realigned: boolean;
+  debugInfo?: {
+    candidateCount: number;
+    bestScore: number;
+    originalBeatOne: number;
+    originalMusicStart: number;
+  };
+}
+
+/**
+ * Resolve Beat 1 anchor time near `musicStartTime`.
+ *
+ * Essentia beat ticks often start many seconds into the track even when BPM is
+ * correct (wrong grid phase). When the current Beat 1 is implausibly late, or
+ * an early phase/onset aligns better with onsets, snap the grid to that anchor.
+ */
+export function resolveBeatOneAnchorTime(
+  audioBuffer: MinimalAudioBuffer,
+  bpm: number,
+  musicStartTime: number,
+  currentBeatOne: number,
+  beatsPerMeasure: number = 4,
+): BeatOneAnchorResolution {
+  const beatInterval = 60 / bpm;
+  const measureDuration = beatInterval * beatsPerMeasure;
+  const searchWindowStart = musicStartTime;
+  const searchWindowEnd = musicStartTime + measureDuration * 2;
+  const allOnsets = detectOnsetsWithEnergy(audioBuffer);
+  const candidateOnsets = allOnsets.filter(
+    (o) => o.time >= searchWindowStart && o.time <= searchWindowEnd,
+  );
+
+  const scoreCandidate = (candidateTime: number, earlyBias: number): number => {
+    const score = calculateAlignmentScore(candidateTime, beatInterval, allOnsets, 16, 0.05);
+    return score * earlyBias;
+  };
+
+  const currentScore = scoreCandidate(currentBeatOne, 1);
+  let bestTime = currentBeatOne;
+  let bestScore = currentScore;
+
+  const phaseSteps = 32;
+  for (let i = 0; i <= phaseSteps; i++) {
+    const candidate = musicStartTime + (i / phaseSteps) * beatInterval;
+    const earlyBias = 1 - (candidate - musicStartTime) / beatInterval * 0.08;
+    const adjusted = scoreCandidate(candidate, earlyBias);
+    if (adjusted > bestScore) {
+      bestScore = adjusted;
+      bestTime = candidate;
+    }
+  }
+
+  for (const candidate of candidateOnsets) {
+    const span = Math.max(beatInterval, searchWindowEnd - searchWindowStart);
+    const earlyBias = 1 - (candidate.time - searchWindowStart) / span * 0.1;
+    const adjusted = scoreCandidate(candidate.time, earlyBias);
+    if (adjusted > bestScore) {
+      bestScore = adjusted;
+      bestTime = candidate.time;
+    }
+  }
+
+  const latePhase = currentBeatOne > musicStartTime + beatInterval * 1.25;
+  const improved = bestScore > currentScore + 0.05;
+  const useResolved =
+    latePhase ||
+    (bestScore >= 0.3 && improved) ||
+    (bestScore >= 0.4 && Math.abs(bestTime - currentBeatOne) > 0.1);
+
+  if (!useResolved) {
+    return {
+      beatOneTime: currentBeatOne,
+      confidence: Math.min(1, currentScore * 1.2),
+      hasPickup: false,
+      realigned: false,
+      debugInfo: {
+        candidateCount: candidateOnsets.length,
+        bestScore: currentScore,
+        originalBeatOne: currentBeatOne,
+        originalMusicStart: musicStartTime,
+      },
+    };
+  }
+
+  const firstOnset = candidateOnsets[0];
+  const hasPickup = firstOnset != null && bestTime > firstOnset.time + beatInterval * 0.5;
+  const confidence = Math.min(1, bestScore * 1.2);
+
+  return {
+    beatOneTime: bestTime,
+    confidence,
+    hasPickup,
+    realigned: Math.abs(bestTime - currentBeatOne) > 0.02,
+    debugInfo: {
+      candidateCount: candidateOnsets.length,
+      bestScore,
+      originalBeatOne: currentBeatOne,
+      originalMusicStart: musicStartTime,
+    },
+  };
+}
+
 /**
  * Align beat grid to the first actual downbeat.
- * 
+ *
  * Handles songs with pickup notes by finding which onset in the opening
  * measures is most likely to be beat 1, based on:
  * - Onset strength (energy)
  * - How well subsequent beats align with detected onsets
- * 
- * @param audioBuffer - The audio to analyze
- * @param bpm - Detected BPM
- * @param musicStartTime - When audio/music starts (from detectMusicStart)
- * @param beatsPerMeasure - Beats per measure (default 4)
- * @returns Alignment result with the best downbeat time
  */
 export function alignBeatGridToDownbeat(
   audioBuffer: MinimalAudioBuffer,
   bpm: number,
   musicStartTime: number,
-  beatsPerMeasure: number = 4
+  beatsPerMeasure: number = 4,
 ): DownbeatAlignmentResult {
-  const beatInterval = 60 / bpm;
-  const measureDuration = beatInterval * beatsPerMeasure;
-  
-  // Search window: first 2 measures after music starts
-  const searchWindowStart = musicStartTime;
-  const searchWindowEnd = musicStartTime + measureDuration * 2;
-  
-  // Detect onsets with energy
-  const allOnsets = detectOnsetsWithEnergy(audioBuffer);
-  
-  // Filter to onsets in search window
-  const candidateOnsets = allOnsets.filter(
-    o => o.time >= searchWindowStart && o.time <= searchWindowEnd
+  const resolved = resolveBeatOneAnchorTime(
+    audioBuffer,
+    bpm,
+    musicStartTime,
+    musicStartTime,
+    beatsPerMeasure,
   );
-  
-  if (candidateOnsets.length === 0) {
-    // No onsets found, use original musicStartTime
-    return {
-      alignedStartTime: musicStartTime,
-      confidence: 0.5,
-      hasPickup: false,
-      debugInfo: {
-        candidateCount: 0,
-        bestScore: 0,
-        originalMusicStart: musicStartTime,
-      },
-    };
-  }
-  
-  // Score each candidate onset as potential beat 1
-  let bestCandidate = candidateOnsets[0];
-  let bestScore = 0;
-  
-  for (const candidate of candidateOnsets) {
-    const score = calculateAlignmentScore(
-      candidate.time,
-      beatInterval,
-      allOnsets,
-      16, // Check 16 beats (4 measures in 4/4)
-      0.05 // 50ms tolerance
-    );
-    
-    // Slight bias toward earlier onsets (simpler explanation)
-    const timeBonus = 1 - (candidate.time - searchWindowStart) / (searchWindowEnd - searchWindowStart) * 0.1;
-    const adjustedScore = score * timeBonus;
-    
-    if (adjustedScore > bestScore) {
-      bestScore = adjustedScore;
-      bestCandidate = candidate;
-    }
-  }
-  
-  // Determine if there's a pickup (best candidate is not the first onset)
-  const firstOnset = candidateOnsets[0];
-  const hasPickup = bestCandidate.time > firstOnset.time + beatInterval * 0.5;
-  
-  // Confidence based on score
-  const confidence = Math.min(1, bestScore * 1.2);
-  
-  // Only use aligned time if confidence is reasonable
-  const useAlignedTime = confidence >= 0.4 && bestScore >= 0.3;
+  const useAlignedTime = resolved.confidence >= 0.4 && resolved.debugInfo?.bestScore != null && resolved.debugInfo.bestScore >= 0.3;
 
   return {
-    alignedStartTime: useAlignedTime ? bestCandidate.time : musicStartTime,
-    confidence,
-    hasPickup: useAlignedTime && hasPickup,
+    alignedStartTime: useAlignedTime ? resolved.beatOneTime : musicStartTime,
+    confidence: resolved.confidence,
+    hasPickup: useAlignedTime && resolved.hasPickup,
     debugInfo: {
-      candidateCount: candidateOnsets.length,
-      bestScore,
+      candidateCount: resolved.debugInfo?.candidateCount ?? 0,
+      bestScore: resolved.debugInfo?.bestScore ?? 0,
       originalMusicStart: musicStartTime,
     },
   };

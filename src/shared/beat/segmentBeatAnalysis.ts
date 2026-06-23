@@ -2,6 +2,7 @@ import type { BeatAnalysisResult } from './findTheBeatAnalyzer';
 import { analyzeBeat } from './findTheBeatAnalyzer';
 import { decodeMediaToBuffer, type AnalysisProgress } from './decodeMediaForBeat';
 import { sliceAudioBuffer } from './sliceAudioBuffer';
+import { beatOneAnchorMediaTime } from './wholeSongBeatAnalysis';
 
 export type SegmentBeatAnalysisProgress = AnalysisProgress;
 
@@ -54,7 +55,7 @@ export async function analyzeBeatForMediaTimeRange(
     onProgress?.({ stage, progress: Math.round(45 + progress * 0.55) });
   });
 
-  const anchorMediaTime = sliceStart + local.offset;
+  const anchorMediaTime = sliceStart + beatOneAnchorMediaTime(local);
 
   return {
     bpm: local.bpm,

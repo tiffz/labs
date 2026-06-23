@@ -58,6 +58,14 @@ export function markAnalysisBundleStale(
   };
 }
 
+/** Absolute media time (seconds) for Beat 1 after analysis. */
+export function beatOneAnchorMediaTime(beat: BeatAnalysisResult): number {
+  if (beat.beats.length > 0 && Number.isFinite(beat.beats[0])) {
+    return beat.beats[0];
+  }
+  return beat.musicStartTime + beat.offset;
+}
+
 export function calibrationFromBeatAnalysis(
   beat: BeatAnalysisResult,
   segmentStart = 0,
@@ -68,7 +76,7 @@ export function calibrationFromBeatAnalysis(
   firstBeatOffsetSec: number;
   confidence: number;
 } {
-  const anchorMediaTime = beat.musicStartTime + beat.offset;
+  const anchorMediaTime = beatOneAnchorMediaTime(beat);
   return {
     bpm: Math.round(beat.bpm),
     anchorMediaTime,
