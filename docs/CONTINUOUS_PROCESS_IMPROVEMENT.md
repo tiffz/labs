@@ -51,6 +51,7 @@ Structure findings as **symptom → root cause class → durable fix** (same fie
 - `main-thread-jank` — O(n) sort/shuffle/index on interaction path
 - `warmup-storm` — prefetch or queue rebuild on unrelated config changes
 - `pedagogy-reveal-gap` — quiz feedback shows ground truth that contradicts the lesson (e.g. identical chips on gray after a perceived-contrast item); fix with induced-read reveal + copy + minimum perceptual delta gates
+- `static-hosting-cors` — local Vite proxy masks browser CORS/referrer failures on GitHub Pages; guest or public Drive I/O must use session BFF or same-origin proxy, not direct `googleapis.com` from the browser (see `buildPublicDriveAltMediaUrl.ts`, `workers/labs-session-bff/src/publicDriveProxy.ts`)
 
 Add a new class only when several future bugs would share it.
 
