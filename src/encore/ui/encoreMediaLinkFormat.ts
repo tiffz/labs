@@ -18,12 +18,6 @@ export function formatMediaLinkCaption(link: EncoreMediaLink): string {
   return 'Recording';
 }
 
-/** Truncated caption for the in-row label (≤ 26 chars). */
-export function formatMediaLinkShortCaption(link: EncoreMediaLink): string {
-  const full = formatMediaLinkCaption(link);
-  return truncateMediaLinkCaption(full, 26);
-}
-
 /** Shared truncation for chip labels (reference / backing / resolved oEmbed titles). */
 export function truncateMediaLinkCaption(full: string, max = 26): string {
   if (full.length <= max) return full;

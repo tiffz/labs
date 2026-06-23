@@ -47,12 +47,3 @@ export async function hasOriginalTakeBlob(songId: string, takeId: string): Promi
 export async function deleteOriginalTakeBlob(songId: string, takeId: string): Promise<void> {
   await encoreDb.originalTakeBlobs.delete(originalTakeBlobKey(songId, takeId));
 }
-
-export async function loadOriginalTakeBlobArrayBuffer(key: string): Promise<ArrayBuffer> {
-  const loaded = await loadOriginalTakeBlob(key);
-  if (!loaded) throw new Error('Local take audio not found.');
-  if (typeof loaded.blob.arrayBuffer === 'function') {
-    return loaded.blob.arrayBuffer();
-  }
-  return new Response(loaded.blob).arrayBuffer();
-}

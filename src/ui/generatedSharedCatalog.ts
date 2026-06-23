@@ -19479,6 +19479,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-test-interactionlatencycore-ts-audio-play-interaction-budget-ms",
+    "name": "AUDIO_PLAY_INTERACTION_BUDGET_MS",
+    "path": "src/shared/test/interactionLatencyCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Web Audio play/stop — audio context + parallel smoke CPU contention (see `drums-load-interaction.spec.ts`).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-test-interactionlatencycore-ts-default-interaction-budget-ms",
     "name": "DEFAULT_INTERACTION_BUDGET_MS",
     "path": "src/shared/test/interactionLatencyCore.ts",

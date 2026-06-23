@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { measureClickUntil } from '../helpers/interactionLatency';
-import { DEFAULT_INTERACTION_BUDGET_MS } from '../../src/shared/test/interactionLatencyCore';
+import { AUDIO_PLAY_INTERACTION_BUDGET_MS } from '../../src/shared/test/interactionLatencyCore';
 
 test.describe('Darbuka load + interaction', () => {
   test('shows rhythm input before staff finishes loading', async ({ page }) => {
@@ -29,6 +29,6 @@ test.describe('Darbuka load + interaction', () => {
     const ms = await measureClickUntil(page, playButton, async () => {
       await expect(stopButton).toBeVisible();
     });
-    expect(ms).toBeLessThanOrEqual(DEFAULT_INTERACTION_BUDGET_MS);
+    expect(ms).toBeLessThanOrEqual(AUDIO_PLAY_INTERACTION_BUDGET_MS);
   });
 });

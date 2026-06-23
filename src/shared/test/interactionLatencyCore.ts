@@ -9,6 +9,9 @@ export const TAB_NAVIGATION_BUDGET_MS = 1200;
 
 export const RELAXED_INTERACTION_BUDGET_MS = 800;
 
+/** Web Audio play/stop — audio context + parallel smoke CPU contention (see `drums-load-interaction.spec.ts`). */
+export const AUDIO_PLAY_INTERACTION_BUDGET_MS = 650;
+
 /** Returns true when measured latency is within budget (inclusive). */
 export function isWithinInteractionBudget(measuredMs: number, budgetMs = DEFAULT_INTERACTION_BUDGET_MS): boolean {
   return measuredMs >= 0 && measuredMs <= budgetMs;
