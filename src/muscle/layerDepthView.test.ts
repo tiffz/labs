@@ -10,7 +10,7 @@ import {
 describe('layerDepthView', () => {
   it('peels superficial layers as depth increases', () => {
     const surface = getNodesForRegion('torso').find((node) => node.layerDepth === 0);
-    const bone = getNodesForRegion('fundamentals').find((node) => node.layerDepth === 2);
+    const bone = getNodesForRegion('fundamentals').find((node) => node.layerDepth === 3);
     expect(surface).toBeTruthy();
     expect(bone).toBeTruthy();
     if (!surface || !bone) return;
@@ -18,12 +18,13 @@ describe('layerDepthView', () => {
     expect(isNodeVisibleAtPeelDepth(surface, 0)).toBe(true);
     expect(isNodeVisibleAtPeelDepth(surface, 1)).toBe(false);
     expect(isNodeVisibleAtPeelDepth(bone, 2)).toBe(true);
+    expect(isNodeVisibleAtPeelDepth(bone, 3)).toBe(true);
     expect(isNodeVisibleAtPeelDepth(bone, 0)).toBe(true);
   });
 
   it('shows fewer structures at skeleton peel on mixed modules', () => {
     const all = countVisibleRegionNodesAtPeel('torso', 0);
-    const skeleton = countVisibleRegionNodesAtPeel('torso', 2);
+    const skeleton = countVisibleRegionNodesAtPeel('torso', 3);
     expect(skeleton).toBeLessThan(all);
     expect(skeleton).toBeGreaterThan(0);
   });

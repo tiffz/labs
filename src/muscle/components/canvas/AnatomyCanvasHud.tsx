@@ -39,8 +39,9 @@ export default function AnatomyCanvasHud() {
   );
 }
 
-function LAYER_DEPTH_META(depth: 0 | 1 | 2): string {
-  if (depth === 0) return 'Surface';
+function LAYER_DEPTH_META(depth: 0 | 1 | 2 | 3): string {
+  if (depth === 0) return 'Superficial';
   if (depth === 1) return 'Intermediate';
-  return 'Deep';
+  if (depth === 2) return 'Deep';
+  return 'Skeleton';
 }

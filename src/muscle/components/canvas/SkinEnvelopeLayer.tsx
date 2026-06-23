@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import type { Mesh } from 'three';
-import { FrontSide, Mesh as ThreeMesh } from 'three';
+import { DoubleSide, FrontSide, Mesh as ThreeMesh } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { muscleModelsManifest as manifest } from '../../types/muscleModelsManifest';
 import { ANATOMY_COLORS } from './anatomyVisuals';
@@ -52,9 +52,10 @@ function SkinMesh({ mesh, half }: { mesh: Mesh; half: 'reference' | 'study' }) {
     material.emissive.set('#3d2818');
     material.emissiveIntensity = isStudy ? 0.03 : 0.05;
     material.transparent = isStudy;
-    material.opacity = isStudy ? 0.42 : 1;
+    material.opacity = isStudy ? 0.52 : 1;
     material.depthWrite = !isStudy;
-    material.side = FrontSide;
+    // Reference half mirrors across x=0 — negative scale flips winding; DoubleSide avoids holes.
+    material.side = half === 'reference' ? DoubleSide : FrontSide;
     material.needsUpdate = true;
     invalidate();
   }, [half, invalidate, isStudy, material, mesh]);
@@ -86,7 +87,7 @@ export default function SkinEnvelopeLayer({ layout, half, visible = true }: Skin
   if (!visible || meshes.length === 0) return null;
 
   return (
-    <AnatomyHalfGroup half={half} layout={layout} renderOrder={half === 'reference' ? 20 : 15}>
+    <AnatomyHalfGroup half={half} layout={layout} renderOrder={half === 'reference' ? 25 : 30}>
       {meshes.map((mesh) => (
         <SkinMesh key={`${half}-${mesh.name}`} mesh={mesh} half={half} />
       ))}

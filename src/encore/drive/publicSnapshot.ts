@@ -11,6 +11,7 @@ import {
   driveFileHasAnyoneReader,
   driveListFiles,
   drivePatchJsonMedia,
+  DriveHttpError,
   driveResolveFileForMedia,
   pickPreferredDriveListFileId,
 } from './driveFetch';
@@ -179,13 +180,14 @@ export async function buildPublicSnapshot(
 
 export async function ensureSnapshotFileId(accessToken: string): Promise<string> {
   const meta = await getSyncMeta();
-  if (meta.snapshotFileId) return meta.snapshotFileId;
   if (!meta.rootFolderId) throw new Error('Drive not bootstrapped');
   const list = await driveListFiles(accessToken, qJsonInParent(PUBLIC_SNAPSHOT_FILE_NAME, meta.rootFolderId));
-  const existing = pickPreferredDriveListFileId(list.files, undefined);
-  if (existing) {
-    await patchSyncMeta({ snapshotFileId: existing });
-    return existing;
+  const resolved = pickPreferredDriveListFileId(list.files, meta.snapshotFileId);
+  if (resolved) {
+    if (resolved !== meta.snapshotFileId) {
+      await patchSyncMeta({ snapshotFileId: resolved });
+    }
+    return resolved;
   }
   const empty: PublicSnapshot = {
     version: 1,
@@ -197,6 +199,25 @@ export async function ensureSnapshotFileId(accessToken: string): Promise<string>
   const created = await driveCreateJsonFile(accessToken, body, PUBLIC_SNAPSHOT_FILE_NAME, [meta.rootFolderId]);
   await patchSyncMeta({ snapshotFileId: created.id });
   return created.id;
+}
+
+async function verifyPublicSnapshotReadable(fileId: string, apiKey: string): Promise<void> {
+  const retryDelaysMs = [0, 900, 2200];
+  let lastError: unknown;
+  for (const delayMs of retryDelaysMs) {
+    if (delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+    try {
+      await fetchPublicDriveJson(fileId, apiKey);
+      return;
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes('Snapshot not found')) break;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
 export interface PublishSnapshotResult {
@@ -234,8 +255,19 @@ export async function publishSnapshotToDrive(
     ownerDisplayNameForPublish?.trim() || extras?.ownerDisplayName?.trim() || undefined;
   const snap = await buildPublicSnapshot(accessToken, songs, performances, ownerName, publishOptions);
   const body = JSON.stringify(snap);
-  const fileId = await ensureSnapshotFileId(accessToken);
-  const patchResult = await drivePatchJsonMedia(accessToken, fileId, body, undefined);
+  let fileId = await ensureSnapshotFileId(accessToken);
+  let patchResult: Awaited<ReturnType<typeof drivePatchJsonMedia>>;
+  try {
+    patchResult = await drivePatchJsonMedia(accessToken, fileId, body, undefined);
+  } catch (error) {
+    if (error instanceof DriveHttpError && error.status === 404) {
+      await patchSyncMeta({ snapshotFileId: undefined });
+      fileId = await ensureSnapshotFileId(accessToken);
+      patchResult = await drivePatchJsonMedia(accessToken, fileId, body, undefined);
+    } else {
+      throw error;
+    }
+  }
   await patchSyncMeta({ lastPublishedSnapshotAt: snap.generatedAt });
   const driveModifiedTime = patchResult.modifiedTime;
 
@@ -275,7 +307,7 @@ export async function publishSnapshotToDrive(
   }
 
   try {
-    await fetchPublicDriveJson(fileId, apiKey);
+    await verifyPublicSnapshotReadable(fileId, apiKey);
     return {
       fileId,
       generatedAt: snap.generatedAt,

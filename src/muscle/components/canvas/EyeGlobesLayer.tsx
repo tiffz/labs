@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import type { Mesh } from 'three';
-import { FrontSide } from 'three';
+import { DoubleSide, FrontSide } from 'three';
 import { muscleModelsManifest as manifest } from '../../types/muscleModelsManifest';
 import { ANATOMY_COLORS } from './anatomyVisuals';
 import AnatomyHalfGroup from './AnatomyHalfGroup';
@@ -33,7 +33,7 @@ function EyeGlobeMesh({ mesh, half }: { mesh: Mesh; half: 'reference' | 'study' 
     material.transparent = isStudy;
     material.opacity = isStudy ? 0.85 : 1;
     material.depthWrite = !isStudy;
-    material.side = FrontSide;
+    material.side = half === 'reference' ? DoubleSide : FrontSide;
     material.needsUpdate = true;
     invalidate();
   }, [half, invalidate, isStudy, material]);

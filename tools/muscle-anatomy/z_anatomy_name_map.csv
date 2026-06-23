@@ -46,8 +46,11 @@ Flexor digitorum superficialis.r,muscle_flexor_digitorum_superficialis,hand
 Extensor digitorum.r,muscle_extensor_digitorum,hand
 Patella.r,bone_patella,leg
 Rectus femoris muscle.r,muscle_quadriceps_rectus_femoris,leg
+Rectus femoris muscle-Iliac insertion.r,muscle_quadriceps_rectus_femoris,leg
 Vastus lateralis muscle.r,muscle_vastus_lateralis,leg
 Long head of biceps femoris muscle.r,muscle_hamstrings_biceps_femoris,leg
+Short head of biceps femoris muscle.r,muscle_hamstrings_biceps_femoris,leg
+Short head of biceps femoris on lateral lip of linea aspera.r,muscle_hamstrings_biceps_femoris,leg
 Medial head of gastrocnemius.r,muscle_gastrocnemius,leg
 Lateral head of gastrocnemius.r,muscle_gastrocnemius,leg
 Tibialis anterior muscle.r,muscle_tibialis_anterior,leg
@@ -56,13 +59,26 @@ Talus.r,bone_talus,foot
 Abductor hallucis.r,muscle_abductor_hallucis,foot
 Extensor digitorum brevis.r,muscle_extensor_digitorum_brevis,foot
 Gluteus maximus muscle.r,muscle_gluteus_maximus,atlas_supplement
+Gluteus maximus ending on gluteal surface.r,muscle_gluteus_maximus,atlas_supplement
+Gluteus maximus muscle-Iliac insertion.r,muscle_gluteus_maximus,atlas_supplement
 Gluteus medius muscle.r,muscle_gluteus_medius,atlas_supplement
+Gluteus medius muscle-Iliac insertion.r,muscle_gluteus_medius,atlas_supplement
+Gluteus minimus muscle.r,muscle_gluteus_minimus,atlas_supplement
+Gluteus minimus muscle-Iliac insertion.r,muscle_gluteus_minimus,atlas_supplement
+Piriformis muscle.r,muscle_piriformis,atlas_supplement
+Iliacus muscle.r,muscle_iliacus,atlas_supplement
+Vastus intermedius muscle.r,muscle_vastus_intermedius,atlas_supplement
 Soleus muscle.r,muscle_soleus,atlas_supplement
 Vastus medialis muscle.r,muscle_vastus_medialis,atlas_supplement
 Gracilis muscle.r,muscle_gracilis,atlas_supplement
+Adductor longus.r,muscle_adductor_longus,atlas_supplement
 Adductor longus on medial surface of femur.r,muscle_adductor_longus,atlas_supplement
 Semitendinosus muscle.r,muscle_semitendinosus,atlas_supplement
+Semitendinosus muscle-Isciatic insertion.r,muscle_semitendinosus,atlas_supplement
+Semitendinosus on 'patte d'oie'.r,muscle_semitendinosus,atlas_supplement
 Semimembranosus muscle.r,muscle_semimembranosus,atlas_supplement
+Semimembranosus muscle-Ischiatic insertion.r,muscle_semimembranosus,atlas_supplement
+Semimembranosus on posterior surf. of med. condyle.r,muscle_semimembranosus,atlas_supplement
 Sartorius muscle.r,muscle_sartorius,atlas_supplement
 Tensor fasciae latae.r,muscle_tensor_fasciae_latae,atlas_supplement
 Teres major muscle.r,muscle_teres_major,atlas_supplement

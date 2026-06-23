@@ -23,7 +23,8 @@ export default function QuizCameraRig({ preset, animate }: QuizCameraRigProps) {
   const goalTarget = useMemo(() => new THREE.Vector3(), []);
 
   useEffect(() => {
-    camera.position.set(0, stageCenter[1] + 0.075, 2.85);
+    const isFullBody = bodyView === 'full_body';
+    camera.position.set(isFullBody ? 0.42 : 0, stageCenter[1] + 0.075, isFullBody ? 2.55 : 2.85);
     goalTarget.set(stageCenter[0], stageCenter[1], stageCenter[2]);
     if (controlsRef.current) {
       controlsRef.current.target.copy(goalTarget);

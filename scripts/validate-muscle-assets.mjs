@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const MAX_MESH_TRIS = 25_000;
-const MAX_SKIN_ENVELOPE_TRIS = 48_000;
+const MAX_SKIN_ENVELOPE_TRIS = 52_000;
 const MAX_REGION_TRIS = 80_000;
 const ATLAS_REGION_TRIS = 120_000;
 const ATLAS_COMPLETE_REGION_TRIS = 400_000;

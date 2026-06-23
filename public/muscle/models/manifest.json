@@ -299,12 +299,32 @@
         {
           "nodeId": "muscle_gluteus_maximus",
           "meshName": "muscle_gluteus_maximus",
-          "triangleCount": 5454
+          "triangleCount": 6788
         },
         {
           "nodeId": "muscle_gluteus_medius",
           "meshName": "muscle_gluteus_medius",
-          "triangleCount": 5706
+          "triangleCount": 6998
+        },
+        {
+          "nodeId": "muscle_gluteus_minimus",
+          "meshName": "muscle_gluteus_minimus",
+          "triangleCount": 6937
+        },
+        {
+          "nodeId": "muscle_piriformis",
+          "meshName": "muscle_piriformis",
+          "triangleCount": 3000
+        },
+        {
+          "nodeId": "muscle_iliacus",
+          "meshName": "muscle_iliacus",
+          "triangleCount": 7140
+        },
+        {
+          "nodeId": "muscle_vastus_intermedius",
+          "meshName": "muscle_vastus_intermedius",
+          "triangleCount": 6796
         },
         {
           "nodeId": "muscle_soleus",
@@ -314,7 +334,7 @@
         {
           "nodeId": "muscle_vastus_medialis",
           "meshName": "muscle_vastus_medialis",
-          "triangleCount": 5840
+          "triangleCount": 7124
         },
         {
           "nodeId": "muscle_gracilis",
@@ -324,22 +344,22 @@
         {
           "nodeId": "muscle_adductor_longus",
           "meshName": "muscle_adductor_longus",
-          "triangleCount": 29
+          "triangleCount": 7457
         },
         {
           "nodeId": "muscle_semitendinosus",
           "meshName": "muscle_semitendinosus",
-          "triangleCount": 5802
+          "triangleCount": 7141
         },
         {
           "nodeId": "muscle_semimembranosus",
           "meshName": "muscle_semimembranosus",
-          "triangleCount": 5515
+          "triangleCount": 6751
         },
         {
           "nodeId": "muscle_sartorius",
           "meshName": "muscle_sartorius",
-          "triangleCount": 5474
+          "triangleCount": 6676
         },
         {
           "nodeId": "muscle_tensor_fasciae_latae",
@@ -369,7 +389,7 @@
         {
           "nodeId": "muscle_splenius_capitis",
           "meshName": "muscle_splenius_capitis",
-          "triangleCount": 5800
+          "triangleCount": 7074
         },
         {
           "nodeId": "muscle_omohyoid",
@@ -520,13 +540,13 @@
         {
           "nodeId": "skin_envelope",
           "meshName": "skin_envelope",
-          "triangleCount": 25618,
+          "triangleCount": 51998,
           "atlasKind": "skin"
         },
         {
           "nodeId": "eye_globes",
           "meshName": "eye_globes",
-          "triangleCount": 1999,
+          "triangleCount": 1457,
           "atlasKind": "skin"
         }
       ],
@@ -618,7 +638,7 @@
         {
           "nodeId": "muscle_pectoralis_major",
           "meshName": "muscle_pectoralis_major",
-          "triangleCount": 3321,
+          "triangleCount": 3937,
           "atlasKind": "muscle"
         },
         {
@@ -781,6 +801,12 @@
           "nodeId": "muscle_gluteus_medius",
           "meshName": "muscle_gluteus_medius",
           "triangleCount": 632,
+          "atlasKind": "muscle"
+        },
+        {
+          "nodeId": "muscle_gluteus_minimus",
+          "meshName": "muscle_gluteus_minimus",
+          "triangleCount": 763,
           "atlasKind": "muscle"
         },
         {
@@ -982,11 +1008,46 @@
           "atlasKind": "muscle"
         },
         {
-          "nodeId": "atlas_abdominal_part_of_pectoralis_major_m_e1ee9389",
-          "meshName": "atlas_abdominal_part_of_pectoralis_major_m_e1ee9389",
-          "triangleCount": 614,
-          "atlasKind": "muscle",
-          "displayName": "Abdominal part of pectoralis major muscle.r"
+          "nodeId": "muscle_bucinator",
+          "meshName": "muscle_bucinator",
+          "triangleCount": 722,
+          "atlasKind": "muscle"
+        },
+        {
+          "nodeId": "muscle_corrugator_supercilii",
+          "meshName": "muscle_corrugator_supercilii",
+          "triangleCount": 226,
+          "atlasKind": "muscle"
+        },
+        {
+          "nodeId": "muscle_depressor_labii_superioris",
+          "meshName": "muscle_depressor_labii_superioris",
+          "triangleCount": 678,
+          "atlasKind": "muscle"
+        },
+        {
+          "nodeId": "muscle_depressor_septi_nasi",
+          "meshName": "muscle_depressor_septi_nasi",
+          "triangleCount": 226,
+          "atlasKind": "muscle"
+        },
+        {
+          "nodeId": "muscle_levator_anguli_oris",
+          "meshName": "muscle_levator_anguli_oris",
+          "triangleCount": 270,
+          "atlasKind": "muscle"
+        },
+        {
+          "nodeId": "muscle_levator_nasolabialis",
+          "meshName": "muscle_levator_nasolabialis",
+          "triangleCount": 140,
+          "atlasKind": "muscle"
+        },
+        {
+          "nodeId": "muscle_procerus",
+          "meshName": "muscle_procerus",
+          "triangleCount": 443,
+          "atlasKind": "muscle"
         },
         {
           "nodeId": "atlas_abductor_digiti_minimi_of_foot_r_b4068044",
@@ -1185,13 +1246,6 @@
           "displayName": "Bracioradialis muscle-Humeral insertion.r"
         },
         {
-          "nodeId": "atlas_bucinator_r_55850a7e",
-          "meshName": "atlas_bucinator_r_55850a7e",
-          "triangleCount": 722,
-          "atlasKind": "muscle",
-          "displayName": "Bucinator.r"
-        },
-        {
           "nodeId": "atlas_c1_28c27031",
           "meshName": "atlas_c1_28c27031",
           "triangleCount": 880,
@@ -1276,13 +1330,6 @@
           "displayName": "Coracoradialis muscle-Humeral insertion.r"
         },
         {
-          "nodeId": "atlas_corrugator_supercilii_r_02f7e1c6",
-          "meshName": "atlas_corrugator_supercilii_r_02f7e1c6",
-          "triangleCount": 226,
-          "atlasKind": "muscle",
-          "displayName": "Corrugator supercilii.r"
-        },
-        {
           "nodeId": "atlas_cuboid_bone_r_baa2aee7",
           "meshName": "atlas_cuboid_bone_r_baa2aee7",
           "triangleCount": 396,
@@ -1337,20 +1384,6 @@
           "triangleCount": 35,
           "atlasKind": "muscle",
           "displayName": "Deltoid muscle-Humeral insertion.r"
-        },
-        {
-          "nodeId": "atlas_depressor_labii_superioris_r_58733ff3",
-          "meshName": "atlas_depressor_labii_superioris_r_58733ff3",
-          "triangleCount": 678,
-          "atlasKind": "muscle",
-          "displayName": "Depressor labii superioris.r"
-        },
-        {
-          "nodeId": "atlas_depressor_septi_nasi_r_ee736281",
-          "meshName": "atlas_depressor_septi_nasi_r_ee736281",
-          "triangleCount": 226,
-          "atlasKind": "muscle",
-          "displayName": "Depressor septi nasi.r"
         },
         {
           "nodeId": "atlas_descending_part_of_trapezius_muscle__13011657",
@@ -1906,13 +1939,6 @@
           "displayName": "Gluteus minimus muscle-Iliac insertion.r"
         },
         {
-          "nodeId": "atlas_gluteus_minimus_muscle_r_4ced0485",
-          "meshName": "atlas_gluteus_minimus_muscle_r_4ced0485",
-          "triangleCount": 763,
-          "atlasKind": "muscle",
-          "displayName": "Gluteus minimus muscle.r"
-        },
-        {
           "nodeId": "atlas_gracilis_muscle_pubic_insertion_r_3568d7dc",
           "meshName": "atlas_gracilis_muscle_pubic_insertion_r_3568d7dc",
           "triangleCount": 59,
@@ -2417,25 +2443,11 @@
           "displayName": "Left parietal bone"
         },
         {
-          "nodeId": "atlas_levator_anguli_oris_r_910c844a",
-          "meshName": "atlas_levator_anguli_oris_r_910c844a",
-          "triangleCount": 270,
-          "atlasKind": "muscle",
-          "displayName": "Levator anguli oris.r"
-        },
-        {
           "nodeId": "atlas_levator_ani_pubic_and_ischiatic_inse_3ea30fe1",
           "meshName": "atlas_levator_ani_pubic_and_ischiatic_inse_3ea30fe1",
           "triangleCount": 42,
           "atlasKind": "muscle",
           "displayName": "Levator ani-Pubic and ischiatic insertions.r"
-        },
-        {
-          "nodeId": "atlas_levator_nasolabialis_r_562f9742",
-          "meshName": "atlas_levator_nasolabialis_r_562f9742",
-          "triangleCount": 140,
-          "atlasKind": "muscle",
-          "displayName": "Levator nasolabialis.r"
         },
         {
           "nodeId": "atlas_levator_palpebrae_superioris_r_5e4fb236",
@@ -2996,13 +3008,6 @@
           "triangleCount": 1042,
           "atlasKind": "muscle",
           "displayName": "Posterior belly of digastric muscle.r"
-        },
-        {
-          "nodeId": "atlas_procerus_r_3ee071db",
-          "meshName": "atlas_procerus_r_3ee071db",
-          "triangleCount": 443,
-          "atlasKind": "muscle",
-          "displayName": "Procerus.r"
         },
         {
           "nodeId": "atlas_pronator_quadratus_radial_insertions_e8c06b94",
@@ -3919,5 +3924,5 @@
       "source": "z-anatomy"
     }
   },
-  "assetRevision": "3fa1bce8e8af"
+  "assetRevision": "dc3f9dca9a96"
 }

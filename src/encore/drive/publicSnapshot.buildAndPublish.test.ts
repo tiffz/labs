@@ -241,6 +241,9 @@ describe('publishSnapshotToDrive', () => {
       rootFolderId: 'root',
       snapshotFileId: 'existing-snap',
     });
+    (driveListFiles as any).mockResolvedValue({
+      files: [{ id: 'existing-snap', modifiedTime: '2025-01-15T00:00:00.000Z' }],
+    });
     (drivePatchJsonMedia as any).mockResolvedValue({
       id: 'existing-snap',
       modifiedTime: '2025-01-15T00:00:00.000Z',
@@ -286,6 +289,31 @@ describe('publishSnapshotToDrive', () => {
       const r = await publishSnapshotToDrive('tok');
       expect(r.publiclyReadable).toBe(false);
       expect(r.warning).toMatch(/forbidden|public read check/);
+    } finally {
+      (import.meta.env as any).VITE_GOOGLE_API_KEY = orig;
+    }
+  });
+
+  it('rebinds to the newest snapshot file when cached id is missing from Drive', async () => {
+    (getSyncMeta as any).mockResolvedValue({
+      id: 'default',
+      rootFolderId: 'root',
+      snapshotFileId: 'stale-snap',
+    });
+    (driveListFiles as any).mockResolvedValue({
+      files: [{ id: 'fresh-snap', modifiedTime: '2025-02-01T00:00:00.000Z' }],
+    });
+    (drivePatchJsonMedia as any).mockResolvedValue({
+      id: 'fresh-snap',
+      modifiedTime: '2025-02-01T00:00:00.000Z',
+    });
+    const orig = (import.meta.env as any).VITE_GOOGLE_API_KEY;
+    (import.meta.env as any).VITE_GOOGLE_API_KEY = 'sample-key';
+    (fetchPublicDriveJson as any).mockResolvedValueOnce({});
+    try {
+      const r = await publishSnapshotToDrive('tok');
+      expect(r.fileId).toBe('fresh-snap');
+      expect(patchSyncMeta).toHaveBeenCalledWith({ snapshotFileId: 'fresh-snap' });
     } finally {
       (import.meta.env as any).VITE_GOOGLE_API_KEY = orig;
     }

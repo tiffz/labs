@@ -2,7 +2,6 @@ import AddToDriveIcon from '@mui/icons-material/AddToDrive';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -247,10 +246,6 @@ export function SharePanel(): ReactElement {
           label={
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
               Only include songs I’ve performed at least once
-              <Box component="span" sx={{ display: 'block', mt: 0.35, fontSize: '0.8125rem', opacity: 0.92 }}>
-                Applies to the <strong>guest link</strong> only. Spotify playlists are configured under{' '}
-                <strong>Saved searches</strong> on the Repertoire page.
-              </Box>
             </Typography>
           }
         />

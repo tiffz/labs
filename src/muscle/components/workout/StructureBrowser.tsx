@@ -8,7 +8,7 @@ import {
 import { useMuscleStore } from '../../store/useMuscleStore';
 import type { MuscleMemoryNode } from '../../types/node';
 
-const LAYER_ORDER: ReadonlyArray<0 | 1 | 2> = [0, 1, 2];
+const LAYER_ORDER: ReadonlyArray<0 | 1 | 2 | 3> = [0, 1, 2, 3];
 
 function typeAbbrev(type: MuscleMemoryNode['type']): string {
   if (type === 'muscle') return 'M';

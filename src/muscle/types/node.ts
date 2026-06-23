@@ -1,3 +1,6 @@
+/** 0 superficial · 1 intermediate · 2 deep · 3 skeleton (bones/joints). */
+export type MuscleLayerDepth = 0 | 1 | 2 | 3;
+
 export type MuscleRegion =
   | 'fundamentals'
   | 'torso'
@@ -34,7 +37,8 @@ export interface MuscleMemoryNode {
   latinName?: string;
   type: MuscleNodeType;
   region: MuscleRegion;
-  layerDepth: 0 | 1 | 2;
+  /** Anatomical peel layer — see MuscleLayerDepth. */
+  layerDepth: MuscleLayerDepth;
   isSurfaceForm: boolean;
   jointType?: JointType;
   originBoneId?: string;

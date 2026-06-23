@@ -2,9 +2,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import MenuItem from '@mui/material/MenuItem';
+import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import type { DragEvent, ReactElement } from 'react';
@@ -195,22 +194,27 @@ export function SongPerformancesCompactPanel(props: SongPerformancesCompactPanel
         </Button>
       </Stack>
 
-      {venueBreakdown.length > 1 ? (
-        <TextField
-          select
-          size="small"
-          label="Venue"
-          value={venueFilter ?? ''}
-          onChange={(e) => onSelectVenueFilter(e.target.value || null)}
-          sx={{ mb: 1.5, minWidth: 160, maxWidth: 280 }}
-        >
-          <MenuItem value="">All venues</MenuItem>
+      {venueBreakdown.length > 0 ? (
+        <Stack direction="row" flexWrap="wrap" gap={0.75} useFlexGap sx={{ mb: 1.5, alignItems: 'center' }}>
+          <Chip
+            size="small"
+            label="All venues"
+            onClick={() => onSelectVenueFilter(null)}
+            color={venueFilter == null ? 'primary' : 'default'}
+            variant={venueFilter == null ? 'filled' : 'outlined'}
+            sx={{ fontWeight: 600 }}
+          />
           {venueBreakdown.map(([venue, n]) => (
-            <MenuItem key={venue} value={venue}>
-              {venue} ({n})
-            </MenuItem>
+            <Chip
+              key={venue}
+              size="small"
+              label={`${venue} (${n})`}
+              onClick={() => onSelectVenueFilter(venue)}
+              color={venueFilter === venue ? 'primary' : 'default'}
+              variant={venueFilter === venue ? 'filled' : 'outlined'}
+            />
           ))}
-        </TextField>
+        </Stack>
       ) : null}
 
       {performances.length > 0 ? (

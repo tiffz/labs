@@ -1,7 +1,7 @@
 /** Triangle budgets for Z-Anatomy region GLBs — enforced by validate-assets + Vitest. */
 export const MUSCLE_MAX_MESH_TRIANGLES = 25_000;
 /** Unified full-body skin envelope — merged Z-Anatomy region patches. */
-export const MUSCLE_MAX_SKIN_ENVELOPE_TRIANGLES = 48_000;
+export const MUSCLE_MAX_SKIN_ENVELOPE_TRIANGLES = 52_000;
 export const MUSCLE_MAX_REGION_TRIANGLES = 80_000;
 export const MUSCLE_MAX_ATLAS_REGION_TRIANGLES = 120_000;
 export const MUSCLE_MAX_ATLAS_COMPLETE_TRIANGLES = 400_000;

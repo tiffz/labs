@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-async function setLayerPeelDepth(page: import('@playwright/test').Page, depth: 0 | 1 | 2) {
+async function setLayerPeelDepth(page: import('@playwright/test').Page, depth: 0 | 1 | 2 | 3) {
   const slider = page.getByRole('slider', { name: 'Depth' });
   await slider.fill(String(depth));
 }
@@ -18,7 +18,7 @@ test.describe('Muscle Memory study journey', () => {
     await expect(page.getByTestId('muscle-app')).toBeVisible();
     await expect(page.getByTestId('muscle-training-canvas')).toBeVisible();
 
-    await setLayerPeelDepth(page, 2);
+    await setLayerPeelDepth(page, 3);
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Skeleton · 12 visible');
   });
 
@@ -33,6 +33,9 @@ test.describe('Muscle Memory study journey', () => {
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Under the skin · 4 visible');
 
     await setLayerPeelDepth(page, 2);
+    await expect(page.getByTestId('muscle-layer-status')).toContainText('Deep muscles · 1 visible');
+
+    await setLayerPeelDepth(page, 3);
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Skeleton · 1 visible');
   });
 

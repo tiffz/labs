@@ -4,7 +4,7 @@ import {
   measureMuscleOrbitPerf,
 } from '../helpers/muscleOrbitPerf';
 
-async function setLayerPeelDepth(page: import('@playwright/test').Page, depth: 0 | 1 | 2) {
+async function setLayerPeelDepth(page: import('@playwright/test').Page, depth: 0 | 1 | 2 | 3) {
   await page.getByRole('slider', { name: 'Depth' }).fill(String(depth));
 }
 
@@ -19,7 +19,7 @@ test.describe('Muscle Memory orbit perf', () => {
     const canvas = page.locator('[data-testid="muscle-training-canvas"] canvas');
     await expect(canvas).toBeVisible({ timeout: 15_000 });
 
-    await setLayerPeelDepth(page, 2);
+    await setLayerPeelDepth(page, 3);
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Skeleton · 12 visible', {
       timeout: 15_000,
     });
@@ -39,7 +39,7 @@ test.describe('Muscle Memory orbit perf', () => {
     await expect(canvas).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId('muscle-layer-status')).toContainText('visible', { timeout: 15_000 });
 
-    await setLayerPeelDepth(page, 2);
+    await setLayerPeelDepth(page, 3);
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Skeleton', { timeout: 15_000 });
     await page.waitForTimeout(2_500);
 

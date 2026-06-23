@@ -1,8 +1,8 @@
 import { getNodesForRegion, ALL_NODES } from './curriculum';
-import type { BodyView, MuscleMemoryNode, MuscleRegion } from './types/node';
+import type { BodyView, MuscleLayerDepth, MuscleMemoryNode, MuscleRegion } from './types/node';
 
 /** Peel index: higher values hide superficial layers (Proko-style depth study). */
-export type LayerPeelDepth = 0 | 1 | 2;
+export type LayerPeelDepth = 0 | 1 | 2 | 3;
 
 export const LAYER_PEEL_STOPS: ReadonlyArray<{
   depth: LayerPeelDepth;
@@ -12,31 +12,37 @@ export const LAYER_PEEL_STOPS: ReadonlyArray<{
   {
     depth: 0,
     label: 'All layers',
-    hint: 'Surface forms, muscles, and bones together',
+    hint: 'Surface muscles through skeleton together',
   },
   {
     depth: 1,
     label: 'Under the skin',
-    hint: 'Hide surface forms; show intermediate and deep structures',
+    hint: 'Hide superficial muscles; show intermediate, deep, and bones',
   },
   {
     depth: 2,
+    label: 'Deep muscles',
+    hint: 'Hide superficial and intermediate; show deep muscles and skeleton',
+  },
+  {
+    depth: 3,
     label: 'Skeleton',
-    hint: 'Bones, joints, and deep framework only',
+    hint: 'Bones and joints only',
   },
 ] as const;
 
-export const LAYER_DEPTH_LABELS: Record<0 | 1 | 2, string> = {
-  0: 'Surface forms',
+export const LAYER_DEPTH_LABELS: Record<MuscleLayerDepth, string> = {
+  0: 'Superficial',
   1: 'Intermediate',
-  2: 'Bones & deep',
+  2: 'Deep',
+  3: 'Skeleton',
 };
 
 export function layerPeelDepthLabel(peel: LayerPeelDepth): string {
   return LAYER_PEEL_STOPS.find((stop) => stop.depth === peel)?.label ?? 'All layers';
 }
 
-/** Show nodes at or below the selected peel (2 = bones/deep only). */
+/** Show nodes at or below the selected peel (3 = skeleton only). */
 export function isNodeVisibleAtPeelDepth(
   node: MuscleMemoryNode,
   peelDepth: LayerPeelDepth,
@@ -77,8 +83,8 @@ export function countVisibleNodesForView(
 export function groupNodesByLayerDepth(
   nodes: readonly MuscleMemoryNode[],
   peelDepth: LayerPeelDepth,
-): Record<0 | 1 | 2, MuscleMemoryNode[]> {
-  const grouped: Record<0 | 1 | 2, MuscleMemoryNode[]> = { 0: [], 1: [], 2: [] };
+): Record<MuscleLayerDepth, MuscleMemoryNode[]> {
+  const grouped: Record<MuscleLayerDepth, MuscleMemoryNode[]> = { 0: [], 1: [], 2: [], 3: [] };
   for (const node of nodes) {
     if (!isNodeVisibleAtPeelDepth(node, peelDepth)) continue;
     grouped[node.layerDepth].push(node);

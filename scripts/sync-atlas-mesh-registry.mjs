@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
  * Regenerate src/muscle/curriculum/atlasMeshRegistry.ts from atlas_complete manifest.
+ * Layer depths follow muscleLayerClassification.ts (keep patterns in sync).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,6 +10,73 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const manifestPath = path.join(root, 'public/muscle/models/manifest.json');
 const outPath = path.join(root, 'src/muscle/curriculum/atlasMeshRegistry.ts');
+
+const DEEP_PATTERNS = [
+  /\bsubscapular/i,
+  /\bteres minor\b/i,
+  /\bquadratus lumborum\b/i,
+  /\bmultifid/i,
+  /\btransvers/i,
+  /\biliacus\b/i,
+  /\bpsoas\b/i,
+  /\bpiriformis\b/i,
+  /\bgluteus minimus\b/i,
+  /\bobturator internus\b/i,
+  /\bgemell/i,
+  /\bquadratus femoris\b/i,
+  /\bpopliteus\b/i,
+  /\bplantaris\b/i,
+  /\blevator scapul/i,
+  /\brhomboid minor\b/i,
+  /\bintercostal/i,
+  /\bdiaphragm\b/i,
+  /\bconstrictor\b/i,
+  /\bdeep\b/i,
+];
+
+const SUPERFICIAL_PATTERNS = [
+  /\bplatysma\b/i,
+  /\bsternocleidomastoid\b/i,
+  /\btrapezius\b/i,
+  /\bdeltoid\b/i,
+  /\bpectoralis major\b/i,
+  /\blatissimus dorsi\b/i,
+  /\brectus abdominis\b/i,
+  /\bexternal (?:abdominal )?oblique\b/i,
+  /\bgluteus maximus\b/i,
+  /\btensor fasciae latae\b/i,
+  /\bsartorius\b/i,
+  /\bgastrocnemius\b/i,
+  /\btibialis anterior\b/i,
+  /\bbiceps brachii\b/i,
+  /\btriceps brachii\b/i,
+  /\bbrachioradialis\b/i,
+  /\bmasseter\b/i,
+  /\btemporalis muscle\b/i,
+  /\bfrontalis\b/i,
+  /\borbicularis\b/i,
+  /\bzygomaticus\b/i,
+  /\bmentalis\b/i,
+  /\bnasalis\b/i,
+  /\bextensor digitorum longus\b/i,
+  /\bflexor carpi radialis\b/i,
+  /\bextensor carpi radialis\b/i,
+  /\bhamstring/i,
+  /\bvastus lateralis\b/i,
+  /\brectus femoris\b/i,
+];
+
+function classifyMuscleLayerDepth(displayName) {
+  const label = displayName.trim();
+  if (DEEP_PATTERNS.some((pattern) => pattern.test(label))) return 2;
+  if (SUPERFICIAL_PATTERNS.some((pattern) => pattern.test(label))) return 0;
+  return 1;
+}
+
+function layerDepthForAtlasKind(kind, displayName) {
+  if (kind === 'bone' || kind === 'joint') return 3;
+  return classifyMuscleLayerDepth(displayName);
+}
 
 function titleFromAtlasId(nodeId) {
   const slug = nodeId.replace(/^atlas_/, '');
@@ -47,7 +115,7 @@ ${atlasMeshes
   .map((mesh) => {
     const name = mesh.displayName ?? titleFromAtlasId(mesh.nodeId);
     const kind = mesh.atlasKind === 'bone' ? 'bone' : 'muscle';
-    const layerDepth = kind === 'bone' ? 2 : 1;
+    const layerDepth = layerDepthForAtlasKind(mesh.atlasKind, name);
     const shape = kind === 'bone' ? 'box' : 'egg';
     return `  {
     id: ${JSON.stringify(mesh.nodeId)},

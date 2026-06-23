@@ -211,6 +211,15 @@ def _is_eminence_skin_patch(obj) -> bool:
     }
 
 
+def _is_fold_skin_patch(obj) -> bool:
+    """Named skin folds that omit the ' region' suffix (e.g. gluteal crease)."""
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    return obj.name.lower() in {'gluteal fold.r'}
+
+
 _BRIDGE_SKIN_BASES = (
     'Deltopectoral triangle',
     'Femoral triangle',
@@ -286,6 +295,7 @@ def _is_any_skin_patch(obj) -> bool:
         or _is_hand_digit_skin_patch(obj)
         or _is_foot_digit_skin_patch(obj)
         or _is_auxiliary_skin_patch(obj)
+        or _is_fold_skin_patch(obj)
     )
 
 
@@ -380,7 +390,7 @@ def shade_smooth_mesh(obj) -> None:
     mesh.update()
 
 
-def weld_skin_mesh(obj, merge_dist: float = 0.001) -> None:
+def weld_skin_mesh(obj, merge_dist: float = 0.00035) -> None:
     """Weld nearby patch vertices and smooth normals — avoids SOLIDIFY seam ridges."""
     if obj.type != 'MESH' or not obj.data.vertices:
         return
@@ -443,6 +453,45 @@ def apply_decimate_to_cap(obj, initial_ratio: float, max_tris: int) -> None:
 
     after = len(obj.data.polygons)
     print(f'  decimate {obj.name}: {before} -> {after} tris')
+
+
+def apply_decimate_to_target(obj, max_tris: int) -> None:
+    """Single-pass decimate to a triangle budget — avoids over-shoot from iterative ratio decay."""
+    if obj.type != 'MESH':
+        return
+
+    view_layer = bpy.context.view_layer
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.hide_set(False)
+    obj.select_set(True)
+    view_layer.objects.active = obj
+
+    ensure_mesh_single_user(obj)
+
+    before = len(obj.data.polygons)
+    if before <= max_tris:
+        return
+    if before <= DECIMATE_THRESHOLD:
+        return
+
+    target_ratio = max(0.05, min(1.0, max_tris / before))
+    mod = obj.modifiers.new('DecimateSkinTarget', 'DECIMATE')
+    mod.ratio = target_ratio
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+
+    after = len(obj.data.polygons)
+    # Collapse decimate can overshoot ratio slightly — trim until within budget.
+    while len(obj.data.polygons) > max_tris:
+        target_ratio = max(0.05, max_tris / max(len(obj.data.polygons), 1))
+        mod = obj.modifiers.new('DecimateSkinTrim', 'DECIMATE')
+        mod.ratio = target_ratio
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+        if len(obj.data.polygons) >= after:
+            break
+        after = len(obj.data.polygons)
+
+    after = len(obj.data.polygons)
+    print(f'  decimate {obj.name}: {before} -> {after} tris (target {max_tris})')
 
 
 def enforce_region_tri_cap(exported: list[tuple[str, object]], max_region_tris: int) -> None:
@@ -548,6 +597,9 @@ def export_region(region: str, blend: Path | None, ratio: float, max_tris: int, 
         raise RuntimeError(f'No meshes exported for region {region!r}')
 
     enforce_region_tri_cap(exported, max_region_tris)
+
+    for _node_id, obj in exported:
+        bake_mesh_world_transform(obj)
 
     export_names = [node_id for node_id, _ in exported]
     export_objects = isolate_export_objects(export_names)
@@ -838,7 +890,7 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
         bpy.ops.wm.open_mainfile(filepath=str(blend))
 
     per_mesh_cap = {
-        'skin_envelope': min(max(max_tris, 48_000), 48_000),
+        'skin_envelope': min(max(max_tris, 52_000), 52_000),
         'eye_globes': min(max(max_tris, 2_000), 2_000),
     }
 
@@ -865,7 +917,10 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
         elif mesh_id == 'eye_globes':
             shade_smooth_mesh(merged)
         cap = per_mesh_cap.get(mesh_id, max_tris)
-        apply_decimate_to_cap(merged, ratio, cap)
+        if mesh_id == 'skin_envelope':
+            apply_decimate_to_target(merged, cap)
+        else:
+            apply_decimate_to_cap(merged, ratio, cap)
         bake_mesh_world_transform(merged)
         tri_count = len(merged.data.polygons)
         print(f'  atlas_skin {mesh_id}: {len(patches)} patches -> {tri_count} tris')
@@ -995,9 +1050,9 @@ def main(argv: list[str] | None = None) -> None:
         elif args.region == 'atlas_skin':
             export_atlas_skin(
                 args.blend,
-                max(args.ratio, 0.82),
-                min(max(args.max_tris, 28_000), 28_000),
-                min(max(args.max_region_tris, 44_000), 44_000),
+                max(args.ratio, 0.55),
+                min(max(args.max_tris, 52_000), 52_000),
+                min(max(args.max_region_tris, 80_000), 80_000),
             )
         else:
             export_region(args.region, args.blend, args.ratio, args.max_tris, args.max_region_tris)
