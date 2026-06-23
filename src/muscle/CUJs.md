@@ -79,15 +79,16 @@ Dev server, hard refresh, `fundamentals` module (smallest GLB) unless noted.
 
 - Context card never empty on first load (first node auto-selected).
 - Visible counts reflect **curriculum** nodes, not raw GLB mesh inventory.
-- Missing GLB nodes (e.g. hip/knee joints) still appear via procedural placeholders.
+- Missing GLB nodes are tracked in the anatomy coverage ledger (`npm run muscle:coverage`); hip/knee capsules are waived until export lands.
 
 ### Automation
 
-| Type                 | Artifact                                        |
-| -------------------- | ----------------------------------------------- |
-| Study journey smoke  | `e2e/smoke/muscle-study-journey.spec.ts`        |
-| Active reps (seeded) | same spec with `?e2eSeed=1`                     |
-| Region coverage      | `src/muscle/utils/muscleRegionCoverage.test.ts` |
+| Type                 | Artifact                                                                      |
+| -------------------- | ----------------------------------------------------------------------------- |
+| Study journey smoke  | `e2e/smoke/muscle-study-journey.spec.ts`                                      |
+| Active reps (seeded) | same spec with `?e2eSeed=1`                                                   |
+| Region coverage      | `src/muscle/utils/muscleRegionCoverage.test.ts`                               |
+| Coverage ledger      | `src/muscle/anatomy/anatomyCoverageLedger.test.ts`, `npm run muscle:coverage` |
 
 ---
 

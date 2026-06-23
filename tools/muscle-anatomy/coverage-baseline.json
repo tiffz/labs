@@ -1,0 +1,4 @@
+{
+  "maxFullBodyGaps": 2,
+  "_comment": "Lower when joint_hip/joint_knee land in fundamentals.glb and waivers are removed."
+}

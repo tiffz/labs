@@ -159,3 +159,41 @@ Dev server, hard refresh.
 ### Write-mode chord reconcile
 
 Lyric edits defer chord realignment until **800 ms idle** or leaving Write (`ORIGINALS_WRITE_RECONCILE_DEBOUNCE_MS` in `useOriginalsChartLayout.ts`).
+
+---
+
+## CUJ-006: Guest share preview (P0)
+
+**Primary goal:** Open a read-only repertoire link (`#/share/<driveFileId>`) without signing in.  
+**Persona:** Guest viewing a published snapshot.
+
+### Steps
+
+1. Owner publishes snapshot from Encore (public read check passes).
+2. Open `#/share/<fileId>` in a logged-out browser.
+3. Song list renders; no “Snapshot not found” / CORS error.
+
+### Success criteria
+
+- Production fetches snapshot JSON via **session BFF** (`VITE_LABS_SESSION_BFF_URL`), not direct `googleapis.com` from the browser.
+- Worker has **`GOOGLE_API_KEY`** secret (same browser key, server-side only).
+
+### Performance budgets
+
+| Step             | Metric                    | Budget | Verification                           |
+| ---------------- | ------------------------- | ------ | -------------------------------------- |
+| Guest share load | hash → repertoire heading | ≤ 5 s  | `e2e/smoke/encore-guest-share.spec.ts` |
+
+### Known traps
+
+- Local Vite proxy masks production-only CORS failures (`static-hosting-cors`).
+- Deploying Worker without `GOOGLE_API_KEY` → 503 on BFF guest routes.
+
+### Automation
+
+| Type   | Artifact                                                                                          |
+| ------ | ------------------------------------------------------------------------------------------------- |
+| Smoke  | `e2e/smoke/encore-guest-share.spec.ts`                                                            |
+| Policy | `src/shared/drive/publicDriveFetchPolicy.test.ts`                                                 |
+| Worker | `src/shared/drive/publicDriveProxyWorker.test.ts`                                                 |
+| BFF    | [`workers/labs-session-bff/README.md`](../../workers/labs-session-bff/README.md) post-deploy curl |

@@ -40,6 +40,15 @@ Deploy:
 npm run deploy
 ```
 
+Post-deploy guest Drive proxy check (expect Google **404**, not Worker **503** missing key):
+
+```bash
+curl -sS -o /dev/null -w "%{http_code}\n" \
+  "https://labs-session-bff.tiffz.workers.dev/v1/public-drive/files/healthcheck/media?supportsAllDrives=false" \
+  -H "Origin: https://labs.tiffzhang.com"
+# 404 = proxy + GOOGLE_API_KEY OK; 503 body mentioning GOOGLE_API_KEY = set secret
+```
+
 ### 2. Google Cloud Console
 
 On your **Web application** OAuth client:

@@ -27,6 +27,12 @@ Registry: [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) — update when addi
 - Stubs: `e2e/helpers/gesturePreviewFixtures.ts` — 1×1 PNG for Drive thumbnail URLs
 - Playbook: [`docs/GESTURE_MEDIA_STABILITY.md`](GESTURE_MEDIA_STABILITY.md) — invariant map + when to extend tests/audits
 
+### Example: Encore guest share preview (P0)
+
+- Helper: `e2e/helpers/encoreGuestShare.ts` — fixture snapshot JSON; stubs dev proxy + BFF; aborts direct `googleapis.com/drive` `alt=media`
+- Spec: `e2e/smoke/encore-guest-share.spec.ts` — `#/share/<fileId>` renders repertoire; asserts zero direct Google Drive fetches
+- CUJ: `src/encore/CUJs.md` CUJ-006
+
 ### Example: Zine Box library chrome before navigation
 
 - Helper: `e2e/helpers/zineboxLibrary.ts` → `expectZineboxLibraryChrome`

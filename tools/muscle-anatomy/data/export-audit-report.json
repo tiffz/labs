@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-06-23T07:28:43.431Z",
+  "generatedAt": "2026-06-23T17:28:15.775Z",
   "summary": {
     "curriculumTotal": 98,
-    "manifestNodeIds": 501,
-    "csvRows": 164,
-    "missingCurriculumCount": 13,
-    "missingCsvNodeCount": 16,
+    "manifestNodeIds": 506,
+    "csvRows": 168,
+    "missingCurriculumCount": 9,
+    "missingCsvNodeCount": 12,
     "atlasCompleteMeshes": 492,
     "gluteMeshCount": 16,
-    "skinMeshCount": 6
+    "skinMeshCount": 7
   },
   "missingCurriculum": [
     "bone_metacarpals",
@@ -18,11 +18,7 @@
     "joint_knee",
     "joint_shoulder",
     "joint_sternoclavicular",
-    "muscle_gemellus_inferior",
-    "muscle_gemellus_superior",
     "muscle_hypothenar_eminence",
-    "muscle_obturator_internus",
-    "muscle_quadratus_femoris",
     "muscle_thenar_eminence"
   ],
   "missingCsvByNode": [
@@ -85,26 +81,6 @@
       "zName": "Hypothenar eminence.r",
       "nodeId": "muscle_hypothenar_eminence",
       "region": "hand"
-    },
-    {
-      "zName": "Inferior gemellus muscle.r",
-      "nodeId": "muscle_gemellus_inferior",
-      "region": "atlas_supplement"
-    },
-    {
-      "zName": "Superior gemellus muscle.r",
-      "nodeId": "muscle_gemellus_superior",
-      "region": "atlas_supplement"
-    },
-    {
-      "zName": "Obturator internus.r",
-      "nodeId": "muscle_obturator_internus",
-      "region": "atlas_supplement"
-    },
-    {
-      "zName": "Quadratus femoris muscle.r",
-      "nodeId": "muscle_quadratus_femoris",
-      "region": "atlas_supplement"
     }
   ],
   "missingCsvByZName": [
@@ -254,6 +230,7 @@
   "skinMeshes": [
     "skin_face",
     "skin_neck_shoulder",
+    "skin_back",
     "skin_hand_digits",
     "skin_foot_digits",
     "skin_envelope",
@@ -291,23 +268,7 @@
       },
       {
         "kind": "curriculum",
-        "id": "muscle_gemellus_inferior"
-      },
-      {
-        "kind": "curriculum",
-        "id": "muscle_gemellus_superior"
-      },
-      {
-        "kind": "curriculum",
         "id": "muscle_hypothenar_eminence"
-      },
-      {
-        "kind": "curriculum",
-        "id": "muscle_obturator_internus"
-      },
-      {
-        "kind": "curriculum",
-        "id": "muscle_quadratus_femoris"
       },
       {
         "kind": "curriculum",
@@ -362,16 +323,6 @@
         "kind": "csv",
         "id": "bone_metacarpals",
         "zName": "5th metacarpal bone.r"
-      },
-      {
-        "kind": "csv",
-        "id": "muscle_gemellus_inferior",
-        "zName": "Inferior gemellus muscle.r"
-      },
-      {
-        "kind": "csv",
-        "id": "muscle_gemellus_superior",
-        "zName": "Superior gemellus muscle.r"
       }
     ],
     "hand": [
@@ -384,18 +335,6 @@
         "kind": "csv",
         "id": "muscle_hypothenar_eminence",
         "zName": "Hypothenar eminence.r"
-      }
-    ],
-    "butt": [
-      {
-        "kind": "csv",
-        "id": "muscle_obturator_internus",
-        "zName": "Obturator internus.r"
-      },
-      {
-        "kind": "csv",
-        "id": "muscle_quadratus_femoris",
-        "zName": "Quadratus femoris muscle.r"
       }
     ]
   },

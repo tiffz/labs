@@ -6,12 +6,13 @@ import { atlasSupplementNodes } from '../curriculum/nodes/atlasSupplement';
 import { curriculumIdsMissingFromManifest } from './muscleRegionCoverage';
 
 describe('muscleRegionCoverage', () => {
-  it('reports fundamentals joints missing from manifest (procedural fill expected)', () => {
+  it('waives fundamentals hip/knee capsules until Z-Anatomy export lands', () => {
     const entry = manifest.regions.fundamentals;
     const manifestIds = new Set((entry?.meshes ?? []).map((mesh) => mesh.nodeId));
     const missing = curriculumIdsMissingFromManifest('fundamentals', manifestIds);
     expect(missing).toContain('joint_hip');
     expect(missing).toContain('joint_knee');
+    expect(missing.length).toBe(2);
   });
 
   it('has full manifest coverage for muscle-heavy regions', () => {

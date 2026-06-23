@@ -1,0 +1,12 @@
+{
+  "waivers": [
+    {
+      "nodeId": "joint_hip",
+      "reason": "Z-Anatomy hip capsule not yet in fundamentals.glb — export via npm run muscle:export-pipeline -- --region fundamentals"
+    },
+    {
+      "nodeId": "joint_knee",
+      "reason": "Z-Anatomy knee capsule not yet in fundamentals.glb — export via npm run muscle:export-pipeline -- --region fundamentals"
+    }
+  ]
+}

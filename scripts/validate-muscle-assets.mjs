@@ -174,10 +174,10 @@ function main() {
     const regionNodesFile = path.join(nodesDir, `${region === 'shoulder_neck' ? 'shoulderNeck' : region}.ts`);
     if (fs.existsSync(regionNodesFile)) {
       const regionText = fs.readFileSync(regionNodesFile, 'utf8');
-      const regionNodeIds = [...regionText.matchAll(/^\s+'([a-z0-9_]+)',/gm)].map((m) => m[1]);
+      const regionNodeIds = [...regionText.matchAll(/\b(?:bone|muscle|joint)\(\s*'([a-z0-9_]+)'/g)].map((m) => m[1]);
       for (const nodeId of regionNodeIds) {
         if (!manifestIds.has(nodeId)) {
-          console.warn(`muscle:validate-assets note: ${region}/${nodeId} missing from manifest (procedural fill)`);
+          console.warn(`muscle:validate-assets note: ${region}/${nodeId} missing from manifest (see npm run muscle:coverage)`);
         }
       }
     }

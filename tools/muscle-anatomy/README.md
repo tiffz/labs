@@ -94,7 +94,10 @@ npm run muscle:sync-bridge   # regenerate zAnatomyBridge.ts from CSV
 
 ```bash
 npm run muscle:validate-assets
+npm run muscle:coverage
 ```
+
+See [`ANATOMY_COVERAGE.md`](ANATOMY_COVERAGE.md) for the coverage ledger (module + full-body + CSV muscles + skin overlays, waivers, baseline).
 
 Fails when manifest mesh `nodeId` values are missing from the TypeScript curriculum **or** triangle counts exceed performance budgets (25k/mesh, 80k/region — see `src/muscle/muscleAssetPerfBudget.ts`).
 
