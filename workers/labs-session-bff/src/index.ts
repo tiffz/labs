@@ -8,6 +8,7 @@ import {
   handleOptions,
 } from './googleOAuth';
 import { corsHeaders, jsonResponse, withCors } from './http';
+import { handlePublicDriveMedia, handlePublicDriveMeta } from './publicDriveProxy';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -41,6 +42,14 @@ export default {
 
       if (url.pathname === '/v1/session/google/sign-out' && request.method === 'POST') {
         return handleGoogleSignOut(request, env);
+      }
+
+      if (request.method === 'GET' && /\/v1\/public-drive\/files\/[^/]+\/media$/.test(url.pathname)) {
+        return withCors(await handlePublicDriveMedia(request, env, cors), cors);
+      }
+
+      if (request.method === 'GET' && /\/v1\/public-drive\/files\/[^/]+\/meta$/.test(url.pathname)) {
+        return withCors(await handlePublicDriveMeta(request, env, cors), cors);
       }
 
       return withCors(jsonResponse({ error: 'Not found.' }, 404, cors), cors);

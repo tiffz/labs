@@ -270,6 +270,24 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-downbeatalignment-ts-beatoneanchorresolution",
+    "name": "BeatOneAnchorResolution",
+    "path": "src/shared/audio/downbeatAlignment.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Downbeat Alignment Handles songs with pickup notes by finding which onset in the opening measures is most likely to be beat 1, based on: - Onset strength (energy) - How well subsequent beats align with detected onsets",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-downbeatalignment-ts-downbeatalignmentresult",
     "name": "DownbeatAlignmentResult",
     "path": "src/shared/audio/downbeatAlignment.ts",
@@ -285,6 +303,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "piano"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-downbeatalignment-ts-resolvebeatoneanchortime",
+    "name": "resolveBeatOneAnchorTime",
+    "path": "src/shared/audio/downbeatAlignment.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Resolve Beat 1 anchor time near `musicStartTime`. Essentia beat ticks often start many seconds into the track even when BPM is correct (wrong grid phase). When the current Beat 1 is implausibly late, or an early phase/onset aligns better with onsets, snap the grid to that anchor.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -3270,6 +3305,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-beat-wholesongbeatanalysis-ts-beatoneanchormediatime",
+    "name": "beatOneAnchorMediaTime",
+    "path": "src/shared/beat/wholeSongBeatAnalysis.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Absolute media time (seconds) for Beat 1 after analysis.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-beat-wholesongbeatanalysis-ts-calibrationfrombeatanalysis",
     "name": "calibrationFromBeatAnalysis",
     "path": "src/shared/beat/wholeSongBeatAnalysis.ts",
@@ -5721,7 +5769,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "True when guest Drive reads should use `/{origin}/__encore/drive-public/…` (Vite dev only).",
+    "description": "Browser URL for Drive `files.get` **alt=media** (guest / anyone-with-link reads). - **Local dev:** same-origin Vite route `/__encore/drive-public/…` (see `vite.config.ts`). - **Production:** when `VITE_LABS_SESSION_BFF_URL` is set, the session BFF proxies Drive server-side (avoids browser CORS/redirect failures and referrer mismatches). - **Fallback:** direct `googleapis.com` with `VITE_GOOGLE_API_KEY` (fragile on static hosting).",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -5747,7 +5795,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "True when guest Drive reads should use `/{origin}/__encore/drive-public/…` (Vite dev only).",
+    "description": "Browser URL for Drive `files.get` **alt=media** (guest / anyone-with-link reads). - **Local dev:** same-origin Vite route `/__encore/drive-public/…` (see `vite.config.ts`). - **Production:** when `VITE_LABS_SESSION_BFF_URL` is set, the session BFF proxies Drive server-side (avoids browser CORS/redirect failures and referrer mismatches). - **Fallback:** direct `googleapis.com` with `VITE_GOOGLE_API_KEY` (fragile on static hosting).",
     "tags": [
       "api"
     ],
@@ -5769,13 +5817,41 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-buildpublicdrivealtmediaurl-ts-publicdrivefetchroute",
+    "name": "PublicDriveFetchRoute",
+    "path": "src/shared/drive/buildPublicDriveAltMediaUrl.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Browser URL for Drive `files.get` **alt=media** (guest / anyone-with-link reads). - **Local dev:** same-origin Vite route `/__encore/drive-public/…` (see `vite.config.ts`). - **Production:** when `VITE_LABS_SESSION_BFF_URL` is set, the session BFF proxies Drive server-side (avoids browser CORS/redirect failures and referrer mismatches). - **Fallback:** direct `googleapis.com` with `VITE_GOOGLE_API_KEY` (fragile on static hosting).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-buildpublicdrivealtmediaurl-ts-resolvepublicdrivefetchroute",
+    "name": "resolvePublicDriveFetchRoute",
+    "path": "src/shared/drive/buildPublicDriveAltMediaUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Browser URL for Drive `files.get` **alt=media** (guest / anyone-with-link reads). - **Local dev:** same-origin Vite route `/__encore/drive-public/…` (see `vite.config.ts`). - **Production:** when `VITE_LABS_SESSION_BFF_URL` is set, the session BFF proxies Drive server-side (avoids browser CORS/redirect failures and referrer mismatches). - **Fallback:** direct `googleapis.com` with `VITE_GOOGLE_API_KEY` (fragile on static hosting).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-buildpublicdrivealtmediaurl-ts-shouldusepublicdrivesameoriginproxy",
     "name": "shouldUsePublicDriveSameOriginProxy",
     "path": "src/shared/drive/buildPublicDriveAltMediaUrl.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "True when guest Drive reads should use `/{origin}/__encore/drive-public/…` (Vite dev only).",
+    "description": "Browser URL for Drive `files.get` **alt=media** (guest / anyone-with-link reads). - **Local dev:** same-origin Vite route `/__encore/drive-public/…` (see `vite.config.ts`). - **Production:** when `VITE_LABS_SESSION_BFF_URL` is set, the session BFF proxies Drive server-side (avoids browser CORS/redirect failures and referrer mismatches). - **Fallback:** direct `googleapis.com` with `VITE_GOOGLE_API_KEY` (fragile on static hosting).",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

@@ -20,6 +20,10 @@ export type Env = {
   SESSION_SIGNING_KEY: string;
   REFRESH_ENCRYPTION_KEY: string;
   ALLOWED_ORIGINS: string;
+  /** Browser Drive API key — server-side only for guest snapshot proxy (never returned to clients). */
+  GOOGLE_API_KEY?: string;
+  /** Referer sent to Google Drive on proxied guest reads (must match API key HTTP referrer allowlist). */
+  GOOGLE_DRIVE_REFERER?: string;
 };
 
 export type StoredSessionRecord = {

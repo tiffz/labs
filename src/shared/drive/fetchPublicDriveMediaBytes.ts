@@ -1,4 +1,4 @@
-import { buildPublicDriveAltMediaUrl, buildPublicDriveFileMetadataUrl } from './buildPublicDriveAltMediaUrl';
+import { buildPublicDriveAltMediaUrl, buildPublicDriveFileMetadataUrl, resolvePublicDriveFetchRoute } from './buildPublicDriveAltMediaUrl';
 import { GOOGLE_DRIVE_SHORTCUT_MIME } from './driveFetch';
 
 export class PublicDriveMediaError extends Error {
@@ -22,11 +22,12 @@ export type PublicDriveFileMetadata = {
 };
 
 export async function fetchPublicDriveFileMetadata(fileId: string): Promise<PublicDriveFileMetadata> {
+  const route = resolvePublicDriveFetchRoute();
   const apiKey = (import.meta.env.VITE_GOOGLE_API_KEY as string | undefined)?.trim();
-  if (!apiKey) {
+  if (route === 'direct' && !apiKey) {
     throw new PublicDriveMediaError('This build is missing VITE_GOOGLE_API_KEY, so Drive files cannot be opened anonymously.', 503);
   }
-  const url = buildPublicDriveFileMetadataUrl(fileId, apiKey);
+  const url = buildPublicDriveFileMetadataUrl(fileId, apiKey ?? '');
   let res: Response;
   try {
     res = await fetch(url, { cache: 'no-store', mode: 'cors', credentials: 'omit' });
@@ -75,11 +76,12 @@ export async function resolvePublicDriveFileForMedia(
 }
 
 export async function fetchPublicDriveMediaWithApiKey(fileId: string): Promise<{ buffer: ArrayBuffer; contentType: string }> {
+  const route = resolvePublicDriveFetchRoute();
   const apiKey = (import.meta.env.VITE_GOOGLE_API_KEY as string | undefined)?.trim();
-  if (!apiKey) {
+  if (route === 'direct' && !apiKey) {
     throw new PublicDriveMediaError('This build is missing VITE_GOOGLE_API_KEY, so Drive files cannot be opened anonymously.', 503);
   }
-  const url = buildPublicDriveAltMediaUrl(fileId, apiKey);
+  const url = buildPublicDriveAltMediaUrl(fileId, apiKey ?? '');
   let res: Response;
   try {
     res = await fetch(url, { cache: 'no-store', mode: 'cors', credentials: 'omit' });
@@ -108,9 +110,10 @@ export async function fetchPublicDriveMediaWithApiKey(fileId: string): Promise<{
  * publishing uses this as a second probe after the OAuth permission check.
  */
 export async function isPublicDriveFileMetadataReadable(fileId: string): Promise<boolean> {
+  const route = resolvePublicDriveFetchRoute();
   const apiKey = (import.meta.env.VITE_GOOGLE_API_KEY as string | undefined)?.trim();
-  if (!apiKey) return false;
-  const url = buildPublicDriveFileMetadataUrl(fileId.trim(), apiKey);
+  if (route === 'direct' && !apiKey) return false;
+  const url = buildPublicDriveFileMetadataUrl(fileId.trim(), apiKey ?? '');
   try {
     const res = await fetch(url, { cache: 'no-store', mode: 'cors', credentials: 'omit' });
     return res.ok;

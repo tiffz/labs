@@ -3,6 +3,7 @@ import {
   buildPublicDriveAltMediaUrl,
   buildPublicDriveFileMetadataUrl,
   isPublicDriveGuestFetchConfigured,
+  resolvePublicDriveFetchRoute,
   shouldUsePublicDriveSameOriginProxy,
 } from './buildPublicDriveAltMediaUrl';
 
@@ -11,14 +12,28 @@ afterEach(() => {
 });
 
 describe('isPublicDriveGuestFetchConfigured', () => {
-  it('is false in test mode without an API key', () => {
+  it('is false in test mode without an API key or BFF', () => {
     vi.stubEnv('VITE_GOOGLE_API_KEY', '');
+    vi.stubEnv('VITE_LABS_SESSION_BFF_URL', '');
     expect(isPublicDriveGuestFetchConfigured()).toBe(false);
   });
 
   it('is true when an API key is set', () => {
     vi.stubEnv('VITE_GOOGLE_API_KEY', 'sample-key');
     expect(isPublicDriveGuestFetchConfigured()).toBe(true);
+  });
+
+  it('is true in production mode when session BFF URL is set', () => {
+    vi.stubEnv('MODE', 'production');
+    vi.stubEnv('VITE_GOOGLE_API_KEY', '');
+    vi.stubEnv('VITE_LABS_SESSION_BFF_URL', 'https://labs-session-bff.example.workers.dev');
+    expect(isPublicDriveGuestFetchConfigured()).toBe(true);
+  });
+});
+
+describe('resolvePublicDriveFetchRoute', () => {
+  it('is direct in test mode', () => {
+    expect(resolvePublicDriveFetchRoute()).toBe('direct');
   });
 });
 
@@ -36,6 +51,24 @@ describe('buildPublicDriveAltMediaUrl', () => {
     expect(u).toContain('supportsAllDrives=false');
     expect(u).toContain(encodeURIComponent('myKey'));
     expect(buildPublicDriveAltMediaUrl('x', 'k', { supportsAllDrives: true })).toContain('supportsAllDrives=true');
+  });
+
+  it('uses session BFF proxy in production when BFF URL is set', () => {
+    vi.stubEnv('MODE', 'production');
+    vi.stubEnv('VITE_LABS_SESSION_BFF_URL', 'https://labs-session-bff.example.workers.dev/');
+    const u = buildPublicDriveAltMediaUrl('fileId1', '');
+    expect(u).toBe(
+      'https://labs-session-bff.example.workers.dev/v1/public-drive/files/fileId1/media?supportsAllDrives=false',
+    );
+  });
+
+  it('buildPublicDriveFileMetadataUrl uses BFF meta route in production', () => {
+    vi.stubEnv('MODE', 'production');
+    vi.stubEnv('VITE_LABS_SESSION_BFF_URL', 'https://labs-session-bff.example.workers.dev');
+    const u = buildPublicDriveFileMetadataUrl('metaFile', '');
+    expect(u).toBe(
+      'https://labs-session-bff.example.workers.dev/v1/public-drive/files/metaFile/meta?supportsAllDrives=false',
+    );
   });
 
   it('buildPublicDriveFileMetadataUrl uses direct googleapis in test mode', () => {

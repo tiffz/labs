@@ -10,9 +10,12 @@ preview_id = "949724716c564e869374a2b81afbbd06"
 [vars]
 # Comma-separated origins allowed for CORS (e.g. https://labs.tiffzhang.com,http://127.0.0.1:5173)
 ALLOWED_ORIGINS = "https://labs.tiffzhang.com,http://127.0.0.1:5173,http://localhost:5173"
+# Referer for server-side Encore guest snapshot Drive reads (must match API key HTTP referrer list).
+GOOGLE_DRIVE_REFERER = "https://labs.tiffzhang.com/encore/"
 
 # Set via wrangler secret in production:
 # GOOGLE_CLIENT_ID
 # GOOGLE_CLIENT_SECRET
+# GOOGLE_API_KEY  (same browser key as VITE_GOOGLE_API_KEY — used only server-side for guest snapshot proxy)
 # SESSION_SIGNING_KEY  (64 hex chars = 32 bytes)
 # REFRESH_ENCRYPTION_KEY (64 hex chars = 32 bytes)

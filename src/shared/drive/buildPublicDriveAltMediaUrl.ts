@@ -1,26 +1,42 @@
 /**
  * Browser URL for Drive `files.get` **alt=media** (guest / anyone-with-link reads).
  *
- * In **local dev**, Encore uses the same-origin Vite route `/__encore/drive-public/…` (see
- * `vite.config.ts`) so HTTP-referrer–restricted API keys work. **Production** builds call
- * `googleapis.com` directly; redirects to `googleusercontent.com` can cause CORS failures in
- * some browsers—operators may need their own server-side or same-origin fetch if that occurs.
+ * - **Local dev:** same-origin Vite route `/__encore/drive-public/…` (see `vite.config.ts`).
+ * - **Production:** when `VITE_LABS_SESSION_BFF_URL` is set, the session BFF proxies Drive
+ *   server-side (avoids browser CORS/redirect failures and referrer mismatches).
+ * - **Fallback:** direct `googleapis.com` with `VITE_GOOGLE_API_KEY` (fragile on static hosting).
  */
 
-/** True when guest Drive reads should use `/{origin}/__encore/drive-public/…` (Vite dev only). */
+export type PublicDriveFetchRoute = 'direct' | 'vite-dev' | 'bff';
+
+function normalizeBaseUrl(raw: string | undefined): string | undefined {
+  const trimmed = raw?.trim();
+  if (!trimmed) return undefined;
+  return trimmed.replace(/\/$/, '');
+}
+
+export function resolvePublicDriveFetchRoute(): PublicDriveFetchRoute {
+  const mode = import.meta.env.MODE;
+  if (mode === 'test') return 'direct';
+  if (mode === 'development') return 'vite-dev';
+  if (normalizeBaseUrl(import.meta.env.VITE_LABS_SESSION_BFF_URL as string | undefined)) return 'bff';
+  return 'direct';
+}
+
+/** @deprecated Prefer {@link resolvePublicDriveFetchRoute}. */
 export function shouldUsePublicDriveSameOriginProxy(): boolean {
-  if (import.meta.env.MODE === 'test') return false;
-  return Boolean(import.meta.env.DEV);
+  return resolvePublicDriveFetchRoute() === 'vite-dev';
 }
 
 /** True when the app can attempt a guest snapshot / public Drive JSON read. */
 export function isPublicDriveGuestFetchConfigured(): boolean {
   const key = (import.meta.env.VITE_GOOGLE_API_KEY as string | undefined)?.trim();
-  return Boolean(key) || shouldUsePublicDriveSameOriginProxy();
+  if (key) return true;
+  return resolvePublicDriveFetchRoute() !== 'direct';
 }
 
-function buildPublicDriveProxyMediaUrl(fileId: string, suffix: 'media' | 'meta'): string | undefined {
-  if (!shouldUsePublicDriveSameOriginProxy()) return undefined;
+function buildViteDevProxyUrl(fileId: string, suffix: 'media' | 'meta'): string | undefined {
+  if (resolvePublicDriveFetchRoute() !== 'vite-dev') return undefined;
   if (typeof window === 'undefined' || typeof window.location?.origin !== 'string') return undefined;
   const base = window.location.origin.replace(/\/$/, '');
   const path =
@@ -28,6 +44,18 @@ function buildPublicDriveProxyMediaUrl(fileId: string, suffix: 'media' | 'meta')
       ? `/__encore/drive-public/${encodeURIComponent(fileId)}`
       : `/__encore/drive-public-meta/${encodeURIComponent(fileId)}`;
   return `${base}${path}`;
+}
+
+function buildBffProxyUrl(
+  fileId: string,
+  suffix: 'media' | 'meta',
+  supportsAllDrives: boolean,
+): string | undefined {
+  if (resolvePublicDriveFetchRoute() !== 'bff') return undefined;
+  const bff = normalizeBaseUrl(import.meta.env.VITE_LABS_SESSION_BFF_URL as string | undefined);
+  if (!bff) return undefined;
+  const supports = supportsAllDrives ? 'true' : 'false';
+  return `${bff}/v1/public-drive/files/${encodeURIComponent(fileId)}/${suffix}?supportsAllDrives=${supports}`;
 }
 
 export type BuildPublicDriveUrlOpts = {
@@ -40,8 +68,10 @@ export function buildPublicDriveAltMediaUrl(
   apiKey: string,
   opts?: BuildPublicDriveUrlOpts,
 ): string {
-  const proxied = buildPublicDriveProxyMediaUrl(fileId, 'media');
-  if (proxied) return proxied;
+  const proxiedDev = buildViteDevProxyUrl(fileId, 'media');
+  if (proxiedDev) return proxiedDev;
+  const proxiedBff = buildBffProxyUrl(fileId, 'media', opts?.supportsAllDrives === true);
+  if (proxiedBff) return proxiedBff;
   const supportsAllDrives = opts?.supportsAllDrives === true ? 'true' : 'false';
   return `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=${supportsAllDrives}&key=${encodeURIComponent(apiKey)}`;
 }
@@ -52,8 +82,10 @@ export function buildPublicDriveFileMetadataUrl(
   apiKey: string,
   opts?: BuildPublicDriveUrlOpts,
 ): string {
-  const proxied = buildPublicDriveProxyMediaUrl(fileId, 'meta');
-  if (proxied) return proxied;
+  const proxiedDev = buildViteDevProxyUrl(fileId, 'meta');
+  if (proxiedDev) return proxiedDev;
+  const proxiedBff = buildBffProxyUrl(fileId, 'meta', opts?.supportsAllDrives === true);
+  if (proxiedBff) return proxiedBff;
   const fields = encodeURIComponent('mimeType,name,shortcutDetails');
   const supportsAllDrives = opts?.supportsAllDrives === true ? 'true' : 'false';
   return `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=${fields}&supportsAllDrives=${supportsAllDrives}&key=${encodeURIComponent(apiKey)}`;

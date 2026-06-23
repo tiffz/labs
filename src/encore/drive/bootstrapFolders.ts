@@ -262,7 +262,8 @@ const fetchPublicDriveJsonInflight = new Map<string, Promise<unknown>>();
  * The file must be shared with `anyone:reader` and the API key must allow the caller.
  * In local dev, requests go through a same-origin Vite proxy (see `vite.config.ts`) that
  * forwards to Drive with a matching Referer so HTTP-referrer–restricted keys work. In
- * production, the browser calls Google directly with `key=` in the query string.
+ * production (when `VITE_LABS_SESSION_BFF_URL` is set), requests go through the session BFF
+ * Drive proxy instead of calling Google directly from the browser.
  */
 export async function fetchPublicDriveJson(fileId: string, apiKey: string): Promise<unknown> {
   const trimmedKey = apiKey.trim();

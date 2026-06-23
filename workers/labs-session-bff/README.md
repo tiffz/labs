@@ -27,6 +27,7 @@ Set secrets (production):
 ```bash
 npx wrangler secret put GOOGLE_CLIENT_ID
 npx wrangler secret put GOOGLE_CLIENT_SECRET
+npx wrangler secret put GOOGLE_API_KEY
 npx wrangler secret put SESSION_SIGNING_KEY
 npx wrangler secret put REFRESH_ENCRYPTION_KEY
 ```
@@ -81,8 +82,10 @@ VITE_LABS_SESSION_BFF_URL=http://127.0.0.1:8787 npm run dev
 | GET    | `/v1/oauth/google/popup-done`                   | Popup bridge: first-party token fetch + `postMessage` to app origin                 |
 | GET    | `/v1/session/google/access-token`               | Refresh access token (cookie auth)                                                  |
 | POST   | `/v1/session/google/sign-out`                   | Clear session                                                                       |
+| GET    | `/v1/public-drive/files/:fileId/media`          | Guest snapshot bytes (server-side Drive `alt=media`; CORS for `ALLOWED_ORIGINS`)    |
+| GET    | `/v1/public-drive/files/:fileId/meta`           | Guest Drive metadata (`mimeType`, shortcuts) before media fetch                     |
 
-The worker calls **only** `https://oauth2.googleapis.com/token` — never Drive/YouTube APIs.
+OAuth routes call **only** `https://oauth2.googleapis.com/token`. Guest snapshot routes call **Google Drive API** with the **`GOOGLE_API_KEY`** secret (never returned to browsers).
 
 ## Rollback
 

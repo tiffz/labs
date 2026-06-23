@@ -8,7 +8,7 @@ import {
 import { pkceChallengeFromVerifier, pkceVerifier, randomToken } from './crypto';
 import { buildSessionCookie, clearSessionCookie, deleteSession, loadSession, parseSessionCookie, storeSession } from './session';
 import { checkRefreshRateLimit } from './rateLimit';
-import { clientIp, corsHeaders, jsonResponse, parseAllowedOrigins } from './http';
+import { clientIp, corsHeaders, jsonResponse, parseAllowedOrigins, withCors } from './http';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
