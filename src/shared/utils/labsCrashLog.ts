@@ -1,6 +1,6 @@
 /**
  * IndexedDB crash log — local-first crash history (export via LabsDebugDock).
- * Production telemetry deferred — see docs/adr/0014-client-crash-telemetry.md
+ * Optional production beacon when `VITE_LABS_CRASH_BEACON_URL` is set — see docs/adr/0016-client-crash-telemetry.md
  */
 
 export type LabsCrashLogEntry = {
@@ -16,6 +16,34 @@ export type LabsCrashLogEntry = {
 const DB_NAME = 'labs-crash-log';
 const STORE = 'entries';
 const MAX_ENTRIES = 50;
+
+function sanitizeRouteForBeacon(route: string): string {
+  try {
+    const url = new URL(route, typeof window !== 'undefined' ? window.location.origin : 'https://labs.local');
+    url.search = '';
+    url.hash = url.hash.split('?')[0] ?? url.hash;
+    return `${url.pathname}${url.hash}`;
+  } catch {
+    return route.split('?')[0]?.split('#')[0] ?? '/';
+  }
+}
+
+function maybeBeaconCrash(entry: LabsCrashLogEntry): void {
+  const beaconUrl = import.meta.env.VITE_LABS_CRASH_BEACON_URL?.trim();
+  if (!beaconUrl || import.meta.env.DEV || typeof navigator === 'undefined') return;
+  try {
+    const payload = JSON.stringify({
+      appId: entry.appId,
+      source: entry.source,
+      message: entry.message.slice(0, 500),
+      route: sanitizeRouteForBeacon(entry.route),
+      timestamp: entry.timestamp,
+    });
+    navigator.sendBeacon(beaconUrl, payload);
+  } catch {
+    /* ignore beacon failures */
+  }
+}
 
 let dbPromise: Promise<IDBDatabase | null> | null = null;
 
@@ -79,6 +107,7 @@ export async function appendLabsCrashLogEntry(
     tx.oncomplete = () => resolve();
   });
   await trimEntries(db);
+  maybeBeaconCrash(entry);
 }
 
 export async function readLabsCrashLogEntries(): Promise<LabsCrashLogEntry[]> {

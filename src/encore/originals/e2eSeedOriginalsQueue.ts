@@ -6,8 +6,10 @@ const E2E_SONG_B = 'e2e-originals-queue-b';
 
 export const E2E_ORIGINALS_QUEUE_A_ID = E2E_SONG_A;
 
+import { isLabsE2eHarness } from '../../shared/test/labsE2eHarness';
+
 export function isE2eOriginalsQueueRoute(): boolean {
-  if (!import.meta.env.DEV || typeof window === 'undefined') return false;
+  if (!isLabsE2eHarness() || typeof window === 'undefined') return false;
   const params = new URLSearchParams(window.location.search);
   const hashQuery = window.location.hash.includes('?')
     ? new URLSearchParams(window.location.hash.split('?')[1] ?? '')
@@ -23,7 +25,7 @@ declare global {
 
 /** Playwright smokes call this after navigation for a deterministic Dexie seed. */
 export function exposeOriginalsQueueE2eSeed(): void {
-  if (!import.meta.env.DEV || typeof window === 'undefined') return;
+  if (!isLabsE2eHarness() || typeof window === 'undefined') return;
   window.__labsSeedOriginalsQueueE2e = seedOriginalsQueueE2e;
 }
 

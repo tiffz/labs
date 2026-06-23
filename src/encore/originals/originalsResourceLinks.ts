@@ -1,6 +1,5 @@
 import {
   createResourceFromDriveFile,
-  createResourceFromLocalFile,
 } from '../repertoire/encoreResourceLinks';
 import type { EncoreMiscResource } from '../types';
 import type { EncoreOriginalSong } from './types';
@@ -24,8 +23,4 @@ export function appendSongReferenceFromDriveFile(
   opts?: { label?: string; mimeType?: string },
 ): EncoreOriginalSong {
   return appendSongReference(song, createResourceFromDriveFile(driveFileId, opts));
-}
-
-export function appendSongReferenceFromLocalFile(song: EncoreOriginalSong, file: File): EncoreOriginalSong {
-  return appendSongReference(song, createResourceFromLocalFile(file));
 }

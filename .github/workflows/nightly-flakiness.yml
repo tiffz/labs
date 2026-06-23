@@ -46,15 +46,8 @@ jobs:
       - name: Run fast test suite (no retries)
         run: npm run test:fast -- --retry=0
 
-      - name: Collect test coverage (advisory)
-        run: |
-          set +e
-          npm run test:coverage
-          code=$?
-          if [ "$code" -ne 0 ]; then
-            echo "::warning title=Coverage (advisory)::Coverage collection exited with code $code (non-blocking)."
-          fi
-          exit 0
+      - name: Collect test coverage
+        run: npm run test:coverage
 
       - name: Upload coverage report
         if: always()

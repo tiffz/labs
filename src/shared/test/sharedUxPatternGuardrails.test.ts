@@ -11,17 +11,13 @@ const SRC_ROOT = path.join(REPO_ROOT, 'src');
 /** Apps allowed to use raw MUI Slider for volume (document in DESIGN.md if adding). */
 const SLIDER_ALLOWLIST = new Set<string>([
   'shared/components/AppLinearVolumeSlider.tsx',
+  'shared/components/AppCompactSlider.tsx',
   'shared/components/PlaybackVolumeRow.tsx',
   'ui/',
-  'agility/App.tsx', // grandfathered — migrate to AppLinearVolumeSlider
 ]);
 
-/** App files allowed Snackbar + blocking-job overlap (grandfathered). */
-const SNACKBAR_BLOCKING_JOB_ALLOWLIST = new Set<string>([
-  'encore/components/LibraryScreen.tsx',
-  'encore/components/practice/PracticeExerciseFocusDialog.tsx',
-  'encore/originals/components/OriginalsChartExportMenu.tsx',
-]);
+/** App files allowed Snackbar for blocking jobs (none — use LabsFeedbackToast). */
+const SNACKBAR_BLOCKING_JOB_ALLOWLIST = new Set<string>();
 
 const VOLUME_SLIDER_IMPORT =
   /import\s+Slider\s+from\s+['"]@mui\/material\/Slider['"]/;
@@ -62,7 +58,7 @@ describe('Shared UX pattern guardrails', () => {
       if (isAllowlisted(rel)) return false;
       const source = fs.readFileSync(file, 'utf8');
       if (!VOLUME_SLIDER_IMPORT.test(source)) return false;
-      return /volume|gain|master/i.test(source);
+      return /\b(volume|gain|master)\b/i.test(source);
     });
     expect(
       offenders.map((f) => path.relative(REPO_ROOT, f)),

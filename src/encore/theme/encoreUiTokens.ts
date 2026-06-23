@@ -268,11 +268,6 @@ export const practiceResourceSectionLabelRailSx: SystemStyleObject<Theme> = {
   pt: 0.3125,
 };
 
-/** @deprecated Use {@link practiceResourceChipFieldSx} — chip stacks no longer use an inner bordered field. */
-export function practiceResourceChipStackSx(theme: Theme): SystemStyleObject<Theme> {
-  return practiceResourceChipFieldSx(theme);
-}
-
 /**
  * Performance surfaces — list rows, editor video panels, staged clips, and section drop hints.
  * Prefer these over ad-hoc `border: 2` / `boxShadow: 1` so Practice and the editor stay aligned.

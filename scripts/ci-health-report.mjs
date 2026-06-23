@@ -12,6 +12,7 @@ import { execSync } from 'node:child_process';
 const args = process.argv.slice(2);
 const days = Number(args.find((_, i, a) => a[i - 1] === '--days') ?? 30);
 const workflowFile = args.find((_, i, a) => a[i - 1] === '--workflow') ?? 'ci.yml';
+const failBelow = Number(args.find((_, i, a) => a[i - 1] === '--fail-below') ?? NaN);
 
 function ghJson(cmd) {
   try {
@@ -69,3 +70,11 @@ if (failure.length > 0) {
 }
 
 console.log('\nTarget: >90% success rate (excl. cancelled). See docs/ENGINEERING_HEALTH.md');
+
+if (Number.isFinite(failBelow) && actionable.length > 0) {
+  const rate = (success.length / actionable.length) * 100;
+  if (rate < failBelow) {
+    console.error(`\nci-health-report: success rate ${rate.toFixed(1)}% is below ${failBelow}% gate`);
+    process.exit(1);
+  }
+}

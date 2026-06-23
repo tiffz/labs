@@ -39,11 +39,24 @@ fi
 echo "== presubmit: typecheck =="
 npm run typecheck
 
+CHANGE_CLASS="$(node scripts/diff-change-class.mjs --json 2>/dev/null | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{try{console.log(JSON.parse(s).classification||'default')}catch{console.log('default')}})")"
+echo "== presubmit: diff class = ${CHANGE_CLASS} =="
+
+if [ "$CHANGE_CLASS" = "docs-only" ]; then
+  echo "presubmit: docs-only diff — skipping build, Vitest, and e2e (see docs/CI_PATH_SCOPING.md)"
+  echo "presubmit: all checks passed"
+  exit 0
+fi
+
 echo "== presubmit: production build =="
 npm run build
 
-echo "== presubmit: test:changed-apps (scoped Vitest vs main) =="
-npm run test:changed-apps
+if [ "$CHANGE_CLASS" != "e2e-only" ]; then
+  echo "== presubmit: test:changed-apps (scoped Vitest vs main) =="
+  npm run test:changed-apps
+else
+  echo "== presubmit: skipping test:changed-apps (e2e-only diff) =="
+fi
 
 echo "== presubmit: scoped e2e smoke =="
 npm run test:e2e:scoped

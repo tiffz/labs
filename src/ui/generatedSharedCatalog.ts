@@ -3421,6 +3421,40 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-appcompactslider-tsx-appcompactslider",
+    "name": "AppCompactSlider",
+    "path": "src/shared/components/AppCompactSlider.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Standard MUI slider with reliable rail/track clicks in dense layouts. Use for 0–1 gain rails; use this for latency, MIDI range, etc.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-appcompactslider-tsx-appcompactsliderprops",
+    "name": "AppCompactSliderProps",
+    "path": "src/shared/components/AppCompactSlider.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-applinearvolumeslider-tsx-applinearvolumeslider",
     "name": "AppLinearVolumeSlider",
     "path": "src/shared/components/AppLinearVolumeSlider.tsx",
@@ -19516,6 +19550,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-test-labse2eharness-ts-islabse2eharness",
+    "name": "isLabsE2eHarness",
+    "path": "src/shared/test/labsE2eHarness.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when Playwright / Vite dev server runs e2e hooks. Never true on production Pages deploy.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-test-layoutheuristicscore-ts-contrastratio",
     "name": "contrastRatio",
     "path": "src/shared/test/layoutHeuristicsCore.ts",
@@ -20557,7 +20604,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Production telemetry deferred — see docs/adr/0014-client-crash-telemetry.md",
+    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Optional production beacon when `VITE_LABS_CRASH_BEACON_URL` is set — see docs/adr/0016-client-crash-telemetry.md",
     "tags": [
       "utils"
     ],
@@ -20583,7 +20630,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Production telemetry deferred — see docs/adr/0014-client-crash-telemetry.md",
+    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Optional production beacon when `VITE_LABS_CRASH_BEACON_URL` is set — see docs/adr/0016-client-crash-telemetry.md",
     "tags": [
       "utils"
     ],
@@ -20609,7 +20656,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Production telemetry deferred — see docs/adr/0014-client-crash-telemetry.md",
+    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Optional production beacon when `VITE_LABS_CRASH_BEACON_URL` is set — see docs/adr/0016-client-crash-telemetry.md",
     "tags": [
       "utils"
     ],
@@ -20635,7 +20682,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Production telemetry deferred — see docs/adr/0014-client-crash-telemetry.md",
+    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Optional production beacon when `VITE_LABS_CRASH_BEACON_URL` is set — see docs/adr/0016-client-crash-telemetry.md",
     "tags": [
       "utils",
       "api"
@@ -20662,7 +20709,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Production telemetry deferred — see docs/adr/0014-client-crash-telemetry.md",
+    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Optional production beacon when `VITE_LABS_CRASH_BEACON_URL` is set — see docs/adr/0016-client-crash-telemetry.md",
     "tags": [
       "utils"
     ],

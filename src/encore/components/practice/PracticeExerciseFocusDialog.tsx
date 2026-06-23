@@ -5,7 +5,6 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import UndoIcon from '@mui/icons-material/Undo';
 import AppBar from '@mui/material/AppBar';
-import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -20,7 +19,7 @@ import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Slide from '@mui/material/Slide';
-import Snackbar from '@mui/material/Snackbar';
+import LabsFeedbackToast from '../../../shared/components/LabsFeedbackToast';
 import Stack from '@mui/material/Stack';
 import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
@@ -651,18 +650,12 @@ export function PracticeExerciseFocusDialog({
                 </MenuItem>
               ) : null}
       </Menu>
-      <Snackbar
-        open={Boolean(exportFeedback)}
+      <LabsFeedbackToast
+        message={exportFeedback?.message ?? null}
+        severity={exportFeedback?.severity ?? 'success'}
         autoHideDuration={exportFeedback?.severity === 'error' ? 9000 : 5000}
         onClose={() => setExportFeedback(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        {exportFeedback ? (
-          <Alert severity={exportFeedback.severity} onClose={() => setExportFeedback(null)} sx={{ width: '100%' }}>
-            {exportFeedback.message}
-          </Alert>
-        ) : undefined}
-      </Snackbar>
+      />
       <Box
         sx={{
           flex: 1,

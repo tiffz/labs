@@ -160,15 +160,7 @@ describe('React StrictMode policy', () => {
   // adoption and some rely on side-effecting renders that would double up).
   // Removing an app from this opt-out list requires a manual StrictMode audit
   // pass — do not add new apps here.
-  const STRICT_MODE_OPT_OUT = new Set<string>([
-    'chords',
-    'corp',
-    'drums',
-    'forms',
-    'ui',
-    'words',
-    'zines',
-  ]);
+  const STRICT_MODE_OPT_OUT = new Set<string>();
 
   function listMainTsxRoots(): Array<{ app: string; file: string }> {
     const out: Array<{ app: string; file: string }> = [];

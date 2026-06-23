@@ -1,4 +1,5 @@
 import '../shared/ui/fonts/appFonts';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ThemeProvider } from '@mui/material/styles';
 import { LabsUndoProvider } from '../shared/undo/LabsUndoContext';
@@ -17,10 +18,12 @@ initMaterialIconRuntime();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <LabsErrorBoundary appId="words">
+    <React.StrictMode>
     <LabsUndoProvider>
     <ThemeProvider theme={getAppTheme('words')}>
       <App />
     </ThemeProvider>
   </LabsUndoProvider>
+  </React.StrictMode>
   </LabsErrorBoundary>
 );

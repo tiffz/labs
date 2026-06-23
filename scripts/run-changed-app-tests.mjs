@@ -33,11 +33,27 @@ const vitestExtraArgs =
   extraArgsIndex >= 0 ? process.argv.slice(extraArgsIndex + 1).join(' ') : '';
 const files = changedFiles(baseRef);
 
+const docOnly = (f) =>
+  f.endsWith('.md') ||
+  /^(docs\/|\.cursor\/(rules|skills)\/|README\.md$|AGENTS\.md$|GEMINI\.md$|DEVELOPMENT\.md$|STYLE_GUIDE\.md$)/.test(f);
+const e2eOnly = (f) => f.startsWith('e2e/') || f === 'playwright.config.ts';
+
+if (files.length > 0 && files.every(docOnly)) {
+  console.log('test:changed-apps: docs-only diff — skipping Vitest');
+  process.exit(0);
+}
+
+if (files.length > 0 && files.every((f) => e2eOnly(f) || docOnly(f))) {
+  console.log('test:changed-apps: e2e-only diff — skipping Vitest');
+  process.exit(0);
+}
+
 const apps = new Set();
 let shared = false;
 let beatOnly = true;
 for (const f of files) {
   if (f.startsWith('src/shared/')) shared = true;
+  if (f.startsWith('e2e/')) continue;
   if (!f.startsWith('src/shared/beat/')) beatOnly = false;
   const m = f.match(/^src\/([^/]+)\//);
   if (m && m[1] !== 'shared') apps.add(m[1]);

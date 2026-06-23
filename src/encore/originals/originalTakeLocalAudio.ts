@@ -1,5 +1,4 @@
 import { inferMediaMimeType } from '../../shared/drive/inferMediaMimeType';
-import { resolveEncoreDriveMediaMime } from '../media/encorePlayableMedia';
 import { encoreDb } from '../db/encoreDb';
 
 export type OriginalTakeBlobRow = {
@@ -56,20 +55,4 @@ export async function loadOriginalTakeBlobArrayBuffer(key: string): Promise<Arra
     return loaded.blob.arrayBuffer();
   }
   return new Response(loaded.blob).arrayBuffer();
-}
-
-export async function loadOriginalTakeObjectUrl(
-  key: string,
-  fileNameHint?: string,
-): Promise<{ objectUrl: string; mimeType: string }> {
-  const loaded = await loadOriginalTakeBlob(key);
-  if (!loaded) throw new Error('Local take audio not found.');
-  const mime = resolveEncoreDriveMediaMime({
-    fileName: fileNameHint,
-    mimeType: loaded.mimeType,
-  });
-  const blobMime = mime === 'application/octet-stream' ? 'audio/mpeg' : mime;
-  const bytes = await loadOriginalTakeBlobArrayBuffer(key);
-  const blob = new Blob([bytes], { type: blobMime });
-  return { objectUrl: URL.createObjectURL(blob), mimeType: blobMime };
 }

@@ -1,4 +1,5 @@
 import '../shared/ui/fonts/appFonts'
+import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { ThemeProvider } from '@mui/material/styles'
 // Initialize server logger BEFORE any app modules so import-time errors are captured
@@ -30,9 +31,11 @@ if (typeof window !== 'undefined') {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <LabsErrorBoundary appId="drums">
+  <React.StrictMode>
   <ThemeProvider theme={getAppTheme('drums')}>
     <App />
   </ThemeProvider>
+  </React.StrictMode>
   </LabsErrorBoundary>
 )
 

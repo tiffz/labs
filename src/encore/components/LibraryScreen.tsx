@@ -32,7 +32,7 @@ import IconButton from '@mui/material/IconButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import Snackbar from '@mui/material/Snackbar';
+import LabsFeedbackToast from '../../shared/components/LabsFeedbackToast';
 import Autocomplete from '@mui/material/Autocomplete';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -2567,21 +2567,12 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
           </Button>
         </DialogActions>
       </Dialog>
-      <Snackbar
-        open={Boolean(bulkSpotifyRefreshToast)}
+      <LabsFeedbackToast
+        message={bulkSpotifyRefreshToast?.message ?? null}
+        severity={bulkSpotifyRefreshToast?.severity ?? 'success'}
         autoHideDuration={10_000}
         onClose={() => setBulkSpotifyRefreshToast(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setBulkSpotifyRefreshToast(null)}
-          severity={bulkSpotifyRefreshToast?.severity ?? 'success'}
-          variant="filled"
-          sx={{ width: '100%' }}
-        >
-          {bulkSpotifyRefreshToast?.message ?? ''}
-        </Alert>
-      </Snackbar>
+      />
     </Box>
   );
 }, encoreTabBodyPropsAreEqual);

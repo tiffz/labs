@@ -37,11 +37,6 @@ export function formatChartAttachmentCaption(a: { label?: string; driveFileId: s
   return `Chart · ${a.driveFileId.slice(0, 8)}`;
 }
 
-/** Truncated chip label for chart attachments (matches {@link formatMediaLinkShortCaption} width). */
-export function formatChartAttachmentShortCaption(a: { label?: string; driveFileId: string }): string {
-  return truncateMediaLinkCaption(formatChartAttachmentCaption(a), 26);
-}
-
 /** Watch URL for a YouTube media link; null for non-YouTube or missing-id links. */
 export function youtubeWatchUrlFromMediaLink(link: EncoreMediaLink): string | null {
   if (link.source !== 'youtube') return null;

@@ -4,7 +4,6 @@ import { encoreDb, markDirtyRow } from '../db/encoreDb';
 import { normalizeEncoreOriginalSong, type EncoreOriginalSong } from '../originals/types';
 import { useEncoreSync } from './useEncoreSync';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
-import { useEncoreOriginalsLibrary } from './EncoreOriginalsLibraryContext';
 
 export interface EncoreOriginalsActionsContextValue {
   saveOriginal: (song: EncoreOriginalSong, options?: { silentUndo?: boolean }) => Promise<void>;
@@ -88,15 +87,4 @@ export function useEncoreOriginalsActions(): EncoreOriginalsActionsContextValue 
   const ctx = useContext(EncoreOriginalsActionsContext);
   if (!ctx) throw new Error('useEncoreOriginalsActions must be used within EncoreOriginalsActionsProvider');
   return ctx;
-}
-
-export function useEncoreOriginals(): {
-  originals: EncoreOriginalSong[];
-  originalsHydrated: boolean;
-  saveOriginal: EncoreOriginalsActionsContextValue['saveOriginal'];
-  deleteOriginal: EncoreOriginalsActionsContextValue['deleteOriginal'];
-} {
-  const lib = useEncoreOriginalsLibrary();
-  const actions = useEncoreOriginalsActions();
-  return { ...lib, ...actions };
 }

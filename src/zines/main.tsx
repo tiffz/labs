@@ -1,6 +1,7 @@
 import '../shared/ui/fonts/appFonts';
 import '@fontsource/caveat/400.css';
 import '@fontsource/caveat/700.css';
+import React from 'react';
 import ReactDOM from 'react-dom/client'
 import { ThemeProvider } from '@mui/material/styles'
 // Initialize server logger BEFORE any app modules so import-time errors are captured
@@ -19,8 +20,10 @@ initMaterialIconRuntime();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <LabsErrorBoundary appId="zines">
+  <React.StrictMode>
   <ThemeProvider theme={getAppTheme('zines')}>
     <App />
   </ThemeProvider>
+  </React.StrictMode>
   </LabsErrorBoundary>
 ) 

@@ -74,6 +74,7 @@
     "report:ci-failure": "node scripts/ci-failure-summary.mjs",
     "report:test-duration": "node scripts/test-duration-report.mjs",
     "report:bundle-size": "node scripts/bundle-size-report.mjs",
+    "diff:class": "node scripts/diff-change-class.mjs --json",
     "verify:layout": "node scripts/run-scoped-layout-heuristics.mjs",
     "audit-pipeline": "node scripts/audit-pipeline.js",
     "audit-refresh": "node scripts/audit-pipeline.js --force",

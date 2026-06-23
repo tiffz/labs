@@ -31,7 +31,15 @@ Ship **local-first** crash capture:
 | **Cloudflare Workers beacon** | Free tier, self-hosted | Requires worker + D1/KV design           |
 | **Sentry free tier**          | Mature grouping        | Event limits; PII review; vendor lock-in |
 
-## Phase 2 requirements (when revisiting)
+## Phase 1.5 — Opt-in production beacon (Accepted)
+
+When `VITE_LABS_CRASH_BEACON_URL` is set at build time, production builds send an anonymous
+`navigator.sendBeacon` payload (app id, sanitized route, truncated message, source, timestamp).
+No PII; query strings stripped. Dev builds never beacon.
+
+Deploy the receiver as a Cloudflare Worker (or similar) before enabling the env var in Pages.
+
+Implementation: [`workers/labs-crash-beacon/`](../../workers/labs-crash-beacon/README.md) — POST `/v1/crash`, KV aggregation, 90-day TTL.
 
 - **Opt-in** or anonymous-only; no PII in payloads
 - Hash routes only (strip query tokens)

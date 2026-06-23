@@ -14,6 +14,7 @@ const CHORD_ADAPTER_IMPORT =
 const SLIDER_ALLOWLIST_PREFIXES = [
   'shared/components/AppSlider.tsx',
   'shared/components/AppLinearVolumeSlider.tsx',
+  'shared/components/AppCompactSlider.tsx',
   'sight/',
   'agility/',
 ];

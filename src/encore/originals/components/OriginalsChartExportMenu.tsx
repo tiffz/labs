@@ -7,7 +7,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import Snackbar from '@mui/material/Snackbar';
+import LabsFeedbackToast from '../../../shared/components/LabsFeedbackToast';
 import Tooltip from '@mui/material/Tooltip';
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { chartLayoutToTwoColumnExport } from '../../../shared/music/chordChartTwoColumnExport';
@@ -103,7 +103,7 @@ export function OriginalsChartExportMenu({ song, layout, onPersist }: OriginalsC
           <ListItemText primary="Google Doc" secondary="Two-column table" />
         </MenuItem>
       </Menu>
-      <Snackbar open={Boolean(snack)} autoHideDuration={2500} message={snack} onClose={() => setSnack(null)} />
+      <LabsFeedbackToast message={snack} onClose={() => setSnack(null)} autoHideDuration={2500} />
     </>
   );
 }

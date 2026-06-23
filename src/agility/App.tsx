@@ -4,7 +4,7 @@ import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import LinearProgress from '@mui/material/LinearProgress';
-import Slider from '@mui/material/Slider';
+import AppCompactSlider from '../shared/components/AppCompactSlider';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { createAppAnalytics } from '../shared/utils/analytics';
@@ -400,7 +400,7 @@ export default function App(): ReactElement {
                 Manual trim (± ms)
               </Typography>
             </Stack>
-            <Slider
+            <AppCompactSlider
               size="small"
               value={manualMs}
               min={-80}
@@ -429,7 +429,7 @@ export default function App(): ReactElement {
             <Typography variant="body2">
               Low MIDI ({comfort.low})
             </Typography>
-            <Slider
+            <AppCompactSlider
               size="small"
               value={comfort.low}
               min={48}
@@ -445,7 +445,7 @@ export default function App(): ReactElement {
             <Typography variant="body2">
               High MIDI ({comfort.high})
             </Typography>
-            <Slider
+            <AppCompactSlider
               size="small"
               value={comfort.high}
               min={Math.max(comfort.low + 6, 55)}

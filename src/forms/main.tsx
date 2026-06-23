@@ -1,4 +1,5 @@
 import '../shared/ui/fonts/appFonts';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ThemeProvider } from '@mui/material/styles';
 import { installServerLogger } from '../shared/utils/serverLogger';
@@ -16,8 +17,10 @@ initMaterialIconRuntime();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <LabsErrorBoundary appId="forms">
+    <React.StrictMode>
     <ThemeProvider theme={getAppTheme('forms')}>
     <App />
   </ThemeProvider>
+  </React.StrictMode>
   </LabsErrorBoundary>
 );

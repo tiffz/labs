@@ -77,8 +77,6 @@ export type EncoreMediaTransportContextValue = {
 export type EncoreMediaPlaybackControlsValue = Omit<EncoreMediaPlaybackContextValue, 'transport'>;
 
 /** Stable context ref — keep in this file so Vite HMR on the provider does not recreate the context. */
-export const EncoreMediaPlaybackContext = createContext<EncoreMediaPlaybackContextValue | null>(null);
-
 export const EncoreMediaPlaybackControlsContext = createContext<EncoreMediaPlaybackControlsValue | null>(null);
 
 export const EncoreMediaTransportContext = createContext<EncoreMediaTransportContextValue | null>(null);

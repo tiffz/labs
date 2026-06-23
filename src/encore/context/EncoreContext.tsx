@@ -50,7 +50,7 @@ export {
   EncoreRepertoirePlaylistProvider,
   useEncoreRepertoirePlaylist,
 } from './EncoreRepertoirePlaylistContext';
-export { useEncoreOriginals, useEncoreOriginalsActions } from './EncoreOriginalsActionsContext';
+export { useEncoreOriginalsActions } from './EncoreOriginalsActionsContext';
 export { useEncoreOriginalsLibrary, useEncoreOriginal } from './EncoreOriginalsLibraryContext';
 
 /**

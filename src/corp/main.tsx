@@ -1,5 +1,5 @@
 import '../shared/ui/fonts/appFonts';
-import React from 'react';
+import React, { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider } from '@mui/material/styles';
 // Initialize server logger BEFORE any app modules so import-time errors are captured
@@ -21,9 +21,11 @@ if (rootEl) {
   const root = createRoot(rootEl);
   root.render(
     <LabsErrorBoundary appId="corp">
+      <StrictMode>
       <ThemeProvider theme={getAppTheme('corp')}>
         <CorpApp />
       </ThemeProvider>
+      </StrictMode>
     </LabsErrorBoundary>,
   );
 }

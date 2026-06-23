@@ -277,6 +277,10 @@ jobs:
         VITE_APP_ENV: production
       run: npm run build
 
+    - name: Bundle size report (advisory)
+      run: node scripts/bundle-size-report.mjs --skip-build
+      continue-on-error: true
+
     - name: Upload production build artifact
       uses: actions/upload-artifact@v6
       with:

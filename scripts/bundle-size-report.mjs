@@ -9,8 +9,11 @@ import path from 'node:path';
 
 const BASELINE_PATH = path.join(process.cwd(), 'docs/bundle-size-baseline.json');
 const THRESHOLD = 0.1;
+const skipBuild = process.argv.includes('--skip-build');
 
-execSync('npm run build', { stdio: 'inherit' });
+if (!skipBuild) {
+  execSync('npm run build', { stdio: 'inherit' });
+}
 
 const distAssets = path.join(process.cwd(), 'dist/assets');
 if (!fs.existsSync(distAssets)) {
