@@ -8,18 +8,26 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const MAX_MESH_TRIS = 25_000;
-const MAX_SKIN_ENVELOPE_TRIS = 52_000;
+const MAX_SKIN_ENVELOPE_TRIS = 44_000;
+const SKIN_OVERLAY_CAPS = {
+  skin_face: 12_000,
+  skin_neck_shoulder: 8_000,
+  skin_hand_digits: 10_000,
+  skin_foot_digits: 10_000,
+  eye_globes: 2_000,
+};
 const MAX_REGION_TRIS = 80_000;
 const ATLAS_REGION_TRIS = 120_000;
 const ATLAS_COMPLETE_REGION_TRIS = 400_000;
 const OVERLAY_NODE_IDS = new Set([
   'skin_envelope',
-  'eye_globes',
   'skin_face',
-  'skin_limbs',
-  'skin_torso',
+  'skin_neck_shoulder',
   'skin_hand_digits',
   'skin_foot_digits',
+  'eye_globes',
+  'skin_limbs',
+  'skin_torso',
   'skin_eminences',
 ]);
 
@@ -59,7 +67,10 @@ function auditTriangleBudgets(manifest) {
     let regionTotal = 0;
     for (const mesh of entry.meshes ?? []) {
       regionTotal += mesh.triangleCount ?? 0;
-      const meshCap = mesh.nodeId === 'skin_envelope' ? MAX_SKIN_ENVELOPE_TRIS : MAX_MESH_TRIS;
+      const meshCap =
+        mesh.nodeId === 'skin_envelope'
+          ? MAX_SKIN_ENVELOPE_TRIS
+          : SKIN_OVERLAY_CAPS[mesh.nodeId] ?? MAX_MESH_TRIS;
       if ((mesh.triangleCount ?? 0) > meshCap) {
         violations.push(
           `${region}/${mesh.nodeId}: ${mesh.triangleCount} tris exceeds mesh cap ${meshCap}`,

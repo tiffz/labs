@@ -68,7 +68,7 @@ function exportArgsForRegion(region) {
     return ['--ratio', '0.15', '--max-tris', '10000', '--max-region-tris', '400000'];
   }
   if (region === 'atlas_skin') {
-    return ['--ratio', '0.55', '--max-tris', '52000', '--max-region-tris', '80000'];
+    return ['--ratio', '0.85', '--max-tris', '44000', '--max-region-tris', '90000'];
   }
   if (region === 'atlas_supplement') {
     return ['--ratio', '0.55', '--max-tris', '25000', '--max-region-tris', '120000'];

@@ -27,9 +27,13 @@ Clavicular part of deltoid muscle.r,muscle_deltoid_anterior,shoulder_neck
 Acromial part of deltoid muscle.r,muscle_deltoid_lateral,shoulder_neck
 Scapular part of deltoid uscle.r,muscle_deltoid_posterior,shoulder_neck
 Ascending part of trapezius muscle.r,muscle_trapezius_upper,shoulder_neck
+Descending part of trapezius muscle.r,muscle_trapezius_upper,shoulder_neck
+Transverse part of trapezius muscle.r,muscle_trapezius_upper,shoulder_neck
 Sternocleidomastoid muscle.r,muscle_sternocleidomastoid,shoulder_neck
 Articular capsule of sternoclavicular joint*.r,joint_sternoclavicular,shoulder_neck
 Long head of biceps brachii muscle.r,muscle_biceps_brachii,arm
+Short head of biceps brachii.r,muscle_biceps_brachii,arm
+Medial head of biceps brachii muscle.r,muscle_biceps_brachii,arm
 Lateral head of triceps brachii muscle.r,muscle_triceps_long_head,arm
 Brachialis muscle.r,muscle_brachialis,arm
 Brachioradialis muscle.r,muscle_brachioradialis,arm
@@ -65,6 +69,14 @@ Gluteus medius muscle.r,muscle_gluteus_medius,atlas_supplement
 Gluteus medius muscle-Iliac insertion.r,muscle_gluteus_medius,atlas_supplement
 Gluteus minimus muscle.r,muscle_gluteus_minimus,atlas_supplement
 Gluteus minimus muscle-Iliac insertion.r,muscle_gluteus_minimus,atlas_supplement
+Inferior gemellus muscle.r,muscle_gemellus_inferior,atlas_supplement
+Inferior gemellus muscle-Ischiatic insertion.r,muscle_gemellus_inferior,atlas_supplement
+Superior gemellus muscle.r,muscle_gemellus_superior,atlas_supplement
+Superior gemellus muscle-Ischiatic insertion.r,muscle_gemellus_superior,atlas_supplement
+Obturator internus.r,muscle_obturator_internus,atlas_supplement
+Quadratus femoris muscle.r,muscle_quadratus_femoris,atlas_supplement
+Quadratus femoris-Ischiatic insertion.r,muscle_quadratus_femoris,atlas_supplement
+Quadratus femoris ending on quadrate tubercle.r,muscle_quadratus_femoris,atlas_supplement
 Piriformis muscle.r,muscle_piriformis,atlas_supplement
 Iliacus muscle.r,muscle_iliacus,atlas_supplement
 Vastus intermedius muscle.r,muscle_vastus_intermedius,atlas_supplement

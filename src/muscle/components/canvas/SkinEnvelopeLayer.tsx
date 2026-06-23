@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import type { Mesh } from 'three';
-import { DoubleSide, FrontSide, Mesh as ThreeMesh } from 'three';
+import { DoubleSide, Mesh as ThreeMesh } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { muscleModelsManifest as manifest } from '../../types/muscleModelsManifest';
 import { ANATOMY_COLORS } from './anatomyVisuals';
@@ -15,7 +15,15 @@ function isSkinMeshName(name: string): boolean {
   return name === 'skin_envelope' || name.startsWith('skin_');
 }
 
-/** One continuous skin surface — avoids z-fighting and seams between GLB sub-meshes. */
+/** Keep high-detail extremity/face overlays separate — avoids decimating palms and soles with the body envelope. */
+function prepareSkinMeshes(meshes: Mesh[]): Mesh[] {
+  if (meshes.length <= 1) return meshes;
+  const envelope = meshes.filter((mesh) => mesh.name === 'skin_envelope');
+  const overlays = meshes.filter((mesh) => mesh.name !== 'skin_envelope');
+  return [...mergeSkinMeshes(envelope), ...overlays];
+}
+
+/** One continuous body skin surface — detail overlays stay as separate meshes. */
 function mergeSkinMeshes(meshes: Mesh[]): Mesh[] {
   if (meshes.length <= 1) return meshes;
 
@@ -54,8 +62,8 @@ function SkinMesh({ mesh, half }: { mesh: Mesh; half: 'reference' | 'study' }) {
     material.transparent = isStudy;
     material.opacity = isStudy ? 0.52 : 1;
     material.depthWrite = !isStudy;
-    // Reference half mirrors across x=0 — negative scale flips winding; DoubleSide avoids holes.
-    material.side = half === 'reference' ? DoubleSide : FrontSide;
+    // Mirrored reference half and thin extremity overlays can flip winding — DoubleSide avoids holes.
+    material.side = DoubleSide;
     material.needsUpdate = true;
     invalidate();
   }, [half, invalidate, isStudy, material, mesh]);
@@ -80,16 +88,20 @@ export default function SkinEnvelopeLayer({ layout, half, visible = true }: Skin
     : muscleRegionGlbUrl('/muscle/models/atlas_skin.glb');
   const { scene } = useMuscleGltf(url);
   const meshes = useMemo(
-    () => mergeSkinMeshes(extractGlbMeshes(scene, (name) => isSkinMeshName(name))),
+    () => prepareSkinMeshes(extractGlbMeshes(scene, (name) => isSkinMeshName(name))),
     [scene],
   );
 
   if (!visible || meshes.length === 0) return null;
 
-  return (
+    return (
     <AnatomyHalfGroup half={half} layout={layout} renderOrder={half === 'reference' ? 25 : 30}>
       {meshes.map((mesh) => (
-        <SkinMesh key={`${half}-${mesh.name}`} mesh={mesh} half={half} />
+        <SkinMesh
+          key={`${half}-${mesh.name}`}
+          mesh={mesh}
+          half={half}
+        />
       ))}
     </AnatomyHalfGroup>
   );

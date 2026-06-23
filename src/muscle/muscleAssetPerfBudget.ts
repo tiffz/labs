@@ -1,7 +1,15 @@
 /** Triangle budgets for Z-Anatomy region GLBs — enforced by validate-assets + Vitest. */
 export const MUSCLE_MAX_MESH_TRIANGLES = 25_000;
-/** Unified full-body skin envelope — merged Z-Anatomy region patches. */
-export const MUSCLE_MAX_SKIN_ENVELOPE_TRIANGLES = 52_000;
+/** Unified full-body skin envelope — merged Z-Anatomy body region patches. */
+export const MUSCLE_MAX_SKIN_ENVELOPE_TRIANGLES = 44_000;
+/** High-detail skin overlays (face, neck, palms, soles) — exported separately from body envelope. */
+export const MUSCLE_SKIN_OVERLAY_CAPS: Readonly<Record<string, number>> = {
+  skin_face: 12_000,
+  skin_neck_shoulder: 8_000,
+  skin_hand_digits: 10_000,
+  skin_foot_digits: 10_000,
+  eye_globes: 2_000,
+};
 export const MUSCLE_MAX_REGION_TRIANGLES = 80_000;
 export const MUSCLE_MAX_ATLAS_REGION_TRIANGLES = 120_000;
 export const MUSCLE_MAX_ATLAS_COMPLETE_TRIANGLES = 400_000;
@@ -24,6 +32,13 @@ export type MuscleManifest = {
   regions: Record<string, MuscleManifestRegion | undefined>;
 };
 
+export function skinMeshTriangleCap(nodeId: string): number {
+  if (nodeId === 'skin_envelope') return MUSCLE_MAX_SKIN_ENVELOPE_TRIANGLES;
+  const overlayCap = MUSCLE_SKIN_OVERLAY_CAPS[nodeId];
+  if (overlayCap != null) return overlayCap;
+  return MUSCLE_MAX_MESH_TRIANGLES;
+}
+
 export function auditMuscleManifestTriangleBudgets(manifest: MuscleManifest): string[] {
   const violations: string[] = [];
 
@@ -33,10 +48,7 @@ export function auditMuscleManifestTriangleBudgets(manifest: MuscleManifest): st
     let regionTotal = 0;
     for (const mesh of entry.meshes) {
       regionTotal += mesh.triangleCount;
-      const meshCap =
-        mesh.nodeId === 'skin_envelope'
-          ? MUSCLE_MAX_SKIN_ENVELOPE_TRIANGLES
-          : MUSCLE_MAX_MESH_TRIANGLES;
+      const meshCap = skinMeshTriangleCap(mesh.nodeId);
       if (mesh.triangleCount > meshCap) {
         violations.push(
           `${regionId}/${mesh.nodeId}: ${mesh.triangleCount.toLocaleString()} tris exceeds mesh cap ${meshCap.toLocaleString()}`,

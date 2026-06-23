@@ -134,7 +134,7 @@
         {
           "nodeId": "muscle_trapezius_upper",
           "meshName": "muscle_trapezius_upper",
-          "triangleCount": 9190
+          "triangleCount": 5740
         },
         {
           "nodeId": "muscle_sternocleidomastoid",
@@ -299,17 +299,37 @@
         {
           "nodeId": "muscle_gluteus_maximus",
           "meshName": "muscle_gluteus_maximus",
-          "triangleCount": 6788
+          "triangleCount": 5565
         },
         {
           "nodeId": "muscle_gluteus_medius",
           "meshName": "muscle_gluteus_medius",
-          "triangleCount": 6998
+          "triangleCount": 5737
         },
         {
           "nodeId": "muscle_gluteus_minimus",
           "meshName": "muscle_gluteus_minimus",
-          "triangleCount": 6937
+          "triangleCount": 5687
+        },
+        {
+          "nodeId": "muscle_gemellus_inferior",
+          "meshName": "muscle_gemellus_inferior",
+          "triangleCount": 1975
+        },
+        {
+          "nodeId": "muscle_gemellus_superior",
+          "meshName": "muscle_gemellus_superior",
+          "triangleCount": 849
+        },
+        {
+          "nodeId": "muscle_obturator_internus",
+          "meshName": "muscle_obturator_internus",
+          "triangleCount": 6168
+        },
+        {
+          "nodeId": "muscle_quadratus_femoris",
+          "meshName": "muscle_quadratus_femoris",
+          "triangleCount": 3360
         },
         {
           "nodeId": "muscle_piriformis",
@@ -319,12 +339,12 @@
         {
           "nodeId": "muscle_iliacus",
           "meshName": "muscle_iliacus",
-          "triangleCount": 7140
+          "triangleCount": 5854
         },
         {
           "nodeId": "muscle_vastus_intermedius",
           "meshName": "muscle_vastus_intermedius",
-          "triangleCount": 6796
+          "triangleCount": 5572
         },
         {
           "nodeId": "muscle_soleus",
@@ -334,7 +354,7 @@
         {
           "nodeId": "muscle_vastus_medialis",
           "meshName": "muscle_vastus_medialis",
-          "triangleCount": 7124
+          "triangleCount": 5840
         },
         {
           "nodeId": "muscle_gracilis",
@@ -344,17 +364,17 @@
         {
           "nodeId": "muscle_adductor_longus",
           "meshName": "muscle_adductor_longus",
-          "triangleCount": 7457
+          "triangleCount": 6114
         },
         {
           "nodeId": "muscle_semitendinosus",
           "meshName": "muscle_semitendinosus",
-          "triangleCount": 7141
+          "triangleCount": 5853
         },
         {
           "nodeId": "muscle_semimembranosus",
           "meshName": "muscle_semimembranosus",
-          "triangleCount": 6751
+          "triangleCount": 5533
         },
         {
           "nodeId": "muscle_sartorius",
@@ -389,7 +409,7 @@
         {
           "nodeId": "muscle_splenius_capitis",
           "meshName": "muscle_splenius_capitis",
-          "triangleCount": 7074
+          "triangleCount": 5800
         },
         {
           "nodeId": "muscle_omohyoid",
@@ -538,15 +558,39 @@
       "glbUrl": "/muscle/models/atlas_skin.glb",
       "meshes": [
         {
+          "nodeId": "skin_face",
+          "meshName": "skin_face",
+          "triangleCount": 10765,
+          "atlasKind": "skin"
+        },
+        {
+          "nodeId": "skin_neck_shoulder",
+          "meshName": "skin_neck_shoulder",
+          "triangleCount": 7891,
+          "atlasKind": "skin"
+        },
+        {
+          "nodeId": "skin_hand_digits",
+          "meshName": "skin_hand_digits",
+          "triangleCount": 10000,
+          "atlasKind": "skin"
+        },
+        {
+          "nodeId": "skin_foot_digits",
+          "meshName": "skin_foot_digits",
+          "triangleCount": 8117,
+          "atlasKind": "skin"
+        },
+        {
           "nodeId": "skin_envelope",
           "meshName": "skin_envelope",
-          "triangleCount": 51998,
+          "triangleCount": 43998,
           "atlasKind": "skin"
         },
         {
           "nodeId": "eye_globes",
           "meshName": "eye_globes",
-          "triangleCount": 1457,
+          "triangleCount": 1999,
           "atlasKind": "skin"
         }
       ],
@@ -3924,5 +3968,5 @@
       "source": "z-anatomy"
     }
   },
-  "assetRevision": "dc3f9dca9a96"
+  "assetRevision": "acebe0b6dea4"
 }

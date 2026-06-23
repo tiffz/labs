@@ -231,6 +231,8 @@ _BRIDGE_SKIN_BASES = (
 # Named skin surfaces in Z-Anatomy that omit " region" in the object name.
 _AUXILIARY_SKIN_BASES = (
     'Palm',
+    'Sole',
+    'Plantar arch',
     'Dorsum of hand',
     'Dorsum of foot',
     'Dorsum of nose',
@@ -299,8 +301,100 @@ def _is_any_skin_patch(obj) -> bool:
     )
 
 
+def _is_skin_face_detail_patch(obj) -> bool:
+    return _is_face_region_skin_patch(obj)
+
+
+def _is_skin_neck_shoulder_patch(obj) -> bool:
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    lower = obj.name.lower()
+    if 'interscapular region' in lower:
+        return True
+    if not _is_region_skin_patch(obj):
+        return False
+    neck_shoulder_tokens = (
+        'posterior cervical',
+        'lateral cervical',
+        'sternocleidomastoid region',
+        'infrascapular region',
+        'scapular region',
+        'deltoid region',
+    )
+    return any(token in lower for token in neck_shoulder_tokens)
+
+
+def _is_skin_hand_detail_patch(obj) -> bool:
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    lower = obj.name.lower()
+    if _is_hand_digit_skin_patch(obj):
+        return True
+    if lower in {'thenar eminence.r', 'hypothenar eminence.r'}:
+        return True
+    hand_bases = (
+        'Palm',
+        'Dorsum of hand',
+        'Dorsal surface of digits of hand',
+        'Palmar surface of digits of hand',
+    )
+    return any(obj.name.startswith(f'{base}.r') for base in hand_bases)
+
+
+def _is_skin_foot_detail_patch(obj) -> bool:
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    lower = obj.name.lower()
+    if _is_foot_digit_skin_patch(obj):
+        return True
+    if lower in {'hallucial eminence.r'}:
+        return True
+    foot_bases = (
+        'Sole',
+        'Plantar arch',
+        'Dorsum of foot',
+        'Dorsal surfaces of digits of foot',
+        'Plantar surfaces of digits of foot',
+    )
+    return any(obj.name.startswith(f'{base}.r') for base in foot_bases)
+
+
+def _is_skin_body_envelope_patch(obj) -> bool:
+    if not _is_any_skin_patch(obj):
+        return False
+    return not (
+        _is_skin_face_detail_patch(obj)
+        or _is_skin_neck_shoulder_patch(obj)
+        or _is_skin_hand_detail_patch(obj)
+        or _is_skin_foot_detail_patch(obj)
+    )
+
+
+SKIN_MESH_TRI_CAPS: dict[str, int] = {
+    'skin_envelope': 44_000,
+    'skin_face': 12_000,
+    'skin_neck_shoulder': 8_000,
+    'skin_hand_digits': 10_000,
+    'skin_foot_digits': 10_000,
+    'eye_globes': 2_000,
+}
+
+SKIN_DETAIL_MESH_IDS = frozenset(
+    {'skin_face', 'skin_neck_shoulder', 'skin_hand_digits', 'skin_foot_digits'},
+)
+
 SKIN_GROUP_SPECS: tuple[tuple[str, object], ...] = (
-    ('skin_envelope', _is_any_skin_patch),
+    ('skin_face', _is_skin_face_detail_patch),
+    ('skin_neck_shoulder', _is_skin_neck_shoulder_patch),
+    ('skin_hand_digits', _is_skin_hand_detail_patch),
+    ('skin_foot_digits', _is_skin_foot_detail_patch),
+    ('skin_envelope', _is_skin_body_envelope_patch),
     ('eye_globes', _is_eye_globe_patch),
 )
 
@@ -889,10 +983,8 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
     if blend and (not bpy.data.filepath or Path(bpy.data.filepath).resolve() != blend.resolve()):
         bpy.ops.wm.open_mainfile(filepath=str(blend))
 
-    per_mesh_cap = {
-        'skin_envelope': min(max(max_tris, 52_000), 52_000),
-        'eye_globes': min(max(max_tris, 2_000), 2_000),
-    }
+    per_mesh_cap = SKIN_MESH_TRI_CAPS.copy()
+    detail_ratio = max(ratio, 0.85)
 
     exported: list[tuple[str, object, int]] = []
     for mesh_id, predicate in SKIN_GROUP_SPECS:
@@ -912,13 +1004,15 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
         merged.name = mesh_id
         merged['nodeId'] = mesh_id
         ensure_mesh_single_user(merged)
-        if mesh_id == 'skin_envelope':
+        if mesh_id in ('skin_envelope', *SKIN_DETAIL_MESH_IDS):
             weld_skin_mesh(merged)
         elif mesh_id == 'eye_globes':
             shade_smooth_mesh(merged)
         cap = per_mesh_cap.get(mesh_id, max_tris)
         if mesh_id == 'skin_envelope':
             apply_decimate_to_target(merged, cap)
+        elif mesh_id in SKIN_DETAIL_MESH_IDS:
+            apply_decimate_to_cap(merged, detail_ratio, cap)
         else:
             apply_decimate_to_cap(merged, ratio, cap)
         bake_mesh_world_transform(merged)
@@ -1050,9 +1144,9 @@ def main(argv: list[str] | None = None) -> None:
         elif args.region == 'atlas_skin':
             export_atlas_skin(
                 args.blend,
-                max(args.ratio, 0.55),
-                min(max(args.max_tris, 52_000), 52_000),
-                min(max(args.max_region_tris, 80_000), 80_000),
+                max(args.ratio, 0.85),
+                min(max(args.max_tris, 44_000), 44_000),
+                min(max(args.max_region_tris, 90_000), 90_000),
             )
         else:
             export_region(args.region, args.blend, args.ratio, args.max_tris, args.max_region_tris)
