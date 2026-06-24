@@ -10,7 +10,7 @@ import {
 
 /** Computes a camera preset when the user focuses a structure in warmup mode. */
 export default function AnatomyFocusCamera() {
-  const { scene, invalidate } = useThree();
+  const { scene, camera, invalidate } = useThree();
   const mode = useMuscleStore((s) => s.mode);
   const focusedNodeId = useMuscleStore((s) => s.focusedNodeId);
   const focusCameraNonce = useMuscleStore((s) => s.focusCameraNonce);
@@ -25,19 +25,23 @@ export default function AnatomyFocusCamera() {
 
     const object = findSceneObjectForNodeId(scene, focusedNodeId);
     if (object) {
-      setCameraFocusPreset(computeFramingPresetFromObject(object));
+      setCameraFocusPreset(computeFramingPresetFromObject(object, camera.position.clone()));
       invalidate();
       return;
     }
 
     const node = getNodeById(focusedNodeId);
     if (node?.layout) {
-      setCameraFocusPreset(computeFramingPresetFromLayout(node.layout.position, node.layout.scale));
+      setCameraFocusPreset(
+        computeFramingPresetFromLayout(node.layout.position, node.layout.scale, camera.position),
+      );
       invalidate();
       return;
     }
 
     setCameraFocusPreset(null);
+  // Snap from current orbit bearing when focus changes — not on every camera tick.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- camera.position intentionally omitted
   }, [
     focusCameraNonce,
     focusedNodeId,

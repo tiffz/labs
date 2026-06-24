@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
-import type { Mesh } from 'three';
+import type { BufferGeometry, Mesh } from 'three';
 import { DoubleSide, FrontSide, Mesh as ThreeMesh } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { muscleModelsManifest as manifest } from '../../types/muscleModelsManifest';
@@ -45,17 +45,19 @@ type SkinEnvelopeLayerProps = {
   visible?: boolean;
 };
 
+function clipSkinForHalf(geometry: BufferGeometry): BufferGeometry {
+  return clipSkinGeometryToStudyHalf(geometry.clone(), 0, {
+    anyVertexOnHalf: true,
+    preserveMidlinePelvis: true,
+  });
+}
+
 function SkinMesh({ mesh, half }: { mesh: Mesh; half: 'reference' | 'study' }) {
   const { invalidate } = useThree();
   const meshRef = useRef<Mesh>(null);
   const material = useMemo(() => acquireSkinMaterial(), []);
   const isStudy = half === 'study';
-  const geometry = useMemo(() => {
-    if (!isStudy || mesh.name === 'eye_globes') {
-      return mesh.geometry;
-    }
-    return clipSkinGeometryToStudyHalf(mesh.geometry.clone(), 0);
-  }, [isStudy, mesh.geometry, mesh.name]);
+  const geometry = useMemo(() => clipSkinForHalf(mesh.geometry), [mesh.geometry]);
 
   useLayoutEffect(() => {
     const skin = meshRef.current;

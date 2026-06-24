@@ -3,6 +3,9 @@ import type { BufferGeometry } from 'three';
 /**
  * Z-Anatomy unified skin weld often lands bulk on −X while curriculum staging pins .r anatomy on +X.
  * Mirror X when the envelope mass sits on the negative side so sagittal clip keeps the study half.
+ *
+ * After clip, study (+scale) shows skin on world +X; reference (−scale) mirrors the same local
+ * shell onto world −X (opaque skin reference side).
  */
 export function alignSkinEnvelopeToStudyHalf(geometry: BufferGeometry): BufferGeometry {
   geometry.computeBoundingBox();

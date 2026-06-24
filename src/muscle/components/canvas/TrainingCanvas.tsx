@@ -28,13 +28,15 @@ function AnatomySceneInner({ showPerf }: { showPerf: boolean }) {
   const mode = useMuscleStore((s) => s.mode);
   const focusedNodeId = useMuscleStore((s) => s.focusedNodeId);
   const cameraFocusPreset = useMuscleStore((s) => s.cameraFocusPreset);
+  const focusCameraNonce = useMuscleStore((s) => s.focusCameraNonce);
   const clearFocus = useMuscleStore((s) => s.clearFocus);
   const setAnatomyStageCenter = useMuscleStore((s) => s.setAnatomyStageCenter);
   const quizPreset = useQuizCameraPreset();
 
   const cameraPreset =
     mode === 'active' ? quizPreset : focusedNodeId ? cameraFocusPreset : null;
-  const animateCamera = Boolean(cameraPreset);
+  const lockControls = mode === 'active' && Boolean(quizPreset);
+  const animatePreset = Boolean(cameraPreset);
 
   useEffect(() => {
     invalidate();
@@ -75,7 +77,12 @@ function AnatomySceneInner({ showPerf }: { showPerf: boolean }) {
         <RegionModel region={activeModuleId} />
       )}
       <AnatomyFocusCamera />
-      <QuizCameraRig preset={cameraPreset} animate={animateCamera} />
+      <QuizCameraRig
+        preset={cameraPreset}
+        animatePreset={animatePreset}
+        lockControls={lockControls}
+        focusSnapNonce={focusCameraNonce}
+      />
     </>
   );
 }

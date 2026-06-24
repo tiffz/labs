@@ -8,10 +8,22 @@ import { useMuscleStore } from '../../store/useMuscleStore';
 
 interface QuizCameraRigProps {
   preset: CameraPreset | null;
-  animate: boolean;
+  /** When true, lerp toward preset (one-shot for focus; sustained for active quiz). */
+  animatePreset: boolean;
+  /** Active quiz locks orbit until the user finishes the rep. */
+  lockControls?: boolean;
+  /** Bumps when warmup focus reframes — retriggers one-shot snap. */
+  focusSnapNonce?: number;
 }
 
-export default function QuizCameraRig({ preset, animate }: QuizCameraRigProps) {
+const FOCUS_SNAP_MS = 900;
+
+export default function QuizCameraRig({
+  preset,
+  animatePreset,
+  lockControls = false,
+  focusSnapNonce = 0,
+}: QuizCameraRigProps) {
   const { camera, invalidate } = useThree();
   const stageCenter = useMuscleStore((s) => s.anatomyStageCenter);
   const activeModuleId = useMuscleStore((s) => s.activeModuleId);
@@ -22,6 +34,15 @@ export default function QuizCameraRig({ preset, animate }: QuizCameraRigProps) {
   );
   const goalPos = useMemo(() => new THREE.Vector3(), []);
   const goalTarget = useMemo(() => new THREE.Vector3(), []);
+  const snapUntilRef = useRef(0);
+  const sustainedAnimateRef = useRef(false);
+
+  useEffect(() => {
+    sustainedAnimateRef.current = animatePreset && lockControls;
+    if (animatePreset && preset && !lockControls) {
+      snapUntilRef.current = performance.now() + FOCUS_SNAP_MS;
+    }
+  }, [animatePreset, focusSnapNonce, lockControls, preset]);
 
   useEffect(() => {
     const isFullBody = bodyView === 'full_body';
@@ -31,13 +52,20 @@ export default function QuizCameraRig({ preset, animate }: QuizCameraRigProps) {
       controlsRef.current.target.copy(goalTarget);
       controlsRef.current.update();
     }
+    snapUntilRef.current = 0;
     invalidate();
   }, [activeModuleId, bodyView, camera, cameraResetNonce, goalTarget, invalidate, stageCenter]);
 
   useFrame((_, delta) => {
     let needsInvalidate = false;
+    const focusSnapping =
+      Boolean(preset) &&
+      animatePreset &&
+      !lockControls &&
+      performance.now() < snapUntilRef.current;
+    const quizSnapping = Boolean(preset) && sustainedAnimateRef.current;
 
-    if (preset && animate) {
+    if (preset && (focusSnapping || quizSnapping)) {
       goalPos.set(...preset.position);
       goalTarget.set(...preset.target);
       camera.position.lerp(goalPos, Math.min(1, delta * 2.5));
@@ -79,7 +107,7 @@ export default function QuizCameraRig({ preset, animate }: QuizCameraRigProps) {
       }}
       minDistance={1.2}
       maxDistance={8}
-      enabled={!animate || !preset}
+      enabled={!lockControls}
       onChange={() => invalidate()}
     />
   );

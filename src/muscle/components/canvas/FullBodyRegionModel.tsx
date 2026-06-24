@@ -63,6 +63,8 @@ export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionMode
     publishMuscleAnatomyDebugWindow();
   }, [meshes]);
 
+  const hideReferenceAnatomy = isStudySkinVisibleAtPeel(layerPeelDepth, showSkinLayer);
+
   return (
     <>
       <SkinEnvelopeLayer layout={groupLayout} half="reference" visible />
@@ -73,13 +75,15 @@ export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionMode
           <EyeGlobesLayer layout={groupLayout} half="study" visible />
         </>
       ) : null}
-      <AnatomyHalfGroup half="reference" layout={groupLayout}>
-        {meshes.map((mesh) => {
-          const node = getNodeById(mesh.name);
-          if (!node) return null;
-          return <GlbAtlasMirrorMesh key={`ref-${mesh.name}`} mesh={mesh} node={node} />;
-        })}
-      </AnatomyHalfGroup>
+      {hideReferenceAnatomy ? null : (
+        <AnatomyHalfGroup half="reference" layout={groupLayout}>
+          {meshes.map((mesh) => {
+            const node = getNodeById(mesh.name);
+            if (!node) return null;
+            return <GlbAtlasMirrorMesh key={`ref-${mesh.name}`} mesh={mesh} node={node} />;
+          })}
+        </AnatomyHalfGroup>
+      )}
       <AnatomyHalfGroup half="study" layout={groupLayout}>
         {meshes.map((mesh) => {
           const node = getNodeById(mesh.name);

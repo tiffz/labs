@@ -320,9 +320,12 @@ def _is_skin_neck_shoulder_patch(obj) -> bool:
         'sternocleidomastoid region',
         'deltoid region',
         'scapular region',
+        'infrascapular region',
+        'vertebral region',
         'presternal region',
         'pectoral region',
         'mastoid region',
+        'occipital region',
     )
     if any(token in lower for token in neck_shoulder_tokens):
         return True
@@ -403,9 +406,21 @@ def _is_skin_limb_detail_patch(obj) -> bool:
     limb_fossae = ('Cubital fossa', 'Popliteal fossa')
     if any(obj.name.startswith(f'{base}.r') for base in limb_fossae):
         return True
-    return _is_region_skin_patch(obj) and any(
-        token in lower for token in (' cubital', ' popliteal', ' elbow', ' knee')
-    )
+    if _is_region_skin_patch(obj) and any(
+        token in lower
+        for token in (
+            ' cubital',
+            ' popliteal',
+            ' elbow',
+            ' knee',
+            ' anterior region of arm',
+            ' posterior region of arm',
+            ' lateral region of arm',
+            ' medial region of arm',
+        )
+    ):
+        return True
+    return False
 
 
 def _is_orphan_skin_generated_patch(obj) -> bool:

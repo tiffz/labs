@@ -1,13 +1,56 @@
 import type { BufferAttribute, BufferGeometry } from 'three';
 
+export type SkinSagittalClipOptions = {
+  /** Minimum +X for triangle centroid (local study-side half before parent mirror). */
+  minCentroidX?: number;
+  /** Keep triangles when any vertex reaches the study half — reduces bicep/neck border gaps. */
+  anyVertexOnHalf?: boolean;
+  /** Keep midline pelvis/groin geometry whole on the study half (avoids half-penis clip). */
+  preserveMidlinePelvis?: boolean;
+};
+
+const DEFAULT_OPTIONS: Required<SkinSagittalClipOptions> = {
+  minCentroidX: 0,
+  anyVertexOnHalf: true,
+  preserveMidlinePelvis: true,
+};
+
+/** Staging-space pelvis band — triangles here stay intact when preserveMidlinePelvis is on. */
+function isMidlinePelvisTriangle(
+  a: [number, number, number],
+  b: [number, number, number],
+  c: [number, number, number],
+): boolean {
+  const maxAbsX = Math.max(Math.abs(a[0]), Math.abs(b[0]), Math.abs(c[0]));
+  const cy = (a[1] + b[1] + c[1]) / 3;
+  return maxAbsX < 0.028 && cy >= 0.78 && cy <= 1.08;
+}
+
+function triangleOnLocalStudyHalf(
+  a: [number, number, number],
+  b: [number, number, number],
+  c: [number, number, number],
+  minCentroidX: number,
+  anyVertexOnHalf: boolean,
+): boolean {
+  if (anyVertexOnHalf) {
+    const maxX = Math.max(a[0], b[0], c[0]);
+    if (maxX >= minCentroidX) return true;
+  }
+  const cx = (a[0] + b[0] + c[0]) / 3;
+  return cx >= minCentroidX;
+}
+
 /**
- * Keep only triangles whose centroid lies on the +X study half (Z-Anatomy .r export side).
- * Removes midline-crossing pelvis/groin fragments that bleed onto the transparent half.
+ * Keep the +X local half used for both study (+scale) and reference (−scale mirror) skin.
+ * Reference parent mirror maps this local +X shell onto world −X so anatomy stays on world +X.
  */
 export function clipSkinGeometryToStudyHalf(
   geometry: BufferGeometry,
-  minCentroidX = 0.004,
+  minCentroidX = 0,
+  options?: SkinSagittalClipOptions,
 ): BufferGeometry {
+  const opts = { ...DEFAULT_OPTIONS, ...options, minCentroidX };
   const position = geometry.getAttribute('position') as BufferAttribute | undefined;
   if (!position || position.count === 0) return geometry;
 
@@ -32,8 +75,13 @@ export function clipSkinGeometryToStudyHalf(
     readVertex(i0, a);
     readVertex(i1, b);
     readVertex(i2, c);
-    const cx = (a[0] + b[0] + c[0]) / 3;
-    if (cx >= minCentroidX) {
+
+    if (opts.preserveMidlinePelvis && isMidlinePelvisTriangle(a, b, c)) {
+      kept.push(i0, i1, i2);
+      continue;
+    }
+
+    if (triangleOnLocalStudyHalf(a, b, c, opts.minCentroidX, opts.anyVertexOnHalf)) {
       kept.push(i0, i1, i2);
     }
   }

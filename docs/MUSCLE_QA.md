@@ -17,7 +17,7 @@ After changing `atlas_skin`, `atlas_complete`, or skin export predicates — **h
 
 | Area            | What to check                                                                                                    |
 | --------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Sagittal split  | Muscles on study (+X) side; skin mirrored on reference side; figure not a thin slice                             |
+| Sagittal split  | World +X study muscles; world −X opaque skin shell. Reference anatomy hidden at Full figure + skin on            |
 | Skin continuity | No Frankenstein stitch ridges; palm, elbow, knee, neck/shoulder, face, ankles                                    |
 | Skin runtime    | Unified `skin_envelope` is X-aligned before study-half clip — regression in `skinEnvelopeClipRegression.test.ts` |
 | Eye globes      | Orbital sockets filled (not hollow dark voids)                                                                   |
