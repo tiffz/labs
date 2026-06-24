@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
 import WorkoutPanel from './components/workout/WorkoutPanel';
+import MuscleAnatomyDebugPanel from './components/debug/MuscleAnatomyDebugPanel';
 import { MUSCLE_MODULES } from './curriculum/modules';
 import { useMuscleStore } from './store/useMuscleStore';
 import type { MuscleRegion } from './types/node';
@@ -73,6 +74,7 @@ export default function App() {
           </Suspense>
         </main>
       </div>
+      <MuscleAnatomyDebugPanel />
     </>
   );
 }

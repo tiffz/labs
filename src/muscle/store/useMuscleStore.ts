@@ -13,6 +13,7 @@ import type { LayerPeelDepth } from '../layerDepthView';
 import { defaultLayerPeelForModule } from '../layerDepthView';
 import type {
   BodyView,
+  CameraPreset,
   MuscleRegion,
   QuizState,
   WorkoutMode,
@@ -34,6 +35,10 @@ export interface MuscleStoreState {
   anatomyStageCenter: [number, number, number];
   /** Increment to snap the camera back to the default study framing. */
   cameraResetNonce: number;
+  /** Warmup focus framing — computed from the focused mesh in the canvas. */
+  cameraFocusPreset: CameraPreset | null;
+  /** Bumps when focusStructure runs so the canvas recomputes framing. */
+  focusCameraNonce: number;
   /** Full-body Z-Anatomy skin envelope overlay. */
   showSkinLayer: boolean;
   progressByNode: Map<string, WorkoutProgress>;
@@ -51,6 +56,7 @@ export interface MuscleStoreState {
   setHoveredNodeId: (nodeId: string | null) => void;
   setLayerPeelDepth: (depth: LayerPeelDepth) => void;
   setAnatomyStageCenter: (center: [number, number, number]) => void;
+  setCameraFocusPreset: (preset: CameraPreset | null) => void;
   toggleSkinLayer: () => void;
   startActiveSession: () => void;
   submitAnswer: (nodeId: string) => Promise<void>;
@@ -139,6 +145,8 @@ export const useMuscleStore = create<MuscleStoreState>((set, get) => ({
   layerPeelDepth: defaultLayerPeelForModule(),
   anatomyStageCenter: [0, 0.875, 0],
   cameraResetNonce: 0,
+  cameraFocusPreset: null,
+  focusCameraNonce: 0,
   showSkinLayer: true,
   progressByNode: new Map(),
   deckQueue: [],
@@ -171,6 +179,7 @@ export const useMuscleStore = create<MuscleStoreState>((set, get) => ({
       layerPeelDepth: defaultLayerPeelForModule(),
       selectedNodeId: null,
       focusedNodeId: null,
+      cameraFocusPreset: null,
       deckQueue: [],
       deckIndex: 0,
       quiz: emptyQuiz(),
@@ -187,6 +196,7 @@ export const useMuscleStore = create<MuscleStoreState>((set, get) => ({
       layerPeelDepth: defaultLayerPeelForModule(),
       selectedNodeId: null,
       focusedNodeId: null,
+      cameraFocusPreset: null,
       deckQueue: [],
       deckIndex: 0,
       quiz: emptyQuiz(),
@@ -195,9 +205,20 @@ export const useMuscleStore = create<MuscleStoreState>((set, get) => ({
 
   selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
 
-  focusStructure: (nodeId) => set({ focusedNodeId: nodeId, selectedNodeId: nodeId }),
+  focusStructure: (nodeId) =>
+    set((s) => ({
+      focusedNodeId: nodeId,
+      selectedNodeId: nodeId,
+      cameraFocusPreset: null,
+      focusCameraNonce: s.focusCameraNonce + 1,
+    })),
 
-  clearFocus: () => set({ focusedNodeId: null }),
+  clearFocus: () =>
+    set((s) => ({
+      focusedNodeId: null,
+      cameraFocusPreset: null,
+      cameraResetNonce: s.cameraResetNonce + 1,
+    })),
 
   resetCameraView: () => set((s) => ({ cameraResetNonce: s.cameraResetNonce + 1 })),
 
@@ -209,6 +230,8 @@ export const useMuscleStore = create<MuscleStoreState>((set, get) => ({
   setLayerPeelDepth: (depth) => set({ layerPeelDepth: depth }),
 
   setAnatomyStageCenter: (center) => set({ anatomyStageCenter: center }),
+
+  setCameraFocusPreset: (preset) => set({ cameraFocusPreset: preset }),
 
   toggleSkinLayer: () => set((s) => ({ showSkinLayer: !s.showSkinLayer })),
 

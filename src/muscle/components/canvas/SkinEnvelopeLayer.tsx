@@ -1,13 +1,15 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef, useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import type { Mesh } from 'three';
-import { DoubleSide, Mesh as ThreeMesh } from 'three';
+import { DoubleSide, FrontSide, Mesh as ThreeMesh } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { muscleModelsManifest as manifest } from '../../types/muscleModelsManifest';
 import { ANATOMY_COLORS } from './anatomyVisuals';
 import AnatomyHalfGroup from './AnatomyHalfGroup';
 import { acquireSkinMaterial } from './anatomyMaterialPool';
+import { clipSkinGeometryToStudyHalf } from './clipSkinToStudyHalf';
 import { extractGlbMeshes } from './extractGlbMeshes';
+import { setMuscleAnatomyDebugSkin, publishMuscleAnatomyDebugWindow } from '../../debug/muscleAnatomyDebugRegistry';
 import { muscleRegionGlbUrl } from './muscleGlbUrl';
 import { useMuscleGltf } from './muscleGltfLoader';
 
@@ -15,26 +17,23 @@ function isSkinMeshName(name: string): boolean {
   return name === 'skin_envelope' || name.startsWith('skin_');
 }
 
-/** Keep high-detail extremity/face overlays separate — avoids decimating palms and soles with the body envelope. */
 function prepareSkinMeshes(meshes: Mesh[]): Mesh[] {
-  if (meshes.length <= 1) return meshes;
-  const envelope = meshes.filter((mesh) => mesh.name === 'skin_envelope');
-  const overlays = meshes.filter((mesh) => mesh.name !== 'skin_envelope');
-  return [...mergeSkinMeshes(envelope), ...overlays];
-}
-
-/** One continuous body skin surface — detail overlays stay as separate meshes. */
-function mergeSkinMeshes(meshes: Mesh[]): Mesh[] {
-  if (meshes.length <= 1) return meshes;
+  const clipped = meshes.map((mesh) => {
+    const geometry = clipSkinGeometryToStudyHalf(mesh.geometry.clone());
+    const next = mesh.clone();
+    next.geometry = geometry;
+    return next;
+  });
+  if (clipped.length <= 1) return clipped;
 
   const combined = mergeGeometries(
-    meshes.map((mesh) => mesh.geometry),
+    clipped.map((mesh) => mesh.geometry),
     false,
   );
-  if (!combined) return meshes;
+  if (!combined) return clipped;
 
   combined.computeVertexNormals();
-  const merged = new ThreeMesh(combined, meshes[0]!.material);
+  const merged = new ThreeMesh(combined, clipped[0]!.material);
   merged.name = 'skin_envelope';
   return [merged];
 }
@@ -62,8 +61,12 @@ function SkinMesh({ mesh, half }: { mesh: Mesh; half: 'reference' | 'study' }) {
     material.transparent = isStudy;
     material.opacity = isStudy ? 0.52 : 1;
     material.depthWrite = !isStudy;
-    // Mirrored reference half and thin extremity overlays can flip winding — DoubleSide avoids holes.
-    material.side = DoubleSide;
+    material.alphaTest = isStudy ? 0.08 : 0;
+    material.polygonOffset = true;
+    material.polygonOffsetFactor = -1;
+    material.polygonOffsetUnits = -1;
+    // Study half: single-sided + clip removes midline pelvis bleed onto the anatomy side.
+    material.side = isStudy ? FrontSide : DoubleSide;
     material.needsUpdate = true;
     invalidate();
   }, [half, invalidate, isStudy, material, mesh]);
@@ -87,10 +90,16 @@ export default function SkinEnvelopeLayer({ layout, half, visible = true }: Skin
     ? muscleRegionGlbUrl(entry.glbUrl)
     : muscleRegionGlbUrl('/muscle/models/atlas_skin.glb');
   const { scene } = useMuscleGltf(url);
-  const meshes = useMemo(
-    () => prepareSkinMeshes(extractGlbMeshes(scene, (name) => isSkinMeshName(name))),
+  const extracted = useMemo(
+    () => extractGlbMeshes(scene, (name) => isSkinMeshName(name)),
     [scene],
   );
+  const meshes = useMemo(() => prepareSkinMeshes(extracted), [extracted]);
+
+  useEffect(() => {
+    setMuscleAnatomyDebugSkin(extracted.map((mesh) => mesh.name));
+    publishMuscleAnatomyDebugWindow();
+  }, [extracted]);
 
   if (!visible || meshes.length === 0) return null;
 

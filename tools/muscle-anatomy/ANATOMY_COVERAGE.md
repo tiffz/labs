@@ -26,6 +26,8 @@ npm run muscle:export-pipeline
 | `full_body_runtime`  | Node missing from **full-body union** (atlas + module GLBs loaded by `FullBodyRegionModel`) | Baseline cap — must not **increase** |
 | `csv_muscle`         | Z-Anatomy CSV `muscle_*` row missing or below triangle minimum                              | **Blocking**                         |
 | `skin_overlay`       | Required skin patch missing from `atlas_skin` manifest                                      | **Blocking**                         |
+| `glb_runtime`        | GLB mesh name fails `resolveCurriculumNodeId()` or required id unreachable in file          | **Blocking**                         |
+| `runtime_inventory`  | Manifest row exists but simulated Full body merge cannot extract the mesh                   | **Blocking** (required bones always) |
 
 Implementation: [`src/muscle/anatomy/anatomyCoverageLedger.ts`](../../src/muscle/anatomy/anatomyCoverageLedger.ts)
 
@@ -49,8 +51,24 @@ Implementation: [`src/muscle/anatomy/anatomyCoverageLedger.ts`](../../src/muscle
 
 If a node is **in manifest** but invisible in the canvas, check:
 
-- GLB mesh name → `resolveCurriculumNodeId()` in [`zAnatomyBridge.ts`](../../src/muscle/curriculum/zAnatomyBridge.ts)
+- GLB mesh name → `resolveCurriculumNodeId()` in [`zAnatomyBridge.ts`](../../src/muscle/curriculum/zAnatomyBridge.ts) — **`npm run muscle:coverage`** now audits `atlas_skin.glb` and `atlas_supplement.glb` for this
 - Layer peel depth hiding skin vs muscle ([`layerDepthView.ts`](../../src/muscle/layerDepthView.ts))
 - `isPlausibleAnatomyMesh()` rejecting degenerate geometry in [`extractGlbMeshes.ts`](../../src/muscle/components/canvas/extractGlbMeshes.ts)
+- `shouldIncludeAtlasCompleteMesh()` loading decimated duplicates from `atlas_complete.glb` ([`fullBodyAtlasFilter.ts`](../../src/muscle/components/canvas/fullBodyAtlasFilter.ts))
 
 Add a row to [`docs/MUSCLE_QA.md`](../../docs/MUSCLE_QA.md) when you confirm a new failure mode.
+
+## Trust checklist (manifest → file → runtime → canvas)
+
+1. **`npm run muscle:coverage`** — zero blocking gaps (`module_region_mesh`, `csv_muscle`, `skin_overlay`, `glb_runtime`, `runtime_inventory`).
+2. **Runtime inventory line** in the report — `Simulated Full body meshes: N node ids` should include all `REQUIRED_FULL_BODY_BONE_IDS`.
+3. **Full-body baseline** — `full_body_runtime` gaps must not exceed [`coverage-baseline.json`](coverage-baseline.json).
+4. **In-app peel sweep** — Full body: peel 0 (skin on), peel 1 (skin off), peel 4 (skeleton); posterior + anterior orbit.
+5. **Module tabs** — spot-check any node you changed in its regional study view.
+
+### What inventory checks cannot catch (yet)
+
+- **Skin seam holes** (neck/shoulder, palm, wrist, ankle) — run **`npm run muscle:skin-boundary`** after export; boundary edge counts must not increase vs [`skin-boundary-baseline.json`](skin-boundary-baseline.json). Fix predicates in [`export_region_glb.py`](export_region_glb.py) and re-export `atlas_skin`.
+- **Sagittal-split artifacts** (opaque skin patch at crotch on the transparent half) — reference-half opaque skin overlapping study-half geometry; not an missing-asset issue.
+- **`isPlausibleAnatomyMesh()` drops** — degenerate geometry removed at Three.js load time; inventory simulation does not run this pass yet.
+- **In-app debug** — `/muscle/?debug=1` shows live loaded mesh ids vs required bones/skin; e2e: `muscle-full-body-skeleton.spec.ts`.

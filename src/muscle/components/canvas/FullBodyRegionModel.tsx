@@ -1,6 +1,10 @@
 import { useEffect, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
 import { getNodeById } from '../../curriculum';
+import {
+  publishMuscleAnatomyDebugWindow,
+  setMuscleAnatomyDebugAnatomy,
+} from '../../debug/muscleAnatomyDebugRegistry';
 import AnatomyHalfGroup from './AnatomyHalfGroup';
 import {
   computeAnatomyGroupTransform,
@@ -12,6 +16,7 @@ import SkinEnvelopeLayer from './SkinEnvelopeLayer';
 import EyeGlobesLayer from './EyeGlobesLayer';
 import { mergeFullBodyMeshes, useExtremityModuleMeshes } from './useExtremityModuleMeshes';
 import { useCurriculumDetailMeshes } from './useCurriculumDetailMeshes';
+import { useFundamentalsMeshes } from './useFundamentalsMeshes';
 import { useAtlasCompleteMeshes } from './useAtlasCompleteMeshes';
 import { useHeadFaceAtlasMeshes } from './useHeadFaceAtlasMeshes';
 import { isStudySkinVisibleAtPeel } from '../../layerDepthView';
@@ -27,6 +32,7 @@ export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionMode
   const layerPeelDepth = useMuscleStore((s) => s.layerPeelDepth);
   const atlasMeshes = useAtlasCompleteMeshes();
   const headFaceMeshes = useHeadFaceAtlasMeshes();
+  const fundamentalsMeshes = useFundamentalsMeshes();
   const curriculumDetailMeshes = useCurriculumDetailMeshes();
   const extremityMeshes = useExtremityModuleMeshes();
   const meshes = useMemo(
@@ -34,10 +40,11 @@ export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionMode
       mergeFullBodyMeshes(
         atlasMeshes,
         headFaceMeshes,
+        fundamentalsMeshes,
         curriculumDetailMeshes,
         extremityMeshes,
       ),
-    [atlasMeshes, curriculumDetailMeshes, extremityMeshes, headFaceMeshes],
+    [atlasMeshes, curriculumDetailMeshes, extremityMeshes, fundamentalsMeshes, headFaceMeshes],
   );
   const groupLayout = useMemo(
     () => computeAnatomyGroupTransform(meshes, { sagittalSplit: true }),
@@ -50,6 +57,11 @@ export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionMode
       onStageReady?.(computeStageOrbitTarget(meshes, groupLayout));
     }
   }, [groupLayout, invalidate, meshes, onStageReady]);
+
+  useEffect(() => {
+    setMuscleAnatomyDebugAnatomy(meshes.map((mesh) => mesh.name));
+    publishMuscleAnatomyDebugWindow();
+  }, [meshes]);
 
   return (
     <>

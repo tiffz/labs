@@ -38,8 +38,11 @@ export default function LayerDepthControl({ variant = 'panel' }: LayerDepthContr
         <span className="muscle-layer-peel__label" id="muscle-layer-peel-label">
           Depth
         </span>
-        <span className="muscle-layer-peel__count">
-          {layerPeelDepthLabel(layerPeelDepth)} · {visibleNodeCount}
+        <span
+          className="muscle-layer-peel__count"
+          data-testid={variant === 'canvas' ? 'muscle-layer-status' : undefined}
+        >
+          {layerPeelDepthLabel(layerPeelDepth)} · {visibleNodeCount} visible
         </span>
         {skinAvailable ? (
           <button
@@ -61,25 +64,21 @@ export default function LayerDepthControl({ variant = 'panel' }: LayerDepthContr
           min={0}
           max={LAYER_PEEL_STOPS.length - 1}
           step={1}
-          list="muscle-layer-peel-ticks"
           value={layerPeelDepth}
           aria-labelledby="muscle-layer-peel-label"
           aria-valuetext={`${layerPeelDepthLabel(layerPeelDepth)} · ${visibleNodeCount} structures visible`}
           onChange={(event) => setLayerPeelDepth(Number(event.target.value) as LayerPeelDepth)}
         />
-        <datalist id="muscle-layer-peel-ticks">
-          {LAYER_PEEL_STOPS.map((stop) => (
-            <option key={stop.depth} value={stop.depth} label={stop.label} />
-          ))}
-        </datalist>
-        <div className="muscle-layer-peel__notches" aria-hidden>
-          {LAYER_PEEL_STOPS.map((stop) => (
-            <span
-              key={stop.depth}
-              className={`muscle-layer-peel__notch${layerPeelDepth === stop.depth ? ' is-active' : ''}`}
-            />
-          ))}
-        </div>
+        {variant === 'panel' ? (
+          <div className="muscle-layer-peel__notches" aria-hidden>
+            {LAYER_PEEL_STOPS.map((stop) => (
+              <span
+                key={stop.depth}
+                className={`muscle-layer-peel__notch${layerPeelDepth === stop.depth ? ' is-active' : ''}`}
+              />
+            ))}
+          </div>
+        ) : null}
       </div>
       {variant === 'panel' ? (
         <div className="muscle-layer-peel__stops" role="radiogroup" aria-labelledby="muscle-layer-peel-label">

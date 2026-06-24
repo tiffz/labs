@@ -76,16 +76,22 @@ describe('extractGlbMeshes', () => {
     const skinDigits = new Mesh(new BoxGeometry(1, 1, 1));
     skinDigits.name = 'skin_hand_digits';
     skinDigits.position.set(0, 0.8, 0);
+    const skinBack = new Mesh(new BoxGeometry(1, 1, 1));
+    skinBack.name = 'skin_back';
+    skinBack.position.set(0, 1.2, -0.2);
+    const orphan = new Mesh(new BoxGeometry(0.5, 0.5, 0.5));
+    orphan.name = 'Skin_Generated_Mesh_From_X3D.050';
+    orphan.position.set(0, 1.4, -0.15);
     const muscle = new Mesh(new BoxGeometry(1, 1, 1));
     muscle.name = 'muscle_pectoralis_major';
     muscle.position.set(0, 1, 0);
     const root = new Object3D();
-    root.add(skinEnvelope, skinDigits, muscle);
+    root.add(skinEnvelope, skinDigits, skinBack, orphan, muscle);
     root.updateMatrixWorld(true);
 
     const meshes = extractGlbMeshes(root, (name) => name.startsWith('skin_'));
 
-    expect(meshes.map((mesh) => mesh.name).sort()).toEqual(['skin_envelope', 'skin_hand_digits']);
+    expect(meshes.map((mesh) => mesh.name).sort()).toEqual(['skin_back', 'skin_envelope', 'skin_hand_digits']);
   });
 
   it('merges multi-material submeshes that share a curriculum node id', () => {

@@ -10,6 +10,8 @@ import { handNodes } from './nodes/hand';
 import { legNodes } from './nodes/leg';
 import { shoulderNeckNodes } from './nodes/shoulderNeck';
 import { torsoNodes } from './nodes/torso';
+import { atlasSupplementNodes } from './nodes/atlasSupplement';
+import { atlasHeadFaceNodes } from './nodes/atlasHeadFace';
 import { ATLAS_MESH_NODE_IDS } from './atlasMeshRegistry';
 
 export type ZAnatomyBridgeEntry = {
@@ -31,8 +33,18 @@ export const Z_ANATOMY_BRIDGE: readonly ZAnatomyBridgeEntry[] = [
   { zAnatomyName: "Tibia.r", nodeId: "bone_tibia", region: "fundamentals" },
   { zAnatomyName: "Articular capsule of glenohumeral joint.r", nodeId: "joint_shoulder", region: "fundamentals" },
   { zAnatomyName: "Articular capsule of elbow.r", nodeId: "joint_elbow", region: "fundamentals" },
+  { zAnatomyName: "1st rib.r", nodeId: "bone_ribcage", region: "torso" },
+  { zAnatomyName: "2d rib.r", nodeId: "bone_ribcage", region: "torso" },
+  { zAnatomyName: "3rd rib.r", nodeId: "bone_ribcage", region: "torso" },
+  { zAnatomyName: "4th rib.r", nodeId: "bone_ribcage", region: "torso" },
   { zAnatomyName: "5th rib.r", nodeId: "bone_ribcage", region: "torso" },
   { zAnatomyName: "6th rib.r", nodeId: "bone_ribcage", region: "torso" },
+  { zAnatomyName: "7th rib.r", nodeId: "bone_ribcage", region: "torso" },
+  { zAnatomyName: "8th rib.r", nodeId: "bone_ribcage", region: "torso" },
+  { zAnatomyName: "9th rib.r", nodeId: "bone_ribcage", region: "torso" },
+  { zAnatomyName: "10th rib.r", nodeId: "bone_ribcage", region: "torso" },
+  { zAnatomyName: "11th rib.r", nodeId: "bone_ribcage", region: "torso" },
+  { zAnatomyName: "12th rib.r", nodeId: "bone_ribcage", region: "torso" },
   { zAnatomyName: "Rectus abdominis muscle.r", nodeId: "muscle_rectus_abdominis", region: "torso" },
   { zAnatomyName: "External abdominal oblique.r", nodeId: "muscle_external_oblique", region: "torso" },
   { zAnatomyName: "Serratus anterior muscle.r", nodeId: "muscle_serratus_anterior", region: "torso" },
@@ -80,6 +92,11 @@ export const Z_ANATOMY_BRIDGE: readonly ZAnatomyBridgeEntry[] = [
   { zAnatomyName: "Tibialis anterior muscle.r", nodeId: "muscle_tibialis_anterior", region: "leg" },
   { zAnatomyName: "Calcaneus.r", nodeId: "bone_calcaneus", region: "foot" },
   { zAnatomyName: "Talus.r", nodeId: "bone_talus", region: "foot" },
+  { zAnatomyName: "1st metatarsal bone.r", nodeId: "bone_metatarsals", region: "foot" },
+  { zAnatomyName: "2d metatarsal bone.r", nodeId: "bone_metatarsals", region: "foot" },
+  { zAnatomyName: "3rd metatarsal bone.r", nodeId: "bone_metatarsals", region: "foot" },
+  { zAnatomyName: "4th metatarsal bone.r", nodeId: "bone_metatarsals", region: "foot" },
+  { zAnatomyName: "5th metatarsal bone.r", nodeId: "bone_metatarsals", region: "foot" },
   { zAnatomyName: "Abductor hallucis.r", nodeId: "muscle_abductor_hallucis", region: "foot" },
   { zAnatomyName: "Extensor digitorum brevis.r", nodeId: "muscle_extensor_digitorum_brevis", region: "foot" },
   { zAnatomyName: "Gluteus maximus muscle.r", nodeId: "muscle_gluteus_maximus", region: "atlas_supplement" },
@@ -193,6 +210,8 @@ export const SKIN_OVERLAY_MESH_IDS = new Set([
   'skin_envelope',
   'eye_globes',
   'skin_face',
+  'skin_neck_shoulder',
+  'skin_back',
   'skin_limbs',
   'skin_torso',
   'skin_hand_digits',
@@ -210,6 +229,11 @@ const CURRICULUM_NODE_IDS = new Set(
     ...legNodes,
     ...footNodes,
   ].map((node) => node.id),
+);
+
+/** Atlas-only nodes exported with curriculum ids as GLB mesh names (not Z-Anatomy aliases). */
+const ATLAS_ONLY_NODE_IDS = new Set(
+  [...atlasSupplementNodes, ...atlasHeadFaceNodes].map((node) => node.id),
 );
 
 const zAnatomyNamesByNodeId = new Map<string, string[]>();
@@ -230,6 +254,8 @@ export function curriculumNodeIdFromZAnatomyName(zAnatomyName: string): string |
 /** Resolve a GLB mesh name to a curriculum node id (direct id or Z-Anatomy alias). */
 export function resolveCurriculumNodeId(meshName: string): string | undefined {
   if (SKIN_OVERLAY_MESH_IDS.has(meshName)) return meshName;
+  if (/^Skin_Generated/i.test(meshName) || /^grp\d/i.test(meshName)) return 'skin_back';
+  if (ATLAS_ONLY_NODE_IDS.has(meshName)) return meshName;
   if (CURRICULUM_NODE_IDS.has(meshName)) return meshName;
   if (ATLAS_MESH_NODE_IDS.has(meshName)) return meshName;
   return nodeIdByZAnatomyName.get(meshName);

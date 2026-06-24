@@ -1,12 +1,13 @@
 /** Triangle budgets for Z-Anatomy region GLBs — enforced by validate-assets + Vitest. */
 export const MUSCLE_MAX_MESH_TRIANGLES = 25_000;
 /** Unified full-body skin envelope — merged Z-Anatomy body region patches. */
-export const MUSCLE_MAX_SKIN_ENVELOPE_TRIANGLES = 44_000;
+export const MUSCLE_MAX_SKIN_ENVELOPE_TRIANGLES = 88_000;
 /** High-detail skin overlays (face, neck, palms, soles) — exported separately from body envelope. */
 export const MUSCLE_SKIN_OVERLAY_CAPS: Readonly<Record<string, number>> = {
   skin_face: 12_000,
-  skin_neck_shoulder: 8_000,
+  skin_neck_shoulder: 9_000,
   skin_back: 14_000,
+  skin_limbs: 14_000,
   skin_hand_digits: 10_000,
   skin_foot_digits: 10_000,
   eye_globes: 2_000,

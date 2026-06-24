@@ -8,11 +8,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const MAX_MESH_TRIS = 25_000;
-const MAX_SKIN_ENVELOPE_TRIS = 44_000;
+const MAX_SKIN_ENVELOPE_TRIS = 88_000;
 const SKIN_OVERLAY_CAPS = {
   skin_face: 12_000,
-  skin_neck_shoulder: 8_000,
+  skin_neck_shoulder: 9_000,
   skin_back: 14_000,
+  skin_limbs: 14_000,
   skin_hand_digits: 10_000,
   skin_foot_digits: 10_000,
   eye_globes: 2_000,
@@ -25,12 +26,10 @@ const OVERLAY_NODE_IDS = new Set([
   'skin_face',
   'skin_neck_shoulder',
   'skin_back',
+  'skin_limbs',
   'skin_hand_digits',
   'skin_foot_digits',
   'eye_globes',
-  'skin_limbs',
-  'skin_torso',
-  'skin_eminences',
 ]);
 
 const ATLAS_EXPORT_REGIONS = new Set([

@@ -33,6 +33,8 @@ import { handNodes } from './nodes/hand';
 import { legNodes } from './nodes/leg';
 import { shoulderNeckNodes } from './nodes/shoulderNeck';
 import { torsoNodes } from './nodes/torso';
+import { atlasSupplementNodes } from './nodes/atlasSupplement';
+import { atlasHeadFaceNodes } from './nodes/atlasHeadFace';
 import { ATLAS_MESH_NODE_IDS } from './atlasMeshRegistry';
 
 export type ZAnatomyBridgeEntry = {
@@ -49,6 +51,8 @@ export const SKIN_OVERLAY_MESH_IDS = new Set([
   'skin_envelope',
   'eye_globes',
   'skin_face',
+  'skin_neck_shoulder',
+  'skin_back',
   'skin_limbs',
   'skin_torso',
   'skin_hand_digits',
@@ -66,6 +70,11 @@ const CURRICULUM_NODE_IDS = new Set(
     ...legNodes,
     ...footNodes,
   ].map((node) => node.id),
+);
+
+/** Atlas-only nodes exported with curriculum ids as GLB mesh names (not Z-Anatomy aliases). */
+const ATLAS_ONLY_NODE_IDS = new Set(
+  [...atlasSupplementNodes, ...atlasHeadFaceNodes].map((node) => node.id),
 );
 
 const zAnatomyNamesByNodeId = new Map<string, string[]>();
@@ -86,6 +95,8 @@ export function curriculumNodeIdFromZAnatomyName(zAnatomyName: string): string |
 /** Resolve a GLB mesh name to a curriculum node id (direct id or Z-Anatomy alias). */
 export function resolveCurriculumNodeId(meshName: string): string | undefined {
   if (SKIN_OVERLAY_MESH_IDS.has(meshName)) return meshName;
+  if (/^Skin_Generated/i.test(meshName) || /^grp\\d/i.test(meshName)) return 'skin_back';
+  if (ATLAS_ONLY_NODE_IDS.has(meshName)) return meshName;
   if (CURRICULUM_NODE_IDS.has(meshName)) return meshName;
   if (ATLAS_MESH_NODE_IDS.has(meshName)) return meshName;
   return nodeIdByZAnatomyName.get(meshName);

@@ -11,8 +11,18 @@ Femur.r,bone_femur,fundamentals
 Tibia.r,bone_tibia,fundamentals
 Articular capsule of glenohumeral joint.r,joint_shoulder,fundamentals
 Articular capsule of elbow.r,joint_elbow,fundamentals
+1st rib.r,bone_ribcage,torso
+2d rib.r,bone_ribcage,torso
+3rd rib.r,bone_ribcage,torso
+4th rib.r,bone_ribcage,torso
 5th rib.r,bone_ribcage,torso
 6th rib.r,bone_ribcage,torso
+7th rib.r,bone_ribcage,torso
+8th rib.r,bone_ribcage,torso
+9th rib.r,bone_ribcage,torso
+10th rib.r,bone_ribcage,torso
+11th rib.r,bone_ribcage,torso
+12th rib.r,bone_ribcage,torso
 Rectus abdominis muscle.r,muscle_rectus_abdominis,torso
 External abdominal oblique.r,muscle_external_oblique,torso
 Serratus anterior muscle.r,muscle_serratus_anterior,torso
@@ -60,6 +70,11 @@ Lateral head of gastrocnemius.r,muscle_gastrocnemius,leg
 Tibialis anterior muscle.r,muscle_tibialis_anterior,leg
 Calcaneus.r,bone_calcaneus,foot
 Talus.r,bone_talus,foot
+1st metatarsal bone.r,bone_metatarsals,foot
+2d metatarsal bone.r,bone_metatarsals,foot
+3rd metatarsal bone.r,bone_metatarsals,foot
+4th metatarsal bone.r,bone_metatarsals,foot
+5th metatarsal bone.r,bone_metatarsals,foot
 Abductor hallucis.r,muscle_abductor_hallucis,foot
 Extensor digitorum brevis.r,muscle_extensor_digitorum_brevis,foot
 Gluteus maximus muscle.r,muscle_gluteus_maximus,atlas_supplement

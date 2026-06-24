@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
+import { MOUSE, TOUCH } from 'three';
 import type { CameraPreset } from '../../types/node';
 import { useMuscleStore } from '../../store/useMuscleStore';
 
@@ -61,9 +62,21 @@ export default function QuizCameraRig({ preset, animate }: QuizCameraRigProps) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- drei OrbitControls ref typing varies by version
       ref={controlsRef as any}
       target={stageCenter}
+      enablePan
       enableDamping
       dampingFactor={0.08}
       rotateSpeed={0.9}
+      panSpeed={0.9}
+      screenSpacePanning
+      mouseButtons={{
+        LEFT: MOUSE.ROTATE,
+        MIDDLE: MOUSE.PAN,
+        RIGHT: MOUSE.PAN,
+      }}
+      touches={{
+        ONE: TOUCH.ROTATE,
+        TWO: TOUCH.DOLLY_PAN,
+      }}
       minDistance={1.2}
       maxDistance={8}
       enabled={!animate || !preset}

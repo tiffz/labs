@@ -4,6 +4,14 @@ import { fileURLToPath } from 'node:url';
 import { ALL_NODES, getNodesForRegion } from '../curriculum';
 import { muscleModelsManifest as manifest } from '../types/muscleModelsManifest';
 import type { MuscleRegion } from '../types/node';
+import { auditGlbMeshResolution } from './glbFileAudit';
+import { buildFullBodyRuntimeMeshInventory, collectSkinOverlayNodeIds } from './fullBodyRuntimeInventory';
+import {
+  REQUIRED_FULL_BODY_BONE_IDS,
+  REQUIRED_SKIN_OVERLAY_NODE_IDS,
+} from './requiredMeshIds';
+
+export { REQUIRED_FULL_BODY_BONE_IDS, REQUIRED_SKIN_OVERLAY_NODE_IDS } from './requiredMeshIds';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const CSV_PATH = path.join(REPO_ROOT, 'tools/muscle-anatomy/z_anatomy_name_map.csv');
@@ -35,21 +43,13 @@ export const MODULE_STUDY_REGIONS: MuscleRegion[] = [
   'foot',
 ];
 
-export const REQUIRED_SKIN_OVERLAY_NODE_IDS = [
-  'skin_envelope',
-  'skin_face',
-  'skin_neck_shoulder',
-  'skin_back',
-  'skin_hand_digits',
-  'skin_foot_digits',
-  'eye_globes',
-] as const;
-
 export type AnatomyGapKind =
   | 'module_region_mesh'
   | 'full_body_runtime'
   | 'csv_muscle'
-  | 'skin_overlay';
+  | 'skin_overlay'
+  | 'glb_runtime'
+  | 'runtime_inventory';
 
 export type AnatomyGap = {
   kind: AnatomyGapKind;
@@ -65,6 +65,8 @@ export type AnatomyCoverageReport = {
     fullBodyGaps: number;
     csvMuscleGaps: number;
     skinOverlayGaps: number;
+    glbRuntimeGaps: number;
+    runtimeInventoryGaps: number;
     waived: number;
     totalBlocking: number;
   };
@@ -75,6 +77,15 @@ export type CoverageBaseline = {
   /** Full-body union gaps allowed while atlas export catches up (must not increase). */
   maxFullBodyGaps: number;
 };
+
+const CRITICAL_SUPPLEMENT_NODE_IDS = [
+  'muscle_gluteus_maximus',
+  'muscle_gluteus_medius',
+  'muscle_gluteus_minimus',
+] as const;
+
+const SKIN_GLB_PATH = 'public/muscle/models/atlas_skin.glb';
+const SUPPLEMENT_GLB_PATH = 'public/muscle/models/atlas_supplement.glb';
 
 const CRITICAL_MUSCLE_MIN_TRIS: Record<string, number> = {
   muscle_gluteus_maximus: 2_000,
@@ -218,6 +229,88 @@ export function buildAnatomyCoverageReport(): AnatomyCoverageReport {
     });
   }
 
+  const skinGlb = auditGlbMeshResolution(SKIN_GLB_PATH, REQUIRED_SKIN_OVERLAY_NODE_IDS);
+  for (const nodeId of skinGlb.missingNodeIds) {
+    if (waivers.has(nodeId)) {
+      waivedIds.add(nodeId);
+      continue;
+    }
+    gaps.push({
+      kind: 'glb_runtime',
+      nodeId,
+      detail: `No mesh in ${SKIN_GLB_PATH} resolves to this skin overlay id`,
+    });
+  }
+  for (const meshName of skinGlb.unmappedMeshNames) {
+    gaps.push({
+      kind: 'glb_runtime',
+      nodeId: meshName,
+      detail: `${SKIN_GLB_PATH} mesh name does not resolve via resolveCurriculumNodeId()`,
+    });
+  }
+
+  const supplementGlb = auditGlbMeshResolution(SUPPLEMENT_GLB_PATH, CRITICAL_SUPPLEMENT_NODE_IDS);
+  for (const nodeId of supplementGlb.missingNodeIds) {
+    if (waivers.has(nodeId)) {
+      waivedIds.add(nodeId);
+      continue;
+    }
+    gaps.push({
+      kind: 'glb_runtime',
+      nodeId,
+      detail: `No mesh in ${SUPPLEMENT_GLB_PATH} resolves to this supplement id`,
+    });
+  }
+
+  const runtimeInventory = buildFullBodyRuntimeMeshInventory();
+  const skinInventory = collectSkinOverlayNodeIds();
+
+  for (const nodeId of REQUIRED_FULL_BODY_BONE_IDS) {
+    if (runtimeInventory.has(nodeId)) continue;
+    if (waivers.has(nodeId)) {
+      waivedIds.add(nodeId);
+      continue;
+    }
+    gaps.push({
+      kind: 'runtime_inventory',
+      nodeId,
+      detail: 'Required full-body bone missing from simulated mesh inventory (check fundamentals + merge)',
+    });
+  }
+
+  for (const nodeId of REQUIRED_SKIN_OVERLAY_NODE_IDS) {
+    if (skinInventory.has(nodeId)) continue;
+    if (waivers.has(nodeId)) {
+      waivedIds.add(nodeId);
+      continue;
+    }
+    gaps.push({
+      kind: 'runtime_inventory',
+      nodeId,
+      detail: 'Required skin overlay missing from simulated skin inventory (atlas_skin.glb)',
+    });
+  }
+
+  const anatomyManifestRegions = FULL_BODY_MANIFEST_REGIONS.filter(
+    (region) => region !== 'atlas_skin',
+  );
+  const manifestUnion = collectManifestNodeIds(anatomyManifestRegions);
+  for (const nodeId of manifestUnion) {
+    if (/^atlas_gluteus_/.test(nodeId)) continue;
+    if (runtimeInventory.has(nodeId)) continue;
+    if (waivers.has(nodeId)) {
+      waivedIds.add(nodeId);
+      continue;
+    }
+    const node = ALL_NODES.find((entry) => entry.id === nodeId);
+    gaps.push({
+      kind: 'runtime_inventory',
+      nodeId,
+      region: node?.region,
+      detail: 'Manifest lists mesh but Full body anatomy merge inventory cannot extract it',
+    });
+  }
+
   const byKind = (kind: AnatomyGapKind) => gaps.filter((gap) => gap.kind === kind);
 
   return {
@@ -227,11 +320,15 @@ export function buildAnatomyCoverageReport(): AnatomyCoverageReport {
       fullBodyGaps: byKind('full_body_runtime').length,
       csvMuscleGaps: byKind('csv_muscle').length,
       skinOverlayGaps: byKind('skin_overlay').length,
+      glbRuntimeGaps: byKind('glb_runtime').length,
+      runtimeInventoryGaps: byKind('runtime_inventory').length,
       waived: waivedIds.size,
       totalBlocking:
         byKind('module_region_mesh').length +
         byKind('csv_muscle').length +
-        byKind('skin_overlay').length,
+        byKind('skin_overlay').length +
+        byKind('glb_runtime').length +
+        byKind('runtime_inventory').length,
     },
     gaps,
   };
@@ -245,10 +342,21 @@ export function formatAnatomyCoverageReport(report: AnatomyCoverageReport): stri
     `- Full-body union gaps: ${report.summary.fullBodyGaps} (baseline cap in coverage-baseline.json)`,
     `- CSV muscle gaps: ${report.summary.csvMuscleGaps}`,
     `- Skin overlay gaps: ${report.summary.skinOverlayGaps}`,
+    `- GLB runtime gaps: ${report.summary.glbRuntimeGaps}`,
+    `- Runtime inventory gaps: ${report.summary.runtimeInventoryGaps}`,
+    `- Simulated Full body anatomy meshes: ${buildFullBodyRuntimeMeshInventory().size} node ids`,
+    `- Simulated skin overlays: ${collectSkinOverlayNodeIds().size} node ids`,
     `- Waived: ${report.summary.waived}`,
     '',
   ];
-  for (const kind of ['module_region_mesh', 'full_body_runtime', 'csv_muscle', 'skin_overlay'] as const) {
+  for (const kind of [
+    'module_region_mesh',
+    'full_body_runtime',
+    'csv_muscle',
+    'skin_overlay',
+    'glb_runtime',
+    'runtime_inventory',
+  ] as const) {
     const rows = report.gaps.filter((gap) => gap.kind === kind);
     if (rows.length === 0) continue;
     lines.push(`## ${kind} (${rows.length})`);

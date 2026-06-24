@@ -13,9 +13,14 @@
 
 body {
   margin: 0;
-  background: var(--muscle-cream);
+  background: var(--muscle-navy);
   color: var(--muscle-navy);
   font-family: var(--muscle-font-ui);
+}
+
+#root {
+  height: 100%;
+  min-height: 100dvh;
 }
 
 .muscle-app {
@@ -38,6 +43,10 @@ body {
 .muscle-main {
   flex: 1 1 65%;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   position: relative;
   background: var(--muscle-navy);
 }
@@ -248,6 +257,11 @@ body {
 .muscle-layer-peel__slider {
   width: 100%;
   accent-color: var(--muscle-navy);
+  margin: 0;
+}
+
+.muscle-layer-peel--canvas .muscle-layer-peel__slider {
+  height: 1.35rem;
 }
 
 .muscle-layer-peel__notches {
@@ -635,6 +649,16 @@ body {
 
 .muscle-canvas-wrap {
   position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.muscle-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .muscle-canvas-hud {
@@ -671,23 +695,25 @@ body {
 }
 
 .muscle-canvas-hud__hint,
-.muscle-canvas-hud__layer {
+.muscle-canvas-hud__nav-hint {
   margin: 0;
   font-size: 0.8125rem;
   color: rgba(245, 240, 232, 0.82);
+}
+
+.muscle-canvas-hud__nav-hint {
+  font-size: 0.75rem;
+  color: rgba(245, 240, 232, 0.58);
+  max-width: 20rem;
 }
 
 .muscle-context-card--hover-preview {
   border-style: dashed;
 }
 
-.muscle-canvas-wrap,
 .muscle-canvas-loading {
   width: 100%;
   height: 100%;
-}
-
-.muscle-canvas-loading {
   display: grid;
   place-items: center;
   color: var(--muscle-cream);

@@ -25,6 +25,10 @@ After changing `atlas_skin`, `atlas_complete`, or skin export predicates — **h
 
 Pipeline: skill **`labs-muscle-anatomy-export`** or `npm run muscle:export-pipeline`.
 
+Automated skin seam guard: `npm run muscle:skin-boundary` (boundary edge baseline in `tools/muscle-anatomy/skin-boundary-baseline.json`).
+
+Debug inventory: `/muscle/?debug=1` — bottom dock lists loaded anatomy/skin node ids vs required sets; **Copy bundle** for LLM paste.
+
 ## LLM / browser QA protocol
 
 1. **Hard refresh** `/muscle/` (Cmd+Shift+R) after canvas or GLB changes — HMR can hide stale `useGLTF` cache bugs.

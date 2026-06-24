@@ -14,6 +14,7 @@ import argparse
 import csv
 import hashlib
 import json
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -167,7 +168,7 @@ def _is_limb_region_skin_patch(obj) -> bool:
     lower = _region_name_lower(obj)
     limb_tokens = (
         ' thigh', ' leg', ' arm', ' forearm', ' elbow', ' knee', ' ankle', ' wrist',
-        ' deltoid', ' heel', ' metatarsal', ' retromalleolar',
+        ' deltoid', ' heel', ' metatarsal', ' retromalleolar', ' hip region',
     )
     return any(token in lower for token in limb_tokens)
 
@@ -315,12 +316,115 @@ def _is_skin_neck_shoulder_patch(obj) -> bool:
         return False
     neck_shoulder_tokens = (
         'lateral cervical',
+        'posterior cervical',
         'sternocleidomastoid region',
+        'deltoid region',
+        'scapular region',
+        'presternal region',
+        'pectoral region',
+        'mastoid region',
     )
-    return any(token in lower for token in neck_shoulder_tokens)
+    if any(token in lower for token in neck_shoulder_tokens):
+        return True
+    return obj.name.startswith('Infraclavicular fossa.r')
+
+
+def _is_malleolus_skin_patch(obj) -> bool:
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    lower = obj.name.lower()
+    return lower.startswith('lateral malleola') or lower.startswith('medial malleola')
+
+
+def _is_skin_hand_detail_patch(obj) -> bool:
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    lower = obj.name.lower()
+    if _is_hand_digit_skin_patch(obj):
+        return True
+    if lower in {'thenar eminence.r', 'hypothenar eminence.r'}:
+        return True
+    if _is_region_skin_patch(obj) and 'wrist' in lower:
+        return True
+    hand_bases = (
+        'Palm',
+        'Dorsum of hand',
+        'Dorsal surface of digits of hand',
+        'Palmar surface of digits of hand',
+        'Lateral border of forearm',
+        'Medial border of forearm',
+        'Anterior region of wrist',
+        'Posterior region of wrist',
+    )
+    return any(obj.name.startswith(f'{base}.r') for base in hand_bases)
+
+
+def _is_skin_foot_detail_patch(obj) -> bool:
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    lower = obj.name.lower()
+    if _is_foot_digit_skin_patch(obj):
+        return True
+    if _is_malleolus_skin_patch(obj):
+        return True
+    if lower in {'hallucial eminence.r'}:
+        return True
+    if _is_region_skin_patch(obj) and any(
+        token in lower for token in ('ankle', 'retromalleolar', 'heel region', 'metatarsal region')
+    ):
+        return True
+    foot_bases = (
+        'Sole',
+        'Plantar arch',
+        'Dorsum of foot',
+        'Dorsal surfaces of digits of foot',
+        'Plantar surfaces of digits of foot',
+        'Lateral border of foot',
+        'Medial border of foot',
+    )
+    return any(obj.name.startswith(f'{base}.r') for base in foot_bases)
+
+
+def _is_skin_limb_detail_patch(obj) -> bool:
+    """Arm/leg/thigh envelopes — keep out of decimated body shell."""
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    if _is_limb_region_skin_patch(obj):
+        return True
+    lower = obj.name.lower()
+    limb_fossae = ('Cubital fossa', 'Popliteal fossa')
+    if any(obj.name.startswith(f'{base}.r') for base in limb_fossae):
+        return True
+    return _is_region_skin_patch(obj) and any(
+        token in lower for token in (' cubital', ' popliteal', ' elbow', ' knee')
+    )
+
+
+def _is_orphan_skin_generated_patch(obj) -> bool:
+    """Z-Anatomy filler meshes (Skin_Generated_*, grp*) — trap/neck/wrist gap fill."""
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    name = obj.name
+    if re.match(r'^Skin_Generated', name, re.I):
+        return True
+    return bool(re.match(r'^grp\d', name, re.I))
 
 
 def _is_skin_back_torso_patch(obj) -> bool:
+    if _is_orphan_skin_generated_patch(obj):
+        return True
+    if obj.name.startswith('Interscapular region'):
+        return True
     if obj.type != 'MESH' or obj.name.endswith('.l'):
         return False
     if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
@@ -338,56 +442,17 @@ def _is_skin_back_torso_patch(obj) -> bool:
         'sacral region',
         'vertebral region',
         'infrascapular region',
-        'scapular region',
-        'deltoid region',
-        'posterior cervical',
+        'interscapular region',
         'occipital region',
         'parietal region',
     )
     return any(token in lower for token in back_tokens)
 
 
-def _is_skin_hand_detail_patch(obj) -> bool:
-    if obj.type != 'MESH' or obj.name.endswith('.l'):
-        return False
-    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
-        return False
-    lower = obj.name.lower()
-    if _is_hand_digit_skin_patch(obj):
-        return True
-    if lower in {'thenar eminence.r', 'hypothenar eminence.r'}:
-        return True
-    hand_bases = (
-        'Palm',
-        'Dorsum of hand',
-        'Dorsal surface of digits of hand',
-        'Palmar surface of digits of hand',
-    )
-    return any(obj.name.startswith(f'{base}.r') for base in hand_bases)
-
-
-def _is_skin_foot_detail_patch(obj) -> bool:
-    if obj.type != 'MESH' or obj.name.endswith('.l'):
-        return False
-    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
-        return False
-    lower = obj.name.lower()
-    if _is_foot_digit_skin_patch(obj):
-        return True
-    if lower in {'hallucial eminence.r'}:
-        return True
-    foot_bases = (
-        'Sole',
-        'Plantar arch',
-        'Dorsum of foot',
-        'Dorsal surfaces of digits of foot',
-        'Plantar surfaces of digits of foot',
-    )
-    return any(obj.name.startswith(f'{base}.r') for base in foot_bases)
-
-
 def _is_skin_body_envelope_patch(obj) -> bool:
     if not _is_any_skin_patch(obj):
+        return False
+    if _is_orphan_skin_generated_patch(obj):
         return False
     return not (
         _is_skin_face_detail_patch(obj)
@@ -395,27 +460,37 @@ def _is_skin_body_envelope_patch(obj) -> bool:
         or _is_skin_back_torso_patch(obj)
         or _is_skin_hand_detail_patch(obj)
         or _is_skin_foot_detail_patch(obj)
+        or _is_skin_limb_detail_patch(obj)
     )
 
 
 SKIN_MESH_TRI_CAPS: dict[str, int] = {
-    'skin_envelope': 44_000,
+    'skin_envelope': 48_000,
     'skin_face': 12_000,
-    'skin_neck_shoulder': 8_000,
+    'skin_neck_shoulder': 9_000,
     'skin_back': 14_000,
+    'skin_limbs': 14_000,
     'skin_hand_digits': 10_000,
     'skin_foot_digits': 10_000,
     'eye_globes': 2_000,
 }
 
 SKIN_DETAIL_MESH_IDS = frozenset(
-    {'skin_face', 'skin_neck_shoulder', 'skin_back', 'skin_hand_digits', 'skin_foot_digits'},
+    {
+        'skin_face',
+        'skin_neck_shoulder',
+        'skin_back',
+        'skin_limbs',
+        'skin_hand_digits',
+        'skin_foot_digits',
+    },
 )
 
 SKIN_GROUP_SPECS: tuple[tuple[str, object], ...] = (
     ('skin_face', _is_skin_face_detail_patch),
     ('skin_neck_shoulder', _is_skin_neck_shoulder_patch),
     ('skin_back', _is_skin_back_torso_patch),
+    ('skin_limbs', _is_skin_limb_detail_patch),
     ('skin_hand_digits', _is_skin_hand_detail_patch),
     ('skin_foot_digits', _is_skin_foot_detail_patch),
     ('skin_envelope', _is_skin_body_envelope_patch),
@@ -437,6 +512,8 @@ def export_gltf_curated(export_objects: list, out_glb: Path) -> None:
         obj.hide_set(False)
         obj.hide_viewport = False
         obj.hide_render = False
+        if obj.data and obj.data.name != obj.name:
+            obj.data.name = obj.name
 
     for obj in list(bpy.data.objects):
         if obj.type == 'MESH' and _is_forbidden_mesh_name(obj.name):
@@ -508,7 +585,7 @@ def shade_smooth_mesh(obj) -> None:
     mesh.update()
 
 
-def weld_skin_mesh(obj, merge_dist: float = 0.00035) -> None:
+def weld_skin_mesh(obj, merge_dist: float = 0.00075) -> None:
     """Weld nearby patch vertices and smooth normals — avoids SOLIDIFY seam ridges."""
     if obj.type != 'MESH' or not obj.data.vertices:
         return
@@ -786,13 +863,18 @@ def _atlas_side_ok(name: str, mesh_names: set[str] | None = None) -> bool:
     return True
 
 
+def _atlas_digit_prefixed_anatomy(name: str) -> bool:
+    """Z-Anatomy uses leading ordinals (1st rib.r, 2d metatarsal bone.r) — not Blender junk."""
+    return bool(re.match(r'^\d+(?:st|nd|rd|th|d)\b', name, re.I))
+
+
 def _classify_atlas_mesh(obj, mesh_names: set[str] | None = None) -> str | None:
     """Return 'muscle' | 'bone' for export candidates, else None."""
     name = obj.name
     if not _atlas_side_ok(name, mesh_names):
         return None
     lower = name.lower()
-    if name[:1].isdigit():
+    if name[:1].isdigit() and not _atlas_digit_prefixed_anatomy(name):
         return None
     if any(token in lower for token in ('ligament', 'cartilage', 'capsule', 'tendon', 'aponeurosis', 'cornea')):
         return None
@@ -1046,6 +1128,27 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
 
     if not exported:
         raise RuntimeError('No skin meshes exported for atlas_skin')
+
+    skin_parts = [obj for mesh_id, obj, _ in exported if mesh_id != 'eye_globes']
+    eye_entries = [(mesh_id, obj, tri) for mesh_id, obj, tri in exported if mesh_id == 'eye_globes']
+
+    if not skin_parts:
+        raise RuntimeError('No skin body meshes exported for atlas_skin')
+
+    unified = join_meshes(skin_parts) if len(skin_parts) > 1 else skin_parts[0]
+    if unified is None:
+        raise RuntimeError('Failed to join atlas_skin body meshes')
+
+    unified.name = 'skin_envelope'
+    unified['nodeId'] = 'skin_envelope'
+    ensure_mesh_single_user(unified)
+    weld_skin_mesh(unified, merge_dist=0.001)
+    unified_cap = min(max_region_tris - sum(tri for _, _, tri in eye_entries), 88_000)
+    apply_decimate_to_target(unified, max(unified_cap, 40_000))
+    bake_mesh_world_transform(unified)
+    unified_tris = len(unified.data.polygons)
+    print(f'  atlas_skin unified skin_envelope: {len(skin_parts)} parts -> {unified_tris} tris')
+    exported = [('skin_envelope', unified, unified_tris), *eye_entries]
 
     region_total = sum(tri for _, _, tri in exported)
     if region_total > max_region_tris:

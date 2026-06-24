@@ -10,6 +10,7 @@ import MuscleCanvasPerfOverlay from './MuscleCanvasPerfOverlay';
 import RegionModel from './RegionModel';
 import FullBodyRegionModel from './FullBodyRegionModel';
 import CanvasViewControls from './CanvasViewControls';
+import AnatomyFocusCamera from './AnatomyFocusCamera';
 import QuizCameraRig from './QuizCameraRig';
 import { useQuizCameraPreset } from './useQuizCameraPreset';
 
@@ -25,9 +26,15 @@ function AnatomySceneInner({ showPerf }: { showPerf: boolean }) {
   const layerPeelDepth = useMuscleStore((s) => s.layerPeelDepth);
   const showSkinLayer = useMuscleStore((s) => s.showSkinLayer);
   const mode = useMuscleStore((s) => s.mode);
+  const focusedNodeId = useMuscleStore((s) => s.focusedNodeId);
+  const cameraFocusPreset = useMuscleStore((s) => s.cameraFocusPreset);
   const clearFocus = useMuscleStore((s) => s.clearFocus);
   const setAnatomyStageCenter = useMuscleStore((s) => s.setAnatomyStageCenter);
-  const preset = useQuizCameraPreset();
+  const quizPreset = useQuizCameraPreset();
+
+  const cameraPreset =
+    mode === 'active' ? quizPreset : focusedNodeId ? cameraFocusPreset : null;
+  const animateCamera = Boolean(cameraPreset);
 
   useEffect(() => {
     invalidate();
@@ -67,7 +74,8 @@ function AnatomySceneInner({ showPerf }: { showPerf: boolean }) {
       ) : (
         <RegionModel region={activeModuleId} />
       )}
-      <QuizCameraRig preset={preset} animate={mode === 'active'} />
+      <AnatomyFocusCamera />
+      <QuizCameraRig preset={cameraPreset} animate={animateCamera} />
     </>
   );
 }

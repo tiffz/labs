@@ -32,6 +32,21 @@ export const footNodes = [
       cameraPresetKey: 'foot',
     },
   ),
+  bone(
+    'bone_metatarsals',
+    'Metatarsals',
+    'foot',
+    'box',
+    {
+      whyItMatters: 'The metatarsal arch carries weight forward into the toes.',
+      commonMistake: 'Flat foot plate. Fan the metatarsals with a slight arch.',
+      movementEffect: 'Push-off rolls from fifth to first metatarsal head.',
+    },
+    {
+      layout: { position: [0.22, -1.42, 0.12], scale: [0.14, 0.04, 0.22] },
+      cameraPresetKey: 'foot',
+    },
+  ),
   muscle(
     'muscle_abductor_hallucis',
     'Abductor hallucis',

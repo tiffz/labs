@@ -6,10 +6,14 @@ import {
 } from './anatomyCoverageLedger';
 
 describe('anatomyCoverageLedger', () => {
-  it('has no blocking CSV muscle or skin overlay gaps', () => {
+  it('has no blocking CSV muscle, skin overlay, GLB runtime, or inventory gaps', () => {
     const report = buildAnatomyCoverageReport();
     const blocking = report.gaps.filter(
-      (gap) => gap.kind === 'csv_muscle' || gap.kind === 'skin_overlay',
+      (gap) =>
+        gap.kind === 'csv_muscle' ||
+        gap.kind === 'skin_overlay' ||
+        gap.kind === 'glb_runtime' ||
+        gap.kind === 'runtime_inventory',
     );
     expect(blocking, formatAnatomyCoverageReport(report)).toEqual([]);
   });
