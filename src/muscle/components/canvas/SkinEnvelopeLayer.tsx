@@ -49,6 +49,9 @@ function clipSkinForHalf(geometry: BufferGeometry): BufferGeometry {
   return clipSkinGeometryToStudyHalf(geometry.clone(), 0, {
     anyVertexOnHalf: true,
     preserveMidlinePelvis: true,
+    preserveMidlineThorax: true,
+    preserveMidlineFace: true,
+    preserveMidlineAnteriorNeck: true,
   });
 }
 
@@ -68,12 +71,13 @@ function SkinMesh({ mesh, half }: { mesh: Mesh; half: 'reference' | 'study' }) {
     material.emissive.set('#3d2818');
     material.emissiveIntensity = isStudy ? 0.03 : 0.05;
     material.transparent = isStudy;
-    material.opacity = isStudy ? 0.52 : 1;
+    material.opacity = isStudy ? 0.5 : 1;
     material.depthWrite = !isStudy;
-    material.alphaTest = isStudy ? 0.08 : 0;
-    material.polygonOffset = true;
-    material.polygonOffsetFactor = -1;
-    material.polygonOffsetUnits = -1;
+    // alphaTest on study skin punched holes over curved pecs (muscle bleed-through = patchy dark).
+    material.alphaTest = 0;
+    material.polygonOffset = !isStudy;
+    material.polygonOffsetFactor = isStudy ? 0 : -1;
+    material.polygonOffsetUnits = isStudy ? 0 : -1;
     // Study half: single-sided + clip removes midline pelvis bleed onto the anatomy side.
     material.side = isStudy ? FrontSide : DoubleSide;
     material.needsUpdate = true;

@@ -28,10 +28,19 @@ describe('skin overlay node ids', () => {
 });
 
 describe('shouldIncludeAtlasCompleteMesh', () => {
-  it('excludes curriculum duplicates and glute atlas fragments', () => {
+  it('excludes curriculum duplicates and regional atlas fragments', () => {
     expect(shouldIncludeAtlasCompleteMesh('muscle_gluteus_maximus')).toBe(false);
     expect(shouldIncludeAtlasCompleteMesh('muscle_latissimus_dorsi')).toBe(false);
     expect(shouldIncludeAtlasCompleteMesh('atlas_gluteus_maximus_ending_on_gluteal_su_e5109520')).toBe(
+      false,
+    );
+    expect(shouldIncludeAtlasCompleteMesh('atlas_pectoralis_major_muscle_clavicular_i_25190cac')).toBe(
+      false,
+    );
+    expect(shouldIncludeAtlasCompleteMesh('atlas_deltoid_muscle_humeral_insertion_r_ed353102')).toBe(
+      false,
+    );
+    expect(shouldIncludeAtlasCompleteMesh('atlas_ascending_part_of_trapezius_muscle_a_24ed9b10')).toBe(
       false,
     );
   });

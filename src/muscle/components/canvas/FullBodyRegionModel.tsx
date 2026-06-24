@@ -6,6 +6,7 @@ import {
   setMuscleAnatomyDebugAnatomy,
 } from '../../debug/muscleAnatomyDebugRegistry';
 import AnatomyHalfGroup from './AnatomyHalfGroup';
+import { alignAnatomyMeshToStudyHalf } from './alignSkinEnvelopeGeometry';
 import {
   computeAnatomyGroupTransform,
   computeStageOrbitTarget,
@@ -26,6 +27,15 @@ interface FullBodyRegionModelProps {
   onStageReady?: (center: [number, number, number]) => void;
 }
 
+/** Z-Anatomy .r exports often land on −X; mirror to +X local so study (+scale) shows cross-section, not sagittal edge. */
+function alignFullBodyAnatomyMeshes(meshes: ReturnType<typeof mergeFullBodyMeshes>) {
+  return meshes.map((mesh) => {
+    const aligned = mesh.clone();
+    aligned.geometry = alignAnatomyMeshToStudyHalf(mesh.geometry.clone());
+    return aligned;
+  });
+}
+
 export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionModelProps) {
   const { invalidate } = useThree();
   const showSkinLayer = useMuscleStore((s) => s.showSkinLayer);
@@ -37,12 +47,14 @@ export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionMode
   const extremityMeshes = useExtremityModuleMeshes();
   const meshes = useMemo(
     () =>
-      mergeFullBodyMeshes(
-        atlasMeshes,
-        headFaceMeshes,
-        fundamentalsMeshes,
-        curriculumDetailMeshes,
-        extremityMeshes,
+      alignFullBodyAnatomyMeshes(
+        mergeFullBodyMeshes(
+          atlasMeshes,
+          headFaceMeshes,
+          fundamentalsMeshes,
+          curriculumDetailMeshes,
+          extremityMeshes,
+        ),
       ),
     [atlasMeshes, curriculumDetailMeshes, extremityMeshes, fundamentalsMeshes, headFaceMeshes],
   );

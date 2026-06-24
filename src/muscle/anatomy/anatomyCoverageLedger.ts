@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { ALL_NODES, getNodesForRegion } from '../curriculum';
 import { muscleModelsManifest as manifest } from '../types/muscleModelsManifest';
 import type { MuscleRegion } from '../types/node';
+import { isRegionalAtlasFragmentDuplicate } from '../components/canvas/fullBodyAtlasFilter';
 import { auditGlbMeshResolution } from './glbFileAudit';
 import { buildFullBodyRuntimeMeshInventory, collectSkinOverlayNodeIds } from './fullBodyRuntimeInventory';
 import {
@@ -296,7 +297,7 @@ export function buildAnatomyCoverageReport(): AnatomyCoverageReport {
   );
   const manifestUnion = collectManifestNodeIds(anatomyManifestRegions);
   for (const nodeId of manifestUnion) {
-    if (/^atlas_gluteus_/.test(nodeId)) continue;
+    if (isRegionalAtlasFragmentDuplicate(nodeId)) continue;
     if (runtimeInventory.has(nodeId)) continue;
     if (waivers.has(nodeId)) {
       waivedIds.add(nodeId);

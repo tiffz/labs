@@ -19,11 +19,13 @@ Nested **`AGENTS.md`** for `src/muscle/`. Root policy: [`../../AGENTS.md`](../..
 - **Gatekeeper:** Active Reps disabled until Fundamentals baseline; do not bypass in UI.
 - **Facts vs judgment:** Dexie stores progress; pure functions in `src/muscle/srs/`.
 - **Z-Anatomy license:** CC BY-SA 4.0 — keep [`ATTRIBUTION.md`](ATTRIBUTION.md) updated.
+- **Full-body skin staging:** Mirror straddling −X skin onto +X (`alignSkinEnvelopeToStudyHalf`) — **never** translate by `−min.x` (explodes anatomy vs skin columns). Study skin: no `alphaTest` (patchy pec transparency). After `atlas_skin` export: `npm run muscle:skin-boundary` + face coverage audit; hard-refresh `#/full_body` (HMR hides stale GLB).
 
 ## Tests
 
 - Unit: `npx vitest run src/muscle`
 - Assets: `npm run muscle:validate-assets`
+- Skin pipeline (after export or clip/material changes): `npm run muscle:skin-boundary`, `faceSkinCoverageAudit.test.ts`, `muscleSkinPipelineGuardrails.test.ts`
 - Perf guardrails: `canvasPerfGuardrails.test.ts`, `muscleAssetPerfBudget.test.ts`
 - Smoke: `muscle-shell.spec.ts`, `muscle-orbit-perf.spec.ts`, `muscle-study-journey.spec.ts`
 - Dev e2e seed: `?e2eSeed=1` (see `src/muscle/e2e/muscleE2eSeed.ts`)

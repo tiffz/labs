@@ -1,18 +1,16 @@
 {
-  "generatedAt": "2026-06-24T03:27:16.616Z",
+  "generatedAt": "2026-06-24T21:14:10.170Z",
   "summary": {
-    "curriculumTotal": 98,
-    "manifestNodeIds": 506,
-    "csvRows": 168,
-    "missingCurriculumCount": 9,
-    "missingCsvNodeCount": 12,
-    "atlasCompleteMeshes": 492,
-    "gluteMeshCount": 16,
-    "skinMeshCount": 7
+    "curriculumTotal": 99,
+    "manifestNodeIds": 477,
+    "csvRows": 183,
+    "missingCurriculumCount": 7,
+    "missingCsvNodeCount": 5,
+    "atlasCompleteMeshes": 475,
+    "gluteMeshCount": 6,
+    "skinMeshCount": 2
   },
   "missingCurriculum": [
-    "bone_metacarpals",
-    "bone_ribcage",
     "joint_elbow",
     "joint_hip",
     "joint_knee",
@@ -33,44 +31,9 @@
       "region": "fundamentals"
     },
     {
-      "zName": "5th rib.r",
-      "nodeId": "bone_ribcage",
-      "region": "torso"
-    },
-    {
-      "zName": "6th rib.r",
-      "nodeId": "bone_ribcage",
-      "region": "torso"
-    },
-    {
       "zName": "Articular capsule of sternoclavicular joint*.r",
       "nodeId": "joint_sternoclavicular",
       "region": "shoulder_neck"
-    },
-    {
-      "zName": "1st metacarpal bone.r",
-      "nodeId": "bone_metacarpals",
-      "region": "hand"
-    },
-    {
-      "zName": "2d metacarpal bone.r",
-      "nodeId": "bone_metacarpals",
-      "region": "hand"
-    },
-    {
-      "zName": "3d metacarpal bone.r",
-      "nodeId": "bone_metacarpals",
-      "region": "hand"
-    },
-    {
-      "zName": "4th metacarpal bone.r",
-      "nodeId": "bone_metacarpals",
-      "region": "hand"
-    },
-    {
-      "zName": "5th metacarpal bone.r",
-      "nodeId": "bone_metacarpals",
-      "region": "hand"
     },
     {
       "zName": "Thenar eminence.r",
@@ -95,44 +58,9 @@
       "region": "fundamentals"
     },
     {
-      "zName": "5th rib.r",
-      "nodeId": "bone_ribcage",
-      "region": "torso"
-    },
-    {
-      "zName": "6th rib.r",
-      "nodeId": "bone_ribcage",
-      "region": "torso"
-    },
-    {
       "zName": "Articular capsule of sternoclavicular joint*.r",
       "nodeId": "joint_sternoclavicular",
       "region": "shoulder_neck"
-    },
-    {
-      "zName": "1st metacarpal bone.r",
-      "nodeId": "bone_metacarpals",
-      "region": "hand"
-    },
-    {
-      "zName": "2d metacarpal bone.r",
-      "nodeId": "bone_metacarpals",
-      "region": "hand"
-    },
-    {
-      "zName": "3d metacarpal bone.r",
-      "nodeId": "bone_metacarpals",
-      "region": "hand"
-    },
-    {
-      "zName": "4th metacarpal bone.r",
-      "nodeId": "bone_metacarpals",
-      "region": "hand"
-    },
-    {
-      "zName": "5th metacarpal bone.r",
-      "nodeId": "bone_metacarpals",
-      "region": "hand"
     },
     {
       "zName": "Thenar eminence.r",
@@ -147,19 +75,16 @@
   ],
   "gluteMeshes": [
     {
-      "nodeId": "atlas_gluteus_maximus_ending_on_gluteal_su_e5109520",
-      "displayName": "Gluteus maximus ending on gluteal surface.r",
-      "tris": 60
+      "nodeId": "muscle_gemellus_inferior",
+      "tris": 818
     },
     {
-      "nodeId": "atlas_gluteus_maximus_muscle_iliac_inserti_c716de7f",
-      "displayName": "Gluteus maximus muscle-Iliac insertion.r",
-      "tris": 76
+      "nodeId": "muscle_gemellus_superior",
+      "tris": 351
     },
     {
-      "nodeId": "atlas_gluteus_medius_muscle_iliac_insertio_cdefd1f4",
-      "displayName": "Gluteus medius muscle-Iliac insertion.r",
-      "tris": 52
+      "nodeId": "muscle_piriformis",
+      "tris": 1243
     },
     {
       "nodeId": "atlas_gluteus_medius_on_greater_trochanter_cc517215",
@@ -167,59 +92,9 @@
       "tris": 37
     },
     {
-      "nodeId": "atlas_gluteus_minimus_muscle_iliac_inserti_b267e970",
-      "displayName": "Gluteus minimus muscle-Iliac insertion.r",
-      "tris": 82
-    },
-    {
-      "nodeId": "atlas_inferior_gemellus_muscle_ischiatic_i_96ee915b",
-      "displayName": "Inferior gemellus muscle-Ischiatic insertion.r",
-      "tris": 21
-    },
-    {
-      "nodeId": "atlas_inferior_gemellus_muscle_r_ea0d16b5",
-      "displayName": "Inferior gemellus muscle.r",
-      "tris": 796
-    },
-    {
       "nodeId": "atlas_obturator_internus_pelvic_insertion__fa648da3",
       "displayName": "Obturator internus-Pelvic insertion.r",
       "tris": 106
-    },
-    {
-      "nodeId": "atlas_obturator_internus_r_900687da",
-      "displayName": "Obturator internus.r",
-      "tris": 3070
-    },
-    {
-      "nodeId": "atlas_piriformis_muscle_r_7f539a24",
-      "displayName": "Piriformis muscle.r",
-      "tris": 1223
-    },
-    {
-      "nodeId": "atlas_quadratus_femoris_ending_on_quadrate_037367e2",
-      "displayName": "Quadratus femoris ending on quadrate tubercle.r",
-      "tris": 39
-    },
-    {
-      "nodeId": "atlas_quadratus_femoris_muscle_r_4e6cee8d",
-      "displayName": "Quadratus femoris muscle.r",
-      "tris": 1344
-    },
-    {
-      "nodeId": "atlas_quadratus_femoris_ischiatic_insertio_59cd8cd0",
-      "displayName": "Quadratus femoris-Ischiatic insertion.r",
-      "tris": 27
-    },
-    {
-      "nodeId": "atlas_superior_gemellus_muscle_ischiatic_i_c648bfff",
-      "displayName": "Superior gemellus muscle-Ischiatic insertion.r",
-      "tris": 39
-    },
-    {
-      "nodeId": "atlas_superior_gemellus_muscle_r_823df409",
-      "displayName": "Superior gemellus muscle.r",
-      "tris": 330
     },
     {
       "nodeId": "atlas_tensor_fasciae_latae_on_upper_anteri_51e07a2b",
@@ -227,25 +102,9 @@
       "tris": 19
     }
   ],
-  "skinMeshes": [
-    "skin_face",
-    "skin_neck_shoulder",
-    "skin_back",
-    "skin_hand_digits",
-    "skin_foot_digits",
-    "skin_envelope",
-    "eye_globes"
-  ],
+  "skinMeshes": ["skin_envelope", "eye_globes"],
   "missingByBodyArea": {
     "other": [
-      {
-        "kind": "curriculum",
-        "id": "bone_metacarpals"
-      },
-      {
-        "kind": "curriculum",
-        "id": "bone_ribcage"
-      },
       {
         "kind": "curriculum",
         "id": "joint_elbow"
@@ -286,43 +145,8 @@
       },
       {
         "kind": "csv",
-        "id": "bone_ribcage",
-        "zName": "5th rib.r"
-      },
-      {
-        "kind": "csv",
-        "id": "bone_ribcage",
-        "zName": "6th rib.r"
-      },
-      {
-        "kind": "csv",
         "id": "joint_sternoclavicular",
         "zName": "Articular capsule of sternoclavicular joint*.r"
-      },
-      {
-        "kind": "csv",
-        "id": "bone_metacarpals",
-        "zName": "1st metacarpal bone.r"
-      },
-      {
-        "kind": "csv",
-        "id": "bone_metacarpals",
-        "zName": "2d metacarpal bone.r"
-      },
-      {
-        "kind": "csv",
-        "id": "bone_metacarpals",
-        "zName": "3d metacarpal bone.r"
-      },
-      {
-        "kind": "csv",
-        "id": "bone_metacarpals",
-        "zName": "4th metacarpal bone.r"
-      },
-      {
-        "kind": "csv",
-        "id": "bone_metacarpals",
-        "zName": "5th metacarpal bone.r"
       }
     ],
     "hand": [

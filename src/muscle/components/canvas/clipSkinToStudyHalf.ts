@@ -7,12 +7,21 @@ export type SkinSagittalClipOptions = {
   anyVertexOnHalf?: boolean;
   /** Keep midline pelvis/groin geometry whole on the study half (avoids half-penis clip). */
   preserveMidlinePelvis?: boolean;
+  /** Keep suprasternal / clavicular skin at the sagittal midline (avoids neck pit hole). */
+  preserveMidlineThorax?: boolean;
+  /** Keep midline facial skin whole (avoids vertical nose/lip seam gaps). */
+  preserveMidlineFace?: boolean;
+  /** Keep anterior neck / platysma junction skin whole at the sagittal midline. */
+  preserveMidlineAnteriorNeck?: boolean;
 };
 
 const DEFAULT_OPTIONS: Required<SkinSagittalClipOptions> = {
   minCentroidX: 0,
   anyVertexOnHalf: true,
   preserveMidlinePelvis: true,
+  preserveMidlineThorax: true,
+  preserveMidlineFace: true,
+  preserveMidlineAnteriorNeck: true,
 };
 
 /** Staging-space pelvis band — triangles here stay intact when preserveMidlinePelvis is on. */
@@ -24,6 +33,39 @@ function isMidlinePelvisTriangle(
   const maxAbsX = Math.max(Math.abs(a[0]), Math.abs(b[0]), Math.abs(c[0]));
   const cy = (a[1] + b[1] + c[1]) / 3;
   return maxAbsX < 0.028 && cy >= 0.78 && cy <= 1.08;
+}
+
+/** Staging-space clavicle / suprasternal notch / upper trap — keep whole when sagittal clip opens a pit. */
+function isMidlineThoraxTriangle(
+  a: [number, number, number],
+  b: [number, number, number],
+  c: [number, number, number],
+): boolean {
+  const maxAbsX = Math.max(Math.abs(a[0]), Math.abs(b[0]), Math.abs(c[0]));
+  const cy = (a[1] + b[1] + c[1]) / 3;
+  return maxAbsX < 0.06 && cy >= 1.15 && cy <= 1.72;
+}
+
+/** Staging-space midline face — nose, philtrum, chin seam. */
+function isMidlineFaceTriangle(
+  a: [number, number, number],
+  b: [number, number, number],
+  c: [number, number, number],
+): boolean {
+  const maxAbsX = Math.max(Math.abs(a[0]), Math.abs(b[0]), Math.abs(c[0]));
+  const cy = (a[1] + b[1] + c[1]) / 3;
+  return maxAbsX < 0.07 && cy >= 1.28 && cy <= 1.78;
+}
+
+/** Staging-space anterior neck / platysma — submental to suprasternal junction. */
+function isMidlineAnteriorNeckTriangle(
+  a: [number, number, number],
+  b: [number, number, number],
+  c: [number, number, number],
+): boolean {
+  const maxAbsX = Math.max(Math.abs(a[0]), Math.abs(b[0]), Math.abs(c[0]));
+  const cy = (a[1] + b[1] + c[1]) / 3;
+  return maxAbsX < 0.08 && cy >= 1.02 && cy <= 1.42;
 }
 
 function triangleOnLocalStudyHalf(
@@ -77,6 +119,21 @@ export function clipSkinGeometryToStudyHalf(
     readVertex(i2, c);
 
     if (opts.preserveMidlinePelvis && isMidlinePelvisTriangle(a, b, c)) {
+      kept.push(i0, i1, i2);
+      continue;
+    }
+
+    if (opts.preserveMidlineThorax && isMidlineThoraxTriangle(a, b, c)) {
+      kept.push(i0, i1, i2);
+      continue;
+    }
+
+    if (opts.preserveMidlineFace && isMidlineFaceTriangle(a, b, c)) {
+      kept.push(i0, i1, i2);
+      continue;
+    }
+
+    if (opts.preserveMidlineAnteriorNeck && isMidlineAnteriorNeckTriangle(a, b, c)) {
       kept.push(i0, i1, i2);
       continue;
     }

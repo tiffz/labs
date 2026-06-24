@@ -93,4 +93,43 @@ describe('skin envelope study-half clip', () => {
       `aligned x=[${box.min.x.toFixed(3)}, ${box.max.x.toFixed(3)}] kept ${kept}/${total}`,
     ).toBeGreaterThan(0.35);
   });
+
+  it('retains suprasternal skin after align+clip (trap/clavicle band)', () => {
+    const envelope = readGlbSkinEnvelopeGeometry();
+    const aligned = alignSkinEnvelopeToStudyHalf(envelope.clone());
+    const clipped = clipSkinGeometryToStudyHalf(aligned, 0, {
+      anyVertexOnHalf: true,
+      preserveMidlinePelvis: true,
+      preserveMidlineThorax: true,
+      preserveMidlineFace: true,
+      preserveMidlineAnteriorNeck: true,
+    });
+
+    const pos = aligned.getAttribute('position');
+    const idx = aligned.getIndex()!;
+    let trapBefore = 0;
+    for (let t = 0; t < idx.count / 3; t += 1) {
+      const i0 = idx.getX(t * 3)!;
+      const i1 = idx.getX(t * 3 + 1)!;
+      const i2 = idx.getX(t * 3 + 2)!;
+      const cy = (pos.getY(i0) + pos.getY(i1) + pos.getY(i2)) / 3;
+      const maxAbsX = Math.max(Math.abs(pos.getX(i0)), Math.abs(pos.getX(i1)), Math.abs(pos.getX(i2)));
+      if (cy >= 1.15 && cy <= 1.72 && maxAbsX < 0.12) trapBefore += 1;
+    }
+
+    const cpos = clipped.getAttribute('position');
+    const cidx = clipped.getIndex()!;
+    let trapAfter = 0;
+    for (let t = 0; t < cidx.count / 3; t += 1) {
+      const i0 = cidx.getX(t * 3)!;
+      const i1 = cidx.getX(t * 3 + 1)!;
+      const i2 = cidx.getX(t * 3 + 2)!;
+      const cy = (cpos.getY(i0) + cpos.getY(i1) + cpos.getY(i2)) / 3;
+      const maxAbsX = Math.max(Math.abs(cpos.getX(i0)), Math.abs(cpos.getX(i1)), Math.abs(cpos.getX(i2)));
+      if (cy >= 1.15 && cy <= 1.72 && maxAbsX < 0.12) trapAfter += 1;
+    }
+
+    expect(trapBefore).toBeGreaterThan(20);
+    expect(trapAfter / trapBefore).toBeGreaterThan(0.85);
+  });
 });

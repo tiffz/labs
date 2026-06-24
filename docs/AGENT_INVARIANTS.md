@@ -48,6 +48,9 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 | Layout/CSS changes → `npm run verify:layout`                | `labs-ux-journey` step 5, `scripts/run-scoped-layout-heuristics.mjs`                                               |
 | Muscle app registered → commit `public/muscle/` with source | `musclePublicAssetsGuardrails.test.ts`, `muscle:validate-assets` in presubmit                                      |
 | Unified skin envelope → X-align before study sagittal clip  | `alignSkinEnvelopeGeometry.test.ts`, `skinEnvelopeClipRegression.test.ts`                                          |
+| Never translate straddling skin by −min.x (midline drift)   | `muscleSkinPipelineGuardrails.test.ts`, `alignSkinEnvelopeGeometry.ts`                                             |
+| atlas_skin re-export → boundary edges must not increase     | `npm run muscle:skin-boundary`, `skin-boundary-baseline.json`                                                      |
+| Face/neck skin coverage must not drop after export          | `faceSkinCoverageAudit.test.ts`, `faceSkinCoverageBaseline.json`                                                   |
 | Flaky test encountered → fix root cause same session        | `docs/FLAKY_TESTS.md`, `.cursor/rules/flaky-tests.mdc` — no push retries without code fix                          |
 | New user-visible route → smoke spec                         | [`docs/E2E_SMOKE_CONVENTIONS.md`](E2E_SMOKE_CONVENTIONS.md)                                                        |
 | Layout padding/contrast on Encore/Gesture home surfaces     | `layout-heuristics-*.spec.ts`                                                                                      |
