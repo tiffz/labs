@@ -15,13 +15,14 @@ npm run presubmit
 
 After changing `atlas_skin`, `atlas_complete`, or skin export predicates — **hard refresh** `/muscle/` then verify:
 
-| Area            | What to check                                                                        |
-| --------------- | ------------------------------------------------------------------------------------ |
-| Sagittal split  | Muscles on study (+X) side; skin mirrored on reference side; figure not a thin slice |
-| Skin continuity | No Frankenstein stitch ridges; palm, elbow, knee, neck/shoulder, face, ankles        |
-| Eye globes      | Orbital sockets filled (not hollow dark voids)                                       |
-| Layer peel      | Depth 0 + skin toggle — semi-transparent study skin over muscles                     |
-| Performance     | ~10 s orbit without sustained judder                                                 |
+| Area            | What to check                                                                                                    |
+| --------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Sagittal split  | Muscles on study (+X) side; skin mirrored on reference side; figure not a thin slice                             |
+| Skin continuity | No Frankenstein stitch ridges; palm, elbow, knee, neck/shoulder, face, ankles                                    |
+| Skin runtime    | Unified `skin_envelope` is X-aligned before study-half clip — regression in `skinEnvelopeClipRegression.test.ts` |
+| Eye globes      | Orbital sockets filled (not hollow dark voids)                                                                   |
+| Layer peel      | Depth 0 + skin toggle — semi-transparent study skin over muscles                                                 |
+| Performance     | ~10 s orbit without sustained judder                                                                             |
 
 Pipeline: skill **`labs-muscle-anatomy-export`** or `npm run muscle:export-pipeline`.
 

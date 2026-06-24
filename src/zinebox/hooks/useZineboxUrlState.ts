@@ -85,6 +85,8 @@ export function useZineboxUrlState(): {
     (comicId: string) => {
       const href = zineboxReadHref(comicId, readerParams);
       window.location.hash = href;
+      setRoute({ kind: 'read', comicId });
+      setReaderParamsState(readReaderParamsFromWindow());
     },
     [readerParams],
   );

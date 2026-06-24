@@ -18,6 +18,7 @@ How to **fix** flaky Vitest/Playwright tests — not mask them with retries. Age
 | Passes alone, fails in full suite | Leaked timers, rAF, BroadcastChannel         | Use `setupTestCleanup()`; global `MockBroadcastChannel` in `setupTests.ts`                           |
 | Animation/timer flakes            | Real `setTimeout` / rAF                      | Mock rAF (see `setupTests.ts`) or use `vi.useFakeTimers()` with cleanup                              |
 | E2e perf budget flakes            | Single max frame / cold scroll or orbit      | Warmup burst before sampling; assert **p95** + separate spike max; CI-aware limits in `*PerfCore.ts` |
+| Zinebox random unread under load  | `openReader` only set hash; seed async race  | Sync `setRoute` in `openReader`; e2e waits for `.zinebox-cover-card` before Random click             |
 | Essentia/WASM slow                | Heavy integration in fast path               | Name `*.integration.test.ts` — excluded from `test:fast`, run when beat files change                 |
 
 ## Async + dynamic imports (React)

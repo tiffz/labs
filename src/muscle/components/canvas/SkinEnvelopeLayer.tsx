@@ -7,6 +7,7 @@ import { muscleModelsManifest as manifest } from '../../types/muscleModelsManife
 import { ANATOMY_COLORS } from './anatomyVisuals';
 import AnatomyHalfGroup from './AnatomyHalfGroup';
 import { acquireSkinMaterial } from './anatomyMaterialPool';
+import { alignSkinEnvelopeToStudyHalf } from './alignSkinEnvelopeGeometry';
 import { clipSkinGeometryToStudyHalf } from './clipSkinToStudyHalf';
 import { extractGlbMeshes } from './extractGlbMeshes';
 import { setMuscleAnatomyDebugSkin, publishMuscleAnatomyDebugWindow } from '../../debug/muscleAnatomyDebugRegistry';
@@ -18,22 +19,22 @@ function isSkinMeshName(name: string): boolean {
 }
 
 function prepareSkinMeshes(meshes: Mesh[]): Mesh[] {
-  const clipped = meshes.map((mesh) => {
-    const geometry = clipSkinGeometryToStudyHalf(mesh.geometry.clone());
+  const aligned = meshes.map((mesh) => {
+    const geometry = alignSkinEnvelopeToStudyHalf(mesh.geometry.clone());
     const next = mesh.clone();
     next.geometry = geometry;
     return next;
   });
-  if (clipped.length <= 1) return clipped;
+  if (aligned.length <= 1) return aligned;
 
   const combined = mergeGeometries(
-    clipped.map((mesh) => mesh.geometry),
+    aligned.map((mesh) => mesh.geometry),
     false,
   );
-  if (!combined) return clipped;
+  if (!combined) return aligned;
 
   combined.computeVertexNormals();
-  const merged = new ThreeMesh(combined, clipped[0]!.material);
+  const merged = new ThreeMesh(combined, aligned[0]!.material);
   merged.name = 'skin_envelope';
   return [merged];
 }
@@ -49,6 +50,12 @@ function SkinMesh({ mesh, half }: { mesh: Mesh; half: 'reference' | 'study' }) {
   const meshRef = useRef<Mesh>(null);
   const material = useMemo(() => acquireSkinMaterial(), []);
   const isStudy = half === 'study';
+  const geometry = useMemo(() => {
+    if (!isStudy || mesh.name === 'eye_globes') {
+      return mesh.geometry;
+    }
+    return clipSkinGeometryToStudyHalf(mesh.geometry.clone(), 0);
+  }, [isStudy, mesh.geometry, mesh.name]);
 
   useLayoutEffect(() => {
     const skin = meshRef.current;
@@ -74,7 +81,7 @@ function SkinMesh({ mesh, half }: { mesh: Mesh; half: 'reference' | 'study' }) {
   return (
     <mesh
       ref={meshRef}
-      geometry={mesh.geometry}
+      geometry={geometry}
       material={material}
       position={mesh.position}
       rotation={mesh.rotation}

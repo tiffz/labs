@@ -47,6 +47,8 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 | Local crash log on uncaught errors                          | `labsCrashLog.ts`, ADR 0016                                                                                        |
 | Layout/CSS changes → `npm run verify:layout`                | `labs-ux-journey` step 5, `scripts/run-scoped-layout-heuristics.mjs`                                               |
 | Muscle app registered → commit `public/muscle/` with source | `musclePublicAssetsGuardrails.test.ts`, `muscle:validate-assets` in presubmit                                      |
+| Unified skin envelope → X-align before study sagittal clip  | `alignSkinEnvelopeGeometry.test.ts`, `skinEnvelopeClipRegression.test.ts`                                          |
+| Flaky test encountered → fix root cause same session        | `docs/FLAKY_TESTS.md`, `.cursor/rules/flaky-tests.mdc` — no push retries without code fix                          |
 | New user-visible route → smoke spec                         | [`docs/E2E_SMOKE_CONVENTIONS.md`](E2E_SMOKE_CONVENTIONS.md)                                                        |
 | Layout padding/contrast on Encore/Gesture home surfaces     | `layout-heuristics-*.spec.ts`                                                                                      |
 | No unintended horizontal scroll on primary surfaces         | `horizontalScrollHeuristicCore.ts`, `layout-heuristics-*.spec.ts`, `.cursor/rules/layout-no-horizontal-scroll.mdc` |

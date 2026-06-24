@@ -19,6 +19,7 @@ test.describe('Zine Box library', () => {
     await expect(page.getByRole('button', { name: /Open a random unread zine/i })).toBeEnabled({
       timeout: 15000,
     });
+    await expect(page.locator('.zinebox-cover-card').first()).toBeVisible({ timeout: 15000 });
     await page.getByRole('button', { name: /Open a random unread zine/i }).click();
     await expect(page).toHaveURL(/#\/read\//, { timeout: 15000 });
   });
