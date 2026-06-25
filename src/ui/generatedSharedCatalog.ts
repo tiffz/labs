@@ -5664,6 +5664,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-debug-readlabsdebugparams-ts-ismuscleskinholesdebugenabled",
+    "name": "isMuscleSkinHolesDebugEnabled",
+    "path": "src/shared/debug/readLabsDebugParams.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Muscle skin hole debug overlay (`?skinHoles=1`).",
+    "tags": [],
+    "appsUsing": [
+      "cats",
+      "drums",
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-debug-readlabsdebugparams-ts-readlabsdebugfromlocation",
     "name": "readLabsDebugFromLocation",
     "path": "src/shared/debug/readLabsDebugParams.ts",

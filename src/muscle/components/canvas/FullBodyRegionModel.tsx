@@ -14,6 +14,7 @@ import {
 import GlbAnatomyMesh from './GlbAnatomyMesh';
 import GlbAtlasMirrorMesh from './GlbAtlasMirrorMesh';
 import SkinEnvelopeLayer from './SkinEnvelopeLayer';
+import SkinHoleDebugLayer from './SkinHoleDebugLayer';
 import EyeGlobesLayer from './EyeGlobesLayer';
 import { mergeFullBodyMeshes, useExtremityModuleMeshes } from './useExtremityModuleMeshes';
 import { useCurriculumDetailMeshes } from './useCurriculumDetailMeshes';
@@ -22,6 +23,7 @@ import { useAtlasCompleteMeshes } from './useAtlasCompleteMeshes';
 import { useHeadFaceAtlasMeshes } from './useHeadFaceAtlasMeshes';
 import { isStudySkinVisibleAtPeel } from '../../layerDepthView';
 import { useMuscleStore } from '../../store/useMuscleStore';
+import { isLabsDebugEnabled, isMuscleSkinHolesDebugEnabled } from '../../../shared/debug/readLabsDebugParams';
 
 interface FullBodyRegionModelProps {
   onStageReady?: (center: [number, number, number]) => void;
@@ -76,15 +78,23 @@ export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionMode
   }, [meshes]);
 
   const hideReferenceAnatomy = isStudySkinVisibleAtPeel(layerPeelDepth, showSkinLayer);
+  const showSkinHoleDebug =
+    typeof window !== 'undefined' &&
+    isLabsDebugEnabled(window.location.search) &&
+    isMuscleSkinHolesDebugEnabled(window.location.search);
 
   return (
     <>
       <SkinEnvelopeLayer layout={groupLayout} half="reference" visible />
       <EyeGlobesLayer layout={groupLayout} half="reference" visible />
+      {showSkinHoleDebug ? (
+        <SkinHoleDebugLayer layout={groupLayout} half="reference" />
+      ) : null}
       {isStudySkinVisibleAtPeel(layerPeelDepth, showSkinLayer) ? (
         <>
           <SkinEnvelopeLayer layout={groupLayout} half="study" visible />
           <EyeGlobesLayer layout={groupLayout} half="study" visible />
+          {showSkinHoleDebug ? <SkinHoleDebugLayer layout={groupLayout} half="study" /> : null}
         </>
       ) : null}
       {hideReferenceAnatomy ? null : (

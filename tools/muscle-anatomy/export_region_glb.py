@@ -120,9 +120,9 @@ def _orphan_skin_centroid_band(obj) -> str:
     if metrics is None:
         return 'back'
     (_, cy, _), _ = metrics
-    if cy >= 1.35:
+    if cy >= 1.32:
         return 'face'
-    if cy >= 1.02:
+    if cy >= 1.0:
         return 'neck'
     return 'back'
 
@@ -176,7 +176,6 @@ def _is_face_region_skin_patch(obj) -> bool:
         'infraorbital region',
         'buccal region',
         'oral region',
-        'mental region',
         'auricular region',
         'temporal region',
         'parotid region',
@@ -251,11 +250,22 @@ _BRIDGE_SKIN_BASES = (
     'Submandibular triangle',
 )
 
-# Bridge patches welded with neck detail — Deltopectoral stays on the body shell (pec/delt junction).
+# Bridge patches welded with neck detail — Deltopectoral joins head_neck with pectoral/deltoid skin.
 _NECK_BRIDGE_SKIN_BASES = (
+    'Deltopectoral triangle',
     'Carotid triangle',
     'Muscular triangle',
     'Submandibular triangle',
+    'Triangle of auscultation',
+)
+
+# Suprasternal / sternal skin fillers (omit " region" in Z-Anatomy object names).
+_NECK_AUXILIARY_SKIN_BASES = (
+    'Lesser supraclavicular fossa',
+    'Greater subclavian fossa',
+    'Sternal line',
+    'Parasternal line',
+    'Infraclavicular fossa',
 )
 
 # Named skin surfaces in Z-Anatomy that omit " region" in the object name.
@@ -267,7 +277,6 @@ _AUXILIARY_SKIN_BASES = (
     'Dorsum of foot',
     'Cubital fossa',
     'Popliteal fossa',
-    'Infraclavicular fossa',
     'Lateral border of foot',
     'Medial border of foot',
     'Lateral border of forearm',
@@ -278,7 +287,7 @@ _AUXILIARY_SKIN_BASES = (
     'Plantar surfaces of digits of foot',
 )
 
-# Face fillers that omit " region" (brows, ear rim, philtrum, nose tip).
+# Face fillers that omit " region" (brows, ear rim, philtrum, smile line, nose tip).
 _FACE_AUXILIARY_SKIN_BASES = (
     'Eyebrow',
     'Eyebrow(hair)',
@@ -286,6 +295,9 @@ _FACE_AUXILIARY_SKIN_BASES = (
     'Posterior auricular groove',
     'Tubercle of upper lip',
     'Dorsum of nose',
+    'Nasolabial sulcus',
+    'Philtrum',
+    'Labial commissure',
 )
 
 _EYE_GLOBE_BASES = (
@@ -358,6 +370,15 @@ def _is_skin_face_auxiliary_patch(obj) -> bool:
     return any(obj.name.startswith(f'{base}.r') for base in _FACE_AUXILIARY_SKIN_BASES)
 
 
+def _is_skin_neck_auxiliary_patch(obj) -> bool:
+    """Supraclavicular / sternal gap fillers for the platysma and suprasternal notch."""
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    return any(obj.name.startswith(f'{base}.r') for base in _NECK_AUXILIARY_SKIN_BASES)
+
+
 def _is_skin_face_detail_patch(obj) -> bool:
     if _is_face_region_skin_patch(obj) or _is_skin_face_auxiliary_patch(obj):
         return True
@@ -377,6 +398,7 @@ def _is_skin_neck_shoulder_patch(obj) -> bool:
         'posterior cervical',
         'sternocleidomastoid region',
         'submental region',
+        'mental region',
         'deltoid region',
         'scapular region',
         'infrascapular region',
@@ -390,9 +412,20 @@ def _is_skin_neck_shoulder_patch(obj) -> bool:
         return True
     if _is_neck_bridge_skin_patch(obj):
         return True
+    if obj.name.startswith('Interscapular region'):
+        return True
     if _is_orphan_skin_generated_patch(obj) and _orphan_skin_centroid_band(obj) == 'neck':
         return True
     return obj.name.startswith('Infraclavicular fossa.r')
+
+
+def _is_skin_head_neck_patch(obj) -> bool:
+    """Face + anterior neck in one welded group — avoids platysma / smile-line inter-group seams."""
+    return (
+        _is_skin_face_detail_patch(obj)
+        or _is_skin_neck_shoulder_patch(obj)
+        or _is_skin_neck_auxiliary_patch(obj)
+    )
 
 
 def _is_malleolus_skin_patch(obj) -> bool:
@@ -501,15 +534,16 @@ def _is_orphan_skin_generated_patch(obj) -> bool:
 def _is_skin_back_torso_patch(obj) -> bool:
     if _is_orphan_skin_generated_patch(obj):
         return _orphan_skin_centroid_band(obj) == 'back'
+    # Interscapular welds with head/neck cape in skin_head_neck — exclude here to avoid duplicate tris.
     if obj.name.startswith('Interscapular region'):
-        return True
+        return False
     if obj.type != 'MESH' or obj.name.endswith('.l'):
         return False
     if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
         return False
     lower = obj.name.lower()
     if 'interscapular region' in lower:
-        return True
+        return False
     if _is_fold_skin_patch(obj):
         return True
     if not _is_region_skin_patch(obj):
@@ -534,9 +568,12 @@ def _is_skin_body_envelope_patch(obj) -> bool:
         return False
     if _is_neck_bridge_skin_patch(obj):
         return False
+    if _is_skin_neck_auxiliary_patch(obj):
+        return False
+    if obj.name.startswith('Deltopectoral triangle.r'):
+        return False
     return not (
-        _is_skin_face_detail_patch(obj)
-        or _is_skin_neck_shoulder_patch(obj)
+        _is_skin_head_neck_patch(obj)
         or _is_skin_back_torso_patch(obj)
         or _is_skin_hand_detail_patch(obj)
         or _is_skin_foot_detail_patch(obj)
@@ -546,8 +583,7 @@ def _is_skin_body_envelope_patch(obj) -> bool:
 
 SKIN_MESH_TRI_CAPS: dict[str, int] = {
     'skin_envelope': 48_000,
-    'skin_face': 16_000,
-    'skin_neck_shoulder': 12_000,
+    'skin_head_neck': 32_000,
     'skin_back': 14_000,
     'skin_limbs': 14_000,
     'skin_hand_digits': 10_000,
@@ -557,8 +593,7 @@ SKIN_MESH_TRI_CAPS: dict[str, int] = {
 
 SKIN_DETAIL_MESH_IDS = frozenset(
     {
-        'skin_face',
-        'skin_neck_shoulder',
+        'skin_head_neck',
         'skin_back',
         'skin_limbs',
         'skin_hand_digits',
@@ -567,8 +602,7 @@ SKIN_DETAIL_MESH_IDS = frozenset(
 )
 
 SKIN_GROUP_SPECS: tuple[tuple[str, object], ...] = (
-    ('skin_face', _is_skin_face_detail_patch),
-    ('skin_neck_shoulder', _is_skin_neck_shoulder_patch),
+    ('skin_head_neck', _is_skin_head_neck_patch),
     ('skin_back', _is_skin_back_torso_patch),
     ('skin_limbs', _is_skin_limb_detail_patch),
     ('skin_hand_digits', _is_skin_hand_detail_patch),
@@ -685,6 +719,26 @@ def weld_skin_mesh(obj, merge_dist: float = 0.00075) -> None:
     bpy.ops.mesh.delete_loose(use_verts=True, use_edges=True, use_faces=False)
     bpy.ops.object.mode_set(mode='OBJECT')
     shade_smooth_mesh(obj)
+
+
+def fill_skin_holes_up_to_sides(obj, sides: int = 48) -> None:
+    """Fill small open boundary loops left between Z-Anatomy skin patches after weld."""
+    if obj.type != 'MESH' or not obj.data.vertices:
+        return
+
+    view_layer = bpy.context.view_layer
+    ensure_mesh_single_user(obj)
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.hide_set(False)
+    obj.select_set(True)
+    view_layer.objects.active = obj
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='DESELECT')
+    try:
+        bpy.ops.mesh.fill_holes(sides=sides)
+    except (AttributeError, TypeError):
+        pass
+    bpy.ops.object.mode_set(mode='OBJECT')
 
 
 def ensure_mesh_single_user(obj) -> None:
@@ -1191,13 +1245,21 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
         merged['nodeId'] = mesh_id
         ensure_mesh_single_user(merged)
         if mesh_id in ('skin_envelope', *SKIN_DETAIL_MESH_IDS):
-            seam_weld = 0.00125 if mesh_id in ('skin_face', 'skin_neck_shoulder') else 0.00075
+            seam_weld = 0.0015 if mesh_id == 'skin_head_neck' else 0.00075
             weld_skin_mesh(merged, merge_dist=seam_weld)
+            if mesh_id == 'skin_head_neck':
+                fill_skin_holes_up_to_sides(merged, sides=48)
         elif mesh_id == 'eye_globes':
             shade_smooth_mesh(merged)
         cap = per_mesh_cap.get(mesh_id, max_tris)
         if mesh_id == 'skin_envelope':
-            apply_decimate_to_target(merged, cap)
+            # Decimate after unified join — pre-decimate misaligns head_neck ↔ body at platysma.
+            pass
+        elif mesh_id == 'skin_head_neck':
+            # Keep head/neck/shoulder cape detail until unified weld with body + back.
+            pass
+        elif mesh_id == 'skin_back':
+            pass
         elif mesh_id in SKIN_DETAIL_MESH_IDS:
             apply_decimate_to_cap(merged, detail_ratio, cap)
         else:
@@ -1216,6 +1278,20 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
     if not skin_parts:
         raise RuntimeError('No skin body meshes exported for atlas_skin')
 
+    cape_ids = {'skin_head_neck', 'skin_back'}
+    cape_parts = [obj for mesh_id, obj, _ in exported if mesh_id in cape_ids]
+    other_parts = [obj for mesh_id, obj, _ in exported if mesh_id not in cape_ids and mesh_id != 'eye_globes']
+    if len(cape_parts) > 1:
+        cape = join_meshes(cape_parts)
+        if cape is None:
+            raise RuntimeError('Failed to join atlas_skin head/neck/back cape')
+        cape.name = 'skin_cape'
+        ensure_mesh_single_user(cape)
+        weld_skin_mesh(cape, merge_dist=0.0025)
+        skin_parts = [cape, *other_parts]
+    elif len(cape_parts) == 1:
+        skin_parts = [*cape_parts, *other_parts]
+
     unified = join_meshes(skin_parts) if len(skin_parts) > 1 else skin_parts[0]
     if unified is None:
         raise RuntimeError('Failed to join atlas_skin body meshes')
@@ -1223,7 +1299,8 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
     unified.name = 'skin_envelope'
     unified['nodeId'] = 'skin_envelope'
     ensure_mesh_single_user(unified)
-    weld_skin_mesh(unified, merge_dist=0.0015)
+    weld_skin_mesh(unified, merge_dist=0.0025)
+    fill_skin_holes_up_to_sides(unified, sides=48)
     unified_cap = min(max_region_tris - sum(tri for _, _, tri in eye_entries), 88_000)
     apply_decimate_to_target(unified, max(unified_cap, 40_000))
     bake_mesh_world_transform(unified)

@@ -80,7 +80,8 @@ export default function MuscleAnatomyDebugPanel() {
         )}
         <p style={{ color: '#94a3b8', margin: '8px 0 0' }}>
           Compare loaded ids to catalog with <code>npm run muscle:coverage</code>. Boundary seam
-          regressions: <code>npm run muscle:skin-boundary</code>.
+          regressions: <code>npm run muscle:skin-boundary</code>. Skin hole overlay:{' '}
+          <code>?debug=1&amp;skinHoles=1</code> (magenta loop wireframe).
         </p>
       </div>
     </LabsDebugDock>

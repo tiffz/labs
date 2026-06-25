@@ -1,0 +1,41 @@
+{
+  "minTrianglesByBand": {
+    "smileLine": 450,
+    "platysmaFront": 1300,
+    "lateralNeckScm": 2300,
+    "upperTrapShoulder": 2900,
+    "pecDeltJunction": 4200,
+    "anteriorNeck": 1300,
+    "eyebrow": 650
+  },
+  "maxBoundaryEdgesByBand": {
+    "smileLine": 100,
+    "platysmaFront": 150,
+    "lateralNeckScm": 250,
+    "upperTrapShoulder": 180,
+    "pecDeltJunction": 400,
+    "anteriorNeck": 260,
+    "eyebrow": 80
+  },
+  "maxInteriorLoopsByBand": {
+    "smileLine": 3,
+    "platysmaFront": 8,
+    "lateralNeckScm": 18,
+    "upperTrapShoulder": 15,
+    "pecDeltJunction": 32,
+    "anteriorNeck": 3,
+    "eyebrow": 4
+  },
+  "maxLargestInteriorLoopEdgesByBand": {
+    "smileLine": 12,
+    "platysmaFront": 20,
+    "lateralNeckScm": 40,
+    "upperTrapShoulder": 45,
+    "pecDeltJunction": 40,
+    "anteriorNeck": 8,
+    "eyebrow": 15
+  },
+  "platysmaHotspotMaxInteriorLoops": 76,
+  "platysmaHotspotMaxLargestLoopEdges": 40,
+  "_comment": "Runtime study-half skin coverage after align+clip. Interior loops = closed boundary holes away from sagittal cut (minAbsX > 0.035, 4–180 edges). Run npm run muscle:skin-coverage to inspect. Tighten when export improves; never loosen without documented regression."
+}

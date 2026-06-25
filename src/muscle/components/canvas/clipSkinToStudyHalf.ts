@@ -43,7 +43,7 @@ function isMidlineThoraxTriangle(
 ): boolean {
   const maxAbsX = Math.max(Math.abs(a[0]), Math.abs(b[0]), Math.abs(c[0]));
   const cy = (a[1] + b[1] + c[1]) / 3;
-  return maxAbsX < 0.06 && cy >= 1.15 && cy <= 1.72;
+  return maxAbsX < 0.08 && cy >= 1.02 && cy <= 1.72;
 }
 
 /** Staging-space midline face — nose, philtrum, chin seam. */

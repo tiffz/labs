@@ -39,13 +39,17 @@ describe('muscle skin pipeline guardrails', () => {
   it('routes orphan skin fillers and neck bridge patches in export script', () => {
     const exportSource = readRepo('tools/muscle-anatomy/export_region_glb.py');
     expect(exportSource).toMatch(/_orphan_skin_centroid_band/);
-    expect(exportSource).toMatch(/_NECK_BRIDGE_SKIN_BASES/);
-    expect(exportSource).toMatch(/merge_dist=0\.0015/);
+    expect(exportSource).toMatch(/skin_head_neck/);
+    expect(exportSource).toMatch(/Lesser supraclavicular fossa/);
+    expect(exportSource).toMatch(/Deltopectoral triangle/);
+    expect(exportSource).toMatch(/merge_dist=0\.0025/);
   });
 
   it('requires face skin coverage and boundary edge audits', () => {
     expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/faceSkinCoverageAudit.test.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/skinCoverageAudit.test.ts'))).toBe(true);
     expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/skinMeshBoundaryAudit.test.ts'))).toBe(true);
     expect(fs.existsSync(path.join(REPO_ROOT, 'tools/muscle-anatomy/skin-boundary-baseline.json'))).toBe(true);
+    expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/skinCoverageBaseline.json'))).toBe(true);
   });
 });

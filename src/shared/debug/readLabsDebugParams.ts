@@ -36,6 +36,12 @@ export function isLabsOverlayEnabled(search: string): boolean {
   return queryKeyMeansOn(params, 'overlay');
 }
 
+/** Muscle skin hole debug overlay (`?skinHoles=1`). */
+export function isMuscleSkinHolesDebugEnabled(search: string): boolean {
+  const params = parseSearch(search);
+  return queryKeyMeansOn(params, 'skinHoles');
+}
+
 /** Read from the browser location; safe to call when `window` is undefined (SSR/tests). */
 export function readLabsDebugFromLocation(): { debug: boolean; overlay: boolean } {
   if (typeof window === 'undefined') {

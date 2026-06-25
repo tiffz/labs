@@ -101,6 +101,18 @@ See [`ANATOMY_COVERAGE.md`](ANATOMY_COVERAGE.md) for the coverage ledger (module
 
 Fails when manifest mesh `nodeId` values are missing from the TypeScript curriculum **or** triangle counts exceed performance budgets (25k/mesh, 80k/region — see `src/muscle/muscleAssetPerfBudget.ts`).
 
+### Skin coverage audits (after `atlas_skin` export)
+
+Three automated gates catch open seams and interior holes before manual QA:
+
+```bash
+npm run muscle:skin-boundary   # global open edge count (welded envelope)
+npm run muscle:skin-coverage   # body-band triangles + seam edges + interior hole loops
+npx vitest run src/muscle/anatomy/faceSkinCoverageAudit.test.ts
+```
+
+**Method:** export → runtime align + sagittal clip (same path as the app) → sample anatomical bands in staging space → fail on low triangle density, high boundary-edge counts, or **interior boundary loops** (closed holes away from the sagittal cut plane). Baselines live in `src/muscle/anatomy/skinCoverageBaseline.json` and `tools/muscle-anatomy/skin-boundary-baseline.json`. Tighten baselines when coverage improves; never loosen without a documented export regression.
+
 Re-export with decimation:
 
 ```bash

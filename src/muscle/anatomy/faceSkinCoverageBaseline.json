@@ -1,7 +1,7 @@
 {
   "minTrianglesByBand": {
-    "eyebrow": 800,
-    "noseTip": 100,
+    "eyebrow": 650,
+    "noseTip": 80,
     "nasolabial": 400,
     "earLateral": 40,
     "anteriorNeck": 1500
