@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import AnchoredPopover from '../AnchoredPopover';
 import './sharedExportPopover.css';
 import {
@@ -15,6 +15,10 @@ interface SharedExportPopoverProps {
   onClose: () => void;
   adapter: ExportSourceAdapter;
   persistKey?: string;
+  /** Hide loop count for full-length sources (e.g. Stanza uploads). */
+  hideLoopCount?: boolean;
+  headerSlot?: ReactNode;
+  footerSlot?: ReactNode;
 }
 
 interface PersistedSettings {
@@ -48,6 +52,9 @@ export default function SharedExportPopover({
   onClose,
   adapter,
   persistKey,
+  hideLoopCount = false,
+  headerSlot,
+  footerSlot,
 }: SharedExportPopoverProps) {
   const storageKey = useMemo(() => (
     persistKey ? `music-export:${persistKey}` : null
@@ -112,7 +119,8 @@ export default function SharedExportPopover({
   const effectiveStemSelection = selectedStemIds.length > 0
     ? selectedStemIds
     : adapter.stems.filter((stem) => stem.defaultSelected !== false).map((stem) => stem.id);
-  const previewSeconds = adapter.estimateDurationSeconds(loopCount, effectiveStemSelection);
+  const effectiveLoopCount = hideLoopCount ? 1 : loopCount;
+  const previewSeconds = adapter.estimateDurationSeconds(effectiveLoopCount, effectiveStemSelection);
   const supportedFormats = EXPORT_FORMATS.filter((item) => adapter.supportsFormat(item.id));
   const canExport = supportedFormats.length > 0 && (format === 'midi' || effectiveStemSelection.length > 0);
 
@@ -133,7 +141,7 @@ export default function SharedExportPopover({
       await executeExport({
         adapter,
         format,
-        loopCount,
+        loopCount: effectiveLoopCount,
         selectedStemIds: effectiveStemSelection,
         separateStemFiles: separateStemFiles && supportsStems && format !== 'midi',
         quality: { mp3BitrateKbps },
@@ -156,6 +164,7 @@ export default function SharedExportPopover({
     >
       <div className={`shared-export-panel shared-export-panel-${adapter.id}`}>
         <div className="shared-export-title">{adapter.title}</div>
+        {headerSlot}
         <div className="shared-export-subtitle">Export file type</div>
         <div className="shared-export-format-list">
           {EXPORT_FORMATS.map((item) => {
@@ -180,6 +189,7 @@ export default function SharedExportPopover({
           })}
         </div>
 
+        {!hideLoopCount ? (
         <div className="shared-export-row shared-export-row-inline">
           <label htmlFor={`loops-${adapter.id}`}>Loops</label>
           <input
@@ -196,6 +206,7 @@ export default function SharedExportPopover({
             }}
           />
         </div>
+        ) : null}
 
         {format === 'mp3' ? (
           <div className="shared-export-row shared-export-row-inline">
@@ -243,6 +254,7 @@ export default function SharedExportPopover({
         <div className="shared-export-preview">
           Preview duration: <strong>{formatDuration(previewSeconds)}</strong>
         </div>
+        {footerSlot}
         {errorMessage ? <div className="shared-export-error">{errorMessage}</div> : null}
         <button
           className="shared-export-action"

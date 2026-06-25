@@ -23,6 +23,23 @@
   font-weight: 700;
 }
 
+.shared-export-link-button {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--theme-link, #2563eb);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.shared-export-link-button:hover {
+  color: var(--theme-link-hover, #1d4ed8);
+}
+
 .shared-export-subtitle {
   font-size: 11px;
   color: var(--theme-text-secondary, #6b7280);

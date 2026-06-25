@@ -137,6 +137,7 @@ import {
 import { stripStanzaYoutubeSearchParamPreservingDrive } from '../utils/stanzaUrlYoutube';
 import StanzaYouTubePlayer, { type StanzaYouTubeController } from './StanzaYouTubePlayer';
 import StanzaAccountMenu from './StanzaAccountMenu';
+import StanzaAudioDownloadButton from './StanzaAudioDownloadButton';
 import StanzaTimeline from './StanzaTimeline';
 import { clampStanzaPlaybackRate } from '../utils/stanzaPlaybackRateLimits';
 import StanzaMetronomeStrip from './StanzaMetronomeStrip';
@@ -2967,6 +2968,16 @@ export default function StanzaWorkspace() {
               }}
             >
               <LabsUndoControls />
+              {selected.localAudioBlob && !selected.ytId ? (
+                <StanzaAudioDownloadButton
+                  song={selected}
+                  playbackRate={playback.playbackRate}
+                  transposeSemitones={transposeDraftSemitones}
+                  durationSec={playback.duration > 0 ? playback.duration : undefined}
+                  primaryGain={playbackPrimaryGain}
+                  stems={playbackStems}
+                />
+              ) : null}
               <StanzaAccountMenu />
             </Box>
           </Box>
