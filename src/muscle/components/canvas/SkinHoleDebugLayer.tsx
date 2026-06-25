@@ -2,20 +2,27 @@ import { useMemo } from 'react';
 import { BufferGeometry, Float32BufferAttribute } from 'three';
 import AnatomyHalfGroup from './AnatomyHalfGroup';
 import type { AnatomyGroupLayout } from './AnatomyHalfGroup';
-import { buildInteriorHoleLoopSegmentPositions } from '../../anatomy/skinCoverageAudit';
+import {
+  buildInteriorHoleLoopSegmentPositions,
+} from '../../anatomy/skinCoverageAudit';
 import { useStudySkinEnvelopeGeometry } from './useStudySkinEnvelopeGeometry';
 
 type SkinHoleDebugLayerProps = {
   layout: AnatomyGroupLayout;
-  half: 'reference' | 'study';
 };
 
-/** Magenta wireframe of interior skin holes in the platysma hotspot — `?debug=1&skinHoles=1`. */
-export default function SkinHoleDebugLayer({ layout, half }: SkinHoleDebugLayerProps) {
+/**
+ * Magenta wireframe of significant skin holes on the opaque reference half.
+ * `?debug=1&skinHoles=1` — delt/pec (≥14 edges), throat midline (≥8), trap dots (4–16).
+ */
+export default function SkinHoleDebugLayer({ layout }: SkinHoleDebugLayerProps) {
   const envelope = useStudySkinEnvelopeGeometry();
   const geometry = useMemo(() => {
     if (!envelope) return null;
-    const positions = buildInteriorHoleLoopSegmentPositions(envelope);
+    const positions = buildInteriorHoleLoopSegmentPositions(envelope, {
+      minEdgeCount: 14,
+      minDiameter: 0.012,
+    });
     if (!positions) return null;
     const lineGeometry = new BufferGeometry();
     lineGeometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
@@ -25,9 +32,9 @@ export default function SkinHoleDebugLayer({ layout, half }: SkinHoleDebugLayerP
   if (!geometry) return null;
 
   return (
-    <AnatomyHalfGroup half={half} layout={layout} renderOrder={40}>
+    <AnatomyHalfGroup half="reference" layout={layout} renderOrder={26}>
       <lineSegments geometry={geometry}>
-        <lineBasicMaterial args={[{ color: '#ff00ff', depthTest: false, transparent: true, opacity: 0.95 }]} />
+        <lineBasicMaterial args={[{ color: '#ff00ff', depthTest: true, transparent: true, opacity: 0.95 }]} />
       </lineSegments>
     </AnatomyHalfGroup>
   );

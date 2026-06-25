@@ -13,6 +13,8 @@ export type SkinSagittalClipOptions = {
   preserveMidlineFace?: boolean;
   /** Keep anterior neck / platysma junction skin whole at the sagittal midline. */
   preserveMidlineAnteriorNeck?: boolean;
+  /** Keep posterior upper-back skin whole at the sagittal midline (trap seam). */
+  preserveMidlinePosteriorNeck?: boolean;
 };
 
 const DEFAULT_OPTIONS: Required<SkinSagittalClipOptions> = {
@@ -22,6 +24,7 @@ const DEFAULT_OPTIONS: Required<SkinSagittalClipOptions> = {
   preserveMidlineThorax: true,
   preserveMidlineFace: true,
   preserveMidlineAnteriorNeck: true,
+  preserveMidlinePosteriorNeck: true,
 };
 
 /** Staging-space pelvis band — triangles here stay intact when preserveMidlinePelvis is on. */
@@ -57,6 +60,18 @@ function isMidlineFaceTriangle(
   return maxAbsX < 0.07 && cy >= 1.28 && cy <= 1.78;
 }
 
+/** Staging-space posterior midline upper back — trap / vertebral seam at the sagittal split. */
+function isMidlinePosteriorNeckTriangle(
+  a: [number, number, number],
+  b: [number, number, number],
+  c: [number, number, number],
+): boolean {
+  const maxAbsX = Math.max(Math.abs(a[0]), Math.abs(b[0]), Math.abs(c[0]));
+  const cy = (a[1] + b[1] + c[1]) / 3;
+  const cz = (a[2] + b[2] + c[2]) / 3;
+  return maxAbsX < 0.06 && cy >= 1.22 && cy <= 1.72 && cz < -0.02;
+}
+
 /** Staging-space anterior neck / platysma — submental to suprasternal junction. */
 function isMidlineAnteriorNeckTriangle(
   a: [number, number, number],
@@ -65,7 +80,7 @@ function isMidlineAnteriorNeckTriangle(
 ): boolean {
   const maxAbsX = Math.max(Math.abs(a[0]), Math.abs(b[0]), Math.abs(c[0]));
   const cy = (a[1] + b[1] + c[1]) / 3;
-  return maxAbsX < 0.08 && cy >= 1.02 && cy <= 1.42;
+  return maxAbsX < 0.08 && cy >= 1.02 && cy <= 1.48;
 }
 
 function triangleOnLocalStudyHalf(
@@ -77,7 +92,11 @@ function triangleOnLocalStudyHalf(
 ): boolean {
   if (anyVertexOnHalf) {
     const maxX = Math.max(a[0], b[0], c[0]);
+    const minX = Math.min(a[0], b[0], c[0]);
     if (maxX >= minCentroidX) return true;
+    const maxAbsX = Math.max(Math.abs(a[0]), Math.abs(b[0]), Math.abs(c[0]));
+    // Midline seam sliver — mirrored halves meet without pinholes along the sagittal split.
+    if (minX >= -0.018 && maxX >= -0.008 && maxAbsX < 0.045) return true;
   }
   const cx = (a[0] + b[0] + c[0]) / 3;
   return cx >= minCentroidX;
@@ -134,6 +153,11 @@ export function clipSkinGeometryToStudyHalf(
     }
 
     if (opts.preserveMidlineAnteriorNeck && isMidlineAnteriorNeckTriangle(a, b, c)) {
+      kept.push(i0, i1, i2);
+      continue;
+    }
+
+    if (opts.preserveMidlinePosteriorNeck && isMidlinePosteriorNeckTriangle(a, b, c)) {
       kept.push(i0, i1, i2);
       continue;
     }

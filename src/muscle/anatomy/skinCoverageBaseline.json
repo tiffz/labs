@@ -1,41 +1,41 @@
 {
   "minTrianglesByBand": {
     "smileLine": 450,
-    "platysmaFront": 1300,
-    "lateralNeckScm": 2300,
-    "upperTrapShoulder": 2900,
-    "pecDeltJunction": 4200,
-    "anteriorNeck": 1300,
+    "platysmaFront": 1200,
+    "lateralNeckScm": 1900,
+    "upperTrapShoulder": 1900,
+    "pecDeltJunction": 3300,
+    "anteriorNeck": 1050,
     "eyebrow": 650
   },
   "maxBoundaryEdgesByBand": {
     "smileLine": 100,
-    "platysmaFront": 150,
-    "lateralNeckScm": 250,
-    "upperTrapShoulder": 180,
-    "pecDeltJunction": 400,
-    "anteriorNeck": 260,
+    "platysmaFront": 145,
+    "lateralNeckScm": 140,
+    "upperTrapShoulder": 90,
+    "pecDeltJunction": 240,
+    "anteriorNeck": 140,
     "eyebrow": 80
   },
   "maxInteriorLoopsByBand": {
-    "smileLine": 3,
-    "platysmaFront": 8,
-    "lateralNeckScm": 18,
+    "smileLine": 6,
+    "platysmaFront": 12,
+    "lateralNeckScm": 12,
     "upperTrapShoulder": 15,
-    "pecDeltJunction": 32,
-    "anteriorNeck": 3,
+    "pecDeltJunction": 28,
+    "anteriorNeck": 4,
     "eyebrow": 4
   },
   "maxLargestInteriorLoopEdgesByBand": {
     "smileLine": 12,
-    "platysmaFront": 20,
-    "lateralNeckScm": 40,
-    "upperTrapShoulder": 45,
-    "pecDeltJunction": 40,
+    "platysmaFront": 8,
+    "lateralNeckScm": 55,
+    "upperTrapShoulder": 25,
+    "pecDeltJunction": 26,
     "anteriorNeck": 8,
     "eyebrow": 15
   },
-  "platysmaHotspotMaxInteriorLoops": 76,
-  "platysmaHotspotMaxLargestLoopEdges": 40,
-  "_comment": "Runtime study-half skin coverage after align+clip. Interior loops = closed boundary holes away from sagittal cut (minAbsX > 0.035, 4–180 edges). Run npm run muscle:skin-coverage to inspect. Tighten when export improves; never loosen without documented regression."
+  "platysmaHotspotMaxInteriorLoops": 70,
+  "platysmaHotspotMaxLargestLoopEdges": 55,
+  "_comment": "Runtime study-half skin coverage after align+clip. Post export fill (staging bands → Blender Z-up). Delt/pec junction target: no loop ≥30 edges in y 1.34–1.42, |x| 0.11–0.17."
 }

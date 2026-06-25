@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { zAnatomyNamesForNodeId } from '../curriculum';
-import { REQUIRED_FULL_BODY_BONE_IDS } from './requiredMeshIds';
+import { REQUIRED_FULL_BODY_BONE_IDS, REQUIRED_FULL_BODY_MUSCLE_IDS } from './requiredMeshIds';
 import {
   buildFullBodyRuntimeMeshInventory,
   collectSkinOverlayNodeIds,
@@ -14,6 +14,16 @@ describe('fullBodyRuntimeInventory', () => {
       expect(inventory.has(boneId), `${boneId} missing — is fundamentals.glb in Full body merge?`).toBe(
         true,
       );
+    }
+  });
+
+  it('includes required landmark muscles in full-body runtime inventory', () => {
+    const inventory = buildFullBodyRuntimeMeshInventory();
+    for (const muscleId of REQUIRED_FULL_BODY_MUSCLE_IDS) {
+      expect(
+        inventory.has(muscleId),
+        `${muscleId} missing — check atlas_complete / regional GLB merge`,
+      ).toBe(true);
     }
   });
 

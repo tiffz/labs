@@ -263,6 +263,7 @@ _NECK_BRIDGE_SKIN_BASES = (
 _NECK_AUXILIARY_SKIN_BASES = (
     'Lesser supraclavicular fossa',
     'Greater subclavian fossa',
+    'Midclavicular line',
     'Sternal line',
     'Parasternal line',
     'Infraclavicular fossa',
@@ -721,10 +722,45 @@ def weld_skin_mesh(obj, merge_dist: float = 0.00075) -> None:
     shade_smooth_mesh(obj)
 
 
-def fill_skin_holes_up_to_sides(obj, sides: int = 48) -> None:
-    """Fill small open boundary loops left between Z-Anatomy skin patches after weld."""
+def _staging_band_contains(
+    co,
+    *,
+    y_min: float,
+    y_max: float,
+    min_abs_x: float = 0.0,
+    max_abs_x: float = 0.35,
+    z_min: float = -0.45,
+    z_max: float = 0.2,
+) -> bool:
+    """Map staging-space bands (glTF Y-up) onto Blender Z-up mesh coordinates."""
+    height = co.z
+    depth = co.y
+    lateral = abs(co.x)
+    if height < y_min or height > y_max:
+        return False
+    if lateral < min_abs_x or lateral > max_abs_x:
+        return False
+    if depth < z_min or depth > z_max:
+        return False
+    return True
+
+
+def weld_skin_mesh_spatial_band(
+    obj,
+    *,
+    merge_dist: float,
+    y_min: float,
+    y_max: float,
+    min_abs_x: float = 0.0,
+    max_abs_x: float = 0.35,
+    z_min: float = -0.45,
+    z_max: float = 0.2,
+) -> None:
+    """Merge-by-distance only for vertices in a staging-space band (patch seam hot spots)."""
     if obj.type != 'MESH' or not obj.data.vertices:
         return
+
+    import bmesh
 
     view_layer = bpy.context.view_layer
     ensure_mesh_single_user(obj)
@@ -734,11 +770,268 @@ def fill_skin_holes_up_to_sides(obj, sides: int = 48) -> None:
     view_layer.objects.active = obj
     bpy.ops.object.mode_set(mode='EDIT')
     bpy.ops.mesh.select_all(action='DESELECT')
+    bm = bmesh.from_edit_mesh(obj.data)
+    bm.verts.ensure_lookup_table()
+    selected = 0
+    for vert in bm.verts:
+        if _staging_band_contains(
+            vert.co,
+            y_min=y_min,
+            y_max=y_max,
+            min_abs_x=min_abs_x,
+            max_abs_x=max_abs_x,
+            z_min=z_min,
+            z_max=z_max,
+        ):
+            vert.select = True
+            selected += 1
+    bmesh.update_edit_mesh(obj.data)
+    if selected == 0:
+        bpy.ops.object.mode_set(mode='OBJECT')
+        return
     try:
-        bpy.ops.mesh.fill_holes(sides=sides)
-    except (AttributeError, TypeError):
-        pass
+        bpy.ops.mesh.merge_by_distance(threshold=merge_dist)
+    except AttributeError:
+        bpy.ops.mesh.remove_doubles(threshold=merge_dist)
     bpy.ops.object.mode_set(mode='OBJECT')
+    shade_smooth_mesh(obj)
+
+
+def fill_skin_holes_up_to_sides(obj, sides: int = 48) -> None:
+    """Fill open boundary loops between Z-Anatomy skin patches (lateral bands only — not sagittal cut)."""
+    fill_skin_patch_holes_bmesh(obj, sides=sides, y_min=0.75, y_max=1.85, min_abs_x=0.045, max_abs_x=0.32)
+
+
+def _collect_boundary_loops(bm, edge_in_band, *, strict: bool = False) -> list[list]:
+    """Walk closed boundary loops; strict=True requires a single unambiguous next edge."""
+    boundary_edges = [edge for edge in bm.edges if edge.is_boundary and edge_in_band(edge)]
+    if not boundary_edges:
+        return []
+
+    adjacency: dict[int, list] = {}
+    for edge in boundary_edges:
+        a, b = edge.verts[0], edge.verts[1]
+        adjacency.setdefault(a.index, []).append((b, edge))
+        adjacency.setdefault(b.index, []).append((a, edge))
+
+    visited_edges: set[int] = set()
+    loops: list[list] = []
+
+    for start_edge in boundary_edges:
+        if start_edge.index in visited_edges:
+            continue
+        loop_edges = [start_edge]
+        visited_edges.add(start_edge.index)
+        prev_vert = start_edge.verts[0]
+        curr_vert = start_edge.verts[1]
+        start_vert = prev_vert
+
+        while curr_vert != start_vert and len(loop_edges) <= 64:
+            neighbors = adjacency.get(curr_vert.index, [])
+            candidates = [
+                (nxt, edge)
+                for nxt, edge in neighbors
+                if nxt != prev_vert and edge.index not in visited_edges
+            ]
+            if not candidates:
+                break
+            if strict and len(candidates) != 1:
+                break
+            nxt_vert, nxt_edge = candidates[0]
+            loop_edges.append(nxt_edge)
+            visited_edges.add(nxt_edge.index)
+            prev_vert = curr_vert
+            curr_vert = nxt_vert
+
+        if curr_vert == start_vert and len(loop_edges) >= 3:
+            loops.append(loop_edges)
+
+    return loops
+
+
+def fill_skin_patch_holes_bmesh(
+    obj,
+    *,
+    sides: int = 52,
+    y_min: float,
+    y_max: float,
+    min_abs_x: float = 0.0,
+    max_abs_x: float = 0.35,
+    z_min: float = -0.45,
+    z_max: float = 0.2,
+    exclude_sagittal_plane: bool = True,
+    max_passes: int = 4,
+    label: str = 'skin',
+) -> int:
+    """Fill closed boundary loops in a staging-space band — smallest loops first, multi-pass."""
+    if obj.type != 'MESH' or not obj.data.vertices:
+        return 0
+
+    import bmesh
+    from mathutils import Vector
+
+    ensure_mesh_single_user(obj)
+    total_filled = 0
+
+    def edge_in_band(edge) -> bool:
+        v0 = edge.verts[0].co
+        v1 = edge.verts[1].co
+        if exclude_sagittal_plane and max(abs(v0.x), abs(v1.x)) < 0.016:
+            return False
+        center = (v0 + v1) * 0.5
+        if _staging_band_contains(
+            center,
+            y_min=y_min,
+            y_max=y_max,
+            min_abs_x=min_abs_x,
+            max_abs_x=max_abs_x,
+            z_min=z_min,
+            z_max=z_max,
+        ):
+            return True
+        # Long loops can straddle the band — keep edges that overlap staging height/lateral span.
+        if max(v0.z, v1.z) < y_min or min(v0.z, v1.z) > y_max:
+            return False
+        if max(abs(v0.x), abs(v1.x)) < min_abs_x or min(abs(v0.x), abs(v1.x)) > max_abs_x:
+            return False
+        if max(v0.y, v1.y) < z_min or min(v0.y, v1.y) > z_max:
+            return False
+        return True
+
+    def loop_centroid(loop_edges) -> Vector:
+        verts = {v for edge in loop_edges for v in edge.verts}
+        center = Vector((0.0, 0.0, 0.0))
+        for vert in verts:
+            center += vert.co
+        return center / max(len(verts), 1)
+
+    for _pass_idx in range(max_passes):
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bm.edges.ensure_lookup_table()
+        loops = _collect_boundary_loops(bm, edge_in_band, strict=False)
+        if _pass_idx == 0 and loops:
+            largest = max((len(loop) for loop in loops), default=0)
+            print(f'    fill {label}: pass {_pass_idx} found {len(loops)} loops (largest {largest} edges)')
+        if not loops:
+            bm.free()
+            break
+
+        loops.sort(key=len)
+        filled_pass = 0
+        for loop_edges in loops:
+            edge_count = len(loop_edges)
+            if edge_count < 3 or edge_count > sides:
+                continue
+            center = loop_centroid(loop_edges)
+            if not _staging_band_contains(
+                center,
+                y_min=y_min,
+                y_max=y_max,
+                min_abs_x=min_abs_x,
+                max_abs_x=max_abs_x,
+                z_min=z_min,
+                z_max=z_max,
+            ):
+                continue
+            try:
+                bmesh.ops.holes_fill(bm, edges=loop_edges, sides=sides)
+                filled_pass += 1
+            except (ValueError, TypeError):
+                continue
+
+        if filled_pass:
+            bm.to_mesh(obj.data)
+            obj.data.update()
+            shade_smooth_mesh(obj)
+            total_filled += filled_pass
+        bm.free()
+        if filled_pass == 0:
+            break
+
+    if total_filled:
+        print(f'    fill {label}: {total_filled} loops (≤{sides} edges, {max_passes} passes max)')
+    return total_filled
+
+
+def weld_skin_problem_bands(obj) -> None:
+    """Targeted merge-by-distance on known Z-Anatomy patch seam hot spots."""
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.0038,
+        y_min=1.05,
+        y_max=1.45,
+        min_abs_x=0.05,
+        max_abs_x=0.28,
+        z_min=-0.14,
+        z_max=0.14,
+    )
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.0035,
+        y_min=1.08,
+        y_max=1.5,
+        min_abs_x=0.0,
+        max_abs_x=0.08,
+        z_min=-0.03,
+        z_max=0.14,
+    )
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.0035,
+        y_min=1.25,
+        y_max=1.65,
+        min_abs_x=0.05,
+        max_abs_x=0.26,
+        z_min=-0.42,
+        z_max=-0.02,
+    )
+
+
+def fill_skin_neck_shoulder_holes(obj) -> None:
+    """Delt / pec / lateral neck patch gaps."""
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=64,
+        y_min=1.02,
+        y_max=1.48,
+        min_abs_x=0.055,
+        max_abs_x=0.28,
+        z_min=-0.14,
+        z_max=0.14,
+        label='neck_shoulder',
+    )
+
+
+def fill_skin_throat_holes(obj) -> None:
+    """Anterior midline throat / submental gaps (adam's apple band)."""
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=56,
+        y_min=1.08,
+        y_max=1.5,
+        min_abs_x=0.0,
+        max_abs_x=0.09,
+        z_min=-0.05,
+        z_max=0.14,
+        exclude_sagittal_plane=False,
+        label='throat',
+    )
+
+
+def fill_skin_back_trap_holes(obj) -> None:
+    """Posterior trap / scapular dot gaps."""
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=20,
+        y_min=1.28,
+        y_max=1.62,
+        min_abs_x=0.055,
+        max_abs_x=0.26,
+        z_min=-0.42,
+        z_max=-0.02,
+        label='back_trap',
+    )
 
 
 def ensure_mesh_single_user(obj) -> None:
@@ -1247,8 +1540,6 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
         if mesh_id in ('skin_envelope', *SKIN_DETAIL_MESH_IDS):
             seam_weld = 0.0015 if mesh_id == 'skin_head_neck' else 0.00075
             weld_skin_mesh(merged, merge_dist=seam_weld)
-            if mesh_id == 'skin_head_neck':
-                fill_skin_holes_up_to_sides(merged, sides=48)
         elif mesh_id == 'eye_globes':
             shade_smooth_mesh(merged)
         cap = per_mesh_cap.get(mesh_id, max_tris)
@@ -1300,10 +1591,13 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
     unified['nodeId'] = 'skin_envelope'
     ensure_mesh_single_user(unified)
     weld_skin_mesh(unified, merge_dist=0.0025)
-    fill_skin_holes_up_to_sides(unified, sides=48)
+    weld_skin_problem_bands(unified)
     unified_cap = min(max_region_tris - sum(tri for _, _, tri in eye_entries), 88_000)
     apply_decimate_to_target(unified, max(unified_cap, 40_000))
     bake_mesh_world_transform(unified)
+    fill_skin_neck_shoulder_holes(unified)
+    fill_skin_throat_holes(unified)
+    fill_skin_back_trap_holes(unified)
     unified_tris = len(unified.data.polygons)
     print(f'  atlas_skin unified skin_envelope: {len(skin_parts)} parts -> {unified_tris} tris')
     exported = [('skin_envelope', unified, unified_tris), *eye_entries]

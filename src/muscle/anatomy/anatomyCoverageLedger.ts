@@ -9,6 +9,7 @@ import { auditGlbMeshResolution } from './glbFileAudit';
 import { buildFullBodyRuntimeMeshInventory, collectSkinOverlayNodeIds } from './fullBodyRuntimeInventory';
 import {
   REQUIRED_FULL_BODY_BONE_IDS,
+  REQUIRED_FULL_BODY_MUSCLE_IDS,
   REQUIRED_SKIN_OVERLAY_NODE_IDS,
 } from './requiredMeshIds';
 
@@ -276,6 +277,19 @@ export function buildAnatomyCoverageReport(): AnatomyCoverageReport {
       kind: 'runtime_inventory',
       nodeId,
       detail: 'Required full-body bone missing from simulated mesh inventory (check fundamentals + merge)',
+    });
+  }
+
+  for (const nodeId of REQUIRED_FULL_BODY_MUSCLE_IDS) {
+    if (runtimeInventory.has(nodeId)) continue;
+    if (waivers.has(nodeId)) {
+      waivedIds.add(nodeId);
+      continue;
+    }
+    gaps.push({
+      kind: 'runtime_inventory',
+      nodeId,
+      detail: 'Required full-body muscle missing from simulated mesh inventory (check atlas + merge)',
     });
   }
 

@@ -3,6 +3,7 @@
  */
 import {
   REQUIRED_FULL_BODY_BONE_IDS,
+  REQUIRED_FULL_BODY_MUSCLE_IDS,
   REQUIRED_SKIN_OVERLAY_NODE_IDS,
 } from '../anatomy/requiredMeshIds';
 
@@ -60,6 +61,9 @@ export function publishMuscleAnatomyDebugWindow(): void {
   window.__LABS_DEBUG__ = {
     muscleAnatomy: snapshot,
     missingRequiredBones: REQUIRED_FULL_BODY_BONE_IDS.filter(
+      (id) => !snapshot.anatomyNodeIds.includes(id),
+    ),
+    missingRequiredMuscles: REQUIRED_FULL_BODY_MUSCLE_IDS.filter(
       (id) => !snapshot.anatomyNodeIds.includes(id),
     ),
     missingRequiredSkin: REQUIRED_SKIN_OVERLAY_NODE_IDS.filter(

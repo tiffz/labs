@@ -87,14 +87,11 @@ export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionMode
     <>
       <SkinEnvelopeLayer layout={groupLayout} half="reference" visible />
       <EyeGlobesLayer layout={groupLayout} half="reference" visible />
-      {showSkinHoleDebug ? (
-        <SkinHoleDebugLayer layout={groupLayout} half="reference" />
-      ) : null}
+      {showSkinHoleDebug ? <SkinHoleDebugLayer layout={groupLayout} /> : null}
       {isStudySkinVisibleAtPeel(layerPeelDepth, showSkinLayer) ? (
         <>
           <SkinEnvelopeLayer layout={groupLayout} half="study" visible />
           <EyeGlobesLayer layout={groupLayout} half="study" visible />
-          {showSkinHoleDebug ? <SkinHoleDebugLayer layout={groupLayout} half="study" /> : null}
         </>
       ) : null}
       {hideReferenceAnatomy ? null : (

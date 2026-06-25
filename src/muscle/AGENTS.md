@@ -26,6 +26,7 @@ Nested **`AGENTS.md`** for `src/muscle/`. Root policy: [`../../AGENTS.md`](../..
 - Unit: `npx vitest run src/muscle`
 - Assets: `npm run muscle:validate-assets`
 - Skin pipeline (after export or clip/material changes): `npm run muscle:skin-boundary`, `npm run muscle:skin-coverage`, `faceSkinCoverageAudit.test.ts`, `muscleSkinPipelineGuardrails.test.ts`
+- Full-body muscle/bone inventory (UI completeness): `npm run muscle:inventory`, `fullBodyRuntimeInventory.test.ts`, debug panel missing-landmark list
 - Perf guardrails: `canvasPerfGuardrails.test.ts`, `muscleAssetPerfBudget.test.ts`
 - Smoke: `muscle-shell.spec.ts`, `muscle-orbit-perf.spec.ts`, `muscle-study-journey.spec.ts`
 - Dev e2e seed: `?e2eSeed=1` (see `src/muscle/e2e/muscleE2eSeed.ts`)

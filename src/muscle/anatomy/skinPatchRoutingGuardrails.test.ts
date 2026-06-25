@@ -10,6 +10,7 @@ const REQUIRED_NECK_SKIN_ROUTING = [
   'Deltopectoral triangle',
   'Triangle of auscultation',
   'Greater subclavian fossa',
+  'Midclavicular line',
   'Lesser supraclavicular fossa',
   'Carotid triangle',
   'Muscular triangle',

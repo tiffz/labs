@@ -39,6 +39,8 @@ describe('findBoundaryLoops', () => {
       centroid: { x: 0.12, y: 1.2, z: 0.05 },
       maxAbsX: 0.12,
       minAbsX: 0.1,
+      vertexIndices: [0, 1, 2, 3],
+      boundaryEdges: [[0, 1], [1, 2], [2, 3], [3, 0]] as Array<[number, number]>,
     };
     expect(isInteriorSkinHoleLoop(loop)).toBe(true);
     expect(isInteriorSkinHoleLoop({ ...loop, minAbsX: 0.02 })).toBe(false);

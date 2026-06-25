@@ -4,6 +4,7 @@ import { isLabsDebugEnabled } from '../../../shared/debug/readLabsDebugParams';
 import { ALL_NODES } from '../../curriculum';
 import {
   REQUIRED_FULL_BODY_BONE_IDS,
+  REQUIRED_FULL_BODY_MUSCLE_IDS,
   REQUIRED_SKIN_OVERLAY_NODE_IDS,
 } from '../../anatomy/requiredMeshIds';
 import {
@@ -43,6 +44,7 @@ export default function MuscleAnatomyDebugPanel() {
   if (!enabled) return null;
 
   const missingBones = missingFromInventory(REQUIRED_FULL_BODY_BONE_IDS, snapshot.anatomyNodeIds);
+  const missingMuscles = missingFromInventory(REQUIRED_FULL_BODY_MUSCLE_IDS, snapshot.anatomyNodeIds);
   const missingSkin = missingFromInventory(REQUIRED_SKIN_OVERLAY_NODE_IDS, snapshot.skinNodeIds);
   const atlasOnlyLoaded = snapshot.anatomyNodeIds.filter((id) => id.startsWith('atlas_')).length;
   const curriculumLoaded = snapshot.anatomyNodeIds.filter((id) => !id.startsWith('atlas_')).length;
@@ -71,6 +73,13 @@ export default function MuscleAnatomyDebugPanel() {
         ) : (
           <p style={{ color: '#86efac', margin: '6px 0' }}>Required full-body bones loaded.</p>
         )}
+        {missingMuscles.length > 0 ? (
+          <p style={{ color: '#fca5a5', margin: '6px 0' }}>
+            Missing landmark muscles ({missingMuscles.length}): {missingMuscles.join(', ')}
+          </p>
+        ) : (
+          <p style={{ color: '#86efac', margin: '6px 0' }}>Landmark muscles loaded.</p>
+        )}
         {missingSkin.length > 0 ? (
           <p style={{ color: '#fca5a5', margin: '6px 0' }}>
             Missing skin overlays ({missingSkin.length}): {missingSkin.join(', ')}
@@ -79,9 +88,9 @@ export default function MuscleAnatomyDebugPanel() {
           <p style={{ color: '#86efac', margin: '6px 0' }}>Required skin overlays loaded.</p>
         )}
         <p style={{ color: '#94a3b8', margin: '8px 0 0' }}>
-          Compare loaded ids to catalog with <code>npm run muscle:coverage</code>. Boundary seam
-          regressions: <code>npm run muscle:skin-boundary</code>. Skin hole overlay:{' '}
-          <code>?debug=1&amp;skinHoles=1</code> (magenta loop wireframe).
+          Compare loaded ids to catalog with <code>npm run muscle:coverage</code> and{' '}
+          <code>npm run muscle:inventory</code>. Skin holes:{' '}
+          <code>?debug=1&amp;skinHoles=1</code> (magenta, opaque reference half, ≥14-edge loops).
         </p>
       </div>
     </LabsDebugDock>

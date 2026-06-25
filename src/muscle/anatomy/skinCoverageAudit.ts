@@ -75,6 +75,8 @@ export type BoundaryLoop = {
   minAbsX: number;
   /** Closed loop vertex indices in boundary order. */
   vertexIndices: number[];
+  /** Boundary edges as vertex-index pairs (for debug wireframe). */
+  boundaryEdges: Array<[number, number]>;
 };
 
 function readVertex(position: BufferAttribute, index: number): SkinBandContext {
@@ -135,6 +137,7 @@ export function findBoundaryLoops(geometry: BufferGeometry): BoundaryLoop[] {
     if (visited.has(key)) continue;
 
     const loopVerts: number[] = [start];
+    const loopEdges: Array<[number, number]> = [[start, next]];
     let prev = start;
     let curr = next;
     visited.add(key);
@@ -151,6 +154,7 @@ export function findBoundaryLoops(geometry: BufferGeometry): BoundaryLoop[] {
       const nxt = candidates[0]!;
       const edgeKey = curr < nxt ? `${curr}:${nxt}` : `${nxt}:${curr}`;
       visited.add(edgeKey);
+      loopEdges.push([curr, nxt]);
       prev = curr;
       curr = nxt;
     }
@@ -159,11 +163,12 @@ export function findBoundaryLoops(geometry: BufferGeometry): BoundaryLoop[] {
     const points = loopVerts.map((vi) => readVertex(position, vi));
     const centroid = ctxFromPoints(points);
     loops.push({
-      edgeCount: loopVerts.length,
+      edgeCount: loopEdges.length,
       centroid: { x: centroid.x, y: centroid.y, z: centroid.z },
       maxAbsX: centroid.maxAbsX,
       minAbsX: Math.min(...points.map((p) => Math.abs(p.x))),
       vertexIndices: loopVerts,
+      boundaryEdges: loopEdges,
     });
   }
 
@@ -173,6 +178,101 @@ export function findBoundaryLoops(geometry: BufferGeometry): BoundaryLoop[] {
 /** Loops fully away from the sagittal clip plane — likely visible skin holes, not the cut edge. */
 export function isInteriorSkinHoleLoop(loop: BoundaryLoop): boolean {
   return loop.minAbsX > 0.035 && loop.edgeCount >= 4 && loop.edgeCount <= 180;
+}
+
+/** Max vertex–vertex distance across a loop (staging units ≈ meters). */
+export function loopDiameter(position: BufferAttribute, loop: BoundaryLoop): number {
+  const indices = loop.vertexIndices;
+  let maxDist = 0;
+  for (let i = 0; i < indices.length; i += 1) {
+    for (let j = i + 1; j < indices.length; j += 1) {
+      const ax = position.getX(indices[i]!);
+      const ay = position.getY(indices[i]!);
+      const az = position.getZ(indices[i]!);
+      const bx = position.getX(indices[j]!);
+      const by = position.getY(indices[j]!);
+      const bz = position.getZ(indices[j]!);
+      const dist = Math.hypot(ax - bx, ay - by, az - bz);
+      if (dist > maxDist) maxDist = dist;
+    }
+  }
+  return maxDist;
+}
+
+export type SkinHoleLoopFilter = {
+  minEdgeCount?: number;
+  minDiameter?: number;
+  bounds?: {
+    minY: number;
+    maxY: number;
+    minAbsX: number;
+    maxAbsX: number;
+    minZ?: number;
+  };
+};
+
+export const SHOULDER_DELT_DEBUG_BOUNDS = {
+  minY: 1.1,
+  maxY: 1.44,
+  minAbsX: 0.07,
+  maxAbsX: 0.26,
+  minZ: -0.1,
+};
+
+/** Filters micro-seams (4–12 edges) that rarely read as visible holes in the viewport. */
+export function isSignificantVisibleSkinHoleLoop(
+  loop: BoundaryLoop,
+  position: BufferAttribute,
+  filter: SkinHoleLoopFilter = {},
+): boolean {
+  if (isMidlineThroatHoleLoop(loop) || isBackTrapDotHoleLoop(loop)) return true;
+  if (!isInteriorSkinHoleLoop(loop)) return false;
+
+  const minEdgeCount = filter.minEdgeCount ?? 14;
+  const minDiameter = filter.minDiameter ?? 0.022;
+  if (loop.edgeCount < minEdgeCount) return false;
+  if (loopDiameter(position, loop) < minDiameter) return false;
+
+  const bounds = filter.bounds;
+  if (bounds && !loopInBounds(loop, bounds)) return false;
+
+  return true;
+}
+
+/** Closed midline loop in the anterior throat — excluded by minAbsX > 0.035 interior filter. */
+export function isMidlineThroatHoleLoop(loop: BoundaryLoop): boolean {
+  return (
+    loop.maxAbsX < 0.075 &&
+    loop.centroid.y >= 1.12 &&
+    loop.centroid.y <= 1.48 &&
+    loop.centroid.z > -0.03 &&
+    loop.edgeCount >= 8 &&
+    loop.edgeCount <= 55
+  );
+}
+
+/** Small posterior trap / scapular skin dots. */
+export function isBackTrapDotHoleLoop(loop: BoundaryLoop): boolean {
+  return (
+    loop.maxAbsX > 0.055 &&
+    loop.maxAbsX < 0.26 &&
+    loop.centroid.y >= 1.28 &&
+    loop.centroid.y <= 1.62 &&
+    loop.centroid.z < -0.03 &&
+    loop.edgeCount >= 4 &&
+    loop.edgeCount <= 16
+  );
+}
+
+function loopInBounds(
+  loop: BoundaryLoop,
+  bounds: { minY: number; maxY: number; minAbsX: number; maxAbsX: number; minZ?: number },
+): boolean {
+  const absX = Math.abs(loop.centroid.x);
+  if (loop.centroid.y < bounds.minY || loop.centroid.y > bounds.maxY) return false;
+  if (absX < bounds.minAbsX || absX > bounds.maxAbsX) return false;
+  if (bounds.minZ !== undefined && loop.centroid.z < bounds.minZ) return false;
+  return true;
 }
 
 function bandForContext(ctx: SkinBandContext, bands = SKIN_COVERAGE_BANDS): string | null {
@@ -299,18 +399,9 @@ export type PlatysmaHotspotMetrics = {
 export function auditPlatysmaHotspotHoles(
   geometry: BufferGeometry,
 ): PlatysmaHotspotMetrics {
-  const { minY, maxY, minAbsX, maxAbsX } = PLATYSMA_HOTSPOT_BOUNDS;
   const loops = findBoundaryLoops(geometry)
     .filter(isInteriorSkinHoleLoop)
-    .filter((loop) => {
-      const absX = Math.abs(loop.centroid.x);
-      return (
-        loop.centroid.y >= minY &&
-        loop.centroid.y <= maxY &&
-        absX >= minAbsX &&
-        absX <= maxAbsX
-      );
-    });
+    .filter((loop) => loopInBounds(loop, PLATYSMA_HOTSPOT_BOUNDS));
 
   return {
     interiorLoopCount: loops.length,
@@ -321,30 +412,18 @@ export function auditPlatysmaHotspotHoles(
 /** Line-segment pairs for interior hole loops (debug overlay). */
 export function buildInteriorHoleLoopSegmentPositions(
   geometry: BufferGeometry,
-  bounds = PLATYSMA_HOTSPOT_BOUNDS,
+  filter: SkinHoleLoopFilter = {},
 ): Float32Array | null {
   const position = geometry.getAttribute('position') as BufferAttribute | undefined;
   if (!position) return null;
 
-  const { minY, maxY, minAbsX, maxAbsX } = bounds;
-  const loops = findBoundaryLoops(geometry)
-    .filter(isInteriorSkinHoleLoop)
-    .filter((loop) => {
-      const absX = Math.abs(loop.centroid.x);
-      return (
-        loop.centroid.y >= minY &&
-        loop.centroid.y <= maxY &&
-        absX >= minAbsX &&
-        absX <= maxAbsX
-      );
-    });
+  const loops = findBoundaryLoops(geometry).filter((loop) =>
+    isSignificantVisibleSkinHoleLoop(loop, position, filter),
+  );
 
   const verts: number[] = [];
   for (const loop of loops) {
-    const indices = loop.vertexIndices;
-    for (let i = 0; i < indices.length; i += 1) {
-      const a = indices[i]!;
-      const b = indices[(i + 1) % indices.length]!;
+    for (const [a, b] of loop.boundaryEdges) {
       verts.push(
         position.getX(a),
         position.getY(a),

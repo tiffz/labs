@@ -108,10 +108,11 @@ Three automated gates catch open seams and interior holes before manual QA:
 ```bash
 npm run muscle:skin-boundary   # global open edge count (welded envelope)
 npm run muscle:skin-coverage   # body-band triangles + seam edges + interior hole loops
+npm run muscle:inventory       # required full-body muscles/bones in runtime merge inventory
 npx vitest run src/muscle/anatomy/faceSkinCoverageAudit.test.ts
 ```
 
-**Method:** export → runtime align + sagittal clip (same path as the app) → sample anatomical bands in staging space → fail on low triangle density, high boundary-edge counts, or **interior boundary loops** (closed holes away from the sagittal cut plane). Baselines live in `src/muscle/anatomy/skinCoverageBaseline.json` and `tools/muscle-anatomy/skin-boundary-baseline.json`. Tighten baselines when coverage improves; never loosen without a documented export regression.
+**Method:** export → bake world transform → **patch-hole fill in staging bands** (Blender Z-up mapping: staging Y→`co.z`, staging Z→`co.y`) → runtime align + sagittal clip (same path as the app) → sample anatomical bands in staging space → fail on low triangle density, high boundary-edge counts, or **interior boundary loops** (closed holes away from the sagittal cut plane). Baselines live in `src/muscle/anatomy/skinCoverageBaseline.json` and `tools/muscle-anatomy/skin-boundary-baseline.json`. Tighten baselines when coverage improves; never loosen without a documented export regression.
 
 Re-export with decimation:
 
