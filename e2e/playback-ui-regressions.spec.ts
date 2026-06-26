@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { enterEncoreApp } from './helpers/enterEncoreApp';
+import { clickStanzaLibraryCard } from './helpers/stanzaLibrary';
 
 const ENCORE_CHORD_PLAYBACK_SETTINGS_KEY = 'encore-originals-chord-playback-settings';
 
@@ -117,7 +118,7 @@ test.describe('Playback UI regressions', () => {
       await w.__stanzaE2e!.seedSongWithDrumsPlayback();
     });
 
-    await page.locator('button.stanza-library-card').filter({ hasText: 'E2E Drums Song' }).click();
+    await clickStanzaLibraryCard(page, 'E2E Drums Song');
     await expect(page.getByPlaceholder('D-T-K-T- or paste Darbuka Trainer URL')).toBeVisible({
       timeout: 15_000,
     });

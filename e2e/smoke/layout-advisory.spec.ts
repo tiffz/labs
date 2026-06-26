@@ -31,7 +31,10 @@ test.describe('Layout advisory (Tier 3)', () => {
   test('sight practice shell LCP within budget', async ({ page }) => {
     await page.goto('/sight/#/practice');
     await expect(page.locator('#root')).toBeVisible();
-    const sample = await sampleLcpMs(page, 3000);
+    await expect(page.locator('.sight-practice-shell, [data-testid="sight-practice"]').first()).toBeVisible({
+      timeout: 15_000,
+    });
+    const sample = await sampleLcpMs(page, 3500);
     expect(sample.ok, sample.reason ?? '').toBe(true);
   });
 

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { clickStanzaLibraryCard } from './helpers/stanzaLibrary';
 import { STANZA_E2E_STEM_SONG_TITLE } from '../src/stanza/e2e/stanzaE2eBootstrap';
 
 /** Max horizontal drift (px) between workbench-aligned surfaces. */
@@ -28,7 +29,7 @@ test.describe('Stanza viewer layout alignment', () => {
       await w.__stanzaE2e!.seedSongWithStems();
     });
 
-    await page.locator('button.stanza-library-card').filter({ hasText: STANZA_E2E_STEM_SONG_TITLE }).click();
+    await clickStanzaLibraryCard(page, STANZA_E2E_STEM_SONG_TITLE);
 
     await expect(page.locator('.stanza-library-panel')).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('.stanza-playback-stack')).toBeVisible();

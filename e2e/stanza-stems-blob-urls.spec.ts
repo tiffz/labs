@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+import { clickStanzaLibraryCard } from './helpers/stanzaLibrary';
+
 const STANZA_E2E_STEM_SONG_TITLE = 'E2E Stems Song';
 
 test.describe('Stanza stems blob URLs', () => {
@@ -31,7 +33,7 @@ test.describe('Stanza stems blob URLs', () => {
       await w.__stanzaE2e!.seedSongWithStems();
     });
 
-    await page.locator('button.stanza-library-card').filter({ hasText: STANZA_E2E_STEM_SONG_TITLE }).click();
+    await clickStanzaLibraryCard(page, STANZA_E2E_STEM_SONG_TITLE);
 
     const mainAudio = page.locator('audio.stanza-local-audio');
     await expect(mainAudio).toBeAttached({ timeout: 15_000 });
