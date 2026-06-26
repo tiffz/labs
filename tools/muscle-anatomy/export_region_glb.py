@@ -1363,7 +1363,7 @@ def weld_skin_throat_midline_band(obj) -> None:
 
 
 def fill_skin_midline_seam_holes(obj) -> None:
-    """Sagittal-adjacent pinholes along face and neck (not lateral shoulder)."""
+    """Sagittal-adjacent pinholes along face, neck, torso, and pelvis (not lateral shoulder)."""
     fill_skin_patch_holes_bmesh(
         obj,
         sides=64,
@@ -1375,8 +1375,52 @@ def fill_skin_midline_seam_holes(obj) -> None:
         z_max=0.18,
         exclude_sagittal_plane=False,
         max_passes=8,
-        label='midline_seam',
+        label='midline_seam_face',
         centroid_only_band=True,
+    )
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=48,
+        y_min=0.15,
+        y_max=1.05,
+        min_abs_x=0.0,
+        max_abs_x=0.045,
+        z_min=-0.22,
+        z_max=0.14,
+        exclude_sagittal_plane=False,
+        max_passes=10,
+        label='midline_seam_torso',
+        centroid_only_band=True,
+        max_loop_diameter=0.06,
+    )
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=8,
+        y_min=0.15,
+        y_max=1.82,
+        min_abs_x=0.0,
+        max_abs_x=0.035,
+        z_min=-0.45,
+        z_max=0.18,
+        exclude_sagittal_plane=False,
+        max_passes=12,
+        label='midline_seam_micro',
+        centroid_only_band=True,
+        max_loop_diameter=0.025,
+    )
+
+
+def weld_skin_midline_seam_band(obj) -> None:
+    """Merge sagittal-adjacent vertices on torso only — avoid face/ear shrinkage."""
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.003,
+        y_min=0.15,
+        y_max=1.02,
+        min_abs_x=0.0,
+        max_abs_x=0.010,
+        z_min=-0.22,
+        z_max=0.14,
     )
 
 
@@ -2396,6 +2440,7 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
     weld_skin_throat_midline_band(unified)
     fill_skin_throat_holes(unified)
     fill_skin_midline_seam_holes(unified)
+    weld_skin_midline_seam_band(unified)
     fill_skin_perioral_holes(unified)
     fill_skin_abdomen_holes(unified)
     weld_skin_hand_forearm_junction(unified)
@@ -2414,8 +2459,18 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
         _, ear_obj, _ = ear_entry
         unified = join_ear_overlay_to_envelope(unified, ear_obj)
         print(f'  atlas_skin joined skin_ear overlay -> skin_envelope ({len(unified.data.polygons)} tris)')
+        weld_skin_mesh_spatial_band(
+            unified,
+            merge_dist=0.003,
+            y_min=1.44,
+            y_max=1.68,
+            min_abs_x=0.04,
+            max_abs_x=0.16,
+            z_min=-0.12,
+            z_max=0.10,
+        )
 
-    for pass_idx in range(4):
+    for pass_idx in range(6):
         filled = force_fill_largest_interior_loop(
             unified,
             y_min=0.84,
@@ -2424,8 +2479,8 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
             max_abs_x=0.32,
             z_min=-0.12,
             z_max=0.14,
-            min_edges=16,
-            max_edges=24,
+            min_edges=14,
+            max_edges=28,
             label=f'palm_post_ear_{pass_idx}',
             filter_centroid=True,
         )

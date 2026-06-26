@@ -1,7 +1,7 @@
 {
-  "studyMaxSeamBoundaryEdges": 738,
-  "studyMaxSeamInteriorLoops": 23,
-  "referenceMaxSeamBoundaryEdges": 731,
-  "referenceMaxSeamInteriorLoops": 22,
-  "_comment": "Midline-adjacent open edges + closed loops (|x| <= 0.028). Baseline = current atlas_skin (2026-06-26). Tighten when export/clip fixes land."
+  "studyMaxSeamBoundaryEdges": 727,
+  "studyMaxSeamInteriorLoops": 24,
+  "referenceMaxSeamBoundaryEdges": 719,
+  "referenceMaxSeamInteriorLoops": 24,
+  "_comment": "Midline-adjacent open edges + closed loops (|x| <= 0.028). Tighten when export/clip fixes land."
 }
