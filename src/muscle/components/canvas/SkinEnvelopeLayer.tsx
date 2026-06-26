@@ -8,7 +8,10 @@ import { ANATOMY_COLORS } from './anatomyVisuals';
 import AnatomyHalfGroup from './AnatomyHalfGroup';
 import { acquireSkinMaterial } from './anatomyMaterialPool';
 import { alignSkinEnvelopeToStudyHalf } from './alignSkinEnvelopeGeometry';
-import { clipSkinGeometryToStudyHalf } from './clipSkinToStudyHalf';
+import {
+  clipSkinGeometryForReferenceHalf,
+  clipSkinGeometryForStudyHalf,
+} from './skinHalfClipOptions';
 import { extractGlbMeshes } from './extractGlbMeshes';
 import { setMuscleAnatomyDebugSkin, publishMuscleAnatomyDebugWindow } from '../../debug/muscleAnatomyDebugRegistry';
 import { muscleRegionGlbUrl } from './muscleGlbUrl';
@@ -25,16 +28,19 @@ function prepareSkinMeshes(meshes: Mesh[]): Mesh[] {
     next.geometry = geometry;
     return next;
   });
-  if (aligned.length <= 1) return aligned;
+
+  const bodyMeshes = aligned.filter((mesh) => mesh.name !== 'skin_ear');
+  if (bodyMeshes.length === 0) return aligned;
+  if (bodyMeshes.length === 1) return bodyMeshes;
 
   const combined = mergeGeometries(
-    aligned.map((mesh) => mesh.geometry),
+    bodyMeshes.map((mesh) => mesh.geometry),
     false,
   );
-  if (!combined) return aligned;
+  if (!combined) return bodyMeshes;
 
   combined.computeVertexNormals();
-  const merged = new ThreeMesh(combined, aligned[0]!.material);
+  const merged = new ThreeMesh(combined, bodyMeshes[0]!.material);
   merged.name = 'skin_envelope';
   return [merged];
 }
@@ -45,14 +51,10 @@ type SkinEnvelopeLayerProps = {
   visible?: boolean;
 };
 
-function clipSkinForHalf(geometry: BufferGeometry): BufferGeometry {
-  return clipSkinGeometryToStudyHalf(geometry.clone(), 0, {
-    anyVertexOnHalf: true,
-    preserveMidlinePelvis: true,
-    preserveMidlineThorax: true,
-    preserveMidlineFace: true,
-    preserveMidlineAnteriorNeck: true,
-  });
+function clipSkinForHalf(geometry: BufferGeometry, half: 'reference' | 'study'): BufferGeometry {
+  return half === 'study'
+    ? clipSkinGeometryForStudyHalf(geometry)
+    : clipSkinGeometryForReferenceHalf(geometry);
 }
 
 function SkinMesh({ mesh, half }: { mesh: Mesh; half: 'reference' | 'study' }) {
@@ -60,26 +62,25 @@ function SkinMesh({ mesh, half }: { mesh: Mesh; half: 'reference' | 'study' }) {
   const meshRef = useRef<Mesh>(null);
   const material = useMemo(() => acquireSkinMaterial(), []);
   const isStudy = half === 'study';
-  const geometry = useMemo(() => clipSkinForHalf(mesh.geometry), [mesh.geometry]);
+  const geometry = useMemo(() => clipSkinForHalf(mesh.geometry, half), [half, mesh.geometry]);
 
   useLayoutEffect(() => {
     const skin = meshRef.current;
     if (skin) {
       skin.raycast = () => undefined;
     }
+    const isStudy = half === 'study';
     material.color.set(ANATOMY_COLORS.skin);
     material.emissive.set('#3d2818');
     material.emissiveIntensity = isStudy ? 0.03 : 0.05;
     material.transparent = isStudy;
     material.opacity = isStudy ? 0.5 : 1;
-    material.depthWrite = !isStudy;
-    // alphaTest on study skin punched holes over curved pecs (muscle bleed-through = patchy dark).
+    material.depthWrite = true;
     material.alphaTest = 0;
     material.polygonOffset = !isStudy;
     material.polygonOffsetFactor = isStudy ? 0 : -1;
     material.polygonOffsetUnits = isStudy ? 0 : -1;
-    // Study half: single-sided + clip removes midline pelvis bleed onto the anatomy side.
-    material.side = isStudy ? FrontSide : DoubleSide;
+    material.side = isStudy ? DoubleSide : FrontSide;
     material.needsUpdate = true;
     invalidate();
   }, [half, invalidate, isStudy, material, mesh]);
@@ -116,8 +117,8 @@ export default function SkinEnvelopeLayer({ layout, half, visible = true }: Skin
 
   if (!visible || meshes.length === 0) return null;
 
-    return (
-    <AnatomyHalfGroup half={half} layout={layout} renderOrder={half === 'reference' ? 25 : 30}>
+  return (
+    <AnatomyHalfGroup half={half} layout={layout} renderOrder={half === 'reference' ? 25 : 40}>
       {meshes.map((mesh) => (
         <SkinMesh
           key={`${half}-${mesh.name}`}

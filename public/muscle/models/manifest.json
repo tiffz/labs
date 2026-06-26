@@ -565,7 +565,7 @@
         {
           "nodeId": "skin_envelope",
           "meshName": "skin_envelope",
-          "triangleCount": 40817,
+          "triangleCount": 35691,
           "atlasKind": "skin"
         },
         {
@@ -3820,5 +3820,5 @@
       "source": "z-anatomy"
     }
   },
-  "assetRevision": "f50eb61d54f2"
+  "assetRevision": "99cf13b23105"
 }

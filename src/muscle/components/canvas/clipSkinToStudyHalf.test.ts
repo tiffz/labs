@@ -120,4 +120,46 @@ describe('clipSkinGeometryToStudyHalf', () => {
     });
     expect(clipped.getIndex()?.count).toBe(3);
   });
+
+  it('preserves midline abdomen triangles for umbilicus coverage', () => {
+    const geometry = new BufferGeometry();
+    geometry.setAttribute(
+      'position',
+      new BufferAttribute(
+        new Float32Array([
+          -0.04, 0.95, 0.05, 0.04, 0.95, 0.05, 0, 0.98, 0.06,
+        ]),
+        3,
+      ),
+    );
+    geometry.setIndex([0, 1, 2]);
+
+    const clipped = clipSkinGeometryToStudyHalf(geometry, 0.02, {
+      anyVertexOnHalf: false,
+      preserveMidlinePelvis: false,
+      preserveMidlineAbdomen: true,
+    });
+    expect(clipped.getIndex()?.count).toBe(3);
+  });
+
+  it('drops triangles with minX below minVertexX (reference mirror bleed guard)', () => {
+    const geometry = new BufferGeometry();
+    geometry.setAttribute(
+      'position',
+      new BufferAttribute(
+        new Float32Array([
+          -0.05, 0.9, 0.05, 0.05, 0.9, 0.05, 0.05, 0.95, 0.05,
+        ]),
+        3,
+      ),
+    );
+    geometry.setIndex([0, 1, 2]);
+
+    const clipped = clipSkinGeometryToStudyHalf(geometry, 0, {
+      anyVertexOnHalf: true,
+      preserveMidlinePelvis: false,
+      minVertexX: 0,
+    });
+    expect(clipped.getIndex()?.count ?? 0).toBe(0);
+  });
 });

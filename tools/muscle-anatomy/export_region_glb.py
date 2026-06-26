@@ -115,15 +115,20 @@ def _mesh_world_metrics(obj) -> tuple[tuple[float, float, float], float] | None:
 
 
 def _orphan_skin_centroid_band(obj) -> str:
-    """Route Skin_Generated_* / grp* fillers to face, neck, or back by world Y."""
+    """Route Skin_Generated_* / grp* fillers by staging height (Blender Z) and lateral X."""
     metrics = _mesh_world_metrics(obj)
     if metrics is None:
         return 'back'
-    (_, cy, _), _ = metrics
-    if cy >= 1.32:
+    (cx, _, height), _ = metrics
+    lateral = abs(cx)
+    if height >= 1.32:
         return 'face'
-    if cy >= 1.0:
+    if height >= 1.0:
         return 'neck'
+    if height >= 0.72 and height <= 1.08 and lateral >= 0.04:
+        return 'hand'
+    if height <= 0.22 and lateral >= 0.03:
+        return 'foot'
     return 'back'
 
 
@@ -267,11 +272,13 @@ _NECK_AUXILIARY_SKIN_BASES = (
     'Sternal line',
     'Parasternal line',
     'Infraclavicular fossa',
+    'Submental region',
 )
 
 # Named skin surfaces in Z-Anatomy that omit " region" in the object name.
 _AUXILIARY_SKIN_BASES = (
     'Palm',
+    'Umbilicus',
     'Sole',
     'Plantar arch',
     'Dorsum of hand',
@@ -288,18 +295,40 @@ _AUXILIARY_SKIN_BASES = (
     'Plantar surfaces of digits of foot',
 )
 
-# Face fillers that omit " region" (brows, ear rim, philtrum, smile line, nose tip).
+# Face fillers that omit " region" (brows, philtrum, smile line, nose tip).
 _FACE_AUXILIARY_SKIN_BASES = (
     'Eyebrow',
     'Eyebrow(hair)',
-    'Auricular tubercle',
-    'Posterior auricular groove',
     'Tubercle of upper lip',
     'Dorsum of nose',
     'Nasolabial sulcus',
     'Philtrum',
     'Labial commissure',
 )
+
+# Auricular overlay — pinna detail exported as skin_ear (preserves helix/concha).
+_EAR_OVERLAY_BASES = (
+    'Helix',
+    'Antihelix',
+    'Crura of antihelix',
+    'Tragus',
+    'Scapha',
+    'Concha of auricle',
+    'Auricular tubercle',
+    'Lobule of auricle',
+    'Apex of auricle',
+    'Anterior notch of auricle',
+)
+
+# Ear base / collar — welded into head_neck so skin_ear overlay has continuous backing.
+_EAR_BACKING_BASES = (
+    'Auricular region',
+    'Mastoid region',
+    'Posterior auricular groove',
+)
+
+# Legacy alias for audits listing all auricular Z-Anatomy names.
+_EAR_SKIN_BASES = _EAR_OVERLAY_BASES + _EAR_BACKING_BASES
 
 _EYE_GLOBE_BASES = (
     'Sclera',
@@ -363,12 +392,41 @@ def _is_any_skin_patch(obj) -> bool:
 
 
 def _is_skin_face_auxiliary_patch(obj) -> bool:
-    """Non-region face skin (brows, ear helix, nose tip, upper-lip tubercle)."""
+    """Non-region face skin (brows, nose tip, upper-lip tubercle) — not auricular."""
     if obj.type != 'MESH' or obj.name.endswith('.l'):
         return False
     if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
         return False
     return any(obj.name.startswith(f'{base}.r') for base in _FACE_AUXILIARY_SKIN_BASES)
+
+
+def _is_skin_ear_auxiliary_patch(obj) -> bool:
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    return any(obj.name.startswith(f'{base}.r') for base in _EAR_OVERLAY_BASES)
+
+
+def _is_skin_ear_backing_patch(obj) -> bool:
+    """Auricular base + mastoid collar — head shell under the skin_ear overlay."""
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    if any(obj.name.startswith(f'{base}.r') for base in _EAR_BACKING_BASES):
+        return True
+    lower = _region_name_lower(obj)
+    return _is_region_skin_patch(obj) and 'auricular region' in lower
+
+
+def _is_skin_ear_patch(obj) -> bool:
+    """Pinna detail — skin_ear overlay only (backing stays in skin_head_neck)."""
+    if obj.type != 'MESH' or obj.name.endswith('.l'):
+        return False
+    if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
+        return False
+    return _is_skin_ear_auxiliary_patch(obj)
 
 
 def _is_skin_neck_auxiliary_patch(obj) -> bool:
@@ -391,6 +449,9 @@ def _is_skin_neck_shoulder_patch(obj) -> bool:
         return False
     if _is_forbidden_mesh_name(obj.name) or _is_degenerate_atlas_mesh(obj):
         return False
+    # Neck bridge fillers omit " region" — must run before _is_region_skin_patch gate.
+    if _is_neck_bridge_skin_patch(obj):
+        return True
     lower = obj.name.lower()
     if not _is_region_skin_patch(obj):
         return False
@@ -406,12 +467,9 @@ def _is_skin_neck_shoulder_patch(obj) -> bool:
         'vertebral region',
         'presternal region',
         'pectoral region',
-        'mastoid region',
         'occipital region',
     )
     if any(token in lower for token in neck_shoulder_tokens):
-        return True
-    if _is_neck_bridge_skin_patch(obj):
         return True
     if obj.name.startswith('Interscapular region'):
         return True
@@ -422,6 +480,10 @@ def _is_skin_neck_shoulder_patch(obj) -> bool:
 
 def _is_skin_head_neck_patch(obj) -> bool:
     """Face + anterior neck in one welded group — avoids platysma / smile-line inter-group seams."""
+    if _is_skin_ear_patch(obj):
+        return False
+    if _is_skin_ear_backing_patch(obj):
+        return True
     return (
         _is_skin_face_detail_patch(obj)
         or _is_skin_neck_shoulder_patch(obj)
@@ -447,6 +509,8 @@ def _is_skin_hand_detail_patch(obj) -> bool:
     if _is_hand_digit_skin_patch(obj):
         return True
     if lower in {'thenar eminence.r', 'hypothenar eminence.r'}:
+        return True
+    if _is_orphan_skin_generated_patch(obj) and _orphan_skin_centroid_band(obj) == 'hand':
         return True
     if _is_region_skin_patch(obj) and 'wrist' in lower:
         return True
@@ -474,6 +538,8 @@ def _is_skin_foot_detail_patch(obj) -> bool:
     if _is_malleolus_skin_patch(obj):
         return True
     if lower in {'hallucial eminence.r'}:
+        return True
+    if _is_orphan_skin_generated_patch(obj) and _orphan_skin_centroid_band(obj) == 'foot':
         return True
     if _is_region_skin_patch(obj) and any(
         token in lower for token in ('ankle', 'retromalleolar', 'heel region', 'metatarsal region')
@@ -567,6 +633,8 @@ def _is_skin_body_envelope_patch(obj) -> bool:
         return False
     if _is_orphan_skin_generated_patch(obj):
         return False
+    if _is_skin_ear_patch(obj):
+        return False
     if _is_neck_bridge_skin_patch(obj):
         return False
     if _is_skin_neck_auxiliary_patch(obj):
@@ -584,6 +652,7 @@ def _is_skin_body_envelope_patch(obj) -> bool:
 
 SKIN_MESH_TRI_CAPS: dict[str, int] = {
     'skin_envelope': 48_000,
+    'skin_ear': 8_000,
     'skin_head_neck': 32_000,
     'skin_back': 14_000,
     'skin_limbs': 14_000,
@@ -591,6 +660,9 @@ SKIN_MESH_TRI_CAPS: dict[str, int] = {
     'skin_foot_digits': 10_000,
     'eye_globes': 2_000,
 }
+
+# Meshes exported alongside skin_envelope — skip unified join / decimation / band welds.
+SKIN_OVERLAY_MESH_IDS = frozenset({'skin_ear', 'eye_globes'})
 
 SKIN_DETAIL_MESH_IDS = frozenset(
     {
@@ -603,6 +675,7 @@ SKIN_DETAIL_MESH_IDS = frozenset(
 )
 
 SKIN_GROUP_SPECS: tuple[tuple[str, object], ...] = (
+    ('skin_ear', _is_skin_ear_patch),
     ('skin_head_neck', _is_skin_head_neck_patch),
     ('skin_back', _is_skin_back_torso_patch),
     ('skin_limbs', _is_skin_limb_detail_patch),
@@ -826,7 +899,7 @@ def _collect_boundary_loops(bm, edge_in_band, *, strict: bool = False) -> list[l
         curr_vert = start_edge.verts[1]
         start_vert = prev_vert
 
-        while curr_vert != start_vert and len(loop_edges) <= 64:
+        while curr_vert != start_vert and len(loop_edges) <= 256:
             neighbors = adjacency.get(curr_vert.index, [])
             candidates = [
                 (nxt, edge)
@@ -862,6 +935,8 @@ def fill_skin_patch_holes_bmesh(
     exclude_sagittal_plane: bool = True,
     max_passes: int = 4,
     label: str = 'skin',
+    centroid_only_band: bool = False,
+    max_loop_diameter: float = 0.11,
 ) -> int:
     """Fill closed boundary loops in a staging-space band — smallest loops first, multi-pass."""
     if obj.type != 'MESH' or not obj.data.vertices:
@@ -878,6 +953,8 @@ def fill_skin_patch_holes_bmesh(
         v1 = edge.verts[1].co
         if exclude_sagittal_plane and max(abs(v0.x), abs(v1.x)) < 0.016:
             return False
+        if centroid_only_band:
+            return edge.is_boundary
         center = (v0 + v1) * 0.5
         if _staging_band_contains(
             center,
@@ -905,6 +982,17 @@ def fill_skin_patch_holes_bmesh(
             center += vert.co
         return center / max(len(verts), 1)
 
+    def loop_diameter(loop_edges) -> float:
+        verts = list({v for edge in loop_edges for v in edge.verts})
+        max_dist = 0.0
+        for i, a in enumerate(verts):
+            for b in verts[i + 1 :]:
+                dx = a.co.x - b.co.x
+                dy = a.co.z - b.co.z
+                dz = a.co.y - b.co.y
+                max_dist = max(max_dist, (dx * dx + dy * dy + dz * dz) ** 0.5)
+        return max_dist
+
     for _pass_idx in range(max_passes):
         bm = bmesh.new()
         bm.from_mesh(obj.data)
@@ -921,7 +1009,7 @@ def fill_skin_patch_holes_bmesh(
         filled_pass = 0
         for loop_edges in loops:
             edge_count = len(loop_edges)
-            if edge_count < 3 or edge_count > sides:
+            if edge_count < 3 or edge_count > 180:
                 continue
             center = loop_centroid(loop_edges)
             if not _staging_band_contains(
@@ -934,11 +1022,50 @@ def fill_skin_patch_holes_bmesh(
                 z_max=z_max,
             ):
                 continue
+            if loop_diameter(loop_edges) > max_loop_diameter:
+                # Large loops are patch perimeters (palm outline, wrist cuff) — weld, do not cap.
+                continue
+            loop_sides = min(max(edge_count, 3), sides)
+            filled = False
+            if edge_count > sides:
+                # Palm / digit patch perimeters often exceed `sides` — grid_fill first.
+                try:
+                    bmesh.ops.grid_fill(bm, edges=loop_edges)
+                    filled_pass += 1
+                    filled = True
+                except (ValueError, TypeError):
+                    try:
+                        bmesh.ops.holes_fill(bm, edges=loop_edges, sides=min(edge_count, 180))
+                        filled_pass += 1
+                        filled = True
+                    except (ValueError, TypeError):
+                        pass
+            if filled:
+                continue
             try:
-                bmesh.ops.holes_fill(bm, edges=loop_edges, sides=sides)
+                bmesh.ops.triangle_fill(bm, edges=loop_edges, use_beauty=True, use_dissolve=False)
                 filled_pass += 1
             except (ValueError, TypeError):
-                continue
+                try:
+                    bmesh.ops.holes_fill(bm, edges=loop_edges, sides=loop_sides)
+                    filled_pass += 1
+                except (ValueError, TypeError):
+                    try:
+                        bmesh.ops.grid_fill(bm, edges=loop_edges)
+                        filled_pass += 1
+                    except (ValueError, TypeError):
+                        loop_span = loop_diameter(loop_edges)
+                        if loop_span <= max_loop_diameter and edge_count >= 8:
+                            try:
+                                hub = bm.verts.new(loop_centroid(loop_edges))
+                                for edge in loop_edges:
+                                    va, vb = edge.verts[0], edge.verts[1]
+                                    bm.faces.new((hub, va, vb))
+                                filled_pass += 1
+                            except (ValueError, TypeError):
+                                continue
+                        else:
+                            continue
 
         if filled_pass:
             bm.to_mesh(obj.data)
@@ -952,6 +1079,179 @@ def fill_skin_patch_holes_bmesh(
     if total_filled:
         print(f'    fill {label}: {total_filled} loops (≤{sides} edges, {max_passes} passes max)')
     return total_filled
+
+
+def force_fill_largest_interior_loop(
+    obj,
+    *,
+    y_min: float,
+    y_max: float,
+    min_abs_x: float,
+    max_abs_x: float,
+    z_min: float,
+    z_max: float,
+    min_edges: int = 8,
+    max_edges: int = 120,
+    label: str = 'force_fill',
+    filter_centroid: bool = True,
+) -> int:
+    """Fan- or grid-fill the largest boundary loop in a band when multi-pass fill misses it."""
+    if obj.type != 'MESH' or not obj.data.vertices:
+        return 0
+
+    import bmesh
+    from mathutils import Vector
+
+    ensure_mesh_single_user(obj)
+
+    def loop_centroid(loop_edges) -> Vector:
+        verts = {v for edge in loop_edges for v in edge.verts}
+        center = Vector((0.0, 0.0, 0.0))
+        for vert in verts:
+            center += vert.co
+        return center / max(len(verts), 1)
+
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    loops = _collect_boundary_loops(bm, lambda edge: edge.is_boundary, strict=False)
+    candidates: list[tuple[int, list]] = []
+    for loop_edges in loops:
+        edge_count = len(loop_edges)
+        if edge_count < min_edges or edge_count > max_edges:
+            continue
+        center = loop_centroid(loop_edges)
+        if filter_centroid and not _staging_band_contains(
+            center,
+            y_min=y_min,
+            y_max=y_max,
+            min_abs_x=min_abs_x,
+            max_abs_x=max_abs_x,
+            z_min=z_min,
+            z_max=z_max,
+        ):
+            continue
+        candidates.append((edge_count, loop_edges))
+
+    if not candidates:
+        print(f'    fill {label}: skipped ({len(loops)} boundary loops, none in band {min_edges}-{max_edges} edges)')
+        bm.free()
+        return 0
+
+    candidates.sort(key=lambda pair: pair[0], reverse=True)
+    edge_count, loop_edges = candidates[0]
+    filled = False
+    try:
+        bmesh.ops.grid_fill(bm, edges=loop_edges)
+        filled = True
+    except (ValueError, TypeError):
+        try:
+            bmesh.ops.holes_fill(bm, edges=loop_edges, sides=min(edge_count, 180))
+            filled = True
+        except (ValueError, TypeError):
+            try:
+                hub = bm.verts.new(loop_centroid(loop_edges))
+                for edge in loop_edges:
+                    va, vb = edge.verts[0], edge.verts[1]
+                    bm.faces.new((hub, va, vb))
+                filled = True
+            except (ValueError, TypeError):
+                filled = False
+
+    if not filled:
+        bm.free()
+        return 0
+
+    bm.to_mesh(obj.data)
+    obj.data.update()
+    shade_smooth_mesh(obj)
+    bm.free()
+    print(f'    fill {label}: forced loop ({edge_count} edges)')
+    return 1
+
+
+def force_fill_loop_near_staging_point(
+    obj,
+    *,
+    target_x: float,
+    target_height: float,
+    target_depth: float,
+    max_distance: float = 0.08,
+    min_edges: int = 8,
+    max_edges: int = 180,
+    label: str = 'target_fill',
+) -> int:
+    """Fill the boundary loop whose centroid is closest to a known staging-space hole."""
+    if obj.type != 'MESH' or not obj.data.vertices:
+        return 0
+
+    import bmesh
+    from mathutils import Vector
+
+    ensure_mesh_single_user(obj)
+
+    def loop_centroid(loop_edges) -> Vector:
+        verts = {v for edge in loop_edges for v in edge.verts}
+        center = Vector((0.0, 0.0, 0.0))
+        for vert in verts:
+            center += vert.co
+        return center / max(len(verts), 1)
+
+    def staging_distance(center: Vector) -> float:
+        # GLB export may flip X sign vs Blender edit coords — match either lateral side.
+        dx = min(abs(center.x - target_x), abs(center.x + target_x))
+        dy = center.z - target_height
+        dz = center.y - target_depth
+        return (dx * dx + dy * dy + dz * dz) ** 0.5
+
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    loops = _collect_boundary_loops(bm, lambda edge: edge.is_boundary, strict=False)
+    candidates: list[tuple[float, int, list]] = []
+    for loop_edges in loops:
+        edge_count = len(loop_edges)
+        if edge_count < min_edges or edge_count > max_edges:
+            continue
+        center = loop_centroid(loop_edges)
+        distance = staging_distance(center)
+        if distance > max_distance:
+            continue
+        candidates.append((distance, edge_count, loop_edges))
+
+    if not candidates:
+        print(f'    fill {label}: skipped (no loop within {max_distance} of target)')
+        bm.free()
+        return 0
+
+    candidates.sort(key=lambda pair: pair[0])
+    distance, edge_count, loop_edges = candidates[0]
+    filled = False
+    try:
+        bmesh.ops.grid_fill(bm, edges=loop_edges)
+        filled = True
+    except (ValueError, TypeError):
+        try:
+            bmesh.ops.holes_fill(bm, edges=loop_edges, sides=min(edge_count, 180))
+            filled = True
+        except (ValueError, TypeError):
+            try:
+                hub = bm.verts.new(loop_centroid(loop_edges))
+                for edge in loop_edges:
+                    va, vb = edge.verts[0], edge.verts[1]
+                    bm.faces.new((hub, va, vb))
+                filled = True
+            except (ValueError, TypeError):
+                filled = False
+
+    if not filled:
+        bm.free()
+        return 0
+
+    bm.to_mesh(obj.data)
+    obj.data.update()
+    shade_smooth_mesh(obj)
+    bm.free()
+    print(f'    fill {label}: targeted loop ({edge_count} edges, d={distance:.3f})')
+    return 1
 
 
 def weld_skin_problem_bands(obj) -> None:
@@ -973,8 +1273,8 @@ def weld_skin_problem_bands(obj) -> None:
         y_max=1.5,
         min_abs_x=0.0,
         max_abs_x=0.08,
-        z_min=-0.03,
-        z_max=0.14,
+        z_min=-0.16,
+        z_max=0.04,
     )
     weld_skin_mesh_spatial_band(
         obj,
@@ -1004,19 +1304,351 @@ def fill_skin_neck_shoulder_holes(obj) -> None:
 
 
 def fill_skin_throat_holes(obj) -> None:
-    """Anterior midline throat / submental gaps (adam's apple band)."""
+    """Anterior midline throat / submental gaps (adam's apple band).
+
+    Staging +Z (anterior) maps to negative Blender co.y after glTF export — keep z_min
+    low enough to include submental loops (~staging z 0.07 → co.y ≈ −0.07).
+    """
     fill_skin_patch_holes_bmesh(
         obj,
-        sides=56,
-        y_min=1.08,
-        y_max=1.5,
+        sides=128,
+        y_min=1.05,
+        y_max=1.52,
         min_abs_x=0.0,
-        max_abs_x=0.09,
-        z_min=-0.05,
-        z_max=0.14,
+        max_abs_x=0.12,
+        z_min=-0.18,
+        z_max=0.06,
         exclude_sagittal_plane=False,
+        max_passes=12,
         label='throat',
     )
+    # Residual 3–6 edge pinholes (adam's apple) that holes_fill skips on larger sides caps.
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=6,
+        y_min=1.12,
+        y_max=1.45,
+        min_abs_x=0.0,
+        max_abs_x=0.08,
+        z_min=-0.16,
+        z_max=0.08,
+        exclude_sagittal_plane=False,
+        max_passes=8,
+        label='throat_micro',
+    )
+
+
+def weld_skin_throat_midline_band(obj) -> None:
+    """Merge submental / presternal patch seams on the anterior midline after hole fill."""
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.0042,
+        y_min=1.08,
+        y_max=1.48,
+        min_abs_x=0.0,
+        max_abs_x=0.09,
+        z_min=-0.16,
+        z_max=0.04,
+    )
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.0038,
+        y_min=1.18,
+        y_max=1.42,
+        min_abs_x=0.0,
+        max_abs_x=0.07,
+        z_min=-0.14,
+        z_max=0.03,
+    )
+
+
+def fill_skin_midline_seam_holes(obj) -> None:
+    """Sagittal-adjacent pinholes along face and neck (not lateral shoulder)."""
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=64,
+        y_min=1.0,
+        y_max=1.82,
+        min_abs_x=0.0,
+        max_abs_x=0.055,
+        z_min=-0.45,
+        z_max=0.18,
+        exclude_sagittal_plane=False,
+        max_passes=8,
+        label='midline_seam',
+        centroid_only_band=True,
+    )
+
+
+def fill_skin_perioral_holes(obj) -> None:
+    """Lip commissures and perioral patch gaps."""
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=40,
+        y_min=1.3,
+        y_max=1.54,
+        min_abs_x=0.012,
+        max_abs_x=0.14,
+        z_min=0.0,
+        z_max=0.14,
+        exclude_sagittal_plane=False,
+        max_passes=4,
+        label='perioral',
+    )
+
+
+def fill_skin_abdomen_holes(obj) -> None:
+    """Umbilicus / epigastrium midline gaps."""
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=36,
+        y_min=0.84,
+        y_max=1.08,
+        min_abs_x=0.0,
+        max_abs_x=0.1,
+        z_min=-0.02,
+        z_max=0.12,
+        exclude_sagittal_plane=False,
+        max_passes=4,
+        label='abdomen',
+    )
+
+
+def fill_skin_palm_wrist_holes(obj) -> None:
+    """Palmar / wrist skin patch gaps on the study half."""
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=80,
+        y_min=0.42,
+        y_max=1.02,
+        min_abs_x=0.06,
+        max_abs_x=0.36,
+        z_min=-0.18,
+        z_max=0.16,
+        max_passes=8,
+        label='palm_wrist',
+        centroid_only_band=True,
+        max_loop_diameter=0.095,
+    )
+
+
+def fill_skin_palm_center_holes(obj) -> None:
+    """Central palm / thenar / hypothenar pinholes (visible on study transparent shell)."""
+    # Blender boundary loops are much longer than runtime GLB loops after decimate/export.
+    for pass_idx in range(3):
+        filled = force_fill_largest_interior_loop(
+            obj,
+            y_min=0.84,
+            y_max=0.98,
+            min_abs_x=0.18,
+            max_abs_x=0.32,
+            z_min=-0.06,
+            z_max=0.06,
+            min_edges=42,
+            max_edges=52,
+            label=f'palm_void_blender_{pass_idx}',
+            filter_centroid=True,
+        )
+        if not filled:
+            break
+    for pass_idx in range(8):
+        filled = force_fill_largest_interior_loop(
+            obj,
+            y_min=0.84,
+            y_max=0.98,
+            min_abs_x=0.18,
+            max_abs_x=0.32,
+            z_min=-0.06,
+            z_max=0.06,
+            min_edges=14,
+            max_edges=22,
+            label=f'palm_center_void_{pass_idx}',
+            filter_centroid=True,
+        )
+        if not filled:
+            break
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=48,
+        y_min=0.84,
+        y_max=0.98,
+        min_abs_x=0.14,
+        max_abs_x=0.30,
+        z_min=-0.08,
+        z_max=0.10,
+        max_passes=12,
+        label='palm_center',
+        centroid_only_band=False,
+        max_loop_diameter=0.22,
+    )
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=12,
+        y_min=0.84,
+        y_max=0.98,
+        min_abs_x=0.14,
+        max_abs_x=0.30,
+        z_min=-0.08,
+        z_max=0.10,
+        max_passes=6,
+        label='palm_center_micro',
+        centroid_only_band=True,
+        max_loop_diameter=0.035,
+    )
+
+
+def fill_skin_upper_arm_holes(obj) -> None:
+    """Lateral anterior upper arm — biceps / deltoid junction gaps."""
+    force_fill_largest_interior_loop(
+        obj,
+        y_min=1.05,
+        y_max=1.35,
+        min_abs_x=0.12,
+        max_abs_x=0.28,
+        z_min=-0.12,
+        z_max=0.06,
+        min_edges=58,
+        max_edges=64,
+        label='upper_arm_shear',
+        filter_centroid=False,
+    )
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=64,
+        y_min=1.05,
+        y_max=1.35,
+        min_abs_x=0.12,
+        max_abs_x=0.28,
+        z_min=-0.12,
+        z_max=0.06,
+        max_passes=8,
+        label='upper_arm',
+        centroid_only_band=True,
+        max_loop_diameter=0.14,
+    )
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=180,
+        y_min=1.08,
+        y_max=1.32,
+        min_abs_x=0.14,
+        max_abs_x=0.26,
+        z_min=-0.10,
+        z_max=0.04,
+        max_passes=4,
+        label='upper_arm_large',
+        centroid_only_band=False,
+        max_loop_diameter=0.22,
+    )
+    force_fill_largest_interior_loop(
+        obj,
+        y_min=1.05,
+        y_max=1.35,
+        min_abs_x=0.12,
+        max_abs_x=0.28,
+        z_min=-0.12,
+        z_max=0.06,
+        min_edges=8,
+        max_edges=120,
+        label='upper_arm_force',
+    )
+    force_fill_largest_interior_loop(
+        obj,
+        y_min=1.05,
+        y_max=1.35,
+        min_abs_x=0.12,
+        max_abs_x=0.28,
+        z_min=-0.12,
+        z_max=0.06,
+        min_edges=58,
+        max_edges=62,
+        label='upper_arm_shear_b',
+        filter_centroid=False,
+    )
+
+
+def weld_skin_upper_arm_junction(obj) -> None:
+    """Merge arm skin with delt / pectoral cape at the long-head biceps band."""
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.0065,
+        y_min=1.08,
+        y_max=1.32,
+        min_abs_x=0.12,
+        max_abs_x=0.28,
+        z_min=-0.12,
+        z_max=0.06,
+    )
+
+
+def weld_skin_palm_shell_band(obj) -> None:
+    """Join palm, digits, and forearm skin islands before hole fill."""
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.0055,
+        y_min=0.82,
+        y_max=1.02,
+        min_abs_x=0.08,
+        max_abs_x=0.32,
+        z_min=-0.14,
+        z_max=0.14,
+    )
+
+
+def finalize_skin_ear_shell(obj) -> None:
+    """Join Z-Anatomy auricular overlay — sits on ear backing in skin_head_neck."""
+    ensure_mesh_single_user(obj)
+    weld_skin_mesh(obj, merge_dist=0.0012)
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.0035,
+        y_min=1.44,
+        y_max=1.68,
+        min_abs_x=0.04,
+        max_abs_x=0.16,
+        z_min=-0.14,
+        z_max=0.10,
+    )
+    # Helix / tragus root — pull overlay toward head backing collar.
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.0045,
+        y_min=1.48,
+        y_max=1.62,
+        min_abs_x=0.05,
+        max_abs_x=0.11,
+        z_min=-0.06,
+        z_max=0.06,
+    )
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=32,
+        y_min=1.44,
+        y_max=1.72,
+        min_abs_x=0.04,
+        max_abs_x=0.14,
+        z_min=-0.12,
+        z_max=0.08,
+        max_passes=6,
+        label='skin_ear_pinhole',
+        centroid_only_band=True,
+        max_loop_diameter=0.045,
+    )
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=180,
+        y_min=1.44,
+        y_max=1.72,
+        min_abs_x=0.04,
+        max_abs_x=0.14,
+        z_min=-0.12,
+        z_max=0.08,
+        max_passes=4,
+        label='skin_ear',
+        centroid_only_band=False,
+        max_loop_diameter=0.18,
+    )
+    shade_smooth_mesh(obj)
 
 
 def fill_skin_back_trap_holes(obj) -> None:
@@ -1032,6 +1664,156 @@ def fill_skin_back_trap_holes(obj) -> None:
         z_max=-0.02,
         label='back_trap',
     )
+
+
+def weld_skin_palm_visible_hole_bands(obj) -> None:
+    """Merge vertices around visible palmar pinholes after fill passes."""
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.006,
+        y_min=0.82,
+        y_max=0.98,
+        min_abs_x=0.18,
+        max_abs_x=0.30,
+        z_min=-0.05,
+        z_max=0.08,
+    )
+
+
+def weld_skin_hand_forearm_junction(obj) -> None:
+    """Merge palm / digit patch vertices across wrist seam gaps."""
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.008,
+        y_min=0.78,
+        y_max=1.05,
+        min_abs_x=0.08,
+        max_abs_x=0.32,
+        z_min=-0.14,
+        z_max=0.14,
+    )
+
+
+def weld_skin_ear_junction(obj) -> None:
+    """Weld pinna root onto head backing — narrow band only (preserve helix detail)."""
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.0035,
+        y_min=1.50,
+        y_max=1.62,
+        min_abs_x=0.06,
+        max_abs_x=0.11,
+        z_min=-0.08,
+        z_max=0.05,
+    )
+
+
+def join_ear_overlay_to_envelope(unified, ear_obj) -> object:
+    """Merge skin_ear into skin_envelope in Blender — one watertight shell at the pinna junction."""
+    ensure_mesh_single_user(unified)
+    ensure_mesh_single_user(ear_obj)
+    joined = join_meshes([unified, ear_obj])
+    if joined is None:
+        raise RuntimeError('Failed to join skin_ear overlay onto skin_envelope')
+    joined.name = 'skin_envelope'
+    joined['nodeId'] = 'skin_envelope'
+    ensure_mesh_single_user(joined)
+    weld_skin_ear_junction(joined)
+    fill_skin_patch_holes_bmesh(
+        joined,
+        sides=24,
+        y_min=1.50,
+        y_max=1.62,
+        min_abs_x=0.06,
+        max_abs_x=0.11,
+        z_min=-0.06,
+        z_max=0.05,
+        max_passes=3,
+        label='ear_junction',
+        centroid_only_band=True,
+        max_loop_diameter=0.035,
+    )
+    fill_skin_patch_holes_bmesh(
+        joined,
+        sides=64,
+        y_min=1.44,
+        y_max=1.68,
+        min_abs_x=0.05,
+        max_abs_x=0.14,
+        z_min=-0.10,
+        z_max=0.08,
+        max_passes=6,
+        label='ear_shell',
+        centroid_only_band=False,
+        max_loop_diameter=0.08,
+    )
+    shade_smooth_mesh(joined)
+    return joined
+
+
+def stitch_skin_component_gaps(obj) -> None:
+    """Merge nearby vertices between disjoint skin islands (GLB multi-primitive seam gaps)."""
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.008,
+        y_min=1.12,
+        y_max=1.32,
+        min_abs_x=0.14,
+        max_abs_x=0.26,
+        z_min=-0.10,
+        z_max=0.04,
+    )
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.012,
+        y_min=0.86,
+        y_max=0.96,
+        min_abs_x=0.20,
+        max_abs_x=0.32,
+        z_min=-0.06,
+        z_max=0.08,
+    )
+
+
+def purge_skin_micro_islands(obj, min_face_count: int = 48) -> None:
+    """Drop tiny disconnected skin fragments before GLB export (avoids extra glTF primitives)."""
+    if obj.type != 'MESH' or not obj.data.polygons:
+        return
+
+    import bmesh
+
+    ensure_mesh_single_user(obj)
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bm.faces.ensure_lookup_table()
+
+    visited: set[int] = set()
+    remove_faces = []
+    for face in bm.faces:
+        if face.index in visited:
+            continue
+        stack = [face]
+        island = []
+        while stack:
+            current = stack.pop()
+            if current.index in visited:
+                continue
+            visited.add(current.index)
+            island.append(current)
+            for edge in current.edges:
+                for linked in edge.link_faces:
+                    if linked.index not in visited:
+                        stack.append(linked)
+        if len(island) < min_face_count:
+            remove_faces.extend(island)
+
+    if remove_faces:
+        bmesh.ops.delete(bm, geom=remove_faces, context='FACES')
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
+        bm.to_mesh(obj.data)
+        obj.data.update()
+        print(f'    purge micro islands: removed {len(remove_faces)} faces (<{min_face_count} tris each)')
+    bm.free()
 
 
 def ensure_mesh_single_user(obj) -> None:
@@ -1549,7 +2331,13 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
         elif mesh_id == 'skin_head_neck':
             # Keep head/neck/shoulder cape detail until unified weld with body + back.
             pass
+        elif mesh_id == 'skin_ear':
+            finalize_skin_ear_shell(merged)
         elif mesh_id == 'skin_back':
+            pass
+        elif mesh_id == 'skin_hand_digits':
+            weld_skin_palm_shell_band(merged)
+        elif mesh_id == 'skin_foot_digits':
             pass
         elif mesh_id in SKIN_DETAIL_MESH_IDS:
             apply_decimate_to_cap(merged, detail_ratio, cap)
@@ -1563,15 +2351,19 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
     if not exported:
         raise RuntimeError('No skin meshes exported for atlas_skin')
 
-    skin_parts = [obj for mesh_id, obj, _ in exported if mesh_id != 'eye_globes']
-    eye_entries = [(mesh_id, obj, tri) for mesh_id, obj, tri in exported if mesh_id == 'eye_globes']
+    skin_parts = [obj for mesh_id, obj, _ in exported if mesh_id not in SKIN_OVERLAY_MESH_IDS]
+    overlay_entries = [(mesh_id, obj, tri) for mesh_id, obj, tri in exported if mesh_id in SKIN_OVERLAY_MESH_IDS]
 
     if not skin_parts:
         raise RuntimeError('No skin body meshes exported for atlas_skin')
 
     cape_ids = {'skin_head_neck', 'skin_back'}
     cape_parts = [obj for mesh_id, obj, _ in exported if mesh_id in cape_ids]
-    other_parts = [obj for mesh_id, obj, _ in exported if mesh_id not in cape_ids and mesh_id != 'eye_globes']
+    other_parts = [
+        obj
+        for mesh_id, obj, _ in exported
+        if mesh_id not in cape_ids and mesh_id not in SKIN_OVERLAY_MESH_IDS
+    ]
     if len(cape_parts) > 1:
         cape = join_meshes(cape_parts)
         if cape is None:
@@ -1592,15 +2384,71 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
     ensure_mesh_single_user(unified)
     weld_skin_mesh(unified, merge_dist=0.0025)
     weld_skin_problem_bands(unified)
-    unified_cap = min(max_region_tris - sum(tri for _, _, tri in eye_entries), 88_000)
+    unified_cap = min(max_region_tris - sum(tri for _, _, tri in overlay_entries), 88_000)
     apply_decimate_to_target(unified, max(unified_cap, 40_000))
     bake_mesh_world_transform(unified)
     fill_skin_neck_shoulder_holes(unified)
+    fill_skin_upper_arm_holes(unified)
+    weld_skin_upper_arm_junction(unified)
+    stitch_skin_component_gaps(unified)
+    fill_skin_upper_arm_holes(unified)
     fill_skin_throat_holes(unified)
+    weld_skin_throat_midline_band(unified)
+    fill_skin_throat_holes(unified)
+    fill_skin_midline_seam_holes(unified)
+    fill_skin_perioral_holes(unified)
+    fill_skin_abdomen_holes(unified)
+    weld_skin_hand_forearm_junction(unified)
+    weld_skin_palm_shell_band(unified)
+    fill_skin_palm_wrist_holes(unified)
+    fill_skin_palm_center_holes(unified)
+    weld_skin_palm_visible_hole_bands(unified)
+    stitch_skin_component_gaps(unified)
+    fill_skin_palm_center_holes(unified)
     fill_skin_back_trap_holes(unified)
+    purge_skin_micro_islands(unified)
+
+    ear_entry = next((entry for entry in overlay_entries if entry[0] == 'skin_ear'), None)
+    overlay_entries = [entry for entry in overlay_entries if entry[0] != 'skin_ear']
+    if ear_entry is not None:
+        _, ear_obj, _ = ear_entry
+        unified = join_ear_overlay_to_envelope(unified, ear_obj)
+        print(f'  atlas_skin joined skin_ear overlay -> skin_envelope ({len(unified.data.polygons)} tris)')
+
+    for pass_idx in range(4):
+        filled = force_fill_largest_interior_loop(
+            unified,
+            y_min=0.84,
+            y_max=0.98,
+            min_abs_x=0.14,
+            max_abs_x=0.32,
+            z_min=-0.12,
+            z_max=0.14,
+            min_edges=16,
+            max_edges=24,
+            label=f'palm_post_ear_{pass_idx}',
+            filter_centroid=True,
+        )
+        if not filled:
+            break
+    fill_skin_patch_holes_bmesh(
+        unified,
+        sides=32,
+        y_min=0.84,
+        y_max=0.98,
+        min_abs_x=0.14,
+        max_abs_x=0.32,
+        z_min=-0.12,
+        z_max=0.14,
+        max_passes=10,
+        label='palm_post_ear_fill',
+        centroid_only_band=False,
+        max_loop_diameter=0.28,
+    )
+
     unified_tris = len(unified.data.polygons)
     print(f'  atlas_skin unified skin_envelope: {len(skin_parts)} parts -> {unified_tris} tris')
-    exported = [('skin_envelope', unified, unified_tris), *eye_entries]
+    exported = [('skin_envelope', unified, unified_tris), *overlay_entries]
 
     region_total = sum(tri for _, _, tri in exported)
     if region_total > max_region_tris:
@@ -1642,6 +2490,68 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
     manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
     refresh_asset_revision(manifest_path)
     print(f'Exported {out_glb} ({len(meshes)} meshes, {out_glb.stat().st_size // 1024} KB)')
+
+
+def _is_skinish_mesh_name(name: str) -> bool:
+    lower = name.lower()
+    return (
+        ' region' in lower
+        or 'skin' in lower
+        or 'helix' in lower
+        or 'antihelix' in lower
+        or 'auricular' in lower
+        or lower.startswith('skin_')
+        or 'triangle' in lower
+        or name.startswith('Skin_')
+    )
+
+
+def audit_skin_source_inventory() -> dict:
+    """Compare Z-Anatomy skin surfaces against atlas_skin export predicates."""
+    included: list[dict] = []
+    excluded: list[dict] = []
+    for obj in bpy.data.objects:
+        if obj.type != 'MESH' or obj.name.endswith('.l'):
+            continue
+        if not _is_skinish_mesh_name(obj.name):
+            continue
+        if _is_forbidden_mesh_name(obj.name):
+            continue
+        tri_count = len(obj.data.polygons)
+        degenerate = _is_degenerate_atlas_mesh(obj)
+        groups = []
+        if _is_skin_ear_patch(obj):
+            groups.append('skin_ear')
+        if _is_skin_head_neck_patch(obj):
+            groups.append('skin_head_neck')
+        if _is_skin_back_torso_patch(obj):
+            groups.append('skin_back')
+        if _is_skin_limb_detail_patch(obj):
+            groups.append('skin_limbs')
+        if _is_skin_hand_detail_patch(obj):
+            groups.append('skin_hand_digits')
+        if _is_skin_foot_detail_patch(obj):
+            groups.append('skin_foot_digits')
+        if _is_skin_body_envelope_patch(obj):
+            groups.append('skin_envelope')
+        if _is_eye_globe_patch(obj):
+            groups.append('eye_globes')
+        if not groups and _is_any_skin_patch(obj):
+            groups.append('unassigned_any_skin')
+        export_groups = [g for g in groups if g != 'unassigned_any_skin']
+        entry = {'name': obj.name, 'triangles': tri_count, 'degenerate': degenerate, 'groups': export_groups or groups}
+        if export_groups:
+            included.append(entry)
+        elif not degenerate:
+            excluded.append(entry)
+    included.sort(key=lambda row: row['name'])
+    excluded.sort(key=lambda row: -row['triangles'])
+    return {
+        'includedCount': len(included),
+        'excludedCount': len(excluded),
+        'excludedTriangles': sum(row['triangles'] for row in excluded),
+        'excluded': excluded[:80],
+    }
 
 
 def audit_z_anatomy_export(blend: Path | None) -> None:
@@ -1691,6 +2601,7 @@ def audit_z_anatomy_export(blend: Path | None) -> None:
 
     payload = {
         **existing,
+        'skinSourceInventory': audit_skin_source_inventory(),
         'blenderCandidates': {
             'total': len(candidates),
             'muscles': sum(1 for k in candidates.values() if k == 'muscle'),
@@ -1702,6 +2613,14 @@ def audit_z_anatomy_export(blend: Path | None) -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
     print(f'Audit: {len(candidates)} candidates, {len(unexported)} not in manifest display names')
+    skin_gap = payload['skinSourceInventory']
+    print(
+        f'Skin source: {skin_gap["includedCount"]} patches in export predicates, '
+        f'{skin_gap["excludedCount"]} non-degenerate excluded ({skin_gap["excludedTriangles"]} tris)',
+    )
+    if skin_gap['excludedCount']:
+        for row in skin_gap['excluded'][:8]:
+            print(f'  • {row["name"]} ({row["triangles"]} tris)')
     print(f'Wrote {report_path}')
 
 

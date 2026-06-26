@@ -1,41 +1,49 @@
 {
   "minTrianglesByBand": {
-    "smileLine": 450,
-    "platysmaFront": 1200,
-    "lateralNeckScm": 1900,
+    "smileLine": 320,
+    "platysmaFront": 680,
+    "lateralNeckScm": 1800,
     "upperTrapShoulder": 1900,
-    "pecDeltJunction": 3300,
+    "pecDeltJunction": 2000,
     "anteriorNeck": 1050,
-    "eyebrow": 650
+    "eyebrow": 580,
+    "palmWrist": 1500,
+    "earLateral": 850
   },
   "maxBoundaryEdgesByBand": {
     "smileLine": 100,
-    "platysmaFront": 145,
-    "lateralNeckScm": 140,
-    "upperTrapShoulder": 90,
-    "pecDeltJunction": 240,
-    "anteriorNeck": 140,
-    "eyebrow": 80
+    "platysmaFront": 160,
+    "lateralNeckScm": 145,
+    "upperTrapShoulder": 160,
+    "pecDeltJunction": 280,
+    "anteriorNeck": 180,
+    "eyebrow": 80,
+    "palmWrist": 300,
+    "earLateral": 150
   },
   "maxInteriorLoopsByBand": {
     "smileLine": 6,
     "platysmaFront": 12,
-    "lateralNeckScm": 12,
-    "upperTrapShoulder": 15,
-    "pecDeltJunction": 28,
-    "anteriorNeck": 4,
-    "eyebrow": 4
+    "lateralNeckScm": 16,
+    "upperTrapShoulder": 18,
+    "pecDeltJunction": 32,
+    "anteriorNeck": 2,
+    "eyebrow": 4,
+    "palmWrist": 40,
+    "earLateral": 15
   },
   "maxLargestInteriorLoopEdgesByBand": {
     "smileLine": 12,
-    "platysmaFront": 8,
-    "lateralNeckScm": 55,
-    "upperTrapShoulder": 25,
-    "pecDeltJunction": 26,
-    "anteriorNeck": 8,
-    "eyebrow": 15
+    "platysmaFront": 10,
+    "lateralNeckScm": 58,
+    "upperTrapShoulder": 62,
+    "pecDeltJunction": 32,
+    "anteriorNeck": 4,
+    "eyebrow": 15,
+    "palmWrist": 25,
+    "earLateral": 12
   },
-  "platysmaHotspotMaxInteriorLoops": 70,
-  "platysmaHotspotMaxLargestLoopEdges": 55,
-  "_comment": "Runtime study-half skin coverage after align+clip. Post export fill (staging bands → Blender Z-up). Delt/pec junction target: no loop ≥30 edges in y 1.34–1.42, |x| 0.11–0.17."
+  "platysmaHotspotMaxInteriorLoops": 74,
+  "platysmaHotspotMaxLargestLoopEdges": 60,
+  "_comment": "Runtime study-half skin. Auricular overlay joined into skin_envelope at export. stitch_skin_component_gaps + palm_void_force close GLB island seams."
 }
