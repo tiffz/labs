@@ -2,6 +2,8 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import type { RhythmDefinition } from '../utils/rhythmRecognition';
 import type { TimeSignature } from '../types';
 import { RHYTHM_DATABASE } from '../data/rhythmDatabase';
+import { drumsRhythmHref } from '../routes/drumsAppUrl';
+import { handleSpaLinkClick } from '../../shared/navigation/spaLinkClick';
 
 const SimpleVexFlowNote = lazy(() => import('./SimpleVexFlowNote'));
 
@@ -112,27 +114,17 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
           <h4 className="rhythm-info-variations-title">Try these variations:</h4>
           <div className="rhythm-variations-grid">
             {rhythm.variations.map((variation, index) => {
+              const variationTimeSignature = variation.timeSignature ?? rhythm.timeSignature;
               const isCurrent = isCurrentVariation(variation.notation, currentNotation);
-              return (
-                <button
-                  key={index}
-                  className={`palette-button notation-button ${isCurrent ? 'rhythm-variation-current' : ''}`}
-                  onClick={() =>
-                    onSelectVariation(
-                      variation.notation,
-                      variation.timeSignature ?? rhythm.timeSignature
-                    )
-                  }
-                  type="button"
-                  disabled={isCurrent}
-                >
+              const variationContent = (
+                <>
                   {vexMiniReady ? (
                     <Suspense fallback={<span className="palette-pattern-fallback">{variation.notation}</span>}>
                       <SimpleVexFlowNote
                         pattern={variation.notation}
                         width={120}
                         height={70}
-                        timeSignature={variation.timeSignature ?? rhythm.timeSignature}
+                        timeSignature={variationTimeSignature}
                       />
                     </Suspense>
                   ) : (
@@ -141,7 +133,37 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
                   {variation.note && (
                     <span className="rhythm-variation-note">{variation.note}</span>
                   )}
-                </button>
+                </>
+              );
+
+              if (isCurrent) {
+                return (
+                  <button
+                    key={index}
+                    className="palette-button notation-button rhythm-variation-current"
+                    type="button"
+                    disabled
+                    aria-current="true"
+                  >
+                    {variationContent}
+                  </button>
+                );
+              }
+
+              const href = drumsRhythmHref(variation.notation, variationTimeSignature);
+              return (
+                <a
+                  key={index}
+                  href={href}
+                  className="palette-button notation-button"
+                  onClick={(e) =>
+                    handleSpaLinkClick(e, () =>
+                      onSelectVariation(variation.notation, variationTimeSignature)
+                    )
+                  }
+                >
+                  {variationContent}
+                </a>
               );
             })}
           </div>
@@ -173,16 +195,23 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
         <div className="rhythm-info-related">
           <strong>Related rhythms:</strong>
           <div className="rhythm-info-related-links">
-            {relatedRhythms.map((related) => (
-              <button
-                key={related.id}
-                type="button"
-                className="rhythm-related-button"
-                onClick={() => onSelectVariation(related.basePattern, related.timeSignature)}
-              >
-                {related.name}
-              </button>
-            ))}
+            {relatedRhythms.map((related) => {
+              const href = drumsRhythmHref(related.basePattern, related.timeSignature);
+              return (
+                <a
+                  key={related.id}
+                  href={href}
+                  className="rhythm-related-button"
+                  onClick={(e) =>
+                    handleSpaLinkClick(e, () =>
+                      onSelectVariation(related.basePattern, related.timeSignature)
+                    )
+                  }
+                >
+                  {related.name}
+                </a>
+              );
+            })}
           </div>
         </div>
       )}

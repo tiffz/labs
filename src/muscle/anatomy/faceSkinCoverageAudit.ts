@@ -1,7 +1,10 @@
 import type { BufferAttribute, BufferGeometry } from 'three';
 import { alignSkinEnvelopeToStudyHalf } from '../components/canvas/alignSkinEnvelopeGeometry';
-import { clipSkinGeometryToStudyHalf } from '../components/canvas/clipSkinToStudyHalf';
-import { readGlbSkinEnvelopeGeometry, SKIN_GLB_PATH } from './skinGlbEnvelopeReader';
+import { clipSkinGeometryForStudyHalf } from '../components/canvas/skinHalfClipOptions';
+import {
+  readGlbSkinEnvelopeGeometry,
+  SKIN_GLB_PATH,
+} from './skinGlbEnvelopeReader';
 
 export { SKIN_GLB_PATH };
 
@@ -43,7 +46,7 @@ export const FACE_SKIN_BANDS: FaceSkinBandSpec[] = [
     matches: (c, verts) =>
       c.y >= 1.45 &&
       c.y <= 1.65 &&
-      Math.max(...verts.map((v) => Math.abs(v.x))) > 0.1,
+      Math.max(...verts.map((v) => Math.abs(v.x))) > 0.06,
   },
   {
     id: 'anteriorNeck',
@@ -61,14 +64,15 @@ export type FaceSkinBandCount = {
   triangleCount: number;
 };
 
-function countFaceSkinBands(geometry: BufferGeometry): FaceSkinBandCount[] {
+function countFaceSkinBands(
+  geometry: BufferGeometry,
+  bands: FaceSkinBandSpec[] = FACE_SKIN_BANDS,
+): FaceSkinBandCount[] {
   const position = geometry.getAttribute('position') as BufferAttribute;
   const index = geometry.getIndex();
-  if (!index) throw new Error('skin_envelope must be indexed');
+  if (!index) throw new Error('skin mesh must be indexed');
 
-  const counts = new Map<FaceSkinBandId, number>(
-    FACE_SKIN_BANDS.map((band) => [band.id, 0]),
-  );
+  const counts = new Map<FaceSkinBandId, number>(bands.map((band) => [band.id, 0]));
 
   for (let tri = 0; tri < index.count / 3; tri += 1) {
     const verts = [0, 1, 2].map((corner) => {
@@ -85,14 +89,14 @@ function countFaceSkinBands(geometry: BufferGeometry): FaceSkinBandCount[] {
       z: (verts[0]!.z + verts[1]!.z + verts[2]!.z) / 3,
     };
 
-    for (const band of FACE_SKIN_BANDS) {
+    for (const band of bands) {
       if (band.matches(centroid, verts)) {
         counts.set(band.id, (counts.get(band.id) ?? 0) + 1);
       }
     }
   }
 
-  return FACE_SKIN_BANDS.map((band) => ({
+  return bands.map((band) => ({
     id: band.id,
     label: band.label,
     triangleCount: counts.get(band.id) ?? 0,
@@ -104,15 +108,10 @@ export function auditRawFaceSkinCoverage(glbRelativePath = SKIN_GLB_PATH): FaceS
 }
 
 export function auditRuntimeFaceSkinCoverage(glbRelativePath = SKIN_GLB_PATH): FaceSkinBandCount[] {
-  const aligned = alignSkinEnvelopeToStudyHalf(readGlbSkinEnvelopeGeometry(glbRelativePath).clone());
-  const clipped = clipSkinGeometryToStudyHalf(aligned, 0, {
-    anyVertexOnHalf: true,
-    preserveMidlinePelvis: true,
-    preserveMidlineThorax: true,
-    preserveMidlineFace: true,
-    preserveMidlineAnteriorNeck: true,
-  });
-  return countFaceSkinBands(clipped);
+  const envelope = clipSkinGeometryForStudyHalf(
+    alignSkinEnvelopeToStudyHalf(readGlbSkinEnvelopeGeometry(glbRelativePath).clone()),
+  );
+  return countFaceSkinBands(envelope);
 }
 
 export function formatFaceSkinCoverageAudit(rows: FaceSkinBandCount[]): string {

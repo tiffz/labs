@@ -37,7 +37,7 @@ describe('fullBodyRuntimeInventory', () => {
 
   it('resolves all required skin overlay ids from atlas_skin.glb', () => {
     const skin = collectSkinOverlayNodeIds();
-    for (const id of ['skin_envelope', 'eye_globes']) {
+    for (const id of ['skin_envelope']) {
       expect(skin.has(id), id).toBe(true);
     }
   });

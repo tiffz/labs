@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { getNodeById } from '../../curriculum';
 import { muscleModelsManifest as manifest } from '../../types/muscleModelsManifest';
 import { extractGlbMeshes } from './extractGlbMeshes';
+import { shouldIncludeHeadFaceAtlasMesh } from './fullBodyAtlasFilter';
 import { muscleRegionGlbUrl } from './muscleGlbUrl';
 import { useMuscleGltf } from './muscleGltfLoader';
 
@@ -13,7 +14,11 @@ export function useHeadFaceAtlasMeshes() {
     : muscleRegionGlbUrl('/muscle/models/atlas_head_face.glb');
   const { scene } = useMuscleGltf(url);
   return useMemo(
-    () => extractGlbMeshes(scene, (name) => Boolean(getNodeById(name))),
+    () =>
+      extractGlbMeshes(scene, (name) => {
+        if (!shouldIncludeHeadFaceAtlasMesh(name)) return false;
+        return Boolean(getNodeById(name));
+      }),
     [scene],
   );
 }

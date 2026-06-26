@@ -68,7 +68,7 @@ Add a row to [`docs/MUSCLE_QA.md`](../../docs/MUSCLE_QA.md) when you confirm a n
 
 ### What inventory checks cannot catch (yet)
 
-- **Skin seam holes** (neck/shoulder, palm, wrist, ankle) — run **`npm run muscle:skin-boundary`** after export; boundary edge counts must not increase vs [`skin-boundary-baseline.json`](skin-boundary-baseline.json). Fix predicates in [`export_region_glb.py`](export_region_glb.py) and re-export `atlas_skin`.
+- **Skin seam holes** (neck/shoulder, palm, wrist, ankle, sagittal center line) — run **`npm run muscle:skin-boundary`**, **`npm run muscle:skin-seam-gaps`**, and **`npm run muscle:skin-coverage`** after export. Burn-down process: [`tools/muscle-anatomy/SKIN_HOLE_BURN_DOWN.md`](../../tools/muscle-anatomy/SKIN_HOLE_BURN_DOWN.md). In-app: `/muscle/?debug=1&skinHoles=1` (magenta = interior, yellow = seam).
 - **Sagittal-split artifacts** (opaque skin patch at crotch on the transparent half) — reference-half opaque skin overlapping study-half geometry; not an missing-asset issue.
 - **`isPlausibleAnatomyMesh()` drops** — degenerate geometry removed at Three.js load time; inventory simulation does not run this pass yet.
 - **In-app debug** — `/muscle/?debug=1` shows live loaded mesh ids vs required bones/skin; e2e: `muscle-full-body-skeleton.spec.ts`.

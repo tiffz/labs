@@ -10,9 +10,11 @@ import {
 } from '../utils/stanzaExportAdapter';
 import {
   downloadStanzaOriginalFile,
+  stanzaOriginalDownloadExtension,
   stanzaPlaybackTransformIsEdited,
   type StanzaPlaybackTransform,
 } from '../utils/stanzaAudioExport';
+import '../stanza-export-popover.css';
 
 type StanzaAudioDownloadButtonProps = {
   song: StanzaSong;
@@ -54,6 +56,10 @@ export default function StanzaAudioDownloadButton({
     [song, transform, transformEdited, usePlaybackTransforms, durationSec, primaryGain, stems],
   );
   const adapter = useMemo(() => createStanzaExportAdapter(adapterOptions), [adapterOptions]);
+  const originalExtension = useMemo(() => {
+    if (!blob) return 'audio';
+    return stanzaOriginalDownloadExtension(blob, song.title);
+  }, [blob, song.title]);
 
   if (!blob || song.ytId) return null;
 
@@ -90,7 +96,7 @@ export default function StanzaAudioDownloadButton({
               setOpen(false);
             }}
           >
-            Download original file
+            Download original file (.{originalExtension})
           </button>
         }
         footerSlot={

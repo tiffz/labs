@@ -1,0 +1,143 @@
+/**
+ * Stanza skin for SharedExportPopover (portaled outside .stanza-app — tokens inlined).
+ * Scoped to adapter id `stanza` via shared-export-popover-stanza.
+ */
+
+.shared-export-popover.shared-export-popover-stanza {
+  border-radius: var(--stanza-radius-panel, 18px) !important;
+  border: 1px solid rgba(49, 43, 38, 0.1) !important;
+  box-shadow: 0 12px 32px rgba(42, 38, 34, 0.12) !important;
+  background: rgba(255, 251, 245, 0.96) !important;
+  color: #2a2622 !important;
+}
+
+.shared-export-panel.shared-export-panel-stanza {
+  width: min(420px, calc(100vw - 24px));
+  padding: 14px 16px 16px;
+  gap: 10px;
+  font-family: var(--stanza-font-ui, 'Source Sans 3', system-ui, sans-serif);
+  color: #2a2622;
+  background: rgba(255, 251, 245, 0.96);
+}
+
+.shared-export-panel-stanza .shared-export-title {
+  font-family: var(--stanza-font-display, 'Fraunces', Georgia, serif);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #2a2622;
+}
+
+.shared-export-panel-stanza .shared-export-link-button {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #6d665e;
+  text-decoration: none;
+}
+
+.shared-export-panel-stanza .shared-export-link-button:hover,
+.shared-export-panel-stanza .shared-export-link-button:focus-visible {
+  color: #e848a0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.shared-export-panel-stanza .shared-export-link-button:focus-visible {
+  outline: 2px solid rgba(232, 72, 160, 0.4);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.shared-export-panel-stanza .shared-export-subtitle {
+  font-family: var(--stanza-font-display, 'Fraunces', Georgia, serif);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #8b837a;
+}
+
+.shared-export-panel-stanza .shared-export-format-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.shared-export-panel-stanza .shared-export-format-row {
+  border-color: rgba(49, 43, 38, 0.1);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.42);
+  min-height: 36px;
+}
+
+.shared-export-panel-stanza .shared-export-format-row:hover {
+  border-color: rgba(232, 72, 160, 0.28);
+  background: rgba(232, 72, 160, 0.08);
+}
+
+.shared-export-panel-stanza
+  .shared-export-format-row:has(input[type='radio']:checked) {
+  border-color: rgba(232, 72, 160, 0.45);
+  background: rgba(232, 72, 160, 0.12);
+}
+
+.shared-export-panel-stanza .shared-export-format-row input[type='radio'] {
+  accent-color: #e848a0;
+}
+
+.shared-export-panel-stanza .shared-export-format-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #2a2622;
+}
+
+.shared-export-panel-stanza .shared-export-row label,
+.shared-export-panel-stanza .shared-export-stem-row {
+  font-size: 0.8125rem;
+  color: #2a2622;
+}
+
+.shared-export-panel-stanza .shared-export-row input,
+.shared-export-panel-stanza .shared-export-row select {
+  border-color: rgba(49, 43, 38, 0.1);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #2a2622;
+}
+
+.shared-export-panel-stanza .shared-export-stems {
+  border-color: rgba(49, 43, 38, 0.1);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.shared-export-panel-stanza .shared-export-stem-row input[type='checkbox'] {
+  accent-color: #e848a0;
+}
+
+.shared-export-panel-stanza .shared-export-preview {
+  font-size: 0.8125rem;
+  color: #6d665e;
+  background: rgba(232, 72, 160, 0.1);
+  border-radius: 11px;
+}
+
+.shared-export-panel-stanza .shared-export-preview strong {
+  color: #2a2622;
+}
+
+.shared-export-panel-stanza .shared-export-action {
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-size: 0.875rem;
+  background: #e848a0;
+  box-shadow: 0 1px 2px rgba(47, 39, 33, 0.06);
+}
+
+.shared-export-panel-stanza .shared-export-action:hover:not(:disabled) {
+  background: #d43d90;
+}
+
+.shared-export-panel-stanza .shared-export-action:disabled {
+  opacity: 0.45;
+}

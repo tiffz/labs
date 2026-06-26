@@ -39,8 +39,6 @@ export interface MuscleStoreState {
   cameraFocusPreset: CameraPreset | null;
   /** Bumps when focusStructure runs so the canvas recomputes framing. */
   focusCameraNonce: number;
-  /** Full-body Z-Anatomy skin envelope overlay. */
-  showSkinLayer: boolean;
   progressByNode: Map<string, WorkoutProgress>;
   deckQueue: string[];
   deckIndex: number;
@@ -57,7 +55,6 @@ export interface MuscleStoreState {
   setLayerPeelDepth: (depth: LayerPeelDepth) => void;
   setAnatomyStageCenter: (center: [number, number, number]) => void;
   setCameraFocusPreset: (preset: CameraPreset | null) => void;
-  toggleSkinLayer: () => void;
   startActiveSession: () => void;
   submitAnswer: (nodeId: string) => Promise<void>;
   submitMultipleChoice: (nodeId: string) => Promise<void>;
@@ -147,7 +144,6 @@ export const useMuscleStore = create<MuscleStoreState>((set, get) => ({
   cameraResetNonce: 0,
   cameraFocusPreset: null,
   focusCameraNonce: 0,
-  showSkinLayer: true,
   progressByNode: new Map(),
   deckQueue: [],
   deckIndex: 0,
@@ -232,8 +228,6 @@ export const useMuscleStore = create<MuscleStoreState>((set, get) => ({
   setAnatomyStageCenter: (center) => set({ anatomyStageCenter: center }),
 
   setCameraFocusPreset: (preset) => set({ cameraFocusPreset: preset }),
-
-  toggleSkinLayer: () => set((s) => ({ showSkinLayer: !s.showSkinLayer })),
 
   startActiveSession: () => {
     const { activeModuleId, progressByNode } = get();

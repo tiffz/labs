@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildInteriorHoleLoopSegmentPositions,
   findBoundaryLoops,
+  findMidlineThroatHoleLoops,
   isSignificantVisibleSkinHoleLoop,
 } from './skinCoverageAudit';
 import { readRuntimeStudySkinEnvelope } from './skinCoverageAuditNode';
@@ -15,7 +16,24 @@ const DELT_PEC_HOLE_BOUNDS = {
   minZ: -0.05,
 };
 
+function formatThroatLoops(loops: ReturnType<typeof findMidlineThroatHoleLoops>): string {
+  return loops
+    .map(
+      (loop) =>
+        `${loop.edgeCount} edges @ y=${loop.centroid.y.toFixed(3)} z=${loop.centroid.z.toFixed(3)} maxAbsX=${loop.maxAbsX.toFixed(3)}`,
+    )
+    .join('; ');
+}
+
 describe('significant shoulder hole filter', () => {
+  it('has no midline throat holes after export fill (adam apple / submental band)', () => {
+    const geometry = readRuntimeStudySkinEnvelope();
+    const throatLoops = findMidlineThroatHoleLoops(geometry);
+    expect(
+      throatLoops,
+      `midline throat still open — re-run atlas_skin export fill (${formatThroatLoops(throatLoops)})`,
+    ).toHaveLength(0);
+  });
   it('does not regress the visible delt/pec junction hole band', () => {
     const geometry = readRuntimeStudySkinEnvelope();
     const deltBandLoops = findBoundaryLoops(geometry).filter((loop) => {

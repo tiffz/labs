@@ -25,6 +25,8 @@
     "muscle:coverage": "MUSCLE_COVERAGE_REPORT=1 npx vitest run src/muscle/anatomy/anatomyCoverageLedger.test.ts",
     "muscle:skin-boundary": "MUSCLE_SKIN_BOUNDARY_AUDIT=1 npx vitest run src/muscle/anatomy/skinMeshBoundaryAudit.test.ts",
     "muscle:skin-coverage": "MUSCLE_SKIN_COVERAGE_AUDIT=1 npx vitest run src/muscle/anatomy/skinCoverageAudit.test.ts",
+    "muscle:skin-half-split": "npx vitest run src/muscle/anatomy/skinHalfSplitAudit.test.ts",
+    "muscle:skin-seam-gaps": "npx vitest run src/muscle/anatomy/skinSeamGapAudit.test.ts",
     "muscle:inventory": "MUSCLE_RUNTIME_INVENTORY=1 npx vitest run src/muscle/anatomy/fullBodyRuntimeInventory.test.ts src/muscle/anatomy/anatomyCoverageLedger.test.ts",
     "muscle:export-pipeline": "node scripts/run-muscle-anatomy-export.mjs",
     "prelint": "npm run generate:shared-catalog && npm run generate:labs-catalog",

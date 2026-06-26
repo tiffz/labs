@@ -31,10 +31,9 @@ describe('layerDepthView', () => {
     expect(muscleLayerThresholdForPeel(4)).toBe(3);
   });
 
-  it('shows study skin only on full figure when toggled on', () => {
-    expect(isStudySkinVisibleAtPeel(0, true)).toBe(true);
-    expect(isStudySkinVisibleAtPeel(0, false)).toBe(false);
-    expect(isStudySkinVisibleAtPeel(1, true)).toBe(false);
+  it('shows study skin only on the full-figure peel stop', () => {
+    expect(isStudySkinVisibleAtPeel(0)).toBe(true);
+    expect(isStudySkinVisibleAtPeel(1)).toBe(false);
   });
 
   it('shows fewer structures at skeleton peel on mixed modules', () => {

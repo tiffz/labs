@@ -43,17 +43,3 @@ export function acquireSkinMaterial(): MeshStandardMaterial {
   }
   return template.clone();
 }
-
-export function acquireEyeGlobeMaterial(): MeshStandardMaterial {
-  const key = 'eye:solid';
-  let template = pool.get(key);
-  if (!template) {
-    template = new MeshStandardMaterial({
-      roughness: 0.35,
-      metalness: 0.02,
-      flatShading: false,
-    });
-    pool.set(key, template);
-  }
-  return template.clone();
-}

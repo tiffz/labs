@@ -53,12 +53,9 @@ export function muscleLayerThresholdForPeel(peelDepth: LayerPeelDepth): MuscleLa
   return (peelDepth - 1) as MuscleLayerDepth;
 }
 
-/** Study-half skin shows only on the full-figure stop when the skin toggle is on. */
-export function isStudySkinVisibleAtPeel(
-  peelDepth: LayerPeelDepth,
-  showSkinLayer: boolean,
-): boolean {
-  return peelDepth === 0 && showSkinLayer;
+/** Study-half skin shows only on the full-figure peel stop (depth slider at “Full figure”). */
+export function isStudySkinVisibleAtPeel(peelDepth: LayerPeelDepth): boolean {
+  return peelDepth === 0;
 }
 
 /** Show nodes at or below the selected peel (4 = skeleton only). */

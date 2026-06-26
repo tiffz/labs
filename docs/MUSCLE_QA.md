@@ -13,22 +13,35 @@ npm run presubmit
 
 ## Full-body atlas (Z-Anatomy export)
 
-After changing `atlas_skin`, `atlas_complete`, or skin export predicates — **hard refresh** `/muscle/` then verify:
+After changing `atlas_skin`, `atlas_complete`, or skin export predicates — **hard refresh** `/muscle/` (Cmd+Shift+R) then verify:
 
-| Area            | What to check                                                                                                    |
-| --------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Sagittal split  | World +X study muscles; world −X opaque skin shell. Reference anatomy hidden at Full figure + skin on            |
-| Skin continuity | No Frankenstein stitch ridges; palm, elbow, knee, neck/shoulder, face, ankles                                    |
-| Skin runtime    | Unified `skin_envelope` is X-aligned before study-half clip — regression in `skinEnvelopeClipRegression.test.ts` |
-| Eye globes      | Orbital sockets filled (not hollow dark voids)                                                                   |
-| Layer peel      | Depth 0 + skin toggle — semi-transparent study skin over muscles                                                 |
-| Performance     | ~10 s orbit without sustained judder                                                                             |
+| Area            | What to check                                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Sagittal split  | World +X study muscles + transparent skin; world −X opaque skin shell. No opaque patches on study-side pelvis/wrist/ankle |
+| Skin continuity | No Frankenstein stitch ridges; palm, elbow, knee, neck/shoulder, face, ear helix, ankles                                  |
+| Palm / ear      | Palmar shell closed on study half (no muscle showing through palm); ear helix continuous, not shredded                    |
+| Midline seam    | No pinholes along face/neck/throat sagittal-adjacent band                                                                 |
+| Skin runtime    | Unified `skin_envelope` X-aligned before study-half clip — no runtime procedural patches                                  |
+| Eye globes      | Orbital sockets filled (not hollow dark voids)                                                                            |
+| Layer peel      | Depth 0 — semi-transparent study skin over muscles; depth 1+ hides skin                                                   |
+| Performance     | ~10 s orbit without sustained judder                                                                                      |
 
 Pipeline: skill **`labs-muscle-anatomy-export`** or `npm run muscle:export-pipeline`.
 
-Automated skin seam guard: `npm run muscle:skin-boundary` (boundary edge baseline in `tools/muscle-anatomy/skin-boundary-baseline.json`).
+Automated guardrails (run after export):
 
-Debug inventory: `/muscle/?debug=1` — bottom dock lists loaded anatomy/skin node ids vs required sets; **Copy bundle** for LLM paste.
+```bash
+npm run muscle:skin-boundary    # boundary edge baseline
+npm run muscle:skin-half-split  # reference mirror bleed = 0
+npm run muscle:skin-coverage    # triangle + interior hole bands (palm, ear, face, neck)
+npm run muscle:skin-seam-gaps   # midline seam open edges (both halves)
+```
+
+Debug hole overlay: `/muscle/?debug=1&skinHoles=1` — **magenta** = interior holes (study); **yellow** = midline seam gaps (both halves). Burn-down process: [`tools/muscle-anatomy/SKIN_HOLE_BURN_DOWN.md`](../tools/muscle-anatomy/SKIN_HOLE_BURN_DOWN.md).
+
+Debug inventory: `/muscle/?debug=1` — bottom dock lists loaded anatomy/skin node ids vs required sets; **Copy bundle** for LLM paste. Confirm `missingRequiredSkin` is empty on Full body tab at peel depth 0.
+
+E2e smoke: `e2e/smoke/muscle-full-body-skin.spec.ts` (debug inventory + peel 0).
 
 ## LLM / browser QA protocol
 

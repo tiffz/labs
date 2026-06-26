@@ -19,7 +19,7 @@ Nested **`AGENTS.md`** for `src/muscle/`. Root policy: [`../../AGENTS.md`](../..
 - **Gatekeeper:** Active Reps disabled until Fundamentals baseline; do not bypass in UI.
 - **Facts vs judgment:** Dexie stores progress; pure functions in `src/muscle/srs/`.
 - **Z-Anatomy license:** CC BY-SA 4.0 — keep [`ATTRIBUTION.md`](ATTRIBUTION.md) updated.
-- **Full-body skin staging:** Mirror straddling −X skin onto +X (`alignSkinEnvelopeToStudyHalf`) — **never** translate by `−min.x` (explodes anatomy vs skin columns). Study skin: no `alphaTest` (patchy pec transparency). After `atlas_skin` export: `npm run muscle:skin-boundary` + face coverage audit; hard-refresh `#/full_body` (HMR hides stale GLB).
+- **Full-body skin staging:** Mirror straddling −X skin onto +X (`alignSkinEnvelopeToStudyHalf`) — **never** translate by `−min.x`. Study vs reference use **different sagittal clips** (`skinHalfClipOptions.ts`): study keeps midline preserve caps; reference uses `minVertexX ≥ 0` so midline bands do not mirror onto world +X as opaque patches. After `atlas_skin` export: `npm run muscle:skin-boundary`, `muscle:skin-half-split`, `muscle:skin-coverage`; hard-refresh `#/full_body`.
 
 ## Tests
 

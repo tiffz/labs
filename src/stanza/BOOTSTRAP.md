@@ -6,7 +6,7 @@ How Stanza picks the first song on load and resolves URL deep links. Implemented
 
 1. **`?v=`** — YouTube video id. Creates a library row if needed, then selects it.
 2. **`?df=`** — Google Drive file id. Imports or selects by `driveSourceFileId`. Tombstoned ids show a re-add prompt (ADR 0006).
-3. **`?f=`** — Local media fingerprint (Beat SHA256 or Stanza `size:duration`). Runs `ensureBeatLibraryImported()` first so Find the Beat rows exist, then resolves the song.
+3. **`?f=`** — Local media fingerprint (Beat SHA256 or Stanza `size:duration`). Runs `ensureBeatLibraryImported()` first so Find the Beat rows exist, then resolves the song. Resolution **retries when the library updates** (e.g. after Drive auto-pull) and defers the “not found” alert briefly so sync can finish.
 4. **Last selected** — `localStorage` key from `stanzaLastSelectedSong.ts` when no competing URL params.
 5. **Hero** — Empty library landing when none of the above apply.
 

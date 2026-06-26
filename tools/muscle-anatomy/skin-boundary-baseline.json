@@ -1,7 +1,7 @@
 {
   "maxBoundaryEdgesByMesh": {
-    "skin_envelope": 4950,
+    "skin_envelope": 4300,
     "eye_globes": 37
   },
-  "_comment": "Unified atlas_skin export (single welded skin_envelope + eye_globes). Counts must not increase after re-export. Run MUSCLE_SKIN_BOUNDARY_AUDIT=1 to inspect."
+  "_comment": "Unified skin_envelope (includes joined auricular overlay) + eye_globes. Run MUSCLE_SKIN_BOUNDARY_AUDIT=1 to inspect."
 }

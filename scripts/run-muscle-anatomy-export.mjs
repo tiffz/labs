@@ -103,7 +103,7 @@ function printVisualChecklist(regions) {
     console.log('2. Full body module: sagittal split — muscles on +X, skin mirrored on −X.');
     console.log('3. Skin: no stitch ridges; check palm, elbow, knee, neck/shoulder, face, ankles.');
     console.log('4. Eye globes: orbital sockets filled (not hollow).');
-    console.log('5. Layer peel 0 + skin toggle: semi-transparent study skin.');
+    console.log('5. Layer peel 0: semi-transparent study skin (depth 1+ hides skin).');
   }
   console.log('6. Orbit ~10 s — no sustained judder.');
   console.log('\nFull protocol: docs/MUSCLE_QA.md');
@@ -139,6 +139,13 @@ function main() {
   }
 
   run('Validate assets', 'npm', ['run', 'muscle:validate-assets'], { shell: true });
+
+  if (regions.includes('atlas_skin')) {
+    run('Skin boundary audit', 'npm', ['run', 'muscle:skin-boundary'], { shell: true });
+    run('Skin half-split audit', 'npm', ['run', 'muscle:skin-half-split'], { shell: true });
+    run('Skin coverage audit', 'npm', ['run', 'muscle:skin-coverage'], { shell: true });
+    run('Skin seam-gap audit', 'npm', ['run', 'muscle:skin-seam-gaps'], { shell: true });
+  }
 
   if (!opts.skipBridge) {
     run('Sync zAnatomyBridge', 'npm', ['run', 'muscle:sync-bridge'], { shell: true });

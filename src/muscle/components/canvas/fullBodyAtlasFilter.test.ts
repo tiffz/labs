@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { resolveCurriculumNodeId } from '../../curriculum/zAnatomyBridge';
-import { shouldIncludeAtlasCompleteMesh } from './fullBodyAtlasFilter';
+import { shouldIncludeAtlasCompleteMesh, shouldIncludeHeadFaceAtlasMesh } from './fullBodyAtlasFilter';
 
 describe('skin overlay node ids', () => {
   it('resolves detail skin overlay mesh names for GLB extraction', () => {
@@ -45,7 +45,16 @@ describe('shouldIncludeAtlasCompleteMesh', () => {
     );
   });
 
-  it('includes atlas registry fill nodes', () => {
+  it('excludes atlas_complete orbital inserts', () => {
+    expect(shouldIncludeAtlasCompleteMesh('atlas_sclera_r_001_c2981b7e')).toBe(false);
     expect(shouldIncludeAtlasCompleteMesh('atlas_abductor_digiti_minimi_r_84af0e15')).toBe(true);
+  });
+});
+
+describe('shouldIncludeHeadFaceAtlasMesh', () => {
+  it('excludes sclera and extraocular inserts for empty orbital sockets', () => {
+    expect(shouldIncludeHeadFaceAtlasMesh('atlas_sclera_r_001_c2981b7e')).toBe(false);
+    expect(shouldIncludeHeadFaceAtlasMesh('atlas_medial_rectus_muscle_r_ff5fdc86')).toBe(false);
+    expect(shouldIncludeHeadFaceAtlasMesh('muscle_orbicularis_oculi')).toBe(true);
   });
 });

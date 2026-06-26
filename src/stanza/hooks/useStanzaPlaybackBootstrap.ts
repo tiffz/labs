@@ -23,6 +23,9 @@ import {
 } from '../utils/stanzaDriveUrlParams';
 import { readYoutubeVFromLocation } from '../utils/stanzaUrlYoutube';
 
+/** Grace period before showing a fingerprint miss — silent Drive auto-pull may still be merging. */
+export const STANZA_FINGERPRINT_DEEP_LINK_MISS_DEFER_MS = 2500;
+
 export interface UseStanzaPlaybackBootstrapParams {
   songs: StanzaSong[] | undefined;
   selected: StanzaSong | null;
@@ -83,30 +86,54 @@ export function useStanzaPlaybackBootstrap(params: UseStanzaPlaybackBootstrapPar
   }, [ensureYoutubeSongByVideoId, setSelectedId]);
 
   useEffect(() => {
-    if (fingerprintBootstrapAttemptedRef.current) return;
     if (!hasStanzaMediaFingerprintDeepLinkQuery()) return;
+    let cancelled = false;
+    let missTimer: number | undefined;
+
     void (async () => {
       await ensureBeatLibraryImported();
       const { youtubeId, driveFileId, mediaFingerprint } = readStanzaDriveBootstrapFromLocation();
       if (youtubeId || driveFileId) return;
-      fingerprintBootstrapAttemptedRef.current = true;
       if (!mediaFingerprint) {
+        fingerprintBootstrapAttemptedRef.current = true;
         setFingerprintDeepLinkError(
           'This upload link is not valid (the fingerprint in the URL is missing or malformed). Open the recording from your library instead.',
         );
         return;
       }
       const song = await findStanzaSongByMediaFingerprint(mediaFingerprint);
+      if (cancelled) return;
       if (song) {
+        fingerprintBootstrapAttemptedRef.current = true;
         setFingerprintDeepLinkError(null);
         setSelectedId(song.id);
         return;
       }
-      setFingerprintDeepLinkError(
-        'No matching upload found in your library on this device. Upload the recording or sync from Drive, then try again.',
-      );
+      if (songs === undefined) return;
+
+      missTimer = window.setTimeout(() => {
+        void (async () => {
+          const retry = await findStanzaSongByMediaFingerprint(mediaFingerprint);
+          if (cancelled) return;
+          if (retry) {
+            fingerprintBootstrapAttemptedRef.current = true;
+            setFingerprintDeepLinkError(null);
+            setSelectedId(retry.id);
+            return;
+          }
+          fingerprintBootstrapAttemptedRef.current = true;
+          setFingerprintDeepLinkError(
+            'No matching upload found in your library on this device yet. If you use Drive backup, wait for sync to finish, or upload the recording here, then try again.',
+          );
+        })();
+      }, STANZA_FINGERPRINT_DEEP_LINK_MISS_DEFER_MS);
     })();
-  }, [setFingerprintDeepLinkError, setSelectedId]);
+
+    return () => {
+      cancelled = true;
+      if (missTimer != null) window.clearTimeout(missTimer);
+    };
+  }, [setFingerprintDeepLinkError, setSelectedId, songs]);
 
   useLayoutEffect(() => {
     if (driveDeepLinkAttemptedRef.current) return;

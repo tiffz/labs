@@ -54,8 +54,22 @@ export function isRegionalAtlasFragmentDuplicate(meshName: string): boolean {
  * not duplicated in module exports). Curriculum ids in torso/leg/atlas_supplement GLBs
  * must not load again from atlas_complete or merge/dedupe fights create visible holes.
  */
+const FULL_BODY_HIDDEN_ORBITAL_MESH = /^atlas_(sclera_|(superior|inferior)_tarsus_|(medial|lateral|superior|inferior)_rectus_muscle_)/i;
+
+/** Orbital inserts omitted from Full body — empty sockets read cleaner than sclera spheres. */
+export function isFullBodyHiddenOrbitalMesh(meshName: string): boolean {
+  return FULL_BODY_HIDDEN_ORBITAL_MESH.test(meshName);
+}
+
+/** Head/face atlas meshes hidden in Full body — empty orbital sockets read cleaner than sclera inserts. */
+export function shouldIncludeHeadFaceAtlasMesh(meshName: string): boolean {
+  if (isFullBodyHiddenOrbitalMesh(meshName)) return false;
+  return true;
+}
+
 export function shouldIncludeAtlasCompleteMesh(meshName: string): boolean {
   if (!ATLAS_MESH_NODE_IDS.has(meshName)) return false;
+  if (isFullBodyHiddenOrbitalMesh(meshName)) return false;
   if (isRegionalAtlasFragmentDuplicate(meshName)) return false;
   return true;
 }

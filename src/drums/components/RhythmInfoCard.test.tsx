@@ -64,12 +64,10 @@ describe('RhythmInfoCard', () => {
       | undefined;
     expect(firstPreviewProps?.timeSignature).toEqual({ numerator: 8, denominator: 8 });
 
-    const buttons = screen.getAllByRole('button');
-    const twoFourButton = buttons.find((button) =>
-      button.textContent?.includes('2/4 variation')
-    );
-    expect(twoFourButton).toBeDefined();
-    fireEvent.click(twoFourButton as HTMLButtonElement);
+    const twoFourLink = screen.getByRole('link', { name: /2\/4 variation/i });
+    expect(twoFourLink).toHaveAttribute('href', expect.stringContaining('rhythm=D--T--T-'));
+    expect(twoFourLink).toHaveAttribute('href', expect.stringContaining('time=2%2F4'));
+    fireEvent.click(twoFourLink);
 
     expect(onSelectVariation).toHaveBeenCalledWith('D--T--T-', {
       numerator: 2,

@@ -49,7 +49,11 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 | Muscle app registered → commit `public/muscle/` with source | `musclePublicAssetsGuardrails.test.ts`, `muscle:validate-assets` in presubmit                                      |
 | Unified skin envelope → X-align before study sagittal clip  | `alignSkinEnvelopeGeometry.test.ts`, `skinEnvelopeClipRegression.test.ts`                                          |
 | Never translate straddling skin by −min.x (midline drift)   | `muscleSkinPipelineGuardrails.test.ts`, `alignSkinEnvelopeGeometry.ts`                                             |
+| No runtime procedural skin patches (throat plug, palm fill) | `muscleSkinPipelineGuardrails.test.ts`, `.cursor/rules/muscle-skin-pipeline.mdc`                                   |
+| Reference skin clip strict +X only (`minVertexX: 0`)        | `skinHalfSplitAudit.test.ts`, `skinHalfClipOptions.ts`                                                             |
+| Study/reference skin clip options must not be shared        | `SkinEnvelopeLayer.tsx`, `skinHalfClipOptions.ts`, `muscle-skin-pipeline.mdc`                                      |
 | atlas_skin re-export → boundary edges must not increase     | `npm run muscle:skin-boundary`, `skin-boundary-baseline.json`                                                      |
+| Skin source inventory before export (Helix, Palm, bridges)  | `npm run muscle:audit-export -- --with-blender`, `export_region_glb.py` predicates                                 |
 | Face/neck skin coverage must not drop after export          | `faceSkinCoverageAudit.test.ts`, `faceSkinCoverageBaseline.json`                                                   |
 | Runtime skin coverage bands (triangles + seams + holes)     | `npm run muscle:skin-coverage`, `skinCoverageAudit.test.ts`, `skinCoverageBaseline.json`                           |
 | Full-body muscle/bone runtime inventory completeness        | `npm run muscle:inventory`, `fullBodyRuntimeInventory.test.ts`, `anatomyCoverageLedger.test.ts`, debug panel       |

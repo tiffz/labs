@@ -3,8 +3,8 @@
     "eyebrow": 650,
     "noseTip": 80,
     "nasolabial": 400,
-    "earLateral": 40,
+    "earLateral": 850,
     "anteriorNeck": 1500
   },
-  "_comment": "Minimum face skin triangles in atlas_skin.glb after runtime align+clip. Regressions mean export predicates dropped brow/ear/nose fillers."
+  "_comment": "Minimum face skin triangles in joined skin_envelope (includes auricular overlay)."
 }

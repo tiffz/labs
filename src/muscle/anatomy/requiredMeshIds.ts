@@ -15,10 +15,7 @@ export const REQUIRED_FULL_BODY_BONE_IDS = [
   'bone_metatarsals',
 ] as const;
 
-export const REQUIRED_SKIN_OVERLAY_NODE_IDS = [
-  'skin_envelope',
-  'eye_globes',
-] as const;
+export const REQUIRED_SKIN_OVERLAY_NODE_IDS = ['skin_envelope'] as const;
 
 /** Curriculum muscles that must resolve in Full body runtime mesh inventory (study view). */
 export const REQUIRED_FULL_BODY_MUSCLE_IDS = [

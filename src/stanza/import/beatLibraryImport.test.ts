@@ -13,6 +13,7 @@ import {
   importBeatLibraryIfNeeded,
   readBeatFingerprintForStanzaSong,
   resolveBeatYoutubeVideoId,
+  resolveStanzaPlaybackUrlParamsForSong,
 } from './beatLibraryImport';
 
 vi.mock('../utils/probeFileAudioDuration', () => ({
@@ -595,6 +596,55 @@ describe('importBeatLibraryIfNeeded', () => {
     expect(song?.title).toBe('Uploaded video');
     expect(readBeatFingerprintForStanzaSong(song!.id)).toBe(beatFp);
     expect(song?.localMediaFingerprint).toMatch(/^\d+:\d+\.\d{2}$/);
+  });
+});
+
+describe('resolveStanzaPlaybackUrlParamsForSong', () => {
+  it('prefers syncable localMediaFingerprint over device-local Beat SHA256 for share URLs', async () => {
+    const beatFp = '69a9c79ec8c4519a732ee7429969e167817d3c397118b38ec81c4af050c1fa33';
+    const syncableFp = '12345678:180.50';
+    const songId = 'song-share-fp';
+    await stanzaDb.songs.put({
+      id: songId,
+      ytId: null,
+      title: 'Shared upload',
+      markers: [],
+      stats: {},
+      updatedAt: 1,
+      localAudioBlob: new Blob(['audio'], { type: 'audio/mpeg' }),
+      localMediaFingerprint: syncableFp,
+    });
+    localStorage.setItem(
+      BEAT_MIGRATION_STATE_KEY,
+      JSON.stringify({
+        migratedEntryIds: [],
+        entryToSongId: {},
+        fingerprintToSongId: { [beatFp]: songId },
+      }),
+    );
+
+    const params = resolveStanzaPlaybackUrlParamsForSong(
+      (await stanzaDb.songs.get(songId))!,
+    );
+    expect(params.mediaFingerprint).toBe(syncableFp);
+    expect(params.driveFileId).toBeNull();
+    expect(readBeatFingerprintForStanzaSong(songId)).toBe(beatFp);
+  });
+
+  it('uses Drive file id when the row is backed up', async () => {
+    const song: StanzaSong = {
+      id: 'drive-backed',
+      ytId: null,
+      title: 'Drive song',
+      markers: [],
+      stats: {},
+      updatedAt: 1,
+      driveSourceFileId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+      localMediaFingerprint: '999:120.00',
+    };
+    const params = resolveStanzaPlaybackUrlParamsForSong(song);
+    expect(params.driveFileId).toBe(song.driveSourceFileId);
+    expect(params.mediaFingerprint).toBeNull();
   });
 });
 

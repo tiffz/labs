@@ -15,15 +15,16 @@ Canonical pattern for syncing app state to the URL (shareable links, back/forwar
 2. **Sync on change** — debounce/throttle writes; omit default values from the URL when possible.
 3. **Popstate** — re-parse when the user navigates history.
 4. **No secrets** — never put tokens or PII in query/hash.
+5. **Shareable href builders** — UI links use the same serialize logic as the sync hook ([ADR 0017](./adr/0017-spa-native-link-navigation.md)); do not duplicate param strings in components.
 
 ## App implementations
 
-| App    | Hook / module                              | App-specific doc                                                    |
-| ------ | ------------------------------------------ | ------------------------------------------------------------------- |
-| Drums  | `src/drums/hooks/useUrlState.ts`           | [`src/drums/docs/URL_SHARING.md`](../src/drums/docs/URL_SHARING.md) |
-| Chords | `src/chords/hooks/useUrlState.ts`          | [`src/chords/README.md`](../src/chords/README.md)                   |
-| Words  | `src/words/hooks/useWordsUrlState.ts`      | [`src/words/README.md`](../src/words/README.md)                     |
-| Stanza | `src/stanza/utils/stanzaDriveUrlParams.ts` | [`src/stanza/README.md`](../src/stanza/README.md)                   |
+| App    | Hook / module                              | Href builder                      | App-specific doc                                                    |
+| ------ | ------------------------------------------ | --------------------------------- | ------------------------------------------------------------------- |
+| Drums  | `src/drums/hooks/useUrlState.ts`           | `src/drums/routes/drumsAppUrl.ts` | [`src/drums/docs/URL_SHARING.md`](../src/drums/docs/URL_SHARING.md) |
+| Chords | `src/chords/hooks/useUrlState.ts`          | —                                 | [`src/chords/README.md`](../src/chords/README.md)                   |
+| Words  | `src/words/hooks/useWordsUrlState.ts`      | —                                 | [`src/words/README.md`](../src/words/README.md)                     |
+| Stanza | `src/stanza/utils/stanzaDriveUrlParams.ts` | `stanzaSongHref`                  | [`src/stanza/README.md`](../src/stanza/README.md)                   |
 
 ## Agent workflow
 

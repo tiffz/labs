@@ -1,8 +1,6 @@
-import FaceRetouchingNaturalOutlinedIcon from '@mui/icons-material/FaceRetouchingNaturalOutlined';
 import { useMemo } from 'react';
 import {
   countVisibleNodesForView,
-  isStudySkinVisibleAtPeel,
   LAYER_PEEL_STOPS,
   layerPeelDepthLabel,
   type LayerPeelDepth,
@@ -18,16 +16,14 @@ export default function LayerDepthControl({ variant = 'panel' }: LayerDepthContr
   const bodyView = useMuscleStore((s) => s.bodyView);
   const activeModuleId = useMuscleStore((s) => s.activeModuleId);
   const layerPeelDepth = useMuscleStore((s) => s.layerPeelDepth);
-  const showSkinLayer = useMuscleStore((s) => s.showSkinLayer);
   const setLayerPeelDepth = useMuscleStore((s) => s.setLayerPeelDepth);
-  const toggleSkinLayer = useMuscleStore((s) => s.toggleSkinLayer);
 
   const visibleNodeCount = useMemo(
     () => countVisibleNodesForView(bodyView, activeModuleId, layerPeelDepth),
     [activeModuleId, bodyView, layerPeelDepth],
   );
 
-  const skinAvailable = bodyView === 'full_body' && isStudySkinVisibleAtPeel(layerPeelDepth, true);
+  const statusLabel = `${layerPeelDepthLabel(layerPeelDepth)} · ${visibleNodeCount} visible`;
 
   return (
     <div
@@ -41,21 +37,10 @@ export default function LayerDepthControl({ variant = 'panel' }: LayerDepthContr
         <span
           className="muscle-layer-peel__count"
           data-testid={variant === 'canvas' ? 'muscle-layer-status' : undefined}
+          title={statusLabel}
         >
-          {layerPeelDepthLabel(layerPeelDepth)} · {visibleNodeCount} visible
+          {statusLabel}
         </span>
-        {skinAvailable ? (
-          <button
-            type="button"
-            className={`muscle-layer-peel__skin-btn${showSkinLayer ? ' is-active' : ''}`}
-            onClick={toggleSkinLayer}
-            aria-pressed={showSkinLayer}
-            aria-label={showSkinLayer ? 'Hide skin layer' : 'Show skin layer'}
-            title={showSkinLayer ? 'Hide skin' : 'Show skin'}
-          >
-            <FaceRetouchingNaturalOutlinedIcon fontSize="inherit" aria-hidden />
-          </button>
-        ) : null}
       </div>
       <div className="muscle-layer-peel__slider-wrap">
         <input
@@ -66,7 +51,7 @@ export default function LayerDepthControl({ variant = 'panel' }: LayerDepthContr
           step={1}
           value={layerPeelDepth}
           aria-labelledby="muscle-layer-peel-label"
-          aria-valuetext={`${layerPeelDepthLabel(layerPeelDepth)} · ${visibleNodeCount} structures visible`}
+          aria-valuetext={statusLabel}
           onChange={(event) => setLayerPeelDepth(Number(event.target.value) as LayerPeelDepth)}
         />
         {variant === 'panel' ? (

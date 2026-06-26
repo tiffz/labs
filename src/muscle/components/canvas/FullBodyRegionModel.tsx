@@ -15,7 +15,6 @@ import GlbAnatomyMesh from './GlbAnatomyMesh';
 import GlbAtlasMirrorMesh from './GlbAtlasMirrorMesh';
 import SkinEnvelopeLayer from './SkinEnvelopeLayer';
 import SkinHoleDebugLayer from './SkinHoleDebugLayer';
-import EyeGlobesLayer from './EyeGlobesLayer';
 import { mergeFullBodyMeshes, useExtremityModuleMeshes } from './useExtremityModuleMeshes';
 import { useCurriculumDetailMeshes } from './useCurriculumDetailMeshes';
 import { useFundamentalsMeshes } from './useFundamentalsMeshes';
@@ -40,7 +39,6 @@ function alignFullBodyAnatomyMeshes(meshes: ReturnType<typeof mergeFullBodyMeshe
 
 export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionModelProps) {
   const { invalidate } = useThree();
-  const showSkinLayer = useMuscleStore((s) => s.showSkinLayer);
   const layerPeelDepth = useMuscleStore((s) => s.layerPeelDepth);
   const atlasMeshes = useAtlasCompleteMeshes();
   const headFaceMeshes = useHeadFaceAtlasMeshes();
@@ -77,7 +75,7 @@ export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionMode
     publishMuscleAnatomyDebugWindow();
   }, [meshes]);
 
-  const hideReferenceAnatomy = isStudySkinVisibleAtPeel(layerPeelDepth, showSkinLayer);
+  const hideReferenceAnatomy = isStudySkinVisibleAtPeel(layerPeelDepth);
   const showSkinHoleDebug =
     typeof window !== 'undefined' &&
     isLabsDebugEnabled(window.location.search) &&
@@ -86,12 +84,10 @@ export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionMode
   return (
     <>
       <SkinEnvelopeLayer layout={groupLayout} half="reference" visible />
-      <EyeGlobesLayer layout={groupLayout} half="reference" visible />
       {showSkinHoleDebug ? <SkinHoleDebugLayer layout={groupLayout} /> : null}
-      {isStudySkinVisibleAtPeel(layerPeelDepth, showSkinLayer) ? (
+      {isStudySkinVisibleAtPeel(layerPeelDepth) ? (
         <>
           <SkinEnvelopeLayer layout={groupLayout} half="study" visible />
-          <EyeGlobesLayer layout={groupLayout} half="study" visible />
         </>
       ) : null}
       {hideReferenceAnatomy ? null : (

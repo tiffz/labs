@@ -22,6 +22,7 @@ describe('muscle skin pipeline guardrails', () => {
     expect(source).toMatch(/material\.alphaTest\s*=\s*0/);
     expect(source).not.toMatch(/alphaTest\s*=\s*isStudy\s*\?\s*0\.0[1-9]/);
     expect(source).toMatch(/material\.polygonOffset\s*=\s*!isStudy/);
+    expect(source).toMatch(/polygonOffsetFactor\s*=\s*isStudy\s*\?\s*0\s*:\s*-1/);
   });
 
   it('preserves midline face and anterior neck bands during sagittal clip', () => {
@@ -32,8 +33,33 @@ describe('muscle skin pipeline guardrails', () => {
     expect(clipSource).toMatch(/isMidlineAnteriorNeckTriangle/);
 
     const layerSource = readRepo('src/muscle/components/canvas/SkinEnvelopeLayer.tsx');
-    expect(layerSource).toMatch(/preserveMidlineFace:\s*true/);
-    expect(layerSource).toMatch(/preserveMidlineAnteriorNeck:\s*true/);
+    expect(layerSource).toMatch(/clipSkinGeometryForStudyHalf/);
+    expect(layerSource).toMatch(/clipSkinGeometryForReferenceHalf/);
+    expect(layerSource).not.toMatch(/appendMidlineThroatPlug/);
+
+    const halfClipSource = readRepo('src/muscle/components/canvas/skinHalfClipOptions.ts');
+    expect(halfClipSource).toMatch(/preserveMidlineFace:\s*true/);
+    expect(halfClipSource).toMatch(/minVertexX:\s*0/);
+  });
+
+  it('fixes midline throat holes at export time — no runtime procedural skin patches', () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/components/canvas/appendMidlineThroatPlug.ts'))).toBe(
+      false,
+    );
+    const exportSource = readRepo('tools/muscle-anatomy/export_region_glb.py');
+    expect(exportSource).toMatch(/Helix/);
+    expect(exportSource).toMatch(/Antihelix/);
+    expect(exportSource).toMatch(/Crura of antihelix/);
+    expect(exportSource).toMatch(/fill_skin_throat_holes/);
+    expect(exportSource).toMatch(/weld_skin_throat_midline_band/);
+    expect(exportSource).toMatch(/finalize_skin_ear_shell/);
+    expect(exportSource).toMatch(/Lobule of auricle/);
+    expect(exportSource).toMatch(/join_ear_overlay_to_envelope/);
+    expect(exportSource).toMatch(/weld_skin_ear_junction/);
+  });
+
+  it('requires muscle skin pipeline cursor rule', () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, '.cursor/rules/muscle-skin-pipeline.mdc'))).toBe(true);
   });
 
   it('routes orphan skin fillers and neck bridge patches in export script', () => {
@@ -41,15 +67,17 @@ describe('muscle skin pipeline guardrails', () => {
     expect(exportSource).toMatch(/_orphan_skin_centroid_band/);
     expect(exportSource).toMatch(/skin_head_neck/);
     expect(exportSource).toMatch(/Lesser supraclavicular fossa/);
+    expect(exportSource).toMatch(/Submental region/);
     expect(exportSource).toMatch(/Deltopectoral triangle/);
     expect(exportSource).toMatch(/merge_dist=0\.0025/);
+    expect(exportSource).toMatch(/if _is_neck_bridge_skin_patch\(obj\):\s*\n\s*return True/);
   });
 
   it('requires face skin coverage and boundary edge audits', () => {
     expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/faceSkinCoverageAudit.test.ts'))).toBe(true);
     expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/skinCoverageAudit.test.ts'))).toBe(true);
-    expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/skinMeshBoundaryAudit.test.ts'))).toBe(true);
-    expect(fs.existsSync(path.join(REPO_ROOT, 'tools/muscle-anatomy/skin-boundary-baseline.json'))).toBe(true);
-    expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/skinCoverageBaseline.json'))).toBe(true);
+    expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/skinSeamGapAudit.test.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/earSkinExportAudit.test.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/components/canvas/skinHalfClipOptions.ts'))).toBe(true);
   });
 });

@@ -219,6 +219,22 @@ function printReport(report, blenderReport) {
     }
   }
 
+  if (blenderReport?.skinSourceInventory) {
+    const skin = blenderReport.skinSourceInventory;
+    console.log(
+      `\nSkin source inventory: ${skin.includedCount} patches in export predicates, ` +
+        `${skin.excludedCount} non-degenerate excluded (${skin.excludedTriangles} tris)`,
+    );
+    if (skin.excludedCount > 0) {
+      console.log('Excluded skin surfaces (should be empty after predicate fix):');
+      for (const row of skin.excluded.slice(0, 12)) {
+        console.log(`  • ${row.name} (${row.triangles} tris)`);
+      }
+    } else {
+      console.log('✓ All non-degenerate Z-Anatomy skin region / ear patches are in export predicates.');
+    }
+  }
+
   console.log(`\nFull report: ${reportPath}`);
 }
 

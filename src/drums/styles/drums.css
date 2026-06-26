@@ -2577,6 +2577,12 @@
     min-height: 80px;
   }
 
+  a.palette-button {
+    text-decoration: none;
+    color: inherit;
+    box-sizing: border-box;
+  }
+
   .palette-button:disabled {
     cursor: not-allowed;
     background-color: #f3f4f6;
@@ -3297,6 +3303,10 @@
     font-weight: 700;
     padding: 0.2rem 0.55rem;
     cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
   }
 
   .rhythm-related-button:hover {

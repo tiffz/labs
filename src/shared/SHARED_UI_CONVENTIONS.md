@@ -20,6 +20,8 @@ While data is still loading (IndexedDB live query not emitted, fetch in flight, 
 
 Hash- and query-routed apps must behave like normal browser links: modifier+click and middle-click open a new tab, right-click can copy the URL, and keyboard users get native link affordances.
 
+**Architecture:** [ADR 0017](../../docs/adr/0017-spa-native-link-navigation.md) — real `href`, shared click helpers, when to use `<button>`.
+
 Shared helpers live in [`navigation/spaLinkClick.ts`](./navigation/spaLinkClick.ts):
 
 | Helper                                      | Use when                                                                                 |
@@ -37,7 +39,7 @@ Shared helpers live in [`navigation/spaLinkClick.ts`](./navigation/spaLinkClick.
 4. Prefer `<a>` / MUI `component="a"` over `<button onClick={navigate}>` for destinations that have a URL.
 5. External URLs: keep `target="_blank"` and `rel="noopener noreferrer"`.
 
-App-specific href builders: Encore [`encoreAppHref`](../encore/routes/encoreAppHash.ts), Stanza [`stanzaSongHref`](../stanza/utils/stanzaDriveUrlParams.ts) + [`resolveStanzaPlaybackUrlParamsForSong`](../stanza/import/beatLibraryImport.ts), Zine Box [`zineboxReadHref`](../zinebox/routes/zineboxHash.ts).
+App-specific href builders: Encore [`encoreAppHref`](../encore/routes/encoreAppHash.ts), Stanza [`stanzaSongHref`](../stanza/utils/stanzaDriveUrlParams.ts) + [`resolveStanzaPlaybackUrlParamsForSong`](../stanza/import/beatLibraryImport.ts), Zine Box [`zineboxReadHref`](../zinebox/routes/zineboxHash.ts), Muscle [`muscleModuleHref`](../muscle/routes/muscleAppUrl.ts), Drums [`drumsRhythmHref`](../drums/routes/drumsAppUrl.ts).
 
 ## Theme Contract (Default)
 

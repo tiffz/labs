@@ -123,6 +123,19 @@ Z-Anatomy skin uses **inconsistent naming**:
 
 **When user reports a gap:** grep `mesh_names.txt` → add to auxiliary/bridge list → re-export `atlas_skin` only → visual verify.
 
+## New anatomy source checklist (female model / Z-Anatomy refresh)
+
+When onboarding a new `.blend` or re-exporting after Z-Anatomy updates:
+
+1. `npm run muscle:audit-export -- --with-blender` — review `skinSourceInventory` + missing patches
+2. Grep `mesh_names.txt` for user-reported gaps → `_AUXILIARY_SKIN_BASES`, `_BRIDGE_SKIN_BASES`, `_FACE_AUXILIARY_SKIN_BASES`, neck bridge predicate order
+3. Export one region: `npm run muscle:export-pipeline -- --region atlas_skin`
+4. Automated gates: `muscle:skin-boundary`, `muscle:skin-half-split`, `muscle:skin-coverage`
+5. Hard refresh `/muscle/#/full_body` — palm, ear, midline seam, throat (see [`docs/MUSCLE_QA.md`](../../docs/MUSCLE_QA.md))
+6. Commit `public/muscle/models/` with export script + runtime clip changes
+
+Rule: `.cursor/rules/muscle-skin-pipeline.mdc` — export fixes holes; no runtime procedural skin meshes.
+
 ## Anti-patterns (learned)
 
 | Do not                                    | Do instead                                           |

@@ -24,7 +24,6 @@ function AnatomySceneInner({ showPerf }: { showPerf: boolean }) {
   const bodyView = useMuscleStore((s) => s.bodyView);
   const activeModuleId = useMuscleStore((s) => s.activeModuleId);
   const layerPeelDepth = useMuscleStore((s) => s.layerPeelDepth);
-  const showSkinLayer = useMuscleStore((s) => s.showSkinLayer);
   const mode = useMuscleStore((s) => s.mode);
   const focusedNodeId = useMuscleStore((s) => s.focusedNodeId);
   const cameraFocusPreset = useMuscleStore((s) => s.cameraFocusPreset);
@@ -40,7 +39,7 @@ function AnatomySceneInner({ showPerf }: { showPerf: boolean }) {
 
   useEffect(() => {
     invalidate();
-  }, [activeModuleId, bodyView, layerPeelDepth, showSkinLayer, invalidate]);
+  }, [activeModuleId, bodyView, layerPeelDepth, invalidate]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

@@ -124,8 +124,10 @@ export function resolveStanzaPlaybackUrlParamsForSong(song: StanzaSong): StanzaP
   if (driveFileId) {
     return { youtubeId: null, driveFileId, driveTitle: song.title, mediaFingerprint: null };
   }
-  const beatFp = readBeatFingerprintForStanzaSong(song.id);
-  const mediaFingerprint = beatFp ?? stanzaLocalMediaFingerprintForRow(song) ?? null;
+  // Prefer the syncable size/duration fingerprint (written to Drive `progress.json`) over the
+  // device-local Beat SHA256 mapping so shared `?f=` links work on other devices after pull.
+  const mediaFingerprint =
+    stanzaLocalMediaFingerprintForRow(song) ?? readBeatFingerprintForStanzaSong(song.id) ?? null;
   return { youtubeId: null, driveFileId: null, driveTitle: null, mediaFingerprint };
 }
 

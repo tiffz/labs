@@ -57,6 +57,18 @@ export const SKIN_COVERAGE_BANDS: SkinCoverageBandSpec[] = [
     label: 'Anterior neck band',
     matches: (c) => c.y >= 1.05 && c.y <= 1.38 && c.maxAbsX < 0.12,
   },
+  {
+    id: 'palmWrist',
+    label: 'Palmar / wrist skin (lateral hand)',
+    matches: (c) =>
+      c.y >= 0.82 && c.y <= 1.02 && c.maxAbsX > 0.08 && c.maxAbsX < 0.36,
+  },
+  {
+    id: 'earLateral',
+    label: 'Lateral auricular / helix skin',
+    matches: (c) =>
+      c.y >= 1.45 && c.y <= 1.65 && c.maxAbsX > 0.06 && c.maxAbsX < 0.15,
+  },
 ];
 
 export type SkinCoverageBandMetrics = {
@@ -251,6 +263,10 @@ export function isMidlineThroatHoleLoop(loop: BoundaryLoop): boolean {
   );
 }
 
+export function findMidlineThroatHoleLoops(geometry: BufferGeometry): BoundaryLoop[] {
+  return findBoundaryLoops(geometry).filter(isMidlineThroatHoleLoop);
+}
+
 /** Small posterior trap / scapular skin dots. */
 export function isBackTrapDotHoleLoop(loop: BoundaryLoop): boolean {
   return (
@@ -433,6 +449,102 @@ export function buildInteriorHoleLoopSegmentPositions(
         position.getZ(b),
       );
     }
+  }
+
+  if (verts.length === 0) return null;
+  return new Float32Array(verts);
+}
+
+/** |x| below this at a boundary-edge midpoint counts as sagittal seam-adjacent (not interior-hole filter). */
+export const MIDLINE_SEAM_EDGE_MAX_ABS_X = 0.028;
+
+/** Vertical span where seam gaps are user-visible (excludes feet). */
+export const MIDLINE_SEAM_Y_RANGE = { minY: 0.15, maxY: 1.55 } as const;
+
+export function isMidlineSeamAdjacentContext(ctx: SkinBandContext): boolean {
+  return (
+    ctx.maxAbsX <= MIDLINE_SEAM_EDGE_MAX_ABS_X &&
+    ctx.y >= MIDLINE_SEAM_Y_RANGE.minY &&
+    ctx.y <= MIDLINE_SEAM_Y_RANGE.maxY
+  );
+}
+
+/** Closed loop straddling the sagittal plane — excluded by isInteriorSkinHoleLoop (minAbsX > 0.035). */
+export function isMidlineSeamInteriorLoop(loop: BoundaryLoop): boolean {
+  if (isMidlineThroatHoleLoop(loop)) return false;
+  return (
+    loop.maxAbsX <= MIDLINE_SEAM_EDGE_MAX_ABS_X &&
+    loop.centroid.y >= MIDLINE_SEAM_Y_RANGE.minY &&
+    loop.centroid.y <= MIDLINE_SEAM_Y_RANGE.maxY &&
+    loop.edgeCount >= 4 &&
+    loop.edgeCount <= 80
+  );
+}
+
+function collectBoundaryEdgeMidpoints(geometry: BufferGeometry): Array<{ a: number; b: number; ctx: SkinBandContext }> {
+  const position = geometry.getAttribute('position') as BufferAttribute;
+  const index = geometry.getIndex();
+  if (!index) return [];
+
+  const edgeCounts = new Map<string, { a: number; b: number; count: number }>();
+  for (let tri = 0; tri < index.count / 3; tri += 1) {
+    const corners = [0, 1, 2].map((c) => index.getX(tri * 3 + c)!);
+    for (let e = 0; e < 3; e += 1) {
+      const a = corners[e]!;
+      const b = corners[(e + 1) % 3]!;
+      const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+      const existing = edgeCounts.get(key);
+      if (existing) existing.count += 1;
+      else edgeCounts.set(key, { a, b, count: 1 });
+    }
+  }
+
+  const edges: Array<{ a: number; b: number; ctx: SkinBandContext }> = [];
+  for (const { a, b, count } of edgeCounts.values()) {
+    if (count !== 1) continue;
+    const midpoint = ctxFromPoints([readVertex(position, a), readVertex(position, b)]);
+    edges.push({ a, b, ctx: midpoint });
+  }
+  return edges;
+}
+
+/** Open boundary edges on the sagittal cut — seam pinholes the interior-hole filter misses. */
+export function countMidlineSeamBoundaryEdges(geometry: BufferGeometry): number {
+  return collectBoundaryEdgeMidpoints(geometry).filter(({ ctx }) => isMidlineSeamAdjacentContext(ctx)).length;
+}
+
+export function countMidlineSeamInteriorLoops(geometry: BufferGeometry): number {
+  return findBoundaryLoops(geometry).filter(isMidlineSeamInteriorLoop).length;
+}
+
+export type MidlineSeamGapMetrics = {
+  seamBoundaryEdgeCount: number;
+  seamInteriorLoopCount: number;
+};
+
+export function auditMidlineSeamGaps(geometry: BufferGeometry): MidlineSeamGapMetrics {
+  return {
+    seamBoundaryEdgeCount: countMidlineSeamBoundaryEdges(geometry),
+    seamInteriorLoopCount: countMidlineSeamInteriorLoops(geometry),
+  };
+}
+
+/** Yellow debug wireframe — sagittal-adjacent open boundary edges (seam gaps). */
+export function buildMidlineSeamGapSegmentPositions(geometry: BufferGeometry): Float32Array | null {
+  const position = geometry.getAttribute('position') as BufferAttribute | undefined;
+  if (!position) return null;
+
+  const verts: number[] = [];
+  for (const { a, b, ctx } of collectBoundaryEdgeMidpoints(geometry)) {
+    if (!isMidlineSeamAdjacentContext(ctx)) continue;
+    verts.push(
+      position.getX(a),
+      position.getY(a),
+      position.getZ(a),
+      position.getX(b),
+      position.getY(b),
+      position.getZ(b),
+    );
   }
 
   if (verts.length === 0) return null;

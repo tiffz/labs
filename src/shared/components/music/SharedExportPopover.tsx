@@ -167,12 +167,10 @@ export default function SharedExportPopover({
         {headerSlot}
         <div className="shared-export-subtitle">Export file type</div>
         <div className="shared-export-format-list">
-          {EXPORT_FORMATS.map((item) => {
-            const disabled = !adapter.supportsFormat(item.id);
-            return (
+          {supportedFormats.map((item) => (
               <label
                 key={item.id}
-                className={`shared-export-format-row ${disabled ? 'disabled' : ''}`}
+                className="shared-export-format-row"
                 title={item.description}
               >
                 <input
@@ -180,13 +178,11 @@ export default function SharedExportPopover({
                   name={`shared-export-format-${adapter.id}`}
                   value={item.id}
                   checked={format === item.id}
-                  disabled={disabled}
                   onChange={() => setFormat(item.id)}
                 />
                 <div className="shared-export-format-label">{item.label}</div>
               </label>
-            );
-          })}
+            ))}
         </div>
 
         {!hideLoopCount ? (

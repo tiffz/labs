@@ -1,6 +1,6 @@
 import { getNodeById } from '../curriculum';
 import { resolveCurriculumNodeId } from '../curriculum/zAnatomyBridge';
-import { shouldIncludeAtlasCompleteMesh } from '../components/canvas/fullBodyAtlasFilter';
+import { shouldIncludeAtlasCompleteMesh, shouldIncludeHeadFaceAtlasMesh } from '../components/canvas/fullBodyAtlasFilter';
 import { muscleModelsManifest as manifest } from '../types/muscleModelsManifest';
 import { listGlbMeshNames } from './glbFileAudit';
 
@@ -15,7 +15,7 @@ const FULL_BODY_MERGE_GROUPS: ReadonlyArray<{
   },
   {
     region: 'atlas_head_face',
-    includeResolvedId: (nodeId) => Boolean(getNodeById(nodeId)),
+    includeResolvedId: (nodeId) => shouldIncludeHeadFaceAtlasMesh(nodeId) && Boolean(getNodeById(nodeId)),
   },
   {
     region: 'fundamentals',
