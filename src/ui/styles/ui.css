@@ -169,6 +169,9 @@ body {
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
 
 .ui-tab-btn.active {

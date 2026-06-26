@@ -2,23 +2,16 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
 import WorkoutPanel from './components/workout/WorkoutPanel';
 import MuscleAnatomyDebugPanel from './components/debug/MuscleAnatomyDebugPanel';
-import { MUSCLE_MODULES } from './curriculum/modules';
+import { parseMuscleModuleFromSearch } from './routes/muscleAppUrl';
 import { useMuscleStore } from './store/useMuscleStore';
-import type { MuscleRegion } from './types/node';
 
 const TrainingCanvas = lazy(() => import('./components/canvas/TrainingCanvas'));
-
-function readModuleFromSearch(): MuscleRegion | null {
-  if (typeof window === 'undefined') return null;
-  const raw = new URLSearchParams(window.location.search).get('module');
-  if (!raw) return null;
-  return MUSCLE_MODULES.some((mod) => mod.id === raw) ? (raw as MuscleRegion) : null;
-}
 
 export default function App() {
   const init = useMuscleStore((s) => s.init);
   const hydrated = useMuscleStore((s) => s.hydrated);
   const setActiveModule = useMuscleStore((s) => s.setActiveModule);
+  const setBodyView = useMuscleStore((s) => s.setBodyView);
   const [panelOpen, setPanelOpen] = useState(false);
 
   useEffect(() => {
@@ -27,11 +20,20 @@ export default function App() {
 
   useEffect(() => {
     if (!hydrated) return;
-    const moduleId = readModuleFromSearch();
-    if (moduleId) {
-      setActiveModule(moduleId);
-    }
-  }, [hydrated, setActiveModule]);
+    const applyModuleFromSearch = () => {
+      const moduleId = parseMuscleModuleFromSearch(window.location.search);
+      if (moduleId) {
+        setActiveModule(moduleId);
+        return;
+      }
+      if (useMuscleStore.getState().bodyView === 'region') {
+        setBodyView('full_body');
+      }
+    };
+    applyModuleFromSearch();
+    window.addEventListener('popstate', applyModuleFromSearch);
+    return () => window.removeEventListener('popstate', applyModuleFromSearch);
+  }, [hydrated, setActiveModule, setBodyView]);
 
   if (!hydrated) {
     return (

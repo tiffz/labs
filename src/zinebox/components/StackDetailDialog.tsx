@@ -13,6 +13,7 @@ import { useMemo } from 'react';
 import { removeComicFromStack } from '../collections/stackMutations';
 import { sortComicIdsNatural } from '../collections/naturalSortComics';
 import AppTooltip from '../../shared/components/AppTooltip';
+import { handleSpaLinkClick, zineboxReadHref, type ZineboxReaderParams } from '../routes/zineboxHash';
 import type { ZineboxCollection, ZineboxComic } from '../types';
 
 function formatStackIssueSecondary(comic: ZineboxComic): string {
@@ -29,6 +30,7 @@ type StackDetailDialogProps = {
   open: boolean;
   collection: ZineboxCollection | null;
   comicsById: ReadonlyMap<string, ZineboxComic>;
+  readerParams: ZineboxReaderParams;
   onClose: () => void;
   onOpenComic: (comicId: string) => void;
   onCollectionChange: (collection: ZineboxCollection | null) => void;
@@ -38,6 +40,7 @@ export default function StackDetailDialog({
   open,
   collection,
   comicsById,
+  readerParams,
   onClose,
   onOpenComic,
   onCollectionChange,
@@ -93,10 +96,14 @@ export default function StackDetailDialog({
                 }
               >
                 <ListItemButton
-                  onClick={() => {
-                    onOpenComic(id);
-                    onClose();
-                  }}
+                  component="a"
+                  href={zineboxReadHref(id, readerParams)}
+                  onClick={(e) =>
+                    handleSpaLinkClick(e, () => {
+                      onOpenComic(id);
+                      onClose();
+                    })
+                  }
                 >
                   <ListItemText
                     primary={comic.title}

@@ -258,6 +258,7 @@
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .zinebox-pill:hover {
@@ -315,6 +316,8 @@
   background: transparent;
   text-align: left;
   cursor: pointer;
+  text-decoration: none;
+  color: inherit;
 }
 
 .zinebox-cover-card__button:focus-visible {

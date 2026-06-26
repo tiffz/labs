@@ -1,5 +1,11 @@
+import {
+  handleSpaLinkClick,
+  handleSpaRowActivate,
+} from '../../shared/navigation/spaLinkClick';
 import type { ZineboxReaderMode, ZineboxSpreadOffset } from '../types';
 import type { ZineboxLibraryReadFilter } from '../utils/zineboxReadFilter';
+
+export { handleSpaLinkClick, handleSpaRowActivate };
 
 export type ZineboxRoute =
   | { kind: 'library' }

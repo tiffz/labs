@@ -23,6 +23,7 @@ import {
 } from '../hooks/gestureLiveQueryEmpty';
 import { useGesturePackStats, resolveGesturePackCoverFileIds } from '../hooks/useGesturePackStats';
 import { useGesturePacks } from '../hooks/useGesturePacks';
+import { gestureAppHref, handleSpaLinkClick } from '../routes/gestureAppHash';
 import { readGesturePracticeSessionConfig } from '../practice/gesturePracticeConfigStorage';
 import type { SessionConfig, GesturePack } from '../types';
 
@@ -215,7 +216,12 @@ export default function PracticeTab({
           <Typography className="gesture-empty-copy">
             Practice pulls photos from your collections. Upload or link a folder to begin.
           </Typography>
-          <Button variant="contained" onClick={onNeedCollections}>
+          <Button
+            variant="contained"
+            component="a"
+            href={gestureAppHref({ kind: 'collections' })}
+            onClick={(e) => handleSpaLinkClick(e, onNeedCollections)}
+          >
             Go to collections
           </Button>
         </div>

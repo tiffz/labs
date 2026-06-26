@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react';
 
 import type { ZineboxCollection, ZineboxComic } from '../types';
+import type { ZineboxReaderParams } from '../routes/zineboxHash';
 import ComicCoverCard from './ComicCoverCard';
 import StackCoverCard from './StackCoverCard';
 
@@ -10,6 +11,7 @@ type LibraryGridViewProps = {
   stackedComicIds: ReadonlySet<string>;
   comicsById: ReadonlyMap<string, ZineboxComic>;
   searchQuery?: string | null;
+  readerParams: ZineboxReaderParams;
   onOpenComic: (comicId: string) => void;
   onOpenStack: (collection: ZineboxCollection) => void;
 };
@@ -20,6 +22,7 @@ function LibraryGridView({
   stackedComicIds,
   comicsById,
   searchQuery,
+  readerParams,
   onOpenComic,
   onOpenStack,
 }: LibraryGridViewProps): React.ReactElement {
@@ -40,7 +43,13 @@ function LibraryGridView({
         />
       ))}
       {looseComics.map((comic) => (
-        <ComicCoverCard key={comic.id} comic={comic} searchQuery={searchQuery} onOpen={onOpenComic} />
+        <ComicCoverCard
+          key={comic.id}
+          comic={comic}
+          readerParams={readerParams}
+          searchQuery={searchQuery}
+          onOpen={onOpenComic}
+        />
       ))}
     </div>
   );

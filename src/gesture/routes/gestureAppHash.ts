@@ -1,3 +1,7 @@
+import { handleSpaLinkClick } from '../../shared/navigation/spaLinkClick';
+
+export { handleSpaLinkClick };
+
 /**
  * Gesture home shell routes (hash only). Session/debrief stay out of the URL.
  */

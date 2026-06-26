@@ -63,6 +63,7 @@ export default function App(): React.ReactElement {
     ) : (
       <LibraryView
         libraryParams={libraryParams}
+        readerParams={readerParams}
         onLibraryParamsChange={setLibraryParams}
         onOpenComic={openReader}
       />

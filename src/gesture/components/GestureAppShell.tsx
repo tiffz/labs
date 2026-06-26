@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
@@ -10,9 +10,12 @@ import GestureWordmark from './GestureWordmark';
 import PracticeTab from './PracticeTab';
 import type { SessionConfig } from '../types';
 import {
+  gestureAppHref,
   gestureRouteToTab,
+  handleSpaLinkClick,
   navigateGesture,
   parseGestureAppHash,
+  type GestureAppRoute,
   type GestureHomeTab,
 } from '../routes/gestureAppHash';
 import { useGestureMediaWarmup } from '../hooks/useGestureMediaWarmup';
@@ -47,6 +50,13 @@ export default function GestureAppShell({ onStartSession }: GestureAppShellProps
     setTab(value);
   }, []);
 
+  const gestureTabNavigate = useCallback((e: ReactMouseEvent, route: GestureAppRoute) => {
+    handleSpaLinkClick(e, () => {
+      navigateGesture(route);
+      setTab(route.kind);
+    });
+  }, []);
+
   return (
     <div className="gesture-shell">
       <header className="gesture-header">
@@ -65,8 +75,20 @@ export default function GestureAppShell({ onStartSession }: GestureAppShellProps
         className="gesture-tabs"
         aria-label="Main sections"
       >
-        <Tab label="Practice" value="practice" />
-        <Tab label="Collections" value="collections" />
+        <Tab
+          label="Practice"
+          value="practice"
+          component="a"
+          href={gestureAppHref({ kind: 'practice' })}
+          onClick={(e) => gestureTabNavigate(e, { kind: 'practice' })}
+        />
+        <Tab
+          label="Collections"
+          value="collections"
+          component="a"
+          href={gestureAppHref({ kind: 'collections' })}
+          onClick={(e) => gestureTabNavigate(e, { kind: 'collections' })}
+        />
       </Tabs>
 
       {message ? (

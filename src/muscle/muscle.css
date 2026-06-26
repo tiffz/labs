@@ -186,6 +186,10 @@ body {
   font: inherit;
   font-size: 0.8125rem;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .muscle-region-tabs__tab.is-active {

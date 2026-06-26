@@ -15,7 +15,7 @@ import LibraryFilterPills from './LibraryFilterPills';
 import LibraryGridView from './LibraryGridView';
 import StackDetailDialog from './StackDetailDialog';
 import ZineboxAppHeader from './ZineboxAppHeader';
-import type { ZineboxLibraryParams } from '../routes/zineboxHash';
+import type { ZineboxLibraryParams, ZineboxReaderParams } from '../routes/zineboxHash';
 import { collectAllZineboxTags } from '../utils/zineboxTags';
 import {
   collectionMatchesLibraryFilters,
@@ -26,6 +26,7 @@ import LibrarySearchField from './LibrarySearchField';
 
 type LibraryViewProps = {
   libraryParams: ZineboxLibraryParams;
+  readerParams: ZineboxReaderParams;
   onLibraryParamsChange: (next: Partial<ZineboxLibraryParams>) => void;
   onOpenComic: (comicId: string) => void;
 };
@@ -42,6 +43,7 @@ function shouldRunE2eScrollGridSeed(): boolean {
 
 export default function LibraryView({
   libraryParams,
+  readerParams,
   onLibraryParamsChange,
   onOpenComic,
 }: LibraryViewProps): React.ReactElement {
@@ -277,6 +279,7 @@ export default function LibraryView({
             stackedComicIds={stackedComicIds}
             comicsById={comicsById}
             searchQuery={libraryParams.q}
+            readerParams={readerParams}
             onOpenComic={onOpenComic}
             onOpenStack={setActiveStack}
           />
@@ -288,6 +291,7 @@ export default function LibraryView({
         open={activeStack !== null}
         collection={activeStack}
         comicsById={comicsById}
+        readerParams={readerParams}
         onClose={() => setActiveStack(null)}
         onOpenComic={onOpenComic}
         onCollectionChange={setActiveStack}

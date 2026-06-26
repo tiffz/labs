@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
+import { handleSpaLinkClick } from '../shared/navigation/spaLinkClick';
 import BpmInput from '../shared/components/music/BpmInput';
 import KeyInput from '../shared/components/music/KeyInput';
 import ChordProgressionInput from '../shared/components/music/ChordProgressionInput';
@@ -96,6 +97,11 @@ function parseHashState(hash: string): {
   const routedSection = expandRunnerLog ? 'screenshots' : sectionPart;
   const regressionSection = normalizeRegressionSection(routedSection);
   return { tab, regressionSection, expandRunnerLog };
+}
+
+function uiCatalogTabHref(tab: CatalogTab, regressionSection: RegressionRouteSection = 'screenshots'): string {
+  if (tab === 'regression') return `#regression/${regressionSection}`;
+  return `#${tab}`;
 }
 
 function getBpmClass(surface: BpmSurface): string {
@@ -1259,42 +1265,42 @@ function App() {
           </div>
           <div className="ui-header-nav">
             <div className="ui-tab-row" role="tablist" aria-label="Catalog views">
-              <button
-                type="button"
+              <a
                 role="tab"
                 aria-selected={activeTab === 'gallery'}
                 className={`ui-tab-btn ${activeTab === 'gallery' ? 'active' : ''}`}
-                onClick={() => setTab('gallery')}
+                href={uiCatalogTabHref('gallery')}
+                onClick={(e) => handleSpaLinkClick(e, () => setTab('gallery'))}
               >
                 Gallery
-              </button>
-              <button
-                type="button"
+              </a>
+              <a
                 role="tab"
                 aria-selected={activeTab === 'docs'}
                 className={`ui-tab-btn ${activeTab === 'docs' ? 'active' : ''}`}
-                onClick={() => setTab('docs')}
+                href={uiCatalogTabHref('docs')}
+                onClick={(e) => handleSpaLinkClick(e, () => setTab('docs'))}
               >
                 Docs
-              </button>
-              <button
-                type="button"
+              </a>
+              <a
                 role="tab"
                 aria-selected={activeTab === 'theme'}
                 className={`ui-tab-btn ${activeTab === 'theme' ? 'active' : ''}`}
-                onClick={() => setTab('theme')}
+                href={uiCatalogTabHref('theme')}
+                onClick={(e) => handleSpaLinkClick(e, () => setTab('theme'))}
               >
                 Theme
-              </button>
-              <button
-                type="button"
+              </a>
+              <a
                 role="tab"
                 aria-selected={activeTab === 'regression'}
                 className={`ui-tab-btn ui-tab-btn--with-badge ${
                   activeTab === 'regression' ? 'active' : ''
                 }`}
                 aria-label={regressionBadgeLabel}
-                onClick={() => setTab('regression', 'screenshots')}
+                href={uiCatalogTabHref('regression', 'screenshots')}
+                onClick={(e) => handleSpaLinkClick(e, () => setTab('regression', 'screenshots'))}
               >
                 Regression
                 {regressionAttentionCount !== null && regressionAttentionCount > 0 ? (
@@ -1302,16 +1308,16 @@ function App() {
                     {regressionAttentionCount > 99 ? '99+' : regressionAttentionCount}
                   </span>
                 ) : null}
-              </button>
-              <button
-                type="button"
+              </a>
+              <a
                 role="tab"
                 aria-selected={activeTab === 'melodia'}
                 className={`ui-tab-btn ${activeTab === 'melodia' ? 'active' : ''}`}
-                onClick={() => setTab('melodia')}
+                href={uiCatalogTabHref('melodia')}
+                onClick={(e) => handleSpaLinkClick(e, () => setTab('melodia'))}
               >
                 Melodia
-              </button>
+              </a>
             </div>
           </div>
         </div>

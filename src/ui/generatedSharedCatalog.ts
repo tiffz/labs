@@ -15310,7 +15310,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "owner": "shared-core",
     "description": "Attach to `<a href>` onClick: modifier/middle clicks use the browser; plain click prevents reload.",
     "tags": [],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -15323,7 +15325,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "owner": "shared-core",
     "description": "Table/card row activation: open href in a new tab on modifier, else run onNavigate.",
     "tags": [],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -15336,7 +15340,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "owner": "shared-core",
     "description": "Helpers for in-app links that must behave like normal browser links: modifier+click and middle-click open a new tab/window, href is copyable, and a plain primary click uses SPA navigation without a full reload.",
     "tags": [],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -15349,7 +15355,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "owner": "shared-core",
     "description": "Helpers for in-app links that must behave like normal browser links: modifier+click and middle-click open a new tab/window, href is copyable, and a plain primary click uses SPA navigation without a full reload.",
     "tags": [],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -15362,7 +15370,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "owner": "shared-core",
     "description": "Resolve a hash, query, or path href against the current page for `window.open`.",
     "tags": [],
-    "appsUsing": [],
+    "appsUsing": [
+      "ui"
+    ],
     "exportType": "function",
     "demoId": null
   },

@@ -1,4 +1,4 @@
-import type { ZineboxLibraryParams } from '../routes/zineboxHash';
+import { handleSpaLinkClick, zineboxLibraryHref, type ZineboxLibraryParams } from '../routes/zineboxHash';
 
 type LibraryFilterPillsProps = {
   params: ZineboxLibraryParams;
@@ -16,49 +16,52 @@ export default function LibraryFilterPills({
   const statusActive = (filter: ZineboxLibraryParams['filter']) =>
     params.filter === filter && !params.source && !params.tag;
 
+  const pillHref = (next: Partial<ZineboxLibraryParams>) =>
+    zineboxLibraryHref({ ...params, ...next });
+
   return (
     <div className="zinebox-filter-pills-wrap">
       <div className="zinebox-filter-pills" role="toolbar" aria-label="Library filters">
-      <button
-        type="button"
+      <a
+        href={pillHref({ filter: 'all', source: null, tag: null })}
         className={`zinebox-pill${statusActive('all') ? ' zinebox-pill--active' : ''}`}
-        onClick={() => onChange({ filter: 'all', source: null, tag: null })}
+        onClick={(e) => handleSpaLinkClick(e, () => onChange({ filter: 'all', source: null, tag: null }))}
       >
         All
-      </button>
-      <button
-        type="button"
+      </a>
+      <a
+        href={pillHref({ filter: 'unread', source: null, tag: null })}
         className={`zinebox-pill${statusActive('unread') ? ' zinebox-pill--active' : ''}`}
-        onClick={() => onChange({ filter: 'unread', source: null, tag: null })}
+        onClick={(e) => handleSpaLinkClick(e, () => onChange({ filter: 'unread', source: null, tag: null }))}
       >
         Unread
-      </button>
-      <button
-        type="button"
+      </a>
+      <a
+        href={pillHref({ filter: 'read', source: null, tag: null })}
         className={`zinebox-pill${statusActive('read') ? ' zinebox-pill--active' : ''}`}
-        onClick={() => onChange({ filter: 'read', source: null, tag: null })}
+        onClick={(e) => handleSpaLinkClick(e, () => onChange({ filter: 'read', source: null, tag: null }))}
       >
         Read
-      </button>
+      </a>
       {sources.map((source) => (
-        <button
+        <a
           key={`source:${source}`}
-          type="button"
+          href={pillHref({ filter: 'all', source, tag: null })}
           className={`zinebox-pill${params.source === source && !params.tag ? ' zinebox-pill--active' : ''}`}
-          onClick={() => onChange({ filter: 'all', source, tag: null })}
+          onClick={(e) => handleSpaLinkClick(e, () => onChange({ filter: 'all', source, tag: null }))}
         >
           {source}
-        </button>
+        </a>
       ))}
       {tags.map((tag) => (
-        <button
+        <a
           key={`tag:${tag}`}
-          type="button"
+          href={pillHref({ filter: 'all', source: null, tag })}
           className={`zinebox-pill zinebox-pill--tag${params.tag === tag && !params.source ? ' zinebox-pill--active' : ''}`}
-          onClick={() => onChange({ filter: 'all', source: null, tag })}
+          onClick={(e) => handleSpaLinkClick(e, () => onChange({ filter: 'all', source: null, tag }))}
         >
           #{tag}
-        </button>
+        </a>
       ))}
       </div>
     </div>

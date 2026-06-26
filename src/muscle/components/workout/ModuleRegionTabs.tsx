@@ -1,4 +1,6 @@
+import { handleSpaLinkClick } from '../../../shared/navigation/spaLinkClick';
 import { isModuleUnlocked } from '../../srs/gatekeeper';
+import { muscleModuleHref, syncMuscleModuleUrl } from '../../routes/muscleAppUrl';
 import { useModuleOptions, useMuscleStore } from '../../store/useMuscleStore';
 import type { MuscleRegion } from '../../types/node';
 
@@ -12,26 +14,36 @@ export default function ModuleRegionTabs(): React.ReactElement {
 
   return (
     <div className="muscle-region-tabs" role="tablist" aria-label="Proko study regions">
-      <button
-        type="button"
+      <a
+        href={muscleModuleHref(null)}
         role="tab"
         aria-selected={bodyView === 'full_body'}
         className={`muscle-region-tabs__tab${bodyView === 'full_body' ? ' is-active' : ''}`}
-        onClick={() => setBodyView('full_body')}
+        onClick={(e) =>
+          handleSpaLinkClick(e, () => {
+            setBodyView('full_body');
+            syncMuscleModuleUrl(null);
+          })
+        }
       >
         <span className="muscle-region-tabs__label">Full body</span>
-      </button>
+      </a>
       {modules.map((mod) => {
         const active = bodyView === 'region' && mod.id === activeModuleId;
         const unlocked = isModuleUnlocked(mod.id, progressByNode);
         return (
-          <button
+          <a
             key={mod.id}
-            type="button"
+            href={muscleModuleHref(mod.id as MuscleRegion)}
             role="tab"
             aria-selected={active}
             className={`muscle-region-tabs__tab${active ? ' is-active' : ''}`}
-            onClick={() => setActiveModule(mod.id as MuscleRegion)}
+            onClick={(e) =>
+              handleSpaLinkClick(e, () => {
+                setActiveModule(mod.id as MuscleRegion);
+                syncMuscleModuleUrl(mod.id as MuscleRegion);
+              })
+            }
           >
             <span className="muscle-region-tabs__label">{mod.label}</span>
             {!unlocked && mod.id !== 'fundamentals' ? (
@@ -39,7 +51,7 @@ export default function ModuleRegionTabs(): React.ReactElement {
                 🔒
               </span>
             ) : null}
-          </button>
+          </a>
         );
       })}
     </div>
