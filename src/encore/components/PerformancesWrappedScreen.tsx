@@ -20,7 +20,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useEffect, useMemo, useState, type MouseEvent as ReactMouseEvent, type ReactElement, type ReactNode } from 'react';
 import type { EncorePerformance, EncoreSong } from '../types';
-import { encoreAppHref } from '../routes/encoreAppHash';
+import { encoreAppHref, handleSpaLinkClick } from '../routes/encoreAppHash';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { encoreMaxWidthPage, encoreShadowSurface } from '../theme/encoreUiTokens';
 import {
@@ -30,6 +30,28 @@ import {
   type ExtendedPerformanceInsights,
   type PerformanceDashboardStats,
 } from '../performances/performancesStatsModel';
+
+function WrappedSongInlineLink({
+  songId,
+  songTitle,
+  onOpenSong,
+  sx,
+}: {
+  songId: string;
+  songTitle: string;
+  onOpenSong: (songId: string, e?: ReactMouseEvent) => void;
+  sx?: Record<string, unknown>;
+}): ReactElement {
+  return (
+    <Link
+      href={encoreAppHref({ kind: 'song', id: songId })}
+      onClick={(e) => handleSpaLinkClick(e, () => onOpenSong(songId))}
+      sx={{ fontWeight: 700, fontSize: 'inherit', verticalAlign: 'baseline', ...sx }}
+    >
+      {songTitle}
+    </Link>
+  );
+}
 
 export type PerformancesWrappedScreenProps = {
   /** First name or display name fragment for possessive hero copy */
@@ -467,42 +489,33 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               {activeStats.mostPerformed?.song ? (
                 <>
                   . You have returned to{' '}
-                  <Link
-                    component="button"
-                    type="button"
-                    onClick={(e) => onOpenSong(activeStats.mostPerformed!.song!.id, e)}
-                    sx={{ fontWeight: 700, fontSize: 'inherit', verticalAlign: 'baseline' }}
-                  >
-                    {activeStats.mostPerformed.song.title}
-                  </Link>{' '}
+                  <WrappedSongInlineLink
+                    songId={activeStats.mostPerformed.song.id}
+                    songTitle={activeStats.mostPerformed.song.title}
+                    onOpenSong={onOpenSong}
+                  />{' '}
                   most often ({activeStats.mostPerformed.count}×).
                 </>
               ) : null}{' '}
               {activeStats.bestRecent?.song ? (
                 <>
                   Your most recent logged show was{' '}
-                  <Link
-                    component="button"
-                    type="button"
-                    onClick={(e) => onOpenSong(activeStats.bestRecent!.song!.id, e)}
-                    sx={{ fontWeight: 700 }}
-                  >
-                    {activeStats.bestRecent.song.title}
-                  </Link>{' '}
+                  <WrappedSongInlineLink
+                    songId={activeStats.bestRecent.song.id}
+                    songTitle={activeStats.bestRecent.song.title}
+                    onOpenSong={onOpenSong}
+                  />{' '}
                   on {activeStats.bestRecent.perf.date}.
                 </>
               ) : null}{' '}
               {activeStats.leastRecentlyPerformed?.song ? (
                 <>
                   The song you have gone longest without performing is{' '}
-                  <Link
-                    component="button"
-                    type="button"
-                    onClick={(e) => onOpenSong(activeStats.leastRecentlyPerformed!.song!.id, e)}
-                    sx={{ fontWeight: 700 }}
-                  >
-                    {activeStats.leastRecentlyPerformed.song.title}
-                  </Link>{' '}
+                  <WrappedSongInlineLink
+                    songId={activeStats.leastRecentlyPerformed.song.id}
+                    songTitle={activeStats.leastRecentlyPerformed.song.title}
+                    onOpenSong={onOpenSong}
+                  />{' '}
                   (last {activeStats.leastRecentlyPerformed.perf.date}).
                 </>
               ) : null}
@@ -517,14 +530,11 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               {activeStats.mostPerformed?.song ? (
                 <>
                   . Most often played:{' '}
-                  <Link
-                    component="button"
-                    type="button"
-                    onClick={(e) => onOpenSong(activeStats.mostPerformed!.song!.id, e)}
-                    sx={{ fontWeight: 700 }}
-                  >
-                    {activeStats.mostPerformed.song.title}
-                  </Link>{' '}
+                  <WrappedSongInlineLink
+                    songId={activeStats.mostPerformed.song.id}
+                    songTitle={activeStats.mostPerformed.song.title}
+                    onOpenSong={onOpenSong}
+                  />{' '}
                   ({activeStats.mostPerformed.count}×).
                 </>
               ) : null}
@@ -594,7 +604,11 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               <Button
                 variant="outlined"
                 size="small"
-                onClick={(e) => onOpenSong(activeStats.leastRecentlyPerformed!.song!.id, e)}
+                component="a"
+                href={encoreAppHref({ kind: 'song', id: activeStats.leastRecentlyPerformed.song.id })}
+                onClick={(e) =>
+                  handleSpaLinkClick(e, () => onOpenSong(activeStats.leastRecentlyPerformed!.song!.id))
+                }
                 sx={{ mt: 1.5, fontWeight: 600, borderRadius: 2, textTransform: 'none' }}
               >
                 Revival pick: {activeStats.leastRecentlyPerformed.song.title}
@@ -663,7 +677,13 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               <Button
                 variant="text"
                 disabled={!block.song}
-                onClick={(e) => block.song && onOpenSong(block.song.id, e)}
+                component={block.song ? 'a' : 'button'}
+                href={block.song ? encoreAppHref({ kind: 'song', id: block.song.id }) : undefined}
+                onClick={(e: ReactMouseEvent) =>
+                  block.song
+                    ? handleSpaLinkClick(e, () => onOpenSong(block.song!.id))
+                    : undefined
+                }
                 sx={{ fontWeight: 700, fontSize: '1rem', textTransform: 'none', lineHeight: 1.35 }}
               >
                 {block.song?.title ?? '–'}
@@ -722,7 +742,11 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                   <Button
                     variant="text"
                     disabled={!row.song}
-                    onClick={(e) => row.song && onOpenSong(row.song.id, e)}
+                    component={row.song ? 'a' : 'button'}
+                    href={row.song ? encoreAppHref({ kind: 'song', id: row.song.id }) : undefined}
+                    onClick={(e: ReactMouseEvent) =>
+                      row.song ? handleSpaLinkClick(e, () => onOpenSong(row.song!.id)) : undefined
+                    }
                     sx={{ textTransform: 'none', fontWeight: 700, fontSize: '0.95rem', minWidth: 0, flex: 1, justifyContent: 'flex-start' }}
                   >
                     {row.song?.title ?? '–'}

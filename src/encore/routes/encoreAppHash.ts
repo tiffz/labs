@@ -1,3 +1,12 @@
+import {
+  handleSpaLinkClick,
+  handleSpaRowActivate,
+  isModifiedOrNonPrimaryClick,
+  openAppLinkInBackgroundTab,
+} from '../../shared/navigation/spaLinkClick';
+
+export { handleSpaLinkClick, handleSpaRowActivate, isModifiedOrNonPrimaryClick };
+
 /**
  * Signed-in Encore client routes (hash only). Guest share stays `#/share/<driveFileId>` in {@link App}.
  *
@@ -83,18 +92,9 @@ export function encoreAppHref(route: EncoreAppRoute): string {
   return h;
 }
 
-/** True when the user expects a new tab/window (modifier keys or non-primary button on `click`). */
-export function isModifiedOrNonPrimaryClick(
-  e: Pick<MouseEvent, 'metaKey' | 'ctrlKey' | 'shiftKey' | 'altKey' | 'button'>,
-): boolean {
-  return e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
-}
-
 /** Open an Encore hash route in a new browsing context (middle-click / programmatic). */
 export function openEncoreRouteInBackgroundTab(route: EncoreAppRoute): void {
-  const url = new URL(window.location.href);
-  url.hash = encoreAppHref(route);
-  window.open(url.toString(), '_blank', 'noopener,noreferrer');
+  openAppLinkInBackgroundTab(encoreAppHref(route));
 }
 
 export function parseEncoreAppHash(hash: string): EncoreAppRoute {

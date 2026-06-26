@@ -74,6 +74,10 @@ export interface StanzaPlaybackUrlParams {
  * YouTube wins when `youtubeId` is set (Drive params are stripped). Other unrelated query
  * parameters (e.g. `?debug`) are preserved.
  */
+export function stanzaSongHref(opts: StanzaPlaybackUrlParams): string {
+  return buildStanzaPlaybackUrl(opts);
+}
+
 function buildStanzaPlaybackUrl(opts: StanzaPlaybackUrlParams): string {
   const u = new URL(window.location.href);
   const mediaFingerprint = opts.mediaFingerprint?.trim() || null;

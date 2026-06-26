@@ -10,6 +10,7 @@ import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import { useMemo, useState, type MouseEvent, type ReactElement, type ReactNode } from 'react';
 import { copyTextToClipboard, originalChartClipboardTexts } from '../originalsChartClipboard';
+import { encoreAppHref, handleSpaLinkClick } from '../../routes/encoreAppHash';
 import { navigateToOriginalLyricEdit } from '../originalsLibraryNavigation';
 
 const LyricsHoverTooltip = styled(({ className, ...props }: TooltipProps) => (
@@ -164,8 +165,13 @@ export function OriginalsLyricsHoverCard({
             <Button
               size="small"
               variant="text"
+              component="a"
+              href={encoreAppHref({ kind: 'original', id: songId })}
               startIcon={<EditOutlinedIcon aria-hidden />}
-              onClick={() => navigateToOriginalLyricEdit(songId)}
+              onClick={(e) => {
+                stopRowClick(e);
+                handleSpaLinkClick(e, () => navigateToOriginalLyricEdit(songId));
+              }}
               sx={hoverActionSx}
             >
               Edit

@@ -3,6 +3,9 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import type { StanzaSong } from '../../db/stanzaDb';
+import { resolveStanzaPlaybackUrlParamsForSong } from '../../import/beatLibraryImport';
+import { stanzaSongHref } from '../../utils/stanzaDriveUrlParams';
+import { handleSpaLinkClick } from '../../../shared/navigation/spaLinkClick';
 import { youtubeMqThumbnailUrl } from '../../utils/stanzaYoutubeMeta';
 import StanzaLibrarySourceBadge from '../StanzaLibrarySourceBadge';
 import { stanzaLibrarySourceKind } from '../stanzaLibrarySourceKind';
@@ -38,10 +41,10 @@ export default function StanzaLibraryGrid({
       ) : (
         songs.map((s) => (
           <Box key={s.id} sx={{ position: 'relative' }}>
-            <button
-              type="button"
+            <a
+              href={stanzaSongHref(resolveStanzaPlaybackUrlParamsForSong(s))}
               className={`stanza-library-card${s.id === selectedId ? ' stanza-library-card--selected' : ''}`}
-              onClick={() => onNavigateToSong(s)}
+              onClick={(e) => handleSpaLinkClick(e, () => onNavigateToSong(s))}
               aria-current={s.id === selectedId ? 'true' : undefined}
             >
               <div className="stanza-library-card-thumb-wrap">
@@ -77,7 +80,7 @@ export default function StanzaLibraryGrid({
                   </Typography>
                 ) : null}
               </div>
-            </button>
+            </a>
             <IconButton
               type="button"
               size="small"

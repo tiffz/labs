@@ -16,7 +16,7 @@ import type { EncoreRepertoireSavedSearch } from '../types';
 import { useEncoreHeavyListTabLaidOut } from '../utils/useEncoreHeavyListTabLaidOut';
 import { useEncoreActions, useEncoreLibraryExtras, useEncoreLibraryTables } from '../context/EncoreContext';
 import { useEncoreRepertoirePlaylist } from '../context/EncoreRepertoirePlaylistContext';
-import { navigateEncore } from '../routes/encoreAppHash';
+import { encoreAppHref, handleSpaLinkClick, navigateEncore } from '../routes/encoreAppHash';
 import {
   derivePlaylistImportTagsFromFilters,
   normalizeExcludedRepertoireFieldIds,
@@ -355,7 +355,9 @@ export function SavedSearchesManageScreen(props?: {
           <Button
             size="small"
             startIcon={<ArrowBackIcon />}
-            onClick={() => navigateEncore({ kind: 'library' })}
+            component="a"
+            href={encoreAppHref({ kind: 'library' })}
+            onClick={(e) => handleSpaLinkClick(e, () => navigateEncore({ kind: 'library' }))}
             sx={{ alignSelf: 'flex-start', textTransform: 'none', fontWeight: 600 }}
           >
             Back to repertoire

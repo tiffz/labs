@@ -5,7 +5,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { useMaterialReactTable, type MRT_ColumnDef, type MRT_RowSelectionState } from 'material-react-table';
-import { useCallback, useMemo, type Dispatch, type ReactElement, type SetStateAction } from 'react';
+import { useCallback, useMemo, type Dispatch, type MouseEvent as ReactMouseEvent, type ReactElement, type SetStateAction } from 'react';
 import { MRT_ROW_SELECT_COL } from '../../components/encoreMrtColumnOrder';
 import { chordProLyricSnippet } from '../../../shared/music/chordPro/chordProText';
 import { EncoreMrtTableShell, ENCORE_MRT_CLICKABLE_ROW_SX } from '../../components/EncoreMrtTableShell';
@@ -18,6 +18,7 @@ import { EncoreMrtColumnHeader } from '../../ui/EncoreMrtColumnHeader';
 import { HighlightedText } from '../../ui/HighlightedText';
 import { InlineChipDate } from '../../ui/InlineEditChip';
 import { originalSongStartedDate, originalSongTimeSignature, type EncoreOriginalSong } from '../types';
+import { encoreAppHref, handleSpaLinkClick, handleSpaRowActivate, openEncoreRouteInBackgroundTab } from '../../routes/encoreAppHash';
 import { navigateToOriginalFromLibrary } from '../originalsLibraryNavigation';
 import {
   isOriginalDemoReady,
@@ -96,7 +97,21 @@ export function OriginalsLibraryMrtTable({
           const playback = takePlaybackBySongId.get(song.id) ?? 'idle';
           return (
             <Stack direction="row" alignItems="center" spacing={0.75} sx={{ minWidth: 0, width: 1 }}>
-              <Typography variant="body2" noWrap sx={{ fontWeight: 600, minWidth: 0, flex: 1 }}>
+              <Typography
+                variant="body2"
+                component="a"
+                href={encoreAppHref({ kind: 'original', id: song.id })}
+                onClick={(e) => handleSpaLinkClick(e, () => navigateToOriginalFromLibrary(song))}
+                noWrap
+                sx={{
+                  fontWeight: 600,
+                  minWidth: 0,
+                  flex: 1,
+                  color: 'text.primary',
+                  textDecoration: 'none',
+                  '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+                }}
+              >
                 <HighlightedText
                   text={song.title.trim() || 'Untitled'}
                   highlight={search}
@@ -266,7 +281,20 @@ export function OriginalsLibraryMrtTable({
       sorting: [{ id: 'updatedAt', desc: true }],
     },
     muiTableBodyRowProps: ({ row }) => ({
-      onClick: () => navigateToOriginalFromLibrary(row.original),
+      onClick: (e: ReactMouseEvent<HTMLTableRowElement>) => {
+        const el = e.target as HTMLElement;
+        if (el.closest('[data-encore-row-control]')) return;
+        handleSpaRowActivate(e, encoreAppHref({ kind: 'original', id: row.original.id }), () =>
+          navigateToOriginalFromLibrary(row.original),
+        );
+      },
+      onAuxClick: (e: ReactMouseEvent<HTMLTableRowElement>) => {
+        if (e.button !== 1) return;
+        const el = e.target as HTMLElement;
+        if (el.closest('[data-encore-row-control]')) return;
+        e.preventDefault();
+        openEncoreRouteInBackgroundTab({ kind: 'original', id: row.original.id });
+      },
       sx: ENCORE_MRT_CLICKABLE_ROW_SX,
     }),
   });

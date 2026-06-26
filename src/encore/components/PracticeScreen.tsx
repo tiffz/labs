@@ -29,7 +29,7 @@ import {
 } from '../utils/useEncoreTabFrozenSnapshot';
 import { mergeSongWithImport } from '../import/findExistingSongForImport';
 import { readSpotifyToken } from '../spotify/pkce';
-import { encoreAppHref, navigateEncore } from '../routes/encoreAppHash';
+import { encoreAppHref, handleSpaLinkClick, navigateEncore } from '../routes/encoreAppHash';
 import { applyTemplateProgressToSong } from '../repertoire/repertoireMilestones';
 import { milestoneProgressSummary } from '../repertoire/repertoireMilestoneSummary';
 import { withPracticingToggle } from '../repertoire/practicingToggle';
@@ -834,11 +834,15 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
                     }
                   >
                     <ListItemButton
+                      component="a"
+                      href={encoreAppHref({ kind: 'practice', songId: s.id })}
                       selected={selected}
-                      onClick={() => {
-                        setFocusedSongId(s.id);
-                        navigateEncore({ kind: 'practice', songId: s.id });
-                      }}
+                      onClick={(e) =>
+                        handleSpaLinkClick(e, () => {
+                          setFocusedSongId(s.id);
+                          navigateEncore({ kind: 'practice', songId: s.id });
+                        })
+                      }
                       sx={{
                         borderRadius: 1,
                         py: 1,

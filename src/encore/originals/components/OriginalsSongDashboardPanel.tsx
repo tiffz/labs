@@ -29,6 +29,7 @@ import {
   originalsDashboardSectionDividerSx,
 } from '../originalsDashboardUi';
 import { originalsLyricsChartTexts } from '../originalsLyricsChartTexts';
+import { encoreAppHref, handleSpaLinkClick } from '../../routes/encoreAppHash';
 import { navigateToOriginalFromLibrary, navigateToOriginalStageEdit } from '../originalsLibraryNavigation';
 import { originalsLibraryStageChipSx, originalsSongMetaChipRowSx } from '../originalsLibraryUi';
 import { buildOriginalSongDashboardStatus } from '../originalsSongDashboardStatus';
@@ -190,11 +191,15 @@ export const OriginalsSongDashboardPanel = memo(function OriginalsSongDashboardP
             <Button
               variant="contained"
               size="medium"
+              component="a"
+              href={encoreAppHref({ kind: 'original', id: song.id })}
               endIcon={<PrimaryIcon sx={{ fontSize: 18 }} />}
-              onClick={() =>
-                demoReady
-                  ? navigateToOriginalFromLibrary(song)
-                  : navigateToOriginalStageEdit(song.id, activeStage)
+              onClick={(e) =>
+                handleSpaLinkClick(e, () =>
+                  demoReady
+                    ? navigateToOriginalFromLibrary(song)
+                    : navigateToOriginalStageEdit(song.id, activeStage),
+                )
               }
               sx={{
                 textTransform: 'none',

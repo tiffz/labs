@@ -16,6 +16,29 @@ Multi-panel apps (header + scrollable main + optional footer) should use [`layou
 
 While data is still loading (IndexedDB live query not emitted, fetch in flight, etc.), **do not** show empty-state copy (`Nothing here yet`, `None yet`). Use [`components/LabsListLoadingState.tsx`](./components/LabsListLoadingState.tsx) (spinner + “Loading …” or skeleton rows) until the source exposes a hydrated/ready signal. Empty states belong only after loading completes with zero rows.
 
+## In-app navigation links (SPA)
+
+Hash- and query-routed apps must behave like normal browser links: modifier+click and middle-click open a new tab, right-click can copy the URL, and keyboard users get native link affordances.
+
+Shared helpers live in [`navigation/spaLinkClick.ts`](./navigation/spaLinkClick.ts):
+
+| Helper                                      | Use when                                                                                 |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `isModifiedOrNonPrimaryClick(e)`            | Branching in custom handlers                                                             |
+| `handleSpaLinkClick(e, onNavigate)`         | `<a href>` or MUI `component="a"` — plain click SPA-navigates; modifiers use the browser |
+| `handleSpaRowActivate(e, href, onNavigate)` | Table/card row click — modifiers open `href` in a new tab                                |
+| `openAppLinkInBackgroundTab(href)`          | Programmatic new-tab open (e.g. middle-click on a row)                                   |
+
+**Pattern**
+
+1. Always set a real **`href`** (hash route, query param, or path) that fully identifies the destination.
+2. On **`click`**, call `handleSpaLinkClick` (or `handleSpaRowActivate` for whole-row targets) so a plain click does not reload the page.
+3. Do **not** call `preventDefault()` before checking modifiers — that blocks Shift/Ctrl/Meta+click.
+4. Prefer `<a>` / MUI `component="a"` over `<button onClick={navigate}>` for destinations that have a URL.
+5. External URLs: keep `target="_blank"` and `rel="noopener noreferrer"`.
+
+App-specific href builders: Encore [`encoreAppHref`](../encore/routes/encoreAppHash.ts), Stanza [`stanzaSongHref`](../stanza/utils/stanzaDriveUrlParams.ts) + [`resolveStanzaPlaybackUrlParamsForSong`](../stanza/import/beatLibraryImport.ts), Zine Box [`zineboxReadHref`](../zinebox/routes/zineboxHash.ts).
+
 ## Theme Contract (Default)
 
 All music apps and `/ui` should publish the same semantic contract, then map app identity into these variables:

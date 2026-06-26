@@ -19,7 +19,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import type { MRT_TableInstance } from 'material-react-table';
 import { useCallback, useId, useState, type ReactElement, type RefObject } from 'react';
 import type { EncoreRepertoireSavedSearch } from '../../types';
-import { navigateEncore } from '../../routes/encoreAppHash';
+import { encoreAppHref, handleSpaLinkClick, navigateEncore } from '../../routes/encoreAppHash';
 import {
   EncoreFilterChipBar,
   type EncoreFilterChipBarHandle,
@@ -193,9 +193,13 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
               )}
               <Divider />
               <MenuItem
-                onClick={() => {
-                  closeSavedSearchMenu();
-                  navigateEncore({ kind: 'savedSearches' });
+                component="a"
+                href={encoreAppHref({ kind: 'savedSearches' })}
+                onClick={(e) => {
+                  handleSpaLinkClick(e, () => {
+                    closeSavedSearchMenu();
+                    navigateEncore({ kind: 'savedSearches' });
+                  });
                 }}
                 sx={{ fontWeight: 600 }}
               >

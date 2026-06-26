@@ -61,7 +61,8 @@ import {
 import type { EncoreMrtTablePrefs, EncorePerformance, EncoreRepertoireSavedSearch, EncoreSong } from '../types';
 import {
   encoreAppHref,
-  isModifiedOrNonPrimaryClick,
+  handleSpaLinkClick,
+  handleSpaRowActivate,
   navigateEncore,
   openEncoreRouteInBackgroundTab,
 } from '../routes/encoreAppHash';
@@ -167,26 +168,38 @@ const getRepertoireRowId = (row: EncoreRepertoireMrtRow): string => row.song.id;
 
 const REPERTOIRE_MRT_DEFAULT_COLUMN = { minSize: 100, maxSize: 640, size: 140 } as const;
 
-function RepTitleTableCell({ renderedCellValue }: { renderedCellValue: unknown }): ReactElement {
+function RepTitleTableCell({
+  songId,
+  renderedCellValue,
+}: {
+  songId: string;
+  renderedCellValue: unknown;
+}): ReactElement {
   const highlight = useContext(EncoreMrtSearchHighlightContext);
   const t = String(renderedCellValue ?? '');
   return (
     <AppTooltip title={t}>
-      <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
-        <HighlightedText
-          text={t}
-          highlight={highlight}
-          variant="body2"
-          sx={{
-            fontWeight: 600,
-            lineHeight: 1.35,
-            color: 'text.primary',
-            display: 'block',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        />
-      </Box>
+      <Typography
+        component="a"
+        href={encoreAppHref({ kind: 'song', id: songId })}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleSpaLinkClick(e, () => navigateEncore({ kind: 'song', id: songId }));
+        }}
+        variant="body2"
+        sx={{
+          fontWeight: 600,
+          lineHeight: 1.35,
+          color: 'text.primary',
+          display: 'block',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          textDecoration: 'none',
+          '&:hover': { color: 'primary.main', textDecoration: 'underline' },
+        }}
+      >
+        <HighlightedText text={t} highlight={highlight} component="span" variant="inherit" />
+      </Typography>
     </AppTooltip>
   );
 }
@@ -360,8 +373,9 @@ const RepertoireGridCard = memo(function RepertoireGridCard(props: RepertoireGri
       }}
     >
       <CardActionArea
-        component="div"
-        onClick={(e) => onOpenSong(s, e)}
+        component="a"
+        href={encoreAppHref({ kind: 'song', id: s.id })}
+        onClick={(e) => handleSpaLinkClick(e, () => onOpenSong(s))}
         sx={{
           flex: 1,
           alignItems: 'stretch',
@@ -1071,11 +1085,12 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
   const tagFilterOptions = useMemo(() => collectAllSongTags(songs), [songs]);
 
   const openSong = useCallback((s: EncoreSong, e?: ReactMouseEvent | globalThis.MouseEvent | null) => {
-    if (e && isModifiedOrNonPrimaryClick(e)) {
-      openEncoreRouteInBackgroundTab({ kind: 'song', id: s.id });
+    const navigate = () => navigateEncore({ kind: 'song', id: s.id });
+    if (e) {
+      handleSpaRowActivate(e, encoreAppHref({ kind: 'song', id: s.id }), navigate);
       return;
     }
-    navigateEncore({ kind: 'song', id: s.id });
+    navigate();
   }, []);
 
   const openSongResources = useCallback((s: EncoreSong, section: SongResourcesEditSection) => {
@@ -1263,7 +1278,9 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
         ),
         size: 220,
         minSize: 200,
-        Cell: ({ renderedCellValue }) => <RepTitleTableCell renderedCellValue={renderedCellValue} />,
+        Cell: ({ row }) => (
+          <RepTitleTableCell songId={row.original.song.id} renderedCellValue={row.original.title} />
+        ),
       },
       {
         accessorKey: 'artist',

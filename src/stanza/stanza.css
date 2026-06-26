@@ -387,7 +387,13 @@
     var(--stanza-shadow-card);
 }
 
-button.stanza-library-card {
+.stanza-library-card:focus-visible {
+  outline: 2px solid rgba(232, 72, 160, 0.55);
+  outline-offset: 2px;
+}
+
+button.stanza-library-card,
+a.stanza-library-card {
   display: flex;
   flex-direction: column;
   width: 100%;

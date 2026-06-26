@@ -15,7 +15,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useState, type ReactElement } from 'react';
-import { encoreAppHref, navigateEncore } from '../../routes/encoreAppHash';
+import { encoreAppHref, handleSpaLinkClick, navigateEncore } from '../../routes/encoreAppHash';
 import { encorePageSectionGap } from '../../theme/encoreM3Layout';
 import { encoreHairline, encoreRadius } from '../../theme/encoreUiTokens';
 import type { EncoreOriginalSong, OriginalSongSnapshot } from '../types';
@@ -58,10 +58,7 @@ export function OriginalsSongHeader({
             aria-label="Back to originals"
             size="small"
             sx={{ mt: 0.5, ml: -0.5 }}
-            onClick={(e) => {
-              e.preventDefault();
-              navigateEncore({ kind: 'originals' });
-            }}
+            onClick={(e) => handleSpaLinkClick(e, () => navigateEncore({ kind: 'originals' }))}
           >
             <ArrowBackIcon fontSize="small" />
           </IconButton>

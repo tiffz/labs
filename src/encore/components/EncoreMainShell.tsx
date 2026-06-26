@@ -23,7 +23,7 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from 'react';
 import type { EncoreAppRoute } from '../routes/encoreAppHash';
-import { encoreAppHref, navigateEncore, parseEncoreAppHash } from '../routes/encoreAppHash';
+import { encoreAppHref, handleSpaLinkClick, navigateEncore, parseEncoreAppHash } from '../routes/encoreAppHash';
 import { useEncoreSync } from '../context/EncoreContext';
 import { encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { encoreHairline, encoreRadius } from '../theme/encoreUiTokens';
@@ -111,9 +111,7 @@ function initialListSectionVisited(route: EncoreAppRoute): Record<EncoreMainList
 }
 
 function encorePrimaryTabNavigate(e: ReactMouseEvent, route: EncoreAppRoute): void {
-  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-  e.preventDefault();
-  startTransition(() => navigateEncore(route));
+  handleSpaLinkClick(e, () => startTransition(() => navigateEncore(route)));
 }
 
 function readInitialRoute(): EncoreAppRoute {
