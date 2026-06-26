@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildInteriorHoleLoopSegmentPositions,
+  buildSkinHoleDebugSegmentPositions,
   findBoundaryLoops,
   findMidlineThroatHoleLoops,
+  isPalmarStudyDebugHoleLoop,
   isSignificantVisibleSkinHoleLoop,
+  PALM_WRIST_DEBUG_BOUNDS,
 } from './skinCoverageAudit';
 import { readRuntimeStudySkinEnvelope } from './skinCoverageAuditNode';
 
@@ -74,15 +77,24 @@ describe('significant shoulder hole filter', () => {
     expect(significant.length).toBeLessThan(allInterior.length);
     expect(significant.length).toBeGreaterThan(0);
     expect(segments).not.toBeNull();
-    if (process.env.MUSCLE_SKIN_HOLE_DIAG === '1') {
-      console.warn(
-        `# Significant skin loops: ${significant.length} (raw interior: ${allInterior.length})`,
-      );
-      for (const loop of significant.slice(0, 8)) {
-        console.warn(
-          `  ${loop.edgeCount} edges @ y=${loop.centroid.y.toFixed(3)} x=${loop.centroid.x.toFixed(3)} z=${loop.centroid.z.toFixed(3)}`,
-        );
-      }
+  });
+
+  it('study debug overlay marks palmar loops on transparent half (8+ edges)', () => {
+    const geometry = readRuntimeStudySkinEnvelope();
+    const position = geometry.getAttribute('position')!;
+    const palmarRelaxed = findBoundaryLoops(geometry).filter((loop) =>
+      isPalmarStudyDebugHoleLoop(loop, position),
+    );
+    const debugSegments = buildSkinHoleDebugSegmentPositions(geometry);
+    expect(
+      palmarRelaxed.length,
+      'expected palmar interior loops in study clip for debug',
+    ).toBeGreaterThan(0);
+    expect(debugSegments).not.toBeNull();
+    expect(debugSegments!.length).toBeGreaterThan(palmarRelaxed.length * 6);
+    for (const loop of palmarRelaxed) {
+      expect(loop.centroid.y).toBeGreaterThanOrEqual(PALM_WRIST_DEBUG_BOUNDS.minY);
+      expect(loop.maxAbsX).toBeGreaterThan(PALM_WRIST_DEBUG_BOUNDS.minAbsX);
     }
   });
 });

@@ -25,10 +25,13 @@ Hard refresh `/muscle/` (Cmd+Shift+R), then visual pass at peel depth 0.
 
 `/muscle/?debug=1&skinHoles=1` on **Full body** tab, peel depth **0**:
 
-| Color       | Meaning                        | Detection                                                                |
-| ----------- | ------------------------------ | ------------------------------------------------------------------------ |
-| **Magenta** | Significant **interior** holes | Closed boundary loops with `minAbsX > 0.035`, ≥14 edges (study half)     |
-| **Yellow**  | **Midline seam** gaps          | Open boundary edges at `\|x\| ≤ 0.028` on study **and** reference halves |
+| Color       | Meaning                            | Detection                                                                |
+| ----------- | ---------------------------------- | ------------------------------------------------------------------------ |
+| **Magenta** | Significant **interior** holes     | ≥14 edges, `minAbsX > 0.035` — drawn on **same half** as analyzed mesh   |
+| **Magenta** | Palmar voids (study / transparent) | +8 edges in `palmWrist` band on **study** half only (relaxed debug)      |
+| **Yellow**  | **Midline seam** gaps              | Open boundary edges at `\|x\| ≤ 0.028` on study **and** reference halves |
+
+Study hole wireframes must render on `AnatomyHalfGroup half="study"` — mirroring study loops onto reference hid palmar voids on the transparent side.
 
 Diagnostic env (Node):
 

@@ -1290,6 +1290,19 @@ def weld_skin_problem_bands(obj) -> None:
 
 def fill_skin_neck_shoulder_holes(obj) -> None:
     """Delt / pec / lateral neck patch gaps."""
+    force_fill_largest_interior_loop(
+        obj,
+        y_min=1.05,
+        y_max=1.42,
+        min_abs_x=0.10,
+        max_abs_x=0.28,
+        z_min=-0.14,
+        z_max=0.10,
+        min_edges=12,
+        max_edges=64,
+        label='neck_shoulder_force',
+        filter_centroid=True,
+    )
     fill_skin_patch_holes_bmesh(
         obj,
         sides=64,
@@ -1299,6 +1312,7 @@ def fill_skin_neck_shoulder_holes(obj) -> None:
         max_abs_x=0.28,
         z_min=-0.14,
         z_max=0.14,
+        max_passes=8,
         label='neck_shoulder',
     )
 
@@ -2470,6 +2484,22 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
             z_max=0.10,
         )
 
+    for pass_idx in range(8):
+        filled = force_fill_largest_interior_loop(
+            unified,
+            y_min=0.84,
+            y_max=0.98,
+            min_abs_x=0.14,
+            max_abs_x=0.32,
+            z_min=0.0,
+            z_max=0.14,
+            min_edges=12,
+            max_edges=32,
+            label=f'palm_anterior_{pass_idx}',
+            filter_centroid=True,
+        )
+        if not filled:
+            break
     for pass_idx in range(6):
         filled = force_fill_largest_interior_loop(
             unified,

@@ -231,6 +231,113 @@ export const SHOULDER_DELT_DEBUG_BOUNDS = {
   minZ: -0.1,
 };
 
+/** Palmar band on study transparent shell — relaxed thresholds for debug overlay only. */
+export const PALM_WRIST_DEBUG_BOUNDS = {
+  minY: 0.82,
+  maxY: 1.02,
+  minAbsX: 0.08,
+  maxAbsX: 0.36,
+  minZ: -0.12,
+};
+
+function loopDedupKey(loop: BoundaryLoop): string {
+  return loop.vertexIndices.join(':');
+}
+
+/** Relaxed palmar loops for ?skinHoles=1 (study half visible voids, 8+ edges). */
+export function isPalmarStudyDebugHoleLoop(
+  loop: BoundaryLoop,
+  position: BufferAttribute,
+): boolean {
+  if (!isInteriorSkinHoleLoop(loop)) return false;
+  if (loop.edgeCount < 8 || loop.edgeCount > 32) return false;
+  if (loopDiameter(position, loop) < 0.008) return false;
+  return loopInBounds(loop, PALM_WRIST_DEBUG_BOUNDS);
+}
+
+/** Line-segment pairs for interior hole loops (debug overlay). */
+export function buildInteriorHoleLoopSegmentPositions(
+  geometry: BufferGeometry,
+  filter: SkinHoleLoopFilter = {},
+): Float32Array | null {
+  const position = geometry.getAttribute('position') as BufferAttribute | undefined;
+  if (!position) return null;
+
+  const loops = findBoundaryLoops(geometry).filter((loop) =>
+    isSignificantVisibleSkinHoleLoop(loop, position, filter),
+  );
+
+  const verts: number[] = [];
+  for (const loop of loops) {
+    for (const [a, b] of loop.boundaryEdges) {
+      verts.push(
+        position.getX(a),
+        position.getY(a),
+        position.getZ(a),
+        position.getX(b),
+        position.getY(b),
+        position.getZ(b),
+      );
+    }
+  }
+
+  if (verts.length === 0) return null;
+  return new Float32Array(verts);
+}
+
+/**
+ * Debug overlay segments for one sagittal half — render on the matching AnatomyHalfGroup
+ * (study geometry → study half; reference geometry → reference half). Do not mirror.
+ */
+export function buildSkinHoleDebugSegmentPositions(
+  geometry: BufferGeometry,
+  options?: { includePalmarRelaxed?: boolean },
+): Float32Array | null {
+  const position = geometry.getAttribute('position') as BufferAttribute | undefined;
+  if (!position) return null;
+
+  const defaultFilter: SkinHoleLoopFilter = { minEdgeCount: 14, minDiameter: 0.012 };
+  const seen = new Set<string>();
+  const included: BoundaryLoop[] = [];
+
+  for (const loop of findBoundaryLoops(geometry)) {
+    if (isSignificantVisibleSkinHoleLoop(loop, position, defaultFilter)) {
+      const key = loopDedupKey(loop);
+      if (!seen.has(key)) {
+        seen.add(key);
+        included.push(loop);
+      }
+    }
+  }
+
+  if (options?.includePalmarRelaxed !== false) {
+    for (const loop of findBoundaryLoops(geometry)) {
+      if (!isPalmarStudyDebugHoleLoop(loop, position)) continue;
+      const key = loopDedupKey(loop);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      included.push(loop);
+    }
+  }
+
+  const verts: number[] = [];
+  for (const loop of included) {
+    for (const [a, b] of loop.boundaryEdges) {
+      verts.push(
+        position.getX(a),
+        position.getY(a),
+        position.getZ(a),
+        position.getX(b),
+        position.getY(b),
+        position.getZ(b),
+      );
+    }
+  }
+
+  if (verts.length === 0) return null;
+  return new Float32Array(verts);
+}
+
 /** Filters micro-seams (4–12 edges) that rarely read as visible holes in the viewport. */
 export function isSignificantVisibleSkinHoleLoop(
   loop: BoundaryLoop,
@@ -423,36 +530,6 @@ export function auditPlatysmaHotspotHoles(
     interiorLoopCount: loops.length,
     largestInteriorLoopEdges: loops.reduce((max, loop) => Math.max(max, loop.edgeCount), 0),
   };
-}
-
-/** Line-segment pairs for interior hole loops (debug overlay). */
-export function buildInteriorHoleLoopSegmentPositions(
-  geometry: BufferGeometry,
-  filter: SkinHoleLoopFilter = {},
-): Float32Array | null {
-  const position = geometry.getAttribute('position') as BufferAttribute | undefined;
-  if (!position) return null;
-
-  const loops = findBoundaryLoops(geometry).filter((loop) =>
-    isSignificantVisibleSkinHoleLoop(loop, position, filter),
-  );
-
-  const verts: number[] = [];
-  for (const loop of loops) {
-    for (const [a, b] of loop.boundaryEdges) {
-      verts.push(
-        position.getX(a),
-        position.getY(a),
-        position.getZ(a),
-        position.getX(b),
-        position.getY(b),
-        position.getZ(b),
-      );
-    }
-  }
-
-  if (verts.length === 0) return null;
-  return new Float32Array(verts);
 }
 
 /** |x| below this at a boundary-edge midpoint counts as sagittal seam-adjacent (not interior-hole filter). */
