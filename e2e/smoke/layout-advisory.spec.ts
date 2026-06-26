@@ -29,11 +29,10 @@ test.describe('Layout advisory (Tier 3)', () => {
   });
 
   test('sight practice shell LCP within budget', async ({ page }) => {
-    await page.goto('/sight/#/practice');
+    await page.goto('/sight/');
     await expect(page.locator('#root')).toBeVisible();
-    await expect(page.locator('.sight-practice-shell, [data-testid="sight-practice"]').first()).toBeVisible({
-      timeout: 15_000,
-    });
+    await page.getByRole('button', { name: /^practice$/i }).click();
+    await expect(page.locator('.sight-practice-shell')).toBeVisible({ timeout: 15_000 });
     const sample = await sampleLcpMs(page, 3500);
     expect(sample.ok, sample.reason ?? '').toBe(true);
   });
