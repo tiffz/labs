@@ -1,6 +1,6 @@
 import { BoxGeometry, BufferGeometry, Float32BufferAttribute, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { alignSkinEnvelopeToStudyHalf, flipGeometryWinding } from './alignSkinEnvelopeGeometry';
+import { alignSkinEnvelopeToStudyHalf, flipGeometryWinding, mirrorClippedSkinToReferenceHalf } from './alignSkinEnvelopeGeometry';
 import { clipSkinGeometryToStudyHalf } from './clipSkinToStudyHalf';
 
 function triangleCount(geometry: BufferGeometry): number {
@@ -89,6 +89,21 @@ describe('alignSkinEnvelopeToStudyHalf', () => {
     aligned.computeBoundingBox();
     const center = aligned.boundingBox!.getCenter(new Vector3());
     expect(outwardNormalDot(aligned, center)).toBeGreaterThan(0);
+  });
+});
+
+describe('mirrorClippedSkinToReferenceHalf', () => {
+  it('mirrors a +X clipped shell onto −X with outward normals', () => {
+    const geometry = new BoxGeometry(0.2, 0.4, 0.1);
+    geometry.translate(0.1, 0.5, 0);
+
+    const mirrored = mirrorClippedSkinToReferenceHalf(geometry);
+    mirrored.computeBoundingBox();
+    expect(mirrored.boundingBox!.max.x).toBeLessThanOrEqual(0.001);
+    expect(mirrored.boundingBox!.min.x).toBeLessThan(-0.05);
+
+    const center = mirrored.boundingBox!.getCenter(new Vector3());
+    expect(outwardNormalDot(mirrored, center)).toBeGreaterThan(0);
   });
 });
 

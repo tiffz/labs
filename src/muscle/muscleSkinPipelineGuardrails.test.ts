@@ -23,6 +23,29 @@ describe('muscle skin pipeline guardrails', () => {
     expect(source).not.toMatch(/alphaTest\s*=\s*isStudy\s*\?\s*0\.0[1-9]/);
     expect(source).toMatch(/material\.polygonOffset\s*=\s*!isStudy/);
     expect(source).toMatch(/polygonOffsetFactor\s*=\s*isStudy\s*\?\s*0\s*:\s*-1/);
+    expect(source).toMatch(/acquireSkinMaterial/);
+    expect(source).not.toMatch(/inflateSkinShellGeometry/);
+    expect(source).not.toMatch(/usePublishSkinPixelAudit/);
+    expect(source).not.toMatch(/depthTest:\s*false/);
+    expect(source).not.toMatch(/SkinEnvelopeShells/);
+  });
+
+  it('disables reference-half frustum culling under −X mirror', () => {
+    const source = readRepo('src/muscle/components/canvas/GlbAtlasMirrorMesh.tsx');
+    expect(source).toMatch(/frustumCulled = false/);
+    expect(source).not.toMatch(/depthTest = false/);
+    expect(source).toMatch(/depthWrite = false/);
+  });
+
+  it('renders reference skin with DoubleSide under parent −X mirror and strips bleed triangles', () => {
+    const layerSource = readRepo('src/muscle/components/canvas/SkinEnvelopeLayer.tsx');
+    expect(layerSource).toMatch(/material\.side = DoubleSide/);
+    expect(layerSource).not.toMatch(/inflateSkinShellGeometry/);
+    expect(layerSource).toMatch(/mergeSkinEnvelopeParts/);
+    expect(readRepo('src/muscle/components/canvas/skinHalfClipOptions.ts')).toMatch(/stripSkinTrianglesOnNegativeX/);
+    expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/components/canvas/inflateSkinShellGeometry.ts'))).toBe(
+      false,
+    );
   });
 
   it('preserves midline face and anterior neck bands during sagittal clip', () => {
@@ -56,6 +79,7 @@ describe('muscle skin pipeline guardrails', () => {
     expect(exportSource).toMatch(/Lobule of auricle/);
     expect(exportSource).toMatch(/join_ear_overlay_to_envelope/);
     expect(exportSource).toMatch(/weld_skin_ear_junction/);
+    expect(exportSource).toMatch(/fill_skin_palm_medial_cuff_holes/);
   });
 
   it('requires muscle skin pipeline cursor rule', () => {
@@ -78,6 +102,15 @@ describe('muscle skin pipeline guardrails', () => {
     expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/skinCoverageAudit.test.ts'))).toBe(true);
     expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/skinSeamGapAudit.test.ts'))).toBe(true);
     expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/earSkinExportAudit.test.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/skinRuntimePipelineAudit.test.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/anatomy/skinRenderAudit.test.ts'))).toBe(true);
     expect(fs.existsSync(path.join(REPO_ROOT, 'src/muscle/components/canvas/skinHalfClipOptions.ts'))).toBe(true);
+  });
+
+  it('requires canvas screenshot visual gate (not JSON pixel heuristics in smoke e2e)', () => {
+    expect(fs.existsSync(path.join(REPO_ROOT, 'e2e/visual/muscle-full-body-skin.visual.spec.ts'))).toBe(true);
+    const smokeSource = readRepo('e2e/smoke/muscle-full-body-skin.spec.ts');
+    expect(smokeSource).not.toMatch(/__MUSCLE_SKIN_PIXEL_AUDIT__/);
+    expect(smokeSource).not.toMatch(/gridSkinHits/);
   });
 });

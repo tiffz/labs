@@ -52,6 +52,7 @@ describe('earSkinExportAudit', () => {
     );
     expect(exportSource).toMatch(/join_ear_overlay_to_envelope/);
     expect(exportSource).toMatch(/weld_skin_ear_junction/);
+    expect(exportSource).toMatch(/seal_skin_ear_attachment_seam/);
 
     const manifest = JSON.parse(
       fs.readFileSync(path.join(REPO_ROOT, 'public/muscle/models/manifest.json'), 'utf8'),

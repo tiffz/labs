@@ -1,6 +1,7 @@
 import type { BufferAttribute, BufferGeometry } from 'three';
 import {
   clipSkinGeometryToStudyHalf,
+  stripSkinTrianglesOnNegativeX,
   type SkinSagittalClipOptions,
 } from './clipSkinToStudyHalf';
 
@@ -13,18 +14,19 @@ export const STUDY_SKIN_CLIP_OPTIONS: SkinSagittalClipOptions = {
   preserveMidlineAnteriorNeck: true,
   preserveMidlineAbdomen: true,
   preserveMidlinePosteriorNeck: true,
+  preserveLateralEar: true,
 };
 
 /**
- * Reference (−scale mirror): strict +X local shell only — no midline preserve bands.
- * Triangles with local minX < 0 mirror onto world +X and read as opaque patches on the study side.
+ * Reference (−scale mirror): strict +X shell with midline face/neck caps, then strip other −X bleed.
+ * Midline face caps straddle x=0 — kept through strip so the opaque shell is closed; other −X tris drop.
  */
 export const REFERENCE_SKIN_CLIP_OPTIONS: SkinSagittalClipOptions = {
   anyVertexOnHalf: false,
   preserveMidlinePelvis: false,
   preserveMidlineThorax: false,
-  preserveMidlineFace: false,
-  preserveMidlineAnteriorNeck: false,
+  preserveMidlineFace: true,
+  preserveMidlineAnteriorNeck: true,
   preserveMidlineAbdomen: false,
   preserveMidlinePosteriorNeck: false,
   preserveLateralEar: true,
@@ -35,11 +37,15 @@ export function clipSkinGeometryForStudyHalf(geometry: BufferGeometry): BufferGe
   return clipSkinGeometryToStudyHalf(geometry.clone(), 0, STUDY_SKIN_CLIP_OPTIONS);
 }
 
+/**
+ * Reference (−scale mirror): strict +X local shell, then strip −X bleed before parent mirror.
+ */
 export function clipSkinGeometryForReferenceHalf(geometry: BufferGeometry): BufferGeometry {
-  return clipSkinGeometryToStudyHalf(geometry.clone(), 0, REFERENCE_SKIN_CLIP_OPTIONS);
+  const clipped = clipSkinGeometryToStudyHalf(geometry.clone(), 0, REFERENCE_SKIN_CLIP_OPTIONS);
+  return stripSkinTrianglesOnNegativeX(clipped);
 }
 
-/** Triangles whose local minX < 0 would appear on world +X after reference parent mirror. */
+/** Triangles whose local minX < 0 would mirror onto world +X after reference parent mirror. */
 export function countReferenceMirrorBleedTriangles(geometry: BufferGeometry): number {
   const position = geometry.getAttribute('position') as BufferAttribute | undefined;
   const index = geometry.getIndex();

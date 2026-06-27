@@ -11,26 +11,26 @@
     "earLateral": 850
   },
   "maxBoundaryEdgesByBand": {
-    "smileLine": 100,
+    "smileLine": 10,
     "platysmaFront": 160,
-    "lateralNeckScm": 145,
-    "upperTrapShoulder": 160,
-    "pecDeltJunction": 280,
+    "lateralNeckScm": 10,
+    "upperTrapShoulder": 40,
+    "pecDeltJunction": 20,
     "anteriorNeck": 180,
     "eyebrow": 80,
-    "palmWrist": 300,
-    "earLateral": 150
+    "palmWrist": 50,
+    "earLateral": 40
   },
   "maxInteriorLoopsByBand": {
-    "smileLine": 6,
+    "smileLine": 2,
     "platysmaFront": 12,
     "lateralNeckScm": 16,
     "upperTrapShoulder": 18,
     "pecDeltJunction": 32,
     "anteriorNeck": 2,
     "eyebrow": 4,
-    "palmWrist": 40,
-    "earLateral": 15
+    "palmWrist": 1,
+    "earLateral": 0
   },
   "maxLargestInteriorLoopEdgesByBand": {
     "smileLine": 12,
@@ -40,8 +40,8 @@
     "pecDeltJunction": 32,
     "anteriorNeck": 4,
     "eyebrow": 15,
-    "palmWrist": 19,
-    "earLateral": 12
+    "palmWrist": 14,
+    "earLateral": 0
   },
   "platysmaHotspotMaxInteriorLoops": 74,
   "platysmaHotspotMaxLargestLoopEdges": 60,

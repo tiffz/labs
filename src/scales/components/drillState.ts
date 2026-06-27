@@ -75,11 +75,14 @@ export function effectiveConsecutiveRough(
   return Math.max(0, consecutiveRoughOnStage - dismissedRoughBaseline);
 }
 
-export function isRegularStuck(args: RegularStuckArgs): boolean {
+export function isRegularStuck(
+  args: RegularStuckArgs & { streakGateActive?: boolean },
+): boolean {
+  const streakGateActive = args.streakGateActive !== false;
   return args.drillState === 'inactive'
     && !args.passedThisExercise
     && args.consecutiveRoughOnStage >= args.snoozedUntil
-    && args.cleanStreak < args.requiredRuns
+    && (!streakGateActive || args.cleanStreak < args.requiredRuns)
     && args.hasFallbackStage;
 }
 
@@ -109,6 +112,7 @@ export function isRegularStuckGated(
     history: readonly { stageId: string; accuracy: number }[];
     stageId: string;
     threshold: number;
+    streakGateActive?: boolean;
   },
 ): boolean {
   if (!isRegularStuck(args)) return false;

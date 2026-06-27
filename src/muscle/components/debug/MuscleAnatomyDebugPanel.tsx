@@ -90,7 +90,8 @@ export default function MuscleAnatomyDebugPanel() {
         <p style={{ color: '#94a3b8', margin: '8px 0 0' }}>
           Compare loaded ids to catalog with <code>npm run muscle:coverage</code> and{' '}
           <code>npm run muscle:inventory</code>. Skin holes:{' '}
-          <code>?debug=1&amp;skinHoles=1</code> (magenta, opaque reference half, ≥14-edge loops).
+          <code>?debug=1&amp;skinHoles=1</code> (magenta interior loops,{' '}
+          <span style={{ color: '#ff6600' }}>orange</span> ear open edges, yellow midline seam).
         </p>
       </div>
     </LabsDebugDock>

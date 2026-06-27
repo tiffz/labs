@@ -1340,7 +1340,8 @@ export default function SessionScreen() {
   const practicingAdvancementStage = Boolean(
     currentStage && isPracticingAdvancementStage(exerciseProgress, currentStage.id),
   );
-  const overlearnState = currentStage && practicingAdvancementStage
+  const usesPerfectRegimen = !isFreeTempo && Boolean(currentStage?.useTempo);
+  const overlearnState = currentStage && usesPerfectRegimen
     ? getOverlearningUiState(exerciseProgress, currentStage.id)
     : {
       attemptCount: 0,
@@ -1348,15 +1349,14 @@ export default function SessionScreen() {
       perfectStreak: 0,
       unlocked: false,
     };
-  const requiredPerfectRuns = overlearnState.requiredPerfectStreak ?? OVERLEARN_MIN_STREAK;
+  const requiredPerfectRuns = overlearnState.requiredPerfectStreak;
   const rawCleanStreak = currentStage ? getCleanRunStreak(exerciseProgress, currentStage.id) : 0;
-  /** Perfect-run streak toward overlearning gate (0 when reviewing an earlier level). */
-  const perfectStreak = practicingAdvancementStage ? overlearnState.perfectStreak : 0;
+  /** Perfect-run streak on the stage being practiced (metronome regimen). */
+  const perfectStreak = usesPerfectRegimen ? overlearnState.perfectStreak : 0;
   const cleanStreak = perfectStreak;
-  const perfectRunsProgressLabel = formatAdvancementPerfectRunsLabel(
-    perfectStreak,
-    requiredPerfectRuns,
-  );
+  const perfectRunsProgressLabel = requiredPerfectRuns != null
+    ? formatAdvancementPerfectRunsLabel(perfectStreak, requiredPerfectRuns)
+    : String(perfectStreak);
   const advancementChipLabel = overlearnState.unlocked
     ? `${perfectRunsProgressLabel} perfect in a row to advance`
     : overlearnState.attemptCount > 0
@@ -1373,6 +1373,7 @@ export default function SessionScreen() {
   const showCleanStreakChipPreStart = !isFreeTempo
     && !!currentStage
     && overlearnState.unlocked
+    && requiredPerfectRuns != null
     && perfectStreak > 0
     && perfectStreak < requiredPerfectRuns;
   const competingPreStartScore = (stageInfo?.stage.description?.trim() ? 1 : 0)
@@ -1393,7 +1394,14 @@ export default function SessionScreen() {
   const lastRunOutcomeTier: RunOutcomeTier = lastRunPracticeRecord && currentStage && exerciseDef
     ? runOutcomeTier(lastRunPracticeRecord, exerciseDef.exercise.kind, currentStage, isFinalStage)
     : 'rough';
-  const lastWasClean = Boolean(lastExerciseResult && lastRunOutcomeTier === 'clean');
+  const lastWasClean = Boolean(
+    lastExerciseResult
+    && (usesPerfectRegimen
+      ? lastExerciseResult.accuracy >= 1
+      : lastRunOutcomeTier === 'clean'),
+  );
+  const lastRunUiSuccess = usesPerfectRegimen ? lastWasClean : lastRunOutcomeTier === 'clean';
+  const lastRunUiNear = !usesPerfectRegimen && lastRunOutcomeTier === 'near';
 
   // Adaptive coaching: when the most recent run scored sub-fluent and we
   // can't yet diagnose with stuck-detection, surface a one-line hint that
@@ -1449,12 +1457,13 @@ export default function SessionScreen() {
     attemptsThisStage,
     consecutiveRoughOnStage,
     cleanStreak,
-    requiredRuns: requiredPerfectRuns,
+    requiredRuns: requiredPerfectRuns ?? OVERLEARN_MIN_STREAK,
     hasFallbackStage,
     snoozedUntil: regularSnoozedUntil,
     stageId: activeExercise.stageId,
     threshold: advancementCriteria.threshold,
     history: exerciseProgress.history,
+    streakGateActive: overlearnState.unlocked,
   });
   const regularStuckGated = Boolean(
     baseRegularStuckGated
@@ -1537,10 +1546,14 @@ export default function SessionScreen() {
       inDrill: drillState === 'active',
       drillStreak,
       cleanStreak,
-      displayRunStreak: practicingAdvancementStage ? cleanStreak : rawCleanStreak,
-      requiredRuns: requiredPerfectRuns,
+      displayRunStreak: usesPerfectRegimen ? cleanStreak : rawCleanStreak,
+      requiredRuns: requiredPerfectRuns ?? 0,
       practicingAdvancementStage,
-      lastWasClean: snapTier === 'clean',
+      usesPerfectRegimen,
+      overlearnUnlocked: overlearnState.unlocked,
+      lastWasClean: usesPerfectRegimen
+        ? lastExerciseResult.accuracy >= 1
+        : snapTier === 'clean',
       lastRunOutcomeTier: snapTier,
     };
   }
@@ -1811,15 +1824,15 @@ export default function SessionScreen() {
                 pr: 2,
                 py: 0.75,
                 borderRadius: 999,
-                bgcolor: theme => (lastRunOutcomeTier === 'clean'
+                bgcolor: theme => (lastRunUiSuccess
                   ? `${theme.palette.success.main}0D`
-                  : lastRunOutcomeTier === 'near'
+                  : lastRunUiNear
                     ? `${theme.palette.warning.main}14`
                     : `${theme.palette.error.main}12`),
                 border: 1,
-                borderColor: theme => (lastRunOutcomeTier === 'clean'
+                borderColor: theme => (lastRunUiSuccess
                   ? `${theme.palette.success.main}40`
-                  : lastRunOutcomeTier === 'near'
+                  : lastRunUiNear
                     ? `${theme.palette.warning.main}40`
                     : `${theme.palette.error.main}35`),
                 textAlign: 'left',
@@ -1835,20 +1848,20 @@ export default function SessionScreen() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
-                  bgcolor: lastRunOutcomeTier === 'clean'
+                  bgcolor: lastRunUiSuccess
                     ? 'success.main'
-                    : lastRunOutcomeTier === 'near'
+                    : lastRunUiNear
                       ? 'warning.main'
                       : 'error.main',
-                  color: lastRunOutcomeTier === 'clean'
+                  color: lastRunUiSuccess
                     ? 'success.contrastText'
-                    : lastRunOutcomeTier === 'near'
+                    : lastRunUiNear
                       ? 'warning.contrastText'
                       : 'error.contrastText',
                 }}
               >
                 <Icon
-                  name={lastRunOutcomeTier === 'clean' ? 'check' : lastRunOutcomeTier === 'near' ? 'schedule' : 'replay'}
+                  name={lastRunUiSuccess ? 'check' : lastRunUiNear ? 'schedule' : 'replay'}
                   size={20}
                 />
               </Box>
@@ -1954,7 +1967,7 @@ export default function SessionScreen() {
               the user returns mid-streak we surface that explicitly so
               they don't think they're starting over. Only relevant on
               tempo stages with a real streak gate. */}
-          {!isFreeTempo && currentStage && overlearnState.unlocked && perfectStreak > 0 && perfectStreak < requiredPerfectRuns && (
+          {!isFreeTempo && currentStage && overlearnState.unlocked && requiredPerfectRuns != null && perfectStreak > 0 && perfectStreak < requiredPerfectRuns && (
             <Box sx={{ mt: hasExerciseHistory ? 0.75 : 1.5 }}>
               <Chip
                 size="small"
@@ -2062,16 +2075,15 @@ export default function SessionScreen() {
           const result: ExerciseResult = live ? lastExerciseResult! : snap!.result;
           const inDrill = live ? drillState === 'active' : snap!.inDrill;
           const streakNumerator = live
-            ? (inDrill ? drillStreak : (practicingAdvancementStage ? cleanStreak : rawCleanStreak))
+            ? (inDrill ? drillStreak : (usesPerfectRegimen ? cleanStreak : rawCleanStreak))
             : (inDrill ? snap!.drillStreak : snap!.displayRunStreak);
           const streakDenominator = live
             ? dwellStreakDenominator(inDrill, requiredPerfectRuns)
-            : dwellStreakDenominator(inDrill, snap!.requiredRuns);
+            : dwellStreakDenominator(inDrill, snap!.requiredRuns || null);
           const wasClean = live ? lastWasClean : snap!.lastWasClean;
           const outcomeTier = live ? lastRunOutcomeTier : snap!.lastRunOutcomeTier;
-          const onAdvancementStage = live
-            ? practicingAdvancementStage
-            : snap!.practicingAdvancementStage;
+          const usesPerfectRegimenLive = live ? usesPerfectRegimen : snap!.usesPerfectRegimen;
+          const overlearnUnlocked = live ? overlearnState.unlocked : snap!.overlearnUnlocked;
           const {
             statusBg,
             statusContrast,
@@ -2086,7 +2098,8 @@ export default function SessionScreen() {
             outcomeTier,
             streakNumerator,
             streakDenominator,
-            onAdvancementStage,
+            usesPerfectRegimen: usesPerfectRegimenLive,
+            overlearnUnlocked,
           });
           const secondsLeft = loopCountdown ?? Math.ceil(AUTO_LOOP_DWELL_MS / 1000);
           const showLoopChrome = live && !fromCountIn;

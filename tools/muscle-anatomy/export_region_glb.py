@@ -1555,6 +1555,127 @@ def fill_skin_palm_center_holes(obj) -> None:
     )
 
 
+def fill_skin_palm_medial_cuff_holes(obj) -> None:
+    """Medial palmar cuff / wrist junction — runtime loops at |x|≈0.06–0.12 (misses center-palm fills)."""
+    # Blender boundary loops are much longer than runtime GLB loops after decimate/export.
+    for pass_idx in range(6):
+        filled = force_fill_largest_interior_loop(
+            obj,
+            y_min=0.82,
+            y_max=0.94,
+            min_abs_x=0.04,
+            max_abs_x=0.12,
+            z_min=0.02,
+            z_max=0.14,
+            min_edges=36,
+            max_edges=72,
+            label=f'palm_medial_cuff_large_{pass_idx}',
+            filter_centroid=True,
+        )
+        if not filled:
+            break
+    for pass_idx in range(12):
+        filled = force_fill_largest_interior_loop(
+            obj,
+            y_min=0.82,
+            y_max=0.94,
+            min_abs_x=0.04,
+            max_abs_x=0.12,
+            z_min=0.02,
+            z_max=0.14,
+            min_edges=4,
+            max_edges=80,
+            label=f'palm_medial_cuff_{pass_idx}',
+            filter_centroid=True,
+        )
+        if not filled:
+            break
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=80,
+        y_min=0.82,
+        y_max=0.94,
+        min_abs_x=0.04,
+        max_abs_x=0.12,
+        z_min=0.0,
+        z_max=0.14,
+        max_passes=10,
+        label='palm_medial_cuff',
+        centroid_only_band=False,
+        max_loop_diameter=0.08,
+    )
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=12,
+        y_min=0.82,
+        y_max=0.94,
+        min_abs_x=0.04,
+        max_abs_x=0.12,
+        z_min=0.0,
+        z_max=0.14,
+        max_passes=6,
+        label='palm_medial_cuff_micro',
+        centroid_only_band=True,
+        max_loop_diameter=0.035,
+    )
+
+
+def fill_skin_upper_arm_lateral_pinholes(obj) -> None:
+    """Micro loops at lateral upper arm / delt junction (y≈1.05, |x|≈0.26–0.32)."""
+    for pass_idx in range(6):
+        filled = force_fill_largest_interior_loop(
+            obj,
+            y_min=1.02,
+            y_max=1.10,
+            min_abs_x=0.22,
+            max_abs_x=0.32,
+            z_min=-0.10,
+            z_max=0.08,
+            min_edges=36,
+            max_edges=72,
+            label=f'upper_arm_lateral_large_{pass_idx}',
+            filter_centroid=True,
+        )
+        if not filled:
+            break
+    for pass_idx in range(10):
+        filled = force_fill_largest_interior_loop(
+            obj,
+            y_min=1.02,
+            y_max=1.10,
+            min_abs_x=0.22,
+            max_abs_x=0.32,
+            z_min=-0.10,
+            z_max=0.08,
+            min_edges=4,
+            max_edges=80,
+            label=f'upper_arm_lateral_{pass_idx}',
+            filter_centroid=True,
+        )
+        if not filled:
+            break
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=64,
+        y_min=1.02,
+        y_max=1.10,
+        min_abs_x=0.22,
+        max_abs_x=0.32,
+        z_min=-0.10,
+        z_max=0.08,
+        max_passes=8,
+        label='upper_arm_lateral',
+        centroid_only_band=True,
+        max_loop_diameter=0.045,
+    )
+
+
+def fill_skin_staging_residual_loops(obj) -> None:
+    """Final audit-targeted fills before GLB export — bands known to survive decimate."""
+    fill_skin_palm_medial_cuff_holes(obj)
+    fill_skin_upper_arm_lateral_pinholes(obj)
+
+
 def fill_skin_upper_arm_holes(obj) -> None:
     """Lateral anterior upper arm — biceps / deltoid junction gaps."""
     force_fill_largest_interior_loop(
@@ -1678,6 +1799,22 @@ def finalize_skin_ear_shell(obj) -> None:
         z_min=-0.06,
         z_max=0.06,
     )
+    for pass_idx in range(10):
+        filled = force_fill_largest_interior_loop(
+            obj,
+            y_min=1.44,
+            y_max=1.68,
+            min_abs_x=0.04,
+            max_abs_x=0.14,
+            z_min=-0.12,
+            z_max=0.10,
+            min_edges=4,
+            max_edges=120,
+            label=f'skin_ear_force_{pass_idx}',
+            filter_centroid=True,
+        )
+        if not filled:
+            break
     fill_skin_patch_holes_bmesh(
         obj,
         sides=32,
@@ -1687,7 +1824,7 @@ def finalize_skin_ear_shell(obj) -> None:
         max_abs_x=0.14,
         z_min=-0.12,
         z_max=0.08,
-        max_passes=6,
+        max_passes=10,
         label='skin_ear_pinhole',
         centroid_only_band=True,
         max_loop_diameter=0.045,
@@ -1701,7 +1838,7 @@ def finalize_skin_ear_shell(obj) -> None:
         max_abs_x=0.14,
         z_min=-0.12,
         z_max=0.08,
-        max_passes=4,
+        max_passes=8,
         label='skin_ear',
         centroid_only_band=False,
         max_loop_diameter=0.18,
@@ -1766,6 +1903,159 @@ def weld_skin_ear_junction(obj) -> None:
     )
 
 
+def seal_skin_ear_attachment_seam(obj) -> None:
+    """Close medial ear attachment perimeter (46-edge loop at min |x| ≈ 0.03 — below interior-hole threshold)."""
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=32,
+        y_min=1.45,
+        y_max=1.65,
+        min_abs_x=0.04,
+        max_abs_x=0.14,
+        z_min=-0.10,
+        z_max=0.08,
+        max_passes=8,
+        label='ear_helix_micro',
+        centroid_only_band=True,
+        max_loop_diameter=0.035,
+    )
+
+
+def fill_skin_ear_envelope_holes(obj) -> None:
+    """Close auricular interior loops after skin_ear joins skin_envelope."""
+    for pass_idx in range(16):
+        filled = force_fill_largest_interior_loop(
+            obj,
+            y_min=1.45,
+            y_max=1.65,
+            min_abs_x=0.05,
+            max_abs_x=0.14,
+            z_min=-0.10,
+            z_max=0.08,
+            min_edges=4,
+            max_edges=64,
+            label=f'ear_envelope_force_{pass_idx}',
+            filter_centroid=True,
+        )
+        if not filled:
+            break
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=120,
+        y_min=1.44,
+        y_max=1.68,
+        min_abs_x=0.05,
+        max_abs_x=0.14,
+        z_min=-0.12,
+        z_max=0.10,
+        max_passes=12,
+        label='ear_envelope_bmesh',
+        centroid_only_band=False,
+        max_loop_diameter=0.10,
+    )
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=24,
+        y_min=1.45,
+        y_max=1.65,
+        min_abs_x=0.05,
+        max_abs_x=0.14,
+        z_min=-0.10,
+        z_max=0.08,
+        max_passes=8,
+        label='ear_envelope_micro',
+        centroid_only_band=True,
+        max_loop_diameter=0.035,
+    )
+
+
+def weld_skin_palm_eminence_junction(obj) -> None:
+    """Merge Palm.r with thenar / hypothenar eminence skin — visible pad junction gaps."""
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.006,
+        y_min=0.84,
+        y_max=0.94,
+        min_abs_x=0.14,
+        max_abs_x=0.32,
+        z_min=-0.02,
+        z_max=0.12,
+    )
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.008,
+        y_min=0.84,
+        y_max=0.92,
+        min_abs_x=0.20,
+        max_abs_x=0.32,
+        z_min=0.02,
+        z_max=0.12,
+    )
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.008,
+        y_min=0.84,
+        y_max=0.92,
+        min_abs_x=0.14,
+        max_abs_x=0.22,
+        z_min=0.02,
+        z_max=0.12,
+    )
+
+
+def fill_skin_palm_eminence_holes(obj) -> None:
+    """Thenar / hypothenar pad pinholes and eminence↔palm junction loops."""
+    eminence_bands = (
+        ('thenar', 0.84, 0.92, 0.20, 0.32, 0.02, 0.12),
+        ('hypothenar', 0.84, 0.92, 0.14, 0.22, 0.02, 0.12),
+    )
+    for label, y_min, y_max, min_ax, max_ax, z_min, z_max in eminence_bands:
+        for pass_idx in range(8):
+            filled = force_fill_largest_interior_loop(
+                obj,
+                y_min=y_min,
+                y_max=y_max,
+                min_abs_x=min_ax,
+                max_abs_x=max_ax,
+                z_min=z_min,
+                z_max=z_max,
+                min_edges=4,
+                max_edges=24,
+                label=f'palm_{label}_{pass_idx}',
+                filter_centroid=True,
+            )
+            if not filled:
+                break
+        fill_skin_patch_holes_bmesh(
+            obj,
+            sides=32,
+            y_min=y_min,
+            y_max=y_max,
+            min_abs_x=min_ax,
+            max_abs_x=max_ax,
+            z_min=z_min,
+            z_max=z_max,
+            max_passes=8,
+            label=f'palm_{label}_bmesh',
+            centroid_only_band=False,
+            max_loop_diameter=0.08,
+        )
+        fill_skin_patch_holes_bmesh(
+            obj,
+            sides=12,
+            y_min=y_min,
+            y_max=y_max,
+            min_abs_x=min_ax,
+            max_abs_x=max_ax,
+            z_min=z_min,
+            z_max=z_max,
+            max_passes=6,
+            label=f'palm_{label}_micro',
+            centroid_only_band=True,
+            max_loop_diameter=0.03,
+        )
+
+
 def join_ear_overlay_to_envelope(unified, ear_obj) -> object:
     """Merge skin_ear into skin_envelope in Blender — one watertight shell at the pinna junction."""
     ensure_mesh_single_user(unified)
@@ -1777,6 +2067,7 @@ def join_ear_overlay_to_envelope(unified, ear_obj) -> object:
     joined['nodeId'] = 'skin_envelope'
     ensure_mesh_single_user(joined)
     weld_skin_ear_junction(joined)
+    seal_skin_ear_attachment_seam(joined)
     fill_skin_patch_holes_bmesh(
         joined,
         sides=24,
@@ -1809,8 +2100,54 @@ def join_ear_overlay_to_envelope(unified, ear_obj) -> object:
     return joined
 
 
+def weld_skin_envelope_gltf_seams(obj, merge_dist: float = 0.001) -> None:
+    """Merge duplicate verts at glTF multi-primitive boundaries — tight dist avoids collapsing ear detail."""
+    if obj.type != 'MESH' or not obj.data.vertices:
+        return
+
+    import bmesh
+
+    ensure_mesh_single_user(obj)
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=merge_dist)
+    bm.to_mesh(obj.data)
+    obj.data.update()
+    bm.free()
+
+
+def weld_skin_envelope_ear_export_seams(obj) -> None:
+    """Close inter-island gaps that become ear attachment open edges after glTF primitive merge."""
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.005,
+        y_min=1.44,
+        y_max=1.68,
+        min_abs_x=0.020,
+        max_abs_x=0.13,
+        z_min=-0.10,
+        z_max=0.08,
+    )
+    weld_skin_envelope_gltf_seams(obj, merge_dist=0.0025)
+
+
+def stitch_skin_ear_primitive_gaps(obj) -> None:
+    """Deprecated — use weld_skin_envelope_gltf_seams before export (spatial ear weld collapsed tris)."""
+    return
+
+
 def stitch_skin_component_gaps(obj) -> None:
     """Merge nearby vertices between disjoint skin islands (GLB multi-primitive seam gaps)."""
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.008,
+        y_min=1.15,
+        y_max=1.45,
+        min_abs_x=0.10,
+        max_abs_x=0.20,
+        z_min=-0.06,
+        z_max=0.06,
+    )
     weld_skin_mesh_spatial_band(
         obj,
         merge_dist=0.008,
@@ -1823,6 +2160,26 @@ def stitch_skin_component_gaps(obj) -> None:
     )
     weld_skin_mesh_spatial_band(
         obj,
+        merge_dist=0.010,
+        y_min=0.93,
+        y_max=1.12,
+        min_abs_x=0.12,
+        max_abs_x=0.30,
+        z_min=-0.04,
+        z_max=0.08,
+    )
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.010,
+        y_min=0.82,
+        y_max=1.05,
+        min_abs_x=0.18,
+        max_abs_x=0.32,
+        z_min=-0.02,
+        z_max=0.08,
+    )
+    weld_skin_mesh_spatial_band(
+        obj,
         merge_dist=0.012,
         y_min=0.86,
         y_max=0.96,
@@ -1830,6 +2187,26 @@ def stitch_skin_component_gaps(obj) -> None:
         max_abs_x=0.32,
         z_min=-0.06,
         z_max=0.08,
+    )
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.006,
+        y_min=0.86,
+        y_max=0.98,
+        min_abs_x=0.025,
+        max_abs_x=0.07,
+        z_min=-0.12,
+        z_max=0.06,
+    )
+    weld_skin_mesh_spatial_band(
+        obj,
+        merge_dist=0.004,
+        y_min=1.45,
+        y_max=1.66,
+        min_abs_x=0.0025,
+        max_abs_x=0.035,
+        z_min=-0.12,
+        z_max=0.12,
     )
 
 
@@ -2460,10 +2837,14 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
     weld_skin_hand_forearm_junction(unified)
     weld_skin_palm_shell_band(unified)
     fill_skin_palm_wrist_holes(unified)
+    fill_skin_palm_eminence_holes(unified)
     fill_skin_palm_center_holes(unified)
+    fill_skin_palm_medial_cuff_holes(unified)
     weld_skin_palm_visible_hole_bands(unified)
     stitch_skin_component_gaps(unified)
     fill_skin_palm_center_holes(unified)
+    fill_skin_palm_medial_cuff_holes(unified)
+    fill_skin_upper_arm_lateral_pinholes(unified)
     fill_skin_back_trap_holes(unified)
     purge_skin_micro_islands(unified)
 
@@ -2483,6 +2864,8 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
             z_min=-0.12,
             z_max=0.10,
         )
+        fill_skin_ear_envelope_holes(unified)
+        seal_skin_ear_attachment_seam(unified)
 
     for pass_idx in range(8):
         filled = force_fill_largest_interior_loop(
@@ -2530,6 +2913,21 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
         centroid_only_band=False,
         max_loop_diameter=0.28,
     )
+    fill_skin_staging_residual_loops(unified)
+    force_fill_loop_near_staging_point(
+        unified,
+        target_x=0.08,
+        target_height=0.873,
+        target_depth=0.077,
+        max_distance=0.06,
+        min_edges=8,
+        max_edges=80,
+        label='palm_medial_runtime_target',
+    )
+    fill_skin_ear_envelope_holes(unified)
+    seal_skin_ear_attachment_seam(unified)
+    weld_skin_envelope_ear_export_seams(unified)
+    weld_skin_envelope_gltf_seams(unified)
 
     unified_tris = len(unified.data.polygons)
     print(f'  atlas_skin unified skin_envelope: {len(skin_parts)} parts -> {unified_tris} tris')

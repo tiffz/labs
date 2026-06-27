@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildInteriorHoleLoopSegmentPositions,
+  buildPalmarEminenceDiagnosticSegmentPositions,
   buildSkinHoleDebugSegmentPositions,
   findBoundaryLoops,
   findMidlineThroatHoleLoops,
+  isEarLateralDebugHoleLoop,
   isPalmarStudyDebugHoleLoop,
   isSignificantVisibleSkinHoleLoop,
-  PALM_WRIST_DEBUG_BOUNDS,
 } from './skinCoverageAudit';
 import { readRuntimeStudySkinEnvelope } from './skinCoverageAuditNode';
 
@@ -18,6 +18,13 @@ const DELT_PEC_HOLE_BOUNDS = {
   maxAbsX: 0.17,
   minZ: -0.05,
 };
+
+/** Known palm medial cuff export hole until atlas_skin re-export (Phase 3). */
+const PALM_CUFF_DEBUG_SEGMENT_FLOATS = 84;
+
+function isKnownPalmCuffExportLoop(loop: { edgeCount: number; centroid: { y: number; x: number } }): boolean {
+  return loop.edgeCount === 14 && loop.centroid.y > 0.84 && loop.centroid.y < 0.92 && Math.abs(loop.centroid.x) < 0.12;
+}
 
 function formatThroatLoops(loops: ReturnType<typeof findMidlineThroatHoleLoops>): string {
   return loops
@@ -57,7 +64,7 @@ describe('significant shoulder hole filter', () => {
     ).toBeLessThan(30);
   });
 
-  it('debug overlay includes throat/trap classifiers without shoulder-only bounds', () => {
+  it('debug overlay filters micro-seams from significant shoulder-class loops', () => {
     const geometry = readRuntimeStudySkinEnvelope();
     const allInterior = findBoundaryLoops(geometry).filter(
       (loop) => loop.minAbsX > 0.035 && loop.edgeCount >= 4,
@@ -69,32 +76,51 @@ describe('significant shoulder hole filter', () => {
         minDiameter: 0.012,
       }),
     );
-    const segments = buildInteriorHoleLoopSegmentPositions(geometry, {
-      minEdgeCount: 14,
-      minDiameter: 0.012,
-    });
+    const segments = buildSkinHoleDebugSegmentPositions(geometry);
 
-    expect(significant.length).toBeLessThan(allInterior.length);
-    expect(significant.length).toBeGreaterThan(0);
-    expect(segments).not.toBeNull();
+    expect(significant.length).toBeLessThanOrEqual(allInterior.length);
+    expect(significant.length).toBeLessThanOrEqual(1);
+    expect(significant.every(isKnownPalmCuffExportLoop)).toBe(true);
+    expect(segments?.length ?? 0).toBeLessThanOrEqual(PALM_CUFF_DEBUG_SEGMENT_FLOATS);
   });
 
-  it('study debug overlay marks palmar loops on transparent half (8+ edges)', () => {
+  it('study debug overlay is empty except known palm cuff export hole', () => {
     const geometry = readRuntimeStudySkinEnvelope();
     const position = geometry.getAttribute('position')!;
     const palmarRelaxed = findBoundaryLoops(geometry).filter((loop) =>
       isPalmarStudyDebugHoleLoop(loop, position),
     );
     const debugSegments = buildSkinHoleDebugSegmentPositions(geometry);
+    expect(palmarRelaxed).toHaveLength(0);
+    expect(debugSegments?.length ?? 0).toBeLessThanOrEqual(PALM_CUFF_DEBUG_SEGMENT_FLOATS);
+  });
+
+  it('palmar eminence diagnostic marks thenar + hypothenar pad bands', () => {
+    const geometry = readRuntimeStudySkinEnvelope();
+    const diagnostic = buildPalmarEminenceDiagnosticSegmentPositions(geometry);
+    expect(diagnostic).not.toBeNull();
+    expect(diagnostic!.length).toBeGreaterThanOrEqual(180);
+  });
+
+  it('auricular band has no interior loops after ear seam weld', () => {
+    const geometry = readRuntimeStudySkinEnvelope();
+    const position = geometry.getAttribute('position')!;
+    const earLoops = findBoundaryLoops(geometry).filter((loop) =>
+      isEarLateralDebugHoleLoop(loop, position),
+    );
+    expect(earLoops).toHaveLength(0);
+  });
+
+  it('study half has no significant interior loops beyond known palm cuff export hole', () => {
+    const geometry = readRuntimeStudySkinEnvelope();
+    const position = geometry.getAttribute('position')!;
+    const significant = findBoundaryLoops(geometry).filter((loop) =>
+      isSignificantVisibleSkinHoleLoop(loop, position, { minEdgeCount: 14, minDiameter: 0.012 }),
+    );
     expect(
-      palmarRelaxed.length,
-      'expected palmar interior loops in study clip for debug',
-    ).toBeGreaterThan(0);
-    expect(debugSegments).not.toBeNull();
-    expect(debugSegments!.length).toBeGreaterThan(palmarRelaxed.length * 6);
-    for (const loop of palmarRelaxed) {
-      expect(loop.centroid.y).toBeGreaterThanOrEqual(PALM_WRIST_DEBUG_BOUNDS.minY);
-      expect(loop.maxAbsX).toBeGreaterThan(PALM_WRIST_DEBUG_BOUNDS.minAbsX);
-    }
+      significant,
+      significant.map((loop) => `${loop.edgeCount} edges @ y=${loop.centroid.y.toFixed(2)} x=${loop.centroid.x.toFixed(3)}`).join('; '),
+    ).toHaveLength(1);
+    expect(isKnownPalmCuffExportLoop(significant[0]!)).toBe(true);
   });
 });

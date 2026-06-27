@@ -49,6 +49,8 @@ export type DwellBadgeSnapshot = {
   displayRunStreak: number;
   requiredRuns: number;
   practicingAdvancementStage: boolean;
+  usesPerfectRegimen: boolean;
+  overlearnUnlocked: boolean;
   lastWasClean: boolean;
   lastRunOutcomeTier: RunOutcomeTier;
 };

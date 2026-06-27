@@ -18,6 +18,12 @@ export type GlbAnatomyMeshProps = {
   node: MuscleMemoryNode;
 };
 
+function renderOrderForNode(node: MuscleMemoryNode): number {
+  if (node.type === 'bone') return 10;
+  if (node.type === 'joint') return 12;
+  return 20;
+}
+
 function GlbAnatomyMeshComponent({ mesh, node }: GlbAnatomyMeshProps) {
   const { invalidate } = useThree();
   const mode = useMuscleStore((s) => s.mode);
@@ -27,6 +33,7 @@ function GlbAnatomyMeshComponent({ mesh, node }: GlbAnatomyMeshProps) {
     () => acquireAnatomyMaterial(flags.visualState, false),
     [flags.visualState],
   );
+  const isBone = node.type === 'bone';
 
   useEffect(() => {
     const base = baseColorForNode(node);
@@ -39,8 +46,18 @@ function GlbAnatomyMeshComponent({ mesh, node }: GlbAnatomyMeshProps) {
     const emissive = emissiveForState(flags.visualState);
     material.emissive.set(emissive.color);
     material.emissiveIntensity = emissive.intensity;
+    material.depthTest = true;
+    material.depthWrite = true;
+    if (isBone) {
+      // Sit bones behind muscle shells on the study cross-section.
+      material.polygonOffset = true;
+      material.polygonOffsetFactor = 1;
+      material.polygonOffsetUnits = 1;
+    } else {
+      material.polygonOffset = false;
+    }
     material.needsUpdate = true;
-  }, [flags.visualState, material, mode, node]);
+  }, [flags.visualState, isBone, material, mode, node]);
 
   useLayoutEffect(() => {
     if (flags.visible) invalidate();
@@ -53,6 +70,7 @@ function GlbAnatomyMeshComponent({ mesh, node }: GlbAnatomyMeshProps) {
       name={mesh.name}
       geometry={mesh.geometry}
       material={material}
+      renderOrder={renderOrderForNode(node)}
       position={mesh.position}
       rotation={mesh.rotation}
       scale={mesh.scale}

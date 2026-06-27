@@ -643,6 +643,7 @@ function reducer(state: ScalesState, action: Action): ScalesState {
       // Review slots often target an earlier stage (stale/shaky refresh). Hitting
       // 3/3 there must still end the auto-loop even when `currentStageId` does not move.
       let reviewSlotCleared = false;
+      let steppingStoneGateMet = false;
       const slot = state.sessionPlan?.exercises[state.activeExerciseIndex];
       if (
         slot?.purpose === 'review'
@@ -664,7 +665,23 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         }
       }
 
-      const advanced = curriculumAdvanced || reviewSlotCleared;
+      if (!curriculumAdvanced && !reviewSlotCleared && action.stageId !== beforeProgress.currentStageId) {
+        const found = findExercise(action.exerciseId);
+        const stage = found?.exercise.stages.find(s => s.id === action.stageId);
+        if (found && stage) {
+          const stageIdx = found.exercise.stages.findIndex(s => s.id === action.stageId);
+          const isFinalStage = stageIdx === found.exercise.stages.length - 1;
+          steppingStoneGateMet = stageAdvancementGateMet(
+            afterProgress,
+            action.stageId,
+            found.exercise.kind,
+            stage,
+            isFinalStage,
+          );
+        }
+      }
+
+      const advanced = curriculumAdvanced || reviewSlotCleared || steppingStoneGateMet;
 
       const runRecord: SessionRunRecord = {
         exerciseId: action.exerciseId,

@@ -3,5 +3,5 @@
     "skin_envelope": 4053,
     "eye_globes": 37
   },
-  "_comment": "Unified skin_envelope (includes joined auricular overlay) + eye_globes. Run MUSCLE_SKIN_BOUNDARY_AUDIT=1 to inspect."
+  "_comment": "Unified skin_envelope (includes joined auricular overlay) + eye_globes. mergeVertices(0.0012) at GLB read welds multi-primitive seams. Run MUSCLE_SKIN_BOUNDARY_AUDIT=1 to inspect."
 }

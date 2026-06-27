@@ -4,8 +4,11 @@ import AnatomyHalfGroup from './AnatomyHalfGroup';
 import type { AnatomyGroupLayout } from './AnatomyHalfGroup';
 import {
   buildMidlineSeamGapSegmentPositions,
+  buildPalmarEminenceDiagnosticSegmentPositions,
   buildSkinHoleDebugSegmentPositions,
 } from '../../anatomy/skinCoverageAudit';
+import { buildEarOpenBoundaryDebugSegmentPositions } from '../../anatomy/earShellAudit';
+import { buildGlTfSlitOpenBoundaryDebugSegmentPositions } from '../../anatomy/skinLimbSlitAudit';
 import { useSkinEnvelopeGeometryForHalf } from './useStudySkinEnvelopeGeometry';
 
 type SkinHoleDebugLayerProps = {
@@ -22,10 +25,14 @@ function segmentGeometry(positions: Float32Array | null): BufferGeometry | null 
 /**
  * Debug overlays for skin topology on both sagittal halves.
  * `?debug=1&skinHoles=1` on Full body peel depth 0:
- * - Magenta — interior holes on **each half's own clip** (never mirror study loops onto reference)
+ * - Magenta — interior holes + relaxed palmar / eminence / ear pinholes (both halves)
+ * - Orange — lateral ear open boundary edges (attachment seam + helix gaps; not interior loops)
+ * - Lime — glTF primitive slits in ear + limb seal bands (open boundary edges; not interior loops)
+ * - Cyan — thenar + hypothenar coverage boxes when triangle count is below floor
  * - Yellow — midline seam gaps (open boundary edges at |x| ≤ 0.028, per half)
  *
- * Study palmar voids use relaxed 8+ edge debug threshold (transparent shell).
+ * Palmar note: visible palm voids often sit on **thenar/hypothenar eminence pads** (patch junction
+ * or missing shell). Cyan boxes mark those pads; magenta marks boundary loops when they exist.
  */
 export default function SkinHoleDebugLayer({ layout }: SkinHoleDebugLayerProps) {
   const studyEnvelope = useSkinEnvelopeGeometryForHalf('study');
@@ -45,8 +52,24 @@ export default function SkinHoleDebugLayer({ layout }: SkinHoleDebugLayerProps) 
     () =>
       segmentGeometry(
         referenceEnvelope
-          ? buildSkinHoleDebugSegmentPositions(referenceEnvelope, { includePalmarRelaxed: false })
+          ? buildSkinHoleDebugSegmentPositions(referenceEnvelope, { includePalmarRelaxed: true })
           : null,
+      ),
+    [referenceEnvelope],
+  );
+
+  const studyPalmarDiagnosticGeometry = useMemo(
+    () =>
+      segmentGeometry(
+        studyEnvelope ? buildPalmarEminenceDiagnosticSegmentPositions(studyEnvelope) : null,
+      ),
+    [studyEnvelope],
+  );
+
+  const referencePalmarDiagnosticGeometry = useMemo(
+    () =>
+      segmentGeometry(
+        referenceEnvelope ? buildPalmarEminenceDiagnosticSegmentPositions(referenceEnvelope) : null,
       ),
     [referenceEnvelope],
   );
@@ -65,11 +88,49 @@ export default function SkinHoleDebugLayer({ layout }: SkinHoleDebugLayerProps) 
     [referenceEnvelope],
   );
 
+  const studyEarOpenBoundaryGeometry = useMemo(
+    () =>
+      segmentGeometry(
+        studyEnvelope ? buildEarOpenBoundaryDebugSegmentPositions(studyEnvelope) : null,
+      ),
+    [studyEnvelope],
+  );
+
+  const referenceEarOpenBoundaryGeometry = useMemo(
+    () =>
+      segmentGeometry(
+        referenceEnvelope ? buildEarOpenBoundaryDebugSegmentPositions(referenceEnvelope) : null,
+      ),
+    [referenceEnvelope],
+  );
+
+  const studyGlTfSlitGeometry = useMemo(
+    () =>
+      segmentGeometry(
+        studyEnvelope ? buildGlTfSlitOpenBoundaryDebugSegmentPositions(studyEnvelope) : null,
+      ),
+    [studyEnvelope],
+  );
+
+  const referenceGlTfSlitGeometry = useMemo(
+    () =>
+      segmentGeometry(
+        referenceEnvelope ? buildGlTfSlitOpenBoundaryDebugSegmentPositions(referenceEnvelope) : null,
+      ),
+    [referenceEnvelope],
+  );
+
   if (
     !studyInteriorGeometry &&
     !referenceInteriorGeometry &&
+    !studyPalmarDiagnosticGeometry &&
+    !referencePalmarDiagnosticGeometry &&
     !studySeamGeometry &&
-    !referenceSeamGeometry
+    !referenceSeamGeometry &&
+    !studyEarOpenBoundaryGeometry &&
+    !referenceEarOpenBoundaryGeometry &&
+    !studyGlTfSlitGeometry &&
+    !referenceGlTfSlitGeometry
   ) {
     return null;
   }
@@ -90,6 +151,20 @@ export default function SkinHoleDebugLayer({ layout }: SkinHoleDebugLayerProps) 
           </lineSegments>
         </AnatomyHalfGroup>
       ) : null}
+      {studyPalmarDiagnosticGeometry ? (
+        <AnatomyHalfGroup half="study" layout={layout} renderOrder={28}>
+          <lineSegments geometry={studyPalmarDiagnosticGeometry}>
+            <lineBasicMaterial args={[{ color: '#00e5ff', depthTest: true, transparent: true, opacity: 0.95 }]} />
+          </lineSegments>
+        </AnatomyHalfGroup>
+      ) : null}
+      {referencePalmarDiagnosticGeometry ? (
+        <AnatomyHalfGroup half="reference" layout={layout} renderOrder={28}>
+          <lineSegments geometry={referencePalmarDiagnosticGeometry}>
+            <lineBasicMaterial args={[{ color: '#00e5ff', depthTest: true, transparent: true, opacity: 0.95 }]} />
+          </lineSegments>
+        </AnatomyHalfGroup>
+      ) : null}
       {studySeamGeometry ? (
         <AnatomyHalfGroup half="study" layout={layout} renderOrder={27}>
           <lineSegments geometry={studySeamGeometry}>
@@ -101,6 +176,34 @@ export default function SkinHoleDebugLayer({ layout }: SkinHoleDebugLayerProps) 
         <AnatomyHalfGroup half="reference" layout={layout} renderOrder={27}>
           <lineSegments geometry={referenceSeamGeometry}>
             <lineBasicMaterial args={[{ color: '#ffcc00', depthTest: true, transparent: true, opacity: 0.9 }]} />
+          </lineSegments>
+        </AnatomyHalfGroup>
+      ) : null}
+      {studyEarOpenBoundaryGeometry ? (
+        <AnatomyHalfGroup half="study" layout={layout} renderOrder={29}>
+          <lineSegments geometry={studyEarOpenBoundaryGeometry}>
+            <lineBasicMaterial args={[{ color: '#ff6600', depthTest: true, transparent: true, opacity: 0.95 }]} />
+          </lineSegments>
+        </AnatomyHalfGroup>
+      ) : null}
+      {referenceEarOpenBoundaryGeometry ? (
+        <AnatomyHalfGroup half="reference" layout={layout} renderOrder={29}>
+          <lineSegments geometry={referenceEarOpenBoundaryGeometry}>
+            <lineBasicMaterial args={[{ color: '#ff6600', depthTest: true, transparent: true, opacity: 0.95 }]} />
+          </lineSegments>
+        </AnatomyHalfGroup>
+      ) : null}
+      {studyGlTfSlitGeometry ? (
+        <AnatomyHalfGroup half="study" layout={layout} renderOrder={30}>
+          <lineSegments geometry={studyGlTfSlitGeometry}>
+            <lineBasicMaterial args={[{ color: '#66ff00', depthTest: true, transparent: true, opacity: 0.95 }]} />
+          </lineSegments>
+        </AnatomyHalfGroup>
+      ) : null}
+      {referenceGlTfSlitGeometry ? (
+        <AnatomyHalfGroup half="reference" layout={layout} renderOrder={30}>
+          <lineSegments geometry={referenceGlTfSlitGeometry}>
+            <lineBasicMaterial args={[{ color: '#66ff00', depthTest: true, transparent: true, opacity: 0.95 }]} />
           </lineSegments>
         </AnatomyHalfGroup>
       ) : null}

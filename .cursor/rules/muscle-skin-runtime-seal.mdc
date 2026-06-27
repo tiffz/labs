@@ -1,0 +1,35 @@
+---
+description: Muscle skin slit seal — export-first, no mirror back-fill, debug overlay taxonomy
+globs:
+  - src/muscle/anatomy/sealEarLateralCracks.ts
+  - src/muscle/anatomy/skinLimbSlitAudit.ts
+  - src/muscle/components/canvas/mergeSkinEnvelopeGeometry.ts
+  - tools/muscle-anatomy/export_region_glb.py
+---
+
+# Muscle skin slit seal (runtime + export)
+
+## Do not reintroduce mirror back-fill
+
+**Never** close glTF primitive slits by adding `(b, a, third)` duplicate coplanar triangles. That passes open-edge audits but creates hundreds of zero-thickness faces that read as slit holes on transparent study skin.
+
+Preferred order:
+
+1. **Export** — expand `stitch_skin_component_gaps()` / `weld_skin_envelope_*` bands in `tools/muscle-anatomy/export_region_glb.py`, re-export `public/muscle/models/atlas_skin.glb`.
+2. **Runtime bridge** — quad stitch paired parallel open edges in `sealEarLateralCracks.ts` (no duplicate tris).
+3. **Baseline** — tighten `skinLimbSlitBaseline.json` / `earShellBaseline.json` after re-export; do not loosen without documented regression.
+
+## Debug overlay taxonomy (`?debug=1&skinHoles=1`)
+
+| Color | Meaning |
+| ----- | ------- |
+| Magenta | Interior boundary loops (closed holes) |
+| Lime | Open glTF slits in seal bands (`buildGlTfSlitOpenBoundaryDebugSegmentPositions`) |
+| Orange | Lateral ear open edges only |
+| Yellow | Midline seam gaps |
+
+**No magenta on slits is expected** — slits are open edges, not interior loops. Use lime/orange.
+
+## Before declaring ear/arm done
+
+Run `npm run muscle:skin-gates`. Visual QA on study half peel 0 after **hard refresh** (HMR misses geometry pipeline changes).

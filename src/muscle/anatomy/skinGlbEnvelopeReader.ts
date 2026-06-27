@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BufferAttribute, BufferGeometry } from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { mergeSkinEnvelopeParts } from '../components/canvas/mergeSkinEnvelopeGeometry';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 export const SKIN_GLB_PATH = 'public/muscle/models/atlas_skin.glb';
@@ -88,9 +88,7 @@ function readNamedMeshGeometry(
   }
 
   const parts = primitives.map((prim) => readPrimitiveGeometry(doc, bin, prim));
-  if (parts.length === 1) return parts[0]!;
-
-  const merged = mergeGeometries(parts, false);
+  const merged = mergeSkinEnvelopeParts(parts);
   if (!merged) {
     throw new Error(`Failed to merge ${meshName} glTF primitives`);
   }

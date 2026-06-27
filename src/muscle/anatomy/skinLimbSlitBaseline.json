@@ -1,0 +1,19 @@
+{
+  "maxGlTfSlitOpenBoundaryEdges": 85,
+  "maxLateralEarSlitOpenBoundaryEdges": 28,
+  "maxMedialEarAttachmentSlitOpenBoundaryEdges": 20,
+  "maxLateralUpperArmSlitOpenBoundaryEdges": 10,
+  "maxLateralForearmSlitOpenBoundaryEdges": 12,
+  "maxLateralPalmSlitOpenBoundaryEdges": 20,
+  "maxMedialThumbCmcSlitOpenBoundaryEdges": 15,
+  "_targetComment": "Burn-down toward zero after export-side stitch_skin_component_gaps expansion; bridge stitch replaces mirror back-fill",
+  "_target": {
+    "maxGlTfSlitOpenBoundaryEdges": 0,
+    "maxLateralEarSlitOpenBoundaryEdges": 0,
+    "maxMedialEarAttachmentSlitOpenBoundaryEdges": 0,
+    "maxLateralUpperArmSlitOpenBoundaryEdges": 0,
+    "maxLateralForearmSlitOpenBoundaryEdges": 0,
+    "maxLateralPalmSlitOpenBoundaryEdges": 0,
+    "maxMedialThumbCmcSlitOpenBoundaryEdges": 0
+  }
+}

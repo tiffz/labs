@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { BufferGeometry } from 'three';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { mergeSkinEnvelopeParts } from './mergeSkinEnvelopeGeometry';
 import { muscleModelsManifest as manifest } from '../../types/muscleModelsManifest';
 import { alignSkinEnvelopeToStudyHalf } from './alignSkinEnvelopeGeometry';
 import {
@@ -17,11 +17,9 @@ function isSkinMeshName(name: string): boolean {
 
 function mergeAlignedSkinBody(meshes: ReturnType<typeof extractGlbMeshes>): BufferGeometry | null {
   const aligned = meshes.map((mesh) => alignSkinEnvelopeToStudyHalf(mesh.geometry.clone()));
-  const body = aligned.filter((_, i) => meshes[i]!.name !== 'skin_ear');
-  const combined = body.length <= 1 ? body[0] : mergeGeometries(body, false);
-  if (!combined) return null;
-  combined.computeVertexNormals();
-  return combined;
+  if (aligned.length === 0) return null;
+  if (aligned.length === 1) return aligned[0]!;
+  return mergeSkinEnvelopeParts(aligned);
 }
 
 /** Runtime skin geometry for a sagittal half — same align + clip path as SkinEnvelopeLayer. */
@@ -41,9 +39,4 @@ export function useSkinEnvelopeGeometryForHalf(half: 'reference' | 'study'): Buf
       ? clipSkinGeometryForStudyHalf(merged)
       : clipSkinGeometryForReferenceHalf(merged);
   }, [half, scene]);
-}
-
-/** @deprecated Use useSkinEnvelopeGeometryForHalf('study') */
-export function useStudySkinEnvelopeGeometry(): BufferGeometry | null {
-  return useSkinEnvelopeGeometryForHalf('study');
 }

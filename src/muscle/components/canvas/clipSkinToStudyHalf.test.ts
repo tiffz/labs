@@ -100,6 +100,27 @@ describe('clipSkinGeometryToStudyHalf', () => {
     expect(clipped.getIndex()?.count).toBe(3);
   });
 
+  it('preserves midline face caps when reference minVertexX is 0', () => {
+    const geometry = new BufferGeometry();
+    geometry.setAttribute(
+      'position',
+      new BufferAttribute(
+        new Float32Array([
+          -0.02, 1.52, 0.08, 0.02, 1.52, 0.08, 0, 1.55, 0.1,
+        ]),
+        3,
+      ),
+    );
+    geometry.setIndex([0, 1, 2]);
+
+    const clipped = clipSkinGeometryToStudyHalf(geometry, 0, {
+      anyVertexOnHalf: false,
+      preserveMidlineFace: true,
+      minVertexX: 0,
+    });
+    expect(clipped.getIndex()?.count).toBe(3);
+  });
+
   it('preserves midline anterior neck triangles for platysma junction coverage', () => {
     const geometry = new BufferGeometry();
     geometry.setAttribute(
@@ -158,6 +179,7 @@ describe('clipSkinGeometryToStudyHalf', () => {
     const clipped = clipSkinGeometryToStudyHalf(geometry, 0, {
       anyVertexOnHalf: true,
       preserveMidlinePelvis: false,
+      preserveMidlineAbdomen: false,
       minVertexX: 0,
     });
     expect(clipped.getIndex()?.count ?? 0).toBe(0);

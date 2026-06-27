@@ -51,3 +51,15 @@ export function alignSkinEnvelopeToStudyHalf(geometry: BufferGeometry): BufferGe
 export function alignAnatomyMeshToStudyHalf(geometry: BufferGeometry): BufferGeometry {
   return alignSkinEnvelopeToStudyHalf(geometry);
 }
+
+/**
+ * Bake reference-half skin onto −X local so it renders with +scale (no parent −X mirror).
+ * Outward normals face −X; FrontSide is correct from the frontal camera.
+ */
+export function mirrorClippedSkinToReferenceHalf(geometry: BufferGeometry): BufferGeometry {
+  const mirrored = geometry.clone();
+  mirrored.scale(-1, 1, 1);
+  flipGeometryWinding(mirrored);
+  mirrored.computeVertexNormals();
+  return mirrored;
+}

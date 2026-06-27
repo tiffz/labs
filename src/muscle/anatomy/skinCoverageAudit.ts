@@ -231,7 +231,7 @@ export const SHOULDER_DELT_DEBUG_BOUNDS = {
   minZ: -0.1,
 };
 
-/** Palmar band on study transparent shell — relaxed thresholds for debug overlay only. */
+/** Palmar band — relaxed thresholds for debug overlay only (both halves). */
 export const PALM_WRIST_DEBUG_BOUNDS = {
   minY: 0.82,
   maxY: 1.02,
@@ -240,11 +240,245 @@ export const PALM_WRIST_DEBUG_BOUNDS = {
   minZ: -0.12,
 };
 
+/** Anterior palmar center (mid-palm void — sparse tris, rarely the thenar/hypothenar gaps). */
+export const PALMAR_CENTER_COVERAGE_BOUNDS = {
+  minY: 0.86,
+  maxY: 0.95,
+  minAbsX: 0.16,
+  maxAbsX: 0.28,
+  minZ: 0.03,
+  maxZ: 0.12,
+};
+
+/** Thenar eminence pad — visible void often aligns here (Palm ↔ eminence patch junction). */
+export const THENAR_EMINENCE_COVERAGE_BOUNDS = {
+  minY: 0.84,
+  maxY: 0.92,
+  minAbsX: 0.22,
+  maxAbsX: 0.32,
+  minZ: 0.02,
+  maxZ: 0.12,
+};
+
+/** Hypothenar eminence pad — often a coverage gap (few tris, no interior loop). */
+export const HYPOTHENAR_EMINENCE_COVERAGE_BOUNDS = {
+  minY: 0.84,
+  maxY: 0.92,
+  minAbsX: 0.14,
+  maxAbsX: 0.22,
+  minZ: 0.02,
+  maxZ: 0.12,
+};
+
+/** Minimum triangles for continuous anterior palmar shell (matches half-split palmar floor). */
+export const PALMAR_CENTER_COVERAGE_TRI_FLOOR = 80;
+
+export const THENAR_EMINENCE_COVERAGE_TRI_FLOOR = 35;
+
+export const HYPOTHENAR_EMINENCE_COVERAGE_TRI_FLOOR = 25;
+
+/** Auricular band — relaxed debug for pinna pinholes (4+ edges). */
+export const EAR_LATERAL_DEBUG_BOUNDS = {
+  minY: 1.45,
+  maxY: 1.66,
+  minAbsX: 0.05,
+  maxAbsX: 0.15,
+  minZ: -0.1,
+  maxZ: 0.09,
+};
+
+/** Medial attachment through helix — runtime seal + orange debug overlay band. */
+export const EAR_SEAL_SKIP_ABS_X = 0.01;
+export const EAR_SEAL_MAX_ABS_X = 0.15;
+
+/** Lateral upper-arm glTF primitive seams (deltoid / biceps junction). */
+export const LATERAL_UPPER_ARM_SEAL_BOUNDS = {
+  minY: 1.15,
+  maxY: 1.45,
+  minAbsX: 0.1,
+  maxAbsX: 0.2,
+  minZ: -0.06,
+  maxZ: 0.06,
+};
+
+/** Lateral forearm + wrist glTF primitive seams. */
+export const LATERAL_FOREARM_SEAL_BOUNDS = {
+  minY: 0.93,
+  maxY: 1.12,
+  minAbsX: 0.12,
+  maxAbsX: 0.3,
+  minZ: -0.04,
+  maxZ: 0.08,
+};
+
+/** Dorsal thenar / thumb CMC glTF island seams (medial x, posterior z). */
+export const MEDIAL_THUMB_CMC_SEAL_BOUNDS = {
+  minY: 0.86,
+  maxY: 0.98,
+  minAbsX: 0.025,
+  maxAbsX: 0.07,
+  minZ: -0.12,
+  maxZ: 0.06,
+};
+
+/** Lateral palm + dorsal hand glTF island seams. */
+export const LATERAL_PALM_SEAL_BOUNDS = {
+  minY: 0.82,
+  maxY: 1.05,
+  minAbsX: 0.18,
+  maxAbsX: 0.32,
+  minZ: -0.02,
+  maxZ: 0.08,
+};
+
+/** Medial auricular attachment to scalp (class I seam) — not the sagittal cut at x≈0. */
+export const MEDIAL_EAR_ATTACHMENT_SEAL_BOUNDS = {
+  minY: 1.45,
+  maxY: 1.66,
+  minAbsX: 0.0025,
+  maxAbsX: 0.035,
+  minZ: -0.12,
+  maxZ: 0.12,
+};
+
+export function isInEarSealBand(point: {
+  y: number;
+  maxAbsX: number;
+  z: number;
+}): boolean {
+  return (
+    point.y >= EAR_LATERAL_DEBUG_BOUNDS.minY &&
+    point.y <= EAR_LATERAL_DEBUG_BOUNDS.maxY &&
+    point.maxAbsX > EAR_SEAL_SKIP_ABS_X &&
+    point.maxAbsX <= EAR_SEAL_MAX_ABS_X &&
+    point.z >= (EAR_LATERAL_DEBUG_BOUNDS.minZ ?? -Infinity) &&
+    point.z <= (EAR_LATERAL_DEBUG_BOUNDS.maxZ ?? Infinity)
+  );
+}
+
+export function isInLateralUpperArmSealBand(point: {
+  y: number;
+  maxAbsX: number;
+  z: number;
+}): boolean {
+  return (
+    point.y >= LATERAL_UPPER_ARM_SEAL_BOUNDS.minY &&
+    point.y <= LATERAL_UPPER_ARM_SEAL_BOUNDS.maxY &&
+    point.maxAbsX >= LATERAL_UPPER_ARM_SEAL_BOUNDS.minAbsX &&
+    point.maxAbsX <= LATERAL_UPPER_ARM_SEAL_BOUNDS.maxAbsX &&
+    point.z >= LATERAL_UPPER_ARM_SEAL_BOUNDS.minZ &&
+    point.z <= LATERAL_UPPER_ARM_SEAL_BOUNDS.maxZ
+  );
+}
+
+export function isInLateralForearmSealBand(point: {
+  y: number;
+  maxAbsX: number;
+  z: number;
+}): boolean {
+  return (
+    point.y >= LATERAL_FOREARM_SEAL_BOUNDS.minY &&
+    point.y <= LATERAL_FOREARM_SEAL_BOUNDS.maxY &&
+    point.maxAbsX >= LATERAL_FOREARM_SEAL_BOUNDS.minAbsX &&
+    point.maxAbsX <= LATERAL_FOREARM_SEAL_BOUNDS.maxAbsX &&
+    point.z >= LATERAL_FOREARM_SEAL_BOUNDS.minZ &&
+    point.z <= LATERAL_FOREARM_SEAL_BOUNDS.maxZ
+  );
+}
+
+export function isInMedialThumbCmcSealBand(point: {
+  y: number;
+  maxAbsX: number;
+  z: number;
+}): boolean {
+  return (
+    point.y >= MEDIAL_THUMB_CMC_SEAL_BOUNDS.minY &&
+    point.y <= MEDIAL_THUMB_CMC_SEAL_BOUNDS.maxY &&
+    point.maxAbsX >= MEDIAL_THUMB_CMC_SEAL_BOUNDS.minAbsX &&
+    point.maxAbsX <= MEDIAL_THUMB_CMC_SEAL_BOUNDS.maxAbsX &&
+    point.z >= MEDIAL_THUMB_CMC_SEAL_BOUNDS.minZ &&
+    point.z <= MEDIAL_THUMB_CMC_SEAL_BOUNDS.maxZ
+  );
+}
+
+export function isInLateralPalmSealBand(point: {
+  y: number;
+  maxAbsX: number;
+  z: number;
+}): boolean {
+  return (
+    point.y >= LATERAL_PALM_SEAL_BOUNDS.minY &&
+    point.y <= LATERAL_PALM_SEAL_BOUNDS.maxY &&
+    point.maxAbsX >= LATERAL_PALM_SEAL_BOUNDS.minAbsX &&
+    point.maxAbsX <= LATERAL_PALM_SEAL_BOUNDS.maxAbsX &&
+    point.z >= LATERAL_PALM_SEAL_BOUNDS.minZ &&
+    point.z <= LATERAL_PALM_SEAL_BOUNDS.maxZ
+  );
+}
+
+export function isInMedialEarAttachmentSealBand(point: {
+  y: number;
+  maxAbsX: number;
+  z: number;
+}): boolean {
+  return (
+    point.y >= MEDIAL_EAR_ATTACHMENT_SEAL_BOUNDS.minY &&
+    point.y <= MEDIAL_EAR_ATTACHMENT_SEAL_BOUNDS.maxY &&
+    point.maxAbsX >= MEDIAL_EAR_ATTACHMENT_SEAL_BOUNDS.minAbsX &&
+    point.maxAbsX <= MEDIAL_EAR_ATTACHMENT_SEAL_BOUNDS.maxAbsX &&
+    point.z >= MEDIAL_EAR_ATTACHMENT_SEAL_BOUNDS.minZ &&
+    point.z <= MEDIAL_EAR_ATTACHMENT_SEAL_BOUNDS.maxZ
+  );
+}
+
+/** True when an open glTF slit edge is eligible for runtime quad bridge (excludes sagittal cut at x≈0). */
+export function shouldSealGlTfSlitEdge(
+  position: BufferAttribute,
+  a: number,
+  b: number,
+): boolean {
+  const ax = position.getX(a);
+  const bx = position.getX(b);
+  const my = (position.getY(a) + position.getY(b)) / 2;
+  const mz = (position.getZ(a) + position.getZ(b)) / 2;
+  const maxAbsX = Math.max(Math.abs(ax), Math.abs(bx));
+  const mid = { y: my, maxAbsX, z: mz };
+
+  if (
+    isInEarSealBand(mid) ||
+    isInLateralUpperArmSealBand(mid) ||
+    isInLateralForearmSealBand(mid) ||
+    isInMedialThumbCmcSealBand(mid) ||
+    isInLateralPalmSealBand(mid)
+  ) {
+    return true;
+  }
+
+  if (Math.abs(ax) < 0.001 && Math.abs(bx) < 0.001) return false;
+  return isInMedialEarAttachmentSealBand(mid);
+}
+
+/** glTF island slits bridged at runtime via quad stitch (ear + limb + palm bands). */
+export function isInGlTfSlitSealBand(point: {
+  y: number;
+  maxAbsX: number;
+  z: number;
+}): boolean {
+  return (
+    isInEarSealBand(point) ||
+    isInLateralUpperArmSealBand(point) ||
+    isInLateralForearmSealBand(point) ||
+    isInMedialThumbCmcSealBand(point) ||
+    isInLateralPalmSealBand(point) ||
+    isInMedialEarAttachmentSealBand(point)
+  );
+}
+
 function loopDedupKey(loop: BoundaryLoop): string {
   return loop.vertexIndices.join(':');
 }
 
-/** Relaxed palmar loops for ?skinHoles=1 (study half visible voids, 8+ edges). */
+/** Relaxed palmar loops for ?skinHoles=1 (8+ edges in palmWrist band). */
 export function isPalmarStudyDebugHoleLoop(
   loop: BoundaryLoop,
   position: BufferAttribute,
@@ -253,6 +487,31 @@ export function isPalmarStudyDebugHoleLoop(
   if (loop.edgeCount < 8 || loop.edgeCount > 32) return false;
   if (loopDiameter(position, loop) < 0.008) return false;
   return loopInBounds(loop, PALM_WRIST_DEBUG_BOUNDS);
+}
+
+/** Thenar / hypothenar pad loops and micro-seams (4+ edges) — matches visible palm void placement. */
+export function isPalmarEminenceDebugHoleLoop(
+  loop: BoundaryLoop,
+  position: BufferAttribute,
+): boolean {
+  if (!isInteriorSkinHoleLoop(loop)) return false;
+  if (loop.edgeCount < 4 || loop.edgeCount > 24) return false;
+  if (loopDiameter(position, loop) < 0.006) return false;
+  return (
+    loopInBounds(loop, THENAR_EMINENCE_COVERAGE_BOUNDS) ||
+    loopInBounds(loop, HYPOTHENAR_EMINENCE_COVERAGE_BOUNDS)
+  );
+}
+
+/** Auricular pinholes for ?skinHoles=1 (4+ edges in earLateral band). */
+export function isEarLateralDebugHoleLoop(
+  loop: BoundaryLoop,
+  position: BufferAttribute,
+): boolean {
+  if (!isInteriorSkinHoleLoop(loop)) return false;
+  if (loop.edgeCount < 4 || loop.edgeCount > 64) return false;
+  if (loopDiameter(position, loop) < 0.004) return false;
+  return loopInBounds(loop, EAR_LATERAL_DEBUG_BOUNDS);
 }
 
 /** Line-segment pairs for interior hole loops (debug overlay). */
@@ -291,7 +550,11 @@ export function buildInteriorHoleLoopSegmentPositions(
  */
 export function buildSkinHoleDebugSegmentPositions(
   geometry: BufferGeometry,
-  options?: { includePalmarRelaxed?: boolean },
+  options?: {
+    includePalmarRelaxed?: boolean;
+    includePalmarEminence?: boolean;
+    includeEarRelaxed?: boolean;
+  },
 ): Float32Array | null {
   const position = geometry.getAttribute('position') as BufferAttribute | undefined;
   if (!position) return null;
@@ -320,6 +583,26 @@ export function buildSkinHoleDebugSegmentPositions(
     }
   }
 
+  if (options?.includePalmarEminence !== false) {
+    for (const loop of findBoundaryLoops(geometry)) {
+      if (!isPalmarEminenceDebugHoleLoop(loop, position)) continue;
+      const key = loopDedupKey(loop);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      included.push(loop);
+    }
+  }
+
+  if (options?.includeEarRelaxed !== false) {
+    for (const loop of findBoundaryLoops(geometry)) {
+      if (!isEarLateralDebugHoleLoop(loop, position)) continue;
+      const key = loopDedupKey(loop);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      included.push(loop);
+    }
+  }
+
   const verts: number[] = [];
   for (const loop of included) {
     for (const [a, b] of loop.boundaryEdges) {
@@ -336,6 +619,134 @@ export function buildSkinHoleDebugSegmentPositions(
 
   if (verts.length === 0) return null;
   return new Float32Array(verts);
+}
+
+export type SkinBandBounds = {
+  minY: number;
+  maxY: number;
+  minAbsX: number;
+  maxAbsX: number;
+  minZ?: number;
+  maxZ?: number;
+};
+
+/** Count triangles whose centroid falls in a staging-space band (+X study coords). */
+export function countTrianglesInBand(
+  geometry: BufferGeometry,
+  bounds: SkinBandBounds,
+): number {
+  const position = geometry.getAttribute('position') as BufferAttribute | undefined;
+  const index = geometry.getIndex();
+  if (!position || !index) return 0;
+
+  let count = 0;
+  for (let tri = 0; tri < index.count / 3; tri += 1) {
+    const verts = [0, 1, 2].map((corner) => {
+      const vi = index.getX(tri * 3 + corner)!;
+      return readVertex(position, vi);
+    });
+    const centroid = ctxFromPoints(verts);
+    if (triangleInBand(centroid, bounds)) count += 1;
+  }
+  return count;
+}
+
+function triangleInBand(ctx: SkinBandContext, bounds: SkinBandBounds): boolean {
+  if (ctx.y < bounds.minY || ctx.y > bounds.maxY) return false;
+  if (ctx.maxAbsX < bounds.minAbsX || ctx.maxAbsX > bounds.maxAbsX) return false;
+  if (bounds.minZ !== undefined && ctx.z < bounds.minZ) return false;
+  if (bounds.maxZ !== undefined && ctx.z > bounds.maxZ) return false;
+  return true;
+}
+
+/** Largest interior palmar loop by edge count (topology anchor — often wrist-adjacent, not void center). */
+export function findPrimaryPalmarInteriorLoop(geometry: BufferGeometry): BoundaryLoop | null {
+  const loops = findBoundaryLoops(geometry).filter(isInteriorSkinHoleLoop);
+  let best: BoundaryLoop | null = null;
+  for (const loop of loops) {
+    if (!loopInBounds(loop, PALM_WRIST_DEBUG_BOUNDS)) continue;
+    if (!best || loop.edgeCount > best.edgeCount) best = loop;
+  }
+  return best;
+}
+
+function pushLineSegment(
+  verts: number[],
+  ax: number,
+  ay: number,
+  az: number,
+  bx: number,
+  by: number,
+  bz: number,
+): void {
+  verts.push(ax, ay, az, bx, by, bz);
+}
+
+function pushAxisAlignedBoxWireframe(verts: number[], bounds: SkinBandBounds): void {
+  const x0 = bounds.minAbsX;
+  const x1 = bounds.maxAbsX;
+  const y0 = bounds.minY;
+  const y1 = bounds.maxY;
+  const z0 = bounds.minZ ?? -0.12;
+  const z1 = bounds.maxZ ?? 0.12;
+
+  pushLineSegment(verts, x0, y0, z0, x1, y0, z0);
+  pushLineSegment(verts, x1, y0, z0, x1, y1, z0);
+  pushLineSegment(verts, x1, y1, z0, x0, y1, z0);
+  pushLineSegment(verts, x0, y1, z0, x0, y0, z0);
+  pushLineSegment(verts, x0, y0, z1, x1, y0, z1);
+  pushLineSegment(verts, x1, y0, z1, x1, y1, z1);
+  pushLineSegment(verts, x1, y1, z1, x0, y1, z1);
+  pushLineSegment(verts, x0, y1, z1, x0, y0, z1);
+  pushLineSegment(verts, x0, y0, z0, x0, y0, z1);
+  pushLineSegment(verts, x1, y0, z0, x1, y0, z1);
+  pushLineSegment(verts, x1, y1, z0, x1, y1, z1);
+  pushLineSegment(verts, x0, y1, z0, x0, y1, z1);
+}
+
+function pushCentroidCrosshair(
+  verts: number[],
+  x: number,
+  y: number,
+  z: number,
+  arm = 0.018,
+): void {
+  pushLineSegment(verts, x - arm, y, z, x + arm, y, z);
+  pushLineSegment(verts, x, y - arm, z, x, y + arm, z);
+  pushLineSegment(verts, x, y, z - arm, x, y, z + arm);
+}
+
+/**
+ * Cyan palmar eminence diagnostic — wireframe boxes on thenar / hypothenar pad staging bands.
+ * Always drawn in ?skinHoles=1 so void placement aligns with eminence anatomy (not mid-palm).
+ */
+export function buildPalmarEminenceDiagnosticSegmentPositions(
+  geometry: BufferGeometry,
+): Float32Array | null {
+  void geometry;
+  const verts: number[] = [];
+  const eminenceBounds = [
+    THENAR_EMINENCE_COVERAGE_BOUNDS,
+    HYPOTHENAR_EMINENCE_COVERAGE_BOUNDS,
+  ];
+
+  for (const bounds of eminenceBounds) {
+    pushAxisAlignedBoxWireframe(verts, bounds);
+    const cx = (bounds.minAbsX + bounds.maxAbsX) / 2;
+    const cy = (bounds.minY + bounds.maxY) / 2;
+    const cz = ((bounds.minZ ?? 0) + (bounds.maxZ ?? 0)) / 2;
+    pushCentroidCrosshair(verts, cx, cy, cz);
+  }
+
+  if (verts.length === 0) return null;
+  return new Float32Array(verts);
+}
+
+/** @deprecated Use buildPalmarEminenceDiagnosticSegmentPositions — kept for tests migrating off center box. */
+export function buildPalmarVoidDiagnosticSegmentPositions(
+  geometry: BufferGeometry,
+): Float32Array | null {
+  return buildPalmarEminenceDiagnosticSegmentPositions(geometry);
 }
 
 /** Filters micro-seams (4–12 edges) that rarely read as visible holes in the viewport. */
@@ -389,12 +800,13 @@ export function isBackTrapDotHoleLoop(loop: BoundaryLoop): boolean {
 
 function loopInBounds(
   loop: BoundaryLoop,
-  bounds: { minY: number; maxY: number; minAbsX: number; maxAbsX: number; minZ?: number },
+  bounds: SkinBandBounds,
 ): boolean {
   const absX = Math.abs(loop.centroid.x);
   if (loop.centroid.y < bounds.minY || loop.centroid.y > bounds.maxY) return false;
   if (absX < bounds.minAbsX || absX > bounds.maxAbsX) return false;
   if (bounds.minZ !== undefined && loop.centroid.z < bounds.minZ) return false;
+  if (bounds.maxZ !== undefined && loop.centroid.z > bounds.maxZ) return false;
   return true;
 }
 

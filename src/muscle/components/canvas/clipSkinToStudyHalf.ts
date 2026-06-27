@@ -161,8 +161,8 @@ export function clipSkinGeometryToStudyHalf(
   const b: [number, number, number] = [0, 0, 0];
   const c: [number, number, number] = [0, 0, 0];
 
-  const keepTriangle = (i0: number, i1: number, i2: number): void => {
-    if (Math.min(a[0], b[0], c[0]) < opts.minVertexX) return;
+  const keepTriangle = (i0: number, i1: number, i2: number, bypassMinVertexX = false): void => {
+    if (!bypassMinVertexX && Math.min(a[0], b[0], c[0]) < opts.minVertexX) return;
     kept.push(i0, i1, i2);
   };
 
@@ -175,37 +175,37 @@ export function clipSkinGeometryToStudyHalf(
     readVertex(i2, c);
 
     if (opts.preserveMidlinePelvis && isMidlinePelvisTriangle(a, b, c)) {
-      keepTriangle(i0, i1, i2);
+      keepTriangle(i0, i1, i2, true);
       continue;
     }
 
     if (opts.preserveMidlineThorax && isMidlineThoraxTriangle(a, b, c)) {
-      keepTriangle(i0, i1, i2);
+      keepTriangle(i0, i1, i2, true);
       continue;
     }
 
     if (opts.preserveMidlineFace && isMidlineFaceTriangle(a, b, c)) {
-      keepTriangle(i0, i1, i2);
+      keepTriangle(i0, i1, i2, true);
       continue;
     }
 
     if (opts.preserveMidlineAnteriorNeck && isMidlineAnteriorNeckTriangle(a, b, c)) {
-      keepTriangle(i0, i1, i2);
+      keepTriangle(i0, i1, i2, true);
       continue;
     }
 
     if (opts.preserveMidlineAbdomen && isMidlineAbdomenTriangle(a, b, c)) {
-      keepTriangle(i0, i1, i2);
+      keepTriangle(i0, i1, i2, true);
       continue;
     }
 
     if (opts.preserveMidlinePosteriorNeck && isMidlinePosteriorNeckTriangle(a, b, c)) {
-      keepTriangle(i0, i1, i2);
+      keepTriangle(i0, i1, i2, true);
       continue;
     }
 
     if (opts.preserveLateralEar && isLateralEarTriangle(a, b, c)) {
-      keepTriangle(i0, i1, i2);
+      keepTriangle(i0, i1, i2, true);
       continue;
     }
 
@@ -225,4 +225,46 @@ export function clipSkinGeometryToStudyHalf(
   clipped.setIndex(kept);
   clipped.computeVertexNormals();
   return clipped;
+}
+
+/** Drop −X triangles on +X reference clip (parent −X mirror flips them into study-side floaters). */
+export function stripSkinTrianglesOnNegativeX(
+  geometry: BufferGeometry,
+  minAllowedX = -0.0005,
+): BufferGeometry {
+  const position = geometry.getAttribute('position') as BufferAttribute | undefined;
+  const index = geometry.getIndex();
+  if (!position || position.count === 0) return geometry.clone();
+
+  const kept: number[] = [];
+  const triangleCount = index ? index.count / 3 : position.count / 3;
+
+  for (let tri = 0; tri < triangleCount; tri += 1) {
+    const i0 = index ? index.getX(tri * 3)! : tri * 3;
+    const i1 = index ? index.getX(tri * 3 + 1)! : tri * 3 + 1;
+    const i2 = index ? index.getX(tri * 3 + 2)! : tri * 3 + 2;
+    const a: [number, number, number] = [position.getX(i0), position.getY(i0), position.getZ(i0)];
+    const b: [number, number, number] = [position.getX(i1), position.getY(i1), position.getZ(i1)];
+    const c: [number, number, number] = [position.getX(i2), position.getY(i2), position.getZ(i2)];
+    const minX = Math.min(a[0], b[0], c[0]);
+    if (minX >= minAllowedX) {
+      kept.push(i0, i1, i2);
+      continue;
+    }
+    if (isMidlineFaceTriangle(a, b, c) || isMidlineAnteriorNeckTriangle(a, b, c)) {
+      kept.push(i0, i1, i2);
+    }
+  }
+
+  if (kept.length === 0) {
+    const empty = geometry.clone();
+    empty.setIndex([]);
+    empty.computeVertexNormals();
+    return empty;
+  }
+
+  const stripped = geometry.clone();
+  stripped.setIndex(kept);
+  stripped.computeVertexNormals();
+  return stripped;
 }

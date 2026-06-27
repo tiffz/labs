@@ -19,13 +19,13 @@ Nested **`AGENTS.md`** for `src/muscle/`. Root policy: [`../../AGENTS.md`](../..
 - **Gatekeeper:** Active Reps disabled until Fundamentals baseline; do not bypass in UI.
 - **Facts vs judgment:** Dexie stores progress; pure functions in `src/muscle/srs/`.
 - **Z-Anatomy license:** CC BY-SA 4.0 — keep [`ATTRIBUTION.md`](ATTRIBUTION.md) updated.
-- **Full-body skin staging:** Mirror straddling −X skin onto +X (`alignSkinEnvelopeToStudyHalf`) — **never** translate by `−min.x`. Study vs reference use **different sagittal clips** (`skinHalfClipOptions.ts`): study keeps midline preserve caps; reference uses `minVertexX ≥ 0` so midline bands do not mirror onto world +X as opaque patches. After `atlas_skin` export: `npm run muscle:skin-boundary`, `muscle:skin-half-split`, `muscle:skin-coverage`; hard-refresh `#/full_body`.
+- **Full-body skin staging:** Mirror straddling −X skin onto +X (`alignSkinEnvelopeToStudyHalf`) — **never** translate by `−min.x`. Study vs reference use **different sagittal clips** (`skinHalfClipOptions.ts`): study keeps midline preserve caps; reference uses `minVertexX ≥ 0` so midline bands do not mirror onto world +X as opaque patches. After `atlas_skin` export or runtime weld changes: `npm run muscle:skin-gates`; hard-refresh `#/full_body`.
 
 ## Tests
 
 - Unit: `npx vitest run src/muscle`
 - Assets: `npm run muscle:validate-assets`
-- Skin pipeline (after export or clip/material changes): `npm run muscle:skin-boundary`, `npm run muscle:skin-coverage`, `faceSkinCoverageAudit.test.ts`, `muscleSkinPipelineGuardrails.test.ts`
+- Skin pipeline (after export or clip/material changes): `npm run muscle:skin-gates` (includes `muscle:skin-runtime` GLTFLoader ear gate)
 - Full-body muscle/bone inventory (UI completeness): `npm run muscle:inventory`, `fullBodyRuntimeInventory.test.ts`, debug panel missing-landmark list
 - Perf guardrails: `canvasPerfGuardrails.test.ts`, `muscleAssetPerfBudget.test.ts`
 - Smoke: `muscle-shell.spec.ts`, `muscle-orbit-perf.spec.ts`, `muscle-study-journey.spec.ts`

@@ -25,6 +25,7 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | [`gesture-media-tiers.mdc`](gesture-media-tiers.mdc)                         | Gesture media / preview / session        | `src/gesture/AGENTS.md` § Media tiers         | —                            |
 | [`muscle-canvas-perf.mdc`](muscle-canvas-perf.mdc)                           | `muscle/components/canvas/**`            | `src/muscle/CUJs.md` CUJ-001                  | `labs-performance`           |
 | [`muscle-skin-pipeline.mdc`](muscle-skin-pipeline.mdc)                       | muscle skin export/staging/audit paths   | `tools/muscle-anatomy/SKIN_HOLE_BURN_DOWN.md` | `labs-muscle-anatomy-export` |
+| [`muscle-skin-runtime-seal.mdc`](muscle-skin-runtime-seal.mdc)               | runtime slit bridge + seal audit paths   | `tools/muscle-anatomy/SKIN_HOLE_BURN_DOWN.md` | `labs-muscle-anatomy-export` |
 | [`dexie-live-query-empty-states.mdc`](dexie-live-query-empty-states.mdc)     | Dexie `useLiveQuery` surfaces            | `resolveDexieLiveQuery.ts`, Encore library    | —                            |
 | [`stanza-viewer-layout.mdc`](stanza-viewer-layout.mdc)                       | `stanza/**`                              | `stanza/LAYOUT.md`                            | —                            |
 | [`stanza-drive-sync.mdc`](stanza-drive-sync.mdc)                             | `stanza/drive/**`, backup hook           | `stanza/AGENTS.md` § Drive sync               | —                            |

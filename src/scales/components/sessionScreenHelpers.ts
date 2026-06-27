@@ -66,7 +66,9 @@ export function computeDwellToastCopy(params: {
   outcomeTier: RunOutcomeTier;
   streakNumerator: number;
   streakDenominator: number;
-  onAdvancementStage: boolean;
+  /** Metronome stages use 100% perfect runs for progression (not threshold "clean"). */
+  usesPerfectRegimen: boolean;
+  overlearnUnlocked: boolean;
 }): DwellToastCopy {
   const {
     result,
@@ -75,12 +77,17 @@ export function computeDwellToastCopy(params: {
     outcomeTier,
     streakNumerator,
     streakDenominator,
-    onAdvancementStage,
+    usesPerfectRegimen,
+    overlearnUnlocked,
   } = params;
 
   const isPerfect = result.accuracy >= 1;
-  const statusOk = inDrill ? isPerfect : wasClean;
-  const statusNear = !inDrill && outcomeTier === 'near';
+  const statusOk = inDrill
+    ? isPerfect
+    : usesPerfectRegimen
+      ? isPerfect
+      : wasClean;
+  const statusNear = !inDrill && !usesPerfectRegimen && outcomeTier === 'near';
   const statusBg = statusOk ? 'success.main' : statusNear ? 'warning.main' : 'error.main';
   const statusContrast = statusOk
     ? 'success.contrastText'
@@ -92,25 +99,31 @@ export function computeDwellToastCopy(params: {
   const percent = Math.round(result.accuracy * 100);
   const headline = inDrill
     ? (isPerfect ? 'Perfect' : 'Reset')
-    : (wasClean ? 'Clean' : statusNear ? 'Almost' : 'Again');
+    : usesPerfectRegimen
+      ? (isPerfect ? 'Perfect' : statusNear ? 'Almost' : 'Again')
+      : (wasClean ? 'Clean' : statusNear ? 'Almost' : 'Again');
   const subline =
     inDrill
       ? `${percent}% · ${streakNumerator}/${streakDenominator}`
-      : streakDenominator > 0
-        ? (onAdvancementStage
+      : usesPerfectRegimen
+        ? (overlearnUnlocked && streakDenominator > 0
           ? formatDwellPerfectRunsSubline(
             percent,
             streakNumerator,
             streakDenominator,
             'advancement',
           )
-          : formatDwellCleanRunsSubline(
+          : overlearnUnlocked
+            ? `${percent}%`
+            : `${percent}% · first perfect sets your target`)
+        : streakDenominator > 0
+          ? formatDwellCleanRunsSubline(
             percent,
             streakNumerator,
             streakDenominator,
             'stage',
-          ))
-        : `${percent}%`;
+          )
+          : `${percent}%`;
 
   return {
     statusBg,
@@ -122,6 +135,10 @@ export function computeDwellToastCopy(params: {
   };
 }
 
-export function dwellStreakDenominator(inDrill: boolean, requiredRuns: number): number {
-  return inDrill ? DRILL_TARGET_PERFECT_RUNS : requiredRuns;
+export function dwellStreakDenominator(
+  inDrill: boolean,
+  requiredRuns: number | null,
+): number {
+  if (inDrill) return DRILL_TARGET_PERFECT_RUNS;
+  return requiredRuns ?? 0;
 }

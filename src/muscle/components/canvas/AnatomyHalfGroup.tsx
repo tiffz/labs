@@ -9,6 +9,8 @@ type AnatomyHalfGroupProps = {
   half: 'reference' | 'study';
   layout: AnatomyGroupLayout;
   renderOrder?: number;
+  /** Reference skin is pre-mirrored onto −X — skip parent −X scale. */
+  bakedMirror?: boolean;
   children: ReactNode;
 };
 
@@ -17,10 +19,11 @@ export default function AnatomyHalfGroup({
   half,
   layout,
   renderOrder,
+  bakedMirror = false,
   children,
 }: AnatomyHalfGroupProps) {
   const scale: [number, number, number] =
-    half === 'reference'
+    half === 'reference' && !bakedMirror
       ? [-layout.scale, layout.scale, layout.scale]
       : [layout.scale, layout.scale, layout.scale];
 

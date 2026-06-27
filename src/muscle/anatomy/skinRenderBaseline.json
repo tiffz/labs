@@ -1,0 +1,7 @@
+{
+  "_comment": "Runtime welded + clipped skin must stay above these floors. Catches 'skin inventory OK but weld/render path empty'.",
+  "minEnvelopePartCount": 4,
+  "minWeldedTriangleCount": 33000,
+  "minClippedStudyTriangleCount": 28000,
+  "minClippedReferenceTriangleCount": 28000
+}
