@@ -52,6 +52,7 @@ Structure findings as **symptom → root cause class → durable fix** (same fie
 - `warmup-storm` — prefetch or queue rebuild on unrelated config changes
 - `pedagogy-reveal-gap` — quiz feedback shows ground truth that contradicts the lesson (e.g. identical chips on gray after a perceived-contrast item); fix with induced-read reveal + copy + minimum perceptual delta gates
 - `static-hosting-cors` — local Vite proxy masks browser CORS/referrer failures on GitHub Pages; guest or public Drive I/O must use session BFF or same-origin proxy, not direct `googleapis.com` from the browser (see `buildPublicDriveAltMediaUrl.ts`, `workers/labs-session-bff/src/publicDriveProxy.ts`)
+- `feasibility-misjudged` — heavy investment in an approach that needed significant **manual human labor** (3D modeling, rigging, pose-matching, asset cleanup) to reach the required quality, when the labor cost and low automation-yield should have been **flagged up front** so the user could choose. Fix: feasibility gate before big new asks — see [`.cursor/rules/feasibility-first.mdc`](../.cursor/rules/feasibility-first.mdc). Prefer a cheap falsifying spike (one import + alignment screenshot) over building the full pipeline first.
 
 Add a new class only when several future bugs would share it.
 

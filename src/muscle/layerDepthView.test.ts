@@ -5,12 +5,11 @@ import {
   countVisibleNodesForView,
   countVisibleRegionNodesAtPeel,
   isNodeVisibleAtPeelDepth,
-  isStudySkinVisibleAtPeel,
   muscleLayerThresholdForPeel,
 } from './layerDepthView';
 
 describe('layerDepthView', () => {
-  it('keeps all muscles visible at under-the-skin peel', () => {
+  it('keeps all muscles visible at the full-muscle peel stop', () => {
     const surface = getNodesForRegion('torso').find((node) => node.layerDepth === 0);
     const intermediate = getNodesForRegion('torso').find((node) => node.layerDepth === 1);
     expect(surface).toBeTruthy();
@@ -18,29 +17,22 @@ describe('layerDepthView', () => {
     if (!surface || !intermediate) return;
 
     expect(isNodeVisibleAtPeelDepth(surface, 0)).toBe(true);
-    expect(isNodeVisibleAtPeelDepth(surface, 1)).toBe(true);
+    expect(isNodeVisibleAtPeelDepth(intermediate, 0)).toBe(true);
+    expect(isNodeVisibleAtPeelDepth(surface, 1)).toBe(false);
     expect(isNodeVisibleAtPeelDepth(intermediate, 1)).toBe(true);
-    expect(isNodeVisibleAtPeelDepth(surface, 2)).toBe(false);
-    expect(isNodeVisibleAtPeelDepth(intermediate, 2)).toBe(true);
+    expect(isNodeVisibleAtPeelDepth(intermediate, 2)).toBe(false);
   });
 
   it('maps peel stops to muscle layer thresholds', () => {
     expect(muscleLayerThresholdForPeel(0)).toBeNull();
-    expect(muscleLayerThresholdForPeel(1)).toBeNull();
-    expect(muscleLayerThresholdForPeel(2)).toBe(1);
-    expect(muscleLayerThresholdForPeel(4)).toBe(3);
-  });
-
-  it('shows study skin only on the full-figure peel stop', () => {
-    expect(isStudySkinVisibleAtPeel(0)).toBe(true);
-    expect(isStudySkinVisibleAtPeel(1)).toBe(false);
+    expect(muscleLayerThresholdForPeel(1)).toBe(1);
+    expect(muscleLayerThresholdForPeel(2)).toBe(2);
+    expect(muscleLayerThresholdForPeel(3)).toBe(3);
   });
 
   it('shows fewer structures at skeleton peel on mixed modules', () => {
     const all = countVisibleRegionNodesAtPeel('torso', 0);
-    const underSkin = countVisibleRegionNodesAtPeel('torso', 1);
-    const skeleton = countVisibleRegionNodesAtPeel('torso', 4);
-    expect(underSkin).toBe(all);
+    const skeleton = countVisibleRegionNodesAtPeel('torso', 3);
     expect(skeleton).toBeLessThan(all);
     expect(skeleton).toBeGreaterThan(0);
   });

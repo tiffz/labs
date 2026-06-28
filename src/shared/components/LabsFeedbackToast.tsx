@@ -3,6 +3,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import Snackbar from '@mui/material/Snackbar';
@@ -14,11 +15,22 @@ import './labsFeedbackToast.css';
 
 export type LabsFeedbackToastSeverity = 'success' | 'info' | 'warning' | 'error';
 
+/** Optional inline action (e.g. "Open") rendered between the message and the dismiss button. */
+export type LabsFeedbackToastAction = {
+  label: string;
+  onClick: () => void;
+};
+
 export type LabsFeedbackToastProps = {
   message: string | null;
   onClose: () => void;
   severity?: LabsFeedbackToastSeverity;
   autoHideDuration?: number;
+  /**
+   * Optional action button. A click here is a direct user gesture, so handlers that open a new
+   * tab (e.g. "Open the doc you just created") are not blocked by popup blockers.
+   */
+  action?: LabsFeedbackToastAction | null;
 };
 
 const SEVERITY_ARIA: Record<LabsFeedbackToastSeverity, 'status' | 'alert'> = {
@@ -47,6 +59,7 @@ export default function LabsFeedbackToast({
   onClose,
   severity = 'success',
   autoHideDuration = 5500,
+  action = null,
 }: LabsFeedbackToastProps): ReactNode {
   const theme = useTheme();
   const bottomOffset = useToastBottomOffset();
@@ -121,6 +134,24 @@ export default function LabsFeedbackToast({
           <Typography component="p" className="labs-feedback-toast-panel__message">
             {message}
           </Typography>
+          {action ? (
+            <Button
+              className="labs-feedback-toast-panel__action"
+              size="small"
+              onClick={action.onClick}
+              sx={{
+                color: accent,
+                fontWeight: 600,
+                textTransform: 'none',
+                whiteSpace: 'nowrap',
+                minWidth: 'auto',
+                px: 1,
+                '&:hover': { backgroundColor: alpha(accent, 0.1) },
+              }}
+            >
+              {action.label}
+            </Button>
+          ) : null}
           <IconButton
             className="labs-feedback-toast-panel__dismiss"
             size="small"

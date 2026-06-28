@@ -140,13 +140,6 @@ function main() {
 
   run('Validate assets', 'npm', ['run', 'muscle:validate-assets'], { shell: true });
 
-  if (regions.includes('atlas_skin')) {
-    run('Skin boundary audit', 'npm', ['run', 'muscle:skin-boundary'], { shell: true });
-    run('Skin half-split audit', 'npm', ['run', 'muscle:skin-half-split'], { shell: true });
-    run('Skin coverage audit', 'npm', ['run', 'muscle:skin-coverage'], { shell: true });
-    run('Skin seam-gap audit', 'npm', ['run', 'muscle:skin-seam-gaps'], { shell: true });
-  }
-
   if (!opts.skipBridge) {
     run('Sync zAnatomyBridge', 'npm', ['run', 'muscle:sync-bridge'], { shell: true });
   }

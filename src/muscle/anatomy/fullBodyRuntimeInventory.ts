@@ -51,8 +51,6 @@ const FULL_BODY_MERGE_GROUPS: ReadonlyArray<{
   },
 ];
 
-const SKIN_OVERLAY_PREFIX = /^skin_|^eye_globes$/;
-
 function glbRelativePath(region: string): string | undefined {
   const entry = manifest.regions[region as keyof typeof manifest.regions];
   const url = entry?.glbUrl ?? `/muscle/models/${region}.glb`;
@@ -71,17 +69,6 @@ export function collectResolvedNodeIdsFromGlb(
   for (const meshName of listGlbMeshNames(rel)) {
     const nodeId = resolveCurriculumNodeId(meshName);
     if (!nodeId || !includeResolvedId(nodeId)) continue;
-    ids.add(nodeId);
-  }
-  return ids;
-}
-
-/** Skin overlay node ids that would render in SkinEnvelopeLayer (study + reference halves). */
-export function collectSkinOverlayNodeIds(): Set<string> {
-  const ids = new Set<string>();
-  for (const meshName of listGlbMeshNames('public/muscle/models/atlas_skin.glb')) {
-    const nodeId = resolveCurriculumNodeId(meshName);
-    if (!nodeId || !SKIN_OVERLAY_PREFIX.test(nodeId)) continue;
     ids.add(nodeId);
   }
   return ids;
@@ -112,6 +99,5 @@ export function formatRuntimeInventorySummary(inventory: Set<string>): string {
     `- bones (${bones.length}): ${bones.slice(0, 12).join(', ')}${bones.length > 12 ? '…' : ''}`,
     `- muscles (${muscles.length})`,
     `- atlas fill (${atlas.length})`,
-    `- skin overlays (${collectSkinOverlayNodeIds().size})`,
   ].join('\n');
 }

@@ -18,6 +18,7 @@ import {
   newLyricsSectionNarrativeRun,
   nineQuestionsProgress,
   parseGeniusLyricsIntoSections,
+  patchLyricsSectionLine,
   removeRunForKind,
   serializeLyricsSectionsToRaw,
   setSingleRunForKind,
@@ -593,5 +594,44 @@ describe('touchExerciseRun', () => {
     const r = newLyricsInOwnWordsRun();
     const t = touchExerciseRun(r);
     expect(t.updatedAt >= r.updatedAt).toBe(true);
+  });
+});
+
+describe('patchLyricsSectionLine (structural sharing — typing perf invariant)', () => {
+  function sampleSections() {
+    return [
+      {
+        title: 'Verse 1',
+        lines: [
+          { original: 'a1', rewrite: '' },
+          { original: 'a2', rewrite: '' },
+        ],
+      },
+      { title: 'Chorus', lines: [{ original: 'b1', rewrite: '' }] },
+    ];
+  }
+
+  it('applies the patch to the targeted line', () => {
+    const next = patchLyricsSectionLine(sampleSections(), 0, 1, { rewrite: 'mine' });
+    expect(next[0].lines[1]).toEqual({ original: 'a2', rewrite: 'mine' });
+  });
+
+  it('keeps untouched sections referentially identical (so memoized rows skip re-render)', () => {
+    const sections = sampleSections();
+    const next = patchLyricsSectionLine(sections, 0, 1, { rewrite: 'mine' });
+    // Top-level array and the edited section are new...
+    expect(next).not.toBe(sections);
+    expect(next[0]).not.toBe(sections[0]);
+    // ...but the untouched section and the untouched line in the edited section are reused.
+    expect(next[1]).toBe(sections[1]);
+    expect(next[0].lines[0]).toBe(sections[0].lines[0]);
+    expect(next[0].lines[1]).not.toBe(sections[0].lines[1]);
+  });
+
+  it('returns the same array reference for no-op patches and out-of-range indices', () => {
+    const sections = sampleSections();
+    expect(patchLyricsSectionLine(sections, 0, 1, { rewrite: '' })).toBe(sections);
+    expect(patchLyricsSectionLine(sections, 9, 0, { rewrite: 'x' })).toBe(sections);
+    expect(patchLyricsSectionLine(sections, 0, 9, { rewrite: 'x' })).toBe(sections);
   });
 });

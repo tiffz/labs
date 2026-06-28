@@ -1,7 +1,0 @@
-{
-  "studyMaxSeamBoundaryEdges": 727,
-  "studyMaxSeamInteriorLoops": 24,
-  "referenceMaxSeamBoundaryEdges": 719,
-  "referenceMaxSeamInteriorLoops": 24,
-  "_comment": "Midline-adjacent open edges + closed loops (|x| <= 0.028). Tighten when export/clip fixes land."
-}

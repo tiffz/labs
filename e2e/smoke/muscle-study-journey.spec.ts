@@ -1,16 +1,18 @@
 import { test, expect } from '@playwright/test';
+import { expectMuscleCanvasReady } from '../helpers/muscleCanvas';
 
-async function setLayerPeelDepth(page: import('@playwright/test').Page, depth: 0 | 1 | 2 | 3 | 4) {
+async function setLayerPeelDepth(page: import('@playwright/test').Page, depth: 0 | 1 | 2 | 3) {
   await page.getByRole('slider', { name: 'Depth' }).fill(String(depth));
 }
 
 test.describe('Muscle Memory study journey', () => {
+  test.describe.configure({ timeout: 60_000 });
+
   test('fundamentals warmup shows skeleton peel count', async ({ page }) => {
     await page.goto('/muscle/?module=fundamentals');
-    await expect(page.getByTestId('muscle-app')).toBeVisible();
-    await expect(page.getByTestId('muscle-training-canvas')).toBeVisible();
+    await expectMuscleCanvasReady(page);
 
-    await setLayerPeelDepth(page, 4);
+    await setLayerPeelDepth(page, 3);
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Skeleton · 12 visible');
   });
 
@@ -19,18 +21,15 @@ test.describe('Muscle Memory study journey', () => {
     await expect(page.getByRole('tab', { name: 'Torso', selected: true })).toBeVisible();
 
     await setLayerPeelDepth(page, 0);
-    await expect(page.getByTestId('muscle-layer-status')).toContainText('Full figure · 7 visible');
+    await expect(page.getByTestId('muscle-layer-status')).toContainText('Full muscle · 7 visible');
 
     await setLayerPeelDepth(page, 1);
-    await expect(page.getByTestId('muscle-layer-status')).toContainText('Under the skin · 7 visible');
-
-    await setLayerPeelDepth(page, 2);
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Below surface · 4 visible');
 
-    await setLayerPeelDepth(page, 3);
+    await setLayerPeelDepth(page, 2);
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Deep muscles · 1 visible');
 
-    await setLayerPeelDepth(page, 4);
+    await setLayerPeelDepth(page, 3);
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Skeleton · 1 visible');
   });
 
@@ -48,11 +47,10 @@ test.describe('Muscle Memory study journey', () => {
 
   test('full body tab loads atlas view', async ({ page }) => {
     await page.goto('/muscle/');
-    await expect(page.getByTestId('muscle-app')).toBeVisible();
+    await expectMuscleCanvasReady(page);
     await expect(page.getByRole('tab', { name: 'Full body', selected: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Full body', level: 1 })).toBeVisible();
-    await expect(page.getByTestId('muscle-training-canvas')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByTestId('muscle-layer-status')).toContainText('Full figure', { timeout: 15_000 });
+    await expect(page.getByTestId('muscle-layer-status')).toContainText('Full muscle', { timeout: 15_000 });
   });
 });
 

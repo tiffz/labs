@@ -773,6 +773,74 @@ def shade_smooth_mesh(obj) -> None:
     mesh.update()
 
 
+# Voxel size (world units, ~metres) for unifying Z-Anatomy's fragmented auricle into one clean
+# watertight ear. Smaller keeps finer helix detail but risks leaving fragment gaps open; larger
+# bridges bigger gaps but blobs out detail. Tuned against rendered pixels.
+SKIN_EAR_VOXEL_SIZE = 0.0010
+SKIN_EAR_SOLIDIFY_THICKNESS = 0.0020
+
+
+def solidify_mesh(obj, thickness: float) -> None:
+    """Give a thin open surface volume (a symmetric shell) so volumetric ops (voxel remesh) work.
+
+    Z-Anatomy's auricle fragments are zero-thickness sheets; voxel remesh needs an inside/outside,
+    so without thickness it degenerates. A 2-sided solidify turns each sheet into a thin slab the
+    remesh can capture, preserving helix/concha relief while making the result watertight.
+    """
+    if obj.type != 'MESH' or not obj.data.polygons:
+        return
+    ensure_mesh_single_user(obj)
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.hide_set(False)
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    mod = obj.modifiers.new('EarSolidify', 'SOLIDIFY')
+    mod.thickness = thickness
+    mod.offset = 0.0  # grow symmetrically about the original surface (no net shift)
+    mod.use_even_offset = True
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+
+
+def smooth_mesh(obj, iterations: int, factor: float) -> None:
+    """Relax vertices (Smooth modifier) to remove spiky voxel-remesh artifacts without re-holing."""
+    if obj.type != 'MESH' or not obj.data.polygons:
+        return
+    ensure_mesh_single_user(obj)
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.hide_set(False)
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    mod = obj.modifiers.new('EarSmooth', 'SMOOTH')
+    mod.iterations = iterations
+    mod.factor = factor
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+
+
+def voxel_remesh_mesh(obj, voxel_size: float, adaptivity: float = 0.0) -> None:
+    """Rebuild `obj` as a single watertight manifold via the Voxel Remesh modifier.
+
+    The auricle arrives as ~14 disconnected thin fragments whose gaps are open chains — weld
+    collapses the helix and fill cannot cap open chains. Voxel remesh marches a closed surface
+    over the fragment union, bridging the gaps and smoothing the crumple in one principled pass.
+    Requires world-baked coordinates so voxel_size is in world units.
+    """
+    if obj.type != 'MESH' or not obj.data.polygons:
+        return
+    ensure_mesh_single_user(obj)
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.hide_set(False)
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    before = len(obj.data.polygons)
+    mod = obj.modifiers.new('EarVoxelRemesh', 'REMESH')
+    mod.mode = 'VOXEL'
+    mod.voxel_size = voxel_size
+    mod.adaptivity = adaptivity
+    mod.use_smooth_shade = True
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+    print(f'  voxel remesh {obj.name}: {before} -> {len(obj.data.polygons)} tris (voxel {voxel_size})')
+
+
 def weld_skin_mesh(obj, merge_dist: float = 0.00075) -> None:
     """Weld nearby patch vertices and smooth normals — avoids SOLIDIFY seam ridges."""
     if obj.type != 'MESH' or not obj.data.vertices:
@@ -1775,74 +1843,23 @@ def weld_skin_palm_shell_band(obj) -> None:
 
 
 def finalize_skin_ear_shell(obj) -> None:
-    """Join Z-Anatomy auricular overlay — sits on ear backing in skin_head_neck."""
+    """Unify Z-Anatomy's fragmented auricle into one clean watertight ear via voxel remesh.
+
+    The auricle ships as ~14 disconnected thin patches with open-chain gaps. Welding them shut
+    collapses the helix (crumpled look) and fills cannot cap open chains, so the old weld+fill
+    cascade could never produce a clean ear. Voxel remesh bridges the fragment gaps and smooths
+    the surface in one pass, staying faithful to Z-Anatomy's auricle geometry.
+    """
     ensure_mesh_single_user(obj)
-    weld_skin_mesh(obj, merge_dist=0.0012)
-    weld_skin_mesh_spatial_band(
-        obj,
-        merge_dist=0.0035,
-        y_min=1.44,
-        y_max=1.68,
-        min_abs_x=0.04,
-        max_abs_x=0.16,
-        z_min=-0.14,
-        z_max=0.10,
-    )
-    # Helix / tragus root — pull overlay toward head backing collar.
-    weld_skin_mesh_spatial_band(
-        obj,
-        merge_dist=0.0045,
-        y_min=1.48,
-        y_max=1.62,
-        min_abs_x=0.05,
-        max_abs_x=0.11,
-        z_min=-0.06,
-        z_max=0.06,
-    )
-    for pass_idx in range(10):
-        filled = force_fill_largest_interior_loop(
-            obj,
-            y_min=1.44,
-            y_max=1.68,
-            min_abs_x=0.04,
-            max_abs_x=0.14,
-            z_min=-0.12,
-            z_max=0.10,
-            min_edges=4,
-            max_edges=120,
-            label=f'skin_ear_force_{pass_idx}',
-            filter_centroid=True,
-        )
-        if not filled:
-            break
-    fill_skin_patch_holes_bmesh(
-        obj,
-        sides=32,
-        y_min=1.44,
-        y_max=1.72,
-        min_abs_x=0.04,
-        max_abs_x=0.14,
-        z_min=-0.12,
-        z_max=0.08,
-        max_passes=10,
-        label='skin_ear_pinhole',
-        centroid_only_band=True,
-        max_loop_diameter=0.045,
-    )
-    fill_skin_patch_holes_bmesh(
-        obj,
-        sides=180,
-        y_min=1.44,
-        y_max=1.72,
-        min_abs_x=0.04,
-        max_abs_x=0.14,
-        z_min=-0.12,
-        z_max=0.08,
-        max_passes=8,
-        label='skin_ear',
-        centroid_only_band=False,
-        max_loop_diameter=0.18,
-    )
+    bake_mesh_world_transform(obj)  # voxel_size must be in world units
+    # Light pre-weld only — merge truly-coincident fragment verts without collapsing helix folds.
+    weld_skin_mesh(obj, merge_dist=0.0008)
+    # Solidify the zero-thickness sheets, then voxel-remesh: the slab gives the remesh volume to
+    # capture, so the auricle survives as a clean watertight ear instead of a degenerate blob.
+    solidify_mesh(obj, thickness=SKIN_EAR_SOLIDIFY_THICKNESS)
+    voxel_remesh_mesh(obj, voxel_size=SKIN_EAR_VOXEL_SIZE)
+    # Relax the spiky slivers the solidify+remesh leaves where source fragments are sparse.
+    smooth_mesh(obj, iterations=14, factor=0.5)
     shade_smooth_mesh(obj)
 
 
@@ -2724,6 +2741,188 @@ def export_atlas_complete(blend: Path | None, ratio: float, max_tris: int, max_r
     print(f'Exported {out_glb} ({len(meshes)} meshes, {out_glb.stat().st_size // 1024} KB)')
 
 
+SKIN_PROTECT_GROUP = 'skin_protect_detail'
+
+
+def _in_protect_region(co) -> bool:
+    """World-space bands (Blender Z-up) for Z-Anatomy detail kept dense under decimation:
+    head + ear (high z), hands/fingers (lateral, hip height — arms hang at sides), feet/toes
+    (near the floor). Forearm/upper-arm/torso/back fall outside and decimate normally."""
+    height = co.z
+    lateral = abs(co.x)
+    if height >= 1.36:  # head + neck + ear shell
+        return True
+    if 0.74 <= height <= 0.99 and lateral >= 0.15:  # hands + fingers
+        return True
+    if height <= 0.12:  # feet + toes
+        return True
+    return False
+
+
+def assign_skin_protect_group(obj, group_name: str = SKIN_PROTECT_GROUP) -> str:
+    """Weight 1.0 on detail verts (head/ear/hands/feet) so an inverted Decimate group spares them.
+
+    Requires world-baked coordinates (see bake_mesh_world_transform) so the bands line up.
+    """
+    if obj.type != 'MESH':
+        return group_name
+    ensure_mesh_single_user(obj)
+    existing = obj.vertex_groups.get(group_name)
+    if existing is not None:
+        obj.vertex_groups.remove(existing)
+    group = obj.vertex_groups.new(name=group_name)
+    keep = [v.index for v in obj.data.vertices if _in_protect_region(v.co)]
+    if keep:
+        group.add(keep, 1.0, 'REPLACE')
+    print(f'  protect group {group_name}: {len(keep)}/{len(obj.data.vertices)} verts kept dense')
+    return group_name
+
+
+def apply_protected_decimate_to_target(obj, max_tris: int, group_name: str) -> None:
+    """Collapse-decimate to a tri budget while sparing `group_name` verts (inverted group).
+
+    Confirmed semantics: weight 1.0 + invert_vertex_group=True + factor 1.0 fully protects the
+    weighted verts and tapers decimation toward them (no hard cut, so seams do not re-open).
+    """
+    if obj.type != 'MESH':
+        return
+
+    view_layer = bpy.context.view_layer
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.hide_set(False)
+    obj.select_set(True)
+    view_layer.objects.active = obj
+    ensure_mesh_single_user(obj)
+
+    before = len(obj.data.polygons)
+    if before <= max_tris or before <= DECIMATE_THRESHOLD:
+        return
+
+    has_group = obj.vertex_groups.get(group_name) is not None
+
+    def _new_decimate(name: str, ratio: float):
+        mod = obj.modifiers.new(name, 'DECIMATE')
+        mod.ratio = ratio
+        if has_group:
+            mod.vertex_group = group_name
+            mod.invert_vertex_group = True
+            mod.vertex_group_factor = 1.0
+        return mod
+
+    mod = _new_decimate('DecimateSkinProtected', max(0.05, min(1.0, max_tris / before)))
+    bpy.ops.object.modifier_apply(modifier=mod.name)
+
+    after = len(obj.data.polygons)
+    # Protected verts raise the achievable floor — only keep trimming while it still shrinks.
+    while len(obj.data.polygons) > max_tris:
+        ratio = max(0.05, max_tris / max(len(obj.data.polygons), 1))
+        mod = _new_decimate('DecimateSkinProtectedTrim', ratio)
+        bpy.ops.object.modifier_apply(modifier=mod.name)
+        if len(obj.data.polygons) >= after:
+            break
+        after = len(obj.data.polygons)
+
+    print(f'  protected decimate {obj.name}: {before} -> {len(obj.data.polygons)} tris (target {max_tris})')
+
+
+def cleanup_skin_sliver_faces(obj, *, degenerate_dist: float = 2.0e-4, beautify_angle_deg: float = 45.0) -> None:
+    """Remove needle/cap sliver triangles that holes_fill fans onto elongated boundary loops.
+
+    These near-zero-area triangles render as bright specular slits on the study/reference skin
+    yet have NO open edge, so no open-edge/coverage audit catches them (proxy gap). Three passes:
+      1. dissolve_degenerate — collapses needle slivers (a short/zero-length edge) + zero-area faces.
+      2. beautify_fill — Delaunay edge flips on coplanar triangle pairs, killing CAP slivers
+         (a near-180° vertex, no short edge); angle_limit preserves genuine curvature.
+      3. targeted dissolve of each residual cap's longest INTERIOR edge + BEAUTY re-triangulation
+         (re-picks a diagonal only — no vertex moves — so silhouette detail is untouched).
+
+    The beautify angle_limit preserves genuine curvature (finger/toe/ear relief is high-dihedral
+    so it is never flipped), so this runs over the whole envelope. REQUIRES world-baked
+    coordinates (call AFTER bake + decimate) so shade-smooth normals recompute cleanly."""
+    if bpy is None or obj.type != 'MESH' or not obj.data.vertices:
+        return
+    import math
+    import bmesh
+
+    mesh = obj.data
+    view_layer = bpy.context.view_layer
+    ensure_mesh_single_user(obj)
+
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.hide_set(False)
+    obj.select_set(True)
+    view_layer.objects.active = obj
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+    try:
+        bpy.ops.mesh.dissolve_degenerate(threshold=degenerate_dist)
+    except (AttributeError, RuntimeError):
+        pass
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
+    bpy.ops.mesh.select_all(action='SELECT')
+    try:
+        bpy.ops.mesh.beautify_fill(angle_limit=math.radians(beautify_angle_deg))
+    except (AttributeError, RuntimeError):
+        pass
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    for _ in range(4):
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        targets = set()
+        for face in bm.faces:
+            if len(face.verts) != 3:
+                continue
+            area = face.calc_area()
+            longest_edge = max(face.edges, key=lambda e: e.calc_length())
+            longest = longest_edge.calc_length()
+            if longest <= 0.0:
+                continue
+            altitude = (2.0 * area) / longest
+            if altitude <= 0.0 or longest / altitude <= 25.0:
+                continue
+            if len(longest_edge.link_faces) == 2:  # interior only — never reopen a boundary
+                targets.add(longest_edge)
+        if not targets:
+            bm.free()
+            break
+        bmesh.ops.dissolve_edges(bm, edges=list(targets), use_verts=False)
+        bm.faces.ensure_lookup_table()
+        ngons = [face for face in bm.faces if len(face.verts) > 3]
+        if ngons:
+            bmesh.ops.triangulate(bm, faces=ngons, quad_method='BEAUTY', ngon_method='BEAUTY')
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+        bm.to_mesh(mesh)
+        bm.free()
+        mesh.update()
+
+    mesh.validate(verbose=False)  # drop any non-manifold/invalid faces the dissolve left behind
+    shade_smooth_mesh(obj)
+
+
+def global_stitch_fill_skin_envelope(obj) -> None:
+    """ONE principled global hole-fill — closes every interior boundary loop across the whole
+    envelope, replacing the per-region fill cascade. At export the surface is full-body (the
+    sagittal half-cut is a runtime operation), so every boundary loop is a genuine gap to seal
+    before decimation. Welding the limb micro-seams happens upstream; this closes true holes."""
+    fill_skin_patch_holes_bmesh(
+        obj,
+        sides=180,
+        y_min=0.0,
+        y_max=2.0,
+        min_abs_x=0.0,
+        max_abs_x=0.7,
+        z_min=-0.7,
+        z_max=0.7,
+        exclude_sagittal_plane=False,
+        max_passes=10,
+        label='global_stitch',
+        centroid_only_band=True,
+        max_loop_diameter=0.20,
+    )
+
+
 def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_region_tris: int) -> None:
     """Export Z-Anatomy skin as separate body / hand / foot / eminence meshes (preserve digit detail)."""
     if bpy is None:
@@ -2819,44 +3018,32 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
     ensure_mesh_single_user(unified)
     weld_skin_mesh(unified, merge_dist=0.0025)
     weld_skin_problem_bands(unified)
-    unified_cap = min(max_region_tris - sum(tri for _, _, tri in overlay_entries), 88_000)
-    apply_decimate_to_target(unified, max(unified_cap, 40_000))
-    bake_mesh_world_transform(unified)
-    fill_skin_neck_shoulder_holes(unified)
-    fill_skin_upper_arm_holes(unified)
+
+    # --- Structural seam welds: collapse limb open-chain micro-slits (the residual forearm/
+    #     wrist/palm gaps are short open chains, not closed loops, so they need a weld, not a
+    #     fill). These are band welds, NOT per-hole fills. ---
     weld_skin_upper_arm_junction(unified)
     stitch_skin_component_gaps(unified)
-    fill_skin_upper_arm_holes(unified)
-    fill_skin_throat_holes(unified)
     weld_skin_throat_midline_band(unified)
-    fill_skin_throat_holes(unified)
-    fill_skin_midline_seam_holes(unified)
     weld_skin_midline_seam_band(unified)
-    fill_skin_perioral_holes(unified)
-    fill_skin_abdomen_holes(unified)
     weld_skin_hand_forearm_junction(unified)
     weld_skin_palm_shell_band(unified)
-    fill_skin_palm_wrist_holes(unified)
-    fill_skin_palm_eminence_holes(unified)
-    fill_skin_palm_center_holes(unified)
-    fill_skin_palm_medial_cuff_holes(unified)
     weld_skin_palm_visible_hole_bands(unified)
     stitch_skin_component_gaps(unified)
-    fill_skin_palm_center_holes(unified)
-    fill_skin_palm_medial_cuff_holes(unified)
-    fill_skin_upper_arm_lateral_pinholes(unified)
-    fill_skin_back_trap_holes(unified)
-    purge_skin_micro_islands(unified)
 
+    # Join the ear auricle into the envelope BEFORE the watertight + decimate passes so it is one
+    # manifold surface and is spared by the protected decimate below (the ear is detail we keep).
     ear_entry = next((entry for entry in overlay_entries if entry[0] == 'skin_ear'), None)
     overlay_entries = [entry for entry in overlay_entries if entry[0] != 'skin_ear']
     if ear_entry is not None:
         _, ear_obj, _ = ear_entry
         unified = join_ear_overlay_to_envelope(unified, ear_obj)
         print(f'  atlas_skin joined skin_ear overlay -> skin_envelope ({len(unified.data.polygons)} tris)')
+        # Weld the watertight voxel-ear's base rim onto the head backing so the attachment crease
+        # does not leave open boundary edges (the voxel blob and head are otherwise two surfaces).
         weld_skin_mesh_spatial_band(
             unified,
-            merge_dist=0.003,
+            merge_dist=0.005,
             y_min=1.44,
             y_max=1.68,
             min_abs_x=0.04,
@@ -2864,70 +3051,36 @@ def export_atlas_skin(blend: Path | None, ratio: float, max_tris: int, max_regio
             z_min=-0.12,
             z_max=0.10,
         )
+        # The auricle is the one genuine special case: Z-Anatomy ships it as ~14 disconnected
+        # fragments, so its gaps are open chains the global closed-loop fill cannot close. This
+        # dedicated ear seal (source-specific assembly, not a body hack) closes them post-join.
         fill_skin_ear_envelope_holes(unified)
         seal_skin_ear_attachment_seam(unified)
 
-    for pass_idx in range(8):
-        filled = force_fill_largest_interior_loop(
-            unified,
-            y_min=0.84,
-            y_max=0.98,
-            min_abs_x=0.14,
-            max_abs_x=0.32,
-            z_min=0.0,
-            z_max=0.14,
-            min_edges=12,
-            max_edges=32,
-            label=f'palm_anterior_{pass_idx}',
-            filter_centroid=True,
-        )
-        if not filled:
-            break
-    for pass_idx in range(6):
-        filled = force_fill_largest_interior_loop(
-            unified,
-            y_min=0.84,
-            y_max=0.98,
-            min_abs_x=0.14,
-            max_abs_x=0.32,
-            z_min=-0.12,
-            z_max=0.14,
-            min_edges=14,
-            max_edges=28,
-            label=f'palm_post_ear_{pass_idx}',
-            filter_centroid=True,
-        )
-        if not filled:
-            break
-    fill_skin_patch_holes_bmesh(
-        unified,
-        sides=32,
-        y_min=0.84,
-        y_max=0.98,
-        min_abs_x=0.14,
-        max_abs_x=0.32,
-        z_min=-0.12,
-        z_max=0.14,
-        max_passes=10,
-        label='palm_post_ear_fill',
-        centroid_only_band=False,
-        max_loop_diameter=0.28,
-    )
-    fill_skin_staging_residual_loops(unified)
-    force_fill_loop_near_staging_point(
-        unified,
-        target_x=0.08,
-        target_height=0.873,
-        target_depth=0.077,
-        max_distance=0.06,
-        min_edges=8,
-        max_edges=80,
-        label='palm_medial_runtime_target',
-    )
+    # --- ONE principled global stitch: close every remaining interior boundary loop so the
+    #     envelope is watertight before decimation (replaces the ~15 per-region body fills). ---
+    global_stitch_fill_skin_envelope(unified)
     fill_skin_ear_envelope_holes(unified)
     seal_skin_ear_attachment_seam(unified)
     weld_skin_envelope_ear_export_seams(unified)
     weld_skin_envelope_gltf_seams(unified)
+    purge_skin_micro_islands(unified, min_face_count=110)
+
+    # --- Decimate LAST: a watertight manifold stays watertight under collapse decimation, so no
+    #     seam re-opens (the old order decimated first, which re-opened seams the fills then
+    #     chased). Protect head/ear/hands/feet so Z-Anatomy detail is not flattened. ---
+    bake_mesh_world_transform(unified)
+    protect_group = assign_skin_protect_group(unified)
+    unified_cap = min(max_region_tris - sum(tri for _, _, tri in overlay_entries), 88_000)
+    apply_protected_decimate_to_target(unified, max(unified_cap, 40_000), protect_group)
+    leftover_group = unified.vertex_groups.get(protect_group)
+    if leftover_group is not None:
+        unified.vertex_groups.remove(leftover_group)
+    # Final pass on the rendered mesh: beautify away the bright sliver triangles holes_fill fans
+    # onto elongated loops (and any fresh slivers from collapse decimation). Skips the protected
+    # ear/hands/feet so the watertight voxel auricle is untouched. Runs after world-bake so the
+    # protect bands line up.
+    cleanup_skin_sliver_faces(unified)
 
     unified_tris = len(unified.data.polygons)
     print(f'  atlas_skin unified skin_envelope: {len(skin_parts)} parts -> {unified_tris} tris')

@@ -1009,4 +1009,49 @@
     min-width: 44px;
     min-height: 44px;
   }
+
+  /*
+   * Immersive reader (touch only): the header floats over the page as a translucent overlay so the
+   * content fills the whole viewport. Header + nav arrows auto-hide while reading (see
+   * useReaderImmersive) and a tap brings them back. Desktop (pointer: fine) keeps the in-flow
+   * header + persistent arrows untouched.
+   */
+  .zinebox-reader__header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 6;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.66),
+      rgba(0, 0, 0, 0)
+    );
+    border-bottom: 0;
+    padding-bottom: 20px;
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease;
+  }
+
+  .zinebox-reader__nav-layer {
+    transition: opacity 0.25s ease;
+  }
+
+  /* Let the browser keep vertical pan + pinch-zoom; horizontal travel is our page-swipe. */
+  .zinebox-reader__single,
+  .zinebox-reader__spread {
+    touch-action: pan-y pinch-zoom;
+  }
+
+  .zinebox-reader--chrome-hidden .zinebox-reader__header {
+    opacity: 0;
+    transform: translateY(-100%);
+    pointer-events: none;
+  }
+
+  .zinebox-reader--chrome-hidden .zinebox-reader__nav-layer {
+    opacity: 0;
+    pointer-events: none;
+  }
 }

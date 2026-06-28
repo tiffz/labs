@@ -7,6 +7,7 @@ import UndoIcon from '@mui/icons-material/Undo';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -19,7 +20,9 @@ import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Slide from '@mui/material/Slide';
-import LabsFeedbackToast from '../../../shared/components/LabsFeedbackToast';
+import LabsFeedbackToast, {
+  type LabsFeedbackToastAction,
+} from '../../../shared/components/LabsFeedbackToast';
 import Stack from '@mui/material/Stack';
 import Toolbar from '@mui/material/Toolbar';
 import Tooltip from '@mui/material/Tooltip';
@@ -52,6 +55,7 @@ import {
   geniusSearchUrlForSong,
   lyricsExerciseSectionDisplayLabel,
   lyricsRewriteProgressFromSections,
+  patchLyricsSectionLine,
   lyricsSectionNarrativeProgress,
   markExerciseRunCompleted,
   mergeParsedNarrativeSectionsWithExisting,
@@ -143,9 +147,17 @@ export function PracticeExerciseFocusDialog({
   onClearDraft,
 }: PracticeExerciseFocusDialogProps): ReactElement {
   const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
-  const [exportFeedback, setExportFeedback] = useState<{ severity: 'success' | 'error'; message: string } | null>(
-    null,
-  );
+  const [exportFeedback, setExportFeedback] = useState<{
+    severity: 'success' | 'error';
+    message: string;
+    action?: LabsFeedbackToastAction | null;
+  } | null>(null);
+
+  // Defer the heavy editor subtree (dozens of autosizing inputs + lyrics parse) until the
+  // fullscreen slide-in finishes, so opening feels instant instead of freezing the click while
+  // the inputs mount and measure. The toolbar handlers read `latestRunRef` (seeded with
+  // `initialRun`), so export / save still work during the brief pre-mount window.
+  const [bodyReady, setBodyReady] = useState(false);
 
   // Snapshot of `drivePracticeExportGoogleDocId` mirrored from the editor's live run, used for
   // the export menu label ("Save to" vs "Update"). Updated only when the underlying id changes,
@@ -418,9 +430,23 @@ export function PracticeExerciseFocusDialog({
           persistSong(setSingleRunForKind(latestSong, touchExerciseRun(next)));
         },
       );
+      const exportedDocId = latestRunRef.current?.drivePracticeExportGoogleDocId?.trim() ?? null;
       setExportFeedback({
         severity: 'success',
         message: hadDoc ? 'Google Doc updated.' : 'Google Doc created.',
+        action: exportedDocId
+          ? {
+              label: 'Open',
+              onClick: () => {
+                window.open(
+                  `https://docs.google.com/document/d/${encodeURIComponent(exportedDocId)}/edit`,
+                  '_blank',
+                  'noopener,noreferrer',
+                );
+                setExportFeedback(null);
+              },
+            }
+          : null,
       });
     } catch (e) {
       setExportFeedback({
@@ -483,6 +509,7 @@ export function PracticeExerciseFocusDialog({
       onClose={handleRequestClose as (event: object, reason: 'backdropClick' | 'escapeKeyDown') => void}
       fullScreen
       TransitionComponent={SlideUpTransition}
+      TransitionProps={{ onEntered: () => setBodyReady(true) }}
       aria-labelledby="practice-exercise-focus-title"
     >
       <AppBar
@@ -653,7 +680,8 @@ export function PracticeExerciseFocusDialog({
       <LabsFeedbackToast
         message={exportFeedback?.message ?? null}
         severity={exportFeedback?.severity ?? 'success'}
-        autoHideDuration={exportFeedback?.severity === 'error' ? 9000 : 5000}
+        action={exportFeedback?.action ?? null}
+        autoHideDuration={exportFeedback?.severity === 'error' ? 9000 : 8000}
         onClose={() => setExportFeedback(null)}
       />
       <Box
@@ -665,7 +693,15 @@ export function PracticeExerciseFocusDialog({
           py: lyricsMainLayout ? { xs: 1, sm: 1.35 } : { xs: 2, sm: 3 },
         }}
       >
-        <Box sx={{ maxWidth: lyricsMainLayout ? 'none' : 1280, mx: 'auto', width: 1 }}>{body}</Box>
+        <Box sx={{ maxWidth: lyricsMainLayout ? 'none' : 1280, mx: 'auto', width: 1 }}>
+          {bodyReady ? (
+            body
+          ) : (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+              <CircularProgress aria-label="Loading exercise" />
+            </Box>
+          )}
+        </Box>
       </Box>
     </Dialog>
   );
@@ -800,6 +836,14 @@ type EncoreExerciseEditorHandle = {
 
 /** Per-edit callback the editor fires whenever its local run state changes (typing, etc.). */
 type EncoreExerciseDirtyCallback = (run: EncorePracticeExerciseRun) => void;
+
+/**
+ * Stable empty-sections reference. `initialRun` is always normalized to a populated `sections`
+ * array (see `cloneRun`), so the editor reads `local.sections` directly instead of calling
+ * `effectiveLyricsSections` — which deep-clones every section/line on every keystroke. Reusing
+ * one frozen array keeps the empty-state render identity stable too.
+ */
+const EMPTY_LYRICS_SECTIONS: readonly EncoreLyricsExerciseSection[] = Object.freeze([]);
 
 const LyricsSideBySideLineRow = memo(function LyricsSideBySideLineRow({
   sectionIdx,
@@ -1050,7 +1094,9 @@ const LyricsExerciseEditor = forwardRef<
     onDirtyRef.current(local);
   }, [local]);
 
-  const sections = useMemo(() => effectiveLyricsSections(local), [local]);
+  // `local.sections` is canonical (initialRun is normalized). Reading it directly — instead of
+  // `effectiveLyricsSections(local)` — avoids a full deep clone of every line on each keystroke.
+  const sections = local.sections ?? (EMPTY_LYRICS_SECTIONS as EncoreLyricsExerciseSection[]);
   const sourceText = local.pastedLyrics ?? '';
 
   const handleSourceLyricsChange = useCallback(
@@ -1089,15 +1135,11 @@ const LyricsExerciseEditor = forwardRef<
     (sectionIdx: number, lineIdx: number, patch: Partial<{ original: string; rewrite: string }>) => {
       if (readOnly) return;
       setLocal((prev) => {
-        const secs = effectiveLyricsSections(prev);
-        const sec = secs[sectionIdx];
-        if (!sec) return prev;
-        const line = sec.lines[lineIdx];
-        if (!line) return prev;
-        const nextLine = { ...line, ...patch };
-        if (nextLine.original === line.original && nextLine.rewrite === line.rewrite) return prev;
-        const newLines = sec.lines.map((l, j) => (j === lineIdx ? nextLine : l));
-        const newSecs = secs.map((s, i) => (i === sectionIdx ? { ...s, lines: newLines } : s));
+        // Structural-sharing update: clone only the touched section + line so unchanged sections
+        // keep referential identity and their memoized rows skip re-render (see helper docs).
+        const secs = prev.sections ?? (EMPTY_LYRICS_SECTIONS as EncoreLyricsExerciseSection[]);
+        const newSecs = patchLyricsSectionLine(secs, sectionIdx, lineIdx, patch);
+        if (newSecs === secs) return prev;
         return { ...prev, sections: newSecs, lines: undefined };
       });
     },
@@ -1113,7 +1155,7 @@ const LyricsExerciseEditor = forwardRef<
     (sectionIdx: number, title: string) => {
       if (readOnly) return;
       setLocal((prev) => {
-        const secs = effectiveLyricsSections(prev);
+        const secs = prev.sections ?? EMPTY_LYRICS_SECTIONS;
         const sec = secs[sectionIdx];
         if (!sec || sec.title === title) return prev;
         const newSecs = secs.map((s, i) => (i === sectionIdx ? { ...s, title } : s));
@@ -1136,7 +1178,7 @@ const LyricsExerciseEditor = forwardRef<
     });
   }, [readOnly]);
 
-  const { done, total } = lyricsRewriteProgressFromSections(sections);
+  const { done, total } = useMemo(() => lyricsRewriteProgressFromSections(sections), [sections]);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [bulkDraft, setBulkDraft] = useState('');
 
@@ -1177,15 +1219,12 @@ const LyricsExerciseEditor = forwardRef<
       >
         <Stack spacing={1.25}>
           <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45, maxWidth: 960 }}>
-            Optional{' '}
+            Rewrite each line in your own words. Lyrics optional from{' '}
             <Link href={geniusUrl} target="_blank" rel="noopener noreferrer">
               Genius
               <OpenInNewIcon sx={{ fontSize: 14, ml: 0.25, verticalAlign: '-2px' }} aria-hidden />
             </Link>
-            . Edit originals inline or use <strong>Full lyrics</strong> for big pastes. Sections split on{' '}
-            <code>[Verse]</code> / <code>[Chorus]</code> lines or on a blank line between paragraphs. rename
-            any auto-labeled section by clicking its title. <strong>Save draft</strong> stores rewrites and
-            syncs lyrics to the song.
+            .
           </Typography>
 
           <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>

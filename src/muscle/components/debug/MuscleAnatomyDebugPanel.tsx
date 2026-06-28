@@ -5,7 +5,6 @@ import { ALL_NODES } from '../../curriculum';
 import {
   REQUIRED_FULL_BODY_BONE_IDS,
   REQUIRED_FULL_BODY_MUSCLE_IDS,
-  REQUIRED_SKIN_OVERLAY_NODE_IDS,
 } from '../../anatomy/requiredMeshIds';
 import {
   getMuscleAnatomyDebugSnapshot,
@@ -45,7 +44,6 @@ export default function MuscleAnatomyDebugPanel() {
 
   const missingBones = missingFromInventory(REQUIRED_FULL_BODY_BONE_IDS, snapshot.anatomyNodeIds);
   const missingMuscles = missingFromInventory(REQUIRED_FULL_BODY_MUSCLE_IDS, snapshot.anatomyNodeIds);
-  const missingSkin = missingFromInventory(REQUIRED_SKIN_OVERLAY_NODE_IDS, snapshot.skinNodeIds);
   const atlasOnlyLoaded = snapshot.anatomyNodeIds.filter((id) => id.startsWith('atlas_')).length;
   const curriculumLoaded = snapshot.anatomyNodeIds.filter((id) => !id.startsWith('atlas_')).length;
 
@@ -59,7 +57,6 @@ export default function MuscleAnatomyDebugPanel() {
       <div style={{ ...MONO, color: '#e2e8f0', padding: '4px 0 8px' }}>
         <div style={ROW}>
           <span>Anatomy meshes: {snapshot.anatomyNodeIds.length}</span>
-          <span>Skin overlays: {snapshot.skinNodeIds.length}</span>
           <span>Catalog: {ALL_NODES.length} nodes</span>
         </div>
         <div style={ROW}>
@@ -80,18 +77,9 @@ export default function MuscleAnatomyDebugPanel() {
         ) : (
           <p style={{ color: '#86efac', margin: '6px 0' }}>Landmark muscles loaded.</p>
         )}
-        {missingSkin.length > 0 ? (
-          <p style={{ color: '#fca5a5', margin: '6px 0' }}>
-            Missing skin overlays ({missingSkin.length}): {missingSkin.join(', ')}
-          </p>
-        ) : (
-          <p style={{ color: '#86efac', margin: '6px 0' }}>Required skin overlays loaded.</p>
-        )}
         <p style={{ color: '#94a3b8', margin: '8px 0 0' }}>
           Compare loaded ids to catalog with <code>npm run muscle:coverage</code> and{' '}
-          <code>npm run muscle:inventory</code>. Skin holes:{' '}
-          <code>?debug=1&amp;skinHoles=1</code> (magenta interior loops,{' '}
-          <span style={{ color: '#ff6600' }}>orange</span> ear open edges, yellow midline seam).
+          <code>npm run muscle:inventory</code>.
         </p>
       </div>
     </LabsDebugDock>

@@ -51,7 +51,7 @@ npm run muscle:export-pipeline
 Single region:
 
 ```bash
-npm run muscle:export-pipeline -- --region atlas_skin
+npm run muscle:export-pipeline -- --region atlas_complete
 ```
 
 Legacy all-regions export (validate + sync only at end):
@@ -97,29 +97,15 @@ npm run muscle:validate-assets
 npm run muscle:coverage
 ```
 
-See [`ANATOMY_COVERAGE.md`](ANATOMY_COVERAGE.md) for the coverage ledger (module + full-body + CSV muscles + skin overlays, waivers, baseline).
+See [`ANATOMY_COVERAGE.md`](ANATOMY_COVERAGE.md) for the coverage ledger (module + full-body + CSV muscles, waivers, baseline).
 
 Fails when manifest mesh `nodeId` values are missing from the TypeScript curriculum **or** triangle counts exceed performance budgets (25k/mesh, 80k/region — see `src/muscle/muscleAssetPerfBudget.ts`).
 
-### Skin coverage audits (after `atlas_skin` export)
-
-Three automated gates catch open seams and interior holes before manual QA:
+### Runtime inventory audit (after export)
 
 ```bash
-npm run muscle:skin-boundary   # global open edge count (welded envelope)
-npm run muscle:skin-half-split   # reference mirror bleed + study palm/ankle bands
-npm run muscle:skin-coverage   # body-band triangles + seam edges + interior hole loops
-npm run muscle:skin-seam-gaps  # midline seam open edges (both halves — yellow debug overlay)
 npm run muscle:inventory       # required full-body muscles/bones in runtime merge inventory
-npm run muscle:audit-export -- --with-blender   # skinSourceInventory: Z-Anatomy patches vs export predicates
-npx vitest run src/muscle/anatomy/faceSkinCoverageAudit.test.ts
 ```
-
-Burn-down workflow (P0 palm/ear, seam taxonomy, baseline policy): [`SKIN_HOLE_BURN_DOWN.md`](SKIN_HOLE_BURN_DOWN.md).
-
-**Runtime half split:** study skin uses midline preserve caps; reference skin uses strict `minVertexX ≥ 0` only (see `skinHalfClipOptions.ts`). Midline preserve on reference would mirror onto world +X as opaque patches on the study side.
-
-**Method:** export → bake world transform → **patch-hole fill in staging bands** (Blender Z-up mapping: staging Y→`co.z`, staging **+Z (anterior) → negative `co.y`** — do not use positive-only depth bands for throat/submental) → runtime align + sagittal clip (same path as the app) → sample anatomical bands in staging space → fail on low triangle density, high boundary-edge counts, or **interior boundary loops** (closed holes away from the sagittal cut plane). Baselines live in `src/muscle/anatomy/skinCoverageBaseline.json` and `tools/muscle-anatomy/skin-boundary-baseline.json`. Tighten baselines when coverage improves; never loosen without a documented export regression.
 
 Re-export with decimation:
 

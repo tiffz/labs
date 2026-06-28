@@ -66,7 +66,7 @@
         {
           "nodeId": "bone_ribcage",
           "meshName": "bone_ribcage",
-          "triangleCount": 13750
+          "triangleCount": 14915
         },
         {
           "nodeId": "muscle_rectus_abdominis",
@@ -553,26 +553,6 @@
           "nodeId": "muscle_procerus",
           "meshName": "muscle_procerus",
           "triangleCount": 1089
-        }
-      ],
-      "procedural": false,
-      "source": "z-anatomy"
-    },
-    "atlas_skin": {
-      "region": "atlas_skin",
-      "glbUrl": "/muscle/models/atlas_skin.glb",
-      "meshes": [
-        {
-          "nodeId": "skin_envelope",
-          "meshName": "skin_envelope",
-          "triangleCount": 35088,
-          "atlasKind": "skin"
-        },
-        {
-          "nodeId": "eye_globes",
-          "meshName": "eye_globes",
-          "triangleCount": 1999,
-          "atlasKind": "skin"
         }
       ],
       "procedural": false,
@@ -3820,5 +3800,5 @@
       "source": "z-anatomy"
     }
   },
-  "assetRevision": "44fc6bda0716"
+  "assetRevision": "6580758f9559"
 }

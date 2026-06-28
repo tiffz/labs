@@ -40,6 +40,9 @@ These are consistent with widely used guidance (clarity, concision, usefulness; 
 - **Catalog voice** (“everything after this unlocks…”). Name the next step, not the whole curriculum or product arc.
 - **LLM tells** (“Remember to…”, “It’s important to note…”, “In today’s session…”).
 - **Over-claiming** unless it is literally true and necessary for the decision at hand.
+- **Affordance narration** — describing controls the screen already shows. If there is a visible `Full lyrics…` button, a clickable section title, and a `Save draft` button, do **not** add a paragraph that explains each one. Trust the labels; the UI is the documentation. Guidance copy should orient (what this is / what to do next), not enumerate features. This is the most common bloat in Labs help text.
+  - **Before:** `Optional Genius. Edit originals inline or use Full lyrics for big pastes. Sections split on [Verse] / [Chorus] lines or on a blank line between paragraphs. rename any auto-labeled section by clicking its title. Save draft stores rewrites and syncs lyrics to the song.`
+  - **After:** `Rewrite each line in your own words. Lyrics optional from Genius.`
 
 ## Patterns by surface
 
@@ -57,3 +60,4 @@ These are consistent with widely used guidance (clarity, concision, usefulness; 
 1. Read it aloud. If you run out of breath, cut it.
 2. Check for em dashes and long clause chains; rewrite.
 3. Ask: “Would I say this out loud to this user in context?” If not, rewrite.
+4. Cross-check the surrounding UI: if a sentence explains a button, link, field, or gesture that is already on screen and labeled, delete the sentence (see **Affordance narration** under Avoid).

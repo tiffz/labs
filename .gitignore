@@ -53,3 +53,9 @@ storybook-static
 .audit-reports/
 .audit-tmp/
 AUDIT_REPORT.md
+.muscle-snapshots/
+
+# Python bytecode cache (muscle anatomy export tooling)
+__pycache__/
+# Abandoned Blender Studio base-mesh assets (skin-swap dropped — see ADR 0018)
+tools/muscle-anatomy/data/human-base-meshes/

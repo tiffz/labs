@@ -28,6 +28,7 @@ import {
   getReaderPrefetchPages,
   scheduleReaderPagePrefetch,
 } from './readerPageCache';
+import { useReaderImmersive } from './useReaderImmersive';
 
 type ReaderViewProps = {
   comicId: string;
@@ -102,6 +103,13 @@ export default function ReaderView({
     }
     setCurrentPage((page) => clampPage(page + 1, totalPages));
   }, [mode, spreadOffset, totalPages, wideSpreadPages]);
+
+  // Touch readers: swipe to turn pages, tap to toggle auto-hiding chrome. No-op on desktop mouse.
+  const { immersiveHidden, contentPointerHandlers } = useReaderImmersive({
+    onSwipePrev: goPrev,
+    onSwipeNext: goNext,
+    swipeEnabled: mode !== 'scroll',
+  });
 
   useEffect(() => {
     pageSeedKeyRef.current = null;
@@ -291,7 +299,7 @@ export default function ReaderView({
     mode === 'spread' && spreadPages.length === 1 && wideSpreadPages.has(spreadPages[0]!);
 
   return (
-    <div className="zinebox-reader">
+    <div className={`zinebox-reader${immersiveHidden ? ' zinebox-reader--chrome-hidden' : ''}`}>
       <ReaderChrome
         title={comic.title}
         mode={mode}
@@ -305,7 +313,12 @@ export default function ReaderView({
       />
 
       {mode === 'single' ? (
-        <div ref={pagedLayoutRef} className="zinebox-reader__single">
+        <div
+          ref={pagedLayoutRef}
+          className="zinebox-reader__single"
+          onPointerDown={contentPointerHandlers.onPointerDown}
+          onPointerUp={contentPointerHandlers.onPointerUp}
+        >
           <canvas ref={singleCanvasRef} className="zinebox-reader__canvas" />
           <ReaderNavButtons
             mode={mode}
@@ -327,6 +340,8 @@ export default function ReaderView({
               ? 'zinebox-reader__spread zinebox-reader__spread--wide-solo'
               : 'zinebox-reader__spread'
           }
+          onPointerDown={contentPointerHandlers.onPointerDown}
+          onPointerUp={contentPointerHandlers.onPointerUp}
         >
           <canvas ref={spreadLeftRef} className="zinebox-reader__canvas" />
           {!wideSoloSpread && spreadPages[1] ? (

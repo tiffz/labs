@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-06-27T23:39:22.393Z",
+  "generatedAt": "2026-06-28T19:11:27.434Z",
   "summary": {
     "curriculumTotal": 99,
-    "manifestNodeIds": 477,
-    "csvRows": 183,
+    "manifestNodeIds": 475,
+    "csvRows": 190,
     "missingCurriculumCount": 7,
-    "missingCsvNodeCount": 5,
+    "missingCsvNodeCount": 45,
     "atlasCompleteMeshes": 475,
     "gluteMeshCount": 6,
-    "skinMeshCount": 2
+    "skinMeshCount": 0
   },
   "missingCurriculum": [
     "joint_elbow",
@@ -44,6 +44,206 @@
       "zName": "Hypothenar eminence.r",
       "nodeId": "muscle_hypothenar_eminence",
       "region": "hand"
+    },
+    {
+      "zName": "Frontal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Zygomatic region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Nasal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Orbital region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Infraorbital region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Buccal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Oral region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Mental region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Submental region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Auricular region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Temporal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Occipital region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Parietal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Mastoid region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Parotidomassetereic region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Posterior cervical region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Lateral cervical region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Sternocleidomastoid region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Presternal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Pectoral region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Deltoid region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Inframammary region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Epigastric region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Umbilical region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Hypogastric region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Inguinal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Hypochondriac region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Lumbar region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Sacral region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Gluteal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Hip region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Infrascapular region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Scapular region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Vertebral region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Lateral retromalleolar region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Medial retromalleolar region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Heel region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Metatarsal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Urogenital region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Anal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
     }
   ],
   "missingCsvByZName": [
@@ -71,6 +271,206 @@
       "zName": "Hypothenar eminence.r",
       "nodeId": "muscle_hypothenar_eminence",
       "region": "hand"
+    },
+    {
+      "zName": "Frontal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Zygomatic region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Nasal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Orbital region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Infraorbital region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Buccal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Oral region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Mental region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Submental region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Auricular region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Temporal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Occipital region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Parietal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Mastoid region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Parotidomassetereic region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Posterior cervical region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Lateral cervical region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Sternocleidomastoid region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Presternal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Pectoral region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Deltoid region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Inframammary region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Epigastric region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Umbilical region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Hypogastric region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Inguinal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Hypochondriac region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Lumbar region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Sacral region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Gluteal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Hip region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Infrascapular region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Scapular region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Vertebral region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Lateral retromalleolar region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Medial retromalleolar region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Heel region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Metatarsal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Urogenital region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
+    },
+    {
+      "zName": "Anal region.r",
+      "nodeId": "skin_envelope",
+      "region": "atlas_skin"
     }
   ],
   "gluteMeshes": [
@@ -102,7 +502,7 @@
       "tris": 19
     }
   ],
-  "skinMeshes": ["skin_envelope", "eye_globes"],
+  "skinMeshes": [],
   "missingByBodyArea": {
     "other": [
       {
@@ -147,6 +547,196 @@
         "kind": "csv",
         "id": "joint_sternoclavicular",
         "zName": "Articular capsule of sternoclavicular joint*.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Frontal region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Nasal region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Orbital region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Infraorbital region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Buccal region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Oral region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Submental region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Auricular region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Temporal region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Occipital region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Parietal region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Mastoid region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Parotidomassetereic region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Posterior cervical region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Lateral cervical region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Sternocleidomastoid region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Presternal region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Pectoral region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Deltoid region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Inframammary region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Epigastric region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Umbilical region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Hypogastric region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Inguinal region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Hypochondriac region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Lumbar region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Sacral region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Gluteal region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Hip region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Infrascapular region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Scapular region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Vertebral region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Lateral retromalleolar region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Medial retromalleolar region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Heel region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Metatarsal region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Urogenital region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Anal region.r"
       }
     ],
     "hand": [
@@ -159,6 +749,18 @@
         "kind": "csv",
         "id": "muscle_hypothenar_eminence",
         "zName": "Hypothenar eminence.r"
+      }
+    ],
+    "face": [
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Zygomatic region.r"
+      },
+      {
+        "kind": "csv",
+        "id": "skin_envelope",
+        "zName": "Mental region.r"
       }
     ]
   },

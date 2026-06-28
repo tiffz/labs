@@ -122,8 +122,70 @@ export async function exportLabsCrashLogJson(): Promise<string> {
   return JSON.stringify(entries, null, 2);
 }
 
+/** sessionStorage key recording the last stale-chunk auto-reload, to break reload loops. */
+const PRELOAD_RELOAD_KEY = 'labs:preload-error-reload-at';
+/** Minimum gap between stale-chunk auto-reloads. A second failure inside this window is treated
+ * as "the asset is genuinely missing / offline", so we stop and let the error boundary surface. */
+export const PRELOAD_RELOAD_COOLDOWN_MS = 10_000;
+
+/**
+ * Decide whether to auto-reload after a failed dynamic import. The first failure (no prior reload,
+ * or one long enough ago) reloads to pick up the fresh post-deploy manifest. A failure shortly
+ * after a reload means reloading did not help — return false so we do not loop forever.
+ */
+export function shouldReloadForPreloadError(
+  now: number,
+  lastReloadAt: number | null,
+  cooldownMs: number = PRELOAD_RELOAD_COOLDOWN_MS,
+): boolean {
+  if (lastReloadAt == null || Number.isNaN(lastReloadAt)) return true;
+  return now - lastReloadAt >= cooldownMs;
+}
+
+function preloadErrorMessage(event: Event): string {
+  const payload = (event as Event & { payload?: unknown }).payload;
+  if (payload instanceof Error) return payload.message;
+  if (typeof payload === 'string') return payload;
+  return 'Failed to fetch dynamically imported module';
+}
+
+/**
+ * Recover from stale lazy-chunk failures after a deploy. Vite fires `vite:preloadError` when a
+ * dynamically imported chunk (e.g. `SimpleVexFlowNote-<hash>.js`) 404s because a new deploy
+ * replaced the content-hashed filenames referenced by the already-open page. A full reload fetches
+ * the new `index.html` + chunk names and the import succeeds. Loop-guarded via sessionStorage so a
+ * genuinely-missing asset or an offline device falls through to the error boundary instead of
+ * reloading forever.
+ */
+function installDynamicImportReloadGuard(appId: string): void {
+  window.addEventListener('vite:preloadError', (event) => {
+    const now = Date.now();
+    let lastReloadAt: number | null = null;
+    try {
+      const raw = sessionStorage.getItem(PRELOAD_RELOAD_KEY);
+      lastReloadAt = raw == null ? null : Number(raw);
+    } catch {
+      lastReloadAt = null;
+    }
+
+    void appendLabsCrashLogEntry({ appId, message: preloadErrorMessage(event), source: 'window-error' });
+
+    if (!shouldReloadForPreloadError(now, lastReloadAt)) return; // already retried — let it surface
+    // Prevent Vite from rethrowing (which would also trip the error boundary) before we reload.
+    event.preventDefault();
+    try {
+      sessionStorage.setItem(PRELOAD_RELOAD_KEY, String(now));
+    } catch {
+      /* sessionStorage unavailable (private mode) — reload anyway */
+    }
+    window.location.reload();
+  });
+}
+
 export function installLabsCrashHandlers(appId: string): void {
   if (typeof window === 'undefined') return;
+
+  installDynamicImportReloadGuard(appId);
 
   if (import.meta.env.DEV) {
     (window as Window & { __labsExportCrashLog?: () => Promise<string> }).__labsExportCrashLog =

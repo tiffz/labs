@@ -1,21 +1,18 @@
 /**
- * Live mesh inventory for ?debug — updated by FullBodyRegionModel and SkinEnvelopeLayer.
+ * Live mesh inventory for ?debug — updated by FullBodyRegionModel.
  */
 import {
   REQUIRED_FULL_BODY_BONE_IDS,
   REQUIRED_FULL_BODY_MUSCLE_IDS,
-  REQUIRED_SKIN_OVERLAY_NODE_IDS,
 } from '../anatomy/requiredMeshIds';
 
 export type MuscleAnatomyDebugSnapshot = {
   anatomyNodeIds: string[];
-  skinNodeIds: string[];
   updatedAt: number;
 };
 
 let snapshot: MuscleAnatomyDebugSnapshot = {
   anatomyNodeIds: [],
-  skinNodeIds: [],
   updatedAt: 0,
 };
 
@@ -29,15 +26,6 @@ export function setMuscleAnatomyDebugAnatomy(nodeIds: readonly string[]): void {
   snapshot = {
     ...snapshot,
     anatomyNodeIds: [...new Set(nodeIds)].sort(),
-    updatedAt: Date.now(),
-  };
-  for (const listener of listeners) listener();
-}
-
-export function setMuscleAnatomyDebugSkin(nodeIds: readonly string[]): void {
-  snapshot = {
-    ...snapshot,
-    skinNodeIds: [...new Set(nodeIds)].sort(),
     updatedAt: Date.now(),
   };
   for (const listener of listeners) listener();
@@ -65,9 +53,6 @@ export function publishMuscleAnatomyDebugWindow(): void {
     ),
     missingRequiredMuscles: REQUIRED_FULL_BODY_MUSCLE_IDS.filter(
       (id) => !snapshot.anatomyNodeIds.includes(id),
-    ),
-    missingRequiredSkin: REQUIRED_SKIN_OVERLAY_NODE_IDS.filter(
-      (id) => !snapshot.skinNodeIds.includes(id),
     ),
   };
 }

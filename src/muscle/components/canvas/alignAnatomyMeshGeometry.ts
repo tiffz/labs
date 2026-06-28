@@ -1,7 +1,7 @@
 import type { BufferAttribute, BufferGeometry } from 'three';
 
 /** Reverse triangle winding so outward normals stay correct after an X mirror. */
-export function flipGeometryWinding(geometry: BufferGeometry): void {
+function flipGeometryWinding(geometry: BufferGeometry): void {
   const index = geometry.getIndex();
   if (index) {
     for (let i = 0; i < index.count; i += 3) {
@@ -29,13 +29,13 @@ export function flipGeometryWinding(geometry: BufferGeometry): void {
 }
 
 /**
- * Mirror −X Z-Anatomy exports onto +X with the sagittal plane at local x=0.
- * Used for both anatomy meshes and the unified skin envelope before study-half clip.
+ * Mirror −X Z-Anatomy exports onto +X with the sagittal plane at local x=0, so study (+scale)
+ * shows a cross-section rather than the sagittal edge.
  *
- * Do not translate straddling skin by −min.x — that pins the mesh edge at x=0 but moves
- * the anatomical midline to +X, while anatomy stays at x=0 and staging explodes into columns.
+ * Do not translate a straddling mesh by −min.x — that pins the edge at x=0 but moves the
+ * anatomical midline to +X, exploding the staged group into columns.
  */
-export function alignSkinEnvelopeToStudyHalf(geometry: BufferGeometry): BufferGeometry {
+export function alignAnatomyMeshToStudyHalf(geometry: BufferGeometry): BufferGeometry {
   geometry.computeBoundingBox();
   const box = geometry.boundingBox;
   if (!box || box.isEmpty() || box.min.x >= 0) return geometry;
@@ -45,21 +45,4 @@ export function alignSkinEnvelopeToStudyHalf(geometry: BufferGeometry): BufferGe
   flipGeometryWinding(aligned);
   aligned.computeVertexNormals();
   return aligned;
-}
-
-/** Same X mirror as skin — anatomy and skin must share local sagittal x=0 before staging. */
-export function alignAnatomyMeshToStudyHalf(geometry: BufferGeometry): BufferGeometry {
-  return alignSkinEnvelopeToStudyHalf(geometry);
-}
-
-/**
- * Bake reference-half skin onto −X local so it renders with +scale (no parent −X mirror).
- * Outward normals face −X; FrontSide is correct from the frontal camera.
- */
-export function mirrorClippedSkinToReferenceHalf(geometry: BufferGeometry): BufferGeometry {
-  const mirrored = geometry.clone();
-  mirrored.scale(-1, 1, 1);
-  flipGeometryWinding(mirrored);
-  mirrored.computeVertexNormals();
-  return mirrored;
 }

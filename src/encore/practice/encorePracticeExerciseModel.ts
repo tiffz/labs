@@ -343,6 +343,32 @@ export function effectiveLyricsSections(
 }
 
 /**
+ * Immutable single-line patch with **structural sharing**: only the touched section's `lines`
+ * array and the touched line are cloned; every other section keeps its reference, so memoized
+ * rows skip re-render. Returns the **same array reference** when the patch is a no-op (or indices
+ * are out of range).
+ *
+ * This is the hot path for lyrics-rewrite typing. The previous editor deep-cloned every section
+ * and line on each keystroke (`effectiveLyricsSections`), which made typing O(all lines); this
+ * keeps it O(lines in one section).
+ */
+export function patchLyricsSectionLine(
+  sections: EncoreLyricsExerciseSection[],
+  sectionIdx: number,
+  lineIdx: number,
+  patch: Partial<{ original: string; rewrite: string }>,
+): EncoreLyricsExerciseSection[] {
+  const sec = sections[sectionIdx];
+  if (!sec) return sections;
+  const line = sec.lines[lineIdx];
+  if (!line) return sections;
+  const nextLine = { ...line, ...patch };
+  if (nextLine.original === line.original && nextLine.rewrite === line.rewrite) return sections;
+  const newLines = sec.lines.map((l, j) => (j === lineIdx ? nextLine : l));
+  return sections.map((s, i) => (i === sectionIdx ? { ...s, lines: newLines } : s));
+}
+
+/**
  * Canonical Genius lyrics text for exercises: prefer {@link EncoreSong.lyricsSourceGenius}, then
  * legacy `pastedLyrics` on a lyrics run, then serialized sections.
  */

@@ -12,10 +12,14 @@
 }
 
 .labs-feedback-toast-panel__row {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
-  column-gap: 12px;
+  gap: 12px;
+}
+
+.labs-feedback-toast-panel__action.MuiButton-root {
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .labs-feedback-toast-panel__icon {

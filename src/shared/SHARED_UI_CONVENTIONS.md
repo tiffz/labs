@@ -301,6 +301,7 @@ After a blocking job finishes, **brief success copy** (e.g. `Synced from Drive (
 - **Default wiring:** `LabsDriveAccountMenu` renders [`LabsDriveSyncToast`](./google/LabsDriveSyncToast.tsx) (thin wrapper). Apps with sticky headers (Zine Box) set `hideSyncToast` and mount one toast at the **app shell** (see `ZineboxDriveBackupProvider`).
 - **Errors / sign-in prompts** stay in the account menu alert slot — do not toast those.
 - **Long-running work** still uses the blocking-job snackbar only; do not duplicate progress UI.
+- **Optional inline action:** pass `action={{ label, onClick }}` to add one button (e.g. `Open`) between the message and the dismiss button. Because the click is a direct user gesture, an `onClick` that opens a new tab is **not** blocked by popup blockers — prefer this over auto-opening a tab after an async export (see Encore practice-exercise Google Doc export). Keep it to a single short verb; the toast is not a place for multiple actions.
 
 ## Related Docs
 

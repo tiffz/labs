@@ -1,31 +1,36 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
-import type { Mesh } from 'three';
+import type { Mesh, Plane } from 'three';
 import type { MuscleMemoryNode } from '../../types/node';
 import { baseColorForNode } from './anatomyVisuals';
 import { acquireAnatomyMaterial } from './anatomyMaterialPool';
-import { useAnatomyMeshFlags } from './useAnatomyMeshFlags';
 
 type GlbAtlasMirrorMeshProps = {
   mesh: Mesh;
   node: MuscleMemoryNode;
+  /** Sagittal clip plane — keeps the reference half from bleeding midline meshes across the cut. */
+  clippingPlane?: Plane | null;
 };
 
 /**
- * Reference half — full peel-0 silhouette, non-interactive, mirrored via parent scale.
+ * Reference half — the "complete human": every muscle layered over every bone, mirrored via the
+ * parent group scale. Non-interactive and **peel-independent** — it stays at full depth as a fixed
+ * anatomical anchor while the study half peels, so it deliberately ignores the depth slider.
  */
-export default function GlbAtlasMirrorMesh({ mesh, node }: GlbAtlasMirrorMeshProps) {
+export default function GlbAtlasMirrorMesh({
+  mesh,
+  node,
+  clippingPlane = null,
+}: GlbAtlasMirrorMeshProps) {
   const { invalidate } = useThree();
   const mirrorRef = useRef<Mesh>(null);
-  const flags = useAnatomyMeshFlags(node.id, node);
   const material = useMemo(() => acquireAnatomyMaterial('default', false), []);
 
   useLayoutEffect(() => {
-    if (!flags.visible) return;
     const mirror = mirrorRef.current;
     if (mirror) {
       mirror.raycast = () => undefined;
-      // Parent −X mirror breaks frustum culling — reference limbs vanish at peel ≥1.
+      // Parent −X mirror breaks frustum culling — reference limbs vanish when orbited off-axis.
       mirror.frustumCulled = false;
     }
     material.color.set(baseColorForNode(node));
@@ -34,20 +39,30 @@ export default function GlbAtlasMirrorMesh({ mesh, node }: GlbAtlasMirrorMeshPro
     material.emissive.set('#000000');
     material.emissiveIntensity = 0;
     material.depthTest = true;
-    // Do not write depth — reference opaque skin (renderOrder 50+) must stay visible on the shell.
-    material.depthWrite = false;
+    // Opaque muscle + bone reference — write depth so layers occlude correctly (no painter-ordering).
+    material.depthWrite = true;
     if (node.type === 'bone') {
+      // Sit bones just behind the muscle shells they share space with.
       material.polygonOffset = true;
       material.polygonOffsetFactor = 1;
       material.polygonOffsetUnits = 1;
     } else {
       material.polygonOffset = false;
     }
+    material.clippingPlanes = clippingPlane ? [clippingPlane] : null;
+    material.clipShadows = clippingPlane != null;
     material.needsUpdate = true;
     invalidate();
-  }, [flags.visible, invalidate, material, node]);
+  }, [clippingPlane, invalidate, material, node]);
 
-  if (!flags.visible) return null;
-
-  return <mesh ref={mirrorRef} geometry={mesh.geometry} material={material} />;
+  return (
+    <mesh
+      ref={mirrorRef}
+      geometry={mesh.geometry}
+      material={material}
+      castShadow
+      receiveShadow
+      renderOrder={node.type === 'bone' ? 10 : 20}
+    />
+  );
 }

@@ -3,9 +3,11 @@ import type { MeshVisualState } from './meshState';
 
 export const ANATOMY_COLORS = {
   /** Rose-coral — between dusty pink and terra cotta; reads clearly against skin. */
-  muscle: '#b87a82',
-  bone: '#faf6f0',
-  joint: '#c5d0de',
+  /** Deeper rose-coral so lit faces read as saturated muscle, not a pale overexposed pink. */
+  muscle: '#a4636c',
+  /** Warm ivory — kept well below pure white so lit faces have headroom and don't clip to a flat blob. */
+  bone: '#ddd0b9',
+  joint: '#bcc7d8',
   /** Warm living skin tone for the envelope. */
   skin: '#e4b896',
   faded: '#6b7280',

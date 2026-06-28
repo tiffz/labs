@@ -13,35 +13,21 @@ npm run presubmit
 
 ## Full-body atlas (Z-Anatomy export)
 
-After changing `atlas_skin`, `atlas_complete`, or skin export predicates — **hard refresh** `/muscle/` (Cmd+Shift+R) then verify:
+After changing `atlas_complete` or atlas export predicates — **hard refresh** `/muscle/` (Cmd+Shift+R) then verify:
 
-| Area            | What to check                                                                                                             |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Sagittal split  | World +X study muscles + transparent skin; world −X opaque skin shell. No opaque patches on study-side pelvis/wrist/ankle |
-| Skin continuity | No Frankenstein stitch ridges; palm, elbow, knee, neck/shoulder, face, ear helix, ankles                                  |
-| Palm / ear      | Palmar shell closed on study half (no muscle showing through palm); ear helix continuous, not shredded                    |
-| Midline seam    | No pinholes along face/neck/throat sagittal-adjacent band                                                                 |
-| Skin runtime    | Unified `skin_envelope` X-aligned before study-half clip — no runtime procedural patches                                  |
-| Eye globes      | Orbital sockets filled (not hollow dark voids)                                                                            |
-| Layer peel      | Depth 0 — semi-transparent study skin over muscles; depth 1+ hides skin                                                   |
-| Performance     | ~10 s orbit without sustained judder                                                                                      |
+| Area           | What to check                                                                                                                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Sagittal split | World +X study muscles (peelable); world −X complete human (all muscles + bones, peel-independent). No thin slice              |
+| Midline seam   | No gaps or pinholes along the sagittal cut plane; no muscle/organ (e.g. diaphragm) bleeding across the cut into the other half |
+| Layer peel     | Depth 0 muscles readable; deeper peel reveals skeleton on the study half only (reference half stays full)                      |
+| Ribcage        | Study-half skeleton peel shows a closed thorax — ribs + costal cartilage to the sternum, not an open cage                      |
+| Performance    | ~10 s orbit without sustained judder                                                                                           |
 
 Pipeline: skill **`labs-muscle-anatomy-export`** or `npm run muscle:export-pipeline`.
 
-Automated guardrails (run after export):
+Debug inventory: `/muscle/?debug=1` — bottom dock lists loaded anatomy node ids vs required sets; **Copy bundle** for LLM paste.
 
-```bash
-npm run muscle:skin-boundary    # boundary edge baseline
-npm run muscle:skin-half-split  # reference mirror bleed = 0
-npm run muscle:skin-coverage    # triangle + interior hole bands (palm, ear, face, neck)
-npm run muscle:skin-seam-gaps   # midline seam open edges (both halves)
-```
-
-Debug hole overlay: `/muscle/?debug=1&skinHoles=1` — **magenta** = interior holes (study); **yellow** = midline seam gaps (both halves). Burn-down process: [`tools/muscle-anatomy/SKIN_HOLE_BURN_DOWN.md`](../tools/muscle-anatomy/SKIN_HOLE_BURN_DOWN.md).
-
-Debug inventory: `/muscle/?debug=1` — bottom dock lists loaded anatomy/skin node ids vs required sets; **Copy bundle** for LLM paste. Confirm `missingRequiredSkin` is empty on Full body tab at peel depth 0.
-
-E2e smoke: `e2e/smoke/muscle-full-body-skin.spec.ts` (debug inventory + peel 0).
+E2e smoke: `e2e/smoke/muscle-full-body-skeleton.spec.ts` (debug inventory + peel).
 
 ## LLM / browser QA protocol
 

@@ -3952,6 +3952,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-labsfeedbacktoast-tsx-labsfeedbacktoastaction",
+    "name": "LabsFeedbackToastAction",
+    "path": "src/shared/components/LabsFeedbackToast.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Optional inline action (e.g. \"Open\") rendered between the message and the dismiss button.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-labsfeedbacktoast-tsx-labsfeedbacktoastprops",
     "name": "LabsFeedbackToastProps",
     "path": "src/shared/components/LabsFeedbackToast.tsx",
@@ -5731,23 +5748,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Cats-style overlay flag (`?overlay=1` / `?overlay=true`).",
-    "tags": [],
-    "appsUsing": [
-      "cats",
-      "drums",
-      "piano"
-    ],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-debug-readlabsdebugparams-ts-ismuscleskinholesdebugenabled",
-    "name": "isMuscleSkinHolesDebugEnabled",
-    "path": "src/shared/debug/readLabsDebugParams.ts",
-    "kind": "utility",
-    "stability": "stable",
-    "owner": "shared-core",
-    "description": "Muscle skin hole debug overlay (`?skinHoles=1`).",
     "tags": [],
     "appsUsing": [
       "cats",
@@ -20968,6 +20968,33 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-labscrashlog-ts-preload-reload-cooldown-ms",
+    "name": "PRELOAD_RELOAD_COOLDOWN_MS",
+    "path": "src/shared/utils/labsCrashLog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Minimum gap between stale-chunk auto-reloads. A second failure inside this window is treated as \"the asset is genuinely missing / offline\", so we stop and let the error boundary surface.",
+    "tags": [
+      "utils",
+      "api"
+    ],
+    "appsUsing": [
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "piano",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-labscrashlog-ts-readlabscrashlogentries",
     "name": "readLabsCrashLogEntries",
     "path": "src/shared/utils/labsCrashLog.ts",
@@ -20975,6 +21002,32 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Optional production beacon when `VITE_LABS_CRASH_BEACON_URL` is set — see docs/adr/0016-client-crash-telemetry.md",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "piano",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labscrashlog-ts-shouldreloadforpreloaderror",
+    "name": "shouldReloadForPreloadError",
+    "path": "src/shared/utils/labsCrashLog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Decide whether to auto-reload after a failed dynamic import. The first failure (no prior reload, or one long enough ago) reloads to pick up the fresh post-deploy manifest. A failure shortly after a reload means reloading did not help — return false so we do not loop forever.",
     "tags": [
       "utils"
     ],

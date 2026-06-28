@@ -37,32 +37,24 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 
 ## Quality gates
 
-| Invariant                                                   | Enforcement                                                                                                        |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Zero ESLint **warnings** on touched files                   | `pre-commit-checks.mdc`                                                                                            |
-| Presubmit before done (build + scoped e2e + scoped Vitest)  | `npm run presubmit`, `scripts/presubmit.sh`                                                                        |
-| CI scoped e2e/Vitest use same merge base on push            | `ciScopeGuardrails.test.ts`, `npm run check:workflows`                                                             |
-| Presubmit + full e2e smoke before **push**                  | `npm run presubmit:push`, `.husky/pre-push` (default-on; `LABS_SKIP_PRESUBMIT_PUSH=1` to skip)                     |
-| App render errors → recovery UI                             | `LabsErrorBoundary` in every `main.tsx`, `spaGuardrails.test.ts`                                                   |
-| Local crash log on uncaught errors                          | `labsCrashLog.ts`, ADR 0016                                                                                        |
-| Layout/CSS changes → `npm run verify:layout`                | `labs-ux-journey` step 5, `scripts/run-scoped-layout-heuristics.mjs`                                               |
-| Muscle app registered → commit `public/muscle/` with source | `musclePublicAssetsGuardrails.test.ts`, `muscle:validate-assets` in presubmit                                      |
-| Unified skin envelope → X-align before study sagittal clip  | `alignSkinEnvelopeGeometry.test.ts`, `skinEnvelopeClipRegression.test.ts`                                          |
-| Never translate straddling skin by −min.x (midline drift)   | `muscleSkinPipelineGuardrails.test.ts`, `alignSkinEnvelopeGeometry.ts`                                             |
-| No runtime procedural skin patches (throat plug, palm fill) | `muscleSkinPipelineGuardrails.test.ts`, `.cursor/rules/muscle-skin-pipeline.mdc`                                   |
-| Reference skin clip strict +X only (`minVertexX: 0`)        | `skinHalfSplitAudit.test.ts`, `skinHalfClipOptions.ts`                                                             |
-| Study/reference skin clip options must not be shared        | `SkinEnvelopeLayer.tsx`, `skinHalfClipOptions.ts`, `muscle-skin-pipeline.mdc`                                      |
-| atlas_skin re-export → boundary edges must not increase     | `npm run muscle:skin-boundary`, `skin-boundary-baseline.json`                                                      |
-| Skin source inventory before export (Helix, Palm, bridges)  | `npm run muscle:audit-export -- --with-blender`, `export_region_glb.py` predicates                                 |
-| Face/neck skin coverage must not drop after export          | `faceSkinCoverageAudit.test.ts`, `faceSkinCoverageBaseline.json`                                                   |
-| Runtime skin coverage bands (triangles + seams + holes)     | `npm run muscle:skin-coverage`, `skinCoverageAudit.test.ts`, `skinCoverageBaseline.json`                           |
-| Full-body muscle/bone runtime inventory completeness        | `npm run muscle:inventory`, `fullBodyRuntimeInventory.test.ts`, `anatomyCoverageLedger.test.ts`, debug panel       |
-| Flaky test encountered → fix root cause same session        | `docs/FLAKY_TESTS.md`, `.cursor/rules/flaky-tests.mdc` — no push retries without code fix                          |
-| New user-visible route → smoke spec                         | [`docs/E2E_SMOKE_CONVENTIONS.md`](E2E_SMOKE_CONVENTIONS.md)                                                        |
-| Layout padding/contrast on Encore/Gesture home surfaces     | `layout-heuristics-*.spec.ts`                                                                                      |
-| No unintended horizontal scroll on primary surfaces         | `horizontalScrollHeuristicCore.ts`, `layout-heuristics-*.spec.ts`, `.cursor/rules/layout-no-horizontal-scroll.mdc` |
-| HMR is not proof — hard-refresh affected routes             | `pre-commit-checks.mdc`                                                                                            |
-| Control + heavy grid → isolate interaction state            | `react-interaction-perf.mdc`, `docs/PERFORMANCE.md`                                                                |
+| Invariant                                                                                                  | Enforcement                                                                                                        |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Zero ESLint **warnings** on touched files                                                                  | `pre-commit-checks.mdc`                                                                                            |
+| Presubmit before done (build + scoped e2e + scoped Vitest)                                                 | `npm run presubmit`, `scripts/presubmit.sh`                                                                        |
+| CI scoped e2e/Vitest use same merge base on push                                                           | `ciScopeGuardrails.test.ts`, `npm run check:workflows`                                                             |
+| Presubmit + full e2e smoke before **push**                                                                 | `npm run presubmit:push`, `.husky/pre-push` (default-on; `LABS_SKIP_PRESUBMIT_PUSH=1` to skip)                     |
+| App render errors → recovery UI                                                                            | `LabsErrorBoundary` in every `main.tsx`, `spaGuardrails.test.ts`                                                   |
+| Local crash log on uncaught errors                                                                         | `labsCrashLog.ts`, ADR 0016                                                                                        |
+| Layout/CSS changes → `npm run verify:layout`                                                               | `labs-ux-journey` step 5, `scripts/run-scoped-layout-heuristics.mjs`                                               |
+| Muscle app registered → commit `public/muscle/` with source                                                | `musclePublicAssetsGuardrails.test.ts`, `muscle:validate-assets` in presubmit                                      |
+| Muscle full-body: no skin overlay; reference half = complete human (peel-independent), study half peelable | `FullBodyRegionModel.tsx`, `GlbAtlasMirrorMesh.tsx` (ignores `layerPeelDepth`), `src/muscle/AGENTS.md`, ADR `0018` |
+| Full-body muscle/bone runtime inventory completeness                                                       | `npm run muscle:inventory`, `fullBodyRuntimeInventory.test.ts`, `anatomyCoverageLedger.test.ts`, debug panel       |
+| Flaky test encountered → fix root cause same session                                                       | `docs/FLAKY_TESTS.md`, `.cursor/rules/flaky-tests.mdc` — no push retries without code fix                          |
+| New user-visible route → smoke spec                                                                        | [`docs/E2E_SMOKE_CONVENTIONS.md`](E2E_SMOKE_CONVENTIONS.md)                                                        |
+| Layout padding/contrast on Encore/Gesture home surfaces                                                    | `layout-heuristics-*.spec.ts`                                                                                      |
+| No unintended horizontal scroll on primary surfaces                                                        | `horizontalScrollHeuristicCore.ts`, `layout-heuristics-*.spec.ts`, `.cursor/rules/layout-no-horizontal-scroll.mdc` |
+| HMR is not proof — hard-refresh affected routes                                                            | `pre-commit-checks.mdc`                                                                                            |
+| Control + heavy grid → isolate interaction state                                                           | `react-interaction-perf.mdc`, `docs/PERFORMANCE.md`                                                                |
 
 ## Process
 

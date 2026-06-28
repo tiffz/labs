@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { mergeSkinEnvelopeParts } from './mergeSkinEnvelopeGeometry';
 import { resolveCurriculumNodeId } from '../../curriculum/zAnatomyBridge';
 import { prepareAnatomyGeometry } from './applyMeshBvh';
 
@@ -54,13 +53,6 @@ function mergeMeshesByNodeId(meshes: THREE.Mesh[]): THREE.Mesh[] {
 
   const merged: THREE.Mesh[] = [];
   for (const [nodeId, group] of byId) {
-    if (nodeId === 'skin_envelope') {
-      const combined = mergeSkinEnvelopeParts(group.map((mesh) => mesh.geometry));
-      if (!combined) continue;
-      merged.push(new THREE.Mesh(combined, group[0]!.material));
-      merged.at(-1)!.name = nodeId;
-      continue;
-    }
     if (group.length === 1) {
       merged.push(group[0]!);
       continue;

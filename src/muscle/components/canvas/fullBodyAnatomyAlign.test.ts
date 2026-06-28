@@ -1,6 +1,6 @@
 import { BoxGeometry } from 'three';
 import { describe, expect, it } from 'vitest';
-import { alignAnatomyMeshToStudyHalf } from './alignSkinEnvelopeGeometry';
+import { alignAnatomyMeshToStudyHalf } from './alignAnatomyMeshGeometry';
 
 describe('full body anatomy X alignment', () => {
   it('mirrors −X-only Z-Anatomy muscle exports onto +X before sagittal staging', () => {

@@ -1,6 +1,6 @@
 import { memo, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
-import type { Mesh } from 'three';
+import type { Mesh, Plane } from 'three';
 import type { MuscleMemoryNode } from '../../types/node';
 import {
   baseColorForNode,
@@ -16,6 +16,8 @@ import { useMuscleStore } from '../../store/useMuscleStore';
 export type GlbAnatomyMeshProps = {
   mesh: Mesh;
   node: MuscleMemoryNode;
+  /** Sagittal clip plane (full-body écorché) — trims midline bleed. Omitted in single-region view. */
+  clippingPlane?: Plane | null;
 };
 
 function renderOrderForNode(node: MuscleMemoryNode): number {
@@ -24,7 +26,7 @@ function renderOrderForNode(node: MuscleMemoryNode): number {
   return 20;
 }
 
-function GlbAnatomyMeshComponent({ mesh, node }: GlbAnatomyMeshProps) {
+function GlbAnatomyMeshComponent({ mesh, node, clippingPlane = null }: GlbAnatomyMeshProps) {
   const { invalidate } = useThree();
   const mode = useMuscleStore((s) => s.mode);
   const flags = useAnatomyMeshFlags(node.id, node);
@@ -56,8 +58,10 @@ function GlbAnatomyMeshComponent({ mesh, node }: GlbAnatomyMeshProps) {
     } else {
       material.polygonOffset = false;
     }
+    material.clippingPlanes = clippingPlane ? [clippingPlane] : null;
+    material.clipShadows = clippingPlane != null;
     material.needsUpdate = true;
-  }, [flags.visualState, isBone, material, mode, node]);
+  }, [clippingPlane, flags.visualState, isBone, material, mode, node]);
 
   useLayoutEffect(() => {
     if (flags.visible) invalidate();
@@ -70,6 +74,8 @@ function GlbAnatomyMeshComponent({ mesh, node }: GlbAnatomyMeshProps) {
       name={mesh.name}
       geometry={mesh.geometry}
       material={material}
+      castShadow
+      receiveShadow
       renderOrder={renderOrderForNode(node)}
       position={mesh.position}
       rotation={mesh.rotation}

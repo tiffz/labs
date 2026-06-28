@@ -102,6 +102,7 @@ Commands quick reference: root [`README.md`](README.md) and `package.json` scrip
 - **Non-trivial UX tasks:** read skill **`labs-ux-journey`**, **post the journey sketch in chat**, then code — see [`.cursor/rules/ux-journey-mandatory.mdc`](.cursor/rules/ux-journey-mandatory.mdc). Do not skip the sketch unless the user waived it or the change is trivial (copy-only, no layout).
 - **Question-only / review-only tasks:** minimal diff—do not refactor or “improve” unrelated code.
 - Read the **nearest app README** before editing an unfamiliar app.
+- **Big new asks:** give an honest **feasibility / manual-labor assessment up front** and flag (and recommend against) approaches likely to need significant human hand-work to reach quality — the user decides, but flag early. See [`.cursor/rules/feasibility-first.mdc`](.cursor/rules/feasibility-first.mdc).
 
 ### Ask first
 

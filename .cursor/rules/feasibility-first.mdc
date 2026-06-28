@@ -1,0 +1,41 @@
+---
+description: Feasibility & manual-labor gate before committing to big new asks
+alwaysApply: true
+---
+
+# Feasibility first (flag manual-labor risk early)
+
+Before starting a **big new ask** — a new asset pipeline, swapping in external/3D/media assets,
+a new subsystem, or any multi-day approach — give an **honest feasibility assessment up front**,
+scoped to **what an automated agent can actually achieve** without significant human hand-labor.
+
+Labs goal: **minimize manual human labor** (no hand 3D-modeling, rigging, frame-by-frame asset
+cleanup, or pixel-pushing). Treat "would this need a human to finish it well?" as a first-class
+gating question, not an afterthought discovered three iterations in.
+
+## Do this before investing
+
+1. **State the honest yield.** Will the agent-automatable path plausibly hit the required quality
+   bar? Name the parts that would need **manual human intervention** (modeling, rigging, retopo,
+   pose-matching, art cleanup) and roughly how much.
+2. **Flag low-yield paths explicitly.** If an approach likely needs substantial manual work to look
+   right, **say so and recommend against it** before writing the code. Offer the
+   lower-labor alternative (use what the source asset already provides, drop the feature, pick a
+   different asset that fits the existing pose/rig).
+3. **The choice is the user's.** Surface the risk and a recommendation; let the user decide. Do not
+   silently start down a multi-iteration path that you expect will require hand-finishing.
+4. **Prefer a cheap probe.** When unsure, propose a 1-step spike (one import, one alignment test,
+   one screenshot) to falsify the approach fast — before building the full pipeline.
+
+## Trigger examples
+
+- "Swap in / generate a new 3D / media asset and make it match our rig/pose" → check pose/topology
+  compatibility **first**; uniform scale/rotate/translate cannot fix a pose or rig mismatch.
+- "Repair / patch a flawed source mesh with scripts" → if patches stack into hacks, flag that the
+  asset may be the wrong foundation rather than iterating repair scripts.
+
+## Root cause class
+
+`feasibility-misjudged` — heavy investment in a path that needed significant manual human labor to
+reach quality; should have been flagged early so the user could choose. See
+[`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](../../docs/CONTINUOUS_PROCESS_IMPROVEMENT.md).

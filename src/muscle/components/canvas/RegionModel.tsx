@@ -129,6 +129,3 @@ if (manifest.regions.atlas_head_face?.glbUrl) {
 if (manifest.regions.atlas_complete?.glbUrl) {
   preloadMuscleGltf(muscleRegionGlbUrl(manifest.regions.atlas_complete.glbUrl));
 }
-if (manifest.regions.atlas_skin?.glbUrl) {
-  preloadMuscleGltf(muscleRegionGlbUrl(manifest.regions.atlas_skin.glbUrl));
-}

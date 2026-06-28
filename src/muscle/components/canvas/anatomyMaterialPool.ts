@@ -17,29 +17,19 @@ export function acquireAnatomyMaterial(
   if (!template) {
     template = new MeshStandardMaterial({
       wireframe,
-      roughness: 0.52,
-      metalness: 0.04,
+      // Matte-ish tissue: enough roughness to avoid blown specular hotspots, with the IBL wash
+      // dialed back so the key light's cast shadows read as form depth instead of an even glow.
+      roughness: 0.58,
+      metalness: 0.03,
+      envMapIntensity: 0.26,
       flatShading: false,
     });
     pool.set(key, template);
   }
   const material = template.clone();
   material.wireframe = wireframe;
-  material.roughness = 0.52;
-  material.metalness = 0.04;
+  material.roughness = 0.58;
+  material.metalness = 0.03;
+  material.envMapIntensity = 0.26;
   return material;
-}
-
-export function acquireSkinMaterial(): MeshStandardMaterial {
-  const key = 'skin:solid';
-  let template = pool.get(key);
-  if (!template) {
-    template = new MeshStandardMaterial({
-      roughness: 0.62,
-      metalness: 0.0,
-      flatShading: false,
-    });
-    pool.set(key, template);
-  }
-  return template.clone();
 }

@@ -6,14 +6,13 @@ import { muscleModelsManifest as manifest } from '../types/muscleModelsManifest'
 import type { MuscleRegion } from '../types/node';
 import { isFullBodyHiddenOrbitalMesh, isRegionalAtlasFragmentDuplicate } from '../components/canvas/fullBodyAtlasFilter';
 import { auditGlbMeshResolution } from './glbFileAudit';
-import { buildFullBodyRuntimeMeshInventory, collectSkinOverlayNodeIds } from './fullBodyRuntimeInventory';
+import { buildFullBodyRuntimeMeshInventory } from './fullBodyRuntimeInventory';
 import {
   REQUIRED_FULL_BODY_BONE_IDS,
   REQUIRED_FULL_BODY_MUSCLE_IDS,
-  REQUIRED_SKIN_OVERLAY_NODE_IDS,
 } from './requiredMeshIds';
 
-export { REQUIRED_FULL_BODY_BONE_IDS, REQUIRED_SKIN_OVERLAY_NODE_IDS } from './requiredMeshIds';
+export { REQUIRED_FULL_BODY_BONE_IDS } from './requiredMeshIds';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const CSV_PATH = path.join(REPO_ROOT, 'tools/muscle-anatomy/z_anatomy_name_map.csv');
@@ -24,7 +23,6 @@ const BASELINE_PATH = path.join(REPO_ROOT, 'tools/muscle-anatomy/coverage-baseli
 export const FULL_BODY_MANIFEST_REGIONS = [
   'atlas_complete',
   'atlas_head_face',
-  'atlas_skin',
   'atlas_supplement',
   'torso',
   'shoulder_neck',
@@ -49,7 +47,6 @@ export type AnatomyGapKind =
   | 'module_region_mesh'
   | 'full_body_runtime'
   | 'csv_muscle'
-  | 'skin_overlay'
   | 'glb_runtime'
   | 'runtime_inventory';
 
@@ -66,7 +63,6 @@ export type AnatomyCoverageReport = {
     moduleRegionGaps: number;
     fullBodyGaps: number;
     csvMuscleGaps: number;
-    skinOverlayGaps: number;
     glbRuntimeGaps: number;
     runtimeInventoryGaps: number;
     waived: number;
@@ -86,7 +82,6 @@ const CRITICAL_SUPPLEMENT_NODE_IDS = [
   'muscle_gluteus_minimus',
 ] as const;
 
-const SKIN_GLB_PATH = 'public/muscle/models/atlas_skin.glb';
 const SUPPLEMENT_GLB_PATH = 'public/muscle/models/atlas_supplement.glb';
 
 const CRITICAL_MUSCLE_MIN_TRIS: Record<string, number> = {
@@ -217,40 +212,6 @@ export function buildAnatomyCoverageReport(): AnatomyCoverageReport {
     }
   }
 
-  const skinManifestIds = new Set((manifest.regions.atlas_skin?.meshes ?? []).map((mesh) => mesh.nodeId));
-  for (const nodeId of REQUIRED_SKIN_OVERLAY_NODE_IDS) {
-    if (skinManifestIds.has(nodeId)) continue;
-    if (waivers.has(nodeId)) {
-      waivedIds.add(nodeId);
-      continue;
-    }
-    gaps.push({
-      kind: 'skin_overlay',
-      nodeId,
-      detail: 'Required skin overlay missing from atlas_skin manifest',
-    });
-  }
-
-  const skinGlb = auditGlbMeshResolution(SKIN_GLB_PATH, REQUIRED_SKIN_OVERLAY_NODE_IDS);
-  for (const nodeId of skinGlb.missingNodeIds) {
-    if (waivers.has(nodeId)) {
-      waivedIds.add(nodeId);
-      continue;
-    }
-    gaps.push({
-      kind: 'glb_runtime',
-      nodeId,
-      detail: `No mesh in ${SKIN_GLB_PATH} resolves to this skin overlay id`,
-    });
-  }
-  for (const meshName of skinGlb.unmappedMeshNames) {
-    gaps.push({
-      kind: 'glb_runtime',
-      nodeId: meshName,
-      detail: `${SKIN_GLB_PATH} mesh name does not resolve via resolveCurriculumNodeId()`,
-    });
-  }
-
   const supplementGlb = auditGlbMeshResolution(SUPPLEMENT_GLB_PATH, CRITICAL_SUPPLEMENT_NODE_IDS);
   for (const nodeId of supplementGlb.missingNodeIds) {
     if (waivers.has(nodeId)) {
@@ -265,7 +226,6 @@ export function buildAnatomyCoverageReport(): AnatomyCoverageReport {
   }
 
   const runtimeInventory = buildFullBodyRuntimeMeshInventory();
-  const skinInventory = collectSkinOverlayNodeIds();
 
   for (const nodeId of REQUIRED_FULL_BODY_BONE_IDS) {
     if (runtimeInventory.has(nodeId)) continue;
@@ -293,23 +253,7 @@ export function buildAnatomyCoverageReport(): AnatomyCoverageReport {
     });
   }
 
-  for (const nodeId of REQUIRED_SKIN_OVERLAY_NODE_IDS) {
-    if (skinInventory.has(nodeId)) continue;
-    if (waivers.has(nodeId)) {
-      waivedIds.add(nodeId);
-      continue;
-    }
-    gaps.push({
-      kind: 'runtime_inventory',
-      nodeId,
-      detail: 'Required skin overlay missing from simulated skin inventory (atlas_skin.glb)',
-    });
-  }
-
-  const anatomyManifestRegions = FULL_BODY_MANIFEST_REGIONS.filter(
-    (region) => region !== 'atlas_skin',
-  );
-  const manifestUnion = collectManifestNodeIds(anatomyManifestRegions);
+  const manifestUnion = collectManifestNodeIds(FULL_BODY_MANIFEST_REGIONS);
   for (const nodeId of manifestUnion) {
     if (isRegionalAtlasFragmentDuplicate(nodeId)) continue;
     if (isFullBodyHiddenOrbitalMesh(nodeId)) continue;
@@ -335,14 +279,12 @@ export function buildAnatomyCoverageReport(): AnatomyCoverageReport {
       moduleRegionGaps: byKind('module_region_mesh').length,
       fullBodyGaps: byKind('full_body_runtime').length,
       csvMuscleGaps: byKind('csv_muscle').length,
-      skinOverlayGaps: byKind('skin_overlay').length,
       glbRuntimeGaps: byKind('glb_runtime').length,
       runtimeInventoryGaps: byKind('runtime_inventory').length,
       waived: waivedIds.size,
       totalBlocking:
         byKind('module_region_mesh').length +
         byKind('csv_muscle').length +
-        byKind('skin_overlay').length +
         byKind('glb_runtime').length +
         byKind('runtime_inventory').length,
     },
@@ -357,11 +299,9 @@ export function formatAnatomyCoverageReport(report: AnatomyCoverageReport): stri
     `- Module region gaps: ${report.summary.moduleRegionGaps}`,
     `- Full-body union gaps: ${report.summary.fullBodyGaps} (baseline cap in coverage-baseline.json)`,
     `- CSV muscle gaps: ${report.summary.csvMuscleGaps}`,
-    `- Skin overlay gaps: ${report.summary.skinOverlayGaps}`,
     `- GLB runtime gaps: ${report.summary.glbRuntimeGaps}`,
     `- Runtime inventory gaps: ${report.summary.runtimeInventoryGaps}`,
     `- Simulated Full body anatomy meshes: ${buildFullBodyRuntimeMeshInventory().size} node ids`,
-    `- Simulated skin overlays: ${collectSkinOverlayNodeIds().size} node ids`,
     `- Waived: ${report.summary.waived}`,
     '',
   ];
@@ -369,7 +309,6 @@ export function formatAnatomyCoverageReport(report: AnatomyCoverageReport): stri
     'module_region_mesh',
     'full_body_runtime',
     'csv_muscle',
-    'skin_overlay',
     'glb_runtime',
     'runtime_inventory',
   ] as const) {

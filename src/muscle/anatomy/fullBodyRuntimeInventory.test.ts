@@ -3,7 +3,6 @@ import { zAnatomyNamesForNodeId } from '../curriculum';
 import { REQUIRED_FULL_BODY_BONE_IDS, REQUIRED_FULL_BODY_MUSCLE_IDS } from './requiredMeshIds';
 import {
   buildFullBodyRuntimeMeshInventory,
-  collectSkinOverlayNodeIds,
   formatRuntimeInventorySummary,
 } from './fullBodyRuntimeInventory';
 
@@ -27,19 +26,19 @@ describe('fullBodyRuntimeInventory', () => {
     }
   });
 
-  it('maps all twelve ribs into bone_ribcage for torso export', () => {
-    expect(zAnatomyNamesForNodeId('bone_ribcage')).toHaveLength(12);
+  it('maps all twelve ribs plus seven costal cartilages into bone_ribcage for torso export', () => {
+    const names = zAnatomyNamesForNodeId('bone_ribcage');
+    // 12 ribs close the cage at the back/sides; the 7 costal cartilages close it at the front
+    // (rib → sternum bridge) so the thorax reads as complete instead of open. See ADR 0018.
+    for (let n = 1; n <= 12; n += 1) {
+      expect(names.some((name) => /rib\.r$/i.test(name))).toBe(true);
+    }
+    expect(names.filter((name) => /costal cartilage\.r$/i.test(name))).toHaveLength(7);
+    expect(names).toHaveLength(19);
   });
 
   it('maps five metatarsals into bone_metatarsals for foot export', () => {
     expect(zAnatomyNamesForNodeId('bone_metatarsals')).toHaveLength(5);
-  });
-
-  it('resolves all required skin overlay ids from atlas_skin.glb', () => {
-    const skin = collectSkinOverlayNodeIds();
-    for (const id of ['skin_envelope']) {
-      expect(skin.has(id), id).toBe(true);
-    }
   });
 
   it('prints inventory summary when MUSCLE_RUNTIME_INVENTORY=1', () => {

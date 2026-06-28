@@ -23,6 +23,13 @@ Articular capsule of elbow.r,joint_elbow,fundamentals
 10th rib.r,bone_ribcage,torso
 11th rib.r,bone_ribcage,torso
 12th rib.r,bone_ribcage,torso
+1st costal cartilage.r,bone_ribcage,torso
+2d costal cartilage.r,bone_ribcage,torso
+3d costal cartilage.r,bone_ribcage,torso
+4th costal cartilage.r,bone_ribcage,torso
+5th costal cartilage.r,bone_ribcage,torso
+6th costal cartilage.r,bone_ribcage,torso
+7th costal cartilage.r,bone_ribcage,torso
 Rectus abdominis muscle.r,muscle_rectus_abdominis,torso
 External abdominal oblique.r,muscle_external_oblique,torso
 Serratus anterior muscle.r,muscle_serratus_anterior,torso
