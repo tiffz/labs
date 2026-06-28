@@ -37,6 +37,9 @@ export type ExerciseKind =
  */
 export type SubdivisionMode = 'none' | 'eighth' | 'triplet' | 'sixteenth';
 
+/** Metronome click density for subdivision stages. Default `'beat'`. */
+export type ClickMode = 'beat' | 'subdivision';
+
 /**
  * A stage represents one level of mastery for a single key+exercise.
  * Stages are pedagogically ordered: learn notes → add tempo → refine.
@@ -52,6 +55,11 @@ export interface Stage {
   bpm: number;
   useMetronome: boolean;
   subdivision: SubdivisionMode;
+  /**
+   * `'subdivision'` = click on every subdivision slot (beat accented).
+   * `'beat'` or omitted = quarter-note clicks only.
+   */
+  clickMode?: ClickMode;
   /** If true, playback sounds are removed — user plays from memory. */
   mutePlayback: boolean;
   /**
@@ -113,6 +121,7 @@ export interface SessionExercise {
   bpm: number;
   useMetronome: boolean;
   subdivision: SubdivisionMode;
+  clickMode: ClickMode;
   mutePlayback: boolean;
   /** Octave span carried from the stage so score generation / grading match. */
   octaves: 1 | 2;

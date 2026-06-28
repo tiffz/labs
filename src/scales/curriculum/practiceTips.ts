@@ -1,4 +1,5 @@
-import type { Stage, SubdivisionMode, Hand } from './types';
+import type { Stage, SubdivisionMode, Hand, ClickMode } from './types';
+import { stageClickMode } from './guidedStages';
 
 /**
  * A single rotating practice tip surfaced in the pre-start panel.
@@ -26,6 +27,7 @@ export interface PracticeTip {
     /** Match stages where mutePlayback === this value. */
     mutePlayback?: boolean;
     hand?: Hand | Hand[];
+    clickMode?: ClickMode;
   };
 }
 
@@ -103,6 +105,11 @@ export const PRACTICE_TIPS: PracticeTip[] = [
     match: { subdivision: 'eighth' },
   },
   {
+    id: 'guided-subdivision-click',
+    text: 'Every subdivision slot gets a click here. Louder beats mark “1”; match the softer clicks on + and a.',
+    match: { clickMode: 'subdivision' },
+  },
+  {
     id: 'triplet-grouping',
     text: 'Triplets: “1 + a, 2 + a…” with the click on each “1,” then even out “+” and “a.”',
     match: { subdivision: 'triplet' },
@@ -147,6 +154,7 @@ function matches(tip: PracticeTip, stage: Stage): boolean {
     const allowed = Array.isArray(m.hand) ? m.hand : [m.hand];
     if (!allowed.includes(stage.hand)) return false;
   }
+  if (m.clickMode !== undefined && stageClickMode(stage) !== m.clickMode) return false;
   return true;
 }
 

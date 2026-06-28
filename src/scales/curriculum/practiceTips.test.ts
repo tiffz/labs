@@ -13,6 +13,7 @@ function makeStage(overrides: Partial<Stage> = {}): Stage {
     bpm: 52,
     useMetronome: true,
     subdivision: 'none',
+    clickMode: 'beat',
     mutePlayback: false,
     octaves: 1,
     ...overrides,

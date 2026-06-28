@@ -8,6 +8,10 @@ import { CLICK_SAMPLE_URL } from '../audio/drumSampleUrls';
 import { createManagedAudioContext, ensureAudioContextRunning, primeAudioContext } from './audioContextLifecycle';
 import { createInstrumentForSoundType } from './instrumentFactory';
 import { loadClickSample, playClickSampleAt, type LoadedClickSample } from '../audio/clickService';
+import {
+  scheduleClicksInBeatRange,
+  type MetronomeClickMode,
+} from '../audio/metronome/subdivisionClickSchedule';
 
 /** Interface for variable-tempo beat mapping (e.g. from video sync). */
 export interface BeatMap {
@@ -142,6 +146,8 @@ export class ScorePlaybackEngine {
   private audioContext: AudioContext | null = null;
   private instrument: Instrument | null = null;
   private metronomeEnabled = false;
+  private metronomeClickMode: MetronomeClickMode = 'beat';
+  private metronomeSubdivision: 'eighth' | 'triplet' | 'sixteenth' = 'eighth';
   private playing = false;
   private animFrameId: number | null = null;
   private events: NoteEvent[] = [];
@@ -157,6 +163,9 @@ export class ScorePlaybackEngine {
   private clickLoadingPromise: Promise<void> | null = null;
   private scheduledClickTimes = new Set<number>();
   private lastClickAudioTime = -1;
+  /** Metronome look-ahead cursor — separate from note `scheduledUpTo` so tab-gap catch-up does not skip subdivisions. */
+  private metronomeScheduledUpTo = -1;
+  private countInGeneration = 0;
   private onEndCallback: (() => void) | null = null;
   private currentScore: PianoScore | null = null;
   private loopEnabled = false;
@@ -340,32 +349,60 @@ export class ScorePlaybackEngine {
     return events.sort((a, b) => a.beatPosition - b.beatPosition);
   }
 
-  async playCountIn(tempo: number): Promise<void> {
+  async playCountIn(
+    tempo: number,
+    options?: {
+      clickMode?: MetronomeClickMode;
+      subdivision?: 'eighth' | 'triplet' | 'sixteenth';
+      timeSignature?: { numerator: number; denominator: number };
+    },
+  ): Promise<void> {
+    const countInGen = ++this.countInGeneration;
     const ctx = this.getAudioContext();
     await ensureAudioContextRunning(ctx);
+    if (countInGen !== this.countInGeneration) return;
     await this.loadClickSound();
-    // Context can suspend again while fetch/decode runs; re-arm before scheduling.
     await ensureAudioContextRunning(ctx);
+    if (countInGen !== this.countInGeneration) return;
+
+    const clickMode = options?.clickMode ?? this.metronomeClickMode;
+    const subdivision = options?.subdivision ?? this.metronomeSubdivision;
+    const timeSignature = options?.timeSignature ?? { numerator: 4, denominator: 4 };
 
     const startBuffer = 0.15;
-    const msPerBeat = 60000 / tempo;
-    const secPerBeat = msPerBeat / 1000;
+    const secPerBeat = 60 / tempo;
+    const countInBeats = clickMode === 'subdivision' ? timeSignature.numerator : 4;
 
-    const countInBeats = 4;
+    const scheduled = scheduleClicksInBeatRange({
+      startBeat: 0,
+      endBeat: countInBeats,
+      clickMode,
+      subdivision,
+      timeSignature,
+    });
+
     let lastCountInClickAt = -1;
-    for (let i = 0; i < countInBeats; i++) {
-      const time = ctx.currentTime + startBuffer + i * secPerBeat;
+    for (const click of scheduled) {
+      if (countInGen !== this.countInGeneration) return;
+      const time = ctx.currentTime + startBuffer + click.beatPosition * secPerBeat;
       const at = Math.max(time, ctx.currentTime + 0.002);
-      if (lastCountInClickAt >= 0 && at - lastCountInClickAt < 0.08) continue;
+      if (lastCountInClickAt >= 0 && at - lastCountInClickAt < 0.04) continue;
       lastCountInClickAt = at;
-      this.playClickAt(time, i === 0);
+      this.playClickAt(
+        at,
+        click.subdivision === 'accent',
+        click.volume * 0.7,
+        click.playbackRate,
+      );
     }
 
-    // Wait on the audio clock (not wall clock) so playback does not start
-    // while count-in clicks are still queued — that sounded like a double click.
     const resolveAt = ctx.currentTime + startBuffer + countInBeats * secPerBeat;
     await new Promise<void>((resolve) => {
       const wait = () => {
+        if (countInGen !== this.countInGeneration) {
+          resolve();
+          return;
+        }
         if (!this.audioContext) {
           resolve();
           return;
@@ -377,7 +414,12 @@ export class ScorePlaybackEngine {
     });
   }
 
-  private playClickAt(time: number, isDownbeat: boolean) {
+  private playClickAt(
+    time: number,
+    isDownbeat: boolean,
+    volumeScale = 1,
+    playbackRate = 1,
+  ) {
     const ctx = this.audioContext;
     if (!ctx) return;
 
@@ -388,8 +430,8 @@ export class ScorePlaybackEngine {
         ctx,
         this.clickSample,
         at,
-        (isDownbeat ? 0.8 : 0.4) * this.metronomeVolume * this.masterVolume,
-        isDownbeat ? 1.3 : 1.0,
+        (isDownbeat ? 0.8 : 0.4) * volumeScale * this.metronomeVolume * this.masterVolume,
+        playbackRate,
       );
     } else {
       const osc = ctx.createOscillator();
@@ -413,6 +455,10 @@ export class ScorePlaybackEngine {
     callback: PositionCallback,
     onEnd?: () => void,
   ): Promise<void> {
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
     this.generation++;
     const myGen = this.generation;
 
@@ -439,6 +485,7 @@ export class ScorePlaybackEngine {
     this.currentScore = score;
     this.scheduledUpTo = -1;
     this.drumScheduledUpTo = -1;
+    this.metronomeScheduledUpTo = -1;
     this.scheduledClickTimes.clear();
     this.lastClickAudioTime = -1;
     clearExpectedTimes();
@@ -487,6 +534,9 @@ export class ScorePlaybackEngine {
         this.startTime += this.beatToElapsed(this.totalBeats);
         this.scheduledUpTo = -1;
         this.drumScheduledUpTo = -1;
+        this.metronomeScheduledUpTo = -1;
+        this.scheduledClickTimes.clear();
+        this.lastClickAudioTime = -1;
         if (this.onLoopCallback) this.onLoopCallback();
         this.animFrameId = requestAnimationFrame(this.tick);
         return;
@@ -508,22 +558,36 @@ export class ScorePlaybackEngine {
 
     if (this.metronomeEnabled) {
       const { numerator, denominator } = this.currentScore?.timeSignature ?? { numerator: 4, denominator: 4 };
-      const beatsPerClick = 4 / denominator;
-      const firstBeat = Math.ceil(Math.max(this.scheduledUpTo, 0) / beatsPerClick) * beatsPerClick;
-      for (let b = firstBeat; b <= scheduleUpTo; b += beatsPerClick) {
-        if (b < 0) continue;
-        // Never schedule metronome clicks at or beyond score end. This prevents
-        // look-ahead spillover clicks after a section ends (especially when loops
-        // are restarted externally, e.g. count-in every loop).
+      const timeSignature = { numerator, denominator };
+      const subdivision = this.metronomeSubdivision;
+      const metronomeStart = Math.max(this.metronomeScheduledUpTo, 0);
+      const scheduled = scheduleClicksInBeatRange({
+        startBeat: metronomeStart,
+        endBeat: scheduleUpTo,
+        clickMode: this.metronomeClickMode,
+        subdivision,
+        timeSignature,
+      });
+
+      for (const click of scheduled) {
+        const b = click.beatPosition;
         if (b >= this.totalBeats) continue;
         const audioTime = this.startTime + this.beatToElapsed(b);
         const timeKey = Math.round(audioTime * 1000);
         if (this.scheduledClickTimes.has(timeKey)) continue;
-        if (this.lastClickAudioTime >= 0 && (audioTime - this.lastClickAudioTime) < 0.05) continue;
+        if (this.lastClickAudioTime >= 0 && (audioTime - this.lastClickAudioTime) < 0.04) continue;
         this.scheduledClickTimes.add(timeKey);
         this.lastClickAudioTime = audioTime;
-        const beatInMeasure = (b / beatsPerClick) % numerator;
-        this.playClickAt(audioTime, Math.abs(beatInMeasure) < 0.01);
+        this.playClickAt(
+          audioTime,
+          click.subdivision === 'accent',
+          click.volume,
+          click.playbackRate,
+        );
+      }
+
+      if (scheduleUpTo > this.metronomeScheduledUpTo) {
+        this.metronomeScheduledUpTo = scheduleUpTo;
       }
 
       // Prune old click times to prevent unbounded growth during long loops
@@ -619,6 +683,7 @@ export class ScorePlaybackEngine {
 
   stop() {
     this.generation++;
+    this.countInGeneration++;
     this.playing = false;
     this.onEndCallback = null;
     this.onLoopCallback = null;
@@ -635,6 +700,10 @@ export class ScorePlaybackEngine {
   isPlaying() { return this.playing; }
 
   setMetronome(enabled: boolean) { this.metronomeEnabled = enabled; }
+  setMetronomeClickMode(mode: MetronomeClickMode) { this.metronomeClickMode = mode; }
+  setMetronomeSubdivision(subdivision: 'eighth' | 'triplet' | 'sixteenth') {
+    this.metronomeSubdivision = subdivision;
+  }
   setTrackMuted(partId: string, muted: boolean) { this.trackMuted.set(partId, muted); }
   setTrackVolume(partId: string, volume: number) { this.trackVolume.set(partId, volume); }
   setTempo(tempo: number) { this.tempo = tempo; }

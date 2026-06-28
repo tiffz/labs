@@ -30,6 +30,7 @@ export interface RestoredSession {
 function isSessionExercise(value: unknown): value is SessionExercise {
   if (!value || typeof value !== 'object') return false;
   const ex = value as SessionExercise;
+  const clickMode = ex.clickMode ?? 'beat';
   return (
     typeof ex.exerciseId === 'string'
     && typeof ex.stageId === 'string'
@@ -38,6 +39,7 @@ function isSessionExercise(value: unknown): value is SessionExercise {
     && (ex.hand === 'right' || ex.hand === 'left' || ex.hand === 'both')
     && typeof ex.bpm === 'number'
     && typeof ex.useMetronome === 'boolean'
+    && (clickMode === 'beat' || clickMode === 'subdivision')
     && (ex.purpose === 'new' || ex.purpose === 'review')
   );
 }

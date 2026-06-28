@@ -3,6 +3,8 @@ import { TIERS, findExercise } from './tiers';
 import type { ScalesProgressData } from '../progress/types';
 import { getReviewExercises, getExerciseProgress } from '../progress/store';
 import { isCurriculumExerciseUnlocked } from './exerciseUnlock';
+import { stageToSessionExercise } from './sessionExercise';
+import { reviewStageForSubdivisionShaky } from './guidedStages';
 
 const MAX_SESSION_EXERCISES = 5;
 const REVIEW_SLOTS = 1;
@@ -46,19 +48,7 @@ export function planSingleExerciseSession(
   const stage = ex.stages.find(s => s.id === ep.currentStageId) ?? ex.stages[0];
   if (!stage) return null;
   return {
-    exercises: [{
-      exerciseId: ex.id,
-      stageId: stage.id,
-      key: ex.key,
-      kind: ex.kind,
-      hand: stage.hand,
-      bpm: stage.bpm,
-      useMetronome: stage.useMetronome,
-      subdivision: stage.subdivision,
-      mutePlayback: stage.mutePlayback,
-      octaves: stage.octaves,
-      purpose: 'new',
-    }],
+    exercises: [stageToSessionExercise(ex, stage, 'new')],
     generatedAt: Date.now(),
   };
 }
@@ -102,19 +92,7 @@ export function planSession(data: ScalesProgressData, options?: PlanSessionOptio
     if (progress.completedStageId === lastStage?.id) continue;
 
     candidateSlots.push({
-      exercise: {
-        exerciseId: ex.id,
-        stageId: stage.id,
-        key: ex.key,
-        kind: ex.kind,
-        hand: stage.hand,
-        bpm: stage.bpm,
-        useMetronome: stage.useMetronome,
-        subdivision: stage.subdivision,
-        mutePlayback: stage.mutePlayback,
-        octaves: stage.octaves,
-        purpose: 'new',
-      },
+      exercise: stageToSessionExercise(ex, stage, 'new'),
       curriculumIndex,
       // ISO timestamps sort lexicographically; used as tie-break only.
       lastPlayed: progress.lastPracticedAt ?? '1970-01-01T00:00:00.000Z',
@@ -143,26 +121,21 @@ export function planSession(data: ScalesProgressData, options?: PlanSessionOptio
     const found = findExercise(entry.exerciseId);
     if (!found) continue;
 
-    const reviewStage = found.exercise.stages.find(s => s.id === entry.stageId)
+    const reviewStageRaw = found.exercise.stages.find(s => s.id === entry.stageId)
       ?? found.exercise.stages.find(
         s => s.id === getExerciseProgress(data, entry.exerciseId).completedStageId,
       )
       ?? found.exercise.stages[0];
-    if (!reviewStage) continue;
+    if (!reviewStageRaw) continue;
 
-    reviewExercises.push({
-      exerciseId: entry.exerciseId,
-      stageId: reviewStage.id,
-      key: found.exercise.key,
-      kind: found.exercise.kind,
-      hand: reviewStage.hand,
-      bpm: reviewStage.bpm,
-      useMetronome: reviewStage.useMetronome,
-      subdivision: reviewStage.subdivision,
-      mutePlayback: reviewStage.mutePlayback,
-      octaves: reviewStage.octaves,
-      purpose: 'review',
-    });
+    const reviewStageId = reviewStageForSubdivisionShaky(
+      found.exercise.stages,
+      reviewStageRaw.id,
+      entry.reason,
+    );
+    const reviewStage = found.exercise.stages.find(s => s.id === reviewStageId) ?? reviewStageRaw;
+
+    reviewExercises.push(stageToSessionExercise(found.exercise, reviewStage, 'review'));
   }
 
   const allExercises = [...newExercises, ...reviewExercises]
@@ -171,19 +144,7 @@ export function planSession(data: ScalesProgressData, options?: PlanSessionOptio
   if (allExercises.length === 0) {
     const firstExercise = sessionTier.exercises[0] ?? TIERS[0].exercises[0];
     const firstStage = firstExercise.stages[0];
-    allExercises.push({
-      exerciseId: firstExercise.id,
-      stageId: firstStage.id,
-      key: firstExercise.key,
-      kind: firstExercise.kind,
-      hand: firstStage.hand,
-      bpm: firstStage.bpm,
-      useMetronome: firstStage.useMetronome,
-      subdivision: firstStage.subdivision,
-      mutePlayback: firstStage.mutePlayback,
-      octaves: firstStage.octaves,
-      purpose: 'new',
-    });
+    allExercises.push(stageToSessionExercise(firstExercise, firstStage, 'new'));
   }
 
   return {

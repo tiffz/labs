@@ -13,6 +13,7 @@ function sessionEx(overrides: Partial<SessionExercise>): SessionExercise {
     bpm: 0,
     useMetronome: false,
     subdivision: 'none',
+    clickMode: 'beat',
     mutePlayback: false,
     octaves: 1,
     purpose: undefined,

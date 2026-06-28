@@ -10,6 +10,12 @@ import type {
 import { TIERS, findExercise, isPentascaleKind } from '../curriculum/tiers';
 import type { ExerciseDefinition, ExerciseKind, Stage } from '../curriculum/types';
 import { triggerConcepts } from '../curriculum/concepts';
+import {
+  isGuidedSubdivisionStage,
+  isBeatOnlySubdivisionStage,
+  redirectCurrentStageToGuidedScaffold,
+  guidedStageIdForBeatOnly,
+} from '../curriculum/guidedStages';
 
 const STORAGE_KEY = 'scales-progress';
 const MAX_HISTORY_PER_EXERCISE = 20;
@@ -99,7 +105,21 @@ export function formatAdvancementPerfectRunsLabel(streak: number, requiredRuns: 
 
 /** Whether a run is pitch- and timing-perfect (same bar as drill mode). */
 export function runMeetsPerfectBar(record: PracticeRecord): boolean {
+  if (record.breakdown) {
+    const { early, late, wrongPitch, missed } = record.breakdown;
+    return early + late + wrongPitch + missed === 0;
+  }
   return record.accuracy >= 1;
+}
+
+function latestAdvancementRecord(
+  progress: ExerciseProgress,
+  stageId: string,
+): PracticeRecord | null {
+  for (const entry of consecutiveStageRecords(progress.history, stageId)) {
+    if (recordCountsTowardAdvancementStreak(entry)) return entry;
+  }
+  return null;
 }
 
 function emptyStageMastery(): StageMasteryState {
@@ -118,11 +138,18 @@ export function getStageMasteryState(
   return progress.stageMastery?.[stageId] ?? emptyStageMastery();
 }
 
-function clampOverlearnStreak(attemptsToFirstPerfect: number): number {
-  return Math.min(
+/** Cap perfect streak on beat-only subdivision stages (overlearning lottery). */
+export const SUBDIVISION_BEAT_ONLY_MAX_PERFECT_STREAK = 3;
+
+function clampOverlearnStreak(attemptsToFirstPerfect: number, stage?: Stage): number {
+  let streak = Math.min(
     OVERLEARN_MAX_STREAK,
     Math.max(OVERLEARN_MIN_STREAK, attemptsToFirstPerfect),
   );
+  if (stage && isBeatOnlySubdivisionStage(stage)) {
+    streak = Math.min(streak, SUBDIVISION_BEAT_ONLY_MAX_PERFECT_STREAK);
+  }
+  return streak;
 }
 
 export function shouldAutoRegressStage(mastery: StageMasteryState): boolean {
@@ -141,6 +168,13 @@ export function resolveRegressTargetStage(
 ): Stage | null {
   if (currentIdx <= 0) return null;
   const current = stages[currentIdx];
+  if (current && isBeatOnlySubdivisionStage(current)) {
+    const guidedId = guidedStageIdForBeatOnly(current.id);
+    if (guidedId) {
+      const guided = stages.find(s => s.id === guidedId);
+      if (guided) return guided;
+    }
+  }
   if (current?.id.endsWith('-s12')) {
     const moderate = stages.find(s => s.id.endsWith('-s11m'));
     if (moderate) return moderate;
@@ -153,24 +187,31 @@ function applyMidInsertCurriculumRedirects(
   completedStageId: string | null,
   currentStageId: string,
 ): string {
-  if (completedStageId == null) return currentStageId;
-  if (
-    currentStageId.endsWith('-s12')
-    && completedStageId.endsWith('-s11')
-    && stages.some(s => s.id.endsWith('-s11m'))
-  ) {
-    const moderate = stages.find(s => s.id.endsWith('-s11m'));
-    if (moderate) return moderate.id;
+  let next = currentStageId;
+
+  if (completedStageId != null) {
+    if (
+      next.endsWith('-s12')
+      && completedStageId.endsWith('-s11')
+      && !completedStageId.endsWith('-s11m')
+      && !completedStageId.endsWith('-s11g')
+      && stages.some(s => s.id.endsWith('-s11m'))
+    ) {
+      const moderate = stages.find(s => s.id.endsWith('-s11m'));
+      if (moderate) return moderate.id;
+    }
+    if (
+      next.endsWith('-p9')
+      && completedStageId.endsWith('-p8')
+      && stages.some(s => s.id.endsWith('-p8t'))
+    ) {
+      const moderate = stages.find(s => s.id.endsWith('-p8t'));
+      if (moderate) return moderate.id;
+    }
   }
-  if (
-    currentStageId.endsWith('-p9')
-    && completedStageId.endsWith('-p8')
-    && stages.some(s => s.id.endsWith('-p8t'))
-  ) {
-    const moderate = stages.find(s => s.id.endsWith('-p8t'));
-    if (moderate) return moderate.id;
-  }
-  return currentStageId;
+
+  next = redirectCurrentStageToGuidedScaffold(stages, completedStageId, next);
+  return next;
 }
 
 /**
@@ -192,7 +233,9 @@ export function updateStageMasteryOnRecord(
   if (isPerfect) {
     if (firstPerfectAtAttempt == null) {
       firstPerfectAtAttempt = attemptCount;
-      requiredPerfectStreak = clampOverlearnStreak(attemptCount);
+      const found = findExercise(progress.exerciseId);
+      const stage = found?.exercise.stages.find(s => s.id === stageId);
+      requiredPerfectStreak = clampOverlearnStreak(attemptCount, stage);
       currentPerfectStreak = 1;
     } else {
       currentPerfectStreak = prev.currentPerfectStreak + 1;
@@ -972,12 +1015,19 @@ export function stageAdvancementGateMet(
   stage: Stage,
   isFinalStage: boolean,
 ): boolean {
-  void exerciseKind;
-  void stage;
-  void isFinalStage;
+  const latest = latestAdvancementRecord(progress, stageId);
+  if (!latest) return false;
+
+  if (isGuidedSubdivisionStage(stage)) {
+    const { runs } = getAdvancementCriteria(stage, isFinalStage, exerciseKind);
+    if (getCleanRunStreak(progress, stageId) < runs) return false;
+    return runMeetsCleanBar(latest, exerciseKind, stage, isFinalStage);
+  }
+
   const mastery = getStageMasteryState(progress, stageId);
   if (mastery.requiredPerfectStreak == null) return false;
-  return mastery.currentPerfectStreak >= mastery.requiredPerfectStreak;
+  if (mastery.currentPerfectStreak < mastery.requiredPerfectStreak) return false;
+  return runMeetsPerfectBar(latest);
 }
 
 /**

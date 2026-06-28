@@ -5,9 +5,10 @@ Nested **`AGENTS.md`** for Scales. Root policy: [`../../AGENTS.md`](../../AGENTS
 ## Start here
 
 1. [`README.md`](README.md) — curriculum, grading, file layout.
-2. [`COPY_STYLE.md`](COPY_STYLE.md) — learner-facing copy.
-3. **Shared UI:** [`/ui/`](/ui/) — `BpmInput`, `InputSourcesMenu` adapter pattern in `InputSources.tsx`.
-4. **Drive backup:** skill `labs-drive-backup`; hook `hooks/useScalesDriveBackup.ts`.
+2. [`PEDAGOGY.md`](PEDAGOGY.md) — teaching principles, subdivision scaffold, advancement gates.
+3. [`COPY_STYLE.md`](COPY_STYLE.md) — learner-facing copy.
+4. **Shared UI:** [`/ui/`](/ui/) — `BpmInput`, `InputSourcesMenu` adapter pattern in `InputSources.tsx`.
+5. **Drive backup:** skill `labs-drive-backup`; hook `hooks/useScalesDriveBackup.ts`.
 
 ## Pitfalls
 

@@ -99,7 +99,7 @@ export const CONCEPT_INTROS: Record<ConceptKey, ConceptIntro> = {
     key: 'triplets',
     title: 'Three notes per beat',
     body:
-      'Three even notes inside each click. Put the first note of each triplet on the metronome. Counting “1 + a, 2 + a…” out loud helps many people; it is not the same syllable pattern as eighth-note “1-and”.',
+      'Three even notes inside each beat. On guided levels every slot gets a click (beat one is loudest). On beat-only levels the click lands on “1” and you supply + and a.',
     stuckJump: true,
   },
   sixteenths: {
@@ -150,7 +150,7 @@ export function getNewCliffConceptKeys(
 export function stuckJumpCoachingModalTip(addedCliffKeys: ConceptKey[]): string {
   const set = new Set(addedCliffKeys);
   if (set.has('triplets')) {
-    return 'Try counting triplets as 1+a, 2+a, 3+a, 4+a, with the click on each “1”.';
+    return 'Try the guided triplet level (full clicks on every slot) before beat-only work.';
   }
   if (set.has('sixteenths')) {
     return 'Treat each click as the first of four even taps inside the beat.';

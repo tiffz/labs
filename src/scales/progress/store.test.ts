@@ -598,7 +598,10 @@ describe('pentascale tempo clean bar', () => {
       exerciseId: PENTA_ID,
       completedStageId: penta.exercise.stages[2].id,
       currentStageId: p4.id,
-      history: [],
+      history: [
+        pentascaleTimedRecord(stageId, { perfect: 8, t: 200 }),
+        pentascaleTimedRecord(stageId, { perfect: 8, t: 100 }),
+      ],
       needsReview: false,
       reviewStageId: null,
       lastPracticedAt: null,
@@ -614,6 +617,33 @@ describe('pentascale tempo clean bar', () => {
     expect(
       stageAdvancementGateMet(progress, stageId, 'pentascale-major', p4, false),
     ).toBe(true);
+  });
+
+  it('stageAdvancementGateMet is false when mastery streak looks met but latest run is sub-perfect', () => {
+    const stageId = p4.id;
+    const progress: ExerciseProgress = {
+      exerciseId: PENTA_ID,
+      completedStageId: penta.exercise.stages[2].id,
+      currentStageId: p4.id,
+      history: [
+        pentascaleTimedRecord(stageId, { perfect: 7, early: 1, t: 200 }),
+        pentascaleTimedRecord(stageId, { perfect: 8, t: 100 }),
+      ],
+      needsReview: false,
+      reviewStageId: null,
+      lastPracticedAt: null,
+      stageMastery: {
+        [stageId]: {
+          attemptCount: 3,
+          firstPerfectAtAttempt: 1,
+          requiredPerfectStreak: 2,
+          currentPerfectStreak: 2,
+        },
+      },
+    };
+    expect(
+      stageAdvancementGateMet(progress, stageId, 'pentascale-major', p4, false),
+    ).toBe(false);
   });
 
   it('does not advance curriculum when cleans are on a stage that is not current', () => {
@@ -1152,6 +1182,14 @@ describe('overlearning', () => {
     expect(runMeetsPerfectBar(record(`${EXERCISE_ID}-s3`, 0.99))).toBe(false);
   });
 
+  it('runMeetsPerfectBar rejects timing slips even when accuracy rounds high', () => {
+    const r: PracticeRecord = {
+      ...record(`${EXERCISE_ID}-s3`, 0.94),
+      breakdown: { perfect: 17, early: 1, late: 0, wrongPitch: 0, missed: 0 },
+    };
+    expect(runMeetsPerfectBar(r)).toBe(false);
+  });
+
   it('clamps required streak between 2 and 5 based on first perfect attempt', () => {
     let progress: ExerciseProgress = {
       exerciseId: EXERCISE_ID,
@@ -1195,10 +1233,139 @@ describe('overlearning', () => {
     expect(after.pendingRegressNotice?.fromStageId).toBe(s3.id);
   });
 
-  it('resolveRegressTargetStage prefers s11m when regressing from s12', () => {
+  it('resolveRegressTargetStage prefers guided sibling when regressing from beat-only s12', () => {
     const stages = exerciseStages();
-    const s12Idx = stages.findIndex(s => s.id.endsWith('-s12'));
+    const s12Idx = stages.findIndex(s => s.id.endsWith('-s12') && !s.id.endsWith('-s12g'));
     const target = resolveRegressTargetStage(stages, s12Idx);
-    expect(target?.id.endsWith('-s11m')).toBe(true);
+    expect(target?.id.endsWith('-s12g')).toBe(true);
+  });
+
+  it('does not advance bridge moderate triplet on sub-perfect accuracy', () => {
+    let data = fresh();
+    const stages = exerciseStages();
+    const s11m = stages.find(s => s.id.endsWith('-s11m') && !s.id.endsWith('-s11mg'))!;
+    data.exercises[EXERCISE_ID] = {
+      exerciseId: EXERCISE_ID,
+      completedStageId: stages.find(s => s.id.endsWith('-s11mg'))!.id,
+      currentStageId: s11m.id,
+      history: [],
+      needsReview: false,
+      reviewStageId: null,
+      lastPracticedAt: null,
+    };
+    data = recordPractice(data, record(s11m.id, 0.94, 100));
+    data = recordPractice(data, record(s11m.id, 0.94, 200));
+    data = recordPractice(data, record(s11m.id, 0.94, 300));
+    expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(
+      stages.find(s => s.id.endsWith('-s11mg'))!.id,
+    );
+    expect(getExerciseProgress(data, EXERCISE_ID).currentStageId).toBe(s11m.id);
+  });
+
+  it('does not advance beat-only triplet on sub-perfect accuracy even with three tries', () => {
+    let data = fresh();
+    const stages = exerciseStages();
+    const s11 = stages.find(s => s.id.endsWith('-s11') && !s.id.endsWith('-s11m') && !s.id.endsWith('-s11g'))!;
+    data.exercises[EXERCISE_ID] = {
+      exerciseId: EXERCISE_ID,
+      completedStageId: stages.find(s => s.id.endsWith('-s11g'))!.id,
+      currentStageId: s11.id,
+      history: [],
+      needsReview: false,
+      reviewStageId: null,
+      lastPracticedAt: null,
+    };
+    data = recordPractice(data, record(s11.id, 0.94, 100));
+    data = recordPractice(data, record(s11.id, 0.94, 200));
+    data = recordPractice(data, record(s11.id, 0.94, 300));
+    expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(
+      stages.find(s => s.id.endsWith('-s11g'))!.id,
+    );
+    expect(getExerciseProgress(data, EXERCISE_ID).currentStageId).toBe(s11.id);
+  });
+
+  it('does not advance guided triplet on a single 94% run', () => {
+    let data = fresh();
+    const stages = exerciseStages();
+    const s11g = stages.find(s => s.id.endsWith('-s11g'))!;
+    data.exercises[EXERCISE_ID] = {
+      exerciseId: EXERCISE_ID,
+      completedStageId: stages.find(s => s.id.endsWith('-s10'))!.id,
+      currentStageId: s11g.id,
+      history: [],
+      needsReview: false,
+      reviewStageId: null,
+      lastPracticedAt: null,
+    };
+    data = recordPractice(data, record(s11g.id, 0.94, 100));
+    expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(
+      stages.find(s => s.id.endsWith('-s10'))!.id,
+    );
+  });
+
+  it('does not advance standard tempo stage on a single 94% run', () => {
+    let data = fresh();
+    const stages = exerciseStages();
+    const s3 = stages[2];
+    data.exercises[EXERCISE_ID] = {
+      exerciseId: EXERCISE_ID,
+      completedStageId: stages[1].id,
+      currentStageId: s3.id,
+      history: [],
+      needsReview: false,
+      reviewStageId: null,
+      lastPracticedAt: null,
+    };
+    data = recordPractice(data, record(s3.id, 0.94, 100));
+    expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(stages[1].id);
+  });
+
+  it('advances guided subdivision stage with three clean runs at 85%', () => {
+    let data = fresh();
+    const stages = exerciseStages();
+    const s11g = stages.find(s => s.id.endsWith('-s11g'))!;
+    data.exercises[EXERCISE_ID] = {
+      exerciseId: EXERCISE_ID,
+      completedStageId: stages.find(s => s.id.endsWith('-s10'))!.id,
+      currentStageId: s11g.id,
+      history: [],
+      needsReview: false,
+      reviewStageId: null,
+      lastPracticedAt: null,
+    };
+    data = recordPractice(data, record(s11g.id, 0.86, 100));
+    data = recordPractice(data, record(s11g.id, 0.87, 200));
+    expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(
+      stages.find(s => s.id.endsWith('-s10'))!.id,
+    );
+    data = recordPractice(data, record(s11g.id, 0.88, 300));
+    expect(getExerciseProgress(data, EXERCISE_ID).completedStageId).toBe(s11g.id);
+    expect(getExerciseProgress(data, EXERCISE_ID).currentStageId.endsWith('-s11')).toBe(true);
+    expect(getExerciseProgress(data, EXERCISE_ID).currentStageId.endsWith('-s11g')).toBe(false);
+  });
+
+  it('reconcileProgress redirects beat-only triplet to guided scaffold', () => {
+    localStorage.setItem('scales-progress', JSON.stringify({
+      version: 4,
+      currentTierId: 'tier-1',
+      exercises: {
+        'C-major-scale': {
+          exerciseId: 'C-major-scale',
+          completedStageId: 'C-major-scale-s10',
+          currentStageId: 'C-major-scale-s11',
+          history: [],
+          needsReview: false,
+          reviewStageId: null,
+          lastPracticedAt: null,
+          stageMastery: {},
+        },
+      },
+      seenOnboarding: true,
+      introducedConcepts: {},
+      introducedExerciseHands: {},
+      progressUpdatedAt: new Date().toISOString(),
+    }));
+    const loaded = loadProgress();
+    expect(loaded.exercises['C-major-scale']!.currentStageId).toBe('C-major-scale-s11g');
   });
 });

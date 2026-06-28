@@ -686,6 +686,83 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-metronome-subdivisionclickschedule-ts-clickvolumeforsubdivision",
+    "name": "clickVolumeForSubdivision",
+    "path": "src/shared/audio/metronome/subdivisionClickSchedule.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Classify a click for accent hierarchy — mirrors .",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-subdivisionclickschedule-ts-metronomeclickmode",
+    "name": "MetronomeClickMode",
+    "path": "src/shared/audio/metronome/subdivisionClickSchedule.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-subdivisionclickschedule-ts-scheduleclicksinbeatrange",
+    "name": "scheduleClicksInBeatRange",
+    "path": "src/shared/audio/metronome/subdivisionClickSchedule.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Enumerate metronome clicks between two quarter-note beat positions (inclusive of start, exclusive of end) for scored playback / count-in.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-subdivisionclickschedule-ts-scheduledclick",
+    "name": "ScheduledClick",
+    "path": "src/shared/audio/metronome/subdivisionClickSchedule.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-subdivisionclickschedule-ts-slotsperquarterbeat",
+    "name": "slotsPerQuarterBeat",
+    "path": "src/shared/audio/metronome/subdivisionClickSchedule.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Map scales curriculum subdivision modes to grid slots per quarter beat.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-metronome-syllablemap-ts-syllableentry",
     "name": "SyllableEntry",
     "path": "src/shared/audio/metronome/syllableMap.ts",

@@ -70,9 +70,9 @@ describe('stuck jump vs incremental (concept diffs)', () => {
     expect(bullets.some(b => b.includes('1 + a'))).toBe(true);
   });
 
-  it('stuckJumpCoachingModalTip gives a neutral one-line triplet hint', () => {
+  it('stuckJumpCoachingModalTip suggests guided triplet level', () => {
     const tip = stuckJumpCoachingModalTip(['triplets']);
-    expect(tip).toContain('1+a');
+    expect(tip).toMatch(/guided triplet/i);
     expect(tip.toLowerCase()).not.toContain('attempt');
   });
 });

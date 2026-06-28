@@ -20,6 +20,8 @@ Route: `/scales/`.
 
 Learner-facing strings should follow **`COPY_STYLE.md`** in this folder (warm, concise, no em-dash essay voice). Update it when you add new UI surfaces that show prose.
 
+Teaching principles and advancement rules: **`PEDAGOGY.md`**.
+
 ## File Layout
 
 ```text

@@ -26,6 +26,7 @@ import { useScales, hasEnabledMidiDevice, type ExerciseResult } from '../store';
 import { generateScoreForExercise } from '../curriculum/scoreGenerator';
 import { getScorePlaybackEngine } from '../../shared/playback/scorePlayback';
 import type { ScorePlaybackEngine } from '../../shared/playback/scorePlayback';
+import { slotsPerQuarterBeat } from '../../shared/audio/metronome/subdivisionClickSchedule';
 import { TIERS, findStage, findExercise, isPentascaleKind } from '../curriculum/tiers';
 import { formatStageSummary, formatOctaveLabel } from '../curriculum/stageSummary';
 import { pickPracticeTip } from '../curriculum/practiceTips';
@@ -33,12 +34,18 @@ import {
   getNewCliffConceptKeys,
   stuckJumpCoachingModalTip,
 } from '../curriculum/concepts';
+import {
+  guidedStageIdForBeatOnly,
+  isBeatOnlySubdivisionStage,
+  isGuidedSubdivisionStage,
+} from '../curriculum/guidedStages';
 import { pickShakyHint } from './shakyHint';
 import type { PracticeRecord } from '../progress/types';
 import {
   getExerciseProgress,
   getAdvancementCriteria,
   formatAdvancementPerfectRunsLabel,
+  formatAdvancementCleanRunsLabel,
   getCleanRunStreak,
   getOverlearningUiState,
   isPracticingAdvancementStage,
@@ -156,6 +163,9 @@ export default function SessionScreen() {
   const [wrongNoteDisplay, setWrongNoteDisplay] = useState<string | null>(null);
   const wrongNoteKeyRef = useRef(0);
   const [countInBeat, setCountInBeat] = useState<number | null>(null);
+  const countInTimerIdsRef = useRef<number[]>([]);
+  /** Bumps on each fresh timed start so stale async count-in / engine.start paths bail out. */
+  const playbackSessionRef = useRef(0);
   /** After a silent free-tempo dry run, brief overlay + 1s pause before {@link startPlayback}. */
   const warmupTimerRef = useRef<number | null>(null);
   const [perfectWarmupUi, setPerfectWarmupUi] = useState(false);
@@ -322,9 +332,17 @@ export default function SessionScreen() {
   const lastCountedResultRef = useRef<typeof lastExerciseResult>(null);
   const dwellBadgeSnapshotRef = useRef<DwellBadgeSnapshot | null>(null);
 
+  const clearCountInTimers = useCallback(() => {
+    for (const id of countInTimerIdsRef.current) window.clearTimeout(id);
+    countInTimerIdsRef.current = [];
+    setCountInBeat(null);
+  }, []);
+
   const startPlayback = useCallback(async () => {
     cancelWarmupCountdown();
     if (!score || !activeExercise) return;
+    const session = ++playbackSessionRef.current;
+    clearCountInTimers();
     // Reset the manual-stop flag on every fresh start so the engine's
     // finish callback behaves normally unless the user explicitly stops.
     manuallyStoppedRef.current = false;
@@ -340,10 +358,19 @@ export default function SessionScreen() {
     // it, auto-loop tick); the others would set it to false themselves.
     setLoopPaused(false);
     const engine = getScorePlaybackEngine();
+    engine.stop();
     engine.primeAudioContext();
     engineRef.current = engine;
     engine.setTempo(activeExercise.bpm || 80);
     engine.setMetronome(activeExercise.useMetronome);
+    engine.setMetronomeClickMode(activeExercise.clickMode ?? 'beat');
+    if (
+      activeExercise.subdivision === 'eighth'
+      || activeExercise.subdivision === 'triplet'
+      || activeExercise.subdivision === 'sixteenth'
+    ) {
+      engine.setMetronomeSubdivision(activeExercise.subdivision);
+    }
 
     if (activeExercise.mutePlayback) {
       score.parts.forEach(p => engine.setTrackMuted(p.id, true));
@@ -380,17 +407,52 @@ export default function SessionScreen() {
       return;
     }
 
-    // Count-in: 4 beats of metronome clicks before playback starts
+    // Count-in: one measure of metronome clicks before playback starts
     if (activeExercise.useMetronome) {
       dispatch({ type: 'SET_PLAYING', isPlaying: true });
       const msPerBeat = 60000 / (activeExercise.bpm || 80);
       const startDelay = 150;
-      for (let i = 0; i < 4; i++) {
-        const beat = i;
-        setTimeout(() => setCountInBeat(beat + 1), startDelay + beat * msPerBeat);
+      const clickMode = activeExercise.clickMode ?? 'beat';
+      const subdivision = activeExercise.subdivision;
+      const usesSubdivisionClicks =
+        clickMode === 'subdivision'
+        && (subdivision === 'eighth' || subdivision === 'triplet' || subdivision === 'sixteenth');
+      if (usesSubdivisionClicks) {
+        const slotsPerBeat = slotsPerQuarterBeat(subdivision);
+        const msPerSlot = msPerBeat / slotsPerBeat;
+        const measureBeats = 4;
+        for (let q = 0; q < measureBeats; q++) {
+          for (let s = 0; s < slotsPerBeat; s++) {
+            const slot = q * slotsPerBeat + s;
+            const id = window.setTimeout(
+              () => {
+                if (s === 0) setCountInBeat(q + 1);
+              },
+              startDelay + slot * msPerSlot,
+            );
+            countInTimerIdsRef.current.push(id);
+          }
+        }
+      } else {
+        for (let i = 0; i < 4; i++) {
+          const id = window.setTimeout(
+            () => setCountInBeat(i + 1),
+            startDelay + i * msPerBeat,
+          );
+          countInTimerIdsRef.current.push(id);
+        }
       }
-      await engine.playCountIn(activeExercise.bpm || 80);
-      setCountInBeat(null);
+      await engine.playCountIn(activeExercise.bpm || 80, {
+        clickMode,
+        subdivision:
+          activeExercise.subdivision === 'eighth'
+          || activeExercise.subdivision === 'triplet'
+          || activeExercise.subdivision === 'sixteenth'
+            ? activeExercise.subdivision
+            : 'eighth',
+      });
+      if (session !== playbackSessionRef.current) return;
+      clearCountInTimers();
       // Dwell verdict chip may persist through count-in; clear once notes begin.
       dwellBadgeSnapshotRef.current = null;
     } else {
@@ -421,9 +483,10 @@ export default function SessionScreen() {
         if (!manuallyStoppedRef.current) finishExercise(purposeForRun);
       },
     );
+    if (session !== playbackSessionRef.current) return;
     dispatch({ type: 'SET_PLAYING', isPlaying: true });
   // eslint-disable-next-line react-hooks/exhaustive-deps -- state.microphoneActive/midiConnected read at call-time for debug only
-  }, [score, activeExercise, dispatch, finishExercise, drillState, cancelWarmupCountdown]);
+  }, [score, activeExercise, dispatch, finishExercise, drillState, cancelWarmupCountdown, clearCountInTimers]);
 
   const schedulePostDryRunStart = useCallback((opts: { recordWarmupHit: boolean }) => {
     if (warmupTimerRef.current != null) return;
@@ -453,19 +516,20 @@ export default function SessionScreen() {
   }, [startPlayback, activeExercise, score, dispatch]);
 
   const stopPlayback = useCallback(() => {
+    playbackSessionRef.current += 1;
+    clearCountInTimers();
     // Flag before stopping so the engine's finish callback (fired
     // synchronously from `stop()`) can tell this apart from natural
     // completion and skip the FINISH_EXERCISE dispatch.
     manuallyStoppedRef.current = true;
     engineRef.current?.stop();
-    setCountInBeat(null);
     // STOP_PRACTICE_RUN (rather than just SET_PLAYING: false) wipes the
     // partial run state — per-note colors, playhead, free-tempo cursor —
     // so a manually-stopped exercise returns to a clean pre-run view
     // instead of leaving "ghost" grading on the score.
     if (activeExercise?.bpm) setTimedDryRunReady(false);
     dispatch({ type: 'STOP_PRACTICE_RUN' });
-  }, [dispatch, activeExercise?.bpm]);
+  }, [dispatch, activeExercise?.bpm, clearCountInTimers]);
 
   const completeExercisePerfectDebug = useCallback(() => {
     if (!labsDebug || !score || !activeExercise) return;
@@ -551,6 +615,7 @@ export default function SessionScreen() {
       bpm: stage.bpm,
       useMetronome: stage.useMetronome,
       subdivision: stage.subdivision,
+      clickMode: stage.clickMode ?? 'beat',
       mutePlayback: stage.mutePlayback,
       octaves: stage.octaves,
       purpose: activeExercise.purpose,
@@ -689,8 +754,19 @@ export default function SessionScreen() {
     && isPracticingAdvancementStage(_exerciseProgressSch, _exerciseProgressSch.currentStageId)
     ? getOverlearningUiState(_exerciseProgressSch, _exerciseProgressSch.currentStageId)
     : null;
-  const _requiredPerfectSch = _overlearnSch?.requiredPerfectStreak ?? OVERLEARN_MIN_STREAK;
-  const _cleanStreakSch = _overlearnSch?.perfectStreak ?? 0;
+  const _usesGuidedSch = Boolean(
+    activeExercise?.bpm && _curStageSch && isGuidedSubdivisionStage(_curStageSch),
+  );
+  const _rawCleanStreakSch = _exerciseProgressSch && activeExercise && _curStageSch
+    ? getCleanRunStreak(_exerciseProgressSch, activeExercise.stageId)
+    : 0;
+  const _requiredRunsSch = _usesGuidedSch
+    ? _advCritSch.runs
+    : (_overlearnSch?.requiredPerfectStreak ?? OVERLEARN_MIN_STREAK);
+  const _cleanStreakSch = _usesGuidedSch
+    ? _rawCleanStreakSch
+    : (_overlearnSch?.perfectStreak ?? 0);
+  const _streakGateActiveSch = _usesGuidedSch || (_overlearnSch?.requiredPerfectStreak != null);
 
   const _rawConsecutiveRoughSch =
     activeExercise
@@ -721,12 +797,13 @@ export default function SessionScreen() {
           attemptsThisStage,
           consecutiveRoughOnStage: _consecutiveRoughSch,
           cleanStreak: _cleanStreakSch,
-          requiredRuns: _requiredPerfectSch,
+          requiredRuns: _requiredRunsSch,
           hasFallbackStage: _hasFallbackStageForScheduler,
           snoozedUntil: regularSnoozedUntil,
           stageId: activeExercise.stageId,
           threshold: _advCritSch.threshold,
           history: _exerciseProgressSch.history,
+          streakGateActive: _streakGateActiveSch,
         }),
     );
 
@@ -1340,7 +1417,11 @@ export default function SessionScreen() {
   const practicingAdvancementStage = Boolean(
     currentStage && isPracticingAdvancementStage(exerciseProgress, currentStage.id),
   );
-  const usesPerfectRegimen = !isFreeTempo && Boolean(currentStage?.useTempo);
+  const usesGuidedSubdivisionRegimen = !isFreeTempo
+    && Boolean(currentStage && isGuidedSubdivisionStage(currentStage));
+  const usesPerfectRegimen = !isFreeTempo
+    && Boolean(currentStage?.useTempo)
+    && !usesGuidedSubdivisionRegimen;
   const overlearnState = currentStage && usesPerfectRegimen
     ? getOverlearningUiState(exerciseProgress, currentStage.id)
     : {
@@ -1351,17 +1432,20 @@ export default function SessionScreen() {
     };
   const requiredPerfectRuns = overlearnState.requiredPerfectStreak;
   const rawCleanStreak = currentStage ? getCleanRunStreak(exerciseProgress, currentStage.id) : 0;
-  /** Perfect-run streak on the stage being practiced (metronome regimen). */
+  /** Perfect-run streak on beat-only metronome stages. */
   const perfectStreak = usesPerfectRegimen ? overlearnState.perfectStreak : 0;
-  const cleanStreak = perfectStreak;
+  const cleanStreak = usesGuidedSubdivisionRegimen ? rawCleanStreak : perfectStreak;
+  const requiredCleanRuns = usesGuidedSubdivisionRegimen ? advancementCriteria.runs : null;
   const perfectRunsProgressLabel = requiredPerfectRuns != null
     ? formatAdvancementPerfectRunsLabel(perfectStreak, requiredPerfectRuns)
     : String(perfectStreak);
-  const advancementChipLabel = overlearnState.unlocked
-    ? `${perfectRunsProgressLabel} perfect in a row to advance`
-    : overlearnState.attemptCount > 0
-      ? `Attempt ${overlearnState.attemptCount + 1} · first perfect sets your target`
-      : 'First perfect run sets your practice target';
+  const advancementChipLabel = usesGuidedSubdivisionRegimen && requiredCleanRuns != null
+    ? `${formatAdvancementCleanRunsLabel(cleanStreak, requiredCleanRuns)} clean in a row to advance`
+    : overlearnState.unlocked
+      ? `${perfectRunsProgressLabel} perfect in a row to advance`
+      : overlearnState.attemptCount > 0
+        ? `Attempt ${overlearnState.attemptCount + 1} · first perfect sets your target`
+        : 'First perfect run sets your practice target';
 
   const scaleHowToText = stageInfo
     ? resolveHandGuidance(stageInfo.exercise, activeExercise.hand)
@@ -1372,10 +1456,17 @@ export default function SessionScreen() {
 
   const showCleanStreakChipPreStart = !isFreeTempo
     && !!currentStage
-    && overlearnState.unlocked
-    && requiredPerfectRuns != null
-    && perfectStreak > 0
-    && perfectStreak < requiredPerfectRuns;
+    && (
+      (usesGuidedSubdivisionRegimen
+        && requiredCleanRuns != null
+        && cleanStreak > 0
+        && cleanStreak < requiredCleanRuns)
+      || (usesPerfectRegimen
+        && overlearnState.unlocked
+        && requiredPerfectRuns != null
+        && perfectStreak > 0
+        && perfectStreak < requiredPerfectRuns)
+    );
   const competingPreStartScore = (stageInfo?.stage.description?.trim() ? 1 : 0)
     + (scaleHowToText ? 1 : 0)
     + (stageInfo?.exercise.helpUrl ? 1 : 0)
@@ -1420,7 +1511,14 @@ export default function SessionScreen() {
   // after they've cleared the stage. `hasFallbackStage` defends against
   // the very first stage of an exercise where there's nowhere to drop to.
   const hasFallbackStage = currentStageIdx > 0;
-  const stuckFallbackStage = hasFallbackStage ? allStages[currentStageIdx - 1] : null;
+  const guidedFallbackId = currentStage && isBeatOnlySubdivisionStage(currentStage)
+    ? guidedStageIdForBeatOnly(currentStage.id)
+    : null;
+  const guidedFallbackStage = guidedFallbackId
+    ? allStages.find(s => s.id === guidedFallbackId) ?? null
+    : null;
+  const stuckFallbackStage = guidedFallbackStage
+    ?? (hasFallbackStage ? allStages[currentStageIdx - 1] : null);
   const stuckFallbackLabel = stuckFallbackStage
     ? `Level ${stuckFallbackStage.stageNumber}`
     : 'an earlier level';
@@ -1457,13 +1555,16 @@ export default function SessionScreen() {
     attemptsThisStage,
     consecutiveRoughOnStage,
     cleanStreak,
-    requiredRuns: requiredPerfectRuns ?? OVERLEARN_MIN_STREAK,
-    hasFallbackStage,
+    requiredRuns: usesGuidedSubdivisionRegimen
+      ? (requiredCleanRuns ?? advancementCriteria.runs)
+      : (requiredPerfectRuns ?? OVERLEARN_MIN_STREAK),
+    hasFallbackStage: hasFallbackStage || guidedFallbackStage != null,
     snoozedUntil: regularSnoozedUntil,
     stageId: activeExercise.stageId,
     threshold: advancementCriteria.threshold,
     history: exerciseProgress.history,
-    streakGateActive: overlearnState.unlocked,
+    streakGateActive: usesGuidedSubdivisionRegimen
+      || overlearnState.unlocked,
   });
   const regularStuckGated = Boolean(
     baseRegularStuckGated
@@ -1547,7 +1648,9 @@ export default function SessionScreen() {
       drillStreak,
       cleanStreak,
       displayRunStreak: usesPerfectRegimen ? cleanStreak : rawCleanStreak,
-      requiredRuns: requiredPerfectRuns ?? 0,
+      requiredRuns: usesGuidedSubdivisionRegimen
+        ? (requiredCleanRuns ?? advancementCriteria.runs)
+        : (requiredPerfectRuns ?? 0),
       practicingAdvancementStage,
       usesPerfectRegimen,
       overlearnUnlocked: overlearnState.unlocked,
@@ -1778,9 +1881,11 @@ export default function SessionScreen() {
                     ? `${DRILL_TARGET_PERFECT_RUNS}/${DRILL_TARGET_PERFECT_RUNS} perfect runs`
                     : activeExercise.purpose === 'review'
                       ? 'Nice refresh. continue when you are ready.'
-                      : allStages[currentStageIdx]
-                        ? `${formatStageSummary(allStages[currentStageIdx])} · next level unlocked`
-                        : 'You unlocked the next level.'}
+                      : usesGuidedSubdivisionRegimen && lastExerciseResult.accuracy < 1
+                        ? `${formatAdvancementCleanRunsLabel(cleanStreak, requiredCleanRuns ?? advancementCriteria.runs)} clean · next level unlocked`
+                        : allStages[currentStageIdx]
+                          ? `${formatStageSummary(allStages[currentStageIdx])} · next level unlocked`
+                          : 'You unlocked the next level.'}
                 </Typography>
               </Box>
             </Box>
@@ -2078,7 +2183,12 @@ export default function SessionScreen() {
             ? (inDrill ? drillStreak : (usesPerfectRegimen ? cleanStreak : rawCleanStreak))
             : (inDrill ? snap!.drillStreak : snap!.displayRunStreak);
           const streakDenominator = live
-            ? dwellStreakDenominator(inDrill, requiredPerfectRuns)
+            ? dwellStreakDenominator(
+              inDrill,
+              usesGuidedSubdivisionRegimen
+                ? (requiredCleanRuns ?? advancementCriteria.runs)
+                : requiredPerfectRuns,
+            )
             : dwellStreakDenominator(inDrill, snap!.requiredRuns || null);
           const wasClean = live ? lastWasClean : snap!.lastWasClean;
           const outcomeTier = live ? lastRunOutcomeTier : snap!.lastRunOutcomeTier;
