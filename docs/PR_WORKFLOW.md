@@ -94,13 +94,24 @@ CI takes **≈8–15 min**. Agents and humans should not sit idle watching check
 | `npm run test:e2e:smoke` when touching routes/shells    | Visual regression (advisory)               |
 | Hard-refresh affected hash routes after provider wiring | Pages deploy                               |
 
-**Agent workflow**
+**Agent workflow — fire-and-forget + fix on failure** (default; rule [`ci-background-watch.mdc`](../.cursor/rules/ci-background-watch.mdc))
 
-1. Run **presubmit** on the final commit; fix failures before push.
-2. **Push + open PR** (or push to branch); tell the user the PR URL — do **not** poll CI for the full run in-chat unless they asked to babysit (`labs-babysit-pr`).
-3. **Keep working** on the next task locally while CI runs; merge when green.
-4. Prefer **small PRs** (`labs-split-to-prs`) so CI surface area stays small and failures are easier to attribute.
-5. **Direct push to `main`** only for trivial docs typos when skipping PR CI is acceptable — still run presubmit locally.
+1. Run **presubmit** on the final commit; fix failures before push. This is the real gate — CI is the safety net.
+2. **Push + open PR**; tell the user the PR URL.
+3. **Arm auto-merge** so green merges itself, no agent action needed:
+   ```bash
+   gh pr merge <n> --auto --squash --delete-branch
+   ```
+4. **Background-watch for failure only** — start `ci:watch` as a backgrounded job and keep working:
+   ```bash
+   npm run ci:watch -- <n>   # silent while pending; prints one CI_WATCH: PASS|FAIL|… sentinel
+   ```
+   Agents: run it with `block_until_ms: 0` and a `notify_on_output` regex `^CI_WATCH: (FAIL|TIMEOUT|ERROR)`. **Do not** poll CI in chat or `AwaitShell` the watcher.
+5. **Immediately continue** the next unit of work. On a failure ping: `npm run report:ci-failure -- <run-id>`, fix within the PR's scope, push again (auto-merge re-arms), restart `ci:watch`.
+6. Prefer **small PRs** (`labs-split-to-prs`) so CI surface area stays small and failures are easier to attribute.
+7. **Direct push to `main`** only for trivial docs typos when skipping PR CI is acceptable — still run presubmit locally.
+
+Block synchronously (foreground babysit) **only** when the user asked to merge now, it's a hotfix for broken `main`, or it's the last action of the session. Honest hand-off: backgrounded watchers are session-scoped — auto-merge still lands green PRs after the session ends, but a _failure_ after the session ends stays a red open PR (caught by `gh pr list` next session or the Nightly detector). Never claim a PR merged/green that you did not observe.
 
 **Human workflow**
 

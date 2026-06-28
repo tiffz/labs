@@ -48,3 +48,4 @@ Skip an ADR for routine features, one-off UI tweaks, or purely internal refactor
 | [0016](./0016-client-crash-telemetry.md)                                  | Client crash telemetry: local-first Phase 1; production beacon deferred (free tier)   |
 | [0017](./0017-spa-native-link-navigation.md)                              | SPA in-app navigation with native link semantics (href + shared click helpers)        |
 | [0018](./0018-muscle-memory-no-skin-overlay.md)                           | Muscle Memory drops the skin overlay (muscle-vs-skeleton écorché)                     |
+| [0019](./0019-encore-non-destructive-sync-merge.md)                       | Encore content-aware non-destructive sync merge + Drive revision recovery             |

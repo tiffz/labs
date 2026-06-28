@@ -76,20 +76,27 @@ const LabsYouTubePlayer: React.FC<LabsYouTubePlayerProps> = ({
     const player = playerRef.current;
     const YT = readYouTubeIframeApi();
     if (!player || !onStateChangeRef.current || !YT) return;
-    const st = player.getPlayerState();
-    const ENDED = YT.PlayerState?.ENDED ?? 0;
-    const prev = prevYtPlayerStateRef.current;
-    if (prev !== null && prev !== ENDED && st === ENDED) {
-      onEndedRef.current?.();
+    // The 280ms poll (and YouTube's own onStateChange) can fire while the iframe is mid-teardown or
+    // in a broken state after a video/network/ad error — `getPlayerState()` etc. then throw across
+    // the iframe boundary. Swallow so it never surfaces as an `Uncaught` in LabsYouTubePlayer.
+    try {
+      const st = player.getPlayerState();
+      const ENDED = YT.PlayerState?.ENDED ?? 0;
+      const prev = prevYtPlayerStateRef.current;
+      if (prev !== null && prev !== ENDED && st === ENDED) {
+        onEndedRef.current?.();
+      }
+      prevYtPlayerStateRef.current = st;
+      const playing = st === (YT.PlayerState?.PLAYING ?? 1);
+      onStateChangeRef.current({
+        currentTime: player.getCurrentTime() || 0,
+        duration: player.getDuration() || 0,
+        isPlaying: playing,
+        playbackRate: player.getPlaybackRate?.() || 1,
+      });
+    } catch {
+      /* iframe not ready / torn down — skip this tick */
     }
-    prevYtPlayerStateRef.current = st;
-    const playing = st === (YT.PlayerState?.PLAYING ?? 1);
-    onStateChangeRef.current({
-      currentTime: player.getCurrentTime() || 0,
-      duration: player.getDuration() || 0,
-      isPlaying: playing,
-      playbackRate: player.getPlaybackRate?.() || 1,
-    });
   }, []);
 
   useEffect(() => {
@@ -123,13 +130,25 @@ const LabsYouTubePlayer: React.FC<LabsYouTubePlayerProps> = ({
                 play: () => {
                   try {
                     player.unMute();
+                    player.playVideo();
                   } catch {
-                    /* ignore */
+                    /* iframe not ready / torn down */
                   }
-                  player.playVideo();
                 },
-                pause: () => player.pauseVideo(),
-                seekTo: (seconds: number) => player.seekTo(Math.max(0, seconds), true),
+                pause: () => {
+                  try {
+                    player.pauseVideo();
+                  } catch {
+                    /* iframe not ready / torn down */
+                  }
+                },
+                seekTo: (seconds: number) => {
+                  try {
+                    player.seekTo(Math.max(0, seconds), true);
+                  } catch {
+                    /* iframe not ready / torn down */
+                  }
+                },
                 getCurrentTime: () => {
                   try {
                     return player.getCurrentTime() || 0;

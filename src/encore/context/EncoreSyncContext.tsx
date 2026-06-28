@@ -202,44 +202,79 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
     })();
   }, [googleAccessToken, libraryReady, runSync]);
 
+  /**
+   * Run the background push now (coalesced through `drivePushChainRef`). Extracted so both the
+   * debounced timer and the flush-on-hide handler share one push path — the latter shortens the
+   * "local-only" window so high-value edits (e.g. exercise answers) reach Drive + revision history
+   * before the tab is backgrounded/closed, which is what makes them recoverable later (ADR 0019).
+   */
+  const runBackgroundPushNow = useCallback(() => {
+    drivePushChainRef.current = drivePushChainRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        const token = googleAccessTokenRef.current;
+        if (!token) return;
+        await withBlockingJob(
+          'Saving to Drive…',
+          async () => {
+            try {
+              if (isShardedSyncEnabled()) {
+                // Phase 5: drain only the rows the user actually touched. The legacy monolithic
+                // push still runs in the same callback as a safety net so a bad shard write
+                // does not strand the user's edits in IndexedDB.
+                await migrateMonolithicToShardedIfNeeded(token);
+                await pushDirtyShards(token);
+              }
+              const meta = await getSyncMeta();
+              if (!meta.repertoireFileId) return;
+              await pushRepertoireToDrive(token, meta.repertoireFileId, meta.lastRemoteEtag);
+              await pushOriginalsDirtyShards(token);
+              setSyncState('idle');
+              setSyncMessage(null);
+            } catch (e) {
+              setSyncState('error');
+              setSyncMessage(e instanceof Error ? e.message : String(e));
+            }
+          },
+          { silent: true },
+        );
+      });
+    void drivePushChainRef.current;
+  }, [withBlockingJob]);
+
   const scheduleBackgroundSync = useCallback(() => {
     if (!googleAccessTokenRef.current) return;
     if (drivePushDebounceTimerRef.current) clearTimeout(drivePushDebounceTimerRef.current);
     drivePushDebounceTimerRef.current = setTimeout(() => {
       drivePushDebounceTimerRef.current = null;
-      drivePushChainRef.current = drivePushChainRef.current
-        .catch(() => undefined)
-        .then(async () => {
-          const token = googleAccessTokenRef.current;
-          if (!token) return;
-          await withBlockingJob(
-            'Saving to Drive…',
-            async () => {
-              try {
-                if (isShardedSyncEnabled()) {
-                  // Phase 5: drain only the rows the user actually touched. The legacy monolithic
-                  // push still runs in the same callback as a safety net so a bad shard write
-                  // does not strand the user's edits in IndexedDB.
-                  await migrateMonolithicToShardedIfNeeded(token);
-                  await pushDirtyShards(token);
-                }
-                const meta = await getSyncMeta();
-                if (!meta.repertoireFileId) return;
-                await pushRepertoireToDrive(token, meta.repertoireFileId, meta.lastRemoteEtag);
-                await pushOriginalsDirtyShards(token);
-                setSyncState('idle');
-                setSyncMessage(null);
-              } catch (e) {
-                setSyncState('error');
-                setSyncMessage(e instanceof Error ? e.message : String(e));
-              }
-            },
-            { silent: true },
-          );
-        });
-      void drivePushChainRef.current;
+      runBackgroundPushNow();
     }, 500);
-  }, [withBlockingJob]);
+  }, [runBackgroundPushNow]);
+
+  /**
+   * Flush a pending debounced push the moment the tab is hidden or unloaded. Without this a user who
+   * fills answers and immediately closes the tab can leave that content local-only until their next
+   * session — exactly the window where a later destructive sync can lose data that never reached
+   * Drive. Fires on `visibilitychange→hidden` (still alive enough to start the fetch) and `pagehide`.
+   */
+  useEffect(() => {
+    const flushIfPending = () => {
+      if (!googleAccessTokenRef.current) return;
+      if (!drivePushDebounceTimerRef.current) return;
+      clearTimeout(drivePushDebounceTimerRef.current);
+      drivePushDebounceTimerRef.current = null;
+      runBackgroundPushNow();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flushIfPending();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', flushIfPending);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', flushIfPending);
+    };
+  }, [runBackgroundPushNow]);
 
   const resolveConflictRemote = useCallback(async () => {
     const token = googleAccessTokenRef.current;

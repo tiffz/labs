@@ -14,6 +14,12 @@ import { driveGetFileMetadata, driveGetMedia, drivePatchJsonMedia } from './driv
 import { ensureEncoreDriveLayout } from './bootstrapFolders';
 import { snapshotEncoreRepertoireBeforeSync } from './encoreDriveUndoSnapshots';
 import { isShardedSyncEnabled, pullChangedShards } from './repertoireSharded';
+import {
+  mergeExerciseRunLists,
+  mergeSongPreservingExercises,
+  mergeSongRecords,
+  songExerciseAnswerCount,
+} from './encoreRepertoireMerge';
 
 export type SyncConflictReason = 'local_and_remote_changed';
 
@@ -45,6 +51,9 @@ export interface ConflictRowSummary {
   sublabel?: string;
   localUpdatedAt?: string;
   remoteUpdatedAt?: string;
+  /** Filled exercise answers on each side (song rows only) — surfaced so a coarse pick is informed. */
+  localAnswerCount?: number;
+  remoteAnswerCount?: number;
 }
 
 /**
@@ -99,7 +108,8 @@ export async function pullRepertoireFromDrive(
   onProgress?.(0.32);
   const localSongs = await encoreDb.songs.toArray();
   const localPerf = await encoreDb.performances.toArray();
-  const mergedSongs = mergeRecordsByUpdatedAt<EncoreSong>(localSongs, wire.songs);
+  // Content-aware: never let a newer-but-empty song row wipe filled exercise answers (ADR 0019).
+  const mergedSongs = mergeSongRecords(localSongs, wire.songs);
   const mergedPerf = mergeRecordsByUpdatedAt<EncorePerformance>(localPerf, wire.performances);
   const extrasRow = repertoireExtrasFromWire(wire);
   const localExtrasRow =
@@ -176,6 +186,8 @@ function songSummary(
     sublabel: artist || undefined,
     localUpdatedAt: s?.updatedAt,
     remoteUpdatedAt: remote?.updatedAt,
+    localAnswerCount: s ? songExerciseAnswerCount(s) : undefined,
+    remoteAnswerCount: remote ? songExerciseAnswerCount(remote) : undefined,
   };
 }
 
@@ -408,20 +420,36 @@ export async function resolveConflictWithChoices(
     return Number.isFinite(t) ? new Date(t + 1).toISOString() : new Date().toISOString();
   };
 
+  /**
+   * Apply a coarse row choice while still merging exercise runs non-destructively: a "keep device"
+   * or "use Drive" pick selects the *scalar* fields, but answers that only exist on the other side
+   * are never silently dropped (ADR 0019 — the user clicked "Use Drive" not realizing it would
+   * delete hours of filled answers). The content-aware conflict dialog surfaces what is at stake.
+   */
+  const applySongChoice = (
+    l: EncoreSong,
+    r: EncoreSong,
+    choice: 'local' | 'remote' | undefined,
+  ): EncoreSong => {
+    const runs = mergeExerciseRunLists(l.practiceExerciseRuns, r.practiceExerciseRuns);
+    const withRuns = (base: EncoreSong): EncoreSong => {
+      const next: EncoreSong = { ...base };
+      if (runs) next.practiceExerciseRuns = runs;
+      else delete next.practiceExerciseRuns;
+      return next;
+    };
+    if (choice === 'local') return withRuns({ ...l, updatedAt: bumpedClock(l.updatedAt, r.updatedAt) });
+    if (choice === 'remote') return withRuns(r);
+    return mergeSongPreservingExercises(l, r);
+  };
+
   const mergedSongs: EncoreSong[] = [];
   const allSongIds = new Set([...localSongsById.keys(), ...remoteSongsById.keys()]);
   for (const id of allSongIds) {
     const l = localSongsById.get(id);
     const r = remoteSongsById.get(id);
     if (l && r) {
-      const choice = choices.get(id);
-      if (choice === 'local') {
-        mergedSongs.push({ ...l, updatedAt: bumpedClock(l.updatedAt, r.updatedAt) });
-      } else if (choice === 'remote') {
-        mergedSongs.push(r);
-      } else {
-        mergedSongs.push(l.updatedAt >= r.updatedAt ? l : r);
-      }
+      mergedSongs.push(applySongChoice(l, r, choices.get(id)));
     } else {
       mergedSongs.push((l ?? r) as EncoreSong);
     }

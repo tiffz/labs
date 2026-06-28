@@ -1,0 +1,46 @@
+---
+description: Default to non-blocking, background CI/CD after push — keep working, fix on failure
+alwaysApply: true
+---
+
+# CI/CD is non-blocking by default
+
+After a push/PR, **do not sit idle watching CI** (a run is ≈8–15 min). Local `npm run presubmit`
+is the gate before push; CI is the safety net. Default flow: **fire-and-forget + fix on failure.**
+Canonical: [`docs/PR_WORKFLOW.md`](../../docs/PR_WORKFLOW.md) § CI without blocking the session.
+
+## Default after push (do this, then move on)
+
+1. **Arm auto-merge** so green merges itself with no agent action:
+   `gh pr merge <n> --auto --squash --delete-branch` (success path needs nobody).
+2. **Background-watch for failure only** — start a backgrounded Shell job:
+   `npm run ci:watch -- <n>` with `block_until_ms: 0` and `notify_on_output` pattern
+   `^CI_WATCH: (FAIL|TIMEOUT|ERROR)` (reason: "CI failed"). It stays silent while pending and
+   prints one sentinel (`CI_WATCH: PASS|FAIL|TIMEOUT|NO_CHECKS`) at the end.
+3. **Immediately continue** the next unit of work. Do not `AwaitShell` the watcher and do not
+   re-poll CI in chat. The completion/failure notification will reach you between turns.
+
+## On a failure notification
+
+- Resolve root cause: `npm run report:ci-failure -- <run-id>` (run id is in the FAIL sentinel).
+- Fix **within the PR's scope** (never weaken CI, never `--no-verify`). Re-run the relevant local
+  check, push again — auto-merge re-arms automatically. Restart `ci:watch` for the new commit.
+- If the failure looks unrelated/flaky, merge latest `main` first and re-check before "fixing"
+  (see [`docs/FLAKY_TESTS.md`](../../docs/FLAKY_TESTS.md), [`docs/CI_RELIABILITY.md`](../../docs/CI_RELIABILITY.md)).
+
+## When to block instead (foreground babysit)
+
+Only watch synchronously when the user asked to **merge now / babysit**, it's a **hotfix for broken
+`main`**, or it's the **last action of the session** and nothing else is queued. Use skill
+`labs-babysit-pr`.
+
+## Honest limits (state these, don't pretend otherwise)
+
+- Backgrounded shells are **session-scoped**: if the session ends, the watcher stops. **Auto-merge
+  still covers the success case** without you. A failure after the session ends stays a red open PR,
+  caught next session (`gh pr list`) or by the Nightly detector — call this out when you hand off.
+- Never report a PR as "merged/green" you did not observe. Say "pushed; auto-merge armed; watching
+  in background" and let the notification confirm.
+
+Root cause class: `ci-blocking-idle` — agent burned session time waiting on CI instead of
+backgrounding it. See [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](../../docs/CONTINUOUS_PROCESS_IMPROVEMENT.md).

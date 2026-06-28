@@ -72,6 +72,7 @@
     "knip:fix": "knip --fix",
     "presubmit": "node scripts/presubmit-with-timing.mjs",
     "presubmit:push": "npm run presubmit && npm run test:e2e:smoke",
+    "ci:watch": "node scripts/ci-watch.mjs",
     "report:ci-health": "node scripts/ci-health-report.mjs",
     "report:ci-failure": "node scripts/ci-failure-summary.mjs",
     "report:test-duration": "node scripts/test-duration-report.mjs",

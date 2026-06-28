@@ -7,6 +7,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FolderIcon from '@mui/icons-material/Folder';
+import HistoryIcon from '@mui/icons-material/History';
 import LogoutIcon from '@mui/icons-material/Logout';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -48,6 +49,7 @@ import { encoreHairline, encoreShadowLift } from '../theme/encoreUiTokens';
 import type { ReorganizeDriveUploadsResult } from '../drive/driveReorganize';
 import type { DriveDuplicateGroup } from '../drive/driveDuplicateDetection';
 import { DriveDuplicateReviewDialog } from './DriveDuplicateReviewDialog';
+import { EncoreRecoverDataDialog } from './EncoreRecoverDataDialog';
 import { EncoreStatusPill } from '../ui/EncoreStatusPill';
 import { GoogleBrandIcon, SpotifyBrandIcon } from './EncoreBrandIcon';
 
@@ -369,6 +371,7 @@ export function EncoreAccountMenu(props: {
   const [reorganizeMsg, setReorganizeMsg] = useState<string | null>(null);
   const [duplicateReviewGroups, setDuplicateReviewGroups] = useState<DriveDuplicateGroup[]>([]);
   const [duplicateReviewOpen, setDuplicateReviewOpen] = useState(false);
+  const [recoverDataOpen, setRecoverDataOpen] = useState(false);
 
   const reportOrganizeResult = useCallback((result: ReorganizeDriveUploadsResult) => {
     const { performanceVideos: pv, attachments: at, dedup } = result;
@@ -741,6 +744,14 @@ export function EncoreAccountMenu(props: {
                 icon: reorganizing ? <RefreshIcon className="spin" fontSize="small" /> : <AutoFixHighIcon fontSize="small" />,
                 onClick: () => void handleReorganize(),
               },
+              {
+                label: 'Recover lost data from history',
+                icon: <HistoryIcon fontSize="small" />,
+                onClick: () => {
+                  close();
+                  setRecoverDataOpen(true);
+                },
+              },
               ...(duplicateReviewGroups.length > 0
                 ? [
                     {
@@ -971,6 +982,11 @@ export function EncoreAccountMenu(props: {
         open={duplicateReviewOpen}
         groups={duplicateReviewGroups}
         onClose={() => setDuplicateReviewOpen(false)}
+      />
+      <EncoreRecoverDataDialog
+        open={recoverDataOpen}
+        accessToken={googleAccessToken}
+        onClose={() => setRecoverDataOpen(false)}
       />
     </>
   );

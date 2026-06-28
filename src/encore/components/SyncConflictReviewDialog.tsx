@@ -280,6 +280,17 @@ export function SyncConflictReviewDialog(props: SyncConflictReviewDialogProps): 
                     )}
                   </Stack>
                 </Stack>
+                {row.kind === 'song' &&
+                ((row.localAnswerCount ?? 0) > 0 || (row.remoteAnswerCount ?? 0) > 0) ? (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: 'block', mb: 1, lineHeight: 1.4 }}
+                  >
+                    Exercise answers · device: {row.localAnswerCount ?? 0} · Drive: {row.remoteAnswerCount ?? 0}.
+                    Answers from both copies are kept.
+                  </Typography>
+                ) : null}
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
                   <ChoiceCard
                     selected={choice === 'local'}

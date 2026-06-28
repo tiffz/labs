@@ -81,6 +81,65 @@ export async function driveGetMedia(accessToken: string, fileId: string): Promis
   return text;
 }
 
+/** One stored revision of a Drive file (`revisions.list`). Drive keeps prior revisions of uploaded files. */
+export type DriveRevisionRow = {
+  id?: string;
+  modifiedTime?: string;
+  /** When true, the revision is pinned and not subject to Drive's automatic pruning. */
+  keepForever?: boolean;
+  size?: string;
+};
+
+/**
+ * List a file's revision history (oldest → newest as Drive returns them). Used by data-loss
+ * recovery: an accidental empty overwrite can be undone by reading an older revision of the
+ * synced JSON. Note Drive auto-prunes unpinned revisions of non-Google files (≈100 revisions or
+ * 30 days), so recovery is time-sensitive.
+ */
+export async function driveListRevisions(
+  accessToken: string,
+  fileId: string,
+): Promise<DriveRevisionRow[]> {
+  const rows: DriveRevisionRow[] = [];
+  let pageToken: string | undefined;
+  do {
+    const query: Record<string, string> = {
+      fields: 'nextPageToken,revisions(id,modifiedTime,keepForever,size)',
+      pageSize: '1000',
+    };
+    if (pageToken) query.pageToken = pageToken;
+    const res = await driveGetJson<{ revisions?: DriveRevisionRow[]; nextPageToken?: string }>(
+      accessToken,
+      `/files/${encodeURIComponent(fileId)}/revisions`,
+      query,
+    );
+    rows.push(...(res.revisions ?? []));
+    pageToken = res.nextPageToken;
+  } while (pageToken);
+  return rows;
+}
+
+/** Read the text body of a specific file revision (`revisions.get?alt=media`). */
+export async function driveGetRevisionMedia(
+  accessToken: string,
+  fileId: string,
+  revisionId: string,
+): Promise<string> {
+  const res = await fetch(
+    `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}/revisions/${encodeURIComponent(revisionId)}?alt=media`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  const text = await res.text();
+  if (!res.ok) {
+    throw new DriveHttpError(
+      formatDriveRequestFailure('GET', `files/…/revisions/…/alt=media`, res.status, text),
+      res.status,
+      text,
+    );
+  }
+  return text;
+}
+
 /** Binary `alt=media` read (audio/video/pdf bytes). Prefer over {@link driveGetMedia} for non-text bodies. */
 export async function driveGetMediaArrayBuffer(accessToken: string, fileId: string): Promise<ArrayBuffer> {
   const res = await fetch(

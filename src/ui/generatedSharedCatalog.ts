@@ -6237,6 +6237,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-drivefetch-ts-drivegetrevisionmedia",
+    "name": "driveGetRevisionMedia",
+    "path": "src/shared/drive/driveFetch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Read the text body of a specific file revision (`revisions.get?alt=media`).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-drivefetch-ts-drivehttperror",
     "name": "DriveHttpError",
     "path": "src/shared/drive/driveFetch.ts",
@@ -6259,6 +6272,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-drivefetch-ts-drivelistrevisions",
+    "name": "driveListRevisions",
+    "path": "src/shared/drive/driveFetch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "List a file's revision history (oldest → newest as Drive returns them). Used by data-loss recovery: an accidental empty overwrite can be undone by reading an older revision of the synced JSON. Note Drive auto-prunes unpinned revisions of non-Google files (≈100 revisions or 30 days), so recovery is time-sensitive.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -6340,6 +6366,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-drivefetch-ts-driverevisionrow",
+    "name": "DriveRevisionRow",
+    "path": "src/shared/drive/driveFetch.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "One stored revision of a Drive file (`revisions.list`). Drive keeps prior revisions of uploaded files.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {

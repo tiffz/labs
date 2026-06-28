@@ -28,6 +28,15 @@ function readAll(): EncoreDriveUndoSnapshot[] {
   }
 }
 
+/**
+ * All locally-retained pre-sync snapshots (newest first), used as an additional data-loss recovery
+ * source alongside Drive revision history — a snapshot taken before a destructive merge on *this*
+ * device can hold content that Drive has since pruned (Drive auto-expires unpinned JSON revisions).
+ */
+export function readEncoreDriveUndoSnapshots(): EncoreDriveUndoSnapshot[] {
+  return readAll().sort((a, b) => b.createdAt - a.createdAt);
+}
+
 export async function snapshotEncoreRepertoireBeforeSync(
   trigger: EncoreDriveUndoSnapshotTrigger,
 ): Promise<void> {

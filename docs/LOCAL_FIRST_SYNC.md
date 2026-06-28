@@ -18,7 +18,7 @@ No other micro-apps use Drive JSON backup today. Encore also uses Drive for uplo
 
 1. **Local-first** — Dexie / in-memory progress is the working copy. Apps work offline without Google.
 2. **Background by default** — Session auto-pull, **periodic re-pull while the tab is visible** (every 5 min), debounced auto-push (3 s); no toast on every success.
-3. **Data-loss guards** — Empty devices must not overwrite richer cloud data; undo snapshots before destructive merges; deletions propagate where union-merge would resurrect rows.
+3. **Data-loss guards** — Empty devices must not overwrite richer cloud data; undo snapshots before destructive merges; deletions propagate where union-merge would resurrect rows. **Filled content must never be silently lost to an empty/sparser copy** — merge compound rows by stable sub-entity id ("content beats empty" always), not whole-row last-writer-wins, and expose revision-history restore. See [ADR 0019](adr/0019-encore-non-destructive-sync-merge.md) + [Data-loss prevention principles](#data-loss-prevention-principles-all-sync-apps).
 4. **Silent merge by default** — Portfolio apps use **`silent_union`** unless merge heuristics can hide meaningful differences (see [Portfolio merge prompt policy](#portfolio-merge-prompt-policy)). Prompt only when user judgment is required; Encore uses row-level review for true simultaneous edits.
 5. **Shared UX for portfolio apps** — Stanza, Scales, and Gesture use [`LabsDriveAccountMenu`](../src/shared/google/LabsDriveAccountMenu.tsx); Encore uses its own account menu with row-level conflict UI.
 6. **No silent OAuth refresh** — ADR 0010/0011; user re-authenticates explicitly when tokens expire (optional BFF refresh per ADR 0014).
@@ -120,13 +120,40 @@ Each app exposes `*MergeReportHasUserVisibleRemoteChanges(report)` beside `forma
 
 ## Data-loss guards
 
-| Guard                                | Encore                                           | Stanza / Scales / Gesture                                                           |
-| ------------------------------------ | ------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| Empty device cannot push sparse data | Pull when remote newer; conflict when both dirty | `labsDriveAutoPushAllowed` until pull or manual backup                              |
-| Pre-merge undo                       | `encoreDriveUndoSnapshots` (IDB)                 | Stanza IDB ring; Scales localStorage ring; Gesture localStorage ring                |
-| Deletion propagation                 | Row delete in repertoire push                    | Stanza/Gesture tombstones in envelope; Zine Box comic + stack membership tombstones |
-| Simultaneous edits                   | Row-level `bothEdited` dialog                    | Stanza: merge prompt; Scales/Gesture: silent union merge                            |
-| OAuth token expiry                   | Sync error state in account menu                 | `syncPaused` + shared reconnect copy                                                |
+| Guard                                | Encore                                                                                                                                                                                                    | Stanza / Scales / Gesture                                                           |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Empty device cannot push sparse data | Pull when remote newer; conflict when both dirty                                                                                                                                                          | `labsDriveAutoPushAllowed` until pull or manual backup                              |
+| **Empty never clobbers filled**      | **Content-aware merge** ([`encoreRepertoireMerge.ts`](../src/encore/drive/encoreRepertoireMerge.ts), ADR 0019): exercise runs merge by id; a filled run always beats an empty one regardless of timestamp | n/a (portfolio payloads are union-merged maps, not embedded answer blobs)           |
+| Pre-merge undo                       | `encoreDriveUndoSnapshots` (localStorage)                                                                                                                                                                 | Stanza IDB ring; Scales localStorage ring; Gesture localStorage ring                |
+| Revision-history recovery            | **Recover answers from Drive history** (account menu) → [`encoreRecoveryRunner.ts`](../src/encore/drive/encoreRecoveryRunner.ts) scans `repertoire_data.json` revisions                                   | Drive keeps revisions; no in-app restore UI yet (backlog)                           |
+| Deletion propagation                 | Row delete in repertoire push                                                                                                                                                                             | Stanza/Gesture tombstones in envelope; Zine Box comic + stack membership tombstones |
+| Simultaneous edits                   | Row-level `bothEdited` dialog (shows answer counts)                                                                                                                                                       | Stanza: merge prompt; Scales/Gesture: silent union merge                            |
+| OAuth token expiry                   | Sync error state in account menu                                                                                                                                                                          | `syncPaused` + shared reconnect copy                                                |
+
+### Data-loss prevention principles (all sync apps)
+
+Distilled from the Encore "Because of You" incident (ADR 0019). Apply to **every** cloud-synced app:
+
+1. **Non-destructive merge for additive content.** An empty or sparser copy must never silently
+   overwrite filled content — even when it has a newer timestamp or the user picked it in a coarse
+   conflict prompt. "Content beats empty" is the floor.
+2. **Merge by stable sub-entity id**, not whole-row last-writer-wins, whenever a row embeds rich
+   user content (answers, notes, lists). Union the parts; pick per-part, not per-row.
+3. **Content-aware conflict surfacing.** Show what is at stake (e.g. "device: 12 answers · Drive: 0")
+   so a destructive pick is never blind. Never offer a bare "Use Drive / Keep device" for rows that
+   carry hours of work without saying what each side holds.
+4. **Revision history is a first-class recovery path.** Synced JSON keeps Drive revisions; expose an
+   in-app "restore from older version" flow rather than relying on the user to dig through Drive.
+5. **Clocks must reflect content.** Don't bump `updatedAt` on no-op opens; treat wall-clock LWW as a
+   fragile heuristic, not a source of truth, for deciding what to discard.
+6. **Minimize the local-only window.** Content that exists only on the device (filled but not yet
+   pushed) is the most fragile state — it is invisible to revision-history recovery until it reaches
+   the cloud. Flush pending pushes on `visibilitychange→hidden` / `pagehide` so closing a tab does
+   not strand fresh work, and write a local pre-sync snapshot before any destructive op so even
+   never-synced content is recoverable from the device. Recovery scans **both** Drive revisions and
+   local snapshots (Encore `encoreRecoveryRunner.ts`). Caveat: if local-only content is wiped before
+   any snapshot or push captures it, it is genuinely unrecoverable — which is why the flush + snapshot
+   guards matter.
 
 ## Conflict decision tree
 
@@ -299,6 +326,7 @@ Until overlay migration lands:
 - [0014](./adr/0014-google-oauth-session-bff.md) — optional Google session BFF (Cloudflare Workers)
 - [0012 Scales](./adr/0012-scales-drive-sync-parity.md) — Scales parity with Stanza safety model
 - [0012 Originals](./adr/0012-encore-originals-local-first-domain.md) — Encore Originals domain
+- [0019](./adr/0019-encore-non-destructive-sync-merge.md) — Encore content-aware non-destructive merge + revision recovery
 
 ## Agent workflow
 

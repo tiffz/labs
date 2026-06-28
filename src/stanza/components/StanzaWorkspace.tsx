@@ -1917,7 +1917,18 @@ export default function StanzaWorkspace() {
         syncTransposeMirrorFromMain();
       };
       if (pr !== undefined && typeof (pr as Promise<void>).then === 'function') {
-        void (pr as Promise<void>).then(afterMainPlaying).catch(() => {
+        void (pr as Promise<void>).then(afterMainPlaying).catch((err: unknown) => {
+          // Play button "dead after a long-open tab, fixed by refresh": capture the concrete reason
+          // (media error code / readyState / network state) so it can be root-caused on the next
+          // repro instead of failing silently. See Stanza playback debugging notes.
+          console.error('[Stanza] main media play() rejected', {
+            reason: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+            mediaErrorCode: main.error?.code ?? null,
+            readyState: main.readyState,
+            networkState: main.networkState,
+            currentSrc: main.currentSrc ? main.currentSrc.slice(0, 24) : '(none)',
+            paused: main.paused,
+          });
           pauseStemAudios();
           if (stemWebAudioMixerEnabled && stemMixerPrepared) {
             abandonWebAudioMix();

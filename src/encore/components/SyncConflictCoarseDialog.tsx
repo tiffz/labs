@@ -21,8 +21,12 @@ export function SyncConflictCoarseDialog(props: SyncConflictCoarseDialogProps) {
       <DialogTitle id="encore-coarse-conflict-title">Drive sync conflict</DialogTitle>
       <DialogContent>
         <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
-          Your repertoire changed on this device and on Google Drive since the last sync. We could not compare individual
-          songs automatically — choose which copy to keep, or sign in again and retry sync.
+          Your repertoire changed on this device and on Google Drive since the last sync. Choose which copy to keep for
+          song details, or sign in again and retry sync.
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, mt: 1 }}>
+          Either way, filled exercise answers from <strong>both</strong> copies are kept. This choice never deletes
+          your written answers.
         </Typography>
       </DialogContent>
       <DialogActions>
