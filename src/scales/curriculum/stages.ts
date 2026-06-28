@@ -524,13 +524,11 @@ export function buildStages(exerciseId: string): Stage[] {
  *
  *   - **p1–p7:** free tempo → metronome fluency on **quarter** subdivisions
  *     only (`subdivision: 'none'` on tempo stages), ending at the fluent gate.
- *   - **p8e:** first metronome **subdivision** pass: both-hands **eighth** notes
- *     at the slow click (two notes per beat).
- *   - **p8–p8t:** both-hands **triplet** slow then moderate tempo.
- *   - **p9:** both-hands **sixteenth** at the slow click.
+ *   - **p8eg → p9:** subdivision ladder with guided click scaffolds before each
+ *     beat-only fade — eighths, triplets (slow + moderate), then sixteenths.
  *
- * Stage id **`p8e`** is used (not reusing `p8`) so saved progress that already
- * points at triplet work on `…-p8` stays valid.
+ * Stage id **`p8e`** is retained (not `p8` for eighths) so saved progress on
+ * triplet `…-p8` stays valid. Guided stages use the `*g` suffix (`p8eg`, `p8g`, …).
  */
 export function buildPentascaleStages(exerciseId: string): Stage[] {
   const core: Stage[] = [
@@ -631,50 +629,113 @@ export function buildPentascaleStages(exerciseId: string): Stage[] {
 
   core.push(
     {
-      id: `${exerciseId}-p8e`,
+      id: `${exerciseId}-p8eg`,
       stageNumber: 8,
-      label: 'Both hands,  eighth notes (slow)',
+      label: 'Both hands,  eighth notes (guided click)',
       description:
-        'Two notes per beat at the same slow click. Aim for an even “and” between beats; triplets come next.',
+        'Two notes per beat with a click on each slot. Downbeats are louder; the “and” is softer. Guide stays on.',
       hand: 'both',
       useTempo: true,
       bpm: 52,
       useMetronome: true,
       subdivision: 'eighth',
+      clickMode: 'subdivision',
       mutePlayback: false,
       octaves: 1,
     },
     {
-      id: `${exerciseId}-p8`,
+      id: `${exerciseId}-p8e`,
       stageNumber: 9,
-      label: 'Both hands,  slow tempo (triplets)',
+      label: 'Both hands,  eighth notes (slow)',
       description:
-        'Same slow click, three notes per beat. First note of each triplet on the click. Counting “1 + a, 2 + a…” out loud helps. Same notes as before.',
+        'Two notes per beat, slow click. Aim for an even “and” between beats; triplets come next.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 52,
+      useMetronome: true,
+      subdivision: 'eighth',
+      clickMode: 'beat',
+      mutePlayback: true,
+      octaves: 1,
+    },
+    {
+      id: `${exerciseId}-p8g`,
+      stageNumber: 10,
+      label: 'Both hands,  triplets (guided click)',
+      description:
+        'Three clicks per beat: louder on “1”, softer on “+” and “a”. Guide stays on until this feels even.',
       hand: 'both',
       useTempo: true,
       bpm: 52,
       useMetronome: true,
       subdivision: 'triplet',
+      clickMode: 'subdivision',
       mutePlayback: false,
       octaves: 1,
     },
     {
-      id: `${exerciseId}-p8t`,
-      stageNumber: 10,
-      label: 'Both hands,  triplets (moderate)',
+      id: `${exerciseId}-p8`,
+      stageNumber: 11,
+      label: 'Both hands,  slow tempo (triplets)',
       description:
-        'Triplets at a working tempo before sixteenths. Keep 1 + a even on every beat.',
+        'Same slow click, three notes per beat. Click on beat one only; you supply + and a between clicks.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 52,
+      useMetronome: true,
+      subdivision: 'triplet',
+      clickMode: 'beat',
+      mutePlayback: false,
+      octaves: 1,
+    },
+    {
+      id: `${exerciseId}-p8tg`,
+      stageNumber: 12,
+      label: 'Both hands,  triplets (guided, moderate)',
+      description:
+        'Working tempo with a full triplet click grid. Keep 1 + a even before beat-only work.',
       hand: 'both',
       useTempo: true,
       bpm: 72,
       useMetronome: true,
       subdivision: 'triplet',
+      clickMode: 'subdivision',
+      mutePlayback: false,
+      octaves: 1,
+    },
+    {
+      id: `${exerciseId}-p8t`,
+      stageNumber: 13,
+      label: 'Both hands,  triplets (moderate)',
+      description:
+        'Triplets at a working tempo. Beat one anchors each group; keep + and a even inside every beat.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 72,
+      useMetronome: true,
+      subdivision: 'triplet',
+      clickMode: 'beat',
+      mutePlayback: true,
+      octaves: 1,
+    },
+    {
+      id: `${exerciseId}-p9g`,
+      stageNumber: 14,
+      label: 'Both hands,  sixteenths (guided click)',
+      description:
+        'Four clicks per beat at a slow tempo. Louder on each beat; softer on e, and, a inside the group.',
+      hand: 'both',
+      useTempo: true,
+      bpm: 52,
+      useMetronome: true,
+      subdivision: 'sixteenth',
+      clickMode: 'subdivision',
       mutePlayback: false,
       octaves: 1,
     },
     {
       id: `${exerciseId}-p9`,
-      stageNumber: 11,
+      stageNumber: 15,
       label: 'Both hands,  slow tempo (sixteenths)',
       description:
         'Four notes per click at a slow tempo. Keep the four taps inside each beat even; add speed only when that feels easy.',
@@ -683,7 +744,8 @@ export function buildPentascaleStages(exerciseId: string): Stage[] {
       bpm: 52,
       useMetronome: true,
       subdivision: 'sixteenth',
-      mutePlayback: false,
+      clickMode: 'beat',
+      mutePlayback: true,
       octaves: 1,
     },
   );

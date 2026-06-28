@@ -71,6 +71,27 @@ describe('sessionScreenHelpers', () => {
     expect(copy.dwellStatusIcon).toBe('close');
   });
 
+  it('shows Almost for high-but-not-perfect runs on perfect-regimen stages', () => {
+    const copy = computeDwellToastCopy({
+      result: {
+        accuracy: 0.94,
+        correct: 17,
+        total: 18,
+        advanced: false,
+        breakdown: { perfect: 17, early: 1, late: 0, wrongPitch: 0, missed: 0 },
+      },
+      inDrill: false,
+      wasClean: false,
+      outcomeTier: 'near',
+      streakNumerator: 0,
+      streakDenominator: 3,
+      usesPerfectRegimen: true,
+      overlearnUnlocked: true,
+    });
+    expect(copy.headline).toBe('Almost');
+    expect(copy.dwellStatusIcon).toBe('schedule');
+  });
+
   it('shows perfect streak subline only after overlearning target unlocks', () => {
     const copy = computeDwellToastCopy({
       result: {

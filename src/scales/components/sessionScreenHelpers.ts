@@ -87,7 +87,7 @@ export function computeDwellToastCopy(params: {
     : usesPerfectRegimen
       ? isPerfect
       : wasClean;
-  const statusNear = !inDrill && !usesPerfectRegimen && outcomeTier === 'near';
+  const statusNear = !inDrill && !statusOk && outcomeTier === 'near';
   const statusBg = statusOk ? 'success.main' : statusNear ? 'warning.main' : 'error.main';
   const statusContrast = statusOk
     ? 'success.contrastText'

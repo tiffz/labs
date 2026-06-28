@@ -21,7 +21,7 @@ Canonical pedagogy doc for the Scales app. Stage ordering lives in [`curriculum/
 
 ## Subdivision click ladder
 
-For each subdivision family (eighth, triplet, sixteenth), full scales use paired stages:
+For each subdivision family (eighth, triplet, sixteenth), **full scales** and **pentascales** use paired stages:
 
 | Stage suffix                           | Click mode                              | Advancement                                    | Guide audio             |
 | -------------------------------------- | --------------------------------------- | ---------------------------------------------- | ----------------------- |
@@ -29,21 +29,26 @@ For each subdivision family (eighth, triplet, sixteenth), full scales use paired
 | Beat-only (e.g. `s11`)                 | Quarter-note clicks only                | Perfect-run streak (max **3** on subdivisions) | Off when `mutePlayback` |
 | Bridge beat-only w/ grid (e.g. `s11m`) | Full triplet click grid @ moderate BPM  | Perfect-run streak                             | Off (`mutePlayback`)    |
 
+**Pentascale ids:** `p8eg` / `p8e`, `p8g` / `p8`, `p8tg` / `p8t`, `p9g` / `p9` (same ladder, fewer tempo steps than full scales).
+
+**Full-scale ids:** `s9g` / `s9`, `s11g` / `s11`, `s11mg` / `s11m`, `s12g` / `s12`, etc. — generated for **every** key via `buildStages(exerciseId)`, not C major only.
+
 **Resume rule:** learners on beat-only subdivision work who have not cleared the paired `*g` stage are redirected to guided work on load (`redirectCurrentStageToGuidedScaffold`).
 
 **Regress rule:** auto-regress from beat-only subdivision goes to the paired `*g` stage, not the previous subdivision type.
 
 ## Advancement criteria (single source of truth)
 
-| Stage type                | Gate                                                          |
-| ------------------------- | ------------------------------------------------------------- |
-| Free tempo                | 2 runs @ 100% pitch                                           |
-| Standard tempo (quarters) | Perfect-run overlearning streak                               |
-| Guided subdivision (`*g`) | 3 consecutive clean runs @ 85%                                |
-| Beat-only subdivision     | Perfect-run streak, required streak capped at 3               |
-| Final mastery stage       | Perfect-run streak; strict 90% outcome tier for mastery label |
+Canonical module: [`progress/advancementRegimen.ts`](progress/advancementRegimen.ts).
 
-Implemented in [`getAdvancementCriteria`](progress/store.ts), [`stageAdvancementGateMet`](progress/store.ts), and [`isGuidedSubdivisionStage`](curriculum/guidedStages.ts).
+| Regimen              | Stage types                                | Gate                                                                                     |
+| -------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| **perfect-streak**   | Free tempo; all beat-only metronome stages | Literal pitch + timing perfection ({@link runMeetsPerfectBar}), then overlearning streak |
+| **guided-threshold** | Subdivision scaffold (`*g`, guide on)      | 3 consecutive runs @ **85%** (or stage threshold)                                        |
+
+Do not use `getAdvancementCriteria` / “clean bar” for beat-only metronome advancement — those thresholds apply only to guided-threshold stages.
+
+Implemented in [`stageAdvancementGateMet`](progress/store.ts) and [`resolveAdvancementRegimen`](progress/advancementRegimen.ts).
 
 ## Cognitive load
 

@@ -57,7 +57,7 @@ export const TIERS: Tier[] = [
     tierNumber: 0,
     label: 'Five-finger warmups',
     description:
-      'Five-finger patterns in C, G, F, D, and A, each in one span. After quarter-note fluency, each key adds eighths, slow triplets, moderate triplets, then sixteenths.',
+      'Five-finger patterns in C, G, F, D, and A, each in one span. After quarter-note fluency, each key adds guided subdivision clicks, then beat-only fades: eighths, triplets, sixteenths.',
     exercises: [
       exercise('C', 'pentascale-major', {
         guidance: {

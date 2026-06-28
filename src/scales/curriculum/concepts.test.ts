@@ -24,33 +24,33 @@ describe('stuck jump vs incremental (concept diffs)', () => {
     expect(isCliffConceptKey('metronome')).toBe(false);
   });
 
-  it('treats p7 → p8e as a jump (eighth subdivision newly active)', () => {
+  it('treats p7 → p8eg as a jump (eighth subdivision newly active)', () => {
     const p7 = pentascaleAStages.find(s => s.stageNumber === 7)!;
-    const p8e = pentascaleAStages.find(s => s.id.endsWith('-p8e'))!;
-    const added = getNewCliffConceptKeys(p8e, p7, pentExercise);
+    const p8eg = pentascaleAStages.find(s => s.id.endsWith('-p8eg'))!;
+    const added = getNewCliffConceptKeys(p8eg, p7, pentExercise);
     expect(added).toContain('eighthSubdivision');
     expect(added).not.toContain('triplets');
     expect(added).not.toContain('moderateTempo');
   });
 
-  it('treats p8e → p8 as a jump (triplets newly active)', () => {
+  it('treats p8e → p8g as a jump (triplets newly active)', () => {
     const p8e = pentascaleAStages.find(s => s.id.endsWith('-p8e'))!;
-    const p8 = pentascaleAStages.find(s => s.id.endsWith('-p8') && !s.id.endsWith('-p8e'))!;
-    const added = getNewCliffConceptKeys(p8, p8e, pentExercise);
+    const p8g = pentascaleAStages.find(s => s.id.endsWith('-p8g'))!;
+    const added = getNewCliffConceptKeys(p8g, p8e, pentExercise);
     expect(added).toContain('triplets');
     expect(added).not.toContain('moderateTempo');
   });
 
-  it('treats p8 → p8t as incremental (moderate tempo only)', () => {
+  it('treats p8 → p8tg as incremental (moderate tempo only)', () => {
     const p8 = pentascaleAStages.find(s => s.id.endsWith('-p8') && !s.id.endsWith('-p8e'))!;
-    const p8t = pentascaleAStages.find(s => s.id.endsWith('-p8t'))!;
-    expect(getNewCliffConceptKeys(p8t, p8, pentExercise)).toEqual([]);
+    const p8tg = pentascaleAStages.find(s => s.id.endsWith('-p8tg'))!;
+    expect(getNewCliffConceptKeys(p8tg, p8, pentExercise)).toEqual([]);
   });
 
-  it('treats p8t → p9 as a jump (sixteenths newly active)', () => {
+  it('treats p8t → p9g as a jump (sixteenths newly active)', () => {
     const p8t = pentascaleAStages.find(s => s.id.endsWith('-p8t'))!;
-    const p9 = pentascaleAStages.find(s => s.id.endsWith('-p9'))!;
-    const added = getNewCliffConceptKeys(p9, p8t, pentExercise);
+    const p9g = pentascaleAStages.find(s => s.id.endsWith('-p9g'))!;
+    const added = getNewCliffConceptKeys(p9g, p8t, pentExercise);
     expect(added).toContain('sixteenths');
   });
 

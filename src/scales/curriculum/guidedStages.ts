@@ -40,6 +40,10 @@ const BEAT_TO_GUIDED_SUFFIX: readonly [string, string][] = [
   ['-s11', '-s11g'],
   ['-s10', '-s10g'],
   ['-s9', '-s9g'],
+  ['-p9', '-p9g'],
+  ['-p8t', '-p8tg'],
+  ['-p8e', '-p8eg'],
+  ['-p8', '-p8g'],
 ];
 
 /** Beat-only stage id → guided scaffold id (same exercise prefix). */

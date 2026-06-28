@@ -7,9 +7,30 @@ import type {
   StageMasteryState,
   PendingRegressNotice,
 } from './types';
-import { TIERS, findExercise, isPentascaleKind } from '../curriculum/tiers';
+import { TIERS, findExercise } from '../curriculum/tiers';
 import type { ExerciseDefinition, ExerciseKind, Stage } from '../curriculum/types';
 import { triggerConcepts } from '../curriculum/concepts';
+import {
+  getGuidedThresholdCriteria,
+  resolveAdvancementRegimen,
+  runMeetsPerfectBar,
+  runMeetsGuidedThresholdBar,
+  runOutcomeTier,
+} from './advancementRegimen';
+
+export {
+  getGuidedThresholdCriteria,
+  resolveAdvancementRegimen,
+  runMeetsPerfectBar,
+  runMeetsGuidedThresholdBar,
+  runAdvancementOutcome,
+  runQualifiesForAdvancement,
+  runOutcomeTier,
+  type AdvancementRegimen,
+  type AdvancementRegimenKind,
+  type RunAdvancementOutcome,
+  type RunOutcomeTier,
+} from './advancementRegimen';
 import {
   isGuidedSubdivisionStage,
   isBeatOnlySubdivisionStage,
@@ -40,21 +61,8 @@ export function subscribeScalesProgressSave(listener: () => void): () => void {
 }
 
 /**
- * Per-stage advancement criteria. Replaces a single global "3 runs at 90%"
- * rule with thresholds tuned to the pedagogical demands of each stage type:
- *
- *   - Free-tempo stages have no timing grading, so we require pitch-perfect
- *     runs but only 2 in a row to keep onboarding from dragging.
- *   - Standard tempo stages (hands-separate / hands-together intro through
- *     the Fluent checkpoint) hold the RCM/ABRSM-style "3 clean runs in a
- *     row at ≥90%" gate.
- *   - Subdivisions and most 2-octave stages loosen the threshold to 85%.
- *     These are meaningfully harder than 1-octave straight notes, and
- *     holding 90% on full-speed sixteenths is unrealistic for most
- *     learners; 85% still demands a real streak.
- *   - The very last stage of every exercise is the mastery gate and snaps
- *     back to the strict 90% bar — reaching "Mastered" should mean
- *     something.
+ * Guided-threshold accuracy bar (subdivision scaffold stages only).
+ * Timed beat-only stages advance via perfect-streak overlearning, not this threshold.
  */
 export interface AdvancementCriteria {
   threshold: number;
@@ -62,8 +70,7 @@ export interface AdvancementCriteria {
 }
 
 /**
- * Practice rows that count toward "N clean runs in a row" for stage
- * advancement and {@link getCleanRunStreak}. Warmup and drill rows stay
+ * Practice rows that count toward advancement streaks. Warmup and drill rows stay
  * in history for proficiency / migrations but must not satisfy the gate.
  */
 function recordCountsTowardAdvancementStreak(record: PracticeRecord): boolean {
@@ -101,15 +108,6 @@ export function formatDwellCleanRunsSubline(
 /** Label for overlearning UI chips, e.g. `2/4` perfect runs. */
 export function formatAdvancementPerfectRunsLabel(streak: number, requiredRuns: number): string {
   return formatAdvancementCleanRunsLabel(streak, requiredRuns);
-}
-
-/** Whether a run is pitch- and timing-perfect (same bar as drill mode). */
-export function runMeetsPerfectBar(record: PracticeRecord): boolean {
-  if (record.breakdown) {
-    const { early, late, wrongPitch, missed } = record.breakdown;
-    return early + late + wrongPitch + missed === 0;
-  }
-  return record.accuracy >= 1;
 }
 
 function latestAdvancementRecord(
@@ -179,6 +177,10 @@ export function resolveRegressTargetStage(
     const moderate = stages.find(s => s.id.endsWith('-s11m'));
     if (moderate) return moderate;
   }
+  if (current?.id.endsWith('-p8t')) {
+    const guidedModerate = stages.find(s => s.id.endsWith('-p8tg'));
+    if (guidedModerate) return guidedModerate;
+  }
   return stages[currentIdx - 1] ?? null;
 }
 
@@ -201,11 +203,24 @@ function applyMidInsertCurriculumRedirects(
       if (moderate) return moderate.id;
     }
     if (
+      next.endsWith('-p8t')
+      && completedStageId.endsWith('-p8')
+      && !completedStageId.endsWith('-p8e')
+      && !completedStageId.endsWith('-p8g')
+      && stages.some(s => s.id.endsWith('-p8tg'))
+    ) {
+      const guided = stages.find(s => s.id.endsWith('-p8tg'));
+      if (guided) return guided.id;
+    }
+    if (
       next.endsWith('-p9')
       && completedStageId.endsWith('-p8')
+      && !completedStageId.endsWith('-p8e')
+      && !completedStageId.endsWith('-p8g')
       && stages.some(s => s.id.endsWith('-p8t'))
     ) {
-      const moderate = stages.find(s => s.id.endsWith('-p8t'));
+      const moderate = stages.find(s => s.id.endsWith('-p8tg'))
+        ?? stages.find(s => s.id.endsWith('-p8t'));
       if (moderate) return moderate.id;
     }
   }
@@ -313,82 +328,19 @@ export function getAdvancementCriteria(
   isFinalStage: boolean = false,
   exerciseKind?: ExerciseKind,
 ): AdvancementCriteria {
-  if (!stage.useTempo) return { threshold: 1.0, runs: 2 };
-  if (
-    exerciseKind != null
-    && isPentascaleKind(exerciseKind)
-    && stage.hand === 'both'
-    && stage.useTempo
-  ) {
-    return { threshold: 0.85, runs: 3 };
-  }
-  if (isFinalStage) return { threshold: 0.90, runs: 3 };
-  if (stage.subdivision !== 'none') return { threshold: 0.85, runs: 3 };
-  if (stage.octaves === 2) return { threshold: 0.85, runs: 3 };
-  return { threshold: 0.90, runs: 3 };
+  return getGuidedThresholdCriteria(stage, isFinalStage, exerciseKind);
 }
 
-/**
- * Whether a finished run counts toward the stage clean streak and
- * advancement window. **Both-hand** pentascale metronome stages use the
- * same {@link PracticeRecord.accuracy} as the results UI (≥85%).
- * **Single-hand** pentascale metronome stages use pitch vs timing nuance
- * when {@link PracticeRecord.breakdown} is present (`early+late<=1`
- * with no wrong pitch / misses). Otherwise this is `accuracy >= threshold`.
- */
+/** @deprecated Use {@link runMeetsGuidedThresholdBar} with {@link resolveAdvancementRegimen}. */
 export function runMeetsCleanBar(
   record: PracticeRecord,
   exerciseKind: ExerciseKind,
   stage: Stage,
   isFinalStage: boolean,
 ): boolean {
-  if (
-    isPentascaleKind(exerciseKind)
-    && record.breakdown
-    && stage.useTempo
-    && stage.hand === 'both'
-  ) {
-    return record.accuracy + 1e-9 >= 0.85;
-  }
-  if (
-    isPentascaleKind(exerciseKind)
-    && record.breakdown
-    && stage.useTempo
-  ) {
-    const { wrongPitch, missed, early, late } = record.breakdown;
-    if (wrongPitch + missed > 0) return false;
-    return early + late <= 1;
-  }
-  const { threshold } = getAdvancementCriteria(stage, isFinalStage, exerciseKind);
-  return record.accuracy + 1e-9 >= threshold;
-}
-
-export type RunOutcomeTier = 'clean' | 'near' | 'rough';
-
-/**
- * UI tier for a non-drill run: {@link runMeetsCleanBar}, else "near miss"
- * heuristics (pentascale: two timing slips with clean pitch; general:
- * accuracy within 5pp of threshold and at least 80%).
- */
-export function runOutcomeTier(
-  record: PracticeRecord,
-  exerciseKind: ExerciseKind,
-  stage: Stage,
-  isFinalStage: boolean,
-): RunOutcomeTier {
-  if (runMeetsCleanBar(record, exerciseKind, stage, isFinalStage)) return 'clean';
-  const { threshold } = getAdvancementCriteria(stage, isFinalStage, exerciseKind);
-  if (
-    isPentascaleKind(exerciseKind)
-    && record.breakdown
-    && stage.useTempo
-    && stage.hand !== 'both'
-  ) {
-    const { wrongPitch, missed, early, late } = record.breakdown;
-    if (wrongPitch + missed === 0 && early + late === 2) return 'near';
-  }
-  if (record.accuracy + 1e-9 >= Math.max(0.8, threshold - 0.05)) return 'near';
-  return 'rough';
+  const regimen = resolveAdvancementRegimen(stage, isFinalStage, exerciseKind);
+  if (regimen.kind !== 'guided-threshold') return false;
+  return runMeetsGuidedThresholdBar(record, regimen, exerciseKind, stage, isFinalStage);
 }
 
 /**
@@ -451,9 +403,11 @@ export function getCleanRunStreak(
   const isFinalStage = stageIndex >= 0 && stageIndex === stages.length - 1;
 
   let streak = 0;
+  const regimen = resolveAdvancementRegimen(stage, isFinalStage, found.exercise.kind);
+  if (regimen.kind !== 'guided-threshold') return 0;
   for (const record of consecutiveStageRecords(progress.history, stageId)) {
     if (!recordCountsTowardAdvancementStreak(record)) continue;
-    if (runMeetsCleanBar(record, found.exercise.kind, stage, isFinalStage)) {
+    if (runMeetsGuidedThresholdBar(record, regimen, found.exercise.kind, stage, isFinalStage)) {
       streak += 1;
     } else {
       break;
@@ -1005,8 +959,8 @@ export function exerciseContributesToGlobalMasteryTotals(
 }
 
 /**
- * True when the newest {@link consecutiveStageRecords} prefix on {@link stageId}
- * satisfies the N-in-a-row clean gate for that stage (same rule as advancement).
+ * True when the newest run on {@link stageId} satisfies that stage's advancement
+ * regimen (guided-threshold streak or perfect-streak overlearning).
  */
 export function stageAdvancementGateMet(
   progress: ExerciseProgress,

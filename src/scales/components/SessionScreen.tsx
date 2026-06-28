@@ -1814,8 +1814,8 @@ export default function SessionScreen() {
             sx={{
               fontSize: '2.5rem',
               fontWeight: 700,
-              color: lastRunOutcomeTier === 'clean' ? 'success.main'
-                : lastRunOutcomeTier === 'near' || lastExerciseResult.accuracy >= 0.6 ? 'warning.main'
+              color: lastRunUiSuccess ? 'success.main'
+                : lastRunUiNear || lastExerciseResult.accuracy >= 0.6 ? 'warning.main'
                 : 'error.main',
               mb: 0.5,
             }}
@@ -1824,6 +1824,9 @@ export default function SessionScreen() {
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             {lastExerciseResult.correct} of {lastExerciseResult.total} notes hit on time
+            {usesPerfectRegimen && lastExerciseResult.accuracy < 1
+              ? ' · need every note on the beat to advance'
+              : ''}
           </Typography>
           {/*
             Breakdown matches the note colors in the score (perfect/early/

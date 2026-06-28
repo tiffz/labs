@@ -12,6 +12,7 @@ Nested **`AGENTS.md`** for Scales. Root policy: [`../../AGENTS.md`](../../AGENTS
 
 ## Pitfalls
 
+- **Advancement regimen:** [`progress/advancementRegimen.ts`](progress/advancementRegimen.ts) is the single source for perfect-streak vs guided-threshold. Beat-only metronome stages require literal perfection to advance; 90%+ with timing slips is “near”, not qualifying. Do not reuse `getAdvancementCriteria` thresholds for perfect-streak UI or gates.
 - **`SessionScreen.tsx`** (~2900 lines) — decomposition in progress; helpers in `sessionScreenHelpers.ts` and leaves under `sessionScreen/`; use skill `labs-component-decomposition`.
 - **Store:** `store.tsx` — reducer invariants; run `npm test -- src/scales` after state shape changes.
 - **Shared grading:** extend `src/shared/` for MIDI/acoustic pipeline; do not fork from Piano wholesale.

@@ -34,7 +34,7 @@ Use this file for **every learner-facing string** in `src/scales/` (tier blurbs,
 Spiral order in [`curriculum/tiers.ts`](curriculum/tiers.ts) is **C, G, F, D, A**. Stage shape comes from [`buildPentascaleStages`](curriculum/stages.ts):
 
 - **All keys:** p1–p7 use **quarter** subdivisions on metronome stages (`subdivision: none`), through the fluent gate.
-- **After p7:** **eighth** notes both hands (`…-p8e`), **triplet** slow (`…-p8`), **triplet** moderate (`…-p8t`), then **sixteenth** (`…-p9`).
+- **After p7:** guided click scaffolds (`…-p8eg`, `…-p8g`, `…-p8tg`, `…-p9g`) precede each beat-only fade for **eighths**, **triplets** (slow + moderate), then **sixteenths**.
 
 If you change `buildPentascaleStages`, update this section and the tier `description` in `tiers.ts` together.
 

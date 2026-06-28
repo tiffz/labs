@@ -10,7 +10,9 @@ import { createInstrumentForSoundType } from './instrumentFactory';
 import { loadClickSample, playClickSampleAt, type LoadedClickSample } from '../audio/clickService';
 import {
   scheduleClicksInBeatRange,
+  slotsPerQuarterBeat,
   type MetronomeClickMode,
+  type ScheduledClick,
 } from '../audio/metronome/subdivisionClickSchedule';
 
 /** Interface for variable-tempo beat mapping (e.g. from video sync). */
@@ -161,8 +163,8 @@ export class ScorePlaybackEngine {
   private sampledPiano: SampledPiano | null = null;
   private clickSample: LoadedClickSample | null = null;
   private clickLoadingPromise: Promise<void> | null = null;
-  private scheduledClickTimes = new Set<number>();
-  private lastClickAudioTime = -1;
+  /** Beat-position keys for clicks already sent to Web Audio (avoids time-collision dedup). */
+  private scheduledClickBeatKeys = new Set<number>();
   /** Metronome look-ahead cursor — separate from note `scheduledUpTo` so tab-gap catch-up does not skip subdivisions. */
   private metronomeScheduledUpTo = -1;
   private countInGeneration = 0;
@@ -381,15 +383,15 @@ export class ScorePlaybackEngine {
       timeSignature,
     });
 
-    let lastCountInClickAt = -1;
+    const countInBeatKeys = new Set<number>();
     for (const click of scheduled) {
       if (countInGen !== this.countInGeneration) return;
+      const beatKey = this.clickBeatKey(click.beatPosition);
+      if (countInBeatKeys.has(beatKey)) continue;
+      countInBeatKeys.add(beatKey);
       const time = ctx.currentTime + startBuffer + click.beatPosition * secPerBeat;
-      const at = Math.max(time, ctx.currentTime + 0.002);
-      if (lastCountInClickAt >= 0 && at - lastCountInClickAt < 0.04) continue;
-      lastCountInClickAt = at;
       this.playClickAt(
-        at,
+        time,
         click.subdivision === 'accent',
         click.volume * 0.7,
         click.playbackRate,
@@ -412,6 +414,48 @@ export class ScorePlaybackEngine {
       };
       wait();
     });
+  }
+
+  private clickBeatKey(beatPosition: number): number {
+    return Math.round(beatPosition * 10000);
+  }
+
+  private recordExpectedAtBeat(now: number, noteId: string, beatPosition: number): void {
+    const audioTime = this.startTime + this.beatToElapsed(beatPosition);
+    const wallTimeMs = performance.now() + (audioTime - now) * 1000;
+    recordNoteExpectedTime(noteId, wallTimeMs);
+  }
+
+  private scheduleMetronomeClick(click: ScheduledClick): void {
+    const b = click.beatPosition;
+    if (b >= this.totalBeats) return;
+    const beatKey = this.clickBeatKey(b);
+    if (this.scheduledClickBeatKeys.has(beatKey)) return;
+    this.scheduledClickBeatKeys.add(beatKey);
+    const audioTime = this.startTime + this.beatToElapsed(b);
+    this.playClickAt(
+      audioTime,
+      click.subdivision === 'accent',
+      click.volume,
+      click.playbackRate,
+    );
+  }
+
+  /** Pre-schedule every click on the Web Audio clock (immune to rAF throttling). */
+  private preScheduleMetronomeClicks(): void {
+    if (!this.metronomeEnabled || !this.currentScore) return;
+    const { numerator, denominator } = this.currentScore.timeSignature;
+    const scheduled = scheduleClicksInBeatRange({
+      startBeat: 0,
+      endBeat: this.totalBeats,
+      clickMode: this.metronomeClickMode,
+      subdivision: this.metronomeSubdivision,
+      timeSignature: { numerator, denominator },
+    });
+    for (const click of scheduled) {
+      this.scheduleMetronomeClick(click);
+    }
+    this.metronomeScheduledUpTo = this.totalBeats;
   }
 
   private playClickAt(
@@ -486,8 +530,7 @@ export class ScorePlaybackEngine {
     this.scheduledUpTo = -1;
     this.drumScheduledUpTo = -1;
     this.metronomeScheduledUpTo = -1;
-    this.scheduledClickTimes.clear();
-    this.lastClickAudioTime = -1;
+    this.scheduledClickBeatKeys.clear();
     clearExpectedTimes();
     refreshHeldNotes(performance.now());
     this.playing = true;
@@ -499,6 +542,10 @@ export class ScorePlaybackEngine {
       if (end > maxBeat) maxBeat = end;
     }
     this.totalBeats = maxBeat;
+
+    if (this.metronomeEnabled && !this.smartBeatMap) {
+      this.preScheduleMetronomeClicks();
+    }
 
     this.tick();
   }
@@ -534,9 +581,12 @@ export class ScorePlaybackEngine {
         this.startTime += this.beatToElapsed(this.totalBeats);
         this.scheduledUpTo = -1;
         this.drumScheduledUpTo = -1;
-        this.metronomeScheduledUpTo = -1;
-        this.scheduledClickTimes.clear();
-        this.lastClickAudioTime = -1;
+        this.scheduledClickBeatKeys.clear();
+        if (this.metronomeEnabled && !this.smartBeatMap) {
+          this.preScheduleMetronomeClicks();
+        } else {
+          this.metronomeScheduledUpTo = -1;
+        }
         if (this.onLoopCallback) this.onLoopCallback();
         this.animFrameId = requestAnimationFrame(this.tick);
         return;
@@ -552,14 +602,17 @@ export class ScorePlaybackEngine {
       return;
     }
 
-    const lookAhead = 0.2;
+    const lookAhead = Math.max(0.5, 60 / this.tempo);
     const lookAheadBeat = this.elapsedToBeat(elapsed + lookAhead);
     const scheduleUpTo = lookAheadBeat;
 
-    if (this.metronomeEnabled) {
+    if (this.metronomeEnabled && this.smartBeatMap) {
       const { numerator, denominator } = this.currentScore?.timeSignature ?? { numerator: 4, denominator: 4 };
       const timeSignature = { numerator, denominator };
       const subdivision = this.metronomeSubdivision;
+      const step = this.metronomeClickMode === 'beat'
+        ? 1
+        : 1 / slotsPerQuarterBeat(subdivision);
       const metronomeStart = Math.max(this.metronomeScheduledUpTo, 0);
       const scheduled = scheduleClicksInBeatRange({
         startBeat: metronomeStart,
@@ -569,33 +622,14 @@ export class ScorePlaybackEngine {
         timeSignature,
       });
 
+      let lastScheduledBeat = this.metronomeScheduledUpTo;
       for (const click of scheduled) {
-        const b = click.beatPosition;
-        if (b >= this.totalBeats) continue;
-        const audioTime = this.startTime + this.beatToElapsed(b);
-        const timeKey = Math.round(audioTime * 1000);
-        if (this.scheduledClickTimes.has(timeKey)) continue;
-        if (this.lastClickAudioTime >= 0 && (audioTime - this.lastClickAudioTime) < 0.04) continue;
-        this.scheduledClickTimes.add(timeKey);
-        this.lastClickAudioTime = audioTime;
-        this.playClickAt(
-          audioTime,
-          click.subdivision === 'accent',
-          click.volume,
-          click.playbackRate,
-        );
+        if (click.beatPosition >= this.totalBeats) continue;
+        this.scheduleMetronomeClick(click);
+        lastScheduledBeat = Math.max(lastScheduledBeat, click.beatPosition);
       }
-
-      if (scheduleUpTo > this.metronomeScheduledUpTo) {
-        this.metronomeScheduledUpTo = scheduleUpTo;
-      }
-
-      // Prune old click times to prevent unbounded growth during long loops
-      if (this.scheduledClickTimes.size > 200) {
-        const cutoff = Math.round((now - 2) * 1000);
-        for (const t of this.scheduledClickTimes) {
-          if (t < cutoff) this.scheduledClickTimes.delete(t);
-        }
+      if (scheduled.length > 0) {
+        this.metronomeScheduledUpTo = lastScheduledBeat + step;
       }
     }
 
@@ -616,6 +650,13 @@ export class ScorePlaybackEngine {
 
       if (!event.rest && event.pitches.length > 0) {
         const muted = this.trackMuted.get(event.partId) ?? false;
+        this.recordExpectedAtBeat(now, event.noteId, event.beatPosition);
+        for (const cont of event.continuations ?? []) {
+          const contBeat = event.beatPosition + cont.beatOffset;
+          if (contBeat <= this.scheduledUpTo) continue;
+          if (contBeat > scheduleUpTo) break;
+          this.recordExpectedAtBeat(now, cont.noteId, contBeat);
+        }
         if (!muted && this.instrument) {
           const volume = this.trackVolume.get(event.partId) ?? 1;
           const audioTime = this.startTime + this.beatToElapsed(event.beatPosition);
@@ -640,14 +681,11 @@ export class ScorePlaybackEngine {
 
     let curMeasure = 0;
     const noteIndices = new Map<string, number>();
-    const perfNow = performance.now();
     for (const event of this.events) {
       if (event.beatPosition > currentBeat) break;
       const endBeat = event.beatPosition + event.duration;
       if (currentBeat >= event.beatPosition && currentBeat < endBeat) {
         const beatInEvent = currentBeat - event.beatPosition;
-        let activeNoteId = event.noteId;
-        let activeBeatPosition = event.beatPosition;
         if (event.continuations && event.continuations.length > 0) {
           let activeCont: TieContinuation | null = null;
           for (const cont of event.continuations) {
@@ -656,8 +694,6 @@ export class ScorePlaybackEngine {
           if (activeCont) {
             curMeasure = activeCont.measureIndex;
             noteIndices.set(event.partId, activeCont.noteIndex);
-            activeNoteId = activeCont.noteId;
-            activeBeatPosition = event.beatPosition + activeCont.beatOffset;
           } else {
             curMeasure = event.measureIndex;
             noteIndices.set(event.partId, event.noteIndex);
@@ -665,11 +701,6 @@ export class ScorePlaybackEngine {
         } else {
           curMeasure = event.measureIndex;
           noteIndices.set(event.partId, event.noteIndex);
-        }
-        if (!event.rest) {
-          const audioTimeForNote = this.startTime + this.beatToElapsed(activeBeatPosition);
-          const wallTimeMs = perfNow + (audioTimeForNote - now) * 1000;
-          recordNoteExpectedTime(activeNoteId, wallTimeMs);
         }
       }
     }

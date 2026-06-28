@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildStages } from './stages';
+import { buildPentascaleStages, buildStages } from './stages';
 import {
   guidedStageIdForBeatOnly,
   isBeatOnlySubdivisionStage,
@@ -46,5 +46,35 @@ describe('guidedStages', () => {
     expect(
       reviewStageForSubdivisionShaky(stages, 'C-major-scale-s11', 'stale'),
     ).toBe('C-major-scale-s11');
+  });
+
+  describe('pentascale guided ladder', () => {
+    const pentaStages = buildPentascaleStages('F-pentascale-major');
+
+    it('maps every beat-only pentascale subdivision stage to a guided sibling', () => {
+      expect(guidedStageIdForBeatOnly('F-pentascale-major-p8e')).toBe('F-pentascale-major-p8eg');
+      expect(guidedStageIdForBeatOnly('F-pentascale-major-p8')).toBe('F-pentascale-major-p8g');
+      expect(guidedStageIdForBeatOnly('F-pentascale-major-p8t')).toBe('F-pentascale-major-p8tg');
+      expect(guidedStageIdForBeatOnly('F-pentascale-major-p9')).toBe('F-pentascale-major-p9g');
+    });
+
+    it('redirects beat-only pentascale triplet to guided when scaffold not cleared', () => {
+      expect(
+        redirectCurrentStageToGuidedScaffold(
+          pentaStages,
+          'F-pentascale-major-p8e',
+          'F-pentascale-major-p8',
+        ),
+      ).toBe('F-pentascale-major-p8g');
+    });
+
+    it('uses subdivision clicks on guided pentascale triplet stages', () => {
+      const p8g = pentaStages.find(s => s.id.endsWith('-p8g'))!;
+      const p8tg = pentaStages.find(s => s.id.endsWith('-p8tg'))!;
+      expect(isGuidedSubdivisionStage(p8g)).toBe(true);
+      expect(isGuidedSubdivisionStage(p8tg)).toBe(true);
+      expect(p8g.clickMode).toBe('subdivision');
+      expect(p8tg.clickMode).toBe('subdivision');
+    });
   });
 });

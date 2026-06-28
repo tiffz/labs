@@ -88,8 +88,7 @@ describe('ScorePlaybackEngine metronome scheduling', () => {
     await engine.start(oneMeasureScore, 'piano', () => {});
 
     (engine as unknown as { scheduledUpTo: number }).scheduledUpTo = 2.9;
-    (engine as unknown as { scheduledClickTimes: Set<number> }).scheduledClickTimes.clear();
-    (engine as unknown as { lastClickAudioTime: number }).lastClickAudioTime = -1;
+    (engine as unknown as { scheduledClickBeatKeys: Set<number> }).scheduledClickBeatKeys.clear();
     hoisted.fakeAudioContext.currentTime = 3.9;
 
     (engine as unknown as { tick: () => void }).tick();
