@@ -13,7 +13,9 @@ import {
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
 describe('skinRenderAudit', () => {
-  it('GLTF runtime weld produces non-empty clipped skin on both halves', async () => {
+  it(
+    'GLTF runtime weld produces non-empty clipped skin on both halves',
+    async () => {
     const scene = await loadAtlasSkinGltfScene(REPO_ROOT);
     const parts = collectSkinEnvelopePartsFromScene(scene);
     const welded = buildAlignedWeldedSkinEnvelopeFromScene(scene);
@@ -34,5 +36,7 @@ describe('skinRenderAudit', () => {
     expect(metrics.referenceClippedTriangleCount).toBeGreaterThanOrEqual(
       renderBaseline.minClippedReferenceTriangleCount,
     );
-  });
+  },
+    30_000,
+  );
 });

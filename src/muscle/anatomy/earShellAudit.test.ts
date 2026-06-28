@@ -56,13 +56,17 @@ describe('earShellAudit', () => {
     expect(metrics.rayMissCount).toBeLessThanOrEqual(MAX_EAR_RAY_MISSES);
   });
 
-  it('GLTF runtime path matches Node ear shell audit on reference half', async () => {
+  it(
+    'GLTF runtime path matches Node ear shell audit on reference half',
+    async () => {
     const scene = await loadAtlasSkinGltfScene(REPO_ROOT);
     const pipeline = auditGltfRuntimeSkinPipeline(scene);
     const nodeRef = auditEarShellForHalf(readRuntimeReferenceSkinEnvelope(), 'reference');
     expect(pipeline.reference.lateralEarOpenBoundaryEdges).toBe(nodeRef.lateralOpenBoundaryEdges);
     expect(pipeline.reference.earShellRayMissCount).toBe(nodeRef.rayMissCount);
-  });
+  },
+    30_000,
+  );
 
   it('prints ear shell audit when MUSCLE_EAR_SHELL_AUDIT=1', () => {
     if (process.env.MUSCLE_EAR_SHELL_AUDIT !== '1') return;

@@ -1,5 +1,5 @@
 {
-  "maxLateralOpenBoundaryEdges": 25,
+  "maxLateralOpenBoundaryEdges": 12,
   "maxEarShellRayMissCount": 4,
   "_targetComment": "Burn-down target matches enforced gate in earShellAudit target tests",
   "_target": {

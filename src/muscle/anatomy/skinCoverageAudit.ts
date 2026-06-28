@@ -798,7 +798,7 @@ export function isBackTrapDotHoleLoop(loop: BoundaryLoop): boolean {
   );
 }
 
-function loopInBounds(
+export function loopInBounds(
   loop: BoundaryLoop,
   bounds: SkinBandBounds,
 ): boolean {

@@ -1,13 +1,25 @@
-import { BufferAttribute, BufferGeometry } from 'three';
+import { BufferAttribute, BufferGeometry, Float32BufferAttribute } from 'three';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { SKIN_GLB_PRIMITIVE_WELD_EPSILON } from '../components/canvas/mergeSkinEnvelopeGeometry';
-import { shouldSealGlTfSlitEdge } from './skinCoverageAudit';
+import {
+  EAR_LATERAL_DEBUG_BOUNDS,
+  findBoundaryLoops,
+  isInEarSealBand,
+  isInGlTfSlitSealBand,
+  isInteriorSkinHoleLoop,
+  loopInBounds,
+  shouldSealGlTfSlitEdge,
+  type BoundaryLoop,
+} from './skinCoverageAudit';
+import { assignBufferGeometryIndex } from '../components/canvas/skinGeometryIndex';
 
 type OpenSlitEdge = { a: number; b: number; key: string };
 
 const SLIT_BRIDGE_MAX_MIDPOINT_DIST = 0.055;
 const SLIT_BRIDGE_MAX_ENDPOINT_DIST = 0.042;
 const SLIT_BRIDGE_MIN_PARALLEL_DOT = 0.45;
+const SLIT_SPATIAL_WELD_EPSILON = 0.006;
+const MAX_BRIDGE_PASSES = 4;
 
 function edgeKey(a: number, b: number): string {
   return a < b ? `${a}:${b}` : `${b}:${a}`;
@@ -49,6 +61,34 @@ function vertexDistance(position: BufferAttribute, a: number, b: number): number
     position.getY(a) - position.getY(b),
     position.getZ(a) - position.getZ(b),
   );
+}
+
+function findRemapRoot(remap: Int32Array, index: number): number {
+  let root = index;
+  while (remap[root] !== root) {
+    root = remap[root]!;
+  }
+  return root;
+}
+
+function unionRemap(remap: Int32Array, a: number, b: number): void {
+  const rootA = findRemapRoot(remap, a);
+  const rootB = findRemapRoot(remap, b);
+  if (rootA === rootB) return;
+  if (rootA < rootB) remap[rootB] = rootA;
+  else remap[rootA] = rootB;
+}
+
+function applyVertexRemap(geometry: BufferGeometry, remap: Int32Array): BufferGeometry {
+  const index = geometry.getIndex();
+  if (!index) return geometry;
+  const indices: number[] = [];
+  for (let i = 0; i < index.count; i += 1) {
+    indices.push(findRemapRoot(remap, index.getX(i)!));
+  }
+  const remapped = geometry.clone();
+  assignBufferGeometryIndex(remapped, indices);
+  return remapped;
 }
 
 function collectOpenSlitEdges(
@@ -139,37 +179,53 @@ function bridgeWinding(
   const ny = e1z * e2x - e1x * e2z;
   const nz = e1x * e2y - e1y * e2x;
   const outward = nx * ax + ny * ay + nz * az >= 0;
-  return outward ? [a, b, d, a, d, c] : [a, c, d, a, d, b];
+  return outward ? [a, b, d, a, d, c] : [a, c, d, a, d, c];
+}
+
+function buildMidpointGridKey(mid: [number, number, number], cell: number): string {
+  return [
+    Math.floor(mid[0] / cell),
+    Math.floor(mid[1] / cell),
+    Math.floor(mid[2] / cell),
+  ].join(':');
 }
 
 function findBridgePartner(
   position: BufferAttribute,
   edge: OpenSlitEdge,
-  candidates: OpenSlitEdge[],
+  grid: Map<string, OpenSlitEdge[]>,
   used: Set<string>,
 ): OpenSlitEdge | null {
   const mid1 = edgeMidpoint(position, edge.a, edge.b);
+  const cell = SLIT_BRIDGE_MAX_MIDPOINT_DIST;
   let best: OpenSlitEdge | null = null;
   let bestDist = Number.POSITIVE_INFINITY;
 
-  for (const candidate of candidates) {
-    if (candidate.key === edge.key || used.has(candidate.key)) continue;
-    if (!edgesAreParallel(position, edge, candidate)) continue;
-    if (!endpointPairing(position, edge, candidate)) continue;
-    const mid2 = edgeMidpoint(position, candidate.a, candidate.b);
-    const dist = Math.hypot(mid2[0] - mid1[0], mid2[1] - mid1[1], mid2[2] - mid1[2]);
-    if (dist > SLIT_BRIDGE_MAX_MIDPOINT_DIST || dist >= bestDist) continue;
-    bestDist = dist;
-    best = candidate;
+  const cx = Math.floor(mid1[0] / cell);
+  const cy = Math.floor(mid1[1] / cell);
+  const cz = Math.floor(mid1[2] / cell);
+  for (let dx = -1; dx <= 1; dx += 1) {
+    for (let dy = -1; dy <= 1; dy += 1) {
+      for (let dz = -1; dz <= 1; dz += 1) {
+        const bucket = grid.get(`${cx + dx}:${cy + dy}:${cz + dz}`);
+        if (!bucket) continue;
+        for (const candidate of bucket) {
+          if (candidate.key === edge.key || used.has(candidate.key)) continue;
+          if (!edgesAreParallel(position, edge, candidate)) continue;
+          if (!endpointPairing(position, edge, candidate)) continue;
+          const mid2 = edgeMidpoint(position, candidate.a, candidate.b);
+          const dist = Math.hypot(mid2[0] - mid1[0], mid2[1] - mid1[1], mid2[2] - mid1[2]);
+          if (dist > SLIT_BRIDGE_MAX_MIDPOINT_DIST || dist >= bestDist) continue;
+          bestDist = dist;
+          best = candidate;
+        }
+      }
+    }
   }
 
   return best;
 }
 
-/**
- * Bridge paired glTF primitive slits with a quad — avoids mirror back-fill, which added
- * hundreds of coplanar duplicate tris that read as slit holes on transparent study skin.
- */
 function bridgeGlTfSlitPairs(geometry: BufferGeometry): BufferGeometry {
   const position = geometry.getAttribute('position') as BufferAttribute | undefined;
   const index = geometry.getIndex();
@@ -178,12 +234,20 @@ function bridgeGlTfSlitPairs(geometry: BufferGeometry): BufferGeometry {
   const open = collectOpenSlitEdges(position, index);
   if (open.length === 0) return geometry;
 
+  const grid = new Map<string, OpenSlitEdge[]>();
+  for (const edge of open) {
+    const key = buildMidpointGridKey(edgeMidpoint(position, edge.a, edge.b), SLIT_BRIDGE_MAX_MIDPOINT_DIST);
+    const bucket = grid.get(key) ?? [];
+    bucket.push(edge);
+    grid.set(key, bucket);
+  }
+
   const used = new Set<string>();
   const bridgeTris: number[] = [];
 
   for (const edge of open) {
     if (used.has(edge.key)) continue;
-    const partner = findBridgePartner(position, edge, open, used);
+    const partner = findBridgePartner(position, edge, grid, used);
     if (!partner) continue;
 
     const pairing = endpointPairing(position, edge, partner);
@@ -203,22 +267,129 @@ function bridgeGlTfSlitPairs(geometry: BufferGeometry): BufferGeometry {
   indices.push(...bridgeTris);
 
   const bridged = geometry.clone();
-  bridged.setIndex(indices);
+  assignBufferGeometryIndex(bridged, indices);
   const welded = mergeVertices(bridged, SKIN_GLB_PRIMITIVE_WELD_EPSILON);
   welded.computeVertexNormals();
   return welded;
 }
 
-/** Bridge glTF primitive seam pairs in ear + limb bands (no mirror back-fill). */
+/** Merge slit-band verts within export-style distance — closes unpaired primitive gaps. */
+function spatialWeldRemainingSlitVerts(geometry: BufferGeometry): BufferGeometry {
+  const position = geometry.getAttribute('position') as BufferAttribute | undefined;
+  const index = geometry.getIndex();
+  if (!position || !index) return geometry;
+
+  const open = collectOpenSlitEdges(position, index);
+  if (open.length === 0) return geometry;
+
+  const slitVerts = new Set<number>();
+  for (const edge of open) {
+    slitVerts.add(edge.a);
+    slitVerts.add(edge.b);
+  }
+
+  const remap = new Int32Array(position.count);
+  for (let i = 0; i < remap.length; i += 1) {
+    remap[i] = i;
+  }
+
+  const verts = [...slitVerts];
+  for (let i = 0; i < verts.length; i += 1) {
+    for (let j = i + 1; j < verts.length; j += 1) {
+      const a = verts[i]!;
+      const b = verts[j]!;
+      const mid = {
+        y: (position.getY(a) + position.getY(b)) / 2,
+        maxAbsX: Math.max(Math.abs(position.getX(a)), Math.abs(position.getX(b))),
+        z: (position.getZ(a) + position.getZ(b)) / 2,
+      };
+      if (!isInGlTfSlitSealBand(mid)) continue;
+      if (vertexDistance(position, a, b) <= SLIT_SPATIAL_WELD_EPSILON) {
+        unionRemap(remap, a, b);
+      }
+    }
+  }
+
+  let mergedAny = false;
+  for (let i = 0; i < remap.length; i += 1) {
+    if (findRemapRoot(remap, i) !== i) mergedAny = true;
+  }
+  if (!mergedAny) return geometry;
+
+  const remapped = applyVertexRemap(geometry, remap);
+  const welded = mergeVertices(remapped, SKIN_GLB_PRIMITIVE_WELD_EPSILON);
+  welded.computeVertexNormals();
+  return welded;
+}
+
+function loopInEarShellBand(loop: BoundaryLoop): boolean {
+  return loopInBounds(loop, EAR_LATERAL_DEBUG_BOUNDS);
+}
+
+/** Fan-fill tiny auricular interior loops only (never face shell). */
+function fillEarMicroInteriorLoops(geometry: BufferGeometry): BufferGeometry {
+  const position = geometry.getAttribute('position') as BufferAttribute | undefined;
+  const index = geometry.getIndex();
+  if (!position || !index) return geometry;
+
+  const loops = findBoundaryLoops(geometry).filter(
+    (loop) =>
+      isInteriorSkinHoleLoop(loop) &&
+      loop.edgeCount >= 4 &&
+      loop.edgeCount <= 10 &&
+      loopInEarShellBand(loop) &&
+      isInEarSealBand({ y: loop.centroid.y, maxAbsX: loop.maxAbsX, z: loop.centroid.z }),
+  );
+  if (loops.length === 0) return geometry;
+
+  const positions: number[] = [];
+  for (let i = 0; i < position.count; i += 1) {
+    positions.push(position.getX(i), position.getY(i), position.getZ(i));
+  }
+  const indices: number[] = [];
+  for (let i = 0; i < index.count; i += 1) {
+    indices.push(index.getX(i)!);
+  }
+
+  for (const loop of loops) {
+    const verts = loop.vertexIndices;
+    let cx = 0;
+    let cy = 0;
+    let cz = 0;
+    for (const vi of verts) {
+      cx += position.getX(vi);
+      cy += position.getY(vi);
+      cz += position.getZ(vi);
+    }
+    cx /= verts.length;
+    cy /= verts.length;
+    cz /= verts.length;
+    const hub = positions.length / 3;
+    positions.push(cx, cy, cz);
+    for (let i = 0; i < verts.length; i += 1) {
+      indices.push(hub, verts[i]!, verts[(i + 1) % verts.length]!);
+    }
+  }
+
+  const filled = geometry.clone();
+  filled.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  assignBufferGeometryIndex(filled, indices);
+  filled.computeVertexNormals();
+  return filled;
+}
+
+/** Bridge + spatial weld glTF primitive seams in ear + limb bands (no mirror back-fill). */
 export function sealEarLateralBoundaryCracks(geometry: BufferGeometry): BufferGeometry {
   const position = geometry.getAttribute('position') as BufferAttribute | undefined;
   if (!position) return geometry;
 
   let current = geometry.clone();
-  for (let pass = 0; pass < 8; pass += 1) {
-    const next = bridgeGlTfSlitPairs(current);
-    if (next.index!.count === current.index!.count) break;
-    current = next;
+  for (let pass = 0; pass < MAX_BRIDGE_PASSES; pass += 1) {
+    const bridged = bridgeGlTfSlitPairs(current);
+    const welded = spatialWeldRemainingSlitVerts(bridged);
+    if (welded.index!.count === current.index!.count) break;
+    current = welded;
   }
-  return current;
+
+  return fillEarMicroInteriorLoops(current);
 }

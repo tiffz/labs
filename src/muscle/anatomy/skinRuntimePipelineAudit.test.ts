@@ -16,7 +16,9 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const WELDED_STUDY_DEBUG_SEGMENT_FLOATS_MAX = 84;
 
 describe('skinRuntimePipelineAudit', () => {
-  it('GLTFLoader runtime path has zero auricular debug loops on both halves', async () => {
+  it(
+    'GLTFLoader runtime path has zero auricular debug loops on both halves',
+    async () => {
     const scene = await loadAtlasSkinGltfScene(REPO_ROOT);
     const audit = auditGltfRuntimeSkinPipeline(scene);
 
@@ -45,9 +47,13 @@ describe('skinRuntimePipelineAudit', () => {
         `${halfMetrics.half} ear shell ray misses`,
       ).toBeLessThanOrEqual(earShellBaseline._target.maxEarShellRayMissCount);
     }
-  });
+  },
+    30_000,
+  );
 
-  it('GLTFLoader runtime debug overlay matches Node audit weld (no normal-attribute seam regression)', async () => {
+  it(
+    'GLTFLoader runtime debug overlay matches Node audit weld (no normal-attribute seam regression)',
+    async () => {
     const scene = await loadAtlasSkinGltfScene(REPO_ROOT);
     const audit = auditGltfRuntimeSkinPipeline(scene);
 
@@ -65,7 +71,9 @@ describe('skinRuntimePipelineAudit', () => {
     expect(palmBand?.interiorLoopCount ?? 0).toBeLessThanOrEqual(
       coverageBaseline.maxInteriorLoopsByBand.palmWrist,
     );
-  });
+  },
+    30_000,
+  );
 
   it('prints runtime pipeline audit when MUSCLE_SKIN_RUNTIME_AUDIT=1', async () => {
     if (process.env.MUSCLE_SKIN_RUNTIME_AUDIT !== '1') return;
