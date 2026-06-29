@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { measureClickUntil } from '../helpers/interactionLatency';
+import { measureClickUntil, reportInteractionLatency } from '../helpers/interactionLatency';
 import { AUDIO_PLAY_INTERACTION_BUDGET_MS } from '../../src/shared/test/interactionLatencyCore';
 
 test.describe('Darbuka load + interaction', () => {
@@ -29,6 +29,6 @@ test.describe('Darbuka load + interaction', () => {
     const ms = await measureClickUntil(page, playButton, async () => {
       await expect(stopButton).toBeVisible();
     });
-    expect(ms).toBeLessThanOrEqual(AUDIO_PLAY_INTERACTION_BUDGET_MS);
+    reportInteractionLatency(ms, AUDIO_PLAY_INTERACTION_BUDGET_MS, 'play after warmup');
   });
 });

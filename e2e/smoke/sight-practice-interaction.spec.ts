@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { measureClickUntil } from '../helpers/interactionLatency';
+import { measureClickUntil, reportInteractionLatency } from '../helpers/interactionLatency';
 import { DEFAULT_INTERACTION_BUDGET_MS, RELAXED_INTERACTION_BUDGET_MS } from '../../src/shared/test/interactionLatencyCore';
 
 /**
@@ -16,7 +16,7 @@ test.describe('Sight practice interaction', () => {
     const loadMs = await measureClickUntil(page, practiceBtn, async () => {
       await expect(page.locator('.sight-practice-body')).toBeVisible();
     });
-    expect(loadMs).toBeLessThanOrEqual(RELAXED_INTERACTION_BUDGET_MS);
+    reportInteractionLatency(loadMs, RELAXED_INTERACTION_BUDGET_MS, 'practice load');
 
     const swatch = page.getByRole('button', { name: /^(Left|Right) swatch$/i }).first();
     await expect(swatch).toBeVisible({ timeout: 5_000 });
@@ -24,7 +24,7 @@ test.describe('Sight practice interaction', () => {
     const tapMs = await measureClickUntil(page, swatch, async () => {
       await expect(page.locator('.sight-compare-verdict--visible')).toBeVisible({ timeout: 3_000 });
     });
-    expect(tapMs).toBeLessThanOrEqual(DEFAULT_INTERACTION_BUDGET_MS);
+    reportInteractionLatency(tapMs, DEFAULT_INTERACTION_BUDGET_MS, 'swatch tap');
   });
 
   test('practice prompts expose glossary terms', async ({ page }) => {

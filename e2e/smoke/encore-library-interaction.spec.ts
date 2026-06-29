@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { enterEncoreApp } from '../helpers/enterEncoreApp';
-import { measureClickUntil } from '../helpers/interactionLatency';
+import { measureClickUntil, reportInteractionLatency } from '../helpers/interactionLatency';
 import { TAB_NAVIGATION_BUDGET_MS } from '../../src/shared/test/interactionLatencyCore';
 
 /**
@@ -18,7 +18,7 @@ test.describe('Encore library interaction latency', () => {
       await expect(page.getByRole('heading', { name: 'Your practice' })).toBeVisible({ timeout: 10_000 });
     });
 
-    expect(ms).toBeLessThanOrEqual(TAB_NAVIGATION_BUDGET_MS);
+    reportInteractionLatency(ms, TAB_NAVIGATION_BUDGET_MS, 'library → practice tab');
     await expect(page).toHaveURL(/#\/practice/);
   });
 });

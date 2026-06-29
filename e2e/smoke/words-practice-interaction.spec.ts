@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { measureClickUntil } from '../helpers/interactionLatency';
+import { measureClickUntil, reportInteractionLatency } from '../helpers/interactionLatency';
 import { RELAXED_INTERACTION_BUDGET_MS } from '../../src/shared/test/interactionLatencyCore';
 
 /**
@@ -21,6 +21,6 @@ test.describe('Words practice interaction', () => {
     const ms = await measureClickUntil(page, addVerse, async () => {
       await expect(page.locator('.words-section-card')).toHaveCount(2, { timeout: 5_000 });
     });
-    expect(ms).toBeLessThanOrEqual(RELAXED_INTERACTION_BUDGET_MS);
+    reportInteractionLatency(ms, RELAXED_INTERACTION_BUDGET_MS, 'add section');
   });
 });

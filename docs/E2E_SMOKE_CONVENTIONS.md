@@ -91,6 +91,12 @@ Registry: [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) — update when addi
   - `e2e/smoke/encore-library-interaction.spec.ts` — Encore Library → Practice tab
 - Skill: `labs-performance`
 - Command: `npm run test:e2e:interaction`
+- **Budgets are advisory.** Use `measureClickUntil(page, target, until)` where `until()` holds the
+  **functional** assertion (the blocking gate — the control did the thing), then
+  `reportInteractionLatency(ms, BUDGET, label)` which **warns** when over budget but never fails.
+  Millisecond budgets on shared CI runners are noisy; a real multi-second regression shows as a
+  `[interaction-latency]` warning in logs. Do **not** add `expect(ms).toBeLessThanOrEqual(...)` —
+  that reintroduces the flake. See `docs/TEST_STRATEGY.md` § Low-ROI test removal (principle 5).
 
 ## Dev seed contract
 

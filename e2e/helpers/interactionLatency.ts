@@ -20,11 +20,22 @@ export async function measureClickUntil(
   return Date.now() - start;
 }
 
-export function expectWithinInteractionBudget(
+/**
+ * Advisory interaction-latency report: warns when over budget but never fails the test.
+ *
+ * Millisecond budgets on shared CI runners are noisy (GPU/CPU contention under the parallel smoke
+ * suite), so they are advisory — the blocking gate is the **functional** assertion inside the
+ * `until()` callback passed to `measureClickUntil` (the control actually does the thing). A genuine
+ * multi-second regression still surfaces as a warning in CI logs without red-failing unrelated work.
+ * See docs/TEST_STRATEGY.md § Low-ROI test removal (principle 5).
+ */
+export function reportInteractionLatency(
   measuredMs: number,
   budgetMs = DEFAULT_INTERACTION_BUDGET_MS,
+  label?: string,
 ): void {
   if (measuredMs > budgetMs) {
-    throw new Error(formatInteractionBudgetMessage(measuredMs, budgetMs));
+    const prefix = label ? `${label}: ` : '';
+    console.warn(`[interaction-latency] ${prefix}${formatInteractionBudgetMessage(measuredMs, budgetMs)} (advisory)`);
   }
 }

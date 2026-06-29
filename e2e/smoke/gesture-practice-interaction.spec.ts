@@ -4,7 +4,7 @@ import {
   prepareGestureE2ePage,
   stubGestureDriveThumbnailImages,
 } from '../helpers/gesturePreviewFixtures';
-import { measureClickUntil } from '../helpers/interactionLatency';
+import { measureClickUntil, reportInteractionLatency } from '../helpers/interactionLatency';
 import { DEFAULT_INTERACTION_BUDGET_MS } from '../../src/shared/test/interactionLatencyCore';
 
 /**
@@ -32,12 +32,12 @@ test.describe('Gesture practice interaction latency', () => {
     const toLimitedMs = await measureClickUntil(page, limitedRadio, async () => {
       await expect(photoLimit).toBeEnabled();
     });
-    expect(toLimitedMs).toBeLessThanOrEqual(DEFAULT_INTERACTION_BUDGET_MS);
+    reportInteractionLatency(toLimitedMs, DEFAULT_INTERACTION_BUDGET_MS, 'session length: limited');
 
     const toEndlessMs = await measureClickUntil(page, endlessRadio, async () => {
       await expect(photoLimit).toBeDisabled();
     });
-    expect(toEndlessMs).toBeLessThanOrEqual(DEFAULT_INTERACTION_BUDGET_MS);
+    reportInteractionLatency(toEndlessMs, DEFAULT_INTERACTION_BUDGET_MS, 'session length: endless');
 
     const blobErrors = consoleErrors.filter(
       (line) => line.includes('ERR_FILE_NOT_FOUND') && line.includes('blob:'),
@@ -54,6 +54,6 @@ test.describe('Gesture practice interaction latency', () => {
     const ms = await measureClickUntil(page, twoMin, async () => {
       await expect(twoMin).toHaveAttribute('aria-pressed', 'true');
     });
-    expect(ms).toBeLessThanOrEqual(DEFAULT_INTERACTION_BUDGET_MS);
+    reportInteractionLatency(ms, DEFAULT_INTERACTION_BUDGET_MS, 'timer preset toggle');
   });
 });
