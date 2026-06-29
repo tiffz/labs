@@ -21,7 +21,7 @@ Read [`src/muscle/CUJs.md`](../../CUJs.md) CUJ-001 before changing orbit, pickin
 
 - `npm run muscle:validate-assets`
 - `npm run test:fast -- src/muscle/canvasPerfGuardrails.test.ts src/muscle/muscleAssetPerfBudget.test.ts`
-- Hard refresh `/muscle/` and orbit — or `e2e/smoke/muscle-orbit-perf.spec.ts`
+- Hard refresh `/muscle/` and orbit (manual frame-time check — see `src/muscle/CUJs.md` CUJ-001 manual trace protocol). There is no orbit frame-time e2e: it was low-signal on headless software-WebGL; the deterministic guardrails above are the CI gate.
 
 ## Related
 

@@ -25,6 +25,10 @@ Track known flaky tests so they get fixed or quarantined — not masked with ret
 
 | CI scoped e2e on push | Scoped mode ran full smoke (Stanza/Words flakes) | agent | resolved | Pass `github.event.before` to `run-scoped-e2e.mjs`; `ciScopeGuardrails.test.ts` (2026-06-23) |
 
+| `e2e/smoke/muscle-full-body-skeleton.spec.ts` | `Test timeout 90000ms` — ~400k-tri atlas load on CI software WebGL | agent | **removed** | Deleted (2026-06-29): audit duplicated `fullBodyRuntimeInventory.test.ts` + `muscle:audit-export`; low ROI for a blocking gate |
+
+| `e2e/smoke/muscle-orbit-perf.spec.ts` | rAF frame-budget flake on shared CI GPU (SwiftShader) | agent | **removed** | Deleted (2026-06-29) with `muscleOrbitPerf.ts` + `muscleOrbitPerfCore.ts`: frame-time on headless software-WebGL measures runner GPU, not app. Real causes guarded by `muscleAssetPerfBudget.test.ts` + `canvasPerfGuardrails.test.ts`; frame-time is manual (CUJ-001) |
+
 ### Resolved (archive)
 
 | File / spec                        | Symptom                                              | Fixed in                                |

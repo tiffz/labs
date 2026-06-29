@@ -57,13 +57,13 @@ Registry: [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) — update when addi
 - Spec: `e2e/smoke/gesture-upload-offline-resume.spec.ts` — interrupted banner → offline stalls → online completes
 - Stubs: `e2e/helpers/gestureUploadOfflineResume.ts` — persisted Google session + minimal Drive API mock
 
-### Example: Muscle Memory shell + orbit perf
+### Example: Muscle Memory shell
 
 - Fixture: `src/muscle/e2e/muscleE2eSeed.ts`, `?e2eSeed=1` gate for Active Reps smoke
-- Specs: `e2e/smoke/muscle-shell.spec.ts`, `muscle-study-journey.spec.ts`, `muscle-orbit-perf.spec.ts`
-- Helper: `e2e/helpers/muscleOrbitPerf.ts` + `src/shared/test/muscleOrbitPerfCore.ts` — rAF frame budget during canvas orbit
+- Specs: `e2e/smoke/muscle-shell.spec.ts`, `muscle-study-journey.spec.ts`
 - Scoped map: `muscle` entry in `scripts/run-scoped-e2e.mjs`
 - Manual QA: `docs/MUSCLE_QA.md`
+- **Removed (low ROI):** the WebGL orbit frame-budget smoke and the full-body `missingRequiredBones` audit. Frame-time on headless software-WebGL measured the runner GPU, not the app; required-bone completeness duplicated `src/muscle/anatomy/fullBodyRuntimeInventory.test.ts` + `npm run muscle:audit-export`. CI guards the actionable causes deterministically (`muscleAssetPerfBudget.test.ts`, `canvasPerfGuardrails.test.ts`).
 
 ### Example: Layout heuristics (padding + contrast)
 

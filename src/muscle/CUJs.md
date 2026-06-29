@@ -28,13 +28,18 @@ Index: [`docs/CRITICAL_USER_JOURNEYS.md`](../../docs/CRITICAL_USER_JOURNEYS.md).
 
 Dev server, hard refresh, `fundamentals` module (smallest GLB) unless noted.
 
-| Step                | Metric                              | Budget (p95)            | Verification                                    |
-| ------------------- | ----------------------------------- | ----------------------- | ----------------------------------------------- |
-| Canvas orbit drag   | rAF frame gap during simulated drag | ≤ 20 ms (≤ 35 ms on CI) | `e2e/smoke/muscle-orbit-perf.spec.ts`           |
-| View mode toggle    | click → HUD count updates           | ≤ 400 ms                | `e2e/smoke/muscle-shell.spec.ts`                |
-| Structure hover     | pointer settle → HUD label          | ≤ 50 ms perceived       | manual                                          |
-| Module switch       | select module → new GLB visible     | ≤ 3 s                   | manual                                          |
-| Torso orbit (heavy) | rAF p95 during drag                 | ≤ 20 ms                 | `muscle-orbit-perf` torso case (presubmit:push) |
+Frame-time orbit checks are **manual / on-demand** — a Playwright frame-budget smoke on headless
+software-WebGL (SwiftShader) measures the CI runner's GPU, not the app, so it was low-signal and
+flaky. The actionable regression _causes_ are guarded deterministically in CI instead (triangle
+budgets + canvas guardrails); use the manual trace protocol below for true frame-time checks.
+
+| Step                | Metric                              | Budget (p95)            | Verification                                            |
+| ------------------- | ----------------------------------- | ----------------------- | ------------------------------------------------------- |
+| Canvas orbit drag   | rAF frame gap during simulated drag | ≤ 20 ms (≤ 35 ms on CI) | Manual trace protocol + `muscleAssetPerfBudget.test.ts` |
+| View mode toggle    | click → HUD count updates           | ≤ 400 ms                | `e2e/smoke/muscle-shell.spec.ts`                        |
+| Structure hover     | pointer settle → HUD label          | ≤ 50 ms perceived       | manual                                                  |
+| Module switch       | select module → new GLB visible     | ≤ 3 s                   | manual                                                  |
+| Torso orbit (heavy) | rAF p95 during drag                 | ≤ 20 ms                 | Manual trace protocol + `canvasPerfGuardrails.test.ts`  |
 
 ### Known traps
 
@@ -45,13 +50,13 @@ Dev server, hard refresh, `fundamentals` module (smallest GLB) unless noted.
 
 ### Automation
 
-| Type              | Artifact                                   |
-| ----------------- | ------------------------------------------ |
-| Shell smoke       | `e2e/smoke/muscle-shell.spec.ts`           |
-| Orbit perf smoke  | `e2e/smoke/muscle-orbit-perf.spec.ts`      |
-| Triangle budgets  | `src/muscle/muscleAssetPerfBudget.test.ts` |
-| Canvas guardrails | `src/muscle/canvasPerfGuardrails.test.ts`  |
-| Asset validate    | `npm run muscle:validate-assets`           |
+| Type               | Artifact                                   |
+| ------------------ | ------------------------------------------ |
+| Shell smoke        | `e2e/smoke/muscle-shell.spec.ts`           |
+| Triangle budgets   | `src/muscle/muscleAssetPerfBudget.test.ts` |
+| Canvas guardrails  | `src/muscle/canvasPerfGuardrails.test.ts`  |
+| Asset validate     | `npm run muscle:validate-assets`           |
+| Frame-time (orbit) | Manual trace protocol below (on-demand)    |
 
 ### Manual trace protocol
 

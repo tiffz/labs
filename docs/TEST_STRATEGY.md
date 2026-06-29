@@ -21,6 +21,28 @@ How we keep test coverage high without runtimes growing exponentially.
 4. **Shared helpers over duplicate specs** — `horizontalScrollHeuristicCore`, `layoutHeuristicsCore`, `interactionLatency`.
 5. **Quarantine flakes** — `*.flaky.test.ts` excluded from fast path; registry row + 7-day fix deadline.
 
+## Low-ROI test removal (be aggressive)
+
+A test earns its place in the **blocking gate** only if it catches a regression a human cares about
+more often than it flakes or burns runtime. Prune aggressively when any of these hold:
+
+1. **Flaky with no high-value justification → delete** (not just nightly). A flake that re-runs green
+   teaches nothing and erodes trust in red. Quarantine is a 7-day bridge to a fix, not a parking lot.
+2. **Redundant with a cheaper deterministic test → delete the expensive one.** If a unit test already
+   asserts the property (e.g. "all required bones present" via `fullBodyRuntimeInventory.test.ts`), a
+   slow e2e re-verifying it through a browser adds cost, not coverage.
+3. **Data/asset _audits_ belong in a script or unit test, not a blocking e2e.** "Does the export
+   contain everything?" is something you run when you change the export (`npm run muscle:audit-export`,
+   `muscle:inventory`) — not on every unrelated push.
+4. **Frame-time / perf-budget e2e on headless software-WebGL (SwiftShader) is low-signal** — it
+   measures the CI runner's GPU, not the app. Guard the _causes_ deterministically (triangle budgets,
+   BVH/`frameloop` guardrails) and keep frame-time checks manual/on-demand (app `CUJs.md`).
+5. **Interaction-latency budgets on shared runners are noisy.** Keep the _functional_ assertion
+   (button does the thing); treat the millisecond budget as advisory, not a merge blocker.
+
+Removed tests get a row in [`FLAKY_TEST_REGISTRY.md`](FLAKY_TEST_REGISTRY.md) (status `removed`) naming
+the cheaper coverage that replaced them, so the audit intent isn't silently lost.
+
 ## Time budgets
 
 | Gate                       | Target   |
