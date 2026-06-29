@@ -102,21 +102,27 @@ export async function measureZineboxLibraryScrollPerf(page: Page): Promise<Zineb
   );
 }
 
-export function assertZineboxLibraryScrollBudget(sample: ZineboxScrollPerfSample): void {
+/**
+ * Advisory scroll-perf report: warns when over budget but never fails the test.
+ *
+ * Frame timing on a shared CI runner is dominated by hardware, not the app, so the budget is
+ * advisory. The blocking guard is the deterministic `toHaveCount` (grid renders all cover cards)
+ * in the spec. A real jank regression still surfaces as a `[scroll-perf]` warning in CI logs.
+ * See docs/TEST_STRATEGY.md § Low-ROI test removal (principle 5).
+ */
+export function reportZineboxLibraryScrollBudget(sample: ZineboxScrollPerfSample): void {
   const limits = getZineboxScrollPerfLimits();
+  const violations: string[] = [];
   if (sample.p95FrameMs > limits.maxFrameMs) {
-    throw new Error(
-      `p95 scroll frame ${sample.p95FrameMs.toFixed(1)}ms exceeds budget ${limits.maxFrameMs}ms`,
-    );
+    violations.push(`p95 frame ${sample.p95FrameMs.toFixed(1)}ms > ${limits.maxFrameMs}ms`);
   }
   if (sample.maxFrameMs > limits.maxSpikeMs) {
-    throw new Error(
-      `max scroll frame ${sample.maxFrameMs.toFixed(1)}ms exceeds spike budget ${limits.maxSpikeMs}ms`,
-    );
+    violations.push(`max frame ${sample.maxFrameMs.toFixed(1)}ms > spike ${limits.maxSpikeMs}ms`);
   }
   if (sample.longTaskCount > limits.maxLongTasks) {
-    throw new Error(
-      `${sample.longTaskCount} long tasks during scroll exceeds budget ${limits.maxLongTasks}`,
-    );
+    violations.push(`${sample.longTaskCount} long tasks > ${limits.maxLongTasks}`);
+  }
+  if (violations.length > 0) {
+    console.warn(`[scroll-perf] zinebox library (advisory): ${violations.join('; ')}`);
   }
 }

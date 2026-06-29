@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test';
 
 import { expectZineboxLibraryChrome } from '../helpers/zineboxLibrary';
 import {
-  assertZineboxLibraryScrollBudget,
   measureZineboxLibraryScrollPerf,
+  reportZineboxLibraryScrollBudget,
 } from '../helpers/zineboxScrollPerf';
 
 test.describe('Zine Box library scroll perf', () => {
@@ -17,6 +17,6 @@ test.describe('Zine Box library scroll perf', () => {
     await expect(grid.locator('.zinebox-cover-card')).toHaveCount(54, { timeout: 15000 });
 
     const sample = await measureZineboxLibraryScrollPerf(page);
-    assertZineboxLibraryScrollBudget(sample);
+    reportZineboxLibraryScrollBudget(sample);
   });
 });

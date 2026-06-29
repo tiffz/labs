@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
-  assertGestureCollectionsScrollBudget,
   measureGestureCollectionsScrollPerf,
+  reportGestureCollectionsScrollBudget,
 } from '../helpers/gestureScrollPerf';
 import {
   collectPageConsoleErrors,
@@ -29,7 +29,7 @@ test.describe('Gesture collections scroll perf', () => {
     });
 
     const sample = await measureGestureCollectionsScrollPerf(page);
-    assertGestureCollectionsScrollBudget(sample);
+    reportGestureCollectionsScrollBudget(sample);
 
     const blobErrors = consoleErrors.filter(
       (line) => line.includes('ERR_FILE_NOT_FOUND') && line.includes('blob:'),

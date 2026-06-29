@@ -69,20 +69,27 @@ export async function measureGestureCollectionsScrollPerf(
   );
 }
 
-export function assertGestureCollectionsScrollBudget(sample: GestureScrollPerfSample): void {
+/**
+ * Advisory scroll-perf report: warns when over budget but never fails the test.
+ *
+ * Frame timing during programmatic scroll on headless software-WebGL/CPU is dominated by the CI
+ * runner, not the app, so the budget is advisory. The blocking guard is the deterministic
+ * `toHaveCount` (grid renders all cards) + blob-error assertions in the spec. A real jank
+ * regression still surfaces as a `[scroll-perf]` warning in CI logs.
+ * See docs/TEST_STRATEGY.md § Low-ROI test removal (principle 5).
+ */
+export function reportGestureCollectionsScrollBudget(sample: GestureScrollPerfSample): void {
+  const violations: string[] = [];
   if (sample.maxFrameMs > COLLECTIONS_SCROLL_MAX_FRAME_MS) {
-    throw new Error(
-      `max scroll frame ${sample.maxFrameMs.toFixed(1)}ms exceeds budget ${COLLECTIONS_SCROLL_MAX_FRAME_MS}ms`,
-    );
+    violations.push(`max frame ${sample.maxFrameMs.toFixed(1)}ms > ${COLLECTIONS_SCROLL_MAX_FRAME_MS}ms`);
   }
   if (sample.p95FrameMs > COLLECTIONS_SCROLL_MAX_FRAME_MS) {
-    throw new Error(
-      `p95 scroll frame ${sample.p95FrameMs.toFixed(1)}ms exceeds budget ${COLLECTIONS_SCROLL_MAX_FRAME_MS}ms`,
-    );
+    violations.push(`p95 frame ${sample.p95FrameMs.toFixed(1)}ms > ${COLLECTIONS_SCROLL_MAX_FRAME_MS}ms`);
   }
   if (sample.longTaskCount > COLLECTIONS_SCROLL_MAX_LONG_TASKS) {
-    throw new Error(
-      `${sample.longTaskCount} long tasks during scroll exceeds budget ${COLLECTIONS_SCROLL_MAX_LONG_TASKS}`,
-    );
+    violations.push(`${sample.longTaskCount} long tasks > ${COLLECTIONS_SCROLL_MAX_LONG_TASKS}`);
+  }
+  if (violations.length > 0) {
+    console.warn(`[scroll-perf] gesture collections (advisory): ${violations.join('; ')}`);
   }
 }
