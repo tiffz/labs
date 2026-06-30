@@ -2,10 +2,17 @@ import { describe, expect, it } from 'vitest';
 import {
   collectGestureTagsFromPacks,
   countGestureCollectionsPerTag,
+  collectGestureTagAutocompleteOptions,
+  countNsfwTaggedCollections,
+  collectGestureTagsForFilterBar,
+  isGestureNsfwTag,
   normalizeGestureTag,
   normalizeGestureTags,
   packHasGestureTag,
+  packHasNsfwTag,
   packMatchesGestureTagFilters,
+  packPassesNsfwVisibility,
+  packShouldBlurNsfwPreviews,
 } from './gesturePackTags';
 import type { GesturePack } from '../types';
 
@@ -60,5 +67,32 @@ describe('gesturePackTags', () => {
     const pack = basePack({ tags: ['cats'] });
     expect(packHasGestureTag(pack, 'Cats')).toBe(true);
     expect(packHasGestureTag(pack, 'feet')).toBe(false);
+  });
+
+  it('hides NSFW-tagged collections by default', () => {
+    const nsfw = basePack({ id: 'n', tags: ['nsfw', 'figure'] });
+    const safe = basePack({ id: 's', tags: ['figure'] });
+    expect(packHasNsfwTag(nsfw)).toBe(true);
+    expect(packPassesNsfwVisibility(nsfw, false)).toBe(false);
+    expect(packPassesNsfwVisibility(nsfw, true)).toBe(true);
+    expect(packPassesNsfwVisibility(safe, false)).toBe(true);
+    expect(packShouldBlurNsfwPreviews(nsfw, false)).toBe(true);
+    expect(packShouldBlurNsfwPreviews(nsfw, true)).toBe(false);
+    expect(packShouldBlurNsfwPreviews(safe, false)).toBe(false);
+    expect(countNsfwTaggedCollections([nsfw, safe])).toBe(1);
+  });
+
+  it('excludes nsfw from tag filter chips', () => {
+    const tags = collectGestureTagsForFilterBar([
+      basePack({ tags: ['cats', 'nsfw'] }),
+      basePack({ id: 'p2', tags: ['NSFW'] }),
+    ]);
+    expect(tags).toEqual(['cats']);
+  });
+
+  it('always suggests nsfw in tag autocomplete', () => {
+    expect(collectGestureTagAutocompleteOptions(['cats'], [])).toEqual(['nsfw', 'cats']);
+    expect(collectGestureTagAutocompleteOptions(['nsfw', 'cats'], ['nsfw'])).toEqual(['cats']);
+    expect(isGestureNsfwTag('NSFW')).toBe(true);
   });
 });

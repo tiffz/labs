@@ -12,11 +12,15 @@ import PracticeSessionConfigProvider, {
 import { gestureDb } from '../db/gestureDb';
 import { isIncompleteUploadPack } from '../drive/gestureUploadActivity';
 import {
-  countGestureCollectionsPerTag,
+  collectGestureTagsForFilterBar,
+  countGestureCollectionsPerTagForFilterBar,
+  countNsfwTaggedCollections,
   packHasGestureTag,
   packMatchesGestureTagFilters,
+  packPassesNsfwVisibility,
+  packShouldBlurNsfwPreviews,
 } from '../drive/gesturePackTags';
-import { useGestureKnownTags } from '../hooks/useGestureKnownTags';
+import { useGestureNsfwVisibility } from '../hooks/useGestureNsfwVisibility';
 import {
   GESTURE_EMPTY_DRAW_HISTORY,
   GESTURE_EMPTY_PACK_FILES,
@@ -28,7 +32,8 @@ import { readGesturePracticeSessionConfig } from '../practice/gesturePracticeCon
 import type { SessionConfig, GesturePack } from '../types';
 
 type PracticeCollectionGridProps = {
-  practicePacks: GesturePack[];
+  gridPacks: GesturePack[];
+  showNsfwCollections: boolean;
   coverIds: Map<string, string[]>;
   counts: Map<string, number>;
   drawnSets: Map<string, Set<string>>;
@@ -39,7 +44,8 @@ type PracticeCollectionGridProps = {
 };
 
 const PracticeCollectionGrid = memo(function PracticeCollectionGrid({
-  practicePacks,
+  gridPacks,
+  showNsfwCollections,
   coverIds,
   counts,
   drawnSets,
@@ -50,15 +56,15 @@ const PracticeCollectionGrid = memo(function PracticeCollectionGrid({
 }: PracticeCollectionGridProps): React.ReactElement {
   const toggleHandlers = useMemo(() => {
     const map = new Map<string, () => void>();
-    for (const pack of practicePacks) {
+    for (const pack of gridPacks) {
       map.set(pack.id, () => onTogglePack(pack.id));
     }
     return map;
-  }, [onTogglePack, practicePacks]);
+  }, [gridPacks, onTogglePack]);
 
   return (
     <div className="gesture-collection-grid gesture-collection-grid--practice">
-      {practicePacks.map((pack) => (
+      {gridPacks.map((pack) => (
         <PackCollectionCard
           key={pack.id}
           pack={pack}
@@ -69,6 +75,7 @@ const PracticeCollectionGrid = memo(function PracticeCollectionGrid({
           selected={selectedSet.has(pack.id)}
           suppressTags={suppressTags}
           previewFetchEnabled={previewFetchEnabled}
+          blurNsfwPreviews={packShouldBlurNsfwPreviews(pack, showNsfwCollections)}
           onToggleSelect={toggleHandlers.get(pack.id)}
         />
       ))}
@@ -93,6 +100,7 @@ export default function PracticeTab({
 }: PracticeTabProps): React.ReactElement {
   const { packs, packsHydrated } = useGesturePacks();
   const { counts, coverIds, drawnSets, statsHydrated } = useGesturePackStats();
+  const { showNsfwCollections, setShowNsfwCollections } = useGestureNsfwVisibility();
 
   const [selectedPackIds, setSelectedPackIds] = useState<string[]>(
     () => readGesturePracticeSessionConfig()?.selectedPackIds ?? [],
@@ -115,16 +123,26 @@ export default function PracticeTab({
     [counts, packs],
   );
 
-  const allTags = useGestureKnownTags(packs);
-  const tagCounts = useMemo(() => countGestureCollectionsPerTag(packs), [packs]);
+  const nsfwTaggedCount = useMemo(() => countNsfwTaggedCollections(packs), [packs]);
 
-  const practicePacks = useMemo(
+  const tagCounts = useMemo(
+    () => countGestureCollectionsPerTagForFilterBar(readyPacks),
+    [readyPacks],
+  );
+  const filterBarTags = useMemo(() => collectGestureTagsForFilterBar(readyPacks), [readyPacks]);
+
+  const gridPacks = useMemo(
     () =>
       readyPacks.filter(
         (p) =>
           (counts.get(p.id) ?? 0) > 0 && packMatchesGestureTagFilters(p, activeTagFilters),
       ),
     [activeTagFilters, counts, readyPacks],
+  );
+
+  const practicePacks = useMemo(
+    () => gridPacks.filter((p) => packPassesNsfwVisibility(p, showNsfwCollections)),
+    [gridPacks, showNsfwCollections],
   );
 
   const packIdsWithPhotos = useMemo(() => practicePacks.map((p) => p.id), [practicePacks]);
@@ -155,10 +173,12 @@ export default function PracticeTab({
   }, [allPackIdsWithPhotos]);
 
   const togglePack = useCallback((packId: string) => {
+    const pack = gridPacks.find((entry) => entry.id === packId);
+    if (pack && packShouldBlurNsfwPreviews(pack, showNsfwCollections)) return;
     setSelectedPackIds((prev) =>
       prev.includes(packId) ? prev.filter((id) => id !== packId) : [...prev, packId],
     );
-  }, []);
+  }, [gridPacks, showNsfwCollections]);
 
   const toggleTagFilter = useCallback(
     (tag: string) => {
@@ -200,6 +220,12 @@ export default function PracticeTab({
 
   const collectionsReady = packsHydrated && statsHydrated;
 
+  const nsfwFilterBarProps = {
+    nsfwTaggedCount,
+    showNsfwCollections,
+    onShowNsfwCollectionsChange: setShowNsfwCollections,
+  };
+
   if (!collectionsReady) {
     return (
       <div className="gesture-tab-panel">
@@ -208,7 +234,7 @@ export default function PracticeTab({
     );
   }
 
-  if (packIdsWithPhotos.length === 0 && activeTagFilters.length === 0) {
+  if (gridPacks.length === 0 && activeTagFilters.length === 0) {
     return (
       <div className="gesture-tab-panel">
         <div className="gesture-empty-state">
@@ -229,15 +255,16 @@ export default function PracticeTab({
     );
   }
 
-  if (packIdsWithPhotos.length === 0) {
+  if (gridPacks.length === 0) {
     return (
       <div className="gesture-tab-panel">
         <GestureTagFilterBar
-          tags={allTags}
+          tags={filterBarTags}
           tagCounts={tagCounts}
           activeTags={activeTagFilters}
           onToggleTag={toggleTagFilter}
           onClear={() => onActiveTagFiltersChange([])}
+          {...nsfwFilterBarProps}
         />
         <div className="gesture-empty-state">
           <Typography className="gesture-empty-title">No collections match these tags</Typography>
@@ -261,7 +288,7 @@ export default function PracticeTab({
         <PracticeSessionControls />
 
         <GestureTagFilterBar
-          tags={allTags}
+          tags={filterBarTags}
           tagCounts={tagCounts}
           activeTags={activeTagFilters}
           onToggleTag={toggleTagFilter}
@@ -269,13 +296,15 @@ export default function PracticeTab({
           selectionHint={selectionHint}
           onSelectAllShown={packIdsWithPhotos.length > 0 ? selectAllVisible : undefined}
           onDeselectAllShown={packIdsWithPhotos.length > 0 ? deselectAllVisible : undefined}
+          {...nsfwFilterBarProps}
         />
 
         <Typography component="h2" className="gesture-practice-label">
           Collections
         </Typography>
         <PracticeCollectionGrid
-          practicePacks={practicePacks}
+          gridPacks={gridPacks}
+          showNsfwCollections={showNsfwCollections}
           coverIds={coverIds}
           counts={counts}
           drawnSets={drawnSets}

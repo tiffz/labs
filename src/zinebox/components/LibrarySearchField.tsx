@@ -22,10 +22,13 @@ export default function LibrarySearchField({
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const trimmed = draft.trim();
-      onChange(trimmed.length > 0 ? trimmed : null);
+      const nextQ = trimmed.length > 0 ? trimmed : null;
+      const currentQ = value.trim().length > 0 ? value.trim() : null;
+      if (nextQ === currentQ) return;
+      onChange(nextQ);
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [draft, onChange]);
+  }, [draft, onChange, value]);
 
   const hasQuery = draft.length > 0;
 

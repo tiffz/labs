@@ -7,7 +7,13 @@ import {
   LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
 import { readGestureDriveAccessToken } from '../drive/readGestureDriveAccessToken';
-import { normalizeGestureTags } from '../drive/gesturePackTags';
+import AppTooltip from '../../shared/components/AppTooltip';
+import {
+  collectGestureTagAutocompleteOptions,
+  GESTURE_NSFW_TAG_TOOLTIP,
+  isGestureNsfwTag,
+  normalizeGestureTags,
+} from '../drive/gesturePackTags';
 import { registerGestureLocalTags } from '../drive/gestureTagRegistry';
 import { updatePackMetadata } from '../drive/updatePackMetadata';
 import type { GesturePack } from '../types';
@@ -46,10 +52,10 @@ export default function InlinePackTags({
   const pendingPersistRef = useRef<string[] | null>(null);
   const commitLockRef = useRef(false);
 
-  const tagOptions = useMemo(() => {
-    const chosen = new Set(localTags.map((tag) => tag.toLowerCase()));
-    return allTags.filter((tag) => !chosen.has(tag.toLowerCase()));
-  }, [allTags, localTags]);
+  const tagOptions = useMemo(
+    () => collectGestureTagAutocompleteOptions(allTags, localTags),
+    [allTags, localTags],
+  );
 
   useEffect(() => {
     if (pendingPersistRef.current !== null) return;
@@ -165,20 +171,32 @@ export default function InlinePackTags({
 
   return (
     <div ref={rootRef} className="gesture-inline-tags" aria-label="Collection tags">
-      {localTags.map((tag) => (
-        <span key={tag} className="gesture-pack-tag-chip">
-          {tag}
-          <button
-            type="button"
-            className="gesture-pack-tag-remove"
-            aria-label={`Remove tag ${tag}`}
-            onClick={() => removeTag(tag)}
-            disabled={disabled}
+      {localTags.map((tag) => {
+        const chip = (
+          <span
+            key={tag}
+            className={`gesture-pack-tag-chip${isGestureNsfwTag(tag) ? ' gesture-pack-tag-chip--nsfw' : ''}`}
           >
-            ×
-          </button>
-        </span>
-      ))}
+            {tag}
+            <button
+              type="button"
+              className="gesture-pack-tag-remove"
+              aria-label={`Remove tag ${tag}`}
+              onClick={() => removeTag(tag)}
+              disabled={disabled}
+            >
+              ×
+            </button>
+          </span>
+        );
+        return isGestureNsfwTag(tag) ? (
+          <AppTooltip key={tag} title={GESTURE_NSFW_TAG_TOOLTIP} placement="top">
+            {chip}
+          </AppTooltip>
+        ) : (
+          chip
+        );
+      })}
 
       {adding ? (
         <Autocomplete
@@ -223,11 +241,13 @@ export default function InlinePackTags({
             const { key, ...optionProps } = props as React.HTMLAttributes<HTMLLIElement> & {
               key?: string;
             };
+            const nsfwOption = isGestureNsfwTag(option);
             return (
               <li
                 key={key ?? option}
                 {...optionProps}
-                className={`gesture-pack-tags-option${optionProps.className ? ` ${optionProps.className}` : ''}`}
+                title={nsfwOption ? GESTURE_NSFW_TAG_TOOLTIP : undefined}
+                className={`gesture-pack-tags-option${nsfwOption ? ' gesture-pack-tags-option--nsfw' : ''}${optionProps.className ? ` ${optionProps.className}` : ''}`}
               >
                 <span className="gesture-pack-tags-option-label">
                   {highlightGestureTagMatch(option, inputValue)}

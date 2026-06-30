@@ -34,6 +34,8 @@ type PackCollectionCardProps = {
   suppressTags?: boolean;
   /** When false, preview strips only read cache (inactive tab). */
   previewFetchEnabled?: boolean;
+  /** Blur preview photos for NSFW-tagged collections (device-local filter). */
+  blurNsfwPreviews?: boolean;
   onToggleSelect?: () => void;
   onRefresh?: () => void;
   refreshing?: boolean;
@@ -62,6 +64,7 @@ function PackCollectionCard({
   allTags = [],
   suppressTags = false,
   previewFetchEnabled = true,
+  blurNsfwPreviews = false,
   onToggleSelect,
   onRefresh,
   refreshing = false,
@@ -132,16 +135,23 @@ function PackCollectionCard({
   const previewSelectionEnabled = mode === 'select' || collectionSelectable;
   const previewSelected = mode === 'select' ? selected : collectionSelected;
   const previewToggleDisabled =
-    mode === 'select' ? Boolean(disabled || needsRefresh) : Boolean(disabled);
+    mode === 'select'
+      ? Boolean(disabled || needsRefresh || blurNsfwPreviews)
+      : Boolean(disabled);
+  const previewBlurClass = blurNsfwPreviews ? ' is-nsfw-blurred' : '';
   const handlePreviewToggle =
     mode === 'select' ? onToggleSelect : onToggleCollectionSelect;
 
   const previewBlock = previewSelectionEnabled ? (
     <button
       type="button"
-      className={`gesture-collection-card-preview-toggle${previewSelected ? ' is-selected' : ''}`}
+      className={`gesture-collection-card-preview-toggle${previewSelected ? ' is-selected' : ''}${previewBlurClass}`}
       aria-pressed={previewSelected}
-      aria-label={`${previewSelected ? 'Deselect' : 'Select'} ${pack.name}`}
+      aria-label={
+        blurNsfwPreviews
+          ? `${pack.name}, NSFW previews blurred on this device`
+          : `${previewSelected ? 'Deselect' : 'Select'} ${pack.name}`
+      }
       disabled={previewToggleDisabled}
       onClick={() => handlePreviewToggle?.()}
     >
@@ -159,7 +169,7 @@ function PackCollectionCard({
       />
     </button>
   ) : (
-    <div className="gesture-collection-card-preview-wrap">
+    <div className={`gesture-collection-card-preview-wrap${previewBlurClass}`}>
       <PackPreviewStrip
         driveFileIds={driveFileIds}
         limit={previewLimit}
@@ -337,6 +347,7 @@ function arePackCollectionCardPropsEqual(
   if (a.selected !== b.selected || a.disabled !== b.disabled || a.refreshing !== b.refreshing || a.mode !== b.mode) return false;
   if (a.suppressTags !== b.suppressTags || a.dropEnabled !== b.dropEnabled) return false;
   if (a.previewFetchEnabled !== b.previewFetchEnabled) return false;
+  if (a.blurNsfwPreviews !== b.blurNsfwPreviews) return false;
   if (a.collectionSelected !== b.collectionSelected || a.collectionSelectable !== b.collectionSelectable) return false;
   if (a.compactManage !== b.compactManage) return false;
   if (a.pack.name !== b.pack.name) return false;

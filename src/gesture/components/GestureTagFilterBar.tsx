@@ -1,5 +1,9 @@
 import type { ReactElement } from 'react';
 import Typography from '@mui/material/Typography';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+
+import AppTooltip from '../../shared/components/AppTooltip';
 
 type GestureTagFilterBarProps = {
   tags: string[];
@@ -19,6 +23,10 @@ type GestureTagFilterBarProps = {
     onClick: () => void;
   };
   onClearSelection?: () => void;
+  /** Device-local NSFW preview visibility — separate from tag chips. */
+  nsfwTaggedCount?: number;
+  showNsfwCollections?: boolean;
+  onShowNsfwCollectionsChange?: (show: boolean) => void;
 };
 
 export default function GestureTagFilterBar({
@@ -32,6 +40,9 @@ export default function GestureTagFilterBar({
   onDeselectAllShown,
   selectionPrimaryAction,
   onClearSelection,
+  nsfwTaggedCount = 0,
+  showNsfwCollections = false,
+  onShowNsfwCollectionsChange,
 }: GestureTagFilterBarProps): ReactElement | null {
   const showSelectionActions =
     selectionHint &&
@@ -40,7 +51,9 @@ export default function GestureTagFilterBar({
       selectionPrimaryAction != null ||
       onClearSelection != null);
 
-  if (tags.length === 0 && !showSelectionActions) return null;
+  const showNsfwToggle = nsfwTaggedCount > 0 && onShowNsfwCollectionsChange != null;
+
+  if (tags.length === 0 && !showSelectionActions && !showNsfwToggle) return null;
 
   const activeSet = new Set(activeTags);
 
@@ -80,6 +93,35 @@ export default function GestureTagFilterBar({
             ) : null}
           </div>
         </>
+      ) : null}
+      {showNsfwToggle ? (
+        <div className="gesture-tag-filter-row gesture-tag-filter-row--nsfw">
+          <AppTooltip
+            title="Stored on this device only. NSFW-tagged collections stay in your library; previews blur until you turn this on."
+            placement="top"
+          >
+            <button
+              type="button"
+              className={`gesture-tag-filter-chip gesture-tag-filter-chip--nsfw${showNsfwCollections ? ' is-active' : ' is-off'}`}
+              aria-pressed={showNsfwCollections}
+              aria-label={
+                showNsfwCollections
+                  ? 'Show NSFW previews, currently on'
+                  : 'Show NSFW previews, currently off'
+              }
+              onClick={() => onShowNsfwCollectionsChange(!showNsfwCollections)}
+            >
+              <span className="gesture-tag-filter-chip-icon" aria-hidden="true">
+                {showNsfwCollections ? (
+                  <VisibilityIcon sx={{ fontSize: 15 }} />
+                ) : (
+                  <VisibilityOffIcon sx={{ fontSize: 15 }} />
+                )}
+              </span>
+              <span className="gesture-tag-filter-chip-label">Show NSFW</span>
+            </button>
+          </AppTooltip>
+        </div>
       ) : null}
       {showSelectionActions ? (
         <div className="gesture-selection-bar" role="group" aria-label="Collection selection">

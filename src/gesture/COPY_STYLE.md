@@ -19,3 +19,4 @@ Defer to [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md) first.
 - “Line of Action” or other product names in UI.
 - Em dashes in user-visible strings.
 - Asking for tags, subjects, or notes during upload — add tags on a collection card after it lands.
+- Tag collections **nsfw** on the card when they contain nude reference photos. Previews blur on this device until the user turns on **Show NSFW** (stored locally, not synced to Drive). Collections stay in the grid; practice excludes blurred collections until shown.

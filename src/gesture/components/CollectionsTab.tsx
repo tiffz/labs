@@ -20,9 +20,15 @@ import { useGestureDriveBackupContext } from '../context/GestureDriveBackupConte
 import { canMergeGesturePacks, isPackInvolvedInIncompleteMerge } from '../drive/gestureMergeCollections';
 import { shouldShowMergeRecoveryBanner } from '../drive/gestureMergeActivity';
 import { refreshPackFolder } from '../drive/linkPackFolder';
-import { packMatchesGestureTagFilters, countGestureCollectionsPerTag } from '../drive/gesturePackTags';
+import {
+  collectGestureTagsForFilterBar,
+  countGestureCollectionsPerTagForFilterBar,
+  countNsfwTaggedCollections,
+  packMatchesGestureTagFilters,
+} from '../drive/gesturePackTags';
 import { useCollectionGridSelection } from '../hooks/useCollectionGridSelection';
 import { useGestureKnownTags } from '../hooks/useGestureKnownTags';
+import { useGestureNsfwVisibility } from '../hooks/useGestureNsfwVisibility';
 import { shouldShowUploadRecoveryBanner } from '../drive/gestureUploadActivity';
 import { useGestureCollectionDrop } from '../hooks/useGestureCollectionDrop';
 import { useGestureCollectionUpload } from '../hooks/useGestureCollectionUpload';
@@ -62,15 +68,16 @@ export default function CollectionsTab({
   const [bulkSourceOpen, setBulkSourceOpen] = useState(false);
   const upload = useGestureCollectionUpload({ onComplete: onMessage, onError });
   const { dragActive, handlers } = useGestureCollectionDrop({
-    disabled: upload.busy,
     upload,
   });
 
   const uploadSessionActive = upload.busy || upload.queuedCount > 0;
-  const interactionDisabled = upload.busy;
+  /** Block only same-pack recovery actions while the upload queue is draining. */
+  const recoveryActionsDisabled = upload.busy;
 
   const { packs, packsHydrated } = useGesturePacks();
   const filesByPack = useGesturePackStats();
+  const { showNsfwCollections, setShowNsfwCollections } = useGestureNsfwVisibility();
 
   const incompleteMergeParents = useMemo(
     () => packs.filter((pack) => pack.mergeStatus === 'incomplete'),
@@ -95,7 +102,15 @@ export default function CollectionsTab({
   );
 
   const allTags = useGestureKnownTags(packs);
-  const tagCounts = useMemo(() => countGestureCollectionsPerTag(packs), [packs]);
+  const nsfwTaggedCount = useMemo(() => countNsfwTaggedCollections(packs), [packs]);
+  const tagCounts = useMemo(
+    () => countGestureCollectionsPerTagForFilterBar(packs),
+    [packs],
+  );
+  const filterBarTags = useMemo(
+    () => collectGestureTagsForFilterBar(packs),
+    [packs],
+  );
   const deferredNameQuery = useDeferredValue(nameQuery.trim().toLowerCase());
 
   const visiblePacks = useMemo(() => {
@@ -268,7 +283,7 @@ export default function CollectionsTab({
       {upload.pendingBatchSession && upload.pendingBatchSession.pendingCount > 0 && !uploadSessionActive ? (
         <InterruptedBatchUploadBanner
           session={upload.pendingBatchSession}
-          disabled={interactionDisabled}
+          disabled={recoveryActionsDisabled}
           upload={upload}
           onDismiss={() => void upload.refreshPendingBatchSession()}
           onError={onError}
@@ -280,7 +295,7 @@ export default function CollectionsTab({
           key={pack.id}
           pack={pack}
           photoCount={filesByPack.counts.get(pack.id) ?? 0}
-          disabled={interactionDisabled}
+          disabled={recoveryActionsDisabled}
           upload={upload}
           onMessage={onMessage}
           onError={onError}
@@ -292,7 +307,6 @@ export default function CollectionsTab({
         <InterruptedMergeBanner
           key={`merge-${pack.id}`}
           pack={pack}
-          disabled={interactionDisabled}
           onMessage={onMessage}
           onError={onError}
           onRemove={(target) => openDeleteDialog([target])}
@@ -305,7 +319,6 @@ export default function CollectionsTab({
         </Typography>
         <div className="gesture-tab-toolbar-actions">
           <AddCollectionActions
-            disabled={interactionDisabled}
             variant="subtle"
             upload={upload}
             onComplete={onMessage}
@@ -329,11 +342,14 @@ export default function CollectionsTab({
         />
 
         <GestureTagFilterBar
-          tags={allTags}
+          tags={filterBarTags}
           tagCounts={tagCounts}
           activeTags={activeTagFilters}
           onToggleTag={toggleTagFilter}
           onClear={() => onActiveTagFiltersChange([])}
+          nsfwTaggedCount={nsfwTaggedCount}
+          showNsfwCollections={showNsfwCollections}
+          onShowNsfwCollectionsChange={setShowNsfwCollections}
         />
       </div>
 
@@ -345,7 +361,7 @@ export default function CollectionsTab({
           <Typography className="gesture-empty-copy">
             Drag a folder here, or use Add to pick files. Everything saves to your Drive automatically.
           </Typography>
-          <AddCollectionActions disabled={upload.busy} upload={upload} onComplete={onMessage} onError={onError} />
+          <AddCollectionActions upload={upload} onComplete={onMessage} onError={onError} />
         </div>
       ) : visiblePacks.length === 0 ? (
         <div className="gesture-empty-state">
@@ -361,9 +377,10 @@ export default function CollectionsTab({
           allTags={allTags}
           upload={upload}
           selectedSet={selectedSet}
-          interactionDisabled={interactionDisabled}
+          interactionDisabled={false}
           refreshingPackIds={refreshingPackIds}
           previewFetchEnabled={previewFetchEnabled}
+          showNsfwCollections={showNsfwCollections}
           onToggleCollectionSelect={toggle}
           onRefresh={handleRefresh}
           onDelete={(pack) => openDeleteDialog([pack])}
@@ -398,7 +415,7 @@ export default function CollectionsTab({
         open={bulkTagsOpen}
         packCount={selectedPacks.length}
         allTags={allTags}
-        busy={interactionDisabled}
+        busy={false}
         packIds={selectedIds}
         onClose={() => setBulkTagsOpen(false)}
         onComplete={(msg) => {
@@ -411,7 +428,7 @@ export default function CollectionsTab({
       <BulkSetSourceDialog
         open={bulkSourceOpen}
         packCount={selectedPacks.length}
-        busy={interactionDisabled}
+        busy={false}
         packIds={selectedIds}
         onClose={() => setBulkSourceOpen(false)}
         onComplete={(msg) => {
@@ -426,7 +443,7 @@ export default function CollectionsTab({
           <CollectionsBulkBar
             selectedCount={selectedIds.length}
             visibleCount={visiblePacks.length}
-            busy={interactionDisabled}
+            busy={false}
             mergeEnabled={mergeEnabled}
             mergeHint={mergeHint}
             refreshEnabled={refreshEnabled}

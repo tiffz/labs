@@ -39,7 +39,7 @@ Track known flaky tests so they get fixed or quarantined — not masked with ret
 
 | `layout-advisory.spec.ts` sight LCP sub-test | single-sample LCP budget environment-dominated on CI | agent | **advisory** | LCP downgraded to `[lcp]` warning (2026-06-29); blocking guard is `.sight-practice-shell` visible. axe + truncation sub-tests stay blocking |
 
-| `e2e/smoke/zinebox-library.spec.ts` › random unread opens reader | `toHaveURL(/#/read/)` 15s timeout — first click landed before unread selection ready under parallel CI load | agent | resolved | Re-dispatch click via `expect(...).toPass()` until reader route engages (2026-06-29); functional assertion preserved. 3× stable |
+| `e2e/smoke/zinebox-library.spec.ts` › random unread opens reader | `toHaveURL(/#/read/)` timeout while reader UI visible — debounced search `onChange(null)` queued `throttledReplaceState(#/library)` that overwrote hash after `openReader` | agent | resolved | Skip no-op search debounce; no-op guard in `setLibraryParams`; cancel pending history in `openReader` (2026-06-30) |
 
 ### Resolved (archive)
 

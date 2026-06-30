@@ -1,5 +1,12 @@
 import type { GesturePack } from '../types';
 
+/** Normalized tag for nude/adult reference collections. Previews blur by default (device-local preference). */
+export const GESTURE_NSFW_TAG = 'nsfw';
+
+/** Tooltip for the nsfw tag chip and autocomplete hint. */
+export const GESTURE_NSFW_TAG_TOOLTIP =
+  'Marks nude or adult reference photos. Previews blur on this device until you turn on Show NSFW. The tag syncs with Drive; blur stays on this device only.';
+
 /** Normalize free-form collection tags for storage and matching (lowercase, trimmed, collapsed spaces). */
 export function normalizeGestureTag(raw: string): string | null {
   const normalized = raw.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -21,7 +28,7 @@ export function normalizeGestureTags(tags: string[]): string[] {
   return out;
 }
 
-export function collectGestureTagsFromPacks(packs: GesturePack[]): string[] {
+export function collectGestureTagsFromPacks(packs: readonly GesturePack[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const pack of packs) {
@@ -36,7 +43,7 @@ export function collectGestureTagsFromPacks(packs: GesturePack[]): string[] {
 }
 
 /** How many collections carry each normalized tag. */
-export function countGestureCollectionsPerTag(packs: GesturePack[]): Map<string, number> {
+export function countGestureCollectionsPerTag(packs: readonly GesturePack[]): Map<string, number> {
   const counts = new Map<string, number>();
   for (const pack of packs) {
     for (const tag of normalizeGestureTags(pack.tags ?? [])) {
@@ -57,4 +64,55 @@ export function packHasGestureTag(pack: GesturePack, tag: string): boolean {
   const normalized = normalizeGestureTag(tag);
   if (!normalized) return false;
   return normalizeGestureTags(pack.tags ?? []).includes(normalized);
+}
+
+export function packHasNsfwTag(pack: GesturePack): boolean {
+  return packHasGestureTag(pack, GESTURE_NSFW_TAG);
+}
+
+export function isGestureNsfwTag(tag: string): boolean {
+  return normalizeGestureTag(tag) === GESTURE_NSFW_TAG;
+}
+
+/** When false, NSFW-tagged collections are excluded from practice selection (previews may still blur in grids). */
+export function packPassesNsfwVisibility(pack: GesturePack, showNsfwCollections: boolean): boolean {
+  if (showNsfwCollections) return true;
+  return !packHasNsfwTag(pack);
+}
+
+/** Blur collection preview photos on this device when NSFW is tagged and Show NSFW is off. */
+export function packShouldBlurNsfwPreviews(pack: GesturePack, showNsfwCollections: boolean): boolean {
+  return !showNsfwCollections && packHasNsfwTag(pack);
+}
+
+export function countNsfwTaggedCollections(packs: readonly GesturePack[]): number {
+  return packs.filter((pack) => packHasNsfwTag(pack)).length;
+}
+
+/** Tag filter chips exclude NSFW — visibility uses a separate device-local toggle. */
+export function collectGestureTagsForFilterBar(packs: readonly GesturePack[]): string[] {
+  return collectGestureTagsFromPacks(packs).filter((tag) => tag !== GESTURE_NSFW_TAG);
+}
+
+export function countGestureCollectionsPerTagForFilterBar(
+  packs: readonly GesturePack[],
+): Map<string, number> {
+  const counts = countGestureCollectionsPerTag(packs);
+  counts.delete(GESTURE_NSFW_TAG);
+  return counts;
+}
+
+/** Tag autocomplete options — always surfaces `nsfw` for discoverability. */
+export function collectGestureTagAutocompleteOptions(
+  allTags: readonly string[],
+  localTags: readonly string[],
+): string[] {
+  const chosen = new Set(
+    localTags
+      .map((tag) => normalizeGestureTag(tag))
+      .filter((tag): tag is string => tag != null),
+  );
+  const options = allTags.filter((tag) => !chosen.has(tag.toLowerCase()));
+  if (chosen.has(GESTURE_NSFW_TAG)) return options;
+  return [GESTURE_NSFW_TAG, ...options.filter((tag) => tag !== GESTURE_NSFW_TAG)];
 }

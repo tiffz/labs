@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { throttledReplaceState } from '../../shared/utils/urlHistory';
+import { cancelPendingHistoryUpdates, throttledReplaceState } from '../../shared/utils/urlHistory';
 import {
   canonicalizeZineboxReadHash,
   extractZineboxHashSearch,
@@ -64,6 +64,14 @@ export function useZineboxUrlState(): {
   const setLibraryParams = useCallback((next: Partial<ZineboxLibraryParams>) => {
     setLibraryParamsState((prev) => {
       const merged = { ...prev, ...next };
+      if (
+        merged.filter === prev.filter &&
+        merged.source === prev.source &&
+        merged.tag === prev.tag &&
+        merged.q === prev.q
+      ) {
+        return prev;
+      }
       const href = zineboxLibraryHref(merged);
       throttledReplaceState(`${window.location.pathname}${window.location.search}${href}`);
       return merged;
@@ -83,6 +91,7 @@ export function useZineboxUrlState(): {
 
   const openReader = useCallback(
     (comicId: string) => {
+      cancelPendingHistoryUpdates();
       const href = zineboxReadHref(comicId, readerParams);
       window.location.hash = href;
       setRoute({ kind: 'read', comicId });
@@ -92,6 +101,7 @@ export function useZineboxUrlState(): {
   );
 
   const closeReader = useCallback(() => {
+    cancelPendingHistoryUpdates();
     const href = zineboxLibraryHref(libraryParams);
     window.location.hash = href;
   }, [libraryParams]);

@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react';
 import PackCollectionCard from './PackCollectionCard';
 import type { GestureCollectionUploadHandle } from '../hooks/useGestureCollectionUpload';
 import { resolveGesturePackCoverFileIds } from '../hooks/useGesturePackStats';
+import { packShouldBlurNsfwPreviews } from '../drive/gesturePackTags';
 import type { GesturePack } from '../types';
 import type { GesturePackStats } from '../hooks/useGesturePackStatsTypes';
 
@@ -14,6 +15,7 @@ type CollectionsCollectionGridProps = {
   interactionDisabled: boolean;
   refreshingPackIds: ReadonlySet<string>;
   previewFetchEnabled: boolean;
+  showNsfwCollections: boolean;
   onToggleCollectionSelect: (packId: string) => void;
   onRefresh: (pack: GesturePack) => void;
   onDelete: (pack: GesturePack) => void;
@@ -31,6 +33,7 @@ function CollectionGridCard({
   interactionDisabled,
   refreshing,
   previewFetchEnabled,
+  showNsfwCollections,
   onToggleCollectionSelect,
   onRefresh,
   onDelete,
@@ -46,6 +49,7 @@ function CollectionGridCard({
   interactionDisabled: boolean;
   refreshing: boolean;
   previewFetchEnabled: boolean;
+  showNsfwCollections: boolean;
   onToggleCollectionSelect?: () => void;
   onRefresh?: () => void;
   onDelete?: () => void;
@@ -77,6 +81,7 @@ function CollectionGridCard({
       onUpdated={onUpdated}
       onError={onError}
       previewFetchEnabled={previewFetchEnabled}
+      blurNsfwPreviews={packShouldBlurNsfwPreviews(pack, showNsfwCollections)}
     />
   );
 }
@@ -90,6 +95,7 @@ const CollectionsCollectionGrid = memo(function CollectionsCollectionGrid({
   interactionDisabled,
   refreshingPackIds,
   previewFetchEnabled,
+  showNsfwCollections,
   onToggleCollectionSelect,
   onRefresh,
   onDelete,
@@ -134,6 +140,7 @@ const CollectionsCollectionGrid = memo(function CollectionsCollectionGrid({
           interactionDisabled={interactionDisabled}
           refreshing={refreshingPackIds.has(pack.id)}
           previewFetchEnabled={previewFetchEnabled}
+          showNsfwCollections={showNsfwCollections}
           onToggleCollectionSelect={toggleHandlers.get(pack.id)}
           onRefresh={refreshHandlers.get(pack.id)}
           onDelete={deleteHandlers.get(pack.id)}
