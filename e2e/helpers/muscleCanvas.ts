@@ -9,10 +9,13 @@ import { expect, type Page } from '@playwright/test';
  */
 export const MUSCLE_CANVAS_TIMEOUT_MS = 20_000;
 
-/** Wait for the muscle app shell and its WebGL canvas to mount with a load-tolerant timeout. */
+/** Wait for the muscle app shell, WebGL canvas, and first anatomy scene layout. */
 export async function expectMuscleCanvasReady(page: Page): Promise<void> {
   await expect(page.getByTestId('muscle-app')).toBeVisible({ timeout: MUSCLE_CANVAS_TIMEOUT_MS });
   await expect(page.getByTestId('muscle-training-canvas')).toBeVisible({
+    timeout: MUSCLE_CANVAS_TIMEOUT_MS,
+  });
+  await expect(page.locator('.muscle-canvas-wrap.is-ready')).toBeVisible({
     timeout: MUSCLE_CANVAS_TIMEOUT_MS,
   });
 }

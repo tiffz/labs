@@ -2,6 +2,7 @@
 export type MuscleLayerDepth = 0 | 1 | 2 | 3;
 
 export type MuscleRegion =
+  | 'anatomy_terms'
   | 'fundamentals'
   | 'torso'
   | 'shoulder_neck'
@@ -25,16 +26,19 @@ export type JointType =
 
 export type PrimitiveShape = 'box' | 'cylinder' | 'sphere' | 'bucket' | 'egg';
 
-export interface ArtisticContext {
-  whyItMatters: string;
-  commonMistake: string;
-  movementEffect: string;
+export interface StructureDetails {
+  /** 1–2 sentences: visible form + drawing role (artist voice). */
+  definition: string;
+  colloquialNames?: string[];
+  latinName?: string;
+  /** Verified only — see scripts/verify-anatomy-links.mjs */
+  wikipediaUrl?: string;
+  learnMore?: { label: string; url: string }[];
 }
 
 export interface MuscleMemoryNode {
   id: string;
   name: string;
-  latinName?: string;
   type: MuscleNodeType;
   region: MuscleRegion;
   /** Anatomical peel layer — see MuscleLayerDepth. */
@@ -47,7 +51,7 @@ export interface MuscleMemoryNode {
   primitiveShape: PrimitiveShape;
   /** When true, only shown in Full body atlas — excluded from module study decks. */
   atlasOnly?: boolean;
-  artisticContext: ArtisticContext;
+  details: StructureDetails;
   /** Optional layout hint for procedural / robo-skelly placement. */
   layout?: {
     position: [number, number, number];
@@ -85,6 +89,12 @@ export interface MuscleMemoryModule {
 
 export type WorkoutMode = 'warmup' | 'active';
 
+export type QuizMode =
+  | 'identify_highlight'
+  | 'locate_name'
+  | 'identify_region'
+  | 'term_direction';
+
 export type QuizFeedbackKind = 'idle' | 'correct' | 'incorrect';
 
 export interface QuizState {
@@ -92,6 +102,19 @@ export interface QuizState {
   choices: string[];
   feedback: QuizFeedbackKind;
   mistakeNodeId: string | null;
+  /** When locate_name, hide MCQ buttons. */
+  quizMode: QuizMode;
+  /** Shown instead of highlight for locate_name. */
+  promptName: string | null;
+}
+
+export type ModuleGuidePhase = 'intro' | 'lesson' | 'explore' | 'quiz' | 'complete';
+
+export interface ModuleGuideProgress {
+  moduleId: MuscleRegion;
+  phase: ModuleGuidePhase;
+  lessonStepIndex: number;
+  completedAt?: number;
 }
 
 export interface RegionManifestEntry {

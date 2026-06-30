@@ -7,6 +7,7 @@ import {
   colorForVisualState,
   emissiveForState,
   opacityForState,
+  ANATOMY_COLORS,
 } from './anatomyVisuals';
 import { acquireAnatomyMaterial } from './anatomyMaterialPool';
 import { useAnatomyMeshFlags } from './useAnatomyMeshFlags';
@@ -29,8 +30,13 @@ function renderOrderForNode(node: MuscleMemoryNode): number {
 function GlbAnatomyMeshComponent({ mesh, node, clippingPlane = null }: GlbAnatomyMeshProps) {
   const { invalidate } = useThree();
   const mode = useMuscleStore((s) => s.mode);
+  const showLandmarks = useMuscleStore((s) => s.showLandmarks);
+  const focusedNodeId = useMuscleStore((s) => s.focusedNodeId);
   const flags = useAnatomyMeshFlags(node.id, node);
   const { handleClick, handlePointerOver, handlePointerOut } = useAnatomyMeshInteraction(node.id);
+  const showSubcutaneous = Boolean(
+    node.subcutaneousLandmarks?.length && (showLandmarks || focusedNodeId === node.id),
+  );
   const material = useMemo(
     () => acquireAnatomyMaterial(flags.visualState, false),
     [flags.visualState],
@@ -46,8 +52,13 @@ function GlbAnatomyMeshComponent({ mesh, node, clippingPlane = null }: GlbAnatom
       exploration: mode === 'warmup',
     });
     const emissive = emissiveForState(flags.visualState);
-    material.emissive.set(emissive.color);
-    material.emissiveIntensity = emissive.intensity;
+    if (showSubcutaneous) {
+      material.emissive.set(ANATOMY_COLORS.subcutaneous);
+      material.emissiveIntensity = 0.35;
+    } else {
+      material.emissive.set(emissive.color);
+      material.emissiveIntensity = emissive.intensity;
+    }
     material.depthTest = true;
     material.depthWrite = true;
     if (isBone) {
@@ -61,7 +72,7 @@ function GlbAnatomyMeshComponent({ mesh, node, clippingPlane = null }: GlbAnatom
     material.clippingPlanes = clippingPlane ? [clippingPlane] : null;
     material.clipShadows = clippingPlane != null;
     material.needsUpdate = true;
-  }, [clippingPlane, flags.visualState, isBone, material, mode, node]);
+  }, [clippingPlane, flags.visualState, isBone, material, mode, node, showSubcutaneous]);
 
   useLayoutEffect(() => {
     if (flags.visible) invalidate();

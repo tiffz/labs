@@ -10,7 +10,7 @@ import AnatomyHalfGroup from './AnatomyHalfGroup';
 import { alignAnatomyMeshToStudyHalf } from './alignAnatomyMeshGeometry';
 import {
   computeAnatomyGroupTransform,
-  computeStageOrbitTarget,
+  computeStageFrame,
 } from './extractGlbMeshes';
 import GlbAnatomyMesh from './GlbAnatomyMesh';
 import GlbAtlasMirrorMesh from './GlbAtlasMirrorMesh';
@@ -19,9 +19,11 @@ import { useCurriculumDetailMeshes } from './useCurriculumDetailMeshes';
 import { useFundamentalsMeshes } from './useFundamentalsMeshes';
 import { useAtlasCompleteMeshes } from './useAtlasCompleteMeshes';
 import { useHeadFaceAtlasMeshes } from './useHeadFaceAtlasMeshes';
+import ReferenceHalfHitZone from './ReferenceHalfHitZone';
+import type { AnatomyStageFrame } from '../../types/anatomyStageFrame';
 
 interface FullBodyRegionModelProps {
-  onStageReady?: (center: [number, number, number]) => void;
+  onStageReady?: (frame: AnatomyStageFrame) => void;
 }
 
 /** Z-Anatomy .r exports often land on −X; mirror to +X local so study (+scale) shows cross-section, not sagittal edge. */
@@ -75,7 +77,7 @@ export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionMode
   useEffect(() => {
     if (meshes.length > 0) {
       invalidate();
-      onStageReady?.(computeStageOrbitTarget(meshes, groupLayout));
+      onStageReady?.(computeStageFrame(meshes, groupLayout));
     }
   }, [groupLayout, invalidate, meshes, onStageReady]);
 
@@ -105,6 +107,7 @@ export default function FullBodyRegionModel({ onStageReady }: FullBodyRegionMode
           return <GlbAnatomyMesh key={mesh.name} mesh={mesh} node={node} clippingPlane={studyClip} />;
         })}
       </AnatomyHalfGroup>
+      <ReferenceHalfHitZone />
     </>
   );
 }

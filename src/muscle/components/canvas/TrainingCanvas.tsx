@@ -14,6 +14,8 @@ import CanvasViewControls from './CanvasViewControls';
 import AnatomyFocusCamera from './AnatomyFocusCamera';
 import QuizCameraRig from './QuizCameraRig';
 import { useQuizCameraPreset } from './useQuizCameraPreset';
+import TermSceneOverlay from '../terms/TermSceneOverlay';
+import OriginInsertionGizmo from './OriginInsertionGizmo';
 
 function readPerfFlag(): boolean {
   if (typeof window === 'undefined') return false;
@@ -36,7 +38,7 @@ function AnatomySceneInner({ showPerf }: { showPerf: boolean }) {
   const cameraFocusPreset = useMuscleStore((s) => s.cameraFocusPreset);
   const focusCameraNonce = useMuscleStore((s) => s.focusCameraNonce);
   const clearFocus = useMuscleStore((s) => s.clearFocus);
-  const setAnatomyStageCenter = useMuscleStore((s) => s.setAnatomyStageCenter);
+  const setAnatomyStageFrame = useMuscleStore((s) => s.setAnatomyStageFrame);
   const quizPreset = useQuizCameraPreset();
 
   const cameraPreset =
@@ -106,10 +108,12 @@ function AnatomySceneInner({ showPerf }: { showPerf: boolean }) {
       <AnatomySceneLighting />
       <AnatomySceneEnvironment />
       {bodyView === 'full_body' ? (
-        <FullBodyRegionModel onStageReady={setAnatomyStageCenter} />
+        <FullBodyRegionModel onStageReady={setAnatomyStageFrame} />
       ) : (
         <RegionModel region={activeModuleId} />
       )}
+      <TermSceneOverlay />
+      <OriginInsertionGizmo />
       <AnatomyFocusCamera />
       <QuizCameraRig
         preset={cameraPreset}
@@ -123,9 +127,20 @@ function AnatomySceneInner({ showPerf }: { showPerf: boolean }) {
 
 export default function TrainingCanvas() {
   const showPerf = useMemo(() => readPerfFlag(), []);
+  const anatomySceneReady = useMuscleStore((s) => s.anatomySceneReady);
 
   return (
-    <div className="muscle-canvas-wrap" data-testid="muscle-training-canvas">
+    <div
+      className={`muscle-canvas-wrap${anatomySceneReady ? ' is-ready' : ''}`}
+      data-testid="muscle-training-canvas"
+      data-scene-ready={anatomySceneReady ? 'true' : 'false'}
+    >
+      {!anatomySceneReady ? (
+        <div className="muscle-canvas-loading-overlay" role="status" aria-live="polite">
+          <div className="muscle-canvas-loading-spinner" aria-hidden="true" />
+          <p className="muscle-canvas-loading-overlay__label">Loading anatomy model…</p>
+        </div>
+      ) : null}
       <Canvas
         frameloop="demand"
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}

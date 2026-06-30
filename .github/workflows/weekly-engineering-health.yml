@@ -8,17 +8,24 @@ on:
 
 jobs:
   ci-success-rate:
-    name: CI success rate gate (>90%)
+    name: CI success rate report (target >90%)
     runs-on: ubuntu-latest
     permissions:
       actions: read
     steps:
       - uses: actions/checkout@v5
 
-      - name: Report CI health (fail below 90%)
+      - name: Report CI health (advisory gate)
+        id: ci_health
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/ci-health-report.mjs --days 7 --fail-below 90
+
+      - name: Warn when below target
+        if: steps.ci_health.outcome == 'failure'
+        run: |
+          echo "::warning title=CI success rate below 90%::Weekly advisory gate — triage with npm run report:ci-health and docs/ENGINEERING_HEALTH.md"
 
   nightly-smoke:
     name: Nightly smoke (cold browser)

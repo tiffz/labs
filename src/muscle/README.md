@@ -1,52 +1,45 @@
 # Muscle Memory
 
-Proko-aligned anatomy training for artists: 3D spatial study, warmup exploration, and spaced-repetition active reps.
+Proko-aligned anatomy training for artists: 3D spatial study, guided modules, and spaced-repetition active reps.
 
 Base path: `/muscle/`.
 
-## Curriculum (7 modules)
+## Curriculum (guided path)
 
-| Module          | Focus                              |
-| --------------- | ---------------------------------- |
-| **Full body**   | Atlas — all regions, layer peel    |
-| Fundamentals    | Core bones and joints (gatekeeper) |
-| Torso           | Chest, abs, back surface forms     |
-| Shoulder & neck | Deltoids, clavicle, scapula, neck  |
-| Arm             | Upper arm and forearm masses       |
-| Hand            | Palm architecture and tendons      |
-| Leg             | Thigh, knee, calf                  |
-| Foot            | Heel, arch, dorsal foot            |
+| Order | Module                  | Focus                                                       |
+| ----- | ----------------------- | ----------------------------------------------------------- |
+| 1     | **Language of Anatomy** | Planes, directional terms, movement vocabulary (gatekeeper) |
+| 2     | **Skeletal landmarks**  | Regional bones and joint types                              |
+| 3     | **Torso**               | Chest, abs, back surface forms                              |
+| 4     | **Shoulder & neck**     | Deltoids, girdle, rotator cuff                              |
+| 5     | **Arm**                 | Upper arm and forearm masses                                |
+| 6     | **Hand**                | Palm architecture and tendons                               |
+| 7     | **Leg**                 | Thigh, glutes, knee, calf                                   |
+| 8     | **Foot**                | Heel, arch, dorsal foot                                     |
+| —     | **Full body**           | Atlas reference with optional detail drill-down             |
+
+Canonical curriculum manifest: [`curriculum/ARTIST_CURRICULUM.md`](curriculum/ARTIST_CURRICULUM.md).
 
 Progress persists in IndexedDB (`muscle-memory` Dexie database). Session UI state uses Zustand.
 
 ## Modes
 
-- **Warmup** — click structures in the 3D canvas; context card shows Proko-style drawing notes.
-- **Active Reps** — quiz highlights a structure (lapis emissive) with multiple-choice or canvas tap; SM-2 schedules reviews.
+- **Warmup** — explore structures; definition cards with verified Wikipedia links; hierarchical study groups.
+- **Active Reps** — quiz modes: name-the-highlight or find-by-name; SM-2 schedules reviews.
 
-Modules stay locked until Fundamentals bones/joints hit baseline reps. See `src/muscle/srs/gatekeeper.ts`.
+Modules stay locked until anatomy terms and skeletal landmarks hit baseline reps. See `src/muscle/srs/gatekeeper.ts`.
 
 ## 3D assets
 
-Region GLBs live under `public/muscle/models/` (lazy-loaded per module). Z-Anatomy exports render real meshes only — curriculum nodes missing from a region GLB (e.g. hip/knee joint capsules) stay in the structure list but do not get procedural placeholder shapes mixed into the scene.
-
-Pipeline: [`tools/muscle-anatomy/README.md`](../../tools/muscle-anatomy/README.md).
-
-### URL params (dev / shareable)
-
-| Param     | Example         | Meaning                                |
-| --------- | --------------- | -------------------------------------- |
-| `module`  | `?module=torso` | Open a specific training module        |
-| `perf`    | `?perf=1`       | FPS overlay on the 3D canvas           |
-| `e2eSeed` | `?e2eSeed=1`    | Dev only — seed Dexie progress for e2e |
+Region GLBs live under `public/muscle/models/` (lazy-loaded per module). Pipeline: [`tools/muscle-anatomy/README.md`](../../tools/muscle-anatomy/README.md).
 
 ## Development
 
 ```bash
 npm run dev          # http://localhost:5173/muscle/
 npx vitest run src/muscle
+node scripts/verify-anatomy-links.mjs
 npm run muscle:validate-assets
-npm run muscle:export-pipeline   # Z-Anatomy export workflow (see labs-muscle-anatomy-export skill)
 npm run presubmit
 ```
 

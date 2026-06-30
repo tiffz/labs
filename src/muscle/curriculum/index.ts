@@ -12,6 +12,7 @@ import { atlasHeadFaceNodes } from './nodes/atlasHeadFace';
 import { ATLAS_MESH_NODES } from './atlasMeshRegistry';
 
 export const NODES_BY_REGION: Record<MuscleRegion, MuscleMemoryNode[]> = {
+  anatomy_terms: [],
   fundamentals: fundamentalsNodes,
   torso: torsoNodes,
   shoulder_neck: shoulderNeckNodes,

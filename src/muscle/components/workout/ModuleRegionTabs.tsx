@@ -2,12 +2,14 @@ import { handleSpaLinkClick } from '../../../shared/navigation/spaLinkClick';
 import { isModuleUnlocked } from '../../srs/gatekeeper';
 import { muscleModuleHref, syncMuscleModuleUrl } from '../../routes/muscleAppUrl';
 import { useModuleOptions, useMuscleStore } from '../../store/useMuscleStore';
+import { isAnatomyTermsStudyTab, isFullBodyAtlasTab } from '../../workout/workoutPanelRouting';
 import type { MuscleRegion } from '../../types/node';
 
 export default function ModuleRegionTabs(): React.ReactElement {
   const modules = useModuleOptions();
   const bodyView = useMuscleStore((s) => s.bodyView);
   const activeModuleId = useMuscleStore((s) => s.activeModuleId);
+  const atlasTabActive = useMuscleStore((s) => s.atlasTabActive);
   const setBodyView = useMuscleStore((s) => s.setBodyView);
   const setActiveModule = useMuscleStore((s) => s.setActiveModule);
   const progressByNode = useMuscleStore((s) => s.progressByNode);
@@ -17,8 +19,8 @@ export default function ModuleRegionTabs(): React.ReactElement {
       <a
         href={muscleModuleHref(null)}
         role="tab"
-        aria-selected={bodyView === 'full_body'}
-        className={`muscle-region-tabs__tab${bodyView === 'full_body' ? ' is-active' : ''}`}
+        aria-selected={isFullBodyAtlasTab(bodyView, atlasTabActive)}
+        className={`muscle-region-tabs__tab${isFullBodyAtlasTab(bodyView, atlasTabActive) ? ' is-active' : ''}`}
         onClick={(e) =>
           handleSpaLinkClick(e, () => {
             setBodyView('full_body');
@@ -29,7 +31,10 @@ export default function ModuleRegionTabs(): React.ReactElement {
         <span className="muscle-region-tabs__label">Full body</span>
       </a>
       {modules.map((mod) => {
-        const active = bodyView === 'region' && mod.id === activeModuleId;
+        const active =
+          mod.id === 'anatomy_terms'
+            ? isAnatomyTermsStudyTab(activeModuleId, atlasTabActive)
+            : bodyView === 'region' && mod.id === activeModuleId;
         const unlocked = isModuleUnlocked(mod.id, progressByNode);
         return (
           <a
@@ -46,7 +51,7 @@ export default function ModuleRegionTabs(): React.ReactElement {
             }
           >
             <span className="muscle-region-tabs__label">{mod.label}</span>
-            {!unlocked && mod.id !== 'fundamentals' ? (
+            {!unlocked && mod.id !== 'anatomy_terms' && mod.id !== 'fundamentals' ? (
               <span className="muscle-region-tabs__lock" aria-hidden="true">
                 🔒
               </span>

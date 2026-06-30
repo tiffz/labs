@@ -1,7 +1,7 @@
 import { BoxGeometry, Group, Mesh, Object3D } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 
-import { computeAnatomyGroupTransform, computeStageOrbitTarget, extractGlbMeshes, isPlausibleAnatomyMesh } from './extractGlbMeshes';
+import { computeAnatomyGroupTransform, computeStageFrame, computeStageOrbitTarget, extractGlbMeshes, isPlausibleAnatomyMesh } from './extractGlbMeshes';
 
 vi.mock('./applyMeshBvh', () => ({
   prepareAnatomyGeometry: (geometry: BoxGeometry) => geometry,
@@ -152,6 +152,22 @@ describe('computeAnatomyGroupTransform', () => {
     const layout = computeAnatomyGroupTransform([mesh]);
     expect(layout.scale).toBeCloseTo(1.75 / 2);
     expect(layout.position[1]).toBeCloseTo(0);
+  });
+});
+
+describe('computeStageFrame', () => {
+  it('returns center, layout, and bounds after staging transform', () => {
+    const mesh = new Mesh(new BoxGeometry(1, 2, 1));
+    mesh.position.set(0, 1, 0);
+    mesh.updateMatrixWorld();
+    const geometry = mesh.geometry.clone();
+    geometry.applyMatrix4(mesh.matrixWorld);
+    const baked = new Mesh(geometry);
+    const layout = computeAnatomyGroupTransform([baked]);
+    const frame = computeStageFrame([baked], layout);
+    expect(frame.center[1]).toBeCloseTo(0.875, 1);
+    expect(frame.bounds.max[1]).toBeGreaterThan(frame.bounds.min[1]);
+    expect(frame.layout).toEqual(layout);
   });
 });
 

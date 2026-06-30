@@ -9,7 +9,7 @@ test.describe('Muscle Memory shell', () => {
     await expectMuscleCanvasReady(page);
     await expect(page.getByTestId('muscle-workout-panel')).toBeVisible();
 
-    await expect(page.getByRole('tab', { name: 'Warmup' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('muscle-panel-stack')).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Shoulder & neck' })).toHaveAttribute('aria-selected', 'true');
 
     await page.getByRole('slider', { name: 'Depth' }).fill('1');

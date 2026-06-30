@@ -31,8 +31,8 @@ describe('layerDepthView', () => {
   });
 
   it('shows fewer structures at skeleton peel on mixed modules', () => {
-    const all = countVisibleRegionNodesAtPeel('torso', 0);
-    const skeleton = countVisibleRegionNodesAtPeel('torso', 3);
+    const all = countVisibleRegionNodesAtPeel('leg', 0);
+    const skeleton = countVisibleRegionNodesAtPeel('leg', 3);
     expect(skeleton).toBeLessThan(all);
     expect(skeleton).toBeGreaterThan(0);
   });

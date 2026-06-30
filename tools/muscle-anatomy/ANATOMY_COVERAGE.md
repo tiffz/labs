@@ -38,6 +38,10 @@ Implementation: [`src/muscle/anatomy/anatomyCoverageLedger.ts`](../../src/muscle
 
 [`coverage-baseline.json`](coverage-baseline.json) sets `maxFullBodyGaps`. When you fix full-body holes, **lower the number** in the same PR. CI fails if gaps **increase** above the baseline (regression guard).
 
+## Cross-region runtime meshes
+
+Some study nodes (e.g. `bone_femur` / `bone_tibia` in the Leg module) are loaded from another region GLB at runtime via `CrossRegionCurriculumMeshes.tsx` until they are exported into the module GLB.
+
 ## Recommended fix loop
 
 1. `npm run muscle:coverage` — read the report; pick the highest-impact **blocking** row.

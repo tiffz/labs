@@ -26,9 +26,7 @@ export default function App() {
         setActiveModule(moduleId);
         return;
       }
-      if (useMuscleStore.getState().bodyView === 'region') {
-        setBodyView('full_body');
-      }
+      setBodyView('full_body');
     };
     applyModuleFromSearch();
     window.addEventListener('popstate', applyModuleFromSearch);

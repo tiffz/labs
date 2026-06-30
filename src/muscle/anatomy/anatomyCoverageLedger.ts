@@ -151,9 +151,13 @@ export function buildAnatomyCoverageReport(): AnatomyCoverageReport {
 
   for (const region of MODULE_STUDY_REGIONS) {
     const manifestIds = new Set((manifest.regions[region]?.meshes ?? []).map((mesh) => mesh.nodeId));
+    const supplementIds = new Set(
+      (manifest.regions.atlas_supplement?.meshes ?? []).map((mesh) => mesh.nodeId),
+    );
     for (const node of getNodesForRegion(region, { includeAtlas: false })) {
       if (node.atlasOnly) continue;
       if (manifestIds.has(node.id)) continue;
+      if (supplementIds.has(node.id)) continue;
       if (waivers.has(node.id)) {
         waivedIds.add(node.id);
         continue;

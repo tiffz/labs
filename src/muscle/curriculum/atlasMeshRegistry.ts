@@ -4,12 +4,7 @@
  * Regenerate: npm run muscle:sync-atlas-registry
  */
 import type { MuscleMemoryNode } from '../types/node';
-
-const ATLAS_CTX = {
-  whyItMatters: 'Anatomy atlas fill — visible in Full body for context.',
-  commonMistake: 'Switch to a module tab to study curated structures with reps.',
-  movementEffect: 'Full body atlas only.',
-};
+import { ATLAS_REFERENCE_DETAILS } from './structureDetailsCatalog';
 
 export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
   {
@@ -21,7 +16,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_abductor_digiti_minimi_r_84af0e15",
@@ -32,7 +27,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_abductor_hallucis_on_medial_process__cce19eb1",
@@ -43,7 +38,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_abductor_hallucis_on_medial_process__546add5e",
@@ -54,7 +49,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_abductor_hallucis_on_medial_process__0a26498e",
@@ -65,7 +60,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_abductor_pollicis_brevis_r_8386f8e0",
@@ -76,7 +71,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_abductor_pollicis_longus_radioulnar__68ab100b",
@@ -87,7 +82,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_acromial_head_of_deltoid_muscle_scap_18d4e450",
@@ -98,7 +93,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_adductor_brevis_r_850d5b06",
@@ -109,7 +104,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_adductor_longus_pubic_insertion_r_3d05294d",
@@ -120,7 +115,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_adductor_magnus_on_medial_lip_of_lin_03f3f255",
@@ -131,7 +126,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_adductor_magnus_ischiatic_insertion__638c2fdf",
@@ -142,7 +137,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_adductor_magnus_r_1839bfc2",
@@ -153,7 +148,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_adductor_minimus_r_a205dd44",
@@ -164,7 +159,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_adductor_pollicis_brevis_ending_r_f73b386a",
@@ -175,7 +170,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_adductor_pollicis_longus_r_8bed6af8",
@@ -186,7 +181,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_anconeus_muscle_humeral_insertion_r_241c9c19",
@@ -197,7 +192,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_anconeus_muscle_ulnar_insertion_r_92b0e819",
@@ -208,7 +203,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_anconeus_muscle_r_357c2d66",
@@ -219,7 +214,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_anterior_belly_of_digastric_muscle_r_ceb7dc2c",
@@ -230,7 +225,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_ascending_part_of_trapezius_muscle_a_24ed9b10",
@@ -241,7 +236,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_ascending_part_of_trapezius_muscle_c_b5761ded",
@@ -252,7 +247,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_ascending_part_of_trapezius_muscle_s_7fbfcfe8",
@@ -263,7 +258,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_biceps_brachii_muscle_radial_inserti_5a9942a5",
@@ -274,7 +269,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_brachialis_anterior_muscle_humeral_i_5bacb069",
@@ -285,7 +280,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_brachialis_muscle_ulnar_insertion_r_ee7c1b98",
@@ -296,7 +291,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_bracioradialis_muscle_humeral_insert_03bc4dad",
@@ -307,7 +302,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_c1_28c27031",
@@ -318,7 +313,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_c2_cb7d29f4",
@@ -329,7 +324,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_c3_0371438f",
@@ -340,7 +335,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_c4_aaa025b3",
@@ -351,7 +346,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_c5_fbeff728",
@@ -362,7 +357,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_c6_742fbe77",
@@ -373,7 +368,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_c7_a838e585",
@@ -384,7 +379,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_capitate_bone_r_449bad7b",
@@ -395,7 +390,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_clavicular_part_of_deltoid_muscle_cl_5b15cb2b",
@@ -406,7 +401,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_coccygeus_muscle_r_c7b9df83",
@@ -417,7 +412,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_coracobrachialis_muscle_r_72c7cf3f",
@@ -428,7 +423,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_coracoradialis_muscle_humeral_insert_29c7e833",
@@ -439,7 +434,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_cuboid_bone_r_baa2aee7",
@@ -450,7 +445,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_deep_head_of_flexor_pollicis_brevis__ba2ee757",
@@ -461,7 +456,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_deep_head_of_flexor_pollicis_brevis__cab92951",
@@ -472,7 +467,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_deep_head_of_flexor_pollicis_brevis__1db8d6a1",
@@ -483,7 +478,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_deep_head_of_flexor_pollicis_brevis__a3e3e1a8",
@@ -494,7 +489,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_deep_head_of_flexor_pollicis_brevis__2b998c38",
@@ -505,7 +500,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_deep_head_of_prontaor_teres_muscle_r_5384bfe5",
@@ -516,7 +511,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_deltoid_muscle_humeral_insertion_r_ed353102",
@@ -527,7 +522,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_diaphragm_19a78b66",
@@ -538,7 +533,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_distal_phalanx_of_1st_finger_of_foot_7dbaaae3",
@@ -549,7 +544,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_distal_phalanx_of_1st_finger_r_1b1fbcfd",
@@ -560,7 +555,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_distal_phalanx_of_2d_finger_of_foot__7e1a7db1",
@@ -571,7 +566,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_distal_phalanx_of_2d_finger_r_5c5f700c",
@@ -582,7 +577,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_distal_phalanx_of_3d_finger_r_484fa4a5",
@@ -593,7 +588,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_distal_phalanx_of_3rd_finger_of_foot_394c8cff",
@@ -604,7 +599,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_distal_phalanx_of_4th_finger_of_foot_a12567b2",
@@ -615,7 +610,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_distal_phalanx_of_4th_finger_r_3287463d",
@@ -626,7 +621,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_distal_phalanx_of_5th_finger_of_foot_9f4db498",
@@ -637,7 +632,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_distal_phalanx_of_5th_finger_r_c59230f7",
@@ -648,7 +643,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_dorsal_interossei_muscles_of_foot_r_406f82c4",
@@ -659,7 +654,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_dorsal_interosseus_muscles_d_3d_meta_e7d11583",
@@ -670,7 +665,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_dorsal_interosseus_muscles_of_1st_me_af7fd5fc",
@@ -681,7 +676,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_dorsal_interosseus_muscles_of_2d_met_efa47127",
@@ -692,7 +687,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_dorsal_interosseus_muscles_of_4th_me_5eb64e16",
@@ -703,7 +698,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_dorsal_interosseus_musclesof_5th_met_c4ae3c43",
@@ -714,7 +709,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_dorsal_parts_of_lateral_intertransve_2a29fdec",
@@ -725,7 +720,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_erector_spinae_muscles_iliac_inserti_bfc50f21",
@@ -736,7 +731,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_ethmoid_bone_e17c8931",
@@ -747,7 +742,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_carpi_radialis_brevis_r_d2f5b38c",
@@ -758,7 +753,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_carpi_radialis_longus_muscl_fc86fba9",
@@ -769,7 +764,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_carpi_ulnaris_ulnar_inserti_fa08eb53",
@@ -780,7 +775,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_digiti_minimi_r_a77e7b69",
@@ -791,7 +786,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_digitorum_longus_on_fibula__99eb4190",
@@ -802,7 +797,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_digitorum_longus_on_fibula__7151b144",
@@ -813,7 +808,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_digitorum_longus_on_lat_sur_7c00b851",
@@ -824,7 +819,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_digitorum_longus_r_cf20b7e2",
@@ -835,7 +830,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_hallucis_brevis_on_dorsal_s_749b7bf3",
@@ -846,7 +841,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_hallucis_brevis_r_f9c5ce16",
@@ -857,7 +852,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_hallucis_longus_on_fibula_a_8a375b0d",
@@ -868,7 +863,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_hallucis_longus_r_40a324dd",
@@ -879,7 +874,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_indicis_ulnar_insertion_r_809c9a2f",
@@ -890,7 +885,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_indicis_r_47985a2f",
@@ -901,7 +896,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_pollicis_brevis_ulnar_inser_9f5929e9",
@@ -912,7 +907,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_pollicis_brevis_r_622e7eb6",
@@ -923,7 +918,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_pollicis_longus_ulnar_inser_b6bb1afe",
@@ -934,7 +929,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_extensor_pollicis_longus_r_b8f110d8",
@@ -945,7 +940,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_external_abdominal_oblique_muscle_il_ef830ec5",
@@ -956,7 +951,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_external_anal_sphincter_r_91adc941",
@@ -967,7 +962,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_external_intercostal_muscles_r_024e74c4",
@@ -978,7 +973,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_fascia_lata_r_d92bb3d0",
@@ -989,7 +984,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_fibula_r_a2845080",
@@ -1000,7 +995,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_fibularis_brevis_on_lateral_side_of__ac2e1f7c",
@@ -1011,7 +1006,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_fibularis_brevis_r_67f770a1",
@@ -1022,7 +1017,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_fibularis_longus_on_lateral_side_of__4116fea4",
@@ -1033,7 +1028,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_fibularis_tertius_on_tuberosity_of_f_9b608e30",
@@ -1044,7 +1039,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_fibularis_tertius_origin_a1b2b09b",
@@ -1055,7 +1050,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_fibularis_tertius_origin_001_bcc13cf2",
@@ -1066,7 +1061,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_fibularis_tertius_r_065a33a8",
@@ -1077,7 +1072,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_carpi_ulnaris_insertion_r_74b61904",
@@ -1088,7 +1083,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digiti_minimi_of_foot_on_5th__5db99b0b",
@@ -1099,7 +1094,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digiti_minimi_of_foot_r_919aed68",
@@ -1110,7 +1105,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digiti_minimi_of_hand_r_07586780",
@@ -1121,7 +1116,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digitorum_brevis_on_3d_medial_97cc2bab",
@@ -1132,7 +1127,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digitorum_brevis_on_medial_pr_0bc37050",
@@ -1143,7 +1138,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digitorum_brevis_on_medial_pr_0bf93c52",
@@ -1154,7 +1149,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digitorum_brevis_r_d9e0b1c4",
@@ -1165,7 +1160,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digitorum_longus_on_1st_dista_049c0a33",
@@ -1176,7 +1171,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digitorum_longus_on_medial_th_e665098b",
@@ -1187,7 +1182,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digitorum_longus_on_medial_th_e2a93c96",
@@ -1198,7 +1193,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digitorum_longus_r_b028cfd8",
@@ -1209,7 +1204,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digitorum_profundus_r_f5609fa6",
@@ -1220,7 +1215,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digitorum_superficialis_radia_28f48b74",
@@ -1231,7 +1226,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digitorum_superficialis_middl_2f3cd279",
@@ -1242,7 +1237,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digitorum_superficialis_middl_193f5153",
@@ -1253,7 +1248,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digitorum_superficialis_middl_f893f1ac",
@@ -1264,7 +1259,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_digitorum_superficialis_middl_5dc94ca4",
@@ -1275,7 +1270,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_hallucis_longus_on_post_fibul_12287ca5",
@@ -1286,7 +1281,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_hallucis_longus_r_37e9cbf1",
@@ -1297,7 +1292,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_pollicis_longus_radial_insert_721bf1f7",
@@ -1308,7 +1303,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_flexor_pollicis_longus_r_e068c7ea",
@@ -1319,7 +1314,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_geniohyoid_muscle_r_90f77a4d",
@@ -1330,7 +1325,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_gluteus_medius_on_greater_trochanter_cc517215",
@@ -1341,7 +1336,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_gracilis_muscle_pubic_insertion_r_3568d7dc",
@@ -1352,7 +1347,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_gracilis_on_patte_d_oie_r_c1543752",
@@ -1363,7 +1358,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_hamate_bone_r_7770f854",
@@ -1374,7 +1369,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_humeral_head_of_extensor_carpi_ulnar_50ace324",
@@ -1385,7 +1380,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_humeral_head_of_extensor_carpi_ulnar_2a3350a5",
@@ -1396,7 +1391,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_humeral_head_of_flexor_carpi_ulnaris_876e7da1",
@@ -1407,7 +1402,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_iliococcygeus_muscle_r_f5772056",
@@ -1418,7 +1413,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_iliocostalis_colli_muscle_r_03f47fb3",
@@ -1429,7 +1424,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_iliocostalis_lumborum_muscle_r_a1894d20",
@@ -1440,7 +1435,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_iliocostalis_thoracis_muscle_r_ff797ca5",
@@ -1451,7 +1446,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_iliopsoas_ending_on_the_lesser_troch_bc5d086b",
@@ -1462,7 +1457,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_inferior_head_of_lateral_pterygoid_m_488260eb",
@@ -1473,7 +1468,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_inferior_nasal_concha_bone_r_80c39c10",
@@ -1484,7 +1479,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_inferior_oblique_muscle_r_df70550e",
@@ -1495,7 +1490,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_inferior_rectus_muscle_r_c98a28bb",
@@ -1506,7 +1501,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_inferior_tarsus_r_fe89cdb1",
@@ -1517,7 +1512,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_infraspinatus_muscle_humeral_inserti_562477a9",
@@ -1528,7 +1523,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_infraspinatus_muscle_scapular_insert_cbd4353b",
@@ -1539,7 +1534,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_innermost_intercostal_muscles_r_bd0ea2e8",
@@ -1550,7 +1545,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intermediate_cuneiform_bone_r_e1dde27d",
@@ -1561,7 +1556,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_internal_abdominal_oblique_muscle_il_45b42876",
@@ -1572,7 +1567,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_internal_abdominal_oblique_r_7656165c",
@@ -1583,7 +1578,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_internal_intercosatlis_muscles_r_7eb405ef",
@@ -1594,7 +1589,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_interosseus_membrane_of_leg_r_b30da720",
@@ -1605,7 +1600,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_interspinales_colli_muscles_r_97f17235",
@@ -1616,7 +1611,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_interspinales_lumborum_muscles_r_15009cb2",
@@ -1627,7 +1622,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_interspinales_thoracis_muscle_r_86b35e4f",
@@ -1638,7 +1633,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_c2_c3_e9f2e8c4",
@@ -1649,7 +1644,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_c3_c4_e51966b1",
@@ -1660,7 +1655,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_c4_c5_1a122365",
@@ -1671,7 +1666,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_c5_c6_39dbde56",
@@ -1682,7 +1677,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_c6_c7_87536aac",
@@ -1693,7 +1688,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_c7_t1_623cf6a0",
@@ -1704,7 +1699,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_l1_l2_c10e90aa",
@@ -1715,7 +1710,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_l2_l3_ac930073",
@@ -1726,7 +1721,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_l3_l4_bdf9d7c5",
@@ -1737,7 +1732,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_l4_l5_260f550f",
@@ -1748,7 +1743,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_l5_s1_80789ffd",
@@ -1759,7 +1754,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_t1_t2_1f9b570c",
@@ -1770,7 +1765,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_t10_t11_68b0a2de",
@@ -1781,7 +1776,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_t11_t12_e0f79b00",
@@ -1792,7 +1787,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_t12_l1_5710f59d",
@@ -1803,7 +1798,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_t2_t3_22b6d594",
@@ -1814,7 +1809,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_t3_t4_d153d2cc",
@@ -1825,7 +1820,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_t4_t5_28bd6ab8",
@@ -1836,7 +1831,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_t5_t6_ebf1fa7f",
@@ -1847,7 +1842,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_t6_t7_e188d9ee",
@@ -1858,7 +1853,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_t7_t8_18e269bd",
@@ -1869,7 +1864,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_t8_t9_6fe8762f",
@@ -1880,7 +1875,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_intervertebral_disc_t9_t10_6b49099f",
@@ -1891,7 +1886,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_l1_52b1773e",
@@ -1902,7 +1897,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_l2_a58b12bf",
@@ -1913,7 +1908,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_l3_c6cacbbe",
@@ -1924,7 +1919,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_l4_08ade9e0",
@@ -1935,7 +1930,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_l5_3a4b083c",
@@ -1946,7 +1941,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_lacrimal_bone_r_c0584e89",
@@ -1957,7 +1952,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_lateral_cuneiform_bone_r_40c4874b",
@@ -1968,7 +1963,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_lateral_head_of_flexor_hallucis_brev_88e375d5",
@@ -1979,7 +1974,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_lateral_head_of_flexor_hallucis_brev_be943aec",
@@ -1990,7 +1985,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_lateral_head_of_flexor_hallucis_brev_22307aa9",
@@ -2001,7 +1996,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_lateral_head_of_gastrocnemius_on_lat_d7a53202",
@@ -2012,7 +2007,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_lateral_head_of_gastrocnemius_on_lat_8d9f0f8d",
@@ -2023,7 +2018,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_lateral_head_of_triceps_brachii_hume_a5d1c7b8",
@@ -2034,7 +2029,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_lateral_rectus_muscle_r_0ef80b22",
@@ -2045,7 +2040,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_latissimus_dorsi_muscle_r_a070e41e",
@@ -2056,7 +2051,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_latissimus_dorsi_muscle_l_001_7bd4f011",
@@ -2067,7 +2062,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_latissimus_dorsi_on_apex_of_the_scap_83328ed8",
@@ -2078,7 +2073,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_latissimus_dorsi_iliac_insertion_r_fbd5c83d",
@@ -2089,7 +2084,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_left_parietal_bone_c407c491",
@@ -2100,7 +2095,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_levator_ani_pubic_and_ischiatic_inse_3ea30fe1",
@@ -2111,7 +2106,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_levator_palpebrae_superioris_r_5e4fb236",
@@ -2122,7 +2117,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_levator_scapulae_scapular_insertion__3d4bb546",
@@ -2133,7 +2128,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_levator_scapulae_r_f1bc2e8a",
@@ -2144,7 +2139,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_levatores_breves_costarum_r_2dc42eed",
@@ -2155,7 +2150,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_levatores_longi_costarum_r_0b887fc9",
@@ -2166,7 +2161,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_linea_alba_eeb055b3",
@@ -2177,7 +2172,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_long_head_of_biceps_brachii_r_241e663a",
@@ -2188,7 +2183,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_long_head_of_biceps_femoris_muscle_i_69d2859a",
@@ -2199,7 +2194,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_long_head_of_biceps_femoris_on_fibul_ed8ca122",
@@ -2210,7 +2205,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_longissimus_capitis_r_49697928",
@@ -2221,7 +2216,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_longissimus_colli_muscle_r_3ed16123",
@@ -2232,7 +2227,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_longissimus_thoracis_r_9a6c4246",
@@ -2243,7 +2238,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_longus_capitis_muscle_r_4f1d6b06",
@@ -2254,7 +2249,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_longus_colli_muscle_r_d3faa702",
@@ -2265,7 +2260,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_lumbrical_muscles_of_foot_r_ae88a6f6",
@@ -2276,7 +2271,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_lumbricals_muscles_of_hand_r_0e75b344",
@@ -2287,7 +2282,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_lunate_bone_r_5991553a",
@@ -2298,7 +2293,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_manubrium_cabf2e04",
@@ -2309,7 +2304,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_medial_cuneiform_bone_r_bfd076ce",
@@ -2320,7 +2315,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_medial_head_of_flexor_hallucis_brevi_ad7a8f15",
@@ -2331,7 +2326,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_medial_head_of_gastrocnemius_on_med__9d2eb188",
@@ -2342,7 +2337,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_medial_head_of_triceps_brachii_humer_e40d0b57",
@@ -2353,7 +2348,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_medial_pterygoid_muscle_r_2f7ede96",
@@ -2364,7 +2359,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_medial_rectus_muscle_r_ff5fdc86",
@@ -2375,7 +2370,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_middle_phalanx_of_2d_finger_of_foot__9451cbfd",
@@ -2386,7 +2381,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_middle_phalanx_of_2d_finger_r_2acca146",
@@ -2397,7 +2392,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_middle_phalanx_of_3rd_finger_of_foot_8311288d",
@@ -2408,7 +2403,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_middle_phalanx_of_3rd_finger_r_0ab4c74a",
@@ -2419,7 +2414,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_middle_phalanx_of_4th_finger_of_foot_e4472a15",
@@ -2430,7 +2425,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_middle_phalanx_of_4th_finger_r_b84a9067",
@@ -2441,7 +2436,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_middle_phalanx_of_5th_finger_of_foot_653c5489",
@@ -2452,7 +2447,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_middle_phalanx_of_5th_finger_r_d0bc6053",
@@ -2463,7 +2458,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_multifidus_colli_muscle_r_229714f1",
@@ -2474,7 +2469,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_multifidus_lumborum_r_cf6909f0",
@@ -2485,7 +2480,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_multifidus_thoracis_r_83cf1c0e",
@@ -2496,7 +2491,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_mylohyoid_muscle_r_44db4053",
@@ -2507,7 +2502,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_navicular_bone_r_2c8f8a06",
@@ -2518,7 +2513,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_oblique_head_of_adductor_hallucis_on_ad3835a3",
@@ -2529,7 +2524,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_oblique_head_of_adductor_hallucis_on_2563243f",
@@ -2540,7 +2535,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_oblique_head_of_adductor_hallucis_r_b66ba198",
@@ -2551,7 +2546,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_oblique_head_of_adductor_policis_bre_57a81bdb",
@@ -2562,7 +2557,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_obliquus_inferior_capitis_muscle_r_95136e0e",
@@ -2573,7 +2568,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_obliquus_superior_capitis_muscle_r_270bdc04",
@@ -2584,7 +2579,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_obturator_externus_on_obturator_memb_705025fd",
@@ -2595,7 +2590,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_obturator_externus_r_093dc41e",
@@ -2606,7 +2601,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_obturator_internus_pelvic_insertion__fa648da3",
@@ -2617,7 +2612,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_occipitalis_r_c2bdd772",
@@ -2628,7 +2623,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_opponens_digiti_minimi_of_foot_on_5t_36143590",
@@ -2639,7 +2634,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_opponens_digiti_minimi_of_foot_r_db71fce8",
@@ -2650,7 +2645,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_opponens_digiti_minimi_of_hand_r_7c258f4e",
@@ -2661,7 +2656,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_opponens_pollicis_muscle_r_1850a4bc",
@@ -2672,7 +2667,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_origin_of_articularis_genus_r_85ebc333",
@@ -2683,7 +2678,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_origin_of_psoas_minor_on_iliac_fossa_d611611c",
@@ -2694,7 +2689,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_origin_of_vastus_intermedius_r_846049d0",
@@ -2705,7 +2700,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_origin_of_vastus_lateralis_r_bd09e1e7",
@@ -2716,7 +2711,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_origin_of_vastus_medialis_r_44c4ad4c",
@@ -2727,7 +2722,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_palatine_bone_r_129618d9",
@@ -2738,7 +2733,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_palmar_interossei_muscles_of_hand_r_6ac17e27",
@@ -2749,7 +2744,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_palmaris_longus_muscle_r_da3cad59",
@@ -2760,7 +2755,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_pectineus_muscle_on_medial_surface_o_0afe52d9",
@@ -2771,7 +2766,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_pectineus_muscle_pubic_insertion_r_6517708f",
@@ -2782,7 +2777,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_pectineus_muscle_r_9632d228",
@@ -2793,7 +2788,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_pectoralis_major_muscle_clavicular_i_25190cac",
@@ -2804,7 +2799,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_pectoralis_major_muscle_humeral_inse_782e067b",
@@ -2815,7 +2810,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_pectoralis_minor_muscle_r_f973f846",
@@ -2826,7 +2821,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_pisiform_bone_r_388db72e",
@@ -2837,7 +2832,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_plantar_interossei_muscles_on_3rd_me_7c5c498c",
@@ -2848,7 +2843,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_plantar_interossei_muscles_on_4th_me_54172b1a",
@@ -2859,7 +2854,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_plantar_interossei_muscles_on_5th_me_15b99a66",
@@ -2870,7 +2865,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_plantar_interossei_muscles_r_b397d746",
@@ -2881,7 +2876,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_plantaris_muscle_medially_to_the_lat_143de19a",
@@ -2892,7 +2887,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_plantaris_muscle_medially_to_the_lat_3ef61b75",
@@ -2903,7 +2898,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_plantaris_muscle_r_5a2fd02c",
@@ -2914,7 +2909,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_popliteus_above_oblique_line_of_tibi_964800d5",
@@ -2925,7 +2920,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_popliteus_muscle_in_the_groove_for_p_a62d0a7d",
@@ -2936,7 +2931,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_popliteus_muscle_r_f65f8b2e",
@@ -2947,7 +2942,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_posterior_belly_of_digastric_muscle__5570a2b8",
@@ -2958,7 +2953,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_pronator_quadratus_radial_insertions_e8c06b94",
@@ -2969,7 +2964,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_pronator_quadratus_ulnar_insertion_r_10f56e21",
@@ -2980,7 +2975,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_pronator_quadratus_r_33b146f5",
@@ -2991,7 +2986,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_pronator_teres_muscle_humeral_insert_d4d2d6a7",
@@ -3002,7 +2997,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_pronator_teres_radial_insertion_r_19f278c8",
@@ -3013,7 +3008,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_proximal_phalanx_of_1st_finger_of_fo_93b958cb",
@@ -3024,7 +3019,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_proximal_phalanx_of_1st_finger_r_eb9fb612",
@@ -3035,7 +3030,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_proximal_phalanx_of_2d_finger_of_foo_afc01867",
@@ -3046,7 +3041,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_proximal_phalanx_of_2d_finger_r_ddd76f77",
@@ -3057,7 +3052,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_proximal_phalanx_of_3rd_finger_of_fo_b6d0871e",
@@ -3068,7 +3063,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_proximal_phalanx_of_3rd_finger_r_92a2a7b6",
@@ -3079,7 +3074,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_proximal_phalanx_of_4th_finger_of_fo_d1598143",
@@ -3090,7 +3085,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_proximal_phalanx_of_4th_finger_r_91b1249a",
@@ -3101,7 +3096,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_proximal_phalanx_of_5th_finger_of_fo_573d1815",
@@ -3112,7 +3107,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_proximal_phalanx_of_5th_finger_r_d46db0a5",
@@ -3123,7 +3118,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_psoas_muscle_r_08af9941",
@@ -3134,7 +3129,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_pubococcygeus_muscle_r_a87d3b88",
@@ -3145,7 +3140,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_puborectalis_muscle_r_9f43ed9b",
@@ -3156,7 +3151,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_pyramidalis_muscle_r_9e122134",
@@ -3167,7 +3162,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_quadratus_lumborum_muscle_r_d64800b8",
@@ -3178,7 +3173,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_quadratus_plantae_muscle_on_plantar__df13f463",
@@ -3189,7 +3184,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_quadratus_plantae_muscle_r_b7f4abc3",
@@ -3200,7 +3195,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_quadriceps_femoris_on_base_of_patell_0a32a9b6",
@@ -3211,7 +3206,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_radial_head_of_flexor_digitorum_supe_a807f317",
@@ -3222,7 +3217,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_rectus_anterior_capitis_muscle_r_5be47d79",
@@ -3233,7 +3228,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_rectus_lateralis_capitis_muscle_r_b3e01a83",
@@ -3244,7 +3239,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_rectus_posterior_major_capitis_muscl_0ce227e0",
@@ -3255,7 +3250,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_rectus_posterior_minor_capitis_muscl_24396a21",
@@ -3266,7 +3261,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_rhomboid_major_muscle_scapular_inser_5edfcd10",
@@ -3277,7 +3272,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_rhomboid_minor_muscle_scapular_inser_a101c69c",
@@ -3288,7 +3283,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_rhomboid_minor_muscle_r_ccf407a3",
@@ -3299,7 +3294,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_sacrum_fb87013e",
@@ -3310,7 +3305,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_sartorius_muscle_on_upper_anterior_i_a4219826",
@@ -3321,7 +3316,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_sartorius_on_patte_d_oie_r_114b15fb",
@@ -3332,7 +3327,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_scalene_anterior_muscle_r_1e3001ee",
@@ -3343,7 +3338,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_scalenus_anterior_and_medius_r_5d70bb29",
@@ -3354,7 +3349,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_scalenus_posterior_r_55d63619",
@@ -3365,7 +3360,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_scaphoid_bone_r_eca0a58b",
@@ -3376,7 +3371,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_scapular_head_of_deltoid_muscle_scap_708240d7",
@@ -3387,7 +3382,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_sclera_r_001_c2981b7e",
@@ -3398,7 +3393,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_semispinalis_colli_muscle_r_9c7f0b23",
@@ -3409,7 +3404,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_semispinalis_thoracis_r_c50bcc85",
@@ -3420,7 +3415,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_serratus_anterior_muscle_scapular_in_6dfd93c8",
@@ -3431,7 +3426,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_serratus_posterior_inferior_muscle_r_9aa86405",
@@ -3442,7 +3437,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_serratus_posterior_superior_muscle_r_280a7fd8",
@@ -3453,7 +3448,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_sesamoid_bones_of_foot_r_9fe412a6",
@@ -3464,7 +3459,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_solear_on_solear_crest_on_fibular_he_5d9cd70e",
@@ -3475,7 +3470,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_solear_on_solear_crest_on_oblique_li_4d8bfebe",
@@ -3486,7 +3481,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_spinalis_capitis_muscle_r_e34954a0",
@@ -3497,7 +3492,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_spinalis_colli_muscle_r_c2d2b32d",
@@ -3508,7 +3503,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_spinalis_thoracis_muscle_r_3e94a8cf",
@@ -3519,7 +3514,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_splenius_colli_muscle_r_f5492178",
@@ -3530,7 +3525,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_sternocleidomastoid_muscle_clavicula_e8140902",
@@ -3541,7 +3536,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_sternohyoid_muscle_r_fe62df9c",
@@ -3552,7 +3547,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_sternothyroid_muscle_r_de6ae1b7",
@@ -3563,7 +3558,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_stylohyoid_muscle_r_0e1b5f38",
@@ -3574,7 +3569,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_subclavius_muscle_clavicular_inserti_b83e8531",
@@ -3585,7 +3580,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_subclavius_muscle_r_be17cbc9",
@@ -3596,7 +3591,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_subscapular_muscle_r_eabf4bc1",
@@ -3607,7 +3602,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_subscapularis_muscle_humeral_inserti_0f7f187f",
@@ -3618,7 +3613,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_subscapularis_muscle_scapular_insert_e7ead897",
@@ -3629,7 +3624,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_superficial_head_of_flexor_pollicis__eb49c631",
@@ -3640,7 +3635,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_superficial_head_of_pronator_teres_m_280b0596",
@@ -3651,7 +3646,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_superior_head_of_lateral_pterygoid_m_8ffe0ad2",
@@ -3662,7 +3657,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_superior_oblique_muscle_r_9137fd02",
@@ -3673,7 +3668,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_superior_rectus_muscle_r_cc8a2b7a",
@@ -3684,7 +3679,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_superior_tarsus_r_ea000632",
@@ -3695,7 +3690,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_supinator_radial_insertion_r_eb0aca0a",
@@ -3706,7 +3701,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_supinator_ulnar_insertion_r_040b7d19",
@@ -3717,7 +3712,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_supinator_r_50dece6c",
@@ -3728,7 +3723,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_supraspinatus_muscle_humeral_inserti_582e5c60",
@@ -3739,7 +3734,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_supraspinatus_muscle_scapular_insert_901d9853",
@@ -3750,7 +3745,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_t1_e2398779",
@@ -3761,7 +3756,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_t10_66c4ace7",
@@ -3772,7 +3767,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_t11_1e0f94c2",
@@ -3783,7 +3778,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_t12_327e217e",
@@ -3794,7 +3789,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_t2_f8cf5510",
@@ -3805,7 +3800,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_t3_101beb6f",
@@ -3816,7 +3811,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_t4_0a80409a",
@@ -3827,7 +3822,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_t5_a39d900d",
@@ -3838,7 +3833,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_t6_ee77495c",
@@ -3849,7 +3844,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_t7_98b8503f",
@@ -3860,7 +3855,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_t8_f4e82d58",
@@ -3871,7 +3866,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_t9_d9e9a583",
@@ -3882,7 +3877,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_temporal_bone_r_d28d5e33",
@@ -3893,7 +3888,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_temporoparietalis_muscle_r_4488937e",
@@ -3904,7 +3899,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_tensor_fasciae_latae_on_upper_anteri_51e07a2b",
@@ -3915,7 +3910,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_teres_major_muscle_humeral_insertion_c559f237",
@@ -3926,7 +3921,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_teres_major_muscle_scapular_insertio_798d71da",
@@ -3937,7 +3932,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_teres_minor_muscle_humeral_insertion_f8e8a650",
@@ -3948,7 +3943,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_teres_minor_muscle_scapular_insertio_c7bccc7e",
@@ -3959,7 +3954,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_teres_minor_muscle_r_e2109437",
@@ -3970,7 +3965,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_thyrohyoid_muscle_r_690d7ebf",
@@ -3981,7 +3976,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_tibialis_anterior_on_lateral_surface_5316d112",
@@ -3992,7 +3987,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_tibialis_posterior_muscle_r_7f7b2e54",
@@ -4003,7 +3998,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_tibialis_posterior_on_post_surface_o_1a307b7a",
@@ -4014,7 +4009,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_tibialis_posterior_on_post_surface_o_0a4fbf0e",
@@ -4025,7 +4020,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_transverse_abdominal_muscle_iliac_in_601d27d4",
@@ -4036,7 +4031,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_transverse_head_of_adductor_hallucis_a65a4e20",
@@ -4047,7 +4042,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_transverse_head_of_adductor_hallucis_c8a2f0e7",
@@ -4058,7 +4053,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_transverse_head_of_adductor_pollicis_a8480383",
@@ -4069,7 +4064,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_transversus_abdominis_muscle_r_c20d1664",
@@ -4080,7 +4075,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_transversus_thoracis_muscle_r_d3eeb8fd",
@@ -4091,7 +4086,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_trapezium_bone_r_6ccae050",
@@ -4102,7 +4097,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_trapezoid_bone_r_e5668131",
@@ -4113,7 +4108,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_triceps_brachii_ulnar_insertion_r_7c16362e",
@@ -4124,7 +4119,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_triceps_surae_on_calcaneal_tuberosit_6faee418",
@@ -4135,7 +4130,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_triquetrum_bone_r_9e2dcb6a",
@@ -4146,7 +4141,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_ulnar_head_of_extensor_carpi_ulnaris_1d690ba6",
@@ -4157,7 +4152,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_ulnar_head_of_flexor_carpi_ulnaris_u_3cfe7073",
@@ -4168,7 +4163,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_ulnar_head_of_flexor_carpi_ulnaris_r_af1399da",
@@ -4179,7 +4174,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_ventral_parts_of_lateral_intertransv_b72e1730",
@@ -4190,7 +4185,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_vomer_d3e3e30b",
@@ -4201,7 +4196,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_xiphoid_process_2c9eea16",
@@ -4212,7 +4207,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "box",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   },
   {
     id: "atlas_dorsal_interossei_muscles_of_hand_r_afbc19ee",
@@ -4223,7 +4218,7 @@ export const ATLAS_MESH_NODES: MuscleMemoryNode[] = [
     isSurfaceForm: false,
     primitiveShape: "egg",
     atlasOnly: true,
-    artisticContext: ATLAS_CTX,
+    details: ATLAS_REFERENCE_DETAILS,
   }
 ];
 

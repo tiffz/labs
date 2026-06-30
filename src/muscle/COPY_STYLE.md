@@ -10,7 +10,7 @@ Encouraging coach, not clinician. Frame study as **reps**, **warmup**, and **dec
 
 | Use            | Avoid                        |
 | -------------- | ---------------------------- |
-| Warmup         | Explore mode                 |
+| Explore        | Warmup, browse mode          |
 | Active Reps    | Test mode, exam              |
 | Reps remaining | Cards left, questions        |
 | Clean rep      | Correct answer, pass         |

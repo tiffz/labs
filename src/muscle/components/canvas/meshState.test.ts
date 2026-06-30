@@ -8,6 +8,8 @@ describe('meshState', () => {
     const state = resolveMeshVisualState({
       nodeId: node.id,
       focusedNodeId: null,
+      focusedGroupNodeIds: null,
+      hoveredGroupNodeIds: null,
       hoveredNodeId: null,
       quizTargetId: node.id,
       quizFeedback: 'idle',
@@ -31,6 +33,8 @@ describe('meshState', () => {
       resolveMeshVisualState({
         nodeId: node.id,
         focusedNodeId: node.id,
+        focusedGroupNodeIds: null,
+        hoveredGroupNodeIds: null,
         hoveredNodeId: null,
         quizTargetId: null,
         quizFeedback: 'idle',
@@ -41,11 +45,83 @@ describe('meshState', () => {
       resolveMeshVisualState({
         nodeId: other.id,
         focusedNodeId: node.id,
+        focusedGroupNodeIds: null,
+        hoveredGroupNodeIds: null,
         hoveredNodeId: null,
         quizTargetId: null,
         quizFeedback: 'idle',
         mode: 'warmup',
       }),
     ).toBe('faded');
+  });
+
+  it('highlights group siblings as group_member on hover', () => {
+    expect(
+      resolveMeshVisualState({
+        nodeId: 'muscle_deltoid_posterior',
+        focusedNodeId: null,
+        focusedGroupNodeIds: null,
+        hoveredGroupNodeIds: [
+          'muscle_deltoid_anterior',
+          'muscle_deltoid_lateral',
+          'muscle_deltoid_posterior',
+        ],
+        hoveredNodeId: 'muscle_deltoid_anterior',
+        quizTargetId: null,
+        quizFeedback: 'idle',
+        mode: 'warmup',
+      }),
+    ).toBe('group_member');
+    expect(
+      resolveMeshVisualState({
+        nodeId: 'muscle_deltoid_lateral',
+        focusedNodeId: null,
+        focusedGroupNodeIds: null,
+        hoveredGroupNodeIds: [
+          'muscle_deltoid_anterior',
+          'muscle_deltoid_lateral',
+          'muscle_deltoid_posterior',
+        ],
+        hoveredNodeId: null,
+        quizTargetId: null,
+        quizFeedback: 'idle',
+        mode: 'warmup',
+      }),
+    ).toBe('group_ensemble');
+  });
+
+  it('keeps group members highlighted below the focused member', () => {
+    expect(
+      resolveMeshVisualState({
+        nodeId: 'muscle_deltoid_posterior',
+        focusedNodeId: 'muscle_deltoid_anterior',
+        focusedGroupNodeIds: [
+          'muscle_deltoid_anterior',
+          'muscle_deltoid_lateral',
+          'muscle_deltoid_posterior',
+        ],
+        hoveredGroupNodeIds: null,
+        hoveredNodeId: null,
+        quizTargetId: null,
+        quizFeedback: 'idle',
+        mode: 'warmup',
+      }),
+    ).toBe('group_member');
+    expect(
+      resolveMeshVisualState({
+        nodeId: 'muscle_deltoid_anterior',
+        focusedNodeId: 'muscle_deltoid_anterior',
+        focusedGroupNodeIds: [
+          'muscle_deltoid_anterior',
+          'muscle_deltoid_lateral',
+          'muscle_deltoid_posterior',
+        ],
+        hoveredGroupNodeIds: null,
+        hoveredNodeId: null,
+        quizTargetId: null,
+        quizFeedback: 'idle',
+        mode: 'warmup',
+      }),
+    ).toBe('highlight');
   });
 });

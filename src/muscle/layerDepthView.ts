@@ -78,6 +78,19 @@ export function countVisibleRegionNodesAtPeel(
   }).length;
 }
 
+export function countGlossaryNodesForView(
+  bodyView: BodyView,
+  region: MuscleRegion,
+  peelDepth: LayerPeelDepth,
+  showDetailStructures: boolean,
+): number {
+  return getNodesForView(bodyView, region).filter((node) => {
+    if (!isNodeVisibleAtPeelDepth(node, peelDepth)) return false;
+    if (!showDetailStructures && node.atlasOnly) return false;
+    return true;
+  }).length;
+}
+
 export function countVisibleNodesForView(
   bodyView: BodyView,
   region: MuscleRegion,

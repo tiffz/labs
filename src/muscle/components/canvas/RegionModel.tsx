@@ -1,12 +1,14 @@
 import { Suspense, useEffect, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
 import { muscleModelsManifest as manifest } from '../../types/muscleModelsManifest';
-import { getNodeById, resolveCurriculumNodeId } from '../../curriculum';
+import { getNodeById, getNodesForRegion, resolveCurriculumNodeId } from '../../curriculum';
 import { getModuleById } from '../../curriculum/modules';
 import type { MuscleRegion } from '../../types/node';
+import type { AnatomyStageFrame } from '../../types/anatomyStageFrame';
 import ProceduralRegionModel from './ProceduralRegionModel';
-import { extractGlbMeshes, computeAnatomyGroupTransform, computeStageOrbitTarget } from './extractGlbMeshes';
+import { extractGlbMeshes, computeAnatomyGroupTransform, computeStageFrame } from './extractGlbMeshes';
 import GlbAnatomyMesh from './GlbAnatomyMesh';
+import CrossRegionCurriculumMeshes from './CrossRegionCurriculumMeshes';
 import { Component, type ReactNode } from 'react';
 import { muscleRegionGlbUrl } from './muscleGlbUrl';
 import { useMuscleGltf, preloadMuscleGltf } from './muscleGltfLoader';
@@ -25,6 +27,53 @@ class GlbFallbackBoundary extends Component<{ fallback: ReactNode; children: Rea
   }
 }
 
+function AtlasSupplementMeshes({
+  region,
+  excludeNodeIds,
+  groupLayout,
+}: {
+  region: MuscleRegion;
+  excludeNodeIds: ReadonlySet<string>;
+  groupLayout: { position: [number, number, number]; scale: number };
+}) {
+  const supplementUrl = muscleRegionGlbUrl('/muscle/models/atlas_supplement.glb');
+  const { scene } = useMuscleGltf(supplementUrl);
+  const regionNodeIds = useMemo(
+    () =>
+      new Set(
+        getNodesForRegion(region)
+          .filter((node) => !node.atlasOnly)
+          .map((node) => node.id),
+      ),
+    [region],
+  );
+  const meshes = useMemo(() => {
+    return extractGlbMeshes(scene, (name) => Boolean(resolveCurriculumNodeId(name))).filter(
+      (mesh) => {
+        const nodeId = resolveCurriculumNodeId(mesh.name);
+        return (
+          nodeId &&
+          regionNodeIds.has(nodeId) &&
+          !excludeNodeIds.has(nodeId)
+        );
+      },
+    );
+  }, [excludeNodeIds, regionNodeIds, scene]);
+
+  if (meshes.length === 0) return null;
+
+  return (
+    <group position={groupLayout.position} scale={groupLayout.scale}>
+      {meshes.map((mesh) => {
+        const nodeId = resolveCurriculumNodeId(mesh.name);
+        const node = nodeId ? getNodeById(nodeId) : undefined;
+        if (!node || !nodeId) return null;
+        return <GlbAnatomyMesh key={`supp-${mesh.name}`} mesh={mesh} node={node} />;
+      })}
+    </group>
+  );
+}
+
 function GlbRegionModel({
   region,
   url,
@@ -35,7 +84,7 @@ function GlbRegionModel({
   url: string;
   /** When true, render curriculum placeholders for nodes missing from the GLB. */
   useProceduralFallback: boolean;
-  onStageReady?: (center: [number, number, number]) => void;
+  onStageReady?: (frame: AnatomyStageFrame) => void;
 }) {
   const { invalidate } = useThree();
   const { scene } = useMuscleGltf(url);
@@ -57,7 +106,7 @@ function GlbRegionModel({
   useEffect(() => {
     if (meshes.length > 0) {
       invalidate();
-      onStageReady?.(computeStageOrbitTarget(meshes, groupLayout));
+      onStageReady?.(computeStageFrame(meshes, groupLayout));
     }
   }, [groupLayout, invalidate, meshes, onStageReady]);
 
@@ -75,6 +124,20 @@ function GlbRegionModel({
           return <GlbAnatomyMesh key={mesh.name} mesh={mesh} node={node} />;
         })}
       </group>
+      {(region === 'leg' || region === 'shoulder_neck') && (
+        <AtlasSupplementMeshes
+          region={region}
+          excludeNodeIds={glbNodeIds}
+          groupLayout={groupLayout}
+        />
+      )}
+      {region === 'leg' ? (
+        <CrossRegionCurriculumMeshes
+          region={region}
+          excludeNodeIds={glbNodeIds}
+          groupLayout={groupLayout}
+        />
+      ) : null}
       {useProceduralFallback ? (
         <ProceduralRegionModel region={region} excludeNodeIds={glbNodeIds} />
       ) : null}
@@ -90,10 +153,10 @@ export default function RegionModel({ region }: RegionModelProps) {
   const mod = getModuleById(region);
   const entry = manifest.regions[region];
   const meshCount = entry?.meshes?.length ?? 0;
-  const useProceduralFallback = entry?.source !== 'z-anatomy' && entry?.procedural !== false;
-  const glbUrl = muscleRegionGlbUrl(mod.glbUrl);
   const isZAnatomy = entry?.source === 'z-anatomy';
-  const setAnatomyStageCenter = useMuscleStore((s) => s.setAnatomyStageCenter);
+  const useProceduralFallback = !isZAnatomy && entry?.procedural !== false;
+  const glbUrl = muscleRegionGlbUrl(mod.glbUrl);
+  const setAnatomyStageFrame = useMuscleStore((s) => s.setAnatomyStageFrame);
 
   if (meshCount === 0) {
     return <ProceduralRegionModel region={region} />;
@@ -108,7 +171,7 @@ export default function RegionModel({ region }: RegionModelProps) {
           region={region}
           url={glbUrl}
           useProceduralFallback={useProceduralFallback}
-          onStageReady={setAnatomyStageCenter}
+          onStageReady={setAnatomyStageFrame}
         />
       </Suspense>
     </GlbFallbackBoundary>
@@ -119,6 +182,9 @@ for (const mod of Object.values(manifest.regions)) {
   if (mod?.glbUrl && mod.meshes?.length) {
     preloadMuscleGltf(muscleRegionGlbUrl(mod.glbUrl));
   }
+}
+if (manifest.regions.fundamentals?.glbUrl) {
+  preloadMuscleGltf(muscleRegionGlbUrl(manifest.regions.fundamentals.glbUrl));
 }
 if (manifest.regions.atlas_supplement?.glbUrl) {
   preloadMuscleGltf(muscleRegionGlbUrl(manifest.regions.atlas_supplement.glbUrl));

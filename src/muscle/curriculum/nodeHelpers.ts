@@ -1,9 +1,11 @@
-import type { ArtisticContext, MuscleMemoryNode, MuscleRegion, PrimitiveShape } from '../types/node';
+import type { MuscleMemoryNode, MuscleRegion, StructureDetails } from '../types/node';
+import { getStructureDetails } from './structureDetailsCatalog';
 
 export function node(
-  partial: Omit<MuscleMemoryNode, 'artisticContext'> & { artisticContext: ArtisticContext },
+  partial: Omit<MuscleMemoryNode, 'details'> & { details?: StructureDetails },
 ): MuscleMemoryNode {
-  return partial;
+  const details = partial.details ?? getStructureDetails(partial.id, partial.name);
+  return { ...partial, details };
 }
 
 export function bone(
@@ -11,7 +13,6 @@ export function bone(
   name: string,
   region: MuscleRegion,
   shape: PrimitiveShape,
-  ctx: ArtisticContext,
   extras: Partial<MuscleMemoryNode> = {},
 ): MuscleMemoryNode {
   return node({
@@ -22,7 +23,6 @@ export function bone(
     layerDepth: 3,
     isSurfaceForm: extras.isSurfaceForm ?? true,
     primitiveShape: shape,
-    artisticContext: ctx,
     ...extras,
   });
 }
@@ -33,7 +33,6 @@ export function muscle(
   region: MuscleRegion,
   layerDepth: 0 | 1 | 2,
   shape: PrimitiveShape,
-  ctx: ArtisticContext,
   extras: Partial<MuscleMemoryNode> = {},
 ): MuscleMemoryNode {
   return node({
@@ -42,9 +41,8 @@ export function muscle(
     type: 'muscle',
     region,
     layerDepth,
-    isSurfaceForm: true,
+    isSurfaceForm: extras.isSurfaceForm ?? true,
     primitiveShape: shape,
-    artisticContext: ctx,
     ...extras,
   });
 }
@@ -54,7 +52,6 @@ export function joint(
   name: string,
   region: MuscleRegion,
   jointType: MuscleMemoryNode['jointType'],
-  ctx: ArtisticContext,
   extras: Partial<MuscleMemoryNode> = {},
 ): MuscleMemoryNode {
   return node({
@@ -66,7 +63,8 @@ export function joint(
     isSurfaceForm: false,
     jointType,
     primitiveShape: 'sphere',
-    artisticContext: ctx,
     ...extras,
   });
 }
+
+type PrimitiveShape = MuscleMemoryNode['primitiveShape'];

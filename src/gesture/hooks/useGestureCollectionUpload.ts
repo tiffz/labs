@@ -103,6 +103,11 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
   const cancelledBatchJobIdsRef = useRef(new Set<string>());
   const { startBlockingJob } = useLabsBlockingJobs();
   const uploadJobRef = useRef<ReturnType<typeof startBlockingJob> | null>(null);
+  const lastProgressAtRef = useRef(Date.now());
+  const lastProgressSignatureRef = useRef('');
+  const stallHintRef = useRef('');
+  const activityRef = useRef(activity);
+  activityRef.current = activity;
 
   useEffect(() => {
     if (!busy && !activity) {
@@ -131,6 +136,58 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
     }
     uploadJobRef.current.updateProgress(progress);
   }, [activity, busy, startBlockingJob]);
+
+  useEffect(() => {
+    if (!activity) return;
+    const signature = `${activity.phase}:${activity.done ?? ''}:${activity.total ?? ''}:${activity.label}`;
+    if (signature === lastProgressSignatureRef.current) return;
+    lastProgressSignatureRef.current = signature;
+    lastProgressAtRef.current = Date.now();
+    stallHintRef.current = '';
+  }, [activity]);
+
+  useEffect(() => {
+    if (!busy) return;
+
+    let wakeLock: WakeLockSentinel | null = null;
+    if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+      void navigator.wakeLock
+        .request('screen')
+        .then((sentinel) => {
+          wakeLock = sentinel;
+        })
+        .catch(() => {});
+    }
+
+    const onVisibilityChange = () => {
+      const current = activityRef.current;
+      if (document.visibilityState === 'visible' || !uploadJobRef.current || !current) return;
+      stallHintRef.current = ' · Tab in background — keep this window open';
+      uploadJobRef.current.updateLabel(`${current.label}${stallHintRef.current}`);
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    const stallInterval = window.setInterval(() => {
+      const current = activityRef.current;
+      if (!uploadJobRef.current || !current) return;
+      const trackable =
+        current.phase === 'uploading' ||
+        current.phase === 'checking' ||
+        current.phase === 'waiting';
+      if (!trackable) return;
+      const idleMs = Date.now() - lastProgressAtRef.current;
+      if (idleMs < 120_000) return;
+      const mins = Math.max(2, Math.floor(idleMs / 60_000));
+      stallHintRef.current = ` · No progress for ${mins} min — keep tab open; refresh to resume if stuck`;
+      uploadJobRef.current.updateLabel(`${current.label}${stallHintRef.current}`);
+    }, 30_000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.clearInterval(stallInterval);
+      void wakeLock?.release();
+    };
+  }, [busy]);
 
   useEffect(
     () => () => {

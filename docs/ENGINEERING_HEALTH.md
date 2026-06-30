@@ -4,18 +4,18 @@ Quarterly snapshot of development-system quality. Update after each audit.
 
 **Commands:** `npm run report:ci-health` · `npm run report:ci-health -- --fail-below 90` · `npm run report:test-duration` · `npm run report:bundle-size`
 
-Weekly gate: [`.github/workflows/weekly-engineering-health.yml`](../.github/workflows/weekly-engineering-health.yml) (Mondays 09:00 UTC).
+Weekly gate: [`.github/workflows/weekly-engineering-health.yml`](../.github/workflows/weekly-engineering-health.yml) (Mondays 09:00 UTC). **Advisory only** — emits a GitHub warning when below target; does not fail the scheduled workflow. Triage with `npm run report:ci-health`.
 
 ## Targets (3-month)
 
-| Metric                            | Target    | Last measured (2026-06-22)             |
-| --------------------------------- | --------- | -------------------------------------- |
-| CI success rate (excl. cancelled) | > 90%     | **75.0%** (84 actionable runs)         |
-| Presubmit duration                | ≤ 8 min   | ~5 min (strict gates)                  |
-| Open flaky registry rows          | 0         | 0 open (see registry)                  |
-| Apps with CUJ doc                 | ≥ 12 / 21 | **22 / 22** (`src/*/CUJs.md`)          |
-| Apps with layout smoke            | ≥ 8       | 8 + `layout-advisory.spec.ts` (Tier 3) |
-| PROCESS_BACKLOG P1 open           | 0         | Run manual audit                       |
+| Metric                            | Target    | Last measured (2026-06-22)                           |
+| --------------------------------- | --------- | ---------------------------------------------------- |
+| CI success rate (excl. cancelled) | > 90%     | **68.8%** (32 actionable runs, 7d window 2026-06-29) |
+| Presubmit duration                | ≤ 8 min   | ~5 min (strict gates)                                |
+| Open flaky registry rows          | 0         | 0 open (see registry)                                |
+| Apps with CUJ doc                 | ≥ 12 / 21 | **22 / 22** (`src/*/CUJs.md`)                        |
+| Apps with layout smoke            | ≥ 8       | 8 + `layout-advisory.spec.ts` (Tier 3)               |
+| PROCESS_BACKLOG P1 open           | 0         | Run manual audit                                     |
 
 ## CI failure triage (2026-06-22)
 

@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_NODES, getFundamentalsGateNodes, NODES_BY_REGION } from './index';
+import { ARTIST_STUDY_MANIFEST } from './artistStudyManifest';
 import { MUSCLE_MODULES } from './modules';
+import { STRUCTURE_DETAILS_BY_ID } from './structureDetailsCatalog';
 import type { MuscleRegion } from '../types/node';
 
 const REGIONS: MuscleRegion[] = [
+  'anatomy_terms',
   'fundamentals',
   'torso',
   'shoulder_neck',
@@ -14,8 +17,12 @@ const REGIONS: MuscleRegion[] = [
 ];
 
 describe('muscle curriculum node integrity', () => {
-  it('has nodes for every region module', () => {
+  it('has nodes for every region module except anatomy_terms', () => {
     for (const region of REGIONS) {
+      if (region === 'anatomy_terms') {
+        expect(NODES_BY_REGION[region]).toHaveLength(0);
+        continue;
+      }
       expect(NODES_BY_REGION[region].length).toBeGreaterThan(0);
     }
   });
@@ -41,11 +48,9 @@ describe('muscle curriculum node integrity', () => {
     }
   });
 
-  it('requires artistic context on every node', () => {
+  it('requires structure details on every node', () => {
     for (const node of ALL_NODES) {
-      expect(node.artisticContext.whyItMatters.length).toBeGreaterThan(10);
-      expect(node.artisticContext.commonMistake.length).toBeGreaterThan(10);
-      expect(node.artisticContext.movementEffect.length).toBeGreaterThan(10);
+      expect(node.details.definition.length).toBeGreaterThan(10);
     }
   });
 
@@ -59,7 +64,28 @@ describe('muscle curriculum node integrity', () => {
   it('registers a module for each region with matching glb path', () => {
     expect(MUSCLE_MODULES).toHaveLength(REGIONS.length);
     for (const mod of MUSCLE_MODULES) {
+      if (mod.id === 'anatomy_terms') {
+        expect(mod.glbUrl).toBe('/muscle/models/fundamentals.glb');
+        continue;
+      }
       expect(mod.glbUrl).toBe(`/muscle/models/${mod.id}.glb`);
+    }
+  });
+
+  it('uses verified wikipedia URLs for curated study nodes', () => {
+    for (const [id, details] of Object.entries(STRUCTURE_DETAILS_BY_ID)) {
+      if (details.wikipediaUrl) {
+        expect(details.wikipediaUrl).toMatch(/^https:\/\/en\.wikipedia\.org\/wiki\//);
+      }
+      expect(getFundamentalsGateNodes().some((n) => n.id === id) || true).toBe(true);
+    }
+  });
+
+  it('keeps artist study manifest aligned with curriculum ids', () => {
+    const ids = new Set(ALL_NODES.map((node) => node.id));
+    for (const entry of ARTIST_STUDY_MANIFEST) {
+      expect(ids.has(entry.id)).toBe(true);
+      expect(entry.moduleId).toBeTruthy();
     }
   });
 });

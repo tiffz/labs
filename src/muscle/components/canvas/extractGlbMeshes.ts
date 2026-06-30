@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { resolveCurriculumNodeId } from '../../curriculum/zAnatomyBridge';
+import type { AnatomyStageFrame } from '../../types/anatomyStageFrame';
 import { prepareAnatomyGeometry } from './applyMeshBvh';
 
 /** Drop origin-placed garbage meshes that slip through export (e.g. tendinous arch duplicate). */
@@ -121,6 +122,48 @@ export function computeStageOrbitTarget(
 
   const center = box.getCenter(new THREE.Vector3());
   return [center.x, center.y, center.z];
+}
+
+/** Staging frame for camera orbit, lighting, and anatomy-term plane overlays. */
+export function computeStageFrame(
+  meshes: readonly THREE.Mesh[],
+  layout: { position: [number, number, number]; scale: number },
+): AnatomyStageFrame {
+  const box = new THREE.Box3();
+  const stageMatrix = new THREE.Matrix4().compose(
+    new THREE.Vector3(...layout.position),
+    new THREE.Quaternion(),
+    new THREE.Vector3(layout.scale, layout.scale, layout.scale),
+  );
+
+  for (const mesh of meshes) {
+    const geometry = mesh.geometry.clone();
+    geometry.applyMatrix4(stageMatrix);
+    geometry.computeBoundingBox();
+    if (geometry.boundingBox) {
+      box.union(geometry.boundingBox);
+    }
+  }
+
+  if (box.isEmpty()) {
+    return {
+      center: [0, 0.875, 0],
+      layout,
+      bounds: { min: [0, 0, -0.22], max: [0.44, 1.75, 0.22] },
+    };
+  }
+
+  const center = box.getCenter(new THREE.Vector3());
+  const min = box.min;
+  const max = box.max;
+  return {
+    center: [center.x, center.y, center.z],
+    layout,
+    bounds: {
+      min: [min.x, min.y, min.z],
+      max: [max.x, max.y, max.z],
+    },
+  };
 }
 
 /** Fit Z-Anatomy exports into the curriculum's ~2-unit-tall staging volume. */

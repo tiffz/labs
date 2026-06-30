@@ -2,7 +2,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import type { Mesh, Plane } from 'three';
 import type { MuscleMemoryNode } from '../../types/node';
-import { baseColorForNode } from './anatomyVisuals';
+import { referenceColorForNode } from './referenceHalfVisuals';
 import { acquireAnatomyMaterial } from './anatomyMaterialPool';
 
 type GlbAtlasMirrorMeshProps = {
@@ -33,7 +33,7 @@ export default function GlbAtlasMirrorMesh({
       // Parent −X mirror breaks frustum culling — reference limbs vanish when orbited off-axis.
       mirror.frustumCulled = false;
     }
-    material.color.set(baseColorForNode(node));
+    material.color.set(referenceColorForNode(node));
     material.opacity = 1;
     material.transparent = false;
     material.emissive.set('#000000');

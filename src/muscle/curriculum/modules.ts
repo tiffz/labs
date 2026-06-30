@@ -17,10 +17,18 @@ const DEFAULT_PRESETS = {
 
 export const MUSCLE_MODULES: MuscleMemoryModule[] = [
   {
-    id: 'fundamentals',
-    label: 'Fundamentals',
-    prokoLessonRefs: ['Proko Figure Drawing — Structure Basics'],
+    id: 'anatomy_terms',
+    label: 'Language of Anatomy',
+    prokoLessonRefs: ['Proko Anatomy — The Language of Anatomy'],
     prerequisiteModuleIds: [],
+    cameraPresets: DEFAULT_PRESETS,
+    glbUrl: '/muscle/models/fundamentals.glb',
+  },
+  {
+    id: 'fundamentals',
+    label: 'Skeletal landmarks',
+    prokoLessonRefs: ['Proko Figure Drawing — Structure Basics', 'Proko Anatomy — The 6 Types of Joints'],
+    prerequisiteModuleIds: ['anatomy_terms'],
     cameraPresets: DEFAULT_PRESETS,
     glbUrl: '/muscle/models/fundamentals.glb',
   },

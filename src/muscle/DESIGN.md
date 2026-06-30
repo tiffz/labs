@@ -20,7 +20,9 @@
 
 ## Layout
 
-Viewport-locked split: **35% workout panel** (scrollable) + **65% 3D canvas** (fixed). Mobile stacks canvas first; workout panel is a bottom drawer toggled from the canvas corner.
+Viewport-locked **60 / 40 split**: 3D canvas (60%) + study panel (40%, scrollable). The figure is mostly vertical, so the panel still has room for glossary and definitions without crowding the model. Mobile stacks canvas first; workout panel is a bottom drawer toggled from the canvas corner.
+
+CSS tokens: `--muscle-canvas-split` (default `60%`), `--muscle-panel-split` (`40%`), `--muscle-panel-min` (`320px`).
 
 ## 3D interaction states
 
