@@ -26,7 +26,7 @@ function GestureAppContent(): React.ReactElement {
   const [e2eSeedReady, setE2eSeedReady] = useState(() => {
     if (!import.meta.env.DEV) return true;
     const params = new URLSearchParams(window.location.search);
-    return !params.has('e2eSeed') && !params.has('e2eInterruptedUpload');
+    return !params.has('e2eSeed') && !params.has('e2eInterruptedUpload') && !params.has('e2eInterruptedUploadEmpty');
   });
 
   useEffect(() => {
@@ -36,6 +36,12 @@ function GestureAppContent(): React.ReactElement {
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     const params = new URLSearchParams(window.location.search);
+    if (params.has('e2eInterruptedUploadEmpty')) {
+      void import('./e2e/gestureE2eSeed')
+        .then((m) => m.seedGestureE2eInterruptedUploadWithEmptyFile())
+        .finally(() => setE2eSeedReady(true));
+      return;
+    }
     if (params.has('e2eInterruptedUpload')) {
       void import('./e2e/gestureE2eSeed')
         .then((m) => m.seedGestureE2eInterruptedUpload())

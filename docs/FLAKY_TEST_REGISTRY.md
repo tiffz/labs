@@ -17,6 +17,7 @@ Track known flaky tests so they get fixed or quarantined — not masked with ret
 | ---------------------------------------------- | -------------------------------------- | ----- | -------- | ------------------------------------------------------------------------ |
 | `e2e/smoke/encore-originals-bulk-play.spec.ts` | Grid view hid `tbody`; Dexie seed race | agent | resolved | `gotoEncoreOriginalsQueue` helper + force table in dev seed (2026-06-22) |
 
+| `e2e/smoke/muscle-study-journey.spec.ts` | `full body atlas shows structure card` — 120s timeout on `click()` (element visible/stable but action never completes under parallel GLB load) | agent | resolved | Target curriculum row only (`M Pectoralis major` exact — filter also matches atlas mesh rows); activate via keyboard Enter; 180s describe budget; defer `collectStudyGroupIdsForNode` in browse rows until group focused (2026-06-30, `0a22ec5`) |
 | `e2e/smoke/muscle-study-journey.spec.ts` | `full body atlas shows structure card` — 60s timeout clicking `M Pectoralis major` in 498-row browse on CI | agent | resolved | Filter browse via search + 90s test budget; wait for layer status before index (2026-06-30) |
 | `e2e/smoke/muscle-study-journey.spec.ts` | `fill` hangs on full-body browse — 498-row mount blocks main thread before search is actionable | agent | resolved | Defer browse list until user types when count > 48 (`StudyIndex`); e2e asserts defer hint then filters (2026-06-30) |
 

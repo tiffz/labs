@@ -25,6 +25,7 @@ const APP_SMOKE_SPECS = {
   gesture: [
     'e2e/smoke/gesture-preview-strip.spec.ts',
     'e2e/smoke/gesture-upload-offline-resume.spec.ts',
+    'e2e/smoke/gesture-upload-skip-empty.spec.ts',
     'e2e/smoke/gesture-practice-interaction.spec.ts',
     'e2e/smoke/gesture-collections-scroll.spec.ts',
     'e2e/smoke/layout-heuristics-gesture.spec.ts',
