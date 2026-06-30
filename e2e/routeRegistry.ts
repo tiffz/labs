@@ -16,6 +16,8 @@ export type RouteSpec = {
   visualReadySelector?: string;
   /** Title matcher for visual tests when smoke title is too strict */
   visualTitle?: RegExp;
+  /** Optional visibility timeout for smoke shell boot (default Playwright 5s). */
+  smokeVisibleTimeoutMs?: number;
   notes?: string;
 };
 
@@ -179,6 +181,7 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     route: '/muscle/',
     title: /Muscle Memory/i,
     visibleSelector: '[data-testid="muscle-app"]',
+    smokeVisibleTimeoutMs: 20_000,
     smoke: true,
     visual: false,
     notes: 'WIP — shell + study journey + orbit perf smokes',
