@@ -10,6 +10,9 @@ import type { MuscleMemoryNode } from '../../types/node';
 
 export type StudyIndexKind = 'structures' | 'terms';
 
+/** Full-body atlas lists can block the main thread; defer row mount until the user filters. */
+const BROWSE_LIST_DEFER_THRESHOLD = 48;
+
 function typeAbbrev(type: MuscleMemoryNode['type']): string {
   if (type === 'muscle') return 'M';
   if (type === 'bone') return 'B';
@@ -174,6 +177,8 @@ export default function StudyIndex({
   const searchPlaceholder = kind === 'terms' ? 'Term name' : 'Muscle or bone name';
   const searchLabel = kind === 'terms' ? 'Filter terms by name' : 'Filter structures by name';
   const listLabel = kind === 'terms' ? 'Anatomy terms' : 'Structures';
+  const listSourceCount = kind === 'terms' ? flatTermSteps.length : visibleNodes.length;
+  const deferListUntilQuery = listSourceCount > BROWSE_LIST_DEFER_THRESHOLD && !query.trim();
 
   return (
     <details
@@ -213,11 +218,17 @@ export default function StudyIndex({
         ) : null}
 
         <div className="muscle-study-index__list" aria-label={listLabel}>
-          {kind === 'terms'
-            ? filteredTermSteps.map(({ step, index }) => (
-                <TermRow key={step.termId} termId={step.termId} index={index} />
-              ))
-            : filteredNodes.map((node) => <StructureRow key={node.id} node={node} />)}
+          {deferListUntilQuery ? (
+            <p className="muscle-study-index__defer-hint" data-testid="muscle-study-index-defer-hint">
+              Type to filter {browseCount} {kind === 'terms' ? 'terms' : 'structures'}.
+            </p>
+          ) : kind === 'terms' ? (
+            filteredTermSteps.map(({ step, index }) => (
+              <TermRow key={step.termId} termId={step.termId} index={index} />
+            ))
+          ) : (
+            filteredNodes.map((node) => <StructureRow key={node.id} node={node} />)
+          )}
         </div>
       </div>
     </details>

@@ -897,6 +897,13 @@ body {
   color: var(--muscle-navy);
 }
 
+.muscle-study-index__defer-hint {
+  margin: 0.35rem 0 0.15rem;
+  padding: 0.35rem 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--muscle-muted);
+}
+
 .muscle-study-index__list {
   flex: 1 1 auto;
   min-height: 0;
