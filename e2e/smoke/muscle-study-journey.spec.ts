@@ -10,6 +10,7 @@ async function openStudyIndexIfCollapsed(page: import('@playwright/test').Page) 
   const search = index.getByRole('searchbox');
   if (!(await search.isVisible())) {
     await index.locator('summary').click();
+    await expect(search).toBeVisible();
   }
 }
 
@@ -65,12 +66,17 @@ test.describe('Muscle Memory study journey', () => {
   });
 
   test('full body atlas shows structure card from browser', async ({ page }) => {
+    test.setTimeout(90_000);
     await page.goto('/muscle/');
     await expectMuscleCanvasReady(page);
+    await expect(page.getByTestId('muscle-layer-status')).toContainText('Full muscle', {
+      timeout: 15_000,
+    });
 
     const index = page.getByTestId('muscle-study-index');
     await openStudyIndexIfCollapsed(page);
-    await index.getByRole('button', { name: 'M Pectoralis major', exact: true }).click();
+    await index.getByRole('searchbox').fill('Pectoralis');
+    await index.getByRole('button', { name: /Pectoralis major/i }).first().click();
     await expect(page.getByTestId('muscle-structure-focus')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Pectoralis major', level: 2 })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Definition', level: 3 })).toBeVisible();

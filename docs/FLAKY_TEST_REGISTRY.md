@@ -17,6 +17,8 @@ Track known flaky tests so they get fixed or quarantined — not masked with ret
 | ---------------------------------------------- | -------------------------------------- | ----- | -------- | ------------------------------------------------------------------------ |
 | `e2e/smoke/encore-originals-bulk-play.spec.ts` | Grid view hid `tbody`; Dexie seed race | agent | resolved | `gotoEncoreOriginalsQueue` helper + force table in dev seed (2026-06-22) |
 
+| `e2e/smoke/muscle-study-journey.spec.ts` | `full body atlas shows structure card` — 60s timeout clicking `M Pectoralis major` in 498-row browse on CI | agent | resolved | Filter browse via search + 90s test budget; wait for layer status before index (2026-06-30) |
+
 | `e2e/smoke/muscle-study-journey.spec.ts` | `muscle-layer-status` slow under parallel GLB load | agent | resolved | Wait for canvas before layer status (2026-06-22) |
 
 | `e2e/smoke/layout-heuristics-stanza.spec.ts` | `missing content node` — headings not mounted when `main#main` visible | agent | resolved | `expectStanzaLibraryChrome` in `beforeEach` (2026-06-23) |
