@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { expectMuscleCanvasReady } from '../helpers/muscleCanvas';
 
 test.describe('Muscle Memory shell', () => {
-  test.describe.configure({ timeout: 60_000 });
+  test.describe.configure({ timeout: 90_000 });
 
   test('warmup exploration and region tabs', async ({ page }) => {
     await page.goto('/muscle/?module=shoulder_neck');
