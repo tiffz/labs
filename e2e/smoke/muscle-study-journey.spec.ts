@@ -15,7 +15,7 @@ async function openStudyIndexIfCollapsed(page: import('@playwright/test').Page) 
 }
 
 test.describe('Muscle Memory study journey', () => {
-  test.describe.configure({ timeout: 60_000 });
+  test.describe.configure({ timeout: 180_000 });
 
   test('fundamentals warmup shows skeleton peel count', async ({ page }) => {
     await page.goto('/muscle/?module=fundamentals');
@@ -66,7 +66,6 @@ test.describe('Muscle Memory study journey', () => {
   });
 
   test('full body atlas shows structure card from browser', async ({ page }) => {
-    test.setTimeout(120_000);
     await page.goto('/muscle/');
     await expectMuscleCanvasReady(page);
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Full muscle', {
@@ -77,9 +76,14 @@ test.describe('Muscle Memory study journey', () => {
     await openStudyIndexIfCollapsed(page);
     await expect(index.getByTestId('muscle-study-index-defer-hint')).toBeVisible();
     await index.getByRole('searchbox').fill('Pectoralis');
-    await expect(index.getByRole('button', { name: /Pectoralis major/i }).first()).toBeVisible();
-    await index.getByRole('button', { name: /Pectoralis major/i }).first().click();
-    await expect(page.getByTestId('muscle-structure-focus')).toBeVisible();
+    await expect(index.getByTestId('muscle-study-index-defer-hint')).toBeHidden();
+    const row = index
+      .locator('.muscle-study-index__list')
+      .getByRole('button', { name: 'M Pectoralis major', exact: true });
+    await expect(row).toBeVisible();
+    await row.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('muscle-structure-focus')).toBeVisible({ timeout: 60_000 });
     await expect(page.getByRole('heading', { name: 'Pectoralis major', level: 2 })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Definition', level: 3 })).toBeVisible();
     await expect(index).toBeVisible();

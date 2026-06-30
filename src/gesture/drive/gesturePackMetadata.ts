@@ -24,3 +24,8 @@ export function isDefaultCollectionName(name: string): boolean {
 export function filterGestureUploadImageFiles(files: File[]): File[] {
   return files.filter((f) => isGestureReferenceImageFile({ name: f.name, mimeType: f.type }));
 }
+
+/** Image files with non-zero size — safe to send to Drive. */
+export function filterUploadableGestureImageFiles(files: File[]): File[] {
+  return filterGestureUploadImageFiles(files).filter((file) => file.size > 0);
+}

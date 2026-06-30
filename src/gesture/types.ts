@@ -139,7 +139,9 @@ export type AppPhase = 'home' | 'session' | 'debrief';
 
 export type GestureHomeTab = 'collections' | 'practice';
 
-export type GestureUploadManifestStatus = 'pending' | 'uploaded';
+export type GestureUploadManifestStatus = 'pending' | 'uploaded' | 'skipped';
+
+export type GestureUploadManifestSkipReason = 'empty';
 
 /** Per-file upload ledger (metadata only, no blobs). Enables skip-on-resume. */
 export type GestureUploadManifestFile = {
@@ -151,6 +153,8 @@ export type GestureUploadManifestFile = {
   lastModified: number;
   status: GestureUploadManifestStatus;
   driveFileId?: string;
+  /** Set when status is `skipped` (e.g. 0-byte placeholder in a reference folder). */
+  skipReason?: GestureUploadManifestSkipReason;
 };
 
 /** Staged photo bytes for resume-without-re-pick (deleted after each Drive upload). */

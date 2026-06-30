@@ -15,9 +15,35 @@ describe('resolveStudyGroupForNode', () => {
     ]);
   });
 
-  it('finds quads group for rectus femoris', () => {
+  it('finds quadriceps group for rectus femoris', () => {
     const group = findMultiMemberStudyGroupForNode('muscle_quadriceps_rectus_femoris');
     expect(group?.id).toBe('leg_quads');
+  });
+
+  it('finds gluteal group without tensor fasciae latae', () => {
+    const group = findMultiMemberStudyGroupForNode('muscle_gluteus_medius');
+    expect(group?.id).toBe('leg_gluteal');
+    expect(findMultiMemberStudyGroupForNode('muscle_tensor_fasciae_latae')).toBeUndefined();
+  });
+
+  it('finds rotator cuff for supraspinatus and infraspinatus only', () => {
+    const group = findMultiMemberStudyGroupForNode('muscle_supraspinatus');
+    expect(group?.id).toBe('sn_rotator_cuff');
+    expect(collectStudyGroupIdsForNode('muscle_infraspinatus')).toEqual([
+      'muscle_supraspinatus',
+      'muscle_infraspinatus',
+    ]);
+    expect(findMultiMemberStudyGroupForNode('muscle_teres_major')).toBeUndefined();
+  });
+
+  it('does not group arm muscles into regional buckets', () => {
+    expect(findMultiMemberStudyGroupForNode('muscle_biceps_brachii')).toBeUndefined();
+    expect(findMultiMemberStudyGroupForNode('muscle_brachioradialis')).toBeUndefined();
+  });
+
+  it('does not group torso muscles into front/back buckets', () => {
+    expect(findMultiMemberStudyGroupForNode('muscle_rectus_abdominis')).toBeUndefined();
+    expect(findMultiMemberStudyGroupForNode('muscle_latissimus_dorsi')).toBeUndefined();
   });
 
   it('returns undefined for singleton nodes', () => {

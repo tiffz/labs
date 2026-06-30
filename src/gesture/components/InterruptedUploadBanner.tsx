@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import {
   ensureLabsGoogleAccessTokenForDrive,
   LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
+import {
+  useLabsBlockingJobs,
+  useLabsBlockingJobsVisible,
+} from '../../shared/jobs/LabsBlockingJobContext';
 import { keepPartialUploadCollection } from '../drive/gestureIncompleteUpload';
 import { inferLocalFolderName } from '../drive/gestureLocalFolderUpload';
 import { canResumeUploadWithoutRepick } from '../drive/gestureUploadResume';
@@ -36,9 +40,12 @@ export default function InterruptedUploadBanner({
 }: InterruptedUploadBannerProps): React.ReactElement {
   const folderInputRef = useRef<HTMLInputElement>(null);
   const [canContinueWithoutPick, setCanContinueWithoutPick] = useState(false);
+  const { withBlockingJob } = useLabsBlockingJobs();
+  const blockingVisible = useLabsBlockingJobsVisible();
   const headline = formatInterruptedUploadHeadline(pack);
   const summary = formatInterruptedUploadSummary(pack, photoCount);
   const folderHint = pack.uploadSourceFolderName ?? pack.name;
+  const interactionDisabled = Boolean(disabled || upload.busy || blockingVisible);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,16 +57,18 @@ export default function InterruptedUploadBanner({
     };
   }, [pack.id]);
 
-  const handleKeep = async () => {
+  const handleKeep = useCallback(async () => {
     onError('');
     try {
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      const count = await keepPartialUploadCollection(token, pack);
-      onMessage(
-        count > 0
-          ? `Using ${count} photo${count === 1 ? '' : 's'} from "${pack.name}". You can continue the upload later.`
-          : `Saved "${pack.name}". Choose Continue upload when you are ready.`,
-      );
+      await withBlockingJob(`Saving partial collection “${pack.name}”…`, async () => {
+        const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+        const count = await keepPartialUploadCollection(token, pack);
+        onMessage(
+          count > 0
+            ? `Using ${count} photo${count === 1 ? '' : 's'} from "${pack.name}". You can continue the upload later.`
+            : `Saved "${pack.name}". Choose Continue upload when you are ready.`,
+        );
+      });
     } catch (e) {
       if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
         onError(e.message);
@@ -67,7 +76,7 @@ export default function InterruptedUploadBanner({
         onError(e instanceof Error ? e.message : 'Could not sync from Drive.');
       }
     }
-  };
+  }, [onError, onMessage, pack, withBlockingJob]);
 
   const handleContinuePick = () => {
     folderInputRef.current?.click();
@@ -124,13 +133,13 @@ export default function InterruptedUploadBanner({
         {!canContinueWithoutPick ? <strong>{folderHint}</strong> : null}
       </Typography>
       <div className="gesture-interrupted-upload-actions">
-        <Button variant="contained" size="small" disabled={disabled || upload.busy} onClick={handleContinue}>
+        <Button variant="contained" size="small" disabled={interactionDisabled} onClick={handleContinue}>
           Continue upload
         </Button>
-        <Button variant="outlined" size="small" disabled={disabled || upload.busy} onClick={() => void handleKeep()}>
+        <Button variant="outlined" size="small" disabled={interactionDisabled} onClick={() => void handleKeep()}>
           Use partial collection
         </Button>
-        <Button variant="text" size="small" disabled={disabled || upload.busy} onClick={() => onRemove(pack)}>
+        <Button variant="text" size="small" disabled={interactionDisabled} onClick={() => onRemove(pack)}>
           Remove…
         </Button>
       </div>

@@ -19,6 +19,7 @@ Full body atlas is reference-only (not in the linear path).
 
 ## Granularity rules
 
+- **Multi-member study groups:** standard anatomical muscle groups only (deltoid, quadriceps femoris, hamstrings, gluteal muscles, rotator cuff, thenar muscles, intrinsic muscles of the hand). No regional buckets like “front torso” or “forearm”.
 - **Default study deck:** Proko lesson mass or AFS silhouette block (see `artistStudyManifest.ts`).
 - **Drill-down:** Individual vertebrae, vastus heads, etc. stay atlas-only until user toggles detail structures.
 - **Quiz eligible:** `quizEligible: true` in manifest; atlas fills default to `false`.

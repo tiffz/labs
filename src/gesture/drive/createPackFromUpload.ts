@@ -11,6 +11,7 @@ import { collectPackContentFingerprintKeys } from './gestureDuplicateDetection';
 import {
   defaultUploadCollectionName,
   filterGestureUploadImageFiles,
+  filterUploadableGestureImageFiles,
   sanitizePackFolderName,
 } from './gesturePackMetadata';
 import { uploadFilesToExistingPack, writeUploadManifest } from './gesturePackUpload';
@@ -68,6 +69,10 @@ export async function createPackFromUpload(
   const images = filterGestureUploadImageFiles(input.files);
   if (images.length === 0) {
     throw new Error('Add at least one image file (JPEG, PNG, WebP, GIF, or similar).');
+  }
+  const uploadableImages = filterUploadableGestureImageFiles(images);
+  if (uploadableImages.length === 0) {
+    throw new Error('All selected photos are empty (0 bytes). Remove placeholder files and try again.');
   }
 
   const sourceFolderName =

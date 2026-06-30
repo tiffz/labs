@@ -18,6 +18,16 @@ export function isStudyGroupNodeRef(
   return 'nodeId' in child;
 }
 
+/** Single-structure browse entry (not a multi-member muscle group). */
+function leaf(id: string, label: string, moduleId: MuscleRegion, nodeId: string): StudyGroup {
+  return { id, label, moduleId, children: [{ nodeId }] };
+}
+
+/**
+ * Study tree for module guides and group focus.
+ * Multi-member groups use standard anatomical names (deltoid, quadriceps, rotator cuff, etc.).
+ * Regional buckets like "front torso" or "forearm" are intentionally avoided.
+ */
 export const STUDY_GROUPS_BY_MODULE: Partial<Record<MuscleRegion, StudyGroup[]>> = {
   fundamentals: [
     {
@@ -93,31 +103,12 @@ export const STUDY_GROUPS_BY_MODULE: Partial<Record<MuscleRegion, StudyGroup[]>>
       defaultExpanded: true,
       children: [{ nodeId: 'bone_ribcage' }],
     },
-    {
-      id: 'torso_pecs',
-      label: 'Pecs (chest)',
-      moduleId: 'torso',
-      defaultExpanded: true,
-      children: [{ nodeId: 'muscle_pectoralis_major' }],
-    },
-    {
-      id: 'torso_front',
-      label: 'Front torso',
-      moduleId: 'torso',
-      defaultExpanded: true,
-      children: [
-        { nodeId: 'muscle_rectus_abdominis' },
-        { nodeId: 'muscle_external_oblique' },
-        { nodeId: 'muscle_serratus_anterior' },
-      ],
-    },
-    {
-      id: 'torso_back',
-      label: 'Back torso',
-      moduleId: 'torso',
-      defaultExpanded: true,
-      children: [{ nodeId: 'muscle_latissimus_dorsi' }, { nodeId: 'muscle_erector_spinae' }],
-    },
+    leaf('torso_pectoralis_major', 'Pectoralis major', 'torso', 'muscle_pectoralis_major'),
+    leaf('torso_rectus_abdominis', 'Rectus abdominis', 'torso', 'muscle_rectus_abdominis'),
+    leaf('torso_external_oblique', 'External oblique', 'torso', 'muscle_external_oblique'),
+    leaf('torso_serratus_anterior', 'Serratus anterior', 'torso', 'muscle_serratus_anterior'),
+    leaf('torso_latissimus_dorsi', 'Latissimus dorsi', 'torso', 'muscle_latissimus_dorsi'),
+    leaf('torso_erector_spinae', 'Erector spinae group', 'torso', 'muscle_erector_spinae'),
   ],
   shoulder_neck: [
     {
@@ -147,50 +138,24 @@ export const STUDY_GROUPS_BY_MODULE: Partial<Record<MuscleRegion, StudyGroup[]>>
       ],
     },
     {
-      id: 'sn_neck',
-      label: 'Neck & upper back',
-      moduleId: 'shoulder_neck',
-      defaultExpanded: true,
-      children: [
-        { nodeId: 'muscle_trapezius_upper' },
-        { nodeId: 'muscle_sternocleidomastoid' },
-        { nodeId: 'muscle_rhomboid_major' },
-      ],
-    },
-    {
-      id: 'sn_rotator',
+      id: 'sn_rotator_cuff',
       label: 'Rotator cuff',
       moduleId: 'shoulder_neck',
-      children: [
-        { nodeId: 'muscle_infraspinatus' },
-        { nodeId: 'muscle_teres_major' },
-        { nodeId: 'muscle_supraspinatus' },
-      ],
+      defaultExpanded: true,
+      children: [{ nodeId: 'muscle_supraspinatus' }, { nodeId: 'muscle_infraspinatus' }],
     },
+    leaf('sn_trapezius', 'Upper trapezius', 'shoulder_neck', 'muscle_trapezius_upper'),
+    leaf('sn_scm', 'Sternocleidomastoid', 'shoulder_neck', 'muscle_sternocleidomastoid'),
+    leaf('sn_rhomboid_major', 'Rhomboid major', 'shoulder_neck', 'muscle_rhomboid_major'),
+    leaf('sn_teres_major', 'Teres major', 'shoulder_neck', 'muscle_teres_major'),
   ],
   arm: [
-    {
-      id: 'arm_upper',
-      label: 'Upper arm',
-      moduleId: 'arm',
-      defaultExpanded: true,
-      children: [
-        { nodeId: 'muscle_biceps_brachii' },
-        { nodeId: 'muscle_triceps_long_head' },
-        { nodeId: 'muscle_brachialis' },
-      ],
-    },
-    {
-      id: 'arm_forearm',
-      label: 'Forearm',
-      moduleId: 'arm',
-      defaultExpanded: true,
-      children: [
-        { nodeId: 'muscle_brachioradialis' },
-        { nodeId: 'muscle_extensor_carpi_radialis' },
-        { nodeId: 'muscle_flexor_carpi_radialis' },
-      ],
-    },
+    leaf('arm_biceps', 'Biceps brachii', 'arm', 'muscle_biceps_brachii'),
+    leaf('arm_triceps', 'Triceps brachii', 'arm', 'muscle_triceps_long_head'),
+    leaf('arm_brachialis', 'Brachialis', 'arm', 'muscle_brachialis'),
+    leaf('arm_brachioradialis', 'Brachioradialis', 'arm', 'muscle_brachioradialis'),
+    leaf('arm_ecr', 'Extensor carpi radialis', 'arm', 'muscle_extensor_carpi_radialis'),
+    leaf('arm_fcr', 'Flexor carpi radialis', 'arm', 'muscle_flexor_carpi_radialis'),
   ],
   hand: [
     {
@@ -205,40 +170,27 @@ export const STUDY_GROUPS_BY_MODULE: Partial<Record<MuscleRegion, StudyGroup[]>>
       ],
     },
     {
-      id: 'hand_palm',
-      label: 'Palm masses',
+      id: 'hand_thenar',
+      label: 'Thenar muscles',
       moduleId: 'hand',
       defaultExpanded: true,
-      children: [
-        { nodeId: 'muscle_thenar_eminence' },
-        { nodeId: 'muscle_hypothenar_eminence' },
-        { nodeId: 'muscle_flexor_pollicis_brevis' },
-      ],
+      children: [{ nodeId: 'muscle_thenar_eminence' }, { nodeId: 'muscle_flexor_pollicis_brevis' }],
     },
+    leaf('hand_hypothenar', 'Hypothenar eminence', 'hand', 'muscle_hypothenar_eminence'),
     {
       id: 'hand_intrinsic',
-      label: 'Intrinsic muscles',
+      label: 'Intrinsic muscles of the hand',
       moduleId: 'hand',
       defaultExpanded: true,
-      children: [
-        { nodeId: 'muscle_lumbricals_hand' },
-        { nodeId: 'muscle_dorsal_interossei_hand' },
-      ],
+      children: [{ nodeId: 'muscle_lumbricals_hand' }, { nodeId: 'muscle_dorsal_interossei_hand' }],
     },
-    {
-      id: 'hand_tendons',
-      label: 'Tendons',
-      moduleId: 'hand',
-      children: [
-        { nodeId: 'muscle_flexor_digitorum_superficialis' },
-        { nodeId: 'muscle_extensor_digitorum' },
-      ],
-    },
+    leaf('hand_fds', 'Flexor digitorum superficialis', 'hand', 'muscle_flexor_digitorum_superficialis'),
+    leaf('hand_edc', 'Extensor digitorum', 'hand', 'muscle_extensor_digitorum'),
   ],
   leg: [
     {
       id: 'leg_quads',
-      label: 'Quads (front thigh)',
+      label: 'Quadriceps femoris',
       moduleId: 'leg',
       defaultExpanded: true,
       children: [
@@ -250,7 +202,7 @@ export const STUDY_GROUPS_BY_MODULE: Partial<Record<MuscleRegion, StudyGroup[]>>
     },
     {
       id: 'leg_hamstrings',
-      label: 'Hamstrings (back thigh)',
+      label: 'Hamstrings',
       moduleId: 'leg',
       defaultExpanded: true,
       children: [
@@ -260,29 +212,20 @@ export const STUDY_GROUPS_BY_MODULE: Partial<Record<MuscleRegion, StudyGroup[]>>
       ],
     },
     {
-      id: 'leg_hip',
-      label: 'Hip & butt',
+      id: 'leg_gluteal',
+      label: 'Gluteal muscles',
       moduleId: 'leg',
       defaultExpanded: true,
       children: [
         { nodeId: 'muscle_gluteus_maximus' },
         { nodeId: 'muscle_gluteus_medius' },
         { nodeId: 'muscle_gluteus_minimus' },
-        { nodeId: 'muscle_tensor_fasciae_latae' },
       ],
     },
-    {
-      id: 'leg_adductors',
-      label: 'Inner thigh',
-      moduleId: 'leg',
-      children: [{ nodeId: 'muscle_adductor_longus' }],
-    },
-    {
-      id: 'leg_calf',
-      label: 'Calf & shin',
-      moduleId: 'leg',
-      children: [{ nodeId: 'muscle_gastrocnemius' }, { nodeId: 'muscle_tibialis_anterior' }],
-    },
+    leaf('leg_tfl', 'Tensor fasciae latae', 'leg', 'muscle_tensor_fasciae_latae'),
+    leaf('leg_adductor_longus', 'Adductor longus', 'leg', 'muscle_adductor_longus'),
+    leaf('leg_gastrocnemius', 'Gastrocnemius', 'leg', 'muscle_gastrocnemius'),
+    leaf('leg_tibialis_anterior', 'Tibialis anterior', 'leg', 'muscle_tibialis_anterior'),
     {
       id: 'leg_bones',
       label: 'Bones',
@@ -305,29 +248,11 @@ export const STUDY_GROUPS_BY_MODULE: Partial<Record<MuscleRegion, StudyGroup[]>>
         { nodeId: 'bone_phalanges_foot' },
       ],
     },
-    {
-      id: 'foot_arch',
-      label: 'Arch & sole',
-      moduleId: 'foot',
-      defaultExpanded: true,
-      children: [
-        { nodeId: 'muscle_abductor_hallucis' },
-        { nodeId: 'muscle_flexor_digitorum_brevis' },
-        { nodeId: 'muscle_lumbricals_foot' },
-      ],
-    },
-    {
-      id: 'foot_dorsal',
-      label: 'Dorsal foot',
-      moduleId: 'foot',
-      children: [{ nodeId: 'muscle_extensor_digitorum_brevis' }],
-    },
-    {
-      id: 'foot_lateral',
-      label: 'Lateral ankle',
-      moduleId: 'foot',
-      children: [{ nodeId: 'muscle_peroneus_longus' }],
-    },
+    leaf('foot_abductor_hallucis', 'Abductor hallucis', 'foot', 'muscle_abductor_hallucis'),
+    leaf('foot_fdb', 'Flexor digitorum brevis', 'foot', 'muscle_flexor_digitorum_brevis'),
+    leaf('foot_lumbricals', 'Lumbricals', 'foot', 'muscle_lumbricals_foot'),
+    leaf('foot_edb', 'Extensor digitorum brevis', 'foot', 'muscle_extensor_digitorum_brevis'),
+    leaf('foot_peroneus', 'Peroneus longus', 'foot', 'muscle_peroneus_longus'),
   ],
 };
 

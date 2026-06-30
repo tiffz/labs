@@ -24,8 +24,11 @@ import {
 import { filterUploadFilesSkippingDuplicates } from './gestureUploadDuplicateFilter';
 import {
   buildUploadManifestId,
+  isManifestEntryComplete,
   localFileRelativePath,
+  markManifestFileSkipped,
   markManifestFileUploaded,
+  reconcileSkippedEmptyManifestEntries,
 } from './gestureUploadManifest';
 import { throttleUploadProgress, yieldToMain } from './gestureUploadProgressReport';
 import { filterGestureUploadImageFiles } from './gesturePackMetadata';
@@ -144,15 +147,19 @@ export async function writeUploadManifest(
   files: File[],
 ): Promise<GestureUploadManifestFile[]> {
   const images = filterGestureUploadImageFiles(files);
-  const entries: GestureUploadManifestFile[] = images.map((file) => ({
-    id: buildUploadManifestId(packId, localFileRelativePath(file)),
-    packId,
-    relativePath: localFileRelativePath(file),
-    name: file.name,
-    size: file.size,
-    lastModified: file.lastModified,
-    status: 'pending',
-  }));
+  const entries: GestureUploadManifestFile[] = images.map((file) => {
+    const status = file.size <= 0 ? 'skipped' : 'pending';
+    return {
+      id: buildUploadManifestId(packId, localFileRelativePath(file)),
+      packId,
+      relativePath: localFileRelativePath(file),
+      name: file.name,
+      size: file.size,
+      lastModified: file.lastModified,
+      status,
+      ...(status === 'skipped' ? { skipReason: 'empty' as const } : {}),
+    };
+  });
   const chunkSize = 250;
   for (let offset = 0; offset < entries.length; offset += chunkSize) {
     await gestureDb.uploadManifestFiles.bulkPut(entries.slice(offset, offset + chunkSize));
@@ -173,15 +180,19 @@ export async function appendUploadManifest(
   const existingPaths = new Set(existing.map((entry) => entry.relativePath));
   const entries: GestureUploadManifestFile[] = images
     .filter((file) => !existingPaths.has(localFileRelativePath(file)))
-    .map((file) => ({
-      id: buildUploadManifestId(packId, localFileRelativePath(file)),
-      packId,
-      relativePath: localFileRelativePath(file),
-      name: file.name,
-      size: file.size,
-      lastModified: file.lastModified,
-      status: 'pending' as const,
-    }));
+    .map((file) => {
+      const status = file.size <= 0 ? 'skipped' : 'pending';
+      return {
+        id: buildUploadManifestId(packId, localFileRelativePath(file)),
+        packId,
+        relativePath: localFileRelativePath(file),
+        name: file.name,
+        size: file.size,
+        lastModified: file.lastModified,
+        status,
+        ...(status === 'skipped' ? { skipReason: 'empty' as const } : {}),
+      };
+    });
   if (entries.length > 0) {
     await gestureDb.uploadManifestFiles.bulkPut(entries);
   }
@@ -217,11 +228,14 @@ export async function uploadFilesToExistingPack(
   const collectionRoot = options?.collectionRootName ?? pack.uploadSourceFolderName;
   await reconcileManifestWithDriveFolder(accessToken, pack.id, pack.driveFolderId, collectionRoot);
 
+  await reconcileSkippedEmptyManifestEntries(pack.id, allImages);
+
   const packFilesExisting = await gestureDb.packFiles.where('packId').equals(pack.id).toArray();
   let manifest = await gestureDb.uploadManifestFiles.where('packId').equals(pack.id).toArray();
   const existingKeys = await collectPackContentFingerprintKeys(accessToken, pack.driveFolderId);
+  const uploadableImages = allImages.filter((file) => file.size > 0);
   const { toUpload: images, skippedDuplicates } = await filterUploadFilesSkippingDuplicates(
-    allImages,
+    uploadableImages,
     {
       existingKeys,
       indexedDriveNames: new Set(packFilesExisting.map((row) => row.name)),
@@ -270,7 +284,7 @@ export async function uploadFilesToExistingPack(
   );
 
   manifest = await gestureDb.uploadManifestFiles.where('packId').equals(pack.id).toArray();
-  const alreadyDone = manifest.filter((entry) => entry.status === 'uploaded').length;
+  const alreadyDone = manifest.filter((entry) => isManifestEntryComplete(entry)).length;
   const total =
     manifest.length > 0 ? manifest.length : Math.max(current.expectedFileCount ?? 0, alreadyDone + images.length);
   let done = alreadyDone;
@@ -324,6 +338,18 @@ export async function uploadFilesToExistingPack(
       const entry = manifestByPath.get(localFileRelativePath(file));
 
       if (entry?.status === 'uploaded' && entry.driveFileId) {
+        await deleteStagedUploadBlob(pack.id, file);
+        done += 1;
+        current = { ...current, uploadedFileCount: done, expectedFileCount: total };
+        await flushPackProgress();
+        reportUploadProgress(done, total);
+        continue;
+      }
+
+      if (entry?.status === 'skipped' || file.size <= 0) {
+        if (file.size <= 0) {
+          await markManifestFileSkipped(pack.id, file, 'empty');
+        }
         await deleteStagedUploadBlob(pack.id, file);
         done += 1;
         current = { ...current, uploadedFileCount: done, expectedFileCount: total };

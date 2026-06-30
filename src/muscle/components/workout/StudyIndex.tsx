@@ -30,13 +30,12 @@ function StructureRow({ node }: { node: MuscleMemoryNode }) {
   const selectNode = useMuscleStore((s) => s.selectNode);
   const setHoveredNodeId = useMuscleStore((s) => s.setHoveredNodeId);
 
-  const groupIds = useMemo(
-    () =>
-      collectStudyGroupIdsForNode(node.id, {
-        moduleId: bodyView === 'region' ? activeModuleId : undefined,
-      }),
-    [activeModuleId, bodyView, node.id],
-  );
+  const groupIds = useMemo(() => {
+    if (!focusedGroupNodeIds || focusedGroupNodeIds.length === 0 || focusedNodeId) return null;
+    return collectStudyGroupIdsForNode(node.id, {
+      moduleId: bodyView === 'region' ? activeModuleId : undefined,
+    });
+  }, [activeModuleId, bodyView, focusedGroupNodeIds, focusedNodeId, node.id]);
 
   const active =
     focusedNodeId === node.id ||
@@ -44,8 +43,7 @@ function StructureRow({ node }: { node: MuscleMemoryNode }) {
     Boolean(
       groupIds &&
         focusedGroupNodeIds &&
-        groupIds.every((id) => focusedGroupNodeIds.includes(id)) &&
-        !focusedNodeId,
+        groupIds.every((id) => focusedGroupNodeIds.includes(id)),
     );
 
   return (
