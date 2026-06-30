@@ -782,34 +782,25 @@ body {
 .muscle-panel-stack {
   flex: 1 1 auto;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 0;
   overflow: hidden;
 }
 
 .muscle-panel-stack__study {
-  flex: 1 1 auto;
+  grid-row: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 .muscle-panel-stack:has(.muscle-study-index[open]) {
-  display: grid;
-  grid-template-rows: minmax(7.5rem, 38%) minmax(10rem, 1fr);
-  align-content: stretch;
-}
-
-.muscle-panel-stack:has(.muscle-study-index[open]) .muscle-panel-stack__study {
-  flex: none;
-  min-height: 0;
-  max-height: none;
-  overflow-y: auto;
+  grid-template-rows: minmax(9rem, 45%) minmax(10rem, 1fr);
 }
 
 .muscle-study-index {
-  flex: 0 0 auto;
+  grid-row: 2;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -818,18 +809,11 @@ body {
   border-top: 1px solid var(--muscle-border);
   background: var(--muscle-cream);
   overflow: hidden;
-  position: relative;
-  z-index: 0;
-}
-
-.muscle-study-index:not([open]) {
-  flex: 0 0 auto;
 }
 
 .muscle-study-index[open] {
-  flex: none;
   min-height: 0;
-  max-height: 100%;
+  overflow: hidden;
 }
 
 .muscle-study-index__summary {

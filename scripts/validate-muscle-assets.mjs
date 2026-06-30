@@ -43,6 +43,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const manifestPath = path.join(root, 'public/muscle/models/manifest.json');
 const nodesDir = path.join(root, 'src/muscle/curriculum/nodes');
 const atlasRegistryPath = path.join(root, 'src/muscle/curriculum/atlasMeshRegistry.ts');
+const zAnatomyBridgePath = path.join(root, 'src/muscle/curriculum/zAnatomyBridge.ts');
 const csvPath = path.join(root, 'tools/muscle-anatomy/z_anatomy_name_map.csv');
 
 /** Muscles that regress often — require a non-trivial merged mesh somewhere in the manifest. */
@@ -67,10 +68,19 @@ function collectCurriculumIds() {
     for (const match of text.matchAll(/\b(?:bone|muscle|joint)\(\s*'([a-z0-9_]+)'/g)) {
       ids.add(match[1]);
     }
+    for (const match of text.matchAll(/\['((?:bone|muscle|joint)_[a-z0-9_]+)'/g)) {
+      ids.add(match[1]);
+    }
   }
   if (fs.existsSync(atlasRegistryPath)) {
     const text = fs.readFileSync(atlasRegistryPath, 'utf8');
     for (const match of text.matchAll(/\bid:\s*["']([a-z0-9_]+)["']/g)) {
+      ids.add(match[1]);
+    }
+  }
+  if (fs.existsSync(zAnatomyBridgePath)) {
+    const text = fs.readFileSync(zAnatomyBridgePath, 'utf8');
+    for (const match of text.matchAll(/\bnodeId:\s*["']([a-z0-9_]+)["']/g)) {
       ids.add(match[1]);
     }
   }
