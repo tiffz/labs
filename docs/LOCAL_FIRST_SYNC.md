@@ -4,6 +4,8 @@ Canonical reference for how Labs micro-apps sync user data with Google Drive. So
 
 **Quick map:** OAuth paths, merge policies, and per-app entry points → [`SYNC_AND_AUTH_MAP.md`](SYNC_AND_AUTH_MAP.md).
 
+**P0 data-loss:** Agent checklist + guard parity → [`DRIVE_SYNC_DATA_LOSS_PREVENTION.md`](DRIVE_SYNC_DATA_LOSS_PREVENTION.md).
+
 ## Apps with Drive sync
 
 | App          | Model                                             | Drive location                                         | Local store         |
@@ -151,7 +153,7 @@ Distilled from the Encore "Because of You" incident (ADR 0019). Apply to **every
 6. **Minimize the local-only window.** Content that exists only on the device (filled but not yet
    pushed) is the most fragile state — it is invisible to revision-history recovery until it reaches
    the cloud. Flush pending pushes on `visibilitychange→hidden` / `pagehide` so closing a tab does
-   not strand fresh work, and write a local pre-sync snapshot before any destructive op so even
+   not strand fresh work (Encore + portfolio `useLabsDrivePortfolioAutoSync`), and write a local pre-sync snapshot before any destructive op so even
    never-synced content is recoverable from the device. Recovery scans **both** Drive revisions and
    local snapshots (Encore `encoreRecoveryRunner.ts`). Caveat: if local-only content is wiped before
    any snapshot or push captures it, it is genuinely unrecoverable — which is why the flush + snapshot

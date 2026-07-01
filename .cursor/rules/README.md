@@ -29,6 +29,7 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | [`dexie-live-query-empty-states.mdc`](dexie-live-query-empty-states.mdc)     | Dexie `useLiveQuery` surfaces            | `resolveDexieLiveQuery.ts`, Encore library  | —                            |
 | [`stanza-viewer-layout.mdc`](stanza-viewer-layout.mdc)                       | `stanza/**`                              | `stanza/LAYOUT.md`                          | —                            |
 | [`stanza-drive-sync.mdc`](stanza-drive-sync.mdc)                             | `stanza/drive/**`, backup hook           | `stanza/AGENTS.md` § Drive sync             | —                            |
+| [`portfolio-drive-data-loss.mdc`](portfolio-drive-data-loss.mdc)             | Drive sync, merge, backup hooks          | `DRIVE_SYNC_DATA_LOSS_PREVENTION.md`        | `labs-drive-backup`          |
 | [`beat-analysis-scope.mdc`](beat-analysis-scope.mdc)                         | beat analysis paths                      | `stanza/ANALYZE.md`, `beat/TEST_MATRIX.md`  | —                            |
 | [`drum-notation-mini-host.mdc`](drum-notation-mini-host.mdc)                 | DrumNotationMini hosts                   | `DrumNotationMini.tsx`                      | —                            |
 | [`session-retrospective-mandatory.mdc`](session-retrospective-mandatory.mdc) | **Always**                               | `CONTINUOUS_PROCESS_IMPROVEMENT.md`         | `labs-session-retrospective` |

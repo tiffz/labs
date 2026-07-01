@@ -73,6 +73,35 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
   deferPullRef.current = shouldDeferAutoPull;
   const onAutoPullErrorRef = useRef(onAutoPullError);
   onAutoPullErrorRef.current = onAutoPullError;
+  const onAutoPushErrorRef = useRef(onAutoPushError);
+  onAutoPushErrorRef.current = onAutoPushError;
+
+  const startAutoPush = useCallback((opts?: { force?: boolean }) => {
+    if (!allowPushRef.current() || autoPushInFlightRef.current || mergeBusyRef.current()) return;
+    if (!opts?.force) {
+      const sinceLast = Date.now() - lastAutoPushAtRef.current;
+      if (sinceLast < LABS_DRIVE_AUTO_PUSH_MIN_INTERVAL_MS) return;
+    }
+    autoPushInFlightRef.current = true;
+    void (async () => {
+      try {
+        await flushRef.current({ silent: true });
+        lastAutoPushAtRef.current = Date.now();
+      } catch (e) {
+        onAutoPushErrorRef.current(formatLabsDriveSyncError(e, 'auto-push'));
+      } finally {
+        autoPushInFlightRef.current = false;
+      }
+    })();
+  }, []);
+
+  /** Flush debounced push immediately (tab hide). Only runs when a push was scheduled. */
+  const runPendingAutoPushNow = useCallback(() => {
+    if (autoPushTimerRef.current == null) return;
+    window.clearTimeout(autoPushTimerRef.current);
+    autoPushTimerRef.current = null;
+    startAutoPush({ force: true });
+  }, [startAutoPush]);
 
   const runSilentPull = useCallback(async () => {
     if (deferPullRef.current?.()) return;
@@ -143,6 +172,22 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
 
   useEffect(() => {
     if (!enabled) return;
+    const flushIfPending = () => {
+      runPendingAutoPushNow();
+    };
+    const onTabHide = () => {
+      if (document.visibilityState === 'hidden') flushIfPending();
+    };
+    document.addEventListener('visibilitychange', onTabHide);
+    window.addEventListener('pagehide', flushIfPending);
+    return () => {
+      document.removeEventListener('visibilitychange', onTabHide);
+      window.removeEventListener('pagehide', flushIfPending);
+    };
+  }, [enabled, runPendingAutoPushNow]);
+
+  useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
 
     const schedule = () => {
@@ -152,23 +197,13 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
       }
       autoPushTimerRef.current = window.setTimeout(() => {
         autoPushTimerRef.current = null;
-        if (cancelled || !allowPushRef.current() || autoPushInFlightRef.current) return;
+        if (cancelled) return;
         const sinceLast = Date.now() - lastAutoPushAtRef.current;
         if (sinceLast < LABS_DRIVE_AUTO_PUSH_MIN_INTERVAL_MS) {
           schedule();
           return;
         }
-        autoPushInFlightRef.current = true;
-        void (async () => {
-          try {
-            await flushRef.current({ silent: true });
-            lastAutoPushAtRef.current = Date.now();
-          } catch (e) {
-            onAutoPushError(formatLabsDriveSyncError(e, 'auto-push'));
-          } finally {
-            autoPushInFlightRef.current = false;
-          }
-        })();
+        startAutoPush({ force: true });
       }, LABS_DRIVE_AUTO_PUSH_DEBOUNCE_MS);
     };
 
@@ -193,7 +228,7 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
         autoPushTimerRef.current = null;
       }
     };
-  }, [enabled, onAutoPushError, subscribeLocalChanges]);
+  }, [enabled, onAutoPushError, subscribeLocalChanges, startAutoPush]);
 
   return {
     notifyAutoPushCompleted: () => {
