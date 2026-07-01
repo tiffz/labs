@@ -2,6 +2,8 @@
 
 Canonical reference for how Labs micro-apps sync user data with Google Drive. Solo dev: treat this doc + linked ADRs as the product bar for sync UX and data-loss prevention.
 
+**Quick map:** OAuth paths, merge policies, and per-app entry points → [`SYNC_AND_AUTH_MAP.md`](SYNC_AND_AUTH_MAP.md).
+
 ## Apps with Drive sync
 
 | App          | Model                                             | Drive location                                         | Local store         |

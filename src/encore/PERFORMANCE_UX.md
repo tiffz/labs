@@ -98,6 +98,19 @@ Before shipping performance UI changes:
 7. **Color** — fuchsia-forward soft surfaces in modals (`tone="soft"`, `encoreSoftPinkWash`); avoid heavy dark-violet body text on upload controls.
 8. **Tests** — extend the nearest `*.test.ts` for new behavior; run `npm run presubmit` before handoff.
 
+## Add-track menu checklist (song media hub)
+
+Regression guard for `EncoreMediaTrackAddMenu` and chart add menu on the song page. E2e: `e2e/smoke/encore-add-track-menu.spec.ts`.
+
+| Rule                                                                       | Why                                                              |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| **No `Fragment` as direct `Menu` child**                                   | MUI logs console errors; breaks Add chart and other menu actions |
+| **Spotify results in portaled Popper**                                     | Avoid fixed empty slot / layout shift in the dropdown            |
+| **Seed Spotify search on field focus**, not on menu open                   | Prevents surprise network calls when opening the menu            |
+| **Open chart menu immediately**; run Drive folder prep on menu action only | Awaiting Drive before open made Add chart feel broken            |
+| **Paste and Search are separate fields**                                   | One combined field confused Spotify vs link paste                |
+| **Import `ensureSpotifyAccessToken` from `spotify/pkce.ts`**               | Wrong import path crashes the app on menu mount                  |
+
 ## Agent preflight (performance UI)
 
 When implementing performance UX in a session:

@@ -81,13 +81,34 @@ Measured on dev (`npm run dev`), hard refresh, typical seed data unless noted.
 
 ## Apps with CUJ docs
 
-| App     | Doc                                             | Notes                                               |
-| ------- | ----------------------------------------------- | --------------------------------------------------- |
-| Gesture | [`src/gesture/CUJs.md`](../src/gesture/CUJs.md) | Practice configure, collections, zen entry          |
-| Encore  | [`src/encore/CUJs.md`](../src/encore/CUJs.md)   | Library, practice tab, originals, performance video |
-| Sight   | [`src/sight/CUJs.md`](../src/sight/CUJs.md)     | Daily practice, debug dock, sandbox                 |
+All micro-apps maintain `src/<app>/CUJs.md` (22/22). Primary journeys with interaction smokes or perf budgets called out in the app doc:
 
-Add a row when you create `src/<app>/CUJs.md`.
+| App        | Doc                                             | Notes                                                        |
+| ---------- | ----------------------------------------------- | ------------------------------------------------------------ |
+| Encore     | [`src/encore/CUJs.md`](../src/encore/CUJs.md)   | Library, practice, originals, performance video, guest share |
+| Gesture    | [`src/gesture/CUJs.md`](../src/gesture/CUJs.md) | Practice configure, collections, zen entry, upload resume    |
+| Stanza     | [`src/stanza/CUJs.md`](../src/stanza/CUJs.md)   | Viewer, Drive backup, analyze                                |
+| Zine Box   | [`src/zinebox/CUJs.md`](../src/zinebox/CUJs.md) | Library, reader, Drive import                                |
+| Muscle     | [`src/muscle/CUJs.md`](../src/muscle/CUJs.md)   | Study journey, orbit perf                                    |
+| Sight      | [`src/sight/CUJs.md`](../src/sight/CUJs.md)     | Daily practice, debug dock, sandbox                          |
+| Scales     | [`src/scales/CUJs.md`](../src/scales/CUJs.md)   | Session exercises                                            |
+| Drums      | [`src/drums/CUJs.md`](../src/drums/CUJs.md)     | Playback configure                                           |
+| Chords     | [`src/chords/CUJs.md`](../src/chords/CUJs.md)   | Progression practice                                         |
+| Words      | [`src/words/CUJs.md`](../src/words/CUJs.md)     | Prosody drills                                               |
+| Piano      | [`src/piano/CUJs.md`](../src/piano/CUJs.md)     | Lesson flow                                                  |
+| Pitch      | [`src/pitch/CUJs.md`](../src/pitch/CUJs.md)     | Interval training                                            |
+| Cats       | [`src/cats/CUJs.md`](../src/cats/CUJs.md)       | Game loop                                                    |
+| Agility    | [`src/agility/CUJs.md`](../src/agility/CUJs.md) | Latency / MIDI drills                                        |
+| Count      | [`src/count/CUJs.md`](../src/count/CUJs.md)     | Rhythm counting                                              |
+| Forms      | [`src/forms/CUJs.md`](../src/forms/CUJs.md)     | Form builder                                                 |
+| Story      | [`src/story/CUJs.md`](../src/story/CUJs.md)     | Narrative reader                                             |
+| Zines      | [`src/zines/CUJs.md`](../src/zines/CUJs.md)     | Zine layout                                                  |
+| Melodia    | [`src/melodia/CUJs.md`](../src/melodia/CUJs.md) | Melody exercises                                             |
+| MIDI       | [`src/midi/CUJs.md`](../src/midi/CUJs.md)       | MIDI lab                                                     |
+| Corp       | [`src/corp/CUJs.md`](../src/corp/CUJs.md)       | Internal demo                                                |
+| UI catalog | [`src/ui/CUJs.md`](../src/ui/CUJs.md)           | Shared component gallery                                     |
+
+Add a row when you create `src/<app>/CUJs.md` for a new app.
 
 ## Maintenance
 
