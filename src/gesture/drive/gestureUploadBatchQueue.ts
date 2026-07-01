@@ -11,8 +11,17 @@ export type PersistedBatchJob = {
   sessionId: string;
   files: File[];
   suggestedFolderName: string;
+  packId?: string;
   directoryHandle?: FileSystemDirectoryHandle;
 };
+
+/** Directory handles migrate from batch job id to pack id once upload starts. */
+export function uploadDirectoryHandleKeyForBatchJob(job: {
+  id: string;
+  packId?: string;
+}): string {
+  return job.packId ?? job.id;
+}
 
 type NewCollectionJobInput = {
   files: File[];
@@ -34,7 +43,9 @@ async function getActiveSession(): Promise<GestureUploadBatchSession | undefined
 export async function persistUploadBatchJobs(
   jobs: NewCollectionJobInput[],
 ): Promise<Array<NewCollectionJobInput & { batchJobId: string; sessionId: string }>> {
-  if (jobs.length <= 1 && !(await getActiveSession())) {
+  const soloWithoutSession = jobs.length <= 1 && !(await getActiveSession());
+  const soloHasPersistedHandle = soloWithoutSession && jobs.some((job) => job.directoryHandle);
+  if (soloWithoutSession && !soloHasPersistedHandle) {
     return jobs.map((job) => ({
       ...job,
       batchJobId: job.batchJobId ?? crypto.randomUUID(),
@@ -134,13 +145,14 @@ export async function loadRestorableBatchJobs(
 
   for (const job of jobs) {
     if (job.status !== 'pending' && job.status !== 'in_progress') continue;
-    const files = await readFilesFromPersistedDirectoryHandle(job.id);
+    const files = await readFilesFromPersistedDirectoryHandle(uploadDirectoryHandleKeyForBatchJob(job));
     if (!files || files.length === 0) continue;
     restorable.push({
       batchJobId: job.id,
       sessionId: job.sessionId,
       files,
       suggestedFolderName: job.suggestedFolderName,
+      packId: job.packId,
     });
   }
 

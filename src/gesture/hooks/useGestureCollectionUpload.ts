@@ -23,7 +23,7 @@ import {
 } from '../drive/gestureLocalFolderUpload';
 import { filterGestureUploadImageFiles } from '../drive/gesturePackMetadata';
 import { resumePackUpload } from '../drive/resumePackUpload';
-import { findResumablePackForUploadJob, loadFilesForUploadResume } from '../drive/gestureUploadResume';
+import { findResumablePackForUploadJob, loadFilesForUploadResume, resolveUploadJobFiles } from '../drive/gestureUploadResume';
 import { isTransientUploadError } from '../drive/gestureUploadNetwork';
 import { buildUploadActivity } from '../drive/gestureUploadActivity';
 import { isGestureUploadCancelledError } from '../drive/gestureUploadCancellation';
@@ -52,6 +52,7 @@ type NewCollectionJob = {
   directoryHandle?: FileSystemDirectoryHandle;
   batchJobId?: string;
   sessionId?: string;
+  packId?: string;
 };
 
 type UploadSessionProgress = {
@@ -444,7 +445,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
     setUploadActivity((prev) => prev ?? buildSessionActivity('preparing'));
 
     const summaries: string[] = [];
-    let hadError = false;
+    let failureCount = 0;
 
     while (queueRef.current.length > 0) {
       const job = queueRef.current.shift()!;
@@ -455,44 +456,72 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         }
         continue;
       }
+
+      let resolvedJob = job;
       try {
-        const message = await executeNewCollectionJob(job);
+        const files = await resolveUploadJobFiles(job);
+        if (files.length === 0) {
+          failureCount += 1;
+          const label = job.suggestedFolderName ?? 'Folder';
+          onError(`"${label}" has no uploadable images — skipping.`);
+          if (job.batchJobId) {
+            await markBatchJobFailed(job.batchJobId);
+          }
+          continue;
+        }
+        resolvedJob = { ...job, files };
+      } catch (e) {
+        failureCount += 1;
+        const label = job.suggestedFolderName ?? 'Folder';
+        onError(e instanceof Error ? `${label}: ${e.message}` : `Could not read "${label}".`);
+        if (job.batchJobId) {
+          await markBatchJobFailed(job.batchJobId);
+        }
+        continue;
+      }
+
+      try {
+        const message = await executeNewCollectionJob(resolvedJob);
         if (message) summaries.push(message);
       } catch (e) {
         if (isGestureUploadCancelledError(e)) {
           continue;
         }
-        hadError = true;
-        if (job.batchJobId) {
-          await markBatchJobFailed(job.batchJobId);
-        }
-        const transient = isTransientUploadError(e);
         if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
+          queueRef.current.unshift(resolvedJob);
+          setQueuedCount(queueRef.current.length);
+          needsInteractiveAuthRef.current = true;
           onError(e.message);
-          queueRef.current = [];
-          sessionRef.current = null;
           break;
         }
+        const transient = isTransientUploadError(e);
         if (transient) {
-          queueRef.current.unshift(job);
+          queueRef.current.unshift(resolvedJob);
+          setQueuedCount(queueRef.current.length);
           onError(
             'Connection lost. Upload paused. It will resume automatically when you are back online.',
           );
           break;
         }
+        failureCount += 1;
+        if (job.batchJobId) {
+          await markBatchJobFailed(job.batchJobId);
+        }
+        const label = job.suggestedFolderName ?? 'Folder';
         onError(
           e instanceof Error
-            ? `${e.message} Check Collections to continue or clean up this upload.`
-            : 'Upload failed. Check Collections to continue or clean up.',
+            ? `${label}: ${e.message}`
+            : `Upload failed for "${label}".`,
         );
-        break;
+        continue;
       }
     }
 
-    setQueuedCount(0);
     drainingRef.current = false;
     const queueEmpty = queueRef.current.length === 0;
+
     if (queueEmpty) {
+      setQueuedCount(0);
       setBusy(false);
       setActivity(null);
       sessionRef.current = null;
@@ -500,16 +529,17 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
       cancelledBatchJobIdsRef.current.clear();
     } else {
       setQueuedCount(queueRef.current.length);
+      setBusy(false);
+      setActivity(null);
     }
 
     void refreshPendingBatchSession();
 
-    if (summaries.length === 1) {
+    if (summaries.length === 1 && failureCount === 0) {
       onComplete(summaries[0]!);
-    } else if (summaries.length > 1) {
-      onComplete(`Uploaded ${summaries.length} collections.`);
-    } else if (!hadError && summaries.length === 0 && queueRef.current.length === 0) {
-      /* empty queue after invalid jobs — caller should have surfaced error */
+    } else if (summaries.length > 0) {
+      const failPart = failureCount > 0 ? ` ${failureCount} failed.` : '';
+      onComplete(`Uploaded ${summaries.length} collection${summaries.length === 1 ? '' : 's'}.${failPart}`);
     }
   }, [executeNewCollectionJob, buildSessionActivity, isJobAborted, setUploadActivity, onComplete, onError, refreshPendingBatchSession]);
 
@@ -521,6 +551,17 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
     };
     window.addEventListener('online', resumeQueuedUploads);
     return () => window.removeEventListener('online', resumeQueuedUploads);
+  }, [drainQueue]);
+
+  useEffect(() => {
+    const resumeWhenVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (queueRef.current.length === 0 || drainingRef.current) return;
+      setBusy(true);
+      void drainQueue();
+    };
+    document.addEventListener('visibilitychange', resumeWhenVisible);
+    return () => document.removeEventListener('visibilitychange', resumeWhenVisible);
   }, [drainQueue]);
 
   const enqueueNewCollectionJobs = useCallback(
@@ -571,6 +612,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
       suggestedFolderName: job.suggestedFolderName,
       batchJobId: job.batchJobId,
       sessionId: job.sessionId,
+      packId: job.packId,
     }));
     extendUploadSession(jobs);
     queueRef.current.push(...jobs);
@@ -578,6 +620,31 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
     setBusy(true);
     void drainQueue();
   }, [drainQueue, extendUploadSession, onError]);
+
+  const autoResumeBatchAttemptedRef = useRef(false);
+  useEffect(() => {
+    if (autoResumeBatchAttemptedRef.current) return;
+    autoResumeBatchAttemptedRef.current = true;
+    void (async () => {
+      if (drainingRef.current || queueRef.current.length > 0) return;
+      const session = await getActiveBatchUploadSession();
+      if (!session || session.pendingCount === 0) return;
+      const restorable = await loadRestorableBatchJobs(session.id);
+      if (restorable.length === 0) return;
+      const jobs: NewCollectionJob[] = restorable.map((job) => ({
+        files: job.files,
+        suggestedFolderName: job.suggestedFolderName,
+        batchJobId: job.batchJobId,
+        sessionId: job.sessionId,
+        packId: job.packId,
+      }));
+      extendUploadSession(jobs);
+      queueRef.current.push(...jobs);
+      setQueuedCount(queueRef.current.length);
+      setBusy(true);
+      void drainQueue();
+    })();
+  }, [extendUploadSession, drainQueue]);
 
   const continueUploadForPack = useCallback(
     async (packId: string, picked: File[]) => {

@@ -1,19 +1,62 @@
 import { gestureDb } from '../db/gestureDb';
 import type { GesturePack } from '../types';
-import { readFilesFromPersistedDirectoryHandle, hasPersistedUploadDirectoryHandle } from './gestureUploadDirectoryHandle';
+import { readDirectoryHandleFiles } from './gestureFolderPicker';
+import {
+  readFilesFromPersistedDirectoryHandle,
+  hasPersistedUploadDirectoryHandle,
+} from './gestureUploadDirectoryHandle';
 import { hasStagedUploadFiles, readStagedUploadFiles } from './gestureUploadStaging';
-import { resolveUploadCollectionName } from './gestureLocalFolderUpload';
+import {
+  collectLocalFolderUploadImages,
+  isLocalFolderUpload,
+  resolveUploadCollectionName,
+} from './gestureLocalFolderUpload';
+import { filterGestureUploadImageFiles } from './gesturePackMetadata';
 import { isIncompleteUploadPack } from './gestureUploadActivity';
 
 type NewCollectionJobLike = {
   files: File[];
   suggestedFolderName?: string;
+  packId?: string;
+  batchJobId?: string;
+  directoryHandle?: FileSystemDirectoryHandle;
 };
+
+function imageFilesForUploadJob(job: NewCollectionJobLike, files: File[]): File[] {
+  const fromFolder = Boolean(job.suggestedFolderName) || isLocalFolderUpload(files);
+  return fromFolder ? collectLocalFolderUploadImages(files) : filterGestureUploadImageFiles(files);
+}
+
+/** Prefer persisted directory handles so queued jobs survive tab backgrounding and refresh. */
+export async function resolveUploadJobFiles(job: NewCollectionJobLike): Promise<File[]> {
+  const handleKeys = [job.packId, job.batchJobId].filter(Boolean) as string[];
+  for (const key of handleKeys) {
+    const fromPersisted = await readFilesFromPersistedDirectoryHandle(key);
+    if (fromPersisted?.length) {
+      const images = imageFilesForUploadJob(job, fromPersisted);
+      if (images.length > 0) return images;
+    }
+  }
+
+  if (job.directoryHandle) {
+    const fromHandle = await readDirectoryHandleFiles(job.directoryHandle, job.directoryHandle.name);
+    if (fromHandle.length > 0) {
+      const images = imageFilesForUploadJob(job, fromHandle);
+      if (images.length > 0) return images;
+    }
+  }
+
+  return job.files;
+}
 
 /** Match an in-progress collection when resuming a queued folder job after reconnect. */
 export async function findResumablePackForUploadJob(
   job: NewCollectionJobLike,
 ): Promise<GesturePack | null> {
+  if (job.packId) {
+    const pack = await gestureDb.packs.get(job.packId);
+    if (pack && isIncompleteUploadPack(pack)) return pack;
+  }
   const sourceName =
     job.suggestedFolderName ?? resolveUploadCollectionName(job.files, job.suggestedFolderName);
   const packs = await gestureDb.packs.toArray();
