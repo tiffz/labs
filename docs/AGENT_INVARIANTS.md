@@ -22,6 +22,10 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 | Blob URL owner is the cache module only                                                     | `gesture-media-tiers.mdc`, preview display tests                                                                                       |
 | Never `fetch()` Google thumbnail URLs (CORS)                                                | `gestureMediaPolicy.ts`; use `<img>` / `probeImageUrlLoads`                                                                            |
 | Guest/public Drive reads on static hosting → BFF or dev proxy, not browser `googleapis.com` | `buildPublicDriveAltMediaUrl.ts`, `publicDriveFetchPolicy.test.ts`, `workers/labs-session-bff/src/publicDriveProxy.ts`                 |
+| Drive-synced delete must not resurrect after pull                                           | App `*DriveMerge.test.ts` tombstone cases; [`DRIVE_SYNC_DATA_LOSS_PREVENTION.md`](DRIVE_SYNC_DATA_LOSS_PREVENTION.md) § Deletion       |
+| Filled content must not lose to empty/sparse copy on merge                                  | Encore ADR 0019 + `encoreDataRecovery.test.ts`; Scales `keeps rich local exercise when remote is sparse`                               |
+| Portfolio auto-push gated until pull or manual backup                                       | `labsDriveSyncGuard.ts`, `createLabsPortfolioDriveBackup.ts`                                                                           |
+| Debounced Drive push flushes on tab hide                                                    | Encore `EncoreSyncContext.tsx`; portfolio `useLabsDrivePortfolioAutoSync.ts` + test                                                    |
 
 ## UI & UX
 

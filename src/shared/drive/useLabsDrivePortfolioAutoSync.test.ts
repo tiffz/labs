@@ -249,4 +249,36 @@ describe('useLabsDrivePortfolioAutoSync', () => {
     });
     expect(pull).toHaveBeenCalledTimes(2);
   });
+
+  it('flushes pending debounced push when the tab hides', async () => {
+    let onChange: ((event?: { immediate?: boolean }) => void) | undefined;
+    const flush = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'hidden',
+    });
+
+    renderHook(() =>
+      useLabsDrivePortfolioAutoSync(
+        baseOptions({
+          flushDriveWrite: flush,
+          subscribeLocalChanges: (cb) => {
+            onChange = cb;
+            return () => {};
+          },
+        }),
+      ),
+    );
+
+    await flushPromises();
+    act(() => onChange?.());
+    act(() => onChange?.());
+    expect(flush).not.toHaveBeenCalled();
+
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await flushPromises();
+    expect(flush).toHaveBeenCalledWith({ silent: true });
+  });
 });

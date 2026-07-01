@@ -8,6 +8,7 @@ import {
   isGestureNsfwTag,
   normalizeGestureTag,
   normalizeGestureTags,
+  sortGestureTagsForDisplay,
   packHasGestureTag,
   packHasNsfwTag,
   packMatchesGestureTagFilters,
@@ -30,14 +31,21 @@ describe('gesturePackTags', () => {
     expect(normalizeGestureTag('  Cats  ')).toBe('cats');
     expect(normalizeGestureTag('')).toBeNull();
     expect(normalizeGestureTags(['Cats', 'cats', 'Feet'])).toEqual(['cats', 'feet']);
+    expect(normalizeGestureTags(['zebra', 'nsfw', 'cats'])).toEqual(['nsfw', 'cats', 'zebra']);
+  });
+
+  it('sorts tags alphabetically with nsfw first', () => {
+    expect(sortGestureTagsForDisplay(['study', 'cats', 'nsfw'])).toEqual(['nsfw', 'cats', 'study']);
+    expect(sortGestureTagsForDisplay(['feet', 'cats'])).toEqual(['cats', 'feet']);
   });
 
   it('collects sorted unique tags across packs', () => {
     const tags = collectGestureTagsFromPacks([
       basePack({ tags: ['cats', 'study'] }),
       basePack({ id: 'p2', tags: ['feet', 'Cats'] }),
+      basePack({ id: 'p3', tags: ['nsfw', 'zebra'] }),
     ]);
-    expect(tags).toEqual(['cats', 'feet', 'study']);
+    expect(tags).toEqual(['nsfw', 'cats', 'feet', 'study', 'zebra']);
   });
 
   it('counts collections per tag', () => {

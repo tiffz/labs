@@ -5,6 +5,7 @@ import { LabsAccountMenu, type LabsAccountMenuProps } from './LabsAccountMenu';
 import LabsDriveBackupActionRow from './LabsDriveBackupActionRow';
 import LabsDriveConflictDialog from './LabsDriveConflictDialog';
 import LabsDriveRestoreDialog from './LabsDriveRestoreDialog';
+import { LabsPortfolioDriveHistoryRecoverDialog } from './LabsPortfolioDriveHistoryRecoverDialog';
 import LabsDriveSyncToast from './LabsDriveSyncToast';
 import { useLabsDriveSyncToastMessage } from './useLabsDriveSyncToastMessage';
 import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from './labsDriveBackupUiTypes';
@@ -90,6 +91,16 @@ export function LabsDriveAccountMenu(props: LabsDriveAccountMenuProps) {
         renderBackupButton={renderBackupButton ?? defaultBackupRow}
       />
       <LabsDriveRestoreDialog {...drive} />
+      {drive.historyRecovery ? (
+        <LabsPortfolioDriveHistoryRecoverDialog
+          open={drive.historyRecovery.historyRecoverOpen}
+          onClose={drive.historyRecovery.closeHistoryRecover}
+          busy={drive.busy}
+          entityNoun={drive.historyRecovery.entityNoun}
+          scanHistory={drive.historyRecovery.scanHistoryForRecovery}
+          restoreSelected={drive.historyRecovery.restoreFromHistory}
+        />
+      ) : null}
       {conflict ? <LabsDriveConflictDialog open {...conflict} /> : null}
       {hideSyncToast ? null : (
         <LabsDriveSyncToast message={toastMessage} onClose={clearToast} />

@@ -115,6 +115,15 @@ describe('mergeExerciseRunLists', () => {
   it('returns undefined when neither side has runs', () => {
     expect(mergeExerciseRunLists(undefined, [])).toBeUndefined();
   });
+
+  it('drops tombstoned run ids from both sides', () => {
+    const local = [ownWordsRun('kept', ['1'], 't1'), ownWordsRun('deleted-local', ['x'], 't2')];
+    const remote = [ownWordsRun('deleted-remote', ['y'], 't3')];
+    const merged = mergeExerciseRunLists(local, remote, {
+      deletedRunIds: new Set(['deleted-local', 'deleted-remote']),
+    });
+    expect(merged?.map((r) => r.id)).toEqual(['kept']);
+  });
 });
 
 describe('mergeSongPreservingExercises', () => {

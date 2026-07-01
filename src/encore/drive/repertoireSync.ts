@@ -108,13 +108,14 @@ export async function pullRepertoireFromDrive(
   onProgress?.(0.32);
   const localSongs = await encoreDb.songs.toArray();
   const localPerf = await encoreDb.performances.toArray();
-  // Content-aware: never let a newer-but-empty song row wipe filled exercise answers (ADR 0019).
-  const mergedSongs = mergeSongRecords(localSongs, wire.songs);
-  const mergedPerf = mergeRecordsByUpdatedAt<EncorePerformance>(localPerf, wire.performances);
   const extrasRow = repertoireExtrasFromWire(wire);
   const localExtrasRow =
     (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(extrasRow.updatedAt);
   const mergedExtras = mergeRepertoireExtras(localExtrasRow, extrasRow);
+  const deletedRunIds = new Set(mergedExtras.deletedExerciseRunIds ?? []);
+  // Content-aware: never let a newer-but-empty song row wipe filled exercise answers (ADR 0019).
+  const mergedSongs = mergeSongRecords(localSongs, wire.songs, { deletedRunIds });
+  const mergedPerf = mergeRecordsByUpdatedAt<EncorePerformance>(localPerf, wire.performances);
   onProgress?.(0.48);
   await yieldToMain();
   await encoreDb.transaction('rw', encoreDb.songs, encoreDb.performances, encoreDb.repertoireExtras, encoreDb.dirtySync, async () => {
@@ -406,6 +407,11 @@ export async function resolveConflictWithChoices(
   const wire = parseRepertoireWire(raw);
   const localSongs = await encoreDb.songs.toArray();
   const localPerf = await encoreDb.performances.toArray();
+  const extrasRow = repertoireExtrasFromWire(wire);
+  const localExtrasRow =
+    (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(wire.exportedAt);
+  const mergedExtras = mergeRepertoireExtras(localExtrasRow, extrasRow);
+  const deletedRunIds = new Set(mergedExtras.deletedExerciseRunIds ?? []);
 
   const remoteSongsById = new Map(wire.songs.map((s) => [s.id, s] as const));
   const remotePerfById = new Map(wire.performances.map((p) => [p.id, p] as const));
@@ -431,7 +437,7 @@ export async function resolveConflictWithChoices(
     r: EncoreSong,
     choice: 'local' | 'remote' | undefined,
   ): EncoreSong => {
-    const runs = mergeExerciseRunLists(l.practiceExerciseRuns, r.practiceExerciseRuns);
+    const runs = mergeExerciseRunLists(l.practiceExerciseRuns, r.practiceExerciseRuns, { deletedRunIds });
     const withRuns = (base: EncoreSong): EncoreSong => {
       const next: EncoreSong = { ...base };
       if (runs) next.practiceExerciseRuns = runs;
@@ -440,7 +446,7 @@ export async function resolveConflictWithChoices(
     };
     if (choice === 'local') return withRuns({ ...l, updatedAt: bumpedClock(l.updatedAt, r.updatedAt) });
     if (choice === 'remote') return withRuns(r);
-    return mergeSongPreservingExercises(l, r);
+    return mergeSongPreservingExercises(l, r, { deletedRunIds });
   };
 
   const mergedSongs: EncoreSong[] = [];
@@ -474,10 +480,6 @@ export async function resolveConflictWithChoices(
     }
   }
 
-  const extrasRow = mergeRepertoireExtras(
-    (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(wire.exportedAt),
-    repertoireExtrasFromWire(wire),
-  );
   await encoreDb.transaction(
     'rw',
     encoreDb.songs,
@@ -490,7 +492,7 @@ export async function resolveConflictWithChoices(
       await encoreDb.dirtySync.clear();
       await encoreDb.songs.bulkPut(mergedSongs);
       await encoreDb.performances.bulkPut(mergedPerf);
-      await encoreDb.repertoireExtras.put(extrasRow);
+      await encoreDb.repertoireExtras.put(mergedExtras);
     },
   );
 

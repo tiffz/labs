@@ -93,4 +93,11 @@ export type LabsPortfolioDriveBackupConfig<
       undoSnapshots: readonly TUndoSnapshot[];
     }) => boolean;
   };
+  historyRecovery?: {
+    entityNoun: string;
+    listEntityIds: (payload: TPayload) => string[];
+    getEntityLabel: (id: string, payload: TPayload) => string | undefined;
+    /** Build a remote-only slice containing `id` for non-destructive merge. */
+    payloadWithEntity: (source: TPayload, id: string) => TPayload | null;
+  };
 };

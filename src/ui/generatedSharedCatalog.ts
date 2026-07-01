@@ -7157,6 +7157,77 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsportfoliodrivehistoryrecovery-ts-assessportfoliohistoryrecovery",
+    "name": "assessPortfolioHistoryRecovery",
+    "path": "src/shared/drive/labsPortfolioDriveHistoryRecovery.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Find entity ids that appear in any historical snapshot but not in the current local payload. `listEntityIds` should return stable ids (comic id, pack id, stanza row id, etc.).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfoliodrivehistoryrecovery-ts-portfoliohistoryrecoveryentry",
+    "name": "PortfolioHistoryRecoveryEntry",
+    "path": "src/shared/drive/labsPortfolioDriveHistoryRecovery.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfoliodrivehistoryrecovery-ts-portfolioprogressrevisionsnapshot",
+    "name": "PortfolioProgressRevisionSnapshot",
+    "path": "src/shared/drive/labsPortfolioDriveHistoryRecovery.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfoliodrivehistoryrecovery-ts-scanportfolioprogressrevisions",
+    "name": "scanPortfolioProgressRevisions",
+    "path": "src/shared/drive/labsPortfolioDriveHistoryRecovery.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Scan Google Drive revision history for a portfolio app's `progress.json`. Skips revisions that fail `parseEnvelope` (corrupt / placeholder).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfoliodrivehistoryrecovery-ts-scanportfolioprogressrevisionsresult",
+    "name": "ScanPortfolioProgressRevisionsResult",
+    "path": "src/shared/drive/labsPortfolioDriveHistoryRecovery.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-labsportfoliodrivetombstones-ts-labsportfoliotombstone",
     "name": "LabsPortfolioTombstone",
     "path": "src/shared/drive/labsPortfolioDriveTombstones.ts",
@@ -7792,6 +7863,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-google-labsdrivebackupuitypes-ts-labsdrivehistoryrecoveryuiprops",
+    "name": "LabsDriveHistoryRecoveryUiProps",
+    "path": "src/shared/google/labsDriveBackupUiTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-google-labsdrivebackupuitypes-ts-labsdriverestoredialogcopy",
     "name": "LabsDriveRestoreDialogCopy",
     "path": "src/shared/google/labsDriveBackupUiTypes.ts",
@@ -8197,6 +8283,38 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "id": "src-shared-google-labsgooglesigninbutton-tsx-labsgooglesigninbuttonprops",
     "name": "LabsGoogleSignInButtonProps",
     "path": "src/shared/google/LabsGoogleSignInButton.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsportfoliodrivehistoryrecoverdialog-tsx-labsportfoliodrivehistoryrecoverdialog",
+    "name": "LabsPortfolioDriveHistoryRecoverDialog",
+    "path": "src/shared/google/LabsPortfolioDriveHistoryRecoverDialog.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsportfoliodrivehistoryrecoverdialog-tsx-labsportfoliodrivehistoryrecoverdialogprops",
+    "name": "LabsPortfolioDriveHistoryRecoverDialogProps",
+    "path": "src/shared/google/LabsPortfolioDriveHistoryRecoverDialog.tsx",
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",

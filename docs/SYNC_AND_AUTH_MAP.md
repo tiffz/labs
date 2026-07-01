@@ -55,3 +55,19 @@ All other micro-apps (Drums, Chords, Words, Piano, Sight, Muscle, Cats, etc.) ar
 2. **Touching merge?** Match app family (Encore row review vs portfolio union).
 3. **Touching delete/remove?** Add tombstone + merge filter + regression test (see LOCAL_FIRST_SYNC § Union merge).
 4. **Touching blocking jobs?** Use shared `LabsBlockingJobContext` — one snackbar per shell.
+5. **Touching merge/delete/push?** Read [`DRIVE_SYNC_DATA_LOSS_PREVENTION.md`](DRIVE_SYNC_DATA_LOSS_PREVENTION.md) + rule `portfolio-drive-data-loss.mdc`.
+
+## Data-loss guard parity
+
+| Guard                            | Encore   | Stanza | Scales | Gesture | Zine Box |
+| -------------------------------- | -------- | ------ | ------ | ------- | -------- |
+| Auto-push gated until pull       | ✅       | ✅     | ✅     | ✅      | ✅       |
+| Pre-merge undo snapshot          | ✅       | ✅     | ✅     | ✅      | ✅       |
+| Tab-close debounced push flush   | ✅       | ✅     | ✅     | ✅      | ✅       |
+| 412 etag retry on push           | ✅       | ✅     | ✅     | ❌      | ✅       |
+| In-app Drive revision recovery   | ✅       | ❌     | ❌     | ❌      | ❌       |
+| Delete tombstones + merge filter | partial† | ✅     | n/a    | ✅      | ✅       |
+
+† Encore exercise-run deletes can resurrect on merge — see [`DRIVE_SYNC_DATA_LOSS_PREVENTION.md`](DRIVE_SYNC_DATA_LOSS_PREVENTION.md).
+
+Full matrix + agent checklist: [`DRIVE_SYNC_DATA_LOSS_PREVENTION.md`](DRIVE_SYNC_DATA_LOSS_PREVENTION.md).

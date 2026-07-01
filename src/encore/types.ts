@@ -392,4 +392,6 @@ export interface RepertoireWirePayload {
   driveUploadFolderOverrideLabels?: EncoreDriveUploadFolderOverrideLabels;
   /** Content-hash index for upload-time duplicate warnings (see `encoreDriveContentIndex`). */
   driveContentIndex?: import('./drive/encoreDriveContentIndex').EncoreDriveContentIndex;
+  /** Cleared exercise run ids — tombstones so union merge cannot resurrect deleted runs. */
+  deletedExerciseRunIds?: string[];
 }

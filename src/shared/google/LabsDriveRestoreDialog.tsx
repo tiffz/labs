@@ -25,6 +25,7 @@ type LabsDriveRestoreDialogProps = Pick<
   | 'undoLastSync'
   | 'canUndoLastSync'
   | 'copy'
+  | 'historyRecovery'
 >;
 
 export default function LabsDriveRestoreDialog(props: LabsDriveRestoreDialogProps) {
@@ -41,6 +42,7 @@ export default function LabsDriveRestoreDialog(props: LabsDriveRestoreDialogProp
     undoLastSync,
     canUndoLastSync,
     copy,
+    historyRecovery,
   } = props;
 
   return (
@@ -101,6 +103,20 @@ export default function LabsDriveRestoreDialog(props: LabsDriveRestoreDialogProp
                 <ListItemText
                   primary="Undo last sync"
                   secondary="Restore the library snapshot from before the most recent Drive sync on this browser."
+                />
+              </ListItemButton>
+            </List>
+          </>
+        ) : null}
+
+        {historyRecovery ? (
+          <>
+            <Divider sx={{ my: 1 }} />
+            <List dense disablePadding>
+              <ListItemButton disabled={busy || !testerOk} onClick={historyRecovery.openHistoryRecover}>
+                <ListItemText
+                  primary="Recover from Drive history"
+                  secondary={`Scan older backup versions for missing ${historyRecovery.entityNoun}s.`}
                 />
               </ListItemButton>
             </List>

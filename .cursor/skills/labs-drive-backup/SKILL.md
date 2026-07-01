@@ -7,7 +7,8 @@ description: Implements Labs Google Drive backup, conflict prompts, and LabsDriv
 
 ## Canonical doc
 
-[`docs/LOCAL_FIRST_SYNC.md`](../../docs/LOCAL_FIRST_SYNC.md) — architecture, data-loss guards, **portfolio merge prompt policy**, ADR links.
+- [`docs/LOCAL_FIRST_SYNC.md`](../../docs/LOCAL_FIRST_SYNC.md) — architecture, data-loss guards, **portfolio merge prompt policy**, ADR links
+- [`docs/DRIVE_SYNC_DATA_LOSS_PREVENTION.md`](../../docs/DRIVE_SYNC_DATA_LOSS_PREVENTION.md) — **P0 agent checklist**, guard parity, known gaps
 
 ## Merge prompt policy (required)
 
@@ -29,6 +30,8 @@ Shared: [`labsDriveBackupTypes.ts`](../../src/shared/drive/labsDriveBackupTypes.
 4. Undo snapshots before merge; expose Restore + Undo last sync.
 5. Gate auto-push with `labsDriveAutoPushAllowed`.
 6. Bulk imports: `notify*LocalChange({ immediate: true })` so the first edit is not skipped by auto-sync priming.
+7. Tab-close safety: portfolio apps inherit debounced push flush from `useLabsDrivePortfolioAutoSync` — do not remove.
+8. Delete UX: tombstone + merge filter + test — see [`DRIVE_SYNC_DATA_LOSS_PREVENTION.md`](../../docs/DRIVE_SYNC_DATA_LOSS_PREVENTION.md).
 
 Portfolio apps should use [`createLabsPortfolioDriveBackup`](../../src/shared/drive/createLabsPortfolioDriveBackup.ts) unless on the allowlist in `labsPortfolioDriveHookGuardrails.test.ts` (Gesture pack upload, Stanza `prompt_when_both_edited`).
 
@@ -54,7 +57,7 @@ Do **not** copy Stanza’s conflict dialog into new apps without an ADR/note exp
 
 ## Workflow
 
-1. Read [`LOCAL_FIRST_SYNC.md`](../../docs/LOCAL_FIRST_SYNC.md) + app hook + merge module before changing envelope shape
+1. Read [`DRIVE_SYNC_DATA_LOSS_PREVENTION.md`](../../docs/DRIVE_SYNC_DATA_LOSS_PREVENTION.md) + [`LOCAL_FIRST_SYNC.md`](../../docs/LOCAL_FIRST_SYNC.md) + app hook + merge module before changing envelope shape
 2. Keep **on-screen copy** honest; full OAuth scope in app README
 3. ADRs: 0006, 0007 (+ [revision](../../docs/adr/0007-revision-stanza-encore-federated-sync.md)), 0010, 0011, 0012
 4. **`npm run presubmit`**

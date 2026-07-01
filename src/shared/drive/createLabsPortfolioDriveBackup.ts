@@ -23,6 +23,11 @@ import type {
   LabsPortfolioDriveBackupConflictBase,
 } from './labsPortfolioDriveBackupTypes';
 import { useLabsDrivePortfolioAutoSync } from './useLabsDrivePortfolioAutoSync';
+import {
+  assessPortfolioHistoryRecovery,
+  scanPortfolioProgressRevisions,
+  type PortfolioProgressRevisionSnapshot,
+} from './labsPortfolioDriveHistoryRecovery';
 import { isEmailAllowedLabsDriveBackup } from '../google/labsDriveTesterGate';
 import { useLabsEncoreGoogleIdentity } from '../google/useLabsEncoreGoogleSession';
 import {
@@ -61,6 +66,7 @@ export function createLabsPortfolioDriveBackup<
     const [syncMetaTick, setSyncMetaTick] = useState(0);
     const [latestRemoteEnvelope, setLatestRemoteEnvelope] = useState<TEnvelope | null>(null);
     const [syncPaused, setSyncPaused] = useState(false);
+    const [historyRecoverOpen, setHistoryRecoverOpen] = useState(false);
 
     const sessionPullSucceededRef = useRef(false);
     const manualBackupSucceededRef = useRef(false);
@@ -70,6 +76,7 @@ export function createLabsPortfolioDriveBackup<
     const pullFromDriveAndMergeRef = useRef<
       (opts?: { silent?: boolean }) => Promise<void>
     >(async () => {});
+    const historySnapshotsRef = useRef<PortfolioProgressRevisionSnapshot<TEnvelope>[]>([]);
 
     const allowAutoPush = useCallback(
       () => labsDriveAutoPushAllowed(sessionPullSucceededRef.current, manualBackupSucceededRef.current),
@@ -460,6 +467,59 @@ export function createLabsPortfolioDriveBackup<
     }, [syncMetaTick]);
 
     const undoApi = config.undo;
+    const historyRecovery = config.historyRecovery;
+
+    const scanHistoryForRecovery = useCallback(async () => {
+      if (!historyRecovery) {
+        return { entries: [], revisionsScanned: 0, revisionsSkipped: 0 };
+      }
+      const token = await config.ensureAccess({ interactive: true });
+      const refs = await ensureLabsDrivePortfolioProgressLayout(token, config.appFolderName);
+      const local = await config.readLocalPayload();
+      const scan = await scanPortfolioProgressRevisions(token, refs.progressFileId, (json) =>
+        config.parseEnvelope(json),
+      );
+      historySnapshotsRef.current = scan.snapshots;
+      const entries = assessPortfolioHistoryRecovery({
+        current: local,
+        snapshots: scan.snapshots,
+        listEntityIds: historyRecovery.listEntityIds,
+        envelopeToPayload: config.envelopeToPayload,
+        getEntityLabel: historyRecovery.getEntityLabel,
+      });
+      return {
+        entries,
+        revisionsScanned: scan.revisionsScanned,
+        revisionsSkipped: scan.revisionsSkipped,
+      };
+    }, [historyRecovery]);
+
+    const restoreFromHistory = useCallback(
+      async (ids: string[]) => {
+        if (!historyRecovery || ids.length === 0) return { restoredCount: 0 };
+        await snapshotBeforeMerge('history-recovery');
+        let local: TPayload = await config.readLocalPayload();
+        let restoredCount = 0;
+        for (const id of ids) {
+          let remoteSlice: TPayload | null = null;
+          for (const snap of historySnapshotsRef.current) {
+            const payload = config.envelopeToPayload(snap.envelope);
+            const slice = historyRecovery.payloadWithEntity(payload, id);
+            if (slice) remoteSlice = slice;
+          }
+          if (!remoteSlice) continue;
+          const { payload: merged } = config.mergePayload(local, remoteSlice);
+          local = merged;
+          restoredCount += 1;
+        }
+        if (restoredCount > 0) {
+          await onMergePayload(local);
+          await flushDriveWrite({ silent: true });
+        }
+        return { restoredCount };
+      },
+      [flushDriveWrite, historyRecovery, onMergePayload, snapshotBeforeMerge],
+    );
 
     return {
       identity,
@@ -497,6 +557,16 @@ export function createLabsPortfolioDriveBackup<
       restoreLatestFromDrive: undoApi ? restoreLatestFromDrive : undefined,
       formatUndoSnapshotTrigger: undoApi?.formatSnapshotTrigger,
       flushDriveWrite,
+      historyRecovery: historyRecovery
+        ? {
+            entityNoun: historyRecovery.entityNoun,
+            openHistoryRecover: () => setHistoryRecoverOpen(true),
+            closeHistoryRecover: () => setHistoryRecoverOpen(false),
+            historyRecoverOpen,
+            scanHistoryForRecovery,
+            restoreFromHistory,
+          }
+        : undefined,
     };
   };
 }

@@ -58,6 +58,8 @@ export interface StanzaSong {
   updatedAt: number;
   /** When the row was created from Encore “Practice in Stanza” (`?df=`) or a future Drive picker. */
   driveSourceFileId?: string;
+  /** Link to Encore repertoire row when federated overlay sync is active (ADR 0007). */
+  encoreSongId?: string;
   /** Last uploaded main-recording blob fingerprint (`size:mime`) for Stanza `main_audio/` sync. */
   driveMainMediaBytesFingerprint?: string;
   /** Local file backing when `ytId` is null */
