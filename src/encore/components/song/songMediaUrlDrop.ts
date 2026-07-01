@@ -12,6 +12,8 @@ import {
   appendYoutubeReferenceLink,
 } from '../../repertoire/songMediaLinks';
 import { appendMiscResourceFromUrl } from '../../repertoire/songMiscResources';
+import { applyParsedEncoreMediaUrlToSong } from '../../repertoire/applyParsedEncoreMediaUrlToSong';
+import { parseEncoreMediaUrlInput } from '../../repertoire/parseEncoreMediaUrlInput';
 import type { SongMediaUploadSlot } from './songMediaUploadSlot';
 
 export function extractFirstUrlFromDataTransfer(dt: DataTransfer): string | null {
@@ -30,6 +32,29 @@ export function applyMediaUrlToSongSlot(song: EncoreSong, slot: SongMediaUploadS
   if (!t) return null;
 
   if (slot === 'misc') return appendMiscResourceFromUrl(song, t);
+
+  const parsed = parseEncoreMediaUrlInput(t);
+  if (parsed) {
+    if (parsed.kind === 'stanza_local_fingerprint') return null;
+    if (slot === 'listen') return applyParsedEncoreMediaUrlToSong(song, parsed, 'reference');
+    if (slot === 'play') return applyParsedEncoreMediaUrlToSong(song, parsed, 'backing');
+    if (slot === 'charts' && parsed.kind === 'drive') {
+      return addSongAttachment(song, {
+        kind: 'chart',
+        driveFileId: parsed.driveFileId,
+        label: parsed.label ?? 'Chart from link',
+        isPrimaryChart: false,
+      });
+    }
+    if (slot === 'takes' && parsed.kind === 'drive') {
+      return addSongAttachment(song, {
+        kind: 'recording',
+        driveFileId: parsed.driveFileId,
+        label: parsed.label ?? 'Take from link',
+      });
+    }
+    return null;
+  }
 
   const yt = parseYoutubeVideoId(t);
   if (yt) {

@@ -27,6 +27,18 @@ describe('parsePerformanceVideoInput', () => {
     expect(yt).toEqual({ kind: 'youtube', videoId: 'dQw4w9WgXcQ' });
   });
 
+  it('resolves Stanza share URLs to underlying YouTube or Drive media', () => {
+    expect(
+      parsePerformanceVideoInput(
+        'https://labs.tiffzhang.com/stanza/?df=1Ap0VMHToFB-HiDTmWQTeG_PD1wzdLho4&driveTitle=piano+karaoke',
+      ),
+    ).toEqual({ kind: 'drive', fileId: '1Ap0VMHToFB-HiDTmWQTeG_PD1wzdLho4' });
+    expect(parsePerformanceVideoInput('https://labs.tiffzhang.com/stanza/?v=dQw4w9WgXcQ')).toEqual({
+      kind: 'youtube',
+      videoId: 'dQw4w9WgXcQ',
+    });
+  });
+
   it('treats non-Drive https as external', () => {
     expect(parsePerformanceVideoInput('https://example.com/vid')).toEqual({
       kind: 'external',

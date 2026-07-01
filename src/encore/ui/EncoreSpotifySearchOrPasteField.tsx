@@ -1,8 +1,9 @@
 import Autocomplete from '@mui/material/Autocomplete';
 import CircularProgress from '@mui/material/CircularProgress';
 import TextField from '@mui/material/TextField';
-import type { ReactNode } from 'react';
+import type { ReactNode, ClipboardEvent } from 'react';
 import type { SpotifySearchTrack } from '../spotify/spotifyApi';
+import { looksLikeEncoreMediaUrlInput } from '../repertoire/parseEncoreMediaUrlInput';
 import { renderSpotifyTrackAutocompleteOption } from './renderSpotifyTrackAutocompleteOption';
 import { encoreBrandInputStartAdornment } from './EncoreBrandTextField';
 
@@ -17,7 +18,7 @@ export type EncoreSpotifySearchOrPasteFieldProps = {
   inputValue: string;
   onInputChange: (next: string) => void;
   onPickTrack: (track: SpotifySearchTrack) => void;
-  onPasteResolve?: () => void | Promise<void>;
+  onPasteResolve?: (raw?: string) => void | Promise<void>;
   label: string;
   placeholder?: string;
   /** Prepended before the loading spinner in the field end adornment (e.g. open / refresh). */
@@ -34,10 +35,22 @@ export function EncoreSpotifySearchOrPasteField(props: EncoreSpotifySearchOrPast
     onPickTrack,
     onPasteResolve,
     label,
-    placeholder = 'Title, artist, or paste a track URL',
+    placeholder = 'Paste URL or search title and artist',
     inputEndAdornment,
     getOptionLabel = defaultTrackLabel,
   } = props;
+
+  const resolvePaste = (raw?: string) => {
+    void onPasteResolve?.(raw);
+  };
+
+  const onPaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData('text').trim();
+    if (!pasted) return;
+    e.preventDefault();
+    onInputChange(pasted);
+    queueMicrotask(() => resolvePaste(pasted));
+  };
 
   return (
     <Autocomplete
@@ -60,9 +73,18 @@ export function EncoreSpotifySearchOrPasteField(props: EncoreSpotifySearchOrPast
           {...params}
           variant="outlined"
           size="small"
-          label={label}
+          {...(label ? { label } : {})}
           placeholder={placeholder}
-          onBlur={() => void onPasteResolve?.()}
+          onPaste={onPaste}
+          onBlur={() => {
+            if (looksLikeEncoreMediaUrlInput(inputValue)) resolvePaste(inputValue);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && looksLikeEncoreMediaUrlInput(inputValue)) {
+              e.preventDefault();
+              resolvePaste(inputValue);
+            }
+          }}
           InputProps={{
             ...params.InputProps,
             startAdornment: (

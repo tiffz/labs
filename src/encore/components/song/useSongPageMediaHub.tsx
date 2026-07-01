@@ -18,10 +18,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
@@ -40,7 +37,7 @@ import type { EncoreDriveUploadFolderOverrides, EncoreMiscResource, EncoreSong }
 import { useEncoreBlockingJobs } from '../../context/EncoreBlockingJobContext';
 import { useEncoreDriveUploadDedup } from '../../context/EncoreDriveUploadDedupContext';
 import { encoreMediaHubAddButtonSx, practiceResourceChipFieldSx, songPageResourceRowShellSx } from '../../theme/encoreUiTokens';
-import { GoogleDriveBrandIcon, SpotifyBrandIcon, YouTubeBrandIcon } from '../EncoreBrandIcon';
+import { GoogleDriveBrandIcon, SpotifyBrandIcon } from '../EncoreBrandIcon';
 import {
   encoreGeniusSearchUrl,
   encoreUltimateGuitarSearchUrl,
@@ -57,8 +54,6 @@ import {
   appendDriveReferenceLink,
   appendSpotifyBackingLink,
   appendSpotifyReferenceLink,
-  appendYoutubeBackingLink,
-  appendYoutubeReferenceLink,
   applySpotifyDataSourcePick,
   mergeSpotifyTrackWebMetadata,
   removeMediaLinkById,
@@ -81,7 +76,13 @@ import {
   youtubeWatchUrlFromMediaLink,
 } from '../../ui/encoreMediaLinkFormat';
 import { EncoreSpotifySearchOrPasteField } from '../../ui/EncoreSpotifySearchOrPasteField';
-import { EncoreYouTubePasteField } from '../../ui/EncoreYouTubePasteField';
+import { EncoreMediaTrackAddMenu } from '../../ui/EncoreMediaTrackAddMenu';
+import { useEncoreMenuSpotifySearch } from '../../ui/useEncoreMenuSpotifySearch';
+import { applyParsedEncoreMediaUrlToSong } from '../../repertoire/applyParsedEncoreMediaUrlToSong';
+import {
+  looksLikeEncoreMediaUrlInput,
+  parseEncoreMediaUrlInput,
+} from '../../repertoire/parseEncoreMediaUrlInput';
 import {
   appendMiscResourceFromDriveFile,
   appendMiscResourceFromLocalFile,
@@ -217,7 +218,10 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ??
     '';
   const [spotifyQuery, setSpotifyQuery] = useState('');
-  const [refSpotifyQuery, setRefSpotifyQuery] = useState('');
+  const [refMediaPasteQuery, setRefMediaPasteQuery] = useState('');
+  const [backingMediaPasteQuery, setBackingMediaPasteQuery] = useState('');
+  const [refSpotifySearchQuery, setRefSpotifySearchQuery] = useState('');
+  const [backingSpotifySearchQuery, setBackingSpotifySearchQuery] = useState('');
   const [spotifyOptions, setSpotifyOptions] = useState<SpotifySearchTrack[]>(
     []
   );
@@ -229,9 +233,6 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
   const [spotifyMetaMessage, setSpotifyMetaMessage] = useState<string | null>(
     null
   );
-  const [youtubeRefPaste, setYoutubeRefPaste] = useState('');
-  const [youtubeBackPaste, setYoutubeBackPaste] = useState('');
-  const [backingSpotifyQuery, setBackingSpotifyQuery] = useState('');
   const [chartAddAnchor, setChartAddAnchor] = useState<null | HTMLElement>(
     null
   );
@@ -242,22 +243,46 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
   const backingDriveInputRef = useRef<HTMLInputElement | null>(null);
   const [driveAttachMsg, setDriveAttachMsg] = useState<string | null>(null);
   const [driveUploading, setDriveUploading] = useState(false);
-  const [referenceAddAnchor, setReferenceAddAnchor] = useState<null | HTMLElement>(null);
-  const [referenceAddKind, setReferenceAddKind] = useState<'spotify' | 'youtube'>('spotify');
-  const [backingAddAnchor, setBackingAddAnchor] = useState<null | HTMLElement>(null);
-  const [backingAddKind, setBackingAddKind] = useState<'spotify' | 'youtube'>('spotify');
   const [referenceAddMenuAnchor, setReferenceAddMenuAnchor] = useState<HTMLElement | null>(null);
   const [backingAddMenuAnchor, setBackingAddMenuAnchor] = useState<HTMLElement | null>(null);
-  const closeReferenceAdd = useCallback(() => {
-    setReferenceAddAnchor(null);
-    setRefSpotifyQuery('');
-    setYoutubeRefPaste('');
+  const [refMediaPasteError, setRefMediaPasteError] = useState<string | null>(null);
+  const [backingMediaPasteError, setBackingMediaPasteError] = useState<string | null>(null);
+
+  const clearReferenceMediaInput = useCallback(() => {
+    setRefMediaPasteQuery('');
+    setRefSpotifySearchQuery('');
+    setRefMediaPasteError(null);
   }, []);
 
-  const closeBackingAdd = useCallback(() => {
-    setBackingAddAnchor(null);
-    setBackingSpotifyQuery('');
-    setYoutubeBackPaste('');
+  const clearBackingMediaInput = useCallback(() => {
+    setBackingMediaPasteQuery('');
+    setBackingSpotifySearchQuery('');
+    setBackingMediaPasteError(null);
+  }, []);
+
+  const closeReferenceAddMenu = useCallback(() => {
+    setReferenceAddMenuAnchor(null);
+    clearReferenceMediaInput();
+  }, [clearReferenceMediaInput]);
+
+  const closeBackingAddMenu = useCallback(() => {
+    setBackingAddMenuAnchor(null);
+    clearBackingMediaInput();
+  }, [clearBackingMediaInput]);
+
+  const songSearchSeed = useMemo(
+    () => `${draft?.title ?? ''} ${draft?.artist ?? ''}`.trim(),
+    [draft?.artist, draft?.title],
+  );
+
+  const openReferenceAddMenu = useCallback((anchor: HTMLElement) => {
+    setRefMediaPasteError(null);
+    setReferenceAddMenuAnchor(anchor);
+  }, []);
+
+  const openBackingAddMenu = useCallback((anchor: HTMLElement) => {
+    setBackingMediaPasteError(null);
+    setBackingAddMenuAnchor(anchor);
   }, []);
 
   useEffect(() => {
@@ -352,25 +377,25 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     }
     const catalogId = draft ? spotifyDataSourceTrackId(draft) : '';
     const catalogRowOnly = Boolean(catalogId) && !spotifyCatalogSwapOpen;
-    const refOpen = Boolean(referenceAddAnchor);
-    const backOpen = Boolean(backingAddAnchor);
-    const candidates = [
-      ...(refOpen ? [refSpotifyQuery.trim()] : []),
-      ...(backOpen ? [backingSpotifyQuery.trim()] : []),
-      ...(catalogRowOnly ? [] : [spotifyQuery.trim()]),
-    ].filter((q) => q.length >= 2);
+    const candidates = [...(catalogRowOnly ? [] : [spotifyQuery.trim()])].filter((q) => q.length >= 2);
     if (candidates.length === 0) return '';
     return candidates.reduce((a, b) => (b.length > a.length ? b : a));
-  }, [
-    isNew,
-    draft,
-    spotifyQuery,
-    refSpotifyQuery,
-    backingSpotifyQuery,
-    referenceAddAnchor,
-    backingAddAnchor,
-    spotifyCatalogSwapOpen,
-  ]);
+  }, [isNew, draft, spotifyQuery, spotifyCatalogSwapOpen]);
+
+  const refMenuSpotifySearch = useEncoreMenuSpotifySearch({
+    menuOpen: Boolean(referenceAddMenuAnchor),
+    query: refSpotifySearchQuery,
+    spotifyLinked,
+    clientId,
+    hubActive,
+  });
+  const backingMenuSpotifySearch = useEncoreMenuSpotifySearch({
+    menuOpen: Boolean(backingAddMenuAnchor),
+    query: backingSpotifySearchQuery,
+    spotifyLinked,
+    clientId,
+    hubActive,
+  });
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!hubActive) return;
@@ -452,8 +477,8 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
 
   const appendReferenceSpotifyFromTrack = useCallback((t: SpotifySearchTrack) => {
     setDraft((d) => (d ? appendSpotifyReferenceLink(d, t.id, { label: trackLabel(t) }) : d));
-    setRefSpotifyQuery(trackLabel(t));
-  }, [setDraft]);
+    closeReferenceAddMenu();
+  }, [closeReferenceAddMenu, setDraft]);
 
   const resolveSpotifyDataSourcePaste = useCallback(
     async (rawOverride?: string) => {
@@ -480,56 +505,116 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     [applySpotifyDataSourceFromTrack, clientId, draft, spotifyLinked, spotifyQuery],
   );
 
-  const resolveRefSpotifyPaste = useCallback(async () => {
-    if (!draft || !clientId || !spotifyLinked) return;
-    const raw = refSpotifyQuery.trim();
-    const id = parseSpotifyTrackId(raw);
-    if (!id) return;
-    setSpotifyError(null);
-    setSpotifyLoading(true);
-    try {
-      const token = await ensureSpotifyAccessToken(clientId);
-      if (!token) {
-        setSpotifyError('Connect Spotify first (Account menu).');
-        return;
+  const resolveReferenceMediaPaste = useCallback(async (rawOverride?: string) => {
+    if (!draft) return;
+    const raw = (rawOverride ?? refMediaPasteQuery).trim();
+    if (!raw) return;
+
+    const parsed = parseEncoreMediaUrlInput(raw);
+    if (!parsed) {
+      if (looksLikeEncoreMediaUrlInput(raw)) {
+        setRefMediaPasteError('Paste a Spotify, YouTube, Stanza, or Drive link.');
       }
-      const t = await fetchSpotifyTrack(token, id);
-      appendReferenceSpotifyFromTrack(t);
-      closeReferenceAdd();
-    } catch (e) {
-      setSpotifyError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSpotifyLoading(false);
+      return;
     }
-  }, [appendReferenceSpotifyFromTrack, clientId, closeReferenceAdd, draft, spotifyLinked, refSpotifyQuery]);
+    if (parsed.kind === 'stanza_local_fingerprint') {
+      setRefMediaPasteError(
+        'This Stanza link points at a local upload on that device. Paste a Stanza link with YouTube or Drive instead.',
+      );
+      return;
+    }
+    if (parsed.kind === 'spotify' && spotifyLinked && clientId) {
+      setRefMediaPasteError(null);
+      setSpotifyLoading(true);
+      try {
+        const token = await ensureSpotifyAccessToken(clientId);
+        if (!token) {
+          setRefMediaPasteError('Connect Spotify first (Account menu).');
+          return;
+        }
+        const t = await fetchSpotifyTrack(token, parsed.trackId);
+        appendReferenceSpotifyFromTrack(t);
+      } catch (e) {
+        setRefMediaPasteError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setSpotifyLoading(false);
+      }
+      return;
+    }
+    const next = applyParsedEncoreMediaUrlToSong(draft, parsed, 'reference');
+    if (next) {
+      setDraft(next);
+      closeReferenceAddMenu();
+      return;
+    }
+    setRefMediaPasteError('Could not add that link.');
+  }, [
+    appendReferenceSpotifyFromTrack,
+    clientId,
+    closeReferenceAddMenu,
+    draft,
+    refMediaPasteQuery,
+    setDraft,
+    spotifyLinked,
+  ]);
 
   const appendBackingSpotifyFromTrack = useCallback((t: SpotifySearchTrack) => {
     setDraft((d) => (d ? appendSpotifyBackingLink(d, t.id, { label: trackLabel(t) }) : d));
-    setBackingSpotifyQuery(trackLabel(t));
-  }, [setDraft]);
+    closeBackingAddMenu();
+  }, [closeBackingAddMenu, setDraft]);
 
-  const resolveBackingSpotifyPaste = useCallback(async () => {
-    if (!draft || !clientId || !spotifyLinked) return;
-    const raw = backingSpotifyQuery.trim();
-    const id = parseSpotifyTrackId(raw);
-    if (!id) return;
-    setSpotifyError(null);
-    setSpotifyLoading(true);
-    try {
-      const token = await ensureSpotifyAccessToken(clientId);
-      if (!token) {
-        setSpotifyError('Connect Spotify first (Account menu).');
-        return;
+  const resolveBackingMediaPaste = useCallback(async (rawOverride?: string) => {
+    if (!draft) return;
+    const raw = (rawOverride ?? backingMediaPasteQuery).trim();
+    if (!raw) return;
+
+    const parsed = parseEncoreMediaUrlInput(raw);
+    if (!parsed) {
+      if (looksLikeEncoreMediaUrlInput(raw)) {
+        setBackingMediaPasteError('Paste a Spotify, YouTube, Stanza, or Drive link.');
       }
-      const t = await fetchSpotifyTrack(token, id);
-      appendBackingSpotifyFromTrack(t);
-      closeBackingAdd();
-    } catch (e) {
-      setSpotifyError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setSpotifyLoading(false);
+      return;
     }
-  }, [appendBackingSpotifyFromTrack, clientId, closeBackingAdd, draft, spotifyLinked, backingSpotifyQuery]);
+    if (parsed.kind === 'stanza_local_fingerprint') {
+      setBackingMediaPasteError(
+        'This Stanza link points at a local upload on that device. Paste a Stanza link with YouTube or Drive instead.',
+      );
+      return;
+    }
+    if (parsed.kind === 'spotify' && spotifyLinked && clientId) {
+      setBackingMediaPasteError(null);
+      setSpotifyLoading(true);
+      try {
+        const token = await ensureSpotifyAccessToken(clientId);
+        if (!token) {
+          setBackingMediaPasteError('Connect Spotify first (Account menu).');
+          return;
+        }
+        const t = await fetchSpotifyTrack(token, parsed.trackId);
+        appendBackingSpotifyFromTrack(t);
+      } catch (e) {
+        setBackingMediaPasteError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setSpotifyLoading(false);
+      }
+      return;
+    }
+    const next = applyParsedEncoreMediaUrlToSong(draft, parsed, 'backing');
+    if (next) {
+      setDraft(next);
+      closeBackingAddMenu();
+      return;
+    }
+    setBackingMediaPasteError('Could not add that link.');
+  }, [
+    appendBackingSpotifyFromTrack,
+    backingMediaPasteQuery,
+    clientId,
+    closeBackingAddMenu,
+    draft,
+    setDraft,
+    spotifyLinked,
+  ]);
 
   const fillFromSpotify = useCallback(async () => {
     setSpotifyMetaMessage(null);
@@ -1413,153 +1498,34 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     );
                     return referenceLinkRow;
                   })}
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="inherit"
-                    startIcon={<AddIcon sx={{ fontSize: 14 }} />}
-                    onClick={(e) => setReferenceAddMenuAnchor(e.currentTarget)}
-                    sx={(t) => encoreMediaHubAddButtonSx(t)}
-                  >
-                    Add track
-                  </Button>
-                  <Menu
-                    open={Boolean(referenceAddMenuAnchor)}
-                    anchorEl={referenceAddMenuAnchor}
-                    onClose={() => setReferenceAddMenuAnchor(null)}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                    transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                  >
-                    <MenuItem
-                      onClick={() => {
-                        const el = referenceAddMenuAnchor;
-                        setReferenceAddMenuAnchor(null);
-                        setReferenceAddKind('spotify');
-                        const seed = `${draft?.title ?? ''} ${draft?.artist ?? ''}`.trim();
-                        setRefSpotifyQuery((q) => (q.trim() ? q : seed));
-                        if (el) queueMicrotask(() => setReferenceAddAnchor(el));
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <SpotifyBrandIcon sx={{ fontSize: 18 }} aria-hidden />
-                      </ListItemIcon>
-                      <ListItemText primary="Spotify" secondary="Search or paste URL" />
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => {
-                        const el = referenceAddMenuAnchor;
-                        setReferenceAddMenuAnchor(null);
-                        setReferenceAddKind('youtube');
-                        if (el) queueMicrotask(() => setReferenceAddAnchor(el));
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <YouTubeBrandIcon sx={{ fontSize: 18 }} aria-hidden />
-                      </ListItemIcon>
-                      <ListItemText primary="YouTube" secondary="Paste watch URL or id" />
-                    </MenuItem>
-                    <MenuItem
-                      disabled={!googleAccessToken || !referenceUploadFolderId || driveUploading}
-                      onClick={() => {
-                        setReferenceAddMenuAnchor(null);
-                        referenceDriveInputRef.current?.click();
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <CloudUploadIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText primary="Upload file" secondary="Audio or video" />
-                    </MenuItem>
-                  </Menu>
-                  <input
-                    ref={referenceDriveInputRef}
-                    type="file"
-                    hidden
-                    accept={ENCORE_AUDIO_VIDEO_FILE_ACCEPT}
-                    onChange={(ev) => void onReferenceDriveFile(ev)}
+                  <EncoreMediaTrackAddMenu
+                    menuAnchor={referenceAddMenuAnchor}
+                    onOpenMenu={openReferenceAddMenu}
+                    onCloseMenu={closeReferenceAddMenu}
+                    pasteValue={refMediaPasteQuery}
+                    onPasteValueChange={setRefMediaPasteQuery}
+                    onPasteApply={(raw) => void resolveReferenceMediaPaste(raw)}
+                    pasteError={refMediaPasteError}
+                    spotifyLinked={spotifyLinked}
+                    clientId={clientId}
+                    searchValue={refSpotifySearchQuery}
+                    onSearchValueChange={setRefSpotifySearchQuery}
+                    searchSeed={songSearchSeed}
+                    spotifyOptions={refMenuSpotifySearch.options}
+                    spotifyLoading={refMenuSpotifySearch.loading}
+                    onPickSpotifyTrack={appendReferenceSpotifyFromTrack}
+                    uploadDisabled={!googleAccessToken || !referenceUploadFolderId || driveUploading}
+                    uploadDisabledReason={
+                      !googleAccessToken
+                        ? 'Sign in to Google to save uploads to Drive'
+                        : undefined
+                    }
+                    onUploadClick={() => referenceDriveInputRef.current?.click()}
+                    onFileChange={(ev) => void onReferenceDriveFile(ev)}
+                    fileInputRef={referenceDriveInputRef}
+                    fileAccept={ENCORE_AUDIO_VIDEO_FILE_ACCEPT}
                   />
                 </Stack>
-
-                <Popover
-                  open={Boolean(referenceAddAnchor)}
-                  anchorEl={referenceAddAnchor}
-                  onClose={closeReferenceAdd}
-                  anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-                  transformOrigin={{ vertical: "top", horizontal: "left" }}
-                  PaperProps={{
-                    sx: {
-                      mt: 0.75,
-                      p: 2,
-                      width: { xs: "min(calc(100vw - 24px), 380px)", sm: 380 },
-                    },
-                  }}
-                >
-                  <Typography variant="subtitle2" sx={{ mb: 1.25, fontWeight: 700 }}>
-                    Add reference track
-                  </Typography>
-                  <ToggleButtonGroup
-                    exclusive
-                    size="small"
-                    value={referenceAddKind}
-                    onChange={(_, v) => {
-                      if (v) setReferenceAddKind(v);
-                    }}
-                    aria-label="Track source"
-                    sx={{ mb: 1.25 }}
-                  >
-                    <ToggleButton value="spotify" sx={{ textTransform: "none" }}>
-                      Spotify
-                    </ToggleButton>
-                    <ToggleButton value="youtube" sx={{ textTransform: "none" }}>
-                      YouTube
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-                  {referenceAddKind === "spotify" ? (
-                    spotifyLinked && clientId ? (
-                      <EncoreSpotifySearchOrPasteField
-                        options={spotifyOptions}
-                        loading={spotifyLoading}
-                        inputValue={refSpotifyQuery}
-                        onInputChange={setRefSpotifyQuery}
-                        getOptionLabel={trackLabel}
-                        onPickTrack={(t) => {
-                          appendReferenceSpotifyFromTrack(t);
-                          closeReferenceAdd();
-                        }}
-                        onPasteResolve={() => void resolveRefSpotifyPaste()}
-                        label="Find on Spotify"
-                        placeholder="Title, artist, or paste URL"
-                      />
-                    ) : (
-                      <Typography variant="caption" color="text.secondary">
-                        Connect Spotify to search tracks.
-                      </Typography>
-                    )
-                  ) : (
-                    <EncoreYouTubePasteField
-                      value={youtubeRefPaste}
-                      onChange={setYoutubeRefPaste}
-                      trailingAction={
-                        <Button
-                          variant="contained"
-                          size="small"
-                          onClick={() => {
-                            if (!draft) return;
-                            const raw = youtubeRefPaste.trim();
-                            if (!raw) return;
-                            const n = appendYoutubeReferenceLink(draft, raw);
-                            if (!n) return;
-                            setDraft(n);
-                            closeReferenceAdd();
-                          }}
-                          sx={{ flexShrink: 0, mt: 0.5 }}
-                        >
-                          Add
-                        </Button>
-                      }
-                    />
-                  )}
-                </Popover>
 </>
   );
 
@@ -1714,153 +1680,34 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     );
                     return backingLinkRow;
                   })}
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="inherit"
-                    startIcon={<AddIcon sx={{ fontSize: 14 }} />}
-                    onClick={(e) => setBackingAddMenuAnchor(e.currentTarget)}
-                    sx={(t) => encoreMediaHubAddButtonSx(t)}
-                  >
-                    Add track
-                  </Button>
-                  <Menu
-                    open={Boolean(backingAddMenuAnchor)}
-                    anchorEl={backingAddMenuAnchor}
-                    onClose={() => setBackingAddMenuAnchor(null)}
-                    anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                    transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                  >
-                    <MenuItem
-                      onClick={() => {
-                        const el = backingAddMenuAnchor;
-                        setBackingAddMenuAnchor(null);
-                        setBackingAddKind('spotify');
-                        const seed = `${draft?.title ?? ''} ${draft?.artist ?? ''}`.trim();
-                        setBackingSpotifyQuery((q) => (q.trim() ? q : seed));
-                        if (el) queueMicrotask(() => setBackingAddAnchor(el));
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <SpotifyBrandIcon sx={{ fontSize: 18 }} aria-hidden />
-                      </ListItemIcon>
-                      <ListItemText primary="Spotify" secondary="Search or paste URL" />
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => {
-                        const el = backingAddMenuAnchor;
-                        setBackingAddMenuAnchor(null);
-                        setBackingAddKind('youtube');
-                        if (el) queueMicrotask(() => setBackingAddAnchor(el));
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <YouTubeBrandIcon sx={{ fontSize: 18 }} aria-hidden />
-                      </ListItemIcon>
-                      <ListItemText primary="YouTube" secondary="Paste watch URL or id" />
-                    </MenuItem>
-                    <MenuItem
-                      disabled={!googleAccessToken || !backingUploadFolderId || driveUploading}
-                      onClick={() => {
-                        setBackingAddMenuAnchor(null);
-                        backingDriveInputRef.current?.click();
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 36 }}>
-                        <CloudUploadIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText primary="Upload file" secondary="Audio or video" />
-                    </MenuItem>
-                  </Menu>
-                  <input
-                    ref={backingDriveInputRef}
-                    type="file"
-                    hidden
-                    accept={ENCORE_AUDIO_VIDEO_FILE_ACCEPT}
-                    onChange={(ev) => void onBackingDriveFile(ev)}
+                  <EncoreMediaTrackAddMenu
+                    menuAnchor={backingAddMenuAnchor}
+                    onOpenMenu={openBackingAddMenu}
+                    onCloseMenu={closeBackingAddMenu}
+                    pasteValue={backingMediaPasteQuery}
+                    onPasteValueChange={setBackingMediaPasteQuery}
+                    onPasteApply={(raw) => void resolveBackingMediaPaste(raw)}
+                    pasteError={backingMediaPasteError}
+                    spotifyLinked={spotifyLinked}
+                    clientId={clientId}
+                    searchValue={backingSpotifySearchQuery}
+                    onSearchValueChange={setBackingSpotifySearchQuery}
+                    searchSeed={songSearchSeed}
+                    spotifyOptions={backingMenuSpotifySearch.options}
+                    spotifyLoading={backingMenuSpotifySearch.loading}
+                    onPickSpotifyTrack={appendBackingSpotifyFromTrack}
+                    uploadDisabled={!googleAccessToken || !backingUploadFolderId || driveUploading}
+                    uploadDisabledReason={
+                      !googleAccessToken
+                        ? 'Sign in to Google to save uploads to Drive'
+                        : undefined
+                    }
+                    onUploadClick={() => backingDriveInputRef.current?.click()}
+                    onFileChange={(ev) => void onBackingDriveFile(ev)}
+                    fileInputRef={backingDriveInputRef}
+                    fileAccept={ENCORE_AUDIO_VIDEO_FILE_ACCEPT}
                   />
                 </Stack>
-
-                <Popover
-                  open={Boolean(backingAddAnchor)}
-                  anchorEl={backingAddAnchor}
-                  onClose={closeBackingAdd}
-                  anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-                  transformOrigin={{ vertical: "top", horizontal: "left" }}
-                  PaperProps={{
-                    sx: {
-                      mt: 0.75,
-                      p: 2,
-                      width: { xs: "min(calc(100vw - 24px), 380px)", sm: 380 },
-                    },
-                  }}
-                >
-                  <Typography variant="subtitle2" sx={{ mb: 1.25, fontWeight: 700 }}>
-                    Add backing track
-                  </Typography>
-                  <ToggleButtonGroup
-                    exclusive
-                    size="small"
-                    value={backingAddKind}
-                    onChange={(_, v) => {
-                      if (v) setBackingAddKind(v);
-                    }}
-                    aria-label="Backing track source"
-                    sx={{ mb: 1.25 }}
-                  >
-                    <ToggleButton value="spotify" sx={{ textTransform: "none" }}>
-                      Spotify
-                    </ToggleButton>
-                    <ToggleButton value="youtube" sx={{ textTransform: "none" }}>
-                      YouTube
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-                  {backingAddKind === "spotify" ? (
-                    spotifyLinked && clientId ? (
-                      <EncoreSpotifySearchOrPasteField
-                        options={spotifyOptions}
-                        loading={spotifyLoading}
-                        inputValue={backingSpotifyQuery}
-                        onInputChange={setBackingSpotifyQuery}
-                        getOptionLabel={trackLabel}
-                        onPickTrack={(t) => {
-                          appendBackingSpotifyFromTrack(t);
-                          closeBackingAdd();
-                        }}
-                        onPasteResolve={() => void resolveBackingSpotifyPaste()}
-                        label="Find on Spotify"
-                        placeholder="Title, artist, or paste URL"
-                      />
-                    ) : (
-                      <Typography variant="caption" color="text.secondary">
-                        Connect Spotify to search tracks.
-                      </Typography>
-                    )
-                  ) : (
-                    <EncoreYouTubePasteField
-                      value={youtubeBackPaste}
-                      onChange={setYoutubeBackPaste}
-                      trailingAction={
-                        <Button
-                          variant="contained"
-                          size="small"
-                          onClick={() => {
-                            if (!draft) return;
-                            const raw = youtubeBackPaste.trim();
-                            if (!raw) return;
-                            const n = appendYoutubeBackingLink(draft, raw);
-                            if (!n) return;
-                            setDraft(n);
-                            closeBackingAdd();
-                          }}
-                          sx={{ flexShrink: 0, mt: 0.5 }}
-                        >
-                          Add
-                        </Button>
-                      }
-                    />
-                  )}
-                </Popover>
 </>
   );
 
@@ -1925,14 +1772,7 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                     color="inherit"
                     startIcon={<AddIcon sx={{ fontSize: 14 }} />}
                     disabled={driveUploading}
-                    onClick={(e) => {
-                      void (async () => {
-                        if (driveUploading) return;
-                        const layout = await prepareDriveForMediaUpload();
-                        if (!layout) return;
-                        setChartAddAnchor(e.currentTarget);
-                      })();
-                    }}
+                    onClick={(e) => setChartAddAnchor(e.currentTarget)}
                     sx={(t) => encoreMediaHubAddButtonSx(t)}
                   >
                     Add chart
