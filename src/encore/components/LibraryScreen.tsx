@@ -58,7 +58,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import type { EncoreMrtTablePrefs, EncorePerformance, EncoreRepertoireSavedSearch, EncoreSong } from '../types';
+import type { EncoreMrtTablePrefs, EncorePerformance, EncoreSong } from '../types';
 import {
   encoreAppHref,
   handleSpaLinkClick,
@@ -87,7 +87,6 @@ import {
 } from '../theme/encoreUiTokens';
 import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
-import { type EncoreFilterChipBarHandle, type EncoreFilterFieldConfig } from '../ui/EncoreFilterChipBar';
 import { EncoreMrtColumnHeader } from '../ui/EncoreMrtColumnHeader';
 import { AddSongDialog } from './AddSongDialog';
 import { PerformanceEditorDialog } from './PerformanceEditorDialog';
@@ -97,13 +96,6 @@ import { BulkScoreImportDialog } from './BulkScoreImportDialog';
 import { SongResourcesEditDialog, type SongResourcesEditSection } from './SongResourcesEditDialog';
 import { SpotifyBrandIcon, YouTubeBrandIcon } from './EncoreBrandIcon';
 import { milestoneProgressSummary } from '../repertoire/repertoireMilestoneSummary';
-import {
-  derivePlaylistImportTagsFromFilters,
-  filterSongsByRepertoireSavedSearchBundle,
-  normalizeExcludedRepertoireFieldIds,
-  normalizeSavedSearchFilterValues,
-} from '../repertoire/repertoireSavedSearchFilter';
-import { buildLibraryRepertoireFilterFieldDefs } from '../repertoire/buildLibraryRepertoireFilterFieldDefs';
 import { collectAllSongTags, normalizeSongTags } from '../repertoire/songTags';
 import { withPracticingToggle } from '../repertoire/practicingToggle';
 import { EncoreKeyChip } from '../ui/EncoreKeyChip';
@@ -120,7 +112,6 @@ import {
 } from './encoreMrtColumnOrder';
 import {
   type RepertoireViewMode,
-  REPERTOIRE_FILTER_EMPTY,
   countBackingTracks,
   countChartAttachments,
   countReferenceTracks,
@@ -138,16 +129,10 @@ import { LibraryRepertoireBulkBar } from './libraryScreen/LibraryRepertoireBulkB
 import { LibraryRepertoireFiltersPanel } from './libraryScreen/LibraryRepertoireFiltersPanel';
 import { LibraryRepertoireSavedSearchesBar } from './libraryScreen/LibraryRepertoireSavedSearchesBar';
 import { LibraryRepertoireMrtOrGrid } from './libraryScreen/LibraryRepertoireMrtOrGrid';
+import { useLibraryRepertoireFilters } from './libraryScreen/useLibraryRepertoireFilters';
 import type { EncoreRepertoireMrtRow } from './libraryScreen/libraryRepertoireMrtRowTypes';
 import { encorePossessivePageTitle } from '../utils/encorePossessivePageTitle';
 import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
-import { useDebouncedString } from '../utils/useDebouncedString';
-import {
-  encoreDateRangeFromFilterRecord,
-  isEncoreDateRangeActive,
-  type EncoreDateRangeFilterValue,
-} from '../utils/encoreDateRangeFilter';
-import { patchEncoreFilterDateRange } from '../utils/encoreFilterFieldHelpers';
 import { useEncoreHeavyListTabLaidOut } from '../utils/useEncoreHeavyListTabLaidOut';
 import {
   encoreTabBodyPropsAreEqual,
@@ -750,8 +735,6 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
   const libraryStatsCacheRef = useRef({ topVenues: [] as [string, number][], totalPerf: 0 });
   const venueOptionsCacheRef = useRef<string[]>([]);
   const perfBySongCacheRef = useRef(new Map<string, EncorePerformance[]>());
-  const repertoireSongsCacheRef = useRef<EncoreSong[]>([]);
-  const repertoireFilterFieldDefsCacheRef = useRef<EncoreFilterFieldConfig[]>([]);
   const repertoireTableDataCacheRef = useRef<EncoreRepertoireMrtRow[]>([]);
   const repertoireColumnsCacheRef = useRef<MRT_ColumnDef<EncoreRepertoireMrtRow>[]>([]);
 
@@ -769,15 +752,6 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
   const [songResourcesSection, setSongResourcesSection] = useState<SongResourcesEditSection>('all');
   const [menuAnchor, setMenuAnchor] = useState<null | { el: HTMLElement; song: EncoreSong }>(null);
   const [importMenuAnchor, setImportMenuAnchor] = useState<HTMLElement | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const debouncedSearch = useDebouncedString(searchQuery, 220);
-  const [repertoireFilterValues, setRepertoireFilterValues] = useState<Record<string, string[]>>(
-    () => ({ ...REPERTOIRE_FILTER_EMPTY }),
-  );
-  const [excludedRepertoireFilterIds, setExcludedRepertoireFilterIds] = useState<string[]>([]);
-  const [visibleRepertoireFilterIds, setVisibleRepertoireFilterIds] = useState<string[]>([
-    ...REPERTOIRE_FILTER_PINNED,
-  ]);
   const [viewMode, setViewMode] = useState<RepertoireViewMode>(() => {
     if (typeof window === 'undefined') return 'table';
     return window.localStorage.getItem(REPERTOIRE_VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'table';
@@ -799,8 +773,6 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
   const [repSorting, setRepSorting] = useState<Array<{ id: string; desc: boolean }>>([
     { id: 'title', desc: false },
   ]);
-
-  const repertoireFilterBarRef = useRef<EncoreFilterChipBarHandle>(null);
 
   // Hydrate from synced table prefs only when the synced object identity changes (Dexie put gives
   // us a fresh row on each save). We compare the four sub-fields shallowly so re-rendering does
@@ -904,135 +876,35 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
     return m;
   }, [heavyListTabActive, performances]);
 
-  const perfPresence = repertoireFilterValues.performed[0] === 'with' ? 'with' : repertoireFilterValues.performed[0] === 'none' ? 'none' : 'all';
-  const practicingSel = repertoireFilterValues.practicing[0];
-  const practicingFilter =
-    practicingSel === 'practicing'
-      ? 'practicing'
-      : practicingSel === 'not_practicing'
-        ? 'not_practicing'
-        : 'all';
-
-  const repertoireSongs = useMemo(() => {
-    if (!heavyListTabActive) return repertoireSongsCacheRef.current;
-    const list = filterSongsByRepertoireSavedSearchBundle(
-      songs,
-      performances,
-      perfBySong,
-      repertoireExtras.milestoneTemplate,
-      debouncedSearch,
-      repertoireFilterValues,
-      excludedRepertoireFilterIds,
-    );
-    repertoireSongsCacheRef.current = list;
-    return list;
-  }, [
-    heavyListTabActive,
-    songs,
-    performances,
-    perfBySong,
-    repertoireExtras.milestoneTemplate,
+  const {
+    searchQuery,
+    setSearchQuery,
     debouncedSearch,
     repertoireFilterValues,
     excludedRepertoireFilterIds,
-  ]);
-
-  const perfDateRange = useMemo(
-    () => encoreDateRangeFromFilterRecord(repertoireFilterValues, 'perfDate'),
-    [repertoireFilterValues],
-  );
-
-  const hasActiveFilters = Boolean(
-    searchQuery.trim() ||
-      perfPresence !== 'all' ||
-      practicingFilter !== 'all' ||
-      excludedRepertoireFilterIds.length > 0 ||
-      (repertoireFilterValues.venue ?? []).length > 0 ||
-      (repertoireFilterValues.tags ?? []).length > 0 ||
-      (repertoireFilterValues.artist ?? []).length > 0 ||
-      (repertoireFilterValues.perfKey ?? []).length > 0 ||
-      isEncoreDateRangeActive(perfDateRange) ||
-      (repertoireFilterValues.assetRefs ?? []).length > 0 ||
-      (repertoireFilterValues.assetBacking ?? []).length > 0 ||
-      (repertoireFilterValues.assetSpotify ?? []).length > 0 ||
-      (repertoireFilterValues.assetCharts ?? []).length > 0 ||
-      (repertoireFilterValues.assetTakes ?? []).length > 0 ||
-      (repertoireFilterValues.milestoneWhich ?? []).length > 0 ||
-      (repertoireFilterValues.milestoneNotDone ?? []).length > 0 ||
-      (repertoireFilterValues.milestoneDoneMin ?? []).length > 0 ||
-      (repertoireFilterValues.milestoneDoneMax ?? []).length > 0,
-  );
-
-  const clearAllFilters = useCallback(() => {
-    setSearchQuery('');
-    setRepertoireFilterValues({ ...REPERTOIRE_FILTER_EMPTY });
-    setExcludedRepertoireFilterIds([]);
-    setVisibleRepertoireFilterIds([...REPERTOIRE_FILTER_PINNED]);
-  }, []);
-
-  const repertoireSavedSearches = repertoireExtras.repertoireSavedSearches ?? [];
-
-  const saveCurrentViewAsSearch = useCallback(
-    (name: string) => {
-      const now = new Date().toISOString();
-      const fv = normalizeSavedSearchFilterValues(repertoireFilterValues);
-      const excluded = normalizeExcludedRepertoireFieldIds(excludedRepertoireFilterIds);
-      const tags = derivePlaylistImportTagsFromFilters(fv, excluded);
-      const next: EncoreRepertoireSavedSearch = {
-        id: crypto.randomUUID(),
-        name,
-        updatedAt: now,
-        searchQuery,
-        visibleFieldIds: [...visibleRepertoireFilterIds],
-        filterValues: fv,
-        excludedFieldIds: excluded.length > 0 ? excluded : undefined,
-        playlistImportTags: tags,
-      };
-      void saveRepertoireExtras({
-        repertoireSavedSearches: [...(extrasRef.current.repertoireSavedSearches ?? []), next],
-      });
-    },
-    [excludedRepertoireFilterIds, repertoireFilterValues, saveRepertoireExtras, searchQuery, visibleRepertoireFilterIds],
-  );
-
-  const applySavedSearch = useCallback((s: EncoreRepertoireSavedSearch) => {
-    setSearchQuery(s.searchQuery);
-    setRepertoireFilterValues(normalizeSavedSearchFilterValues(s.filterValues));
-    setExcludedRepertoireFilterIds(normalizeExcludedRepertoireFieldIds(s.excludedFieldIds));
-    setVisibleRepertoireFilterIds(
-      s.visibleFieldIds.length > 0 ? [...s.visibleFieldIds] : [...REPERTOIRE_FILTER_PINNED],
-    );
-  }, []);
-
-  const repertoireFilterFieldDefs = useMemo((): EncoreFilterFieldConfig[] => {
-    if (!heavyListTabActive) return repertoireFilterFieldDefsCacheRef.current;
-    const next = buildLibraryRepertoireFilterFieldDefs({
-      songs,
-      performances,
-      venueCatalog: repertoireExtras.venueCatalog,
-      milestoneTemplate: repertoireExtras.milestoneTemplate,
-    });
-    repertoireFilterFieldDefsCacheRef.current = next;
-    return next;
-  }, [heavyListTabActive, songs, performances, repertoireExtras.venueCatalog, repertoireExtras.milestoneTemplate]);
-
-  const repertoireAddableFilterFields = useMemo(() => {
-    const pinned = new Set<string>(REPERTOIRE_FILTER_PINNED);
-    return repertoireFilterFieldDefs.filter((f) => !pinned.has(f.id));
-  }, [repertoireFilterFieldDefs]);
-
-  const onRepertoireFilterChange = useCallback((fieldId: string, nextValues: string[]) => {
-    setRepertoireFilterValues((prev) => ({ ...prev, [fieldId]: nextValues }));
-  }, []);
-
-  const onRepertoireDateRangeChange = useCallback((fieldId: string, range: EncoreDateRangeFilterValue) => {
-    setRepertoireFilterValues((prev) => patchEncoreFilterDateRange(prev, fieldId, range));
-  }, []);
-
-  const applyExclusiveRepertoireFilter = useCallback((fieldId: string, value: string) => {
-    setVisibleRepertoireFilterIds((prev) => (prev.includes(fieldId) ? prev : [...prev, fieldId]));
-    setRepertoireFilterValues((prev) => ({ ...prev, [fieldId]: [value] }));
-  }, []);
+    setExcludedRepertoireFilterIds,
+    visibleRepertoireFilterIds,
+    setVisibleRepertoireFilterIds,
+    repertoireFilterBarRef,
+    hasActiveFilters,
+    clearAllFilters,
+    repertoireSavedSearches,
+    saveCurrentViewAsSearch,
+    applySavedSearch,
+    repertoireFilterFieldDefs,
+    repertoireAddableFilterFields,
+    onRepertoireFilterChange,
+    onRepertoireDateRangeChange,
+    applyExclusiveRepertoireFilter,
+    repertoireSongs,
+  } = useLibraryRepertoireFilters({
+    tabActive: heavyListTabActive,
+    songs,
+    performances,
+    repertoireExtras,
+    saveRepertoireExtras,
+    perfBySong,
+  });
 
   const tableData = useMemo((): EncoreRepertoireMrtRow[] => {
     if (!heavyListTabActive) return repertoireTableDataCacheRef.current;
@@ -1742,15 +1614,13 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
                   label={venue}
                   variant="outlined"
                   clickable
-                  onClick={() =>
-                    setRepertoireFilterValues((prev) => {
-                      const cur = prev.venue ?? [];
-                      const next = cur.includes(venue)
-                        ? cur.filter((v) => v !== venue)
-                        : [...cur, venue];
-                      return { ...prev, venue: next };
-                    })
-                  }
+                  onClick={() => {
+                    const cur = repertoireFilterValues.venue ?? [];
+                    const next = cur.includes(venue)
+                      ? cur.filter((v) => v !== venue)
+                      : [...cur, venue];
+                    onRepertoireFilterChange('venue', next);
+                  }}
                   sx={{
                     fontWeight: 600,
                     maxWidth: 200,
@@ -1819,7 +1689,7 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
       repertoireColumnsCacheRef.current = next;
       return next;
     },
-    [heavyListTabActive, theme, saveSong, tagFilterOptions, openSongResources, milestoneWhichFieldOptions, applyExclusiveRepertoireFilter],
+    [heavyListTabActive, theme, saveSong, tagFilterOptions, openSongResources, milestoneWhichFieldOptions, applyExclusiveRepertoireFilter, onRepertoireFilterChange, repertoireFilterBarRef, repertoireFilterValues.venue],
   );
 
   const repDefaultColumnOrder = useMemo(

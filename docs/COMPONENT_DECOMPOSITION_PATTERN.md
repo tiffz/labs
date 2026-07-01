@@ -71,6 +71,8 @@ These are the files flagged in the engineering audit as over-size and ripe for t
 ### Deferred to dedicated PRs
 
 - **`src/encore/components/LibraryScreen.tsx`** (~2520 lines)
+  - Extracted: `libraryScreen/LibraryRepertoireFiltersPanel`, `useLibraryRepertoireFilters`, bulk bar, MRT/grid leaves
+  - Next splits: MRT column defs, grid card, import header menu
 - **`src/encore/components/song/useSongPageMediaHub.tsx`** (~2312 lines)
 - **`src/stanza/components/StanzaTimeline.tsx`** (~1135 lines)
 - **`src/drums/components/VexFlowRenderer.tsx`** (~2297 lines)

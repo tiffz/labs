@@ -197,3 +197,28 @@ Lyric edits defer chord realignment until **800 ms idle** or leaving Write (`ORI
 | Policy | `src/shared/drive/publicDriveFetchPolicy.test.ts`                                                 |
 | Worker | `src/shared/drive/publicDriveProxyWorker.test.ts`                                                 |
 | BFF    | [`workers/labs-session-bff/README.md`](../../workers/labs-session-bff/README.md) post-deploy curl |
+
+---
+
+## CUJ-007: Song page — add reference track or chart
+
+**Primary goal:** Open Add track / Add chart menus and attach media without console errors.  
+**Persona:** Musician on a song page filling in Listen / Charts.
+
+### Steps
+
+1. Open a song (`#/song/<id>`).
+2. Click **Add track** under Listen or Play → paste link field and upload row visible.
+3. Click **Add chart** → upload / Drive folder actions visible.
+
+### Success criteria
+
+- Menus open on first click (no silent failure waiting on Drive).
+- No MUI “Menu doesn't accept a Fragment as a child” console errors.
+
+### Automation
+
+| Type  | Artifact                                                            |
+| ----- | ------------------------------------------------------------------- |
+| Smoke | `e2e/smoke/encore-add-track-menu.spec.ts`                           |
+| UX    | [`PERFORMANCE_UX.md`](PERFORMANCE_UX.md) § Add-track menu checklist |
