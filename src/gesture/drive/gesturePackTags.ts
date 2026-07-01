@@ -15,7 +15,7 @@ export function normalizeGestureTag(raw: string): string | null {
   return normalized;
 }
 
-/** Deduped normalized tags in stable order. */
+/** Deduped normalized tags in display order (nsfw first when present, then A–Z). */
 export function normalizeGestureTags(tags: string[]): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
@@ -25,7 +25,17 @@ export function normalizeGestureTags(tags: string[]): string[] {
     seen.add(tag);
     out.push(tag);
   }
-  return out;
+  return sortGestureTagsForDisplay(out);
+}
+
+/** Alphabetical tag order; `nsfw` first when present (special visibility tag). */
+export function sortGestureTagsForDisplay(tags: readonly string[]): string[] {
+  const hasNsfw = tags.some((tag) => normalizeGestureTag(tag) === GESTURE_NSFW_TAG);
+  const rest = tags
+    .filter((tag) => normalizeGestureTag(tag) !== GESTURE_NSFW_TAG)
+    .slice()
+    .sort((a, b) => a.localeCompare(b));
+  return hasNsfw ? [GESTURE_NSFW_TAG, ...rest] : rest;
 }
 
 export function collectGestureTagsFromPacks(packs: readonly GesturePack[]): string[] {
@@ -39,7 +49,7 @@ export function collectGestureTagsFromPacks(packs: readonly GesturePack[]): stri
       out.push(tag);
     }
   }
-  return out.sort((a, b) => a.localeCompare(b));
+  return sortGestureTagsForDisplay(out);
 }
 
 /** How many collections carry each normalized tag. */
@@ -113,6 +123,9 @@ export function collectGestureTagAutocompleteOptions(
       .filter((tag): tag is string => tag != null),
   );
   const options = allTags.filter((tag) => !chosen.has(tag.toLowerCase()));
-  if (chosen.has(GESTURE_NSFW_TAG)) return options;
-  return [GESTURE_NSFW_TAG, ...options.filter((tag) => tag !== GESTURE_NSFW_TAG)];
+  if (chosen.has(GESTURE_NSFW_TAG)) return sortGestureTagsForDisplay(options);
+  const withNsfw = options.includes(GESTURE_NSFW_TAG)
+    ? options
+    : [GESTURE_NSFW_TAG, ...options.filter((tag) => tag !== GESTURE_NSFW_TAG)];
+  return sortGestureTagsForDisplay(withNsfw);
 }
