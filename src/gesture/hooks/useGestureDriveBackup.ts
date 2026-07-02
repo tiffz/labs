@@ -3,6 +3,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DriveHttpError } from '../../shared/drive/driveFetch';
 import { labsDriveAutoPushAllowed } from '../../shared/drive/labsDriveSyncGuard';
 import {
   formatLabsDriveSyncError,
@@ -155,23 +156,39 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
     [],
   );
 
+  const pullFromDriveAndMergeRef = useRef<
+    (opts?: { silent?: boolean }) => Promise<void>
+  >(async () => {});
+
   const flushDriveWrite = useCallback(async (opts?: { silent?: boolean }) => {
-    const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: !opts?.silent });
-    const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_GESTURE);
-    const metaBefore = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
-    const local = await readGestureLocalPayload();
-    const envelope = buildGestureDriveEnvelope(local);
-    const body = serializeGestureDriveEnvelope(envelope);
-    await writeLabsDriveProgressJson(token, refs.progressFileId, body, metaBefore.etag);
-    const metaAfter = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
-    writeGestureDriveSyncMeta({
-      lastCloudModifiedTime: metaAfter.modifiedTime,
-      lastBackupExportedAt: envelope.exportedAt,
-      driveAppFolderId: refs.appFolderId,
-    });
-    setSyncMetaTick((n) => n + 1);
-    setLatestRemoteEnvelope(envelope);
-    if (!opts?.silent) setMessage('Progress saved to Google Drive.');
+    const writeOnce = async () => {
+      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: !opts?.silent });
+      const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_GESTURE);
+      const metaBefore = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
+      const local = await readGestureLocalPayload();
+      const envelope = buildGestureDriveEnvelope(local);
+      const body = serializeGestureDriveEnvelope(envelope);
+      await writeLabsDriveProgressJson(token, refs.progressFileId, body, metaBefore.etag);
+      const metaAfter = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
+      writeGestureDriveSyncMeta({
+        lastCloudModifiedTime: metaAfter.modifiedTime,
+        lastBackupExportedAt: envelope.exportedAt,
+        driveAppFolderId: refs.appFolderId,
+      });
+      setSyncMetaTick((n) => n + 1);
+      setLatestRemoteEnvelope(envelope);
+      if (!opts?.silent) setMessage('Progress saved to Google Drive.');
+    };
+    try {
+      await writeOnce();
+    } catch (e) {
+      if (e instanceof DriveHttpError && e.status === 412) {
+        await pullFromDriveAndMergeRef.current({ silent: true });
+        await writeOnce();
+        return;
+      }
+      throw e;
+    }
   }, []);
 
   const applyMerged = useCallback(
@@ -252,6 +269,7 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
     },
     [applyMerged, markPullSucceeded, snapshotBeforeMerge],
   );
+  pullFromDriveAndMergeRef.current = pullFromDriveAndMerge;
 
   const onSignIn = useCallback(async () => {
     setMessage(null);

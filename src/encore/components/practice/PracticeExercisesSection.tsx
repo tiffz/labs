@@ -21,6 +21,7 @@ import {
   removeRunForKind,
   setSingleRunForKind,
 } from '../../practice/encorePracticeExerciseModel';
+import { recordDeletedExerciseRunIds } from '../../drive/encoreExerciseRunTombstones';
 import type { EncoreBlockingJobsApi } from '../../context/EncoreBlockingJobContext';
 import type { EncorePracticeExerciseKind, EncorePracticeExerciseRun, EncoreSong } from '../../types';
 import { PracticeExerciseFocusDialog } from './PracticeExerciseFocusDialog';
@@ -93,6 +94,10 @@ export function PracticeExercisesSection({
 
   const onClearKind = useCallback(
     (kind: EncorePracticeExerciseKind) => {
+      const removedIds = (song.practiceExerciseRuns ?? [])
+        .filter((run) => run.kind === kind)
+        .map((run) => run.id);
+      void recordDeletedExerciseRunIds(removedIds);
       const nextSong = removeRunForKind(song, kind);
       onPersistSong({ ...nextSong, updatedAt: new Date().toISOString() });
     },

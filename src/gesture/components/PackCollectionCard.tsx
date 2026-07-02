@@ -14,6 +14,7 @@ import { GESTURE_COMPACT_PREVIEW_THUMB_WIDTH } from '../media/gestureMediaPolicy
 import { useLiveQuery } from 'dexie-react-hooks';
 import { topLevelSubfolderCounts } from '../drive/gestureCollectionPaths';
 import { isIncompleteUploadPack } from '../drive/gestureUploadActivity';
+import { normalizeGestureTags } from '../drive/gesturePackTags';
 import { gestureDb } from '../db/gestureDb';
 import { usePackCollectionDrop } from '../hooks/usePackCollectionDrop';
 import type { GestureCollectionUploadHandle } from '../hooks/useGestureCollectionUpload';
@@ -218,7 +219,7 @@ function PackCollectionCard({
           />
         ) : showSelectTags ? (
           <div className="gesture-collection-card-tag-row" aria-label="Tags">
-            {pack.tags!.map((tag) => (
+            {normalizeGestureTags(pack.tags ?? []).map((tag) => (
               <span key={tag} className="gesture-collection-card-tag">{tag}</span>
             ))}
           </div>

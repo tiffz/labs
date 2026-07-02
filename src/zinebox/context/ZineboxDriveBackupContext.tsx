@@ -110,6 +110,16 @@ export function ZineboxDriveBackupProvider({ children }: { children: ReactNode }
         intro:
           'Merges comics, stacks, and reading progress into this browser. Local-only items are kept when possible. Use Undo last sync to roll back a bad merge.',
       },
+      historyRecovery: backup.historyRecovery
+        ? {
+            entityNoun: backup.historyRecovery.entityNoun,
+            historyRecoverOpen: backup.historyRecovery.historyRecoverOpen,
+            openHistoryRecover: backup.historyRecovery.openHistoryRecover,
+            closeHistoryRecover: backup.historyRecovery.closeHistoryRecover,
+            scanHistoryForRecovery: backup.historyRecovery.scanHistoryForRecovery,
+            restoreFromHistory: backup.historyRecovery.restoreFromHistory,
+          }
+        : undefined,
     };
   }, [backup]);
 

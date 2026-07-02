@@ -98,6 +98,11 @@ export interface RepertoireExtrasRow {
    * → canonical Drive file). Rebuilt during organize; updated after uploads.
    */
   driveContentIndex?: EncoreDriveContentIndex;
+  /**
+   * Exercise run ids the user cleared locally — union merge skips these so deletes propagate
+   * across devices (see ADR 0019 follow-up).
+   */
+  deletedExerciseRunIds?: string[];
   updatedAt: string;
 }
 

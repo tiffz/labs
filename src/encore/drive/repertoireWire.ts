@@ -1,3 +1,4 @@
+import { unionDeletedExerciseRunIds } from './encoreExerciseRunTombstones';
 import type { RepertoireExtrasRow } from '../db/encoreDb';
 import type { EncoreDriveContentIndex } from './encoreDriveContentIndex';
 import {
@@ -135,6 +136,11 @@ export function parseRepertoireWire(json: string): RepertoireWirePayload {
     driveUploadFolderOverrides: parseDriveUploadFolderOverrides(data.driveUploadFolderOverrides),
     driveUploadFolderOverrideLabels: parseDriveUploadFolderOverrideLabels(data.driveUploadFolderOverrideLabels),
     driveContentIndex: parseDriveContentIndex(data.driveContentIndex),
+    deletedExerciseRunIds: Array.isArray(data.deletedExerciseRunIds)
+      ? (data.deletedExerciseRunIds as unknown[])
+          .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+          .map((x) => x.trim())
+      : undefined,
   };
 }
 
@@ -215,6 +221,10 @@ export function buildWireFromTables(
     driveUploadFolderOverrides: extras.driveUploadFolderOverrides,
     driveUploadFolderOverrideLabels: extras.driveUploadFolderOverrideLabels,
     driveContentIndex: extras.driveContentIndex,
+    deletedExerciseRunIds:
+      extras.deletedExerciseRunIds && extras.deletedExerciseRunIds.length > 0
+        ? [...extras.deletedExerciseRunIds]
+        : undefined,
   };
 }
 
@@ -246,6 +256,10 @@ export function repertoireExtrasFromWire(wire: RepertoireWirePayload): Repertoir
     driveUploadFolderOverrides: wire.driveUploadFolderOverrides,
     driveUploadFolderOverrideLabels: wire.driveUploadFolderOverrideLabels,
     driveContentIndex: wire.driveContentIndex,
+    deletedExerciseRunIds:
+      wire.deletedExerciseRunIds && wire.deletedExerciseRunIds.length > 0
+        ? [...wire.deletedExerciseRunIds]
+        : undefined,
     updatedAt: wire.exportedAt,
   };
 }
@@ -303,6 +317,11 @@ export function mergeRepertoireExtras(
       Object.keys(mergedOverrides).length > 0 ? mergedOverrides : undefined,
     driveUploadFolderOverrideLabels:
       Object.keys(mergedOverrideLabels).length > 0 ? mergedOverrideLabels : undefined,
+    driveContentIndex: pick(local.driveContentIndex, remote.driveContentIndex),
+    deletedExerciseRunIds: unionDeletedExerciseRunIds(
+      local.deletedExerciseRunIds,
+      remote.deletedExerciseRunIds,
+    ),
     updatedAt:
       [local.updatedAt, remote.updatedAt].sort((a, b) => b.localeCompare(a))[0] ?? new Date().toISOString(),
   };

@@ -52,6 +52,13 @@ import {
   type StanzaDriveMergeReport,
 } from '../drive/stanzaDriveMerge';
 import {
+  buildStanzaPracticeOverlayFromRows,
+  mergeStanzaPracticeOverlayIntoRows,
+  readStanzaPracticeOverlayFromDrive,
+  resolveEncoreAppFolderId,
+  writeStanzaPracticeOverlayToDrive,
+} from '../drive/stanzaPracticeOverlaySync';
+import {
   hydrateStanzaLibraryMainMediaFromDrive,
   syncStanzaLibraryMainMediaToDrive,
 } from '../drive/stanzaDriveMainMediaSync';
@@ -216,6 +223,17 @@ async function mergeRemoteEnvelopeIntoLocal(
     accessToken: opts?.accessToken,
     interactive: opts?.hydrateInteractive,
   });
+  if (opts?.accessToken) {
+    const encoreRootId = await resolveEncoreAppFolderId(opts.accessToken);
+    if (encoreRootId) {
+      const overlay = await readStanzaPracticeOverlayFromDrive(opts.accessToken, encoreRootId);
+      if (overlay) {
+        const overlayRows = await stanzaDb.songs.toArray();
+        const mergedOverlay = mergeStanzaPracticeOverlayIntoRows(overlayRows, overlay);
+        await persistMergedSongs(mergedOverlay);
+      }
+    }
+  }
   return {
     added: report.addedFromRemote,
     updatedFromRemote: report.mergedPreferRemote,
@@ -315,6 +333,12 @@ export function useStanzaDriveBackup() {
       const envelope = await buildStanzaDriveEnvelope();
       const body = serializeStanzaDriveEnvelope(envelope);
       await writeLabsDriveProgressJson(token, refs.progressFileId, body, metaBefore.etag);
+      const encoreRootId = await resolveEncoreAppFolderId(token);
+      if (encoreRootId) {
+        const rows = await stanzaDb.songs.toArray();
+        const overlay = buildStanzaPracticeOverlayFromRows(rows);
+        await writeStanzaPracticeOverlayToDrive(token, encoreRootId, overlay);
+      }
       const metaAfter = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
       patchStanzaDriveSyncMeta({
         lastCloudModifiedTime: metaAfter.modifiedTime,

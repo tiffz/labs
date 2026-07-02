@@ -138,4 +138,15 @@ export const zineboxPortfolioDriveBackupConfig: LabsPortfolioDriveBackupConfig<
         Boolean(lastMeta.lastBackupExportedAt) ||
         undoSnapshots.length > 0),
   },
+  historyRecovery: {
+    entityNoun: 'comic',
+    listEntityIds: (payload) => payload.comics.map((c) => c.id),
+    getEntityLabel: (id, payload) => payload.comics.find((c) => c.id === id)?.title,
+    payloadWithEntity: (source, id) => {
+      const comic = source.comics.find((c) => c.id === id);
+      if (!comic) return null;
+      const collections = source.collections.filter((stack) => stack.itemIds.includes(id));
+      return { comics: [comic], collections };
+    },
+  },
 };

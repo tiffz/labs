@@ -17,6 +17,19 @@ export type LabsDriveRestoreDialogCopy = {
   intro: string;
 };
 
+export type LabsDriveHistoryRecoveryUiProps = {
+  entityNoun: string;
+  historyRecoverOpen: boolean;
+  openHistoryRecover: () => void;
+  closeHistoryRecover: () => void;
+  scanHistoryForRecovery: () => Promise<{
+    entries: { id: string; label: string; lastSeenModifiedTime?: string }[];
+    revisionsScanned: number;
+    revisionsSkipped: number;
+  }>;
+  restoreFromHistory: (ids: string[]) => Promise<{ restoredCount: number }>;
+};
+
 /** Drive restore + folder link actions rendered under the backup block. */
 export type LabsDriveBackupUiProps = {
   driveFolderUrl: string | null;
@@ -35,6 +48,7 @@ export type LabsDriveBackupUiProps = {
   undoLastSync?: () => void | Promise<void>;
   canUndoLastSync?: boolean;
   copy: LabsDriveRestoreDialogCopy;
+  historyRecovery?: LabsDriveHistoryRecoveryUiProps;
 };
 
 export type LabsDriveConflictUiProps = {

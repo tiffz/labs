@@ -94,11 +94,24 @@ export function mergeExerciseRunPair(
  * that is not yet expressed as a tombstone is the lesser evil vs. losing answers). Shared ids use
  * {@link mergeExerciseRunPair}. Returns `undefined` when neither side has runs.
  */
+export type MergeExerciseRunListsOptions = {
+  /** Run ids the user deleted — excluded from the union so remote copies cannot resurrect. */
+  deletedRunIds?: ReadonlySet<string>;
+};
+
 export function mergeExerciseRunLists(
   local: EncorePracticeExerciseRun[] | undefined,
   remote: EncorePracticeExerciseRun[] | undefined,
+  options?: MergeExerciseRunListsOptions,
 ): EncorePracticeExerciseRun[] | undefined {
-  if (!local?.length && !remote?.length) return undefined;
+  const deletedRunIds = options?.deletedRunIds;
+  const filterDeleted = (runs: EncorePracticeExerciseRun[] | undefined) =>
+    deletedRunIds?.size
+      ? (runs ?? []).filter((run) => !deletedRunIds.has(run.id))
+      : (runs ?? []);
+  const filteredLocal = filterDeleted(local);
+  const filteredRemote = filterDeleted(remote);
+  if (!filteredLocal.length && !filteredRemote.length) return undefined;
   const byId = new Map<string, EncorePracticeExerciseRun>();
   const order: string[] = [];
   const consider = (run: EncorePracticeExerciseRun) => {
@@ -110,8 +123,8 @@ export function mergeExerciseRunLists(
       byId.set(run.id, mergeExerciseRunPair(existing, run));
     }
   };
-  for (const run of local ?? []) consider(run);
-  for (const run of remote ?? []) consider(run);
+  for (const run of filteredLocal) consider(run);
+  for (const run of filteredRemote) consider(run);
   return order.map((id) => byId.get(id)!);
 }
 
@@ -120,9 +133,13 @@ export function mergeExerciseRunLists(
  * per-field clocks), but `practiceExerciseRuns` are merged non-destructively so a newer-but-empty
  * song row can never erase the user's answers.
  */
-export function mergeSongPreservingExercises(local: EncoreSong, remote: EncoreSong): EncoreSong {
+export function mergeSongPreservingExercises(
+  local: EncoreSong,
+  remote: EncoreSong,
+  options?: MergeExerciseRunListsOptions,
+): EncoreSong {
   const base = local.updatedAt >= remote.updatedAt ? local : remote;
-  const mergedRuns = mergeExerciseRunLists(local.practiceExerciseRuns, remote.practiceExerciseRuns);
+  const mergedRuns = mergeExerciseRunLists(local.practiceExerciseRuns, remote.practiceExerciseRuns, options);
   const merged: EncoreSong = { ...base };
   if (mergedRuns) merged.practiceExerciseRuns = mergedRuns;
   else delete merged.practiceExerciseRuns;
@@ -133,12 +150,16 @@ export function mergeSongPreservingExercises(local: EncoreSong, remote: EncoreSo
  * Union-merge local and remote song lists by id using {@link mergeSongPreservingExercises} for the
  * overlap. Drop-in replacement for the historical `mergeRecordsByUpdatedAt` on songs.
  */
-export function mergeSongRecords(local: EncoreSong[], remote: EncoreSong[]): EncoreSong[] {
+export function mergeSongRecords(
+  local: EncoreSong[],
+  remote: EncoreSong[],
+  options?: MergeExerciseRunListsOptions,
+): EncoreSong[] {
   const byId = new Map<string, EncoreSong>();
   for (const s of local) byId.set(s.id, s);
   for (const s of remote) {
     const cur = byId.get(s.id);
-    byId.set(s.id, cur ? mergeSongPreservingExercises(cur, s) : s);
+    byId.set(s.id, cur ? mergeSongPreservingExercises(cur, s, options) : s);
   }
   return [...byId.values()].sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
 }
