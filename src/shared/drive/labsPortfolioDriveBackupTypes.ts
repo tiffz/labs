@@ -1,3 +1,5 @@
+import type { LabsPortfolioConflictAnalysis } from './labsPortfolioConflictAnalysis';
+import type { LabsPortfolioConflictChoice } from '../google/LabsPortfolioConflictReviewDialog';
 import type { LabsDrivePortfolioLocalChangeEvent } from './useLabsDrivePortfolioAutoSync';
 
 export type LabsPortfolioDriveSyncMeta = {
@@ -8,10 +10,13 @@ export type LabsPortfolioDriveSyncMeta = {
 
 export type LabsPortfolioDriveBackupConflictBase<TEnvelope> = {
   driveModifiedTime: string;
-  remoteExportedAt: string;
   remoteEnvelope: TEnvelope;
   etag: string | undefined;
   progressFileId: string;
+  /** Row-level analysis when `needsReview.length > 0` (ADR 0020). */
+  analysis?: LabsPortfolioConflictAnalysis;
+  /** @deprecated diagnostics / legacy copy */
+  remoteExportedAt?: string;
 };
 
 export type LabsPortfolioDriveBackupConfig<
@@ -37,6 +42,9 @@ export type LabsPortfolioDriveBackupConfig<
   ) => { payload: TPayload; report: TMergeReport };
   formatMergeReport: (report: TMergeReport) => string;
   mergeReportHasRemoteChanges: (report: TMergeReport) => boolean;
+  /**
+   * @deprecated Always false under ADR 0020. Prefer {@link analyzeConflict}.
+   */
   shouldPromptMerge: (args: {
     syncMeta: LabsPortfolioDriveSyncMeta;
     cloudModifiedTime: string | undefined;
@@ -55,7 +63,20 @@ export type LabsPortfolioDriveBackupConfig<
     remoteEnvelope: TEnvelope;
     local: TPayload;
     reasons: TConflictReason[];
+    analysis?: LabsPortfolioConflictAnalysis;
   }) => TConflictState;
+  /** Row-level analysis (ADR 0020). When `needsReview.length > 0`, pull opens review UI. */
+  analyzeConflict?: (args: {
+    syncMeta: LabsPortfolioDriveSyncMeta;
+    local: TPayload;
+    remoteEnvelope: TEnvelope;
+  }) => LabsPortfolioConflictAnalysis;
+  /** Apply per-row choices then return merged payload. Required when analyzeConflict can yield needsReview. */
+  resolveConflictChoices?: (args: {
+    local: TPayload;
+    remoteEnvelope: TEnvelope;
+    choices: Map<string, LabsPortfolioConflictChoice>;
+  }) => { payload: TPayload; report: TMergeReport };
   readSyncMeta: () => LabsPortfolioDriveSyncMeta;
   writeSyncMeta: (meta: LabsPortfolioDriveSyncMeta) => void;
   subscribeLocalChanges: (onChange: (event: LabsDrivePortfolioLocalChangeEvent) => void) => () => void;

@@ -22,6 +22,8 @@ import type {
   LabsPortfolioDriveBackupConfig,
   LabsPortfolioDriveBackupConflictBase,
 } from './labsPortfolioDriveBackupTypes';
+import { shouldBlockSyncForConflict } from './labsPortfolioConflictAnalysis';
+import type { LabsPortfolioConflictChoice } from '../google/LabsPortfolioConflictReviewDialog';
 import { useLabsDrivePortfolioAutoSync } from './useLabsDrivePortfolioAutoSync';
 import {
   assessPortfolioHistoryRecovery,
@@ -223,35 +225,37 @@ export function createLabsPortfolioDriveBackup<
         }
         const local = await config.readLocalPayload();
         const syncMetaBefore = config.readSyncMeta();
-        if (
-          remoteEnvelope &&
-          config.shouldPromptMerge({
+        if (remoteEnvelope && config.analyzeConflict) {
+          const analysis = config.analyzeConflict({
             syncMeta: syncMetaBefore,
-            cloudModifiedTime: meta.modifiedTime,
-            remoteEnvelope,
             local,
-            localUpdatedAtMs: lastLocalChangeAtRef.current || Date.now(),
-          })
-        ) {
-          const assessment = config.assessConflict({
-            syncMeta: syncMetaBefore,
-            cloudModifiedTime: meta.modifiedTime,
             remoteEnvelope,
           });
-          setLatestRemoteEnvelope(remoteEnvelope);
-          setConflict(
-            config.buildConflictState({
-              meta,
-              refs,
+          if (shouldBlockSyncForConflict(analysis)) {
+            const assessment = config.assessConflict({
+              syncMeta: syncMetaBefore,
+              cloudModifiedTime: meta.modifiedTime,
               remoteEnvelope,
-              local,
-              reasons: assessment.reasons,
-            }),
-          );
-          if (opts?.silent) {
-            setMessage(config.messages.silentPullChanged);
+            });
+            setLatestRemoteEnvelope(remoteEnvelope);
+            setConflict(
+              config.buildConflictState({
+                meta,
+                refs,
+                remoteEnvelope,
+                local,
+                reasons: assessment.reasons,
+                analysis,
+              }),
+            );
+            if (opts?.silent) {
+              const n = analysis.needsReview.length;
+              setMessage(
+                `Drive has changes that need a choice (${n} item${n === 1 ? '' : 's'}). Open your account menu to resolve.`,
+              );
+            }
+            return;
           }
-          return;
         }
         config.writeSyncMeta({
           ...syncMetaBefore,
@@ -344,33 +348,45 @@ export function createLabsPortfolioDriveBackup<
       }
     }, [conflict, flushDriveWrite, markManualBackupSucceeded, startBlockingJob]);
 
+    const resolveConflictWithChoices = useCallback(
+      async (choices: Map<string, LabsPortfolioConflictChoice>) => {
+        if (!conflict) return;
+        const job = startBlockingJob('Applying sync choices…');
+        try {
+          await snapshotBeforeMerge('pre-merge');
+          const local = await config.readLocalPayload();
+          const { payload: merged, report } = config.resolveConflictChoices
+            ? config.resolveConflictChoices({
+                local,
+                remoteEnvelope: conflict.remoteEnvelope,
+                choices,
+              })
+            : config.mergePayload(local, config.envelopeToPayload(conflict.remoteEnvelope), {
+                remoteEnvelope: conflict.remoteEnvelope,
+              });
+          const token = await config.ensureAccess({ interactive: true });
+          await applyMerged(
+            merged,
+            `Merged library (${config.formatMergeReport(report)}), then saved to Drive.`,
+            token,
+            (label) => job.updateLabel(label),
+          );
+          setConflict(null);
+          await flushDriveWrite({ silent: true, onUploadLabel: (label) => job.updateLabel(label) });
+          markManualBackupSucceeded();
+        } catch (e) {
+          setMessage(e instanceof Error ? e.message : 'Merge or backup failed.');
+        } finally {
+          job.end();
+        }
+      },
+      [applyMerged, conflict, flushDriveWrite, markManualBackupSucceeded, snapshotBeforeMerge, startBlockingJob],
+    );
+
+    /** @deprecated Prefer resolveConflictWithChoices (ADR 0020). */
     const confirmMergeThenUpload = useCallback(async () => {
-      if (!conflict) return;
-      const job = startBlockingJob('Merging and backing up…');
-      try {
-        await snapshotBeforeMerge('pre-merge');
-        const local = await config.readLocalPayload();
-        const { payload: merged, report } = config.mergePayload(
-          local,
-          config.envelopeToPayload(conflict.remoteEnvelope),
-          { remoteEnvelope: conflict.remoteEnvelope },
-        );
-        const token = await config.ensureAccess({ interactive: true });
-        await applyMerged(
-          merged,
-          `Merged library (${config.formatMergeReport(report)}), then saved to Drive.`,
-          token,
-          (label) => job.updateLabel(label),
-        );
-        setConflict(null);
-        await flushDriveWrite({ silent: true, onUploadLabel: (label) => job.updateLabel(label) });
-        markManualBackupSucceeded();
-      } catch (e) {
-        setMessage(e instanceof Error ? e.message : 'Merge or backup failed.');
-      } finally {
-        job.end();
-      }
-    }, [applyMerged, conflict, flushDriveWrite, markManualBackupSucceeded, snapshotBeforeMerge, startBlockingJob]);
+      await resolveConflictWithChoices(new Map());
+    }, [resolveConflictWithChoices]);
 
     const applyUndoSnapshot = useCallback(
       async (snap: TUndoSnapshot) => {
@@ -536,6 +552,7 @@ export function createLabsPortfolioDriveBackup<
       driveFolderUrl: labsDriveFolderUrl(lastMeta.driveAppFolderId),
       conflict,
       cancelConflict,
+      resolveConflictWithChoices,
       confirmMergeThenUpload,
       confirmReplaceDriveOnly,
       restoreOpen,

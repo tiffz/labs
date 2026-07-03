@@ -6591,7 +6591,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Default for new portfolio backup apps (Gesture, Scales, …).",
+    "description": "Default for all portfolio backup apps (Stanza, Gesture, Scales, Zine Box).",
     "tags": [
       "api"
     ],
@@ -6664,7 +6664,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "When to show before pull/backup. - **`silent_union`** (default) — merge in the background; undo snapshots are the safety net. Use when app merge is union-based and cannot drop local edits. - **`prompt_when_both_edited`** — prompt when cloud diverged and local changed since last backup. Use only when merge heuristics can hide meaningful differences or replace-only is a common intentional choice (Stanza section markers). See `docs/LOCAL_FIRST_SYNC.md` § Portfolio merge prompt policy.",
+    "description": "Portfolio merge prompt policy (ADR 0020). - **`silent_union`** (default, only supported policy) — never block pull on divergence alone. Run row analysis (`labsPortfolioConflictAnalysis`); open review UI only when `needsReview.length > 0`. Undo snapshots are the safety net. - **`prompt_when_both_edited`** — **deprecated**. Coarse whole-library dialog; always returns false from (treated as `silent_union`). See `docs/LOCAL_FIRST_SYNC.md` § Divergence vs conflict and ADR 0020.",
     "tags": [
       "api"
     ],
@@ -6692,7 +6692,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Shared Drive backup conflict assessment (Stanza, Scales, future apps). App hooks supply envelope-specific \"has remote content\" checks.",
+    "description": "Whether to show the **coarse** whole-library conflict dialog. Always `false` under ADR 0020 — use from `labsPortfolioConflictAnalysis` for true row-level conflicts.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -7109,6 +7109,148 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfolioconflictanalysis-ts-analyzeportfoliorows",
+    "name": "analyzePortfolioRows",
+    "path": "src/shared/drive/labsPortfolioConflictAnalysis.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Build a full conflict analysis for two maps of entities keyed by stable id.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfolioconflictanalysis-ts-analyzeportfoliorowsoptions",
+    "name": "AnalyzePortfolioRowsOptions",
+    "path": "src/shared/drive/labsPortfolioConflictAnalysis.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Milliseconds since epoch (portfolio apps) or comparable numeric clocks.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfolioconflictanalysis-ts-classifyportfoliorow",
+    "name": "classifyPortfolioRow",
+    "path": "src/shared/drive/labsPortfolioConflictAnalysis.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Classify a single entity by whether local and/or remote moved past the last sync baselines. Mirrors Encore's `classifyRow` (ISO clocks there; numeric ms here).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfolioconflictanalysis-ts-labsportfolioclock",
+    "name": "LabsPortfolioClock",
+    "path": "src/shared/drive/labsPortfolioConflictAnalysis.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Milliseconds since epoch (portfolio apps) or comparable numeric clocks.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfolioconflictanalysis-ts-labsportfolioclockfromiso",
+    "name": "labsPortfolioClockFromIso",
+    "path": "src/shared/drive/labsPortfolioConflictAnalysis.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parse an ISO timestamp to ms; returns 0 when missing/invalid.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfolioconflictanalysis-ts-labsportfolioconflictanalysis",
+    "name": "LabsPortfolioConflictAnalysis",
+    "path": "src/shared/drive/labsPortfolioConflictAnalysis.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Milliseconds since epoch (portfolio apps) or comparable numeric clocks.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfolioconflictanalysis-ts-labsportfolioconflictrow",
+    "name": "LabsPortfolioConflictRow",
+    "path": "src/shared/drive/labsPortfolioConflictAnalysis.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Milliseconds since epoch (portfolio apps) or comparable numeric clocks.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfolioconflictanalysis-ts-labsportfoliorowclock",
+    "name": "LabsPortfolioRowClock",
+    "path": "src/shared/drive/labsPortfolioConflictAnalysis.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Milliseconds since epoch (portfolio apps) or comparable numeric clocks.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfolioconflictanalysis-ts-labsportfoliorowconflictclass",
+    "name": "LabsPortfolioRowConflictClass",
+    "path": "src/shared/drive/labsPortfolioConflictAnalysis.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Milliseconds since epoch (portfolio apps) or comparable numeric clocks.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsportfolioconflictanalysis-ts-shouldblocksyncforconflict",
+    "name": "shouldBlockSyncForConflict",
+    "path": "src/shared/drive/labsPortfolioConflictAnalysis.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when the user must resolve at least one row before sync continues.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -8283,6 +8425,54 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "id": "src-shared-google-labsgooglesigninbutton-tsx-labsgooglesigninbuttonprops",
     "name": "LabsGoogleSignInButtonProps",
     "path": "src/shared/google/LabsGoogleSignInButton.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsportfolioconflictreviewdialog-tsx-labsportfolioconflictchoice",
+    "name": "LabsPortfolioConflictChoice",
+    "path": "src/shared/google/LabsPortfolioConflictReviewDialog.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsportfolioconflictreviewdialog-tsx-labsportfolioconflictreviewdialog",
+    "name": "LabsPortfolioConflictReviewDialog",
+    "path": "src/shared/google/LabsPortfolioConflictReviewDialog.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Per-row conflict review for portfolio Drive apps (ADR 0020). Only `needsReview` rows are listed; non-overlapping edits auto-merge silently.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsportfolioconflictreviewdialog-tsx-labsportfolioconflictreviewdialogprops",
+    "name": "LabsPortfolioConflictReviewDialogProps",
+    "path": "src/shared/google/LabsPortfolioConflictReviewDialog.tsx",
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",

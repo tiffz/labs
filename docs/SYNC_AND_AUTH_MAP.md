@@ -25,15 +25,14 @@ Encore also uses Drive for **uploads, picker, public snapshots, and guest BFF re
 2. Portfolio apps block auto-push until first pull or manual backup (`labsDriveSyncGuard`).
 3. Zine Box uses **split scopes**: `drive.readonly` for folder import vs `drive.file` for portfolio backup — see [`src/zinebox/README.md`](../src/zinebox/README.md).
 
-## Portfolio merge prompt policy
+## Portfolio merge prompt policy (ADR 0020)
 
-| Policy                    | Apps            | User sees dialog when…                                 |
-| ------------------------- | --------------- | ------------------------------------------------------ |
-| `silent_union`            | Gesture, Scales | Never (undo snapshots + restore are the escape hatch)  |
-| `prompt_when_both_edited` | Stanza          | Cloud diverged **and** local changed since last backup |
-| Row-level review          | Encore only     | Same repertoire row edited on device and Drive         |
+| Policy           | Apps                              | User sees dialog when…                                         |
+| ---------------- | --------------------------------- | -------------------------------------------------------------- |
+| `silent_union`   | Stanza, Gesture, Scales, Zine Box | Only when `needsReview.length > 0` (true same-entity conflict) |
+| Row-level review | Encore                            | Same repertoire row edited on device and Drive (content-aware) |
 
-Constants live in each app's `*DriveConflict.ts` → [`LabsPortfolioMergePromptPolicy`](../src/shared/drive/labsDriveBackupTypes.ts).
+Constants live in each app's `*DriveConflict.ts` → [`LabsPortfolioMergePromptPolicy`](../src/shared/drive/labsDriveBackupTypes.ts). Analysis: [`labsPortfolioConflictAnalysis.ts`](../src/shared/drive/labsPortfolioConflictAnalysis.ts).
 
 ## Per-app sync entry points
 

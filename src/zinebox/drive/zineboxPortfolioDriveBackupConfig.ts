@@ -12,6 +12,7 @@ import {
   zineboxStackMembershipRemovalTombstonesForEnvelope,
 } from './zineboxDriveStackTombstones';
 import {
+  analyzeZineboxConflict,
   assessZineboxDriveBackupConflict,
   shouldPromptZineboxDriveMerge,
   type ZineboxDriveConflictReason,
@@ -45,13 +46,14 @@ import { readZineboxLocalPayload } from './zineboxLocalData';
 
 export type ZineboxDriveBackupConflictState = {
   driveModifiedTime: string;
-  remoteExportedAt: string;
-  remoteComicCount: number;
-  localComicCount: number;
+  remoteExportedAt?: string;
+  remoteComicCount?: number;
+  localComicCount?: number;
   reasons: ZineboxDriveConflictReason[];
   remoteEnvelope: ZineboxDriveEnvelopeV1;
   etag: string | undefined;
   progressFileId: string;
+  analysis?: import('../../shared/drive/labsPortfolioConflictAnalysis').LabsPortfolioConflictAnalysis;
 };
 
 export const zineboxPortfolioDriveBackupConfig: LabsPortfolioDriveBackupConfig<
@@ -97,7 +99,9 @@ export const zineboxPortfolioDriveBackupConfig: LabsPortfolioDriveBackupConfig<
   mergeReportHasRemoteChanges: zineboxMergeReportHasUserVisibleRemoteChanges,
   shouldPromptMerge: shouldPromptZineboxDriveMerge,
   assessConflict: assessZineboxDriveBackupConflict,
-  buildConflictState: ({ meta, refs, remoteEnvelope, local, reasons }) => ({
+  analyzeConflict: ({ syncMeta, local, remoteEnvelope }) =>
+    analyzeZineboxConflict({ syncMeta, local, remoteEnvelope }),
+  buildConflictState: ({ meta, refs, remoteEnvelope, local, reasons, analysis }) => ({
     driveModifiedTime: meta.modifiedTime ?? '',
     remoteExportedAt: remoteEnvelope.exportedAt,
     remoteComicCount: remoteEnvelope.comics.length,
@@ -106,6 +110,7 @@ export const zineboxPortfolioDriveBackupConfig: LabsPortfolioDriveBackupConfig<
     remoteEnvelope,
     etag: meta.etag,
     progressFileId: refs.progressFileId,
+    analysis,
   }),
   readSyncMeta: readZineboxDriveSyncMeta,
   writeSyncMeta: writeZineboxDriveSyncMeta,

@@ -6,6 +6,11 @@ import {
   type LabsDriveConflictAssessment,
   type LabsDriveConflictReason,
 } from '../../shared/drive/labsDriveBackupTypes';
+import {
+  analyzePortfolioRows,
+  labsPortfolioClockFromIso,
+  type LabsPortfolioConflictAnalysis,
+} from '../../shared/drive/labsPortfolioConflictAnalysis';
 import type { ScalesProgressData } from '../progress/types';
 import type { ScalesDriveSyncMeta } from './scalesDriveSyncMeta';
 import type { ScalesDriveEnvelopeV1 } from './scalesDriveEnvelope';
@@ -49,5 +54,40 @@ export function shouldPromptScalesDriveMerge(params: {
       Number.isFinite(localMs) ? localMs : 0,
       params.syncMeta.lastBackupExportedAt,
     ),
+  });
+}
+
+/**
+ * Per-exercise union merge is always auto-resolvable (ADR 0020).
+ * `needsReview` stays empty; analysis still classifies localOnly / remoteOnly for diagnostics.
+ */
+export function analyzeScalesConflict(params: {
+  syncMeta: ScalesDriveSyncMeta;
+  local: ScalesProgressData;
+  remoteEnvelope: ScalesDriveEnvelopeV1;
+}): LabsPortfolioConflictAnalysis {
+  const lastSyncedLocalMax = labsPortfolioClockFromIso(params.syncMeta.lastBackupExportedAt);
+  const lastRemoteSeen = labsPortfolioClockFromIso(params.syncMeta.lastCloudModifiedTime);
+  const localUpdatedAt = labsPortfolioClockFromIso(params.local.progressUpdatedAt);
+  const remoteUpdatedAt = labsPortfolioClockFromIso(params.remoteEnvelope.exportedAt);
+  const localIds = Object.keys(params.local.exercises ?? {});
+  const remoteIds = Object.keys(params.remoteEnvelope.payload.exercises ?? {});
+  return analyzePortfolioRows({
+    lastSyncedLocalMax,
+    lastRemoteSeen,
+    localRows: localIds.map((id) => ({
+      id,
+      updatedAt: localUpdatedAt,
+      label: id,
+      kind: 'exercise',
+    })),
+    remoteRows: remoteIds.map((id) => ({
+      id,
+      updatedAt: remoteUpdatedAt,
+      label: id,
+      kind: 'exercise',
+    })),
+    defaultKind: 'exercise',
+    isAutoResolvable: () => true,
   });
 }

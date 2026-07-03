@@ -11,8 +11,9 @@ import LabsFeedbackToast from '../../shared/components/LabsFeedbackToast';
 import { LABS_ENCORE_GOOGLE_IDENTITY_CHANGED_EVENT } from '../../shared/google/encoreGoogleTokenStorage';
 import type { LabsAccountBackupSlotProps } from '../../shared/google/LabsAccountMenu';
 import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from '../../shared/google/labsDriveBackupUiTypes';
+import type { LabsPortfolioConflictAnalysis } from '../../shared/drive/labsPortfolioConflictAnalysis';
+import type { LabsPortfolioConflictChoice } from '../../shared/google/LabsPortfolioConflictReviewDialog';
 import { getLabsDriveBackupRestrictionHashesFromEnv } from '../../shared/google/labsDriveTesterGate';
-import { formatLabsDriveInstant } from '../../shared/google/formatLabsDriveInstant';
 import { useLabsDriveSyncToastMessage } from '../../shared/google/useLabsDriveSyncToastMessage';
 import { useLabsGoogleSessionRefresh } from '../../shared/session/useLabsGoogleSessionRefresh';
 import { writeZineboxLocalPayload } from '../drive/zineboxLocalData';
@@ -26,7 +27,12 @@ export type ZineboxDriveBackupContextValue = {
   googleClientConfigured: boolean;
   backupSlot: LabsAccountBackupSlotProps;
   driveUi: LabsDriveBackupUiProps;
+  /** @deprecated Always null (ADR 0020). Use conflictReview. */
   conflict: (LabsDriveConflictUiProps & { dialogTitleId: string }) | null;
+  conflictReview: LabsPortfolioConflictAnalysis | null;
+  resolveConflictWithChoices: (choices: Map<string, LabsPortfolioConflictChoice>) => Promise<void>;
+  cancelConflict: () => void;
+  busy: boolean;
   /** Brief success copy at the bottom of the shell (Drive sync, organize, etc.). */
   notifyAppToast: (message: string) => void;
 };
@@ -141,35 +147,21 @@ export function ZineboxDriveBackupProvider({ children }: { children: ReactNode }
     };
   }, [allowlistEmpty, backup]);
 
-  const conflict = useMemo((): (LabsDriveConflictUiProps & { dialogTitleId: string }) | null => {
-    if (!backup.conflict) return null;
-    const c = backup.conflict;
-    const firstDeviceHere = c.reasons.includes('drive_nonempty_first_device');
-    const driveWhen = formatLabsDriveInstant(c.driveModifiedTime || c.remoteExportedAt);
-    return {
-      dialogTitleId: 'zinebox-drive-conflict-title',
-      busy: backup.busy,
-      title: 'Drive backup conflict',
-      intro: firstDeviceHere
-        ? 'Drive already has a Zine Box library, but this device has not synced here before.'
-        : 'Your library was updated on another device since this browser last synced.',
-      detail: `${c.remoteComicCount} comic${c.remoteComicCount === 1 ? '' : 's'} on Drive · ${c.localComicCount} here · Drive updated ${driveWhen}`,
-      recommendation: 'Merge and upload is usually safest so you keep comics and progress from both copies.',
-      onCancel: backup.cancelConflict,
-      onReplaceOnly: backup.confirmReplaceDriveOnly,
-      onMergeThenUpload: backup.confirmMergeThenUpload,
-    };
-  }, [backup]);
+  const conflictReview = backup.conflict?.analysis ?? null;
 
   const value = useMemo(
     (): ZineboxDriveBackupContextValue => ({
       googleClientConfigured: zineboxGoogleClientConfigured(),
       backupSlot,
       driveUi,
-      conflict,
+      conflict: null,
+      conflictReview,
+      resolveConflictWithChoices: backup.resolveConflictWithChoices,
+      cancelConflict: backup.cancelConflict,
+      busy: backup.busy,
       notifyAppToast,
     }),
-    [backupSlot, driveUi, conflict, notifyAppToast],
+    [backup, backupSlot, driveUi, conflictReview, notifyAppToast],
   );
 
   return (

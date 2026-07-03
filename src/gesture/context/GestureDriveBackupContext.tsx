@@ -9,8 +9,9 @@ import {
 import { LABS_ENCORE_GOOGLE_IDENTITY_CHANGED_EVENT } from '../../shared/google/encoreGoogleTokenStorage';
 import type { LabsAccountBackupSlotProps } from '../../shared/google/LabsAccountMenu';
 import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from '../../shared/google/labsDriveBackupUiTypes';
+import type { LabsPortfolioConflictAnalysis } from '../../shared/drive/labsPortfolioConflictAnalysis';
+import type { LabsPortfolioConflictChoice } from '../../shared/google/LabsPortfolioConflictReviewDialog';
 import { getLabsDriveBackupRestrictionHashesFromEnv } from '../../shared/google/labsDriveTesterGate';
-import { formatLabsDriveInstant } from '../../shared/google/formatLabsDriveInstant';
 import { useLabsGoogleSessionRefresh } from '../../shared/session/useLabsGoogleSessionRefresh';
 import { applyGestureMergedPayload } from '../db/gestureLocalData';
 import { resetGestureDriveAccessTokenFlight } from '../drive/readGestureDriveAccessToken';
@@ -24,7 +25,12 @@ export type GestureDriveBackupContextValue = {
   googleClientConfigured: boolean;
   backupSlot: LabsAccountBackupSlotProps;
   driveUi: LabsDriveBackupUiProps;
+  /** @deprecated Always null (ADR 0020). Use conflictReview. */
   conflict: (LabsDriveConflictUiProps & { dialogTitleId: string }) | null;
+  conflictReview: LabsPortfolioConflictAnalysis | null;
+  resolveConflictWithChoices: (choices: Map<string, LabsPortfolioConflictChoice>) => Promise<void>;
+  cancelConflict: () => void;
+  busy: boolean;
   /** Remote backup pack folder ids — probed during Organize when missing locally. */
   organizeProbeFolderIds: readonly string[];
   /** Push local progress to Drive immediately (e.g. after refresh reindex). */
@@ -116,25 +122,7 @@ export function GestureDriveBackupProvider({ children }: { children: ReactNode }
     };
   }, [allowlistEmpty, backup]);
 
-  const conflict = useMemo((): (LabsDriveConflictUiProps & { dialogTitleId: string }) | null => {
-    if (!backup.conflict) return null;
-    const c = backup.conflict;
-    const firstDeviceHere = c.reasons.includes('drive_nonempty_first_device');
-    const driveWhen = formatLabsDriveInstant(c.driveModifiedTime || c.remoteExportedAt);
-    return {
-      dialogTitleId: 'gesture-drive-conflict-title',
-      busy: backup.busy,
-      title: 'Drive backup conflict',
-      intro: firstDeviceHere
-        ? 'Drive already has Gesture Room progress, but this device has not synced here before.'
-        : 'Your progress was updated on another device since this browser last synced.',
-      detail: `${c.remotePackCount} pack${c.remotePackCount === 1 ? '' : 's'} on Drive · ${c.localPackCount} here · Drive updated ${driveWhen}`,
-      recommendation: 'Merge and upload is usually safest so you keep progress from both copies.',
-      onCancel: backup.cancelConflict,
-      onReplaceOnly: backup.confirmReplaceDriveOnly,
-      onMergeThenUpload: backup.confirmMergeThenUpload,
-    };
-  }, [backup]);
+  const conflictReview = backup.conflict?.analysis ?? null;
 
   const organizeProbeFolderIds = useMemo((): readonly string[] => {
     const ids = new Set<string>();
@@ -149,11 +137,15 @@ export function GestureDriveBackupProvider({ children }: { children: ReactNode }
       googleClientConfigured: gestureGoogleClientConfigured(),
       backupSlot,
       driveUi,
-      conflict,
+      conflict: null,
+      conflictReview,
+      resolveConflictWithChoices: backup.resolveConflictWithChoices,
+      cancelConflict: backup.cancelConflict,
+      busy: backup.busy,
       organizeProbeFolderIds,
       flushDriveWrite: backup.flushDriveWrite,
     }),
-    [backup, backupSlot, driveUi, conflict, organizeProbeFolderIds],
+    [backup, backupSlot, driveUi, conflictReview, organizeProbeFolderIds],
   );
 
   return (

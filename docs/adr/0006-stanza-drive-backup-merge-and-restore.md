@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted (revised — auto-pull / auto-push, Drive-snapshot restore, Drive deletion tombstones)
+Accepted (revised — auto-pull / auto-push, Drive-snapshot restore, Drive deletion tombstones).
+
+**Conflict UX superseded by [ADR 0020](0020-silent-union-sync-row-conflicts-only.md):** Stanza no longer
+shows a coarse Merge / Replace dialog on routine divergence. Auto-pull/push, tombstones, and undo
+snapshots in this ADR remain in force.
 
 ## Context
 

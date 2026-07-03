@@ -6,6 +6,11 @@ import {
   type LabsDriveConflictAssessment,
   type LabsDriveConflictReason,
 } from '../../shared/drive/labsDriveBackupTypes';
+import {
+  analyzePortfolioRows,
+  labsPortfolioClockFromIso,
+  type LabsPortfolioConflictAnalysis,
+} from '../../shared/drive/labsPortfolioConflictAnalysis';
 import type { GestureSyncPayload } from '../types';
 import type { GestureDriveEnvelopeV1 } from './gestureDriveEnvelope';
 import type { GestureDriveSyncMeta } from './gestureDriveSyncMeta';
@@ -50,5 +55,42 @@ export function shouldPromptGestureDriveMerge(params: {
       Number.isFinite(localMs) ? localMs : 0,
       params.syncMeta.lastBackupExportedAt,
     ),
+  });
+}
+
+/** Pack union merge is always auto-resolvable (ADR 0020). */
+export function analyzeGestureConflict(params: {
+  syncMeta: GestureDriveSyncMeta;
+  local: GestureSyncPayload;
+  remoteEnvelope: GestureDriveEnvelopeV1;
+}): LabsPortfolioConflictAnalysis {
+  const lastSyncedLocalMax = labsPortfolioClockFromIso(params.syncMeta.lastBackupExportedAt);
+  const lastRemoteSeen = labsPortfolioClockFromIso(params.syncMeta.lastCloudModifiedTime);
+  const localUpdatedAt = labsPortfolioClockFromIso(gestureLocalProgressUpdatedAt(params.local));
+  const remoteUpdatedAt = labsPortfolioClockFromIso(params.remoteEnvelope.exportedAt);
+  return analyzePortfolioRows({
+    lastSyncedLocalMax,
+    lastRemoteSeen,
+    localRows: params.local.packs.map((p) => ({
+      id: p.id,
+      updatedAt: localUpdatedAt,
+      label: p.name,
+      kind: 'pack',
+    })),
+    remoteRows: params.remoteEnvelope.packs.map((p) => ({
+      id: p.id,
+      updatedAt: remoteUpdatedAt,
+      label: p.name,
+      kind: 'pack',
+    })),
+    defaultKind: 'pack',
+    isAutoResolvable: () => true,
+    summarizeStakes: (local, remote) => {
+      const localFiles = params.local.packFiles ?? [];
+      const remoteFiles = params.remoteEnvelope.packFiles ?? [];
+      const lCount = localFiles.filter((f) => f.packId === local.id).length;
+      const rCount = remoteFiles.filter((f) => f.packId === remote.id).length;
+      return `${lCount} photo${lCount === 1 ? '' : 's'} here · ${rCount} on Drive`;
+    },
   });
 }

@@ -5,6 +5,7 @@ import Typography from '@mui/material/Typography';
 
 import { LabsDriveAccountMenu } from '../../shared/google/LabsDriveAccountMenu';
 import LabsDriveBackupActionRow from '../../shared/google/LabsDriveBackupActionRow';
+import LabsPortfolioConflictReviewDialog from '../../shared/google/LabsPortfolioConflictReviewDialog';
 import {
   useLabsBlockingJobs,
   useLabsBlockingJobsVisible,
@@ -15,8 +16,16 @@ import { scanZineboxLibraryOrganize, type ZineboxOrganizeScanResult } from '../o
 import OrganizeLibraryDialog from './OrganizeLibraryDialog';
 
 export default function ZineboxAccountMenu(): React.ReactElement | null {
-  const { googleClientConfigured, backupSlot, driveUi, conflict, notifyAppToast } =
-    useZineboxDriveBackupContext();
+  const {
+    googleClientConfigured,
+    backupSlot,
+    driveUi,
+    conflictReview,
+    resolveConflictWithChoices,
+    cancelConflict,
+    busy: backupBusy,
+    notifyAppToast,
+  } = useZineboxDriveBackupContext();
   const { comics } = useZineboxComics();
   const { collections } = useZineboxCollections();
   const { withBlockingJob } = useLabsBlockingJobs();
@@ -52,7 +61,6 @@ export default function ZineboxAccountMenu(): React.ReactElement | null {
         googleClientConfigured={googleClientConfigured}
         backup={backupSlot}
         drive={driveUi}
-        conflict={conflict}
         ids={{ menu: 'zinebox-account-menu', button: 'zinebox-account-menu-button' }}
         appearance={{
           tooltipTitle: 'Account and Drive backup',
@@ -108,6 +116,16 @@ export default function ZineboxAccountMenu(): React.ReactElement | null {
         }}
         onError={setOrganizeError}
       />
+      {conflictReview && conflictReview.needsReview.length > 0 ? (
+        <LabsPortfolioConflictReviewDialog
+          open
+          dialogTitleId="zinebox-drive-conflict-title"
+          analysis={conflictReview}
+          busy={backupBusy}
+          onApply={(choices) => void resolveConflictWithChoices(choices)}
+          onDismiss={cancelConflict}
+        />
+      ) : null}
     </>
   );
 }

@@ -23,31 +23,41 @@ No other micro-apps use Drive JSON backup today. Encore also uses Drive for uplo
 1. **Local-first** — Dexie / in-memory progress is the working copy. Apps work offline without Google.
 2. **Background by default** — Session auto-pull, **periodic re-pull while the tab is visible** (every 5 min), debounced auto-push (3 s); no toast on every success.
 3. **Data-loss guards** — Empty devices must not overwrite richer cloud data; undo snapshots before destructive merges; deletions propagate where union-merge would resurrect rows. **Filled content must never be silently lost to an empty/sparser copy** — merge compound rows by stable sub-entity id ("content beats empty" always), not whole-row last-writer-wins, and expose revision-history restore. See [ADR 0019](adr/0019-encore-non-destructive-sync-merge.md) + [Data-loss prevention principles](#data-loss-prevention-principles-all-sync-apps).
-4. **Silent merge by default** — Portfolio apps use **`silent_union`** unless merge heuristics can hide meaningful differences (see [Portfolio merge prompt policy](#portfolio-merge-prompt-policy)). Prompt only when user judgment is required; Encore uses row-level review for true simultaneous edits.
-5. **Shared UX for portfolio apps** — Stanza, Scales, and Gesture use [`LabsDriveAccountMenu`](../src/shared/google/LabsDriveAccountMenu.tsx); Encore uses its own account menu with row-level conflict UI.
+4. **Silent merge by default** — All portfolio apps use **`silent_union`**. Divergence (cloud newer + local edits) auto-merges; prompt only for **true row-level conflicts** (`needsReview`). See [ADR 0020](adr/0020-silent-union-sync-row-conflicts-only.md) and [Divergence vs conflict](#divergence-vs-conflict).
+5. **Shared UX for portfolio apps** — Stanza, Scales, Gesture, and Zine Box use [`LabsDriveAccountMenu`](../src/shared/google/LabsDriveAccountMenu.tsx) + [`LabsPortfolioConflictReviewDialog`](../src/shared/google/LabsPortfolioConflictReviewDialog.tsx) when `needsReview.length > 0`. Encore uses the same analysis semantics with content-aware sub-entity merge (ADR 0019).
 6. **No silent OAuth refresh** — ADR 0010/0011; user re-authenticates explicitly when tokens expire (optional BFF refresh per ADR 0014).
+
+## Divergence vs conflict
+
+| Signal                                                                  | Meaning                                                                                                          | User action                                                                                                                         |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Divergence** (`drive_file_newer_than_seen`, local edits since backup) | Another device saved, or this device edited                                                                      | **Auto-merge** (union + non-destructive field merge); optional snackbar                                                             |
+| **True conflict** (`needsReview`)                                       | Same stable entity edited on both sides since last sync baseline **and** auto-merge would drop non-empty content | [`LabsPortfolioConflictReviewDialog`](../src/shared/google/LabsPortfolioConflictReviewDialog.tsx) — per-row Keep device / Use Drive |
+
+Shared analysis: [`labsPortfolioConflictAnalysis.ts`](../src/shared/drive/labsPortfolioConflictAnalysis.ts). Canonical decision: [ADR 0020](adr/0020-silent-union-sync-row-conflicts-only.md).
 
 ## Portfolio merge prompt policy
 
-Shared type: [`LabsPortfolioMergePromptPolicy`](../src/shared/drive/labsDriveBackupTypes.ts). Each app exports a constant in `*DriveConflict.ts` and calls `shouldPromptPortfolioMerge({ policy, assessment, localChangedSinceLastBackup })`.
+Shared type: [`LabsPortfolioMergePromptPolicy`](../src/shared/drive/labsDriveBackupTypes.ts). Each app exports a constant in `*DriveConflict.ts`.
 
-| Policy                             | When to use                                                                                                                                                     | Apps today                                           |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| **`silent_union`** (default)       | Union merge cannot drop local edits; undo snapshots + Restore are the escape hatch. Auto-pull and manual backup **merge then upload** with no dialog.           | **Gesture**, **Scales**                              |
-| **`prompt_when_both_edited`**      | Cloud diverged **and** local changed since last backup → show [`LabsDriveConflictDialog`](../src/shared/google/LabsDriveConflictDialog.tsx) before pull/backup. | **Stanza** (section markers / richer per-song merge) |
-| **Row-level review** (Encore only) | Local and remote both changed the **same** repertoire row → per-row keep device vs Drive.                                                                       | **Encore**                                           |
+| Policy                       | When to use                                                                                                                                     | Apps today                                        |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| **`silent_union`** (default) | Never block pull on divergence alone. Run row analysis; open review dialog only if `needsReview.length > 0`. Undo snapshots are the safety net. | **Stanza**, **Gesture**, **Scales**, **Zine Box** |
+| **`row_review`** (Encore)    | Same analysis semantics; content-aware sub-entity merge (ADR 0019).                                                                             | **Encore**                                        |
 
-**Default for new portfolio apps:** set `LABS_PORTFOLIO_MERGE_PROMPT_POLICY_DEFAULT` (`silent_union`). Diverge only with a one-line comment in `*DriveConflict.ts` explaining why union merge is insufficient.
+**Deprecated:** `prompt_when_both_edited` (coarse Merge / Replace dialog). Do not use for new apps.
 
-**Assessment vs prompt:** `assessLabsDriveBackupConflict` still records _divergence_ (`drive_file_newer_than_seen`, etc.) for diagnostics and copy. Prompt policy decides whether divergence blocks the user.
+**Default for new portfolio apps:** `LABS_PORTFOLIO_MERGE_PROMPT_POLICY_DEFAULT` (`silent_union`).
 
-**Manual backup pattern (`silent_union` apps):**
+**Assessment vs prompt:** `assessLabsDriveBackupConflict` records _divergence_ for diagnostics and copy only. `shouldBlockSyncForConflict(analysis)` gates the user when `needsReview.length > 0`.
+
+**Manual backup pattern:**
 
 1. Undo snapshot (`manual-backup`)
-2. `pullFromDriveAndMerge({ silent: true })` — merge remote into local
+2. `pullFromDriveAndMerge({ silent: true })` — merge remote into local (or open row review if needed)
 3. `flushDriveWrite()` — upload merged envelope
 
-**Undo:** Restore → **Undo last sync** (pre-pull snapshot) rolls back a bad merge without needing the conflict dialog.
+**Undo:** Restore → **Undo last sync** (pre-pull snapshot) rolls back a bad merge. Overwrite Drive with this device is Restore → Advanced only (not everyday sync).
 
 ## Architecture
 
@@ -167,38 +177,34 @@ Distilled from the Encore "Because of You" incident (ADR 0019). Apply to **every
 flowchart TD
   Start[Session start or manual backup]
   AutoPull[Auto-pull / pullFromDriveAndMerge]
-  Policy{App merge prompt policy}
+  Analyze[analyzeConflict]
   SilentMerge[Merge remote into local + undo snapshot]
-  Dialog[LabsDriveConflictDialog]
+  Review[LabsPortfolioConflictReviewDialog]
   Push[Write progress.json to Drive]
 
   Start --> AutoPull
-  AutoPull --> Policy
-  Policy -->|silent_union| SilentMerge
-  Policy -->|prompt_when_both_edited + both sides changed| Dialog
-  Policy -->|prompt_when_both_edited + local unchanged| SilentMerge
+  AutoPull --> Analyze
+  Analyze -->|needsReview empty| SilentMerge
+  Analyze -->|needsReview nonempty| Review
   SilentMerge --> Push
-  Dialog -->|Merge and upload| Push
-  Dialog -->|Use this device only| Push
-  Dialog -->|Cancel| Stop[No write]
+  Review -->|Apply choices and sync| Push
+  Review -->|Decide later| Stop[No write]
 ```
 
-**Conflict reasons** (recorded by `assessLabsDriveBackupConflict`; prompt only when policy + local-changed say so):
+**Divergence reasons** (diagnostics only via `assessLabsDriveBackupConflict`):
 
 - `drive_file_newer_than_seen` — Drive `modifiedTime` > device `lastCloudModifiedTime`
 - `remote_export_newer_than_last_backup` — envelope `exportedAt` > device `lastBackupExportedAt`
 - `drive_nonempty_first_device` — no prior sync meta but remote has content
 
-**`silent_union` (Gesture, Scales):** auto-pull and manual backup always merge silently when remote exists, then push when appropriate. No blocking dialog.
-
-**`prompt_when_both_edited` (Stanza):** auto-pull merges silently when local unchanged since last backup; otherwise opens the conflict dialog (including blocking auto-pull with an account-menu hint).
+**All portfolio apps (`silent_union`):** auto-pull and manual backup merge silently when `needsReview` is empty, then push. Row review only for true conflicts (ADR 0020).
 
 ### Encore
 
 When local and remote both changed since last sync:
 
 - **`bothEdited.length === 0`** — silent auto-merge by `updatedAt`; brief snackbar
-- **`bothEdited.length > 0`** — [`SyncConflictReviewDialog`](../src/encore/components/SyncConflictReviewDialog.tsx) per row (keep device vs use Drive)
+- **`bothEdited.length > 0`** — [`SyncConflictReviewDialog`](../src/encore/components/SyncConflictReviewDialog.tsx) per row (keep device vs use Drive); content-aware merge (ADR 0019)
 
 See [`src/encore/ARCHITECTURE.md`](../src/encore/ARCHITECTURE.md) § Sync state machine.
 

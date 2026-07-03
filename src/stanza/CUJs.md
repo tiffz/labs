@@ -33,17 +33,17 @@ UX sketch skill: [`labs-ux-journey`](../../.cursor/skills/labs-ux-journey/SKILL.
 ## CUJ-002: Drive backup and merge
 
 **Primary goal:** Keep song library and section markers synced across devices.  
-**Persona:** Multi-device user with `prompt_when_both_edited` merge policy.
+**Persona:** Multi-device user with `silent_union` merge policy (ADR 0020).
 
 ### Steps
 
 1. Sign in via account menu.
 2. Manual backup or wait for auto-sync after library edit.
-3. On conflict, choose merge/replace in dialog.
+3. Non-overlapping edits merge silently. Only true same-song conflicts open the row review dialog.
 
 ### Success criteria
 
-- Local library survives refresh; merge dialog copy matches conflict assessment.
+- Local library survives refresh; routine divergence does not show a modal.
 - Undo last sync available after a pull.
 
 ### Automation

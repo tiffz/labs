@@ -4,7 +4,7 @@
 
 **Who reads this:** Humans triaging sync bugs; **LLM agents** before editing `*DriveMerge*`, `*DriveBackup*`, envelope schemas, delete UX, or conflict UI.
 
-**Related:** [`LOCAL_FIRST_SYNC.md`](LOCAL_FIRST_SYNC.md) (architecture) · [`SYNC_AND_AUTH_MAP.md`](SYNC_AND_AUTH_MAP.md) (app map) · skill **`labs-drive-backup`** · ADR [0019](adr/0019-encore-non-destructive-sync-merge.md)
+**Related:** [`LOCAL_FIRST_SYNC.md`](LOCAL_FIRST_SYNC.md) (architecture) · [`SYNC_AND_AUTH_MAP.md`](SYNC_AND_AUTH_MAP.md) (app map) · skill **`labs-drive-backup`** · ADR [0019](adr/0019-encore-non-destructive-sync-merge.md) · ADR [0020](adr/0020-silent-union-sync-row-conflicts-only.md)
 
 ---
 
@@ -41,18 +41,18 @@ No single layer is sufficient. **Agents must not remove or bypass a layer** with
 
 ## Guard parity matrix
 
-| Guard                                | Encore      | Stanza                  | Scales             | Gesture      | Zine Box       |
-| ------------------------------------ | ----------- | ----------------------- | ------------------ | ------------ | -------------- |
-| Auto-push gated until pull           | ✅          | ✅                      | ✅                 | ✅           | ✅             |
-| Pre-merge undo snapshot              | ✅          | ✅ (Dexie)              | ✅                 | ✅           | ✅             |
-| Delete tombstones + merge filter     | partial†    | ✅                      | n/a‡               | ✅           | ✅             |
-| Content-aware merge (filled > empty) | ✅ ADR 0019 | markers/mix heuristics  | sparse-remote test | union + tags | union + stacks |
-| Conflict UI when stakes are high     | row review  | prompt when both edited | silent_union       | silent_union | silent_union   |
-| 412 etag retry on push               | ✅          | ✅                      | ✅                 | ❌§          | ✅             |
-| Visibility/tab-close push flush      | ✅          | ✅¶                     | ✅¶                | ✅¶          | ✅¶            |
-| In-app Drive revision recovery       | ✅          | ❌ backlog              | ❌ backlog         | ❌ backlog   | ❌ backlog     |
-| Merge/delete regression tests        | ✅ unit     | ✅ unit                 | ✅ unit            | ✅ unit      | ✅ unit        |
-| E2e merge/tombstone smoke            | ❌ backlog  | ❌ backlog              | ❌ backlog         | ❌ backlog   | ❌ backlog     |
+| Guard                                | Encore      | Stanza                 | Scales             | Gesture      | Zine Box       |
+| ------------------------------------ | ----------- | ---------------------- | ------------------ | ------------ | -------------- |
+| Auto-push gated until pull           | ✅          | ✅                     | ✅                 | ✅           | ✅             |
+| Pre-merge undo snapshot              | ✅          | ✅ (Dexie)             | ✅                 | ✅           | ✅             |
+| Delete tombstones + merge filter     | partial†    | ✅                     | n/a‡               | ✅           | ✅             |
+| Content-aware merge (filled > empty) | ✅ ADR 0019 | markers/mix heuristics | sparse-remote test | union + tags | union + stacks |
+| Conflict UI when stakes are high     | row review  | row review (ADR 0020)  | row review         | row review   | row review     |
+| 412 etag retry on push               | ✅          | ✅                     | ✅                 | ❌§          | ✅             |
+| Visibility/tab-close push flush      | ✅          | ✅¶                    | ✅¶                | ✅¶          | ✅¶            |
+| In-app Drive revision recovery       | ✅          | ❌ backlog             | ❌ backlog         | ❌ backlog   | ❌ backlog     |
+| Merge/delete regression tests        | ✅ unit     | ✅ unit                | ✅ unit            | ✅ unit      | ✅ unit        |
+| E2e merge/tombstone smoke            | ❌ backlog  | ❌ backlog             | ❌ backlog         | ❌ backlog   | ❌ backlog     |
 
 † Encore exercise-run **deletes** can resurrect on merge (union by id — no run tombstones). Song/performance deletes propagate via `dirtySync`.
 
@@ -99,15 +99,15 @@ No single layer is sufficient. **Agents must not remove or bypass a layer** with
 
 ## UX forgiveness (human error)
 
-| Pattern                          | Intent                                                          |
-| -------------------------------- | --------------------------------------------------------------- |
-| **Undo last sync**               | Revert pre-pull snapshot without Drive archaeology              |
-| **Restore from Drive**           | Pull latest cloud envelope when local is corrupt                |
-| **Encore Recover lost data**     | Scan Drive revisions + local snapshots for richer copies        |
-| **Stanza conflict dialog**       | Block silent merge when **both** sides edited since last backup |
-| **Encore row review**            | Show answer counts per side before keep-device vs use-Drive     |
-| **Blocking job + keep tab open** | Prevent navigating away mid-upload/merge                        |
-| **Clear site data warning**      | Restore dialog copy — undo rings lost; Drive remains fallback   |
+| Pattern                          | Intent                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------- |
+| **Undo last sync**               | Revert pre-pull snapshot without Drive archaeology                        |
+| **Restore from Drive**           | Pull latest cloud envelope when local is corrupt                          |
+| **Encore Recover lost data**     | Scan Drive revisions + local snapshots for richer copies                  |
+| **Row-level conflict review**    | Prompt only when `needsReview` rows exist (ADR 0020); show stakes per row |
+| **Encore content-aware merge**   | Filled answers never lost to empty (ADR 0019)                             |
+| **Blocking job + keep tab open** | Prevent navigating away mid-upload/merge                                  |
+| **Clear site data warning**      | Restore dialog copy — undo rings lost; Drive remains fallback             |
 
 Avoid: destructive actions without confirm; coarse LWW on compound rows; silent overwrite toasts that look like success.
 

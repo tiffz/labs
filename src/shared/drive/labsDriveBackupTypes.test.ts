@@ -15,7 +15,7 @@ describe('shouldPromptPortfolioMerge', () => {
     remoteHasContent: true,
   });
 
-  it('silent_union never prompts', () => {
+  it('silent_union never prompts (ADR 0020)', () => {
     expect(
       shouldPromptPortfolioMerge({
         policy: 'silent_union',
@@ -25,14 +25,14 @@ describe('shouldPromptPortfolioMerge', () => {
     ).toBe(false);
   });
 
-  it('prompt_when_both_edited prompts when local changed and cloud diverged', () => {
+  it('deprecated prompt_when_both_edited never prompts (ADR 0020)', () => {
     expect(
       shouldPromptPortfolioMerge({
         policy: 'prompt_when_both_edited',
         assessment: divergedAssessment,
         localChangedSinceLastBackup: true,
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('default policy is silent_union', () => {
@@ -41,9 +41,9 @@ describe('shouldPromptPortfolioMerge', () => {
 });
 
 describe('shouldPromptBeforePortfolioMerge', () => {
-  it('does not prompt when cloud is newer but local unchanged since backup', () => {
+  it('always returns false (ADR 0020 — use row analysis instead)', () => {
     const assessment = assessLabsDriveBackupConflict({
-      syncMeta: { lastBackupExportedAt: '2026-01-02T00:00:00.000Z', lastCloudModifiedTime: '2026-01-01' },
+      syncMeta: { lastBackupExportedAt: '2026-01-01T00:00:00.000Z' },
       cloudModifiedTime: '2026-01-03',
       remoteExportedAt: '2026-01-03T00:00:00.000Z',
       remoteHasContent: true,
@@ -52,72 +52,7 @@ describe('shouldPromptBeforePortfolioMerge', () => {
     expect(
       shouldPromptBeforePortfolioMerge({
         assessment,
-        localChangedSinceLastBackup: false,
-      }),
-    ).toBe(false);
-  });
-
-  it('prompts when cloud diverged and local edited since last backup', () => {
-    const assessment = assessLabsDriveBackupConflict({
-      syncMeta: { lastBackupExportedAt: '2026-01-01T00:00:00.000Z' },
-      cloudModifiedTime: '2026-01-03',
-      remoteExportedAt: '2026-01-03T00:00:00.000Z',
-      remoteHasContent: true,
-    });
-    expect(
-      shouldPromptBeforePortfolioMerge({
-        assessment,
         localChangedSinceLastBackup: true,
-      }),
-    ).toBe(true);
-  });
-
-  it('does not prompt when assessment says cloud is already in sync', () => {
-    const assessment = assessLabsDriveBackupConflict({
-      syncMeta: {
-        lastCloudModifiedTime: '2026-01-03',
-        lastBackupExportedAt: '2026-01-03T00:00:00.000Z',
-      },
-      cloudModifiedTime: '2026-01-03',
-      remoteExportedAt: '2026-01-03T00:00:00.000Z',
-      remoteHasContent: true,
-    });
-    expect(assessment.needsPrompt).toBe(false);
-    expect(
-      shouldPromptBeforePortfolioMerge({
-        assessment,
-        localChangedSinceLastBackup: true,
-      }),
-    ).toBe(false);
-  });
-
-  it('prompts on first-device conflict when local already has edits', () => {
-    const assessment = assessLabsDriveBackupConflict({
-      syncMeta: {},
-      cloudModifiedTime: '2026-01-03',
-      remoteExportedAt: '2026-01-03T00:00:00.000Z',
-      remoteHasContent: true,
-    });
-    expect(assessment.reasons).toContain('drive_nonempty_first_device');
-    expect(
-      shouldPromptBeforePortfolioMerge({
-        assessment,
-        localChangedSinceLastBackup: true,
-      }),
-    ).toBe(true);
-  });
-
-  it('allows silent merge on first device when local is still empty', () => {
-    const assessment = assessLabsDriveBackupConflict({
-      syncMeta: {},
-      cloudModifiedTime: '2026-01-03',
-      remoteExportedAt: '2026-01-03T00:00:00.000Z',
-      remoteHasContent: true,
-    });
-    expect(
-      shouldPromptBeforePortfolioMerge({
-        assessment,
-        localChangedSinceLastBackup: false,
       }),
     ).toBe(false);
   });
@@ -167,7 +102,7 @@ describe('assessLabsDriveBackupConflict', () => {
     ).toEqual({ needsPrompt: false, reasons: [] });
   });
 
-  it('flags drive file newer than last seen', () => {
+  it('flags drive file newer than last seen (diagnostics only)', () => {
     const result = assessLabsDriveBackupConflict({
       syncMeta: { lastCloudModifiedTime: '2026-01-01' },
       cloudModifiedTime: '2026-01-03',

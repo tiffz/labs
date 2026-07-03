@@ -65,6 +65,12 @@ Long-loop manual checklist (≈10 min):
 
 Consider automating a timed loop smoke (Playwright `page.waitForTimeout` + transport assertions) if soak regressions recur.
 
+## Drive sync (ADR 0020)
+
+- **Silent union by default** — cloud divergence + local edits auto-merge; no coarse Merge / Replace modal.
+- **Row review only** when `analyzeStanzaConflict` reports `needsReview` (auto-merge would drop markers or practice maps).
+- Manual drill for same-song conflict: edit markers for song A on device 1 and incompatible markers for the same song id on device 2, then pull — review dialog should list only that song.
+
 ## Agent checklist
 
 1. **No hot-path IndexedDB writes** during playback except batched stats, metronome persistence, or explicit user edits.

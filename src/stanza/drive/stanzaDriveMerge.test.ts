@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { StanzaSong } from '../db/stanzaDb';
 import type { StanzaSongDriveRow } from './stanzaDriveEnvelope';
-import { mergeDriveRowsIntoLocalLibrary, stanzaSongFromDriveRow } from './stanzaDriveMerge';
+import {
+  applyStanzaConflictChoices,
+  mergeDriveRowsIntoLocalLibrary,
+  stanzaSongFromDriveRow,
+} from './stanzaDriveMerge';
 
 function song(p: Partial<StanzaSong> & Pick<StanzaSong, 'id' | 'title' | 'updatedAt'>): StanzaSong {
   return {
@@ -519,5 +523,60 @@ describe('mergeDriveRowsIntoLocalLibrary', () => {
     ];
     const { nextRows } = mergeDriveRowsIntoLocalLibrary(local, remote);
     expect(nextRows[0].drumPattern).toBe('D---D---');
+  });
+});
+
+describe('applyStanzaConflictChoices', () => {
+  it('keeps local song when choice is local and remote when choice is remote', () => {
+    const local = [
+      {
+        id: 'a',
+        ytId: 'vid-a',
+        title: 'Local A',
+        markers: [{ id: 'm1', time: 1, label: 'L' }],
+        stats: {},
+        updatedAt: 100,
+      },
+      {
+        id: 'b',
+        ytId: 'vid-b',
+        title: 'Local B',
+        markers: [],
+        stats: {},
+        updatedAt: 100,
+      },
+    ];
+    const remote = [
+      {
+        id: 'a',
+        ytId: 'vid-a',
+        title: 'Remote A',
+        markers: [{ id: 'm2', time: 2, label: 'R' }],
+        stats: {},
+        updatedAt: 200,
+      },
+      {
+        id: 'b',
+        ytId: 'vid-b',
+        title: 'Remote B',
+        markers: [{ id: 'm3', time: 3, label: 'R' }],
+        stats: {},
+        updatedAt: 200,
+      },
+    ];
+    const choices = new Map<string, 'local' | 'remote'>([
+      ['a', 'local'],
+      ['b', 'remote'],
+    ]);
+    const { nextRows } = applyStanzaConflictChoices({
+      localRows: local as never,
+      remoteSongs: remote as never,
+      choices,
+    });
+    const byId = new Map(nextRows.map((r) => [r.id, r]));
+    expect(byId.get('a')?.title).toBe('Local A');
+    expect(byId.get('a')?.markers).toHaveLength(1);
+    expect(byId.get('b')?.title).toBe('Remote B');
+    expect(byId.get('b')?.markers).toHaveLength(1);
   });
 });

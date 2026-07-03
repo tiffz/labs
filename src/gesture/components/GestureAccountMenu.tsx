@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import { LabsDriveAccountMenu } from '../../shared/google/LabsDriveAccountMenu';
 import LabsDriveBackupActionRow from '../../shared/google/LabsDriveBackupActionRow';
+import LabsPortfolioConflictReviewDialog from '../../shared/google/LabsPortfolioConflictReviewDialog';
 import {
   ensureLabsGoogleAccessTokenForDrive,
   LabsGoogleInteractiveAuthRequiredError,
@@ -18,8 +19,16 @@ import { useGestureDriveBackupContext } from '../context/GestureDriveBackupConte
 import GestureOrganizeDuplicatesDialog from './GestureOrganizeDuplicatesDialog';
 
 export default function GestureAccountMenu() {
-  const { googleClientConfigured, backupSlot, driveUi, conflict, organizeProbeFolderIds } =
-    useGestureDriveBackupContext();
+  const {
+    googleClientConfigured,
+    backupSlot,
+    driveUi,
+    conflictReview,
+    resolveConflictWithChoices,
+    cancelConflict,
+    busy: backupBusy,
+    organizeProbeFolderIds,
+  } = useGestureDriveBackupContext();
   const { withBlockingJob } = useLabsBlockingJobs();
   const blockingVisible = useLabsBlockingJobsVisible();
   const [organizeOpen, setOrganizeOpen] = useState(false);
@@ -59,7 +68,6 @@ export default function GestureAccountMenu() {
         googleClientConfigured={googleClientConfigured}
         backup={backupSlot}
         drive={driveUi}
-        conflict={conflict}
         ids={{ menu: 'gesture-account-menu', button: 'gesture-account-menu-button' }}
         appearance={{
           tooltipTitle: 'Account and Drive backup',
@@ -120,6 +128,16 @@ export default function GestureAccountMenu() {
         }}
         onError={setOrganizeError}
       />
+      {conflictReview && conflictReview.needsReview.length > 0 ? (
+        <LabsPortfolioConflictReviewDialog
+          open
+          dialogTitleId="gesture-drive-conflict-title"
+          analysis={conflictReview}
+          busy={backupBusy}
+          onApply={(choices) => void resolveConflictWithChoices(choices)}
+          onDismiss={cancelConflict}
+        />
+      ) : null}
     </>
   );
 }

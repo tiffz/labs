@@ -8,8 +8,9 @@ import {
 } from 'react';
 import type { LabsAccountBackupSlotProps } from '../../shared/google/LabsAccountMenu';
 import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from '../../shared/google/labsDriveBackupUiTypes';
+import type { LabsPortfolioConflictAnalysis } from '../../shared/drive/labsPortfolioConflictAnalysis';
+import type { LabsPortfolioConflictChoice } from '../../shared/google/LabsPortfolioConflictReviewDialog';
 import { getLabsDriveBackupRestrictionHashesFromEnv } from '../../shared/google/labsDriveTesterGate';
-import { formatLabsDriveInstant } from '../../shared/google/formatLabsDriveInstant';
 import {
   scalesGoogleClientConfigured,
   useScalesDriveBackup,
@@ -21,7 +22,12 @@ export type ScalesDriveBackupContextValue = {
   googleClientConfigured: boolean;
   backupSlot: LabsAccountBackupSlotProps;
   driveUi: LabsDriveBackupUiProps;
+  /** @deprecated Always null (ADR 0020). Use conflictReview. */
   conflict: (LabsDriveConflictUiProps & { dialogTitleId: string }) | null;
+  conflictReview: LabsPortfolioConflictAnalysis | null;
+  resolveConflictWithChoices: (choices: Map<string, LabsPortfolioConflictChoice>) => Promise<void>;
+  cancelConflict: () => void;
+  busy: boolean;
 };
 
 const ScalesDriveBackupContext = createContext<ScalesDriveBackupContextValue | null>(null);
@@ -118,34 +124,21 @@ export function ScalesDriveBackupProvider({ children }: { children: ReactNode })
     };
   }, [allowlistEmpty, backup]);
 
-  const conflict = useMemo((): (LabsDriveConflictUiProps & { dialogTitleId: string }) | null => {
-    if (!backup.conflict) return null;
-    const c = backup.conflict;
-    const firstDeviceHere = c.reasons.includes('drive_nonempty_first_device');
-    const driveWhen = formatLabsDriveInstant(c.driveModifiedTime || c.remoteExportedAt);
-    return {
-      dialogTitleId: 'scales-drive-conflict-title',
-      busy: backup.busy,
-      title: 'Drive backup conflict',
-      intro: firstDeviceHere
-        ? 'Drive already has Learn Your Scales progress, but this device has not synced here before.'
-        : 'Your progress was updated on another device since this browser last synced.',
-      detail: `${c.remoteExerciseCount} exercise${c.remoteExerciseCount === 1 ? '' : 's'} on Drive · ${c.localExerciseCount} here · Drive updated ${driveWhen}`,
-      recommendation: 'Merge and upload is usually safest so you keep practice from both copies.',
-      onCancel: backup.cancelConflict,
-      onReplaceOnly: backup.confirmReplaceDriveOnly,
-      onMergeThenUpload: backup.confirmMergeThenUpload,
-    };
-  }, [backup]);
+  /** ADR 0020: coarse dialog removed; row review only when needsReview is non-empty. */
+  const conflictReview = backup.conflict?.analysis ?? null;
 
   const value = useMemo(
     (): ScalesDriveBackupContextValue => ({
       googleClientConfigured: scalesGoogleClientConfigured(),
       backupSlot,
       driveUi,
-      conflict,
+      conflict: null,
+      conflictReview,
+      resolveConflictWithChoices: backup.resolveConflictWithChoices,
+      cancelConflict: backup.cancelConflict,
+      busy: backup.busy,
     }),
-    [backupSlot, driveUi, conflict],
+    [backup, backupSlot, driveUi, conflictReview],
   );
 
   return <ScalesDriveBackupContext.Provider value={value}>{children}</ScalesDriveBackupContext.Provider>;

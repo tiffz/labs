@@ -10,7 +10,7 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 /** Custom portfolio Drive hooks — document why factory is insufficient before adding here. */
 const PORTFOLIO_DRIVE_HOOK_ALLOWLIST = new Set([
   'src/gesture/hooks/useGestureDriveBackup.ts', // pack upload + merge; not portfolio-json-only
-  'src/stanza/hooks/useStanzaDriveBackup.ts', // prompt_when_both_edited + song sidecars
+  'src/stanza/hooks/useStanzaDriveBackup.ts', // custom media hydrate + row review (ADR 0020)
 ]);
 
 const PORTFOLIO_DRIVE_HOOKS = [

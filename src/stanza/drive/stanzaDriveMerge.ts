@@ -376,6 +376,38 @@ export function mergeDriveRowsIntoLocalLibrary(
   return { nextRows, remappedIds: consolidation.remappedIds, report, staleTombstoneFileIds };
 }
 
+/**
+ * Apply per-song conflict choices (ADR 0020) then run the normal library merge.
+ * - `local`: drop remote row so this device's copy is kept.
+ * - `remote`: force Drive metadata (inherit local audio blobs).
+ * Choices are keyed by song id (not `kind:id`).
+ */
+export function applyStanzaConflictChoices(params: {
+  localRows: StanzaSong[];
+  remoteSongs: StanzaSongDriveRow[];
+  choices: Map<string, 'local' | 'remote'>;
+}): { nextRows: StanzaSong[]; remappedIds: Map<string, string>; report: StanzaDriveMergeReport } {
+  const { localRows, remoteSongs, choices } = params;
+  const localById = new Map(localRows.map((s) => [s.id, s] as const));
+  const remoteForMerge = remoteSongs.filter((r) => choices.get(r.id) !== 'local');
+  const merged = mergeDriveRowsIntoLocalLibrary(localRows, remoteForMerge);
+  const nextRows = merged.nextRows.map((row) => {
+    if (choices.get(row.id) !== 'remote') return row;
+    const remote = remoteSongs.find((r) => r.id === row.id);
+    if (!remote) return row;
+    const fromRemote = stanzaSongFromDriveRow(remote);
+    if (!fromRemote) return row;
+    const local = localById.get(row.id);
+    return {
+      ...fromRemote,
+      localAudioBlob: local?.localAudioBlob ?? fromRemote.localAudioBlob,
+      localVideoThumbnailBlob: local?.localVideoThumbnailBlob ?? fromRemote.localVideoThumbnailBlob,
+      stems: mergeStanzaStemTracks(local?.stems, fromRemote.stems) ?? fromRemote.stems,
+    };
+  });
+  return { nextRows, remappedIds: merged.remappedIds, report: merged.report };
+}
+
 export function formatStanzaDriveMergeReport(r: StanzaDriveMergeReport): string {
   const parts = [
     `Kept ${r.keptLocalOnly} only on this device`,

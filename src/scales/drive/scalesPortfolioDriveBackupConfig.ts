@@ -3,6 +3,7 @@ import type { LabsPortfolioDriveBackupConfig } from '../../shared/drive/labsPort
 import { subscribeScalesProgressSave } from '../progress/store';
 import type { ScalesProgressData } from '../progress/types';
 import {
+  analyzeScalesConflict,
   assessScalesDriveBackupConflict,
   shouldPromptScalesDriveMerge,
   type ScalesDriveConflictReason,
@@ -32,13 +33,14 @@ import { readScalesPortfolioDriveLocalPayload } from './scalesPortfolioDriveProg
 
 export type ScalesDriveBackupConflictState = {
   driveModifiedTime: string;
-  remoteExportedAt: string;
-  remoteExerciseCount: number;
-  localExerciseCount: number;
+  remoteExportedAt?: string;
+  remoteExerciseCount?: number;
+  localExerciseCount?: number;
   reasons: ScalesDriveConflictReason[];
   remoteEnvelope: ScalesDriveEnvelopeV1;
   etag: string | undefined;
   progressFileId: string;
+  analysis?: import('../../shared/drive/labsPortfolioConflictAnalysis').LabsPortfolioConflictAnalysis;
 };
 
 export const scalesPortfolioDriveBackupConfig: LabsPortfolioDriveBackupConfig<
@@ -75,7 +77,9 @@ export const scalesPortfolioDriveBackupConfig: LabsPortfolioDriveBackupConfig<
     const assessment = assessScalesDriveBackupConflict(args);
     return { reasons: assessment.reasons };
   },
-  buildConflictState: ({ meta, refs, remoteEnvelope, local, reasons }) => ({
+  analyzeConflict: ({ syncMeta, local, remoteEnvelope }) =>
+    analyzeScalesConflict({ syncMeta, local, remoteEnvelope }),
+  buildConflictState: ({ meta, refs, remoteEnvelope, local, reasons, analysis }) => ({
     driveModifiedTime: meta.modifiedTime ?? '',
     remoteExportedAt: remoteEnvelope.exportedAt,
     remoteExerciseCount: Object.keys(remoteEnvelope.payload.exercises ?? {}).length,
@@ -84,6 +88,7 @@ export const scalesPortfolioDriveBackupConfig: LabsPortfolioDriveBackupConfig<
     remoteEnvelope,
     etag: meta.etag,
     progressFileId: refs.progressFileId,
+    analysis,
   }),
   readSyncMeta: readScalesDriveSyncMeta,
   writeSyncMeta: writeScalesDriveSyncMeta,
