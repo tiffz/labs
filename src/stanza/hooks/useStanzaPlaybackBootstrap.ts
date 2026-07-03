@@ -319,6 +319,11 @@ export function useStanzaPlaybackBootstrap(params: UseStanzaPlaybackBootstrapPar
     if (hasStanzaMediaFingerprintDeepLinkQuery() && !fingerprintBootstrapAttemptedRef.current) return;
 
     if (selectedId && !songs.some((s) => s.id === selectedId)) {
+      const remapped = readStanzaLastSelectedSongId();
+      if (remapped && remapped !== selectedId && songs.some((s) => s.id === remapped)) {
+        setSelectedId(remapped);
+        return;
+      }
       setSelectedId(null);
     }
     if (lastSelectedRestoreAttemptedRef.current) {

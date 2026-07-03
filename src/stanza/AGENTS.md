@@ -6,7 +6,9 @@ Nested **`AGENTS.md`** for Stanza. Root policy: [`../../AGENTS.md`](../../AGENTS
 
 1. [`README.md`](README.md) — product overview.
 2. [`LAYOUT.md`](LAYOUT.md) — viewer shell tokens and layer table (**canonical for layout**).
-3. `.cursor/rules/stanza-viewer-layout.mdc` — no viewer width in `sx`; CSS tokens only.
+3. [`../../docs/STANZA_PLAYBACK.md`](../../docs/STANZA_PLAYBACK.md) — transport clocks, loop/skip invariants, test map.
+4. [`../../docs/STANZA_RESILIENCE.md`](../../docs/STANZA_RESILIENCE.md) — long-session stability, wake lock, crash observability.
+5. `.cursor/rules/stanza-viewer-layout.mdc` — no viewer width in `sx`; CSS tokens only.
 
 ## Layout contract
 
@@ -17,6 +19,8 @@ Nested **`AGENTS.md`** for Stanza. Root policy: [`../../AGENTS.md`](../../AGENTS
 ## Tests
 
 - Layout smoke: `e2e/stanza-viewer-layout.spec.ts`
+- Loop playback smoke: `e2e/smoke/stanza-loop-whole-song.spec.ts`
+- Transport policy: `stanzaTransportLoop.integration.test.ts`, `useStanzaTransportLoop.test.ts`
 - Drive sync unit: `stanzaDriveMainMediaSync.test.ts`, `stanzaDriveStemSync.test.ts`, `stanzaDriveMerge.test.ts`
 
 ## Drive sync checklist (agents)

@@ -614,6 +614,7 @@ export default function StanzaTapTempoDialog({
       fullWidth
       maxWidth="xs"
       scroll="paper"
+      aria-labelledby="stanza-tap-tempo-dialog-title"
       slotProps={{
         backdrop: {
           sx: { bgcolor: 'rgba(0, 0, 0, 0.32)' },
@@ -629,7 +630,11 @@ export default function StanzaTapTempoDialog({
         },
       }}
     >
-      <DialogTitle sx={{ textAlign: 'center', pt: 4, pb: 2.5, px: { xs: 3, sm: 3.5 } }}>
+      <DialogTitle
+        id="stanza-tap-tempo-dialog-title"
+        component="div"
+        sx={{ textAlign: 'center', pt: 4, pb: 2.5, px: { xs: 3, sm: 3.5 } }}
+      >
         <Box
           aria-hidden
           sx={(theme: Theme) => ({

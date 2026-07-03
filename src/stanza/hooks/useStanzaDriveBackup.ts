@@ -98,6 +98,7 @@ import {
   LABS_DRIVE_SYNC_PAUSED_IDLE_MESSAGE,
 } from '../../shared/drive/labsDriveSyncMessages';
 import { useLabsDrivePortfolioAutoSync } from '../../shared/drive/useLabsDrivePortfolioAutoSync';
+import { labsBlockingJobsActive, useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
 
 export function stanzaGoogleClientConfigured(): boolean {
   return Boolean((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim());
@@ -124,6 +125,13 @@ export type StanzaDriveBackupConflictState = {
  * push back to Drive (which would clobber the same data we just pulled).
  */
 let stanzaDriveMergeInProgress = false;
+
+/** True while a manual merge / backup / restore holds the library (blocks debounced auto-push). */
+const stanzaDriveBulkSyncInProgressRef = { current: false };
+
+function stanzaDriveSyncOperationInProgress(): boolean {
+  return stanzaDriveMergeInProgress || stanzaDriveBulkSyncInProgressRef.current || labsBlockingJobsActive();
+}
 
 async function persistMergedSongs(nextRows: StanzaSong[]): Promise<void> {
   stanzaDriveMergeInProgress = true;
@@ -175,7 +183,10 @@ async function snapshotLocalLibraryBeforeMerge(
 async function tryHydrateLibraryFromDrive(opts?: {
   interactive?: boolean;
   accessToken?: string;
+  /** When true, rely on per-song lazy hydrate on open (avoids OOM during merge+upload). */
+  skip?: boolean;
 }): Promise<{ mainMediaSongs: number; stemSongs: number }> {
+  if (opts?.skip) return { mainMediaSongs: 0, stemSongs: 0 };
   try {
     const token =
       opts?.accessToken ??
@@ -190,7 +201,7 @@ async function tryHydrateLibraryFromDrive(opts?: {
 
 async function mergeRemoteEnvelopeIntoLocal(
   remoteEnvelope: StanzaDriveEnvelopeV1,
-  opts?: { accessToken?: string; hydrateInteractive?: boolean },
+  opts?: { accessToken?: string; hydrateInteractive?: boolean; skipBulkHydrate?: boolean },
 ): Promise<{
   added: number;
   updatedFromRemote: number;
@@ -222,6 +233,7 @@ async function mergeRemoteEnvelopeIntoLocal(
   await tryHydrateLibraryFromDrive({
     accessToken: opts?.accessToken,
     interactive: opts?.hydrateInteractive,
+    skip: opts?.skipBulkHydrate,
   });
   if (opts?.accessToken) {
     const encoreRootId = await resolveEncoreAppFolderId(opts.accessToken);
@@ -247,6 +259,7 @@ async function mergeRemoteEnvelopeIntoLocal(
 
 export function useStanzaDriveBackup() {
   const identity = useLabsEncoreGoogleIdentity();
+  const { withBlockingJob } = useLabsBlockingJobs();
   const [testerOk, setTesterOk] = useState(false);
   const [testerResolved, setTesterResolved] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -557,10 +570,13 @@ export function useStanzaDriveBackup() {
   const confirmReplaceDriveOnly = useCallback(async () => {
     if (!conflict) return;
     setBusy(true);
+    stanzaDriveBulkSyncInProgressRef.current = true;
     try {
-      await flushDriveWrite();
-      markManualBackupSucceeded();
-      setConflict(null);
+      await withBlockingJob('Saving to Google Drive…', async () => {
+        await flushDriveWrite();
+        markManualBackupSucceeded();
+        setConflict(null);
+      });
     } catch (e) {
       const msg =
         e instanceof DriveHttpError
@@ -570,61 +586,38 @@ export function useStanzaDriveBackup() {
             : 'Backup failed.';
       setMessage(msg);
     } finally {
+      stanzaDriveBulkSyncInProgressRef.current = false;
       setBusy(false);
     }
-  }, [conflict, flushDriveWrite, markManualBackupSucceeded]);
+  }, [conflict, flushDriveWrite, markManualBackupSucceeded, withBlockingJob]);
 
   const confirmMergeThenUpload = useCallback(async () => {
     if (!conflict) return;
     setBusy(true);
+    stanzaDriveBulkSyncInProgressRef.current = true;
     try {
-      // Same tombstone treatment as the auto-pull path (see `mergeRemoteEnvelopeIntoLocal`):
-      // any remote tombstones in the conflicted envelope are unioned in first; the merge then
-      // skips remote rows the user (or another device) previously removed.
-      if (conflict.remoteEnvelope.deletedDriveSourceFileIds?.length) {
-        unionStanzaDriveTombstones(conflict.remoteEnvelope.deletedDriveSourceFileIds);
-      }
-      if (conflict.remoteEnvelope.deletedYoutubeVideoIds?.length) {
-        unionStanzaYoutubeTombstones(conflict.remoteEnvelope.deletedYoutubeVideoIds);
-      }
-      await snapshotLocalLibraryBeforeMerge('pre-merge');
-      const tombstoneFileIds = getStanzaDriveTombstoneFileIds();
-      const youtubeTombstoneVideoIds = getStanzaYoutubeTombstoneVideoIds();
-      const localRows = await stanzaDb.songs.toArray();
-      const { nextRows, remappedIds, report, staleTombstoneFileIds } = mergeDriveRowsIntoLocalLibrary(
-        localRows,
-        conflict.remoteEnvelope.songs,
-        { tombstoneFileIds, youtubeTombstoneVideoIds },
-      );
-      await persistMergedSongs(nextRows);
-      await remapStanzaTakesForConsolidation(remappedIds);
-      for (const fid of staleTombstoneFileIds) {
-        clearStanzaDriveTombstone(fid);
-      }
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      const hydrated = await tryHydrateLibraryFromDrive({
-        accessToken: token,
-        interactive: true,
+      await withBlockingJob('Merging and backing up…', async () => {
+        await snapshotLocalLibraryBeforeMerge('pre-merge');
+        const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+        const result = await mergeRemoteEnvelopeIntoLocal(conflict.remoteEnvelope, {
+          accessToken: token,
+          hydrateInteractive: true,
+          skipBulkHydrate: true,
+        });
+        patchStanzaDriveSyncMeta({
+          lastCloudModifiedTime: conflict.driveModifiedTime,
+          lastBackupExportedAt: conflict.remoteEnvelope.exportedAt,
+          lastAutoPullAt: Date.now(),
+        });
+        markPullSucceeded();
+        setLatestRemoteEnvelope(conflict.remoteEnvelope);
+        const mergeMsg = `${formatMergeUserMessage(result.report, 'Merged library (')}, then saved to Drive.`;
+        setMessage(mergeMsg);
+        setSyncMetaTick((n) => n + 1);
+        setConflict(null);
+        await flushDriveWrite();
+        markManualBackupSucceeded();
       });
-      patchStanzaDriveSyncMeta({
-        lastCloudModifiedTime: conflict.driveModifiedTime,
-        lastBackupExportedAt: conflict.remoteEnvelope.exportedAt,
-        lastAutoPullAt: Date.now(),
-      });
-      markPullSucceeded();
-      setLatestRemoteEnvelope(conflict.remoteEnvelope);
-      let mergeMsg = `${formatMergeUserMessage(report, 'Merged library (')}, then saved to Drive.`;
-      if (hydrated.mainMediaSongs > 0) {
-        mergeMsg += ` Downloaded recordings for ${hydrated.mainMediaSongs} song${hydrated.mainMediaSongs === 1 ? '' : 's'}.`;
-      }
-      if (hydrated.stemSongs > 0) {
-        mergeMsg += ` Downloaded mix layers for ${hydrated.stemSongs} song${hydrated.stemSongs === 1 ? '' : 's'}.`;
-      }
-      setMessage(mergeMsg);
-      setSyncMetaTick((n) => n + 1);
-      setConflict(null);
-      await flushDriveWrite();
-      markManualBackupSucceeded();
     } catch (e) {
       const msg =
         e instanceof DriveHttpError
@@ -634,9 +627,17 @@ export function useStanzaDriveBackup() {
             : 'Merge or backup failed.';
       setMessage(msg);
     } finally {
+      stanzaDriveBulkSyncInProgressRef.current = false;
       setBusy(false);
     }
-  }, [conflict, flushDriveWrite, formatMergeUserMessage, markManualBackupSucceeded, markPullSucceeded]);
+  }, [
+    conflict,
+    flushDriveWrite,
+    formatMergeUserMessage,
+    markManualBackupSucceeded,
+    markPullSucceeded,
+    withBlockingJob,
+  ]);
 
   const openRestorePicker = useCallback(() => {
     setRestoreOpen(true);
@@ -676,9 +677,10 @@ export function useStanzaDriveBackup() {
           clearStanzaDriveTombstone(fid);
         }
         const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-        const hydrated = await tryHydrateLibraryFromDrive({
+        await tryHydrateLibraryFromDrive({
           accessToken: token,
           interactive: true,
+          skip: true,
         });
         setRestoreOpen(false);
         setSyncMetaTick((n) => n + 1);
@@ -686,12 +688,6 @@ export function useStanzaDriveBackup() {
           let msg = `Restored snapshot from ${snap.label}. ${formatStanzaDriveMergeReport(report)}`;
           if (report.markersRecoveredFromLocal > 0) {
             msg += ` Kept your section markers for ${report.markersRecoveredFromLocal} song${report.markersRecoveredFromLocal === 1 ? '' : 's'}.`;
-          }
-          if (hydrated.mainMediaSongs > 0) {
-            msg += ` Downloaded recordings for ${hydrated.mainMediaSongs} song${hydrated.mainMediaSongs === 1 ? '' : 's'}.`;
-          }
-          if (hydrated.stemSongs > 0) {
-            msg += ` Downloaded mix layers for ${hydrated.stemSongs} song${hydrated.stemSongs === 1 ? '' : 's'}.`;
           }
           return msg;
         });
@@ -747,7 +743,7 @@ export function useStanzaDriveBackup() {
     allowAutoPush,
     pullFromDriveAndMerge,
     flushDriveWrite,
-    isMergeInProgress: () => stanzaDriveMergeInProgress,
+    isMergeInProgress: stanzaDriveSyncOperationInProgress,
     onAutoPullError: handleAutoPullError,
     onAutoPushError: handleAutoPushError,
     afterSilentAutoPull: async (result) => {

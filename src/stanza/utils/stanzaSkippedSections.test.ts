@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DerivedSegment } from './segments';
 import {
   firstPlayableTimeInWindow,
+  hasPlayableTimeInWindow,
   lastPlayableTimeInWindow,
   nextNonSkippedTimeForwardPlayback,
 } from './stanzaSkippedSections';
@@ -91,17 +92,16 @@ describe('nextNonSkippedTimeForwardPlayback', () => {
     expect(got).toBeNull();
   });
 
-  it('respects a narrower loop window: skipped section landing past windowEnd loops back', () => {
+  it('returns null when the loop window has no playable sections', () => {
     const got = nextNonSkippedTimeForwardPlayback({
       segments,
       skipped: { 'seg-2': true, 'seg-3': true },
       currentTime: 22,
-      // Loop covers seg-2 and seg-3 (20..40); both are skipped → restart.
       windowStart: 20,
       windowEnd: 40,
       loop: true,
     });
-    expect(got).toBe(20);
+    expect(got).toBeNull();
   });
 
   it('clamps the jump target to windowStart when the next non-skipped start is earlier', () => {
@@ -157,6 +157,11 @@ describe('firstPlayableTimeInWindow', () => {
 
   it('returns the first non-skipped start inside a selection window', () => {
     expect(firstPlayableTimeInWindow(segments, { 'seg-1': true }, 10, 30)).toBe(20);
+  });
+
+  it('reports when no playable time exists in the window', () => {
+    expect(hasPlayableTimeInWindow(segments, { 'seg-2': true, 'seg-3': true }, 20, 40)).toBe(false);
+    expect(hasPlayableTimeInWindow(segments, { 'seg-3': true }, 0, 40)).toBe(true);
   });
 });
 

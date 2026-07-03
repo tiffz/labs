@@ -83,9 +83,6 @@ import {
   applySectionSelectionExtend,
   computeLoopHull,
   effectiveBpmForSelectedSpan,
-  STANZA_LOOP_WRAP_TOLERANCE_SEC,
-  STANZA_MIN_LOOP_SPAN_SEC,
-  isPastLoopWrapPoint,
   suggestMusicalLoopPadSec,
   type StanzaPlaybackLoopMode,
   type StanzaSectionSelectionExtend,
@@ -97,7 +94,7 @@ import {
 import { snapSegmentBoundaryMarkersToBeats, commitSelectionSpanToHullBoundaryMarkers } from '../utils/stanzaBeatGrid';
 import { canPlaceMarkerAtTime, markerTimesEqual } from '../utils/stanzaMarkerSpacing';
 import type { StanzaMarkersChangeContext } from './StanzaTimeline';
-import { isSegmentSkipped, nextNonSkippedTimeForwardPlayback, resolvePlayableWindowAnchors } from '../utils/stanzaSkippedSections';
+import { resolvePlayableWindowAnchors } from '../utils/stanzaSkippedSections';
 import { useStanzaLocalPlaybackObjectUrls } from '../hooks/useStanzaLocalPlaybackObjectUrls';
 import {
   stanzaPrimaryLocalBlobKey,
@@ -156,6 +153,10 @@ import { StanzaLocalTransposeMirror } from '../audio/stanzaLocalTransposeMirror'
 import { StanzaLocalTransposeStemBus } from '../audio/stanzaLocalTransposeStemBus';
 import { decodeStanzaLocalBlobForPlayback } from '../audio/decodeStanzaLocalBlob';
 import { readInitialStanzaViewerIntent } from '../utils/readInitialStanzaViewerIntent';
+import { shouldReanchorStanzaPlayhead, useStanzaTransportLoop } from '../hooks/useStanzaTransportLoop';
+import type { UseStanzaTransportLoopRefs } from '../hooks/useStanzaTransportLoop';
+import { useStanzaPlaybackWakeLock } from '../hooks/useStanzaPlaybackWakeLock';
+import { useStanzaPracticeStatsTracker } from '../hooks/useStanzaPracticeStatsTracker';
 import { mergeStanzaPlaybackSnapshot } from '../utils/stanzaPlaybackStateMerge';
 import { applyStanzaYoutubeControllerMix } from '../utils/stanzaYoutubeMixVolume';
 import { useBeatLibraryMigration } from '../hooks/useBeatLibraryMigration';
@@ -1880,15 +1881,15 @@ export default function StanzaWorkspace() {
     const span = effectiveSelectionSpanRef.current;
     const segs = segmentsRef.current;
     const skipped = skippedBySegmentIdRef.current;
-    if (mode === 'loopAll' && d > 0) {
-      const { start } = resolvePlayableWindowAnchors(segs, skipped, 0, d);
-      if (t < 0 || isPastLoopWrapPoint(t, d)) seekUnified(start, { flushPlaybackState: true });
-    } else if (mode === 'loopSelection' && span) {
-      const { start } = resolvePlayableWindowAnchors(segs, skipped, span.start, span.end);
-      if (t < start - 0.05 || isPastLoopWrapPoint(t, span.end)) {
-        seekUnified(start, { flushPlaybackState: true });
-      }
-    }
+    const reanchorTarget = shouldReanchorStanzaPlayhead({
+      loopMode: mode,
+      transportTime: t,
+      duration: d,
+      selectionSpan: span,
+      segments: segs,
+      skipped,
+    });
+    if (reanchorTarget != null) seekUnified(reanchorTarget, { flushPlaybackState: true });
     if (isYoutube) {
       ytControllerRef.current?.play();
       if ((selected?.stems?.length ?? 0) > 0) {
@@ -1960,35 +1961,8 @@ export default function StanzaWorkspace() {
   const playUnifiedRef = useRef(playUnified);
   playUnifiedRef.current = playUnified;
 
-  /** Resume transport on the next frame so seek applies before play (YouTube ENDED, loop wraps). */
-  const resumeLoopTransportAfterWrap = useCallback(() => {
-    requestAnimationFrame(() => {
-      playUnifiedRef.current();
-    });
-  }, []);
-
-  const handleLoopAtMediaEnd = useCallback(() => {
-    const mode = loopModeRef.current;
-    const segs = segmentsRef.current;
-    const skipped = skippedBySegmentIdRef.current;
-    if (mode === 'through') return;
-    if (mode === 'loopAll') {
-      const d = durationRef.current;
-      if (!(d > 0)) return;
-      const { start } = resolvePlayableWindowAnchors(segs, skipped, 0, d);
-      seekUnified(start, { flushPlaybackState: true });
-      resumeLoopTransportAfterWrap();
-      return;
-    }
-    if (mode === 'loopSelection') {
-      const span = effectiveSelectionSpanRef.current;
-      if (span != null && span.end - span.start >= STANZA_MIN_LOOP_SPAN_SEC) {
-        const { start } = resolvePlayableWindowAnchors(segs, skipped, span.start, span.end);
-        seekUnified(start, { flushPlaybackState: true });
-        resumeLoopTransportAfterWrap();
-      }
-    }
-  }, [seekUnified, resumeLoopTransportAfterWrap]);
+  const seekUnifiedRef = useRef(seekUnified);
+  seekUnifiedRef.current = seekUnified;
 
   const pauseUnified = useCallback(() => {
     if (isYoutube) {
@@ -2028,163 +2002,54 @@ export default function StanzaWorkspace() {
   hasAnySkippedSectionRef.current = hasAnySkippedSection;
   const isYoutubeRef = useRef(isYoutube);
   isYoutubeRef.current = isYoutube;
-  const seekUnifiedRef = useRef(seekUnified);
-  seekUnifiedRef.current = seekUnified;
   const pauseStemAudiosRef = useRef(pauseStemAudios);
   pauseStemAudiosRef.current = pauseStemAudios;
 
-  useEffect(() => {
-    let raf = 0;
-    // True while the transport has been auto-paused for "no playable section
-    // left in this pass". Prevents the tick from spamming pause() / setPlayback
-    // every frame until React commits `playingRef.current = false`.
-    let pausedForSkipExhausted = false;
-    const tick = () => {
-      // Cheap fast-path when nothing the RAF cares about is engaged. Re-checked
-      // every frame via refs so toggling skip / loop mode mid-playback picks up
-      // immediately without re-establishing the effect.
-      const loopMode = loopModeRef.current;
-      const hasAnySkipped = hasAnySkippedSectionRef.current;
-      if (loopMode === 'through' && !hasAnySkipped) {
-        raf = window.requestAnimationFrame(tick);
-        return;
-      }
-      if (!playingRef.current) {
-        pausedForSkipExhausted = false;
-        raf = window.requestAnimationFrame(tick);
-        return;
-      }
-      const tLive = readLiveTransportTime();
-      timeRef.current = tLive;
-      const d = durationRef.current;
-      const segs = segmentsRef.current;
-      const skipped = skippedBySegmentIdRef.current;
-      const span = effectiveSelectionSpanRef.current;
+  const transportLoopRefsRef = useRef<UseStanzaTransportLoopRefs>(null!);
+  const transposeMirrorStopRef = useRef<(() => void) | null>(null);
+  const transposeStemBusStopRef = useRef<(() => void) | null>(null);
+  transposeMirrorStopRef.current = () => {
+    transposeMirrorRef.current?.stop();
+  };
+  transposeStemBusStopRef.current = () => {
+    transposeStemBusRef.current?.stop();
+  };
+  transportLoopRefsRef.current = {
+    playingRef,
+    timeRef,
+    durationRef,
+    loopModeRef,
+    effectiveSelectionSpanRef,
+    segmentsRef,
+    skippedBySegmentIdRef,
+    hasAnySkippedSectionRef,
+    isYoutubeRef,
+    lastUserEnteredSectionIdRef,
+    seekUnifiedRef,
+    playUnifiedRef,
+    pauseStemAudiosRef,
+    ytControllerRef,
+    transposeMirrorStopRef,
+    transposeStemBusStopRef,
+  };
 
-      // 1. Skipped-section auto-advance. Resolve the playback window
-      // (whole track for through/loopAll, selection span for loopSelection)
-      // and ask the helper where to jump next. The user-entered ref keeps
-      // an explicit click-into-skipped-section playable until the playhead
-      // crosses a marker.
-      if (skipped) {
-        const idx = findSegmentIndexAtTime(segs, tLive);
-        const seg = idx != null ? segs[idx] : null;
-        if (seg && lastUserEnteredSectionIdRef.current && seg.id !== lastUserEnteredSectionIdRef.current) {
-          lastUserEnteredSectionIdRef.current = null;
-        }
-        if (seg && lastUserEnteredSectionIdRef.current !== seg.id && isSegmentSkipped(seg, skipped)) {
-          let windowStart = 0;
-          let windowEnd = d > 0 ? d : seg.end;
-          let loop = false;
-          if (loopMode === 'loopAll' && d > 0) {
-            loop = true;
-          } else if (loopMode === 'loopSelection' && span) {
-            windowStart = span.start;
-            windowEnd = span.end;
-            loop = true;
-          }
-          const next = nextNonSkippedTimeForwardPlayback({
-            segments: segs,
-            skipped,
-            currentTime: tLive,
-            windowStart,
-            windowEnd,
-            loop,
-          });
-          if (next != null) {
-            pausedForSkipExhausted = false;
-            try {
-              seekUnifiedRef.current(next, { flushPlaybackState: true });
-            } catch (err) {
-              console.warn('[stanza] skip-advance seek failed', err);
-            }
-            raf = window.requestAnimationFrame(tick);
-            return;
-          }
-          // Nothing playable left in this pass: pause the transport once
-          // and stop spamming pause/setPlayback every frame until React
-          // commits the state change (mirrored back via `playingRef`).
-          if (!pausedForSkipExhausted) {
-            pausedForSkipExhausted = true;
-            try {
-              if (isYoutubeRef.current) ytControllerRef.current?.pause();
-              else {
-                const main = getLocalMainMedia();
-                main?.pause();
-                pauseStemAudiosRef.current();
-              }
-              setPlayback((p) => (p.isPlaying ? { ...p, isPlaying: false } : p));
-            } catch (err) {
-              console.warn('[stanza] skip-advance pause failed', err);
-            }
-          }
-          raf = window.requestAnimationFrame(tick);
-          return;
-        }
-      }
-      // Reaching here means we're inside a non-skipped section; clear the
-      // exhausted flag so a future skip can re-trigger the pause path.
-      pausedForSkipExhausted = false;
+  const { handleLoopAtMediaEnd } = useStanzaTransportLoop({
+    refsRef: transportLoopRefsRef,
+    readLiveTransportTime,
+    getLocalMainMedia,
+    setPlayback,
+  });
 
-      // 2. Loop-bound enforcement (sub-frame tolerance avoids audibly clipping tails).
-      try {
-        if (loopMode === 'loopAll' && d > 0 && isPastLoopWrapPoint(tLive, d)) {
-          const { start } = resolvePlayableWindowAnchors(segs, skipped, 0, d);
-          seekUnifiedRef.current(start, { flushPlaybackState: true });
-          requestAnimationFrame(() => playUnifiedRef.current());
-        } else if (loopMode === 'loopSelection' && span) {
-          const { start } = resolvePlayableWindowAnchors(segs, skipped, span.start, span.end);
-          if (isPastLoopWrapPoint(tLive, span.end)) {
-            seekUnifiedRef.current(start, { flushPlaybackState: true });
-            requestAnimationFrame(() => playUnifiedRef.current());
-          } else if (tLive < start - STANZA_LOOP_WRAP_TOLERANCE_SEC) {
-            seekUnifiedRef.current(start, { flushPlaybackState: true });
-          }
-        }
-      } catch (err) {
-        console.warn('[stanza] loop-wrap seek failed', err);
-      }
-      raf = window.requestAnimationFrame(tick);
-    };
-    raf = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(raf);
-    // Mount-only: dynamic state (loopMode, segments, skipped, span, isYoutube,
-    // seekUnified, pauseStemAudios) is read from refs each tick so we never
-    // need to re-establish the RAF on prop / state churn.
-  }, [readLiveTransportTime, getLocalMainMedia]);
+  useStanzaPlaybackWakeLock(playback.isPlaying);
 
-  useEffect(() => {
-    if (!selected) return;
-    const id = window.setInterval(() => {
-      if (!document.hasFocus()) return;
-      if (!playingRef.current) return;
-      const t = timeRef.current;
-      const idx = findSegmentIndexAtTime(segments, t);
-      if (idx === null) return;
-      const seg = segments[idx];
-      if (!seg) return;
-      void (async () => {
-        const row = await stanzaDb.songs.get(selected.id);
-        if (!row) return;
-        const prev = row.stats[seg.id]?.totalMs ?? 0;
-        const stats = {
-          ...row.stats,
-          [seg.id]: {
-            totalMs: prev + 1000,
-            lastPracticed: Date.now(),
-          },
-        };
-        void persistSong(
-          {
-            id: selected.id,
-            stats,
-          },
-          { recordUndo: false },
-        );
-      })();
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [selected, segments, persistSong]);
+  useStanzaPracticeStatsTracker({
+    songId: selected?.id,
+    isPlaying: playback.isPlaying,
+    segmentsRef,
+    playingRef,
+    timeRef,
+    persistSong,
+  });
 
   const addMarkerAtCurrentTime = useCallback(() => {
     if (!selected) return;

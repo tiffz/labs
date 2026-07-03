@@ -56,3 +56,30 @@ UX sketch skill: [`labs-ux-journey`](../../.cursor/skills/labs-ux-journey/SKILL.
 ### Known traps
 
 - Custom `useStanzaDriveBackup` — do not copy into new apps without ADR; use factory when possible (`labs-drive-backup` skill).
+
+---
+
+## CUJ-003: Loop whole song without clipping the tail
+
+**Primary goal:** Practice with **Loop whole song** enabled; playback reaches the natural end and wraps to the start.  
+**Persona:** Singer looping a backing track for repetition.
+
+### Steps
+
+1. Open a local-audio song in the viewer.
+2. Enable **Loop whole song** (repeat icon in transport).
+3. Play through at least one full cycle.
+
+### Success criteria
+
+- Audio plays through the outro (no early cutoff from stale duration metadata).
+- Transport wraps to the start and continues playing.
+
+### Automation
+
+| Type  | Artifact                                   |
+| ----- | ------------------------------------------ |
+| Smoke | `e2e/smoke/stanza-loop-whole-song.spec.ts` |
+| Unit  | `stanzaTransportLoop.integration.test.ts`  |
+
+See [`docs/STANZA_PLAYBACK.md`](../../docs/STANZA_PLAYBACK.md) for transport invariants.

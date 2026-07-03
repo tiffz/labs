@@ -15,9 +15,9 @@
  *     should jump to, or `null` to leave playback alone. Inside a window
  *     `[windowStart, windowEnd]` (loop range or full track), it advances past
  *     any contiguous run of skipped sections that contains `currentTime`.
- *   - If the run extends to or past `windowEnd`, the function returns the
- *     first playable time at `windowStart` (loop modes restart the loop) or
- *     `null` (play-through has nothing left to play; the caller should pause).
+ *   - If the run extends to or past `windowEnd`, loop modes restart at the first
+ *     playable time in the window when one exists; otherwise return `null` so
+ *     the caller pauses (avoids infinite seek when every section is skipped).
  */
 import type { DerivedSegment } from './segments';
 import { STANZA_TIME_EPS } from './segments';
@@ -29,9 +29,37 @@ export function isSegmentSkipped(seg: DerivedSegment, skipped: SkippedSegmentSet
   return skipped[seg.id] === true;
 }
 
+/** True when at least one non-skipped section overlaps `[windowStart, windowEnd)`. */
+export function hasPlayableTimeInWindow(
+  segments: DerivedSegment[],
+  skipped: SkippedSegmentSet,
+  windowStart: number,
+  windowEnd: number,
+): boolean {
+  if (segments.length === 0 || !skipped) return true;
+
+  for (const seg of segments) {
+    if (seg.end <= windowStart + STANZA_TIME_EPS) continue;
+    if (seg.start >= windowEnd - STANZA_TIME_EPS) break;
+    if (!isSegmentSkipped(seg, skipped)) return true;
+  }
+  return false;
+}
+
+function loopRestartTargetInWindow(
+  segments: DerivedSegment[],
+  skipped: SkippedSegmentSet,
+  windowStart: number,
+  windowEnd: number,
+): number | null {
+  if (!hasPlayableTimeInWindow(segments, skipped, windowStart, windowEnd)) return null;
+  return firstPlayableTimeInWindow(segments, skipped, windowStart, windowEnd);
+}
+
 /**
  * First time in `[windowStart, windowEnd)` that is not inside a skipped section.
- * Falls back to `windowStart` when every overlapping section is skipped.
+ * Falls back to `windowStart` when every overlapping section is skipped (manual
+ * jump buttons); forward playback should use {@link loopRestartTargetInWindow}.
  */
 export function firstPlayableTimeInWindow(
   segments: DerivedSegment[],
@@ -154,10 +182,10 @@ export function nextNonSkippedTimeForwardPlayback(opts: NextNonSkippedTimeOpts):
       return target < windowEnd - STANZA_TIME_EPS
         ? target
         : loop
-          ? firstPlayableTimeInWindow(segments, skipped, windowStart, windowEnd)
+          ? loopRestartTargetInWindow(segments, skipped, windowStart, windowEnd)
           : null;
     }
   }
   // Ran past the end of segments / the window.
-  return loop ? firstPlayableTimeInWindow(segments, skipped, windowStart, windowEnd) : null;
+  return loop ? loopRestartTargetInWindow(segments, skipped, windowStart, windowEnd) : null;
 }

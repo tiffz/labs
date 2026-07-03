@@ -94,9 +94,26 @@ async function buildE2eSongWithDrumsPlayback(): Promise<StanzaSong> {
   };
 }
 
+export const STANZA_E2E_LOOP_SONG_ID = '__stanza_e2e_loop__';
+export const STANZA_E2E_LOOP_SONG_TITLE = 'E2E Loop Song';
+
+async function buildE2eSongWithLoopPlayback(): Promise<StanzaSong> {
+  const primary = createMinimalWavBlobForStanzaE2e(2.5);
+  return {
+    id: STANZA_E2E_LOOP_SONG_ID,
+    ytId: null,
+    title: STANZA_E2E_LOOP_SONG_TITLE,
+    markers: [],
+    stats: {},
+    updatedAt: Date.now(),
+    localAudioBlob: primary,
+  };
+}
+
 export type StanzaE2eWindowHooks = {
   seedSongWithStems: () => Promise<string>;
   seedSongWithDrumsPlayback: () => Promise<string>;
+  seedSongWithLoopPlayback: () => Promise<string>;
 };
 
 declare global {
@@ -119,6 +136,12 @@ export function installStanzaE2eHooks(): void {
     },
     async seedSongWithDrumsPlayback() {
       const row = await buildE2eSongWithDrumsPlayback();
+      await stanzaDb.songs.put(row);
+      writeStanzaLastSelectedSongId(row.id);
+      return row.id;
+    },
+    async seedSongWithLoopPlayback() {
+      const row = await buildE2eSongWithLoopPlayback();
       await stanzaDb.songs.put(row);
       writeStanzaLastSelectedSongId(row.id);
       return row.id;
