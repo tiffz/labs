@@ -17,6 +17,7 @@ Canonical: [`docs/PR_WORKFLOW.md`](../../docs/PR_WORKFLOW.md) § CI without bloc
    `npm run ci:watch -- <n>` with `block_until_ms: 0` and `notify_on_output` pattern
    `^CI_WATCH: (FAIL|TIMEOUT|ERROR)` (reason: "CI failed"). It stays silent while pending and
    prints one sentinel (`CI_WATCH: PASS|FAIL|TIMEOUT|NO_CHECKS`) at the end.
+   For **direct `main` pushes** (no PR): `npm run ci:watch -- main` or pass the workflow run id.
 3. **Immediately continue** the next unit of work. Do not `AwaitShell` the watcher and do not
    re-poll CI in chat. The completion/failure notification will reach you between turns.
 

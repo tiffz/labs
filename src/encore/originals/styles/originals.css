@@ -885,6 +885,42 @@
   line-height: 1.2;
 }
 
+.encore-originals-chart-read-chrome {
+  border: 1px solid rgba(76, 29, 149, 0.12);
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.encore-originals-chart-read-chrome--embedded {
+  border-radius: 8px 8px 0 0;
+}
+
+.encore-originals-chart-read-display-strip {
+  border-top: 1px solid rgba(76, 29, 149, 0.06);
+  background: linear-gradient(
+    180deg,
+    rgba(249, 250, 251, 0.98) 0%,
+    rgba(255, 255, 255, 0.94) 100%
+  );
+}
+
+.encore-originals-chart-read-display-strip
+  .encore-originals-chord-palette-pick {
+  display: flex;
+  align-items: center;
+  min-height: 1.75rem;
+}
+
+.encore-originals-chart-read-chords-off {
+  margin-bottom: 0.75rem;
+}
+
+.encore-originals-paint-section-playback-chip--read-only {
+  cursor: default;
+  pointer-events: none;
+}
+
 .encore-originals-chart-read-view {
   min-width: 0;
   max-width: 100%;
@@ -919,10 +955,6 @@
 
 .encore-originals-chart-read-view .encore-originals-paint-scroll {
   padding: 0.15rem 0 0.35rem;
-}
-
-.encore-originals-chart-read-toolbar {
-  row-gap: 0.5rem;
 }
 
 .encore-originals-paint-mode--read-only .encore-originals-chord-badge,

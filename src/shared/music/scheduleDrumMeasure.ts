@@ -1,6 +1,8 @@
 import { AudioPlayer } from '../audio/audioPlayer';
 import { DRUM_SAMPLE_URLS } from '../audio/drumSampleUrls';
+import { secPerSixteenthAtBpm } from '../playback/measureClock';
 import { parseRhythm } from '../rhythm/rhythmParser';
+import { getSixteenthsPerMeasure } from '../rhythm/timeSignatureUtils';
 import type { TimeSignature } from './chordTypes';
 
 export type ScheduleDrumMeasureParams = {
@@ -9,11 +11,12 @@ export type ScheduleDrumMeasureParams = {
   timeSignature: TimeSignature;
   tempo: number;
   volume: number;
+  /**
+   * Absolute AudioContext time for beat 0 of this measure on the drum player's clock.
+   * When omitted, defaults to `ctx.currentTime + 0.02` (immediate scheduling).
+   */
+  measureStartTime?: number;
 };
-
-function sixteenthsPerMeasure(timeSignature: TimeSignature): number {
-  return Math.max(4, Math.round((timeSignature.numerator * 16) / timeSignature.denominator));
-}
 
 /** Schedule one measure of drum pattern at absolute AudioContext times. */
 export function scheduleDrumMeasure({
@@ -22,6 +25,7 @@ export function scheduleDrumMeasure({
   timeSignature,
   tempo,
   volume,
+  measureStartTime,
 }: ScheduleDrumMeasureParams): void {
   if (volume <= 0) return;
 
@@ -32,10 +36,9 @@ export function scheduleDrumMeasure({
   if (!parsed.isValid || parsed.measures.length === 0) return;
 
   const measure = parsed.measures[0]!;
-  const secPerSixteenth = 60 / tempo / 4;
-  // Always anchor to the drum player's clock — callers may pass a start time from
-  // a different AudioContext (e.g. chord instrument), which would clamp later hits to "now".
-  const baseTime = ctx.currentTime + 0.02;
+  const secPerSixteenth = secPerSixteenthAtBpm(tempo);
+  const baseTime = measureStartTime ?? ctx.currentTime + 0.02;
+  const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
   let cursor = 0;
 
   for (const note of measure.notes) {
@@ -44,7 +47,7 @@ export function scheduleDrumMeasure({
       drumPlayer.playNowIfReady(note.sound, volume, undefined, hitTime);
     }
     cursor += note.durationInSixteenths;
-    if (cursor >= sixteenthsPerMeasure(timeSignature)) break;
+    if (cursor >= sixteenthsPerMeasure) break;
   }
 }
 

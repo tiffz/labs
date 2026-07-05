@@ -85,7 +85,8 @@ export function chartLayoutToPlaybackSequence(layout: ChartLayout): ChartPlaybac
 
 /** One measure duration in ms at the given tempo (4/4). */
 export function chartPlaybackMeasureDurationMs(tempo: number): number {
-  const beatMs = 60_000 / tempo;
+  const safeTempo = Number.isFinite(tempo) && tempo > 0 ? tempo : 80;
+  const beatMs = 60_000 / safeTempo;
   return beatMs * CHART_PLAYBACK_BEATS_PER_MEASURE;
 }
 

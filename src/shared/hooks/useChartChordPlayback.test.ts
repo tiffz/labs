@@ -162,12 +162,15 @@ describe('useChartChordPlayback stop', () => {
     expect(result.current.playingSectionId).toBe('verse-1');
 
     await act(async () => {
-      vi.advanceTimersByTime(chartPlaybackMeasureDurationMs(120) * 2);
-      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(chartPlaybackMeasureDurationMs(120) * 2);
     });
 
     expect(result.current.playing).toBe(true);
     expect(result.current.playingSectionId).toBe('verse-1');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(chartPlaybackMeasureDurationMs(120) * 2);
+    });
 
     act(() => {
       result.current.stop();

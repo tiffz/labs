@@ -9,6 +9,7 @@ export type OriginalsChordPlaybackBarProps = {
   layout: ChartLayout;
   tempo: number;
   sectionPlaybackOverrides?: Record<string, SectionPlaybackOverride>;
+  compact?: boolean;
   onActiveStepChange: (step: ChartPlaybackStep | null) => void;
 };
 
@@ -16,6 +17,7 @@ export function OriginalsChordPlaybackBar({
   layout,
   tempo,
   sectionPlaybackOverrides,
+  compact = false,
   onActiveStepChange,
 }: OriginalsChordPlaybackBarProps): ReactElement {
   return (
@@ -24,6 +26,7 @@ export function OriginalsChordPlaybackBar({
         layout={layout}
         tempo={tempo}
         sectionPlaybackOverrides={sectionPlaybackOverrides}
+        compact={compact}
         onActiveStepChange={onActiveStepChange}
       />
     </Box>

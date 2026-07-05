@@ -117,7 +117,8 @@ export function OriginalsPaintSectionHeading({
     return (
       <div
         className={[
-          'encore-originals-paint-section-heading-static',
+          'encore-originals-paint-section-heading',
+          hasCustomPlayback ? 'has-custom-playback' : '',
           sectionIsPlaying ? 'is-section-looping' : '',
         ]
           .filter(Boolean)
@@ -127,7 +128,13 @@ export function OriginalsPaintSectionHeading({
         <div className="encore-originals-paint-section-heading-actions">
           {sectionPlayButton}
           {hasCustomPlayback ? (
-            <span className="encore-originals-paint-section-heading-badge">Custom</span>
+            <span
+              className="encore-originals-paint-section-playback-chip encore-originals-paint-section-playback-chip--read-only"
+              aria-label={`Custom playback for ${label}`}
+            >
+              <TuneOutlinedIcon sx={{ fontSize: 13 }} aria-hidden />
+              <span className="encore-originals-paint-section-playback-chip-label">Custom</span>
+            </span>
           ) : null}
         </div>
       </div>

@@ -105,6 +105,7 @@ CI takes **≈8–15 min**. Agents and humans should not sit idle watching check
 4. **Background-watch for failure only** — start `ci:watch` as a backgrounded job and keep working:
    ```bash
    npm run ci:watch -- <n>   # silent while pending; prints one CI_WATCH: PASS|FAIL|… sentinel
+   npm run ci:watch -- main  # direct push to main (no PR)
    ```
    Agents: run it with `block_until_ms: 0` and a `notify_on_output` regex `^CI_WATCH: (FAIL|TIMEOUT|ERROR)`. **Do not** poll CI in chat or `AwaitShell` the watcher.
 5. **Immediately continue** the next unit of work. On a failure ping: `npm run report:ci-failure -- <run-id>`, fix within the PR's scope, push again (auto-merge re-arms), restart `ci:watch`.

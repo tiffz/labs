@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChartLayout } from '../music/chordPro/chordChartLayout';
 import {
+  chartLayoutSectionPlayableSteps,
   chartLayoutToPlayablePlaybackSteps,
   chartPlaybackMeasureDurationMs,
   type ChartPlaybackStep,
@@ -17,6 +18,10 @@ import { resolveSectionPlaybackSettings, type SectionPlaybackOverride } from '..
 import { CHART_PLAYBACK_BEATS_PER_MEASURE } from '../music/chordPro/chartPlaybackSequence';
 import { ChordInstrumentSession } from '../music/chordInstrumentSession';
 import { ensureAudioContextRunning } from '../playback/audioContextLifecycle';
+import {
+  measureStartAudioTimeFromEpoch,
+  PLAYBACK_SCHEDULE_LEAD_MS,
+} from '../playback/measureClock';
 import type { SampledPianoLoadState } from '../music/sampledPianoLoadState';
 import { useSampledPianoPreload } from './useSampledPianoPreload';
 import { createChartDrumAudioPlayer, scheduleDrumMeasure } from '../music/scheduleDrumMeasure';
@@ -77,6 +82,8 @@ export function useChartChordPlayback({
   const activeStepsRef = useRef<ChartPlaybackStep[]>([]);
   const instrumentSessionRef = useSampledPianoPreload(settings.soundType, setSampledPianoLoad);
   const drumPlayerRef = useRef<AudioPlayer | null>(null);
+  const playingSectionIdRef = useRef<string | null>(null);
+  const playbackEpochPerfRef = useRef(0);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const sectionPlaybackOverridesRef = useRef(sectionPlaybackOverrides);
@@ -95,23 +102,28 @@ export function useChartChordPlayback({
     [storageKey],
   );
 
-  const stop = useCallback(() => {
+  const resetTransport = useCallback(() => {
     playbackGenerationRef.current += 1;
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
     stepIndexRef.current = 0;
-    loopPlaybackRef.current = false;
-    activeStepsRef.current = [];
     instrumentSessionRef.current?.stopAll();
     drumPlayerRef.current?.stopAll();
+  }, [instrumentSessionRef]);
+
+  const stop = useCallback(() => {
+    resetTransport();
+    loopPlaybackRef.current = false;
+    playingSectionIdRef.current = null;
+    activeStepsRef.current = [];
     setPlaying(false);
     setPlayingSectionId(null);
     setPlaybackBeatTime(0);
     onActiveStepChange?.(null);
-  }, [instrumentSessionRef, onActiveStepChange]);
+  }, [resetTransport, onActiveStepChange]);
 
   const playMeasure = useCallback(
-    async (step: ChartPlaybackStep, generation: number) => {
+    async (step: ChartPlaybackStep, stepIndex: number, generation: number) => {
       if (generation !== playbackGenerationRef.current) return;
 
       let session = instrumentSessionRef.current;
@@ -136,7 +148,12 @@ export function useChartChordPlayback({
 
       const measureMs = chartPlaybackMeasureDurationMs(tempo);
       const measureDurationSec = measureMs / 1000;
-      const measureStartTime = ctx.currentTime + 0.02;
+      const measureStartTime = measureStartAudioTimeFromEpoch(
+        ctx,
+        playbackEpochPerfRef.current,
+        stepIndex,
+        measureMs,
+      );
       const chordVelocity = effectiveChordPlaybackVelocity(measureSettings);
 
       scheduleStyledChordMeasure({
@@ -165,12 +182,20 @@ export function useChartChordPlayback({
         if (generation !== playbackGenerationRef.current) return;
         await drumPlayer.ensureResumed();
         if (generation !== playbackGenerationRef.current) return;
+        const drumCtx = drumPlayer.getAudioContext();
+        if (!drumCtx) return;
         scheduleDrumMeasure({
           drumPlayer,
           pattern: measureSettings.drumPattern,
           timeSignature: CHART_CHORD_PLAYBACK_TIME_SIGNATURE,
           tempo,
           volume: drumVolume,
+          measureStartTime: measureStartAudioTimeFromEpoch(
+            drumCtx,
+            playbackEpochPerfRef.current,
+            stepIndex,
+            measureMs,
+          ),
         });
       }
     },
@@ -189,21 +214,27 @@ export function useChartChordPlayback({
       // Resume chord AudioContext synchronously while the click gesture is still active.
       session.primeAudioContext();
 
-      stop();
+      resetTransport();
       loopPlaybackRef.current = options.loop;
+      playingSectionIdRef.current = options.sectionId;
       activeStepsRef.current = playSteps;
+      playbackEpochPerfRef.current = performance.now() + PLAYBACK_SCHEDULE_LEAD_MS;
       setPlaying(true);
       setPlayingSectionId(options.sectionId);
       stepIndexRef.current = 0;
+
+      const shouldContinueLoop = () =>
+        loopPlaybackRef.current || playingSectionIdRef.current !== null;
 
       const runStep = (idx: number) => {
         const step = activeStepsRef.current[idx];
         if (!step) return;
         const generation = playbackGenerationRef.current;
-        measureStartPerfRef.current = performance.now();
+        measureStartPerfRef.current =
+          playbackEpochPerfRef.current + idx * chartPlaybackMeasureDurationMs(tempo);
         setPlaybackBeatTime(0);
         onActiveStepChange?.(step);
-        void playMeasure(step, generation);
+        void playMeasure(step, idx, generation);
       };
 
       runStep(0);
@@ -212,7 +243,10 @@ export function useChartChordPlayback({
         const idx = stepIndexRef.current;
         const currentSteps = activeStepsRef.current;
         if (idx >= currentSteps.length) {
-          if (loopPlaybackRef.current) {
+          if (shouldContinueLoop()) {
+            instrumentSessionRef.current?.stopAll();
+            drumPlayerRef.current?.stopAll();
+            playbackEpochPerfRef.current = performance.now() + PLAYBACK_SCHEDULE_LEAD_MS;
             stepIndexRef.current = 0;
             runStep(0);
             stepIndexRef.current = 1;
@@ -225,7 +259,7 @@ export function useChartChordPlayback({
         stepIndexRef.current += 1;
       }, chartPlaybackMeasureDurationMs(tempo));
     },
-    [instrumentSessionRef, onActiveStepChange, playMeasure, stop, tempo],
+    [instrumentSessionRef, onActiveStepChange, playMeasure, resetTransport, stop, tempo],
   );
 
   const start = useCallback(() => {
@@ -234,10 +268,10 @@ export function useChartChordPlayback({
 
   const startSectionLoop = useCallback(
     (sectionId: string) => {
-      const sectionSteps = steps.filter((step) => step.sectionId === sectionId);
+      const sectionSteps = chartLayoutSectionPlayableSteps(layout, sectionId);
       beginPlayback(sectionSteps, { loop: true, sectionId });
     },
-    [beginPlayback, steps],
+    [beginPlayback, layout],
   );
 
   useEffect(() => {

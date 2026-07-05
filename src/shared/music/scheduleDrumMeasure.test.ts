@@ -33,4 +33,21 @@ describe('scheduleDrumMeasure', () => {
     expect(play.mock.calls[2]?.[3]).toBeCloseTo(12.02 + 8 * secPerSixteenth, 5);
     expect(play.mock.calls[3]?.[3]).toBeCloseTo(12.02 + 12 * secPerSixteenth, 5);
   });
+
+  it('honors an explicit measureStartTime anchor', () => {
+    const drumPlayer = mockDrumPlayer(12);
+    scheduleDrumMeasure({
+      drumPlayer,
+      pattern: 'D---T---',
+      timeSignature: { numerator: 4, denominator: 4 },
+      tempo: 120,
+      volume: 0.8,
+      measureStartTime: 20,
+    });
+
+    const play = drumPlayer.playNowIfReady as ReturnType<typeof vi.fn>;
+    const secPerSixteenth = 60 / 120 / 4;
+    expect(play.mock.calls[0]?.[3]).toBeCloseTo(20, 5);
+    expect(play.mock.calls[1]?.[3]).toBeCloseTo(20 + 4 * secPerSixteenth, 5);
+  });
 });
