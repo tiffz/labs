@@ -303,7 +303,7 @@ jobs:
     
     environment:
       name: github-pages
-      url: ${{ steps.deployment_retry.outputs.page_url || steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment_retry2.outputs.page_url || steps.deployment_retry.outputs.page_url || steps.deployment.outputs.page_url }}
     
     permissions:
       contents: read
@@ -331,13 +331,24 @@ jobs:
       timeout-minutes: 10
       continue-on-error: true
 
-    - name: Wait for in-flight GitHub Pages deployment
+    - name: Wait before Pages deploy retry (90s)
       if: steps.deployment.outcome == 'failure'
       run: sleep 90
 
-    - name: Deploy to GitHub Pages (retry)
+    - name: Deploy to GitHub Pages (retry 1)
       id: deployment_retry
       if: steps.deployment.outcome == 'failure'
+      uses: actions/deploy-pages@v5
+      timeout-minutes: 10
+      continue-on-error: true
+
+    - name: Wait before Pages deploy retry (120s)
+      if: steps.deployment.outcome == 'failure' && steps.deployment_retry.outcome == 'failure'
+      run: sleep 120
+
+    - name: Deploy to GitHub Pages (retry 2)
+      id: deployment_retry2
+      if: steps.deployment.outcome == 'failure' && steps.deployment_retry.outcome == 'failure'
       uses: actions/deploy-pages@v5
       timeout-minutes: 10
 
@@ -346,5 +357,6 @@ jobs:
       run: |
         if [ "${{ steps.deployment.outcome }}" = "success" ]; then exit 0; fi
         if [ "${{ steps.deployment_retry.outcome }}" = "success" ]; then exit 0; fi
-        echo "Pages deploy failed after retry"
+        if [ "${{ steps.deployment_retry2.outcome }}" = "success" ]; then exit 0; fi
+        echo "Pages deploy failed after retries"
         exit 1

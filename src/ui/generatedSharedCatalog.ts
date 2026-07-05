@@ -18254,6 +18254,67 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-playback-measureclock-ts-measurestartaudiotimefromepoch",
+    "name": "measureStartAudioTimeFromEpoch",
+    "path": "src/shared/playback/measureClock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Absolute AudioContext start time for chart/measure step `stepIndex`.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-measureclock-ts-perfmstoaudiocontexttime",
+    "name": "perfMsToAudioContextTime",
+    "path": "src/shared/playback/measureClock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Map a performance.now() target to an AudioContext timeline (works across contexts).",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-measureclock-ts-playback-schedule-lead-ms",
+    "name": "PLAYBACK_SCHEDULE_LEAD_MS",
+    "path": "src/shared/playback/measureClock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Lead time before the first scheduled hit (matches rhythmPlayer startup).",
+    "tags": [
+      "playback",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-measureclock-ts-secpersixteenthatbpm",
+    "name": "secPerSixteenthAtBpm",
+    "path": "src/shared/playback/measureClock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Seconds per sixteenth note at the given BPM (quarter note = beat).",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-playback-scheduler-ts-playbackscheduler",
     "name": "PlaybackScheduler",
     "path": "src/shared/playback/scheduler.ts",
