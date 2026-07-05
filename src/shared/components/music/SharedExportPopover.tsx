@@ -4,6 +4,7 @@ import './sharedExportPopover.css';
 import {
   DEFAULT_EXPORT_QUALITY,
   EXPORT_FORMATS,
+  isScoreExportFormat,
   type ExportFormat,
   type ExportSourceAdapter,
 } from '../../music/exportTypes';
@@ -27,6 +28,7 @@ interface PersistedSettings {
   selectedStemIds: string[];
   separateStemFiles: boolean;
   mp3BitrateKbps: number;
+  scoreTitle?: string;
 }
 
 const DEFAULT_SETTINGS: PersistedSettings = {
@@ -81,6 +83,9 @@ export default function SharedExportPopover({
   const [mp3BitrateKbps, setMp3BitrateKbps] = useState<number>(
     persisted?.mp3BitrateKbps ?? DEFAULT_SETTINGS.mp3BitrateKbps
   );
+  const [scoreTitle, setScoreTitle] = useState(
+    () => persisted?.scoreTitle ?? '',
+  );
   const [isExporting, setIsExporting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -103,6 +108,22 @@ export default function SharedExportPopover({
   }, [adapter.stems]);
 
   useEffect(() => {
+    if (!open) return;
+    const storedTitle = storageKey
+      ? safeParsePersisted(window.localStorage.getItem(storageKey))?.scoreTitle
+      : undefined;
+    if (storedTitle !== undefined) {
+      setScoreTitle(storedTitle);
+      return;
+    }
+    setScoreTitle((previous) => (
+      previous.trim()
+        ? previous
+        : adapter.defaultScoreTitle?.trim() || adapter.fileBaseName || ''
+    ));
+  }, [open, storageKey, adapter.defaultScoreTitle, adapter.fileBaseName]);
+
+  useEffect(() => {
     if (!storageKey) return;
     const payload: PersistedSettings = {
       format,
@@ -110,9 +131,10 @@ export default function SharedExportPopover({
       selectedStemIds,
       separateStemFiles,
       mp3BitrateKbps,
+      scoreTitle,
     };
     window.localStorage.setItem(storageKey, JSON.stringify(payload));
-  }, [storageKey, format, loopCount, selectedStemIds, separateStemFiles, mp3BitrateKbps]);
+  }, [storageKey, format, loopCount, selectedStemIds, separateStemFiles, mp3BitrateKbps, scoreTitle]);
 
   const stemCount = adapter.stems.length;
   const supportsStems = stemCount > 1;
@@ -122,7 +144,14 @@ export default function SharedExportPopover({
   const effectiveLoopCount = hideLoopCount ? 1 : loopCount;
   const previewSeconds = adapter.estimateDurationSeconds(effectiveLoopCount, effectiveStemSelection);
   const supportedFormats = EXPORT_FORMATS.filter((item) => adapter.supportsFormat(item.id));
-  const canExport = supportedFormats.length > 0 && (format === 'midi' || effectiveStemSelection.length > 0);
+  const scoreFormatSelected = isScoreExportFormat(format);
+  const canExport = supportedFormats.length > 0 && (
+    scoreFormatSelected
+      ? Boolean(adapter.renderScoreSheet)
+      : format === 'midi'
+        ? Boolean(adapter.renderMidi)
+        : effectiveStemSelection.length > 0
+  );
 
   const handleToggleStem = (stemId: string) => {
     setSelectedStemIds((prev) => {
@@ -145,6 +174,7 @@ export default function SharedExportPopover({
         selectedStemIds: effectiveStemSelection,
         separateStemFiles: separateStemFiles && supportsStems && format !== 'midi',
         quality: { mp3BitrateKbps },
+        scoreTitle: scoreFormatSelected ? scoreTitle : undefined,
       });
       onClose();
     } catch (error) {
@@ -185,7 +215,7 @@ export default function SharedExportPopover({
             ))}
         </div>
 
-        {!hideLoopCount ? (
+        {!hideLoopCount && !scoreFormatSelected ? (
         <div className="shared-export-row shared-export-row-inline">
           <label htmlFor={`loops-${adapter.id}`}>Loops</label>
           <input
@@ -202,6 +232,21 @@ export default function SharedExportPopover({
             }}
           />
         </div>
+        ) : null}
+
+        {scoreFormatSelected ? (
+          <div className="shared-export-row shared-export-row-stack shared-export-score-title-row">
+            <label htmlFor={`score-title-${adapter.id}`}>Score title</label>
+            <input
+              id={`score-title-${adapter.id}`}
+              className="shared-export-score-title-input"
+              type="text"
+              value={scoreTitle}
+              maxLength={120}
+              placeholder="Rhythm name"
+              onChange={(event) => setScoreTitle(event.target.value)}
+            />
+          </div>
         ) : null}
 
         {format === 'mp3' ? (
@@ -221,7 +266,7 @@ export default function SharedExportPopover({
           </div>
         ) : null}
 
-        {supportsStems ? (
+        {supportsStems && !scoreFormatSelected ? (
           <div className="shared-export-stems">
             <div className="shared-export-subtitle">Parts / stems</div>
             {adapter.stems.map((stem) => (
@@ -248,7 +293,11 @@ export default function SharedExportPopover({
         ) : null}
 
         <div className="shared-export-preview">
-          Preview duration: <strong>{formatDuration(previewSeconds)}</strong>
+          {scoreFormatSelected ? (
+            <>Score sheet: <strong>print-ready {format.toUpperCase()}</strong></>
+          ) : (
+            <>Preview duration: <strong>{formatDuration(previewSeconds)}</strong></>
+          )}
         </div>
         {footerSlot}
         {errorMessage ? <div className="shared-export-error">{errorMessage}</div> : null}

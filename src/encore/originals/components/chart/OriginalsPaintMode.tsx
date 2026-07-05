@@ -4,9 +4,12 @@ import type { ChartLayout } from '../../../../shared/music/chordPro/chordChartLa
 import type { ApplySectionProgressionResult } from '../../../../shared/music/chordPro/applySectionProgression';
 import type { ChartPlaybackStep } from '../../../../shared/music/chordPro/chartPlaybackSequence';
 import type { ChordNotationMode } from '../../../../shared/music/chordSymbolDisplay';
+import type { TimeSignature } from '../../../../shared/rhythm/types';
+import type { OriginalsSectionPlaybackOverride } from '../../sectionPlaybackOverrides';
 import type { ChordInteractionTarget, WordInteractionTarget } from '../../chartInteractionTypes';
 import { OriginalsPaintLine } from './OriginalsPaintLine';
 import { OriginalsPaintSectionHeading } from './OriginalsPaintSectionHeading';
+import { useOptionalOriginalsChartPlayback } from '../../context/useOriginalsChartPlayback';
 
 export type OriginalsPaintModeProps = {
   layout: ChartLayout;
@@ -17,8 +20,15 @@ export type OriginalsPaintModeProps = {
   selectedChord?: ChordInteractionTarget | null;
   selectedWord?: WordInteractionTarget | null;
   activePlaybackStep: ChartPlaybackStep | null;
+  tempo: number;
+  timeSignature: TimeSignature;
+  sectionPlaybackOverrides?: Record<string, OriginalsSectionPlaybackOverride>;
   scrollHeader?: ReactNode;
   onApplySectionProgression?: (sectionId: string, progression: string) => ApplySectionProgressionResult;
+  onSectionPlaybackOverrideChange?: (
+    sectionId: string,
+    override: OriginalsSectionPlaybackOverride | null,
+  ) => void;
   onStamp?: (sectionId: string, lineId: string, charIndex: number) => void;
   onSelectChord?: (sectionId: string, lineId: string, charIndex: number, chordId: string) => void;
   onSelectWord?: (sectionId: string, lineId: string, charIndex: number) => void;
@@ -33,23 +43,42 @@ export function OriginalsPaintMode({
   selectedChord = null,
   selectedWord = null,
   activePlaybackStep,
+  tempo,
+  timeSignature,
+  sectionPlaybackOverrides,
   scrollHeader,
   onApplySectionProgression,
+  onSectionPlaybackOverrideChange,
   onStamp,
   onSelectChord,
   onSelectWord,
 }: OriginalsPaintModeProps): ReactElement {
+  const chartPlayback = useOptionalOriginalsChartPlayback();
+
   return (
     <Box className={['encore-originals-paint-mode', readOnly ? 'encore-originals-paint-mode--read-only' : ''].filter(Boolean).join(' ')}>
       <Box className="encore-originals-paint-scroll-outer">
         {scrollHeader ? <Box className="encore-originals-paint-scroll-header">{scrollHeader}</Box> : null}
         <Box className="encore-originals-paint-scroll encore-originals-paint-scroll--columns">
         {layout.sections.map((section) => (
-          <Box key={section.sectionId} className="encore-originals-paint-section">
+          <Box
+            key={section.sectionId}
+            className={[
+              'encore-originals-paint-section',
+              chartPlayback?.playingSectionId === section.sectionId ? 'is-section-looping' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
             <OriginalsPaintSectionHeading
               section={section}
+              layout={layout}
               readOnly={readOnly}
+              tempo={tempo}
+              timeSignature={timeSignature}
+              sectionPlaybackOverride={sectionPlaybackOverrides?.[section.sectionId]}
               onApply={onApplySectionProgression}
+              onSectionPlaybackOverrideChange={onSectionPlaybackOverrideChange}
             />
             {section.lines.map((line) => (
               <OriginalsPaintLine

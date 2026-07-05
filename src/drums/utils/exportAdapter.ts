@@ -1,5 +1,5 @@
 import { buildLabsDownloadFileName } from '../../shared/utils/labsDownloadFileName';
-import type { ParsedRhythm } from '../types';
+import type { ParsedRhythm, TimeSignature } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import type { ExportSourceAdapter } from '../../shared/music/exportTypes';
 import { buildDrumMidiEventsFromParsedRhythm } from '../../shared/music/drumRhythmMidiEvents';
@@ -13,6 +13,7 @@ interface CreateDrumsExportAdapterOptions {
   playbackSettings: PlaybackSettings;
   metronomeEnabled: boolean;
   notation: string;
+  timeSignature: TimeSignature;
 }
 
 function estimateRhythmDurationSeconds(rhythm: ParsedRhythm, bpm: number): number {
@@ -32,23 +33,44 @@ export function buildDrumsAudioDownloadFileName(notation: string): string {
   return buildLabsDownloadFileName([rhythmLabel, 'Darbuka Rhythm']);
 }
 
+function buildDrumsScoreTitle(notation: string): string {
+  const rhythmMatch = recognizeRhythm(notation);
+  return rhythmMatch?.rhythm.name ?? 'Custom Rhythm';
+}
+
 export function createDrumsExportAdapter({
   rhythm,
   bpm,
   playbackSettings,
   metronomeEnabled,
   notation,
+  timeSignature,
 }: CreateDrumsExportAdapterOptions): ExportSourceAdapter {
+  const fileBaseName = buildDrumsAudioDownloadFileName(notation);
+  const scoreTitle = buildDrumsScoreTitle(notation);
+
   return {
     id: 'drums',
     title: 'Export Rhythm',
-    fileBaseName: buildDrumsAudioDownloadFileName(notation),
+    fileBaseName,
     defaultFormat: 'wav',
     stems: [{ id: 'drums', label: 'Drums', defaultSelected: true }],
-    supportsFormat: (format) => ['wav', 'mp3', 'ogg', 'flac', 'midi'].includes(format),
+    defaultScoreTitle: scoreTitle,
+    supportsFormat: (format) => ['wav', 'mp3', 'ogg', 'flac', 'midi', 'png', 'pdf'].includes(format),
     estimateDurationSeconds: (loopCount) => {
       if (!rhythm.isValid || rhythm.measures.length === 0) return 0;
       return estimateRhythmDurationSeconds(rhythm, bpm) * loopCount;
+    },
+    renderScoreSheet: async ({ format, title }) => {
+      const { exportDrumsScoreSheet } = await import('./scoreExport');
+      return exportDrumsScoreSheet({
+        rhythm,
+        timeSignature,
+        notation,
+        title,
+        bpm,
+        format,
+      });
     },
     renderAudio: async ({ loopCount }) => {
       const { renderRhythmAudio } = await import('./audioExport');

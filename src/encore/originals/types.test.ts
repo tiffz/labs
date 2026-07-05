@@ -63,4 +63,14 @@ describe('normalizeEncoreOriginalSong', () => {
     });
     expect(song.timeSignature).toEqual({ numerator: 4, denominator: 4 });
   });
+
+  it('preserves sectionPlaybackOverrides when present', () => {
+    const song = normalizeEncoreOriginalSong({
+      ...createBlankOriginalSong(),
+      sectionPlaybackOverrides: {
+        'chorus-0': { customPlayback: true, chordStyleId: 'jazz' },
+      },
+    });
+    expect(song.sectionPlaybackOverrides?.['chorus-0']?.chordStyleId).toBe('jazz');
+  });
 });

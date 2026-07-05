@@ -91,4 +91,29 @@ describe('exportService', () => {
     expect(formatDuration(9.28)).toBe('9.3s');
     expect(formatDuration(132)).toBe('2m 12s');
   });
+
+  it('exports score sheets when adapter supports png', async () => {
+    const renderScoreSheet = vi.fn(async () => new Blob(['png'], { type: 'image/png' }));
+    const adapter: ExportSourceAdapter = {
+      id: 'test-score',
+      title: 'Score Export',
+      fileBaseName: 'score-export',
+      defaultScoreTitle: 'Score Export',
+      stems: [{ id: 'mix', label: 'Mix' }],
+      supportsFormat: (format) => format === 'png',
+      estimateDurationSeconds: () => 0,
+      renderScoreSheet,
+    };
+    const result = await executeExport({
+      adapter,
+      format: 'png',
+      loopCount: 1,
+      selectedStemIds: ['mix'],
+      separateStemFiles: false,
+      quality: { mp3BitrateKbps: 160 },
+      scoreTitle: 'My Rhythm',
+    });
+    expect(renderScoreSheet).toHaveBeenCalledWith({ format: 'png', title: 'My Rhythm' });
+    expect(result.downloadedFiles[0]).toContain('.png');
+  });
 });

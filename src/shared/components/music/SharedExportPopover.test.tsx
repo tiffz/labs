@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import SharedExportPopover from './SharedExportPopover';
 import type { ExportSourceAdapter } from '../../music/exportTypes';
 
@@ -70,5 +70,94 @@ describe('SharedExportPopover', () => {
     expect(
       screen.queryByText('Tiny note/event file for DAWs and notation editors.')
     ).not.toBeInTheDocument();
+  });
+
+  it('hides loop controls for score sheet formats', async () => {
+    const adapter: ExportSourceAdapter = {
+      id: 'drums-score',
+      title: 'Export Rhythm',
+      fileBaseName: 'maqsum',
+      stems: [{ id: 'drums', label: 'Drums', defaultSelected: true }],
+      supportsFormat: (format) => format === 'png' || format === 'wav',
+      estimateDurationSeconds: () => 8,
+      renderScoreSheet: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
+    };
+
+    render(
+      <SharedExportPopover
+        open
+        anchorEl={document.body}
+        onClose={vi.fn()}
+        adapter={adapter}
+        persistKey="test-score-format"
+      />
+    );
+
+    const pngRadio = screen.getByLabelText('PNG');
+    await act(async () => {
+      pngRadio.click();
+    });
+
+    expect(screen.queryByLabelText(/Loops/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Score title')).toBeInTheDocument();
+    expect(screen.getByText(/print-ready PNG/i)).toBeInTheDocument();
+  });
+
+  it('keeps a custom score title after closing and reopening the popover', async () => {
+    const adapter: ExportSourceAdapter = {
+      id: 'drums-score',
+      title: 'Export Rhythm',
+      fileBaseName: 'maqsum',
+      defaultScoreTitle: 'Custom Rhythm',
+      stems: [{ id: 'drums', label: 'Drums', defaultSelected: true }],
+      supportsFormat: (format) => format === 'png',
+      estimateDurationSeconds: () => 8,
+      renderScoreSheet: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
+    };
+
+    const view = render(
+      <SharedExportPopover
+        open
+        anchorEl={document.body}
+        onClose={vi.fn()}
+        adapter={adapter}
+        persistKey="test-score-title"
+      />,
+    );
+
+    await act(async () => {
+      screen.getByLabelText('PNG').click();
+    });
+
+    const titleInput = screen.getByLabelText('Score title');
+    await act(async () => {
+      fireEvent.change(titleInput, { target: { value: 'My Cat Has Zoomies' } });
+    });
+
+    view.rerender(
+      <SharedExportPopover
+        open={false}
+        anchorEl={document.body}
+        onClose={vi.fn()}
+        adapter={adapter}
+        persistKey="test-score-title"
+      />,
+    );
+
+    view.rerender(
+      <SharedExportPopover
+        open
+        anchorEl={document.body}
+        onClose={vi.fn()}
+        adapter={adapter}
+        persistKey="test-score-title"
+      />,
+    );
+
+    await act(async () => {
+      screen.getByLabelText('PNG').click();
+    });
+
+    expect(screen.getByLabelText('Score title')).toHaveValue('My Cat Has Zoomies');
   });
 });

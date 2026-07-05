@@ -293,6 +293,7 @@ export const OriginalsSongDashboardPanel = memo(function OriginalsSongDashboardP
               songId={song.id}
               songKey={song.key}
               tempo={song.tempo}
+              sectionPlaybackOverrides={song.sectionPlaybackOverrides}
               compactPlayback
               embedded
             />

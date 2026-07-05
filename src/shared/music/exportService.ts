@@ -1,6 +1,6 @@
 import { buildLabsDownloadFileName, labsDownloadFileNameWithExtension, sanitizeLabsDownloadFileStem } from '../utils/labsDownloadFileName';
 import { encodeAudioBuffer } from './audioCodecs';
-import { EXPORT_FORMATS, type ExportExecutionRequest, type ExportExecutionResult, type ExportFormat } from './exportTypes';
+import { EXPORT_FORMATS, isScoreExportFormat, type ExportExecutionRequest, type ExportExecutionResult, type ExportFormat } from './exportTypes';
 import { triggerBlobDownload } from '../utils/triggerBlobDownload';
 
 function extensionForFormat(format: ExportFormat): string {
@@ -38,6 +38,22 @@ export async function executeExport(
   const downloadedFiles: string[] = [];
   const base = exportFileStem(adapter);
   const ext = extensionForFormat(format);
+
+  if (isScoreExportFormat(format)) {
+    if (!adapter.renderScoreSheet) {
+      throw new Error('This source does not support score sheet export.');
+    }
+    const scoreTitle = request.scoreTitle?.trim()
+      || adapter.defaultScoreTitle?.trim()
+      || adapter.fileBaseName
+      || adapter.title;
+    const blob = await adapter.renderScoreSheet({ format, title: scoreTitle });
+    const scoreStem = sanitizeLabsDownloadFileStem(scoreTitle) || exportFileStem(adapter);
+    const fileName = labsDownloadFileNameWithExtension(scoreStem, ext);
+    triggerBlobDownload(blob, fileName);
+    downloadedFiles.push(fileName);
+    return { downloadedFiles };
+  }
 
   if (format === 'midi') {
     if (!adapter.renderMidi) {

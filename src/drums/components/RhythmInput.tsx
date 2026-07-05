@@ -63,7 +63,8 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
     playbackSettings,
     metronomeEnabled,
     notation,
-  }), [parsedRhythm, bpm, playbackSettings, metronomeEnabled, notation]);
+    timeSignature,
+  }), [parsedRhythm, bpm, playbackSettings, metronomeEnabled, notation, timeSignature]);
 
   // NOTE: Selection syncing between display and textarea has been disabled
   // because it doesn't work correctly with repeat syntax (|x3, %, etc.)

@@ -1,11 +1,11 @@
-export type ExportFormat = 'midi' | 'wav' | 'mp3' | 'ogg' | 'flac';
+export type ExportFormat = 'midi' | 'wav' | 'mp3' | 'ogg' | 'flac' | 'png' | 'pdf';
 
 export interface ExportFormatDescriptor {
   id: ExportFormat;
   label: string;
   extension: string;
   description: string;
-  category: 'audio' | 'midi';
+  category: 'audio' | 'midi' | 'image' | 'document';
 }
 
 export interface ExportStem {
@@ -47,6 +47,11 @@ export interface ExportMidiRenderRequest {
   selectedStemIds: string[];
 }
 
+export interface ExportScoreSheetRenderRequest {
+  format: 'png' | 'pdf';
+  title: string;
+}
+
 export type MidiRenderPayload = Uint8Array;
 
 export interface ExportSourceAdapter {
@@ -64,6 +69,11 @@ export interface ExportSourceAdapter {
   renderMidi?: (
     request: ExportMidiRenderRequest
   ) => Promise<MidiRenderPayload>;
+  renderScoreSheet?: (
+    request: ExportScoreSheetRenderRequest
+  ) => Promise<Blob>;
+  /** Default title for PNG/PDF score sheet exports. */
+  defaultScoreTitle?: string;
   metadata?: ExportMetadata;
 }
 
@@ -74,6 +84,8 @@ export interface ExportExecutionRequest {
   selectedStemIds: string[];
   separateStemFiles: boolean;
   quality: ExportQualitySettings;
+  /** Custom sheet title for PNG/PDF score exports. */
+  scoreTitle?: string;
 }
 
 export interface ExportExecutionResult {
@@ -116,8 +128,26 @@ export const EXPORT_FORMATS: ExportFormatDescriptor[] = [
     category: 'audio',
     description: 'Lossless compressed audio with smaller files than WAV.',
   },
+  {
+    id: 'png',
+    label: 'PNG',
+    extension: 'png',
+    category: 'image',
+    description: 'Print-ready score image for messages and slides.',
+  },
+  {
+    id: 'pdf',
+    label: 'PDF',
+    extension: 'pdf',
+    category: 'document',
+    description: 'Print-ready score sheet for email and handouts.',
+  },
 ];
 
 export const DEFAULT_EXPORT_QUALITY: ExportQualitySettings = {
   mp3BitrateKbps: 160,
 };
+
+export function isScoreExportFormat(format: ExportFormat): format is 'png' | 'pdf' {
+  return format === 'png' || format === 'pdf';
+}

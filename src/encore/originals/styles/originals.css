@@ -593,6 +593,33 @@
 .encore-originals-paint-section {
   break-inside: avoid;
   margin-bottom: 1.35rem;
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.55rem 0.55rem;
+  background: transparent;
+  box-shadow: 0 0 0 1px transparent;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.encore-originals-paint-section.is-section-looping {
+  background: rgba(76, 29, 149, 0.032);
+  box-shadow: 0 0 0 1px rgba(76, 29, 149, 0.09);
+}
+
+.encore-originals-paint-section.is-section-looping
+  .encore-originals-paint-section-heading-label,
+.encore-originals-paint-section-heading.is-section-looping
+  .encore-originals-paint-section-heading-label,
+.encore-originals-paint-section-heading-static.is-section-looping
+  .encore-originals-paint-section-heading-label {
+  color: rgba(91, 33, 182, 0.82);
+}
+
+.encore-originals-paint-section.is-section-looping
+  .encore-originals-lyric-token--playback {
+  background: rgba(124, 58, 237, 0.16);
+  outline-color: rgba(124, 58, 237, 0.34);
 }
 
 .encore-originals-workspace--chords
@@ -720,52 +747,130 @@
   cursor: not-allowed;
 }
 
-.encore-originals-paint-section-heading-trigger {
+.encore-originals-section-progression-menu
+  .encore-originals-section-progression-menu-inner {
+  min-width: min(18rem, calc(100vw - 24px));
+}
+
+.encore-originals-section-playback-menu {
+  background: #fff;
+}
+
+.encore-originals-section-playback-menu
+  .shared-chord-playback-settings--encore {
+  background: transparent;
+}
+
+.encore-originals-paint-section-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.35rem;
+  margin: 0 0 0.35rem;
+}
+
+.encore-originals-paint-section-heading-actions {
   display: inline-flex;
   align-items: center;
-  gap: 0.15rem;
-  margin: 0 0 0.35rem;
-  padding: 0.12rem 0.28rem 0.12rem 0;
-  border: 0;
-  border-radius: 0.35rem;
-  background: transparent;
-  color: rgba(15, 23, 42, 0.58);
+  gap: 0.05rem;
+  margin-left: 0.1rem;
+}
+
+.encore-originals-paint-section-heading-action {
+  color: rgba(15, 23, 42, 0.48);
+}
+
+.encore-originals-paint-section-heading-action:hover,
+.encore-originals-paint-section-heading-action.is-open {
+  color: rgba(109, 40, 217, 0.92);
+  background: color-mix(in srgb, #f5f3ff 72%, transparent);
+}
+
+.encore-originals-paint-section-heading-action.has-custom-playback {
+  color: rgba(109, 40, 217, 0.88);
+}
+
+.encore-originals-paint-section-heading-action:focus-visible {
+  outline: 2px solid rgba(124, 58, 237, 0.42);
+  outline-offset: 2px;
+}
+
+.encore-originals-paint-section-heading.has-custom-playback {
+  gap: 0.2rem 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.encore-originals-paint-section-playback-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.18rem;
+  min-height: 1.625rem;
+  padding: 0.06rem 0.38rem 0.06rem 0.3rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #7c3aed 24%, #e9d5ff);
+  background: color-mix(in srgb, #7c3aed 12%, #ffffff);
+  color: #5b21b6;
   font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.encore-originals-paint-section-playback-chip:hover,
+.encore-originals-paint-section-playback-chip.is-open {
+  background: color-mix(in srgb, #7c3aed 18%, #ffffff);
+  border-color: color-mix(in srgb, #7c3aed 34%, #ddd6fe);
+  box-shadow: 0 1px 0 color-mix(in srgb, #7c3aed 10%, transparent);
+}
+
+.encore-originals-paint-section-playback-chip:focus-visible {
+  outline: 2px solid rgba(124, 58, 237, 0.42);
+  outline-offset: 2px;
+}
+
+.encore-originals-paint-section-playback-chip-label {
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.encore-originals-paint-section-playback-button.is-playing {
+  color: rgba(109, 40, 217, 0.88);
+  background: color-mix(in srgb, #f5f3ff 60%, transparent);
+  box-shadow: 0 0 0 1px rgba(76, 29, 149, 0.12);
+}
+
+.encore-originals-paint-section-heading-badge {
+  margin-left: 0.15rem;
+  padding: 0.08rem 0.35rem;
+  border-radius: 999px;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #5b21b6;
+  background: color-mix(in srgb, #7c3aed 12%, #ffffff);
+  border: 1px solid color-mix(in srgb, #7c3aed 24%, #e9d5ff);
+}
+
+.encore-originals-paint-section-heading-label {
+  color: rgba(15, 23, 42, 0.58);
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   line-height: 1.2;
-  cursor: pointer;
-  transition:
-    color 120ms ease,
-    background-color 120ms ease;
-}
-
-.encore-originals-paint-section-heading-trigger:hover,
-.encore-originals-paint-section-heading-trigger.is-open {
-  color: rgba(109, 40, 217, 0.92);
-  background: color-mix(in srgb, #f5f3ff 72%, transparent);
-}
-
-.encore-originals-paint-section-heading-trigger:focus-visible {
-  outline: 2px solid rgba(124, 58, 237, 0.42);
-  outline-offset: 2px;
-}
-
-.encore-originals-paint-section-heading-chevron {
-  font-size: 0.95rem;
-  opacity: 0.55;
-  transition: transform 120ms ease;
-}
-
-.encore-originals-paint-section-heading-trigger.is-open
-  .encore-originals-paint-section-heading-chevron {
-  transform: rotate(180deg);
-  opacity: 0.85;
 }
 
 .encore-originals-paint-section-heading-static {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   margin: 0 0 0.35rem;
 }
 

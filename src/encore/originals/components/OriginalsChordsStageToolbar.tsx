@@ -52,6 +52,7 @@ export function OriginalsChordsStageToolbar({
       <OriginalsChordPlaybackBar
         layout={layout}
         tempo={song.tempo}
+        sectionPlaybackOverrides={song.sectionPlaybackOverrides}
         onActiveStepChange={onActivePlaybackStepChange}
       />
       <Box sx={{ flex: 1, minWidth: 8 }} />

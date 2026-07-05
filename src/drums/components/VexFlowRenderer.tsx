@@ -3,6 +3,17 @@ import { Renderer, Stave, StaveNote, Voice, Formatter, Beam, Dot, BarlineType } 
 import type { ParsedRhythm, Note, DrumSound, TimeSignature, RepeatMarker, SectionRepeat } from '../types';
 import { drawDrumSymbol } from '../assets/drumSymbols';
 import { getDefaultBeatGrouping, isCompoundTimeSignature, isAsymmetricTimeSignature, getBeatGroupingInSixteenths, getSixteenthsPerMeasure } from '../utils/timeSignatureUtils';
+import {
+  DRUMS_SCORE_EXPORT_LAYOUT,
+  DRUMS_SCORE_EXPORT_LAYOUT_WIDTH,
+  DRUMS_SCORE_EXPORT_SVG_META,
+  calculateDrumsExportMeasureMinWidth,
+  computeDrumsExportUniformScale,
+  getDrumsExportScaledLineHeight,
+  getMeasureSixteenths,
+  packDrumsExportMeasuresByTargetLine,
+  wrapDrumsExportLineSvgElements,
+} from '../utils/scoreExportLayout';
 import { findDropTarget, type NotePosition } from '../utils/dropTargetFinder';
 import { computeDropPreview } from '../utils/dropPreview';
 import { getCurrentDraggedPattern } from './NotePalette';
@@ -188,6 +199,10 @@ interface VexFlowRendererProps {
   compactMode?: boolean;
   /** Whether to auto-scroll to keep the current playing note visible */
   autoScrollDuringPlayback?: boolean;
+  /** Offscreen export: fixed layout, no interaction overlays. */
+  exportMode?: boolean;
+  /** Width used for line wrapping when `exportMode` is true. */
+  exportLayoutWidth?: number;
 }
 
 /**
@@ -361,6 +376,8 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   onRequestPaletteFocus,
   compactMode = false,
   autoScrollDuringPlayback = false,
+  exportMode = false,
+  exportLayoutWidth = DRUMS_SCORE_EXPORT_LAYOUT_WIDTH,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const metronomeDotsRef = useRef<Map<string, SVGCircleElement>>(new Map());
@@ -398,7 +415,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   });
 
   // Re-render when the notation container width changes.
-  const [containerWidth, setContainerWidth] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(exportMode ? exportLayoutWidth : 0);
 
   // Selection rectangle ref for direct DOM manipulation (avoids re-render conflicts with VexFlow)
   const selectionRectRef = useRef<HTMLDivElement | null>(null);
@@ -424,6 +441,11 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   }, []);
 
   useEffect(() => {
+    if (exportMode) {
+      setContainerWidth(exportLayoutWidth);
+      return;
+    }
+
     const container = containerRef.current;
     if (!container) return;
 
@@ -443,7 +465,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       observer?.disconnect();
       window.removeEventListener('resize', updateWidth);
     };
-  }, []);
+  }, [exportMode, exportLayoutWidth]);
 
   useEffect(() => {
     if (!containerRef.current || rhythm.measures.length === 0) {
@@ -465,13 +487,27 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       const isLongMeasure = sixteenthsPerMeasure > 32; // More than 8/4 equivalent
 
       // Fixed width for simile (repeat) measures - compact and consistent
-      const SIMILE_MEASURE_WIDTH = compactMode ? 40 : 60;
+      const SIMILE_MEASURE_WIDTH = exportMode
+        ? DRUMS_SCORE_EXPORT_LAYOUT.simileWidth
+        : compactMode
+          ? 40
+          : 60;
 
       const calculateMeasureWidth = (measure: typeof rhythm.measures[0], measureIndex: number): number => {
         // Check if this measure is a simile repeat
         const measureRepeatInfo = getMeasureRepeatInfo(measureIndex, rhythm.repeats);
         if (measureRepeatInfo?.isSimile) {
           return SIMILE_MEASURE_WIDTH;
+        }
+
+        if (exportMode) {
+          const sixteenths = getMeasureSixteenths(measure.notes, rhythm.timeSignature);
+          return calculateDrumsExportMeasureMinWidth(
+            sixteenths,
+            measure.notes.length,
+            isLongMeasure,
+            false,
+          );
         }
 
         const baseWidth = compactMode ? 100 : 120; // Base width for time signature, barlines, etc.
@@ -508,19 +544,36 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       }
 
       const measureWidths = rhythm.measures.map((m, i) => calculateMeasureWidth(m, i));
+      const exportLineBudget = exportLayoutWidth - DRUMS_SCORE_EXPORT_LAYOUT.containerPadding;
 
       // Layout measures into lines based on available width
-      // Use measured container width so mobile/tablet layouts wrap correctly.
-      const containerPadding = compactMode ? 24 : 40;
-      const availableWidth =
-        containerWidth > 0 ? containerWidth - containerPadding : window.innerWidth - containerPadding;
-      const baseMaxLineWidth = Math.max(420, Math.min(1200, availableWidth));
-      const lineHeight = 100;
-      const leftMargin = 10;
-      const rightMargin = 10;
+      const containerPadding = exportMode
+        ? DRUMS_SCORE_EXPORT_LAYOUT.containerPadding
+        : compactMode
+          ? 24
+          : 40;
+      const availableWidth = exportMode
+        ? exportLayoutWidth - containerPadding
+        : containerWidth > 0
+          ? containerWidth - containerPadding
+          : window.innerWidth - containerPadding;
+      const baseMaxLineWidth = exportMode
+        ? Math.max(DRUMS_SCORE_EXPORT_LAYOUT.minLineWidth, availableWidth)
+        : Math.max(420, Math.min(1200, availableWidth));
+      const lineHeight = exportMode ? DRUMS_SCORE_EXPORT_LAYOUT.lineHeight : 100;
+      const topPadding = exportMode ? DRUMS_SCORE_EXPORT_LAYOUT.topPadding : 40;
+      const leftMargin = exportMode ? DRUMS_SCORE_EXPORT_LAYOUT.leftMargin : 10;
+      const rightMargin = exportMode ? DRUMS_SCORE_EXPORT_LAYOUT.rightMargin : 10;
 
       // Group measures into lines
-      const lines: number[][] = []; // Array of arrays of measure indices
+      let lines: number[][] = [];
+
+      if (exportMode) {
+        const visibleMeasureIndices = rhythm.measures
+          .map((_, measureIndex) => measureIndex)
+          .filter((measureIndex) => !hiddenMeasureIndices.has(measureIndex));
+        lines = packDrumsExportMeasuresByTargetLine(visibleMeasureIndices);
+      } else {
       let currentLine: number[] = [];
       let currentLineWidth = leftMargin;
 
@@ -567,6 +620,23 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       if (currentLine.length > 0) {
         lines.push(currentLine);
       }
+      }
+
+      const exportLineScales = exportMode
+        ? (() => {
+            const uniformScale = computeDrumsExportUniformScale(
+              lines,
+              measureWidths,
+              exportLineBudget,
+              Number(leftMargin),
+              Number(rightMargin),
+            );
+            return lines.map(() => uniformScale);
+          })()
+        : [];
+      const exportLineHeights = exportMode
+        ? exportLineScales.map((lineScale) => getDrumsExportScaledLineHeight(lineScale, Number(lineHeight)))
+        : [];
 
       // Calculate actual max line width based on content
       // This ensures the SVG is wide enough for long measures
@@ -577,8 +647,15 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
 
       const numLines = lines.length;
       // Add extra space at bottom for metronome dots (15px)
-      const totalHeight = numLines * lineHeight + 40 + (metronomeEnabled ? 15 : 0);
-      const totalWidth = Math.max(baseMaxLineWidth, maxActualLineWidth) + 20;
+      const totalHeight = exportMode
+        ? topPadding
+          + exportLineHeights.reduce((sum, height) => sum + height, 0)
+          + DRUMS_SCORE_EXPORT_LAYOUT.bottomPadding
+          + (metronomeEnabled ? 15 : 0)
+        : numLines * lineHeight + topPadding + (metronomeEnabled ? 15 : 0);
+      const totalWidth = exportMode
+        ? baseMaxLineWidth
+        : Math.max(baseMaxLineWidth, maxActualLineWidth) + 20;
 
       // Create SVG renderer
       const renderer = new Renderer(containerRef.current, Renderer.Backends.SVG);
@@ -611,9 +688,16 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       }> = [];
 
       // Render each line
+      let exportLineYOffset = topPadding;
+      let exportVisibleMeasureNumber = 0;
       lines.forEach((lineIndices, lineIndex) => {
         let xPosition = leftMargin;
-        const yPosition = 40 + lineIndex * lineHeight;
+        const yPosition = exportMode ? exportLineYOffset : topPadding + lineIndex * lineHeight;
+        const lineScale = exportMode ? exportLineScales[lineIndex] ?? 1 : 1;
+        const svgElementBeforeLine = exportMode
+          ? containerRef.current?.querySelector('svg')
+          : null;
+        const lineStartChildIndex = svgElementBeforeLine?.childNodes.length ?? 0;
 
         lineIndices.forEach((measureIndex) => {
           const measure = rhythm.measures[measureIndex];
@@ -729,14 +813,36 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
             const svgElement = containerRef.current?.querySelector('svg');
             if (svgElement) {
               const textElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-              textElement.setAttribute('x', String(xPosition));
-              textElement.setAttribute('y', String(yPosition + 15));
-              textElement.setAttribute('font-family', 'Arial');
-              textElement.setAttribute('font-size', '10');
-              textElement.setAttribute('fill', '#666');
-              textElement.setAttribute('text-anchor', 'start');
-              textElement.setAttribute('dominant-baseline', 'baseline');
-              textElement.textContent = `${measureIndex + 1}`;
+              if (exportMode) {
+                exportVisibleMeasureNumber += 1;
+                const measureNumberInset =
+                  measureIndex === 0
+                    ? DRUMS_SCORE_EXPORT_LAYOUT.measureNumberFirstMeasureInset
+                    : DRUMS_SCORE_EXPORT_LAYOUT.measureNumberInset;
+                const staffTopY = stave.getYForLine(0);
+                textElement.setAttribute('x', String(xPosition + measureNumberInset));
+                textElement.setAttribute(
+                  'y',
+                  String(staffTopY + DRUMS_SCORE_EXPORT_LAYOUT.measureNumberTopOffset),
+                );
+                textElement.setAttribute('font-family', 'Arial');
+                textElement.setAttribute('font-size', '8');
+                textElement.setAttribute('fill', '#374151');
+                textElement.setAttribute('text-anchor', 'start');
+                textElement.setAttribute('dominant-baseline', 'alphabetic');
+                textElement.setAttribute('class', 'drums-export-measure-number');
+                textElement.setAttribute('data-measure-index', String(measureIndex));
+                textElement.textContent = `${exportVisibleMeasureNumber}`;
+              } else {
+                textElement.setAttribute('x', String(xPosition));
+                textElement.setAttribute('y', String(yPosition + 15));
+                textElement.setAttribute('font-family', 'Arial');
+                textElement.setAttribute('font-size', '10');
+                textElement.setAttribute('fill', '#666');
+                textElement.setAttribute('text-anchor', 'start');
+                textElement.setAttribute('dominant-baseline', 'baseline');
+                textElement.textContent = `${measureIndex + 1}`;
+              }
               svgElement.appendChild(textElement);
             }
           }
@@ -878,7 +984,8 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
             );
 
             const formatter = new Formatter();
-            formatter.joinVoices([voice]).format([voice], measureWidth - 60);
+            const formatWidth = measureWidth - (exportMode ? 42 : 60);
+            formatter.joinVoices([voice]).format([voice], formatWidth);
 
             voice.draw(context, stave);
 
@@ -963,9 +1070,34 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
 
           xPosition += measureWidth;
         });
+
+        if (exportMode) {
+          const svgElement = containerRef.current?.querySelector('svg');
+          if (svgElement) {
+            allStaveNoteRefs
+              .filter(({ measureIndex }) => lineIndices.includes(measureIndex))
+              .forEach(({ staveNote, stave, note }) => {
+                if (note && note.sound !== 'rest') {
+                  const noteX = staveNote.getAbsoluteX() + 10;
+                  const noteY = stave.getYForLine(2);
+                  drawDrumSymbol(
+                    svgElement,
+                    noteX,
+                    noteY,
+                    note.sound,
+                    '#111827',
+                    DRUMS_SCORE_EXPORT_LAYOUT.drumSymbolScale,
+                    DRUMS_SCORE_EXPORT_LAYOUT.drumSymbolYOffset,
+                  );
+                }
+              });
+            wrapDrumsExportLineSvgElements(svgElement, lineStartChildIndex, yPosition, leftMargin, lineScale);
+          }
+          exportLineYOffset += exportLineHeights[lineIndex] ?? lineHeight;
+        }
       });
 
-      if (notation && timeSignature) {
+      if (notation && timeSignature && !exportMode) {
         notePositionsRef.current = [];
 
         let globalCharPosition = 0;
@@ -1160,13 +1292,21 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       // Draw custom drum symbols (playback highlight is a separate effect — no full re-layout).
       const svgElement = containerRef.current?.querySelector('svg');
       if (svgElement) {
-        allStaveNoteRefs.forEach(({ staveNote, stave, note }) => {
-          if (note && note.sound !== 'rest') {
-            const noteX = staveNote.getAbsoluteX() + 10;
-            const noteY = stave.getYForLine(2);
-            drawDrumSymbol(svgElement, noteX, noteY, note.sound);
-          }
-        });
+        if (!exportMode) {
+          allStaveNoteRefs.forEach(({ staveNote, stave, note }) => {
+            if (note && note.sound !== 'rest') {
+              const noteX = staveNote.getAbsoluteX() + 10;
+              const noteY = stave.getYForLine(2);
+              drawDrumSymbol(svgElement, noteX, noteY, note.sound);
+            }
+          });
+        }
+
+        if (exportMode) {
+          svgElement.setAttribute(DRUMS_SCORE_EXPORT_SVG_META.lines, String(numLines));
+          svgElement.setAttribute(DRUMS_SCORE_EXPORT_SVG_META.lineHeights, exportLineHeights.join(','));
+          svgElement.setAttribute(DRUMS_SCORE_EXPORT_SVG_META.topPadding, String(topPadding));
+        }
       }
 
       // Draw ties for notes that span measure boundaries
@@ -1359,7 +1499,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       }
 
       // Draw metronome dots if enabled
-      if (metronomeEnabled) {
+      if (metronomeEnabled && !exportMode) {
         // Get beat grouping for this time signature
         const beatGrouping = getDefaultBeatGrouping(rhythm.timeSignature);
 
@@ -1463,7 +1603,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     // Preview rendering is handled in a separate useEffect below
     // Note: notation, timeSignature, and onDropPattern are used for drag/drop but don't need to trigger re-renders
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rhythm, metronomeEnabled, containerWidth, selection, compactMode]);
+  }, [rhythm, metronomeEnabled, containerWidth, selection, compactMode, exportMode, exportLayoutWidth]);
 
   // Playback note highlight — DOM-only updates so playhead does not re-layout the staff.
   useEffect(() => {
@@ -2136,31 +2276,30 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   };
 
   return (
-    // Keyboard support is intentional for this canvas-like editor surface.
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       ref={containerRef}
       className="vexflow-container"
-      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- canvas-like editor needs focus
-      tabIndex={0}
-      role="application"
-      aria-label="Rhythm notation editor. Use arrow keys to navigate notes, Delete to remove, Escape to clear selection."
-      aria-roledescription="notation editor"
-      aria-describedby="notation-live-region"
-      onMouseDown={handleContainerMouseDown}
-      onKeyDown={handleKeyDown}
-      onDragOver={handleContainerDragOver}
-      onDragLeave={handleContainerDragLeave}
-      onDrop={handleContainerDrop}
+      tabIndex={exportMode ? undefined : 0}
+      role={exportMode ? undefined : 'application'}
+      aria-label={exportMode ? undefined : 'Rhythm notation editor. Use arrow keys to navigate notes, Delete to remove, Escape to clear selection.'}
+      aria-roledescription={exportMode ? undefined : 'notation editor'}
+      aria-describedby={exportMode ? undefined : 'notation-live-region'}
+      onMouseDown={exportMode ? undefined : handleContainerMouseDown}
+      onKeyDown={exportMode ? undefined : handleKeyDown}
+      onDragOver={exportMode ? undefined : handleContainerDragOver}
+      onDragLeave={exportMode ? undefined : handleContainerDragLeave}
+      onDrop={exportMode ? undefined : handleContainerDrop}
       style={{
-        width: '100%',
-        overflowX: 'auto',
-        padding: '20px 0',
-        position: 'relative', // Enable absolute positioning for selection overlay
-        cursor: 'crosshair',
-        outline: 'none', // We'll use custom focus styling
+        width: exportMode ? `${exportLayoutWidth}px` : '100%',
+        overflowX: exportMode ? 'visible' : 'auto',
+        padding: exportMode ? '0' : '20px 0',
+        position: 'relative',
+        cursor: exportMode ? 'default' : 'crosshair',
+        outline: 'none',
       }}
     >
+      {!exportMode ? (
+      <>
       {/* ARIA live region for screen reader announcements */}
       <div
         ref={liveRegionRef}
@@ -2197,6 +2336,8 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
           zIndex: 10,
         }}
       />
+      </>
+      ) : null}
     </div>
   );
 };

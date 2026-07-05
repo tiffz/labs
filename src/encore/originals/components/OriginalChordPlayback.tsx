@@ -10,42 +10,55 @@ import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import { useRef, useState, type ReactElement } from 'react';
 import { ChordPlaybackSettingsPanel } from '../../../shared/components/music/ChordPlaybackSettingsPanel';
-import { useChartChordPlayback } from '../../../shared/hooks/useChartChordPlayback';
+import { useChartChordPlayback, type UseChartChordPlaybackResult } from '../../../shared/hooks/useChartChordPlayback';
 import {
   popoverAnchorEl,
   usePopoverScrollAnchorSync,
 } from '../../../shared/hooks/usePopoverScrollAnchorSync';
 import type { ChartLayout } from '../../../shared/music/chordPro/chordChartLayout';
 import type { ChartPlaybackStep } from '../../../shared/music/chordPro/chartPlaybackSequence';
+import type { SectionPlaybackOverride } from '../../../shared/music/resolveSectionPlaybackSettings';
 import { encoreHairline, encoreShadowLift } from '../../theme/encoreUiTokens';
 import { playbackFloatingPanelSlotProps } from '../../../shared/components/music/playbackFieldSelect';
+import { useOptionalOriginalsChartPlayback } from '../context/useOriginalsChartPlayback';
 
 const PLAYBACK_SETTINGS_STORAGE_KEY = 'encore-originals-chord-playback-settings';
 
 export type OriginalChordPlaybackProps = {
   layout: ChartLayout;
   tempo: number;
+  sectionPlaybackOverrides?: Record<string, SectionPlaybackOverride>;
   compact?: boolean;
   onActiveStepChange?: (step: ChartPlaybackStep | null) => void;
 };
 
-export function OriginalChordPlayback({
-  layout,
+type OriginalChordPlaybackControlsProps = {
+  playback: UseChartChordPlaybackResult;
+  tempo: number;
+  compact?: boolean;
+};
+
+function OriginalChordPlaybackControls({
+  playback,
   tempo,
   compact = false,
-  onActiveStepChange,
-}: OriginalChordPlaybackProps): ReactElement {
+}: OriginalChordPlaybackControlsProps): ReactElement {
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const settingsPopoverActionRef = useRef<PopoverActions>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   usePopoverScrollAnchorSync(settingsOpen, settingsButtonRef, settingsPopoverActionRef);
-  const { playing, canPlay, settings, updateSettings, start, stop, sampledPianoLoad, playbackBeatTime, playbackBeat } =
-    useChartChordPlayback({
-      layout,
-      tempo,
-      storageKey: PLAYBACK_SETTINGS_STORAGE_KEY,
-      onActiveStepChange,
-    });
+  const {
+    playing,
+    canPlay,
+    playingSectionId,
+    settings,
+    updateSettings,
+    start,
+    stop,
+    sampledPianoLoad,
+    playbackBeatTime,
+    playbackBeat,
+  } = playback;
 
   if (!canPlay) return <></>;
 
@@ -53,6 +66,12 @@ export function OriginalChordPlayback({
     if (playing) stop();
     else start();
   };
+
+  const playLabel = playing
+    ? playingSectionId
+      ? 'Stop section playback'
+      : 'Stop chord playback'
+    : 'Play chord chart';
 
   const settingsButton = (
     <Tooltip title="Playback settings">
@@ -132,10 +151,10 @@ export function OriginalChordPlayback({
     return (
       <>
         <Stack direction="row" alignItems="center" spacing={0.15}>
-          <Tooltip title={playing ? 'Stop chord playback' : 'Play chord chart'}>
+          <Tooltip title={playLabel}>
             <IconButton
               size="small"
-              aria-label={playing ? 'Stop chord playback' : 'Play chord chart'}
+              aria-label={playLabel}
               onClick={togglePlayback}
               sx={{ p: 0.35 }}
             >
@@ -166,4 +185,36 @@ export function OriginalChordPlayback({
       {settingsPopover}
     </>
   );
+}
+
+function OriginalChordPlaybackWithHook({
+  layout,
+  tempo,
+  sectionPlaybackOverrides,
+  compact = false,
+  onActiveStepChange,
+}: OriginalChordPlaybackProps): ReactElement {
+  const playback = useChartChordPlayback({
+    layout,
+    tempo,
+    storageKey: PLAYBACK_SETTINGS_STORAGE_KEY,
+    sectionPlaybackOverrides,
+    onActiveStepChange,
+  });
+
+  return <OriginalChordPlaybackControls playback={playback} tempo={tempo} compact={compact} />;
+}
+
+export function OriginalChordPlayback(props: OriginalChordPlaybackProps): ReactElement {
+  const contextPlayback = useOptionalOriginalsChartPlayback();
+  if (contextPlayback) {
+    return (
+      <OriginalChordPlaybackControls
+        playback={contextPlayback}
+        tempo={props.tempo}
+        compact={props.compact}
+      />
+    );
+  }
+  return <OriginalChordPlaybackWithHook {...props} />;
 }

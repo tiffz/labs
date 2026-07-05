@@ -26,6 +26,9 @@ import {
   readPersistedWorkflowStage,
 } from '../originalsWorkflowStagePersistence';
 import type { EncoreOriginalSong } from '../types';
+import { originalSongTimeSignature } from '../types';
+import { setOriginalsSectionPlaybackOverride, type OriginalsSectionPlaybackOverride } from '../sectionPlaybackOverrides';
+import { OriginalsChartPlaybackProvider } from '../context/OriginalsChartPlaybackContext';
 import { OriginalsBrainstormStage } from './OriginalsBrainstormStage';
 import { OriginalsChordPalette } from './chart/OriginalsChordPalette';
 import { OriginalsChordsStageToolbar } from './OriginalsChordsStageToolbar';
@@ -33,6 +36,8 @@ import { OriginalsPaintChordsEditor } from './OriginalsPaintChordsEditor';
 import { OriginalsTakesStage } from './OriginalsTakesStage';
 import { OriginalsWorkflowStepper } from './OriginalsWorkflowStepper';
 import { OriginalsWriteLyricsEditor } from './OriginalsWriteLyricsEditor';
+
+const ORIGINALS_CHORD_PLAYBACK_STORAGE_KEY = 'encore-originals-chord-playback-settings';
 
 export type OriginalsSongWorkspaceProps = {
   song: EncoreOriginalSong;
@@ -109,6 +114,21 @@ export function OriginalsSongWorkspace({
     if (!sel) return;
     chart.onRemoveChord(sel.sectionId, sel.lineId, sel.chordId);
   }, [chart]);
+
+  const onSectionPlaybackOverrideChange = useCallback(
+    (sectionId: string, override: OriginalsSectionPlaybackOverride | null) => {
+      onSongChange({
+        sectionPlaybackOverrides: setOriginalsSectionPlaybackOverride(
+          song.sectionPlaybackOverrides,
+          sectionId,
+          override,
+        ),
+      });
+    },
+    [onSongChange, song.sectionPlaybackOverrides],
+  );
+
+  const songTimeSignature = useMemo(() => originalSongTimeSignature(song), [song]);
 
   const onStageChange = useCallback(
     (next: OriginalsWorkflowStage) => {
@@ -356,55 +376,67 @@ export function OriginalsSongWorkspace({
             >
               <OriginalsWorkflowStepper song={song} stage={stage} onStageChange={onStageChange} />
             </Box>
-            <Box
-              className={[
-                'in-scroll-region__sticky-surface',
-                'encore-originals-chords-paint-chrome',
-                'encore-originals-no-print',
-              ].join(' ')}
+            <OriginalsChartPlaybackProvider
+              layout={chart.layout}
+              tempo={song.tempo}
+              storageKey={ORIGINALS_CHORD_PLAYBACK_STORAGE_KEY}
+              sectionPlaybackOverrides={song.sectionPlaybackOverrides}
+              onActiveStepChange={setActivePlaybackStep}
             >
-              <OriginalsChordsStageToolbar
-                song={song}
-                layout={chart.layout}
-                stageDone={stageDone}
-                onActivePlaybackStepChange={setActivePlaybackStep}
-                onSongChange={onSongChange}
-                onPersist={onPersist}
-                onToggleStageComplete={onToggleStageComplete}
-              />
-              <OriginalsChordPalette
-                songKey={song.key}
-                armedChord={chart.armedChord}
-                notation={chordNotation}
-                selectedChord={chart.selectedChord}
-                selectedWord={chart.selectedWord}
-                onArm={handleArmChord}
-                onNotationChange={setChordNotation}
-                onClearSelection={chart.onClearSelection}
-              />
-            </Box>
-            <Box className="encore-originals-chords-chart-surface">
-              <OriginalsPaintChordsEditor
-                layout={chart.layout}
-                songKey={song.key}
-                notation={chordNotation}
-                armedChord={chart.armedChord}
-                selectedChord={chart.selectedChord}
-                selectedWord={chart.selectedWord}
-                activePlaybackStep={activePlaybackStep}
-                onArm={handleArmChord}
-                onClearSelection={chart.onClearSelection}
-                onStamp={chart.onStamp}
-                onSelectChord={(sectionId, lineId, charIndex, chordId) =>
-                  chart.onSelectChord({ sectionId, lineId, charIndex, chordId })
-                }
-                onSelectWord={(sectionId, lineId, charIndex) =>
-                  chart.onSelectWord({ sectionId, lineId, charIndex })
-                }
-                onDeleteSelected={onDeleteSelectedChord}
-                onApplySectionProgression={chart.onApplySectionProgression}
-              />
-            </Box>
+              <Box
+                className={[
+                  'in-scroll-region__sticky-surface',
+                  'encore-originals-chords-paint-chrome',
+                  'encore-originals-no-print',
+                ].join(' ')}
+              >
+                <OriginalsChordsStageToolbar
+                  song={song}
+                  layout={chart.layout}
+                  stageDone={stageDone}
+                  onActivePlaybackStepChange={setActivePlaybackStep}
+                  onSongChange={onSongChange}
+                  onPersist={onPersist}
+                  onToggleStageComplete={onToggleStageComplete}
+                />
+                <OriginalsChordPalette
+                  songKey={song.key}
+                  armedChord={chart.armedChord}
+                  notation={chordNotation}
+                  selectedChord={chart.selectedChord}
+                  selectedWord={chart.selectedWord}
+                  onArm={handleArmChord}
+                  onNotationChange={setChordNotation}
+                  onClearSelection={chart.onClearSelection}
+                />
+              </Box>
+              <Box className="encore-originals-chords-chart-surface">
+                <OriginalsPaintChordsEditor
+                  layout={chart.layout}
+                  songKey={song.key}
+                  notation={chordNotation}
+                  armedChord={chart.armedChord}
+                  selectedChord={chart.selectedChord}
+                  selectedWord={chart.selectedWord}
+                  activePlaybackStep={activePlaybackStep}
+                  tempo={song.tempo}
+                  timeSignature={songTimeSignature}
+                  sectionPlaybackOverrides={song.sectionPlaybackOverrides}
+                  onArm={handleArmChord}
+                  onClearSelection={chart.onClearSelection}
+                  onStamp={chart.onStamp}
+                  onSelectChord={(sectionId, lineId, charIndex, chordId) =>
+                    chart.onSelectChord({ sectionId, lineId, charIndex, chordId })
+                  }
+                  onSelectWord={(sectionId, lineId, charIndex) =>
+                    chart.onSelectWord({ sectionId, lineId, charIndex })
+                  }
+                  onDeleteSelected={onDeleteSelectedChord}
+                  onApplySectionProgression={chart.onApplySectionProgression}
+                  onSectionPlaybackOverrideChange={onSectionPlaybackOverrideChange}
+                />
+              </Box>
+            </OriginalsChartPlaybackProvider>
           </>
         ) : (
           <OriginalsTakesStage

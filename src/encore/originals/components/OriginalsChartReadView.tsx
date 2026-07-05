@@ -6,18 +6,23 @@ import Typography from '@mui/material/Typography';
 import { useMemo, useState, type ReactElement } from 'react';
 import { parseChordProToChartLayout } from '../../../shared/music/chordPro/chordChartLayout';
 import type { ChartPlaybackStep } from '../../../shared/music/chordPro/chartPlaybackSequence';
+import type { SectionPlaybackOverride } from '../../../shared/music/resolveSectionPlaybackSettings';
 import { chartLayoutHasPaintedChords } from '../originalsChartLayoutHelpers';
 import { originalsLyricsChartTexts } from '../originalsLyricsChartTexts';
 import { useOriginalsChordNotation } from '../hooks/useOriginalsChordNotation';
 import { OriginalChordPlayback } from './OriginalChordPlayback';
 import { OriginalsPaintMode } from './chart/OriginalsPaintMode';
 import { OriginalsChordPaletteNotationToggle } from './chart/OriginalsChordPaletteNotationToggle';
+import { OriginalsChartPlaybackProvider } from '../context/OriginalsChartPlaybackContext';
+
+const ORIGINALS_CHORD_PLAYBACK_STORAGE_KEY = 'encore-originals-chord-playback-settings';
 
 export type OriginalsChartReadViewProps = {
   lyricsAndChords: string;
   songId: string;
   songKey: string;
   tempo: number;
+  sectionPlaybackOverrides?: Record<string, SectionPlaybackOverride>;
   /** Smaller play/settings controls for dashboard embeds. */
   compactPlayback?: boolean;
   /** Dashboard/detail embed — single-column chart, contained width. */
@@ -30,6 +35,7 @@ export function OriginalsChartReadView({
   songId,
   songKey,
   tempo,
+  sectionPlaybackOverrides,
   compactPlayback = false,
   embedded = false,
 }: OriginalsChartReadViewProps): ReactElement | null {
@@ -47,61 +53,86 @@ export function OriginalsChartReadView({
   return (
     <Stack spacing={1.25}>
       {hasPaintedChords ? (
-        <Stack
-          direction="row"
-          alignItems="center"
-          flexWrap="wrap"
-          useFlexGap
-          spacing={1}
-          className="encore-originals-chart-read-toolbar"
+        <OriginalsChartPlaybackProvider
+          layout={layout}
+          tempo={tempo}
+          storageKey={ORIGINALS_CHORD_PLAYBACK_STORAGE_KEY}
+          sectionPlaybackOverrides={sectionPlaybackOverrides}
+          onActiveStepChange={setActivePlaybackStep}
         >
-          <FormControlLabel
-            control={
-              <Checkbox
-                size="small"
-                checked={showChords}
-                onChange={(_, checked) => setShowChords(checked)}
-              />
-            }
-            label={
-              <Typography variant="body2" color="text.secondary">
-                Show chords
-              </Typography>
-            }
-            sx={{ m: 0, alignItems: 'center', gap: 0.5 }}
-          />
-          {showStyledChart ? (
-            <>
-              <OriginalsChordPaletteNotationToggle notation={notation} onNotationChange={setNotation} />
-              <OriginalChordPlayback
-                layout={layout}
-                tempo={tempo}
-                compact={compactPlayback}
-                onActiveStepChange={setActivePlaybackStep}
-              />
-            </>
-          ) : null}
-        </Stack>
-      ) : null}
+          <Stack
+            direction="row"
+            alignItems="center"
+            flexWrap="wrap"
+            useFlexGap
+            spacing={1}
+            className="encore-originals-chart-read-toolbar"
+          >
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={showChords}
+                  onChange={(_, checked) => setShowChords(checked)}
+                />
+              }
+              label={
+                <Typography variant="body2" color="text.secondary">
+                  Show chords
+                </Typography>
+              }
+              sx={{ m: 0, alignItems: 'center', gap: 0.5 }}
+            />
+            {showStyledChart ? (
+              <>
+                <OriginalsChordPaletteNotationToggle notation={notation} onNotationChange={setNotation} />
+                <OriginalChordPlayback
+                  layout={layout}
+                  tempo={tempo}
+                  sectionPlaybackOverrides={sectionPlaybackOverrides}
+                  compact={compactPlayback}
+                  onActiveStepChange={setActivePlaybackStep}
+                />
+              </>
+            ) : null}
+          </Stack>
 
-      {showStyledChart ? (
-        <Box
-          className={[
-            'encore-originals-chart-read-view',
-            'encore-originals-chart-read-view--readonly',
-            embedded ? 'encore-originals-chart-read-view--embedded' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-        >
-          <OriginalsPaintMode
-            readOnly
-            layout={layout}
-            songKey={songKey}
-            notation={notation}
-            activePlaybackStep={activePlaybackStep}
-          />
-        </Box>
+          {showStyledChart ? (
+            <Box
+              className={[
+                'encore-originals-chart-read-view',
+                'encore-originals-chart-read-view--readonly',
+                embedded ? 'encore-originals-chart-read-view--embedded' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              <OriginalsPaintMode
+                readOnly
+                layout={layout}
+                songKey={songKey}
+                notation={notation}
+                tempo={tempo}
+                timeSignature={{ numerator: 4, denominator: 4 }}
+                sectionPlaybackOverrides={sectionPlaybackOverrides}
+                activePlaybackStep={activePlaybackStep}
+              />
+            </Box>
+          ) : (
+            <Typography
+              component="pre"
+              variant="body1"
+              sx={{
+                whiteSpace: 'pre-wrap',
+                m: 0,
+                lineHeight: 1.65,
+                color: 'text.primary',
+              }}
+            >
+              {lyrics}
+            </Typography>
+          )}
+        </OriginalsChartPlaybackProvider>
       ) : (
         <Typography
           component="pre"

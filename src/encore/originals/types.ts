@@ -5,6 +5,7 @@ import { DEFAULT_TIME_SIGNATURE, normalizeTimeSignature } from '../../shared/mus
 import type { TimeSignature } from '../../shared/rhythm/types';
 import type { EncoreMiscResource } from '../types';
 import type { OriginalsWorkflowStage } from './originalsWorkflowStages';
+import type { OriginalsSectionPlaybackOverride } from './sectionPlaybackOverrides';
 
 /** Brainstorm reference links and files — same shape as repertoire misc practice resources. */
 export type OriginalBrainstormResource = EncoreMiscResource;
@@ -65,6 +66,11 @@ export interface EncoreOriginalSong {
    * When absent, matching section types inherit the first section's progression visually.
    */
   sectionProgressionOverrides?: Record<string, string>;
+  /**
+   * Per-section playback overrides keyed by {@link SongSection.sectionId}.
+   * Sections inherit global playback settings until `customPlayback` is enabled.
+   */
+  sectionPlaybackOverrides?: Record<string, OriginalsSectionPlaybackOverride>;
   /**
    * Local calendar day (YYYY-MM-DD) when songwriting began — may predate {@link EncoreOriginalSong.createdAt}.
    * When unset, UI falls back to the date the song was added to Encore.
@@ -140,6 +146,7 @@ export function normalizeEncoreOriginalSong(raw: LegacyOriginalRow): EncoreOrigi
     songReferences: song.songReferences ?? [],
     stageCompletion: song.stageCompletion ?? {},
     timeSignature: normalizeTimeSignature(song.timeSignature),
+    sectionPlaybackOverrides: song.sectionPlaybackOverrides,
   };
 }
 

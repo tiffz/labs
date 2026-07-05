@@ -257,6 +257,7 @@ export function OriginalsSongViewMode({
               songId={song.id}
               songKey={song.key}
               tempo={song.tempo}
+              sectionPlaybackOverrides={song.sectionPlaybackOverrides}
             />
           ) : (
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>

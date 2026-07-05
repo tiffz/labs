@@ -10458,6 +10458,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-chartlayoutsectionplayablesteps",
+    "name": "chartLayoutSectionPlayableSteps",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Playable steps for one section — used by section loop playback.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordpro-chartplaybacksequence-ts-chartlayouttoplayableplaybacksteps",
     "name": "chartLayoutToPlayablePlaybackSteps",
     "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
@@ -10571,6 +10586,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "music-core",
     "description": "Format playback duration as `m:ss` (rounded to whole seconds).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-sectionhasplayablechartsteps",
+    "name": "sectionHasPlayableChartSteps",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Assume 4/4: each lyric line spans two measures; one chord change per measure.",
     "tags": [
       "music"
     ],
@@ -12730,6 +12760,28 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-exporttypes-ts-exportscoresheetrenderrequest",
+    "name": "ExportScoreSheetRenderRequest",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-exporttypes-ts-exportsourceadapter",
     "name": "ExportSourceAdapter",
     "path": "src/shared/music/exportTypes.ts",
@@ -12771,6 +12823,27 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-exporttypes-ts-isscoreexportformat",
+    "name": "isScoreExportFormat",
+    "path": "src/shared/music/exportTypes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -14344,6 +14417,52 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "chords"
     ],
     "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-resolvesectionplaybacksettings-ts-resolvesectionplaybacksettings",
+    "name": "resolveSectionPlaybackSettings",
+    "path": "src/shared/music/resolveSectionPlaybackSettings.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Per-section playback override — unset fields inherit from song/session defaults.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-resolvesectionplaybacksettings-ts-sectionplaybackoverride",
+    "name": "SectionPlaybackOverride",
+    "path": "src/shared/music/resolveSectionPlaybackSettings.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Per-section playback override — unset fields inherit from song/session defaults.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-resolvesectionplaybacksettings-ts-sectionusescustomplayback",
+    "name": "sectionUsesCustomPlayback",
+    "path": "src/shared/music/resolveSectionPlaybackSettings.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Per-section playback override — unset fields inherit from song/session defaults.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -16053,6 +16172,43 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-notation-drumsymbols-ts-drawabledrumsound",
+    "name": "DrawableDrumSound",
+    "path": "src/shared/notation/drumSymbols.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "SVG path data for drum symbols",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-drumsymbols-ts-drawdrumssymbollegendoncanvas",
+    "name": "drawDrumsSymbolLegendOnCanvas",
+    "path": "src/shared/notation/drumSymbols.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "SVG path data for drum symbols",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-notation-drumsymbols-ts-drawdrumsymbol",
     "name": "drawDrumSymbol",
     "path": "src/shared/notation/drumSymbols.ts",
@@ -16068,6 +16224,43 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-drumsymbols-ts-drawdrumsymboloncanvas",
+    "name": "drawDrumSymbolOnCanvas",
+    "path": "src/shared/notation/drumSymbols.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "SVG path data for drum symbols",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-drumsymbols-ts-drums-symbol-legend",
+    "name": "DRUMS_SYMBOL_LEGEND",
+    "path": "src/shared/notation/drumSymbols.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "SVG path data for drum symbols",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "const",
     "demoId": null
   },
   {
@@ -17330,6 +17523,92 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "chords"
     ],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-vexflowfontexport-ts-buildvexflowsvgfontstyles",
+    "name": "buildVexFlowSvgFontStyles",
+    "path": "src/shared/notation/vexFlowFontExport.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-vexflowfontexport-ts-ensurevexflowfontsloaded",
+    "name": "ensureVexFlowFontsLoaded",
+    "path": "src/shared/notation/vexFlowFontExport.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-vexflowfontexport-ts-fetchvexflowfontdataurl",
+    "name": "fetchVexFlowFontDataUrl",
+    "path": "src/shared/notation/vexFlowFontExport.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-vexflowfontexport-ts-injectsvgstyle",
+    "name": "injectSvgStyle",
+    "path": "src/shared/notation/vexFlowFontExport.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-vexflowfontexport-ts-vexflow-notation-fonts",
+    "name": "VEXFLOW_NOTATION_FONTS",
+    "path": "src/shared/notation/vexFlowFontExport.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "const",
     "demoId": null
   },
   {
@@ -21362,6 +21641,41 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-labspdffromcanvas-ts-createpdfblobfromcanvas",
+    "name": "createPdfBlobFromCanvas",
+    "path": "src/shared/utils/labsPdfFromCanvas.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Lazy pdf-lib wrapper so score/PDF export does not pull pdf-lib into app main chunks.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labspdffromcanvas-ts-pdffromcanvasoptions",
+    "name": "PdfFromCanvasOptions",
+    "path": "src/shared/utils/labsPdfFromCanvas.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "utils",
+      "api"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-playbackautoscroll-ts-playbackautoscrolloptions",
     "name": "PlaybackAutoScrollOptions",
     "path": "src/shared/utils/playbackAutoScroll.ts",
@@ -21683,6 +21997,58 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "zines"
     ],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-svgtocanvas-ts-svgelementtocanvas",
+    "name": "svgElementToCanvas",
+    "path": "src/shared/utils/svgToCanvas.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-svgtocanvas-ts-svgelementtopngblob",
+    "name": "svgElementToPngBlob",
+    "path": "src/shared/utils/svgToCanvas.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-svgtocanvas-ts-svgtocanvasoptions",
+    "name": "SvgToCanvasOptions",
+    "path": "src/shared/utils/svgToCanvas.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "utils",
+      "api"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "interface",
     "demoId": null
   },
   {

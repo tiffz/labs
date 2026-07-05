@@ -4,6 +4,8 @@ import type { ApplySectionProgressionResult } from '../../../shared/music/chordP
 import type { ChartLayout } from '../../../shared/music/chordPro/chordChartLayout';
 import type { ChartPlaybackStep } from '../../../shared/music/chordPro/chartPlaybackSequence';
 import type { ChordNotationMode } from '../../../shared/music/chordSymbolDisplay';
+import type { TimeSignature } from '../../../shared/rhythm/types';
+import type { OriginalsSectionPlaybackOverride } from '../sectionPlaybackOverrides';
 import { isPointerInsideSelector } from '../../../shared/dom/resolveEventTargetElement';
 import type { ChordInteractionTarget, WordInteractionTarget } from '../chartInteractionTypes';
 import { OriginalsPaintMode } from './chart/OriginalsPaintMode';
@@ -16,6 +18,9 @@ export type OriginalsPaintChordsEditorProps = {
   selectedChord: ChordInteractionTarget | null;
   selectedWord: WordInteractionTarget | null;
   activePlaybackStep: ChartPlaybackStep | null;
+  tempo: number;
+  timeSignature: TimeSignature;
+  sectionPlaybackOverrides?: Record<string, OriginalsSectionPlaybackOverride>;
   /** Renders at the top of the scrollable chart area (e.g. workflow stepper on the chords stage). */
   scrollHeader?: ReactNode;
   onArm: (chord: string | null) => void;
@@ -25,6 +30,10 @@ export type OriginalsPaintChordsEditorProps = {
   onSelectWord: (sectionId: string, lineId: string, charIndex: number) => void;
   onDeleteSelected: () => void;
   onApplySectionProgression: (sectionId: string, progression: string) => ApplySectionProgressionResult;
+  onSectionPlaybackOverrideChange?: (
+    sectionId: string,
+    override: OriginalsSectionPlaybackOverride | null,
+  ) => void;
 };
 
 export function OriginalsPaintChordsEditor({
@@ -43,6 +52,10 @@ export function OriginalsPaintChordsEditor({
   onSelectWord,
   onDeleteSelected,
   onApplySectionProgression,
+  onSectionPlaybackOverrideChange,
+  tempo,
+  timeSignature,
+  sectionPlaybackOverrides,
 }: OriginalsPaintChordsEditorProps): ReactElement {
   useEffect(() => {
     const hasSelection = Boolean(selectedChord || selectedWord || armedChord);
@@ -53,7 +66,7 @@ export function OriginalsPaintChordsEditor({
         isPointerInsideSelector(e, 'input, textarea, [contenteditable="true"]') ||
         isPointerInsideSelector(
           e,
-          '.encore-originals-chord-badge, .encore-originals-lyric-token, .encore-originals-chord-palette, .encore-originals-chord-palette-pick, .encore-originals-chord-palette-display, .encore-originals-chords-toolbar, .encore-originals-chords-playback-bar, .encore-originals-section-progression-menu',
+          '.encore-originals-chord-badge, .encore-originals-lyric-token, .encore-originals-chord-palette, .encore-originals-chord-palette-pick, .encore-originals-chord-palette-display, .encore-originals-chords-toolbar, .encore-originals-chords-playback-bar, .encore-originals-section-progression-menu, .encore-originals-section-playback-menu, .encore-originals-paint-section-playback-button',
         )
       ) {
         return;
@@ -94,11 +107,15 @@ export function OriginalsPaintChordsEditor({
         selectedChord={selectedChord}
         selectedWord={selectedWord}
         activePlaybackStep={activePlaybackStep}
+        tempo={tempo}
+        timeSignature={timeSignature}
+        sectionPlaybackOverrides={sectionPlaybackOverrides}
         scrollHeader={scrollHeader}
         onStamp={onStamp}
         onSelectChord={onSelectChord}
         onSelectWord={onSelectWord}
         onApplySectionProgression={onApplySectionProgression}
+        onSectionPlaybackOverrideChange={onSectionPlaybackOverrideChange}
       />
     </Box>
   );

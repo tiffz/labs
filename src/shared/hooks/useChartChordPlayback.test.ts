@@ -2,6 +2,7 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { useChartChordPlayback } from './useChartChordPlayback';
 import type { ChartLayout } from '../music/chordPro/chordChartLayout';
+import { chartPlaybackMeasureDurationMs } from '../music/chordPro/chartPlaybackSequence';
 
 const scheduleStyledChordMeasure = vi.fn();
 const scheduleDrumMeasure = vi.fn();
@@ -111,5 +112,69 @@ describe('useChartChordPlayback stop', () => {
     expect(scheduleDrumMeasure).not.toHaveBeenCalled();
     expect(stopAll).toHaveBeenCalled();
     expect(result.current.playing).toBe(false);
+  });
+
+  it('loops a single section until stop', async () => {
+    vi.useFakeTimers();
+    const multiSectionLayout: ChartLayout = {
+      sections: [
+        {
+          sectionId: 'verse-1',
+          type: 'Verse',
+          header: 'Verse 1',
+          lines: [
+            {
+              lineId: 'line-1',
+              text: 'Hello',
+              chords: [{ id: 'c1', charIndex: 0, chordName: 'C' }],
+            },
+          ],
+        },
+        {
+          sectionId: 'chorus-0',
+          type: 'Chorus',
+          header: 'Chorus',
+          lines: [
+            {
+              lineId: 'line-2',
+              text: 'World',
+              chords: [{ id: 'c2', charIndex: 0, chordName: 'G' }],
+            },
+          ],
+        },
+      ],
+    };
+
+    const { result } = renderHook(() =>
+      useChartChordPlayback({
+        layout: multiSectionLayout,
+        tempo: 120,
+        storageKey: 'test-chart-playback-section-loop',
+      }),
+    );
+
+    await act(async () => {
+      result.current.startSectionLoop('verse-1');
+      await Promise.resolve();
+    });
+
+    expect(result.current.playing).toBe(true);
+    expect(result.current.playingSectionId).toBe('verse-1');
+
+    await act(async () => {
+      vi.advanceTimersByTime(chartPlaybackMeasureDurationMs(120) * 2);
+      await Promise.resolve();
+    });
+
+    expect(result.current.playing).toBe(true);
+    expect(result.current.playingSectionId).toBe('verse-1');
+
+    act(() => {
+      result.current.stop();
+    });
+
+    expect(result.current.playing).toBe(false);
+    expect(result.current.playingSectionId).toBeNull();
+    vi.useRealTimers();
   });
 });

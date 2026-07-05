@@ -26,6 +26,8 @@ describe('OriginalsPaintChordsEditor', () => {
         }}
         selectedWord={null}
         activePlaybackStep={null}
+        tempo={80}
+        timeSignature={{ numerator: 4, denominator: 4 }}
         onArm={onArm}
         onClearSelection={onClearSelection}
         onStamp={vi.fn()}

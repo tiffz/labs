@@ -94,6 +94,18 @@ export function chartLayoutToPlayablePlaybackSteps(layout: ChartLayout): ChartPl
   return chartLayoutToPlaybackSequence(layout).filter((step) => parseChordSymbol(step.chordName));
 }
 
+/** Playable steps for one section — used by section loop playback. */
+export function chartLayoutSectionPlayableSteps(
+  layout: ChartLayout,
+  sectionId: string,
+): ChartPlaybackStep[] {
+  return chartLayoutToPlayablePlaybackSteps(layout).filter((step) => step.sectionId === sectionId);
+}
+
+export function sectionHasPlayableChartSteps(layout: ChartLayout, sectionId: string): boolean {
+  return chartLayoutSectionPlayableSteps(layout, sectionId).length > 0;
+}
+
 function distinctChordAnchors(line: LyricLine): number {
   const anchors = new Set(
     line.chords.map((c) => snapChordColumnToCharIndex(c.charIndex, line.text)),
