@@ -37,5 +37,7 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | [`react-interaction-perf.mdc`](react-interaction-perf.mdc)                   | Control + grid tabs, practice configure  | `docs/PERFORMANCE.md`                       | `labs-performance`           |
 | [`stale-preview-callback-deps.mdc`](stale-preview-callback-deps.mdc)         | preview/strip hooks with async deps      | `docs/PROCESS_BACKLOG.md`                   | —                            |
 | [`ux-agent-guide.mdc`](ux-agent-guide.mdc)                                   | `src/**/components/**`, app shells, CSS  | `docs/UX_AGENT_GUIDE.md`                    | `labs-ux-journey`            |
+| [`selection-visual-hierarchy.mdc`](selection-visual-hierarchy.mdc)           | metronome, chips, shared theme CSS       | `docs/SELECTION_VISUAL_HIERARCHY.md`        | —                            |
+| [`focus-theming.mdc`](focus-theming.mdc)                                     | `**/*.css`, shared components, main.tsx  | `docs/FOCUS_THEMING.md`                     | —                            |
 
 **Maintenance:** When adding a rule or skill, update this table and [`.cursor/skills/README.md`](../skills/README.md) in the same PR. Keep each rule **~50 lines**; link to canonical docs for prose. Prefer **enforcement** (tests, ESLint) over duplicated policy.

@@ -109,6 +109,18 @@ export const RHYTHM_DATABASE: Record<string, RhythmDefinition> = {
       { notation: 'D-TKD-T-' },
       { notation: 'D-TKT-D-', note: 'La Bass Fe Eyne variation' },
     ],
+    relatedRhythmIds: ['daem'],
+  },
+  daem: {
+    id: 'daem',
+    name: 'Da-em',
+    description:
+      'A lively 2/4 Middle Eastern groove with a ka ornament before the second dum (D-TKD-TK).',
+    learnMoreLinks: [],
+    basePattern: 'D-TKD-TK',
+    timeSignature: { numerator: 2, denominator: 4 },
+    variations: [{ notation: 'D-TKD-TK' }],
+    relatedRhythmIds: ['ayoub'],
   },
   malfuf: {
     id: 'malfuf',
@@ -333,4 +345,125 @@ export function getRhythmTemplatePresets(
       notation: getPresetNotation(rhythm, targetTimeSignature),
       timeSignature: targetTimeSignature,
     }));
+}
+
+export type RhythmPresetGroup = {
+  id: string;
+  label: string;
+  presetIds: string[];
+};
+
+export type RhythmPresetMeterGroup = {
+  id: string;
+  meterLabel: string;
+  presetIds: string[];
+};
+
+export type RhythmPresetFamily = {
+  id: string;
+  label: string;
+  meterGroups: RhythmPresetMeterGroup[];
+};
+
+function meterLabel(ts: TimeSignature): string {
+  return `${ts.numerator}/${ts.denominator}`;
+}
+
+const METER_SORT_ORDER = ['4/4', '2/4', '6/8', '8/8'] as const;
+
+function meterSortKey(label: string): number {
+  const index = METER_SORT_ORDER.indexOf(label as (typeof METER_SORT_ORDER)[number]);
+  return index >= 0 ? index : METER_SORT_ORDER.length;
+}
+
+type FamilySpec = {
+  id: string;
+  label: string;
+  meters: Record<string, string[]>;
+};
+
+const PRESET_FAMILIES: FamilySpec[] = [
+  {
+    id: 'middle-eastern',
+    label: 'Middle Eastern',
+    meters: {
+      '4/4': ['baladi', 'maqsum', 'saeidi'],
+      '2/4': ['ayoub', 'daem'],
+      '8/8': ['malfuf', 'kahleegi'],
+    },
+  },
+  {
+    id: 'common',
+    label: 'Common',
+    meters: {
+      '4/4': ['rockAndRoll', 'simple'],
+      '6/8': ['simple68'],
+    },
+  },
+];
+
+/** Type → meter nested families for the load-rhythm picker. */
+export function getRhythmPresetFamilies(): RhythmPresetFamily[] {
+  const assigned = new Set<string>();
+  const families: RhythmPresetFamily[] = [];
+
+  for (const family of PRESET_FAMILIES) {
+    const meterGroups: RhythmPresetMeterGroup[] = [];
+
+    for (const meterLabelKey of Object.keys(family.meters).sort(
+      (a, b) => meterSortKey(a) - meterSortKey(b),
+    )) {
+      const presetIds = family.meters[meterLabelKey]!.filter(
+        (presetId) => RHYTHM_DATABASE[presetId] && !assigned.has(presetId),
+      );
+      if (presetIds.length === 0) continue;
+      presetIds.forEach((presetId) => assigned.add(presetId));
+      meterGroups.push({
+        id: `${family.id}-${meterLabelKey.replace('/', '-')}`,
+        meterLabel: meterLabelKey,
+        presetIds,
+      });
+    }
+
+    if (meterGroups.length > 0) {
+      families.push({ id: family.id, label: family.label, meterGroups });
+    }
+  }
+
+  const fallbackByMeter = new Map<string, string[]>();
+  for (const id of Object.keys(RHYTHM_DATABASE)) {
+    if (assigned.has(id)) continue;
+    const rhythm = RHYTHM_DATABASE[id]!;
+    const label = meterLabel(rhythm.timeSignature);
+    const bucket = fallbackByMeter.get(label) ?? [];
+    bucket.push(id);
+    fallbackByMeter.set(label, bucket);
+  }
+
+  if (fallbackByMeter.size > 0) {
+    const meterGroups = [...fallbackByMeter.entries()]
+      .sort(([a], [b]) => meterSortKey(a) - meterSortKey(b))
+      .map(([meterLabelKey, presetIds]) => {
+        presetIds.forEach((presetId) => assigned.add(presetId));
+        return {
+          id: `other-${meterLabelKey.replace('/', '-')}`,
+          meterLabel: meterLabelKey,
+          presetIds,
+        };
+      });
+    families.push({ id: 'other', label: 'Other', meterGroups });
+  }
+
+  return families;
+}
+
+/** Flattened groups (legacy); prefer {@link getRhythmPresetFamilies}. */
+export function getRhythmPresetGroups(): RhythmPresetGroup[] {
+  return getRhythmPresetFamilies().flatMap((family) =>
+    family.meterGroups.map((meter) => ({
+      id: meter.id,
+      label: `${family.label} · ${meter.meterLabel}`,
+      presetIds: meter.presetIds,
+    })),
+  );
 }

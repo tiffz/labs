@@ -7,6 +7,7 @@ import type { TimeSignature } from '../../shared/rhythm/types';
 import type { SampledPianoLoadState } from '../../shared/music/sampledPianoLoadState';
 import type { SoundType } from '../../shared/music/soundOptions';
 import type { WordsPlaybackRailProps } from '../components/WordsPlaybackRail';
+import type { MetronomePreferences } from '../../shared/audio/platform/metronome';
 import { clampBpm } from '../utils/appRhythmHelpers';
 import {
   BACKING_FALLBACK_TEMPLATE,
@@ -66,6 +67,9 @@ export function useWordsPlaybackRailProps(params: {
   setBackingBeatNotation: React.Dispatch<React.SetStateAction<string>>;
   autoFollowPlayback: boolean;
   setAutoFollowPlayback: React.Dispatch<React.SetStateAction<boolean>>;
+  metronomePreferences: MetronomePreferences;
+  setMetronomePreferences: React.Dispatch<React.SetStateAction<MetronomePreferences>>;
+  metronomePrefsNonDefault: boolean;
 }): WordsPlaybackRailProps {
   const {
     isPlaying,
@@ -120,6 +124,9 @@ export function useWordsPlaybackRailProps(params: {
     setBackingBeatNotation,
     autoFollowPlayback,
     setAutoFollowPlayback,
+    metronomePreferences,
+    setMetronomePreferences,
+    metronomePrefsNonDefault,
   } = params;
 
   return useMemo(
@@ -157,6 +164,9 @@ export function useWordsPlaybackRailProps(params: {
         setSoundMenuOpen((previous) => !previous);
         setGenerationMenuOpen(false);
       },
+      metronomePreferences,
+      onMetronomePreferencesChange: setMetronomePreferences,
+      metronomePrefsNonDefault,
       soundMenuProps: {
         menuRef: soundMenuRef,
         masterVolume,
@@ -251,6 +261,9 @@ export function useWordsPlaybackRailProps(params: {
       setBackingBeatNotation,
       autoFollowPlayback,
       setAutoFollowPlayback,
+      metronomePreferences,
+      setMetronomePreferences,
+      metronomePrefsNonDefault,
     ]
   );
 }

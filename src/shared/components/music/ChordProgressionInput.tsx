@@ -195,9 +195,6 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
           open={Boolean(open && anchorRef.current)}
           anchorEl={anchorRef.current}
           onClose={() => setOpen(false)}
-          disableAutoFocus
-          disableEnforceFocus
-          disableRestoreFocus
           placement="bottom-start"
           paperClassName={[
             'shared-chord-progression-dropdown',

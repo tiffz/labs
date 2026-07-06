@@ -6,7 +6,13 @@ const root = process.cwd();
 const checks = [
   {
     file: 'src/shared/components/music/appSharedThemes.css',
-    required: ['--space-1', '--theme-primary', '--control-height-comfortable'],
+    required: [
+      '--space-1',
+      '--theme-primary',
+      '--control-height-comfortable',
+      '--labs-popover-shadow',
+      '--labs-control-hover-shadow',
+    ],
   },
   {
     file: 'src/shared/components/music/bpmInput.css',

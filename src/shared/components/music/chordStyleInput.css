@@ -61,8 +61,6 @@
 .shared-chord-style-dropdown {
   min-width: var(--cs-dropdown-min-width);
   max-width: var(--cs-dropdown-max-width);
-  --pfs-bg: #fff;
-  background-color: var(--pfs-bg, #fff) !important;
 }
 
 .shared-chord-style-dropdown-list {

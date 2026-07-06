@@ -1,5 +1,6 @@
 import Popover, { type PopoverOrigin, type PopoverProps } from '@mui/material/Popover';
 import type { ReactNode } from 'react';
+import { mergeAnchoredPopoverPaperSlot } from './anchoredPopoverChrome';
 
 export type AnchoredPopoverPlacement =
   | 'bottom-start'
@@ -41,8 +42,10 @@ export interface AnchoredPopoverProps
  * placement patterns used across apps so each app no longer re-specifies
  * `anchorOrigin` / `transformOrigin` / `slotProps.paper.className`.
  *
- * Adopt this primitive in new code; migrate existing call sites opportunistically.
- * See `src/shared/SHARED_UI_CONVENTIONS.md` for the current adoption status.
+ * Disables MUI Paper elevation so `--labs-popover-shadow` (app token) is the
+ * only shell shadow — div menus and portaled pickers match.
+ *
+ * See `src/shared/SHARED_UI_CONVENTIONS.md` and `docs/CHROME_UI_CONTRACT.md`.
  */
 export default function AnchoredPopover({
   placement = 'bottom-start',
@@ -51,14 +54,17 @@ export default function AnchoredPopover({
   children,
   ...rest
 }: AnchoredPopoverProps) {
+  const paperSlot = slotProps?.paper;
+  const slotClassName =
+    paperSlot && typeof paperSlot === 'object' && 'className' in paperSlot
+      ? paperSlot.className
+      : undefined;
+  const mergedPaperClassName = ['labs-popover-surface', paperClassName, slotClassName]
+    .filter(Boolean)
+    .join(' ');
   const mergedSlotProps: PopoverProps['slotProps'] = {
     ...slotProps,
-    paper: {
-      ...(slotProps?.paper ?? {}),
-      ...(paperClassName
-        ? { className: paperClassName }
-        : {}),
-    },
+    paper: mergeAnchoredPopoverPaperSlot(paperSlot, mergedPaperClassName),
   };
   return (
     <Popover

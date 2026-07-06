@@ -10,6 +10,7 @@ vi.mock('../shared/rhythm/rhythmPlayer', () => ({
     play: vi.fn(),
     stop: vi.fn(),
     setMetronomeEnabled: vi.fn(),
+    setMetronomePlaybackPrefs: vi.fn().mockResolvedValue(undefined),
     setSettings: vi.fn(),
     setBpmAtMeasureBoundary: vi.fn(),
   },
@@ -109,13 +110,7 @@ describe('App', () => {
 
   it('displays the default time signature in controls', () => {
     render(<App />);
-    // Check the time signature controls have correct default values
-    const numeratorInput = screen.getByLabelText('Time signature numerator') as HTMLInputElement;
-    const denominatorSelect = screen.getAllByRole('combobox').find(
-      select => (select as HTMLElement).getAttribute('aria-label') === 'Time signature denominator'
-    ) as HTMLSelectElement;
-    expect(numeratorInput).toHaveValue(4); // numerator
-    expect(denominatorSelect).toHaveValue('4'); // denominator
+    expect(screen.getByRole('button', { name: 'Change time signature' })).toHaveTextContent('4 / 4');
   });
 
   it('has a default rhythm notation', () => {
@@ -128,7 +123,7 @@ describe('App', () => {
     it('should toggle metronome when button is clicked', () => {
       render(<App />);
 
-      const metronomeButton = screen.getByLabelText('Toggle metronome');
+      let metronomeButton = screen.getByLabelText('Metronome off');
 
       // Initially should be off
       expect(metronomeButton).not.toHaveClass('active');
@@ -136,20 +131,21 @@ describe('App', () => {
       // Click to enable
       fireEvent.click(metronomeButton);
 
+      metronomeButton = screen.getByLabelText('Metronome on');
       expect(metronomeButton).toHaveClass('active');
       expect(rhythmPlayer.setMetronomeEnabled).toHaveBeenCalledWith(true);
 
       // Click to disable
       fireEvent.click(metronomeButton);
 
-      expect(metronomeButton).not.toHaveClass('active');
+      metronomeButton = screen.getByLabelText('Metronome off');
       expect(rhythmPlayer.setMetronomeEnabled).toHaveBeenCalledWith(false);
     });
 
     it('should update metronome state and rhythm player when toggled', () => {
       render(<App />);
 
-      const metronomeButton = screen.getByLabelText('Toggle metronome');
+      const metronomeButton = screen.getByLabelText('Metronome off');
 
       fireEvent.click(metronomeButton);
 
@@ -157,7 +153,7 @@ describe('App', () => {
       expect(rhythmPlayer.setMetronomeEnabled).toHaveBeenCalledWith(true);
 
       // Verify the button shows active state
-      expect(metronomeButton).toHaveClass('active');
+      expect(screen.getByLabelText('Metronome on')).toHaveClass('active');
     });
   });
 

@@ -132,8 +132,8 @@ export function EncoreMediaPlaybackQueueChip(): ReactElement | null {
         transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         slotProps={{
           paper: {
-            className: 'encore-media-playback-queue-popover',
-            elevation: 3,
+            elevation: 0,
+            className: 'labs-popover-surface encore-media-playback-queue-popover',
           },
         }}
       >

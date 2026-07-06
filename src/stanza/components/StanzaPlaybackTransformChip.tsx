@@ -7,6 +7,8 @@ export type StanzaPlaybackTransformChipProps = {
   /** When true, chip uses accent styling and may show a direction arrow. */
   shifted: boolean;
   direction?: 'up' | 'down';
+  /** Smaller rail chip — full detail belongs in the tooltip. */
+  compact?: boolean;
 };
 
 /** Beat-style pill for logical playback BPM / key after speed or transpose transforms. */
@@ -14,11 +16,18 @@ export default function StanzaPlaybackTransformChip({
   label,
   shifted,
   direction,
+  compact = false,
 }: StanzaPlaybackTransformChipProps): React.ReactElement {
   return (
     <Box
       component="span"
-      className={`stanza-playback-transform-chip${shifted ? ' stanza-playback-transform-chip--shifted' : ''}`}
+      className={[
+        'stanza-playback-transform-chip',
+        shifted ? 'stanza-playback-transform-chip--shifted' : '',
+        compact ? 'stanza-playback-transform-chip--compact' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
       {shifted && direction ? (
         direction === 'up' ? (

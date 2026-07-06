@@ -56,7 +56,7 @@ export default function WordsSectionSettingsMenu({
   return (
     <div
       ref={menuRef}
-      className="words-dropdown-menu words-dropdown-section words-section-settings-menu words-section-settings-menu-portal"
+      className="labs-popover-surface words-dropdown-menu words-dropdown-section words-section-settings-menu words-section-settings-menu-portal"
       style={{
         position: 'fixed',
         top: `${position.top}px`,

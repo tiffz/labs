@@ -1,0 +1,148 @@
+/**
+ * Shared interactive chrome — popover surfaces, buttons, focus/hover rhythm.
+ * Apps theme via semantic tokens in appSharedThemes.css; override brand tint only.
+ * Contract: docs/CHROME_UI_CONTRACT.md · Focus: docs/FOCUS_THEMING.md
+ */
+@layer shared-base {
+  .labs-popover-surface {
+    border: var(--labs-popover-border);
+    border-radius: var(--labs-popover-radius);
+    background: var(--labs-popover-bg);
+    box-shadow: var(--labs-popover-shadow);
+    backdrop-filter: var(--labs-popover-backdrop);
+  }
+
+  /* Beat MUI Paper elevation shadow when both classes apply (AnchoredPopover sets elevation 0). */
+  .labs-popover-surface.MuiPaper-root {
+    box-shadow: var(--labs-popover-shadow);
+    background-color: var(--labs-popover-bg);
+    border: var(--labs-popover-border);
+    border-radius: var(--labs-popover-radius);
+    backdrop-filter: var(--labs-popover-backdrop);
+    background-image: none;
+  }
+
+  .labs-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: var(--control-height-compact, 34px);
+    padding: 6px var(--control-padding-x, 14px);
+    border-radius: 999px;
+    border: 1px solid var(--labs-btn-border, var(--theme-border));
+    background: var(--labs-btn-bg, var(--theme-surface));
+    color: var(--labs-btn-fg, var(--theme-text));
+    font-size: var(--font-size-sm, 0.76rem);
+    font-weight: var(--font-weight-bold, 700);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: var(--labs-control-transition);
+  }
+
+  .labs-btn:hover:not(:disabled) {
+    transform: var(--labs-control-hover-translate);
+    box-shadow: var(--labs-control-hover-shadow);
+    background: var(
+      --labs-btn-bg-hover,
+      var(--labs-btn-bg, var(--theme-surface))
+    );
+  }
+
+  .labs-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--labs-control-focus-ring);
+  }
+
+  /** Opt-in outset focus ring for custom controls (matches .labs-btn). */
+  .labs-focus-outset:focus-visible {
+    outline: none;
+    box-shadow: var(--labs-control-focus-ring);
+  }
+
+  /** Opt-in inset focus ring for toggles inside clipped popovers / segmented rows. */
+  .labs-focus-inset:focus-visible {
+    outline: none;
+    position: relative;
+    z-index: 1;
+    box-shadow: var(--labs-control-focus-ring-inset);
+  }
+
+  .labs-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .labs-btn--primary {
+    background: var(--labs-btn-primary-bg, var(--theme-primary));
+    border-color: var(--labs-btn-primary-border, var(--theme-primary));
+    color: var(--labs-btn-primary-fg, #ffffff);
+  }
+
+  .labs-btn--primary:hover:not(:disabled) {
+    background: var(--labs-btn-primary-bg-hover, var(--theme-primary-hover));
+    border-color: var(
+      --labs-btn-primary-border-hover,
+      var(--theme-primary-hover)
+    );
+  }
+
+  .labs-btn--ghost {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .labs-btn--ghost:hover:not(:disabled) {
+    transform: none;
+    box-shadow: none;
+    background: var(
+      --labs-btn-ghost-hover-bg,
+      color-mix(in srgb, var(--theme-primary) 8%, transparent)
+    );
+  }
+
+  .labs-btn--icon {
+    min-width: var(--control-height-compact, 34px);
+    padding: 6px;
+    border-radius: var(--control-radius, 6px);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  /** Disclosure / dropdown chevron — matches split-action menus (ArrowDropDown). */
+  .labs-disclosure-chevron {
+    flex-shrink: 0;
+    width: var(
+      --labs-disclosure-chevron-size,
+      var(--metro-menu-icon-size, 0.625rem)
+    );
+    height: var(
+      --labs-disclosure-chevron-size,
+      var(--metro-menu-icon-size, 0.625rem)
+    );
+    font-size: var(
+      --labs-disclosure-chevron-size,
+      var(--metro-menu-icon-size, 0.625rem)
+    );
+    color: var(--labs-disclosure-chevron-color, currentColor);
+    opacity: var(--labs-disclosure-chevron-opacity, 0.88);
+    transition:
+      transform 0.2s ease,
+      color 0.15s ease;
+  }
+
+  /**
+   * Wrapper for controls whose :focus-visible ring must not be clipped by sticky bars
+   * or overflow:auto ancestors. Pair with visible overflow on the control shell.
+   */
+  .labs-focus-ring-host {
+    display: inline-flex;
+    overflow: visible;
+    padding: var(--labs-focus-ring-bleed, 3px);
+    margin: calc(-1 * var(--labs-focus-ring-bleed, 3px));
+  }
+}

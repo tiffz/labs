@@ -38,6 +38,7 @@ const CLIENT_LIST_BASE = Object.freeze({
     },
   },
   muiTableContainerProps: {
+    className: 'encore-mrt-scroll-container encore-scroll-surface',
     sx: { overflow: 'auto', bgcolor: 'background.paper' },
   },
   muiTableHeadCellProps: {
@@ -50,7 +51,7 @@ const CLIENT_LIST_BASE = Object.freeze({
       textTransform: 'uppercase',
       color: 'text.secondary',
       whiteSpace: 'nowrap',
-      py: 1.25,
+      py: 1.375,
       px: 1.5,
       borderBottom: 1,
       borderBottomColor: 'divider',
@@ -93,7 +94,7 @@ const REPERTOIRE_TABLE = Object.freeze({
   layoutMode: 'grid-no-grow',
   /** Row virtualization: client-side data + heavy cells → keep React work proportional to viewport. */
   enableRowVirtualization: true,
-  rowVirtualizerOptions: { overscan: 8 },
+  rowVirtualizerOptions: { overscan: 12 },
   /** Many Encore columns are optional/hidden; virtualize horizontally so wide tables stay cheaper. */
   enableColumnVirtualization: true,
   columnVirtualizerOptions: { overscan: 4 },
@@ -128,6 +129,7 @@ const REPERTOIRE_TABLE = Object.freeze({
     },
   },
   muiTableContainerProps: {
+    className: 'encore-mrt-scroll-container encore-scroll-surface',
     sx: {
       bgcolor: 'background.paper',
       maxWidth: '100%',
@@ -136,8 +138,10 @@ const REPERTOIRE_TABLE = Object.freeze({
       overflowY: 'auto',
       overscrollBehavior: 'contain',
       WebkitOverflowScrolling: 'touch',
-      /** Row virtualization measures from the first scroll container; give it a usable height cap. */
-      maxHeight: 'calc(100vh - 220px)',
+      /** Flex parent supplies height; fallback cap when embedded outside list flex chain. */
+      height: '100%',
+      maxHeight: '100%',
+      minHeight: 240,
     },
   },
   muiTableHeadCellProps: {
@@ -289,7 +293,7 @@ const ORIGINALS_LIBRARY_TABLE = Object.freeze({
   enableStickyHeader: false,
   layoutMode: 'semantic',
   enableRowVirtualization: true,
-  rowVirtualizerOptions: { overscan: 8 },
+  rowVirtualizerOptions: { overscan: 12 },
   memoMode: 'cells',
   muiTableProps: {
     sx: { tableLayout: 'fixed', width: '100%', minWidth: 0 },
@@ -307,12 +311,14 @@ const ORIGINALS_LIBRARY_TABLE = Object.freeze({
     },
   },
   muiTableContainerProps: {
+    className: 'encore-mrt-scroll-container encore-scroll-surface',
     sx: {
       bgcolor: 'background.paper',
       maxWidth: '100%',
       minWidth: 0,
       height: '100%',
       maxHeight: '100%',
+      minHeight: 240,
       overflowX: 'auto',
       overflowY: 'auto',
       overscrollBehavior: 'contain',

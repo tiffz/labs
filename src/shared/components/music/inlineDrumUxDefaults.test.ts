@@ -24,7 +24,7 @@ describe('inlineDrumUxDefaults', () => {
   it('INLINE_DRUM_PROFILES define settings-panel, practice-rail, and sidebar-compact', () => {
     expect(INLINE_DRUM_PROFILES['settings-panel'].presetLayout).toBe('grid');
     expect(INLINE_DRUM_PROFILES['settings-panel'].hidePatternInput).toBe(false);
-    expect(INLINE_DRUM_PROFILES['practice-rail'].presetLayout).toBe('compact');
+    expect(INLINE_DRUM_PROFILES['practice-rail'].presetLayout).toBe('grid');
     expect(INLINE_DRUM_PROFILES['practice-rail'].audioEnabled).toBe(true);
     expect(INLINE_DRUM_PROFILES['sidebar-compact'].audioEnabled).toBe(true);
   });

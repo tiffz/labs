@@ -270,6 +270,45 @@ describe('buildSubdivisionGrid — compound /8', () => {
 });
 
 // ---------------------------------------------------------------------------
+// buildSubdivisionGrid — /16 meters (grouping in sixteenth-note units)
+// ---------------------------------------------------------------------------
+describe('buildSubdivisionGrid — /16', () => {
+  it('8/16 level 2: one slot per sixteenth (8 slots)', () => {
+    const grid = buildSubdivisionGrid({
+      timeSignature: { numerator: 8, denominator: 16 },
+      grouping: [1, 1, 1, 1, 1, 1, 1, 1],
+      voiceMode: 'counting',
+      subdivisionLevel: 2,
+      compound: false,
+    });
+    expect(grid).toHaveLength(8);
+  });
+
+  it('12/16 compound [3+3+3+3] level 2: 12 slots', () => {
+    const grid = buildSubdivisionGrid({
+      timeSignature: { numerator: 12, denominator: 16 },
+      grouping: [3, 3, 3, 3],
+      voiceMode: 'counting',
+      subdivisionLevel: 2,
+      compound: true,
+    });
+    expect(grid).toHaveLength(12);
+  });
+
+  it('5/16 [3+2] level 2: 5 slots with group starts at 0 and 3', () => {
+    const grid = buildSubdivisionGrid({
+      timeSignature: { numerator: 5, denominator: 16 },
+      grouping: [3, 2],
+      voiceMode: 'counting',
+      subdivisionLevel: 2,
+      compound: false,
+    });
+    expect(grid).toHaveLength(5);
+    expect(grid.map((e) => e.isGroupStart)).toEqual([true, false, false, true, false]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Group start flags
 // ---------------------------------------------------------------------------
 describe('isGroupStart flags', () => {

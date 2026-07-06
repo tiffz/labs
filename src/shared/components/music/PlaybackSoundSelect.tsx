@@ -120,9 +120,6 @@ export function PlaybackSoundSelect({
         onClose={(_, reason) => {
           if (reason === 'backdropClick' || reason === 'escapeKeyDown') close();
         }}
-        disableAutoFocus
-        disableEnforceFocus
-        disableRestoreFocus
         disableScrollLock
         placement="bottom-start"
         marginThreshold={8}

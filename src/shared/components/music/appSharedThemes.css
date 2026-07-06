@@ -31,7 +31,56 @@
     --theme-border-strong: #cbd5e1;
     --theme-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.14);
     --theme-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --theme-shadow-md: 0 4px 14px rgba(15, 23, 42, 0.1);
     --theme-shadow-lg: 0 12px 28px rgba(15, 23, 42, 0.14);
+    --theme-shadow-popover: var(--theme-shadow-md);
+    --labs-popover-border: 1px solid var(--theme-border);
+    --labs-popover-radius: var(--theme-radius-md);
+    --labs-popover-bg: var(--theme-surface-elevated);
+    --labs-popover-shadow: var(--theme-shadow-popover);
+    --labs-popover-backdrop: blur(4px);
+    --labs-control-transition:
+      transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease,
+      border-color 120ms ease, color 120ms ease;
+    --labs-control-hover-translate: translateY(-1px);
+    --labs-control-hover-shadow: var(--theme-shadow-sm);
+    --labs-control-focus-ring: var(--theme-focus-ring);
+    /** Brand tint source for inset rings (popover toggles, dense panels). */
+    --labs-control-focus-ring-inset-color: var(--theme-primary);
+    --labs-control-focus-ring-inset: inset 0 0 0 2px
+      color-mix(
+        in srgb,
+        var(--labs-control-focus-ring-inset-color) 55%,
+        transparent
+      );
+    /** Outset focus ring padding for sticky toolbars / split controls — see docs/FOCUS_THEMING.md */
+    --labs-focus-ring-bleed: 3px;
+
+    /**
+     * Selection tiers — see docs/SELECTION_VISUAL_HIERARCHY.md
+     * Primary: transport / one main on-state. Secondary: popover toggles & preset chips.
+     */
+    --labs-selection-primary-bg: var(--theme-primary);
+    --labs-selection-primary-fg: #ffffff;
+    --labs-selection-primary-hover-bg: var(--theme-primary-hover);
+    --labs-selection-secondary-bg: color-mix(
+      in srgb,
+      var(--theme-primary) 12%,
+      var(--theme-surface)
+    );
+    --labs-selection-secondary-fg: var(--theme-primary-hover);
+    --labs-selection-secondary-border: color-mix(
+      in srgb,
+      var(--theme-primary) 28%,
+      var(--theme-border)
+    );
+    --labs-selection-secondary-hover-bg: color-mix(
+      in srgb,
+      var(--theme-primary) 18%,
+      var(--theme-surface)
+    );
+    --labs-selection-secondary-weight: var(--font-weight-semibold);
+
     --theme-radius-sm: 6px;
     --theme-radius-md: 10px;
     --theme-radius-lg: 12px;
@@ -1527,8 +1576,6 @@
 
   .drums-shared-bpm-input .shared-bpm-value,
   .ui-drums-bpm-input .shared-bpm-value {
-    font-size: 1rem;
-    font-weight: 600;
     color: var(--text-color, #111827);
   }
 
@@ -1553,5 +1600,124 @@
       var(--menu-border, #e5e7eb) 78%,
       transparent
     );
+  }
+
+  /* Stanza — practice rail KeyInput / BpmInput (`appearance="stanza"`). */
+  .shared-key-input--stanza,
+  .ui-stanza-key-input {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    --key-shell-height: var(--stanza-rail-control-height, 2rem);
+    --key-radius: var(
+      --stanza-rail-control-radius,
+      var(--stanza-radius-chip, 8px)
+    );
+    --key-bg: var(--stanza-rail-control-bg, var(--stanza-tray-bg-strong));
+    --key-border: var(
+      --stanza-rail-control-border,
+      var(--stanza-paper-line-faint)
+    );
+    --key-text: var(--stanza-ink, #2a2622);
+    --key-muted: var(--stanza-ink-muted, rgba(49, 43, 38, 0.62));
+    --key-focus: var(--stanza-rose, #e848a0);
+    --key-divider: var(--stanza-paper-line-faint, rgba(49, 43, 38, 0.1));
+    --key-focus-ring: 0 0 0 2px rgba(232, 72, 160, 0.18);
+    --key-control-hover-bg: color-mix(
+      in srgb,
+      var(--stanza-rose, #e848a0) 8%,
+      transparent
+    );
+    --key-dropdown-bg: var(--labs-popover-bg, #ffffff);
+    --key-dropdown-border: rgba(49, 43, 38, 0.12);
+  }
+
+  .shared-bpm-input--stanza,
+  .ui-stanza-bpm-input {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    --bpm-shell-height: var(--stanza-rail-control-height, 2rem);
+    --bpm-shell-radius: var(
+      --stanza-rail-control-radius,
+      var(--stanza-radius-chip, 8px)
+    );
+    --bpm-bg: var(--stanza-rail-control-bg, var(--stanza-tray-bg-strong));
+    --bpm-border: var(
+      --stanza-rail-control-border,
+      var(--stanza-paper-line-faint)
+    );
+    --bpm-text: var(--stanza-ink, #2a2622);
+    --bpm-muted: var(--stanza-ink-muted, rgba(49, 43, 38, 0.62));
+    --bpm-focus: var(--stanza-rose, #e848a0);
+    --bpm-divider: var(--stanza-paper-line-faint, rgba(49, 43, 38, 0.1));
+    --bpm-focus-ring: 0 0 0 2px rgba(232, 72, 160, 0.18);
+    --bpm-dropdown-bg: var(--labs-popover-bg, #ffffff);
+    --bpm-dropdown-border: rgba(49, 43, 38, 0.12);
+  }
+
+  .shared-key-dropdown.stanza-key-dropdown,
+  .shared-key-dropdown.ui-stanza-key-dropdown {
+    --stanza-rose: #e848a0;
+    --stanza-rose-strong: #c4176e;
+    --labs-selection-secondary-bg: rgba(232, 72, 160, 0.14);
+    --labs-selection-secondary-fg: #c4176e;
+    --labs-selection-secondary-border: rgba(232, 72, 160, 0.28);
+    --labs-selection-secondary-hover-bg: rgba(232, 72, 160, 0.2);
+    --key-dropdown-bg: var(--labs-popover-bg, #ffffff);
+    --key-dropdown-border: rgba(49, 43, 38, 0.12);
+    --key-dropdown-padding: 6px;
+    --key-grid-gap: 4px;
+    --key-chip-min-height: 1.85rem;
+    --key-chip-font-size: 0.8125rem;
+    --key-chip-font-weight: 600;
+    --key-chip-border: rgba(49, 43, 38, 0.1);
+    --key-chip-hover-border: var(--labs-selection-secondary-border);
+    --key-chip-hover-bg: var(--labs-selection-secondary-bg);
+    --key-chip-active-border: var(--labs-selection-secondary-border);
+    --key-chip-active-bg: var(--labs-selection-secondary-bg);
+    --key-chip-active-text: var(--labs-selection-secondary-fg);
+    border-radius: 10px;
+    min-width: min(16.25rem, calc(100vw - 24px));
+    max-width: min(22rem, calc(100vw - 24px));
+  }
+
+  .shared-bpm-dropdown.stanza-bpm-dropdown,
+  .shared-bpm-dropdown.ui-stanza-bpm-dropdown {
+    --stanza-rose: #e848a0;
+    --stanza-rose-strong: #c4176e;
+    --labs-selection-secondary-bg: rgba(232, 72, 160, 0.14);
+    --labs-selection-secondary-fg: #c4176e;
+    --labs-selection-secondary-border: rgba(232, 72, 160, 0.28);
+    --labs-selection-secondary-hover-bg: rgba(232, 72, 160, 0.2);
+    --bpm-focus: var(--stanza-rose, #e848a0);
+    --bpm-border: rgba(232, 72, 160, 0.28);
+    --bpm-dropdown-bg: var(--labs-popover-bg, #ffffff);
+    --bpm-dropdown-border: rgba(49, 43, 38, 0.12);
+    --bpm-dropdown-hover-bg: color-mix(
+      in srgb,
+      var(--stanza-rose, #e848a0) 10%,
+      transparent
+    );
+    --bpm-dropdown-active-bg: var(--labs-selection-secondary-hover-bg);
+    --bpm-dropdown-active-text: var(--stanza-rose, #e848a0);
+    --bpm-chip-hover-bg: color-mix(
+      in srgb,
+      var(--stanza-rose, #e848a0) 8%,
+      transparent
+    );
+    --bpm-chip-active-bg: var(--labs-selection-secondary-bg);
+    --bpm-chip-active-text: var(--labs-selection-secondary-fg);
+    border-radius: 10px;
+  }
+
+  /* Metronome split control — /ui gallery parity */
+  .ui-metronome-split-control--drums,
+  .ui-metronome-split-control--words,
+  .ui-metronome-split-control--piano,
+  .ui-metronome-split-control--chords,
+  .ui-metronome-split-control--stanza,
+  .ui-metronome-split-control--midi {
+    display: inline-flex;
   }
 } /* end @layer shared-base */

@@ -8,6 +8,24 @@ This document defines default conventions for shared UI so apps stay naturally a
 - App teams should override tokens, not internals.
 - Defaults should encode the non-load-bearing UX decisions (spacing, typography scale, state behavior, focus treatment).
 
+## Chrome UI (dropdowns, buttons, hovers)
+
+Cross-app **popover surfaces**, **pill buttons**, and **hover rhythm** use the shared chrome contract — not per-app `box-shadow` / `:hover` copies.
+
+**Selection visual hierarchy** (primary vs secondary selected states for toggles, chips, transport): [`docs/SELECTION_VISUAL_HIERARCHY.md`](../docs/SELECTION_VISUAL_HIERARCHY.md). Tokens: `--labs-selection-primary-*`, `--labs-selection-secondary-*` in `appSharedThemes.css`.
+
+**Focus rings** (tokens, inset vs outset, sticky bar bleed, portal-safe accent): [`docs/FOCUS_THEMING.md`](../docs/FOCUS_THEMING.md). Utilities: `.labs-focus-ring-host`, `.labs-focus-inset`, `.labs-focus-outset`, `--labs-focus-ring-bleed` in `labsChrome.css`. Menu open/close + split controls: [`docs/A11Y_MENU_PATTERNS.md`](../docs/A11Y_MENU_PATTERNS.md).
+
+- **Contract:** [`docs/CHROME_UI_CONTRACT.md`](../../docs/CHROME_UI_CONTRACT.md)
+- **Primitives:** [`styles/labsChrome.css`](./styles/labsChrome.css) — `.labs-popover-surface`, `.labs-btn` (+ `--primary`, `--ghost`, `--icon`)
+- **Tokens:** [`components/music/appSharedThemes.css`](./components/music/appSharedThemes.css) — `--labs-popover-*`, `--labs-control-*`
+- **Popovers:** prefer [`AnchoredPopover`](./components/AnchoredPopover.tsx) (applies `.labs-popover-surface`, **MUI elevation 0**, and `--labs-popover-*` sx so portaled pickers match in-app div menus)
+- **Reference migration:** Words — remap brand tint on `.words-page` only; layout classes stay app-local
+
+**Do not** add new app-local menu `box-shadow` / backdrop rules. Extend the contract or open a shared primitive PR.
+
+Enforcement: `npm run check:chrome-ui` (presubmit).
+
 ## App shell layout
 
 Multi-panel apps (header + scrollable main + optional footer) should use [`layout/AppShellLayout.tsx`](./layout/AppShellLayout.tsx) and [`layout/app-shell-layout.css`](./layout/app-shell-layout.css). Copy [`templates/app-main.starter.tsx`](./templates/app-main.starter.tsx) and [`templates/app-layout.starter.css`](./templates/app-layout.starter.css) for new apps. See [`layout/README.md`](./layout/README.md) and Stanza [`LAYOUT.md`](../stanza/LAYOUT.md).
@@ -179,13 +197,16 @@ Bucket-specific values should be expressed via variables, not one-off per-compon
 
 For **mix rails and other linear 0–1 gain** controls, use `AppLinearVolumeSlider` (`src/shared/components/AppLinearVolumeSlider.tsx`) instead of raw MUI `Slider` copies. It wraps MUI with defaults (`min={0}`, `max={1}`, `step={0.02}`, `size="small"`) and **keeps vertical padding** on the Slider root so **clicks on the middle of the visible rail** still hit MUI’s input (zeroing `py` in dense layouts commonly breaks rail jumps).
 
-`AppSlider` remains the older **legacy event-shape** helper for BPM and similar; prefer `AppLinearVolumeSlider` for new **volume / gain** UX.
+`AppSlider` remains the older **legacy event-shape** helper for BPM, bias, and non-volume ranges; **do not** use it for labeled volume/mute rows.
+
+Enforcement: `npm run check:volume-slider` (Words reference panel + shared primitives).
 
 ### Playback volume rows (`PlaybackVolumeRow`)
 
-For **labeled mix rows with mute + 0–100 slider**, use `PlaybackVolumeRow` (`src/shared/components/music/PlaybackVolumeRow.tsx`) instead of hand-rolled `AppSlider` + icon button rows. Used in `ChordPlaybackSettingsPanel`, Words sound settings, and Chords playback popover.
+For **labeled mix rows with mute + 0–100 slider**, use `PlaybackVolumeRow` (`src/shared/components/music/PlaybackVolumeRow.tsx`) instead of hand-rolled `AppSlider` + icon button rows. Used in `ChordPlaybackSettingsPanel`, Words sound settings, metronome advanced settings, and Chords playback popover.
 
 - Volume prop is **0–100** (integer-ish); internally maps to `AppLinearVolumeSlider` 0–1 gain.
+- Theme sliders via host CSS targeting `.shared-playback-volume-row .MuiSlider-root` (see Words `word-rhythm.css`).
 - Pair with `ChordPlaybackSettingsPanel` when the surface matches chart/chord playback (style, sound, drums toggle).
 - URL state for shareable links: [`docs/URL_STATE_PATTERN.md`](../../docs/URL_STATE_PATTERN.md).
 
@@ -280,6 +301,15 @@ While mounted, the dock sets `--labs-debug-dock-height` on `:root` (and mirrors 
 ## App-specific shared primitives
 
 Some primitives live under `src/<app>/ui/` because their data shapes are app-specific. **Encore:** see [`src/encore/UI_PRIMITIVES.md`](../encore/UI_PRIMITIVES.md) (do not hand-roll media rows, integration cards, or Spotify sync panels).
+
+## Metronome split control and mix bus
+
+- **`MetronomeSplitControl`** — primary metronome toggle + chevron for `MetronomeAdvancedSettingsPanel`. Import from `src/shared/audio/platform/metronome`.
+- **`appearance` contract** — pass `appearance="drums|words|piano|chords|stanza|midi"` (typed `MetronomeAppearance`). Split shell + portaled settings panel share `--metro-*` tokens via `metronome-themes.css` (mirror `PlaybackFieldSelect`).
+- **`LabsSplitActionButton`** — generic split button; prefer `MetronomeSplitControl` for metronome UX.
+- **Portaled controls near playback bar** — Darbuka selection uses `isDrumsSelectionProtectedTarget()` so BPM/metronome/settings popovers do not clear note selection. Metronome settings popover class: `.labs-metronome-settings-popover`.
+- **`DrumAccentSettingsPanel`** — accent volume sliders; bind via `useAudioMixBus().channels.accent`.
+- **`useAudioMixBus`** / **`useMetronomePreferences`** — see [`docs/SHARED_AUDIO_PLATFORM.md`](../../docs/SHARED_AUDIO_PLATFORM.md).
 
 ## Google Drive account menu (Stanza, Learn Your Scales)
 

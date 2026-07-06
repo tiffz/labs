@@ -18,6 +18,7 @@ import {
 } from '../../ui/EncoreFilterChipBar';
 import { EncoreMrtColumnsSettingsButton } from '../../ui/EncoreMrtColumnsSettingsButton';
 import type { EncoreDateRangeFilterValue } from '../../utils/encoreDateRangeFilter';
+import { encoreListSurfaceTopGap, encoreListToolbarGap } from '../../theme/encoreM3Layout';
 import { EncoreToolbarRow } from '../../ui/EncoreToolbarRow';
 import type { PerformancesViewMode, PerfMrtRow } from '../performancesScreenHelpers';
 
@@ -41,6 +42,8 @@ export type PerformancesListToolbarProps = {
   onVisiblePerfFilterIdsChange: (ids: string[]) => void;
   defaultPinnedFieldIds: readonly string[];
   onClearAllFilters: () => void;
+  /** Tighter search + filters row so the table gets more viewport height. */
+  compact?: boolean;
 };
 
 export function PerformancesListToolbar(props: PerformancesListToolbarProps): ReactElement {
@@ -64,7 +67,88 @@ export function PerformancesListToolbar(props: PerformancesListToolbarProps): Re
     onVisiblePerfFilterIdsChange,
     defaultPinnedFieldIds,
     onClearAllFilters,
+    compact = false,
   } = props;
+
+  const trailingControls = (
+    <Stack direction="row" alignItems="center" gap={compact ? 1.25 : 2.5} sx={{ flexShrink: 0 }}>
+      {table ? (
+        <EncoreMrtColumnsSettingsButton
+          show={viewMode === 'table'}
+          table={table}
+          onResetLayout={onResetTableLayout}
+        />
+      ) : null}
+      <ToggleButtonGroup
+        exclusive
+        size="small"
+        value={viewMode}
+        onChange={(_e, next: PerformancesViewMode | null) => {
+          if (next) onViewModeChange(next);
+        }}
+        aria-label="Performances layout"
+      >
+        <Tooltip title="Table view">
+          <ToggleButton value="table" aria-label="Table view">
+            <ViewListIcon fontSize="small" />
+          </ToggleButton>
+        </Tooltip>
+        <Tooltip title="Grid view">
+          <ToggleButton value="grid" aria-label="Grid view">
+            <ViewModuleIcon fontSize="small" />
+          </ToggleButton>
+        </Tooltip>
+      </ToggleButtonGroup>
+    </Stack>
+  );
+
+  if (compact && performancesCount > 0) {
+    return (
+      <Box
+        sx={{
+          flexShrink: 0,
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: { xs: 0.75, sm: 1 },
+          mt: encoreListToolbarGap,
+          mb: encoreListSurfaceTopGap,
+        }}
+      >
+        <TextField
+          size="small"
+          placeholder="Search song, artist, venue, date…"
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          inputProps={{ 'aria-label': 'Search performances' }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" color="action" aria-hidden />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ flex: '1 1 12rem', minWidth: 0, maxWidth: { md: 320 } }}
+        />
+        <Box sx={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.75 }}>
+          <EncoreFilterChipBar
+            ref={perfFilterBarRef}
+            fields={perfFilterFieldDefs}
+            visibleFieldIds={visiblePerfFilterIds}
+            values={perfFilterValues}
+            onChange={onPerfFilterChange}
+            onDateRangeChange={onPerfDateRangeChange}
+            addableFields={perfAddableFilterFields}
+            onVisibleFieldIdsChange={onVisiblePerfFilterIdsChange}
+            defaultPinnedFieldIds={[...defaultPinnedFieldIds]}
+            hasActiveFilters={hasActivePerfFilters}
+            onClearAll={onClearAllFilters}
+          />
+        </Box>
+        {trailingControls}
+      </Box>
+    );
+  }
 
   return (
     <>
@@ -109,35 +193,7 @@ export function PerformancesListToolbar(props: PerformancesListToolbarProps): Re
                 {performancesCount === 1 ? 'performance' : 'performances'}
                 {hasActivePerfFilters || query.trim() ? ' · search or filters applied' : ''}
               </Typography>
-              <Stack direction="row" alignItems="center" gap={2.5} sx={{ flexShrink: 0 }}>
-                {table ? (
-                  <EncoreMrtColumnsSettingsButton
-                    show={viewMode === 'table'}
-                    table={table}
-                    onResetLayout={onResetTableLayout}
-                  />
-                ) : null}
-                <ToggleButtonGroup
-                  exclusive
-                  size="small"
-                  value={viewMode}
-                  onChange={(_e, next: PerformancesViewMode | null) => {
-                    if (next) onViewModeChange(next);
-                  }}
-                  aria-label="Performances layout"
-                >
-                  <Tooltip title="Table view">
-                    <ToggleButton value="table" aria-label="Table view">
-                      <ViewListIcon fontSize="small" />
-                    </ToggleButton>
-                  </Tooltip>
-                  <Tooltip title="Grid view">
-                    <ToggleButton value="grid" aria-label="Grid view">
-                      <ViewModuleIcon fontSize="small" />
-                    </ToggleButton>
-                  </Tooltip>
-                </ToggleButtonGroup>
-              </Stack>
+              {trailingControls}
             </Stack>
           </Stack>
         </Box>

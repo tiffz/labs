@@ -1,11 +1,14 @@
 import type { VoiceManifest } from './types';
 
-const VOICE_BASE_PATH = '/count/voice';
-
 export class VoicePackLoader {
   private buffers = new Map<string, AudioBuffer>();
   private manifest: VoiceManifest | null = null;
   private loadPromise: Promise<void> | null = null;
+  private basePath: string;
+
+  constructor(options?: { basePath?: string }) {
+    this.basePath = options?.basePath ?? '/count/voice';
+  }
 
   async load(ctx: AudioContext): Promise<void> {
     if (this.loadPromise) return this.loadPromise;
@@ -14,12 +17,12 @@ export class VoicePackLoader {
   }
 
   private async doLoad(ctx: AudioContext): Promise<void> {
-    const resp = await fetch(`${VOICE_BASE_PATH}/manifest.json`);
+    const resp = await fetch(`${this.basePath}/manifest.json`);
     this.manifest = (await resp.json()) as VoiceManifest;
 
     const loads = this.manifest.samples.map(async (sample) => {
       try {
-        const url = `${VOICE_BASE_PATH}/${sample.file}`;
+        const url = `${this.basePath}/${sample.file}`;
         const audioResp = await fetch(url);
         if (!audioResp.ok) return;
         const arrayBuf = await audioResp.arrayBuffer();

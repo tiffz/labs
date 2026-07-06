@@ -40,6 +40,10 @@ export function useWordsKeyboardShortcuts(params: {
     const onKeyDown = (event: KeyboardEvent) => {
       const p = paramsRef.current;
       if (event.key === 'Escape') {
+        const target = event.target;
+        if (target instanceof Element && target.closest('.MuiPopover-root')) {
+          return;
+        }
         p.setGenerationMenuOpen(false);
         p.setSoundMenuOpen(false);
         p.setOpenSectionSettingsId(null);

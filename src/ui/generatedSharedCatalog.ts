@@ -20,6 +20,104 @@ export interface SharedCatalogEntry {
 
 export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
+    "id": "src-shared-a11y-focusable-ts-focusfirstfocusable",
+    "name": "focusFirstFocusable",
+    "path": "src/shared/a11y/focusable.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Focusable elements for menu/disclosure keyboard support.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-a11y-focusable-ts-getfocusableelements",
+    "name": "getFocusableElements",
+    "path": "src/shared/a11y/focusable.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Focusable elements for menu/disclosure keyboard support.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-a11y-focusable-ts-handlemenulistkeydown",
+    "name": "handleMenuListKeyDown",
+    "path": "src/shared/a11y/focusable.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Focusable elements for menu/disclosure keyboard support.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-a11y-usefocusmenuonopen-ts-usefocusmenuonopen",
+    "name": "useFocusMenuOnOpen",
+    "path": "src/shared/a11y/useFocusMenuOnOpen.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Move focus into a menu/panel when it opens (after paint).",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-a11y-uselabsdisclosuremenu-ts-labsdisclosuremenutriggera11y",
+    "name": "LabsDisclosureMenuTriggerA11y",
+    "path": "src/shared/a11y/useLabsDisclosureMenu.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-a11y-uselabsdisclosuremenu-ts-uselabsdisclosuremenu",
+    "name": "useLabsDisclosureMenu",
+    "path": "src/shared/a11y/useLabsDisclosureMenu.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared trigger/menu ids + ARIA for disclosure menus (popover or in-page panel).",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-test-mockaudiocontext-ts-createmockaudiocontext",
     "name": "createMockAudioContext",
     "path": "src/shared/audio/__test__/mockAudioContext.ts",
@@ -92,10 +190,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [
-      "chords",
-      "words"
-    ],
+    "appsUsing": [],
     "exportType": "class",
     "demoId": null
   },
@@ -111,10 +206,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [
-      "chords",
-      "words"
-    ],
+    "appsUsing": [],
     "exportType": "interface",
     "demoId": null
   },
@@ -129,10 +221,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "audio"
     ],
-    "appsUsing": [
-      "chords",
-      "words"
-    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
@@ -335,7 +424,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "chords",
       "words"
     ],
     "exportType": "const",
@@ -354,7 +442,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
-      "chords",
       "words"
     ],
     "exportType": "const",
@@ -670,6 +757,105 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-metronome-gridmetronomeplayback-ts-gridmetronomeplaybackprefs",
+    "name": "GridMetronomePlaybackPrefs",
+    "path": "src/shared/audio/metronome/gridMetronomePlayback.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "chords"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-gridmetronomeplayback-ts-gridmetronomescheduler",
+    "name": "GridMetronomeScheduler",
+    "path": "src/shared/audio/metronome/gridMetronomePlayback.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "chords"
+    ],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-gridmetronomeplayback-ts-gridsubdivdurationsec",
+    "name": "gridSubdivDurationSec",
+    "path": "src/shared/audio/metronome/gridMetronomePlayback.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "chords"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomedrumsamples-ts-loadmetronomedrumsamples",
+    "name": "loadMetronomeDrumSamples",
+    "path": "src/shared/audio/metronome/metronomeDrumSamples.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomedrumsamples-ts-metronomedrumsound",
+    "name": "MetronomeDrumSound",
+    "path": "src/shared/audio/metronome/metronomeDrumSamples.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomedrumsamples-ts-playmetronomedrumsampleat",
+    "name": "playMetronomeDrumSampleAt",
+    "path": "src/shared/audio/metronome/metronomeDrumSamples.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-metronome-metronomeengine-ts-metronomeengine",
     "name": "MetronomeEngine",
     "path": "src/shared/audio/metronome/MetronomeEngine.ts",
@@ -683,6 +869,399 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomegridpositions-ts-positioninsixteenthsforgridindex",
+    "name": "positionInSixteenthsForGridIndex",
+    "path": "src/shared/audio/metronome/metronomeGridPositions.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Map a subdivision-grid index to a **fractional** sixteenth-note position in the measure. Beat-aware (triplets divide each beat into equal thirds, not sixteenth slots).",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomeraillabels-ts-activemetronomerailslotindex",
+    "name": "activeMetronomeRailSlotIndex",
+    "path": "src/shared/audio/metronome/metronomeRailLabels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomeraillabels-ts-buildmetronomemeasurelabels",
+    "name": "buildMetronomeMeasureLabels",
+    "path": "src/shared/audio/metronome/metronomeRailLabels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "One measure of counting labels for a dense metronome rail (Count / Stanza).",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomeraillabels-ts-metronomeraillabel",
+    "name": "MetronomeRailLabel",
+    "path": "src/shared/audio/metronome/metronomeRailLabels.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomevisualdots-ts-getmetronomevisualdots",
+    "name": "getMetronomeVisualDots",
+    "path": "src/shared/audio/metronome/metronomeVisualDots.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Metronome dot positions aligned with the shared subdivision grid (Count / advanced prefs). Primary beats use tier `downbeat` | `beat`; finer slots use `subdivision`.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomevisualdots-ts-getmetronomevisualpositions",
+    "name": "getMetronomeVisualPositions",
+    "path": "src/shared/audio/metronome/metronomeVisualDots.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomevisualdots-ts-metronomedotidlefill",
+    "name": "metronomeDotIdleFill",
+    "path": "src/shared/audio/metronome/metronomeVisualDots.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomevisualdots-ts-metronomedotradius",
+    "name": "metronomeDotRadius",
+    "path": "src/shared/audio/metronome/metronomeVisualDots.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomevisualdots-ts-metronomedotradiuspx",
+    "name": "metronomeDotRadiusPx",
+    "path": "src/shared/audio/metronome/metronomeVisualDots.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomevisualdots-ts-metronomedottier",
+    "name": "MetronomeDotTier",
+    "path": "src/shared/audio/metronome/metronomeVisualDots.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomevisualdots-ts-metronomevisualdot",
+    "name": "MetronomeVisualDot",
+    "path": "src/shared/audio/metronome/metronomeVisualDots.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-metronomevisualdots-ts-shouldclickatvisualdot",
+    "name": "shouldClickAtVisualDot",
+    "path": "src/shared/audio/metronome/metronomeVisualDots.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Whether rhythm playback should audibly click at this visual dot.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-rhythmmetronomeclick-ts-channelsneededforsubdivisionlevel",
+    "name": "channelsNeededForSubdivisionLevel",
+    "path": "src/shared/audio/metronome/rhythmMetronomeClick.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-rhythmmetronomeclick-ts-enabled-subdivision-channel-gains",
+    "name": "ENABLED_SUBDIVISION_CHANNEL_GAINS",
+    "path": "src/shared/audio/metronome/rhythmMetronomeClick.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Suggested channel gains when a user enables finer subdivisions (off-beat sliders were at 0).",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-rhythmmetronomeclick-ts-metronome-drum-for-subdivision",
+    "name": "METRONOME_DRUM_FOR_SUBDIVISION",
+    "path": "src/shared/audio/metronome/rhythmMetronomeClick.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-rhythmmetronomeclick-ts-resolvedrhythmmetronomeclick",
+    "name": "ResolvedRhythmMetronomeClick",
+    "path": "src/shared/audio/metronome/rhythmMetronomeClick.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-rhythmmetronomeclick-ts-resolvedrhythmmetronomedrum",
+    "name": "ResolvedRhythmMetronomeDrum",
+    "path": "src/shared/audio/metronome/rhythmMetronomeClick.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-rhythmmetronomeclick-ts-resolvedrhythmmetronomevoice",
+    "name": "ResolvedRhythmMetronomeVoice",
+    "path": "src/shared/audio/metronome/rhythmMetronomeClick.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-rhythmmetronomeclick-ts-resolverhythmmetronomeclick",
+    "name": "resolveRhythmMetronomeClick",
+    "path": "src/shared/audio/metronome/rhythmMetronomeClick.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Resolve whether a grid dot should audibly click during rhythm playback and at what gain. Mirrors MetronomeEngine channel gating (volumes, mutes, click source).",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-rhythmmetronomeclick-ts-resolverhythmmetronomedrum",
+    "name": "resolveRhythmMetronomeDrum",
+    "path": "src/shared/audio/metronome/rhythmMetronomeClick.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Resolve darbuka drum sample (dum/tak/ka) for a rhythm-playback metronome dot.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-rhythmmetronomeclick-ts-resolverhythmmetronomevoice",
+    "name": "resolveRhythmMetronomeVoice",
+    "path": "src/shared/audio/metronome/rhythmMetronomeClick.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Resolve vocal count sample for a rhythm-playback metronome dot.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-rhythmmetronomeclick-ts-rhythmmetronomeclickprefs",
+    "name": "RhythmMetronomeClickPrefs",
+    "path": "src/shared/audio/metronome/rhythmMetronomeClick.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-rhythmmetronomeclick-ts-subdivisionvolumesforlevel",
+    "name": "subdivisionVolumesForLevel",
+    "path": "src/shared/audio/metronome/rhythmMetronomeClick.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-schedulevoicesample-ts-schedulevoicesampleoncontext",
+    "name": "scheduleVoiceSampleOnContext",
+    "path": "src/shared/audio/metronome/scheduleVoiceSample.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Schedule a counting voice clip on an existing AudioContext (rhythm playback path).",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -820,7 +1399,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -836,7 +1418,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -852,7 +1437,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -867,7 +1455,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "audio"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -882,7 +1473,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "audio"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -897,7 +1491,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "audio"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -912,7 +1509,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "audio"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -928,7 +1528,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -944,8 +1547,29 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-metronome-types-ts-sixteenthbaseslotspersixteenth",
+    "name": "sixteenthBaseSlotsPerSixteenth",
+    "path": "src/shared/audio/metronome/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Grid slots per sixteenth note for /16 meters. Level 1–2: one slot per sixteenth; level 3–4: two slots (32nd feel).",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -959,7 +1583,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "audio"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -975,7 +1602,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -991,7 +1621,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -1007,7 +1640,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -1023,7 +1659,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -1039,7 +1678,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -1055,7 +1697,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -1071,7 +1716,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "interface",
     "demoId": null
   },
@@ -1087,7 +1735,10 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "audio",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -1153,6 +1804,2540 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-audiopatternregistry-ts-appaudiopattern",
+    "name": "AppAudioPattern",
+    "path": "src/shared/audio/platform/audioPatternRegistry.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Approved audio patterns per music app — keep in sync with docs/SHARED_AUDIO_PLATFORM.md. Guardrail: audioPatternRegistry.test.ts",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-audiopatternregistry-ts-audio-pattern-registry",
+    "name": "AUDIO_PATTERN_REGISTRY",
+    "path": "src/shared/audio/platform/audioPatternRegistry.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Approved audio patterns per music app — keep in sync with docs/SHARED_AUDIO_PLATFORM.md. Guardrail: audioPatternRegistry.test.ts",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-audiopatternregistry-ts-clockpattern",
+    "name": "ClockPattern",
+    "path": "src/shared/audio/platform/audioPatternRegistry.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Approved audio patterns per music app — keep in sync with docs/SHARED_AUDIO_PLATFORM.md. Guardrail: audioPatternRegistry.test.ts",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-audiopatternregistry-ts-forbidden-reactive-patterns",
+    "name": "FORBIDDEN_REACTIVE_PATTERNS",
+    "path": "src/shared/audio/platform/audioPatternRegistry.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Patterns that must not appear in new grid-aligned audio code.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-audiopatternregistry-ts-schedulerpattern",
+    "name": "SchedulerPattern",
+    "path": "src/shared/audio/platform/audioPatternRegistry.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Approved audio patterns per music app — keep in sync with docs/SHARED_AUDIO_PLATFORM.md. Guardrail: audioPatternRegistry.test.ts",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-audioclocksource-ts-audioclocksource",
+    "name": "AudioClockSource",
+    "path": "src/shared/audio/platform/clocks/AudioClockSource.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Pluggable clock for slave-clock apps (loop transport, score, media timeline). Master-clock apps (Count/Midi standalone) use MetronomeEngine directly.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-audioclocksource-ts-beatposition",
+    "name": "BeatPosition",
+    "path": "src/shared/audio/platform/clocks/AudioClockSource.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Beat position in fractional beats from pattern/score start.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-audioclocksource-ts-beatspermeasure",
+    "name": "beatsPerMeasure",
+    "path": "src/shared/audio/platform/clocks/AudioClockSource.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Beat position in fractional beats from pattern/score start.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-index-ts-audioclocksource",
+    "name": "AudioClockSource",
+    "path": "src/shared/audio/platform/clocks/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-index-ts-beatposition",
+    "name": "BeatPosition",
+    "path": "src/shared/audio/platform/clocks/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-index-ts-beatspermeasure",
+    "name": "beatsPerMeasure",
+    "path": "src/shared/audio/platform/clocks/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-index-ts-looptransportclock",
+    "name": "LoopTransportClock",
+    "path": "src/shared/audio/platform/clocks/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-index-ts-masteraudioclock",
+    "name": "MasterAudioClock",
+    "path": "src/shared/audio/platform/clocks/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-index-ts-mediatimelineclock",
+    "name": "MediaTimelineClock",
+    "path": "src/shared/audio/platform/clocks/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-index-ts-mediatimelineclockoptions",
+    "name": "MediaTimelineClockOptions",
+    "path": "src/shared/audio/platform/clocks/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-index-ts-scoretransportclock",
+    "name": "ScoreTransportClock",
+    "path": "src/shared/audio/platform/clocks/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-looptransportclock-ts-looptransportclock",
+    "name": "LoopTransportClock",
+    "path": "src/shared/audio/platform/clocks/LoopTransportClock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "rhythmPlayer loop anchor — beats relative to loop start on AudioContext timeline.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-masteraudioclock-ts-masteraudioclock",
+    "name": "MasterAudioClock",
+    "path": "src/shared/audio/platform/clocks/MasterAudioClock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Standalone metronome — AudioContext owns tempo from a fixed start time.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-mediatimelineclock-ts-mediatimelineclock",
+    "name": "MediaTimelineClock",
+    "path": "src/shared/audio/platform/clocks/MediaTimelineClock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Stanza-style media-slaved clock. Maps media timeline → beats using calibration anchor.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-mediatimelineclock-ts-mediatimelineclockoptions",
+    "name": "MediaTimelineClockOptions",
+    "path": "src/shared/audio/platform/clocks/MediaTimelineClock.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-clocks-scoretransportclock-ts-scoretransportclock",
+    "name": "ScoreTransportClock",
+    "path": "src/shared/audio/platform/clocks/ScoreTransportClock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "ScorePlaybackEngine beat position — optional BeatMap for rubato/video sync.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-hooks-uselookaheadbackingbeat-ts-uselookaheadbackingbeat",
+    "name": "useLookAheadBackingBeat",
+    "path": "src/shared/audio/platform/hooks/useLookAheadBackingBeat.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Schedules auxiliary backing patterns on the rhythmPlayer loop transport (look-ahead). Replaces reactive AudioPlayer.play() on metronome beat crossings.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-hooks-uselookaheadbackingbeat-ts-uselookaheadbackingbeatoptions",
+    "name": "UseLookAheadBackingBeatOptions",
+    "path": "src/shared/audio/platform/hooks/useLookAheadBackingBeat.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-hooks-usemediatimelinedrumscheduler-ts-createmediatimelinedrumscheduler",
+    "name": "createMediaTimelineDrumScheduler",
+    "path": "src/shared/audio/platform/hooks/useMediaTimelineDrumScheduler.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "DrumScheduler for media-slaved hosts (Stanza). Invokes DrumAccompaniment callback with beat windows derived from media timeline + look-ahead.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-hooks-usemediatimelinedrumscheduler-ts-mediatimelinedrumscheduleroptions",
+    "name": "MediaTimelineDrumSchedulerOptions",
+    "path": "src/shared/audio/platform/hooks/useMediaTimelineDrumScheduler.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-hooks-useplatformmediametronome-ts-primeplatformmetronomeaudio",
+    "name": "primePlatformMetronomeAudio",
+    "path": "src/shared/audio/platform/hooks/usePlatformMediaMetronome.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-hooks-useplatformmediametronome-ts-useplatformmediametronome",
+    "name": "usePlatformMediaMetronome",
+    "path": "src/shared/audio/platform/hooks/usePlatformMediaMetronome.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Media-slaved metronome with look-ahead click/voice scheduling on the subdivision grid.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-hooks-useplatformmediametronome-ts-useplatformmediametronomeoptions",
+    "name": "UsePlatformMediaMetronomeOptions",
+    "path": "src/shared/audio/platform/hooks/usePlatformMediaMetronome.ts",
+    "kind": "hook",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-index-ts-appaudiopattern",
+    "name": "AppAudioPattern",
+    "path": "src/shared/audio/platform/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-index-ts-audio-pattern-registry",
+    "name": "AUDIO_PATTERN_REGISTRY",
+    "path": "src/shared/audio/platform/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-index-ts-clockpattern",
+    "name": "ClockPattern",
+    "path": "src/shared/audio/platform/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-index-ts-createmediatimelinedrumscheduler",
+    "name": "createMediaTimelineDrumScheduler",
+    "path": "src/shared/audio/platform/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-index-ts-forbidden-reactive-patterns",
+    "name": "FORBIDDEN_REACTIVE_PATTERNS",
+    "path": "src/shared/audio/platform/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-index-ts-primeplatformmetronomeaudio",
+    "name": "primePlatformMetronomeAudio",
+    "path": "src/shared/audio/platform/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-index-ts-schedulerpattern",
+    "name": "SchedulerPattern",
+    "path": "src/shared/audio/platform/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-index-ts-uselookaheadbackingbeat",
+    "name": "useLookAheadBackingBeat",
+    "path": "src/shared/audio/platform/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-index-ts-useplatformmediametronome",
+    "name": "usePlatformMediaMetronome",
+    "path": "src/shared/audio/platform/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-components-drumaccentsettingspanel-tsx-drumaccentsettingspanel",
+    "name": "DrumAccentSettingsPanel",
+    "path": "src/shared/audio/platform/metronome/components/DrumAccentSettingsPanel.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Shared accent + reverb controls — replaces Drums SettingsMenu accent rows and Words custom sliders.",
+    "tags": [
+      "audio",
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-components-drumaccentsettingspanel-tsx-drumaccentsettingspanelprops",
+    "name": "DrumAccentSettingsPanelProps",
+    "path": "src/shared/audio/platform/metronome/components/DrumAccentSettingsPanel.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-components-labssplitactionbutton-tsx-labssplitactionbutton",
+    "name": "LabsSplitActionButton",
+    "path": "src/shared/audio/platform/metronome/components/LabsSplitActionButton.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-components-labssplitactionbutton-tsx-labssplitactionbuttonprops",
+    "name": "LabsSplitActionButtonProps",
+    "path": "src/shared/audio/platform/metronome/components/LabsSplitActionButton.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-components-metronomeadvancedsettingspanel-tsx-metronomeadvancedsettingspanel",
+    "name": "MetronomeAdvancedSettingsPanel",
+    "path": "src/shared/audio/platform/metronome/components/MetronomeAdvancedSettingsPanel.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-components-metronomeadvancedsettingspanel-tsx-metronomeadvancedsettingspanelprops",
+    "name": "MetronomeAdvancedSettingsPanelProps",
+    "path": "src/shared/audio/platform/metronome/components/MetronomeAdvancedSettingsPanel.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-components-metronomesplitcontrol-tsx-metronomesplitcontrol",
+    "name": "MetronomeSplitControl",
+    "path": "src/shared/audio/platform/metronome/components/MetronomeSplitControl.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": "metronome-split-control"
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-components-metronomesplitcontrol-tsx-metronomesplitcontrolprops",
+    "name": "MetronomeSplitControlProps",
+    "path": "src/shared/audio/platform/metronome/components/MetronomeSplitControl.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-applymetronomebusgain",
+    "name": "applyMetronomeBusGain",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-count-metronome-defaults",
+    "name": "COUNT_METRONOME_DEFAULTS",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-decodemetronomepreferences",
+    "name": "decodeMetronomePreferences",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-default-subdivision-volumes",
+    "name": "DEFAULT_SUBDIVISION_VOLUMES",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-defaultmetronomepreferences",
+    "name": "defaultMetronomePreferences",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-drumaccentsettingspanel",
+    "name": "DrumAccentSettingsPanel",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-encodemetronomepreferences",
+    "name": "encodeMetronomePreferences",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-getplaybackappdefaultsubdivisionlevel",
+    "name": "getPlaybackAppDefaultSubdivisionLevel",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-ismetronomenondefault",
+    "name": "isMetronomeNonDefault",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-labssplitactionbutton",
+    "name": "LabsSplitActionButton",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-metronomeadvancedsettingspanel",
+    "name": "MetronomeAdvancedSettingsPanel",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-metronomeappearance",
+    "name": "MetronomeAppearance",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-metronomeclicklevels",
+    "name": "metronomeClickLevels",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-metronomepreferences",
+    "name": "MetronomePreferences",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-metronomeruntimecoordinator",
+    "name": "MetronomeRuntimeCoordinator",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-metronomesettingspanelclass",
+    "name": "metronomeSettingsPanelClass",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-metronomesettingspopoverclass",
+    "name": "metronomeSettingsPopoverClass",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-metronomesourceenabled",
+    "name": "MetronomeSourceEnabled",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-metronomesplitcontrol",
+    "name": "MetronomeSplitControl",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-metronomesplitcontrolclass",
+    "name": "metronomeSplitControlClass",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-playback-app-metronome-defaults",
+    "name": "PLAYBACK_APP_METRONOME_DEFAULTS",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-resolvemetronomeappearance",
+    "name": "resolveMetronomeAppearance",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-tometronomeengineconfig",
+    "name": "toMetronomeEngineConfig",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-usemetronomepreferences",
+    "name": "useMetronomePreferences",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-index-ts-usemetronomepreferencesoptions",
+    "name": "UseMetronomePreferencesOptions",
+    "path": "src/shared/audio/platform/metronome/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "chords",
+      "drums",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-metronomeappearance-ts-metronomeappearance",
+    "name": "MetronomeAppearance",
+    "path": "src/shared/audio/platform/metronome/metronomeAppearance.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Host appearance tokens for — mirrors PlaybackFieldSelect pattern.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-metronomeappearance-ts-metronomesettingspanelclass",
+    "name": "metronomeSettingsPanelClass",
+    "path": "src/shared/audio/platform/metronome/metronomeAppearance.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Host appearance tokens for — mirrors PlaybackFieldSelect pattern.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-metronomeappearance-ts-metronomesettingspopoverclass",
+    "name": "metronomeSettingsPopoverClass",
+    "path": "src/shared/audio/platform/metronome/metronomeAppearance.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Host appearance tokens for — mirrors PlaybackFieldSelect pattern.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-metronomeappearance-ts-metronomesplitcontrolclass",
+    "name": "metronomeSplitControlClass",
+    "path": "src/shared/audio/platform/metronome/metronomeAppearance.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Host appearance tokens for — mirrors PlaybackFieldSelect pattern.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-metronomeappearance-ts-resolvemetronomeappearance",
+    "name": "resolveMetronomeAppearance",
+    "path": "src/shared/audio/platform/metronome/metronomeAppearance.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Host appearance tokens for — mirrors PlaybackFieldSelect pattern.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-metronomebusgain-ts-applymetronomebusgain",
+    "name": "applyMetronomeBusGain",
+    "path": "src/shared/audio/platform/metronome/metronomeBusGain.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Apply an app-level metronome bus gain (0–1 mix slider) on top of advanced-panel Overall volume. Matches rhythm playback: legacyMetVolume × prefs.masterVolume.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-metronomeclicklevels-ts-metronome-downbeat-ceiling",
+    "name": "METRONOME_DOWNBEAT_CEILING",
+    "path": "src/shared/audio/platform/metronome/metronomeClickLevels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Downbeat ceiling before user gain slider. Shared from Stanza metronome UX.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-metronomeclicklevels-ts-metronome-downbeat-playback-rate",
+    "name": "METRONOME_DOWNBEAT_PLAYBACK_RATE",
+    "path": "src/shared/audio/platform/metronome/metronomeClickLevels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Downbeat ceiling before user gain slider. Shared from Stanza metronome UX.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-metronomeclicklevels-ts-metronome-offbeat-ratio",
+    "name": "METRONOME_OFFBEAT_RATIO",
+    "path": "src/shared/audio/platform/metronome/metronomeClickLevels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Downbeat ceiling before user gain slider. Shared from Stanza metronome UX.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-metronomeclicklevels-ts-metronomeclicklevels",
+    "name": "metronomeClickLevels",
+    "path": "src/shared/audio/platform/metronome/metronomeClickLevels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Downbeat ceiling before user gain slider. Shared from Stanza metronome UX.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-metronomeruntimecoordinator-ts-metronomeruntimecoordinator",
+    "name": "MetronomeRuntimeCoordinator",
+    "path": "src/shared/audio/platform/metronome/MetronomeRuntimeCoordinator.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Coordinates metronome emission for slave-clock apps. Uses MetronomeEngine when advanced prefs active; legacy click path when defaults.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-preferences-ts-count-metronome-defaults",
+    "name": "COUNT_METRONOME_DEFAULTS",
+    "path": "src/shared/audio/platform/metronome/preferences.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Coarsest grid for playback apps — quarter pulses in /4, eighth in /8.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-preferences-ts-decodemetronomepreferences",
+    "name": "decodeMetronomePreferences",
+    "path": "src/shared/audio/platform/metronome/preferences.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Coarsest grid for playback apps — quarter pulses in /4, eighth in /8.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-preferences-ts-default-metronome-drum-gain",
+    "name": "DEFAULT_METRONOME_DRUM_GAIN",
+    "path": "src/shared/audio/platform/metronome/preferences.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Coarsest grid for playback apps — quarter pulses in /4, eighth in /8.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-preferences-ts-default-subdivision-volumes",
+    "name": "DEFAULT_SUBDIVISION_VOLUMES",
+    "path": "src/shared/audio/platform/metronome/preferences.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Coarsest grid for playback apps — quarter pulses in /4, eighth in /8.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-preferences-ts-defaultmetronomelevelvolumes",
+    "name": "defaultMetronomeLevelVolumes",
+    "path": "src/shared/audio/platform/metronome/preferences.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Default level sliders for the “Reset levels” control in advanced settings.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-preferences-ts-defaultmetronomepreferences",
+    "name": "defaultMetronomePreferences",
+    "path": "src/shared/audio/platform/metronome/preferences.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Coarsest grid for playback apps — quarter pulses in /4, eighth in /8.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-preferences-ts-encodemetronomepreferences",
+    "name": "encodeMetronomePreferences",
+    "path": "src/shared/audio/platform/metronome/preferences.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Coarsest grid for playback apps — quarter pulses in /4, eighth in /8.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-preferences-ts-getplaybackappdefaultsubdivisionlevel",
+    "name": "getPlaybackAppDefaultSubdivisionLevel",
+    "path": "src/shared/audio/platform/metronome/preferences.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Coarsest grid for playback apps — quarter pulses in /4, eighth in /8.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-preferences-ts-ismetronomenondefault",
+    "name": "isMetronomeNonDefault",
+    "path": "src/shared/audio/platform/metronome/preferences.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Coarsest grid for playback apps — quarter pulses in /4, eighth in /8.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-preferences-ts-metronomeappdefaults",
+    "name": "MetronomeAppDefaults",
+    "path": "src/shared/audio/platform/metronome/preferences.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Coarsest grid for playback apps — quarter pulses in /4, eighth in /8.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-preferences-ts-metronomepreferences",
+    "name": "MetronomePreferences",
+    "path": "src/shared/audio/platform/metronome/preferences.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Coarsest grid for playback apps — quarter pulses in /4, eighth in /8.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-preferences-ts-metronomesourceenabled",
+    "name": "MetronomeSourceEnabled",
+    "path": "src/shared/audio/platform/metronome/preferences.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Coarsest grid for playback apps — quarter pulses in /4, eighth in /8.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-preferences-ts-normalizemetronomepreferences",
+    "name": "normalizeMetronomePreferences",
+    "path": "src/shared/audio/platform/metronome/preferences.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Coarsest grid for playback apps — quarter pulses in /4, eighth in /8.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-preferences-ts-playback-app-metronome-defaults",
+    "name": "PLAYBACK_APP_METRONOME_DEFAULTS",
+    "path": "src/shared/audio/platform/metronome/preferences.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Coarsest grid for playback apps — quarter pulses in /4, eighth in /8.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-tometronomeengineconfig-ts-tometronomeengineconfig",
+    "name": "toMetronomeEngineConfig",
+    "path": "src/shared/audio/platform/metronome/toMetronomeEngineConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-usemetronomepreferences-ts-usemetronomepreferences",
+    "name": "useMetronomePreferences",
+    "path": "src/shared/audio/platform/metronome/useMetronomePreferences.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-metronome-usemetronomepreferences-ts-usemetronomepreferencesoptions",
+    "name": "UseMetronomePreferencesOptions",
+    "path": "src/shared/audio/platform/metronome/useMetronomePreferences.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-index-ts-accentmixstate",
+    "name": "AccentMixState",
+    "path": "src/shared/audio/platform/mix/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-index-ts-audiomixchannels",
+    "name": "AudioMixChannels",
+    "path": "src/shared/audio/platform/mix/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-index-ts-audiomixchannelspatch",
+    "name": "AudioMixChannelsPatch",
+    "path": "src/shared/audio/platform/mix/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-index-ts-audiomixchannelstate",
+    "name": "AudioMixChannelState",
+    "path": "src/shared/audio/platform/mix/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-index-ts-default-audio-mix",
+    "name": "DEFAULT_AUDIO_MIX",
+    "path": "src/shared/audio/platform/mix/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-index-ts-labsaudiomixbus",
+    "name": "LabsAudioMixBus",
+    "path": "src/shared/audio/platform/mix/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-index-ts-mergeaudiomix",
+    "name": "mergeAudioMix",
+    "path": "src/shared/audio/platform/mix/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-index-ts-mixchannelstoplaybacksettings",
+    "name": "mixChannelsToPlaybackSettings",
+    "path": "src/shared/audio/platform/mix/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-index-ts-playbacksettingstomixpatch",
+    "name": "playbackSettingsToMixPatch",
+    "path": "src/shared/audio/platform/mix/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-index-ts-useaudiomixbus",
+    "name": "useAudioMixBus",
+    "path": "src/shared/audio/platform/mix/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-index-ts-useaudiomixbusoptions",
+    "name": "UseAudioMixBusOptions",
+    "path": "src/shared/audio/platform/mix/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-index-ts-useplaybacksettingsmixsync",
+    "name": "usePlaybackSettingsMixSync",
+    "path": "src/shared/audio/platform/mix/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-labsaudiomixbus-ts-accentmixstate",
+    "name": "AccentMixState",
+    "path": "src/shared/audio/platform/mix/LabsAudioMixBus.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-labsaudiomixbus-ts-audiomixchannels",
+    "name": "AudioMixChannels",
+    "path": "src/shared/audio/platform/mix/LabsAudioMixBus.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Normalized mix bus — apps map local storage into this shape.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-labsaudiomixbus-ts-audiomixchannelspatch",
+    "name": "AudioMixChannelsPatch",
+    "path": "src/shared/audio/platform/mix/LabsAudioMixBus.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Deep-partial patch for (volume-only updates preserve mute flags).",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-labsaudiomixbus-ts-audiomixchannelstate",
+    "name": "AudioMixChannelState",
+    "path": "src/shared/audio/platform/mix/LabsAudioMixBus.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-labsaudiomixbus-ts-default-audio-mix",
+    "name": "DEFAULT_AUDIO_MIX",
+    "path": "src/shared/audio/platform/mix/LabsAudioMixBus.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-labsaudiomixbus-ts-labsaudiomixbus",
+    "name": "LabsAudioMixBus",
+    "path": "src/shared/audio/platform/mix/LabsAudioMixBus.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Unified mix calculations — wraps playbackVolumeMix for all apps.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-labsaudiomixbus-ts-mergeaudiomix",
+    "name": "mergeAudioMix",
+    "path": "src/shared/audio/platform/mix/LabsAudioMixBus.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-playbacksettingsmixsync-ts-mixchannelstoplaybacksettings",
+    "name": "mixChannelsToPlaybackSettings",
+    "path": "src/shared/audio/platform/mix/playbackSettingsMixSync.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Hydrate playback-settings UI from persisted mix-bus channels.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-playbacksettingsmixsync-ts-playbacksettingstomixpatch",
+    "name": "playbackSettingsToMixPatch",
+    "path": "src/shared/audio/platform/mix/playbackSettingsMixSync.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Map playback-settings sliders into mix-bus channel volumes (preserves mute flags via merge).",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-useaudiomixbus-ts-useaudiomixbus",
+    "name": "useAudioMixBus",
+    "path": "src/shared/audio/platform/mix/useAudioMixBus.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-useaudiomixbus-ts-useaudiomixbusoptions",
+    "name": "UseAudioMixBusOptions",
+    "path": "src/shared/audio/platform/mix/useAudioMixBus.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-mix-useplaybacksettingsmixsync-ts-useplaybacksettingsmixsync",
+    "name": "usePlaybackSettingsMixSync",
+    "path": "src/shared/audio/platform/mix/usePlaybackSettingsMixSync.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Binds PlaybackSettings sliders to so effective gain matches UI. Use in Drums (and future apps) instead of duplicating metronome/accent channel state.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-players-createdrumaudioplayer-ts-createdrumaudioplayer",
+    "name": "createDrumAudioPlayer",
+    "path": "src/shared/audio/platform/players/createDrumAudioPlayer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-players-createdrumaudioplayer-ts-createdrumaudioplayeroptions",
+    "name": "CreateDrumAudioPlayerOptions",
+    "path": "src/shared/audio/platform/players/createDrumAudioPlayer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-players-createdrumaudioplayer-ts-drumaudioplayerfacade",
+    "name": "DrumAudioPlayerFacade",
+    "path": "src/shared/audio/platform/players/createDrumAudioPlayer.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-players-index-ts-createdrumaudioplayer",
+    "name": "createDrumAudioPlayer",
+    "path": "src/shared/audio/platform/players/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-players-index-ts-createdrumaudioplayeroptions",
+    "name": "CreateDrumAudioPlayerOptions",
+    "path": "src/shared/audio/platform/players/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-players-index-ts-drumaudioplayerfacade",
+    "name": "DrumAudioPlayerFacade",
+    "path": "src/shared/audio/platform/players/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-drumscheduleradapter-ts-createdrumscheduleradapter",
+    "name": "createDrumSchedulerAdapter",
+    "path": "src/shared/audio/platform/scheduling/DrumSchedulerAdapter.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Implements DrumAccompaniment DrumScheduler via ScorePlaybackEngine or custom playAt.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-drumscheduleradapter-ts-wiredrumaccompanimenttoengine",
+    "name": "wireDrumAccompanimentToEngine",
+    "path": "src/shared/audio/platform/scheduling/DrumSchedulerAdapter.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Implements DrumAccompaniment DrumScheduler via ScorePlaybackEngine or custom playAt.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-index-ts-createdrumpatternschedulercallback",
+    "name": "createDrumPatternSchedulerCallback",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-index-ts-createdrumscheduleradapter",
+    "name": "createDrumSchedulerAdapter",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-index-ts-default-look-ahead-sec",
+    "name": "DEFAULT_LOOK_AHEAD_SEC",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-index-ts-drumhitplayat",
+    "name": "DrumHitPlayAt",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-index-ts-drumschedulercallback",
+    "name": "DrumSchedulerCallback",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-index-ts-hidden-tab-look-ahead-sec",
+    "name": "HIDDEN_TAB_LOOK_AHEAD_SEC",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-index-ts-lookaheadaudioscheduler",
+    "name": "LookAheadAudioScheduler",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-index-ts-scheduledrumpatternwindow",
+    "name": "scheduleDrumPatternWindow",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-index-ts-scheduledrumpatternwindowparams",
+    "name": "ScheduleDrumPatternWindowParams",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-index-ts-setdrumpatternplayatbridge",
+    "name": "setDrumPatternPlayAtBridge",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-index-ts-wiredrumaccompanimenttoengine",
+    "name": "wireDrumAccompanimentToEngine",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-lookaheadaudioscheduler-ts-default-look-ahead-sec",
+    "name": "DEFAULT_LOOK_AHEAD_SEC",
+    "path": "src/shared/audio/platform/scheduling/LookAheadAudioScheduler.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-lookaheadaudioscheduler-ts-hidden-tab-look-ahead-sec",
+    "name": "HIDDEN_TAB_LOOK_AHEAD_SEC",
+    "path": "src/shared/audio/platform/scheduling/LookAheadAudioScheduler.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-lookaheadaudioscheduler-ts-lookaheadaudioscheduler",
+    "name": "LookAheadAudioScheduler",
+    "path": "src/shared/audio/platform/scheduling/LookAheadAudioScheduler.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Shared rAF + PreciseScheduler wrapper for look-ahead Web Audio scheduling.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-scheduledrumpatternwindow-ts-createdrumpatternschedulercallback",
+    "name": "createDrumPatternSchedulerCallback",
+    "path": "src/shared/audio/platform/scheduling/scheduleDrumPatternWindow.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Build a ScorePlayback-compatible drum callback from pattern + volume refs.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-scheduledrumpatternwindow-ts-drumhitplayat",
+    "name": "DrumHitPlayAt",
+    "path": "src/shared/audio/platform/scheduling/scheduleDrumPatternWindow.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-scheduledrumpatternwindow-ts-drumschedulercallback",
+    "name": "DrumSchedulerCallback",
+    "path": "src/shared/audio/platform/scheduling/scheduleDrumPatternWindow.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-scheduledrumpatternwindow-ts-scheduledrumpatternwindow",
+    "name": "scheduleDrumPatternWindow",
+    "path": "src/shared/audio/platform/scheduling/scheduleDrumPatternWindow.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Schedule drum pattern hits in a beat window — shared by DrumAccompaniment, ScorePlayback drum callback, and rhythmPlayer internals.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-scheduledrumpatternwindow-ts-scheduledrumpatternwindowparams",
+    "name": "ScheduleDrumPatternWindowParams",
+    "path": "src/shared/audio/platform/scheduling/scheduleDrumPatternWindow.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-scheduledrumpatternwindow-ts-setdrumpatternplayatbridge",
+    "name": "setDrumPatternPlayAtBridge",
+    "path": "src/shared/audio/platform/scheduling/scheduleDrumPatternWindow.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -3483,7 +6668,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "Thin wrapper around MUI `Popover` that bakes in the two most common placement patterns used across apps so each app no longer re-specifies `anchorOrigin` / `transformOrigin` / `slotProps.paper.className`. Adopt this primitive in new code; migrate existing call sites opportunistically. See `src/shared/SHARED_UI_CONVENTIONS.md` for the current adoption status.",
+    "description": "Thin wrapper around MUI `Popover` that bakes in the two most common placement patterns used across apps so each app no longer re-specifies `anchorOrigin` / `transformOrigin` / `slotProps.paper.className`. Disables MUI Paper elevation so `--labs-popover-shadow` (app token) is the only shell shadow — div menus and portaled pickers match. See `src/shared/SHARED_UI_CONVENTIONS.md` and `docs/CHROME_UI_CONTRACT.md`.",
     "tags": [
       "components",
       "api",
@@ -3543,6 +6728,37 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-anchoredpopoverchrome-ts-labs-popover-chrome-sx",
+    "name": "LABS_POPOVER_CHROME_SX",
+    "path": "src/shared/components/anchoredPopoverChrome.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "MUI Paper chrome — must match `.labs-popover-surface` in labsChrome.css",
+    "tags": [
+      "components",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-anchoredpopoverchrome-ts-mergeanchoredpopoverpaperslot",
+    "name": "mergeAnchoredPopoverPaperSlot",
+    "path": "src/shared/components/anchoredPopoverChrome.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "MUI Paper chrome — must match `.labs-popover-surface` in labsChrome.css",
+    "tags": [
+      "components"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -3879,6 +7095,25 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-labsdisclosurechevron-tsx-labsdisclosurechevron",
+    "name": "LabsDisclosureChevron",
+    "path": "src/shared/components/LabsDisclosureChevron.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Filled disclosure chevron — same glyph as metronome split menus and Load Rhythm. Pointing down when expanded; rotate the wrapper −90° when collapsed.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-labserrorboundary-tsx-labserrorboundary",
     "name": "LabsErrorBoundary",
     "path": "src/shared/components/LabsErrorBoundary.tsx",
@@ -4050,11 +7285,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "chords",
-      "drums",
-      "piano",
-      "ui",
-      "words"
+      "ui"
     ],
     "exportType": "default",
     "demoId": "metronome-toggle"
@@ -4421,7 +7652,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "Behavior defaults for inline drum embeds. Hosts pass a profile via and keep theming local (`notationStyle`, wrapper className). - **settings-panel** — chord playback popovers (Encore Originals, Chords chart). - **practice-rail** — compact preset picker + audible playback (Stanza mix rail). - **sidebar-compact** — full preset grid + audible playback (Piano sidebar). Host-owned pattern fields (Words section template row): spread the profile then override `{ hidePatternInput: true, hideDarbukaLink: true }`.",
+    "description": "Behavior defaults for inline drum embeds. Hosts pass a profile via and keep theming local (`notationStyle`, wrapper className). - **settings-panel** — chord playback popovers (Encore Originals, Chords chart). - **practice-rail** — preset chip grid + audible playback (Stanza practice rail). - **sidebar-compact** — full preset grid + audible playback (Piano sidebar). Host-owned pattern fields (Words section template row): spread the profile then override `{ hidePatternInput: true, hideDarbukaLink: true }`.",
     "tags": [
       "components",
       "music",
@@ -4629,6 +7860,52 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-music-keyinput-tsx-keyrelativeswitch",
+    "name": "KeyRelativeSwitch",
+    "path": "src/shared/components/music/KeyInput.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-keyinput-tsx-keyrelativeswitchprops",
+    "name": "KeyRelativeSwitchProps",
+    "path": "src/shared/components/music/KeyInput.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "chords",
+      "piano",
+      "ui",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-music-keyinputmenuparts-tsx-keyinputmenu",
     "name": "KeyInputMenu",
     "path": "src/shared/components/music/KeyInputMenuParts.tsx",
@@ -4701,6 +7978,42 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-music-keyinputmenuparts-tsx-keyrelativeswitch",
+    "name": "KeyRelativeSwitch",
+    "path": "src/shared/components/music/KeyInputMenuParts.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Switch to the relative major/minor partner (same key signature, new tonic).",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-keyinputmenuparts-tsx-keyrelativeswitchprops",
+    "name": "KeyRelativeSwitchProps",
+    "path": "src/shared/components/music/KeyInputMenuParts.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "music",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-music-keyinputpicker-tsx-keyinputpicker",
     "name": "KeyInputPicker",
     "path": "src/shared/components/music/KeyInputPicker.tsx",
@@ -4734,6 +8047,39 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-musicinputappearance-ts-musicinputappearance",
+    "name": "MusicInputAppearance",
+    "path": "src/shared/components/music/musicInputAppearance.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared closed-shell + portaled menu appearance for KeyInput / BpmInput.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-musicinputappearance-ts-musicinputrootclass",
+    "name": "musicInputRootClass",
+    "path": "src/shared/components/music/musicInputAppearance.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Shared closed-shell + portaled menu appearance for KeyInput / BpmInput.",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -4809,6 +8155,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -4827,6 +8174,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -4846,6 +8194,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "const",
@@ -4865,6 +8214,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "const",
@@ -4884,6 +8234,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "const",
@@ -4903,6 +8254,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "type",
@@ -4922,6 +8274,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "type",
@@ -4940,6 +8293,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -4958,6 +8312,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -4976,6 +8331,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -4994,6 +8350,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -5012,6 +8369,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -5030,6 +8388,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
+      "drums",
       "words"
     ],
     "exportType": "function",
@@ -5382,7 +8741,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums"
+    ],
     "exportType": "default",
     "demoId": null
   },
@@ -5400,7 +8761,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api",
       "react"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "drums"
+    ],
     "exportType": "type",
     "demoId": null
   },
@@ -15154,6 +18517,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-songkeyformat-ts-formatrelativeparallelkey",
+    "name": "formatRelativeParallelKey",
+    "path": "src/shared/music/songKeyFormat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Format the relative major/minor partner, preserving the caller's short/long style.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-songkeyformat-ts-formatsongkey",
     "name": "formatSongKey",
     "path": "src/shared/music/songKeyFormat.ts",
@@ -15246,6 +18626,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "music-core",
     "description": "Song key with optional mode (`C`, `Cm`, `D major`, `D minor`, …).",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-songkeyformat-ts-relativeparallelkey",
+    "name": "relativeParallelKey",
+    "path": "src/shared/music/songKeyFormat.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Relative major/minor partner (same key signature, different tonic).",
     "tags": [
       "music"
     ],
@@ -16036,7 +19433,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Style configuration for the drum notation renderer. Use a single `inkColor` for staff lines, barlines, noteheads, stems, beams, and time signature.",
+    "description": "Style configuration for the drum notation renderer. Note ink (stems, heads, barlines) uses `inkColor`; staff lines use `staffLineColor`.",
     "tags": [
       "notation",
       "api",
@@ -16057,7 +19454,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Style configuration for the drum notation renderer. Use a single `inkColor` for staff lines, barlines, noteheads, stems, beams, and time signature.",
+    "description": "Style configuration for the drum notation renderer. Note ink (stems, heads, barlines) uses `inkColor`; staff lines use `staffLineColor`.",
     "tags": [
       "notation",
       "api",
@@ -16695,6 +20092,146 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-notation-metronomedotlayout-ts-buildsixteenthxmap",
+    "name": "buildSixteenthXMap",
+    "path": "src/shared/notation/metronomeDotLayout.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Map every sixteenth slot in the measure to X by interpolating between note onsets (and measure edges). Subdivisions land evenly in **time** between visible attacks.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-metronomedotlayout-ts-layoutmetronomedotsinmeasure",
+    "name": "layoutMetronomeDotsInMeasure",
+    "path": "src/shared/notation/metronomeDotLayout.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Resolve X under notehead centers; subdivisions interpolate between onsets in time.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-metronomedotlayout-ts-metronome-dot-nudge-px",
+    "name": "METRONOME_DOT_NUDGE_PX",
+    "path": "src/shared/notation/metronomeDotLayout.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Nudge right when `headCenterX` is the VexFlow stem origin (Darbuka editor).",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-metronomedotlayout-ts-metronomedotplacement",
+    "name": "MetronomeDotPlacement",
+    "path": "src/shared/notation/metronomeDotLayout.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Nudge right when `headCenterX` is the VexFlow stem origin (Darbuka editor).",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-metronomedotlayout-ts-metronomelayoutnoteanchor",
+    "name": "MetronomeLayoutNoteAnchor",
+    "path": "src/shared/notation/metronomeDotLayout.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Nudge right when `headCenterX` is the VexFlow stem origin (Darbuka editor).",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-metronomedotlayout-ts-min-dot-edge-gap-px",
+    "name": "MIN_DOT_EDGE_GAP_PX",
+    "path": "src/shared/notation/metronomeDotLayout.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Minimum gap between dot edges when circles would otherwise overlap.",
+    "tags": [
+      "notation",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-metronomedotlayout-ts-noteheadcenterx",
+    "name": "noteheadCenterX",
+    "path": "src/shared/notation/metronomeDotLayout.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Nudge right when `headCenterX` is the VexFlow stem origin (Darbuka editor).",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-metronomedotlayout-ts-resolvemetronomedotxinmeasure",
+    "name": "resolveMetronomeDotXInMeasure",
+    "path": "src/shared/notation/metronomeDotLayout.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "X for one grid slot — note onsets snap to noteheads; others interpolate between anchors.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-notation-playbacksvghighlight-ts-highlightmininoteoptions",
     "name": "HighlightMiniNoteOptions",
     "path": "src/shared/notation/playbackSvgHighlight.ts",
@@ -16942,7 +20479,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -16957,7 +20496,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -16972,7 +20513,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -16988,7 +20531,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17004,7 +20549,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17019,7 +20566,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17034,7 +20583,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17049,7 +20600,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17064,7 +20617,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17079,7 +20634,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17095,7 +20652,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17110,7 +20669,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17126,7 +20687,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17142,7 +20705,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17158,7 +20723,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17173,7 +20740,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17188,7 +20757,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17203,7 +20774,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17218,7 +20791,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17233,7 +20808,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17249,7 +20826,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17265,7 +20844,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17281,7 +20862,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17297,7 +20880,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17313,7 +20898,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17329,7 +20916,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17344,7 +20933,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17360,7 +20951,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17375,7 +20968,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17391,7 +20986,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17407,7 +21004,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17423,7 +21022,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -17439,8 +21040,27 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-unionmetronomeglyphboundsvexflow",
+    "name": "unionMetronomeGlyphBoundsVexFlow",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Notehead or rest glyph bounds for metronome dot alignment (after `draw()`).",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -17454,7 +21074,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "notation"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -17470,7 +21092,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -18978,6 +22602,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-rhythm-metronomeplaybackprefs-ts-torhythmmetronomeplaybackprefs",
+    "name": "toRhythmMetronomePlaybackPrefs",
+    "path": "src/shared/rhythm/metronomePlaybackPrefs.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Map platform metronome prefs to rhythm playback scheduler prefs.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-rhythm-presetdatabase-ts-findrhythmtemplatepresetbynotation",
     "name": "findRhythmTemplatePresetByNotation",
     "path": "src/shared/rhythm/presetDatabase.ts",
@@ -18989,6 +22628,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
+      "drums",
       "ui",
       "words"
     ],
@@ -19007,6 +22647,45 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
+      "drums",
+      "ui",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-presetdatabase-ts-getrhythmpresetfamilies",
+    "name": "getRhythmPresetFamilies",
+    "path": "src/shared/rhythm/presetDatabase.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Type → meter nested families for the load-rhythm picker.",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "drums",
+      "ui",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-presetdatabase-ts-getrhythmpresetgroups",
+    "name": "getRhythmPresetGroups",
+    "path": "src/shared/rhythm/presetDatabase.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "Flattened groups (legacy); prefer .",
+    "tags": [
+      "rhythm"
+    ],
+    "appsUsing": [
+      "drums",
       "ui",
       "words"
     ],
@@ -19025,6 +22704,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
+      "drums",
       "ui",
       "words"
     ],
@@ -19043,6 +22723,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
+      "drums",
       "ui",
       "words"
     ],
@@ -19061,6 +22742,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "rhythm"
     ],
     "appsUsing": [
+      "drums",
       "ui",
       "words"
     ],
@@ -19080,6 +22762,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "drums",
       "ui",
       "words"
     ],
@@ -19099,6 +22782,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "drums",
       "ui",
       "words"
     ],
@@ -19118,10 +22802,71 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "drums",
       "ui",
       "words"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-presetdatabase-ts-rhythmpresetfamily",
+    "name": "RhythmPresetFamily",
+    "path": "src/shared/rhythm/presetDatabase.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "rhythm",
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "ui",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-presetdatabase-ts-rhythmpresetgroup",
+    "name": "RhythmPresetGroup",
+    "path": "src/shared/rhythm/presetDatabase.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "rhythm",
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "ui",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-rhythm-presetdatabase-ts-rhythmpresetmetergroup",
+    "name": "RhythmPresetMeterGroup",
+    "path": "src/shared/rhythm/presetDatabase.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "rhythm",
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "ui",
+      "words"
+    ],
+    "exportType": "type",
     "demoId": null
   },
   {
@@ -19137,6 +22882,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "drums",
       "ui",
       "words"
     ],
@@ -19156,6 +22902,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "drums",
       "ui",
       "words"
     ],
@@ -19175,6 +22922,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [
+      "drums",
       "ui",
       "words"
     ],
@@ -19385,13 +23133,29 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-rhythm-rhythmplayer-ts-rhythmmetronomeplaybackprefs",
+    "name": "RhythmMetronomePlaybackPrefs",
+    "path": "src/shared/rhythm/rhythmPlayer.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "rhythm-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "rhythm",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-rhythm-rhythmplayer-ts-rhythmplayer",
     "name": "rhythmPlayer",
     "path": "src/shared/rhythm/rhythmPlayer.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "rhythm-core",
-    "description": "Callback for when a note starts playing Parameters: measureIndex, noteIndex within that measure",
+    "description": "No JSDoc summary provided.",
     "tags": [
       "rhythm"
     ],

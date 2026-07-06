@@ -304,6 +304,53 @@ describe('rhythmPlayer timing accuracy', () => {
       expect(metronomeEvents.length).toBeGreaterThan(0);
       expect(audioPlayer.playClickNowIfReady).not.toHaveBeenCalled();
     });
+
+    it('rebuilds metronome schedule when prefs change during playback', async () => {
+      const notation = 'D---T---K---S---';
+      const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
+      const parsedRhythm = parseRhythm(notation, timeSignature);
+      const basePrefs = {
+        subdivisionLevel: 1 as const,
+        sourceEnabled: { click: true, voice: false, drum: false },
+        subdivisionVolumes: { accent: 1, quarter: 0.8, eighth: 0, sixteenth: 0 },
+        levelChannelMutes: [],
+        channelClickMutes: [],
+        channelVoiceMutes: [],
+        channelDrumMutes: [],
+        clickGain: 0.5,
+        voiceGain: 0,
+        drumGain: 0,
+        voiceMode: 'counting' as const,
+        masterVolume: 100,
+        masterMuted: false,
+      };
+
+      await rhythmPlayer.play(
+        parsedRhythm,
+        120,
+        undefined,
+        undefined,
+        true,
+        undefined,
+        { measureAccentVolume: 90, beatGroupAccentVolume: 70, nonAccentVolume: 40, emphasizeSimpleRhythms: false, metronomeVolume: 100, reverbStrength: 0 },
+        undefined,
+        'sixteenth',
+        basePrefs,
+      );
+
+      pumpFrames(100);
+      vi.mocked(audioPlayer.playClickNowIfReady).mockClear();
+
+      await rhythmPlayer.setMetronomePlaybackPrefs({
+        ...basePrefs,
+        subdivisionLevel: 4,
+        subdivisionVolumes: { accent: 1, quarter: 0.8, eighth: 0.7, sixteenth: 0.55 },
+      });
+
+      pumpFrames(2000);
+
+      expect(vi.mocked(audioPlayer.playClickNowIfReady).mock.calls.length).toBeGreaterThan(4);
+    });
   });
 
   describe('lifecycle recovery', () => {

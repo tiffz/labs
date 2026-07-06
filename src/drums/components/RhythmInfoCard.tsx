@@ -4,6 +4,7 @@ import type { TimeSignature } from '../types';
 import { RHYTHM_DATABASE } from '../data/rhythmDatabase';
 import { drumsRhythmHref } from '../routes/drumsAppUrl';
 import { handleSpaLinkClick } from '../../shared/navigation/spaLinkClick';
+import LabsDisclosureChevron from '../../shared/components/LabsDisclosureChevron';
 
 const SimpleVexFlowNote = lazy(() => import('./SimpleVexFlowNote'));
 
@@ -96,8 +97,11 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
       >
         <h3 className="rhythm-info-title">{rhythm.name}</h3>
         {isMobile && (
-          <span className="material-symbols-outlined rhythm-info-toggle">
-            {isExpanded ? 'expand_less' : 'expand_more'}
+          <span
+            className={`rhythm-info-toggle ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}
+            aria-hidden
+          >
+            <LabsDisclosureChevron />
           </span>
         )}
       </div>

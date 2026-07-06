@@ -9,8 +9,12 @@ import {
   randomSongKey,
 } from '../../music/songKeyFormat';
 import { KeyInputPicker } from './KeyInputPicker';
-export { KeyInputMenu, KeyModeToggle } from './KeyInputMenuParts';
-export type { KeyInputMenuProps, KeyModeToggleProps } from './KeyInputMenuParts';
+import {
+  musicInputRootClass,
+  type MusicInputAppearance,
+} from './musicInputAppearance';
+export { KeyInputMenu, KeyModeToggle, KeyRelativeSwitch } from './KeyInputMenuParts';
+export type { KeyInputMenuProps, KeyModeToggleProps, KeyRelativeSwitchProps } from './KeyInputMenuParts';
 import './keyInput.css';
 
 const ENHARMONIC_TO_DISPLAY: Record<string, MusicKey> = {
@@ -46,6 +50,7 @@ interface KeyInputProps {
   placeholder?: string;
   onChange: (next: string) => void;
   className?: string;
+  appearance?: MusicInputAppearance;
   disabled?: boolean;
   showRandomize?: boolean;
   showStepButtons?: boolean;
@@ -71,6 +76,7 @@ const KeyInput: React.FC<KeyInputProps> = ({
   placeholder,
   onChange,
   className,
+  appearance = 'default',
   disabled = false,
   showRandomize = false,
   showStepButtons = false,
@@ -115,7 +121,7 @@ const KeyInput: React.FC<KeyInputProps> = ({
   };
 
   return (
-    <div className={className}>
+    <div className={musicInputRootClass('key', appearance, className)}>
       <div className="shared-key-dropdown-anchor" ref={anchorRef}>
         <div className="shared-key-shell">
           <button
@@ -123,6 +129,8 @@ const KeyInput: React.FC<KeyInputProps> = ({
             className="shared-key-value-btn"
             onClick={() => !disabled && setIsOpen((previous) => !previous)}
             aria-label={hasValue ? 'Change key' : placeholder ? `Set key (${placeholder})` : 'Set key'}
+            aria-haspopup="dialog"
+            aria-expanded={isOpen}
             disabled={disabled}
           >
             <span

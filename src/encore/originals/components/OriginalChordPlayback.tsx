@@ -18,7 +18,6 @@ import {
 import type { ChartLayout } from '../../../shared/music/chordPro/chordChartLayout';
 import type { ChartPlaybackStep } from '../../../shared/music/chordPro/chartPlaybackSequence';
 import type { SectionPlaybackOverride } from '../../../shared/music/resolveSectionPlaybackSettings';
-import { encoreHairline, encoreShadowLift } from '../../theme/encoreUiTokens';
 import { playbackFloatingPanelSlotProps } from '../../../shared/components/music/playbackFieldSelect';
 import { useOptionalOriginalsChartPlayback } from '../context/useOriginalsChartPlayback';
 
@@ -119,8 +118,6 @@ function OriginalChordPlaybackControls({
             flexDirection: 'column',
             overflow: 'hidden',
             borderRadius: 3,
-            border: `1px solid ${encoreHairline}`,
-            boxShadow: encoreShadowLift,
           },
         }),
       }}

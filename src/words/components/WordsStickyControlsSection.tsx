@@ -1,4 +1,7 @@
 import type { RefObject } from 'react';
+import { useCallback, useRef } from 'react';
+import { useFocusMenuOnOpen } from '../../shared/a11y/useFocusMenuOnOpen';
+import { useLabsDisclosureMenu } from '../../shared/a11y/useLabsDisclosureMenu';
 import type { WordRhythmGenerationSettings } from '../utils/prosodyEngine';
 import type { RandomizeMode } from '../utils/randomizeModes';
 import { RANDOMIZE_MODE_OPTIONS } from '../utils/randomizeModes';
@@ -57,6 +60,23 @@ export default function WordsStickyControlsSection({
   onGenerationSettingsChange,
   playbackRailProps,
 }: WordsStickyControlsSectionProps) {
+  const randomizeMenuTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const randomizeDisclosure = useLabsDisclosureMenu({ menuId: 'words-randomize-mode-menu' });
+  const generationDisclosure = useLabsDisclosureMenu({
+    menuId: 'words-generation-settings-menu',
+    hasPopup: 'dialog',
+  });
+
+  useFocusMenuOnOpen(generationMenuOpen, generationMenuRef);
+
+  const closeRandomizeMenu = useCallback(() => {
+    onCloseRandomizeMenu();
+    randomizeMenuTriggerRef.current?.focus();
+  }, [onCloseRandomizeMenu]);
+
+  const randomizeTriggerA11y = randomizeDisclosure.getTriggerA11yProps(randomizeMenuOpen);
+  const generationTriggerA11y = generationDisclosure.getTriggerA11yProps(generationMenuOpen);
+
   return (
     <section
       ref={sectionRef}
@@ -73,19 +93,24 @@ export default function WordsStickyControlsSection({
               Randomize
             </button>
             <button
+              {...randomizeTriggerA11y}
+              ref={randomizeMenuTriggerRef}
               className="words-button words-button-primary words-split-menu-trigger"
               type="button"
-              onClick={onToggleRandomizeMenu}
               aria-label="Choose randomization mode"
+              onClick={onToggleRandomizeMenu}
             >
               {RANDOMIZE_MODE_OPTIONS.find((o) => o.mode === selectedRandomizeMode)?.label}
-              <span className="material-symbols-outlined words-split-arrow">arrow_drop_down</span>
+              <span className="material-symbols-outlined words-split-arrow" aria-hidden="true">
+                arrow_drop_down
+              </span>
             </button>
           </div>
           <WordsRandomizeMenuPopover
             open={randomizeMenuOpen}
             anchorEl={randomizeButtonRef.current}
-            onClose={onCloseRandomizeMenu}
+            onClose={closeRandomizeMenu}
+            menuId={randomizeDisclosure.menuId}
             activeMode={selectedRandomizeMode}
             onSelect={onSelectRandomizeMode}
           />
@@ -93,16 +118,20 @@ export default function WordsStickyControlsSection({
         <div className="words-generation-anchor">
           <button
             ref={generationButtonRef}
+            {...generationTriggerA11y}
             className={`words-button words-gear-button${generationMenuOpen ? ' is-open' : ''}`}
             type="button"
             aria-label="Generation settings"
             onClick={onToggleGenerationMenu}
           >
-            <span className="material-symbols-outlined">settings</span>
+            <span className="material-symbols-outlined" aria-hidden="true">
+              settings
+            </span>
           </button>
           {generationMenuOpen ? (
             <div ref={generationMenuRef}>
               <WordsGenerationSettingsPanel
+                menuId={generationDisclosure.menuId}
                 settings={generationSettings}
                 onReset={onResetGenerationSettings}
                 onSelectAll={onSelectAllRules}

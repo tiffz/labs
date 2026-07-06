@@ -131,7 +131,7 @@ describe('DownloadDropdown', () => {
 
     expect(screen.getByText('Format')).toBeInTheDocument();
     expect(screen.getByText('Loops')).toBeInTheDocument();
-    expect(screen.getByText('Preview Duration')).toBeInTheDocument();
+    expect(screen.getByText(/preview duration/i)).toBeInTheDocument();
     expect(screen.getByText('Download')).toBeInTheDocument();
   });
 
@@ -169,11 +169,9 @@ describe('DownloadDropdown', () => {
       </div>
     );
 
-    const formatSelect = screen.getByLabelText('Format');
-    expect(formatSelect).toBeInTheDocument();
-
-    fireEvent.change(formatSelect, { target: { value: 'mp3' } });
-    expect(formatSelect).toHaveValue('mp3');
+    const mp3Button = screen.getByRole('button', { name: 'MP3' });
+    fireEvent.click(mp3Button);
+    expect(screen.getByRole('button', { name: 'MP3' })).toHaveClass('is-active');
   });
 
   it('should allow changing loop count', async () => {
@@ -281,8 +279,7 @@ describe('DownloadDropdown', () => {
     );
 
     // Change format to MP3
-    const formatSelect = screen.getByLabelText('Format');
-    fireEvent.change(formatSelect, { target: { value: 'mp3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'MP3' }));
 
     const downloadButton = screen.getByText('Download');
     fireEvent.click(downloadButton);
@@ -333,7 +330,7 @@ describe('DownloadDropdown', () => {
 
     // Should show exporting state
     await waitFor(() => {
-      expect(screen.getByText('Exporting...')).toBeInTheDocument();
+      expect(screen.getByText(/exporting/i)).toBeInTheDocument();
     });
 
     // Resolve the promise

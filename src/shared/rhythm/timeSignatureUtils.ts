@@ -5,7 +5,10 @@ import type { TimeSignature } from './types';
  * Compound time signatures have /8 denominator and numerator divisible by 3
  */
 export function isCompoundTimeSignature(timeSignature: TimeSignature): boolean {
-  return timeSignature.denominator === 8 && timeSignature.numerator % 3 === 0;
+  return (
+    (timeSignature.denominator === 8 || timeSignature.denominator === 16) &&
+    timeSignature.numerator % 3 === 0
+  );
 }
 
 /**
@@ -41,19 +44,9 @@ export function getDefaultBeatGrouping(timeSignature: TimeSignature): number[] {
     return getDefaultAsymmetricGrouping(timeSignature.numerator);
   }
 
-  // Regular time signatures (/4): one group per beat (adds up to numerator)
-  if (timeSignature.denominator === 4) {
+  // Regular time signatures (/4, /16): one group per notated beat (adds up to numerator)
+  if (timeSignature.denominator === 4 || timeSignature.denominator === 16) {
     return Array(timeSignature.numerator).fill(1);
-  }
-
-  // Time signatures with /16 denominator
-  if (timeSignature.denominator === 16) {
-    // If divisible by 4 (e.g. 4/16, 8/16, 12/16), group in 4s (quarter note beats)
-    if (timeSignature.numerator % 4 === 0) {
-      return Array(timeSignature.numerator / 4).fill(4);
-    }
-    // Otherwise fallback to single group for now (e.g. 5/16)
-    return [timeSignature.numerator];
   }
 
   // Fallback: single group

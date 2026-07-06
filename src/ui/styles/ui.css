@@ -1834,6 +1834,47 @@ body {
   }
 }
 
+.ui-stanza-rail-demo {
+  --stanza-rail-control-height: 2rem;
+  --stanza-rail-control-radius: 8px;
+  --stanza-rail-control-border: rgba(49, 43, 38, 0.1);
+  --stanza-rail-control-bg: rgba(255, 251, 245, 0.96);
+  --stanza-rose: #e848a0;
+  --stanza-ink: #2a2622;
+  --stanza-ink-muted: rgba(49, 43, 38, 0.62);
+  max-width: 392px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(49, 43, 38, 0.1);
+  background: rgba(255, 251, 245, 0.82);
+}
+
+.ui-stanza-demo-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ui-stanza-demo-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ui-stanza-demo-kicker {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--stanza-ink-muted, rgba(49, 43, 38, 0.62));
+}
+
+.ui-stanza-open-chrome-preview {
+  position: static;
+  margin-top: 0;
+  box-shadow: var(--key-dropdown-shadow, var(--theme-shadow-lg));
+}
+
 @media (max-width: 720px) {
   .ui-docs-app {
     padding: 0 12px 20px;

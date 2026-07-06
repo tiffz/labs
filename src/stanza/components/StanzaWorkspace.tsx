@@ -106,6 +106,13 @@ import { primaryPlaybackMuted, stanzaSanitizeLinearBusGain, stemPlaybackMuted } 
 import { migrateStanzaSongSegmentKeysIfNeeded } from '../utils/stanzaSegmentMigration';
 import { resolveStanzaMetronomeGridSync } from '../utils/stanzaMetronomeResolution';
 import {
+  resolveStanzaDrumInheritanceMode,
+  stanzaDrumPatternsDiffer,
+  stanzaEffectiveDrumPatternForSection,
+  stanzaSectionHasCustomDrumPattern,
+  stanzaSongDrumPattern,
+} from '../utils/stanzaScopePractice';
+import {
   probeFileAudioDurationSeconds,
   STANZA_STEM_DURATION_MATCH_EPS_SEC,
 } from '../utils/probeFileAudioDuration';
@@ -139,14 +146,18 @@ import StanzaTimeline from './StanzaTimeline';
 import { clampStanzaPlaybackRate } from '../utils/stanzaPlaybackRateLimits';
 import StanzaMetronomeStrip from './StanzaMetronomeStrip';
 import StanzaSectionMetronomeRail from './StanzaSectionMetronomeRail';
+import StanzaScopeInheritanceControl from './stanzaWorkspace/StanzaScopeInheritanceControl';
+import StanzaRailInheritanceHint from './stanzaWorkspace/StanzaRailInheritanceHint';
 import StanzaRepeatMark from './StanzaRepeatMark';
 import StanzaSongTitleEditor from './StanzaSongTitleEditor';
 import { StanzaViewerLayout } from './StanzaViewerLayout';
 import { primeStanzaMetronomeAudio, useStanzaMetronomeSync } from '../hooks/useStanzaMetronomeSync';
+import { useMetronomePreferences } from '../../shared/audio/platform/metronome';
 import { useStanzaMetronomePersistence } from '../hooks/useStanzaMetronomePersistence';
+import { createMediaTimelineDrumScheduler } from '../../shared/audio/platform/hooks/useMediaTimelineDrumScheduler';
 import DrumAccompaniment from '../../shared/components/music/DrumAccompaniment';
 import type { MusicKey } from '../../shared/music/musicInputConstants';
-import { transposeSongKey, formatSongKeyDisplay } from '../../shared/music/songKeyFormat';
+import { transposeSongKey, formatSongKeyButtonLabel, formatSongKeyDisplay } from '../../shared/music/songKeyFormat';
 import { useStanzaLocalStemMixer } from '../hooks/useStanzaLocalStemMixer';
 import { useStanzaSongKeyDetection } from '../hooks/useStanzaSongAnalysis';
 import { StanzaLocalTransposeMirror } from '../audio/stanzaLocalTransposeMirror';
@@ -245,6 +256,7 @@ export default function StanzaWorkspace() {
   const [transposeStepperEditing, setTransposeStepperEditing] = useState(false);
   const transposePersistTimerRef = useRef<number | null>(null);
   const drumPatternPersistTimerRef = useRef<number | null>(null);
+  const [drumPatternDraft, setDrumPatternDraft] = useState<string | null>(null);
   const transposeMirrorRef = useRef<StanzaLocalTransposeMirror | null>(null);
   const transposeStemBusRef = useRef<StanzaLocalTransposeStemBus | null>(null);
   const transposeDraftRef = useRef(0);
@@ -1227,23 +1239,77 @@ export default function StanzaWorkspace() {
     });
   }, [persistSong, railCalibSeg, selected]);
 
+  const clearRailSegmentDrumPattern = useCallback(() => {
+    if (!selected || !railCalibSeg) return;
+    const prev = selected.drumPatternBySegmentId ?? {};
+    if (!prev[railCalibSeg.id]) return;
+    const next = { ...prev };
+    delete next[railCalibSeg.id];
+    void persistSong({
+      id: selected.id,
+      drumPatternBySegmentId: Object.keys(next).length > 0 ? next : undefined,
+    });
+    setDrumPatternDraft(stanzaSongDrumPattern(selected));
+  }, [persistSong, railCalibSeg, selected]);
+
   const schedulePersistDrumPattern = useCallback(
     (pattern: string) => {
       if (!selected) return;
       const trimmed = pattern.trim();
+      setDrumPatternDraft(trimmed.length > 0 ? trimmed : STANZA_DRUMS_DEFAULT_PATTERN);
+      const timingScope = selected.metronomeTimingScope ?? 'song';
       if (drumPatternPersistTimerRef.current != null) {
         window.clearTimeout(drumPatternPersistTimerRef.current);
       }
       drumPatternPersistTimerRef.current = window.setTimeout(() => {
         drumPatternPersistTimerRef.current = null;
+        if (timingScope === 'section' && railCalibSeg) {
+          const songPattern = stanzaSongDrumPattern(selected);
+          const normalized = trimmed.length > 0 ? trimmed : STANZA_DRUMS_DEFAULT_PATTERN;
+          if (!stanzaDrumPatternsDiffer(normalized, songPattern)) {
+            clearRailSegmentDrumPattern();
+            return;
+          }
+          void persistSong({
+            id: selected.id,
+            drumPatternBySegmentId: {
+              ...(selected.drumPatternBySegmentId ?? {}),
+              [railCalibSeg.id]: normalized,
+            },
+          });
+          return;
+        }
         void persistSong({
           id: selected.id,
           drumPattern: trimmed.length > 0 ? trimmed : undefined,
         });
       }, 420);
     },
-    [persistSong, selected],
+    [clearRailSegmentDrumPattern, persistSong, railCalibSeg, selected],
   );
+
+  useEffect(() => {
+    if (!selected) {
+      setDrumPatternDraft(null);
+      return;
+    }
+    const timingScope = selected.metronomeTimingScope ?? 'song';
+    if (timingScope === 'section' && railCalibSeg) {
+      setDrumPatternDraft(
+        stanzaEffectiveDrumPatternForSection(selected, railCalibSeg.id).pattern,
+      );
+      return;
+    }
+    setDrumPatternDraft(stanzaSongDrumPattern(selected));
+  }, [
+    railCalibSeg,
+    railCalibSeg?.id,
+    selected?.drumPattern,
+    selected?.drumPatternBySegmentId,
+    selected?.id,
+    selected?.metronomeTimingScope,
+    selected,
+  ]);
 
   const schedulePersistTransposeSemitones = useCallback(
     (next: number) => {
@@ -2475,6 +2541,13 @@ export default function StanzaWorkspace() {
 
   const metronomeUserGain = stanzaSanitizeLinearBusGain(mixMetronomeGainDraft ?? selected?.metronomeGain, 1);
   const metronomeUserMuted = selected?.metronomeMuted === true;
+  const {
+    preferences: stanzaMetronomePreferences,
+    setPreferences: setStanzaMetronomePreferences,
+  } = useMetronomePreferences({
+    storageKey: 'stanza-metronome-prefs',
+    timeSignature: { numerator: 4, denominator: 4 },
+  });
   useStanzaMetronomeSync({
     enabled: Boolean(
       metronomeEnabledForPlayback && metronomeSyncSource.bpm != null && metronomeSyncSource.bpm > 0,
@@ -2486,6 +2559,7 @@ export default function StanzaWorkspace() {
     audioEnabled: true,
     gain: metronomeUserGain,
     muted: metronomeUserMuted || stanzaTapMetronomeTapActive,
+    preferences: stanzaMetronomePreferences,
   });
 
   /**
@@ -2519,6 +2593,28 @@ export default function StanzaWorkspace() {
         STANZA_DRUMS_DEFAULT_TIME_SIGNATURE.numerator) %
       STANZA_DRUMS_DEFAULT_TIME_SIGNATURE.numerator
     : 0;
+  const drumsPlaybackPattern = useMemo(() => {
+    if (!selected) return STANZA_DRUMS_DEFAULT_PATTERN;
+    if (playbackMetSeg) {
+      return stanzaEffectiveDrumPatternForSection(selected, playbackMetSeg.id).pattern;
+    }
+    return stanzaSongDrumPattern(selected);
+  }, [playbackMetSeg, selected]);
+
+  const practiceTimingScope = selected?.metronomeTimingScope ?? 'song';
+  const railSectionHasCustomDrums =
+    selected && railCalibSeg
+      ? stanzaSectionHasCustomDrumPattern(railCalibSeg.id, selected.drumPatternBySegmentId)
+      : false;
+  const drumInheritanceMode =
+    selected && railCalibSeg
+      ? resolveStanzaDrumInheritanceMode({
+          timingScope: practiceTimingScope,
+          segmentId: railCalibSeg.id,
+          song: selected,
+        })
+      : 'direct';
+
   const drumsActuallyPlaying = Boolean(
     selected?.drumsEnabled &&
       playback.isPlaying &&
@@ -2526,6 +2622,17 @@ export default function StanzaWorkspace() {
       // Silence the groove during tap-tempo count-in/tapping (metronome clicks are muted too).
       !stanzaTapMetronomeTapActive,
   );
+
+  const stanzaDrumScheduler = useMemo(() => {
+    if (!drumsHasGrid) return undefined;
+    return createMediaTimelineDrumScheduler({
+      bpm: drumsBpm,
+      timeSignature: STANZA_DRUMS_DEFAULT_TIME_SIGNATURE,
+      anchorMediaTime: drumsAnchorMediaTime,
+      getMediaTime: getTime,
+      isPlaying: drumsActuallyPlaying,
+    });
+  }, [drumsHasGrid, drumsBpm, drumsAnchorMediaTime, getTime, drumsActuallyPlaying]);
 
   const analysisAudioContextRef = useRef<AudioContext | null>(null);
   const getAnalysisAudioContext = useCallback(() => {
@@ -2568,6 +2675,9 @@ export default function StanzaWorkspace() {
     ? transposeDraftSemitones === 0
       ? `Playback key: ${formatSongKeyDisplay(playbackMusicKey!)}`
       : `Playback key: ${formatSongKeyDisplay(playbackMusicKey!)} (${transposeDraftSemitones >= 0 ? '+' : ''}${transposeDraftSemitones})`
+    : '';
+  const playbackKeyChipShortLabel = showPlaybackKeyChip
+    ? formatSongKeyButtonLabel(playbackMusicKey!)
     : '';
 
   // Surface the "set BPM" hint on the metronome strip itself when the toggle is on but no usable
@@ -3253,12 +3363,14 @@ export default function StanzaWorkspace() {
                       getMediaTime={getTime}
                       isPlaying={playback.isPlaying}
                       needsCalibration={metronomeNeedsCalibration}
+                      preferences={stanzaMetronomePreferences}
+                      onPreferencesChange={setStanzaMetronomePreferences}
+                      timeSignature={STANZA_DRUMS_DEFAULT_TIME_SIGNATURE}
                     />
                     {railCalibSeg ? (
                       <StanzaSectionMetronomeRail
                         segment={railCalibSeg}
                         timingScope={selected.metronomeTimingScope ?? 'song'}
-                        onTimingScopeChange={(scope) => void persistSong({ id: selected.id, metronomeTimingScope: scope })}
                         songDurationSec={playback.duration}
                         songCalibration={selected.metronomeSongCalibration}
                         segmentCalibration={selected.metronomeBySegmentId?.[railCalibSeg.id]}
@@ -3289,54 +3401,103 @@ export default function StanzaWorkspace() {
                           railCalibSegIdx != null ? () => snapHoveredSectionBoundariesToBeat(railCalibSegIdx) : undefined
                         }
                         onPrimeMetronomeAudio={primeStanzaMetronomeAudio}
-                      />
-                    ) : null}
-                  </Box>
-
-                  <Box className="stanza-rail-section stanza-rail-section--drums">
-                    <Box className="stanza-rail-section-head">
-                      <Typography component="h3" className="stanza-rail-section-title">
-                        Drums
-                      </Typography>
-                      <FormControlLabel
-                        className="stanza-rail-section-toggle"
-                        control={
-                          <Checkbox
-                            size="small"
-                            checked={Boolean(selected.drumsEnabled)}
-                            onChange={(e) => {
-                              const enabled = e.target.checked;
-                              if (enabled) {
-                                primeStanzaMetronomeAudio();
-                              }
-                              void persistSong({ id: selected.id, drumsEnabled: enabled });
-                            }}
-                            sx={{ p: 0.25 }}
+                        scopeHeader={
+                          <StanzaScopeInheritanceControl
+                            timingScope={selected.metronomeTimingScope ?? 'song'}
+                            onTimingScopeChange={(scope) =>
+                              void persistSong({ id: selected.id, metronomeTimingScope: scope })
+                            }
+                            sectionDisplayName={railCalibSeg.label || `Section ${railCalibSeg.index + 1}`}
+                            sectionToggleLabel={
+                              (railCalibSeg.label || `Section ${railCalibSeg.index + 1}`).length > 14
+                                ? `${(railCalibSeg.label || `Section ${railCalibSeg.index + 1}`).slice(0, 13)}…`
+                                : railCalibSeg.label || `Section ${railCalibSeg.index + 1}`
+                            }
+                            segmentCalibration={selected.metronomeBySegmentId?.[railCalibSeg.id]}
+                            songCalibration={selected.metronomeSongCalibration}
+                            liveRailBpm={
+                              railLiveTiming?.segmentId === railCalibSeg.id
+                                ? railLiveTiming.bpm
+                                : undefined
+                            }
+                            sectionHasCustomDrumPattern={railSectionHasCustomDrums}
                           />
                         }
-                        label="On"
+                        grooveFooter={
+                          <Box
+                            className={[
+                              'stanza-rail-groove-drums',
+                              drumInheritanceMode === 'custom' ? 'stanza-rail-groove-drums--custom' : '',
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
+                          >
+                            <Box className="stanza-rail-groove-drums__head">
+                              <Box className="stanza-rail-groove-drums__head-main">
+                                <Typography component="span" className="stanza-rail-groove-drums__label">
+                                  Drums
+                                </Typography>
+                                {practiceTimingScope === 'section' ? (
+                                  <StanzaRailInheritanceHint
+                                    mode={drumInheritanceMode}
+                                    onResetToParent={
+                                      drumInheritanceMode === 'custom'
+                                        ? clearRailSegmentDrumPattern
+                                        : undefined
+                                    }
+                                    resetLabel="Use song pattern"
+                                    inheritLabel="From whole song"
+                                    customLabel="Custom pattern"
+                                  />
+                                ) : null}
+                              </Box>
+                              <FormControlLabel
+                                className="stanza-rail-section-toggle"
+                                control={
+                                  <Checkbox
+                                    size="small"
+                                    checked={Boolean(selected.drumsEnabled)}
+                                    onChange={(e) => {
+                                      const enabled = e.target.checked;
+                                      if (enabled) {
+                                        primeStanzaMetronomeAudio();
+                                      }
+                                      void persistSong({ id: selected.id, drumsEnabled: enabled });
+                                    }}
+                                    sx={{ p: 0.25 }}
+                                  />
+                                }
+                                label="On"
+                              />
+                            </Box>
+                            {selected.drumsEnabled ? (
+                              <Box className="stanza-drums-panel">
+                                <DrumAccompaniment
+                                  {...STANZA_DRUM_PANEL_UX}
+                                  bpm={drumsBpm}
+                                  timeSignature={STANZA_DRUMS_DEFAULT_TIME_SIGNATURE}
+                                  isPlaying={drumsActuallyPlaying}
+                                  currentBeatTime={drumsCurrentBeatTime}
+                                  currentBeat={drumsCurrentBeat}
+                                  metronomeEnabled={Boolean(selected.metronomeEnabled)}
+                                  volume={Math.round(drumsUserGain * 100)}
+                                  notationValue={
+                                    drumsActuallyPlaying
+                                      ? drumsPlaybackPattern
+                                      : drumPatternDraft ?? STANZA_DRUMS_DEFAULT_PATTERN
+                                  }
+                                  onNotationValueChange={schedulePersistDrumPattern}
+                                  notationWidth={STANZA_DRUMS_NOTATION_WIDTH}
+                                  notationHeight={STANZA_DRUMS_NOTATION_HEIGHT}
+                                  notationStyle={STANZA_DRUMS_NOTATION_STYLE}
+                                  notationFrameClassName="stanza-drums-notation-frame"
+                                  scheduler={stanzaDrumScheduler}
+                                />
+                              </Box>
+                            ) : null}
+                          </Box>
+                        }
                       />
-                    </Box>
-                    {selected.drumsEnabled ? (
-                      <Box className="stanza-drums-panel">
-                        <DrumAccompaniment
-                          {...STANZA_DRUM_PANEL_UX}
-                          presetLayout="compact"
-                          bpm={drumsBpm}
-                          timeSignature={STANZA_DRUMS_DEFAULT_TIME_SIGNATURE}
-                          isPlaying={drumsActuallyPlaying}
-                          currentBeatTime={drumsCurrentBeatTime}
-                          currentBeat={drumsCurrentBeat}
-                          metronomeEnabled={Boolean(selected.metronomeEnabled)}
-                          volume={Math.round(drumsUserGain * 100)}
-                          notationValue={selected.drumPattern ?? STANZA_DRUMS_DEFAULT_PATTERN}
-                          onNotationValueChange={schedulePersistDrumPattern}
-                          notationWidth={STANZA_DRUMS_NOTATION_WIDTH}
-                          notationHeight={STANZA_DRUMS_NOTATION_HEIGHT}
-                          notationStyle={STANZA_DRUMS_NOTATION_STYLE}
-                          notationFrameClassName="stanza-drums-notation-frame"
-                        />
-                      </Box>
                     ) : null}
                   </Box>
 
@@ -3396,6 +3557,7 @@ export default function StanzaWorkspace() {
                       }}
                       showPlaybackKeyChip={showPlaybackKeyChip}
                       playbackKeyChipLabel={playbackKeyChipLabel}
+                      playbackKeyChipShortLabel={playbackKeyChipShortLabel}
                     />
                   )}
                   <StanzaPracticeMixSection

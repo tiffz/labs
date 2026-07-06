@@ -92,16 +92,14 @@ export function EncoreSpotifyMenuSearchField(props: EncoreSpotifyMenuSearchField
         modifiers={[{ name: 'offset', options: { offset: [0, 4] } }]}
       >
         <Paper
-          elevation={4}
+          elevation={0}
+          className="labs-popover-surface"
           aria-label="Spotify search results"
           onMouseDown={stopMenuClose}
           sx={{
             width: anchorWidth,
             maxHeight: MENU_SPOTIFY_RESULTS_MAX_HEIGHT_PX,
             overflow: 'auto',
-            border: 1,
-            borderColor: 'divider',
-            borderRadius: 1,
           }}
         >
           <List dense disablePadding>

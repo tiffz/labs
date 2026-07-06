@@ -5,6 +5,7 @@ import { expandSimileMeasure } from '../utils/notationUtils';
 import { parseRhythm, findMeasureIndexAtTick, findMeasureIndexFromVisualTick } from '../../shared/rhythm/rhythmParser';
 // getSixteenthsPerMeasure removed (unused)
 import type { TimeSignature, ParsedRhythm } from '../types';
+import { isDrumsSelectionProtectedTarget } from '../utils/drumsSelectionProtectedZones';
 
 interface UseRhythmSelectionProps {
     notation: string;
@@ -96,31 +97,14 @@ export function useRhythmSelection({
             // Only process if there's an active selection
             if (selection.startCharPosition === null) return;
 
-            // Check if click is inside the note display container
-            if (noteDisplayRef.current && noteDisplayRef.current.contains(e.target as Node)) {
-                return; // Click is inside note display, don't clear
+            if (isDrumsSelectionProtectedTarget(e.target)) {
+                return;
             }
 
-            // Check if click is inside the palette sidebar (allow palette interactions)
-            const paletteSidebar = document.querySelector('.palette-sidebar');
-            if (paletteSidebar && paletteSidebar.contains(e.target as Node)) {
-                return; // Click is inside palette, don't clear
+            if (noteDisplayRef.current?.contains(e.target as Node)) {
+                return;
             }
 
-            // Check if click is inside the rhythm notation input section
-            const inputSection = document.querySelector('.input-section');
-            if (inputSection && inputSection.contains(e.target as Node)) {
-                return; // Click is inside input section, don't clear
-            }
-
-            // Check if click is inside the playback controls (Play/Stop, BPM, etc.)
-            // This preserves selection when starting/stopping playback for scoped playback
-            const playbackControls = document.querySelector('.playback-controls-bar');
-            if (playbackControls && playbackControls.contains(e.target as Node)) {
-                return; // Click is inside playback controls, don't clear
-            }
-
-            // Click is outside all interactive areas, clear the selection
             clearSelection();
         };
 

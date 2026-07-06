@@ -36,11 +36,8 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import { analyzeBeatForMediaTimeRange } from '../../shared/beat/segmentBeatAnalysis';
 import type { PersistedAnalysisBundle } from '../../shared/beat/analysisVersion';
@@ -48,6 +45,9 @@ import { isAnalysisVersionStale } from '../../shared/beat/analysisVersion';
 import { calibrationFromBeatAnalysis, runWholeSongBeatAnalysis } from '../../shared/beat/wholeSongBeatAnalysis';
 import AppTooltip from '../../shared/components/AppTooltip';
 import BpmInput from '../../shared/components/music/BpmInput';
+import StanzaRailField from './stanzaWorkspace/StanzaRailField';
+import StanzaRailGridRow from './stanzaWorkspace/StanzaRailGridRow';
+import StanzaRailInheritanceHint from './stanzaWorkspace/StanzaRailInheritanceHint';
 import type { StanzaMetronomeTimingScope, StanzaSegmentMetronomeCalibration } from '../db/stanzaDb';
 import { sectionBoundaryBeatMisaligned } from '../utils/stanzaBeatGrid';
 import type { DerivedSegment } from '../utils/segments';
@@ -58,12 +58,12 @@ import {
   inheritedFirstBeatOffsetSecFromSongCalibration,
 } from '../utils/stanzaMetronome';
 import { STANZA_SONG_METRONOME_LIVE_ID } from '../utils/stanzaMetronomeResolution';
+import { resolveStanzaTempoInheritanceMode } from '../utils/stanzaScopePractice';
 import StanzaTapTempoDialog from './StanzaTapTempoDialog';
 
 export interface StanzaSectionMetronomeRailProps {
   segment: DerivedSegment;
   timingScope: StanzaMetronomeTimingScope;
-  onTimingScopeChange: (scope: StanzaMetronomeTimingScope) => void;
   songDurationSec: number;
   songCalibration: StanzaSegmentMetronomeCalibration | undefined;
   segmentCalibration: StanzaSegmentMetronomeCalibration | undefined;
@@ -97,6 +97,9 @@ export interface StanzaSectionMetronomeRailProps {
   /** Device-local cached whole-song analysis (ADR 0013). */
   analysisCache?: PersistedAnalysisBundle;
   onPersistAnalysisCache?: (cache: PersistedAnalysisBundle) => void;
+  /** Scope switcher + grouped groove chrome (tempo + drums). */
+  scopeHeader: React.ReactNode;
+  grooveFooter?: React.ReactNode;
 }
 
 function offsetFromCalibration(segStart: number, cal: StanzaSegmentMetronomeCalibration | undefined): number {
@@ -131,7 +134,6 @@ const ZERO_SEG: StanzaSegmentMetronomeCalibration = {
 export default function StanzaSectionMetronomeRail({
   segment,
   timingScope,
-  onTimingScopeChange,
   songDurationSec,
   songCalibration,
   segmentCalibration,
@@ -158,6 +160,8 @@ export default function StanzaSectionMetronomeRail({
   onPrimeMetronomeAudio,
   analysisCache,
   onPersistAnalysisCache,
+  scopeHeader,
+  grooveFooter,
 }: StanzaSectionMetronomeRailProps) {
   const segmentStart = timingScope === 'song' ? 0 : segment.start;
   const persistedCal = timingScope === 'song' ? songCalibration : segmentCalibration;
@@ -177,6 +181,12 @@ export default function StanzaSectionMetronomeRail({
     if (timingScope === 'section' && songCalibration) return inheritedSongOffsetSec;
     return 0;
   }, [inheritedSongOffsetSec, persistedCal, segmentStart, songCalibration, timingScope]);
+
+  const tempoInheritanceMode = resolveStanzaTempoInheritanceMode({
+    timingScope,
+    segmentCalibration,
+    songCalibration,
+  });
 
   const [draftBpm, setDraftBpm] = useState(() => Math.round(baselineBpm));
   const [draftOffsetInput, setDraftOffsetInput] = useState(() => beatOffsetSecToMsDisplay(baselineOffsetSec));
@@ -569,117 +579,110 @@ export default function StanzaSectionMetronomeRail({
     [pushLiveFromDraft],
   );
 
-  const sectionDisplayName = segment.label || `Section ${segment.index + 1}`;
-  const showSectionOverrideHint = timingScope === 'song' && Boolean(segmentCalibration);
-  const showInheritanceHint =
-    timingScope === 'section' && !segmentCalibration && Boolean(songCalibration);
+  const resetTempoCalibration = useCallback(() => {
+    if (persistTimerRef.current != null) {
+      window.clearTimeout(persistTimerRef.current);
+      persistTimerRef.current = null;
+    }
+    let targetBpm: number;
+    let targetOff: number;
+    if (timingScope === 'song') {
+      const built = buildStanzaSegmentCalibration({
+        segmentStart: 0,
+        bpm: ZERO_SEG.bpm,
+        firstBeatOffsetSec: 0,
+        source: 'tap',
+      });
+      onPersistSongCalibration(built);
+      targetBpm = ZERO_SEG.bpm;
+      targetOff = 0;
+    } else {
+      onClearSegmentCalibration();
+      targetBpm =
+        songCalibration && songCalibration.bpm > 40 && songCalibration.bpm < 360
+          ? Math.round(songCalibration.bpm)
+          : ZERO_SEG.bpm;
+      targetOff = songCalibration
+        ? inheritedFirstBeatOffsetSecFromSongCalibration(segment.start, songCalibration)
+        : 0;
+    }
+    pendingResetBaselineRef.current = {
+      bpm: Math.round(targetBpm),
+      offsetSec: roundBeatOffsetForUi(targetOff),
+    };
+    applyDraftNumbers(targetBpm, targetOff);
+    draftDirtyRef.current = false;
+  }, [
+    applyDraftNumbers,
+    onClearSegmentCalibration,
+    onPersistSongCalibration,
+    segment.start,
+    songCalibration,
+    timingScope,
+  ]);
 
   return (
-    <Stack spacing={0.75} className="stanza-metronome-rail" sx={{ mt: 0.75 }}>
-      <Box className="stanza-rail-calibration-scope">
-        <Stack direction="row" alignItems="center" spacing={0.4} sx={{ minWidth: 0, flex: '1 1 auto' }}>
-          <Typography
-            component="span"
-            className="stanza-rail-calibration-scope-name"
-            title={`Calibrate for ${sectionDisplayName}`}
-          >
-            {sectionDisplayName}
-          </Typography>
-          {showSectionOverrideHint ? (
-            <AppTooltip title="This section has its own tempo. Whole-song edits won't change its BPM or Beat 1.">
-              <InfoOutlinedIcon
-                sx={{ fontSize: 14, color: 'info.main', flexShrink: 0 }}
-                aria-label="Section overrides whole-song tempo"
+    <Stack spacing={0.75} className="stanza-metronome-rail">
+      <Box
+        className={[
+          'stanza-rail-groove-panel',
+          timingScope === 'section' && tempoInheritanceMode === 'custom'
+            ? 'stanza-rail-groove-panel--custom'
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
+        {scopeHeader}
+        <Box className="stanza-rail-groove-panel__body">
+      <StanzaRailGridRow variant="calibration">
+        <StanzaRailField
+          label="BPM"
+          className="stanza-rail-calibration-field"
+          inheritanceMode={tempoInheritanceMode}
+          inheritanceHint={
+            timingScope === 'section' ? (
+              <StanzaRailInheritanceHint
+                mode={tempoInheritanceMode}
+                onResetToParent={
+                  tempoInheritanceMode === 'custom' ? resetTempoCalibration : undefined
+                }
+                resetLabel="Use song tempo"
+                inheritLabel="From whole song"
+                customLabel="Custom tempo"
               />
-            </AppTooltip>
-          ) : null}
-          {showInheritanceHint ? (
-            <AppTooltip
-              title={`Inheriting ${Math.round(songCalibration!.bpm)} BPM from the whole song until you override.`}
-            >
-              <InfoOutlinedIcon
-                sx={{ fontSize: 14, color: 'text.secondary', flexShrink: 0 }}
-                aria-label="Inheriting whole-song tempo"
-              />
-            </AppTooltip>
-          ) : null}
-        </Stack>
-        <ToggleButtonGroup
-          size="small"
-          exclusive
-          value={timingScope}
-          onChange={(_event, next: StanzaMetronomeTimingScope | null) => {
-            if (!next || next === timingScope) return;
-            onTimingScopeChange(next);
-          }}
-          aria-label="Calibration scope"
-          sx={{ flexShrink: 0 }}
+            ) : null
+          }
         >
-          <ToggleButton value="section">Section</ToggleButton>
-          <ToggleButton value="song">Song</ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
-
-      <Box className="stanza-rail-calibration-grid">
-        <Box sx={{ minWidth: 0 }}>
-          <Typography component="label" className="stanza-rail-field-label">
-            BPM
-          </Typography>
           <BpmInput
             value={draftBpm}
             onChange={handleBpmChange}
-            className="shared-bpm-input stanza-bpm-rail-input"
+            appearance="stanza"
+            className="stanza-bpm-rail-input"
             dropdownClassName="stanza-bpm-dropdown"
             sliderClassName="stanza-bpm-slider"
             presetPanelHorizontal="right"
             showRateActions={false}
             trailingActions={
-              <AppTooltip title="Reset BPM and Beat 1 to defaults for the current target (whole song or this section)">
+              <AppTooltip
+                title={
+                  timingScope === 'section' && segmentCalibration
+                    ? 'Use whole-song tempo and Beat 1 for this section'
+                    : timingScope === 'section'
+                      ? 'Reset Beat 1 for this section'
+                      : 'Reset whole-song tempo and Beat 1'
+                }
+              >
                 <span>
                   <IconButton
                     type="button"
                     size="small"
-                    aria-label="Reset tempo calibration"
-                    onClick={() => {
-                      if (persistTimerRef.current != null) {
-                        window.clearTimeout(persistTimerRef.current);
-                        persistTimerRef.current = null;
-                      }
-                      // Compute the post-reset target (what the rail should show
-                      // once the persisted clear flushes). For section scope this
-                      // is the inherited whole-song values; for song scope it's
-                      // the blank default. We apply the target optimistically and
-                      // gate the prop-driven sync until baseline matches, so the
-                      // user never sees the value flicker back to the stale one.
-                      let targetBpm: number;
-                      let targetOff: number;
-                      if (timingScope === 'song') {
-                        const built = buildStanzaSegmentCalibration({
-                          segmentStart: 0,
-                          bpm: ZERO_SEG.bpm,
-                          firstBeatOffsetSec: 0,
-                          source: 'tap',
-                        });
-                        onPersistSongCalibration(built);
-                        targetBpm = ZERO_SEG.bpm;
-                        targetOff = 0;
-                      } else {
-                        onClearSegmentCalibration();
-                        targetBpm =
-                          songCalibration && songCalibration.bpm > 40 && songCalibration.bpm < 360
-                            ? Math.round(songCalibration.bpm)
-                            : ZERO_SEG.bpm;
-                        targetOff = songCalibration
-                          ? inheritedFirstBeatOffsetSecFromSongCalibration(segment.start, songCalibration)
-                          : 0;
-                      }
-                      pendingResetBaselineRef.current = {
-                        bpm: Math.round(targetBpm),
-                        offsetSec: roundBeatOffsetForUi(targetOff),
-                      };
-                      applyDraftNumbers(targetBpm, targetOff);
-                      draftDirtyRef.current = false;
-                    }}
+                    aria-label={
+                      timingScope === 'section' && segmentCalibration
+                        ? 'Use song tempo'
+                        : 'Reset tempo calibration'
+                    }
+                    onClick={resetTempoCalibration}
                     sx={{ p: 0.35 }}
                   >
                     <RestartAltOutlinedIcon sx={{ fontSize: 20 }} />
@@ -688,11 +691,12 @@ export default function StanzaSectionMetronomeRail({
               </AppTooltip>
             }
           />
-        </Box>
-        <Box>
-          <Typography component="label" className="stanza-rail-field-label">
-            Beat 1 (ms)
-          </Typography>
+        </StanzaRailField>
+        <StanzaRailField
+          label="Beat 1 (ms)"
+          className="stanza-rail-calibration-field"
+          inheritanceMode={tempoInheritanceMode}
+        >
           <Box className="stanza-rail-beat-offset-shell">
             <TextField
               size="small"
@@ -705,7 +709,7 @@ export default function StanzaSectionMetronomeRail({
               className="stanza-rail-beat-offset-input"
             />
           </Box>
-        </Box>
+        </StanzaRailField>
         <Box className="stanza-rail-tool-pair">
           <AppTooltip
             title={
@@ -781,6 +785,11 @@ export default function StanzaSectionMetronomeRail({
             </AppTooltip>
           ) : null}
         </Box>
+      </StanzaRailGridRow>
+
+        {grooveFooter}
+
+        </Box>
       </Box>
 
       {analysisError && (
@@ -819,7 +828,8 @@ export default function StanzaSectionMetronomeRail({
                   <BpmInput
                     value={modalDraftBpm}
                     onChange={handleModalBpmChange}
-                    className="shared-bpm-input stanza-bpm-rail-input stanza-bpm-modal-input"
+                    appearance="stanza"
+                    className="stanza-bpm-rail-input stanza-bpm-modal-input"
                     dropdownClassName="stanza-bpm-dropdown"
                     sliderClassName="stanza-bpm-slider"
                     presetPanelHorizontal="right"

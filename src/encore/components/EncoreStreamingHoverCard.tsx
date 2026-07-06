@@ -9,6 +9,7 @@ import Tooltip, { tooltipClasses, type TooltipProps } from '@mui/material/Toolti
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import { useCallback, useEffect, useRef, useState, type FocusEvent, type MutableRefObject, type ReactElement, type ReactNode } from 'react';
+import { LABS_POPOVER_CHROME_SX } from '../../shared/components/anchoredPopoverChrome';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
 import { fetchSpotifyTrack } from '../spotify/spotifyApi';
 import type { EncoreMediaSource } from '../types';
@@ -73,11 +74,8 @@ const HoverCardTooltip = styled(({ className, ...props }: TooltipProps) => (
   <Tooltip {...props} classes={{ popper: className }} />
 ))(({ theme }) => ({
   [`& .${tooltipClasses.tooltip}`]: {
-    backgroundColor: theme.palette.background.paper,
+    ...LABS_POPOVER_CHROME_SX,
     color: theme.palette.text.primary,
-    boxShadow: theme.shadows[3],
-    border: `1px solid ${theme.palette.divider}`,
-    borderRadius: Number(theme.shape.borderRadius) * 1.5,
     padding: theme.spacing(1, 1.25),
     maxWidth: 360,
     fontSize: theme.typography.body2.fontSize,

@@ -4,13 +4,14 @@ import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
 import AppTooltip from '../../../shared/components/AppTooltip';
 import KeyInput from '../../../shared/components/music/KeyInput';
 import { NumericStepperField } from '../../../shared/components/music/NumericStepperField';
 import type { SongKey } from '../../../shared/music/songKeyFormat';
 import type { StanzaSong } from '../../db/stanzaDb';
 import StanzaPlaybackTransformChip from '../StanzaPlaybackTransformChip';
+import StanzaRailField from './StanzaRailField';
+import StanzaRailGridRow from './StanzaRailGridRow';
 
 export interface StanzaPracticePitchSectionProps {
   selected: StanzaSong;
@@ -35,6 +36,7 @@ export interface StanzaPracticePitchSectionProps {
   onResetTranspose: () => void;
   showPlaybackKeyChip: boolean;
   playbackKeyChipLabel: string;
+  playbackKeyChipShortLabel: string;
 }
 
 export default function StanzaPracticePitchSection({
@@ -60,22 +62,21 @@ export default function StanzaPracticePitchSection({
   onResetTranspose,
   showPlaybackKeyChip,
   playbackKeyChipLabel,
+  playbackKeyChipShortLabel,
 }: StanzaPracticePitchSectionProps) {
   return (
-    <Box className="stanza-rail-section stanza-rail-section--pitch">
-      <Typography component="h3" className="stanza-rail-section-title" sx={{ mb: 0.5 }}>
-        Pitch
-      </Typography>
-      <Box className="stanza-rail-pitch-fields">
-        <Box className="stanza-original-key-block">
-          <Typography component="label" className="stanza-rail-field-label">
-            Original key
-          </Typography>
+    <Box className="stanza-rail-section stanza-rail-section--pitch" aria-label="Pitch">
+      <StanzaRailGridRow variant="pitch">
+        <StanzaRailField
+          label="Original Key"
+          labelVariant="inline"
+          className="stanza-rail-pitch-field stanza-rail-pitch-field--original"
+        >
           <KeyInput
-            className="shared-key-input"
+            appearance="stanza"
             value={selected.localOriginalKey}
             placeholder="Unknown"
-            modeFormat="long"
+            modeFormat="short"
             dropdownClassName="stanza-key-dropdown"
             onChange={(next) =>
               onOriginalKeyChange(next.trim() ? (next as SongKey) : undefined)
@@ -83,37 +84,32 @@ export default function StanzaPracticePitchSection({
             trailingActions={
               <AppTooltip title={stanzaAnalysisDisabledReason ?? 'Detect key from the uploaded recording'}>
                 <span>
-                  <IconButton
+                  <button
                     type="button"
-                    size="small"
-                    className="stanza-original-key-detect-btn stanza-rail-compact-btn"
+                    className="shared-key-inline-action stanza-original-key-detect-btn"
                     disabled={!stanzaCanAnalyze || keyDetectBusy}
                     aria-label="Detect original key"
                     onClick={() => void onDetectOriginalKey()}
-                    sx={{ p: 0.35 }}
                   >
                     {keyDetectBusy ? (
-                      <CircularProgress size={16} sx={{ color: 'inherit' }} />
+                      <CircularProgress size={14} sx={{ color: 'inherit' }} />
                     ) : (
-                      <AutoFixHighIcon sx={{ fontSize: 18 }} />
+                      <AutoFixHighIcon sx={{ fontSize: 16 }} aria-hidden />
                     )}
-                  </IconButton>
+                  </button>
                 </span>
               </AppTooltip>
             }
           />
-          {keyDetectError ? (
-            <Alert severity="warning" onClose={onDismissKeyDetectError} sx={{ mt: 0.75, py: 0, '& .MuiAlert-message': { py: 0.5 } }}>
-              {keyDetectError}
-            </Alert>
-          ) : null}
-        </Box>
-        <Box className="stanza-key-shift-block">
-          <Typography component="label" className="stanza-rail-field-label">
-            Key shift
-          </Typography>
-          <Box className="stanza-key-shift-row">
-            <Box className="shared-bpm-input stanza-key-shift-numeric">
+        </StanzaRailField>
+
+        <StanzaRailField
+          label="Shift"
+          labelVariant="inline"
+          className="stanza-rail-pitch-field stanza-rail-pitch-field--shift"
+        >
+          <Box className="stanza-rail-pitch-shift-controls">
+            <Box className="shared-bpm-input shared-bpm-input--stanza stanza-key-shift-numeric">
               <AppTooltip title="Raise or lower pitch in half-steps (−12 to +12). Applies to the main file and any mix layers. Playback re-decodes shortly after you stop adjusting.">
                 <Box
                   className={`shared-bpm-shell ${transposeStepperEditing ? 'is-editing' : 'is-idle'}`}
@@ -155,9 +151,8 @@ export default function StanzaPracticePitchSection({
                           size="small"
                           aria-label="Reset pitch shift"
                           disabled={transposeDecodeBusy || transposeDraftSemitones === 0}
-                          className="stanza-key-shift-reset"
+                          className="stanza-key-shift-reset stanza-rail-icon-btn"
                           onClick={onResetTranspose}
-                          sx={{ p: 0.35 }}
                         >
                           <RestartAltOutlinedIcon sx={{ fontSize: 18 }} />
                         </IconButton>
@@ -170,41 +165,45 @@ export default function StanzaPracticePitchSection({
             {transposeDecodeBusy ? (
               <Box
                 className="stanza-key-shift-busy-spinner"
-                sx={{
-                  flexShrink: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 28,
-                }}
                 aria-live="polite"
                 aria-busy="true"
                 aria-label="Rebuilding pitch-shifted audio"
               >
                 <AppTooltip title="Rebuilding pitch-shifted audio…">
                   <span>
-                    <CircularProgress size={20} thickness={4.5} sx={{ color: 'var(--stanza-rose, #e848a0)' }} />
+                    <CircularProgress size={18} thickness={4.5} sx={{ color: 'var(--stanza-rose, #e848a0)' }} />
                   </span>
                 </AppTooltip>
               </Box>
             ) : null}
             {showPlaybackKeyChip ? (
-              <StanzaPlaybackTransformChip
-                label={playbackKeyChipLabel}
-                shifted={transposeDraftSemitones !== 0}
-                direction={transposeDraftSemitones > 0 ? 'up' : 'down'}
-              />
+              <AppTooltip title={playbackKeyChipLabel}>
+                <span className="stanza-rail-pitch-playback-chip">
+                  <StanzaPlaybackTransformChip
+                    label={playbackKeyChipShortLabel}
+                    shifted={transposeDraftSemitones !== 0}
+                    direction={transposeDraftSemitones > 0 ? 'up' : 'down'}
+                    compact
+                  />
+                </span>
+              </AppTooltip>
             ) : null}
           </Box>
-          {transposeDecodeError ? (
-            <Box aria-live="polite" sx={{ mt: 0.75 }}>
-              <Alert severity="warning" onClose={onDismissTransposeDecodeError} sx={{ py: 0, '& .MuiAlert-message': { py: 0.5 } }}>
-                {transposeDecodeError}
-              </Alert>
-            </Box>
-          ) : null}
+        </StanzaRailField>
+      </StanzaRailGridRow>
+
+      {keyDetectError ? (
+        <Alert severity="warning" onClose={onDismissKeyDetectError} className="stanza-rail-inline-alert">
+          {keyDetectError}
+        </Alert>
+      ) : null}
+      {transposeDecodeError ? (
+        <Box aria-live="polite" className="stanza-rail-inline-alert-wrap">
+          <Alert severity="warning" onClose={onDismissTransposeDecodeError} className="stanza-rail-inline-alert">
+            {transposeDecodeError}
+          </Alert>
         </Box>
-      </Box>
+      ) : null}
     </Box>
   );
 }

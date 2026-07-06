@@ -3,6 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { usePlayback } from '../../shared/rhythm/usePlayback';
 import { rhythmPlayer } from '../../shared/rhythm/rhythmPlayer';
 import type { ParsedRhythm, PlaybackSettings } from '../../shared/rhythm/types';
+import { defaultMetronomePreferences } from '../../shared/audio/platform/metronome/preferences';
 
 // Mock rhythmPlayer
 vi.mock('../../shared/rhythm/rhythmPlayer', () => ({
@@ -10,6 +11,7 @@ vi.mock('../../shared/rhythm/rhythmPlayer', () => ({
     play: vi.fn(),
     stop: vi.fn(),
     setMetronomeEnabled: vi.fn(),
+    setMetronomePlaybackPrefs: vi.fn().mockResolvedValue(undefined),
     setSettings: vi.fn(),
     setBpmAtMeasureBoundary: vi.fn(),
   },
@@ -87,7 +89,9 @@ describe('usePlayback', () => {
       false, // metronomeEnabled
       expect.any(Function), // metronomeCallback
       defaultSettings,
-      undefined // tickRange (no selection)
+      undefined, // tickRange (no selection)
+      'sixteenth',
+      undefined,
     );
     expect(result.current.isPlaying).toBe(true);
   });
@@ -325,6 +329,38 @@ describe('usePlayback', () => {
     });
   });
 
+  it('should update metronome prefs when they change during playback', async () => {
+    const basePrefs = defaultMetronomePreferences({ numerator: 4, denominator: 4 }, { subdivisionLevel: 1 });
+    const finerPrefs = defaultMetronomePreferences(
+      { numerator: 4, denominator: 4 },
+      { subdivisionLevel: 4, subdivisionVolumes: { accent: 1, quarter: 0.8, eighth: 0.7, sixteenth: 0.55 } },
+    );
+
+    const { result, rerender } = renderHook(
+      (props) =>
+        usePlayback({
+          parsedRhythm: mockParsedRhythm,
+          bpm: 120,
+          metronomeEnabled: true,
+          playbackSettings: props.settings,
+          metronomePreferences: props.metronomePreferences,
+        }),
+      {
+        initialProps: { settings: defaultSettings, metronomePreferences: basePrefs },
+      },
+    );
+
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    rerender({ settings: defaultSettings, metronomePreferences: finerPrefs });
+
+    await waitFor(() => {
+      expect(rhythmPlayer.setMetronomePlaybackPrefs).toHaveBeenCalled();
+    });
+  });
+
   it('should pass metronomeEnabled state to rhythmPlayer.play', () => {
     const { result } = renderHook(() =>
       usePlayback({
@@ -368,7 +404,9 @@ describe('usePlayback', () => {
       false,
       expect.any(Function),
       defaultSettings,
-      { startTick: 16, endTick: 32 }
+      { startTick: 16, endTick: 32 },
+      'sixteenth',
+      undefined,
     );
   });
 
@@ -395,7 +433,9 @@ describe('usePlayback', () => {
       false,
       expect.any(Function),
       defaultSettings,
-      undefined
+      undefined,
+      'sixteenth',
+      undefined,
     );
   });
 });

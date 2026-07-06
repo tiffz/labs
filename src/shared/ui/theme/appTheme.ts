@@ -570,6 +570,52 @@ const THEMES: Record<AppThemeId, Theme> = {
             },
           },
         },
+        /** Floating menus, popovers, and hover-card tooltips share `--labs-popover-*` on `.encore-app-shell`. */
+        MuiMenu: {
+          defaultProps: {
+            disableScrollLock: true,
+            elevation: 0,
+          },
+          styleOverrides: {
+            paper: {
+              backgroundImage: 'none',
+              backgroundColor: 'var(--labs-popover-bg, #ffffff)',
+              border: 'var(--labs-popover-border, 1px solid rgba(124, 58, 237, 0.14))',
+              boxShadow: 'var(--labs-popover-shadow, 0 12px 28px rgba(76, 29, 149, 0.1))',
+              borderRadius: 'var(--labs-popover-radius, 12px)',
+              backdropFilter: 'var(--labs-popover-backdrop, blur(4px))',
+            },
+          },
+        },
+        MuiPopover: {
+          defaultProps: {
+            disableScrollLock: true,
+            elevation: 0,
+          },
+          styleOverrides: {
+            paper: {
+              backgroundImage: 'none',
+              backgroundColor: 'var(--labs-popover-bg, #ffffff)',
+              border: 'var(--labs-popover-border, 1px solid rgba(124, 58, 237, 0.14))',
+              boxShadow: 'var(--labs-popover-shadow, 0 12px 28px rgba(76, 29, 149, 0.1))',
+              borderRadius: 'var(--labs-popover-radius, 12px)',
+              backdropFilter: 'var(--labs-popover-backdrop, blur(4px))',
+            },
+          },
+        },
+        MuiTooltip: {
+          styleOverrides: {
+            tooltip: {
+              backgroundImage: 'none',
+              backgroundColor: 'var(--labs-popover-bg, #ffffff)',
+              color: 'var(--labs-popover-fg, inherit)',
+              border: 'var(--labs-popover-border, 1px solid rgba(124, 58, 237, 0.14))',
+              boxShadow: 'var(--labs-popover-shadow, 0 12px 28px rgba(76, 29, 149, 0.1))',
+              borderRadius: 'var(--labs-popover-radius, 12px)',
+              backdropFilter: 'var(--labs-popover-backdrop, blur(4px))',
+            },
+          },
+        },
         MuiAppBar: {
           styleOverrides: {
             root: {

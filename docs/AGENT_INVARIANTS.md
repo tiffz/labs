@@ -29,15 +29,18 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 
 ## UI & UX
 
-| Invariant                                                    | Enforcement                                                               |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------- |
-| Shared UI before app-local copies                            | `shared-ui-first.mdc`, `/ui/` catalog                                     |
-| Parallel concepts → parallel components                      | [`STYLE_GUIDE.md`](../STYLE_GUIDE.md) § Parallel surfaces                 |
-| One primary action per viewport; aggregate background status | [`docs/UX_AGENT_GUIDE.md`](UX_AGENT_GUIDE.md), `ux-journey-mandatory.mdc` |
-| Journey sketch in chat before non-trivial UI code            | `labs-ux-journey`, `ux-journey-mandatory.mdc`                             |
-| App theme via tokens (`--*-`, MUI theme), not ad-hoc hex     | App `DESIGN.md`, `ux-agent-guide.mdc`                                     |
-| User copy voice                                              | `docs/USER_COPY_STYLE.md`, `check:ui-copy`                                |
-| No new `!important` in CSS                                   | `check:css-important`                                                     |
+| Invariant                                                               | Enforcement                                                                                             |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Shared UI before app-local copies                                       | `shared-ui-first.mdc`, `/ui/` catalog                                                                   |
+| Parallel concepts → parallel components                                 | [`STYLE_GUIDE.md`](../STYLE_GUIDE.md) § Parallel surfaces                                               |
+| One primary action per viewport; aggregate background status            | [`docs/UX_AGENT_GUIDE.md`](UX_AGENT_GUIDE.md), `ux-journey-mandatory.mdc`                               |
+| Popover/settings selection uses secondary tier (not solid primary fill) | [`docs/SELECTION_VISUAL_HIERARCHY.md`](SELECTION_VISUAL_HIERARCHY.md), `selection-visual-hierarchy.mdc` |
+| Focus rings use theme tokens; sticky bars do not clip keyboard rings    | [`docs/FOCUS_THEMING.md`](FOCUS_THEMING.md), `focus-theming.mdc`, `check:menu-a11y`                     |
+| Journey sketch in chat before non-trivial UI code                       | `labs-ux-journey`, `ux-journey-mandatory.mdc`                                                           |
+| App theme via tokens (`--*-`, MUI theme), not ad-hoc hex                | App `DESIGN.md`, `ux-agent-guide.mdc`                                                                   |
+| User copy voice                                                         | `docs/USER_COPY_STYLE.md`, `check:ui-copy`                                                              |
+| No new `!important` in CSS                                              | `check:css-important`                                                                                   |
+| CSS `@import` only at file top (before other rules)                     | `check:css-import-order`                                                                                |
 
 ## Quality gates
 

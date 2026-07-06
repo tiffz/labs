@@ -1,15 +1,13 @@
 import type { RefObject } from 'react';
+import { useFocusMenuOnOpen } from '../../shared/a11y/useFocusMenuOnOpen';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import type { PlaybackSettings } from '../../shared/rhythm/types';
 import type { SampledPianoLoadState } from '../../shared/music/sampledPianoLoadState';
 import type { SoundType } from '../../shared/music/soundOptions';
-import AppSlider from '../../shared/components/AppSlider';
-import AppTooltip from '../../shared/components/AppTooltip';
 import { PlaybackSoundSelect } from '../../shared/components/music/PlaybackSoundSelect';
 import { PlaybackVolumeRow } from '../../shared/components/music/PlaybackVolumeRow';
 import DarbukaTrainerIconLink from '../../shared/components/music/DarbukaTrainerIconLink';
 import DrumAccompaniment from '../../shared/components/music/DrumAccompaniment';
-import { volumeIconName } from '../utils/appRhythmHelpers';
 import {
   WORDS_HOST_INPUT_DRUM_UX,
   WORDS_INLINE_DRUM_NOTATION_STYLE,
@@ -19,6 +17,7 @@ import {
 
 export type WordsSoundSettingsPanelProps = {
   menuRef: RefObject<HTMLDivElement | null>;
+  menuId?: string;
   masterVolume: number;
   onMasterVolumeChange: (value: number) => void;
   masterMuted: boolean;
@@ -60,6 +59,7 @@ export type WordsSoundSettingsPanelProps = {
 
 export default function WordsSoundSettingsPanel({
   menuRef,
+  menuId = 'words-sound-settings-menu',
   masterVolume,
   onMasterVolumeChange,
   masterMuted,
@@ -98,10 +98,19 @@ export default function WordsSoundSettingsPanel({
   autoFollowPlayback,
   onAutoFollowPlaybackChange,
 }: WordsSoundSettingsPanelProps) {
+  useFocusMenuOnOpen(true, menuRef);
+
   return (
-    <div ref={menuRef} className="words-dropdown-menu words-dropdown-sound">
+    <div
+      ref={menuRef}
+      id={menuId}
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby={`${menuId}-title`}
+      className="labs-popover-surface words-dropdown-menu words-dropdown-sound"
+    >
       <div className="words-dropdown-header">
-        <strong>Sound settings</strong>
+        <strong id={`${menuId}-title`}>Sound settings</strong>
       </div>
       <PlaybackVolumeRow
         label="Master"
@@ -123,62 +132,37 @@ export default function WordsSoundSettingsPanel({
         }}
         aria-label="Drums volume"
       />
-      <label className="words-slider-row">
-        accent volume
-        <AppSlider
-          min={0}
-          max={100}
-          className="words-slider-input"
-          value={playbackSettings.measureAccentVolume}
-          onChange={(event) =>
-            onPlaybackSettingsChange((previous) => ({
-              ...previous,
-              measureAccentVolume: Number(event.target.value),
-              beatGroupAccentVolume: Math.min(
-                Number(event.target.value),
-                previous.beatGroupAccentVolume,
-              ),
-            }))
-          }
-        />
-        <span>{playbackSettings.measureAccentVolume}</span>
-        <AppTooltip title={accentMuted ? 'Unmute accents' : 'Mute accents'}>
-          <button
-            type="button"
-            className="words-button words-button-icon words-icon-tooltip"
-            onClick={onAccentMutedToggle}
-            aria-label={accentMuted ? 'Unmute accents' : 'Mute accents'}
-          >
-            <span className="material-symbols-outlined">{volumeIconName(accentMuted)}</span>
-          </button>
-        </AppTooltip>
-      </label>
-      <label className="words-slider-row">
-        metronome volume
-        <AppSlider
-          min={0}
-          max={100}
-          className="words-slider-input"
-          value={playbackSettings.metronomeVolume}
-          onChange={(event) =>
-            onPlaybackSettingsChange((previous) => ({
-              ...previous,
-              metronomeVolume: Number(event.target.value),
-            }))
-          }
-        />
-        <span>{playbackSettings.metronomeVolume}</span>
-        <AppTooltip title={metronomeMuted ? 'Unmute metronome' : 'Mute metronome'}>
-          <button
-            type="button"
-            className="words-button words-button-icon words-icon-tooltip"
-            onClick={onMetronomeMutedToggle}
-            aria-label={metronomeMuted ? 'Unmute metronome' : 'Mute metronome'}
-          >
-            <span className="material-symbols-outlined">{volumeIconName(metronomeMuted)}</span>
-          </button>
-        </AppTooltip>
-      </label>
+      <PlaybackVolumeRow
+        label="Accent"
+        volume={playbackSettings.measureAccentVolume}
+        muted={accentMuted}
+        onVolumeChange={(volume) =>
+          onPlaybackSettingsChange((previous) => ({
+            ...previous,
+            measureAccentVolume: volume,
+            beatGroupAccentVolume: Math.min(volume, previous.beatGroupAccentVolume),
+          }))
+        }
+        onMutedChange={(next) => {
+          if (next !== accentMuted) onAccentMutedToggle();
+        }}
+        aria-label="Accent volume"
+      />
+      <PlaybackVolumeRow
+        label="Metronome"
+        volume={playbackSettings.metronomeVolume}
+        muted={metronomeMuted}
+        onVolumeChange={(volume) =>
+          onPlaybackSettingsChange((previous) => ({
+            ...previous,
+            metronomeVolume: volume,
+          }))
+        }
+        onMutedChange={(next) => {
+          if (next !== metronomeMuted) onMetronomeMutedToggle();
+        }}
+        aria-label="Metronome volume"
+      />
       <div className="words-chord-settings">
         <div className="words-chord-sound-field">
           <span className="words-chord-sound-label">chord sound</span>

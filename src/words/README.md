@@ -1,6 +1,10 @@
 # Words App Notes
 
-**Agents:** [`AGENTS.md`](AGENTS.md) · shared UI: [`/ui/`](/ui/) · copy: [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md)
+**Agents:** [`AGENTS.md`](AGENTS.md) · shared UI: [`/ui/`](/ui/) · chrome contract: [`docs/CHROME_UI_CONTRACT.md`](../../docs/CHROME_UI_CONTRACT.md) · copy: [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md)
+
+## Chrome UI (reference app)
+
+Words is the first app on the shared chrome contract — dropdown shadows, button hovers, and popover surfaces come from [`labsChrome.css`](../shared/styles/labsChrome.css) + `--labs-popover-*` / `--labs-control-*` tokens. Override **brand tint** on `.words-page` only; keep layout in `word-rhythm.css`.
 
 ## Major functionality
 

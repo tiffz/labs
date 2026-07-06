@@ -4,6 +4,19 @@
   width: 100%;
 }
 
+/**
+ * Paired meter + BPM row — set typography once so value displays align across apps.
+ * Apply on the flex row wrapping TimeSignatureInput + BpmInput (e.g. drums playback bar).
+ */
+.shared-music-timing-row {
+  --music-timing-value-font-size: var(--control-font-size, 1rem);
+  --music-timing-value-font-weight: 600;
+  --music-timing-value-letter-spacing: 0.01em;
+  --music-timing-value-line-height: 1;
+  --bpm-value-text-align: center;
+  --bpm-value-padding: 0 0.24rem;
+}
+
 .shared-bpm-shell {
   --bpm-bg: var(--bg-input, var(--theme-surface, #fff));
   --bpm-border: var(
@@ -13,6 +26,7 @@
   --bpm-text: var(--text-primary, var(--theme-text, #141a26));
   --bpm-muted: var(--text-secondary, var(--theme-text-secondary, #6f7790));
   --bpm-focus: var(--accent-primary, var(--theme-primary, #7c3aed));
+  --labs-control-focus-ring-inset-color: var(--bpm-focus);
   --bpm-hover: color-mix(in srgb, var(--bpm-bg) 90%, #000 10%);
   --bpm-dropdown-bg: var(--bg-card, var(--theme-surface-elevated, #fff));
   --bpm-dropdown-border: var(--bpm-border);
@@ -29,8 +43,7 @@
   --bpm-dropdown-active-text: var(--bpm-focus);
   --bpm-dropdown-header-bg: transparent;
   --bpm-dropdown-header-border: transparent;
-  --bpm-focus-ring: inset 0 0 0 2px
-    color-mix(in srgb, var(--bpm-focus) 38%, transparent);
+  --bpm-focus-ring: var(--labs-control-focus-ring-inset);
   --bpm-dropdown-offset-y: 6px;
   --bpm-dropdown-min-width: 300px;
   --bpm-dropdown-max-width: min(460px, calc(100vw - 24px));
@@ -70,7 +83,7 @@
   --bpm-divider: color-mix(in srgb, var(--bpm-border) 72%, transparent);
   display: inline-flex;
   align-items: center;
-  border: 1px solid var(--bpm-border);
+  border: var(--bpm-border-width, 1px) solid var(--bpm-border);
   border-radius: var(--bpm-shell-radius);
   background: var(--bpm-bg);
   color: var(--bpm-text);
@@ -142,16 +155,19 @@
   border: none;
   background: transparent;
   color: var(--bpm-text);
-  font: inherit;
-  font-weight: 700;
+  font-family: inherit;
+  font-size: var(--music-timing-value-font-size, 1em);
+  font-style: inherit;
+  font-weight: var(--music-timing-value-font-weight, 700);
   width: 100%;
   min-width: 0;
   flex: 1 1 auto;
   outline: none;
   text-align: var(--bpm-value-text-align, left);
   padding: var(--bpm-value-padding, 0 0.3rem 0 0.52rem);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
+  font-variant-numeric: var(--music-timing-value-font-variant, tabular-nums);
+  letter-spacing: var(--music-timing-value-letter-spacing, 0.01em);
+  line-height: var(--music-timing-value-line-height, 1.15);
   align-self: center;
 }
 
@@ -354,15 +370,7 @@
     var(--bpm-dropdown-bg, #fff) 94%,
     transparent
   );
-  background: var(--bpm-dropdown-bg, #ffffff);
-  border: 1px solid
-    color-mix(
-      in srgb,
-      var(--bpm-dropdown-border, var(--bpm-border)) 92%,
-      #e2e8f0
-    );
-  border-radius: 0.82rem;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+  background: var(--bpm-dropdown-bg, var(--labs-popover-bg, #ffffff));
   max-height: 300px;
   overflow-y: auto;
   overflow-x: visible;
@@ -428,8 +436,11 @@
 .shared-bpm-slider-wrap {
   padding: var(--bpm-slider-wrap-padding);
   border-radius: 0.7rem;
-  border: 1px solid
-    color-mix(in srgb, var(--bpm-dropdown-border) 68%, transparent);
+  border: var(--bpm-slider-panel-border-width, 1px) solid
+    var(
+      --bpm-slider-wrap-border-color,
+      color-mix(in srgb, var(--bpm-dropdown-border) 68%, transparent)
+    );
   background: var(--bpm-slider-panel-bg);
   display: grid;
   gap: 0.36rem;
@@ -515,7 +526,7 @@
 }
 
 .shared-bpm-preset-chip {
-  border: 1px solid
+  border: var(--bpm-chip-border-width, 1px) solid
     var(
       --bpm-chip-border,
       color-mix(in srgb, var(--bpm-dropdown-border, #d5d9e2) 72%, transparent)

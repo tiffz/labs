@@ -5,7 +5,7 @@ Nested **`AGENTS.md`** for Words. Root policy: [`../../AGENTS.md`](../../AGENTS.
 ## Start here
 
 1. [`README.md`](README.md) — sections, prosody, playback integration.
-2. **Shared UI:** [`../shared/SHARED_UI_CONVENTIONS.md`](../shared/SHARED_UI_CONVENTIONS.md) § Playback field selects — use `PlaybackSoundSelect`, `BpmInput`, `ChordStyleInput`, `ChordProgressionInput` with matching `appearance`.
+2. **Shared UI:** [`../shared/SHARED_UI_CONVENTIONS.md`](../shared/SHARED_UI_CONVENTIONS.md) § Playback field selects — use `PlaybackSoundSelect`, `BpmInput`, `ChordStyleInput`, `ChordProgressionInput` with matching `appearance`. **Chrome UI reference app:** [`docs/CHROME_UI_CONTRACT.md`](../../docs/CHROME_UI_CONTRACT.md). **Menu a11y:** [`docs/A11Y_MENU_PATTERNS.md`](../../docs/A11Y_MENU_PATTERNS.md) — `useLabsDisclosureMenu`, focus on open, no clipped focus rings on split buttons.
 3. **Copy:** [`../docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md).
 4. **Catalog:** `/ui/` — search before building a new control.
 

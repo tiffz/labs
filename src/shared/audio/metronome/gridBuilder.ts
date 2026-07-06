@@ -1,6 +1,10 @@
 import type { TimeSignature } from '../../rhythm/types';
 import type { SubdivisionType, SubdivisionLevel, VoiceMode } from './types';
-import { eighthBaseSlotsPerEighth, slotsPerBeat } from './types';
+import {
+  eighthBaseSlotsPerEighth,
+  sixteenthBaseSlotsPerSixteenth,
+  slotsPerBeat,
+} from './types';
 import { syllableForPosition, takadimiLabelForPosition } from './syllableMap';
 
 export interface SubdivGridEntry {
@@ -31,7 +35,12 @@ function buildSimpleGrid(grid: SubdivGridEntry[], params: GridBuilderParams): vo
   const { grouping, voiceMode, subdivisionLevel: level, timeSignature } = params;
   const takadimi = voiceMode === 'takadimi';
   const isEighthBase = timeSignature.denominator === 8;
-  const slots = isEighthBase ? eighthBaseSlotsPerEighth(level) : slotsPerBeat(level);
+  const isSixteenthBase = timeSignature.denominator === 16;
+  const slots = isEighthBase
+    ? eighthBaseSlotsPerEighth(level)
+    : isSixteenthBase
+      ? sixteenthBaseSlotsPerSixteenth(level)
+      : slotsPerBeat(level);
   let subdivIndex = 0;
   let globalBeatNumber = 0;
 
@@ -51,6 +60,43 @@ function buildSimpleGrid(grid: SubdivGridEntry[], params: GridBuilderParams): vo
           let subdivision: SubdivisionType;
           if (isEighthStart) {
             subdivision = isFirstOfMeasure ? 'accent' : (isGroupStart ? 'quarter' : 'eighth');
+          } else {
+            subdivision = 'sixteenth';
+          }
+
+          const sampleId = takadimi
+            ? takadimiLabelForPosition(groupLength, groupSlotIdx)
+            : syllableForPosition(groupLength, groupSlotIdx, gi + 1).sampleId;
+
+          grid.push({
+            subdivision,
+            sampleId,
+            isGroupStart,
+            groupIndex: gi,
+            beatIndex: subdivIndex,
+            measureBeat: globalBeatNumber - 1,
+          });
+          subdivIndex++;
+          groupSlotIdx++;
+        }
+      }
+    }
+  } else if (isSixteenthBase) {
+    for (let gi = 0; gi < grouping.length; gi++) {
+      const groupSize = grouping[gi];
+      const groupLength = groupSize * slots;
+      let groupSlotIdx = 0;
+      for (let sixteenthInGroup = 0; sixteenthInGroup < groupSize; sixteenthInGroup++) {
+        globalBeatNumber++;
+        const isGroupStartSixteenth = sixteenthInGroup === 0;
+        for (let s = 0; s < slots; s++) {
+          const isFirstOfMeasure = gi === 0 && sixteenthInGroup === 0 && s === 0;
+          const isGroupStart = isGroupStartSixteenth && s === 0;
+          const isSixteenthStart = s === 0;
+
+          let subdivision: SubdivisionType;
+          if (isSixteenthStart) {
+            subdivision = isFirstOfMeasure ? 'accent' : isGroupStart ? 'quarter' : 'eighth';
           } else {
             subdivision = 'sixteenth';
           }

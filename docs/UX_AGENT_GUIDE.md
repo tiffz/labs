@@ -26,12 +26,13 @@ When the journey ships, **promote** steps + success criteria to `src/<app>/CUJs.
 
 ## Gestalt & consistency
 
-| Principle         | Agent rule                                                                                                                                         |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Proximity**     | Controls that configure the same task live in one `<section>` with a shared label. Do not scatter related fields across the viewport.              |
-| **Similarity**    | Same semantic thing → same component shell (see STYLE_GUIDE § Parallel surfaces). Match verb labels exactly (`Sign in again`, not mixed synonyms). |
-| **Common region** | Prefer one panel per concern. Avoid nested cards that repeat the same boundary (card-in-card).                                                     |
-| **Theme**         | Use app CSS variables and MUI theme tokens. Read app `DESIGN.md` first. No one-off hex/radius/shadow unless the design doc allows it.              |
+| Principle          | Agent rule                                                                                                                                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Proximity**      | Controls that configure the same task live in one `<section>` with a shared label. Do not scatter related fields across the viewport.                                                                               |
+| **Similarity**     | Same semantic thing → same component shell (see STYLE_GUIDE § Parallel surfaces). Match verb labels exactly (`Sign in again`, not mixed synonyms).                                                                  |
+| **Common region**  | Prefer one panel per concern. Avoid nested cards that repeat the same boundary (card-in-card). **Max one elevated surface per section** — inner content uses hairline dividers, not nested Papers/borders/shadows.  |
+| **Theme**          | Use app CSS variables and MUI theme tokens. Read app `DESIGN.md` first. No one-off hex/radius/shadow unless the design doc allows it.                                                                               |
+| **Selection tier** | Popover/settings toggles and preset chips → **secondary** selected (tint + brand text). Transport on-state and one CTA → **primary** (solid). See [`SELECTION_VISUAL_HIERARCHY.md`](SELECTION_VISUAL_HIERARCHY.md). |
 
 ## Redundancy (copy & UI)
 
@@ -56,12 +57,13 @@ Encore/Gesture upload sessions: one `GestureStatusBanner` or tab-level progress;
 
 Per screen, default caps (unless design doc says otherwise):
 
-| Element           | Budget                                                                                    |
-| ----------------- | ----------------------------------------------------------------------------------------- |
-| Drop shadows      | ≤1 elevation level on primary content; previews flat or inset                             |
-| Borders           | Prefer spacing + background wash over extra outlines                                      |
-| Nested containers | Max **one** framed region per logical group                                               |
-| Accent color      | One primary CTA + semantic states (error/warning); brand color on marks, not every button |
+| Element           | Budget                                                                                                                                  |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Drop shadows      | ≤1 elevation level on primary content; previews flat or inset                                                                           |
+| Borders           | Prefer spacing + background wash over extra outlines                                                                                    |
+| Nested containers | Max **one** framed region per logical group                                                                                             |
+| Accent color      | One primary CTA + semantic states (error/warning); brand color on marks, not every button                                               |
+| Selected state    | Settings/preset chips: tinted secondary; transport on: primary solid — [`SELECTION_VISUAL_HIERARCHY.md`](SELECTION_VISUAL_HIERARCHY.md) |
 
 **Anti-patterns:** card inside card inside card; border + shadow + inset on the same strip; heavy `backdrop-filter` on hot paths (see Gesture perf notes).
 
@@ -113,6 +115,7 @@ These inform our process; Labs enforcement is the docs/rules above.
 
 ## Related
 
+- [`docs/SELECTION_VISUAL_HIERARCHY.md`](SELECTION_VISUAL_HIERARCHY.md) — primary vs secondary selection tiers
 - [`docs/AGENT_INVARIANTS.md`](AGENT_INVARIANTS.md)
 - [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCESS_IMPROVEMENT.md)
 - [`src/encore/PERFORMANCE_UX.md`](../src/encore/PERFORMANCE_UX.md) — performance-specific UX checklist

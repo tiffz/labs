@@ -15,7 +15,6 @@ import AppTooltip from '../../../shared/components/AppTooltip';
 import type { StanzaSong, StanzaStemTrack } from '../../db/stanzaDb';
 import { primaryPlaybackMuted, stanzaSanitizeLinearBusGain, stemPlaybackMuted } from '../../utils/stanzaPlaybackMute';
 import {
-  STANZA_MIX_DRAG_COL_PX,
   STANZA_MIX_LABEL_MAX_WIDTH,
   STANZA_MIX_TRAIL_BALANCE_PX,
   STANZA_STEM_REORDER_MIME,
@@ -117,15 +116,14 @@ export default function StanzaPracticeMixSection({
             aria-label="Add audio layer"
             className="stanza-mix-add-icon"
             onClick={() => stemFileInputRef.current?.click()}
-            sx={{ p: 0.35, color: 'text.secondary' }}
           >
             <AddIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </AppTooltip>
       </Box>
       <Stack spacing={0.4} className="stanza-mix-rows">
-        <Box className="stanza-mix-row stanza-mix-row--system" sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 28 }}>
-          <Box sx={{ width: STANZA_MIX_DRAG_COL_PX, flexShrink: 0 }} aria-hidden />
+        <Box className="stanza-mix-row stanza-mix-row--system">
+          <Box className="stanza-mix-row__drag-col stanza-mix-row__drag-col--spacer" aria-hidden />
           <AppTooltip
             title={
               metronomeUserMuted ? 'Unmute the metronome click' : 'Mute the metronome click (calibration is preserved)'
@@ -134,8 +132,8 @@ export default function StanzaPracticeMixSection({
             <IconButton
               size="small"
               aria-label={metronomeUserMuted ? 'Unmute metronome' : 'Mute metronome'}
+              className="stanza-rail-icon-btn"
               onClick={() => onMetronomeMutedChange(!metronomeUserMuted)}
-              sx={{ p: 0.35, alignSelf: 'center' }}
             >
               {metronomeUserMuted ? (
                 <VolumeOffOutlinedIcon sx={{ fontSize: 18 }} />
@@ -144,18 +142,7 @@ export default function StanzaPracticeMixSection({
               )}
             </IconButton>
           </AppTooltip>
-          <Typography
-            component="span"
-            noWrap
-            title="Metronome click"
-            sx={(theme) => ({
-              ...stanzaMixTrackLabelSurfaceSx(theme),
-              flex: '0 1 auto',
-              minWidth: 0,
-              maxWidth: STANZA_MIX_LABEL_MAX_WIDTH,
-              alignSelf: 'center',
-            })}
-          >
+          <Typography component="span" noWrap title="Metronome click" className="stanza-mix-row__label">
             Metronome
           </Typography>
           <AppLinearVolumeSlider
@@ -165,17 +152,18 @@ export default function StanzaPracticeMixSection({
               await onMetronomeGainCommit(stanzaSanitizeLinearBusGain(v as number));
             }}
             aria-label="Metronome click level"
-            sx={{
-              alignSelf: 'center',
-              opacity: metronomeUserMuted || !selected.metronomeEnabled ? 0.42 : 1,
-              transition: 'opacity 0.15s ease',
-            }}
+            className={[
+              'stanza-mix-row__slider',
+              metronomeUserMuted || !selected.metronomeEnabled ? 'stanza-mix-row__slider--muted' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
           />
-          <Box sx={{ width: STANZA_MIX_TRAIL_BALANCE_PX, flexShrink: 0 }} aria-hidden />
+          <Box className="stanza-mix-row__trail-spacer" aria-hidden />
         </Box>
         {drumsEnabled ? (
-          <Box className="stanza-mix-row stanza-mix-row--system" sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 28 }}>
-            <Box sx={{ width: STANZA_MIX_DRAG_COL_PX, flexShrink: 0 }} aria-hidden />
+          <Box className="stanza-mix-row stanza-mix-row--system">
+            <Box className="stanza-mix-row__drag-col stanza-mix-row__drag-col--spacer" aria-hidden />
             <AppTooltip
               title={
                 drumsUserMuted ? 'Unmute the drum groove' : 'Mute the drum groove (pattern and level are preserved)'
@@ -184,8 +172,8 @@ export default function StanzaPracticeMixSection({
               <IconButton
                 size="small"
                 aria-label={drumsUserMuted ? 'Unmute drums' : 'Mute drums'}
+                className="stanza-rail-icon-btn"
                 onClick={() => onDrumsMutedChange(!drumsUserMuted)}
-                sx={{ p: 0.35, alignSelf: 'center' }}
               >
                 {drumsUserMuted ? (
                   <VolumeOffOutlinedIcon sx={{ fontSize: 18 }} />
@@ -194,18 +182,7 @@ export default function StanzaPracticeMixSection({
                 )}
               </IconButton>
             </AppTooltip>
-            <Typography
-              component="span"
-              noWrap
-              title="Drum groove"
-              sx={(theme) => ({
-                ...stanzaMixTrackLabelSurfaceSx(theme),
-                flex: '0 1 auto',
-                minWidth: 0,
-                maxWidth: STANZA_MIX_LABEL_MAX_WIDTH,
-                alignSelf: 'center',
-              })}
-            >
+            <Typography component="span" noWrap title="Drum groove" className="stanza-mix-row__label">
               Drums
             </Typography>
             <AppLinearVolumeSlider
@@ -215,17 +192,18 @@ export default function StanzaPracticeMixSection({
                 await onDrumsGainCommit(stanzaSanitizeLinearBusGain(v as number));
               }}
               aria-label="Drums level"
-              sx={{
-                alignSelf: 'center',
-                opacity: drumsUserMuted ? 0.42 : 1,
-                transition: 'opacity 0.15s ease',
-              }}
+              className={[
+                'stanza-mix-row__slider',
+                drumsUserMuted ? 'stanza-mix-row__slider--muted' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             />
-            <Box sx={{ width: STANZA_MIX_TRAIL_BALANCE_PX, flexShrink: 0 }} aria-hidden />
+            <Box className="stanza-mix-row__trail-spacer" aria-hidden />
           </Box>
         ) : null}
-        <Box className="stanza-mix-row" sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 28 }}>
-          <Box sx={{ width: STANZA_MIX_DRAG_COL_PX, flexShrink: 0 }} aria-hidden />
+        <Box className="stanza-mix-row">
+          <Box className="stanza-mix-row__drag-col stanza-mix-row__drag-col--spacer" aria-hidden />
           <AppTooltip
             title={
               primaryPlaybackMuted(selected)
@@ -248,8 +226,8 @@ export default function StanzaPracticeMixSection({
                     ? 'Mute video'
                     : 'Mute main track'
               }
+              className="stanza-rail-icon-btn"
               onClick={() => onPrimaryMutedChange(!primaryPlaybackMuted(selected))}
-              sx={{ p: 0.35, alignSelf: 'center' }}
             >
               {primaryPlaybackMuted(selected) ? (
                 <VolumeOffOutlinedIcon sx={{ fontSize: 18 }} />
@@ -262,13 +240,7 @@ export default function StanzaPracticeMixSection({
             component="span"
             noWrap
             title={isYoutube ? 'Video' : 'Main file'}
-            sx={(theme) => ({
-              ...stanzaMixTrackLabelSurfaceSx(theme),
-              flex: '0 1 auto',
-              minWidth: 0,
-              maxWidth: STANZA_MIX_LABEL_MAX_WIDTH,
-              alignSelf: 'center',
-            })}
+            className="stanza-mix-row__label"
           >
             {isYoutube ? 'Video' : 'Main'}
           </Typography>
@@ -279,18 +251,18 @@ export default function StanzaPracticeMixSection({
               await onPrimaryGainCommit(stanzaSanitizeLinearBusGain(v as number));
             }}
             aria-label={isYoutube ? 'Video level' : 'Main track level'}
-            sx={{
-              alignSelf: 'center',
-              opacity: primaryPlaybackMuted(selected) ? 0.42 : 1,
-              transition: 'opacity 0.15s ease',
-            }}
+            className={[
+              'stanza-mix-row__slider',
+              primaryPlaybackMuted(selected) ? 'stanza-mix-row__slider--muted' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
           />
-          <Box sx={{ width: STANZA_MIX_TRAIL_BALANCE_PX, flexShrink: 0 }} aria-hidden />
+          <Box className="stanza-mix-row__trail-spacer" aria-hidden />
         </Box>
         {stems.map((stem) => (
           <Box
             key={stem.id}
-            className="stanza-mix-row"
             onDragOver={(e) => {
               if (!Array.from(e.dataTransfer.types).includes(STANZA_STEM_REORDER_MIME)) return;
               e.preventDefault();
@@ -312,28 +284,16 @@ export default function StanzaPracticeMixSection({
               if (!fromId || fromId === stem.id) return;
               void onReorderStems(fromId, stem.id);
             }}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              minHeight: 28,
-              borderRadius: 0.75,
-              outline:
-                stemReorderOverId === stem.id && stemReorderDragId && stemReorderDragId !== stem.id
-                  ? '1px dashed rgba(232, 72, 160, 0.55)'
-                  : 'none',
-              outlineOffset: 1,
-            }}
+            className={[
+              'stanza-mix-row',
+              stemReorderOverId === stem.id && stemReorderDragId && stemReorderDragId !== stem.id
+                ? 'stanza-mix-row--drop-target'
+                : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
           >
-            <Box
-              sx={{
-                width: STANZA_MIX_DRAG_COL_PX,
-                flexShrink: 0,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
+            <Box className="stanza-mix-row__drag-col">
               <AppTooltip title="Drag to reorder">
                 <Box
                   component="span"

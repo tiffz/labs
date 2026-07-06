@@ -45,7 +45,7 @@ import { useEncoreActions } from '../context/useEncoreActions';
 import { useEncoreSync } from '../context/useEncoreSync';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
 import { fetchSpotifyCurrentUserSummary, type SpotifyCurrentUserSummary } from '../spotify/spotifyApi';
-import { encoreHairline, encoreShadowLift } from '../theme/encoreUiTokens';
+import { encoreHairline } from '../theme/encoreUiTokens';
 import type { ReorganizeDriveUploadsResult } from '../drive/driveReorganize';
 import type { DriveDuplicateGroup } from '../drive/driveDuplicateDetection';
 import { DriveDuplicateReviewDialog } from './DriveDuplicateReviewDialog';
@@ -633,8 +633,6 @@ export function EncoreAccountMenu(props: {
               mt: 1.25,
               borderRadius: 3,
               overflow: 'hidden',
-              border: `1px solid ${encoreHairline}`,
-              boxShadow: encoreShadowLift,
             },
           },
         }}

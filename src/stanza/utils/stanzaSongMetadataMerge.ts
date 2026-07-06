@@ -29,6 +29,21 @@ function mergePracticeStats(local: StanzaSong, remote: MergeSide): StanzaSong['s
   return remote.stats || local.stats ? { ...remote.stats, ...local.stats } : local.stats;
 }
 
+function mergePracticeDrumPatternBySegmentId(
+  local: StanzaSong,
+  remote: MergeSide,
+): StanzaSong['drumPatternBySegmentId'] {
+  const localScore = stanzaSongPracticeCustomizationScore(local);
+  const remoteScore = stanzaSongPracticeCustomizationScore(remote);
+  if (localScore > 0 && remoteScore === 0) return local.drumPatternBySegmentId;
+  if (remoteScore > 0 && localScore === 0) return remote.drumPatternBySegmentId;
+  const merged =
+    remote.drumPatternBySegmentId || local.drumPatternBySegmentId
+      ? { ...remote.drumPatternBySegmentId, ...local.drumPatternBySegmentId }
+      : undefined;
+  return merged && Object.keys(merged).length > 0 ? merged : undefined;
+}
+
 function mergePracticeMetronomeBySegmentId(
   local: StanzaSong,
   remote: MergeSide,
@@ -119,6 +134,7 @@ export function mergeStanzaRicherSongMetadataWithReport(
     remoteWouldWin && localMarkerCount > remoteMarkerCount && mergedMarkerCount >= localMarkerCount;
 
   const metronomeBySegmentId = mergePracticeMetronomeBySegmentId(local, remote);
+  const drumPatternBySegmentId = mergePracticeDrumPatternBySegmentId(local, remote);
   const skippedBySegmentId = mergePracticeSkippedBySegmentId(local, remote);
   const stats = mergePracticeStats(local, remote);
   const metronomeSongCalibration = mergePracticeMetronomeSongCalibration(local, remote);
@@ -141,6 +157,7 @@ export function mergeStanzaRicherSongMetadataWithReport(
       metronomeMuted: local.metronomeMuted ?? remote.metronomeMuted,
       drumsEnabled: local.drumsEnabled ?? remote.drumsEnabled,
       drumPattern: local.drumPattern ?? remote.drumPattern,
+      drumPatternBySegmentId,
       drumsGain: local.drumsGain ?? remote.drumsGain,
       drumsMuted: local.drumsMuted ?? remote.drumsMuted,
       localTransposeSemitones: local.localTransposeSemitones ?? remote.localTransposeSemitones,
@@ -183,6 +200,8 @@ export function mergeStanzaSongWithRemotePreference(
       metronomeMuted: remote.metronomeMuted ?? local.metronomeMuted,
       drumsEnabled: remote.drumsEnabled ?? local.drumsEnabled,
       drumPattern: remote.drumPattern ?? local.drumPattern,
+      drumPatternBySegmentId:
+        remote.drumPatternBySegmentId ?? local.drumPatternBySegmentId,
       drumsGain: remote.drumsGain ?? local.drumsGain,
       drumsMuted: remote.drumsMuted ?? local.drumsMuted,
       localTransposeSemitones: remote.localTransposeSemitones ?? local.localTransposeSemitones,

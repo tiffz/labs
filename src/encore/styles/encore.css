@@ -20,6 +20,20 @@
   min-height: 100vh;
   min-height: 100dvh;
   background-color: #fbf7fb;
+
+  /* Chrome contract — brand-tinted floating menus + hover cards (see docs/CHROME_UI_CONTRACT.md) */
+  --labs-popover-shadow: 0 12px 28px rgba(76, 29, 149, 0.1);
+  --labs-popover-border: 1px solid rgba(124, 58, 237, 0.14);
+  --labs-popover-bg: rgba(255, 255, 255, 0.98);
+  --labs-popover-radius: 0.75rem;
+  --labs-popover-backdrop: saturate(180%) blur(12px);
+  --labs-control-hover-shadow: 0 6px 14px rgba(76, 29, 149, 0.14);
+
+  /* Lightweight scrollbars — virtualized MRT tables + in-app scroll regions. */
+  --encore-scrollbar-size: 8px;
+  --encore-scrollbar-thumb: color-mix(in srgb, #4c1d95 22%, transparent);
+  --encore-scrollbar-thumb-hover: color-mix(in srgb, #4c1d95 34%, transparent);
+  --encore-scrollbar-track: transparent;
 }
 
 .encore-app-shell::before {
@@ -59,6 +73,64 @@
   line-height: 1.6;
 }
 
+/* Shared thin scrollbar styling (Firefox + WebKit). */
+.encore-scroll-surface {
+  scrollbar-width: thin;
+  scrollbar-color: var(--encore-scrollbar-thumb) var(--encore-scrollbar-track);
+}
+
+.encore-scroll-surface::-webkit-scrollbar {
+  width: var(--encore-scrollbar-size);
+  height: var(--encore-scrollbar-size);
+}
+
+.encore-scroll-surface::-webkit-scrollbar-track {
+  background: var(--encore-scrollbar-track);
+}
+
+.encore-scroll-surface::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--encore-scrollbar-thumb);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.encore-scroll-surface::-webkit-scrollbar-thumb:hover {
+  background: var(--encore-scrollbar-thumb-hover);
+  background-clip: padding-box;
+}
+
+.encore-app-shell #main.in-scroll-region {
+  scrollbar-width: thin;
+  scrollbar-color: var(--encore-scrollbar-thumb) var(--encore-scrollbar-track);
+}
+
+.encore-app-shell #main.in-scroll-region::-webkit-scrollbar {
+  width: var(--encore-scrollbar-size);
+  height: var(--encore-scrollbar-size);
+}
+
+.encore-app-shell #main.in-scroll-region::-webkit-scrollbar-track {
+  background: var(--encore-scrollbar-track);
+}
+
+.encore-app-shell #main.in-scroll-region::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--encore-scrollbar-thumb);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.encore-app-shell #main.in-scroll-region::-webkit-scrollbar-thumb:hover {
+  background: var(--encore-scrollbar-thumb-hover);
+  background-clip: padding-box;
+}
+
+/* List tabs with virtualized tables: table owns scroll — no nested page + table bars. */
+.encore-app-shell #main.in-scroll-region.encore-main-list-scroll {
+  overflow: hidden;
+}
+
 /* Material React Table (repertoire): quieter sort icons; top toolbar is off in code. */
 .encore-mrt-repertoire .MuiTableSortLabel-icon {
   opacity: 0.35;
@@ -71,6 +143,36 @@
   opacity: 0.9;
 }
 
+.encore-mrt-repertoire .MuiTableContainer-root.encore-mrt-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: var(--encore-scrollbar-thumb) var(--encore-scrollbar-track);
+}
+
+.encore-mrt-repertoire
+  .MuiTableContainer-root.encore-mrt-scroll-container::-webkit-scrollbar {
+  width: var(--encore-scrollbar-size);
+  height: var(--encore-scrollbar-size);
+}
+
+.encore-mrt-repertoire
+  .MuiTableContainer-root.encore-mrt-scroll-container::-webkit-scrollbar-track {
+  background: var(--encore-scrollbar-track);
+}
+
+.encore-mrt-repertoire
+  .MuiTableContainer-root.encore-mrt-scroll-container::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--encore-scrollbar-thumb);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.encore-mrt-repertoire
+  .MuiTableContainer-root.encore-mrt-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: var(--encore-scrollbar-thumb-hover);
+  background-clip: padding-box;
+}
+
 /* Encore floating menus — shared shell for key, BPM, section progression, etc. */
 .encore-repertoire-floating-menu.MuiPaper-root {
   margin-top: 0.38rem;
@@ -78,15 +180,12 @@
   background-image: none;
 }
 
+/* Layout only — shell chrome lives on .labs-popover-surface (AnchoredPopover / theme). */
 .encore-repertoire-floating-menu,
 .encore-repertoire-floating-menu.shared-key-dropdown,
 .encore-repertoire-floating-menu.shared-bpm-dropdown {
   min-width: min(18rem, calc(100vw - 24px));
   max-width: min(22rem, calc(100vw - 24px));
-  border: 1px solid rgba(124, 58, 237, 0.14);
-  border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 12px 28px rgba(76, 29, 149, 0.1);
   margin-top: 0.38rem;
 }
 

@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
+import type { MetronomePreferences } from '../audio/platform/metronome/preferences';
 import { rhythmPlayer } from './rhythmPlayer';
+import { toRhythmMetronomePlaybackPrefs } from './metronomePlaybackPrefs';
 import type { ParsedRhythm, PlaybackSettings } from './types';
 
 interface UsePlaybackOptions {
@@ -9,6 +11,7 @@ interface UsePlaybackOptions {
   playbackSettings: PlaybackSettings;
   selectionRange?: { startTick: number; endTick: number } | null;
   metronomeResolution?: 'sixteenth' | 'beat';
+  metronomePreferences?: MetronomePreferences;
 }
 
 /**
@@ -21,6 +24,7 @@ export function usePlayback({
   playbackSettings,
   selectionRange,
   metronomeResolution,
+  metronomePreferences,
 }: UsePlaybackOptions) {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentNote, setCurrentNote] = useState<{
@@ -58,20 +62,8 @@ export function usePlayback({
       setCurrentMetronomeBeat({ measureIndex, positionInSixteenths, isDownbeat });
     };
 
-    if (metronomeResolution) {
-      rhythmPlayer.play(
-        parsedRhythm,
-        bpm,
-        onNote,
-        onEnd,
-        metronomeEnabled,
-        onMet,
-        playbackSettings,
-        tickRange,
-        metronomeResolution,
-      );
-      return;
-    }
+    const metronomePlaybackPrefs = toRhythmMetronomePlaybackPrefs(metronomePreferences);
+
     rhythmPlayer.play(
       parsedRhythm,
       bpm,
@@ -81,8 +73,10 @@ export function usePlayback({
       onMet,
       playbackSettings,
       tickRange,
+      metronomeResolution ?? 'sixteenth',
+      metronomePlaybackPrefs,
     );
-  }, [parsedRhythm, bpm, metronomeEnabled, playbackSettings, selectionRange, metronomeResolution]);
+  }, [parsedRhythm, bpm, metronomeEnabled, playbackSettings, selectionRange, metronomeResolution, metronomePreferences]);
 
   const handleStop = useCallback(() => {
     rhythmPlayer.stop();
@@ -109,6 +103,15 @@ export function usePlayback({
       rhythmPlayer.setBpmAtMeasureBoundary(bpm);
     }
   }, [isPlaying, bpm]);
+
+  // Live metronome prefs (subdivision grid, sources, gains) during playback.
+  useEffect(() => {
+    if (isPlaying) {
+      void rhythmPlayer.setMetronomePlaybackPrefs(
+        toRhythmMetronomePlaybackPrefs(metronomePreferences) ?? null,
+      );
+    }
+  }, [isPlaying, metronomePreferences]);
 
   return {
     isPlaying,

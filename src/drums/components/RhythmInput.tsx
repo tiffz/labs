@@ -3,6 +3,7 @@ import type { TimeSignature, ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import { } from '../utils/timeSignatureUtils';
 import RhythmPresets from './RhythmPresets';
+import DrumSymbolIcon from './DrumSymbolIcon';
 import SharedExportPopover from '../../shared/components/music/SharedExportPopover';
 import { detectTabType, isTab, type TabType } from '../utils/tabDetector';
 import { formatRhythm } from '../utils/formatting';
@@ -161,85 +162,62 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
                 ?
               </button>
               {showTooltip && (
-                <div className="tooltip">
+                <div className="tooltip notation-guide-tooltip">
                 <div className="tooltip-title">Notation Guide</div>
 
-                <div className="tooltip-section">
-                  <strong>Drum Sounds:</strong>
-                  <div className="tooltip-symbols">
-                    <div className="tooltip-symbol-item">
-                      <svg width="20" height="26" viewBox="-2 -10 16 30">
-                        <path
-                          d="M 6 -7 Q -2 -7, -2 0 Q -2 7, 6 7 L 6 13"
-                          stroke="black"
-                          strokeWidth="2"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      <span><code>D</code> = Dum (bass)</span>
+                <div className="notation-guide__body">
+                  <section className="notation-guide__panel">
+                    <h4 className="notation-guide__label">Drum sounds</h4>
+                    <div className="notation-guide__sound-grid">
+                      <div className="notation-guide__sound-item">
+                        <DrumSymbolIcon sound="dum" size={22} className="notation-guide__glyph" />
+                        <span><code>D</code> Dum</span>
+                      </div>
+                      <div className="notation-guide__sound-item">
+                        <DrumSymbolIcon sound="tak" size={22} className="notation-guide__glyph" />
+                        <span><code>T</code> Tak</span>
+                      </div>
+                      <div className="notation-guide__sound-item">
+                        <DrumSymbolIcon sound="ka" size={22} className="notation-guide__glyph" />
+                        <span><code>K</code> Ka</span>
+                      </div>
+                      <div className="notation-guide__sound-item">
+                        <DrumSymbolIcon sound="slap" size={22} className="notation-guide__glyph" />
+                        <span><code>S</code> Slap</span>
+                      </div>
+                      <div className="notation-guide__sound-item notation-guide__sound-item--wide">
+                        <span className="notation-guide__glyph notation-guide__glyph--rest" aria-hidden>_</span>
+                        <span><code>_</code> Rest</span>
+                      </div>
                     </div>
-                    <div className="tooltip-symbol-item">
-                      <svg width="16" height="16" viewBox="-8 -8 16 16">
-                        <path
-                          d="M -6 6 L 0 -6 L 6 6"
-                          stroke="black"
-                          strokeWidth="2"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="miter"
-                        />
-                      </svg>
-                      <span><code>T</code> = Tak (high)</span>
+                  </section>
+
+                  <section className="notation-guide__panel notation-guide__panel--rules">
+                    <div className="notation-guide__rule-block">
+                      <h4 className="notation-guide__label">Duration</h4>
+                      <ul className="notation-guide__list">
+                        <li>Dashes (<code>-</code>) extend duration</li>
+                        <li>Each character = 16th note</li>
+                      </ul>
                     </div>
-                    <div className="tooltip-symbol-item">
-                      <svg width="16" height="16" viewBox="-8 -8 16 16">
-                        <path
-                          d="M -6 -6 L 0 6 L 6 -6"
-                          stroke="black"
-                          strokeWidth="2"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="miter"
-                        />
-                      </svg>
-                      <span><code>K</code> = Ka (high)</span>
+                    <div className="notation-guide__rule-block">
+                      <h4 className="notation-guide__label">Dotted notes</h4>
+                      <ul className="notation-guide__list">
+                        <li><code>D--</code> dotted 8th</li>
+                        <li><code>D-----</code> dotted quarter</li>
+                      </ul>
                     </div>
-                    <div className="tooltip-symbol-item">
-                      <svg width="16" height="16" viewBox="-8 -8 16 16">
-                        <circle
-                          cx="0"
-                          cy="0"
-                          r="7"
-                          fill="black"
-                          stroke="none"
-                        />
-                      </svg>
-                      <span><code>S</code> = Slap (accented)</span>
+                    <div className="notation-guide__rule-block">
+                      <h4 className="notation-guide__label">Repeats</h4>
+                      <ul className="notation-guide__list">
+                        <li><code>%</code> repeat previous measure</li>
+                        <li><code>|x4</code> repeat measure ×4</li>
+                        <li><code>|: … :| x4</code> repeat section ×4</li>
+                      </ul>
                     </div>
-                    <div className="tooltip-symbol-item">
-                      <span><code>_</code> = Rest (silence)</span>
-                    </div>
-                  </div>
+                  </section>
                 </div>
 
-                <div className="tooltip-section">
-                  <strong>Duration:</strong>
-                  <div className="tooltip-row">Add dashes (<code>-</code>) to extend duration</div>
-                  <div className="tooltip-row">Each character = 16th note</div>
-                </div>
-                <div className="tooltip-section">
-                  <strong>Dotted Notes:</strong>
-                  <div className="tooltip-row"><code>D--</code> = dotted 8th (3 sixteenths)</div>
-                  <div className="tooltip-row"><code>D-----</code> = dotted quarter (6 sixteenths)</div>
-                </div>
-                <div className="tooltip-section">
-                  <strong>Repeats:</strong>
-                  <div className="tooltip-row"><code>%</code> = Repeat previous measure</div>
-                  <div className="tooltip-row"><code>|x4</code> = Repeat previous measure 4 times</div>
-                  <div className="tooltip-row"><code>|: D ... :| x4</code> = Repeat section 4 times</div>
-                </div>
                 <div className="tooltip-attribution">
                   Notation from <a href="http://www.khafif.com/rhy/" target="_blank" rel="noopener noreferrer">Khafif Middle Eastern Rhythms</a>, <a href="https://www.amirschoolofmusic.com/store/p/pdf-mastering-darbuka-1" target="_blank" rel="noopener noreferrer">Mastering Darbuka</a>, and <a href="https://en.wikipedia.org/wiki/Dumbek_rhythms#Notation" target="_blank" rel="noopener noreferrer">Dumbek rhythms</a>
                 </div>
@@ -251,6 +229,8 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
           {/* Edit Controls */}
           <div className="rhythm-edit-controls">
             <RhythmPresets
+              currentNotation={notation}
+              currentTimeSignature={timeSignature}
               onSelectPreset={(notation, ts) => {
                 onNotationChange(notation);
                 onTimeSignatureChange(ts);

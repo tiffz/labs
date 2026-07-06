@@ -94,8 +94,8 @@ class DrumAudioPlayer {
    *
    * @param startTime - Optional precise AudioContext time.
    */
-  playClickNowIfReady(volume: number = 1.0, startTime?: number): void {
-    this.player.playClickNowIfReady(volume, startTime);
+  playClickNowIfReady(volume: number = 1.0, startTime?: number, playbackRate: number = 1): void {
+    this.player.playClickNowIfReady(volume, startTime, playbackRate);
   }
 
   /**

@@ -14,6 +14,8 @@ export interface NotePosition {
   width: number;
   height: number;
   durationInSixteenths: number;
+  /** VexFlow notehead center X (getAbsoluteX + offset); used for metronome dot alignment. */
+  headCenterX?: number;
   staveY?: number; // Optional: absolute Y position of the stave (for accurate highlight calculation)
   isTiedFrom?: boolean; // This note is tied from a previous note
   isTiedTo?: boolean; // This note ties to the next note

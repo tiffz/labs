@@ -12,7 +12,7 @@ import DrumAccompaniment, { type DrumScheduler } from '../../shared/components/m
 import { getInlineDrumUxProps } from '../../shared/components/music/inlineDrumUxDefaults';
 import type { NotationStyle } from '../../shared/notation/DrumNotationMini';
 import { getScorePlaybackEngine } from '../utils/scorePlayback';
-import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
+import { MetronomeSplitControl, useMetronomePreferences } from '../../shared/audio/platform/metronome';
 import AppTooltip from '../../shared/components/AppTooltip';
 import BpmInput from '../../shared/components/music/BpmInput';
 import AppSlider from '../../shared/components/AppSlider';
@@ -168,6 +168,11 @@ const PlaybackControls: React.FC = () => {
   const defaultTempo = originalScoreTempo ?? 80;
   const hasTempoOverride = Math.round(state.tempo) !== Math.round(defaultTempo);
   const canSaveTempoToSong = hasTempoOverride && originalScoreTempo !== null && !state.isExerciseScore;
+  const scoreTimeSignature = state.score?.timeSignature ?? { numerator: 4, denominator: 4 };
+  const { preferences, setPreferences, isNonDefault } = useMetronomePreferences({
+    storageKey: 'piano-metronome-prefs',
+    timeSignature: scoreTimeSignature,
+  });
 
   const handleTempoChange = (nextTempo: number) => {
     const clamped = Math.max(20, Math.min(300, Math.round(nextTempo)));
@@ -404,21 +409,17 @@ const PlaybackControls: React.FC = () => {
       </div>
 
       <div className="sb-icon-row">
-        <AppTooltip title={state.metronomeEnabled ? 'Metronome: On' : 'Metronome: Off'}>
-          <span>
-            <MetronomeToggleButton
-              enabled={state.metronomeEnabled}
-              onToggle={handleMetronomeToggle}
-              className="metronome-btn"
-              label={undefined}
-              showOnLabel={false}
-              tooltipOn="Metronome (on)"
-              tooltipOff="Metronome (off)"
-              includeNativeTitle={false}
-              includeDataTooltip={false}
-            />
-          </span>
-        </AppTooltip>
+        <MetronomeSplitControl
+          enabled={state.metronomeEnabled}
+          onToggle={handleMetronomeToggle}
+          preferences={preferences}
+          onPreferencesChange={setPreferences}
+          timeSignature={scoreTimeSignature}
+          isNonDefault={isNonDefault}
+          appearance="piano"
+          toggleClassName="metronome-btn"
+          toggleActiveClassName="active"
+        />
         <AppTooltip title={`Loop ${state.loopingEnabled ? '(on)' : '(off)'}`}>
           <button
             className={`metronome-btn ${state.loopingEnabled ? 'active' : ''}`}

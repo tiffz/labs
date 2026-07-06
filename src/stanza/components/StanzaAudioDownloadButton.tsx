@@ -1,4 +1,3 @@
-import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import { IconButton } from '@mui/material';
 import { useMemo, useRef, useState } from 'react';
 import AppTooltip from '../../shared/components/AppTooltip';
@@ -76,7 +75,9 @@ export default function StanzaAudioDownloadButton({
             aria-haspopup="dialog"
             onClick={() => setOpen((prev) => !prev)}
           >
-            <DownloadOutlinedIcon sx={{ fontSize: 20 }} />
+            <span className="material-symbols-outlined" aria-hidden style={{ fontSize: 20 }}>
+              download
+            </span>
           </IconButton>
         </span>
       </AppTooltip>

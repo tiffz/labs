@@ -290,7 +290,8 @@ function TapTempoPreviewPanel({
           <BpmInput
             value={previewBpm}
             onChange={onPreviewBpmChange}
-            className="shared-bpm-input stanza-bpm-rail-input stanza-bpm-modal-input"
+            appearance="stanza"
+            className="stanza-bpm-rail-input stanza-bpm-modal-input"
             dropdownClassName="stanza-bpm-dropdown"
             sliderClassName="stanza-bpm-slider"
             presetPanelHorizontal="right"

@@ -27,10 +27,10 @@ export const COMMON_TIME_SIGNATURE_PRESETS: TimeSignaturePreset[] = [
 
 export const TIME_SIGNATURE_NUMERATOR_MIN = 1;
 export const TIME_SIGNATURE_NUMERATOR_MAX = 32;
-export const TIME_SIGNATURE_DENOMINATORS = [4, 8] as const;
+export const TIME_SIGNATURE_DENOMINATORS = [4, 8, 16] as const;
 
 export function formatTimeSignatureDisplay(timeSignature: TimeSignature): string {
-  return `${timeSignature.numerator}/${timeSignature.denominator}`;
+  return `${timeSignature.numerator} / ${timeSignature.denominator}`;
 }
 
 export function formatTimeSignatureForWordsUrl(timeSignature: TimeSignature): string {

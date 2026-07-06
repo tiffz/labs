@@ -20,20 +20,37 @@ export type EncorePageHeaderProps = {
   description?: string;
   actions?: React.ReactNode;
   sx?: SystemStyleObject<Theme>;
+  /** When true, clamp description and tighten vertical rhythm for list/table layouts. */
+  listSurface?: boolean;
+  /** When true, omit description entirely (song dashboard grid view). */
+  hideDescription?: boolean;
+  /** When true, smaller title and tighter spacing (song dashboard grid view). */
+  compact?: boolean;
 };
 
 /**
  * Consistent page chrome: optional kicker (overline), primary title, supporting copy, actions.
  */
 export function EncorePageHeader(props: EncorePageHeaderProps): React.ReactElement {
-  const { kicker, title, titleComponent = 'h2', titleVariant = 'h6', description, actions, sx } = props;
+  const {
+    kicker,
+    title,
+    titleComponent = 'h2',
+    titleVariant = 'h6',
+    description,
+    actions,
+    listSurface = false,
+    hideDescription = false,
+    compact = false,
+    sx,
+  } = props;
   return (
     <Stack
       direction={{ xs: 'column', sm: 'row' }}
-      spacing={2}
+      spacing={compact ? 1.25 : listSurface ? 1.25 : 2}
       justifyContent="space-between"
       alignItems={{ xs: 'stretch', sm: 'flex-start' }}
-      sx={{ mb: { xs: 3, sm: 4 }, ...sx }}
+      sx={{ mb: listSurface ? 0 : { xs: 3, sm: 4 }, ...sx }}
     >
       <Box sx={{ minWidth: 0, pr: { sm: 2 } }}>
         {kicker ? (
@@ -46,14 +63,29 @@ export function EncorePageHeader(props: EncorePageHeaderProps): React.ReactEleme
           component={titleComponent}
           sx={{
             ...encorePageTitleSx,
+            ...(compact ? { fontSize: { xs: '1.125rem', sm: '1.25rem' } } : {}),
             ...(titleVariant === 'h3' ? { letterSpacing: '-0.03em', lineHeight: 1.12 } : {}),
             ...(titleVariant === 'h4' ? { mt: 0.5 } : {}),
           }}
         >
           {title}
         </Typography>
-        {description ? (
-          <Typography variant="body2" color="text.secondary" sx={encorePageHeaderSubtitleSx}>
+        {description && !hideDescription ? (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              ...encorePageHeaderSubtitleSx,
+              ...(listSurface
+                ? {
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }
+                : {}),
+            }}
+          >
             {description}
           </Typography>
         ) : null}

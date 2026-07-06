@@ -229,9 +229,6 @@ const PlaybackSpeedControl: React.FC<PlaybackSpeedControlProps> = ({
           open={presetOpen}
           anchorEl={anchorRef.current}
           onClose={closePanel}
-          disableAutoFocus
-          disableEnforceFocus
-          disableRestoreFocus
           placement={presetPanelHorizontal === 'right' ? 'bottom-end' : 'bottom-start'}
           paperClassName={[
             'shared-bpm-dropdown',

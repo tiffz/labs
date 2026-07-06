@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { usePlayback } from '../shared/rhythm/usePlayback';
+import { useMetronomePreferences } from '../shared/audio/platform/metronome';
 import { DEFAULT_PLAYBACK_SETTINGS } from '../shared/rhythm/types';
 import type { PlaybackSettings, TimeSignature } from '../shared/rhythm/types';
 import type { WordRhythmGenerationSettings } from './utils/prosodyEngine';
@@ -70,6 +71,15 @@ const App: React.FC = () => {
 
   const [notation, setNotation] = useState<string>(DEFAULT_WORD_RESULT.notation);
   const [timeSignature, setTimeSignature] = useState<TimeSignature>(DEFAULT_TIME_SIGNATURE);
+
+  const {
+    preferences: metronomePreferences,
+    setPreferences: setMetronomePreferences,
+    isNonDefault: metronomePrefsNonDefault,
+  } = useMetronomePreferences({
+    storageKey: 'words-metronome-prefs',
+    timeSignature,
+  });
   const [bpm, setBpm] = useState<number>(100);
   const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(true);
   const [autoFollowPlayback, setAutoFollowPlayback] = useState<boolean>(true);
@@ -182,7 +192,7 @@ const App: React.FC = () => {
     metronomeEnabled,
     playbackSettings: songModel.effectivePlaybackSettings,
     selectionRange: playbackRange.playbackSelectionRange,
-    metronomeResolution: 'beat',
+    metronomePreferences,
   });
 
   handleStopRef.current = handleStop;
@@ -331,6 +341,9 @@ const App: React.FC = () => {
     setBackingBeatNotation,
     autoFollowPlayback,
     setAutoFollowPlayback,
+    metronomePreferences,
+    setMetronomePreferences,
+    metronomePrefsNonDefault,
   });
 
   const getPlaybackScrollContainer = useCallback(
@@ -370,6 +383,7 @@ const App: React.FC = () => {
     notationSectionRefs,
     songKey,
     metronomeEnabled,
+    metronomeSubdivisionLevel: metronomePreferences.subdivisionLevel,
     autoFollowPlayback,
     notation,
     darbukaEditUrl: songModel.darbukaEditUrl,
@@ -458,6 +472,15 @@ const App: React.FC = () => {
       setSectionChorusLinkMenuId,
       setExportMenuOpen,
       setRandomizeMenuOpen,
+    },
+    {
+      generationMenuOpen,
+      soundMenuOpen,
+      openSectionSettingsId,
+      sectionRandomizeMenuId,
+      sectionChorusLinkMenuId,
+      exportMenuOpen,
+      randomizeMenuOpen,
     }
   );
 

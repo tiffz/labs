@@ -45,6 +45,10 @@ App themes should map to a common semantic bridge before component-family tokens
 
 Shared component tokens (`--bpm-*`, `--key-*`, `--cp-*`, `--cs-*`) should derive from those semantic variables where possible.
 
+**Focus rings:** map `--theme-focus-ring` on the app shell; portaled dropdowns duplicate on dropdown class. Shared tokens: `--labs-control-focus-ring`, `--labs-control-focus-ring-inset`, `--labs-focus-ring-bleed`. See [`docs/FOCUS_THEMING.md`](../../../docs/FOCUS_THEMING.md).
+
+**Selection tiers** (primary transport vs secondary popover/chip selection): [`docs/SELECTION_VISUAL_HIERARCHY.md`](../../../docs/SELECTION_VISUAL_HIERARCHY.md). Map active chip tokens (`--*-chip-active-*`) and metronome settings toggles (`--metro-toggle-selected-*`) to `--labs-selection-secondary-*` on the app shell.
+
 ## Density and size buckets
 
 Use three density modes:
@@ -127,3 +131,4 @@ This has caused real regressions:
 - `/ui` now includes drums BPM (`drums-shared-bpm-input`, `drums-bpm-dropdown`, `drums-bpm-slider`) so the drum app's shared BPM contract is visible in gallery parity checks.
 - Wrapper-aware gallery bridging is now part of the contract (for example `words-inline-control`, chords option-chip shells, piano tempo label wrappers), preventing "token-only" previews from hiding composition-level style dependencies.
 - Duplicate app-level shared-control overrides were reduced in app CSS where the same contract already exists in `appSharedThemes.css`.
+- **Metronome** (`--metro-*`) follows the same three-layer model as playback pickers: defaults in `metronome-control.css`, `appearance` on `MetronomeSplitControl`, app tokens in `metronome-themes.css` + optional `appSharedThemes.css` hooks. Portaled settings panel must repeat appearance class on `.labs-metronome-settings-popover--{appearance}`. **Split button on-state** = primary selection; **settings panel toggles** = secondary selection tinted from **`--metro-accent`** (not `:root` `--labs-selection-secondary-*`).

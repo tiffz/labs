@@ -16,8 +16,23 @@ npm run check:doc-links
 echo "== presubmit: agent docs =="
 npm run check:agent-docs
 
+echo "== presubmit: shared theme contract =="
+npm run check:shared-theme-contract
+
+echo "== presubmit: chrome UI contract =="
+npm run check:chrome-ui
+
+echo "== presubmit: menu a11y contract =="
+npm run check:menu-a11y
+
+echo "== presubmit: volume slider contract =="
+npm run check:volume-slider
+
 echo "== presubmit: css important baseline =="
 npm run check:css-important
+
+echo "== presubmit: css import order =="
+npm run check:css-import-order
 
 echo "== presubmit: workflow guardrails =="
 npm run check:workflows

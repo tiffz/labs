@@ -141,29 +141,32 @@ describe('DrumNotationMini', () => {
       expect(svg).toBeInTheDocument();
     });
 
-    it('applies unified ink color to staff lines and note glyphs', () => {
+    it('uses light grey staff lines and dark ink for note glyphs', () => {
       const rhythm = createRhythm('D-T-K-T-');
       const ink = '#112233';
+      const staff = '#d1d5db';
       const { container } = render(
-        <DrumNotationMini rhythm={rhythm} style={{ inkColor: ink, highlightColor: '#aabbcc' }} />
+        <DrumNotationMini
+          rhythm={rhythm}
+          style={{ inkColor: ink, staffLineColor: staff, highlightColor: '#aabbcc' }}
+        />,
       );
       const svg = container.querySelector('svg');
       expect(svg).toBeInTheDocument();
 
-      const coloredElements = svg!.querySelectorAll('path, line, text, rect');
-      expect(coloredElements.length).toBeGreaterThan(0);
+      const staveLines = svg!.querySelectorAll("g[class*='vf-stave'] > line, g[class*='vf-stave'] > path");
+      expect(staveLines.length).toBeGreaterThan(0);
+      for (const el of staveLines) {
+        const cls = el.getAttribute('class') ?? '';
+        if (cls.includes('barline')) continue;
+        expect((el as SVGElement).style.getPropertyValue('stroke')).toBe(staff);
+      }
 
-      for (const el of coloredElements) {
-        if (el.closest('[data-highlighted="true"]')) continue;
-        const svgEl = el as SVGElement;
-        const fill = svgEl.style.getPropertyValue('fill');
-        const stroke = svgEl.style.getPropertyValue('stroke');
-        if (fill && fill !== 'none') {
-          expect(fill).toBe(ink);
-        }
-        if (stroke && stroke !== 'none') {
-          expect(stroke).toBe(ink);
-        }
+      const noteStem = svg!.querySelector("path[class*='stem'], line[class*='stem']") as SVGElement | null;
+      if (noteStem) {
+        const stroke = noteStem.style.getPropertyValue('stroke');
+        const fill = noteStem.style.getPropertyValue('fill');
+        expect(stroke === ink || fill === ink).toBe(true);
       }
     });
   });

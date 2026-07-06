@@ -220,6 +220,12 @@ export function EncoreMainShell(): React.ReactElement {
               : 0;
 
   const listSection = listSectionFromRoute(route);
+  const performancesUsesListTableScroll =
+    route.kind === 'performances' && (route.tab ?? 'list') === 'list';
+  const mainUsesListTableScroll =
+    !onEditorRoute &&
+    (listSection === 'library' ||
+      (listSection === 'performances' && performancesUsesListTableScroll));
 
   const [heavyListTabOverlay, setHeavyListTabOverlay] = useState<HeavyListTabOverlayState>({ kind: 'none' });
   const [heavyListTabSessionWarmed, setHeavyListTabSessionWarmed] = useState<HeavyListTabSessionWarmed>({
@@ -540,7 +546,11 @@ export function EncoreMainShell(): React.ReactElement {
         component="main"
         id="main"
         ref={setMainScrollEl}
-        className="in-scroll-region"
+        className={
+          mainUsesListTableScroll
+            ? 'in-scroll-region encore-main-list-scroll'
+            : 'in-scroll-region'
+        }
         sx={{
           position: 'relative',
           flex: 1,

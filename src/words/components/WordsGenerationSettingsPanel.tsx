@@ -16,6 +16,7 @@ import {
 } from '../utils/generationRules';
 
 export type WordsGenerationSettingsPanelProps = {
+  menuId?: string;
   settings: WordRhythmGenerationSettings;
   onReset: () => void;
   onSelectAll: () => void;
@@ -30,6 +31,7 @@ export type WordsGenerationSettingsPanelProps = {
 };
 
 export default function WordsGenerationSettingsPanel({
+  menuId = 'words-generation-settings-menu',
   settings,
   onReset,
   onSelectAll,
@@ -41,10 +43,16 @@ export default function WordsGenerationSettingsPanel({
   onSettingsChange,
 }: WordsGenerationSettingsPanelProps) {
   return (
-    <div className="words-dropdown-menu words-dropdown-generation">
+    <div
+      id={menuId}
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby={`${menuId}-title`}
+      className="labs-popover-surface words-dropdown-menu words-dropdown-generation"
+    >
       <div className="words-dropdown-header words-generation-header">
         <span className="words-generation-title">
-          <strong>Generation settings</strong>
+          <strong id={`${menuId}-title`}>Generation settings</strong>
           <AppTooltip title="Rules transform the template in order. All off = syllables follow the template exactly.">
             <button
               className="words-setting-help"

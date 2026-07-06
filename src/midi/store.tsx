@@ -7,7 +7,8 @@ import React, {
 } from 'react';
 import { getMidiInput } from '../shared/midi/midiInput';
 import { MetronomeEngine } from '../shared/audio/metronome/MetronomeEngine';
-import type { SubdivisionVolumes } from '../shared/audio/metronome/types';
+import { toMetronomeEngineConfig } from '../shared/audio/platform/metronome/toMetronomeEngineConfig';
+import { getMidiMetronomePreferences } from './metronomePreferencesBridge';
 import { MidiMonitor } from './monitor/midiMonitor';
 import { RollingMidiBuffer } from './buffer/rollingMidiBuffer';
 import {
@@ -26,23 +27,12 @@ import { msPerBar, selectPerformanceNotes } from './selectors';
 import { midiMatchesRiffStep } from './guide/riffGuideEngine';
 import { MidiContext, type MidiContextValue } from './midiContext';
 
-const DEFAULT_VOLUMES: SubdivisionVolumes = {
-  accent: 1,
-  quarter: 0.85,
-  eighth: 0.5,
-  sixteenth: 0,
-};
-
 function buildMetronomeConfig(transport: TransportConfig) {
-  return {
-    bpm: transport.bpm,
-    timeSignature: transport.timeSignature,
-    volumes: DEFAULT_VOLUMES,
-    subdivisionLevel: subdivisionToLevel(transport.subdivision),
-    voiceGain: 0,
-    clickGain: 0.6,
-    drumGain: 0,
-  };
+  return toMetronomeEngineConfig(
+    getMidiMetronomePreferences(),
+    transport.bpm,
+    transport.timeSignature,
+  );
 }
 
 export function MidiProvider({ children }: { children: React.ReactNode }) {
@@ -216,17 +206,34 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'TOGGLE_MIDI_DEVICE', deviceId });
   }, []);
 
+  const syncMetronomePreferences = useCallback(() => {
+    const engine = metronomeRef.current;
+    if (!engine || !stateRef.current.metronomePlaying) return;
+    const transport = stateRef.current.transport;
+    const cfg = toMetronomeEngineConfig(
+      getMidiMetronomePreferences(),
+      transport.bpm,
+      transport.timeSignature,
+    );
+    engine.setTempo(cfg.bpm);
+    engine.setTimeSignature(cfg.timeSignature);
+    engine.setSubdivisionLevel(cfg.subdivisionLevel ?? subdivisionToLevel(transport.subdivision));
+    engine.setVoiceMode(cfg.voiceMode ?? 'counting');
+    if (cfg.voiceGain !== undefined) engine.setVoiceGain(cfg.voiceGain);
+    if (cfg.clickGain !== undefined) engine.setClickGain(cfg.clickGain);
+    if (cfg.drumGain !== undefined) engine.setDrumGain(cfg.drumGain);
+    engine.setSubdivisionVolumes(cfg.volumes);
+  }, []);
+
   useEffect(() => {
     if (!state.metronomePlaying || !metronomeRef.current) return;
-    const engine = metronomeRef.current;
-    engine.setTempo(state.transport.bpm);
-    engine.setTimeSignature(state.transport.timeSignature);
-    engine.setSubdivisionLevel(subdivisionToLevel(state.transport.subdivision));
+    syncMetronomePreferences();
   }, [
     state.transport.bpm,
     state.transport.timeSignature,
     state.transport.subdivision,
     state.metronomePlaying,
+    syncMetronomePreferences,
   ]);
 
   useEffect(() => {
@@ -290,6 +297,7 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
       toggleMidiDevice,
       startGuide,
       stopGuide,
+      syncMetronomePreferences,
     }),
     [
       state,
@@ -299,6 +307,7 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
       toggleMidiDevice,
       startGuide,
       stopGuide,
+      syncMetronomePreferences,
     ],
   );
 

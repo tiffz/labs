@@ -17,6 +17,7 @@ export type InlineDrumUxProfileProps = {
   showRandomizeButtons: boolean;
   hidePatternInput: boolean;
   presetLayout: 'grid' | 'compact';
+  patternEditing: 'inline' | 'popover';
   audioEnabled: boolean;
   notationHeight: number;
   drumSymbolScale: number;
@@ -46,7 +47,7 @@ export const INLINE_DARBUKA_LINK_UX = {
  * and keep theming local (`notationStyle`, wrapper className).
  *
  * - **settings-panel** — chord playback popovers (Encore Originals, Chords chart).
- * - **practice-rail** — compact preset picker + audible playback (Stanza mix rail).
+ * - **practice-rail** — preset chip grid + audible playback (Stanza practice rail).
  * - **sidebar-compact** — full preset grid + audible playback (Piano sidebar).
  *
  * Host-owned pattern fields (Words section template row): spread the profile then override
@@ -57,6 +58,7 @@ export const INLINE_DRUM_PROFILES: Record<InlineDrumUxProfile, InlineDrumUxProfi
     showRandomizeButtons: true,
     hidePatternInput: false,
     presetLayout: 'grid',
+    patternEditing: 'inline',
     audioEnabled: false,
     notationHeight: 72,
     drumSymbolScale: 0.68,
@@ -65,16 +67,18 @@ export const INLINE_DRUM_PROFILES: Record<InlineDrumUxProfile, InlineDrumUxProfi
   'practice-rail': {
     showRandomizeButtons: true,
     hidePatternInput: false,
-    presetLayout: 'compact',
+    presetLayout: 'grid',
+    patternEditing: 'popover',
     audioEnabled: true,
     notationHeight: 72,
-    drumSymbolScale: 0.68,
+    drumSymbolScale: 0.62,
     ...INLINE_DARBUKA_LINK_UX,
   },
   'sidebar-compact': {
     showRandomizeButtons: true,
     hidePatternInput: false,
     presetLayout: 'grid',
+    patternEditing: 'inline',
     audioEnabled: true,
     notationHeight: 72,
     drumSymbolScale: 0.68,

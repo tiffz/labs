@@ -1,7 +1,6 @@
 import NotesIcon from '@mui/icons-material/Notes';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
-import Popover from '@mui/material/Popover';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
@@ -15,6 +14,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
+import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import { encoreMediaHubChipMinHeight, encoreMediaLinkRowSx } from '../theme/encoreUiTokens';
 
 export type EncoreAudioResourceNotesWrapperProps = {
@@ -98,19 +98,17 @@ export function EncoreAudioResourceNotesWrapper(props: EncoreAudioResourceNotesW
           <NotesIcon sx={{ fontSize: 18 }} />
         </IconButton>
       </Tooltip>
-      <Popover
+      <AnchoredPopover
         open={Boolean(anchor)}
         anchorEl={anchor}
         onClose={close}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        placement="bottom-end"
         slotProps={{
           paper: {
             sx: { p: 1.5, width: { xs: 'min(calc(100vw - 32px), 320px)', sm: 320 } },
             'aria-labelledby': titleId,
           },
         }}
-        disableRestoreFocus
       >
         <Typography id={titleId} variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
           {resourceLabel}
@@ -126,7 +124,7 @@ export function EncoreAudioResourceNotesWrapper(props: EncoreAudioResourceNotesW
           fullWidth
           inputProps={{ 'aria-label': resourceLabel }}
         />
-      </Popover>
+      </AnchoredPopover>
     </Box>
   );
 }

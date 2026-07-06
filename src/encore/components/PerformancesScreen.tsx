@@ -85,7 +85,7 @@ import {
   encoreRadius,
   encoreShadowSurface,
 } from '../theme/encoreUiTokens';
-import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
+import { encoreListPageHeaderMb, encoreListPagePaddingTop, encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
 import { performanceVideoOpenUrl } from '../utils/performanceVideoUrl';
 import { performanceVideoPlaybackTarget } from '../utils/performancePlaybackTarget';
@@ -906,23 +906,43 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
 
   const performancesHeaderStackPb =
     performancesSubTab === 'list'
-      ? { xs: 10, md: 5 }
+      ? viewMode === 'table' && data.length > 0
+        ? 0
+        : { xs: 10, md: 5 }
       : performanceDashboardStats && extendedPerformanceInsights
         ? 0
         : { xs: 8, md: 6 };
+
+  const perfListUsesFlexFill = performancesSubTab === 'list' && performances.length > 0;
+  const perfTableListMode = perfListUsesFlexFill && viewMode === 'table';
 
   return (
     <>
       <Box
         sx={{
           px: encoreScreenPaddingX,
-          pt: encorePagePaddingTop,
+          pt: perfListUsesFlexFill ? encoreListPagePaddingTop : encorePagePaddingTop,
           pb: performancesHeaderStackPb,
+          ...(perfListUsesFlexFill
+            ? {
+                flex: 1,
+                minHeight: 0,
+                minWidth: 0,
+                width: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }
+            : {}),
           ...encoreMaxWidthPage,
         }}
       >
         <EncorePageHeader
           title={encorePossessivePageTitle(effectiveDisplayName, 'performances')}
+          listSurface={perfListUsesFlexFill}
+          hideDescription={perfTableListMode}
+          compact={perfTableListMode}
+          sx={perfListUsesFlexFill ? { mb: encoreListPageHeaderMb } : undefined}
           description="Every show you have logged. Open a song for charts, milestones, and notes."
           actions={
             <>
@@ -1092,12 +1112,14 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           value={performancesSubTab}
           aria-label="Performances sections"
           sx={{
-            mt: 1,
-            mb: 2.5,
-            minHeight: 44,
+            mt: perfTableListMode ? 0.25 : 1,
+            mb: perfTableListMode ? 0.75 : 2.5,
+            flexShrink: 0,
+            minHeight: perfTableListMode ? 40 : 44,
             '& .MuiTabs-indicator': { height: 2, borderRadius: 1 },
             '& .MuiTab-root': {
-              minHeight: 44,
+              minHeight: perfTableListMode ? 40 : 44,
+              py: perfTableListMode ? 0.75 : 1,
               textTransform: 'none',
               fontWeight: 600,
               letterSpacing: '-0.005em',
@@ -1123,9 +1145,22 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         </Tabs>
 
         {performancesSubTab === 'list' ? (
-          <>
+          <Box
+            sx={
+              perfListUsesFlexFill
+                ? {
+                    flex: 1,
+                    minHeight: 0,
+                    minWidth: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                  }
+                : undefined
+            }
+          >
             {performances.length > 0 && !hasAnyPerformanceVideoLink ? (
-              <Alert severity="info" sx={{ mt: 2, mb: 1 }}>
+              <Alert severity="info" sx={{ mt: perfTableListMode ? 0 : 2, mb: perfTableListMode ? 0.5 : 1, flexShrink: 0 }}>
                 <Typography variant="body2" component="div" sx={{ lineHeight: 1.55 }}>
                   None of your performances have a linked video yet. Use <strong>Import</strong>,{' '}
                   <strong>Bulk import videos</strong>, above, or from Repertoire. Encore renames files in your
@@ -1161,6 +1196,7 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
                 clearPerfFilters();
                 setQuery('');
               }}
+              compact={perfTableListMode}
             />
 
             {performances.length > 0 && viewMode === 'table' && selectedPerfIds.size > 0 ? (
@@ -1272,18 +1308,27 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         />
       ) : viewMode === 'table' ? null : (
         <Box
+          className="encore-scroll-surface"
           sx={{
-            mt: 2,
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: 'repeat(1, minmax(0, 1fr))',
-              sm: 'repeat(2, minmax(0, 1fr))',
-              md: 'repeat(3, minmax(0, 1fr))',
-              lg: 'repeat(4, minmax(0, 1fr))',
-            },
-            gap: 2,
+            flex: '1 1 0',
+            minHeight: 0,
+            overflow: 'auto',
+            pb: { xs: 2, md: 1 },
           }}
         >
+          <Box
+            sx={{
+              mt: 2,
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: 'repeat(1, minmax(0, 1fr))',
+                sm: 'repeat(2, minmax(0, 1fr))',
+                md: 'repeat(3, minmax(0, 1fr))',
+                lg: 'repeat(4, minmax(0, 1fr))',
+              },
+              gap: 2,
+            }}
+          >
           {data.map(({ perf, song, date, venue }) => {
             const url = performanceVideoOpenUrl(perf);
             return (
@@ -1376,9 +1421,10 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
               </Card>
             );
           })}
+          </Box>
         </Box>
       )}
-        </>
+        </Box>
       ) : !performanceDashboardStats ? (
         <Stack spacing={2} sx={{ py: 6, maxWidth: 560 }}>
           <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
@@ -1660,5 +1706,21 @@ export function PerformancesScreen(props?: PerformancesScreenProps): ReactElemen
     saveRepertoireExtras,
     playMediaQueue,
   });
-  return <PerformancesScreenBody {...bodyProps} />;
+  const performancesSubTab = useSyncExternalStore(
+    subscribePerformancesSubTab,
+    getPerformancesSubTabSnapshot,
+    () => 'list' as const,
+  );
+  const shellUsesFlexFill = performancesSubTab === 'list' && performances.length > 0;
+  const body = <PerformancesScreenBody {...bodyProps} />;
+
+  if (!shellUsesFlexFill) {
+    return body;
+  }
+
+  return (
+    <Box sx={{ flex: 1, minHeight: 0, minWidth: 0, width: 1, display: 'flex', flexDirection: 'column' }}>
+      {body}
+    </Box>
+  );
 }

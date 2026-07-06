@@ -47,6 +47,7 @@ Agent UX workflow: [`docs/UX_AGENT_GUIDE.md`](docs/UX_AGENT_GUIDE.md) + skill `l
 ### Focus and motion
 
 - Never ship bare `outline: none`. Replace suppressed outlines with matching `:focus-visible` rules.
+- **Focus theming is part of the CSS contract** — map `--theme-focus-ring` on the app shell; use `--labs-control-focus-ring` (outset) or `--labs-control-focus-ring-inset` (popover toggles). Sticky toolbars need `--labs-focus-ring-bleed` + `overflow: visible`. Canonical: [`docs/FOCUS_THEMING.md`](docs/FOCUS_THEMING.md). Menu/split specifics: [`docs/A11Y_MENU_PATTERNS.md`](docs/A11Y_MENU_PATTERNS.md).
 - Do not override browser animation/transition durations globally — the shared `prefers-reduced-motion` baseline in `public/styles/shared.css` already clamps them. Only re-enable a specific animation inside a per-app `@media (prefers-reduced-motion: reduce)` block when the animation is essential to the UX.
 
 ### Icon-only controls
@@ -83,6 +84,8 @@ Use MUI semantic colors for **state**, not for **branding**:
 - `color="info"` — neutral informational state (`syncing…`, "fetching"). Rare on buttons; usually on chips/banners.
 
 If a third-party brand happens to be green/red/orange, render the brand mark in its native color (icon, chip background) but keep button color/state semantic. The user reads color before label; loud-but-neutral buttons (e.g. green Sync) misdirect attention away from the page's actual primary commit.
+
+**Selected-state tiers:** transport on-state and one CTA use **primary** selection (solid brand). Popover toggles, preset chips, and filter rows use **secondary** selection (tint + brand text). See [`docs/SELECTION_VISUAL_HIERARCHY.md`](docs/SELECTION_VISUAL_HIERARCHY.md).
 
 ### Filter / search operators (include vs exclude)
 

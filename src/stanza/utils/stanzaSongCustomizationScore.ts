@@ -34,6 +34,9 @@ export function stanzaSongPracticeCustomizationScore(row: ScoreInput): number {
   const metronomeBySegmentId = row.metronomeBySegmentId ?? {};
   score += Object.keys(metronomeBySegmentId).length;
 
+  const drumPatternBySegmentId = row.drumPatternBySegmentId ?? {};
+  score += Object.keys(drumPatternBySegmentId).length;
+
   const skippedBySegmentId = row.skippedBySegmentId ?? {};
   score += Object.keys(skippedBySegmentId).length;
 

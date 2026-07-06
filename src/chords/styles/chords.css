@@ -61,6 +61,11 @@
     --control-height-touch: 44px;
     --control-height: var(--control-height-comfortable);
     --control-radius: var(--theme-radius-sm);
+
+    --labs-popover-shadow: 0 8px 24px rgba(99, 102, 241, 0.12);
+    --labs-popover-border: 1px solid var(--border-color);
+    --labs-popover-bg: var(--bg-card);
+    --labs-control-hover-shadow: var(--shadow-primary);
   }
 
   /* Override shared.css body styles for chords app */
@@ -267,22 +272,18 @@
   width: var(--control-height);
   height: var(--control-height);
   padding: 0;
-  border: 1px solid var(--border-color);
-  border-radius: var(--control-radius);
-  background: var(--bg-card);
-  color: var(--text-secondary);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
-.chords-metronome-toggle:hover {
-  border-color: var(--primary-light);
-}
-
+.chords-metronome-toggle:hover,
 .chords-metronome-toggle.active {
-  color: white;
-  border-color: var(--primary);
-  background: var(--primary);
+  background: transparent;
+  border: 0;
+  color: inherit;
 }
 
 .chords-metronome-toggle .material-symbols-outlined {

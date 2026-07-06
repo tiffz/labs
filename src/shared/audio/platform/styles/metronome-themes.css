@@ -1,0 +1,397 @@
+/* Metronome appearance tokens — set on .labs-metronome-split-control--{app} wrappers only.
+ * Layout/interaction: metronome-control.css. Do not add per-app split-button rules in app CSS. */
+
+.labs-metronome-split-control--default,
+.labs-metronome-settings-popover--default {
+  --metro-accent: #7c3aed;
+  --metro-accent-dot: #7c3aed;
+  --metro-split-border: rgba(0, 0, 0, 0.1);
+  --metro-split-border-hover: rgba(124, 58, 237, 0.28);
+  --metro-split-bg: #fff;
+  --metro-split-hover-bg: rgba(124, 58, 237, 0.04);
+  --metro-split-divider: rgba(0, 0, 0, 0.1);
+  --metro-primary-color: #64748b;
+  --metro-menu-color: #64748b;
+  --metro-primary-hover-bg: rgba(124, 58, 237, 0.06);
+  --metro-menu-hover-bg: rgba(124, 58, 237, 0.08);
+  --metro-primary-active-bg: #7c3aed;
+  --metro-primary-active-color: #fff;
+  --metro-split-active-hover-bg: rgba(255, 255, 255, 0.14);
+  --metro-split-divider-active: rgba(255, 255, 255, 0.28);
+  --metro-panel-bg: #fff;
+  --metro-panel-border: rgba(0, 0, 0, 0.12);
+  --metro-panel-divider: rgba(0, 0, 0, 0.08);
+  --metro-slider-color: #7c3aed;
+}
+
+.labs-metronome-split-control--drums,
+.labs-metronome-settings-popover--drums {
+  --metro-split-radius: 0.5rem;
+  --metro-split-height: var(--drums-playback-control-height, 2.5rem);
+  --metro-split-min-height: var(--drums-playback-control-height, 2.5rem);
+  --metro-split-border-width: 2px;
+  --metro-split-border-width-active: 2px;
+  --metro-primary-min-width: 2rem;
+  --metro-menu-width: 1.375rem;
+  --metro-split-border: var(--border-color, #e5e7eb);
+  --metro-split-border-hover: var(--primary-purple, #7c3aed);
+  --metro-split-bg: #ffffff;
+  --metro-split-hover-bg: #f9fafb;
+  --metro-split-divider: var(--border-color, #e5e7eb);
+  --metro-split-divider-inset: 28%;
+  --metro-primary-padding: 0 0.5rem;
+  --metro-menu-padding: 0;
+  --metro-icon-size: 1.25rem;
+  --metro-menu-icon-size: 0.625rem;
+  --metro-menu-chevron-opacity: 0.9;
+  --metro-state-off-color: var(--text-color, #1f2937);
+  --metro-state-on-color: #fff;
+  --metro-accent: var(--primary-purple, #7c3aed);
+  --metro-primary-color: var(--text-color, #1f2937);
+  --metro-menu-color: var(--text-color, #1f2937);
+  --metro-primary-hover-bg: #f9fafb;
+  --metro-menu-hover-bg: #f9fafb;
+  --metro-primary-active-bg: #6d28d9;
+  --metro-primary-active-color: #fff;
+  --metro-primary-active-border: var(--primary-purple, #7c3aed);
+  --metro-split-active-hover-bg: rgba(255, 255, 255, 0.12);
+  --metro-focus-ring: 0 0 0 3px rgba(124, 58, 237, 0.35);
+  --metro-focus-ring-active: 0 0 0 2px #fff, 0 0 0 4px rgba(124, 58, 237, 0.55);
+  --metro-panel-bg: var(--labs-popover-bg, var(--menu-surface, #fff));
+  --metro-panel-header-bg: var(--menu-header-bg, #f9fafb);
+  --metro-panel-border: var(--labs-popover-border, var(--menu-border, #d1d5db));
+  --metro-panel-divider: var(--border-color, #d1d5db);
+  --metro-panel-radius: var(--labs-popover-radius, var(--menu-radius, 8px));
+  --metro-panel-shadow: var(
+    --labs-popover-shadow,
+    0 8px 24px rgba(76, 29, 149, 0.12)
+  );
+  --metro-panel-muted: rgba(31, 41, 55, 0.62);
+  --metro-toggle-bg: #ffffff;
+  --metro-toggle-border: var(--border-color, #e5e7eb);
+  --metro-toggle-hover-bg: #f9fafb;
+  --metro-toggle-focus-ring: 0 0 0 2px var(--primary-purple, #7c3aed);
+  --metro-focus-ring: 0 0 0 3px rgba(124, 58, 237, 0.22);
+  --metro-slider-color: var(--primary-purple, #7c3aed);
+}
+
+.labs-metronome-split-control--words,
+.labs-metronome-settings-popover--words {
+  --metro-split-radius: 999px;
+  --metro-split-min-height: 34px;
+  --metro-menu-padding: 0;
+  --metro-menu-icon-size: 0.625rem;
+  --metro-menu-chevron-opacity: 0.88;
+  --metro-split-border: color-mix(
+    in srgb,
+    var(--pastel-6, #0d9488) 20%,
+    #cbd5e1
+  );
+  --metro-split-border-hover: color-mix(
+    in srgb,
+    var(--pastel-6, #0a8a8f) 34%,
+    #94a3b8
+  );
+  --metro-split-bg: color-mix(
+    in srgb,
+    var(--pastel-9, #fff) 72%,
+    var(--pastel-8, #99f6e4)
+  );
+  --metro-split-hover-bg: color-mix(
+    in srgb,
+    var(--pastel-8, #99f6e4) 42%,
+    #fff
+  );
+  --metro-split-divider: color-mix(
+    in srgb,
+    var(--pastel-6, #0d9488) 18%,
+    #cbd5e1
+  );
+  --metro-accent: #ea580c;
+  --metro-accent-dot: #ea580c;
+  --metro-primary-color: #0f766e;
+  --metro-menu-color: #0f766e;
+  --metro-primary-hover-bg: color-mix(
+    in srgb,
+    var(--pastel-8, #99f6e4) 55%,
+    #fff
+  );
+  --metro-menu-hover-bg: color-mix(in srgb, var(--pastel-8, #99f6e4) 62%, #fff);
+  --metro-primary-active-bg: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--pastel-3, #fde68a) 88%, #f59e0b),
+    color-mix(in srgb, var(--pastel-2, #fed7aa) 88%, #ea580c)
+  );
+  --metro-primary-active-color: #fff;
+  --metro-primary-active-border: color-mix(in srgb, #ea580c 82%, #c2410c);
+  --metro-split-active-hover-bg: rgba(255, 255, 255, 0.16);
+  --metro-split-divider-active: rgba(255, 255, 255, 0.32);
+  --metro-focus-ring: 0 0 0 2px
+    color-mix(in srgb, var(--pastel-5, #67e8f9) 46%, #67e8f9);
+  /* Panel interior — shell chrome from .labs-popover-surface via :root --labs-popover-*. */
+  --metro-panel-bg: var(--labs-popover-bg, rgba(255, 255, 255, 0.98));
+  --metro-panel-border: var(--labs-popover-border);
+  --metro-panel-shadow: var(--labs-popover-shadow);
+  --metro-slider-color: #0a8a8f;
+}
+
+.labs-metronome-split-control--piano,
+.labs-metronome-settings-popover--piano {
+  --metro-split-radius: var(--radius-lg, 10px);
+  --metro-split-min-height: 36px;
+  --metro-menu-padding: 0;
+  --metro-menu-icon-size: 0.625rem;
+  --metro-split-border: var(--piano-border, #e2e8f0);
+  --metro-split-border-hover: color-mix(
+    in srgb,
+    var(--piano-primary, #7c3aed) 28%,
+    var(--piano-border, #e2e8f0)
+  );
+  --metro-split-bg: var(--piano-surface, #fff);
+  --metro-split-hover-bg: var(--piano-surface-hover, #f8fafc);
+  --metro-split-divider: var(--piano-border, #e2e8f0);
+  --metro-accent: var(--piano-primary, #7c3aed);
+  --metro-accent-dot: var(--piano-primary, #7c3aed);
+  --metro-primary-color: var(--piano-text-secondary, #6b5b8e);
+  --metro-menu-color: var(--piano-text-secondary, #6b5b8e);
+  --metro-primary-hover-bg: color-mix(
+    in srgb,
+    var(--piano-primary, #7c3aed) 7%,
+    var(--piano-surface-hover, #f8fafc)
+  );
+  --metro-menu-hover-bg: color-mix(
+    in srgb,
+    var(--piano-primary, #7c3aed) 9%,
+    var(--piano-surface-hover, #f8fafc)
+  );
+  --metro-primary-active-bg: var(--piano-primary, #7c3aed);
+  --metro-primary-active-color: #fff;
+  --metro-primary-active-border: var(--piano-primary, #7c3aed);
+  --metro-split-active-hover-bg: rgba(255, 255, 255, 0.14);
+  --metro-panel-bg: var(--piano-surface, #fff);
+  --metro-panel-border: var(--piano-border, #e2e8f0);
+  --metro-slider-color: var(--piano-primary, #7c3aed);
+}
+
+.labs-metronome-split-control--chords,
+.labs-metronome-settings-popover--chords {
+  --metro-split-radius: var(--control-radius, 8px);
+  --metro-split-min-height: var(--control-height, 38px);
+  --metro-menu-padding: 0;
+  --metro-menu-icon-size: 0.625rem;
+  --metro-split-border: var(--border-color, #e2e8f0);
+  --metro-split-border-hover: color-mix(
+    in srgb,
+    var(--primary, #7c3aed) 26%,
+    var(--border-color, #e2e8f0)
+  );
+  --metro-split-bg: var(--bg-card, #fff);
+  --metro-split-hover-bg: color-mix(
+    in srgb,
+    var(--primary, #7c3aed) 4%,
+    var(--bg-card, #fff)
+  );
+  --metro-split-divider: var(--border-color, #e2e8f0);
+  --metro-accent: var(--primary, #7c3aed);
+  --metro-accent-dot: var(--primary, #7c3aed);
+  --metro-primary-color: var(--text-secondary, #64748b);
+  --metro-menu-color: var(--text-secondary, #64748b);
+  --metro-primary-hover-bg: color-mix(
+    in srgb,
+    var(--primary, #7c3aed) 7%,
+    var(--bg-card, #fff)
+  );
+  --metro-menu-hover-bg: color-mix(
+    in srgb,
+    var(--primary, #7c3aed) 9%,
+    var(--bg-card, #fff)
+  );
+  --metro-primary-active-bg: var(--primary, #7c3aed);
+  --metro-primary-active-color: #fff;
+  --metro-primary-active-border: var(--primary, #7c3aed);
+  --metro-split-active-hover-bg: rgba(255, 255, 255, 0.14);
+  --metro-panel-bg: var(--bg-card, #fff);
+  --metro-panel-border: var(--border-color, #e2e8f0);
+  --metro-slider-color: var(--primary, #7c3aed);
+}
+
+.labs-metronome-split-control--stanza,
+.labs-metronome-settings-popover--stanza {
+  --metro-split-radius: 999px;
+  --metro-split-height: 32px;
+  --metro-split-min-height: 32px;
+  --metro-split-border-width: 1px;
+  --metro-primary-min-width: 1.75rem;
+  --metro-menu-width: 1.5rem;
+  --metro-split-border: transparent;
+  --metro-split-border-hover: rgba(232, 72, 160, 0.2);
+  --metro-split-bg: transparent;
+  --metro-split-hover-bg: rgba(232, 72, 160, 0.06);
+  --metro-split-divider: rgba(49, 43, 38, 0.1);
+  --metro-split-divider-inset: 24%;
+  --metro-primary-padding: 0 0.25rem 0 0.35rem;
+  --metro-menu-padding: 0;
+  --metro-icon-size: 1.125rem;
+  --metro-menu-icon-size: 0.625rem;
+  --metro-menu-chevron-opacity: 0.72;
+  --metro-accent: #e848a0;
+  --metro-primary-color: var(--stanza-ink, #312b26);
+  --metro-menu-color: color-mix(
+    in srgb,
+    var(--stanza-ink, #312b26) 72%,
+    transparent
+  );
+  --metro-primary-hover-bg: rgba(232, 72, 160, 0.1);
+  --metro-menu-hover-bg: rgba(232, 72, 160, 0.12);
+  --metro-split-active-hover-bg: rgba(232, 72, 160, 0.2);
+  --metro-primary-active-bg: rgba(232, 72, 160, 0.11);
+  --metro-primary-active-color: var(--stanza-ink, #312b26);
+  --metro-primary-active-border: rgba(232, 72, 160, 0.24);
+  --metro-split-active-shadow: inset 0 0 0 1px rgba(232, 72, 160, 0.18);
+  --metro-split-divider-active: rgba(49, 43, 38, 0.14);
+  --metro-focus-ring: 0 0 0 2px rgba(232, 72, 160, 0.22);
+  --metro-panel-bg: var(--stanza-paper-elevated-strong, #fffbf5);
+  --metro-panel-border: rgba(49, 43, 38, 0.12);
+  --metro-slider-color: #e848a0;
+}
+
+.labs-metronome-split-control--midi,
+.labs-metronome-settings-popover--midi {
+  --metro-split-radius: 999px;
+  --metro-split-min-height: 36px;
+  --metro-menu-padding: 0;
+  --metro-menu-icon-size: 0.625rem;
+  --metro-split-border: var(--midi-border, rgba(255, 68, 153, 0.12));
+  --metro-split-border-hover: color-mix(
+    in srgb,
+    var(--midi-accent, #ff4499) 28%,
+    rgba(255, 255, 255, 0.92)
+  );
+  --metro-split-bg: rgba(255, 255, 255, 0.92);
+  --metro-split-hover-bg: color-mix(
+    in srgb,
+    var(--midi-accent-soft, rgba(255, 68, 153, 0.12)) 55%,
+    #fff
+  );
+  --metro-split-divider: var(--midi-border, rgba(255, 68, 153, 0.14));
+  --metro-accent: var(--midi-accent, #ff4499);
+  --metro-accent-dot: var(--midi-accent-strong, #e91e8c);
+  --metro-primary-color: var(--midi-text-muted, #7c6485);
+  --metro-menu-color: var(--midi-text-muted, #7c6485);
+  --metro-primary-hover-bg: var(--midi-accent-soft, rgba(255, 68, 153, 0.1));
+  --metro-menu-hover-bg: var(--midi-accent-soft, rgba(255, 68, 153, 0.14));
+  --metro-primary-active-bg: var(--midi-accent, #ff4499);
+  --metro-primary-active-color: #fff;
+  --metro-primary-active-border: color-mix(
+    in srgb,
+    var(--midi-accent, #ff4499) 88%,
+    #e91e8c
+  );
+  --metro-split-active-hover-bg: rgba(255, 255, 255, 0.16);
+  --metro-panel-bg: var(--midi-surface, #fff);
+  --metro-panel-border: var(--midi-border, rgba(255, 68, 153, 0.14));
+  --metro-panel-shadow: var(--midi-shadow, 0 10px 40px rgba(59, 31, 69, 0.08));
+  --metro-slider-color: var(--midi-accent, #ff4499);
+}
+
+/*
+ * Secondary selection bridge — portaled metronome popovers do not inherit app-shell
+ * --theme-primary. Derive settings toggles from --metro-accent on each appearance wrapper.
+ */
+.labs-metronome-split-control--default,
+.labs-metronome-settings-popover--default,
+.labs-metronome-settings-panel--default,
+.labs-metronome-split-control--drums,
+.labs-metronome-settings-popover--drums,
+.labs-metronome-settings-panel--drums,
+.labs-metronome-split-control--words,
+.labs-metronome-settings-popover--words,
+.labs-metronome-settings-panel--words,
+.labs-metronome-split-control--piano,
+.labs-metronome-settings-popover--piano,
+.labs-metronome-settings-panel--piano,
+.labs-metronome-split-control--chords,
+.labs-metronome-settings-popover--chords,
+.labs-metronome-settings-panel--chords,
+.labs-metronome-split-control--stanza,
+.labs-metronome-settings-popover--stanza,
+.labs-metronome-settings-panel--stanza,
+.labs-metronome-split-control--midi,
+.labs-metronome-settings-popover--midi,
+.labs-metronome-settings-panel--midi {
+  --metro-toggle-selected-bg: color-mix(
+    in srgb,
+    var(--metro-accent, #7c3aed) 12%,
+    var(--metro-panel-bg, #fff)
+  );
+  --metro-toggle-selected-hover-bg: color-mix(
+    in srgb,
+    var(--metro-accent, #7c3aed) 18%,
+    var(--metro-panel-bg, #fff)
+  );
+  --metro-toggle-selected-color: var(
+    --metro-accent-dot,
+    var(--metro-accent, #7c3aed)
+  );
+  --metro-toggle-focus-ring: 0 0 0 2px var(--metro-accent, #7c3aed);
+  --labs-control-focus-ring-inset-color: var(--metro-accent, #7c3aed);
+}
+
+.labs-metronome-split-control--drums,
+.labs-metronome-settings-popover--drums,
+.labs-metronome-settings-panel--drums {
+  --metro-toggle-selected-color: var(--primary-purple-dark, #6d28d9);
+}
+
+.labs-metronome-split-control--stanza,
+.labs-metronome-settings-popover--stanza,
+.labs-metronome-settings-panel--stanza {
+  --metro-toggle-selected-bg: color-mix(
+    in srgb,
+    var(--metro-accent, #e848a0) 18%,
+    var(--metro-panel-bg, #fffbf5)
+  );
+  --metro-toggle-selected-hover-bg: color-mix(
+    in srgb,
+    var(--metro-accent, #e848a0) 26%,
+    var(--metro-panel-bg, #fffbf5)
+  );
+  --metro-toggle-selected-color: var(--stanza-ink, #312b26);
+}
+
+.labs-metronome-split-control--words,
+.labs-metronome-settings-popover--words,
+.labs-metronome-settings-panel--words {
+  --metro-toggle-selected-color: var(--metro-primary-color, #0f766e);
+}
+
+/* Host app toggle classes — strip chrome; unified split shell owns border/bg/active. */
+.labs-metronome-split-control[class*='--'] .labs-split-action-button__primary,
+.labs-metronome-split-control[class*='--'] .labs-split-action-button__menu {
+  border: 0;
+  border-radius: 0;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+  box-shadow: none;
+  color: inherit;
+}
+
+.labs-metronome-split-control[class*='--'] .labs-split-action-button__primary {
+  background: transparent;
+}
+
+.labs-metronome-split-control[class*='--'] .labs-split-action-button__menu {
+  background: transparent;
+}
+
+.labs-metronome-split-control[class*='--']
+  .labs-split-action-button__primary:hover:not(:disabled),
+.labs-metronome-split-control[class*='--']
+  .labs-split-action-button__primary.active,
+.labs-metronome-split-control[class*='--']
+  .labs-split-action-button__primary.is-on {
+  box-shadow: none;
+}

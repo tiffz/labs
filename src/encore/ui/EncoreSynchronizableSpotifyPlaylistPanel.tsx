@@ -11,6 +11,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { alpha } from '@mui/material/styles';
 import { useCallback, useEffect, useState, type ReactElement, type ReactNode } from 'react';
+import { LABS_POPOVER_CHROME_SX } from '../../shared/components/anchoredPopoverChrome';
 import { SpotifyBrandIcon } from '../components/EncoreBrandIcon';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
 import { fetchSpotifyPlaylistSummary } from '../spotify/spotifyApi';
@@ -184,11 +185,8 @@ export function EncoreSynchronizableSpotifyPlaylistPanel(props: EncoreSynchroniz
           slotProps={{
             tooltip: {
               sx: {
-                bgcolor: 'background.paper',
+                ...LABS_POPOVER_CHROME_SX,
                 color: 'text.primary',
-                border: 1,
-                borderColor: 'divider',
-                boxShadow: 3,
                 maxWidth: 360,
               },
             },

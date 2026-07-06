@@ -5,6 +5,10 @@ import AppSlider from '../AppSlider';
 import { NumericStepperField } from './NumericStepperField';
 import { buildSliderMilestones, pickBpmSliderMilestones } from './sliderMilestoneUtils';
 import SliderMilestoneLabels from './sliderMilestoneLabels';
+import {
+  musicInputRootClass,
+  type MusicInputAppearance,
+} from './musicInputAppearance';
 import './bpmInput.css';
 
 interface BpmInputProps {
@@ -14,6 +18,7 @@ interface BpmInputProps {
   max?: number;
   step?: number;
   className?: string;
+  appearance?: MusicInputAppearance;
   /** `inline` keeps the shell only as wide as the stepper; `block` fills the row (default). */
   layout?: 'inline' | 'block';
   disabled?: boolean;
@@ -44,6 +49,7 @@ const BpmInput: React.FC<BpmInputProps> = ({
   max = DEFAULT_BPM_MAX,
   step = 1,
   className,
+  appearance = 'default',
   layout = 'block',
   disabled = false,
   showRandomize = false,
@@ -63,6 +69,7 @@ const BpmInput: React.FC<BpmInputProps> = ({
   const anchorRef = React.useRef<HTMLDivElement | null>(null);
   const dropdownPaperRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const suppressPresetOpenOnFocusRef = useRef(false);
   const valueRef = useRef(value);
   const presets = useMemo(() => COMMON_BPMS.filter((candidate) => candidate >= min && candidate <= max), [max, min]);
   const filteredPresets = useMemo(() => presets, [presets]);
@@ -108,8 +115,64 @@ const BpmInput: React.FC<BpmInputProps> = ({
     setDraft(String(next));
   };
 
+  const isInsidePresetPanel = (target: Node): boolean => {
+    if (dropdownPaperRef.current?.contains(target)) return true;
+    if (target instanceof Element && target.closest('.shared-bpm-dropdown')) return true;
+    return false;
+  };
+
+  const dismissPresetPanel = (): void => {
+    suppressPresetOpenOnFocusRef.current = true;
+    setIsPresetOpen(false);
+    setIsEditing(false);
+  };
+
+  const restoreInputFocusAfterDismiss = (): void => {
+    suppressPresetOpenOnFocusRef.current = true;
+    window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+  };
+
+  const closePresetPanelFromPopover = (): void => {
+    dismissPresetPanel();
+    restoreInputFocusAfterDismiss();
+  };
+
+  const handlePresetPanelKeyDown = (event: React.KeyboardEvent<HTMLElement>): void => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      closePresetPanelFromPopover();
+    }
+  };
+
+  useEffect(() => {
+    if (!isPresetOpen) return;
+
+    const handlePointerDownOutside = (event: PointerEvent): void => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (anchorRef.current?.contains(target)) return;
+      if (isInsidePresetPanel(target)) return;
+      dismissPresetPanel();
+      inputRef.current?.blur();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDownOutside, true);
+    return () => document.removeEventListener('pointerdown', handlePointerDownOutside, true);
+  }, [isPresetOpen]);
+
   return (
-    <div className={['shared-bpm-input', layout === 'inline' ? 'shared-bpm-input--inline' : '', className].filter(Boolean).join(' ')}>
+    <div
+      className={[
+        musicInputRootClass('bpm', appearance),
+        layout === 'inline' ? 'shared-bpm-input--inline' : '',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <div className="shared-bpm-dropdown-anchor" ref={anchorRef}>
         <div className="shared-bpm-main-row">
           <div className={`shared-bpm-shell ${isEditing ? 'is-editing' : 'is-idle'}`}>
@@ -124,19 +187,22 @@ const BpmInput: React.FC<BpmInputProps> = ({
                 if (disabled) return;
                 setDraft(String(Math.round(value)));
                 setIsEditing(true);
-                if (showPresetDropdown) {
+                if (showPresetDropdown && !suppressPresetOpenOnFocusRef.current) {
                   setIsPresetOpen(true);
                 }
+                suppressPresetOpenOnFocusRef.current = false;
               }}
               onInputBlur={(event) => {
                 if (disabled) return;
                 commit(draft);
                 const nextTarget = event.relatedTarget;
                 const movingIntoDropdown =
-                  nextTarget instanceof Node &&
-                  dropdownPaperRef.current?.contains(nextTarget) === true;
+                  nextTarget instanceof Node && isInsidePresetPanel(nextTarget);
                 setIsEditing(movingIntoDropdown);
-                setIsPresetOpen(movingIntoDropdown);
+                // Only close on blur — never reopen (focus handler opens the panel).
+                if (!movingIntoDropdown) {
+                  setIsPresetOpen(false);
+                }
               }}
               inputRef={inputRef}
               disabled={disabled}
@@ -149,9 +215,13 @@ const BpmInput: React.FC<BpmInputProps> = ({
                   setIsPresetOpen(false);
                 }
                 if (event.key === 'Escape') {
+                  event.preventDefault();
+                  event.stopPropagation();
                   setDraft(String(Math.round(value)));
-                  setIsEditing(false);
-                  setIsPresetOpen(false);
+                  dismissPresetPanel();
+                  if (document.activeElement !== inputRef.current) {
+                    restoreInputFocusAfterDismiss();
+                  }
                 }
                 if (event.key === 'ArrowUp') {
                   event.preventDefault();
@@ -216,23 +286,32 @@ const BpmInput: React.FC<BpmInputProps> = ({
         <AnchoredPopover
           open={Boolean(showPresetDropdown && isPresetOpen && anchorRef.current && !disabled)}
           anchorEl={anchorRef.current}
-          onClose={() => {
-            setIsPresetOpen(false);
-            setIsEditing(false);
+          onClose={(_, reason) => {
+            dismissPresetPanel();
+            if (reason === 'escapeKeyDown') {
+              restoreInputFocusAfterDismiss();
+            } else if (reason === 'backdropClick') {
+              suppressPresetOpenOnFocusRef.current = true;
+              inputRef.current?.blur();
+            }
           }}
-          disableAutoFocus
-          disableEnforceFocus
-          disableRestoreFocus
+          disableScrollLock
           placement={presetPanelHorizontal === 'right' ? 'bottom-end' : 'bottom-start'}
           paperClassName={['shared-bpm-dropdown', dropdownClassName].filter(Boolean).join(' ')}
           slotProps={{
             paper: {
               style: dropdownOffsetPx !== undefined ? { marginTop: `${dropdownOffsetPx}px` } : undefined,
-              ref: dropdownPaperRef,
+              ref: (node: HTMLDivElement | null) => {
+                dropdownPaperRef.current = node;
+              },
+              onKeyDownCapture: handlePresetPanelKeyDown,
             },
           }}
         >
-          <div className="shared-bpm-dropdown-list" aria-label="Common BPM options">
+          <div
+            className="shared-bpm-dropdown-list"
+            aria-label="Common BPM options"
+          >
             <div className="shared-bpm-slider-wrap">
               <AppSlider
                 className={['shared-bpm-slider', sliderClassName].filter(Boolean).join(' ')}

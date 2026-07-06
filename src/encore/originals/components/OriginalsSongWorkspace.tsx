@@ -34,7 +34,6 @@ import { OriginalsChordPalette } from './chart/OriginalsChordPalette';
 import { OriginalsChordsStageToolbar } from './OriginalsChordsStageToolbar';
 import { OriginalsPaintChordsEditor } from './OriginalsPaintChordsEditor';
 import { OriginalsTakesStage } from './OriginalsTakesStage';
-import { OriginalsWorkflowStepper } from './OriginalsWorkflowStepper';
 import { OriginalsWriteLyricsEditor } from './OriginalsWriteLyricsEditor';
 
 const ORIGINALS_CHORD_PLAYBACK_STORAGE_KEY = 'encore-originals-chord-playback-settings';
@@ -43,7 +42,7 @@ export type OriginalsSongWorkspaceProps = {
   song: EncoreOriginalSong;
   /** When set (e.g. from view-mode section Edit), opens write workspace at this stage. */
   initialWorkflowStage?: OriginalsWorkflowStage;
-  /** Chords stage: stepper + sticky chrome are direct children of the page scroll region. */
+  /** Chords stage: toolbar + chart are direct children of the page scroll region. */
   integratedPageScroll?: boolean;
   /** Lyrics / brainstorm stages: workspace grows with content inside the page scroll region. */
   pageScrollIntegrated?: boolean;
@@ -208,10 +207,6 @@ export function OriginalsSongWorkspace({
                 flexShrink: 0,
                 display: 'flex',
                 flexDirection: 'column',
-                borderRadius: encoreRadius,
-                border: 1,
-                borderColor: encoreHairline,
-                boxShadow: encoreShadowSurface,
                 bgcolor: 'background.paper',
               }
             : {
@@ -228,20 +223,6 @@ export function OriginalsSongWorkspace({
               }
       }
     >
-      {!isChords ? (
-        <Box
-          sx={{
-            px: encoreSurfacePadX,
-            py: { xs: 1, sm: 1.25 },
-            borderBottom: 1,
-            borderColor: encoreHairline,
-            flexShrink: 0,
-          }}
-        >
-          <OriginalsWorkflowStepper song={song} stage={stage} onStageChange={onStageChange} />
-        </Box>
-      ) : null}
-
       {showStageTitleBand ? (
         <Stack
           direction="row"
@@ -361,21 +342,6 @@ export function OriginalsSongWorkspace({
           />
         ) : stage === 'chords' ? (
           <>
-            <Box
-              className="in-scroll-region__band encore-originals-chords-stepper-scroll encore-originals-no-print"
-              sx={{
-                px: encoreSurfacePadX,
-                py: { xs: 0.9, sm: 1.15 },
-                ...(chordsIntegratedScroll
-                  ? {}
-                  : {
-                      borderBottom: 1,
-                      borderColor: encoreHairline,
-                    }),
-              }}
-            >
-              <OriginalsWorkflowStepper song={song} stage={stage} onStageChange={onStageChange} />
-            </Box>
             <OriginalsChartPlaybackProvider
               layout={chart.layout}
               tempo={song.tempo}
@@ -383,34 +349,32 @@ export function OriginalsSongWorkspace({
               sectionPlaybackOverrides={song.sectionPlaybackOverrides}
               onActiveStepChange={setActivePlaybackStep}
             >
-              <Box
-                className={[
-                  'in-scroll-region__sticky-surface',
-                  'encore-originals-chords-paint-chrome',
-                  'encore-originals-no-print',
-                ].join(' ')}
-              >
-                <OriginalsChordsStageToolbar
-                  song={song}
-                  layout={chart.layout}
-                  stageDone={stageDone}
-                  onActivePlaybackStepChange={setActivePlaybackStep}
-                  onSongChange={onSongChange}
-                  onPersist={onPersist}
-                  onToggleStageComplete={onToggleStageComplete}
-                />
-                <OriginalsChordPalette
-                  songKey={song.key}
-                  armedChord={chart.armedChord}
-                  notation={chordNotation}
-                  selectedChord={chart.selectedChord}
-                  selectedWord={chart.selectedWord}
-                  onArm={handleArmChord}
-                  onNotationChange={setChordNotation}
-                  onClearSelection={chart.onClearSelection}
-                />
+              <Box className="in-scroll-region__sticky-surface encore-originals-chords-sticky-chrome encore-originals-no-print">
+                <Box className="encore-originals-chords-toolbar-band">
+                  <OriginalsChordsStageToolbar
+                    song={song}
+                    layout={chart.layout}
+                    stageDone={stageDone}
+                    onActivePlaybackStepChange={setActivePlaybackStep}
+                    onSongChange={onSongChange}
+                    onPersist={onPersist}
+                    onToggleStageComplete={onToggleStageComplete}
+                  />
+                </Box>
+                <Box className="encore-originals-chord-palette">
+                  <OriginalsChordPalette
+                    songKey={song.key}
+                    armedChord={chart.armedChord}
+                    notation={chordNotation}
+                    selectedChord={chart.selectedChord}
+                    selectedWord={chart.selectedWord}
+                    onArm={handleArmChord}
+                    onNotationChange={setChordNotation}
+                    onClearSelection={chart.onClearSelection}
+                  />
+                </Box>
               </Box>
-              <Box className="encore-originals-chords-chart-surface">
+              <Box className="encore-originals-chords-chart-surface encore-originals-chart-surface--flat">
                 <OriginalsPaintChordsEditor
                   layout={chart.layout}
                   songKey={song.key}

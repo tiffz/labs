@@ -6,12 +6,12 @@ import Checkbox from '@mui/material/Checkbox';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
-import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import type { MRT_Column, MRT_RowData, MRT_TableInstance } from 'material-react-table';
 import { useState, type ReactElement } from 'react';
+import AnchoredPopover from '../../shared/components/AnchoredPopover';
 
 export type EncoreMrtColumnsSettingsButtonProps<TData extends MRT_RowData> = {
   table: MRT_TableInstance<TData>;
@@ -55,13 +55,14 @@ export function EncoreMrtColumnsSettingsButton<TData extends MRT_RowData>(
           <ViewColumnIcon fontSize="small" />
         </IconButton>
       </Tooltip>
-      <Popover
+      <AnchoredPopover
         open={Boolean(anchor)}
         anchorEl={anchor}
         onClose={() => setAnchor(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        slotProps={{ paper: { sx: { width: 280, maxWidth: 'min(320px, 92vw)', p: 1.5 } } }}
+        placement="bottom-end"
+        slotProps={{
+          paper: { sx: { width: 280, maxWidth: 'min(320px, 92vw)', p: 1.5 } },
+        }}
       >
         <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
           Visible columns
@@ -108,7 +109,7 @@ export function EncoreMrtColumnsSettingsButton<TData extends MRT_RowData>(
             Reset columns
           </Button>
         </Box>
-      </Popover>
+      </AnchoredPopover>
     </>
   );
 }

@@ -4,6 +4,7 @@ import {
   formatOriginalStageSummary,
   inferredWorkflowStage,
   isOriginalDemoReady,
+  isOriginalSongPersistable,
   isStageComplete,
   originalsLibraryStageLabel,
   originalsLibraryStageProgressDetail,
@@ -14,6 +15,13 @@ describe('originalsWorkflowCompletion', () => {
   it('starts at brainstorm for blank song', () => {
     const song = createBlankOriginalSong();
     expect(inferredWorkflowStage(song)).toBe('brainstorm');
+  });
+
+  it('does not persist blank scaffold-only originals', () => {
+    const song = createBlankOriginalSong();
+    expect(isOriginalSongPersistable(song)).toBe(false);
+    expect(isOriginalSongPersistable({ ...song, title: 'My song' })).toBe(true);
+    expect(isOriginalSongPersistable(song, song)).toBe(true);
   });
 
   it('manual completion overrides heuristics', () => {

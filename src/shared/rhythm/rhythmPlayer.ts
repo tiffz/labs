@@ -1,4 +1,4 @@
-import type { ParsedRhythm, PlaybackSettings, DrumSound } from './types';
+import type { ParsedRhythm, PlaybackSettings, DrumSound, TimeSignature } from './types';
 import { audioPlayer } from './drumAudioPlayer';
 import {
   getDefaultBeatGrouping,
@@ -8,6 +8,25 @@ import {
 } from './timeSignatureUtils';
 import { PlaybackScheduler } from '../playback/scheduler';
 import { PreciseScheduler } from '../audio/preciseScheduler';
+import {
+  getMetronomeVisualDots,
+  shouldClickAtVisualDot,
+} from '../audio/metronome/metronomeVisualDots';
+import {
+  resolveRhythmMetronomeClick,
+  resolveRhythmMetronomeDrum,
+  resolveRhythmMetronomeVoice,
+  type RhythmMetronomeClickPrefs,
+} from '../audio/metronome/rhythmMetronomeClick';
+import { gridSubdivDurationSec } from '../audio/metronome/gridMetronomePlayback';
+import type { SubdivisionLevel } from '../audio/metronome/types';
+import { VOICE_SUBDIV_MIN_DUR } from '../audio/metronome/types';
+import { VoicePackLoader } from '../audio/metronome/voicePackLoader';
+import { scheduleVoiceSampleOnContext } from '../audio/metronome/scheduleVoiceSample';
+
+export type RhythmMetronomePlaybackPrefs = RhythmMetronomeClickPrefs & {
+  subdivisionLevel: SubdivisionLevel;
+};
 
 /**
  * Callback for when a note starts playing
@@ -44,6 +63,15 @@ interface ScheduledMetronomeEvent {
   positionInMeasure: number;
   isDownbeat: boolean;
   shouldClick: boolean;
+  clickVolume: number;
+  clickPlaybackRate: number;
+  shouldVoice: boolean;
+  voiceSampleId?: string;
+  voiceVolume: number;
+  shouldDrum: boolean;
+  drumSound?: 'dum' | 'tak' | 'ka';
+  drumVolume: number;
+  subdivDurationSec: number;
 }
 
 function unrollMeasures(rhythm: ParsedRhythm) {
@@ -122,6 +150,9 @@ class RhythmPlayer {
   private healthCheckScheduler: PlaybackScheduler | null = null;
   private tickRange: { startTick: number; endTick: number } | null = null;
   private metronomeResolution: 'sixteenth' | 'beat' = 'sixteenth';
+  private metronomePlaybackPrefs: RhythmMetronomePlaybackPrefs | null = null;
+  private voicePack = new VoicePackLoader();
+  private voiceSources: AudioBufferSourceNode[] = [];
 
   private scheduledUpToSec = 0;
   /** Absolute AudioContext time where the current loop iteration begins (event times are relative to this). */
@@ -152,6 +183,7 @@ class RhythmPlayer {
     settings?: PlaybackSettings,
     tickRange?: { startTick: number; endTick: number },
     metronomeResolution: 'sixteenth' | 'beat' = 'sixteenth',
+    metronomePlaybackPrefs?: RhythmMetronomePlaybackPrefs,
   ): Promise<void> {
     this.stop();
 
@@ -162,6 +194,11 @@ class RhythmPlayer {
       console.error('Failed to initialize audio - cannot start playback');
       if (onPlaybackEnd) onPlaybackEnd();
       return;
+    }
+
+    const ctx = audioPlayer.getAudioContext();
+    if (metronomePlaybackPrefs?.sourceEnabled.voice && ctx) {
+      await this.voicePack.load(ctx);
     }
 
     if (!this.scheduler.isSessionValid(session)) return;
@@ -177,6 +214,7 @@ class RhythmPlayer {
     this.settings = settings || null;
     this.tickRange = tickRange || null;
     this.metronomeResolution = metronomeResolution;
+    this.metronomePlaybackPrefs = metronomePlaybackPrefs ?? null;
 
     if (settings) {
       audioPlayer.setReverbStrength(settings.reverbStrength);
@@ -187,7 +225,6 @@ class RhythmPlayer {
 
     this.buildEventList();
 
-    const ctx = audioPlayer.getAudioContext();
     if (!ctx) return;
 
     this.audioStartTimeSec = ctx.currentTime + 0.05;
@@ -260,45 +297,10 @@ class RhythmPlayer {
     const beatGrouping = getDefaultBeatGrouping(rhythm.timeSignature);
     const beatGroupingInSixteenths = getBeatGroupingInSixteenths(beatGrouping, rhythm.timeSignature);
 
-    // --- Metronome events ---
-    this.metronomeEvents = [];
-    let measureStartTick = 0;
-
-    rhythm.measures.forEach((measure, measureIndex) => {
-      const sixteenthsPerMeasure = getSixteenthsPerMeasure(rhythm.timeSignature);
-      const metBeatGrouping = getBeatGroupingInSixteenths(
-        getDefaultBeatGrouping(rhythm.timeSignature),
-        rhythm.timeSignature,
-      );
-
-      const clickPositions = new Set<number>();
-      clickPositions.add(0);
-      let cumulative = 0;
-      for (const groupSize of metBeatGrouping) {
-        cumulative += groupSize;
-        if (cumulative < sixteenthsPerMeasure) clickPositions.add(cumulative);
-      }
-
-      const positionsToEmit = this.metronomeResolution === 'beat'
-        ? Array.from(clickPositions.values()).sort((a, b) => a - b)
-        : Array.from({ length: sixteenthsPerMeasure }, (_, i) => i);
-
-      for (const pos of positionsToEmit) {
-        const absTick = measureStartTick + pos;
-        if (this.tickRange && (absTick < effectiveStartTick || absTick >= effectiveEndTick)) continue;
-        const timeSec = (absTick - effectiveStartTick) * secPerSixteenth;
-        this.metronomeEvents.push({
-          timeSec,
-          measureIndex,
-          positionInMeasure: pos,
-          isDownbeat: pos === 0,
-          shouldClick: clickPositions.has(pos),
-        });
-      }
-
-      let measureTicks = 0;
-      measure.notes.forEach(note => { measureTicks += note.durationInSixteenths; });
-      measureStartTick += measureTicks;
+    this.buildMetronomeEvents({
+      secPerSixteenth,
+      effectiveStartTick,
+      effectiveEndTick,
     });
 
     // --- Note events ---
@@ -356,6 +358,229 @@ class RhythmPlayer {
         positionInMeasure += note.durationInSixteenths;
       });
     });
+  }
+
+  private buildMetronomeEvents(timing: {
+    secPerSixteenth: number;
+    effectiveStartTick: number;
+    effectiveEndTick: number;
+  }): void {
+    if (!this.currentRhythm) return;
+
+    const rhythm = this.currentRhythm;
+    const bpm = this.currentBpm;
+    const { secPerSixteenth, effectiveStartTick, effectiveEndTick } = timing;
+
+    this.metronomeEvents = [];
+    let measureStartTick = 0;
+
+    const subdivisionLevel = this.metronomePlaybackPrefs?.subdivisionLevel ?? null;
+    const voiceMode = this.metronomePlaybackPrefs?.voiceMode ?? 'counting';
+    const visualDots = subdivisionLevel != null
+      ? getMetronomeVisualDots(rhythm.timeSignature, subdivisionLevel, voiceMode)
+      : null;
+    const legacyMetVolume = this.settings?.metronomeVolume ?? 50;
+    const gridSubdivSec =
+      subdivisionLevel != null
+        ? gridSubdivDurationSec(bpm, rhythm.timeSignature, subdivisionLevel)
+        : secPerSixteenth;
+
+    rhythm.measures.forEach((measure, measureIndex) => {
+      const sixteenthsPerMeasure = getSixteenthsPerMeasure(rhythm.timeSignature);
+      const metBeatGrouping = getBeatGroupingInSixteenths(
+        getDefaultBeatGrouping(rhythm.timeSignature),
+        rhythm.timeSignature,
+      );
+
+      const clickPositions = new Set<number>();
+      clickPositions.add(0);
+      let cumulative = 0;
+      for (const groupSize of metBeatGrouping) {
+        cumulative += groupSize;
+        if (cumulative < sixteenthsPerMeasure) clickPositions.add(cumulative);
+      }
+
+      let positionsToEmit: number[];
+      const eventByPosition = new Map<
+        number,
+        Pick<
+          ScheduledMetronomeEvent,
+          | 'shouldClick'
+          | 'clickVolume'
+          | 'clickPlaybackRate'
+          | 'shouldVoice'
+          | 'voiceSampleId'
+          | 'voiceVolume'
+          | 'shouldDrum'
+          | 'drumSound'
+          | 'drumVolume'
+          | 'subdivDurationSec'
+        >
+      >();
+
+      if (visualDots && subdivisionLevel != null) {
+        positionsToEmit = visualDots.map((d) => d.positionInSixteenths);
+        for (const dot of visualDots) {
+          let clickVolume = 0;
+          let clickPlaybackRate = 1;
+          let shouldClick = false;
+          let shouldVoice = false;
+          let voiceSampleId: string | undefined;
+          let voiceVolume = 0;
+          let shouldDrum = false;
+          let drumSound: 'dum' | 'tak' | 'ka' | undefined;
+          let drumVolume = 0;
+
+          if (this.metronomePlaybackPrefs) {
+            const resolved = resolveRhythmMetronomeClick(
+              dot,
+              this.metronomePlaybackPrefs,
+              legacyMetVolume,
+            );
+            if (resolved) {
+              shouldClick = true;
+              clickVolume = resolved.volume;
+              clickPlaybackRate = resolved.playbackRate;
+            }
+
+            const voiceResolved = resolveRhythmMetronomeVoice(
+              dot,
+              this.metronomePlaybackPrefs,
+              legacyMetVolume,
+              gridSubdivSec,
+              VOICE_SUBDIV_MIN_DUR,
+            );
+            if (voiceResolved) {
+              shouldVoice = true;
+              voiceSampleId = voiceResolved.sampleId;
+              voiceVolume = voiceResolved.volume;
+            }
+
+            const drumResolved = resolveRhythmMetronomeDrum(
+              dot,
+              this.metronomePlaybackPrefs,
+              legacyMetVolume,
+            );
+            if (drumResolved) {
+              shouldDrum = true;
+              drumSound = drumResolved.sound;
+              drumVolume = drumResolved.volume;
+            }
+          } else if (shouldClickAtVisualDot(dot, subdivisionLevel)) {
+            shouldClick = true;
+            clickVolume = (dot.tier === 'downbeat' ? 0.8 : 0.5) * (legacyMetVolume / 100);
+            clickPlaybackRate = dot.tier === 'downbeat' ? 1.05 : 1.5;
+          }
+
+          eventByPosition.set(dot.positionInSixteenths, {
+            shouldClick,
+            clickVolume,
+            clickPlaybackRate,
+            shouldVoice,
+            voiceSampleId,
+            voiceVolume,
+            shouldDrum,
+            drumSound,
+            drumVolume,
+            subdivDurationSec: gridSubdivSec,
+          });
+        }
+      } else {
+        positionsToEmit = this.metronomeResolution === 'beat'
+          ? Array.from(clickPositions.values()).sort((a, b) => a - b)
+          : Array.from({ length: sixteenthsPerMeasure }, (_, i) => i);
+
+        for (const pos of positionsToEmit) {
+          const beatsClick = clickPositions.has(pos);
+          eventByPosition.set(pos, {
+            shouldClick: beatsClick,
+            clickVolume: beatsClick ? (pos === 0 ? 0.8 : 0.5) * (legacyMetVolume / 100) : 0,
+            clickPlaybackRate: pos === 0 ? 1.05 : 1,
+            shouldVoice: false,
+            voiceVolume: 0,
+            shouldDrum: false,
+            drumVolume: 0,
+            subdivDurationSec: gridSubdivSec,
+          });
+        }
+      }
+
+      for (const pos of positionsToEmit) {
+        const absTick = measureStartTick + pos;
+        if (this.tickRange && (absTick < effectiveStartTick || absTick >= effectiveEndTick)) continue;
+        const timeSec = (absTick - effectiveStartTick) * secPerSixteenth;
+        const clickMeta = eventByPosition.get(pos) ?? {
+          shouldClick: false,
+          clickVolume: 0,
+          clickPlaybackRate: 1,
+          shouldVoice: false,
+          voiceVolume: 0,
+          shouldDrum: false,
+          drumVolume: 0,
+          subdivDurationSec: gridSubdivSec,
+        };
+        this.metronomeEvents.push({
+          timeSec,
+          measureIndex,
+          positionInMeasure: pos,
+          isDownbeat: pos === 0,
+          shouldClick: clickMeta.shouldClick,
+          clickVolume: clickMeta.clickVolume,
+          clickPlaybackRate: clickMeta.clickPlaybackRate,
+          shouldVoice: clickMeta.shouldVoice ?? false,
+          voiceSampleId: clickMeta.voiceSampleId,
+          voiceVolume: clickMeta.voiceVolume ?? 0,
+          shouldDrum: clickMeta.shouldDrum ?? false,
+          drumSound: clickMeta.drumSound,
+          drumVolume: clickMeta.drumVolume ?? 0,
+          subdivDurationSec: clickMeta.subdivDurationSec ?? gridSubdivSec,
+        });
+      }
+
+      let measureTicks = 0;
+      measure.notes.forEach(note => { measureTicks += note.durationInSixteenths; });
+      measureStartTick += measureTicks;
+    });
+  }
+
+  private getLoopTiming(): {
+    secPerSixteenth: number;
+    effectiveStartTick: number;
+    effectiveEndTick: number;
+  } | null {
+    if (!this.currentRhythm) return null;
+
+    const rhythm = this.currentRhythm;
+    const bpm = this.currentBpm;
+    const secPerSixteenth = 60 / bpm / 4;
+
+    const unrolledMeasures = unrollMeasures(rhythm);
+    let totalTicks = 0;
+    unrolledMeasures.forEach(({ measure }) => {
+      measure.notes.forEach(note => { totalTicks += note.durationInSixteenths; });
+    });
+
+    const effectiveStartTick = this.tickRange ? this.tickRange.startTick : 0;
+    const effectiveEndTick = this.tickRange ? Math.min(this.tickRange.endTick, totalTicks) : totalTicks;
+
+    return { secPerSixteenth, effectiveStartTick, effectiveEndTick };
+  }
+
+  private resyncMetronomeEventIndexFromNow(): void {
+    const ctx = audioPlayer.getAudioContext();
+    if (!ctx) {
+      this.metronomeEventIndex = 0;
+      return;
+    }
+
+    const elapsed = Math.max(0, ctx.currentTime - this.audioStartTimeSec);
+    this.metronomeEventIndex = 0;
+    while (
+      this.metronomeEventIndex < this.metronomeEvents.length &&
+      this.metronomeEvents[this.metronomeEventIndex].timeSec < elapsed
+    ) {
+      this.metronomeEventIndex++;
+    }
   }
 
   /**
@@ -422,10 +647,23 @@ class RhythmPlayer {
 
       if (audioTime >= this.scheduledUpToSec) {
         if (this.metronomeEnabled && evt.shouldClick) {
-          const settings = this.settings || { metronomeVolume: 50 };
-          const baseVolume = evt.isDownbeat ? 0.8 : 0.5;
-          const clickVolume = baseVolume * ((settings.metronomeVolume ?? 50) / 100);
-          audioPlayer.playClickNowIfReady(clickVolume, audioTime);
+          audioPlayer.playClickNowIfReady(evt.clickVolume, audioTime, evt.clickPlaybackRate);
+        }
+        if (this.metronomeEnabled && evt.shouldVoice && evt.voiceSampleId && ctx) {
+          scheduleVoiceSampleOnContext(
+            ctx,
+            this.voicePack,
+            evt.voiceSampleId,
+            audioTime,
+            evt.voiceVolume,
+            evt.subdivDurationSec,
+            (source) => {
+              this.voiceSources.push(source);
+            },
+          );
+        }
+        if (this.metronomeEnabled && evt.shouldDrum && evt.drumSound) {
+          audioPlayer.playNowIfReady(evt.drumSound, evt.drumVolume, evt.subdivDurationSec, audioTime);
         }
 
         const delayMs = Math.max(0, (audioTime - now) * 1000);
@@ -508,6 +746,28 @@ class RhythmPlayer {
   }
 
   /**
+   * Update advanced metronome prefs during playback (subdivision grid, sources, gains).
+   * Rebuilds the metronome schedule from the current loop position.
+   */
+  async setMetronomePlaybackPrefs(prefs: RhythmMetronomePlaybackPrefs | null): Promise<void> {
+    this.metronomePlaybackPrefs = prefs;
+
+    if (!this.isPlaying || !this.currentRhythm) return;
+
+    const ctx = audioPlayer.getAudioContext();
+    if (prefs?.sourceEnabled.voice && ctx) {
+      await this.voicePack.load(ctx);
+    }
+    if (!this.isPlaying || !this.currentRhythm) return;
+
+    const timing = this.getLoopTiming();
+    if (!timing) return;
+
+    this.buildMetronomeEvents(timing);
+    this.resyncMetronomeEventIndexFromNow();
+  }
+
+  /**
    * Update playback settings during playback
    * This allows adjusting volume and accent settings in real-time
    * Settings will apply to newly scheduled notes in the next loop iteration
@@ -535,6 +795,24 @@ class RhythmPlayer {
     if (bpm !== this.pendingBpm) {
       this.pendingBpm = bpm;
     }
+  }
+
+  /** Exposes loop transport for auxiliary look-ahead schedulers (e.g. Words backing beat). */
+  getLoopTransportSnapshot(): {
+    audioStartTimeSec: number;
+    bpm: number;
+    loopDurationSec: number;
+    timeSignature: TimeSignature;
+    isPlaying: boolean;
+  } | null {
+    if (!this.isPlaying || !this.currentRhythm) return null;
+    return {
+      audioStartTimeSec: this.audioStartTimeSec,
+      bpm: this.currentBpm,
+      loopDurationSec: this.loopDurationSec,
+      timeSignature: this.currentRhythm.timeSignature,
+      isPlaying: this.isPlaying,
+    };
   }
 
 }

@@ -3,7 +3,6 @@ import IconButton from '@mui/material/IconButton';
 import EditIcon from '@mui/icons-material/Edit';
 import { useDeferredValue, useEffect, useMemo, type Dispatch, type SetStateAction } from 'react';
 import {
-  MaterialReactTable,
   useMaterialReactTable,
   type MRT_ColumnDef,
   type MRT_Row,
@@ -12,7 +11,7 @@ import {
   type MRT_TableInstance,
   type MRT_TableOptions,
 } from 'material-react-table';
-import { EncoreMrtSearchHighlightContext } from '../encoreMrtSearchHighlightContext';
+import { EncoreMrtTableShell } from '../EncoreMrtTableShell';
 import { encoreMrtRepertoireTableOptions } from '../encoreMrtTableDefaults';
 import { MRT_ROW_SELECT_COL, MRT_ROW_SPACER_COL } from '../encoreMrtColumnOrder';
 import type { PerfMrtRow } from '../performancesScreenHelpers';
@@ -145,10 +144,21 @@ export function PerformancesMrtTableView({
   }, [onTableReady, table]);
 
   return (
-    <Box sx={{ mt: 2 }}>
-      <EncoreMrtSearchHighlightContext.Provider value={searchHighlight}>
-        <MaterialReactTable table={table} />
-      </EncoreMrtSearchHighlightContext.Provider>
+    <Box
+      sx={{
+        flex: '1 1 0',
+        minHeight: 240,
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      <EncoreMrtTableShell
+        table={table}
+        searchHighlight={searchHighlight}
+        sx={{ flex: 1, minHeight: 0, mt: 0 }}
+      />
     </Box>
   );
 }

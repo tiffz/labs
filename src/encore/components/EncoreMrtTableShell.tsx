@@ -38,7 +38,23 @@ export function EncoreMrtTableShell<TData extends MRT_RowData>({
           minWidth: 0,
           maxWidth: '100%',
           overflow: 'hidden',
-          mt: 2,
+          mt: 0,
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          '& .MuiPaper-root': {
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+          },
+          '& .MuiTableContainer-root': {
+            flex: 1,
+            minHeight: 0,
+            maxHeight: '100%',
+          },
           ...sx,
         }}
       >

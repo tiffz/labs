@@ -1,6 +1,7 @@
 import { parseChordProToChartLayout } from '../../shared/music/chordPro/chordChartLayout';
 import { isRichTextEmpty } from '../../shared/utils/richTextContent';
 import type { EncoreOriginalSong } from './types';
+import { FULL_STRUCTURAL_BLUEPRINT } from './originalsStructurePresets';
 import { ORIGINALS_WORKFLOW_STAGES, type OriginalsWorkflowStage, workflowStageShortLabel } from './originalsWorkflowStages';
 
 function hasSubstantialLyrics(chordPro: string): boolean {
@@ -11,6 +12,24 @@ function hasSubstantialLyrics(chordPro: string): boolean {
 function hasChordMarkers(chordPro: string): boolean {
   const layout = parseChordProToChartLayout(chordPro);
   return layout.sections.some((sec) => sec.lines.some((line) => line.chords.length > 0));
+}
+
+/** Whether a new original has enough user content to write to Dexie / Drive. Existing rows always persist. */
+export function isOriginalSongPersistable(
+  song: EncoreOriginalSong,
+  previous?: EncoreOriginalSong | null,
+): boolean {
+  if (previous) return true;
+  if (song.title.trim()) return true;
+  if (!isRichTextEmpty(song.brainstormHtml)) return true;
+  if ((song.brainstormResources?.length ?? 0) > 0) return true;
+  if ((song.songReferences?.length ?? 0) > 0) return true;
+  if (song.takes.length > 0) return true;
+  if (song.history.length > 0) return true;
+  if (hasSubstantialLyrics(song.lyricsAndChords)) return true;
+  if (hasChordMarkers(song.lyricsAndChords)) return true;
+  if (song.lyricsAndChords.trim() !== FULL_STRUCTURAL_BLUEPRINT.trim()) return true;
+  return false;
 }
 
 /** Heuristic completion when the user has not manually marked a stage. */

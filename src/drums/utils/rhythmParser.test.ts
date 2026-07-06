@@ -473,3 +473,12 @@ describe('rhythmParser', () => {
   });
 });
 
+describe('whole notes (notation-only)', () => {
+  it('parses 16 sixteenths as a whole note in 4/4', () => {
+    const parsed = parseRhythm('D---------------', { numerator: 4, denominator: 4 });
+    expect(parsed.isValid).toBe(true);
+    expect(parsed.measures[0]?.notes[0]?.duration).toBe('whole');
+    expect(parsed.measures[0]?.notes[0]?.durationInSixteenths).toBe(16);
+  });
+});
+

@@ -1,6 +1,7 @@
 import type { PopoverProps } from '@mui/material/Popover';
 import type { SystemStyleObject } from '@mui/system';
 import type { WheelEvent as ReactWheelEvent } from 'react';
+import { LABS_POPOVER_CHROME_SX } from '../anchoredPopoverChrome';
 
 /** Shared closed-trigger + menu shell appearance for playback pickers (sound, chord style, …). */
 export type PlaybackFieldSelectAppearance =
@@ -123,7 +124,6 @@ export function playbackFieldSelectPopoverSlotProps(
       sx: {
         minWidth: opts?.minWidth,
         maxWidth: opts?.maxWidth,
-        bgcolor: 'background.paper',
       },
     },
   };
@@ -134,11 +134,18 @@ export function playbackFloatingPanelSlotProps(opts?: {
   paperClassName?: string;
   paperSx?: SystemStyleObject;
 }): PopoverProps['slotProps'] {
+  const paperSx = opts?.paperSx
+    ? Array.isArray(opts.paperSx)
+      ? [...opts.paperSx, LABS_POPOVER_CHROME_SX]
+      : [opts.paperSx, LABS_POPOVER_CHROME_SX]
+    : LABS_POPOVER_CHROME_SX;
+
   return {
     backdrop: popoverBackdropSlotProps(),
     paper: {
-      className: opts?.paperClassName,
-      sx: opts?.paperSx,
+      elevation: 0,
+      className: ['labs-popover-surface', opts?.paperClassName].filter(Boolean).join(' '),
+      sx: paperSx,
     },
   };
 }

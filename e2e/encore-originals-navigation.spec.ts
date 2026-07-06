@@ -23,4 +23,15 @@ test.describe('Encore Originals', () => {
     await page.getByRole('button', { name: 'Write lyrics' }).click();
     await expect(lyricsChart).toHaveValue(/\[Verse 1\][\s\S]*Test line/, { timeout: 10_000 });
   });
+
+  test('does not persist empty original when navigating away without edits', async ({ page }) => {
+    await page.goto('/encore/#/originals');
+    await expect(page.getByRole('heading', { name: 'Originals' })).toBeVisible({ timeout: 15_000 });
+    await page.getByRole('button', { name: 'New Original' }).click();
+    await expect(page.getByPlaceholder('Untitled original')).toBeVisible({ timeout: 10_000 });
+    await page.getByLabel('Back to originals').click();
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Originals' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('Untitled original')).toHaveCount(0);
+  });
 });

@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import RhythmInput from './components/RhythmInput';
+import { usePlaybackSettingsMixSync } from '../shared/audio/platform/mix';
+import { useMetronomePreferences } from '../shared/audio/platform/metronome';
 import RhythmDisplay from './components/RhythmDisplay';
 import NotePalette, { type NotePaletteHandle } from './components/NotePalette';
 import PlaybackControls from './components/PlaybackControls';
@@ -25,6 +27,10 @@ import {
   insertPatternAtPosition,
   getPatternDuration,
 } from './utils/dragAndDrop';
+import {
+  isPasteableDarbukaPattern,
+  normalizePastedDarbukaPattern,
+} from './utils/darbukaPatternPaste';
 import type { TimeSignature } from './types';
 import { createAppAnalytics } from '../shared/utils/analytics';
 import SkipToMain from '../shared/components/SkipToMain';
@@ -34,7 +40,6 @@ import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
 const analytics = createAppAnalytics('drums');
 
 const drumsDebugMode = readLabsDebugFromLocation().debug;
-import type { PlaybackSettings } from './types/settings';
 import { DEFAULT_SETTINGS } from './types/settings';
 
 const App: React.FC = () => {
@@ -56,7 +61,30 @@ const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showShareFeedback, setShowShareFeedback] = useState<boolean>(false);
   const [shareFeedbackPosition, setShareFeedbackPosition] = useState<{ top: number; left: number } | null>(null);
-  const [playbackSettings, setPlaybackSettings] = useState<PlaybackSettings>(DEFAULT_SETTINGS);
+  const {
+    playbackSettings,
+    setPlaybackSettings,
+    effectivePlaybackSettings,
+  } = usePlaybackSettingsMixSync(DEFAULT_SETTINGS, {
+    storageKey: 'drums-audio-mix',
+    initial: {
+      accent: {
+        measureAccentVolume: DEFAULT_SETTINGS.measureAccentVolume,
+        beatGroupAccentVolume: DEFAULT_SETTINGS.beatGroupAccentVolume,
+        nonAccentVolume: DEFAULT_SETTINGS.nonAccentVolume,
+        accentMuted: false,
+      },
+      metronome: { volume: DEFAULT_SETTINGS.metronomeVolume, muted: false },
+    },
+  });
+
+  const {
+    preferences: metronomePreferences,
+    setPreferences: setMetronomePreferences,
+  } = useMetronomePreferences({
+    storageKey: 'drums-metronome-prefs',
+    timeSignature: { numerator: timeSignature.numerator, denominator: timeSignature.denominator },
+  });
 
 
   // Refs (moved up to be available for hooks)
@@ -134,8 +162,9 @@ const App: React.FC = () => {
     parsedRhythm,
     bpm,
     metronomeEnabled,
-    playbackSettings,
+    playbackSettings: effectivePlaybackSettings,
     selectionRange,
+    metronomePreferences,
   });
 
   const handleInsertPattern = useCallback((pattern: string) => {
@@ -237,6 +266,36 @@ const App: React.FC = () => {
       setNotationWithoutHistory(newNotation);
     }
   }, [notation, addToHistory, timeSignature, setNotationWithoutHistory, parsedRhythm]);
+
+  const handlePastePattern = useCallback(
+    (rawPattern: string) => {
+      const pattern = normalizePastedDarbukaPattern(rawPattern);
+      if (!isPasteableDarbukaPattern(pattern, timeSignature)) return;
+
+      if (selection.startCharPosition !== null && selection.endCharPosition !== null) {
+        handleReplaceSelection(pattern);
+        return;
+      }
+
+      if (selection.startCharPosition !== null) {
+        handleDropPattern(pattern, selection.startCharPosition, 'insert');
+        return;
+      }
+
+      addToHistory(notation);
+      setNotationWithoutHistory(notation + pattern);
+    },
+    [
+      addToHistory,
+      handleDropPattern,
+      handleReplaceSelection,
+      notation,
+      selection.endCharPosition,
+      selection.startCharPosition,
+      setNotationWithoutHistory,
+      timeSignature,
+    ],
+  );
 
   const drumsPlayStartRef = useRef<number>(0);
   useEffect(() => {
@@ -567,6 +626,8 @@ const App: React.FC = () => {
           playbackSettings={playbackSettings}
           onSettingsChange={setPlaybackSettings}
           onSettingsClose={() => setShowSettings(false)}
+          metronomePreferences={metronomePreferences}
+          onMetronomePreferencesChange={setMetronomePreferences}
         />
 
         <div className="main-workspace">
@@ -601,6 +662,7 @@ const App: React.FC = () => {
             rhythm={parsedRhythm}
             currentNote={currentNote}
             metronomeEnabled={metronomeEnabled}
+            metronomeSubdivisionLevel={metronomePreferences.subdivisionLevel}
             currentMetronomeBeat={currentMetronomeBeat}
             onDropPattern={handleDropPattern}
             notation={notation}
@@ -609,6 +671,7 @@ const App: React.FC = () => {
             onSelectionChange={handleSelectionChange}
             onMoveSelection={handleMoveSelection}
             onDeleteSelection={handleDeleteSelection}
+            onPastePattern={handlePastePattern}
             onRequestPaletteFocus={handleRequestPaletteFocus}
             autoScrollDuringPlayback={playbackSettings.autoScrollDuringPlayback}
           />

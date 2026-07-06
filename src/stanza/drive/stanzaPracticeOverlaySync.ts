@@ -71,6 +71,7 @@ const OVERLAY_FIELDS: (keyof StanzaPracticeOverlayEntry)[] = [
   'metronomeMuted',
   'drumsEnabled',
   'drumPattern',
+  'drumPatternBySegmentId',
   'drumsGain',
   'drumsMuted',
   'localTransposeSemitones',

@@ -3,7 +3,7 @@ import AnchoredPopover from '../AnchoredPopover';
 import { DISPLAY_KEYS_12, type MusicKey } from '../../music/musicInputConstants';
 import type { HarmonicMode } from '../../music/chordTheory';
 import { formatSongKey, parseSongKey } from '../../music/songKeyFormat';
-import { KeyInputMenu, KeyModeToggle } from './KeyInputMenuParts';
+import { KeyInputMenu, KeyModeToggle, KeyRelativeSwitch } from './KeyInputMenuParts';
 import './keyInput.css';
 
 export type KeyInputPickerProps = {
@@ -56,9 +56,6 @@ export function KeyInputPicker({
       open={Boolean(open && anchorEl)}
       anchorEl={anchorEl}
       onClose={onClose}
-      disableAutoFocus
-      disableEnforceFocus
-      disableRestoreFocus
       placement="bottom-start"
       paperClassName={['shared-key-dropdown', dropdownClassName].filter(Boolean).join(' ')}
       slotProps={{
@@ -80,13 +77,25 @@ export function KeyInputPicker({
           itemClassName={menuItemClassName}
         />
         {showMode ? (
-          <KeyModeToggle
-            mode={parsed.mode}
-            onChange={(next) => {
-              emitKey(parsed.root, next);
-              onClose();
-            }}
-          />
+          <>
+            <KeyModeToggle
+              mode={parsed.mode}
+              onChange={(next) => {
+                emitKey(parsed.root, next);
+                onClose();
+              }}
+            />
+            {hasValue ? (
+              <KeyRelativeSwitch
+                value={value!}
+                modeFormat={modeFormat}
+                onSelect={(next) => {
+                  onChange(next);
+                  onClose();
+                }}
+              />
+            ) : null}
+          </>
         ) : null}
         {clearable && hasValue ? (
           <button

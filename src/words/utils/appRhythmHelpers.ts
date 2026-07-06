@@ -29,20 +29,6 @@ export function getTemplateSyncopationScore(notation: string): number {
   return score / Math.max(1, length);
 }
 
-export function getNoteSoundAtSixteenth(
-  notes: Array<{ durationInSixteenths: number; sound: string }>,
-  sixteenthOffset: number
-): string | null {
-  let cursor = 0;
-  for (const note of notes) {
-    if (cursor === sixteenthOffset) {
-      return note.sound;
-    }
-    cursor += note.durationInSixteenths;
-  }
-  return null;
-}
-
 export function volumeIconName(isMuted: boolean): string {
   return isMuted ? 'volume_off' : 'volume_up';
 }

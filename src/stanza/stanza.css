@@ -9,20 +9,27 @@
  *      — viewer grid/shell: stanza-viewer-layout.css
  *   5. Playback strip + transport / loop chips
  *   6. Scrub track + section buttons + selection / loop overlays
- *   7. Metronome strip, beat counts, BPM rail, key shift
- *   8. Mix rail
+ *   7–8. Practice rail — stanza-practice-rail.css (metronome, pitch, mix)
  *   9. MUI overrides (Button, focus rings)
  *
  * Conventions:
  *   - Colors flow from the tokens at the top. Bypass with a literal hex/rgba ONLY
  *     when the surface lives outside `.stanza-app` (e.g. portaled MUI Dialogs)
  *     and a token cascade can't reach.
+ *   - Selection tiers: `--labs-selection-primary-*` (transport on) vs
+ *     `--labs-selection-secondary-*` (chips, presets, loop mode) —
+ *     docs/SELECTION_VISUAL_HIERARCHY.md. Portaled pickers duplicate rose +
+ *     selection tokens on their root class (`.stanza-bpm-dropdown`, etc.).
+ *   - Focus bleed: `--labs-focus-ring-bleed` on sticky toolbars / split controls;
+ *     `overflow: visible` on interactive wrappers — docs/A11Y_MENU_PATTERNS.md.
  *   - Every `!important` carries a `/* REASON: ... *​/` comment explaining what
  *     it is fighting (per docs/CSS_IMPORTANT_AUDIT.md).
  *   - Reach for `--stanza-focus-ring` instead of hand-rolled `outline: ...`.
  */
 
 @import './stanza-viewer-layout.css';
+@import './stanza-practice-rail.css';
+@import './stanza-scope-inheritance.css';
 
 /* =====================================================================
  * 1. Tokens, fonts, app shell + atmospheric background
@@ -48,6 +55,38 @@
   --stanza-rose-hover: #d43d90;
   --stanza-rose-wash: rgba(232, 72, 160, 0.12);
   --stanza-rose-line: rgba(232, 72, 160, 0.28);
+
+  /* Shared semantic bridge — in-app controls inherit rose, not default purple */
+  --theme-primary: var(--stanza-rose);
+  --theme-primary-hover: var(--stanza-rose-strong);
+  --theme-accent: var(--stanza-rose);
+  --theme-bg: var(--stanza-paper);
+  --theme-surface: var(--stanza-paper-elevated-strong);
+  --theme-surface-elevated: var(--stanza-paper-elevated-strong);
+  --theme-text: var(--stanza-ink);
+  --theme-text-secondary: var(--stanza-ink-muted);
+  --theme-text-muted: var(--stanza-ink-soft);
+  --theme-border: var(--stanza-paper-line);
+  --theme-border-strong: var(--stanza-rose-line);
+  --theme-focus-ring: var(--stanza-focus-ring-rose);
+  --labs-control-focus-ring: var(--stanza-focus-ring-rose);
+  --labs-popover-border: 1px solid var(--stanza-paper-line);
+  --labs-popover-bg: var(--stanza-paper-elevated-strong);
+  --labs-popover-shadow: var(--stanza-shadow-card);
+  --labs-popover-radius: var(--stanza-radius-chip);
+
+  /* Selection tiers — docs/SELECTION_VISUAL_HIERARCHY.md */
+  --labs-selection-primary-bg: var(--stanza-rose);
+  --labs-selection-primary-fg: #ffffff;
+  --labs-selection-primary-hover-bg: var(--stanza-rose-strong);
+  --labs-selection-secondary-bg: var(--stanza-rose-wash);
+  --labs-selection-secondary-fg: var(--stanza-rose-strong);
+  --labs-selection-secondary-border: var(--stanza-rose-line);
+  --labs-selection-secondary-hover-bg: color-mix(
+    in srgb,
+    var(--stanza-rose) 20%,
+    var(--stanza-paper-elevated-strong)
+  );
 
   /* Inset control trays (quiet "iOS" pills, transport chips, segmented backgrounds) */
   --stanza-tray-bg: rgba(255, 255, 255, 0.42);
@@ -381,9 +420,9 @@
 }
 
 .stanza-library-card--selected {
-  border-color: rgba(232, 72, 160, 0.62);
+  border-color: var(--labs-selection-secondary-border);
   box-shadow:
-    0 0 0 1px rgba(232, 72, 160, 0.18),
+    0 0 0 1px color-mix(in srgb, var(--stanza-rose) 18%, transparent),
     var(--stanza-shadow-card);
 }
 
@@ -650,6 +689,9 @@ a.stanza-library-card {
   flex-wrap: wrap;
   gap: 10px 14px;
   margin-bottom: 10px;
+  overflow: visible;
+  padding: var(--labs-focus-ring-bleed, 3px) 0;
+  margin-inline: calc(-1 * var(--labs-focus-ring-bleed, 3px));
 }
 
 @media (min-width: 540px) {
@@ -664,6 +706,7 @@ a.stanza-library-card {
   gap: 8px;
   flex-wrap: wrap;
   min-width: 0;
+  overflow: visible;
 }
 
 .stanza-playback-toolbar-tools {
@@ -673,6 +716,7 @@ a.stanza-library-card {
   margin-left: auto;
   flex-wrap: wrap;
   min-width: 0;
+  overflow: visible;
 }
 
 .stanza-playback-control-group {
@@ -700,6 +744,7 @@ a.stanza-library-card {
   border-radius: var(--stanza-radius-chip);
   background: var(--stanza-tray-bg);
   box-shadow: inset 0 0 0 1px var(--stanza-tray-divider);
+  overflow: visible;
 }
 
 .stanza-playback-chip--meta {
@@ -760,22 +805,22 @@ a.stanza-library-card {
   outline-offset: var(--stanza-focus-ring-offset);
 }
 
-/* Loop mode trio: selected mode matches selection-span / loop ring accent (rose). */
+/* Loop mode trio: secondary selection tier (not solid primary fill). */
 .stanza-playback-chip-btn--active.MuiIconButton-root {
-  background: var(--stanza-rose-wash);
+  background: var(--labs-selection-secondary-bg);
   color: var(--stanza-rose);
   box-shadow:
-    0 1px 2px rgba(232, 72, 160, 0.14),
-    inset 0 0 0 1px var(--stanza-rose-line);
+    0 1px 2px color-mix(in srgb, var(--stanza-rose) 14%, transparent),
+    inset 0 0 0 1px var(--labs-selection-secondary-border);
 }
 
 .stanza-playback-chip-btn--active.MuiIconButton-root:hover {
-  background: rgba(232, 72, 160, 0.2);
+  background: var(--labs-selection-secondary-hover-bg);
   color: var(--stanza-rose);
 }
 
 .stanza-playback-chip-btn--active.MuiIconButton-root:focus-visible {
-  outline-color: var(--stanza-rose-line);
+  outline-color: var(--labs-selection-secondary-border);
 }
 
 .stanza-playback-chip-btn--play.MuiIconButton-root {
@@ -988,1225 +1033,9 @@ a.stanza-library-card {
 }
 
 /* =====================================================================
- * 7. Metronome strip, beat counts, BPM rail, key shift
+ * 7–8. Practice rail — stanza-practice-rail.css (imported at top of file)
+ *     See src/stanza/DESIGN.md
  * =================================================================== */
-
-.stanza-metronome-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  margin: 0;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: var(--stanza-tray-bg-pressed);
-  color: var(--stanza-ink);
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
-}
-
-.stanza-metronome-toggle:hover {
-  background: rgba(49, 43, 38, 0.14);
-}
-
-.stanza-metronome-toggle.active {
-  background: rgba(232, 72, 160, 0.18);
-  color: var(--stanza-ink);
-  box-shadow: 0 0 0 1px rgba(232, 72, 160, 0.35);
-}
-
-/* Compact variant used inside the metronome strip rail. */
-.stanza-metronome-toggle.stanza-metronome-toggle--strip {
-  width: 32px;
-  height: 32px;
-}
-
-.stanza-metronome-toggle.stanza-metronome-toggle--strip
-  .material-symbols-outlined {
-  font-size: 20px;
-}
-
-/* Metronome strip: horizontal beat counts beside the toggle. */
-.stanza-app .stanza-metronome-strip {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 36px;
-  padding: 3px 6px;
-  border-radius: var(--stanza-radius-chip);
-  border: 1px solid var(--stanza-paper-line-faint);
-  background: rgba(255, 255, 255, 0.62);
-}
-
-.stanza-app .stanza-metronome-strip--clickable {
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.stanza-app .stanza-metronome-strip--clickable:hover {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(232, 72, 160, 0.22);
-}
-
-.stanza-app
-  .stanza-metronome-strip--clickable.stanza-metronome-strip--active:hover {
-  border-color: rgba(232, 72, 160, 0.32);
-}
-
-.stanza-app .stanza-metronome-strip-placeholder {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--stanza-ink-muted);
-}
-
-.stanza-app .stanza-beat-visualizer--compact {
-  flex: 1;
-  min-width: 0;
-}
-
-.stanza-app .stanza-beat-counts {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.stanza-app .stanza-beat-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.65rem;
-  height: 1.65rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--stanza-ink-muted);
-  border: 1px solid var(--stanza-paper-line-faint);
-  background: var(--stanza-tray-bg);
-  box-sizing: border-box;
-  transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease,
-    color 0.12s ease,
-    box-shadow 0.12s ease;
-}
-
-.stanza-app .stanza-beat-count--active {
-  color: var(--stanza-rose);
-  background: var(--stanza-rose-wash);
-  border-color: var(--stanza-rose-line);
-  box-shadow: 0 0 0 1px rgba(232, 72, 160, 0.08);
-}
-
-.stanza-app .stanza-beat-count--downbeat.stanza-beat-count--active {
-  color: var(--stanza-rose-strong);
-  background: rgba(232, 72, 160, 0.2);
-  border-color: rgba(232, 72, 160, 0.45);
-}
-
-/* Practice rail: warmer than pure white on cream. */
-.stanza-practice-rail.stanza-panel {
-  background: rgba(255, 251, 245, 0.82);
-  border-color: var(--stanza-paper-line);
-}
-
-.stanza-practice-rail--dense {
-  padding: 8px 8px 9px;
-  --stanza-rail-control-height: 2rem;
-  --stanza-rail-control-radius: var(--stanza-radius-chip);
-  --stanza-rail-control-border: var(--stanza-paper-line-faint);
-  --stanza-rail-control-bg: var(
-    --stanza-paper-elevated-strong,
-    rgba(255, 255, 255, 0.92)
-  );
-}
-
-@media (min-width: 900px) {
-  .stanza-practice-rail.stanza-viewer-rail-slot {
-    box-sizing: border-box;
-    height: var(--stanza-viewer-rail-max-height);
-    max-height: var(--stanza-viewer-rail-max-height);
-    min-height: 0;
-  }
-}
-
-.stanza-rail-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.stanza-rail-section {
-  padding: 8px 2px 10px;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  min-width: 0;
-}
-
-.stanza-rail-section + .stanza-rail-section {
-  border-top: 1px solid var(--stanza-paper-line-faint);
-  margin-top: 2px;
-  padding-top: 10px;
-}
-
-.stanza-rail-section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 4px;
-  min-height: 22px;
-}
-
-.stanza-rail-section-title {
-  font-family: var(--stanza-font-ui);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--stanza-ink-muted);
-}
-
-.stanza-rail-section-toggle.MuiFormControlLabel-root {
-  margin: 0;
-  gap: 4px;
-}
-
-.stanza-rail-section-toggle .MuiFormControlLabel-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--stanza-ink-muted);
-}
-
-.stanza-rail-field-label {
-  display: block;
-  margin-bottom: 3px;
-  font-family: var(--stanza-font-ui);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--stanza-ink-muted);
-  line-height: 1.2;
-}
-
-.stanza-rail-calibration-grid .stanza-rail-beat-offset-shell {
-  box-sizing: border-box;
-  display: flex;
-  align-items: stretch;
-  min-height: var(--stanza-rail-control-height);
-  border: 1px solid var(--stanza-rail-control-border);
-  border-radius: var(--stanza-rail-control-radius);
-  background: var(--stanza-rail-control-bg);
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.stanza-rail-calibration-grid .stanza-rail-beat-offset-shell:focus-within {
-  border-color: var(--stanza-rose);
-}
-
-.stanza-rail-calibration-grid .stanza-rail-beat-offset-input {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.stanza-rail-calibration-grid
-  .stanza-rail-beat-offset-input
-  .MuiOutlinedInput-root {
-  min-height: var(--stanza-rail-control-height);
-  border-radius: var(--stanza-rail-control-radius);
-  background: transparent;
-}
-
-.stanza-rail-calibration-grid
-  .stanza-rail-beat-offset-input
-  .MuiOutlinedInput-notchedOutline {
-  border: 0;
-}
-
-.stanza-rail-calibration-grid
-  .stanza-rail-beat-offset-input
-  .MuiOutlinedInput-input {
-  padding: 0.35rem 0.55rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-}
-
-.stanza-rail-calibration-grid .stanza-bpm-rail-input .shared-bpm-shell {
-  min-height: var(--stanza-rail-control-height);
-  border-radius: var(--stanza-rail-control-radius);
-  border-color: var(--stanza-rail-control-border);
-  background: var(--stanza-rail-control-bg);
-}
-
-.stanza-rail-calibration-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 5.75rem auto;
-  gap: 6px;
-  align-items: end;
-}
-
-@media (max-width: 359px) {
-  .stanza-rail-calibration-grid {
-    grid-template-columns: minmax(0, 1fr) 5.25rem;
-  }
-
-  .stanza-rail-calibration-grid .stanza-rail-tool-pair {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-    padding-top: 2px;
-  }
-}
-
-.stanza-rail-calibration-scope {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  margin-bottom: 4px;
-  min-width: 0;
-}
-
-.stanza-rail-calibration-scope-name {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  line-height: 1.35;
-  color: var(--stanza-ink);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stanza-rail-calibration-scope
-  .MuiToggleButtonGroup-root
-  .MuiToggleButton-root {
-  padding: 2px 7px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: none;
-  line-height: 1.2;
-  min-height: 24px;
-  border-color: var(--stanza-paper-line-faint);
-}
-
-.stanza-rail-calibration-hint {
-  margin: 0 0 4px;
-  font-size: 0.6875rem;
-  line-height: 1.3;
-  color: var(--stanza-ink-muted);
-}
-
-.stanza-rail-tool-pair {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding-bottom: 2px;
-}
-
-.stanza-rail-tool-pair .stanza-rail-compact-btn.MuiIconButton-root {
-  min-width: 32px;
-  min-height: 32px;
-  border-radius: 9px;
-  border: 1px solid var(--stanza-paper-line);
-  background: rgba(255, 255, 255, 0.72);
-}
-
-@media (pointer: coarse) {
-  .stanza-rail-tool-pair .stanza-rail-compact-btn.MuiIconButton-root {
-    min-width: 44px;
-    min-height: 44px;
-  }
-}
-
-.stanza-rail-pitch-fields {
-  display: grid;
-  grid-template-rows: auto auto;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.stanza-rail-section--pitch .stanza-rail-field-label {
-  margin-bottom: 0;
-  min-width: 4.25rem;
-  font-size: 0.6875rem;
-}
-
-.stanza-rail-section--pitch .stanza-original-key-block,
-.stanza-rail-section--pitch .stanza-key-shift-block {
-  min-width: 0;
-}
-
-.stanza-rail-section--pitch .stanza-key-shift-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  flex-wrap: wrap;
-}
-
-.stanza-rail-section--pitch .stanza-key-shift-row .stanza-key-shift-numeric {
-  flex: 1 1 120px;
-  min-width: 0;
-  max-width: none;
-}
-
-.stanza-rail-section--pitch
-  .stanza-key-shift-row
-  .stanza-playback-transform-chip {
-  flex-shrink: 0;
-}
-
-.stanza-rail-section--youtube-local {
-  padding-block: 0.25rem 0.65rem;
-}
-
-.stanza-rail-section--youtube-local .stanza-rail-section-title {
-  margin-bottom: 6px;
-}
-
-.stanza-youtube-local-copy {
-  margin: 0;
-  font-family: var(--stanza-font-ui);
-  font-size: 0.75rem;
-  line-height: 1.45;
-  color: var(--stanza-ink-muted);
-}
-
-.stanza-youtube-local-copy + .stanza-youtube-local-copy {
-  margin-top: 3px;
-}
-
-.stanza-youtube-local-copy--lead {
-  margin-top: 7px;
-}
-
-.stanza-youtube-local-features {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-top: 8px;
-}
-
-.stanza-youtube-local-feature {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-}
-
-.stanza-youtube-local-feature-icon {
-  flex-shrink: 0;
-  width: 15px;
-  height: 15px;
-  font-size: 15px;
-  opacity: 0.78;
-  color: var(--stanza-ink-muted);
-}
-
-.stanza-youtube-local-feature-label {
-  font-family: var(--stanza-font-ui);
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.005em;
-  line-height: 1.25;
-  color: var(--stanza-ink-muted);
-}
-
-.stanza-practice-rail .stanza-metronome-strip {
-  border-color: var(
-    --stanza-rail-control-border,
-    var(--stanza-paper-line-faint)
-  );
-  background: var(--stanza-rail-control-bg, rgba(255, 255, 255, 0.78));
-  min-height: var(--stanza-rail-control-height, 2rem);
-}
-
-.stanza-practice-rail .MuiFormControl-root {
-  margin-top: 0;
-}
-
-/* Practice rail BPM + key shift + playback speed: rose accent (overrides shared defaults). */
-.stanza-app .stanza-metronome-rail .shared-bpm-shell,
-.stanza-app .stanza-key-shift-block .shared-bpm-shell,
-.stanza-app .stanza-playback-speed-control .shared-bpm-shell {
-  --bpm-focus: var(--stanza-rose);
-  --bpm-border: var(--stanza-rose-line);
-  --bpm-dropdown-hover-bg: rgba(232, 72, 160, 0.1);
-  --bpm-dropdown-active-bg: rgba(232, 72, 160, 0.16);
-  --bpm-dropdown-active-text: var(--stanza-rose);
-  --bpm-chip-hover-bg: rgba(232, 72, 160, 0.08);
-  --bpm-chip-active-bg: rgba(232, 72, 160, 0.14);
-  --bpm-chip-active-text: var(--stanza-rose-strong);
-  --bpm-bg: var(--stanza-paper-elevated-strong);
-  overflow: hidden;
-}
-
-/* Avoid "double border": the default `shared-bpm-shell:focus-within` adds a 2px ring
-   outside the existing 1px border. */
-.stanza-app .stanza-metronome-rail .shared-bpm-shell:focus-within,
-.stanza-app .stanza-bpm-modal-input .shared-bpm-shell:focus-within,
-.stanza-tempo-preview-dialog-content
-  .stanza-bpm-modal-input
-  .shared-bpm-shell:focus-within,
-.stanza-app .stanza-key-shift-block .shared-bpm-shell:focus-within,
-.stanza-app .stanza-original-key-block .shared-key-shell:focus-within,
-.stanza-app .stanza-playback-speed-control .shared-bpm-shell:focus-within {
-  box-shadow: none;
-  border-color: var(--stanza-rose);
-}
-
-.stanza-app
-  .stanza-metronome-rail
-  .shared-bpm-shell
-  .MuiIconButton-root:focus-visible,
-.stanza-app
-  .stanza-key-shift-block
-  .shared-bpm-shell
-  .MuiIconButton-root:focus-visible,
-.stanza-app
-  .stanza-playback-speed-control
-  .shared-bpm-shell
-  button:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 2px rgba(232, 72, 160, 0.22);
-}
-
-.stanza-app
-  .stanza-metronome-rail
-  .stanza-bpm-rail-input
-  .shared-bpm-shell
-  .shared-bpm-stepper,
-.stanza-app .stanza-key-shift-block .shared-bpm-shell .shared-bpm-stepper {
-  --bpm-stepper-min-width: 4.25rem;
-}
-
-.stanza-app .stanza-key-shift-block .shared-bpm-shell[aria-busy='true'] {
-  opacity: 0.72;
-}
-
-.stanza-app .stanza-key-shift-block .stanza-key-shift-reset.MuiIconButton-root {
-  border-radius: 0;
-  color: var(--bpm-muted, var(--stanza-ink-muted));
-}
-
-.stanza-app
-  .stanza-key-shift-block
-  .stanza-key-shift-reset.MuiIconButton-root:hover:not(.Mui-disabled) {
-  background: color-mix(in srgb, var(--stanza-rose) 10%, transparent);
-  color: var(--bpm-text, var(--stanza-ink));
-}
-
-/* Playback toolbar speed: inky compact shell inside the meta chip. */
-.stanza-app .stanza-playback-speed-control.shared-bpm-input {
-  width: auto;
-  max-width: none;
-  flex: 0 0 auto;
-}
-
-.stanza-app .stanza-playback-speed-control .shared-bpm-shell {
-  --bpm-shell-height: 26px;
-  --bpm-shell-radius: 8px;
-  --bpm-border: transparent;
-  --bpm-bg: transparent;
-  --bpm-text: var(--stanza-ink);
-  --bpm-muted: var(--stanza-ink-muted);
-  --bpm-hover: var(--stanza-tray-bg-hover);
-  border: 0;
-  box-shadow: none;
-  min-height: 26px;
-}
-
-.stanza-app .stanza-playback-speed-control .shared-bpm-compact-display {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  padding: 0 0.34rem 0 0.42rem;
-}
-
-.stanza-app .stanza-playback-speed-control .shared-bpm-preset-toggle {
-  border-left-color: var(--stanza-tray-divider);
-  width: 26px;
-  min-width: 26px;
-  color: var(--stanza-ink-soft);
-}
-
-.stanza-app
-  .stanza-playback-speed-control
-  .shared-bpm-preset-toggle:hover:not(:disabled) {
-  color: var(--stanza-ink);
-}
-
-.stanza-app
-  .stanza-playback-speed-control
-  .shared-bpm-preset-toggle
-  .material-symbols-outlined {
-  font-size: 17px;
-}
-
-/* BPM preset popover (portaled under body): stanza-only class keeps rose accent. */
-.shared-bpm-dropdown.stanza-bpm-dropdown {
-  --bpm-focus: var(--stanza-rose, #e848a0);
-  --bpm-border: rgba(232, 72, 160, 0.28);
-  --bpm-dropdown-hover-bg: rgba(232, 72, 160, 0.1);
-  --bpm-dropdown-active-bg: rgba(232, 72, 160, 0.16);
-  --bpm-dropdown-active-text: var(--stanza-rose, #e848a0);
-  --bpm-chip-hover-bg: rgba(232, 72, 160, 0.08);
-  --bpm-chip-active-bg: rgba(232, 72, 160, 0.14);
-  --bpm-chip-active-text: #c4176e;
-  overflow: visible !important;
-}
-
-.shared-bpm-dropdown.stanza-bpm-dropdown .shared-bpm-slider-wrap {
-  overflow: visible;
-}
-
-.stanza-app .stanza-metronome-rail .app-slider.stanza-bpm-slider,
-.shared-bpm-dropdown.stanza-bpm-dropdown .app-slider.stanza-bpm-slider {
-  --app-slider-track: var(--stanza-rose, #e848a0);
-  --app-slider-thumb: var(--stanza-rose, #e848a0);
-  --app-slider-mark-active: var(--stanza-rose, #e848a0);
-  --app-slider-shadow: rgba(232, 72, 160, 0.22);
-}
-
-.stanza-app
-  .stanza-metronome-rail
-  .stanza-rail-analyze-icon:hover:not(.Mui-disabled),
-.stanza-app
-  .stanza-metronome-rail
-  .stanza-rail-tap-icon:hover:not(.Mui-disabled) {
-  background-color: rgba(232, 72, 160, 0.1);
-}
-
-.stanza-tap-tempo-pad {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 160px;
-  margin: 0;
-  padding: 24px 16px;
-  border: 2px dashed rgba(232, 72, 160, 0.45);
-  border-radius: 16px;
-  background: rgba(232, 72, 160, 0.04);
-  color: var(--stanza-ink, #2a2622);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  touch-action: manipulation;
-  user-select: none;
-  transition:
-    background-color 120ms ease,
-    border-color 120ms ease,
-    transform 80ms ease;
-}
-
-.stanza-tap-tempo-pad:hover {
-  background: rgba(232, 72, 160, 0.08);
-  border-color: rgba(232, 72, 160, 0.65);
-}
-
-.stanza-tap-tempo-pad:active,
-.stanza-tap-tempo-pad--flash {
-  background: rgba(232, 72, 160, 0.16);
-  border-color: var(--stanza-rose, #e848a0);
-  transform: scale(0.985);
-}
-
-.stanza-app .stanza-key-shift-block {
-  margin-bottom: 0;
-}
-
-.stanza-playback-transform-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.12rem;
-  font-size: 0.72rem;
-  line-height: 1.2;
-  color: var(--stanza-muted, rgba(49, 43, 38, 0.62));
-  border: 1px solid var(--stanza-line, rgba(49, 43, 38, 0.12));
-  border-radius: 999px;
-  padding: 0.22rem 0.48rem;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.stanza-playback-transform-chip--shifted {
-  border-color: rgba(232, 72, 160, 0.35);
-  color: var(--stanza-ink, rgba(49, 43, 38, 0.92));
-  background: rgba(232, 72, 160, 0.1);
-}
-
-.stanza-playback-transform-chip__arrow {
-  font-size: 0.95rem !important;
-}
-
-.stanza-playback-transform-chip__arrow--up {
-  color: #4a8fd4;
-}
-
-.stanza-playback-transform-chip__arrow--down {
-  color: #d4747f;
-}
-
-.stanza-playback-toolbar .stanza-playback-transform-chip {
-  margin-left: 0.15rem;
-}
-
-.stanza-key-shift-block .stanza-playback-transform-chip {
-  margin-top: 0;
-}
-
-.stanza-rail-section--pitch .shared-key-shell,
-.stanza-rail-section--pitch .shared-bpm-shell {
-  min-height: var(--stanza-rail-control-height, 2rem);
-  border-radius: var(--stanza-rail-control-radius, var(--stanza-radius-chip));
-  border-color: var(
-    --stanza-rail-control-border,
-    var(--stanza-paper-line-faint)
-  );
-  background: var(
-    --stanza-rail-control-bg,
-    var(--stanza-paper-elevated-strong)
-  );
-}
-
-.stanza-app .stanza-original-key-block .shared-key-shell {
-  --key-focus: var(--stanza-rose);
-  --key-border: var(--stanza-rose-line);
-  --key-bg: var(--stanza-paper-elevated-strong);
-  --key-chip-hover-bg: rgba(232, 72, 160, 0.08);
-  --key-chip-active-bg: rgba(232, 72, 160, 0.14);
-  --key-chip-active-text: var(--stanza-rose-strong);
-  --key-chip-active-border: var(--stanza-rose-line);
-  --key-chip-hover-border: rgba(232, 72, 160, 0.35);
-}
-
-.stanza-app .stanza-original-key-block .stanza-original-key-detect-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--stanza-rose-strong);
-}
-
-.stanza-app .stanza-original-key-block .stanza-key-dropdown {
-  --key-chip-active-text: var(--stanza-rose-strong);
-  --key-chip-active-border: var(--stanza-rose-line);
-  --key-chip-active-bg: rgba(232, 72, 160, 0.14);
-  --key-chip-hover-bg: rgba(232, 72, 160, 0.08);
-  --key-chip-hover-border: rgba(232, 72, 160, 0.35);
-}
-
-.stanza-app .stanza-original-key-block .shared-key-value-btn {
-  font-family: var(--stanza-font-ui);
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-
-.stanza-app
-  .stanza-original-key-block
-  .shared-key-value-btn
-  .material-symbols-outlined {
-  font-size: 1.125rem;
-}
-
-/* Portaled key picker (AnchoredPopover) — outside `.stanza-app`; use literal Stanza tokens. */
-.stanza-key-dropdown.shared-key-dropdown {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
-    'Helvetica Neue', sans-serif;
-  min-width: 16.25rem;
-  max-width: min(22rem, calc(100vw - 24px));
-  margin-top: 4px;
-  border: 1px solid rgba(49, 43, 38, 0.12);
-  border-radius: 10px;
-  background: rgba(255, 251, 245, 0.98);
-  box-shadow:
-    0 1px 2px rgba(47, 39, 33, 0.045),
-    0 16px 38px rgba(47, 39, 33, 0.075);
-}
-
-.stanza-key-dropdown .shared-key-dropdown-list {
-  padding: 6px;
-}
-
-.stanza-key-dropdown .shared-key-grid {
-  gap: 4px;
-}
-
-.stanza-key-dropdown .shared-key-grid-item {
-  font-family: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  min-height: 1.85rem;
-  border-radius: 8px;
-  border-color: rgba(49, 43, 38, 0.1);
-  background: rgba(255, 255, 255, 0.88);
-  color: #2a2622;
-  padding: 0.28rem 0.35rem;
-}
-
-.stanza-key-dropdown .shared-key-grid-item:hover {
-  border-color: rgba(232, 72, 160, 0.35);
-  background: rgba(232, 72, 160, 0.08);
-  color: #2a2622;
-}
-
-.stanza-key-dropdown .shared-key-grid-item.active {
-  border-color: rgba(232, 72, 160, 0.45);
-  background: rgba(232, 72, 160, 0.14);
-  color: #b81268;
-}
-
-.stanza-key-dropdown .shared-key-mode-toggle {
-  margin-top: 0.45rem;
-  padding-top: 0.45rem;
-  border-top: 1px solid rgba(49, 43, 38, 0.1);
-}
-
-.stanza-key-dropdown .shared-key-mode-toggle-btn {
-  font-family: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  min-height: 1.85rem;
-  border-radius: 8px;
-  border-color: rgba(49, 43, 38, 0.1);
-  background: rgba(255, 255, 255, 0.88);
-  color: #2a2622;
-}
-
-.stanza-key-dropdown .shared-key-mode-toggle-btn:hover {
-  border-color: rgba(232, 72, 160, 0.35);
-  background: rgba(232, 72, 160, 0.08);
-}
-
-.stanza-key-dropdown .shared-key-mode-toggle-btn.active {
-  border-color: rgba(232, 72, 160, 0.45);
-  background: rgba(232, 72, 160, 0.14);
-  color: #b81268;
-}
-
-/* Automatic tempo modal (portaled): paper is outside .stanza-app, no ancestor prefix. */
-.stanza-tempo-preview-dialog-paper.MuiPaper-root {
-  border-radius: 16px;
-  border: 1px solid rgba(49, 43, 38, 0.08);
-  box-shadow: var(--stanza-shadow-card, 0 16px 38px rgba(47, 39, 33, 0.075));
-}
-
-.stanza-tempo-preview-dialog-content {
-  padding-top: 0;
-}
-
-.stanza-tap-tempo-dialog-content.stanza-tempo-preview-dialog-content {
-  padding-top: 0;
-}
-
-.stanza-tap-tempo-ready-panel {
-  width: 100%;
-}
-
-.stanza-app .stanza-bpm-modal-input .shared-bpm-shell,
-.stanza-tempo-preview-dialog-content .stanza-bpm-modal-input .shared-bpm-shell {
-  width: 100%;
-  max-width: none;
-}
-
-/* =====================================================================
- * 8. Mix rail
- * =================================================================== */
-
-.stanza-mix-block {
-  border-top: 1px solid var(--stanza-paper-line-faint);
-  margin-top: 2px;
-  padding-top: 5px;
-}
-
-.stanza-rail-section--mix {
-  padding-bottom: 6px;
-}
-
-.stanza-rail-section--mix .stanza-mix-rows {
-  margin-top: 2px;
-}
-
-.stanza-rail-section--mix .stanza-mix-row {
-  min-height: 26px;
-  gap: 0.4rem;
-}
-
-.stanza-rail-section--mix .stanza-mix-row--system + .stanza-mix-row--system {
-  margin-top: 1px;
-  padding-top: 1px;
-}
-
-.stanza-mix-row {
-  min-height: 28px;
-}
-
-/* "System" Mix rows (Metronome + Drums) sit above the per-file layers and use a slightly muted
- * label tint so the user reads them as global controls, not user-supplied audio files. */
-.stanza-mix-row--system {
-  opacity: 1;
-}
-.stanza-mix-row--system + .stanza-mix-row--system {
-  border-top: 1px dashed var(--stanza-paper-line-faint);
-  padding-top: 2px;
-}
-
-/* Nested inside `.stanza-rail-section--drums` (section chrome replaces the old divider). */
-.stanza-drums-block {
-  overflow: visible;
-}
-
-/* The shared DrumAccompaniment was designed for the dark Beat Finder canvas. Restyle it to
- * match the Stanza paper tone — smaller pills tinted with the rose accent, a compact custom
- * notation input, and a tighter notation render with no measure-indicator margin so the panel
- * fits inside the practice rail without dominating it. */
-.stanza-drums-panel .drum-accompaniment {
-  color: var(--stanza-ink);
-  font-family: var(--stanza-font-ui);
-}
-
-/* Preset row: five columns so 8 presets + 2 dice icons fit in two rows. */
-.stanza-drums-panel .drum-presets {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 2px 3px;
-  margin-bottom: 3px;
-}
-
-.stanza-drums-panel .drum-presets--compact {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  margin-bottom: 3px;
-}
-
-.stanza-drums-panel .preset-btn--picker {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-  min-height: var(--stanza-rail-control-height, 2rem);
-  padding: 0 8px 0 10px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-color: var(
-    --stanza-rail-control-border,
-    var(--stanza-paper-line-faint)
-  );
-  background: var(--stanza-rail-control-bg, rgba(255, 255, 255, 0.72));
-}
-
-.stanza-drums-panel .preset-btn--picker:hover:not(.active) {
-  border-color: var(--stanza-rose-line);
-  background: var(--stanza-rose-wash);
-}
-
-.stanza-drums-panel .preset-btn-icon {
-  min-width: var(--stanza-rail-control-height, 2rem);
-  min-height: var(--stanza-rail-control-height, 2rem);
-  border-color: var(
-    --stanza-rail-control-border,
-    var(--stanza-paper-line-faint)
-  );
-  background: var(--stanza-rail-control-bg, rgba(255, 255, 255, 0.72));
-}
-
-.stanza-drums-panel .preset-btn--picker .preset-btn-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.stanza-drums-panel .preset-btn--picker .preset-btn-chevron {
-  font-size: 1.1rem;
-  flex-shrink: 0;
-  opacity: 0.65;
-}
-.stanza-drums-panel .preset-btn {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid var(--stanza-paper-line-faint);
-  border-radius: 8px;
-  color: var(--stanza-ink);
-  font-family: inherit;
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  padding: 0 4px;
-  cursor: pointer;
-  line-height: 1.2;
-  transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease,
-    color 0.12s ease;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.stanza-drums-panel .preset-btn:hover:not(.active) {
-  border-color: var(--stanza-rose-line);
-  background: var(--stanza-rose-wash);
-}
-.stanza-drums-panel .preset-btn.active {
-  background: var(--stanza-rose);
-  color: #fff;
-  border-color: var(--stanza-rose);
-}
-.stanza-drums-panel .preset-btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 2px;
-  min-height: 18px;
-}
-.stanza-drums-panel .drum-pattern-input-row {
-  margin-bottom: 1px;
-}
-
-.stanza-drums-panel .darbuka-trainer-icon-link {
-  color: var(--stanza-ink-muted);
-}
-
-.stanza-drums-panel .darbuka-trainer-icon-link:hover {
-  color: var(--stanza-rose-strong);
-  background: var(--stanza-rose-wash);
-}
-
-.stanza-drums-panel .drum-pattern-input {
-  margin-bottom: 1px;
-}
-
-.stanza-drums-panel .rhythm-template-variation {
-  margin-bottom: 2px;
-  gap: 2px;
-}
-
-.stanza-drums-panel .rhythm-template-variation-counter {
-  color: var(--stanza-ink-muted);
-  font-size: 0.6rem;
-}
-
-.stanza-drums-panel .rhythm-template-variation-arrow {
-  width: 20px;
-  height: 20px;
-  border-color: var(--stanza-paper-line-faint);
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--stanza-ink-soft);
-}
-
-.stanza-drums-panel
-  .rhythm-template-variation-arrow
-  .material-symbols-outlined {
-  font-size: 15px;
-}
-
-.stanza-drums-panel .rhythm-template-variation-controls {
-  gap: 6px;
-}
-
-.stanza-drums-panel .rhythm-template-variation-arrow:hover {
-  border-color: var(--stanza-rose-line);
-  color: var(--stanza-ink);
-}
-.stanza-drums-panel .drum-pattern-input input {
-  width: 100%;
-  font-family: var(--stanza-font-ui);
-  font-size: 0.74rem;
-  padding: 3px 8px;
-  border: 1px solid var(--stanza-paper-line-faint);
-  border-radius: 6px;
-  background: var(--stanza-paper-elevated, #fff);
-  color: var(--stanza-ink);
-  outline: none;
-  transition:
-    border-color 0.12s ease,
-    box-shadow 0.12s ease;
-}
-.stanza-drums-panel .drum-pattern-input input::placeholder {
-  color: var(--stanza-ink-soft);
-}
-.stanza-drums-panel .drum-pattern-input input:focus {
-  border-color: var(--stanza-rose);
-  box-shadow: 0 0 0 2px var(--stanza-rose-wash);
-}
-.stanza-drums-panel .drum-display-error {
-  color: var(--stanza-ink-muted);
-  font-size: 0.72rem;
-  margin-top: 4px;
-}
-.stanza-drums-panel .drum-display-error p {
-  margin: 0;
-}
-
-/* Notation tray: variation + staff only — no nested card chrome. */
-.stanza-drums-panel .stanza-drums-notation-frame {
-  padding: 2px 0 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  width: 100%;
-  box-sizing: border-box;
-  gap: 2px;
-  overflow: visible;
-}
-
-.stanza-drums-panel .stanza-drums-notation-frame .rhythm-template-variation {
-  margin-bottom: 0;
-  justify-items: stretch;
-}
-
-.stanza-drums-panel
-  .stanza-drums-notation-frame
-  .rhythm-template-variation-controls {
-  width: 100%;
-  justify-content: space-between;
-  padding-bottom: 0;
-}
-
-.stanza-drums-panel .stanza-drums-notation-frame .drum-notation-mini-x-scroll {
-  margin-top: -2px;
-}
-
-.stanza-drums-panel .stanza-drums-notation-frame.vexflow-mini-container {
-  margin-top: 3px;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  overflow: visible;
-  flex-shrink: 0;
-  min-height: auto;
-}
-
-.stanza-drums-panel .drum-notation-mini-x-scroll {
-  flex-shrink: 0;
-}
-
-.stanza-drums-panel .drum-notation-mini {
-  --notation-ink: var(--stanza-ink);
-  --notation-highlight: var(--stanza-rose);
-  flex-shrink: 0;
-  overflow: visible;
-}
-
-.stanza-drums-panel .drum-notation-mini svg {
-  display: block;
-  overflow: visible;
-  max-width: none;
-  height: auto;
-  margin-top: -2px;
-}
-
-.stanza-drums-panel
-  .stanza-drums-notation-frame
-  > div:first-child:has(.measure-dot) {
-  margin: 0 0 2px;
-}
-
-.stanza-drums-panel .measure-dot {
-  width: 6px;
-  height: 6px;
-}
-
-.stanza-drums-panel .stanza-drums-edit-link,
-.stanza-drums-panel .stanza-drums-edit-link.drum-notation-mini-edit-link {
-  align-self: center;
-  margin-top: 0;
-  font-size: 0.65rem;
-  font-weight: 600;
-  color: var(--stanza-ink-muted);
-  text-decoration: none;
-  gap: 3px;
-  padding: 2px 4px;
-  border-radius: 6px;
-  transition:
-    color 0.12s ease,
-    background-color 0.12s ease;
-}
-
-.stanza-drums-panel .stanza-drums-edit-link:hover {
-  color: var(--stanza-rose-strong);
-  background: var(--stanza-rose-wash);
-}
-
-.stanza-drums-panel .stanza-drums-notation-hint {
-  margin: 2px 0 0;
-  padding-top: 4px;
-  border-top: 1px solid var(--stanza-paper-line-faint);
-  font-size: 0.68rem;
-  line-height: 1.35;
-  color: var(--stanza-ink-soft);
-  text-align: center;
-}
-
-/* Portaled rhythm preset menu (DrumAccompaniment compact layout in Stanza). */
-.stanza-drums-preset-menu.MuiPaper-root {
-  margin-top: 4px;
-  border-radius: 10px;
-  border: 1px solid var(--stanza-paper-line-faint);
-  box-shadow: var(--stanza-shadow-card);
-  background: var(--stanza-paper-elevated, #fff);
-}
-
-.stanza-drums-preset-menu .MuiList-root {
-  padding: 4px;
-}
-
-.stanza-drums-preset-menu .MuiMenuItem-root {
-  min-height: 2rem;
-  border-radius: 7px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--stanza-ink);
-  padding: 0.35rem 0.65rem;
-}
-
-.stanza-drums-preset-menu .MuiMenuItem-root.Mui-selected {
-  background: rgba(232, 72, 160, 0.12);
-  color: var(--stanza-rose-strong);
-}
-
-.stanza-drums-preset-menu .MuiMenuItem-root:hover {
-  background: rgba(232, 72, 160, 0.08);
-}
-
-.stanza-rail-compact-btn.MuiButton-root {
-  min-height: 30px;
-  font-size: 0.75rem;
-  border-radius: 999px;
-  text-transform: none;
-  font-weight: 600;
-}
-
-.stanza-transport-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-}
 
 /* =====================================================================
  * 9. MUI overrides (Button pills, Switch, Disabled)

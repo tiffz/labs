@@ -5,7 +5,7 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
-import { useCallback, useMemo, type ReactElement } from 'react';
+import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import { parseChordProToChartLayout } from '../../../shared/music/chordPro/chordChartLayout';
 import {
   estimateChartPlaybackDurationMs,
@@ -25,6 +25,8 @@ import { encoreMaxWidthPage } from '../../theme/encoreUiTokens';
 import { encorePageSectionGap } from '../../theme/encoreM3Layout';
 import { useEncoreOriginalsPlayback } from '../context/EncoreOriginalsPlaybackContext';
 import { useOriginalTakePlayable } from '../hooks/useOriginalTakePlayable';
+import { chartLayoutHasPaintedChords } from '../originalsChartLayoutHelpers';
+import { resolveOriginalsChartEditStage } from '../originalsChartEditStage';
 import { originalsLyricsChartTexts } from '../originalsLyricsChartTexts';
 import {
   formatOriginalStageSummary,
@@ -70,6 +72,11 @@ export function OriginalsSongViewMode({
     return formatChartPlaybackDuration(durationMs);
   }, [chartLayout, song.tempo]);
   const chartTexts = useMemo(() => originalsLyricsChartTexts(song.lyricsAndChords), [song.lyricsAndChords]);
+  const hasPaintedChords = useMemo(
+    () => chartLayoutHasPaintedChords(chartLayout),
+    [chartLayout],
+  );
+  const [chartShowsChords, setChartShowsChords] = useState(hasPaintedChords);
   const hasLyricsSection = Boolean(chartTexts.lyrics || chartTexts.chordChart);
   const demoReady = isOriginalDemoReady(song);
   const currentStage = inferredWorkflowStage(song);
@@ -249,7 +256,7 @@ export function OriginalsSongViewMode({
         <OriginalsViewSection
           title="Lyrics & chart"
           trailing={copyButtons}
-          onEdit={() => onEditStage('write')}
+          onEdit={() => onEditStage(resolveOriginalsChartEditStage(chartShowsChords, hasPaintedChords))}
         >
           {hasLyricsSection ? (
             <OriginalsLyricsChartPanel
@@ -258,6 +265,8 @@ export function OriginalsSongViewMode({
               songKey={song.key}
               tempo={song.tempo}
               sectionPlaybackOverrides={song.sectionPlaybackOverrides}
+              flatChrome
+              onShowChordsChange={setChartShowsChords}
             />
           ) : (
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>

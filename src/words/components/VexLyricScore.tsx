@@ -10,12 +10,21 @@ import {
   type PlaybackNotePointer,
 } from '../utils/playbackHighlight';
 import {
-  getDefaultBeatGrouping,
-  getBeatGroupingInSixteenths,
   getSixteenthsPerMeasure,
 } from '../../shared/rhythm/timeSignatureUtils';
 import { getChordHitsForStyle } from '../../shared/music/chordStyleHits';
 import { computeMaxLineWidth, wrapMeasureIndexes } from '../utils/vexLayout';
+import {
+  getMetronomeVisualDots,
+  metronomeDotIdleFill,
+  metronomeDotRadiusPx,
+} from '../../shared/audio/metronome/metronomeVisualDots';
+import {
+  layoutMetronomeDotsInMeasure,
+  type MetronomeLayoutNoteAnchor,
+} from '../../shared/notation/metronomeDotLayout';
+import { unionMetronomeGlyphBoundsVexFlow } from '../../shared/notation/scoreDisplayHelpers';
+import type { SubdivisionLevel } from '../../shared/audio/metronome/types';
 
 interface VexLyricScoreProps {
   rhythm: ParsedRhythm;
@@ -30,6 +39,7 @@ interface VexLyricScoreProps {
     isDownbeat: boolean;
   } | null;
   metronomeEnabled?: boolean;
+  metronomeSubdivisionLevel?: SubdivisionLevel;
   chordLabelsByMeasure?: Map<number, string>;
   chordStyleByMeasure?: Map<number, string>;
   activeChordMeasure?: number | null;
@@ -179,6 +189,7 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
   currentNote,
   currentMetronomeBeat,
   metronomeEnabled = false,
+  metronomeSubdivisionLevel = 1,
   chordLabelsByMeasure = new Map(),
   chordStyleByMeasure = new Map(),
   activeChordMeasure = null,
@@ -257,8 +268,6 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
       rightPad,
       wrapSafetyPx
     );
-    const beatGrouping = getDefaultBeatGrouping(timeSignature);
-    const beatGroupingInSixteenths = getBeatGroupingInSixteenths(beatGrouping, timeSignature);
     const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
     const sectionStartLabels = new Map<number, string>();
     sectionMarkers.forEach((marker) => {
@@ -706,64 +715,55 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
         }
 
         if (metronomeEnabled && vexNotes.length > 0) {
-          const getNoteCenterX = (noteIndex: number): number => {
-            const vexNote = vexNotes[noteIndex];
-            if (!vexNote) return stave.getNoteStartX();
-            try {
-              const bounds = vexNote.getBoundingBox();
-              if (bounds) return bounds.getX() + bounds.getW() * 0.5;
-            } catch {
-              // Fall through to absolute position fallback
-            }
-            return vexNote.getAbsoluteX() + 6;
-          };
+          const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
+          let localChar = 0;
+          const noteAnchors: MetronomeLayoutNoteAnchor[] = [];
 
-          const beatPositions = [0];
-          let cumulativeBeatPosition = 0;
-          beatGroupingInSixteenths.forEach((groupSize) => {
-            cumulativeBeatPosition += groupSize;
-            if (cumulativeBeatPosition < sixteenthsPerMeasure) {
-              beatPositions.push(cumulativeBeatPosition);
-            }
+          vexNotes.forEach((vexNote, noteIndex) => {
+            const rhythmNote = measure.notes[noteIndex];
+            const duration = rhythmNote?.durationInSixteenths ?? 1;
+            const glyphBounds = unionMetronomeGlyphBoundsVexFlow(vexNote);
+            noteAnchors.push({
+              measureIndex,
+              noteIndex,
+              charPosition: measureIndex * sixteenthsPerMeasure + localChar,
+              durationInSixteenths: duration,
+              x: vexNote.getAbsoluteX(),
+              headCenterX: glyphBounds
+                ? glyphBounds.x + glyphBounds.w * 0.5
+                : vexNote.getAbsoluteX() + 6,
+              headCenterXIsNotehead: glyphBounds != null,
+            });
+            localChar += duration;
           });
 
-          beatPositions.forEach((beatPosition) => {
-            let dotX = getNoteCenterX(0);
-            let cumulativeNotePosition = 0;
-            let found = false;
+          const visualDots = getMetronomeVisualDots(timeSignature, metronomeSubdivisionLevel);
+          const measureStartX = stave.getNoteStartX();
+          const measureEndX = stave.getNoteEndX() - 12;
+          const dotPlacements = layoutMetronomeDotsInMeasure({
+            measureIndex,
+            dots: visualDots.map(({ positionInSixteenths, tier, subdivision }) => ({
+              positionInSixteenths,
+              tier,
+              subdivision,
+            })),
+            notePositions: noteAnchors,
+            measureStartX,
+            measureEndX,
+            sixteenthsPerMeasure,
+          });
 
-            for (let noteIndex = 0; noteIndex < measure.notes.length; noteIndex += 1) {
-              const noteDuration = measure.notes[noteIndex]?.durationInSixteenths ?? 1;
-              const noteStartPosition = cumulativeNotePosition;
-              const noteEndPosition = cumulativeNotePosition + noteDuration;
-              if (beatPosition >= noteStartPosition && beatPosition < noteEndPosition) {
-                const noteX = getNoteCenterX(noteIndex);
-                const progressWithinNote = (beatPosition - noteStartPosition) / Math.max(1, noteDuration);
-                if (progressWithinNote === 0) {
-                  dotX = noteX;
-                } else {
-                  const nextX =
-                    noteIndex < measure.notes.length - 1
-                      ? getNoteCenterX(noteIndex + 1)
-                      : stave.getNoteEndX() - 12;
-                  dotX = noteX + (nextX - noteX) * progressWithinNote;
-                }
-                found = true;
-                break;
-              }
-              cumulativeNotePosition = noteEndPosition;
-            }
-
-            if (!found) {
-              dotX = getNoteCenterX(0);
-            }
-
-            const dotY = stave.getYForLine(5) + 8;
+          const dotY = stave.getYForLine(5) + 8;
+          dotPlacements.forEach(({ positionInSixteenths: beatPosition, tier, subdivision, x, renderRadiusPx }) => {
+            const radiusPx = renderRadiusPx ?? metronomeDotRadiusPx(tier, subdivision);
             const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            dot.setAttribute('cx', String(dotX));
+            dot.setAttribute('cx', String(x));
             dot.setAttribute('cy', String(dotY));
-            dot.setAttribute('r', '4');
-            dot.setAttribute('fill', '#8a97ab');
+            dot.setAttribute('data-tier', tier);
+            dot.setAttribute('data-subdivision', subdivision ?? '');
+            dot.setAttribute('data-render-radius', String(radiusPx));
+            dot.setAttribute('r', String(radiusPx));
+            dot.setAttribute('fill', metronomeDotIdleFill(tier, '#b0bac9', '#8a97ab'));
             dot.setAttribute('stroke', 'none');
             dot.setAttribute('stroke-width', '0');
             svg.appendChild(dot);
@@ -780,6 +780,7 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
     timeSignature,
     hitMap,
     metronomeEnabled,
+    metronomeSubdivisionLevel,
     chordLabelsByMeasure,
     chordStyleByMeasure,
     chordKey,
@@ -799,35 +800,34 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
 
   useEffect(() => {
     if (!metronomeEnabled || metronomeDotElementsRef.current.size === 0) return;
-    const beatPositions: number[] = [0];
-    const grouping = getBeatGroupingInSixteenths(getDefaultBeatGrouping(timeSignature), timeSignature);
-    const measureLength = getSixteenthsPerMeasure(timeSignature);
-    let cumulative = 0;
-    grouping.forEach((groupSize) => {
-      cumulative += groupSize;
-      if (cumulative < measureLength) beatPositions.push(cumulative);
-    });
 
     metronomeDotElementsRef.current.forEach((dot) => {
-      dot.setAttribute('fill', '#8a97ab');
+      const tier = dot.getAttribute('data-tier') ?? 'beat';
+      const subdivision = dot.getAttribute('data-subdivision') || undefined;
+      const renderRadius = dot.getAttribute('data-render-radius');
+      dot.setAttribute('fill', metronomeDotIdleFill(tier as 'downbeat' | 'beat' | 'subdivision', '#b0bac9', '#8a97ab'));
       dot.setAttribute('stroke', 'none');
       dot.setAttribute('stroke-width', '0');
-      dot.setAttribute('r', '4');
+      dot.setAttribute(
+        'r',
+        renderRadius ??
+          String(
+            metronomeDotRadiusPx(
+              tier as 'downbeat' | 'beat' | 'subdivision',
+              subdivision as 'eighth' | 'sixteenth' | undefined,
+            ),
+          ),
+      );
     });
     if (!currentMetronomeBeat) return;
-    // Latch highlight to the active beat window so the dot stays red for the whole beat.
-    const latchedBeatPosition = beatPositions.reduce(
-      (active, beatPos) =>
-        beatPos <= currentMetronomeBeat.positionInSixteenths && beatPos >= active ? beatPos : active,
-      0
-    );
-    const key = `${currentMetronomeBeat.measureIndex}-${latchedBeatPosition}`;
+
+    const key = `${currentMetronomeBeat.measureIndex}-${currentMetronomeBeat.positionInSixteenths}`;
     const dot = metronomeDotElementsRef.current.get(key);
     if (!dot) return;
     dot.setAttribute('fill', '#ef4444');
     dot.setAttribute('stroke', '#dc2626');
     dot.setAttribute('stroke-width', '1');
-  }, [currentMetronomeBeat, metronomeEnabled, rhythm, timeSignature]);
+  }, [currentMetronomeBeat, metronomeEnabled, rhythm, timeSignature, metronomeSubdivisionLevel]);
 
   useEffect(() => {
     const prev = activeChordMeasureRef.current;

@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useMemo, type ReactElement, type ReactNode } from 'react';
 import { encoreDb, markDirtyRow } from '../db/encoreDb';
+import { isOriginalSongPersistable } from '../originals/originalsWorkflowCompletion';
 import { normalizeEncoreOriginalSong, type EncoreOriginalSong } from '../originals/types';
 import { useEncoreSync } from './useEncoreSync';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
@@ -23,6 +24,7 @@ export function EncoreOriginalsActionsProvider({ children }: { children: ReactNo
   const saveOriginal = useCallback(
     async (song: EncoreOriginalSong, options?: { silentUndo?: boolean }) => {
       const previous = await encoreDb.originals.get(song.id);
+      if (!isOriginalSongPersistable(song, previous)) return;
       const next = normalizeEncoreOriginalSong({ ...song, updatedAt: new Date().toISOString() });
       const willPushUndo = !isReplayingRef.current && !options?.silentUndo;
       const prevSnap = willPushUndo && previous ? cloneRow(previous) : undefined;

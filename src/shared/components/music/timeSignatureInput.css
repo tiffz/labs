@@ -11,15 +11,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: var(--control-height, 38px);
+  box-sizing: border-box;
+  margin: 0;
+  min-height: var(--bpm-shell-height, var(--control-height, 38px));
   padding: 0 0.65rem;
-  border: 1px solid
-    var(--border-subtle, color-mix(in srgb, #818cf8 32%, #c7d2fe));
-  border-radius: var(--control-radius, 12px);
+  border: var(--time-sig-trigger-border-width, var(--bpm-border-width, 1px))
+    solid var(--border-subtle, color-mix(in srgb, #818cf8 32%, #c7d2fe));
+  border-radius: var(--bpm-shell-radius, var(--control-radius, 12px));
   background: var(--bg-input, var(--theme-surface, #fff));
   color: var(--text-primary, var(--theme-text, #141a26));
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  font-family: inherit;
+  font-size: var(--music-timing-value-font-size, 1em);
+  font-weight: var(--music-timing-value-font-weight, 700);
+  font-variant-numeric: var(--music-timing-value-font-variant, tabular-nums);
+  letter-spacing: var(--music-timing-value-letter-spacing, 0.01em);
+  line-height: var(--music-timing-value-line-height, 1.15);
   cursor: pointer;
 }
 
@@ -119,7 +125,7 @@
 .shared-time-sig-den-toggle {
   display: inline-flex;
   align-items: stretch;
-  border: 1px solid
+  border: var(--bpm-chip-border-width, 1px) solid
     color-mix(in srgb, var(--bpm-chip-border, #c7d2fe) 92%, transparent);
   border-radius: 0.5rem;
   overflow: hidden;
@@ -169,7 +175,7 @@
 .shared-time-sig-grouping-input {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid
+  border: var(--bpm-chip-border-width, 1px) solid
     color-mix(in srgb, var(--bpm-chip-border, #c7d2fe) 92%, transparent);
   border-radius: 0.5rem;
   padding: 0.45rem 0.55rem;

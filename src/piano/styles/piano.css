@@ -46,6 +46,11 @@
   --piano-danger-light: #fef2f2;
   --piano-info: #3b82f6;
 
+  --labs-popover-shadow: 0 10px 40px rgba(59, 31, 69, 0.08);
+  --labs-popover-border: 1px solid var(--piano-border);
+  --labs-popover-bg: #ffffff;
+  --labs-control-hover-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
+
   /* ── Spacing (4px grid) ── */
   --sp-0: 0px;
   --sp-1: 4px;

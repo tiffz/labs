@@ -229,11 +229,13 @@ export class AudioPlayer {
     duration?: number,
     startTime?: number,
     trackAsActive: boolean = true,
+    playbackRate: number = 1,
   ): void {
     if (!this.audioContext) return;
     try {
       const source = this.audioContext.createBufferSource();
       source.buffer = buffer;
+      source.playbackRate.value = playbackRate;
 
       const gainNode = this.audioContext.createGain();
       const now = this.audioContext.currentTime;
@@ -331,9 +333,9 @@ export class AudioPlayer {
    *
    * @param startTime - Optional precise AudioContext time.
    */
-  playClickNowIfReady(volume: number = 1.0, startTime?: number): void {
+  playClickNowIfReady(volume: number = 1.0, startTime?: number, playbackRate: number = 1): void {
     if (!this.audioContext || this.audioContext.state !== 'running' || !this.clickBuffer) return;
-    this.playBuffer(this.clickBuffer, volume, undefined, startTime, false);
+    this.playBuffer(this.clickBuffer, volume, undefined, startTime, false, playbackRate);
   }
 
   /**

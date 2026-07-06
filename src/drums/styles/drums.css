@@ -65,6 +65,35 @@
     --control-height-touch: 44px;
     --control-height: var(--control-height-touch);
     --control-radius: var(--theme-radius-sm);
+
+    /* Playback bar — one height for play, time sig, BPM, metronome, settings */
+    --drums-playback-control-height: 2.5rem;
+
+    /*
+     * Drums control surface — single knob for the 2px light-grey border motif used on
+     * playback controls, palette tiles, and floating-menu chips/toggles. Shared music
+     * and metronome components read the --labs-* / --bpm-* bridges below.
+     */
+    --drums-control-border-width: 2px;
+    --drums-control-border-color: var(--border-color);
+    --drums-control-border: var(--drums-control-border-width) solid
+      var(--drums-control-border-color);
+    --labs-control-border-width: var(--drums-control-border-width);
+    --labs-chip-border-width: var(--drums-control-border-width);
+    --labs-chip-border-color: var(--drums-control-border-color);
+    --bpm-border-width: var(--labs-control-border-width);
+    --bpm-chip-border-width: var(--labs-chip-border-width);
+    --bpm-chip-border: var(--labs-chip-border-color);
+    --bpm-slider-panel-border-width: var(--labs-control-border-width);
+    --bpm-slider-wrap-border-color: var(--labs-chip-border-color);
+    --metro-toggle-border-width: var(--labs-control-border-width);
+
+    /* Chrome contract — brand-tinted popover shell (see docs/CHROME_UI_CONTRACT.md) */
+    --labs-popover-shadow: 0 8px 24px rgba(76, 29, 149, 0.12);
+    --labs-popover-border: 2px solid var(--border-color);
+    --labs-popover-bg: var(--menu-surface);
+    --labs-popover-radius: var(--menu-radius);
+    --labs-control-hover-shadow: var(--shadow-hover-purple);
   }
 
   body {
@@ -190,6 +219,7 @@
     gap: 0.75rem;
     margin-left: auto; /* Push entire group to the right edge */
     flex-shrink: 0;
+    overflow: visible;
   }
 
   /*
@@ -246,14 +276,15 @@
     .drums-shared-bpm-input {
       width: min(100%, 204px);
       min-width: 136px;
-      --bpm-shell-height: 40px;
+      --bpm-shell-height: var(--drums-playback-control-height);
       --bpm-stepper-min-width: 4.5rem;
       --bpm-value-padding: 0 0.22rem 0 0.38rem;
     }
 
     .drums-shared-bpm-input .shared-bpm-shell {
       padding: 0 0.26rem;
-      min-height: 40px;
+      min-height: var(--drums-playback-control-height);
+      height: var(--drums-playback-control-height);
     }
 
     .drums-shared-bpm-input .shared-bpm-leading-actions {
@@ -275,6 +306,10 @@
   }
 
   @media (max-width: 900px) {
+    :root {
+      --drums-playback-control-height: 2.25rem;
+    }
+
     .app-layout {
       flex-direction: column;
       height: auto;
@@ -348,43 +383,27 @@
       order: 0;
     }
 
-    /* Keep beat grouping compact to avoid extra bar height */
-    .beat-grouping-control {
-      width: auto;
-      min-width: 0;
-      max-width: none;
-      flex-direction: row;
-      align-items: center;
-      gap: 0.35rem;
+    .beat-grouping-control-inline {
       flex: 0 0 auto;
-      align-self: center;
+      min-width: 0;
     }
 
-    .beat-grouping-header {
-      gap: 0.2rem;
-      margin: 0;
-    }
-
-    .beat-grouping-label {
-      display: none;
-    }
-
-    .beat-grouping-input {
-      width: 96px;
-      padding: 0.35rem 0.45rem;
-      min-height: 34px;
+    .beat-grouping-control-inline .beat-grouping-input {
+      width: 5.25rem;
+      min-width: 4.5rem;
     }
 
     .drums-shared-bpm-input {
       width: min(100%, 184px);
       min-width: 124px;
-      --bpm-shell-height: 36px;
+      --bpm-shell-height: var(--drums-playback-control-height);
       --bpm-stepper-min-width: 3.9rem;
       --bpm-value-padding: 0 0.18rem 0 0.32rem;
     }
 
     .drums-shared-bpm-input .shared-bpm-shell {
-      min-height: 36px;
+      min-height: var(--drums-playback-control-height);
+      height: var(--drums-playback-control-height);
       padding: 0 0.22rem;
     }
 
@@ -418,6 +437,10 @@
 
   /* Mobile-specific styles */
   @media (max-width: 640px) {
+    :root {
+      --drums-playback-control-height: 2.125rem;
+    }
+
     .main-content {
       padding: 0.75rem;
     }
@@ -471,30 +494,27 @@
       min-width: 96px;
     }
 
-    .beat-grouping-control {
+    .beat-grouping-control-inline {
       flex: 0 0 auto;
       min-width: 0;
-      max-width: none;
-      gap: 0.25rem;
     }
 
-    .beat-grouping-input {
-      width: 90px;
-      min-height: 32px;
-      font-size: 0.82rem;
-      padding: 0.28rem 0.4rem;
+    .beat-grouping-control-inline .beat-grouping-input {
+      width: 4.75rem;
+      min-width: 4rem;
     }
 
     .drums-shared-bpm-input {
       width: min(100%, 164px);
       min-width: 112px;
-      --bpm-shell-height: 34px;
+      --bpm-shell-height: var(--drums-playback-control-height);
       --bpm-stepper-min-width: 3.5rem;
       --bpm-value-padding: 0 0.14rem 0 0.28rem;
     }
 
     .drums-shared-bpm-input .shared-bpm-shell {
-      min-height: 34px;
+      min-height: var(--drums-playback-control-height);
+      height: var(--drums-playback-control-height);
       padding: 0 0.16rem;
     }
 
@@ -524,9 +544,9 @@
     }
 
     .metronome-button {
-      width: 2.5rem;
-      min-width: 2.5rem;
-      height: 2.5rem;
+      width: var(--drums-playback-control-height);
+      min-width: var(--drums-playback-control-height);
+      height: var(--drums-playback-control-height);
       margin-left: 0;
       gap: 0;
       padding: 0;
@@ -566,13 +586,14 @@
         min-width: 100px;
       }
 
-      .beat-grouping-control {
+      .beat-grouping-control-inline {
         order: 4;
         margin-left: auto;
       }
 
-      .beat-grouping-input {
-        width: 84px;
+      .beat-grouping-control-inline .beat-grouping-input {
+        width: 4.5rem;
+        min-width: 3.75rem;
       }
 
       .right-controls-group {
@@ -916,6 +937,122 @@
     text-decoration: underline;
   }
 
+  /* Notation guide — balanced reference layout (sounds + rules use full width) */
+  .notation-guide-tooltip {
+    width: min(520px, calc(100vw - 24px));
+    min-width: min(320px, calc(100vw - 24px));
+    max-width: min(520px, calc(100vw - 24px));
+    padding: 0.82rem 1rem 0.88rem;
+    padding-top: calc(0.82rem + 0.25rem);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .notation-guide-tooltip .tooltip-title {
+    margin-bottom: 0.62rem;
+    padding-bottom: 0.42rem;
+    font-size: 1rem;
+    border-bottom-width: 1px;
+  }
+
+  .notation-guide__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: stretch;
+  }
+
+  .notation-guide__label {
+    margin: 0 0 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--menu-header-text, #6b7280);
+  }
+
+  .notation-guide__sound-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem 0.85rem;
+  }
+
+  .notation-guide__sound-item {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 1.65rem;
+    color: var(--text-color);
+  }
+
+  .notation-guide__sound-item--wide {
+    grid-column: auto;
+  }
+
+  .notation-guide__glyph {
+    flex-shrink: 0;
+    color: #111827;
+  }
+
+  .notation-guide__glyph--rest {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    line-height: 1;
+  }
+
+  .notation-guide__panel--rules {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.72rem 0.85rem;
+    align-items: start;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color, #e5e7eb);
+  }
+
+  .notation-guide__rule-block {
+    min-width: 0;
+  }
+
+  .notation-guide__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .notation-guide__list li + li {
+    margin-top: 0.28rem;
+  }
+
+  .notation-guide-tooltip code {
+    padding: 0.14rem 0.36rem;
+    font-size: 0.8125rem;
+  }
+
+  .notation-guide-tooltip .tooltip-attribution {
+    margin-top: 0.72rem;
+    padding-top: 0.55rem;
+    font-size: 0.72rem;
+    line-height: 1.45;
+  }
+
+  @media (max-width: 560px) {
+    .notation-guide__sound-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .notation-guide__panel--rules {
+      grid-template-columns: 1fr;
+      gap: 0.55rem;
+    }
+  }
+
   .controls-group {
     display: flex;
     align-items: center;
@@ -956,10 +1093,14 @@
   }
 
   .time-signature-control {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.5rem 0.75rem;
+    box-sizing: border-box;
+    min-height: var(--drums-playback-control-height);
+    height: var(--drums-playback-control-height);
+    padding: 0 0.75rem;
     background-color: white;
     border: 2px solid var(--border-color);
     border-radius: 0.375rem;
@@ -999,6 +1140,19 @@
   .time-sig-numerator-input {
     width: 3rem;
     text-align: center;
+  }
+
+  .time-sig-dropdown {
+    position: absolute;
+    top: calc(100% + 0.25rem);
+    left: 0;
+    z-index: 1000;
+    min-width: min(100%, 240px);
+    overflow: visible;
+  }
+
+  .time-sig-dropdown .time-sig-dropdown-item {
+    width: 100%;
   }
 
   .bpm-control-inline {
@@ -1045,21 +1199,17 @@
   .drums-shared-bpm-input {
     width: min(100%, 228px);
     min-width: 152px;
-    --bpm-shell-height: 44px;
+    --bpm-shell-height: var(--drums-playback-control-height);
     --bpm-shell-radius: 0.375rem;
-    --bpm-stepper-min-width: 5.2rem;
-    --bpm-value-padding: 0 0.3rem 0 0.5rem;
+    --bpm-stepper-min-width: 4.5rem;
+    --bpm-value-padding: 0 0.22rem;
     --bpm-bg: #ffffff;
-    --bpm-border: var(--border-color);
+    --bpm-border: var(--drums-control-border-color);
     --bpm-text: var(--text-color);
     --bpm-muted: #6b7280;
     --bpm-focus: var(--primary-purple);
     --bpm-dropdown-bg: #ffffff;
-    --bpm-dropdown-border: color-mix(
-      in srgb,
-      var(--primary-purple) 20%,
-      var(--border-color)
-    );
+    --bpm-dropdown-border: var(--drums-control-border-color);
     --bpm-dropdown-header-bg: color-mix(in srgb, #faf5ff 60%, #ffffff);
     --bpm-dropdown-header-border: color-mix(
       in srgb,
@@ -1083,12 +1233,10 @@
   }
 
   .drums-shared-bpm-input .shared-bpm-shell {
-    border-width: 2px;
-    border-color: var(--border-color);
+    border: var(--drums-control-border);
     padding: 0 0.38rem;
-    min-height: 44px;
-    font-size: 1rem;
-    font-weight: 500;
+    min-height: var(--drums-playback-control-height);
+    height: var(--drums-playback-control-height);
     border-radius: 0.375rem;
     box-shadow: none;
   }
@@ -1111,12 +1259,6 @@
     font-size: 16px;
   }
 
-  .drums-shared-bpm-input .shared-bpm-value {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-color);
-  }
-
   .drums-shared-bpm-input .shared-bpm-rate-btn.inline {
     font-size: 0.78rem;
     font-weight: 500;
@@ -1133,6 +1275,85 @@
     border-left: 1px solid var(--bpm-divider);
   }
 
+  .timing-inputs.shared-music-timing-row {
+    --music-timing-value-font-size: 1rem;
+    --music-timing-value-font-weight: 600;
+    --music-timing-value-letter-spacing: 0.01em;
+    --music-timing-value-line-height: 1;
+    --bpm-value-text-align: center;
+  }
+
+  .drums-shared-time-sig-input {
+    flex-shrink: 0;
+    --time-sig-trigger-border-width: var(--labs-control-border-width);
+    --border-subtle: var(--labs-chip-border-color);
+    --bpm-shell-height: var(--drums-playback-control-height);
+    --bpm-shell-radius: 0.375rem;
+  }
+
+  .drums-shared-time-sig-input .shared-time-sig-trigger {
+    box-sizing: border-box;
+    min-height: var(--drums-playback-control-height);
+    height: var(--drums-playback-control-height);
+    min-width: 4.25rem;
+    padding: 0 0.85rem;
+    border: var(--drums-control-border);
+    background: #fff;
+    color: var(--text-color);
+    box-shadow: none;
+  }
+
+  .drums-shared-time-sig-input .shared-time-sig-trigger:hover:not(:disabled) {
+    background: #fff;
+    border-color: color-mix(
+      in srgb,
+      var(--primary-purple) 35%,
+      var(--border-color)
+    );
+  }
+
+  .drums-shared-time-sig-input .shared-time-sig-trigger:focus-visible {
+    outline: none;
+    border-color: var(--primary-purple);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+  }
+
+  .drums-time-sig-dropdown.shared-bpm-dropdown {
+    --bpm-chip-border: var(--labs-chip-border-color);
+    --bpm-chip-border-width: var(--labs-chip-border-width);
+    --bpm-slider-wrap-border-color: var(--labs-chip-border-color);
+    --bpm-slider-panel-border-width: var(--labs-control-border-width);
+  }
+
+  .drums-time-sig-dropdown .shared-bpm-dropdown-list {
+    padding: 0.72rem 0.76rem 1.08rem;
+  }
+
+  .drums-time-sig-dropdown .shared-bpm-presets-label {
+    color: var(--menu-header-text);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .drums-time-sig-dropdown .shared-time-sig-custom-panel {
+    gap: 0.55rem;
+  }
+
+  .drums-time-sig-dropdown .shared-time-sig-slash {
+    padding: 0 0.15rem;
+    font-size: 1.05rem;
+  }
+
+  .drums-time-sig-dropdown .shared-time-sig-den-btn {
+    padding: 0 0.82rem;
+  }
+
+  .drums-time-sig-dropdown .shared-time-sig-den-btn:focus-visible,
+  .drums-time-sig-dropdown .shared-bpm-preset-chip:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+  }
+
   .drums-bpm-inline-label {
     display: inline-flex;
     align-items: center;
@@ -1147,10 +1368,322 @@
   }
 
   .drums-bpm-dropdown {
-    border-radius: 0.375rem;
-    border: 2px solid var(--border-color);
-    background: white;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    /* Shell chrome from .labs-popover-surface — layout/interior only here */
+    border-radius: var(--labs-popover-radius, var(--menu-radius));
+  }
+
+  /**
+   * Drums floating menu interior — BPM preset panel is the reference.
+   * Shell: `.labs-popover-surface` (+ optional modifier). No duplicate border/shadow on inner wrappers.
+   */
+  .drums-floating-menu {
+    border-radius: var(--labs-popover-radius, var(--menu-radius));
+    min-width: var(--drums-floating-menu-min-width, 280px);
+    overflow: visible;
+    box-sizing: border-box;
+    /* Shared dropdowns reset chip tokens — re-bridge drums surface borders here. */
+    --bpm-chip-border: var(--labs-chip-border-color);
+    --bpm-chip-border-width: var(--labs-chip-border-width);
+    --bpm-slider-wrap-border-color: var(--labs-chip-border-color);
+    --bpm-slider-panel-border-width: var(--labs-control-border-width);
+    --metro-toggle-border: var(--labs-chip-border-color);
+    --metro-toggle-border-width: var(--labs-control-border-width);
+  }
+
+  /* Div-based menus (Load Rhythm) — shell chrome must live in components layer. */
+  .drums-floating-menu.labs-popover-surface {
+    border: var(--labs-popover-border);
+    box-shadow: var(--labs-popover-shadow);
+    background: var(--labs-popover-bg);
+  }
+
+  .drums-floating-menu__body {
+    padding: 0.72rem 0.76rem 1.08rem;
+    box-sizing: border-box;
+  }
+
+  .drums-floating-menu__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.56rem 0.76rem 0.65rem;
+    border-bottom: 1px solid var(--menu-header-border);
+  }
+
+  .drums-floating-menu__title {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--menu-header-text);
+  }
+
+  .drums-floating-menu__header-action {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--primary-purple);
+    background: #fff;
+    border: 1px solid
+      color-mix(in srgb, var(--primary-purple) 45%, var(--border-color));
+    border-radius: 999px;
+    padding: 0.2rem 0.62rem;
+    cursor: pointer;
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease,
+      color 120ms ease;
+  }
+
+  .drums-floating-menu__header-action:hover {
+    border-color: var(--primary-purple);
+    background: #f9fafb;
+    color: var(--primary-purple-dark);
+  }
+
+  .drums-floating-menu__section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.52rem;
+  }
+
+  .drums-floating-menu__section + .drums-floating-menu__section {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid
+      color-mix(in srgb, var(--primary-purple) 8%, var(--border-color));
+  }
+
+  .drums-floating-menu__section-label {
+    margin: 0;
+    color: var(--menu-header-text);
+    font-size: 0.67rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .drums-floating-menu__chip-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(3.15rem, 1fr));
+    align-items: stretch;
+    gap: 0.54rem;
+  }
+
+  .drums-floating-menu__chip-grid--3 {
+    grid-template-columns: repeat(3, minmax(3.15rem, 1fr));
+  }
+
+  .drums-floating-menu__chip-grid--2 {
+    grid-template-columns: repeat(2, minmax(3.15rem, 1fr));
+  }
+
+  .drums-floating-menu__chip,
+  .drums-floating-menu .shared-bpm-preset-chip,
+  .drums-floating-menu .rhythm-presets-chip,
+  .drums-floating-menu .time-sig-dropdown-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: var(--labs-chip-border-width) solid var(--labs-chip-border-color);
+    border-radius: 999px;
+    background: #fff;
+    color: #374151;
+    font-size: 0.73rem;
+    font-weight: 600;
+    line-height: 1.1;
+    min-height: 1.9rem;
+    min-width: 0;
+    padding: 0 0.62rem;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: none;
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease,
+      color 120ms ease,
+      transform 120ms ease;
+  }
+
+  .drums-floating-menu__chip:hover,
+  .drums-floating-menu .shared-bpm-preset-chip:hover,
+  .drums-floating-menu .rhythm-presets-chip:hover,
+  .drums-floating-menu .time-sig-dropdown-item:hover,
+  .drums-floating-menu .time-sig-dropdown-item:focus-visible {
+    border-color: color-mix(
+      in srgb,
+      var(--primary-purple) 40%,
+      var(--border-color)
+    );
+    background: #f9fafb;
+    color: var(--primary-purple);
+    outline: none;
+    transform: translateY(-1px);
+  }
+
+  .drums-floating-menu__chip.is-active,
+  .drums-floating-menu__chip.active,
+  .drums-floating-menu .shared-bpm-preset-chip.active,
+  .drums-floating-menu .rhythm-presets-chip--active,
+  .drums-floating-menu .time-sig-dropdown-item.is-active {
+    border-color: var(--primary-purple);
+    background: #fff;
+    color: var(--primary-purple);
+    font-weight: 700;
+    transform: none;
+  }
+
+  .drums-floating-menu__slider-panel {
+    padding: 0.74rem 0.86rem 0.78rem;
+    border-radius: 0.7rem;
+    border: var(--drums-control-border);
+    background: color-mix(in srgb, #fff 94%, #f8fafc);
+    box-sizing: border-box;
+  }
+
+  .drums-floating-menu__slider-panel + .drums-floating-menu__slider-panel {
+    margin-top: 0.54rem;
+  }
+
+  .drums-floating-menu__field-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin: 0 0 0.28rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  .drums-floating-menu__field-value {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--primary-purple);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  .drums-floating-menu__slider,
+  .drums-floating-menu .drums-bpm-slider,
+  .drums-floating-menu .settings-slider {
+    width: 100%;
+    --app-slider-track: var(--primary-purple);
+    --app-slider-rail: color-mix(in srgb, var(--menu-border) 74%, transparent);
+    --app-slider-mark: color-mix(in srgb, var(--menu-border) 78%, transparent);
+  }
+
+  .drums-floating-menu__note-panel {
+    padding: 0.62rem 0.72rem;
+    border-radius: 0.7rem;
+    border: 1px solid color-mix(in srgb, var(--menu-border) 68%, transparent);
+    background: color-mix(in srgb, var(--menu-header-bg) 72%, #fff);
+  }
+
+  .drums-floating-menu__note-label {
+    margin: 0 0 0.2rem;
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--menu-header-text);
+  }
+
+  .drums-floating-menu__note-value {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-color);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  .drums-floating-menu__primary-action {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5rem;
+    margin-top: 0.65rem;
+    padding: 0 1rem;
+    border: 2px solid var(--primary-purple);
+    border-radius: 0.5rem;
+    background: var(--primary-purple);
+    color: #fff;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition-base);
+  }
+
+  .drums-floating-menu__primary-action:hover:not(:disabled) {
+    background: var(--primary-purple-dark);
+    border-color: var(--primary-purple-dark);
+  }
+
+  .drums-floating-menu__primary-action:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .drums-floating-menu__select,
+  .drums-floating-menu__input {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 2.25rem;
+    padding: 0.45rem 0.62rem;
+    border: var(--drums-control-border);
+    border-radius: 0.5rem;
+    background: #fff;
+    color: var(--text-color);
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+
+  .drums-floating-menu__select:focus-visible,
+  .drums-floating-menu__input:focus-visible {
+    outline: none;
+    border-color: var(--primary-purple);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+  }
+
+  .drums-floating-menu__divider {
+    height: 1px;
+    margin: 0.65rem 0 0.45rem;
+    background: color-mix(
+      in srgb,
+      var(--primary-purple) 8%,
+      var(--border-color)
+    );
+    border: 0;
+  }
+
+  .drums-floating-menu__action-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.55rem 0.72rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .drums-floating-menu__action-row:hover {
+    background: var(--menu-item-hover-bg);
+    color: var(--menu-item-hover-text);
+  }
+
+  .drums-floating-menu__action-row .material-symbols-outlined {
+    font-size: 1.125rem;
+    color: var(--primary-purple);
   }
 
   .drums-bpm-dropdown .shared-bpm-dropdown-trigger {
@@ -1190,6 +1723,13 @@
     padding: 0.72rem 0.76rem 1.08rem;
   }
 
+  .drums-bpm-dropdown.shared-bpm-dropdown {
+    --bpm-chip-border: var(--labs-chip-border-color);
+    --bpm-chip-border-width: var(--labs-chip-border-width);
+    --bpm-slider-wrap-border-color: var(--labs-chip-border-color);
+    --bpm-slider-panel-border-width: var(--labs-control-border-width);
+  }
+
   .drums-bpm-dropdown .shared-bpm-presets-section {
     padding: 0.56rem 0.08rem 0.12rem;
   }
@@ -1204,55 +1744,49 @@
     letter-spacing: 0.04em;
   }
 
-  .drums-bpm-dropdown .shared-bpm-preset-chip {
-    border-color: var(--border-color);
-    background: #fff;
-    color: #374151;
-    font-weight: 600;
-  }
-
-  .drums-bpm-dropdown .shared-bpm-preset-chip:hover {
-    border-color: color-mix(
-      in srgb,
-      var(--primary-purple) 40%,
-      var(--border-color)
-    );
-    background: #f9fafb;
-    color: var(--primary-purple);
-  }
-
-  .drums-bpm-dropdown .shared-bpm-preset-chip.active {
-    border-color: var(--primary-purple);
-    background: #fff;
-    color: var(--primary-purple);
-    font-weight: 700;
-  }
-
-  /* Beat Grouping Control */
-  .beat-grouping-control {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    min-width: 150px;
-    max-width: 150px; /* Fixed width to prevent layout shift */
+  /* Beat grouping — inline shell aligned with Meter / BPM */
+  .beat-grouping-control-inline {
+    display: inline-flex;
+    align-items: stretch;
+    flex-shrink: 0;
+    box-sizing: border-box;
     position: relative;
-    flex-shrink: 0; /* Prevent from shrinking */
-    align-self: flex-end; /* Align input baseline with other controls */
+    min-height: var(--drums-playback-control-height);
+    height: var(--drums-playback-control-height);
+    border: var(--drums-control-border);
+    border-radius: 0.375rem;
+    background: #fff;
+    overflow: hidden;
   }
 
-  .beat-grouping-header {
-    display: flex;
+  .drums-beat-grouping-inline-label {
+    display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
-    position: relative;
-  }
-
-  .beat-grouping-label {
-    font-size: 0.75rem;
+    justify-content: center;
+    padding: 0 0.52rem 0 0.46rem;
+    font-size: 0.82rem;
     font-weight: 600;
+    letter-spacing: 0.025em;
     color: #6b7280;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    border-right: 1px solid var(--border-color);
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .beat-grouping-control-inline .beat-grouping-help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0 0.34rem 0 0.22rem;
+    border-left: 1px solid var(--border-color);
+  }
+
+  .beat-grouping-control-inline .help-button {
+    width: 1.125rem;
+    height: 1.125rem;
+    font-size: 0.6875rem;
   }
 
   .help-icon-button {
@@ -1298,24 +1832,60 @@
     max-width: 350px;
   }
 
-  .beat-grouping-input {
-    width: 100%;
-    padding: 0.5rem;
-    font-size: 0.875rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 6px;
-    font-family: 'Roboto Mono', monospace;
-    transition: border-color 0.2s;
+  .beat-grouping-control-inline .beat-grouping-input {
+    flex: 1 1 auto;
+    width: 5.75rem;
+    min-width: 4.75rem;
+    padding: 0 0.42rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border: 0;
+    border-radius: 0;
+    font-family: 'Roboto Mono', ui-monospace, monospace;
+    color: var(--text-color);
+    background: transparent;
+    transition: none;
   }
 
-  .beat-grouping-input:focus {
-    outline: none;
+  .beat-grouping-control-inline:focus-within {
     border-color: var(--primary-purple);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
   }
 
-  .beat-grouping-input:disabled {
+  .beat-grouping-control-inline:has(.input-error) {
+    border-color: #ef4444;
+  }
+
+  .beat-grouping-control-inline:has(.input-error):focus-within {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+  }
+
+  .beat-grouping-control-inline .beat-grouping-input:focus {
+    outline: none;
+  }
+
+  .beat-grouping-control-inline .beat-grouping-input:disabled {
     background-color: #f3f4f6;
     cursor: not-allowed;
+  }
+
+  .beat-grouping-error-message {
+    position: absolute;
+    top: calc(100% + 0.2rem);
+    left: 0;
+    z-index: 20;
+    min-width: max-content;
+    max-width: min(18rem, calc(100vw - 24px));
+    padding: 0.28rem 0.45rem;
+    border-radius: 0.375rem;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    font-size: 0.6875rem;
+    line-height: 1.35;
+    color: #b91c1c;
+    box-shadow: var(--shadow-sm);
+    pointer-events: none;
   }
 
   .input-error {
@@ -1372,48 +1942,75 @@
   }
 
   /* Shared button styles */
+  .playback-buttons {
+    display: inline-flex;
+    align-items: center;
+    align-self: center;
+  }
+
   .play-button,
   .stop-button {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 600;
+    justify-content: center;
+    gap: 0.45rem;
+    box-sizing: border-box;
+    min-height: var(--drums-playback-control-height);
+    height: var(--drums-playback-control-height);
+    padding: 0 1.125rem;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.15;
     border-radius: 0.5rem;
-    border: none;
+    border: 2px solid transparent;
     cursor: pointer;
     transition: var(--transition-base);
+    white-space: nowrap;
+    box-shadow: var(--shadow-md);
+  }
+
+  .play-button__label,
+  .stop-button__label {
+    font-weight: inherit;
+    letter-spacing: inherit;
   }
 
   .play-button {
     background-color: var(--primary-purple);
     color: white;
+    border-color: var(--primary-purple);
   }
 
   .play-button:hover {
     background-color: var(--primary-purple-dark);
-    transform: translateY(-1px);
+    border-color: var(--primary-purple-dark);
     box-shadow: var(--shadow-hover-purple);
+    transform: translateY(-1px);
   }
 
   .play-button:active {
     transform: translateY(0);
+    box-shadow: var(--shadow-sm);
   }
 
   .stop-button {
     background-color: #ef4444;
     color: white;
+    border-color: #ef4444;
   }
 
   .stop-button:hover {
     background-color: #dc2626;
+    border-color: #dc2626;
     transform: translateY(-1px);
     box-shadow: var(--shadow-hover-red);
   }
 
   .stop-button:active {
     transform: translateY(0);
+    box-shadow: var(--shadow-sm);
   }
 
   .metronome-button {
@@ -1422,37 +2019,85 @@
     justify-content: center;
     gap: 0;
     padding: 0;
-    width: 2.5rem;
-    min-width: 2.5rem;
-    border-radius: 0.5rem;
-    border: 2px solid var(--border-color);
-    background-color: white;
-    color: var(--text-color);
+    width: auto;
+    min-width: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
     cursor: pointer;
-    transition: var(--transition-base);
-    height: 2.5rem;
-    flex-shrink: 0; /* Don't shrink - wrap instead */
+    height: 100%;
+    flex-shrink: 0;
   }
 
-  .metronome-button:hover {
-    border-color: var(--primary-purple);
-    background-color: #fafafa;
-  }
-
-  .metronome-button .material-symbols-outlined {
-    font-size: 1.25rem;
-    line-height: 1;
-    width: 1.25rem;
-    height: 1.25rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
+  .metronome-button:hover,
   .metronome-button.active {
-    background: #6d28d9;
-    border-color: var(--primary-purple);
-    color: #ffffff;
+    border: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  /* Metronome split control — tokens only; see metronome-themes.css (--metro-*). */
+
+  .playback-controls-bar .labs-metronome-split-control--drums {
+    min-height: var(--drums-playback-control-height);
+  }
+
+  .playback-controls-bar
+    .labs-metronome-split-control--drums
+    .labs-split-action-button {
+    height: var(--drums-playback-control-height);
+    min-height: var(--drums-playback-control-height);
+  }
+
+  .labs-metronome-settings-popover--drums {
+    /* Interior tokens — popover shell from .labs-popover-surface */
+    --metro-panel-header-bg: transparent;
+    --metro-toggle-border: var(--labs-chip-border-color);
+    --metro-toggle-border-width: var(--labs-control-border-width);
+    min-width: 300px;
+  }
+
+  .labs-metronome-settings-popover--drums
+    .labs-metronome-settings-panel__header {
+    padding: 0.56rem 0.76rem 0.65rem;
+    border-bottom: 1px solid var(--menu-header-border);
+    background: transparent;
+  }
+
+  .labs-metronome-settings-popover--drums .labs-metronome-settings-panel__body {
+    gap: 0.62rem;
+    padding: 0.56rem 0.76rem 0.72rem;
+    max-height: min(70vh, 420px);
+  }
+
+  .labs-metronome-settings-popover--drums
+    .labs-metronome-settings-panel__section-title {
+    font-size: 0.67rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+    color: var(--menu-header-text) !important;
+  }
+
+  .labs-metronome-settings-popover--drums
+    .labs-metronome-settings-panel__toggle-group {
+    border-radius: 0.7rem;
+    background: #fff;
+  }
+
+  .labs-metronome-settings-popover--drums
+    .labs-metronome-settings-panel__levels
+    .shared-playback-volume-row {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .labs-metronome-settings-popover--drums
+    .labs-metronome-settings-panel__levels {
+    gap: 0.42rem;
   }
 
   .metronome-label {
@@ -1528,8 +2173,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    box-sizing: border-box;
+    width: var(--drums-playback-control-height);
+    height: var(--drums-playback-control-height);
+    min-height: var(--drums-playback-control-height);
     padding: 0;
     border-radius: 0.5rem;
     border: 2px solid var(--border-color);
@@ -2127,63 +2774,81 @@
 
   /* Settings Dropdown Styles */
   .settings-dropdown {
-    background-color: var(--menu-surface);
-    border: 1px solid var(--menu-border);
-    border-radius: var(--menu-radius);
-    box-shadow: var(--menu-shadow);
-    width: 380px; /* Fixed width for larger screens */
-    min-width: 280px; /* Minimum width for smaller screens */
-    max-width: 400px;
-    max-height: 80vh;
-    overflow-y: auto;
-    overflow-x: visible; /* Allow tooltips to overflow horizontally */
-    animation: slideUp 0.2s ease;
-    /* Ensure content doesn't overflow */
+    width: 340px;
+    min-width: 280px;
+    max-width: 360px;
+    max-height: none;
+    overflow: visible;
     box-sizing: border-box;
   }
 
-  .settings-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.875rem 1rem;
-    border-bottom: 1px solid var(--border-color);
+  .drums-settings-menu .drums-floating-menu__body {
+    padding: 0.56rem 0.76rem 0.72rem;
   }
 
-  .settings-header h3 {
-    margin: 0;
+  .settings-slider-row {
+    margin-bottom: 0.55rem;
+  }
+
+  .settings-slider-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .drums-download-menu {
+    min-width: 280px;
+    max-width: 320px;
+  }
+
+  .download-dropdown {
+    min-width: 280px;
+    max-width: 320px;
+    overflow: visible;
+  }
+
+  .download-dropdown__loops-input {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 2.25rem;
+    padding: 0.42rem 0.55rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    font: inherit;
     font-size: 0.875rem;
     font-weight: 600;
     color: var(--text-color);
+    background: #fff;
   }
 
-  .settings-reset-button {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--primary-purple);
-    background: transparent;
-    border: 1px solid var(--primary-purple);
-    border-radius: 0.25rem;
-    padding: 0.25rem 0.5rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
+  .download-dropdown__loops-input:focus {
+    outline: none;
+    border-color: var(--primary-purple);
+    box-shadow: 0 0 0 2px
+      color-mix(in srgb, var(--primary-purple) 14%, transparent);
   }
 
-  .settings-reset-button:hover {
-    background: var(--primary-purple);
-    color: white;
+  .download-dropdown__preview-label {
+    margin: 0 0 0.2rem;
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--menu-header-text);
   }
 
-  .settings-reset-button:active {
-    transform: scale(0.95);
+  .download-dropdown__preview-value {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-color);
+    font-variant-numeric: tabular-nums lining-nums;
   }
 
-  .settings-content {
-    padding: 0.875rem 1rem;
+  .download-dropdown .drums-floating-menu__primary-action {
+    margin-top: 0.75rem;
   }
 
   .settings-group {
-    margin-bottom: 1rem;
+    margin-bottom: 0.55rem;
     position: relative;
   }
 
@@ -2210,7 +2875,7 @@
   .settings-slider-wrapper {
     position: relative;
     width: 100%;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
   }
 
   .settings-slider {
@@ -2284,7 +2949,7 @@
     gap: 0.75rem;
     flex-wrap: wrap;
     row-gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    padding: calc(0.75rem + var(--labs-focus-ring-bleed, 3px)) 1rem;
     background-color: #f9fafb;
     border: 2px solid var(--border-color);
     border-radius: 0.375rem;
@@ -2292,6 +2957,7 @@
     position: sticky;
     top: 0;
     z-index: 100;
+    overflow: visible;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
 
@@ -2718,19 +3384,23 @@
   }
 
   .collapsible-section-icon {
-    font-size: 0.625rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: #9ca3af;
-    transition:
-      transform 0.2s ease,
-      color 0.15s ease;
     margin-left: 0.5rem;
+    --labs-disclosure-chevron-opacity: 0.92;
   }
 
-  .collapsible-section.expanded .collapsible-section-icon {
+  .collapsible-section.expanded
+    .collapsible-section-icon
+    .labs-disclosure-chevron {
     transform: rotate(0deg);
   }
 
-  .collapsible-section.collapsed .collapsible-section-icon {
+  .collapsible-section.collapsed
+    .collapsible-section-icon
+    .labs-disclosure-chevron {
     transform: rotate(-90deg);
   }
 
@@ -3058,17 +3728,39 @@
   }
 
   .load-rhythm-button {
-    padding: 0.625rem 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    min-height: var(--drums-playback-control-height, 2.5rem);
+    height: var(--drums-playback-control-height, 2.5rem);
+    padding: 0 1.125rem;
     background-color: var(--primary-purple);
     color: white;
     border: 2px solid var(--primary-purple);
     border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.15;
     cursor: pointer;
     transition: var(--transition-base);
     box-shadow: var(--shadow-md);
     white-space: nowrap;
+    box-sizing: border-box;
+    --labs-disclosure-chevron-opacity: 0.92;
+    --labs-disclosure-chevron-color: currentColor;
+  }
+
+  .load-rhythm-button__label {
+    /* Keep label weight independent of chevron glyph metrics */
+    font-weight: inherit;
+    letter-spacing: inherit;
+  }
+
+  .load-rhythm-button__chevron {
+    --labs-disclosure-chevron-size: var(--metro-menu-icon-size, 0.625rem);
   }
 
   .load-rhythm-button:hover {
@@ -3088,12 +3780,94 @@
     top: calc(100% + 0.25rem);
     left: 0;
     min-width: 300px;
-    background-color: var(--menu-surface);
-    border: 1px solid var(--menu-border);
-    border-radius: var(--menu-radius);
-    box-shadow: var(--menu-shadow);
     z-index: 1000;
     overflow: hidden;
+  }
+
+  .rhythm-presets-menu {
+    min-width: 440px;
+    max-width: min(520px, calc(100vw - 24px));
+    overflow: visible;
+    border: var(--labs-popover-border);
+    box-shadow: var(--labs-popover-shadow);
+    background: var(--labs-popover-bg);
+  }
+
+  .rhythm-presets-menu .drums-floating-menu__body {
+    padding: 0.72rem 0.76rem 0.85rem;
+  }
+
+  .rhythm-presets-family + .rhythm-presets-family {
+    margin-top: 0.65rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid
+      color-mix(in srgb, var(--primary-purple) 8%, var(--border-color));
+  }
+
+  .rhythm-presets-family__label {
+    margin: 0 0 0.52rem;
+  }
+
+  .rhythm-presets-family__meters {
+    display: flex;
+    flex-direction: column;
+    gap: 0.52rem;
+  }
+
+  .rhythm-presets-meter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.38rem 0.45rem;
+  }
+
+  .rhythm-presets-meter__label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-width: 2.35rem;
+    padding: 0.24rem 0.42rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    color: var(--menu-header-text);
+    text-align: center;
+    line-height: 1.15;
+    user-select: none;
+    border: var(--drums-control-border);
+    border-radius: 0.35rem;
+    background: #f9fafb;
+  }
+
+  .rhythm-presets-meter__chips {
+    display: flex;
+    flex: 1 1 12rem;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    min-width: 0;
+  }
+
+  .rhythm-presets-chip {
+    padding: 0 0.62rem;
+    letter-spacing: 0.005em;
+  }
+
+  .rhythm-presets-menu__divider {
+    margin: 0.58rem 0 0.35rem;
+  }
+
+  .rhythm-presets-import {
+    margin-top: 0;
+    border-radius: 0.5rem;
+    font-weight: 600;
+  }
+
+  .rhythm-presets-import:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.22);
   }
 
   .dropdown-item {
@@ -3214,8 +3988,20 @@
   }
 
   .rhythm-info-toggle {
-    font-size: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: var(--primary-purple);
+    --labs-disclosure-chevron-size: 1.125rem;
+    --labs-disclosure-chevron-opacity: 0.92;
+  }
+
+  .rhythm-info-toggle.is-expanded .labs-disclosure-chevron {
+    transform: rotate(0deg);
+  }
+
+  .rhythm-info-toggle.is-collapsed .labs-disclosure-chevron {
+    transform: rotate(-90deg);
   }
 
   .rhythm-info-title {
@@ -3414,51 +4200,62 @@
 
   /* Selection Dropdown */
   .selection-dropdown {
-    background: var(--menu-surface);
-    border-radius: var(--menu-radius);
-    box-shadow: var(--menu-shadow);
-    padding: 0.5rem;
-    border: 1px solid var(--menu-border);
+    min-width: 280px;
     max-width: 320px;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .selection-dropdown .drums-floating-menu__body {
+    padding: 0.62rem 0.68rem 0.72rem;
   }
 
   .selection-dropdown-header {
-    font-size: 0.75rem;
-    color: #6b7280;
-    margin-bottom: 0.5rem;
-    padding: 0 0.25rem;
+    margin: 0 0 0.52rem;
+    font-size: 0.67rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--menu-header-text);
   }
 
   .selection-dropdown-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.25rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.54rem;
   }
 
   .selection-dropdown-item {
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 2.5rem;
     padding: 0.25rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.375rem;
-    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    background: #fff;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease;
   }
 
   .selection-dropdown-item:hover {
-    background: #f3f4f6;
-    border-color: var(--primary-purple);
+    background: #f9fafb;
+    border-color: color-mix(
+      in srgb,
+      var(--primary-purple) 40%,
+      var(--border-color)
+    );
   }
 
   .selection-dropdown-item.exact-fit {
     border-color: var(--primary-purple);
-    background: #faf5ff;
+    background: #fff;
   }
 
   .selection-dropdown-item.exact-fit:hover {
-    background: #f3e8ff;
+    background: #f9fafb;
   }
 
   /* Note Palette Selection Mode Styles */
@@ -4120,6 +4917,21 @@
     align-items: center;
     column-gap: 0.75rem;
     row-gap: 0.5rem;
+    overflow: visible;
+  }
+
+  .playback-controls-bar .play-button,
+  .playback-controls-bar .stop-button,
+  .playback-controls-bar .drums-shared-time-sig-input .shared-time-sig-trigger,
+  .playback-controls-bar .beat-grouping-control-inline,
+  .playback-controls-bar .drums-shared-bpm-input .shared-bpm-shell,
+  .playback-controls-bar
+    .labs-metronome-split-control--drums
+    .labs-split-action-button,
+  .playback-controls-bar .settings-button {
+    box-sizing: border-box;
+    height: var(--drums-playback-control-height);
+    min-height: var(--drums-playback-control-height);
   }
 
   .timing-controls {

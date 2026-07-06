@@ -41,9 +41,11 @@ const APP_SMOKE_SPECS = {
   ],
   drums: [
     'e2e/smoke/drums-load-interaction.spec.ts',
+    'e2e/smoke/metronome-advanced-settings.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/drums/' },
   ],
   stanza: [
+    'e2e/smoke/stanza-practice-rail.spec.ts',
     'e2e/smoke/stanza-library.spec.ts',
     'e2e/smoke/stanza-loop-whole-song.spec.ts',
     'e2e/smoke/layout-heuristics-stanza.spec.ts',

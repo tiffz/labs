@@ -10,7 +10,10 @@ import { getAppTheme } from '../shared/ui/theme/appTheme'
 import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstrap'
 import App from './App.tsx'
 import '../shared/components/music/appSharedThemes.css'
+import '../shared/styles/labsChrome.css'
+import '../shared/audio/platform/styles/metronome-control.css'
 import './styles/drums.css'
+import './drums-export-popover.css'
 
 // Install server logging for this app
 installServerLogger('DRUMS');

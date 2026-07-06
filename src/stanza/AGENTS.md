@@ -16,6 +16,18 @@ Nested **`AGENTS.md`** for Stanza. Root policy: [`../../AGENTS.md`](../../AGENTS
 - Workbench width is **CSS-only** (`--stanza-viewer-content-width`); do not set viewer width in MUI `sx`.
 - Large shell splits live under `components/stanzaWorkspace/` (see `docs/COMPONENT_DECOMPOSITION_PATTERN.md`).
 
+## Theming + shared CSS
+
+Stanza uses **rose** as the sole accent. Follow the repo-wide patterns from this session:
+
+- **In-app shell:** `.stanza-app` bridges `--theme-*`, `--labs-selection-*`, and `--labs-popover-*` to Stanza paper/rose tokens (`stanza.css` §1).
+- **Selection tiers:** loop mode chips, beat counts, BPM/key preset rows → `--labs-selection-secondary-*`; solid transport on-states → primary. See [`docs/SELECTION_VISUAL_HIERARCHY.md`](../../docs/SELECTION_VISUAL_HIERARCHY.md).
+- **Portaled pickers:** BPM/key dropdowns and metronome settings render outside `.stanza-app` — duplicate rose + selection tokens on `.stanza-bpm-dropdown` / `.stanza-key-dropdown` (not `:root` purple). Metronome uses `appearance="stanza"` + `metronome-themes.css`.
+- **Focus rings:** `--labs-focus-ring-bleed` on metronome strip and playback toolbar; `overflow: visible` on chip/toolbar wrappers. See [`docs/FOCUS_THEMING.md`](../../docs/FOCUS_THEMING.md) and [`docs/A11Y_MENU_PATTERNS.md`](../../docs/A11Y_MENU_PATTERNS.md).
+- **Shared music inputs:** `KeyInput` / `BpmInput` use `appearance="stanza"` + `dropdownClassName="stanza-*-dropdown"`. Tokens in `appSharedThemes.css`; rail layout in `stanza-practice-rail.css`. See [`DESIGN.md`](DESIGN.md).
+
+Do not add ad-hoc `rgba(232, 72, 160, …)` for selection states when `--labs-selection-secondary-*` is available on the same surface.
+
 ## Tests
 
 - Layout smoke: `e2e/stanza-viewer-layout.spec.ts`

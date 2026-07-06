@@ -4,7 +4,6 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactElement } from 'react';
-import { encoreHairline, encoreShadowLift } from '../theme/encoreUiTokens';
 import { SharePanel } from './SharePanel';
 
 export function EncoreShareMenu(props: {
@@ -62,8 +61,6 @@ export function EncoreShareMenu(props: {
               mt: 1.25,
               borderRadius: 3,
               overflow: 'hidden',
-              border: `1px solid ${encoreHairline}`,
-              boxShadow: encoreShadowLift,
             },
           },
         }}

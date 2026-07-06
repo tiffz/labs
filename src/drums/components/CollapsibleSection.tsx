@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import LabsDisclosureChevron from '../../shared/components/LabsDisclosureChevron';
 
 interface CollapsibleSectionProps {
   title: string;
@@ -24,8 +25,8 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         aria-expanded={isExpanded}
       >
         <span className="collapsible-section-title">{title}</span>
-        <span className="collapsible-section-icon">
-          {isExpanded ? '▼' : '▶'}
+        <span className="collapsible-section-icon" aria-hidden>
+          <LabsDisclosureChevron />
         </span>
       </button>
       {isExpanded && (
@@ -38,4 +39,3 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 };
 
 export default CollapsibleSection;
-

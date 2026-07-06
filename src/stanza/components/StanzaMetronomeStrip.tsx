@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react';
-import type { MouseEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
 import AppTooltip from '../../shared/components/AppTooltip';
-import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
-
-const BEATS = 4;
+import { MetronomeSplitControl } from '../../shared/audio/platform/metronome';
+import type { MetronomePreferences } from '../../shared/audio/platform/metronome/preferences';
+import { gridSubdivDurationSec } from '../../shared/audio/metronome/gridMetronomePlayback';
+import {
+  activeMetronomeRailSlotIndex,
+  buildMetronomeMeasureLabels,
+} from '../../shared/audio/metronome/metronomeRailLabels';
+import type { TimeSignature } from '../../shared/rhythm/types';
 
 export interface StanzaMetronomeStripProps {
   enabled: boolean;
@@ -19,12 +23,15 @@ export interface StanzaMetronomeStripProps {
    * Shows a short "set BPM" hint inline with the placeholder so we don't need a separate Alert row.
    */
   needsCalibration?: boolean;
+  preferences: MetronomePreferences;
+  onPreferencesChange: (next: MetronomePreferences) => void;
+  timeSignature?: TimeSignature;
 }
 
 /**
- * Beat Finder–style metronome row: toggle on the **left**, beat counts when on (4/4),
+ * Beat Finder–style metronome row: toggle on the **left** (timer icon only), beat counts when on,
  * or the word “Metronome” when off (or on without a usable tempo yet).
- * Clicking the strip background (outside the icon button) also toggles metronome.
+ * The settings chevron opens advanced options without toggling — no whole-strip click target.
  */
 export default function StanzaMetronomeStrip({
   enabled,
@@ -34,6 +41,9 @@ export default function StanzaMetronomeStrip({
   getMediaTime,
   isPlaying,
   needsCalibration = false,
+  preferences,
+  onPreferencesChange,
+  timeSignature = { numerator: 4, denominator: 4 },
 }: StanzaMetronomeStripProps) {
   const [, setRafTick] = useState(0);
 
@@ -52,63 +62,87 @@ export default function StanzaMetronomeStrip({
 
   const showBeats = Boolean(enabled && bpm && bpm > 0 && anchorMediaTime != null && Number.isFinite(anchorMediaTime));
 
-  let currentBeat = 0;
-  if (showBeats) {
-    const period = 60 / (bpm as number);
-    const t = getMediaTime();
-    const beat = Math.floor((t - (anchorMediaTime as number)) / period + 1e-9);
-    currentBeat = ((beat % BEATS) + BEATS) % BEATS;
-  }
+  const measureLabels = useMemo(
+    () =>
+      buildMetronomeMeasureLabels({
+        timeSignature,
+        subdivisionLevel: preferences.subdivisionLevel,
+        voiceMode: preferences.voiceMode,
+      }),
+    [timeSignature, preferences.subdivisionLevel, preferences.voiceMode],
+  );
 
-  const handleStripClick = (event: MouseEvent<HTMLDivElement>) => {
-    const target = event.target as HTMLElement;
-    if (target.closest('button')) return;
-    onToggle();
-  };
+  const showSubdivisions = preferences.subdivisionLevel !== 1;
+
+  const activeSlotIndex = showBeats
+    ? activeMetronomeRailSlotIndex({
+        mediaTime: getMediaTime(),
+        anchorMediaTime: anchorMediaTime as number,
+        bpm: bpm as number,
+        slotCount: measureLabels.length,
+        slotDurationSec: gridSubdivDurationSec(bpm as number, timeSignature, preferences.subdivisionLevel),
+      })
+    : 0;
+
+  const placeholderHint =
+    enabled && needsCalibration ? 'Set BPM and Beat 1 below to start the click.' : undefined;
 
   return (
     <Box
-      className={`stanza-metronome-strip stanza-metronome-strip--clickable${enabled ? ' stanza-metronome-strip--active' : ''}`}
-      onClick={handleStripClick}
+      className={`stanza-metronome-strip${enabled ? ' stanza-metronome-strip--active' : ''}`}
       role="presentation"
     >
-      <AppTooltip
-        title={
-          enabled
-            ? needsCalibration
-              ? 'Metronome on. Set BPM and Beat 1 below to start the click. Click this row to turn off.'
-              : 'Metronome on. Click this row to turn off.'
-            : 'Metronome off. Click this row to turn on.'
-        }
-      >
-        <MetronomeToggleButton
+      <span className="stanza-metronome-split-host">
+        <MetronomeSplitControl
           enabled={enabled}
           onToggle={onToggle}
-          className="stanza-metronome-strip-toggle stanza-metronome-toggle stanza-metronome-toggle--strip"
-          includeNativeTitle={false}
-          includeDataTooltip={false}
-          ariaLabel="Toggle metronome"
+          preferences={preferences}
+          onPreferencesChange={onPreferencesChange}
+          timeSignature={timeSignature}
+          appearance="stanza"
+          toggleClassName="stanza-metronome-strip-toggle stanza-metronome-toggle stanza-metronome-toggle--strip"
+          toggleActiveClassName="active"
         />
-      </AppTooltip>
+      </span>
       {showBeats ? (
-        <Box className="stanza-beat-visualizer stanza-beat-visualizer--compact" aria-live="polite">
+        <Box
+          className={[
+            'stanza-beat-visualizer',
+            'stanza-beat-visualizer--compact',
+            showSubdivisions ? 'stanza-beat-visualizer--subdivisions' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          aria-live="polite"
+          aria-label="Metronome count"
+        >
           <Box className="stanza-beat-counts">
-            {Array.from({ length: BEATS }, (_, i) => (
+            {measureLabels.map((entry) => (
               <Box
-                key={i}
-                className={`stanza-beat-count${currentBeat === i ? ' stanza-beat-count--active' : ''}${
-                  i === 0 ? ' stanza-beat-count--downbeat' : ''
-                }`}
+                key={entry.slotIndex}
+                component="span"
+                className={[
+                  'stanza-beat-count',
+                  activeSlotIndex === entry.slotIndex ? 'stanza-beat-count--active' : '',
+                  entry.isAccent ? 'stanza-beat-count--downbeat' : '',
+                  showSubdivisions && entry.isBeat ? 'stanza-beat-count--beat' : '',
+                  showSubdivisions && !entry.isBeat ? 'stanza-beat-count--subdivision' : '',
+                  entry.isSwingSilent ? 'stanza-beat-count--swing-silent' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
               >
-                {i + 1}
+                {entry.label}
               </Box>
             ))}
           </Box>
         </Box>
       ) : (
-        <span className="stanza-metronome-strip-placeholder">
-          {enabled && needsCalibration ? 'Set BPM below' : 'Metronome'}
-        </span>
+        <AppTooltip title={placeholderHint}>
+          <span className="stanza-metronome-strip-placeholder">
+            {enabled && needsCalibration ? 'Set BPM below' : 'Metronome'}
+          </span>
+        </AppTooltip>
       )}
     </Box>
   );

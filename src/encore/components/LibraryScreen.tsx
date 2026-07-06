@@ -85,7 +85,7 @@ import {
   encoreHairline,
   encoreMaxWidthPage,
 } from '../theme/encoreUiTokens';
-import { encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
+import { encoreListPageHeaderMb, encoreListPagePaddingTop, encorePagePaddingTop, encoreScreenPaddingX } from '../theme/encoreM3Layout';
 import { EncorePageHeader } from '../ui/EncorePageHeader';
 import { EncoreMrtColumnHeader } from '../ui/EncoreMrtColumnHeader';
 import { AddSongDialog } from './AddSongDialog';
@@ -905,6 +905,17 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
     saveRepertoireExtras,
     perfBySong,
   });
+
+  const repertoireListChrome = repertoireSongs.length > 0;
+  const repertoireTableMode = repertoireListChrome && viewMode === 'table';
+
+  const repertoireStatsCaption = useMemo(() => {
+    if (!songsHydrated || songs.length === 0) return undefined;
+    if (libraryStats.totalPerf === 0) {
+      return `${songs.length} ${songs.length === 1 ? 'song' : 'songs'}. No performances logged yet.`;
+    }
+    return `${songs.length} ${songs.length === 1 ? 'song' : 'songs'} · ${libraryStats.totalPerf} ${libraryStats.totalPerf === 1 ? 'performance' : 'performances'}${libraryStats.topVenues.length > 0 ? ` · top venue ${libraryStats.topVenues[0]?.[0] ?? ''}` : ''}`;
+  }, [libraryStats, songs.length, songsHydrated]);
 
   const tableData = useMemo((): EncoreRepertoireMrtRow[] => {
     if (!heavyListTabActive) return repertoireTableDataCacheRef.current;
@@ -1857,21 +1868,32 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
     <Box
       sx={{
         px: encoreScreenPaddingX,
-        pt: encorePagePaddingTop,
-        pb: { xs: 10, md: 5 },
+        pt: repertoireSongs.length > 0 ? encoreListPagePaddingTop : encorePagePaddingTop,
+        pb: repertoireSongs.length > 0 ? 0 : { xs: 10, md: 5 },
+        ...(repertoireSongs.length > 0
+          ? {
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }
+          : {}),
         ...encoreMaxWidthPage,
       }}
     >
       <EncorePageHeader
         title={encorePossessivePageTitle(effectiveDisplayName, 'repertoire')}
+        listSurface={repertoireListChrome}
+        compact={repertoireTableMode}
+        hideDescription={repertoireTableMode}
+        sx={repertoireListChrome ? { mb: encoreListPageHeaderMb } : undefined}
         description={
           !songsHydrated
             ? 'Loading your library from this device…'
             : songs.length === 0
             ? 'Add a song or import a playlist to start.'
-            : libraryStats.totalPerf === 0
-              ? `${songs.length} ${songs.length === 1 ? 'song' : 'songs'}. No performances logged yet.`
-              : `${songs.length} ${songs.length === 1 ? 'song' : 'songs'} · ${libraryStats.totalPerf} ${libraryStats.totalPerf === 1 ? 'performance' : 'performances'}${libraryStats.topVenues.length > 0 ? ` · top venue ${libraryStats.topVenues[0]?.[0] ?? ''}` : ''}`
+            : repertoireStatsCaption
         }
         actions={
           <>
@@ -2072,6 +2094,8 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
         onSaveCurrentViewClick={songs.length > 0 ? () => setSaveSearchDialogOpen(true) : undefined}
         savedSearches={repertoireSavedSearches}
         onApplySavedSearch={applySavedSearch}
+        compact={repertoireTableMode}
+        statsCaption={repertoireTableMode ? repertoireStatsCaption : undefined}
       />
 
       {songs.length > 0 ? (

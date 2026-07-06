@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
 import type { SongKey } from '../../shared/music/songKeyFormat';
 import type { TimeSignature } from '../../shared/rhythm/types';
+import type { SubdivisionLevel } from '../../shared/audio/metronome/types';
 import type { ExportSourceAdapter } from '../../shared/music/exportTypes';
 import VexLyricScore from './VexLyricScore';
 import WordsScoreActionsBar from './WordsScoreActionsBar';
@@ -31,6 +32,7 @@ export type WordsNotationPanelProps = {
   timeSignature: TimeSignature;
   songKey: SongKey;
   metronomeEnabled: boolean;
+  metronomeSubdivisionLevel: SubdivisionLevel;
   autoFollowPlayback: boolean;
   isPlaying: boolean;
   playbackScrollContainer: HTMLElement | null;
@@ -63,6 +65,7 @@ export default function WordsNotationPanel({
   timeSignature,
   songKey,
   metronomeEnabled,
+  metronomeSubdivisionLevel,
   autoFollowPlayback,
   isPlaying,
   playbackScrollContainer,
@@ -113,6 +116,7 @@ export default function WordsNotationPanel({
               currentNote={block.localCurrentNote}
               currentMetronomeBeat={block.localCurrentMetronomeBeat}
               metronomeEnabled={metronomeEnabled}
+              metronomeSubdivisionLevel={metronomeSubdivisionLevel}
               chordLabelsByMeasure={block.localChordLabelsByMeasure}
               chordStyleByMeasure={block.localChordStyleByMeasure}
               activeChordMeasure={block.localActiveChordMeasure}

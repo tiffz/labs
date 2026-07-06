@@ -6,11 +6,18 @@
  */
 .drum-notation-mini {
   --notation-ink: #333333;
+  --notation-staff-line: #d1d5db;
   --notation-highlight: #9d8ec7;
 }
 
 .drum-notation-mini svg {
   color: var(--notation-ink);
+}
+
+/* Staff lines stay light grey even before JS post-processing (matches Darbuka trainer). */
+.drum-notation-mini svg g[class*='vf-stave'] > path:not([class*='barline']),
+.drum-notation-mini svg g[class*='vf-stave'] > line:not([class*='barline']) {
+  stroke: var(--notation-staff-line, #d1d5db);
 }
 
 /**

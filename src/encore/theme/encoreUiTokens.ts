@@ -10,6 +10,7 @@ export const encoreRadius = 1 as const;
 
 /** Shadow scale: surface (sticky chrome / outlined cards) and lift (hero art, modals, floating chips). */
 export const encoreShadowSurface = '0 1px 2px rgba(76, 29, 149, 0.04)' as const;
+/** Modal / marketing card lift — not for floating menus (use `--labs-popover-*` + `.labs-popover-surface`). */
 export const encoreShadowLift = '0 12px 40px rgba(76, 29, 149, 0.08)' as const;
 
 /**

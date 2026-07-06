@@ -16,16 +16,37 @@ export function LibraryRepertoireMrtOrGrid(props: LibraryRepertoireMrtOrGridProp
   const { debouncedSearch, viewMode, table, grid } = props;
 
   return viewMode === 'table' ? (
-    <EncoreMrtTableShell table={table} searchHighlight={debouncedSearch} />
-  ) : (
     <Box
       sx={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
-        gap: { xs: 2.25, sm: 2.75 },
+        flex: '1 1 0',
+        minHeight: 240,
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      {grid}
+      <EncoreMrtTableShell table={table} searchHighlight={debouncedSearch} sx={{ mt: 0, flex: 1, minHeight: 0 }} />
+    </Box>
+  ) : (
+    <Box
+      className="encore-scroll-surface"
+      sx={{
+        flex: '1 1 0',
+        minHeight: 0,
+        overflow: 'auto',
+        pb: { xs: 2, md: 1 },
+      }}
+    >
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
+          gap: { xs: 2.25, sm: 2.75 },
+        }}
+      >
+        {grid}
+      </Box>
     </Box>
   );
 }

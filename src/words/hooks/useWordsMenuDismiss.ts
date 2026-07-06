@@ -24,9 +24,20 @@ export type WordsMenuDismissActions = {
   setRandomizeMenuOpen: (open: boolean) => void;
 };
 
+export type WordsMenuDismissState = {
+  generationMenuOpen: boolean;
+  soundMenuOpen: boolean;
+  openSectionSettingsId: string | null;
+  sectionRandomizeMenuId: string | null;
+  sectionChorusLinkMenuId: string | null;
+  exportMenuOpen: boolean;
+  randomizeMenuOpen: boolean;
+};
+
 export function useWordsMenuDismiss(
   refs: WordsMenuDismissRefs,
-  actions: WordsMenuDismissActions
+  actions: WordsMenuDismissActions,
+  state: WordsMenuDismissState,
 ): void {
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
@@ -85,4 +96,29 @@ export function useWordsMenuDismiss(
     // Refs and setState dispatchers are stable; read .current inside handler.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (state.generationMenuOpen) {
+        event.preventDefault();
+        actions.setGenerationMenuOpen(false);
+        refs.generationButtonRef.current?.focus();
+        return;
+      }
+      if (state.soundMenuOpen) {
+        event.preventDefault();
+        actions.setSoundMenuOpen(false);
+        refs.soundButtonRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [
+    actions,
+    refs.generationButtonRef,
+    refs.soundButtonRef,
+    state.generationMenuOpen,
+    state.soundMenuOpen,
+  ]);
 }

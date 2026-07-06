@@ -24,6 +24,16 @@ import {
   clearDrumsPlaybackHighlights,
 } from '../utils/drumsPlaybackHighlight';
 import type { NoteSelectionState } from './VexFlowRendererTypes';
+import {
+  layoutMetronomeDotsInMeasure,
+} from '../utils/metronomeDotLayout';
+import {
+  getMetronomeVisualDots,
+  metronomeDotIdleFill,
+  metronomeDotRadius,
+  metronomeDotRadiusPx,
+} from '../../shared/audio/metronome/metronomeVisualDots';
+import type { SubdivisionLevel } from '../../shared/audio/metronome/types';
 
 export type { NoteSelectionState } from './VexFlowRendererTypes';
 
@@ -181,6 +191,7 @@ interface VexFlowRendererProps {
   rhythm: ParsedRhythm;
   currentNote?: { measureIndex: number; noteIndex: number; repeatIteration?: number; maxRepeats?: number } | null;
   metronomeEnabled?: boolean;
+  metronomeSubdivisionLevel?: SubdivisionLevel;
   currentMetronomeBeat?: { measureIndex: number; positionInSixteenths: number; isDownbeat: boolean } | null;
   onDropPattern?: (pattern: string, charPosition: number, operationType: 'replace' | 'insert') => void;
   notation?: string;
@@ -193,6 +204,8 @@ interface VexFlowRendererProps {
   onMoveSelection?: (fromStart: number, fromEnd: number, toPosition: number) => void;
   /** Callback when delete key is pressed on selection */
   onDeleteSelection?: () => void;
+  /** Paste Darbuka pattern from clipboard (Ctrl/Cmd+V). */
+  onPastePattern?: (pattern: string) => void;
   /** Callback to request focus on the note palette (for Tab navigation) */
   onRequestPaletteFocus?: () => void;
   /** Optional mode for denser rendering (e.g. for import preview) */
@@ -365,6 +378,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   rhythm,
   currentNote,
   metronomeEnabled = false,
+  metronomeSubdivisionLevel = 1,
   currentMetronomeBeat = null,
   onDropPattern,
   notation = '',
@@ -373,6 +387,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   onSelectionChange,
   onMoveSelection,
   onDeleteSelection,
+  onPastePattern,
   onRequestPaletteFocus,
   compactMode = false,
   autoScrollDuringPlayback = false,
@@ -1114,6 +1129,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
           height: number;
           charPosition: number;
           durationInSixteenths: number;
+          headCenterX: number;
           staveY: number;
           isTiedFrom?: boolean;
           isTiedTo?: boolean;
@@ -1202,6 +1218,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
                   height: noteHeight,
                   charPosition: effectiveStart + localOffset,
                   durationInSixteenths: durationInSixteenths,
+                  headCenterX: ref.staveNote.getAbsoluteX(),
                   staveY: staveY,
                   isTiedFrom: ref.note.isTiedFrom,
                   isTiedTo: ref.note.isTiedTo,
@@ -1500,83 +1517,44 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
 
       // Draw metronome dots if enabled
       if (metronomeEnabled && !exportMode) {
-        // Get beat grouping for this time signature
-        const beatGrouping = getDefaultBeatGrouping(rhythm.timeSignature);
+        const visualDots = getMetronomeVisualDots(rhythm.timeSignature, metronomeSubdivisionLevel);
 
-        // Convert beat grouping to sixteenths
-        const beatGroupingInSixteenths = getBeatGroupingInSixteenths(beatGrouping, rhythm.timeSignature);
-
-        // Draw dots for ALL beat group positions, not just where notes exist
         rhythm.measures.forEach((_measure, measureIndex) => {
-          // Find the stave for this measure
           const measureRefs = allStaveNoteRefs.filter(ref => ref.measureIndex === measureIndex);
           if (measureRefs.length === 0) return;
 
-          // Sort by noteIndex to ensure correct order
           measureRefs.sort((a, b) => a.noteIndex - b.noteIndex);
 
           const stave = measureRefs[0].stave;
+          const staveY = stave.getY();
+          const sixteenthsPerMeasure = getSixteenthsPerMeasure(rhythm.timeSignature);
+          const staveWidth = stave.getWidth();
+          const staveX = stave.getX();
+          const measureStartX = staveX + (measureIndex === 0 ? 28 : 12);
+          const measureEndX = staveX + staveWidth - 20;
+          const dotYBase = stave.getYForLine(5) + 8;
+          const measureNotePositions = notePositionsRef.current.filter(
+            (n) => n.measureIndex === measureIndex && n.staveY === staveY,
+          );
 
-          // Calculate all beat group positions for this measure (in sixteenths)
-          const beatPositions = [0]; // Start with downbeat
-          let cumulativePosition = 0;
-          const localSixteenthsPerMeasure = getSixteenthsPerMeasure(rhythm.timeSignature);
-          beatGroupingInSixteenths.forEach((groupSize) => {
-            cumulativePosition += groupSize;
-            if (cumulativePosition < localSixteenthsPerMeasure) {
-              beatPositions.push(cumulativePosition);
-            }
+          const dotPlacements = layoutMetronomeDotsInMeasure({
+            measureIndex,
+            dots: visualDots.map(({ positionInSixteenths, tier, subdivision }) => ({
+              positionInSixteenths,
+              tier,
+              subdivision,
+            })),
+            notePositions: measureNotePositions,
+            measureStartX,
+            measureEndX,
+            sixteenthsPerMeasure,
           });
 
-          // For each beat position, calculate X coordinate using note-based positioning
-          // This ensures dots align with actual rendered notes regardless of measure length
-          beatPositions.forEach((beatPosition) => {
-            let dotX: number = 0;
-
-            // Find the note that contains this beat position
-            let cumulativeNotePosition = 0;
-            let found = false;
-
-            for (let i = 0; i < measureRefs.length; i++) {
-              const ref = measureRefs[i];
-              const noteStartPosition = cumulativeNotePosition;
-              const noteEndPosition = cumulativeNotePosition + ref.note.durationInSixteenths;
-
-              // Check if this beat position falls within this note
-              if (beatPosition >= noteStartPosition && beatPosition < noteEndPosition) {
-                // Beat is within this note - calculate proportional X position
-                const progressWithinNote = (beatPosition - noteStartPosition) / ref.note.durationInSixteenths;
-                const noteX = ref.staveNote.getAbsoluteX();
-
-                if (progressWithinNote === 0) {
-                  // Beat is at the start of this note
-                  dotX = noteX;
-                } else {
-                  // Beat is partway through this note - interpolate to next note
-                  const nextX = i < measureRefs.length - 1
-                    ? measureRefs[i + 1].staveNote.getAbsoluteX()
-                    : noteX + 40; // Estimate if no next note
-                  dotX = noteX + (nextX - noteX) * progressWithinNote;
-                }
-                found = true;
-                break;
-              }
-
-              cumulativeNotePosition = noteEndPosition;
-            }
-
-            // If beat position wasn't found within any note (shouldn't happen normally),
-            // use the first note's X position as fallback
-            if (!found) {
-              dotX = measureRefs[0].staveNote.getAbsoluteX();
-            }
-
-            const dotY = stave.getYForLine(5) + 8; // Closer to the bottom of the staff
-
-            // Create unique ID for this dot based on measure and position
+          dotPlacements.forEach(({ positionInSixteenths: beatPosition, tier, subdivision, x: dotX, renderRadiusPx, cyOffsetPx }) => {
+            const dotY = dotYBase + (cyOffsetPx ?? 0);
             const dotId = `metronome-dot-${measureIndex}-${beatPosition}`;
+            const radiusPx = renderRadiusPx ?? metronomeDotRadiusPx(tier, subdivision);
 
-            // Create new dot
             const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle') as SVGCircleElement;
             circle.setAttribute('id', dotId);
             circle.setAttribute('cx', dotX.toString());
@@ -1584,15 +1562,17 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
             circle.setAttribute('class', 'metronome-dot');
             circle.setAttribute('data-measure', measureIndex.toString());
             circle.setAttribute('data-position', beatPosition.toString());
-            circle.setAttribute('r', '4'); // Smaller dots (was 5)
-            circle.setAttribute('fill', '#6b7280'); // Dark grey - use setAttribute for SVG
+            circle.setAttribute('data-tier', tier);
+            circle.setAttribute('data-subdivision', subdivision ?? '');
+            circle.setAttribute('data-render-radius', String(radiusPx));
+            circle.setAttribute('r', String(radiusPx));
+            circle.setAttribute('fill', metronomeDotIdleFill(tier));
             circle.setAttribute('stroke', 'none');
             circle.setAttribute('stroke-width', '0');
             if (svgElement) {
               svgElement.appendChild(circle);
             }
 
-            // Store reference to this dot
             metronomeDotsRef.current.set(dotId, circle);
           });
         });
@@ -1603,7 +1583,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     // Preview rendering is handled in a separate useEffect below
     // Note: notation, timeSignature, and onDropPattern are used for drag/drop but don't need to trigger re-renders
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rhythm, metronomeEnabled, containerWidth, selection, compactMode, exportMode, exportLayoutWidth]);
+  }, [rhythm, metronomeEnabled, metronomeSubdivisionLevel, containerWidth, selection, compactMode, exportMode, exportLayoutWidth]);
 
   // Playback note highlight — DOM-only updates so playhead does not re-layout the staff.
   useEffect(() => {
@@ -1628,7 +1608,13 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
 
     // Reset all dots to inactive state (dark grey)
     metronomeDotsRef.current.forEach((circle) => {
-      circle.setAttribute('fill', '#6b7280'); // Use setAttribute instead of style for SVG
+      const tier = circle.getAttribute('data-tier') ?? 'beat';
+      const renderRadius = circle.getAttribute('data-render-radius');
+      circle.setAttribute('fill', metronomeDotIdleFill(tier as 'downbeat' | 'beat' | 'subdivision'));
+      circle.setAttribute(
+        'r',
+        renderRadius ?? metronomeDotRadius(tier as 'downbeat' | 'beat' | 'subdivision'),
+      );
       circle.setAttribute('stroke', 'none');
       circle.setAttribute('stroke-width', '0');
     });
@@ -2254,7 +2240,21 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
       }
       return;
     }
-  }, [selection, onSelectionChange, onDeleteSelection, onRequestPaletteFocus, findAdjacentNote, announce, rhythm]);
+
+    // Paste Darbuka pattern with Cmd/Ctrl+V
+    if (key === 'v' && (e.metaKey || e.ctrlKey) && onPastePattern) {
+      e.preventDefault();
+      void navigator.clipboard
+        .readText()
+        .then((text) => {
+          if (text.trim()) onPastePattern(text);
+        })
+        .catch(() => {
+          // Clipboard read failed silently
+        });
+      return;
+    }
+  }, [selection, onSelectionChange, onDeleteSelection, onPastePattern, onRequestPaletteFocus, findAdjacentNote, announce, rhythm]);
 
   if (rhythm.measures.length === 0) {
     return null;

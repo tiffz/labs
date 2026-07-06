@@ -67,9 +67,6 @@ export function MidiOptionSelect<T extends string | number>({
         onClose={(_, reason) => {
           if (reason === 'backdropClick' || reason === 'escapeKeyDown') setOpen(false);
         }}
-        disableAutoFocus
-        disableEnforceFocus
-        disableRestoreFocus
         disableScrollLock
         placement="bottom-start"
         marginThreshold={8}

@@ -21,7 +21,10 @@
     var(--theme-primary, #7c3aed) 56%,
     #c4b5fd
   );
-  --pfs-focus-ring: 0 0 0 2px rgba(124, 58, 237, 0.12);
+  --pfs-focus-ring: var(
+    --labs-control-focus-ring,
+    0 0 0 2px rgba(124, 58, 237, 0.12)
+  );
   --pfs-menu-border: color-mix(in srgb, #8b5cf6 32%, #ddd6fe);
   --pfs-menu-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
   --pfs-menu-radius: 0.625rem;
@@ -119,24 +122,12 @@
 }
 
 .shared-playback-field-select__menu {
-  --pfs-bg: #fff;
-  border-radius: var(--pfs-menu-radius, 0.625rem) !important;
-  border: 1px solid var(--pfs-menu-border, rgba(124, 58, 237, 0.12)) !important;
-  box-shadow: var(
-    --pfs-menu-shadow,
-    0 12px 28px rgba(15, 23, 42, 0.12)
-  ) !important;
-  background-color: var(--pfs-bg, #fff) !important;
-  background-image: none !important;
   overflow: hidden;
 }
 
 .shared-playback-field-select__menu--default {
   --pfs-bg: #fff;
   --pfs-text: #0f172a;
-  --pfs-menu-border: color-mix(in srgb, #8b5cf6 32%, #ddd6fe);
-  --pfs-menu-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
-  --pfs-menu-radius: 0.625rem;
   --pfs-menu-padding: 0.375rem;
   --pfs-item-radius: 0.5rem;
   --pfs-item-hover-bg: rgba(99, 102, 241, 0.06);
@@ -147,9 +138,6 @@
 .shared-playback-field-select__menu--encore {
   --pfs-bg: #fff;
   --pfs-text: rgba(15, 23, 42, 0.92);
-  --pfs-menu-border: rgba(124, 58, 237, 0.12);
-  --pfs-menu-shadow: 0 12px 32px rgba(76, 29, 149, 0.08);
-  --pfs-menu-radius: 10px;
   --pfs-menu-padding: 0.375rem;
   --pfs-item-radius: 0.5rem;
   --pfs-item-hover-bg: rgba(124, 58, 237, 0.06);
@@ -182,9 +170,6 @@
 .shared-playback-field-select__menu--words {
   --pfs-bg: #fff;
   --pfs-text: #0f172a;
-  --pfs-menu-border: color-mix(in srgb, #0a8a8f 30%, #dbeafe);
-  --pfs-menu-shadow: 0 10px 20px rgba(2, 132, 199, 0.16);
-  --pfs-menu-radius: 0.625rem;
   --pfs-menu-padding: 0.375rem;
   --pfs-item-radius: 0.5rem;
   --pfs-item-hover-bg: color-mix(in srgb, #f0fdfa 72%, #fff);
@@ -197,9 +182,6 @@
 .shared-playback-field-select__menu--chords {
   --pfs-bg: #fff;
   --pfs-text: #0f172a;
-  --pfs-menu-border: color-mix(in srgb, #6366f1 26%, #c7d2fe);
-  --pfs-menu-shadow: 0 12px 24px rgba(67, 56, 202, 0.16);
-  --pfs-menu-radius: 0.625rem;
   --pfs-menu-padding: 0.375rem;
   --pfs-item-radius: 0.5rem;
   --pfs-item-hover-bg: color-mix(in srgb, #eef2ff 68%, #fff);
@@ -211,9 +193,6 @@
 .shared-playback-field-select__menu--piano {
   --pfs-bg: #fff;
   --pfs-text: #0f172a;
-  --pfs-menu-border: color-mix(in srgb, #7c3aed 24%, #d8b4fe);
-  --pfs-menu-shadow: 0 14px 30px rgba(124, 58, 237, 0.15);
-  --pfs-menu-radius: 0.625rem;
   --pfs-menu-padding: 0.375rem;
   --pfs-item-radius: 0.5rem;
   --pfs-item-hover-bg: color-mix(in srgb, #f5f3ff 70%, #fff);

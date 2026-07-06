@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import PlaybackControls from './PlaybackControls';
 import type { TimeSignature } from '../types';
 
@@ -26,32 +26,34 @@ describe('PlaybackControls', () => {
   it('should render metronome button', () => {
     render(<PlaybackControls {...defaultProps} />);
     
-    const metronomeButton = screen.getByLabelText('Toggle metronome');
+    const metronomeButton = screen.getByLabelText('Metronome off');
     expect(metronomeButton).toBeInTheDocument();
-    expect(metronomeButton).toHaveAttribute('title', 'Metronome: Off');
   });
 
   it('should show active state when metronome is enabled', () => {
     render(<PlaybackControls {...defaultProps} metronomeEnabled={true} />);
     
-    const metronomeButton = screen.getByLabelText('Toggle metronome');
+    const metronomeButton = screen.getByLabelText('Metronome on');
     expect(metronomeButton).toHaveClass('active');
-    expect(metronomeButton).toHaveAttribute('title', 'Metronome: On');
   });
 
   it('should show inactive state when metronome is disabled', () => {
     render(<PlaybackControls {...defaultProps} metronomeEnabled={false} />);
-    
-    const metronomeButton = screen.getByLabelText('Toggle metronome');
+
+    const metronomeButton = screen.getByLabelText('Metronome off');
     expect(metronomeButton).not.toHaveClass('active');
-    expect(metronomeButton).toHaveAttribute('title', 'Metronome: Off');
+  });
+
+  it('shows filled icon when metronome is enabled', () => {
+    render(<PlaybackControls {...defaultProps} metronomeEnabled={true} />);
+    expect(screen.getByLabelText('Metronome on')).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('should call onMetronomeToggle with opposite value when clicked', () => {
     const onMetronomeToggle = vi.fn();
     render(<PlaybackControls {...defaultProps} metronomeEnabled={false} onMetronomeToggle={onMetronomeToggle} />);
     
-    const metronomeButton = screen.getByLabelText('Toggle metronome');
+    const metronomeButton = screen.getByLabelText('Metronome off');
     fireEvent.click(metronomeButton);
     
     expect(onMetronomeToggle).toHaveBeenCalledTimes(1);
@@ -62,9 +64,9 @@ describe('PlaybackControls', () => {
     const onMetronomeToggle = vi.fn();
     render(<PlaybackControls {...defaultProps} metronomeEnabled={true} onMetronomeToggle={onMetronomeToggle} />);
     
-    const metronomeButton = screen.getByLabelText('Toggle metronome');
+    const metronomeButton = screen.getByLabelText('Metronome on');
     fireEvent.click(metronomeButton);
-    
+
     expect(onMetronomeToggle).toHaveBeenCalledTimes(1);
     expect(onMetronomeToggle).toHaveBeenCalledWith(false);
   });
@@ -116,7 +118,7 @@ describe('PlaybackControls', () => {
     const rightControls = container.querySelector('.right-controls-group');
     const timingInputs = container.querySelector('.timing-inputs');
     const settingsButton = screen.getByLabelText('Open settings');
-    const metronomeButton = screen.getByLabelText('Toggle metronome');
+    const metronomeButton = screen.getByLabelText('Metronome off');
 
     expect(rightControls).toBeTruthy();
     expect(timingInputs).toBeTruthy();
@@ -170,28 +172,23 @@ describe('PlaybackControls', () => {
     expect(onBpmChange).toHaveBeenCalledWith(132);
   });
 
-  it('should show time signature dropdown when numerator input is focused', () => {
+  it('should show time signature dropdown when trigger is clicked', () => {
     render(<PlaybackControls {...defaultProps} />);
-    
-    const numeratorInput = screen.getByLabelText('Time signature numerator');
-    fireEvent.focus(numeratorInput);
-    
-    // Check if dropdown appears with common time signatures
-    expect(screen.getByText('2/4')).toBeInTheDocument();
-    expect(screen.getByText('3/4')).toBeInTheDocument();
-    expect(screen.getByText('4/4')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Change time signature'));
+
+    expect(screen.getByText('Common meters')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '3/4' })).toBeInTheDocument();
   });
 
   it('should update time signature when selecting from dropdown', () => {
     const onTimeSignatureChange = vi.fn();
     render(<PlaybackControls {...defaultProps} onTimeSignatureChange={onTimeSignatureChange} />);
-    
-    const numeratorInput = screen.getByLabelText('Time signature numerator');
-    fireEvent.focus(numeratorInput);
-    
-    const option = screen.getByText('3/4');
-    fireEvent.click(option);
-    
+
+    fireEvent.click(screen.getByLabelText('Change time signature'));
+
+    fireEvent.click(screen.getByRole('button', { name: '3/4' }));
+
     expect(onTimeSignatureChange).toHaveBeenCalledWith({
       numerator: 3,
       denominator: 4,
@@ -199,19 +196,19 @@ describe('PlaybackControls', () => {
     });
   });
 
-  it('should close dropdown when clicking outside', () => {
+  it('should close BPM preset dropdown when clicking outside', async () => {
     render(<PlaybackControls {...defaultProps} />);
-    
-    const numeratorInput = screen.getByLabelText('Time signature numerator');
-    fireEvent.focus(numeratorInput);
-    
-    expect(screen.getByText('2/4')).toBeInTheDocument();
-    
-    // Click outside
-    fireEvent.mouseDown(document.body);
-    
-    // Dropdown should be closed (elements not in document)
-    expect(screen.queryByText('2/4')).not.toBeInTheDocument();
+
+    const bpmInput = screen.getByLabelText('Tempo in BPM');
+    fireEvent.focus(bpmInput);
+    expect(screen.getByText('Common BPMs')).toBeInTheDocument();
+
+    fireEvent.pointerDown(document.body);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Common BPMs')).not.toBeInTheDocument();
+    });
   });
+
 });
 

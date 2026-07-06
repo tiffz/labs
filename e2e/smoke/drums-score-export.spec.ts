@@ -22,10 +22,12 @@ test.describe('Darbuka score export', () => {
     await expect(page.locator('.vexflow-container svg')).toBeVisible({ timeout: 20_000 });
 
     await page.getByRole('button', { name: /Download rhythm/i }).click();
-    await page.getByRole('radio', { name: 'PNG' }).check();
+    const exportPanel = page.locator('.shared-export-panel-drums');
+    await expect(exportPanel).toBeVisible({ timeout: 10_000 });
+    await exportPanel.getByText('PNG', { exact: true }).click();
 
     const downloadPromise = page.waitForEvent('download', { timeout: 30_000 });
-    await page.getByRole('button', { name: /^Export$/ }).click();
+    await exportPanel.getByRole('button', { name: /^Export$/ }).click();
     const download = await downloadPromise;
 
     mkdirSync(OUTPUT_DIR, { recursive: true });

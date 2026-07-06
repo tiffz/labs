@@ -1,6 +1,7 @@
 import { forwardRef, lazy, Suspense, type ReactElement } from 'react';
 import type { ParsedRhythm, TimeSignature } from '../types';
 import type { NoteSelectionState } from './VexFlowRendererTypes';
+import type { SubdivisionLevel } from '../../shared/audio/metronome/types';
 import CollapsibleSection from './CollapsibleSection';
 
 const VexFlowRenderer = lazy(() => import('./VexFlowRenderer'));
@@ -17,6 +18,7 @@ interface RhythmDisplayProps {
   rhythm: ParsedRhythm;
   currentNote?: { measureIndex: number; noteIndex: number } | null;
   metronomeEnabled?: boolean;
+  metronomeSubdivisionLevel?: SubdivisionLevel;
   currentMetronomeBeat?: { measureIndex: number; positionInSixteenths: number; isDownbeat: boolean } | null;
   onDropPattern?: (pattern: string, charPosition: number, operationType: 'replace' | 'insert') => void;
   notation?: string;
@@ -29,6 +31,8 @@ interface RhythmDisplayProps {
   onMoveSelection?: (fromStart: number, fromEnd: number, toPosition: number) => void;
   /** Callback when delete key is pressed on selection */
   onDeleteSelection?: () => void;
+  /** Paste Darbuka pattern from clipboard (Ctrl/Cmd+V). */
+  onPastePattern?: (pattern: string) => void;
   /** Callback to request focus on the note palette */
   onRequestPaletteFocus?: () => void;
   /** Whether to auto-scroll to keep the current playing note visible */
@@ -39,6 +43,7 @@ const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({
   rhythm,
   currentNote,
   metronomeEnabled = false,
+  metronomeSubdivisionLevel = 1,
   currentMetronomeBeat = null,
   onDropPattern,
   notation = '',
@@ -47,6 +52,7 @@ const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({
   onSelectionChange,
   onMoveSelection,
   onDeleteSelection,
+  onPastePattern,
   onRequestPaletteFocus,
   autoScrollDuringPlayback = false,
 }, ref) => {
@@ -83,6 +89,7 @@ const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({
               rhythm={rhythm}
               currentNote={currentNote}
               metronomeEnabled={metronomeEnabled}
+              metronomeSubdivisionLevel={metronomeSubdivisionLevel}
               currentMetronomeBeat={currentMetronomeBeat}
               onDropPattern={onDropPattern}
               notation={notation}
@@ -91,6 +98,7 @@ const RhythmDisplay = forwardRef<HTMLDivElement, RhythmDisplayProps>(({
               onSelectionChange={onSelectionChange}
               onMoveSelection={onMoveSelection}
               onDeleteSelection={onDeleteSelection}
+              onPastePattern={onPastePattern}
               onRequestPaletteFocus={onRequestPaletteFocus}
               autoScrollDuringPlayback={autoScrollDuringPlayback}
             />

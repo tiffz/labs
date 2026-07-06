@@ -1,0 +1,32 @@
+---
+description: Focus ring theming — tokens, inset vs outset, sticky bar bleed, portal-safe accent
+globs:
+  - "**/*.css"
+  - "**/labsChrome.css"
+  - "**/appSharedThemes.css"
+  - "**/metronome-*.css"
+  - "**/*metronome*"
+  - "src/shared/components/**"
+  - "src/**/main.tsx"
+---
+
+# Focus theming
+
+Read [`docs/FOCUS_THEMING.md`](../../docs/FOCUS_THEMING.md) before editing focus styles or interactive chrome.
+
+## Rules
+
+1. **Theme tokens, not hex** — use `--labs-control-focus-ring`, `--labs-control-focus-ring-inset`, or family `--*-focus-ring`. Map `--theme-focus-ring` once on app shell.
+2. **Outset vs inset** — toolbar / split controls → outset; popover toggles / dense panels → inset. Do not stack both on one control.
+3. **Never clip rings** — no `overflow: hidden` on split shells or settings popovers; use `.labs-focus-ring-host` + `--labs-focus-ring-bleed` on sticky bars.
+4. **No bare `outline: none`** — always add `:focus-visible` replacement (shared utility or component token).
+5. **Portaled UI** — duplicate focus + brand tokens on portal root class (dropdown paper, metronome appearance wrapper), not `:root`.
+
+## Checklist
+
+- [ ] Ring mode chosen (outset / inset / shell `:focus-within`)
+- [ ] App shell or portal class maps `--theme-focus-ring`
+- [ ] Keyboard tab shows visible, unclipped ring
+- [ ] Sticky toolbar has bleed padding if it contains icon/split controls
+
+Menu open/close patterns: [`docs/A11Y_MENU_PATTERNS.md`](../../docs/A11Y_MENU_PATTERNS.md).

@@ -28,6 +28,7 @@ import {
 import { EncoreMrtColumnsSettingsButton } from '../../ui/EncoreMrtColumnsSettingsButton';
 import type { EncoreDateRangeFilterValue } from '../../utils/encoreDateRangeFilter';
 import { EncoreToolbarRow } from '../../ui/EncoreToolbarRow';
+import { encoreListSurfaceTopGap, encoreListToolbarGap, encoreListToolbarSubRowGap } from '../../theme/encoreM3Layout';
 import type { EncoreRepertoireMrtRow } from './libraryRepertoireMrtRowTypes';
 import type { RepertoireViewMode } from '../libraryScreenHelpers';
 
@@ -57,6 +58,10 @@ export type LibraryRepertoireFiltersPanelProps = {
   onSaveCurrentViewClick?: () => void;
   savedSearches: EncoreRepertoireSavedSearch[];
   onApplySavedSearch: (s: EncoreRepertoireSavedSearch) => void;
+  /** Tighter toolbar when the page header is compact (table view). */
+  compact?: boolean;
+  /** Shown under the toolbar when the page header hides the stats line. */
+  statsCaption?: string;
 };
 
 export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPanelProps): ReactElement | null {
@@ -85,6 +90,8 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
     onSaveCurrentViewClick,
     savedSearches,
     onApplySavedSearch,
+    compact = false,
+    statsCaption,
   } = props;
 
   const [savedSearchMenuAnchor, setSavedSearchMenuAnchor] = useState<null | HTMLElement>(null);
@@ -92,6 +99,208 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
   const savedSearchMenuId = useId();
 
   const closeSavedSearchMenu = useCallback(() => setSavedSearchMenuAnchor(null), []);
+
+  const savedSearchButtons = (
+    <>
+      {onSaveCurrentViewClick ? (
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<BookmarkAddIcon sx={{ fontSize: 18 }} />}
+          onClick={onSaveCurrentViewClick}
+          sx={{
+            flexShrink: 0,
+            textTransform: 'none',
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            alignSelf: { xs: 'stretch', sm: 'auto' },
+          }}
+        >
+          Save search
+        </Button>
+      ) : null}
+      <Button
+        variant="outlined"
+        size="small"
+        startIcon={<BookmarksOutlinedIcon sx={{ fontSize: 20 }} />}
+        endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 20 }} />}
+        id={`${savedSearchMenuId}-trigger`}
+        aria-controls={savedSearchMenuOpen ? `${savedSearchMenuId}-menu` : undefined}
+        aria-haspopup="true"
+        aria-expanded={savedSearchMenuOpen ? 'true' : undefined}
+        onClick={(e) => setSavedSearchMenuAnchor(e.currentTarget)}
+        sx={{
+          flexShrink: 0,
+          textTransform: 'none',
+          fontWeight: 600,
+          whiteSpace: 'nowrap',
+          alignSelf: { xs: 'stretch', sm: 'auto' },
+        }}
+      >
+        Saved searches
+        {savedSearches.length > 0 ? (
+          <Typography
+            component="span"
+            variant="caption"
+            sx={{ ml: 0.5, color: 'text.secondary', fontWeight: 500 }}
+          >
+            ({savedSearches.length})
+          </Typography>
+        ) : null}
+      </Button>
+      <Menu
+        id={`${savedSearchMenuId}-menu`}
+        anchorEl={savedSearchMenuAnchor}
+        open={savedSearchMenuOpen}
+        onClose={closeSavedSearchMenu}
+        slotProps={{ list: { 'aria-labelledby': `${savedSearchMenuId}-trigger`, dense: true } }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        {savedSearches.length === 0 ? (
+          <MenuItem disabled>No saved searches yet</MenuItem>
+        ) : (
+          savedSearches.map((s) => (
+            <MenuItem
+              key={s.id}
+              onClick={() => {
+                onApplySavedSearch(s);
+                closeSavedSearchMenu();
+              }}
+              sx={{ py: 1 }}
+            >
+              {s.name}
+            </MenuItem>
+          ))
+        )}
+        <Divider />
+        <MenuItem
+          component="a"
+          href={encoreAppHref({ kind: 'savedSearches' })}
+          onClick={(e) => {
+            handleSpaLinkClick(e, () => {
+              closeSavedSearchMenu();
+              navigateEncore({ kind: 'savedSearches' });
+            });
+          }}
+          sx={{ fontWeight: 600 }}
+        >
+          Manage saved searches…
+        </MenuItem>
+      </Menu>
+    </>
+  );
+
+  const trailingControls = (
+    <Stack direction="row" alignItems="center" gap={compact ? 1.25 : 2.5} sx={{ flexShrink: 0 }}>
+      <EncoreMrtColumnsSettingsButton
+        show={viewMode === 'table'}
+        table={table}
+        onResetLayout={onResetRepertoireTableLayout}
+      />
+      <ToggleButtonGroup
+        exclusive
+        size="small"
+        value={viewMode}
+        onChange={(_e, next: RepertoireViewMode | null) => {
+          if (next) onViewModeChange(next);
+        }}
+        aria-label="Repertoire layout"
+      >
+        <Tooltip title="Table view">
+          <ToggleButton value="table" aria-label="Table view">
+            <ViewListIcon fontSize="small" />
+          </ToggleButton>
+        </Tooltip>
+        <Tooltip title="Grid view">
+          <ToggleButton value="grid" aria-label="Grid view">
+            <ViewModuleIcon fontSize="small" />
+          </ToggleButton>
+        </Tooltip>
+      </ToggleButtonGroup>
+    </Stack>
+  );
+
+  if (songsCount === 0) return null;
+
+  if (compact) {
+    const statsLine = (
+      <>
+        {statsCaption ? `${statsCaption} · ` : ''}
+        Showing {repertoireSongsCount} of {songsCount} {songsCount === 1 ? 'song' : 'songs'}
+        {hasActiveFilters || searchQuery.trim() ? ' · search or filters applied' : ''}
+      </>
+    );
+
+    return (
+      <Box sx={{ flexShrink: 0, mt: encoreListToolbarGap, mb: encoreListSurfaceTopGap }}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: { xs: 0.75, sm: 1 },
+          }}
+        >
+          <TextField
+            size="small"
+            placeholder="Search title, artist, venue, key…"
+            value={searchQuery}
+            onChange={(e) => onSearchQueryChange(e.target.value)}
+            inputProps={{ 'aria-label': 'Search repertoire' }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" aria-hidden />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ flex: '1 1 12rem', minWidth: 0, maxWidth: { md: 320 } }}
+          />
+          {savedSearchButtons}
+          <Box
+            sx={{
+              flex: '1 1 auto',
+              minWidth: 0,
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: 0.75,
+            }}
+          >
+            <EncoreFilterChipBar
+              ref={repertoireFilterBarRef}
+              fields={repertoireFilterFieldDefs}
+              visibleFieldIds={visibleRepertoireFilterIds}
+              values={repertoireFilterValues}
+              onChange={onRepertoireFilterChange}
+              onDateRangeChange={onRepertoireDateRangeChange}
+              excludedFieldIds={excludedRepertoireFilterIds}
+              onExcludedFieldIdsChange={onExcludedRepertoireFilterIdsChange}
+              addableFields={repertoireAddableFilterFields}
+              onVisibleFieldIdsChange={onVisibleRepertoireFilterIdsChange}
+              defaultPinnedFieldIds={[...defaultPinnedFieldIds]}
+              hasActiveFilters={hasActiveFilters}
+              onClearAll={onClearAllFilters}
+            />
+          </Box>
+        </Box>
+        <Stack
+          direction="row"
+          flexWrap="wrap"
+          alignItems="center"
+          justifyContent="space-between"
+          gap={1}
+          useFlexGap
+          sx={{ mt: encoreListToolbarSubRowGap }}
+        >
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, minWidth: 0 }}>
+            {statsLine}
+          </Typography>
+          {trailingControls}
+        </Stack>
+      </Box>
+    );
+  }
 
   if (songsCount === 0) return null;
 
@@ -121,91 +330,7 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
               }}
               sx={{ flex: 1, minWidth: 0 }}
             />
-            {onSaveCurrentViewClick ? (
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<BookmarkAddIcon sx={{ fontSize: 18 }} />}
-                onClick={onSaveCurrentViewClick}
-                sx={{
-                  flexShrink: 0,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  whiteSpace: 'nowrap',
-                  alignSelf: { xs: 'stretch', sm: 'auto' },
-                }}
-              >
-                Save search
-              </Button>
-            ) : null}
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<BookmarksOutlinedIcon sx={{ fontSize: 20 }} />}
-              endIcon={<KeyboardArrowDownIcon sx={{ fontSize: 20 }} />}
-              id={`${savedSearchMenuId}-trigger`}
-              aria-controls={savedSearchMenuOpen ? `${savedSearchMenuId}-menu` : undefined}
-              aria-haspopup="true"
-              aria-expanded={savedSearchMenuOpen ? 'true' : undefined}
-              onClick={(e) => setSavedSearchMenuAnchor(e.currentTarget)}
-              sx={{
-                flexShrink: 0,
-                textTransform: 'none',
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
-                alignSelf: { xs: 'stretch', sm: 'auto' },
-              }}
-            >
-              Saved searches
-              {savedSearches.length > 0 ? (
-                <Typography
-                  component="span"
-                  variant="caption"
-                  sx={{ ml: 0.5, color: 'text.secondary', fontWeight: 500 }}
-                >
-                  ({savedSearches.length})
-                </Typography>
-              ) : null}
-            </Button>
-            <Menu
-              id={`${savedSearchMenuId}-menu`}
-              anchorEl={savedSearchMenuAnchor}
-              open={savedSearchMenuOpen}
-              onClose={closeSavedSearchMenu}
-              slotProps={{ list: { 'aria-labelledby': `${savedSearchMenuId}-trigger`, dense: true } }}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-            >
-              {savedSearches.length === 0 ? (
-                <MenuItem disabled>No saved searches yet</MenuItem>
-              ) : (
-                savedSearches.map((s) => (
-                  <MenuItem
-                    key={s.id}
-                    onClick={() => {
-                      onApplySavedSearch(s);
-                      closeSavedSearchMenu();
-                    }}
-                    sx={{ py: 1 }}
-                  >
-                    {s.name}
-                  </MenuItem>
-                ))
-              )}
-              <Divider />
-              <MenuItem
-                component="a"
-                href={encoreAppHref({ kind: 'savedSearches' })}
-                onClick={(e) => {
-                  handleSpaLinkClick(e, () => {
-                    closeSavedSearchMenu();
-                    navigateEncore({ kind: 'savedSearches' });
-                  });
-                }}
-                sx={{ fontWeight: 600 }}
-              >
-                Manage saved searches…
-              </MenuItem>
-            </Menu>
+            {savedSearchButtons}
           </Stack>
         </EncoreToolbarRow>
 
@@ -231,33 +356,7 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
             Showing {repertoireSongsCount} of {songsCount} {songsCount === 1 ? 'song' : 'songs'}
             {hasActiveFilters || searchQuery.trim() ? ' · search or filters applied' : ''}
           </Typography>
-          <Stack direction="row" alignItems="center" gap={2.5} sx={{ flexShrink: 0 }}>
-            <EncoreMrtColumnsSettingsButton
-              show={viewMode === 'table'}
-              table={table}
-              onResetLayout={onResetRepertoireTableLayout}
-            />
-            <ToggleButtonGroup
-              exclusive
-              size="small"
-              value={viewMode}
-              onChange={(_e, next: RepertoireViewMode | null) => {
-                if (next) onViewModeChange(next);
-              }}
-              aria-label="Repertoire layout"
-            >
-              <Tooltip title="Table view">
-                <ToggleButton value="table" aria-label="Table view">
-                  <ViewListIcon fontSize="small" />
-                </ToggleButton>
-              </Tooltip>
-              <Tooltip title="Grid view">
-                <ToggleButton value="grid" aria-label="Grid view">
-                  <ViewModuleIcon fontSize="small" />
-                </ToggleButton>
-              </Tooltip>
-            </ToggleButtonGroup>
-          </Stack>
+          {trailingControls}
         </Stack>
       </Stack>
     </Box>

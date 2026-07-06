@@ -1,5 +1,5 @@
 import { AudioPlayer } from '../audio/audioPlayer';
-import { DRUM_SAMPLE_URLS } from '../audio/drumSampleUrls';
+import { createDrumAudioPlayer } from '../audio/platform/players/createDrumAudioPlayer';
 import { secPerSixteenthAtBpm } from '../playback/measureClock';
 import { parseRhythm } from '../rhythm/rhythmParser';
 import { getSixteenthsPerMeasure } from '../rhythm/timeSignatureUtils';
@@ -52,8 +52,5 @@ export function scheduleDrumMeasure({
 }
 
 export function createChartDrumAudioPlayer(): AudioPlayer {
-  return new AudioPlayer({
-    soundUrls: { ...DRUM_SAMPLE_URLS },
-    enableReverb: false,
-  });
+  return createDrumAudioPlayer({ includeClick: false }).underlying;
 }

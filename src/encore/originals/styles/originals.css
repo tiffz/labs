@@ -69,10 +69,45 @@
   background: rgba(124, 58, 237, 0.14);
 }
 
-/* Chords paint: page scroll includes title + stepper; toolbar + palette stick. */
+/* Chords paint: stepper scrolls away; palette sticks for painting. */
 .encore-originals-chords-page-scroll {
   flex: 1;
   min-height: 0;
+}
+
+.encore-originals-chords-page-scroll .encore-originals-workspace-stepper {
+  flex-shrink: 0;
+}
+
+.encore-originals-chords-toolbar-band {
+  flex-shrink: 0;
+  background: #fff;
+  border-bottom: 1px solid rgba(76, 29, 149, 0.08);
+}
+
+.encore-originals-chords-sticky-chrome.in-scroll-region__sticky-surface {
+  --in-scroll-sticky-bg: rgba(255, 255, 255, 0.98);
+  --in-scroll-sticky-border: rgba(76, 29, 149, 0.1);
+}
+
+.encore-originals-chords-sticky-chrome .encore-originals-chords-toolbar-band {
+  border-bottom: 1px solid rgba(76, 29, 149, 0.08);
+}
+
+.encore-originals-chords-sticky-chrome .encore-originals-chord-palette {
+  border-top: 0;
+  background: transparent;
+}
+
+.encore-originals-chord-palette--sticky {
+  position: sticky;
+  top: 0;
+  z-index: var(--in-scroll-sticky-z, 11);
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(76, 29, 149, 0.1);
+  box-shadow: 0 1px 0 rgba(76, 29, 149, 0.05);
 }
 
 .encore-originals-chords-page-scroll .encore-originals-paint-editor,
@@ -83,34 +118,88 @@
   overflow: visible;
 }
 
-.encore-originals-workspace--chords-integrated
-  .encore-originals-chords-stepper-scroll {
-  border: 1px solid rgba(76, 29, 149, 0.1);
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(76, 29, 149, 0.05);
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.15rem;
+/* Unified editor shell — one card for title, stepper, and stage body. */
+.encore-originals-editor-shell {
+  flex-shrink: 0;
 }
 
+.encore-originals-editor-shell__scroll {
+  min-height: 0;
+}
+
+.encore-originals-editor-anchor {
+  flex-shrink: 0;
+}
+
+.encore-originals-workspace-stepper .encore-originals-workflow-stepper {
+  max-width: 42rem;
+  margin-inline: auto;
+}
+
+.encore-originals-workflow-stepper {
+  max-width: 42rem;
+  margin-inline: auto;
+}
+
+.encore-originals-workflow-stepper__step {
+  position: relative;
+  z-index: 1;
+}
+
+.encore-originals-workflow-stepper__track {
+  z-index: 0;
+}
+
+/* Chords body inside shell — scrolls with chart; no nested card or sticky toolbar. */
+.encore-originals-editor-shell
+  .encore-originals-workspace--chords-integrated
+  .encore-originals-chords-paint-chrome.encore-originals-chart-chrome--flat {
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
+  background: #fff;
+}
+
+.encore-originals-editor-shell
+  .encore-originals-workspace--chords-integrated
+  .encore-originals-chords-chart-surface.encore-originals-chart-surface--flat,
+.encore-originals-editor-shell
+  .encore-originals-workspace--chords-integrated
+  .encore-originals-chart-chrome--flat
+  + .encore-originals-chords-chart-surface {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: #fff;
+}
+
+/* Legacy chords integrated layout (outside shell) — keep flat dividers only. */
 .encore-originals-workspace--chords-integrated
-  .encore-originals-chords-paint-chrome {
-  border: 1px solid rgba(76, 29, 149, 0.1);
-  border-radius: 12px;
+  .encore-originals-chords-paint-chrome.encore-originals-chart-chrome--flat {
+  border: none;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow:
-    0 1px 2px rgba(76, 29, 149, 0.05),
-    0 4px 16px rgba(76, 29, 149, 0.04);
+  box-shadow: none;
+  background: #fff;
 }
 
 .encore-originals-workspace--chords-integrated
-  .encore-originals-chords-paint-chrome.in-scroll-region__sticky-surface {
+  .encore-originals-chords-paint-chrome.encore-originals-chart-chrome--flat.in-scroll-region__sticky-surface {
+  position: static;
   backdrop-filter: none;
-  background: #fff;
+  box-shadow: none;
   border-bottom: none;
-  box-shadow:
-    0 1px 2px rgba(76, 29, 149, 0.05),
-    0 4px 16px rgba(76, 29, 149, 0.04);
+}
+
+.encore-originals-chart-chrome--flat .encore-originals-chords-toolbar {
+  background: #fff;
+  border-bottom: 1px solid rgba(76, 29, 149, 0.08);
+}
+
+.encore-originals-chart-chrome--flat .encore-originals-chord-palette {
+  border-top: 1px solid rgba(76, 29, 149, 0.08);
+  background: #fff;
 }
 
 .encore-originals-chords-toolbar {
@@ -126,16 +215,22 @@
   box-shadow: 0 1px 3px rgba(76, 29, 149, 0.06);
 }
 
-.encore-originals-chords-stepper-scroll .encore-originals-workflow-stepper {
-  max-width: 52rem;
-  margin-inline: auto;
+.encore-originals-chart-surface--flat,
+.encore-originals-chart-chrome--flat + .encore-originals-chords-chart-surface,
+.encore-originals-chart-chrome--flat + .encore-originals-chart-surface--flat {
+  border: none;
+  border-top: 1px solid rgba(76, 29, 149, 0.08);
+  border-radius: 0;
+  box-shadow: none;
+  background: #fff;
 }
 
 .encore-originals-chords-paint-chrome {
   background: #fff;
 }
 
-.encore-originals-chords-paint-chrome .encore-originals-chord-palette {
+.encore-originals-chords-paint-chrome:not(.encore-originals-chart-chrome--flat)
+  .encore-originals-chord-palette {
   border-top: 1px solid rgba(76, 29, 149, 0.06);
   background: linear-gradient(
     180deg,
@@ -505,11 +600,6 @@
 .encore-originals-workspace--write .MuiTextField-root {
   flex: 1;
   min-height: 0;
-}
-
-.encore-originals-workflow-stepper {
-  max-width: 52rem;
-  margin-inline: auto;
 }
 
 .encore-originals-dashboard-workflow .encore-originals-workflow-stepper {
@@ -896,6 +986,20 @@
   border-radius: 8px 8px 0 0;
 }
 
+.encore-originals-chart-read-chrome--flat {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  border-bottom: none;
+  background: #fff;
+}
+
+.encore-originals-chart-read-chrome--flat .encore-originals-chords-toolbar {
+  background: #fff;
+  border-bottom: 1px solid rgba(76, 29, 149, 0.08);
+}
+
 .encore-originals-chart-read-display-strip {
   border-top: 1px solid rgba(76, 29, 149, 0.06);
   background: linear-gradient(
@@ -903,6 +1007,41 @@
     rgba(249, 250, 251, 0.98) 0%,
     rgba(255, 255, 255, 0.94) 100%
   );
+}
+
+.encore-originals-chart-read-chrome--flat
+  .encore-originals-chart-read-display-strip {
+  background: #fff;
+  border-top: 1px solid rgba(76, 29, 149, 0.08);
+}
+
+.encore-originals-chart-read-chrome--flat
+  + .encore-originals-chords-chart-surface,
+.encore-originals-chart-read-view--flat.encore-originals-chords-chart-surface {
+  border: none;
+  border-top: 1px solid rgba(76, 29, 149, 0.08);
+  border-radius: 0;
+  box-shadow: none;
+  background: #fff;
+}
+
+.encore-originals-chart-chrome--flat .encore-originals-meta-chip .MuiChip-root {
+  border-color: rgba(76, 29, 149, 0.14);
+  background: transparent;
+  box-shadow: none;
+}
+
+.encore-originals-chart-chrome--flat
+  .encore-originals-meta-chip
+  .MuiChip-root.Mui-disabled {
+  opacity: 1;
+  -webkit-text-fill-color: inherit;
+}
+
+.encore-originals-chart-chrome--flat .encore-originals-meta-chip {
+  border: none;
+  box-shadow: none;
+  background: transparent;
 }
 
 .encore-originals-chart-read-display-strip

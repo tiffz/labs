@@ -121,12 +121,6 @@ function TimeSignaturePickerPanel({
 
   return (
     <Box className="shared-time-sig-dropdown-list shared-bpm-dropdown-list" aria-label="Time signature">
-      <Box className="shared-time-sig-preview" aria-hidden>
-        <span className="shared-time-sig-preview-num">{value.numerator}</span>
-        <span className="shared-time-sig-preview-bar" />
-        <span className="shared-time-sig-preview-den">{value.denominator}</span>
-      </Box>
-
       <Box className="shared-time-sig-presets-block">
         <span className="shared-bpm-presets-label">Common meters</span>
         <Box className="shared-bpm-presets-row" role="group" aria-label="Common time signatures">
@@ -290,9 +284,6 @@ export default function TimeSignatureInput({
           open={Boolean(open && anchorRef.current && !disabled)}
           anchorEl={anchorRef.current}
           onClose={() => setOpen(false)}
-          disableAutoFocus
-          disableEnforceFocus
-          disableRestoreFocus
           placement="bottom-start"
           paperClassName={[
             'shared-time-sig-dropdown',

@@ -4,6 +4,9 @@ import { writeStanzaLastSelectedSongId } from '../db/stanzaLastSelectedSong';
 export const STANZA_E2E_STEM_SONG_ID = '__stanza_e2e_stems__';
 export const STANZA_E2E_STEM_SONG_TITLE = 'E2E Stems Song';
 
+export const STANZA_E2E_PRACTICE_RAIL_SONG_ID = '__stanza_e2e_practice_rail__';
+export const STANZA_E2E_PRACTICE_RAIL_SONG_TITLE = 'E2E Practice Rail Song';
+
 /** ~mono 8kHz 8-bit PCM WAV — decodes in Chromium for playback smoke tests. */
 export function createMinimalWavBlobForStanzaE2e(durationSec = 0.05): Blob {
   const sampleRate = 8000;
@@ -48,6 +51,21 @@ export function createMinimalWavBlobForStanzaE2e(durationSec = 0.05): Blob {
     view.setUint8(offset++, 128);
   }
   return new Blob([buffer], { type: 'audio/wav' });
+}
+
+async function buildE2eSongWithPracticeRail(): Promise<StanzaSong> {
+  const primary = createMinimalWavBlobForStanzaE2e();
+  return {
+    id: STANZA_E2E_PRACTICE_RAIL_SONG_ID,
+    ytId: null,
+    title: STANZA_E2E_PRACTICE_RAIL_SONG_TITLE,
+    markers: [],
+    stats: {},
+    updatedAt: Date.now(),
+    localAudioBlob: primary,
+    localOriginalKey: 'F minor',
+    localTransposeSemitones: -1,
+  };
 }
 
 async function buildE2eSongWithStems(): Promise<StanzaSong> {
@@ -114,6 +132,7 @@ export type StanzaE2eWindowHooks = {
   seedSongWithStems: () => Promise<string>;
   seedSongWithDrumsPlayback: () => Promise<string>;
   seedSongWithLoopPlayback: () => Promise<string>;
+  seedSongWithPracticeRail: () => Promise<string>;
 };
 
 declare global {
@@ -142,6 +161,12 @@ export function installStanzaE2eHooks(): void {
     },
     async seedSongWithLoopPlayback() {
       const row = await buildE2eSongWithLoopPlayback();
+      await stanzaDb.songs.put(row);
+      writeStanzaLastSelectedSongId(row.id);
+      return row.id;
+    },
+    async seedSongWithPracticeRail() {
+      const row = await buildE2eSongWithPracticeRail();
       await stanzaDb.songs.put(row);
       writeStanzaLastSelectedSongId(row.id);
       return row.id;

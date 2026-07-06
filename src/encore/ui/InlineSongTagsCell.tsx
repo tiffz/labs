@@ -1,10 +1,10 @@
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
-import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { ReactElement } from 'react';
 import { useCallback, useRef, useState } from 'react';
+import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import { normalizeSongTags } from '../repertoire/songTags';
 import { TagsAutocomplete } from './TagsAutocomplete';
 
@@ -84,15 +84,11 @@ export function InlineSongTagsCell(props: InlineSongTagsCellProps): ReactElement
           />
         </Box>
       </Stack>
-      <Popover
+      <AnchoredPopover
         open={open}
         anchorEl={anchorRef.current}
         onClose={close}
-        disableAutoFocus
-        disableEnforceFocus
-        disableRestoreFocus
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        placement="bottom-start"
         slotProps={{
           paper: {
             sx: { p: 2, width: 320, maxWidth: '90vw' },
@@ -113,7 +109,7 @@ export function InlineSongTagsCell(props: InlineSongTagsCellProps): ReactElement
           }}
           fullWidth
         />
-      </Popover>
+      </AnchoredPopover>
     </Box>
   );
 }

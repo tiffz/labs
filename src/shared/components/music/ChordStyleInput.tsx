@@ -319,9 +319,6 @@ const ChordStyleInput = <TStyle extends string>({
         onClose={(_, reason) => {
           if (reason === 'backdropClick' || reason === 'escapeKeyDown') setOpen(false);
         }}
-        disableAutoFocus
-        disableEnforceFocus
-        disableRestoreFocus
         disableScrollLock
         placement="bottom-start"
         slotProps={{

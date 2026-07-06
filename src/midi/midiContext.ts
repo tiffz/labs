@@ -11,6 +11,7 @@ export interface MidiContextValue {
   toggleMidiDevice: (deviceId: string) => void;
   startGuide: () => Promise<void>;
   stopGuide: () => void;
+  syncMetronomePreferences: () => void;
 }
 
 export const MidiContext = createContext<MidiContextValue | null>(null);

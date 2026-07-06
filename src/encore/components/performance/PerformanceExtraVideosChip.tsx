@@ -3,12 +3,12 @@ import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
-import Popover from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import type { MouseEvent, ReactElement } from 'react';
 import { useCallback, useId, useMemo, useState } from 'react';
+import AnchoredPopover from '../../../shared/components/AnchoredPopover';
 import { useEncoreMediaPlaybackHoverProps } from '../../hooks/useEncoreMediaPlaybackHoverProps';
 import type { EncoreHoverCardPlayProps } from '../../media/encoreMediaPlaybackTargets';
 import type { EncorePerformance, EncorePerformanceVideo } from '../../types';
@@ -159,23 +159,18 @@ export function PerformanceExtraVideosChip(props: PerformanceExtraVideosChipProp
           '&:hover': { bgcolor: 'action.hover' },
         }}
       />
-      <Popover
+      <AnchoredPopover
         id={popoverId}
         open={popoverOpen}
         anchorEl={anchorEl}
         onClose={close}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        placement="bottom-start"
         slotProps={{
           paper: {
             sx: {
               mt: 0.75,
               width: 320,
               maxWidth: 'calc(100vw - 24px)',
-              borderRadius: 1.5,
-              border: 1,
-              borderColor: encoreHairline,
-              boxShadow: 3,
             },
           },
         }}
@@ -211,7 +206,7 @@ export function PerformanceExtraVideosChip(props: PerformanceExtraVideosChipProp
             ))}
           </Stack>
         </Box>
-      </Popover>
+      </AnchoredPopover>
     </>
   );
 }

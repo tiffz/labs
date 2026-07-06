@@ -46,11 +46,13 @@ import '../components/music/darbukaTrainerIconLink.css';
 
 /**
  * Style configuration for the drum notation renderer.
- * Use a single `inkColor` for staff lines, barlines, noteheads, stems, beams, and time signature.
+ * Note ink (stems, heads, barlines) uses `inkColor`; staff lines use `staffLineColor`.
  */
 export interface NotationStyle {
-  /** Unified ink for all notation glyphs and lines (staff, barlines, notes, time signature). */
+  /** Ink for noteheads, stems, beams, barlines, and time signature. */
   inkColor: string;
+  /** Horizontal staff lines only — defaults to light grey when omitted. */
+  staffLineColor?: string;
   /** Color for highlighted/active notes during playback. */
   highlightColor: string;
   /** Background color (for contrast). */
@@ -66,11 +68,13 @@ export type NotationStyleInput = 'light' | 'dark' | NotationStyle;
 export const NOTATION_STYLES = {
   light: {
     inkColor: '#333333',
+    staffLineColor: '#d1d5db',
     highlightColor: '#9d8ec7',
     backgroundColor: '#ffffff',
   },
   dark: {
     inkColor: '#c8c4d8',
+    staffLineColor: 'rgba(200, 196, 216, 0.35)',
     highlightColor: '#c9a0b8',
     backgroundColor: '#262630',
   },
@@ -78,11 +82,15 @@ export const NOTATION_STYLES = {
 
 /** Resolve a preset name or custom style object to a full {@link NotationStyle}. */
 // eslint-disable-next-line react-refresh/only-export-components
-export function resolveNotationStyle(style: NotationStyleInput = 'light'): NotationStyle {
+export function resolveNotationStyle(style: NotationStyleInput = 'light'): Required<NotationStyle> {
   if (typeof style === 'string') {
     return NOTATION_STYLES[style];
   }
-  return style;
+  return {
+    ...NOTATION_STYLES.light,
+    ...style,
+    staffLineColor: style.staffLineColor ?? NOTATION_STYLES.light.staffLineColor,
+  };
 }
 
 /** Derive VexFlow layout from the requested render height (host apps tune density via `height`). */
@@ -498,9 +506,23 @@ function applyInkToSvgElement(el: SVGElement, inkColor: string): void {
   }
 }
 
-function applyColorsToSvg(svg: SVGSVGElement, style: NotationStyle): void {
+function applyStaffLineColors(svg: SVGSVGElement, staffLineColor: string): void {
+  svg.querySelectorAll("g[class*='vf-stave']").forEach((staveGroup) => {
+    staveGroup.querySelectorAll(':scope > path, :scope > line').forEach((el) => {
+      const cls = el.getAttribute('class') ?? '';
+      if (cls.includes('barline')) return;
+      const svgEl = el as SVGElement;
+      svgEl.setAttribute('stroke', staffLineColor);
+      svgEl.style.setProperty('stroke', staffLineColor, 'important');
+    });
+  });
+}
+
+function applyColorsToSvg(svg: SVGSVGElement, style: Required<NotationStyle>): void {
   svg.querySelectorAll('*').forEach(el => applyInkToSvgElement(el as SVGElement, style.inkColor));
+  applyStaffLineColors(svg, style.staffLineColor);
   svg.style.setProperty('--notation-ink', style.inkColor);
+  svg.style.setProperty('--notation-staff-line', style.staffLineColor);
   svg.style.setProperty('--notation-highlight', style.highlightColor);
 }
 
@@ -531,7 +553,7 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
   } | null>(null);
 
   // Resolve style to NotationStyle object
-  const resolvedStyle = useMemo((): NotationStyle => resolveNotationStyle(style), [style]);
+  const resolvedStyle = useMemo(() => resolveNotationStyle(style), [style]);
 
   useEffect(() => {
     if (!containerRef.current || rhythm.measures.length === 0) {

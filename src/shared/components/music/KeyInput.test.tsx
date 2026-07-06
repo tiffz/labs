@@ -54,4 +54,13 @@ describe('KeyInput', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Clear key' }));
     expect(onChange).toHaveBeenCalledWith('');
   });
+
+  it('offers relative major/minor switch distinct from mode toggle', () => {
+    const onChange = vi.fn();
+    render(<KeyInput value="F minor" onChange={onChange} modeFormat="long" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Change key' }));
+    fireEvent.click(screen.getByRole('button', { name: /Use relative major: Ab major/i }));
+
+    expect(onChange).toHaveBeenCalledWith('Ab major');
+  });
 });

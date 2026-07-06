@@ -1,0 +1,226 @@
+/**
+ * Drums skin for SharedExportPopover (portaled outside .drums-app — scoped via adapter id).
+ * Interior matches `.drums-floating-menu` / BPM preset panel reference.
+ */
+
+.shared-export-popover.shared-export-popover-drums {
+  min-width: 300px;
+}
+
+.shared-export-panel.shared-export-panel-drums {
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(78vh, 560px);
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.shared-export-panel-drums .shared-export-title {
+  margin: 0;
+  padding: 0.56rem 0.76rem 0.65rem;
+  border-bottom: 1px solid var(--menu-header-border);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--menu-header-text);
+  line-height: 1.25;
+}
+
+.shared-export-panel-drums > :not(.shared-export-title) {
+  margin-left: 0.76rem;
+  margin-right: 0.76rem;
+}
+
+.shared-export-panel-drums > .shared-export-subtitle:first-of-type {
+  margin-top: 0.72rem;
+}
+
+.shared-export-panel-drums .shared-export-subtitle {
+  margin: 0.75rem 0 0.52rem;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--menu-header-text);
+}
+
+.shared-export-panel-drums .shared-export-format-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.54rem;
+  margin-bottom: 0.15rem;
+}
+
+.shared-export-panel-drums .shared-export-format-row {
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  min-height: 1.9rem;
+  padding: 0 0.62rem;
+  justify-content: center;
+  background: #fff;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.shared-export-panel-drums .shared-export-format-row:hover:not(.disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--primary-purple) 40%,
+    var(--border-color)
+  );
+  background: #f9fafb;
+}
+
+.shared-export-panel-drums
+  .shared-export-format-row:has(input[type='radio']:checked):not(.disabled) {
+  border-color: var(--primary-purple);
+  background: #fff;
+}
+
+.shared-export-panel-drums .shared-export-format-row input[type='radio'] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.shared-export-panel-drums .shared-export-format-label {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.shared-export-panel-drums
+  .shared-export-format-row:has(input[type='radio']:checked)
+  .shared-export-format-label {
+  color: var(--primary-purple);
+  font-weight: 700;
+}
+
+.shared-export-panel-drums .shared-export-row {
+  padding: 0.62rem 0.72rem;
+  border-radius: 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--menu-border) 68%, transparent);
+  background: color-mix(in srgb, #fff 94%, #f8fafc);
+  margin-top: 0.54rem;
+}
+
+.shared-export-panel-drums .shared-export-row label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.shared-export-panel-drums .shared-export-score-title-row.shared-export-row {
+  padding: 0;
+  border: none;
+  background: transparent;
+  margin-top: 0.54rem;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+
+.shared-export-panel-drums .shared-export-row-inline input,
+.shared-export-panel-drums .shared-export-row-inline select,
+.shared-export-panel-drums .shared-export-score-title-input {
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  min-height: 2rem;
+  padding: 0.45rem 0.62rem;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.shared-export-panel-drums .shared-export-row-inline input:focus,
+.shared-export-panel-drums .shared-export-row-inline select:focus,
+.shared-export-panel-drums .shared-export-score-title-input:focus {
+  outline: none;
+  border-color: var(--primary-purple);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--primary-purple) 14%, transparent);
+}
+
+.shared-export-panel-drums .shared-export-stems {
+  margin-top: 0.35rem;
+}
+
+.shared-export-panel-drums .shared-export-stem-row {
+  font-size: 0.8125rem;
+  color: var(--text-color);
+}
+
+.shared-export-panel-drums .shared-export-preview {
+  margin-top: 0.54rem;
+  padding-block: 0.62rem;
+  padding-inline: 0.72rem;
+  border-radius: 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--menu-border) 68%, transparent);
+  background: color-mix(in srgb, var(--menu-header-bg) 72%, #fff);
+  font-size: 0.8125rem;
+  color: var(--text-color);
+  box-sizing: border-box;
+}
+
+.shared-export-panel-drums .shared-export-preview strong {
+  color: var(--text-color);
+  font-weight: 700;
+}
+
+.shared-export-panel-drums .shared-export-action {
+  display: flex;
+  width: calc(100% - 1.52rem);
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  margin: 0.75rem 0.76rem 1.08rem;
+  padding: 0 1rem;
+  border: 2px solid var(--primary-purple);
+  border-radius: 0.5rem;
+  background: var(--primary-purple);
+  color: #fff;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    opacity 120ms ease;
+}
+
+.shared-export-panel-drums .shared-export-action:hover:not(:disabled) {
+  background: var(--primary-purple-dark);
+  border-color: var(--primary-purple-dark);
+}
+
+.shared-export-panel-drums .shared-export-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.shared-export-panel-drums .shared-export-error {
+  margin: 0.35rem 0.76rem 0;
+  font-size: 0.8125rem;
+  color: #dc2626;
+}
+
+.shared-export-panel-drums .shared-export-link-button {
+  margin: 0.35rem 0.76rem 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--primary-purple);
+}
+
+.shared-export-panel-drums .shared-export-link-button:hover {
+  color: var(--primary-purple-dark);
+}
+
+@media (max-width: 640px) {
+  .shared-export-panel-drums .shared-export-format-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

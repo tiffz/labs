@@ -104,6 +104,8 @@ export interface StanzaSong {
   drumsEnabled?: boolean;
   /** Darbuka-style notation for the whole-song drum groove (synced via Drive `progress.json`). */
   drumPattern?: string;
+  /** Per-section drum pattern overrides keyed by stable segment id. Sections inherit {@link drumPattern} until overridden. */
+  drumPatternBySegmentId?: Record<string, string>;
   /** Linear drums level 0–1 (default 0.7). Global only. */
   drumsGain?: number;
   /** Mute the drum groove from the Mix without disabling the pattern or calibration. */

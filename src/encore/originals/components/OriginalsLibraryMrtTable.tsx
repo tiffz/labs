@@ -304,8 +304,10 @@ export function OriginalsLibraryMrtTable({
       table={table}
       searchHighlight={search}
       sx={{
-        height: '100%',
+        flex: 1,
         minHeight: 0,
+        mt: 0,
+        height: '100%',
         display: 'flex',
         flexDirection: 'column',
         '& .MuiPaper-root': { height: '100%', minHeight: 0 },

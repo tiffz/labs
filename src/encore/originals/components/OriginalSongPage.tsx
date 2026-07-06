@@ -5,14 +5,15 @@ import { useCallback, useEffect, useRef, useState, type ReactElement } from 'rea
 import { useEncoreOriginalsActions } from '../../context/EncoreOriginalsActionsContext';
 import { useEncoreOriginal } from '../../context/EncoreOriginalsLibraryContext';
 import { navigateEncore } from '../../routes/encoreAppHash';
-import { encoreMaxWidthPage } from '../../theme/encoreUiTokens';
-import { encorePagePaddingTop, encoreScreenPaddingX } from '../../theme/encoreM3Layout';
+import { encoreHairline, encoreMaxWidthPage, encoreRadius, encoreShadowSurface } from '../../theme/encoreUiTokens';
+import { encorePagePaddingTop, encorePageSectionGap, encoreScreenPaddingX, encoreSurfacePadX } from '../../theme/encoreM3Layout';
 import { takePendingOriginalDraft } from '../pendingOriginalDraft';
 import { mergeIdleChartSnapshot, restoreOriginalFromSnapshot } from '../originalsSnapshot';
 import { createBlankOriginalSong, type EncoreOriginalSong } from '../types';
 import { OriginalsSongHeader, type OriginalsPageMode } from './OriginalsSongHeader';
 import { OriginalsSongViewMode } from './OriginalsSongViewMode';
 import { OriginalsSongWorkspace } from './OriginalsSongWorkspace';
+import { OriginalsWorkflowStepper } from './OriginalsWorkflowStepper';
 import { readPersistedWorkflowStage, persistWorkflowStage, readSessionWorkflowStage } from '../originalsWorkflowStagePersistence';
 import type { OriginalsWorkflowStage } from '../originalsWorkflowStages';
 
@@ -51,26 +52,23 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
     () => readSessionWorkflowStage(id) ?? 'brainstorm',
   );
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const persistedNewRef = useRef(false);
   const latestChartRef = useRef('');
   const saveChainRef = useRef(Promise.resolve());
   /** Bind draft from Dexie once per song id; later live updates must not clobber in-flight edits. */
   const hydratedOriginalIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!isNew || !draft || persistedNewRef.current) return;
-    persistedNewRef.current = true;
-    void (async () => {
-      await saveOriginal(draft, { silentUndo: true });
-      navigateEncore({ kind: 'original', id: draft.id });
-    })();
-  }, [isNew, draft, saveOriginal]);
+    if (!isNew || !draft) return;
+    navigateEncore({ kind: 'original', id: draft.id });
+    // Stable id in the hash replaces legacy #/originals/new without persisting an empty row.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per /new draft id
+  }, [isNew, draft?.id]);
 
   useEffect(() => {
     if (isNew) return;
     if (live.status === 'missing') {
       hydratedOriginalIdRef.current = null;
-      setDraft(null);
+      setDraft((prev) => (prev?.id === id ? prev : null));
       return;
     }
     if (live.status !== 'ok') return;
@@ -192,6 +190,15 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
     [id],
   );
 
+  const handleWorkflowStageChange = useCallback(
+    (next: OriginalsWorkflowStage) => {
+      if (next === workflowStage) return;
+      flushIdleSnapshot();
+      setWorkflowStage(next);
+    },
+    [flushIdleSnapshot, workflowStage],
+  );
+
   const activeSong = draft ?? (live.status === 'ok' ? live.song : null);
 
   if (!activeSong) {
@@ -223,7 +230,6 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
       mode={mode}
       onModeChange={setMode}
       onChange={update}
-      compact={chordsPaintScroll}
       onRestoreSnapshot={(snap) => void persist(restoreOriginalFromSnapshot(activeSong, snap))}
       onDelete={async () => {
         if (!window.confirm('Delete this original?')) return;
@@ -231,6 +237,58 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
         navigateEncore({ kind: 'originals' });
       }}
     />
+  );
+
+  const workflowStepperBand =
+    mode === 'write' ? (
+      <Box
+        className={[
+          'encore-originals-workspace-stepper',
+          'encore-originals-no-print',
+          chordsPaintScroll ? 'in-scroll-region__band' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        sx={{
+          px: encoreSurfacePadX,
+          py: { xs: 1.25, sm: 1.5 },
+          flexShrink: 0,
+          borderTop: 1,
+          borderBottom: 1,
+          borderColor: encoreHairline,
+        }}
+      >
+        <OriginalsWorkflowStepper
+          song={activeSong}
+          stage={workflowStage}
+          onStageChange={handleWorkflowStageChange}
+        />
+      </Box>
+    ) : null;
+
+  const editorShellSx = {
+    display: 'flex',
+    flexDirection: 'column',
+    border: 1,
+    borderColor: encoreHairline,
+    borderRadius: encoreRadius,
+    overflow: 'hidden',
+    bgcolor: 'background.paper',
+    boxShadow: encoreShadowSurface,
+    ...(chordsPaintScroll ? { flex: 1, minHeight: 0 } : { flexShrink: 0, mb: encorePageSectionGap }),
+  } as const;
+
+  const editorHeaderBand = (
+    <Box
+      className="encore-originals-editor-anchor__header"
+      sx={{
+        px: encoreSurfacePadX,
+        pt: { xs: 1.5, sm: 2 },
+        pb: { xs: 1, sm: 1.25 },
+      }}
+    >
+      {songHeader}
+    </Box>
   );
 
   const writeWorkspace = (
@@ -248,6 +306,54 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
     />
   );
 
+  const writeEditorShell =
+    mode === 'write' ? (
+      <Box className="encore-originals-editor-shell encore-originals-no-print" sx={editorShellSx}>
+        {chordsPaintScroll ? (
+          <Box
+            className="in-scroll-region encore-originals-chords-page-scroll encore-originals-editor-shell__scroll"
+            sx={{ flex: 1, minHeight: 0 }}
+          >
+            <Box
+              className="in-scroll-region__band encore-originals-editor-anchor__header"
+              sx={{
+                px: encoreSurfacePadX,
+                pt: { xs: 1.5, sm: 2 },
+                pb: { xs: 1, sm: 1.25 },
+                flexShrink: 0,
+              }}
+            >
+              {songHeader}
+            </Box>
+            {workflowStepperBand}
+            {writeWorkspace}
+          </Box>
+        ) : (
+          <>
+            <Box className="encore-originals-editor-anchor" sx={{ flexShrink: 0 }}>
+              {editorHeaderBand}
+              {workflowStepperBand}
+            </Box>
+            {writeWorkspace}
+          </>
+        )}
+      </Box>
+    ) : null;
+
+  const viewHeaderShell = (
+    <Box
+      className="encore-originals-editor-shell encore-originals-no-print"
+      sx={{
+        ...editorShellSx,
+        mb: encorePageSectionGap,
+      }}
+    >
+      <Box className="encore-originals-editor-anchor" sx={{ flexShrink: 0 }}>
+        {editorHeaderBand}
+      </Box>
+    </Box>
+  );
+
   return (
     <Box
       className="encore-originals-print-root"
@@ -263,29 +369,15 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
         ...encoreMaxWidthPage,
       }}
     >
-      {chordsPaintScroll ? (
-        <Box
-          className="in-scroll-region encore-originals-chords-page-scroll"
-          sx={{ flex: 1, minHeight: 0 }}
-        >
-          <Box className="in-scroll-region__band">{songHeader}</Box>
-          {writeWorkspace}
-        </Box>
-      ) : (
-        <>
-          {songHeader}
-          {mode === 'write' ? (
-            writeWorkspace
-          ) : (
-            <OriginalsSongViewMode
-              song={activeSong}
-              onEdit={() => setMode('write')}
-              onEditStage={onEditStage}
-              onSongChange={update}
-            />
-          )}
-        </>
-      )}
+      {mode === 'write' ? writeEditorShell : viewHeaderShell}
+      {mode === 'view' ? (
+        <OriginalsSongViewMode
+          song={activeSong}
+          onEdit={() => setMode('write')}
+          onEditStage={onEditStage}
+          onSongChange={update}
+        />
+      ) : null}
     </Box>
   );
 }

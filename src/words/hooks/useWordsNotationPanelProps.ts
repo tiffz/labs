@@ -4,6 +4,7 @@ import { openMonospaceChartPrintWindow, type ChartPrintExportOptions } from '../
 import { createAppAnalytics } from '../../shared/utils/analytics';
 import type { SongKey } from '../../shared/music/songKeyFormat';
 import type { TimeSignature } from '../../shared/rhythm/types';
+import type { SubdivisionLevel } from '../../shared/audio/metronome/types';
 import type { ExportSourceAdapter } from '../../shared/music/exportTypes';
 import type { ChordStyleId } from '../../shared/music/chordStyleOptions';
 import type { WordsNotationPanelProps } from '../components/WordsNotationPanel';
@@ -49,6 +50,7 @@ export function useWordsNotationPanelProps(params: {
   notationSectionRefs: RefObject<Map<string, HTMLElement>>;
   songKey: SongKey;
   metronomeEnabled: boolean;
+  metronomeSubdivisionLevel: SubdivisionLevel;
   autoFollowPlayback: boolean;
   notation: string;
   darbukaEditUrl: string;
@@ -86,6 +88,7 @@ export function useWordsNotationPanelProps(params: {
     notationSectionRefs,
     songKey,
     metronomeEnabled,
+    metronomeSubdivisionLevel,
     autoFollowPlayback,
     notation,
     darbukaEditUrl,
@@ -170,6 +173,7 @@ export function useWordsNotationPanelProps(params: {
       timeSignature,
       songKey,
       metronomeEnabled,
+      metronomeSubdivisionLevel,
       autoFollowPlayback,
       isPlaying,
       playbackScrollContainer: getPlaybackScrollContainer(),
@@ -195,6 +199,7 @@ export function useWordsNotationPanelProps(params: {
       timeSignature,
       songKey,
       metronomeEnabled,
+      metronomeSubdivisionLevel,
       autoFollowPlayback,
       isPlaying,
       getPlaybackScrollContainer,

@@ -5,7 +5,7 @@ import AppTooltip from '../../shared/components/AppTooltip';
 import BpmInput from '../../shared/components/music/BpmInput';
 import DiceIcon from '../../shared/components/DiceIcon';
 import KeyInput from '../../shared/components/music/KeyInput';
-import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
+import { MetronomeSplitControl, useMetronomePreferences, type MetronomePreferences } from '../../shared/audio/platform/metronome';
 import WordsSoundSettingsPanel from './WordsSoundSettingsPanel';
 
 export type WordsPlaybackRailProps = {
@@ -25,6 +25,9 @@ export type WordsPlaybackRailProps = {
   soundButtonRef: RefObject<HTMLButtonElement | null>;
   soundMenuOpen: boolean;
   onToggleSoundMenu: () => void;
+  metronomePreferences?: MetronomePreferences;
+  onMetronomePreferencesChange?: (prefs: MetronomePreferences) => void;
+  metronomePrefsNonDefault?: boolean;
   soundMenuProps: React.ComponentProps<typeof WordsSoundSettingsPanel>;
 };
 
@@ -45,8 +48,19 @@ export default function WordsPlaybackRail({
   soundButtonRef,
   soundMenuOpen,
   onToggleSoundMenu,
+  metronomePreferences: metronomePreferencesProp,
+  onMetronomePreferencesChange,
+  metronomePrefsNonDefault: metronomePrefsNonDefaultProp,
   soundMenuProps,
 }: WordsPlaybackRailProps) {
+  const internalMetronomePrefs = useMetronomePreferences({
+    storageKey: metronomePreferencesProp ? undefined : 'words-metronome-prefs',
+    timeSignature,
+  });
+  const preferences = metronomePreferencesProp ?? internalMetronomePrefs.preferences;
+  const setPreferences = onMetronomePreferencesChange ?? internalMetronomePrefs.setPreferences;
+  const isNonDefault = metronomePrefsNonDefaultProp ?? internalMetronomePrefs.isNonDefault;
+
   return (
     <div className="words-playback-row">
       <button className="words-button words-button-primary" type="button" onClick={onPlayStop}>
@@ -116,26 +130,25 @@ export default function WordsPlaybackRail({
           ))}
         </select>
       </label>
-      <AppTooltip title={metronomeEnabled ? 'Metronome is on' : 'Metronome is off'}>
-        <span>
-          <MetronomeToggleButton
-            enabled={metronomeEnabled}
-            onToggle={() => onMetronomeToggle(!metronomeEnabled)}
-            className="words-button words-button-icon words-icon-tooltip words-metronome-toggle"
-            activeClassName="is-on"
-            showOnLabel={false}
-            tooltipOn="Metronome is on"
-            tooltipOff="Metronome is off"
-            includeNativeTitle={false}
-            includeDataTooltip={false}
-          />
-        </span>
-      </AppTooltip>
+      <MetronomeSplitControl
+        enabled={metronomeEnabled}
+        onToggle={() => onMetronomeToggle(!metronomeEnabled)}
+        preferences={preferences}
+        onPreferencesChange={setPreferences}
+        timeSignature={timeSignature}
+        isNonDefault={isNonDefault}
+        appearance="words"
+        toggleClassName="words-button words-button-icon words-icon-tooltip words-metronome-toggle"
+        toggleActiveClassName="is-on"
+      />
       <button
         ref={soundButtonRef}
         className={`words-button words-gear-button${soundMenuOpen ? ' is-open' : ''}`}
         type="button"
         aria-label="Sound settings"
+        aria-haspopup="dialog"
+        aria-expanded={soundMenuOpen}
+        aria-controls="words-sound-settings-menu"
         onClick={onToggleSoundMenu}
       >
         <span className="material-symbols-outlined">tune</span>

@@ -12,6 +12,7 @@ import AppLinearVolumeSlider from '../shared/components/AppLinearVolumeSlider';
 import AppSlider from '../shared/components/AppSlider';
 import AnchoredPopover from '../shared/components/AnchoredPopover';
 import MetronomeToggleButton from '../shared/components/MetronomeToggleButton';
+import { MetronomeSplitControl, useMetronomePreferences } from '../shared/audio/platform/metronome';
 import { PlaybackSoundSelect } from '../shared/components/music/PlaybackSoundSelect';
 import PlaybackSpeedControl from '../shared/components/music/PlaybackSpeedControl';
 import { PlaybackVolumeRow } from '../shared/components/music/PlaybackVolumeRow';
@@ -47,8 +48,8 @@ const APPEARANCES = ['default', 'piano', 'words', 'chords'] as const;
 type Appearance = (typeof APPEARANCES)[number];
 type CatalogTab = 'gallery' | 'docs' | 'theme' | 'regression' | 'melodia';
 type RegressionRouteSection = 'screenshots' | 'report';
-const BPM_SURFACES = ['default', 'piano', 'words', 'chords', 'drums'] as const;
-const KEY_SURFACES = ['default', 'piano', 'words', 'chords'] as const;
+const BPM_SURFACES = ['default', 'piano', 'words', 'chords', 'drums', 'stanza'] as const;
+const KEY_SURFACES = ['default', 'piano', 'words', 'chords', 'stanza'] as const;
 const EXPORT_SURFACES = ['piano', 'words', 'chords', 'drums'] as const;
 type BpmSurface = (typeof BPM_SURFACES)[number];
 type KeySurface = (typeof KEY_SURFACES)[number];
@@ -112,6 +113,8 @@ function getBpmClass(surface: BpmSurface): string {
       return 'chords-bpm-input';
     case 'drums':
       return 'drums-shared-bpm-input';
+    case 'stanza':
+      return 'ui-stanza-bpm-input';
     case 'piano':
       return 'sb-shared-bpm-input';
     default:
@@ -129,6 +132,8 @@ function getBpmDropdownClass(surface: BpmSurface): string | undefined {
       return 'piano-bpm-dropdown';
     case 'drums':
       return 'drums-bpm-dropdown';
+    case 'stanza':
+      return 'ui-stanza-bpm-dropdown';
     default:
       return undefined;
   }
@@ -144,6 +149,8 @@ function getBpmSliderClass(surface: BpmSurface): string | undefined {
       return 'piano-bpm-slider';
     case 'drums':
       return 'drums-bpm-slider';
+    case 'stanza':
+      return 'ui-stanza-bpm-slider';
     default:
       return undefined;
   }
@@ -157,6 +164,8 @@ function getKeyClass(surface: KeySurface): string {
       return 'chords-key-input';
     case 'piano':
       return 'ui-piano-key-input';
+    case 'stanza':
+      return 'ui-stanza-key-input';
     default:
       return 'ui-key-default';
   }
@@ -168,6 +177,8 @@ function getKeyDropdownClass(surface: KeySurface): string | undefined {
       return 'ui-words-key-dropdown';
     case 'chords':
       return 'chords-key-dropdown';
+    case 'stanza':
+      return 'ui-stanza-key-dropdown';
     default:
       return undefined;
   }
@@ -345,6 +356,97 @@ function renderAppsUsingLinks(appsUsing: ReadonlyArray<string>) {
   );
 }
 
+function StanzaRailDemoShell({ children }: { children: React.ReactNode }) {
+  return <div className="ui-stanza-rail-demo">{children}</div>;
+}
+
+function StanzaBpmSkinDemo({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (next: number) => void;
+}) {
+  return (
+    <StanzaRailDemoShell>
+      <div className="ui-stanza-demo-stack">
+        <div className="ui-stanza-demo-block">
+          <span className="ui-stanza-demo-kicker">Closed shell</span>
+          <BpmInput
+            appearance="stanza"
+            value={value}
+            onChange={onChange}
+            dropdownClassName="stanza-bpm-dropdown"
+            sliderClassName="stanza-bpm-slider"
+            showRateActions={false}
+          />
+        </div>
+        <div className="ui-stanza-demo-block">
+          <span className="ui-stanza-demo-kicker">Open menu chrome</span>
+          <div className="shared-bpm-dropdown ui-stanza-bpm-dropdown stanza-bpm-dropdown ui-stanza-open-chrome-preview">
+            <div className="shared-bpm-dropdown-list">
+              <div className="shared-bpm-presets-row">
+                <button type="button" className="shared-bpm-preset-chip active">
+                  {value}
+                </button>
+                <button type="button" className="shared-bpm-preset-chip">
+                  80
+                </button>
+                <button type="button" className="shared-bpm-preset-chip">
+                  120
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </StanzaRailDemoShell>
+  );
+}
+
+function StanzaKeySkinDemo({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  return (
+    <StanzaRailDemoShell>
+      <div className="ui-stanza-demo-stack">
+        <div className="ui-stanza-demo-block">
+          <span className="ui-stanza-demo-kicker">Closed shell</span>
+          <KeyInput
+            appearance="stanza"
+            value={value}
+            onChange={onChange}
+            dropdownClassName="stanza-key-dropdown"
+            modeFormat="short"
+          />
+        </div>
+        <div className="ui-stanza-demo-block">
+          <span className="ui-stanza-demo-kicker">Open menu chrome</span>
+          <div className="shared-key-dropdown ui-stanza-key-dropdown stanza-key-dropdown ui-stanza-open-chrome-preview">
+            <div className="shared-key-dropdown-list">
+              <div className="shared-key-grid">
+                {['C', 'D', 'E', 'F', 'G', 'A'].map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`shared-key-grid-item ${value.startsWith(key) ? 'active' : ''}`}
+                  >
+                    {key}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </StanzaRailDemoShell>
+  );
+}
+
 function BpmMultiDemo({
   values,
   onChange,
@@ -421,6 +523,11 @@ function BpmMultiDemo({
               />
               <span className="input-suffix">BPM</span>
             </div>
+          ) : appearance === 'stanza' ? (
+            <StanzaBpmSkinDemo
+              value={values[appearance]}
+              onChange={(next) => onChange(appearance, next)}
+            />
           ) : (
             <BpmInput
               value={values[appearance]}
@@ -486,6 +593,11 @@ function KeyMultiDemo({
                 </div>
               </div>
             </div>
+          ) : appearance === 'stanza' ? (
+            <StanzaKeySkinDemo
+              value={values[appearance]}
+              onChange={(next) => onChange(appearance, next)}
+            />
           ) : (
             <KeyInput
               value={values[appearance]}
@@ -947,6 +1059,35 @@ function SharedExportPopoverDemo() {
   );
 }
 
+function MetronomeSplitControlDemo({
+  enabled,
+  onToggle,
+  appearance = 'default',
+}: {
+  enabled: boolean;
+  onToggle: () => void;
+  appearance?: 'default' | 'drums' | 'words' | 'piano' | 'chords' | 'stanza' | 'midi';
+}) {
+  const { preferences, setPreferences, isNonDefault } = useMetronomePreferences({
+    storageKey: `ui-metronome-split-demo-${appearance}`,
+  });
+  return (
+    <div className={`ui-demo-inline ui-metronome-split-control--${appearance}`}>
+      <MetronomeSplitControl
+        enabled={enabled}
+        onToggle={onToggle}
+        preferences={preferences}
+        onPreferencesChange={setPreferences}
+        timeSignature={{ numerator: 4, denominator: 4 }}
+        isNonDefault={isNonDefault}
+        appearance={appearance}
+        toggleClassName="ui-metronome-toggle"
+        toggleActiveClassName="active"
+      />
+    </div>
+  );
+}
+
 function DemoPanel({
   entry,
   bpmBySurface,
@@ -1030,6 +1171,8 @@ function DemoPanel({
           />
         </div>
       );
+    case 'metronome-split-control':
+      return <MetronomeSplitControlDemo enabled={metronomeEnabled} onToggle={() => setMetronomeEnabled(!metronomeEnabled)} />;
     case 'dice-icon':
       return (
         <div className="ui-demo-inline">
@@ -1105,12 +1248,14 @@ function App() {
     words: 104,
     chords: 120,
     drums: 100,
+    stanza: 71,
   });
   const [keyBySurface, setKeyBySurface] = useState<Record<KeySurface, string>>({
     default: 'C',
     piano: 'F',
     words: 'G',
     chords: 'D',
+    stanza: 'F minor',
   });
   const [progressionByAppearance, setProgressionByAppearance] = useState<Record<Appearance, string>>({
     default: 'I–V–vi–IV',

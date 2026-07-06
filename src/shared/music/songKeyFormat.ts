@@ -90,6 +90,19 @@ export function formatSongKeyDisplay(value: string): string {
   return formatSongKey(root, mode, style);
 }
 
+/** Relative major/minor partner (same key signature, different tonic). */
+export function relativeParallelKey(raw: string): { root: MusicKey; mode: HarmonicMode } {
+  const { root, mode } = parseSongKey(raw);
+  const relativeRoot = transposeMusicKey(root, mode === 'major' ? -3 : 3);
+  return { root: relativeRoot, mode: mode === 'major' ? 'minor' : 'major' };
+}
+
+/** Format the relative major/minor partner, preserving the caller's short/long style. */
+export function formatRelativeParallelKey(raw: string, style?: 'short' | 'long'): SongKey {
+  const rel = relativeParallelKey(raw);
+  return formatSongKey(rel.root, rel.mode, style ?? songKeyOutputStyle(raw));
+}
+
 export function isValidSongKey(value: string): boolean {
   const trimmed = value.trim();
   if (!trimmed) return false;

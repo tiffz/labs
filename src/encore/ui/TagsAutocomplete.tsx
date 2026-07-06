@@ -31,6 +31,8 @@ export interface TagsAutocompleteProps {
    * Use when the parent already lists every tag (e.g. inline chip row + popover editor).
    */
   omitInputChips?: boolean;
+  /** Hide the dropdown chevron when there are no saved tags to suggest. */
+  hidePopupWhenEmpty?: boolean;
 }
 
 const filter = createFilterOptions<string>({
@@ -53,6 +55,7 @@ export function TagsAutocomplete(props: TagsAutocompleteProps): React.ReactEleme
     fullWidth = true,
     dense = false,
     omitInputChips = false,
+    hidePopupWhenEmpty = true,
   } = props;
 
   const options = useMemo(() => {
@@ -62,6 +65,8 @@ export function TagsAutocomplete(props: TagsAutocompleteProps): React.ReactEleme
     return suggestions.filter((s) => !chosen.has(s.toLowerCase()));
   }, [suggestions, value]);
 
+  const hasSuggestions = options.length > 0;
+
   return (
     <Autocomplete
       multiple
@@ -70,6 +75,8 @@ export function TagsAutocomplete(props: TagsAutocompleteProps): React.ReactEleme
       handleHomeEndKeys
       clearOnBlur
       selectOnFocus
+      openOnFocus={hasSuggestions}
+      forcePopupIcon={!hidePopupWhenEmpty || hasSuggestions}
       size={size}
       fullWidth={fullWidth}
       value={value as string[]}
@@ -154,6 +161,17 @@ export function TagsAutocomplete(props: TagsAutocompleteProps): React.ReactEleme
         [`& .${autocompleteClasses.inputRoot}`]: {
           flexWrap: 'wrap',
           gap: 0.5,
+        },
+        [`& .${autocompleteClasses.listbox}`]: {
+          maxHeight: 280,
+        },
+      }}
+      slotProps={{
+        popper: {
+          sx: {
+            /* Avoid empty listbox chrome (purple hairline) when there is nothing to suggest yet. */
+            display: hasSuggestions ? undefined : 'none',
+          },
         },
       }}
     />

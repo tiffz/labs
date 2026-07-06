@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useEffect, useRef } from 'react';
 import type { TimeSignature } from '../types';
 import type { PlaybackSettings } from '../types/settings';
 import HelpTooltip from './HelpTooltip';
 import SettingsMenu from './SettingsMenu';
-import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
+import { MetronomeSplitControl, useMetronomePreferences, type MetronomePreferences } from '../../shared/audio/platform/metronome';
 import BpmInput from '../../shared/components/music/BpmInput';
+import TimeSignatureInput from '../../shared/components/music/TimeSignatureInput';
 import {
   isAsymmetricTimeSignature,
   isCompoundTimeSignature,
@@ -30,6 +30,8 @@ interface PlaybackControlsProps {
   playbackSettings?: PlaybackSettings;
   onSettingsChange?: (settings: PlaybackSettings) => void;
   onSettingsClose?: () => void;
+  metronomePreferences?: MetronomePreferences;
+  onMetronomePreferencesChange?: (prefs: MetronomePreferences) => void;
 }
 
 const PlaybackControls: React.FC<PlaybackControlsProps> = ({
@@ -47,48 +49,18 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   playbackSettings,
   onSettingsChange,
   onSettingsClose,
+  metronomePreferences: metronomePreferencesProp,
+  onMetronomePreferencesChange,
 }) => {
+  const internalMetronomePrefs = useMetronomePreferences({
+    storageKey: metronomePreferencesProp ? undefined : 'drums-metronome-prefs',
+    timeSignature: { numerator: timeSignature.numerator, denominator: timeSignature.denominator },
+  });
+  const preferences = metronomePreferencesProp ?? internalMetronomePrefs.preferences;
+  const setPreferences = onMetronomePreferencesChange ?? internalMetronomePrefs.setPreferences;
   const [beatGroupingInput, setBeatGroupingInput] = useState<string>('');
   const [beatGroupingError, setBeatGroupingError] = useState<string>('');
-  const [showTimeSigDropdown, setShowTimeSigDropdown] = useState<boolean>(false);
-  const [tip, setTip] = useState<{ text: string; x: number; y: number; below?: boolean } | null>(
-    null
-  );
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
-  const timeSigInputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Common time signatures
-  const commonTimeSignatures: TimeSignature[] = [
-    { numerator: 2, denominator: 4 },
-    { numerator: 3, denominator: 4 },
-    { numerator: 4, denominator: 4 },
-    { numerator: 5, denominator: 4 },
-    { numerator: 6, denominator: 8 },
-    { numerator: 7, denominator: 8 },
-    { numerator: 9, denominator: 8 },
-    { numerator: 11, denominator: 8 },
-    { numerator: 12, denominator: 8 },
-  ];
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        timeSigInputRef.current &&
-        !timeSigInputRef.current.contains(event.target as Node)
-      ) {
-        setShowTimeSigDropdown(false);
-      }
-    };
-
-    if (showTimeSigDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showTimeSigDropdown]);
 
   // Update beat grouping input when time signature changes
   useEffect(() => {
@@ -97,46 +69,6 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
     setBeatGroupingError('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeSignature.numerator, timeSignature.denominator]);
-
-  const handleNumeratorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value === '') {
-      // Allow empty input while typing
-      return;
-    }
-    const newNumerator = parseInt(value, 10);
-    if (!isNaN(newNumerator) && newNumerator > 0 && newNumerator <= 32) {
-      onTimeSignatureChange({
-        ...timeSignature,
-        numerator: newNumerator,
-        beatGrouping: undefined, // Reset to default
-      });
-    }
-  };
-
-  const handleNumeratorBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const num = parseInt(e.target.value, 10);
-    if (isNaN(num) || num < 1) {
-      // Reset to current value if invalid
-      e.target.value = timeSignature.numerator.toString();
-    } else if (num > 32) {
-      // Cap at 32
-      onTimeSignatureChange({
-        ...timeSignature,
-        numerator: 32,
-        beatGrouping: undefined,
-      });
-    }
-  };
-
-  const handleDenominatorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newDenominator = parseInt(e.target.value, 10);
-    onTimeSignatureChange({
-      ...timeSignature,
-      denominator: newDenominator,
-      beatGrouping: undefined, // Reset to default
-    });
-  };
 
   const handleBeatGroupingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -166,20 +98,6 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
     });
   };
 
-  const showTip = useCallback((e: React.MouseEvent, text: string) => {
-    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    const clamped = Math.max(120, Math.min(cx, window.innerWidth - 120));
-    const spaceAbove = r.top;
-    if (spaceAbove < 50) {
-      setTip({ text, x: clamped, y: r.bottom, below: true });
-    } else {
-      setTip({ text, x: clamped, y: r.top, below: false });
-    }
-  }, []);
-
-  const hideTip = useCallback(() => setTip(null), []);
-
   return (
     <div className="playback-controls-bar">
       {/* Playback Controls - moved to front */}
@@ -193,7 +111,7 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
             title="Play (Spacebar)"
           >
             <span className="material-symbols-outlined">play_arrow</span>
-            Play
+            <span className="play-button__label">Play</span>
           </button>
         ) : (
           <button
@@ -204,97 +122,21 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
             title="Stop (Spacebar)"
           >
             <span className="material-symbols-outlined">stop</span>
-            Stop
+            <span className="stop-button__label">Stop</span>
           </button>
         )}
       </div>
 
       {/* Timing Controls */}
       <div className="timing-controls">
-        <div className="timing-inputs">
-          <div className="time-signature-control" style={{ position: 'relative' }}>
-            <label htmlFor="time-sig-numerator" className="sr-only">Time signature numerator</label>
-            <input
-              ref={timeSigInputRef}
-              id="time-sig-numerator"
-              type="number"
-              className="control-input time-sig-numerator-input"
-              value={timeSignature.numerator}
-              onChange={handleNumeratorChange}
-              onBlur={handleNumeratorBlur}
-              onFocus={() => setShowTimeSigDropdown(true)}
-              min="1"
-              max="32"
-              disabled={isPlaying}
-              aria-label="Time signature numerator"
-            />
-            <span className="time-sig-slash">/</span>
-            <select
-              className="control-select"
-              value={timeSignature.denominator}
-              onChange={handleDenominatorChange}
-              aria-label="Time signature denominator"
-            >
-              <option value="4">4</option>
-              <option value="8">8</option>
-              <option value="16">16</option>
-            </select>
-            {showTimeSigDropdown && (
-              <div
-                ref={dropdownRef}
-                className="time-sig-dropdown"
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  marginTop: '0.25rem',
-                  backgroundColor: 'white',
-                  border: '2px solid var(--border-color)',
-                  borderRadius: '0.375rem',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  zIndex: 1000,
-                  minWidth: '100%',
-                  maxHeight: '200px',
-                  overflowY: 'auto',
-                }}
-              >
-                {commonTimeSignatures.map((ts) => (
-                  <button
-                    key={`${ts.numerator}/${ts.denominator}`}
-                    type="button"
-                    className="time-sig-dropdown-item"
-                    onClick={() => {
-                      onTimeSignatureChange({
-                        ...ts,
-                        beatGrouping: undefined, // Reset to default
-                      });
-                      setShowTimeSigDropdown(false);
-                      timeSigInputRef.current?.blur();
-                    }}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      padding: '0.5rem 0.75rem',
-                      textAlign: 'left',
-                      border: 'none',
-                      background: 'none',
-                      cursor: 'pointer',
-                      fontSize: '1rem',
-                      color: 'var(--text-color)',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f3f4f6';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                  >
-                    {ts.numerator}/{ts.denominator}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="timing-inputs shared-music-timing-row">
+          <TimeSignatureInput
+            value={timeSignature}
+            onChange={onTimeSignatureChange}
+            disabled={isPlaying}
+            className="drums-shared-time-sig-input"
+            dropdownClassName="drums-floating-menu drums-time-sig-dropdown"
+          />
           <div className="bpm-control-inline">
             <BpmInput
               value={bpm}
@@ -302,85 +144,83 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
               min={20}
               max={300}
               className="drums-shared-bpm-input"
-              dropdownClassName="drums-bpm-dropdown"
+              dropdownClassName="drums-floating-menu drums-bpm-dropdown"
               sliderClassName="drums-bpm-slider"
               leadingActions={<span className="drums-bpm-inline-label">BPM</span>}
             />
           </div>
 
-          {/* Beat Grouping Input for Compound, Asymmetric, and /16 Time Signatures */}
-          <div className="beat-grouping-control">
-            {(isCompoundTimeSignature(timeSignature) || isAsymmetricTimeSignature(timeSignature) || timeSignature.denominator === 16) && (
-              <>
-                <div className="beat-grouping-header">
-                  <label htmlFor="beat-grouping-input" className="beat-grouping-label">
-                    Beat Grouping
-                  </label>
-                  <HelpTooltip
-                    ariaLabel="Help for beat grouping"
-                    content={
-                      <>
-                        <div className="tooltip-title">Beat Grouping</div>
-                        <div className="tooltip-content">
-                          <p>
-                            <strong>Compound rhythms</strong> (ie: 6/8, 9/8, 12/8) are grouped into sets of 3 eighth notes by default.
-                            For example, 12/8 defaults to 3+3+3+3.
-                          </p>
-                          <p>
-                            <strong>Asymmetric rhythms</strong> (ie: 5/8, 7/8, 11/8) can have different groupings.
-                            For example, 11/8 can be 3+3+3+2 or 2+3+3+3.
-                          </p>
-                          <p>
-                            You can adjust the grouping for any /8 or /16 time signature to create custom patterns.
-                          </p>
-                        </div>
-                        <a
-                          href="https://en.wikipedia.org/wiki/Additive_rhythm_and_divisive_rhythm#Additive_rhythm"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="tooltip-link"
-                        >
-                          Learn more about additive rhythm →
-                        </a>
-                      </>
-                    }
-                  />
-                </div>
-                <input
-                  id="beat-grouping-input"
-                  type="text"
-                  className={`beat-grouping-input ${beatGroupingError ? 'input-error' : ''}`}
-                  value={beatGroupingInput}
-                  onChange={handleBeatGroupingChange}
-                  onBlur={handleBeatGroupingBlur}
-                  disabled={isPlaying}
-                  placeholder="e.g., 3+3+2"
-                  title="Enter beat grouping (e.g., 3+3+2)"
+          {(isCompoundTimeSignature(timeSignature) ||
+            isAsymmetricTimeSignature(timeSignature) ||
+            timeSignature.denominator === 16) && (
+            <div className="beat-grouping-control-inline">
+              <label htmlFor="beat-grouping-input" className="drums-beat-grouping-inline-label">
+                Groups
+              </label>
+              <input
+                id="beat-grouping-input"
+                type="text"
+                className={`beat-grouping-input ${beatGroupingError ? 'input-error' : ''}`}
+                value={beatGroupingInput}
+                onChange={handleBeatGroupingChange}
+                onBlur={handleBeatGroupingBlur}
+                disabled={isPlaying}
+                placeholder="3+3+2"
+                aria-label="Beat grouping"
+                aria-invalid={beatGroupingError ? true : undefined}
+                aria-describedby={beatGroupingError ? 'beat-grouping-error' : undefined}
+                title={beatGroupingError || 'Enter beat grouping (e.g., 3+3+2)'}
+              />
+              <span className="beat-grouping-help">
+                <HelpTooltip
+                  ariaLabel="Help for beat grouping"
+                  content={
+                    <>
+                      <div className="tooltip-title">Beat Grouping</div>
+                      <div className="tooltip-content">
+                        <p>
+                          <strong>Compound rhythms</strong> (ie: 6/8, 9/8, 12/8) are grouped into sets of 3 eighth
+                          notes by default. For example, 12/8 defaults to 3+3+3+3.
+                        </p>
+                        <p>
+                          <strong>Asymmetric rhythms</strong> (ie: 5/8, 7/8, 11/8) can have different groupings. For
+                          example, 11/8 can be 3+3+3+2 or 2+3+3+3.
+                        </p>
+                        <p>You can adjust the grouping for any /8 or /16 time signature to create custom patterns.</p>
+                      </div>
+                      <a
+                        href="https://en.wikipedia.org/wiki/Additive_rhythm_and_divisive_rhythm#Additive_rhythm"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="tooltip-link"
+                      >
+                        Learn more about additive rhythm →
+                      </a>
+                    </>
+                  }
                 />
-                {beatGroupingError ? (
-                  <div className="input-error-message">{beatGroupingError}</div>
-                ) : null}
-              </>
-            )}
-          </div>
+              </span>
+              {beatGroupingError ? (
+                <div id="beat-grouping-error" className="beat-grouping-error-message" role="alert">
+                  {beatGroupingError}
+                </div>
+              ) : null}
+            </div>
+          )}
 
         </div>
       </div>
       {/* Right-aligned controls group: Metronome + Settings */}
       <div className="right-controls-group">
-        {/* Metronome Toggle */}
-        <MetronomeToggleButton
+        <MetronomeSplitControl
           enabled={metronomeEnabled}
           onToggle={() => onMetronomeToggle(!metronomeEnabled)}
-          className="metronome-button"
-          label={undefined}
-          showOnLabel={false}
-          tooltipOn="Metronome: On"
-          tooltipOff="Metronome: Off"
-          onMouseEnter={(event: React.MouseEvent<HTMLButtonElement>) =>
-            showTip(event, metronomeEnabled ? 'Metronome: On' : 'Metronome: Off')
-          }
-          onMouseLeave={hideTip}
+          preferences={preferences}
+          onPreferencesChange={setPreferences}
+          timeSignature={{ numerator: timeSignature.numerator, denominator: timeSignature.denominator }}
+          appearance="drums"
+          toggleClassName="metronome-button"
+          toggleActiveClassName="active"
         />
 
         {/* Settings Button */}
@@ -406,13 +246,6 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           )}
         </div>
       </div>
-      {tip &&
-        createPortal(
-          <div className={`mat-tooltip ${tip.below ? 'mat-tooltip--below' : ''}`} style={{ left: tip.x, top: tip.y }}>
-            {tip.text}
-          </div>,
-          document.body
-        )}
     </div>
   );
 };

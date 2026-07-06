@@ -24,7 +24,7 @@ export function originalsDashboardPanelPaperSx(theme: Theme) {
     borderColor: 'divider',
     boxShadow: encoreShadowSurface,
     bgcolor: theme.palette.background.paper,
-    minHeight: { md: 360 },
+    minHeight: 0,
     minWidth: 0,
     maxWidth: '100%',
     overflowX: 'clip',

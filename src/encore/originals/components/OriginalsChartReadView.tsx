@@ -4,7 +4,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useMemo, useState, type ReactElement } from 'react';
+import { useMemo, useState, useEffect, type ReactElement } from 'react';
 import { parseChordProToChartLayout } from '../../../shared/music/chordPro/chordChartLayout';
 import {
   estimateChartPlaybackDurationMs,
@@ -38,6 +38,12 @@ export type OriginalsChartReadViewProps = {
   compactPlayback?: boolean;
   /** Dashboard/detail embed — single-column chart, contained width. */
   embedded?: boolean;
+  /** Song dashboard grid — lyrics region fills available viewport height. */
+  dashboardLayout?: boolean;
+  /** Skip nested card chrome when parent section already owns the surface (defaults to `embedded`). */
+  flatChrome?: boolean;
+  /** Notifies parent when the Show chords toggle changes (for smart Edit routing). */
+  onShowChordsChange?: (showChords: boolean) => void;
 };
 
 type OriginalsChartReadMetaProps = {
@@ -132,13 +138,25 @@ export function OriginalsChartReadView({
   sectionPlaybackOverrides,
   compactPlayback = false,
   embedded = false,
+  dashboardLayout = false,
+  flatChrome,
+  onShowChordsChange,
 }: OriginalsChartReadViewProps): ReactElement | null {
+  const useFlatChrome = flatChrome ?? embedded;
   const layout = useMemo(() => parseChordProToChartLayout(lyricsAndChords), [lyricsAndChords]);
   const hasPaintedChords = useMemo(() => chartLayoutHasPaintedChords(layout), [layout]);
   const { lyrics } = useMemo(() => originalsLyricsChartTexts(lyricsAndChords), [lyricsAndChords]);
   const [showChords, setShowChords] = useState(hasPaintedChords);
   const [activePlaybackStep, setActivePlaybackStep] = useState<ChartPlaybackStep | null>(null);
   const { notation, setNotation } = useOriginalsChordNotation(songId);
+
+  useEffect(() => {
+    setShowChords(hasPaintedChords);
+  }, [hasPaintedChords, songId]);
+
+  useEffect(() => {
+    onShowChordsChange?.(showChords);
+  }, [onShowChordsChange, showChords]);
 
   if (!lyrics && !hasPaintedChords) return null;
 
@@ -175,8 +193,10 @@ export function OriginalsChartReadView({
         <Box
           className={[
             'encore-originals-chart-read-chrome',
+            'encore-originals-chart-chrome--flat',
             'encore-originals-no-print',
             embedded ? 'encore-originals-chart-read-chrome--embedded' : '',
+            useFlatChrome ? 'encore-originals-chart-read-chrome--flat' : '',
           ]
             .filter(Boolean)
             .join(' ')}
@@ -229,6 +249,8 @@ export function OriginalsChartReadView({
             'encore-originals-chords-chart-surface',
             'encore-originals-chart-read-view',
             embedded ? 'encore-originals-chart-read-view--embedded' : '',
+            dashboardLayout ? 'encore-originals-chart-read-view--dashboard' : '',
+            useFlatChrome ? 'encore-originals-chart-read-view--flat encore-originals-chart-surface--flat' : '',
           ]
             .filter(Boolean)
             .join(' ')}

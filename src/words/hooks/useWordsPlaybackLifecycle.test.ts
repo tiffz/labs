@@ -53,6 +53,39 @@ describe('useWordsKeyboardShortcuts', () => {
     expect(setExportMenuOpen).toHaveBeenCalledWith(false);
   });
 
+  it('Escape inside MUI popovers is left to the popover (e.g. BPM menu)', () => {
+    const setGenerationMenuOpen = vi.fn();
+
+    renderHook(() =>
+      useWordsKeyboardShortcuts({
+        isPlaying: false,
+        stopPlaybackImmediately: vi.fn(),
+        setActiveSectionLoopId: vi.fn(),
+        setPlaybackSelectionRange: vi.fn(),
+        setPendingPlaybackStartMode: vi.fn(),
+        setGenerationMenuOpen,
+        setSoundMenuOpen: vi.fn(),
+        setOpenSectionSettingsId: vi.fn(),
+        setSectionRandomizeMenuId: vi.fn(),
+        setSectionChorusLinkMenuId: vi.fn(),
+        setRandomizeMenuOpen: vi.fn(),
+        setExportMenuOpen: vi.fn(),
+      })
+    );
+
+    const popover = document.createElement('div');
+    popover.className = 'MuiPopover-root';
+    const slider = document.createElement('input');
+    popover.appendChild(slider);
+    document.body.appendChild(popover);
+
+    keyDown({ key: 'Escape', target: slider });
+
+    expect(setGenerationMenuOpen).not.toHaveBeenCalled();
+
+    popover.remove();
+  });
+
   it('Space toggles playback intent outside editable fields', () => {
     const stopPlaybackImmediately = vi.fn();
     const setPendingPlaybackStartMode = vi.fn();

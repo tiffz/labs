@@ -17,6 +17,7 @@
     "DrumNotationMini": "drum-notation-mini",
     "AppTooltip": "app-tooltip",
     "MetronomeToggleButton": "metronome-toggle",
+    "MetronomeSplitControl": "metronome-split-control",
     "DiceIcon": "dice-icon",
     "AppLinearVolumeSlider": "app-linear-volume-slider",
     "AppSlider": "app-slider",

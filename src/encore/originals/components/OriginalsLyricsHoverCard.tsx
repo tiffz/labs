@@ -9,6 +9,7 @@ import Tooltip, { tooltipClasses, type TooltipProps } from '@mui/material/Toolti
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import { useMemo, useState, type MouseEvent, type ReactElement, type ReactNode } from 'react';
+import { LABS_POPOVER_CHROME_SX } from '../../../shared/components/anchoredPopoverChrome';
 import { copyTextToClipboard, originalChartClipboardTexts } from '../originalsChartClipboard';
 import { encoreAppHref, handleSpaLinkClick } from '../../routes/encoreAppHash';
 import { navigateToOriginalLyricEdit } from '../originalsLibraryNavigation';
@@ -17,11 +18,8 @@ const LyricsHoverTooltip = styled(({ className, ...props }: TooltipProps) => (
   <Tooltip {...props} classes={{ popper: className }} />
 ))(({ theme }) => ({
   [`& .${tooltipClasses.tooltip}`]: {
-    backgroundColor: theme.palette.background.paper,
+    ...LABS_POPOVER_CHROME_SX,
     color: theme.palette.text.primary,
-    boxShadow: theme.shadows[4],
-    border: `1px solid ${theme.palette.divider}`,
-    borderRadius: Number(theme.shape.borderRadius) * 1.5,
     maxWidth: 420,
     padding: 0,
     pointerEvents: 'auto',

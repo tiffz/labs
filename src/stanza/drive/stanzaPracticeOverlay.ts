@@ -28,6 +28,7 @@ export type StanzaPracticeOverlayEntry = Pick<
   | 'metronomeMuted'
   | 'drumsEnabled'
   | 'drumPattern'
+  | 'drumPatternBySegmentId'
   | 'drumsGain'
   | 'drumsMuted'
   | 'localTransposeSemitones'

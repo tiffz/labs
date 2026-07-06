@@ -12,7 +12,7 @@ export const STANZA_DRUMS_DEFAULT_BPM = 120;
 export const STANZA_DRUMS_NOTATION_WIDTH = 236;
 
 /** Minimum host height; {@link computeMiniNotationLayout} may grow the SVG to fit the staff. */
-export const STANZA_DRUMS_NOTATION_HEIGHT = 68;
+export const STANZA_DRUMS_NOTATION_HEIGHT = 56;
 
 /** Stanza-tinted notation palette so the staff matches `--stanza-ink` ink and the active note
  *  flashes the rose accent (`--stanza-rose`) instead of Beat Finder's green. */

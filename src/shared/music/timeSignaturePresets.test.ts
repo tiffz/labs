@@ -23,8 +23,8 @@ describe('timeSignaturePresets', () => {
     });
   });
 
-  it('formats display labels', () => {
-    expect(formatTimeSignatureDisplay({ numerator: 6, denominator: 8 })).toBe('6/8');
+  it('formats display labels with spaced slash', () => {
+    expect(formatTimeSignatureDisplay({ numerator: 6, denominator: 8 })).toBe('6 / 8');
   });
 
   it('matches preset meters including grouping', () => {

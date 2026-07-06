@@ -16,7 +16,6 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useState, type ReactElement } from 'react';
 import { encoreAppHref, handleSpaLinkClick, navigateEncore } from '../../routes/encoreAppHash';
-import { encorePageSectionGap } from '../../theme/encoreM3Layout';
 import { encoreHairline, encoreRadius } from '../../theme/encoreUiTokens';
 import type { EncoreOriginalSong, OriginalSongSnapshot } from '../types';
 
@@ -27,8 +26,6 @@ export type OriginalsSongHeaderProps = {
   mode: OriginalsPageMode;
   onModeChange: (mode: OriginalsPageMode) => void;
   onChange: (patch: Partial<EncoreOriginalSong>) => void;
-  /** Tighter spacing when the header lives inside the chords scroll column. */
-  compact?: boolean;
   onRestoreSnapshot: (snap: OriginalSongSnapshot) => void;
   onDelete: () => void;
 };
@@ -38,7 +35,6 @@ export function OriginalsSongHeader({
   mode,
   onModeChange,
   onChange,
-  compact = false,
   onRestoreSnapshot,
   onDelete,
 }: OriginalsSongHeaderProps): ReactElement {
@@ -49,7 +45,7 @@ export function OriginalsSongHeader({
   const historyNewestFirst = [...song.history].reverse();
 
   return (
-    <Stack spacing={0} className="encore-originals-no-print" sx={{ mb: compact ? 0 : encorePageSectionGap }}>
+    <Stack spacing={0} className="encore-originals-no-print">
       <Stack direction="row" alignItems="flex-start" spacing={2} useFlexGap>
         <Tooltip title="Back to originals">
           <IconButton

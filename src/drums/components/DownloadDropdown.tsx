@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import type { ParsedRhythm } from '../types';
 import type { PlaybackSettings } from '../types/settings';
@@ -15,7 +15,6 @@ interface DownloadDropdownProps {
   isOpen: boolean;
   onClose: () => void;
   buttonRef?: React.RefObject<HTMLButtonElement>;
-  // Persisted settings
   format?: AudioFormat;
   loops?: number;
   onFormatChange?: (format: AudioFormat) => void;
@@ -38,34 +37,33 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
   onFormatChange,
   onLoopsChange,
 }) => {
-  const [format, setFormat] = useState<AudioFormat>(externalFormat || 'wav');
-  const [loops, setLoops] = useState<number>(externalLoops || 1);
-  
-  // Sync with external state if provided
-  useEffect(() => {
+  const [format, setFormat] = React.useState<AudioFormat>(externalFormat || 'wav');
+  const [loops, setLoops] = React.useState<number>(externalLoops || 1);
+
+  React.useEffect(() => {
     if (externalFormat !== undefined) {
       setFormat(externalFormat);
     }
   }, [externalFormat]);
-  
-  useEffect(() => {
+
+  React.useEffect(() => {
     if (externalLoops !== undefined) {
       setLoops(externalLoops);
     }
   }, [externalLoops]);
-  
+
   const handleFormatChange = (newFormat: AudioFormat) => {
     setFormat(newFormat);
     onFormatChange?.(newFormat);
   };
-  
+
   const handleLoopsChange = (newLoops: number) => {
     setLoops(newLoops);
     onLoopsChange?.(newLoops);
   };
-  const [isExporting, setIsExporting] = useState(false);
 
-  // Calculate preview duration
+  const [isExporting, setIsExporting] = React.useState(false);
+
   const singleLoopDuration = rhythm.isValid && rhythm.measures.length > 0
     ? calculateRhythmDuration(rhythm, bpm)
     : 0;
@@ -78,13 +76,8 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
 
     setIsExporting(true);
     try {
-      // Render audio
       const audioBuffer = await renderRhythmAudio(rhythm, bpm, loops, playbackSettings, metronomeEnabled ?? false);
-      
-      // Convert to selected format
       const blob = await exportAudioBuffer(audioBuffer, format);
-      
-      // Create download link with a readable filename
       const filename = buildDrumsAudioDownloadFileName(notation);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -94,8 +87,6 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
-      // Don't close immediately - let user see success
       setTimeout(() => onClose(), 500);
     } catch (error) {
       console.error('Error exporting audio:', error);
@@ -116,49 +107,49 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
       onClose={onClose}
       anchorEl={buttonRef?.current ?? null}
       placement="bottom-end"
+      paperClassName="drums-floating-menu drums-download-menu download-dropdown-container"
     >
-      <div
-          className="download-dropdown"
-          style={{
-            backgroundColor: 'white',
-            border: '2px solid var(--border-color)',
-            borderRadius: '0.375rem',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            zIndex: 1000,
-            minWidth: '280px',
-            padding: '1rem',
-          }}
-        >
-          <div style={{ marginBottom: '1rem' }}>
-            <label htmlFor="download-format" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
-              Format
-            </label>
-            <select
-              id="download-format"
-              value={format}
-              onChange={(e) => handleFormatChange(e.target.value as AudioFormat)}
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '2px solid var(--border-color)',
-                borderRadius: '0.375rem',
-                fontSize: '1rem',
-              }}
+      <div className="download-dropdown">
+        <div className="drums-floating-menu__header">
+          <h3 className="drums-floating-menu__title">Download audio</h3>
+        </div>
+        <div className="drums-floating-menu__body">
+          <div className="drums-floating-menu__section">
+            <p className="drums-floating-menu__section-label">Format</p>
+            <div
+              className="drums-floating-menu__chip-grid drums-floating-menu__chip-grid--2"
+              role="group"
+              aria-label="Audio format"
             >
-              <option value="wav">WAV</option>
-              <option value="mp3">MP3</option>
-            </select>
+              {(['wav', 'mp3'] as const).map((option) => {
+                const isActive = format === option;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    className={`drums-floating-menu__chip${isActive ? ' is-active' : ''}`}
+                    aria-pressed={isActive}
+                    onClick={() => handleFormatChange(option)}
+                  >
+                    {option.toUpperCase()}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div style={{ marginBottom: '1rem' }}>
-            <label htmlFor="download-loops" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
-              Loops
+          <div className="drums-floating-menu__slider-panel download-dropdown__loops">
+            <label htmlFor="download-loops" className="drums-floating-menu__field-label">
+              <span>Loops</span>
+              <span className="drums-floating-menu__field-value">{loops}</span>
             </label>
             <input
               id="download-loops"
+              className="download-dropdown__loops-input"
               type="number"
               min="1"
               max="100"
+              aria-label="Loops"
               value={loops}
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10);
@@ -166,46 +157,26 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
                   handleLoopsChange(val);
                 }
               }}
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '2px solid var(--border-color)',
-                borderRadius: '0.375rem',
-                fontSize: '1rem',
-              }}
             />
           </div>
 
-          <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f3f4f6', borderRadius: '0.375rem' }}>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
-              Preview Duration
-            </div>
-            <div style={{ fontSize: '1.125rem', fontWeight: 600 }}>
-              {formatDuration(totalDuration)}
-            </div>
+          <div className="drums-floating-menu__note-panel download-dropdown__preview">
+            <div className="download-dropdown__preview-label">Preview duration</div>
+            <div className="download-dropdown__preview-value">{formatDuration(totalDuration)}</div>
           </div>
 
           <button
-            onClick={handleDownload}
+            type="button"
+            className="drums-floating-menu__primary-action"
+            onClick={() => void handleDownload()}
             disabled={isExporting}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              backgroundColor: isExporting ? '#9ca3af' : 'var(--primary-purple)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.375rem',
-              fontSize: '1rem',
-              fontWeight: 500,
-              cursor: isExporting ? 'not-allowed' : 'pointer',
-            }}
           >
-            {isExporting ? 'Exporting...' : 'Download'}
+            {isExporting ? 'Exporting…' : 'Download'}
           </button>
+        </div>
       </div>
     </AnchoredPopover>
   );
 };
 
 export default DownloadDropdown;
-

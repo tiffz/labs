@@ -97,6 +97,72 @@ describe('BpmInput', () => {
     expect(await screen.findByText('Common BPMs')).toBeInTheDocument();
   });
 
+  it('closes the preset dropdown on Escape from the input', async () => {
+    const onChange = vi.fn();
+    render(<BpmInput value={120} onChange={onChange} />);
+    const input = screen.getByRole('textbox');
+
+    fireEvent.focus(input);
+    expect(await screen.findByText('Common BPMs')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Escape', code: 'Escape' });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Common BPMs')).not.toBeInTheDocument();
+    });
+  });
+
+  it('closes the preset dropdown on Escape while focus is inside the menu', async () => {
+    const onChange = vi.fn();
+    render(<BpmInput value={120} onChange={onChange} />);
+    const input = screen.getByRole('textbox');
+
+    fireEvent.focus(input);
+    const menu = await screen.findByLabelText('Common BPM options');
+    fireEvent.keyDown(menu, { key: 'Escape', code: 'Escape' });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Common BPMs')).not.toBeInTheDocument();
+    });
+  });
+
+  it('closes the preset dropdown when clicking outside', async () => {
+    const onChange = vi.fn();
+    render(<BpmInput value={120} onChange={onChange} />);
+    const input = screen.getByRole('textbox');
+
+    fireEvent.focus(input);
+    expect(await screen.findByText('Common BPMs')).toBeInTheDocument();
+
+    fireEvent.pointerDown(document.body);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Common BPMs')).not.toBeInTheDocument();
+    });
+  });
+
+  it('does not reopen the preset dropdown after dismiss blur', async () => {
+    const onChange = vi.fn();
+    render(<BpmInput value={120} onChange={onChange} />);
+    const input = screen.getByRole('textbox');
+
+    fireEvent.focus(input);
+    expect(await screen.findByText('Common BPMs')).toBeInTheDocument();
+
+    fireEvent.pointerDown(document.body);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Common BPMs')).not.toBeInTheDocument();
+    });
+
+    const menu = document.querySelector('.shared-bpm-dropdown');
+    fireEvent.blur(input, { relatedTarget: menu ?? undefined });
+
+    expect(screen.queryByText('Common BPMs')).not.toBeInTheDocument();
+  });
+
   it('selects a preset BPM and closes the dropdown', async () => {
     const onChange = vi.fn();
     render(<BpmInput value={120} onChange={onChange} />);

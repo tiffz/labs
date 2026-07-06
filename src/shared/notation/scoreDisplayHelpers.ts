@@ -114,6 +114,26 @@ export function unionNoteheadBoundsVexFlow(sn: StaveNote): { x: number; y: numbe
   return { x: x1, y: y1, w: Math.max(x2 - x1, 1), h: Math.max(y2 - y1, 1) };
 }
 
+/** Notehead or rest glyph bounds for metronome dot alignment (after `draw()`). */
+export function unionMetronomeGlyphBoundsVexFlow(
+  sn: StaveNote,
+): { x: number; y: number; w: number; h: number } | null {
+  const notehead = unionNoteheadBoundsVexFlow(sn);
+  if (notehead) return notehead;
+  try {
+    const bb = sn.getBoundingBox();
+    if (!bb) return null;
+    return {
+      x: bb.getX(),
+      y: bb.getY(),
+      w: Math.max(bb.getW(), 1),
+      h: Math.max(bb.getH(), 1),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function liveActiveNoteMatched(
   note: ScoreNote,
   played: number[],

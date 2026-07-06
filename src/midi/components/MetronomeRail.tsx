@@ -1,11 +1,13 @@
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { useEffect } from 'react';
 import BpmInput from '../../shared/components/music/BpmInput';
-import MetronomeToggleButton from '../../shared/components/MetronomeToggleButton';
+import { MetronomeSplitControl, useMetronomePreferences } from '../../shared/audio/platform/metronome';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import { useMidi } from '../useMidi';
 import { MidiOptionSelect } from './MidiOptionSelect';
 import type { MidiSubdivision } from '../types';
+import { setMidiMetronomePreferences } from '../metronomePreferencesBridge';
 
 const TIME_SIG_OPTIONS: { value: string; label: string; ts: TimeSignature }[] = [
   { value: '4/4', label: '4/4', ts: { numerator: 4, denominator: 4 } },
@@ -25,9 +27,18 @@ function timeSigValue(ts: TimeSignature): string {
 }
 
 export function MetronomeRail() {
-  const { state, dispatch, toggleMetronome } = useMidi();
+  const { state, dispatch, toggleMetronome, syncMetronomePreferences } = useMidi();
   const { transport, metronomePlaying, currentBeat } = state;
   const meterValue = timeSigValue(transport.timeSignature);
+  const { preferences, setPreferences, isNonDefault } = useMetronomePreferences({
+    storageKey: 'midi-metronome-prefs',
+    timeSignature: transport.timeSignature,
+  });
+
+  useEffect(() => {
+    setMidiMetronomePreferences(preferences);
+    syncMetronomePreferences();
+  }, [preferences, syncMetronomePreferences]);
 
   return (
     <Stack
@@ -47,10 +58,14 @@ export function MetronomeRail() {
         showPresetDropdown
         showRateActions={false}
         trailingActions={
-          <MetronomeToggleButton
+          <MetronomeSplitControl
             enabled={metronomePlaying}
             onToggle={() => void toggleMetronome()}
-            ariaLabel={metronomePlaying ? 'Stop metronome' : 'Start metronome'}
+            preferences={preferences}
+            onPreferencesChange={setPreferences}
+            timeSignature={transport.timeSignature}
+            isNonDefault={isNonDefault}
+            appearance="midi"
           />
         }
       />

@@ -102,13 +102,6 @@
 .shared-chord-progression-dropdown {
   min-width: min(460px, calc(100vw - 24px));
   max-width: min(560px, calc(100vw - 24px));
-  border-radius: var(--cp-surface-radius);
-  border: 1px solid color-mix(in srgb, var(--cp-surface-border) 92%, #e2e8f0);
-  background: var(--cp-surface-bg);
-  box-shadow: var(
-    --cp-surface-shadow,
-    var(--theme-shadow-lg, 0 12px 28px rgba(15, 23, 42, 0.14))
-  );
 }
 
 .shared-chord-progression-inline-content {

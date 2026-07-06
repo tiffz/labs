@@ -24,7 +24,9 @@
   --theme-border-strong: color-mix(in srgb, var(--pastel-6) 36%, #a7f3d0);
   --theme-focus-ring: 0 0 0 2px rgba(10, 138, 143, 0.14);
   --theme-shadow-sm: 0 8px 16px rgba(2, 132, 199, 0.12);
+  --theme-shadow-md: 0 8px 16px rgba(2, 132, 199, 0.12);
   --theme-shadow-lg: 0 14px 30px rgba(2, 132, 199, 0.18);
+  --theme-shadow-popover: var(--theme-shadow-md);
   --theme-radius-sm: 0.65rem;
   --theme-radius-md: 0.85rem;
   --theme-radius-lg: 1rem;
@@ -33,13 +35,20 @@
   --control-height-touch: 44px;
   --control-height: var(--control-height-comfortable);
   --control-radius: var(--theme-radius-sm);
-  --words-dropdown-surface-border: var(
-    --surface-border,
-    1px solid color-mix(in srgb, #0a8a8f 24%, #dbeafe)
-  );
-  --words-dropdown-surface-radius: 0.85rem;
-  --words-dropdown-surface-bg: rgba(255, 255, 255, 0.98);
-  --words-dropdown-surface-shadow: 0 8px 16px rgba(2, 132, 199, 0.12);
+  --words-dropdown-surface-border: var(--labs-popover-border);
+  --words-dropdown-surface-radius: var(--labs-popover-radius);
+  --words-dropdown-surface-bg: var(--labs-popover-bg);
+  --words-dropdown-surface-shadow: var(--labs-popover-shadow);
+
+  /* App-wide chrome (portaled MUI papers are outside .words-page). */
+  --labs-popover-shadow: 0 8px 16px rgba(2, 132, 199, 0.12);
+  --labs-popover-border: 1px solid
+    color-mix(in srgb, var(--pastel-6) 24%, #dbeafe);
+  --labs-popover-bg: rgba(255, 255, 255, 0.98);
+  --labs-control-hover-shadow: 0 6px 12px rgba(10, 138, 143, 0.22);
+  --labs-btn-border: 1px solid color-mix(in srgb, var(--pastel-6) 28%, #cbd5e1);
+  --labs-btn-bg: color-mix(in srgb, var(--pastel-9) 88%, var(--pastel-8));
+  --labs-btn-fg: #0f766e;
 }
 
 body {
@@ -223,20 +232,9 @@ body,
   overflow: auto;
   z-index: 80;
   padding: 16px;
-  border: var(--words-dropdown-surface-border);
-  border-radius: var(--words-dropdown-surface-radius);
-  background: var(--words-dropdown-surface-bg);
-  box-shadow: var(--words-dropdown-surface-shadow);
-  backdrop-filter: blur(4px);
 }
 
-.words-section-chord-dropdown.shared-chord-progression-dropdown,
-.words-section-style-dropdown.shared-chord-style-dropdown,
-.words-bpm-dropdown .shared-bpm-dropdown-list {
-  box-shadow: var(--words-dropdown-surface-shadow) !important;
-}
-
-/* --- Generation settings dropdown: MD high-density --- */
+/* Nested shared pickers inherit :root --labs-popover-*; layout-only overrides below. */
 .words-dropdown-generation {
   left: 0;
   right: auto;
@@ -328,6 +326,24 @@ body,
   display: grid;
   gap: 8px;
   right: 10px;
+}
+
+.words-dropdown-sound .shared-playback-volume-row {
+  padding: 2px 0;
+}
+
+.words-dropdown-sound .shared-playback-volume-row .MuiSlider-root {
+  color: var(--words-slider-track, #0f766e);
+}
+
+.words-dropdown-sound .shared-playback-volume-row .MuiSlider-thumb {
+  width: 12px;
+  height: 12px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--pastel-9) 92%, #fff);
+}
+
+.words-dropdown-sound .shared-playback-volume-row .MuiSlider-rail {
+  opacity: 0.28;
 }
 
 .words-dropdown-header {
@@ -508,9 +524,9 @@ body,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid color-mix(in srgb, var(--pastel-6) 28%, #cbd5e1);
-  background: color-mix(in srgb, var(--pastel-9) 88%, var(--pastel-8));
-  color: #0f766e;
+  border: var(--labs-btn-border);
+  background: var(--labs-btn-bg);
+  color: var(--labs-btn-fg);
   border-radius: 999px;
   font-size: 0.76rem;
   font-weight: 700;
@@ -520,14 +536,12 @@ body,
   box-sizing: border-box;
   padding: 6px 14px;
   cursor: pointer;
-  transition:
-    transform 120ms ease,
-    box-shadow 120ms ease;
+  transition: var(--labs-control-transition);
 }
 
-.words-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 12px rgba(10, 138, 143, 0.22);
+.words-button:hover:not(:disabled) {
+  transform: var(--labs-control-hover-translate);
+  box-shadow: var(--labs-control-hover-shadow);
 }
 
 .words-button-primary {
@@ -545,7 +559,7 @@ body,
   display: inline-flex;
   align-items: stretch;
   border-radius: 999px;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid #ea580c;
   background: linear-gradient(
     135deg,
@@ -576,6 +590,7 @@ body,
 
 .words-split-button .words-split-action {
   padding: 6px 12px 6px 14px;
+  border-radius: 999px 0 0 999px;
 }
 
 .words-split-button .words-split-menu-trigger {
@@ -585,6 +600,18 @@ body,
   display: inline-flex;
   align-items: center;
   position: relative;
+  border-radius: 0 999px 999px 0;
+}
+
+.words-split-button .words-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--pastel-5) 70%, #67e8f9);
+  outline-offset: 2px;
+  z-index: 1;
+}
+
+.words-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--pastel-6) 56%, #67e8f9);
+  outline-offset: 2px;
 }
 
 .words-split-button .words-split-menu-trigger::before {
@@ -1541,11 +1568,6 @@ body,
   overflow-x: hidden;
   overscroll-behavior: contain;
   box-sizing: border-box;
-  border: var(--words-dropdown-surface-border);
-  border-radius: var(--words-dropdown-surface-radius);
-  background: var(--words-dropdown-surface-bg);
-  box-shadow: var(--words-dropdown-surface-shadow);
-  backdrop-filter: blur(4px);
 }
 
 .words-chord-input-with-action {
@@ -1850,13 +1872,6 @@ body,
   display: grid;
   gap: 4px;
   padding: 6px;
-  border-radius: 0.65rem;
-  border: var(
-    --surface-border,
-    1px solid color-mix(in srgb, #0a8a8f 24%, #dbeafe)
-  );
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.16);
 }
 
 .words-randomize-menu-section {
@@ -1909,19 +1924,8 @@ body,
 }
 
 .shared-export-panel-words {
-  border-radius: var(--words-dropdown-surface-radius, 0.85rem);
-}
-
-.shared-export-popover-words {
-  border: var(--words-dropdown-surface-border) !important;
-  border-radius: var(--words-dropdown-surface-radius) !important;
-  background: var(--words-dropdown-surface-bg) !important;
-  box-shadow: var(--words-dropdown-surface-shadow) !important;
-  backdrop-filter: blur(4px);
-}
-
-.shared-export-panel-words {
-  background: var(--words-dropdown-surface-bg);
+  border-radius: var(--labs-popover-radius);
+  background: var(--labs-popover-bg);
 }
 
 .shared-export-panel-words .shared-export-title,
@@ -2000,30 +2004,27 @@ body,
   justify-content: center;
 }
 
+/* Layout only — split shell owns chrome via --metro-* (metronome-themes.css). */
 .words-metronome-toggle.words-button {
-  background: color-mix(in srgb, var(--pastel-9) 88%, var(--pastel-8));
-  border-color: color-mix(in srgb, var(--pastel-6) 28%, #cbd5e1);
-  color: #0f766e;
   min-height: 34px;
   height: 34px;
   min-width: 42px;
   padding: 0 10px;
   border-radius: 999px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  box-shadow: none;
 }
 
 .words-metronome-toggle.words-button.is-on {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--pastel-3) 88%, #f59e0b),
-    color-mix(in srgb, var(--pastel-2) 88%, #ea580c)
-  );
-  border-color: #ea580c;
-  color: #ffffff;
+  background: transparent;
+  border: 0;
+  color: inherit;
 }
 
 .words-metronome-toggle.words-button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--pastel-5) 46%, #67e8f9);
 }
 
 .words-metronome-toggle .metronome-on-label {
@@ -2031,6 +2032,209 @@ body,
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+}
+
+/* Metronome settings panel layout — shell chrome from .labs-popover-surface. */
+.labs-metronome-settings-popover--words {
+  overflow: hidden;
+}
+
+.labs-metronome-settings-panel--words {
+  width: min(100vw - 24px, 320px);
+  min-width: 0;
+}
+
+.labs-metronome-settings-panel--words .labs-metronome-settings-panel__header {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--pastel-6) 14%, #e2e8f0);
+  background: transparent;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__header
+  h3 {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #0f766e;
+}
+
+.labs-metronome-settings-panel--words .labs-metronome-settings-panel__body {
+  padding: 12px 16px 14px;
+  gap: 0;
+  max-height: min(70vh, 420px);
+}
+
+.labs-metronome-settings-panel--words .labs-metronome-settings-panel__section {
+  padding: 12px 0;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__section:first-child {
+  padding-top: 0;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__section
+  + .labs-metronome-settings-panel__section {
+  border-top: 1px solid color-mix(in srgb, var(--pastel-6) 10%, #e2e8f0);
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__section-title {
+  font-size: 0.64rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b !important;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__reset-levels {
+  color: #0a8a8f !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  min-height: 0 !important;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__reset-levels:hover {
+  background: color-mix(
+    in srgb,
+    var(--pastel-9) 60%,
+    var(--pastel-8)
+  ) !important;
+}
+
+/* Chip-style toggles — same language as .words-segmented-toggle, not orange bars. */
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__toggle-group {
+  --metro-toggle-divider: transparent;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__toggle-group.MuiToggleButtonGroup-root {
+  gap: 6px;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__toggle-group
+  .MuiToggleButtonGroup-grouped {
+  margin: 0 !important;
+  flex: 0 1 auto;
+  min-width: 0;
+  border: 0 !important;
+  border-radius: 0.4rem !important;
+  box-shadow: none !important;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__toggle-group
+  .MuiToggleButtonGroup-grouped:not(:first-of-type),
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__toggle-group
+  .MuiToggleButtonGroup-grouped.Mui-selected
+  + .MuiToggleButtonGroup-grouped.Mui-selected {
+  box-shadow: none !important;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__toggle-group
+  .MuiToggleButton-root {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 2.25rem;
+  padding: 6px 10px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #0f766e;
+  background: color-mix(in srgb, var(--pastel-9) 94%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--pastel-5) 32%, #bae6fd) !important;
+  border-radius: 0.4rem !important;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__toggle-group
+  .MuiToggleButton-root:hover {
+  border-color: color-mix(in srgb, var(--pastel-3) 55%, #0ea5e9) !important;
+  background: color-mix(
+    in srgb,
+    var(--pastel-9) 82%,
+    var(--pastel-8)
+  ) !important;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__toggle-group
+  .MuiToggleButton-root.Mui-selected {
+  color: #0b4f54 !important;
+  background: color-mix(in srgb, var(--pastel-3) 16%, #ccfbf1) !important;
+  border-color: #0a8a8f !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--pastel-5) 24%, transparent) !important;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__toggle-group
+  .MuiToggleButton-root.Mui-selected:hover {
+  background: color-mix(in srgb, var(--pastel-3) 22%, #ccfbf1) !important;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__toggle-group--counting
+  .MuiToggleButton-root {
+  flex: 1 1 calc(50% - 3px);
+  text-transform: none;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-size: 0.75rem;
+}
+
+.labs-metronome-settings-panel--words .labs-metronome-settings-panel__levels {
+  gap: 2px !important;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__levels
+  .shared-playback-volume-row {
+  padding: 2px 0;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__levels
+  .MuiSlider-root {
+  color: #0a8a8f;
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__levels
+  .MuiSlider-thumb {
+  width: 12px;
+  height: 12px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--pastel-9) 92%, #fff);
+}
+
+.labs-metronome-settings-panel--words
+  .labs-metronome-settings-panel__levels
+  .MuiSlider-rail {
+  opacity: 0.28;
 }
 
 .words-inline-control {
@@ -2138,8 +2342,6 @@ body,
 }
 
 .shared-key-dropdown.words-key-dropdown {
-  --key-dropdown-bg: rgba(255, 255, 255, 0.98);
-  --key-dropdown-border: color-mix(in srgb, #0a8a8f 24%, #dbeafe);
   --key-dropdown-padding: 0.6rem;
   --key-grid-gap: 0.38rem;
   --key-chip-min-height: 2.18rem;
@@ -2155,13 +2357,6 @@ body,
   --key-chip-active-text: #0f766e;
   --key-chip-active-shadow:
     0 10px 20px rgba(2, 132, 199, 0.16), 0 0 20px rgba(10, 138, 143, 0.16);
-  border-radius: 0.85rem;
-  border: var(
-    --surface-border,
-    1px solid color-mix(in srgb, #0a8a8f 24%, #dbeafe)
-  );
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 8px 16px rgba(2, 132, 199, 0.12);
   min-width: min(420px, calc(100vw - 44px));
   max-width: min(520px, calc(100vw - 44px));
 }
@@ -2425,6 +2620,8 @@ body,
   width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
+  --notation-staff-line: #d1d5db;
+  --notation-ink: #1f2937;
   border: 1px solid color-mix(in srgb, var(--pastel-5) 42%, #99f6e4);
   border-radius: 0.65rem;
   background: linear-gradient(
@@ -2479,6 +2676,42 @@ body,
   min-width: 100%;
   width: max-content;
   max-width: none;
+}
+
+/* Staff lines — light grey like Darbuka + DrumNotationMini (note ink stays dark). */
+.words-vex-score svg g[class*='vf-stave'] > path:not([class*='barline']),
+.words-vex-score svg g[class*='vf-stave'] > line:not([class*='barline']) {
+  stroke: var(--notation-staff-line, #d1d5db) !important;
+  stroke-width: 1 !important;
+}
+
+.words-vex-score svg g[class*='vf-stave'] path[class*='barline'],
+.words-vex-score svg g[class*='vf-stave'] line[class*='barline'] {
+  stroke: var(--notation-ink, #1f2937) !important;
+  stroke-width: 1.5 !important;
+}
+
+.words-vex-score svg path[class*='stem'],
+.words-vex-score svg line[class*='stem'],
+.words-vex-score svg path[class*='vf-stem'],
+.words-vex-score svg line[class*='vf-stem'],
+.words-vex-score svg g[class*='vf-stem'] path,
+.words-vex-score svg g[class*='vf-stem'] line,
+.words-vex-score svg g path[class*='stem'],
+.words-vex-score svg g line[class*='stem'],
+.words-vex-score svg path[class*='beam'],
+.words-vex-score svg line[class*='beam'],
+.words-vex-score svg g[class*='beam'] path,
+.words-vex-score svg g[class*='beam'] line,
+.words-vex-score svg g:not([class*='vf-stave']) path:not([class*='notehead']),
+.words-vex-score svg g:not([class*='vf-stave']) line {
+  stroke: var(--notation-ink, #1f2937) !important;
+  stroke-width: 1.5 !important;
+}
+
+.words-vex-score svg .vf-dot {
+  fill: var(--notation-ink, #1f2937) !important;
+  stroke: var(--notation-ink, #1f2937) !important;
 }
 
 @media (max-width: 1400px) {

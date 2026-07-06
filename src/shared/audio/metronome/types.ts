@@ -63,13 +63,23 @@ export function slotsPerBeat(level: SubdivisionLevel): number {
  * Minimum subdivision slot duration (seconds) for voicing subdivision
  * syllables. Below this, only beat numbers are voiced to maintain clarity.
  */
-export const VOICE_SUBDIV_MIN_DUR = 0.18;
+export const VOICE_SUBDIV_MIN_DUR = 0.11;
 
 /**
  * Grid slots per eighth note for /8 meters.
  */
 export function eighthBaseSlotsPerEighth(level: SubdivisionLevel): number {
   if (level === 'swing8') return 1;
+  const n = slotsPerBeat(level);
+  return n <= 2 ? 1 : 2;
+}
+
+/**
+ * Grid slots per sixteenth note for /16 meters.
+ * Level 1–2: one slot per sixteenth; level 3–4: two slots (32nd feel).
+ */
+export function sixteenthBaseSlotsPerSixteenth(level: SubdivisionLevel): number {
+  if (level === 1 || level === 'swing8') return 1;
   const n = slotsPerBeat(level);
   return n <= 2 ? 1 : 2;
 }

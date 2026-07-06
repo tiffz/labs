@@ -23,7 +23,6 @@ import { loadChordPlaybackSettings } from '../../../../shared/music/chordPlaybac
 import { sectionHasPlayableChartSteps } from '../../../../shared/music/chordPro/chartPlaybackSequence';
 import { sectionUsesCustomPlayback } from '../../../../shared/music/resolveSectionPlaybackSettings';
 import type { TimeSignature } from '../../../../shared/rhythm/types';
-import { encoreHairline, encoreShadowLift } from '../../../theme/encoreUiTokens';
 import { useOptionalOriginalsChartPlayback } from '../../context/useOriginalsChartPlayback';
 import {
   createSectionPlaybackOverrideFromGlobal,
@@ -375,8 +374,6 @@ export function OriginalsPaintSectionHeading({
               flexDirection: 'column',
               overflow: 'hidden',
               borderRadius: 3,
-              border: `1px solid ${encoreHairline}`,
-              boxShadow: encoreShadowLift,
             },
           }),
           paper: {

@@ -83,3 +83,22 @@ UX sketch skill: [`labs-ux-journey`](../../.cursor/skills/labs-ux-journey/SKILL.
 | Unit  | `stanzaTransportLoop.integration.test.ts`  |
 
 See [`docs/STANZA_PLAYBACK.md`](../../docs/STANZA_PLAYBACK.md) for transport invariants.
+
+---
+
+## CUJ-004: Practice rail pitch row at desktop rail width
+
+**Primary goal:** Calibrate pitch (original key, shift, playback result) in one dense row without control overlap.  
+**Persona:** Singer adjusting transpose while watching the video.
+
+### Success criteria
+
+- Original key, shift stepper, and playback chip share one row at ~392px rail width.
+- Controls do not horizontally overlap.
+
+### Automation
+
+| Type  | Artifact                                   |
+| ----- | ------------------------------------------ |
+| Smoke | `e2e/smoke/stanza-practice-rail.spec.ts`   |
+| Unit  | — (layout asserted in Playwright geometry) |

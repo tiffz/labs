@@ -14,7 +14,7 @@ import { alpha, useTheme, type SxProps, type Theme } from '@mui/material/styles'
 import { useId, useState, type ReactElement, type ReactNode } from 'react';
 import { useEncore } from '../context/EncoreContext';
 import { SpotifyBrandIcon } from '../components/EncoreBrandIcon';
-import { encoreHairline, encoreShadowLift } from '../theme/encoreUiTokens';
+import { encoreHairline } from '../theme/encoreUiTokens';
 import { EncoreStatusPill } from './EncoreStatusPill';
 
 const SPOTIFY_GREEN = '#1DB954';
@@ -202,8 +202,6 @@ export function EncoreSpotifyConnectionChip(props: EncoreSpotifyConnectionChipPr
               minWidth: 220,
               mt: 0.75,
               borderRadius: 2,
-              border: `1px solid ${encoreHairline}`,
-              boxShadow: encoreShadowLift,
             },
           },
         }}

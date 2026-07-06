@@ -146,6 +146,30 @@ describe('mergeStanzaRicherSongMetadata', () => {
     expect(merged.drumPattern).toBe('D-T-K-T-');
   });
 
+  it('merges per-section drum overrides from both sides', () => {
+    const local = song({
+      id: '1',
+      title: 'Local',
+      updatedAt: 50,
+      drumPattern: 'D-T-K-T-',
+      drumPatternBySegmentId: { 'seg-a': 'D---D---' },
+    });
+    const remote = {
+      id: '1',
+      ytId: 'vid',
+      title: 'Remote',
+      markers: [],
+      stats: {},
+      updatedAt: 40,
+      drumPatternBySegmentId: { 'seg-b': 'T-K-T-K-' },
+    };
+    const merged = mergeStanzaRicherSongMetadata(local, remote);
+    expect(merged.drumPatternBySegmentId).toEqual({
+      'seg-a': 'D---D---',
+      'seg-b': 'T-K-T-K-',
+    });
+  });
+
   it('keeps explicit zero Beat 1 when analysis cache would infer offset', () => {
     const local = song({
       id: '1',
