@@ -564,11 +564,15 @@ async function migrateBeatEntry(
       metronomeSongCalibration:
         existing.metronomeSongCalibration ??
         beatSettingsToMetronomeCalibration(settings, analysisBundle),
-      metronomeEnabled: settings?.metronomeEnabled ?? existing.metronomeEnabled ?? false,
+      metronomeEnabled:
+        settings?.metronomeEnabled != null
+          ? settings.metronomeEnabled
+          : existing.metronomeEnabled ?? false,
       metronomeGain:
         settings?.metronomeVolume != null ? settings.metronomeVolume / 100 : existing.metronomeGain,
       metronomeMuted: settings?.metronomeMuted ?? existing.metronomeMuted,
-      drumsEnabled: settings?.drumEnabled ?? existing.drumsEnabled,
+      drumsEnabled:
+        settings?.drumEnabled != null ? settings.drumEnabled : existing.drumsEnabled,
       drumsGain: settings?.drumVolume != null ? settings.drumVolume / 100 : existing.drumsGain,
       drumsMuted: settings?.drumMuted ?? existing.drumsMuted,
       primaryGain: settings?.audioVolume != null ? settings.audioVolume / 100 : existing.primaryGain,

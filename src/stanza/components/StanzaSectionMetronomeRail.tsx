@@ -649,7 +649,7 @@ export default function StanzaSectionMetronomeRail({
                 }
                 resetLabel="Use song tempo"
                 inheritLabel="From whole song"
-                customLabel="Custom tempo"
+                showCustomStatus={false}
               />
             ) : null
           }
@@ -698,15 +698,14 @@ export default function StanzaSectionMetronomeRail({
           inheritanceMode={tempoInheritanceMode}
         >
           <Box className="stanza-rail-beat-offset-shell">
-            <TextField
-              size="small"
-              fullWidth
+            <input
+              type="text"
+              inputMode="numeric"
+              className="stanza-rail-beat-offset-value"
               value={draftOffsetInput}
               onChange={(e) => handleOffsetInputChange(e.target.value)}
               onBlur={handleOffsetBlur}
-              inputProps={{ inputMode: 'numeric' }}
-              variant="outlined"
-              className="stanza-rail-beat-offset-input"
+              aria-label="Beat 1 offset in milliseconds"
             />
           </Box>
         </StanzaRailField>

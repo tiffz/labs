@@ -383,35 +383,30 @@
 
 .stanza-rail-calibration-grid .stanza-rail-beat-offset-shell:focus-within {
   border-color: var(--stanza-rose);
+  box-shadow: var(--bpm-focus-ring, 0 0 0 2px rgba(232, 72, 160, 0.18));
 }
 
-.stanza-rail-calibration-grid .stanza-rail-beat-offset-input {
+.stanza-rail-calibration-grid .stanza-rail-beat-offset-value {
   flex: 1 1 auto;
   min-width: 0;
-}
-
-.stanza-rail-calibration-grid
-  .stanza-rail-beat-offset-input
-  .MuiOutlinedInput-root {
-  min-height: var(--stanza-rail-control-height);
-  border-radius: var(--stanza-rail-control-radius);
+  width: 100%;
+  margin: 0;
+  border: none;
   background: transparent;
-}
-
-.stanza-rail-calibration-grid
-  .stanza-rail-beat-offset-input
-  .MuiOutlinedInput-notchedOutline {
-  border: 0;
-}
-
-.stanza-rail-calibration-grid
-  .stanza-rail-beat-offset-input
-  .MuiOutlinedInput-input {
-  padding: 0.35rem 0.55rem;
+  color: var(--stanza-ink, #2a2622);
+  font-family: var(--stanza-font-ui);
   font-size: 0.8125rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+  text-align: left;
+  padding: 0 0.52rem 0 0.55rem;
+  outline: none;
+}
+
+.stanza-rail-calibration-grid .stanza-rail-beat-offset-value::placeholder {
+  color: var(--stanza-ink-soft);
 }
 
 .stanza-rail-calibration-grid .stanza-bpm-rail-input .shared-bpm-shell {
@@ -452,14 +447,11 @@
 }
 
 .stanza-rail-calibration-panel--inheriting {
-  border-left: 2px dashed
-    color-mix(in srgb, var(--stanza-ink-muted) 38%, transparent);
-  padding-left: 10px;
+  padding-left: 8px;
 }
 
 .stanza-rail-calibration-panel--section-override {
-  border-left: 2px solid var(--stanza-rose-line);
-  padding-left: 10px;
+  padding-left: 8px;
 }
 
 .stanza-rail-scope-switch {
@@ -924,6 +916,11 @@
   --bpm-stepper-min-width: 4.25rem;
 }
 
+.stanza-app .stanza-metronome-rail .stanza-bpm-rail-input .shared-bpm-value {
+  --bpm-value-text-align: left;
+  padding-inline: 0.55rem 0.45rem;
+}
+
 .stanza-app .stanza-rail-section--pitch .shared-bpm-shell[aria-busy='true'] {
   opacity: 0.72;
 }
@@ -1059,7 +1056,7 @@
   font-size: 0.72rem;
   line-height: 1.2;
   color: var(--stanza-muted, rgba(49, 43, 38, 0.62));
-  border: 1px solid var(--stanza-line, rgba(49, 43, 38, 0.12));
+  border: 1px solid var(--stanza-paper-line, rgba(49, 43, 38, 0.13));
   border-radius: 999px;
   padding: 0.22rem 0.48rem;
   white-space: nowrap;
@@ -1174,7 +1171,7 @@
   min-width: 16.25rem;
   max-width: min(22rem, calc(100vw - 24px));
   margin-top: 4px;
-  border: 1px solid rgba(49, 43, 38, 0.12);
+  border: 1px solid var(--stanza-paper-line);
   border-radius: 10px;
   background: var(--labs-popover-bg, #ffffff);
   box-shadow:
@@ -1197,7 +1194,7 @@
   letter-spacing: 0.01em;
   min-height: 1.85rem;
   border-radius: 8px;
-  border-color: rgba(49, 43, 38, 0.1);
+  border-color: var(--stanza-paper-line);
   background: rgba(255, 255, 255, 0.88);
   color: #2a2622;
   padding: 0.28rem 0.35rem;
@@ -1224,7 +1221,7 @@
 .stanza-key-dropdown .shared-key-mode-toggle {
   margin-top: 0.45rem;
   padding-top: 0.45rem;
-  border-top: 1px solid rgba(49, 43, 38, 0.1);
+  border-top: 1px solid var(--stanza-paper-line);
 }
 
 .stanza-key-dropdown .shared-key-mode-toggle-btn {
@@ -1233,7 +1230,7 @@
   font-weight: 600;
   min-height: 1.85rem;
   border-radius: 8px;
-  border-color: rgba(49, 43, 38, 0.1);
+  border-color: var(--stanza-paper-line);
   background: rgba(255, 255, 255, 0.88);
   color: #2a2622;
 }
@@ -1264,7 +1261,7 @@
 }
 
 .stanza-key-dropdown .shared-key-relative-switch-btn {
-  border-color: rgba(49, 43, 38, 0.1);
+  border-color: var(--stanza-paper-line);
   background: rgba(255, 255, 255, 0.96);
   color: #2a2622;
 }
@@ -1280,7 +1277,7 @@
 /* Automatic tempo modal (portaled): paper is outside .stanza-app, no ancestor prefix. */
 .stanza-tempo-preview-dialog-paper.MuiPaper-root {
   border-radius: 16px;
-  border: 1px solid rgba(49, 43, 38, 0.08);
+  border: 1px solid var(--stanza-paper-line-faint);
   box-shadow: var(--stanza-shadow-card, 0 16px 38px rgba(47, 39, 33, 0.075));
 }
 
@@ -1658,7 +1655,20 @@
   margin: 0;
 }
 
-/* Notation tray: variation + staff only — no nested card chrome. */
+.stanza-drums-panel .drum-display-error--inline {
+  position: relative;
+  z-index: 0;
+  padding: 0.35rem 0;
+  border: none;
+  background: transparent;
+  text-align: center;
+}
+
+.stanza-drums-panel .drum-display-error--inline p {
+  font-size: 0.75rem;
+}
+
+/* Notation tray: variation + staff only — no nested card chrome (unless section scope shell). */
 .stanza-drums-panel .stanza-drums-notation-frame {
   padding: 2px 0 0;
   border: none;
@@ -1669,6 +1679,40 @@
   box-sizing: border-box;
   gap: 2px;
   overflow: visible;
+}
+
+/* Section scope: one card morphs between inherit (muted) and custom (rose accent). */
+.stanza-drums-panel
+  .stanza-drums-notation-frame.stanza-rail-groove-drums__pattern-shell {
+  padding: 6px 8px 4px;
+  border: 1px solid var(--stanza-paper-line-faint);
+  border-radius: var(--stanza-radius-chip, 8px);
+  background: var(--stanza-rail-control-bg, rgba(255, 255, 255, 0.72));
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.stanza-drums-panel
+  .stanza-drums-notation-frame.stanza-rail-groove-drums__pattern-shell--inherit {
+  border-color: color-mix(in srgb, var(--stanza-paper-line) 75%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--stanza-paper-elevated-strong, rgba(255, 255, 255, 0.72)) 92%,
+    transparent
+  );
+}
+
+.stanza-drums-panel
+  .stanza-drums-notation-frame.stanza-rail-groove-drums__pattern-shell--custom {
+  border-color: color-mix(
+    in srgb,
+    var(--stanza-rose-line) 55%,
+    var(--stanza-paper-line-faint)
+  );
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--stanza-rose-line) 22%, transparent);
 }
 
 .stanza-drums-panel .stanza-drums-notation-frame .rhythm-template-variation {
@@ -1741,6 +1785,7 @@
   position: relative;
   z-index: 2;
   margin-bottom: 2px;
+  justify-content: space-between;
 }
 
 .stanza-drums-panel .stanza-drums-notation-toolbar__trail {
@@ -1770,11 +1815,26 @@
     color 120ms ease;
 }
 
-.stanza-drums-panel .drum-pattern-edit-btn:hover,
-.stanza-drums-panel .drum-pattern-edit-btn[aria-expanded='true'] {
+.stanza-drums-panel .drum-pattern-edit-btn:hover:not([aria-expanded='true']) {
   border-color: var(--stanza-rose-line);
   background: var(--stanza-rose-wash);
   color: var(--stanza-ink);
+}
+
+.stanza-drums-panel .drum-pattern-edit-btn[aria-expanded='true'] {
+  border-color: var(--stanza-rose);
+  background: var(--stanza-rose);
+  color: #fff;
+}
+
+.stanza-drums-panel .stanza-drums-notation-trigger.is-editing {
+  cursor: default;
+}
+
+.stanza-drums-panel
+  .stanza-drums-notation-trigger.is-editing
+  .stanza-drums-notation-trigger__hit {
+  display: none;
 }
 
 .stanza-drums-panel .stanza-drums-notation-trigger {
@@ -1813,31 +1873,24 @@
   outline: none;
 }
 
-.stanza-drums-pattern-editor-popover.stanza-drums-panel {
-  border-radius: 10px;
-  border: 1px solid var(--stanza-paper-line-faint);
-  background: var(--stanza-paper-elevated, #fff);
-  box-shadow:
-    0 1px 2px rgba(47, 39, 33, 0.045),
-    0 12px 28px rgba(47, 39, 33, 0.1);
-  overflow: hidden;
-  font-family: var(--stanza-font-ui);
-  color: var(--stanza-ink);
+.stanza-drums-pattern-editor-panel {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--stanza-paper-line-faint);
 }
 
-.stanza-drums-pattern-editor-popover .stanza-drums-pattern-editor {
-  padding: 10px;
-  min-width: min(320px, calc(100vw - 32px));
+.stanza-drums-pattern-editor-panel .stanza-drums-pattern-editor {
+  min-width: 0;
 }
 
-.stanza-drums-pattern-editor-popover .drum-presets {
+.stanza-drums-pattern-editor-panel .drum-presets {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 5px;
-  margin-bottom: 8px;
+  gap: 4px;
+  margin-bottom: 6px;
 }
 
-.stanza-drums-pattern-editor-popover .preset-btn {
+.stanza-drums-pattern-editor-panel .preset-btn {
   background: var(--stanza-rail-control-bg, var(--stanza-tray-bg-strong));
   border: 1px solid
     var(--stanza-rail-control-border, var(--stanza-paper-line-faint));
@@ -1861,26 +1914,27 @@
   text-overflow: ellipsis;
 }
 
-.stanza-drums-pattern-editor-popover .preset-btn:hover:not(.active) {
+.stanza-drums-pattern-editor-panel .preset-btn:hover:not(.active) {
   border-color: var(--stanza-rose-line);
   background: var(--stanza-rose-wash);
 }
 
-.stanza-drums-pattern-editor-popover .preset-btn.active {
+.stanza-drums-pattern-editor-panel .preset-btn.active {
   background: var(--stanza-rose);
   color: #fff;
   border-color: var(--stanza-rose);
 }
 
-.stanza-drums-pattern-editor-popover .preset-btn-icon {
+.stanza-drums-pattern-editor-panel .preset-btn-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--stanza-rail-control-height, 2rem);
-  min-height: var(--stanza-rail-control-height, 2rem);
+  min-width: 0;
+  min-height: 1.5rem;
+  padding: 0;
 }
 
-.stanza-drums-pattern-editor-popover .drum-pattern-input input {
+.stanza-drums-pattern-editor-panel .drum-pattern-input input {
   width: 100%;
   box-sizing: border-box;
   font-family: var(--stanza-font-ui);
@@ -1894,8 +1948,8 @@
   color: var(--stanza-ink);
 }
 
-.stanza-drums-pattern-editor-popover .drum-pattern-input-row,
-.stanza-drums-pattern-editor-popover .drum-pattern-input {
+.stanza-drums-pattern-editor-panel .drum-pattern-input-row,
+.stanza-drums-pattern-editor-panel .drum-pattern-input {
   margin-top: 0;
   margin-bottom: 0;
 }

@@ -1621,7 +1621,7 @@
     --key-text: var(--stanza-ink, #2a2622);
     --key-muted: var(--stanza-ink-muted, rgba(49, 43, 38, 0.62));
     --key-focus: var(--stanza-rose, #e848a0);
-    --key-divider: var(--stanza-paper-line-faint, rgba(49, 43, 38, 0.1));
+    --key-divider: var(--stanza-paper-line-faint, rgba(49, 43, 38, 0.09));
     --key-focus-ring: 0 0 0 2px rgba(232, 72, 160, 0.18);
     --key-control-hover-bg: color-mix(
       in srgb,
@@ -1650,7 +1650,7 @@
     --bpm-text: var(--stanza-ink, #2a2622);
     --bpm-muted: var(--stanza-ink-muted, rgba(49, 43, 38, 0.62));
     --bpm-focus: var(--stanza-rose, #e848a0);
-    --bpm-divider: var(--stanza-paper-line-faint, rgba(49, 43, 38, 0.1));
+    --bpm-divider: var(--stanza-paper-line-faint, rgba(49, 43, 38, 0.09));
     --bpm-focus-ring: 0 0 0 2px rgba(232, 72, 160, 0.18);
     --bpm-dropdown-bg: var(--labs-popover-bg, #ffffff);
     --bpm-dropdown-border: rgba(49, 43, 38, 0.12);

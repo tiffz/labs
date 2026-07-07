@@ -500,6 +500,31 @@ describe('mergeDriveRowsIntoLocalLibrary', () => {
     expect(nextRows[0].drumPattern).toBe('D-T-K-T-');
   });
 
+  it('keeps local drumsEnabled when remote wins with explicit false', () => {
+    const local = [
+      song({
+        id: '1',
+        ytId: 'vid',
+        title: 'Local',
+        updatedAt: 5,
+        drumsEnabled: true,
+      }),
+    ];
+    const remote: StanzaSongDriveRow[] = [
+      {
+        id: '1',
+        ytId: 'vid',
+        title: 'Remote mix tweak',
+        markers: [],
+        stats: {},
+        updatedAt: 100,
+        drumsEnabled: false,
+      },
+    ];
+    const { nextRows } = mergeDriveRowsIntoLocalLibrary(local, remote);
+    expect(nextRows[0].drumsEnabled).toBe(true);
+  });
+
   it('prefers local drumPattern when local updatedAt wins richer merge', () => {
     const local = [
       song({

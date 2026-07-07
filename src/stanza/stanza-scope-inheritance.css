@@ -13,7 +13,6 @@
     var(--stanza-rose-line) 55%,
     var(--stanza-paper-line-faint)
   );
-  box-shadow: inset 3px 0 0 var(--stanza-rose-line);
 }
 
 .stanza-rail-groove-panel__body {
@@ -28,40 +27,15 @@
   border-top: 1px solid var(--stanza-paper-line-faint);
 }
 
-.stanza-rail-groove-drums--custom .stanza-rail-groove-drums__head-main {
-  padding-left: 2px;
-}
-
 .stanza-rail-groove-drums__head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   min-height: 24px;
 }
 
-.stanza-rail-groove-drums__head-main {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 8px;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.stanza-rail-groove-drums__head .stanza-rail-section-toggle {
-  flex-shrink: 0;
+.stanza-rail-groove-drums__head .stanza-rail-groove-drums__toggle {
   margin: 0;
-}
-
-.stanza-rail-groove-drums__label {
-  font-family: var(--stanza-font-ui);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  line-height: 1.2;
-  color: var(--stanza-ink-muted);
 }
 
 .stanza-scope-inheritance {
@@ -71,6 +45,7 @@
   gap: 0 2px;
   margin-bottom: 10px;
   min-width: 0;
+  width: 100%;
 }
 
 .stanza-scope-inheritance__song,
@@ -79,9 +54,15 @@
   max-width: 100%;
 }
 
+.stanza-scope-inheritance__song {
+  flex: 0 1 auto;
+  max-width: 46%;
+}
+
 .stanza-scope-inheritance__section {
   flex: 1 1 8rem;
   min-width: 0;
+  overflow: hidden;
 }
 
 .stanza-scope-inheritance__bridge {
@@ -106,8 +87,9 @@
   align-items: center;
   justify-content: flex-start;
   gap: 6px;
-  width: auto;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
   margin: 0;
   padding: 5px 10px;
   border: 1px solid transparent;
@@ -118,11 +100,25 @@
   font-family: var(--stanza-font-ui);
   text-align: left;
   position: relative;
+  overflow: hidden;
   transition:
     background-color 140ms ease,
     border-color 140ms ease,
     box-shadow 140ms ease,
     color 140ms ease;
+}
+
+.stanza-scope-inheritance__option--section {
+  flex-wrap: wrap;
+  row-gap: 3px;
+}
+
+.stanza-scope-inheritance__option-trail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .stanza-scope-inheritance__option-kicker {
@@ -134,6 +130,7 @@
   font-weight: 500;
   line-height: 1.25;
   min-width: 0;
+  flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -156,24 +153,6 @@
   font-variant-numeric: tabular-nums lining-nums;
 }
 
-.stanza-scope-inheritance__drum-badge {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.125rem;
-  height: 1.125rem;
-  font-size: 0.8125rem;
-  line-height: 1;
-  color: var(--stanza-rose-strong);
-  border-radius: 999px;
-  background: var(--stanza-rose-wash);
-  cursor: help;
-  font-variation-settings:
-    'FILL' 0,
-    'wght' 500;
-}
-
 .stanza-scope-inheritance__option.is-active
   .stanza-scope-inheritance__option-meta {
   color: var(--stanza-ink-muted);
@@ -188,6 +167,11 @@
   .stanza-scope-inheritance__option-meta {
   color: var(--stanza-rose-strong);
   background: var(--stanza-rose-wash);
+}
+
+.stanza-scope-inheritance--section-has-override
+  .stanza-scope-inheritance__option--section:not(.has-override) {
+  opacity: 0.92;
 }
 
 .stanza-scope-inheritance__option.is-active {
@@ -252,6 +236,24 @@
   margin-left: auto;
 }
 
+.stanza-rail-inheritance-hint--embedded {
+  margin-left: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.stanza-rail-inheritance-hint--embedded .stanza-rail-inheritance-hint__status {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.stanza-drums-panel
+  .stanza-drums-notation-toolbar__trail
+  .stanza-rail-inheritance-hint {
+  margin-left: 0;
+  flex: 0 0 auto;
+}
+
 .stanza-rail-inheritance-hint__status {
   font-size: 0.6875rem;
   font-weight: 400;
@@ -300,10 +302,4 @@
 .stanza-rail-field--inherit .stanza-rail-field-label,
 .stanza-rail-field--custom .stanza-rail-field-label {
   color: var(--stanza-ink-muted);
-}
-
-.stanza-rail-groove-drums--custom .stanza-drums-notation-frame {
-  border-radius: var(--stanza-radius-chip, 8px);
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--stanza-rose-line) 30%, transparent);
 }

@@ -34,6 +34,7 @@ Full layer table: **[`LAYOUT.md`](./LAYOUT.md)**. CSS in **`stanza-viewer-layout
 - **Scroll host** — Wide patterns scroll on `.drum-notation-mini-x-scroll`, not on `.drum-notation-mini` (the SVG host). `overflow-x: auto` on the same node as the SVG forces `overflow-y: auto` and a nested vertical scrollbar; the shared wrapper sets `overflow-y: hidden`. See `notationMini.css`.
 - **Stanza frame CSS** — `.stanza-drums-notation-frame` uses `overflow: visible` and `flex-shrink: 0`. Avoid `min-height: 0` on the notation frame (flex shrink clips the staff).
 - **Constants** — `STANZA_DRUMS_NOTATION_WIDTH` / `HEIGHT` in `components/stanzaWorkspace/stanzaPracticeRailConstants.ts` (currently 236×68); host height is a minimum — SVG may grow slightly for stems. Dense patterns widen via `estimateMiniNotationRenderWidth()` + horizontal scroll. Stanza uses `STANZA_DRUM_PANEL_UX` with `presetLayout="grid"` (compact six-column chips in `stanza.css`).
+- **Pattern editor (disclosure, not popover)** — `patternEditing: 'popover'` in `getInlineDrumUxProps('practice-rail')` means **collapsed until Edit**: preset grid + notation field expand **inline** below the staff inside the pattern card. Close only via **Done** (same control, rose fill when open) or **Escape**. Do **not** portaled-popover this editor (scroll/hover/portal bugs in a ~392px rail) and do **not** click-outside dismiss (Mix/BPM controls sit below; outside dismiss reads as random close). Compact single-choice pickers (BPM presets, sound) still use shared `AnchoredPopover`.
 
 ## Metronome strip
 
@@ -54,6 +55,7 @@ Full layer table: **[`LAYOUT.md`](./LAYOUT.md)**. CSS in **`stanza-viewer-layout
 - **Inline in the practice rail** — Mix lives in `.stanza-rail-section--mix` (not a volume popover). The rail scrolls when content exceeds the grid cell height.
 - **Icon alignment** — Metronome, Drums, and Main rows share the same structure: drag spacer → `IconButton` mute → label → `AppLinearVolumeSlider` → trail spacer. Never use a decorative icon `Box` in the mute slot (Drums was misaligned until it matched Metronome).
 - **Mute vs enable** — `drumsEnabled` / metronome toggle = master on/off. `drumsMuted` / `metronomeMuted` = Mix mute (level preserved, slider dims). Drums share BPM + Beat 1 calibration with the metronome but do **not** require the metronome toggle to be on. Tap-tempo tap gate is separate and temporary.
+- **Add drums persistence** — merge uses OR-sticky toggles (`mergePracticePlaybackToggle`): once enabled locally or on Drive, sync will not clear the checkbox from stale remote `false` (Beat import default, overlay, or older device). Disable explicitly on the device that should stay off.
 
 ## Tests worth adding when touching this area
 

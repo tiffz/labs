@@ -54,4 +54,23 @@ describe('mergeStanzaPracticeOverlayIntoRows', () => {
     const merged = mergeStanzaPracticeOverlayIntoRows(local, overlay);
     expect(merged[0].markers).toHaveLength(2);
   });
+
+  it('keeps local drumsEnabled when overlay has equal markers but false toggle', () => {
+    const local = [
+      {
+        ...song('s1', [{ id: 'm1', label: 'A', timeSec: 1 }]),
+        drumsEnabled: true,
+        updatedAt: 2000,
+      },
+    ];
+    const overlay = buildStanzaPracticeOverlayFromRows([
+      {
+        ...song('s1', [{ id: 'm1', label: 'A', timeSec: 1 }]),
+        drumsEnabled: false,
+        updatedAt: 2000,
+      },
+    ]);
+    const merged = mergeStanzaPracticeOverlayIntoRows(local, overlay);
+    expect(merged[0].drumsEnabled).toBe(true);
+  });
 });

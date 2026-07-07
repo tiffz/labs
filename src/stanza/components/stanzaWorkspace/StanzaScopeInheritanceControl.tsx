@@ -1,4 +1,3 @@
-import AppTooltip from '../../../shared/components/AppTooltip';
 import type { StanzaMetronomeTimingScope, StanzaSegmentMetronomeCalibration } from '../../db/stanzaDb';
 import {
   resolveStanzaScopeBreadcrumbBpms,
@@ -85,7 +84,7 @@ export default function StanzaScopeInheritanceControl({
             'stanza-scope-inheritance__option',
             'stanza-scope-inheritance__option--section',
             timingScope === 'section' ? 'is-active' : '',
-            sectionShowsCustomState ? 'has-override' : '',
+            sectionHasDistinctBpm ? 'has-override' : '',
           ]
             .filter(Boolean)
             .join(' ')}
@@ -95,21 +94,12 @@ export default function StanzaScopeInheritanceControl({
         >
           <span className="stanza-scope-inheritance__option-label">{sectionToggleLabel}</span>
           {sectionBpm != null ? (
-            <span className="stanza-scope-inheritance__option-meta">{sectionBpm} BPM</span>
-          ) : null}
-          {sectionHasCustomDrumPattern ? (
-            <AppTooltip title={`${sectionDisplayName} has its own drum pattern`}>
-              <span
-                className="stanza-scope-inheritance__drum-badge material-symbols-outlined"
-                aria-label="Custom drum pattern"
-              >
-                percussion
-              </span>
-            </AppTooltip>
+            <span className="stanza-scope-inheritance__option-trail">
+              <span className="stanza-scope-inheritance__option-meta">{sectionBpm} BPM</span>
+            </span>
           ) : null}
         </button>
       </div>
     </div>
   );
 }
-
