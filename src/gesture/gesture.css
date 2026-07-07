@@ -996,8 +996,8 @@ html:has(.gesture-app) {
  */
 .gesture-collection-card-preview-wrap.is-nsfw-blurred .gesture-preview-strip,
 .gesture-collection-card-preview-toggle.is-nsfw-blurred .gesture-preview-strip {
-  filter: blur(14px) saturate(0.46) brightness(0.7);
-  transform: scale(1.05);
+  filter: blur(11px) saturate(0.58) brightness(0.78);
+  transform: scale(1.04);
   transform-origin: center center;
 }
 
@@ -1019,10 +1019,10 @@ html:has(.gesture-app) {
   background:
     radial-gradient(
       ellipse 95% 88% at 50% 42%,
-      color-mix(in srgb, var(--gesture-ink) 14%, transparent) 0%,
-      color-mix(in srgb, var(--gesture-ink) 34%, transparent) 100%
+      color-mix(in srgb, var(--gesture-ink) 8%, transparent) 0%,
+      color-mix(in srgb, var(--gesture-ink) 22%, transparent) 100%
     ),
-    color-mix(in srgb, var(--gesture-ink) 26%, transparent);
+    color-mix(in srgb, var(--gesture-ink) 16%, transparent);
 }
 
 .gesture-collection-card-preview-wrap.is-nsfw-blurred::after,
@@ -1035,19 +1035,18 @@ html:has(.gesture-app) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.28rem 0.58rem;
+  padding: 0.22rem 0.5rem;
   border-radius: 999px;
   font-family: var(--gesture-sans);
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
   line-height: 1;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--gesture-card-bg) 86%, var(--gesture-ink));
-  background: color-mix(in srgb, var(--gesture-ink) 24%, transparent);
-  border: 1px solid color-mix(in srgb, var(--gesture-card-bg) 16%, transparent);
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--gesture-ink) 8%, transparent);
+  color: color-mix(in srgb, var(--gesture-card-bg) 78%, var(--gesture-ink));
+  background: color-mix(in srgb, var(--gesture-ink) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gesture-card-bg) 10%, transparent);
+  backdrop-filter: blur(2px);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
