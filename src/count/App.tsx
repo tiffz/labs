@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../shared/components/AnchoredPopover';
 import type { TimeSignature } from '../shared/rhythm/types';
 import {
   getDefaultBeatGrouping,
@@ -79,11 +79,7 @@ function computeSubdivsPerMeasure(ts: TimeSignature, groupingStr: string | undef
 }
 
 const POPOVER_PAPER_BASE_SX = {
-  bgcolor: 'var(--pulse-surface)',
   color: 'var(--pulse-text)',
-  border: '1px solid var(--pulse-accent)',
-  borderRadius: 0,
-  boxShadow: 'none',
   fontFamily: 'var(--pulse-mono)',
   overflowY: 'auto' as const,
   p: '14px',
@@ -500,18 +496,19 @@ export default function App() {
         </div>
       </header>
 
-      <Popover
+      <AnchoredPopover
         open={aboutOpen}
         anchorEl={aboutAnchor}
         onClose={() => { aboutPinned.current = false; setAboutAnchor(null); }}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        placement="bottom-start"
         disableRestoreFocus
         disableScrollLock
+        marginThreshold={0}
         slotProps={{
           root: { sx: { pointerEvents: 'none' } },
           paper: {
             sx: { ...ABOUT_PAPER_SX, pointerEvents: 'auto' },
+            className: 'pulse-header-dropdown',
             onMouseEnter: () => clearTimeout(aboutHoverTimer.current),
             onMouseLeave: () => {
               if (aboutPinned.current) return;
@@ -559,15 +556,14 @@ export default function App() {
             </li>
           </ul>
         </div>
-      </Popover>
+      </AnchoredPopover>
 
-      <Popover
+      <AnchoredPopover
         open={profilesOpen}
         anchorEl={profileAnchor}
         onClose={() => setProfileAnchor(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        slotProps={{ paper: { sx: POPOVER_PAPER_SX } }}
+        placement="bottom-end"
+        slotProps={{ paper: { sx: POPOVER_PAPER_SX, className: 'pulse-header-dropdown' } }}
       >
         <div className="pulse-header-dropdown-title">SONG PROFILES</div>
         <SongProfileManager
@@ -580,7 +576,7 @@ export default function App() {
           onLoad={handleLoadProfile}
           onDelete={profiles.remove}
         />
-      </Popover>
+      </AnchoredPopover>
 
       <main id="main" className="pulse-main">
         <div className="pulse-top-row">

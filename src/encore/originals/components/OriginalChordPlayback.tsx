@@ -4,11 +4,11 @@ import StopIcon from '@mui/icons-material/Stop';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
-import Popover from '@mui/material/Popover';
 import type { PopoverActions } from '@mui/material/Popover';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import { useRef, useState, type ReactElement } from 'react';
+import AnchoredPopover from '../../../shared/components/AnchoredPopover';
 import { ChordPlaybackSettingsPanel } from '../../../shared/components/music/ChordPlaybackSettingsPanel';
 import { useChartChordPlayback, type UseChartChordPlaybackResult } from '../../../shared/hooks/useChartChordPlayback';
 import {
@@ -92,14 +92,13 @@ function OriginalChordPlaybackControls({
   );
 
   const settingsPopover = (
-    <Popover
+    <AnchoredPopover
       id="encore-originals-chord-playback-settings"
       action={settingsPopoverActionRef}
       open={settingsOpen}
       onClose={() => setSettingsOpen(false)}
       anchorEl={popoverAnchorEl(settingsButtonRef)}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+      placement="bottom-start"
       disableAutoFocus
       disableEnforceFocus
       disableRestoreFocus
@@ -141,7 +140,7 @@ function OriginalChordPlaybackControls({
           playbackBeat={playbackBeat}
         />
       </Box>
-    </Popover>
+    </AnchoredPopover>
   );
 
   if (compact) {

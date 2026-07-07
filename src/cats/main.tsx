@@ -8,6 +8,8 @@ import { installLabsCrashHandlers } from '../shared/utils/labsCrashLog';
 import LabsErrorBoundary from '../shared/components/LabsErrorBoundary';
 import { getAppTheme } from '../shared/ui/theme/appTheme'
 import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstrap'
+import '../shared/components/music/appSharedThemes.css';
+import '../shared/styles/labsChrome.css';
 import './styles/cats.css'
 import App from './App.tsx'
 import { CoordinateSystemProvider } from './context/CoordinateSystemContext'

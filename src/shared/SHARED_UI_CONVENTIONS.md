@@ -206,6 +206,7 @@ Enforcement: `npm run check:volume-slider` (Words reference panel + shared primi
 For **labeled mix rows with mute + 0–100 slider**, use `PlaybackVolumeRow` (`src/shared/components/music/PlaybackVolumeRow.tsx`) instead of hand-rolled `AppSlider` + icon button rows. Used in `ChordPlaybackSettingsPanel`, Words sound settings, metronome advanced settings, and Chords playback popover.
 
 - Volume prop is **0–100** (integer-ish); internally maps to `AppLinearVolumeSlider` 0–1 gain.
+- **Shared geometry** — `labsVolumeSlider.css` (imported via `labsChrome.css`) defines thumb size, rail opacity, and focus ring for `.shared-playback-volume-row` and `.labs-volume-slider`. Remap `--labs-volume-track` on the app shell or menu for brand tint.
 - Theme sliders via host CSS targeting `.shared-playback-volume-row .MuiSlider-root` (see Words `word-rhythm.css`).
 - Pair with `ChordPlaybackSettingsPanel` when the surface matches chart/chord playback (style, sound, drums toggle).
 - URL state for shareable links: [`docs/URL_STATE_PATTERN.md`](../../docs/URL_STATE_PATTERN.md).
@@ -273,6 +274,16 @@ Use shared **`KeyInput`** (`src/shared/components/music/KeyInput.tsx`) for any m
 - **`clearable`** — optional clear control for nullable fields (Encore `performanceKey`).
 - **App theming** — pass `className` + `dropdownClassName` (see `stanza-key-dropdown`, `encore-repertoire-key-dropdown`, `words-key-dropdown` in app CSS).
 - **Transpose helpers** — `transposeSongKey` / `formatSongKeyDisplay` in `songKeyFormat.ts` preserve quality when shifting pitch.
+
+## Interaction patterns (pickers vs editors)
+
+See [`docs/CHROME_UI_CONTRACT.md`](../docs/CHROME_UI_CONTRACT.md) for chrome profiles and the full matrix.
+
+| UI need                                | Use                                                        |
+| -------------------------------------- | ---------------------------------------------------------- |
+| Compact anchored picker                | `AnchoredPopover` + portaled token mirror on paper class   |
+| Multi-row editor inside scrolling rail | Inline disclosure (Edit/Done) — **not** a portaled popover |
+| Full app shell on portaled node        | **Never** — mirror tokens on dropdown root only            |
 
 ## Popover Primitive
 

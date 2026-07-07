@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import { usePiano } from '../store';
 import { durationToBeats } from '../types';
 import type { Key } from '../types';
@@ -131,16 +131,16 @@ const ChipPopover: React.FC<{
   children: React.ReactNode;
 }> = ({ id, anchor, open, onClose, children }) => {
   return (
-    <Popover
+    <AnchoredPopover
       open={open}
       anchorEl={anchor}
       onClose={onClose}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-      slotProps={{ paper: { className: 'np-popover', id } }}
+      placement="bottom-start"
+      paperClassName="np-popover"
+      slotProps={{ paper: { id } }}
     >
       {children}
-    </Popover>
+    </AnchoredPopover>
   );
 };
 

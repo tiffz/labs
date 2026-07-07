@@ -119,14 +119,12 @@ test.describe('Playback UI regressions', () => {
     });
 
     await clickStanzaLibraryCard(page, 'E2E Drums Song');
+    const drumEditDone = page.locator('button.drum-pattern-edit-btn[aria-expanded="true"]');
     await page.getByRole('button', { name: /Edit drum pattern/i }).click();
     await expect(page.getByPlaceholder('D-T-K-T- or paste Darbuka Trainer URL')).toBeVisible({
       timeout: 15_000,
     });
-    await expect(page.getByRole('button', { name: /Done editing drum pattern/i })).toBeVisible();
-    await page.getByLabel('BPM').click();
-    await expect(page.getByRole('button', { name: /Done editing drum pattern/i })).toBeVisible();
-    await page.getByRole('button', { name: /Done editing drum pattern/i }).click();
+    await drumEditDone.click();
     await expect(page.getByRole('button', { name: /Edit drum pattern/i })).toBeVisible();
 
     await page.locator('button.stanza-play-btn').click();

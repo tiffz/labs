@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import IconButton from '@mui/material/IconButton';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
@@ -42,18 +42,16 @@ export default function MasteryTierLegend({
           info
         </Box>
       </IconButton>
-      <Popover
+      <AnchoredPopover
         open={open}
         anchorEl={anchorEl}
         onClose={() => setAnchorEl(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        placement="bottom-start"
         slotProps={{
           paper: {
             sx: {
               p: 2.5,
               maxWidth: 360,
-              borderRadius: '16px',
             },
           },
         }}
@@ -89,7 +87,7 @@ export default function MasteryTierLegend({
           icon="check_circle"
           description="Two octaves at full speed with sixteenth-note subdivisions, both hands, from memory. And practiced recently enough that it still feels easy in your fingers."
         />
-      </Popover>
+      </AnchoredPopover>
     </>
   );
 }

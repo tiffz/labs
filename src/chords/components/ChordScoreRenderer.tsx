@@ -3,7 +3,7 @@
  * Renders grand staff (bass + treble clef) with proper measure-by-measure formatting
  */
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, StaveConnector, BarlineType, Dot } from 'vexflow';
 import type { ChordProgressionState } from '../types';
 import { progressionToChordsInSongKey, harmonicModeFromSongKey, songKeyToTonic } from '../../shared/music/chordTheory';
@@ -135,6 +135,31 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
     lastTargetTop: null,
   });
   const prevHighlightedRef = useRef<Set<string>>(new Set());
+  const [layoutWidth, setLayoutWidth] = useState(0);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const updateLayoutWidth = () => {
+      const nextWidth = el.clientWidth;
+      setLayoutWidth((prev) => (prev === nextWidth ? prev : nextWidth));
+    };
+
+    updateLayoutWidth();
+    window.addEventListener('resize', updateLayoutWidth);
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(updateLayoutWidth);
+      resizeObserver.observe(el);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateLayoutWidth);
+      resizeObserver?.disconnect();
+    };
+  }, []);
 
   const applyHighlights = useCallback((groups: Set<string>) => {
     syncKeyedSvgHighlights({
@@ -175,6 +200,7 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
       stylingStrategy: state.stylingStrategy,
       measuresPerChord: state.measuresPerChord,
       voicingOptions: state.voicingOptions,
+      layoutWidth,
     });
     
     if (stateRef.current === currentStateKey) return;
@@ -233,7 +259,8 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
       const densityScale = 0.85;
       const finalScale = complexityScale * densityScale;
       
-      const containerWidth = containerRef.current.clientWidth || 1200;
+      const measuredWidth = layoutWidth > 0 ? layoutWidth : containerRef.current.clientWidth;
+      const containerWidth = measuredWidth > 0 ? measuredWidth : 1200;
       const baseMeasureWidth = 320;
       const defaultMeasuresPerLine = 4;
       
@@ -525,7 +552,7 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- activeNoteGroups handled separately to avoid full re-render
-  }, [state]);
+  }, [state, layoutWidth]);
 
   // Lightweight highlight effect — toggles fill/stroke on existing SVG elements without re-rendering
   useEffect(() => {

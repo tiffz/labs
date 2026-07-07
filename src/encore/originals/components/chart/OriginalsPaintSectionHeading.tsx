@@ -4,7 +4,6 @@ import StopIcon from '@mui/icons-material/Stop';
 import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
-import Popover from '@mui/material/Popover';
 import type { PopoverActions } from '@mui/material/Popover';
 import Tooltip from '@mui/material/Tooltip';
 import { useRef, useState, type MouseEvent, type ReactElement } from 'react';
@@ -349,13 +348,12 @@ export function OriginalsPaintSectionHeading({
         </div>
       </AnchoredPopover>
 
-      <Popover
+      <AnchoredPopover
         open={playbackOpen}
         onClose={closePlayback}
         action={playbackPopoverActionRef}
         anchorEl={popoverAnchorEl(playbackButtonRef)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        placement="bottom-start"
         disableAutoFocus
         disableEnforceFocus
         disableRestoreFocus
@@ -400,7 +398,7 @@ export function OriginalsPaintSectionHeading({
             onOverrideChange={patchPlaybackOverride}
           />
         </Box>
-      </Popover>
+      </AnchoredPopover>
     </>
   );
 }

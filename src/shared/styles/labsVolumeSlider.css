@@ -1,0 +1,46 @@
+/**
+ * Shared 0–100 / 0–1 volume slider geometry — mix rails, Darbuka settings, metronome levels.
+ * Apps theme track color via --labs-volume-track on shell or row.
+ * See SHARED_UI_CONVENTIONS.md § Volume sliders.
+ */
+@layer shared-base {
+  .shared-playback-volume-row .MuiSlider-root,
+  .labs-volume-slider.MuiSlider-root {
+    color: var(--labs-volume-track, var(--theme-primary, #7c3aed));
+  }
+
+  .shared-playback-volume-row .MuiSlider-rail,
+  .labs-volume-slider .MuiSlider-rail {
+    opacity: var(--labs-volume-rail-opacity, 0.32);
+  }
+
+  .shared-playback-volume-row .MuiSlider-thumb,
+  .labs-volume-slider .MuiSlider-thumb {
+    width: var(--labs-volume-thumb-size, 9px);
+    height: var(--labs-volume-thumb-size, 9px);
+    box-shadow: var(
+      --labs-volume-thumb-shadow,
+      0 0 0 2px
+        color-mix(
+          in srgb,
+          var(--labs-volume-track, var(--theme-primary)) 18%,
+          #fff
+        )
+    );
+  }
+
+  .shared-playback-volume-row .MuiSlider-thumb:hover,
+  .shared-playback-volume-row .MuiSlider-thumb.Mui-focusVisible,
+  .labs-volume-slider .MuiSlider-thumb:hover,
+  .labs-volume-slider .MuiSlider-thumb.Mui-focusVisible {
+    box-shadow: var(
+      --labs-volume-thumb-focus-shadow,
+      0 0 0 3px
+        color-mix(
+          in srgb,
+          var(--labs-volume-track, var(--theme-primary)) 22%,
+          transparent
+        )
+    );
+  }
+}

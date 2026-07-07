@@ -21,8 +21,12 @@ if (!fs.existsSync(path.join(root, 'src/shared/components/AppLinearVolumeSlider.
   failures.push('AppLinearVolumeSlider is missing');
 }
 
-if (!fs.existsSync(path.join(root, 'src/shared/components/music/PlaybackVolumeRow.tsx'))) {
-  failures.push('PlaybackVolumeRow is missing');
+if (!fs.existsSync(path.join(root, 'src/shared/styles/labsVolumeSlider.css'))) {
+  failures.push('labsVolumeSlider.css is missing');
+}
+
+if (!fs.readFileSync(path.join(root, 'src/shared/styles/labsChrome.css'), 'utf8').includes('labsVolumeSlider.css')) {
+  failures.push('labsChrome.css must import labsVolumeSlider.css');
 }
 
 if (failures.length > 0) {

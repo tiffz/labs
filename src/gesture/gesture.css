@@ -988,26 +988,66 @@ html:has(.gesture-app) {
 .gesture-collection-card-preview-toggle.is-nsfw-blurred {
   position: relative;
   overflow: hidden;
+  isolation: isolate;
 }
 
-.gesture-collection-card-preview-wrap.is-nsfw-blurred .gesture-preview-image,
-.gesture-collection-card-preview-toggle.is-nsfw-blurred .gesture-preview-image {
-  filter: blur(14px) saturate(0.82);
-  transform: scale(1.06);
+/**
+ * NSFW preview — soft blur with photo hints, light charcoal veil, quiet label chip.
+ */
+.gesture-collection-card-preview-wrap.is-nsfw-blurred .gesture-preview-strip,
+.gesture-collection-card-preview-toggle.is-nsfw-blurred .gesture-preview-strip {
+  filter: blur(11px) saturate(0.58) brightness(0.78);
+  transform: scale(1.04);
+  transform-origin: center center;
+}
+
+.gesture-collection-card-preview-toggle.is-nsfw-blurred
+  .gesture-preview-image.is-visible,
+.gesture-collection-card--selectable:hover
+  .gesture-collection-card-preview-toggle.is-nsfw-blurred
+  .gesture-preview-image.is-visible {
+  transform: none;
+}
+
+.gesture-collection-card-preview-wrap.is-nsfw-blurred::before,
+.gesture-collection-card-preview-toggle.is-nsfw-blurred::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 95% 88% at 50% 42%,
+      color-mix(in srgb, var(--gesture-ink) 8%, transparent) 0%,
+      color-mix(in srgb, var(--gesture-ink) 22%, transparent) 100%
+    ),
+    color-mix(in srgb, var(--gesture-ink) 16%, transparent);
 }
 
 .gesture-collection-card-preview-wrap.is-nsfw-blurred::after,
 .gesture-collection-card-preview-toggle.is-nsfw-blurred::after {
   content: 'NSFW';
   position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.22rem 0.5rem;
+  border-radius: 999px;
+  font-family: var(--gesture-sans);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--gesture-ink) 72%, transparent);
+  color: color-mix(in srgb, var(--gesture-card-bg) 78%, var(--gesture-ink));
+  background: color-mix(in srgb, var(--gesture-ink) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gesture-card-bg) 10%, transparent);
+  backdrop-filter: blur(2px);
+  transform: translate(-50%, -50%);
   pointer-events: none;
 }
 
@@ -1666,7 +1706,7 @@ html:has(.gesture-app) {
   position: absolute;
   top: 0.5rem;
   left: 0.5rem;
-  z-index: 2;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: center;

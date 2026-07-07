@@ -6,6 +6,8 @@ import { installLabsCrashHandlers } from '../shared/utils/labsCrashLog';
 import LabsErrorBoundary from '../shared/components/LabsErrorBoundary';
 import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstrap';
 import { LabsBlockingJobProvider } from '../shared/jobs/LabsBlockingJobContext';
+import '../shared/components/music/appSharedThemes.css';
+import '../shared/styles/labsChrome.css';
 import '../shared/layout/app-shell-layout.css';
 import './zinebox-layout.css';
 import './styles/zinebox.css';
