@@ -273,7 +273,7 @@ jobs:
           node scripts/run-changed-app-tests.mjs "${{ github.event.before }}" -- --retry=1
         fi
 
-  # Coverage runs nightly (nightly-flakiness.yml) — not on every PR/main push.
+  # Coverage runs nightly (nightly-portfolio-audit.yml) — not on every PR/main push.
 
     - name: Build project
       env:

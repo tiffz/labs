@@ -1,20 +1,21 @@
-name: Nightly Flakiness Detector
+name: Nightly Portfolio Audit
 
-# Runs on a cold runner every night with npm cache disabled, no test retries,
-# and strict coverage reporting. Flakes surface here before they reach main.
+# Cold-runner portfolio checks — not on PR CI (too slow).
+# - Vitest fast suite + coverage (flake detector, no retries)
+# - Playwright smoke + full visual matrix (Linux canonical baselines)
+# - Lighthouse production audit (advisory — warnings only)
 #
-# Also runs a single Playwright smoke pass on a cold browser install so we
-# catch browser-bootstrap flakes without blocking PR CI.
+# Formerly "Nightly Flakiness Detector".
 
 on:
   schedule:
-    # 08:15 UTC = 01:15 PT / 04:15 ET — after the main CI traffic tapers off.
+    # 08:15 UTC = 01:15 PT / 04:15 ET — after main CI traffic tapers off.
     - cron: '15 8 * * *'
   workflow_dispatch:
 
 jobs:
   vitest-cold:
-    name: Vitest cold-cache (test:fast, no retries)
+    name: Vitest (cold cache + coverage)
     runs-on: ubuntu-latest
     env:
       CI: true
@@ -31,8 +32,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '20'
-          # Intentionally no `cache:` key — we want a cold npm install every
-          # run so dynamic-import and module-resolution flakes surface.
 
       - name: Install dependencies
         run: npm ci
@@ -59,9 +58,8 @@ jobs:
             coverage/**
 
   playwright-cold:
-    name: Playwright smoke cold-browser
+    name: Playwright (smoke + visual)
     runs-on: ubuntu-latest
-    needs: vitest-cold
     env:
       CI: true
 
@@ -97,3 +95,45 @@ jobs:
           path: |
             playwright-report/**
             test-results/**
+
+  lighthouse-portfolio:
+    name: Lighthouse (production, advisory)
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js (no npm cache)
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium for Lighthouse
+        run: npx playwright install --with-deps chromium
+
+      - name: Production Lighthouse portfolio audit
+        id: lighthouse
+        continue-on-error: true
+        run: npm run audit:lighthouse -- --smoke-all --production
+
+      - name: Warn on Lighthouse budget misses
+        if: steps.lighthouse.outcome == 'failure'
+        run: |
+          echo "::warning title=Lighthouse advisory::One or more routes missed production budgets — see job log and docs/LIGHTHOUSE_AUDIT.md"
+
+      - name: Upload Lighthouse JSON reports
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: lighthouse-nightly-reports
+          if-no-files-found: ignore
+          path: |
+            .cache/lighthouse-*.json

@@ -1,0 +1,146 @@
+{
+  "/": {
+    "performance": 97,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/cats/": {
+    "performance": 46,
+    "accessibility": 94,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/chords/": {
+    "performance": 55,
+    "accessibility": 95,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/corp/": {
+    "performance": 55,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/count/": {
+    "performance": 55,
+    "accessibility": 92,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/drums/": {
+    "performance": 55,
+    "accessibility": 81,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/encore/": {
+    "performance": 55,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/forms/": {
+    "performance": 55,
+    "accessibility": 96,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/melodia/": {
+    "performance": 45,
+    "accessibility": 92,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/midi/": {
+    "performance": 55,
+    "accessibility": 94,
+    "best-practices": 82,
+    "seo": 100
+  },
+  "/piano/": {
+    "performance": 55,
+    "accessibility": 91,
+    "best-practices": 82,
+    "seo": 100
+  },
+  "/pitch/": {
+    "performance": 55,
+    "accessibility": 95,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/scales/": {
+    "performance": 55,
+    "accessibility": 92,
+    "best-practices": 82,
+    "seo": 100
+  },
+  "/stanza/": {
+    "performance": 55,
+    "accessibility": 99,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/story/": {
+    "performance": 55,
+    "accessibility": 98,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/sight/": {
+    "performance": 55,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/agility/": {
+    "performance": 55,
+    "accessibility": 96,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/gesture/": {
+    "performance": 55,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/zinebox/": {
+    "performance": 44,
+    "accessibility": 95,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/muscle/": {
+    "performance": 55,
+    "accessibility": 100,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/ui/": {
+    "performance": 55,
+    "accessibility": 91,
+    "best-practices": 100,
+    "seo": 63
+  },
+  "/words/": {
+    "performance": 55,
+    "accessibility": 94,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/zines/": {
+    "performance": 55,
+    "accessibility": 90,
+    "best-practices": 100,
+    "seo": 100
+  },
+  "/drums/universal_tom/": {
+    "performance": 55,
+    "accessibility": 91,
+    "best-practices": 100,
+    "seo": 63
+  }
+}

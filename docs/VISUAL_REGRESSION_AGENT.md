@@ -14,7 +14,7 @@ Shared UI (`src/shared/components/`, `/ui/` catalog, fonts, tokens) can change *
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | **Linux CI** (Ubuntu, Chromium) | **Source of truth** for committed `e2e/visual/apps.visual.spec.ts-snapshots/*.png`                                     |
 | **macOS local**                 | Verify + triage; expect pixel drift vs Linux baselines — do not `--update-snapshots` on Mac unless you accept CI churn |
-| **Nightly**                     | Full visual matrix on cold runner (`nightly-flakiness.yml`)                                                            |
+| **Nightly**                     | Full visual matrix on cold runner (`nightly-portfolio-audit.yml`)                                                      |
 
 Baselines were last refreshed April 2026; catalog and Encore landing changes will legitimately drift until updated from CI.
 

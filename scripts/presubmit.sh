@@ -28,6 +28,9 @@ npm run check:menu-a11y
 echo "== presubmit: volume slider contract =="
 npm run check:volume-slider
 
+echo "== presubmit: app quality contract =="
+npm run check:app-quality
+
 echo "== presubmit: css important baseline =="
 npm run check:css-important
 

@@ -4,11 +4,11 @@ How Labs keeps [GitHub Actions](https://github.com/tiffz/labs/actions) green and
 
 ## Workflow map
 
-| Workflow                         | Triggers                                          | Blocking?            | Deploys Pages?                                                  |
-| -------------------------------- | ------------------------------------------------- | -------------------- | --------------------------------------------------------------- |
-| **`CI/CD`** (`ci.yml`)           | Push/PR when code, docs, config, or assets change | **Yes** — merge gate | **Yes** — `deploy` job on `main` push only, after `test` passes |
-| **`Nightly Flakiness Detector`** | Schedule + manual                                 | No — early warning   | No                                                              |
-| **`Rollback`**                   | Manual                                            | N/A                  | Redeploy older SHA                                              |
+| Workflow                      | Triggers                                          | Blocking?            | Deploys Pages?                                                  |
+| ----------------------------- | ------------------------------------------------- | -------------------- | --------------------------------------------------------------- |
+| **`CI/CD`** (`ci.yml`)        | Push/PR when code, docs, config, or assets change | **Yes** — merge gate | **Yes** — `deploy` job on `main` push only, after `test` passes |
+| **`Nightly Portfolio Audit`** | Schedule + manual                                 | No — early warning   | No                                                              |
+| **`Rollback`**                | Manual                                            | N/A                  | Redeploy older SHA                                              |
 
 ## Merge gate (what must be green)
 
@@ -20,7 +20,7 @@ On PRs and `main`, the **`test`** job in `CI/CD` must pass:
 - Full Vitest (`npm test`, with **one retry** in CI for rare worker teardown flakes)
 - Production build (artifact reused by `deploy` — no second compile on `main`)
 
-**Advisory (non-blocking):** visual regression on cross-cutting `main`/`PR` diffs only (exits 0 with a warning when snapshots differ; artifacts uploaded). Full visual matrix and **coverage** run **nightly** (`Nightly Flakiness Detector`).
+**Advisory (non-blocking):** visual regression on cross-cutting `main`/`PR` diffs only (exits 0 with a warning when snapshots differ; artifacts uploaded). Full visual matrix, **coverage**, and **Lighthouse** run **nightly** (`Nightly Portfolio Audit`).
 
 ## Pages deployment (single path)
 

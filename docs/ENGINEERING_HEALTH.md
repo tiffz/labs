@@ -2,7 +2,7 @@
 
 Quarterly snapshot of development-system quality. Update after each audit.
 
-**Commands:** `npm run report:ci-health` · `npm run report:ci-health -- --fail-below 90` · `npm run report:test-duration` · `npm run report:bundle-size`
+**Commands:** `npm run report:ci-health` · `npm run report:ci-health -- --fail-below 90` · `npm run report:test-duration` · `npm run report:bundle-size` · `npm run audit:lighthouse -- --smoke-all --production` · **Nightly Portfolio Audit** workflow (Vitest + Playwright + Lighthouse)
 
 Weekly gate: [`.github/workflows/weekly-engineering-health.yml`](../.github/workflows/weekly-engineering-health.yml) (Mondays 09:00 UTC). **Advisory only** — emits a GitHub warning when below target; does not fail the scheduled workflow. Triage with `npm run report:ci-health`.
 

@@ -33,6 +33,8 @@
     "check:chrome-ui": "node scripts/check-chrome-ui-contract.mjs",
     "check:menu-a11y": "node scripts/check-menu-a11y-contract.mjs",
     "check:volume-slider": "node scripts/check-volume-slider-contract.mjs",
+    "check:app-quality": "node scripts/check-app-quality-contract.mjs",
+    "audit:lighthouse": "node scripts/lighthouse-audit.mjs",
     "build:labs-cookie-consent": "esbuild src/shared/legal/labsCookieConsentBrowser.ts --bundle --format=iife --platform=browser --target=es2018 --outfile=public/scripts/labs-cookie-consent.js --legal-comments=inline",
     "dev": "npm run generate:shared-catalog && npm run generate:labs-catalog && vite",
     "build": "vite build",

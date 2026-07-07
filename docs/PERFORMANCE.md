@@ -68,7 +68,7 @@ Add or extend interaction smoke when **any** apply:
 2. Fix involved **isolating state**, **memo**, or **removing O(n) work** on interaction.
 3. CUJ doc lists an explicit **performance budget** for the step.
 
-Do **not** add Lighthouse CI for every app — use CUJ smokes first; trace audits are manual/on-demand.
+Lighthouse is **Tier 3 advisory** — see [`docs/LIGHTHOUSE_AUDIT.md`](LIGHTHOUSE_AUDIT.md). Use CUJ smokes first; production Lighthouse (`npm run audit:lighthouse -- --smoke-all --production`) on-demand or before major load work; do not merge-block presubmit on Lighthouse scores.
 
 ## Agent workflow (summary)
 

@@ -9,6 +9,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.cache/
 *.local
 workers/labs-session-bff/.dev.vars
 
