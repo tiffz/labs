@@ -3,6 +3,9 @@
  * Apps theme via semantic tokens in appSharedThemes.css; override brand tint only.
  * Contract: docs/CHROME_UI_CONTRACT.md · Focus: docs/FOCUS_THEMING.md
  */
+@import './labsChromeAppShells.css';
+@import './labsVolumeSlider.css';
+
 @layer shared-base {
   .labs-popover-surface {
     border: var(--labs-popover-border);

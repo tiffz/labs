@@ -69,6 +69,62 @@ Apps remap **brand tint only**, e.g. Words:
 6. Map `--theme-focus-ring` on app shell; portaled pickers duplicate on dropdown class. See [`FOCUS_THEMING.md`](FOCUS_THEMING.md).
 7. Document app shell token overrides in app `DESIGN.md` or README.
 
+## Chrome profiles
+
+Apps remap **brand tint only** on their shell class. Pick a **profile** so structure stays shared while mood stays app-specific:
+
+| Profile      | Popover shadow                                               | Use when                                                                     |
+| ------------ | ------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| **standard** | `--labs-popover-shadow` (default from `appSharedThemes.css`) | Words, Stanza, Encore, Piano, most playback apps                             |
+| **flat**     | `--labs-popover-shadow: none` + inset hairline border        | Gesture Linen, Muscle, Zinebox (no drop shadows on chrome per app DESIGN.md) |
+
+Example flat profile (Gesture):
+
+```css
+.gesture-app {
+  --labs-popover-shadow: none;
+  --labs-popover-border: 1px solid var(--gesture-border, rgba(47, 51, 44, 0.12));
+  --labs-popover-bg: var(--gesture-card-bg, #f7f5f1);
+  --labs-popover-radius: var(--gesture-radius-md, 12px);
+  --theme-focus-ring: 0 0 0 2px
+    color-mix(in srgb, var(--gesture-accent) 35%, transparent);
+}
+```
+
+## Interaction pattern matrix
+
+Pick the **smallest** pattern that fits — do not portaled-popover a multi-control editor in a scrolling rail.
+
+| UI need                             | Pattern                                                                                                                    | Example                                                                    |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Compact picker (≤12 options)        | [`AnchoredPopover`](../src/shared/components/AnchoredPopover.tsx) + `playbackFieldSelectPopoverSlotProps` / dropdown class | BPM, sound, style, preset menu                                             |
+| Multi-control editor in scroll rail | **Inline disclosure** (Edit/Done), no portal                                                                               | Stanza drum pattern ([`PRACTICE_RAIL.md`](../src/stanza/PRACTICE_RAIL.md)) |
+| Never                               | Custom MUI `Popover` + `pointer-events: none` on modal root                                                                | —                                                                          |
+| Never                               | Portaled paper with full app shell class (e.g. `.stanza-app`)                                                              | Blanks viewport — use portal-safe token mirror on dropdown root class only |
+
+## Portal-safe checklist
+
+Portaled pickers render under `document.body` and **cannot** inherit app shell tokens.
+
+1. Add dropdown root class on portaled paper (e.g. `.stanza-bpm-dropdown`, `.shared-playback-field-select-popover`).
+2. Duplicate on that class: `--labs-popover-*`, `--labs-selection-secondary-*`, focus ring tokens, and any `--bpm-*` / `--key-*` bridges the picker reads.
+3. Trigger + portaled menu must share the same `appearance="stanza|words|…"`.
+4. Use `usePopoverScrollAnchorSync` + `popoverAnchorEl()` when anchor lives inside nested scroll regions.
+
+See [`SHARED_UI_CONVENTIONS.md`](../src/shared/SHARED_UI_CONVENTIONS.md) § Portaled playback pickers.
+
+## Per-app migration exit criteria
+
+An app is **chrome-complete** when:
+
+- [ ] `main.tsx` imports `appSharedThemes.css` then `labsChrome.css`
+- [ ] App shell remaps `--labs-popover-*` (standard or flat profile)
+- [ ] Floating menus use `AnchoredPopover` or `.labs-popover-surface` (no raw MUI grey elevation)
+- [ ] App menu CSS is layout-only (no duplicate shell `box-shadow` / `border` on dropdown papers)
+- [ ] Portaled pickers have token mirror block on root class
+- [ ] `DESIGN.md` or README documents chrome profile + overrides
+- [ ] App listed in `scripts/check-chrome-ui-contract.mjs`
+
 ## Enforcement
 
 - `npm run check:chrome-ui` — contract files + reference app import (presubmit).
@@ -76,11 +132,37 @@ Apps remap **brand tint only**, e.g. Words:
 
 ## Rollout order (suggested)
 
+| App        | Profile  | Status       |
+| ---------- | -------- | ------------ |
+| Words      | standard | ✅ reference |
+| Drums      | standard | ✅           |
+| Chords     | standard | ✅           |
+| Encore     | standard | ✅           |
+| Stanza     | standard | ✅           |
+| Piano      | standard | ✅           |
+| Midi       | standard | ✅           |
+| Scales     | standard | ✅           |
+| Pitch      | standard | ✅           |
+| UI catalog | standard | ✅           |
+| Melodia    | standard | ✅           |
+| Gesture    | flat     | ✅           |
+| Muscle     | flat     | ✅           |
+| Zinebox    | flat     | ✅           |
+| Sight      | flat     | ✅           |
+| Count      | standard | ✅           |
+| Cats       | standard | ✅           |
+| Agility    | standard | ✅           |
+| Corp       | standard | ✅           |
+| Forms      | standard | ✅           |
+| Story      | standard | ✅           |
+| Zines      | standard | ✅           |
+
+Legacy list (same order):
+
 1. **Words** — reference migration ✅
 2. **Drums** — playback bar, rhythm presets, metronome tokens ✅
 3. **Chords** — chrome import + settings popover a11y ✅
-4. **Stanza** — chrome import (tokens in `stanza.css` opportunistically)
-5. **Piano / Midi / Scales** — chrome import + `--labs-popover-*` on `:root`
-6. **Encore** — chrome import + `--labs-popover-*` on `.encore-app-shell`; MUI Menu/Popover/Tooltip theme overrides; hover cards use shared shell tokens ✅
-   - Opportunistic: raw `Popover` surfaces → `AnchoredPopover` or `labs-popover-surface` (queue chip, notes, MRT columns ✅)
-7. Remaining apps opportunistically
+4. **Stanza** — chrome import + portaled BPM/key mirrors ✅
+5. **Piano / Midi / Scales** — chrome import + `--labs-popover-*` on shell
+6. **Encore** — chrome import + `--labs-popover-*` on `.encore-app-shell` ✅
+7. **Remaining apps** — chrome import + profile tokens + `AnchoredPopover` where floating UI exists

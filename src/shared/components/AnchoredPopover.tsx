@@ -7,6 +7,7 @@ export type AnchoredPopoverPlacement =
   | 'bottom-end'
   | 'top-start'
   | 'top-end'
+  | 'top-center'
   | 'right-start'
   | 'left-start';
 
@@ -15,6 +16,7 @@ const ANCHOR_BY_PLACEMENT: Record<AnchoredPopoverPlacement, PopoverOrigin> = {
   'bottom-end': { vertical: 'bottom', horizontal: 'right' },
   'top-start': { vertical: 'top', horizontal: 'left' },
   'top-end': { vertical: 'top', horizontal: 'right' },
+  'top-center': { vertical: 'top', horizontal: 'center' },
   'right-start': { vertical: 'top', horizontal: 'right' },
   'left-start': { vertical: 'top', horizontal: 'left' },
 };
@@ -24,6 +26,7 @@ const TRANSFORM_BY_PLACEMENT: Record<AnchoredPopoverPlacement, PopoverOrigin> = 
   'bottom-end': { vertical: 'top', horizontal: 'right' },
   'top-start': { vertical: 'bottom', horizontal: 'left' },
   'top-end': { vertical: 'bottom', horizontal: 'right' },
+  'top-center': { vertical: 'bottom', horizontal: 'center' },
   'right-start': { vertical: 'top', horizontal: 'left' },
   'left-start': { vertical: 'top', horizontal: 'right' },
 };

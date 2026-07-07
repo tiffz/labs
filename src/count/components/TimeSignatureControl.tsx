@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import PulseTooltip from './PulseTooltip';
 import type { TimeSignature } from '../../shared/rhythm/types';
 import {
@@ -31,10 +31,6 @@ const NUMERATORS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 const DENOMINATORS = [4, 8];
 
 const PICKER_PAPER_SX = {
-  bgcolor: 'var(--pulse-bg)',
-  border: '1px solid var(--pulse-accent)',
-  borderRadius: 0,
-  boxShadow: '4px 4px 16px rgba(0,0,0,0.8)',
   p: '6px',
   display: 'flex',
   flexWrap: 'wrap' as const,
@@ -136,13 +132,12 @@ export function TimeSignatureControl({
         </button>
       </div>
 
-      <Popover
+      <AnchoredPopover
         open={Boolean(numAnchor)}
         anchorEl={numAnchor}
         onClose={() => setNumAnchor(null)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        slotProps={{ paper: { sx: PICKER_PAPER_SX } }}
+        placement="left-start"
+        slotProps={{ paper: { sx: PICKER_PAPER_SX, className: 'pulse-ts-picker' } }}
       >
         {NUMERATORS.map((n) => (
           <button
@@ -154,15 +149,14 @@ export function TimeSignatureControl({
             {n}
           </button>
         ))}
-      </Popover>
+      </AnchoredPopover>
 
-      <Popover
+      <AnchoredPopover
         open={Boolean(denAnchor)}
         anchorEl={denAnchor}
         onClose={() => setDenAnchor(null)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        slotProps={{ paper: { sx: PICKER_PAPER_SX } }}
+        placement="left-start"
+        slotProps={{ paper: { sx: PICKER_PAPER_SX, className: 'pulse-ts-picker' } }}
       >
         {DENOMINATORS.map((d) => (
           <button
@@ -174,7 +168,7 @@ export function TimeSignatureControl({
             {d}
           </button>
         ))}
-      </Popover>
+      </AnchoredPopover>
 
       <div className="pulse-time-sig-controls">
         {PRESETS.map((p) => (

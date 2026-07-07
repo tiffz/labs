@@ -105,7 +105,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
                 max={100}
                 value={settings.measureAccentVolume}
                 onChange={(e) => handleMeasureAccentChange(parseInt(e.target.value, 10))}
-                className="settings-slider drums-floating-menu__slider"
+                className="settings-slider drums-floating-menu__slider labs-volume-slider"
                 style={{
                   '--disabled-start': '100%',
                 } as React.CSSProperties}
@@ -135,7 +135,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
                     handleBeatGroupAccentChange(value);
                   }
                 }}
-                className="settings-slider drums-floating-menu__slider"
+                className="settings-slider drums-floating-menu__slider labs-volume-slider"
                 style={{
                   '--disabled-start': `${settings.measureAccentVolume}%`,
                 } as React.CSSProperties}
@@ -165,7 +165,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
                     handleNonAccentVolumeChange(value);
                   }
                 }}
-                className="settings-slider drums-floating-menu__slider"
+                className="settings-slider drums-floating-menu__slider labs-volume-slider"
                 style={{
                   '--disabled-start': `${Math.min(settings.measureAccentVolume, settings.beatGroupAccentVolume)}%`,
                 } as React.CSSProperties}
@@ -191,7 +191,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
                     metronomeVolume: Math.max(0, Math.min(100, value)),
                   });
                 }}
-                className="settings-slider drums-floating-menu__slider"
+                className="settings-slider drums-floating-menu__slider labs-volume-slider"
                 style={{
                   '--disabled-start': '100%',
                 } as React.CSSProperties}
@@ -211,7 +211,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
                 max={100}
                 value={settings.reverbStrength}
                 onChange={(e) => handleReverbStrengthChange(parseInt(e.target.value, 10))}
-                className="settings-slider drums-floating-menu__slider"
+                className="settings-slider drums-floating-menu__slider labs-volume-slider"
                 style={{
                   '--disabled-start': '100%',
                 } as React.CSSProperties}

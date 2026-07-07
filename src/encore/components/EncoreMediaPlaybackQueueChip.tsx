@@ -6,7 +6,7 @@ import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import Typography from '@mui/material/Typography';
 import { useState, type ReactElement } from 'react';
 import type { EncoreMediaPlaybackTarget } from '../media/encorePlayableMedia';
@@ -124,18 +124,12 @@ export function EncoreMediaPlaybackQueueChip(): ReactElement | null {
           {current}/{total}
         </Typography>
       </Box>
-      <Popover
+      <AnchoredPopover
         open={Boolean(anchorEl)}
         anchorEl={anchorEl}
         onClose={() => setAnchorEl(null)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        transformOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        slotProps={{
-          paper: {
-            elevation: 0,
-            className: 'labs-popover-surface encore-media-playback-queue-popover',
-          },
-        }}
+        placement="top-center"
+        paperClassName="encore-media-playback-queue-popover"
       >
         <Box className="encore-media-playback-queue">
           <Box className="encore-media-playback-queue__header">
@@ -164,7 +158,7 @@ export function EncoreMediaPlaybackQueueChip(): ReactElement | null {
             ))}
           </List>
         </Box>
-      </Popover>
+      </AnchoredPopover>
     </>
   );
 }

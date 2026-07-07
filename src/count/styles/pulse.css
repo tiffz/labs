@@ -97,6 +97,21 @@ body {
   margin: 0 0 12px 0;
 }
 
+/**
+ * Portaled Count menus — mirror .pulse-app chrome (see docs/CHROME_UI_CONTRACT.md).
+ * AnchoredPopover adds .labs-popover-surface on the paper root.
+ */
+.pulse-header-dropdown.labs-popover-surface,
+.pulse-ts-picker.labs-popover-surface {
+  --labs-popover-shadow: 4px 4px 16px rgba(0, 0, 0, 0.85);
+  --labs-popover-border: 1px solid var(--pulse-accent, #00ff41);
+  --labs-popover-bg: var(--pulse-bg, #0a0a0a);
+  --labs-popover-radius: 0;
+  --labs-popover-backdrop: none;
+  color: var(--pulse-text, #e8e8e8);
+  font-family: var(--pulse-mono, 'JetBrains Mono', monospace);
+}
+
 /* ---- Top row: 3-column transport ---- */
 .pulse-top-row {
   display: grid;

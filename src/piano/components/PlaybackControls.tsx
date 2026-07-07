@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
-import Popover from '@mui/material/Popover';
+import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import { usePiano, type ActiveMode } from '../store';
 import { type SoundType } from '../../shared/music/soundOptions';
 import {
@@ -576,13 +576,12 @@ const PlaybackControls: React.FC = () => {
         </div>
       ) : null}
 
-      <Popover
+      <AnchoredPopover
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         anchorEl={settingsBtnRef.current}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        slotProps={{ paper: { className: 'sb-settings-popover' } }}
+        placement="bottom-end"
+        paperClassName="sb-settings-popover"
       >
         <SettingsDropdown
           state={state}
@@ -600,7 +599,7 @@ const PlaybackControls: React.FC = () => {
           onMidiSound={(enabled) => dispatch({ type: 'SET_MIDI_SOUND', enabled })}
           onMidiSoundVolume={(volume) => dispatch({ type: 'SET_MIDI_SOUND_VOLUME', volume })}
         />
-      </Popover>
+      </AnchoredPopover>
     </div>
   );
 };

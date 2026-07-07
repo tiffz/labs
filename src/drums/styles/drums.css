@@ -1381,6 +1381,7 @@
     min-width: var(--drums-floating-menu-min-width, 280px);
     overflow: visible;
     box-sizing: border-box;
+    --labs-volume-track: var(--primary-purple, #7c3aed);
     /* Shared dropdowns reset chip tokens — re-bridge drums surface borders here. */
     --bpm-chip-border: var(--labs-chip-border-color);
     --bpm-chip-border-width: var(--labs-chip-border-width);
@@ -2901,20 +2902,8 @@
     z-index: 0;
   }
 
-  .settings-slider .MuiSlider-thumb {
-    width: 1.25rem;
-    height: 1.25rem;
-    border: 2px solid white;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  }
-
   .settings-slider:focus {
     outline: none;
-  }
-
-  .settings-slider .MuiSlider-thumb:hover,
-  .settings-slider .MuiSlider-thumb.Mui-focusVisible {
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
   }
 
   .settings-description {

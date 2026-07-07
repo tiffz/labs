@@ -14,7 +14,7 @@ import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import Popover from '@mui/material/Popover';
+import DialogTitle from '@mui/material/DialogTitle';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Link from '@mui/material/Link';
@@ -3074,29 +3074,25 @@ export default function SessionScreen() {
         );
       })()}
 
-      <Popover
+      <Dialog
         open={labsDebug && helpPreview === 'drill_how_it_works'}
         onClose={() => setHelpPreview(null)}
-        anchorReference="anchorPosition"
-        anchorPosition={{ top: typeof window !== 'undefined' ? window.innerHeight / 2 : 400, left: typeof window !== 'undefined' ? window.innerWidth / 2 : 400 }}
-        transformOrigin={{ vertical: 'center', horizontal: 'center' }}
-        slotProps={{
-          paper: {
-            sx: { maxWidth: 380, p: 2, borderRadius: 2 },
-          },
-        }}
+        maxWidth="xs"
+        fullWidth
       >
-        <Typography variant="subtitle2" component="p" sx={{ mt: 0, mb: 1, fontWeight: 700 }}>
+        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
           How it works (Practice until perfect)
-        </Typography>
-        <Typography variant="body2" color="text.secondary" component="p" sx={{ m: 0, lineHeight: 1.5 }}>
-          Repeats this stage in a tight loop until you play
-          {' '}
-          {DRILL_TARGET_PERFECT_RUNS}
-          {' '}
-          perfect runs in a row (literal 100% each time). Useful when you want to lock in an exercise before moving on.
-        </Typography>
-      </Popover>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" component="p" sx={{ m: 0, lineHeight: 1.5 }}>
+            Repeats this stage in a tight loop until you play
+            {' '}
+            {DRILL_TARGET_PERFECT_RUNS}
+            {' '}
+            perfect runs in a row (literal 100% each time). Useful when you want to lock in an exercise before moving on.
+          </Typography>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

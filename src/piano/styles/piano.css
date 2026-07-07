@@ -3687,14 +3687,8 @@ body {
   font-weight: var(--weight-regular);
 }
 
-/* Chip popover (inline key selector, etc.) */
+/* Chip popover (inline key selector, etc.) — layout only; shell via .labs-popover-surface */
 .np-popover {
-  position: fixed;
-  z-index: 10001;
-  background: white;
-  border: 1px solid var(--piano-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
   padding: var(--sp-3);
   font-family: 'Roboto', system-ui, sans-serif;
   color: var(--piano-text);

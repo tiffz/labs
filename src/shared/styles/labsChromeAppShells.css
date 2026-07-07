@@ -1,0 +1,120 @@
+/**
+ * Per-app `--labs-popover-*` bridges for chrome contract.
+ * Imported via labsChrome.css — apps need not duplicate in local CSS.
+ * Profile: standard (shadow) vs flat (no drop shadow). See docs/CHROME_UI_CONTRACT.md.
+ */
+@layer shared-base {
+  /* Wave 2 — playback */
+  .midi-root {
+    --labs-popover-shadow: var(
+      --midi-shadow,
+      0 10px 40px rgba(59, 31, 69, 0.08)
+    );
+    --labs-popover-border: 1px solid
+      var(--midi-border, rgba(255, 68, 153, 0.14));
+    --labs-popover-bg: var(--midi-surface, #ffffff);
+    --labs-popover-radius: 0.85rem;
+    --labs-control-focus-ring-inset-color: var(--midi-accent, #ff4499);
+  }
+
+  .scales-app {
+    --labs-popover-shadow: 0 8px 24px rgba(15, 118, 110, 0.12);
+    --labs-popover-border: 1px solid rgba(15, 118, 110, 0.18);
+    --labs-popover-bg: #ffffff;
+    --labs-popover-radius: 1rem;
+    --labs-control-focus-ring-inset-color: #0f766e;
+  }
+
+  /* Wave 3 — baseline */
+  .pitch-app {
+    --labs-popover-shadow: var(
+      --md-elev-2,
+      8px 12px 0 rgba(219, 39, 119, 0.16)
+    );
+    --labs-popover-border: 1px solid var(--md-outline-variant, #fecdd3);
+    --labs-popover-bg: var(--md-surface, #ffffff);
+    --labs-popover-radius: var(--pitch-control-radius, 6px);
+    --labs-control-focus-ring-inset-color: var(--md-primary, #0f766e);
+  }
+
+  .melodia-app {
+    --labs-popover-shadow: 0 10px 28px rgba(28, 40, 64, 0.1);
+    --labs-popover-border: 1px solid rgba(28, 40, 64, 0.14);
+    --labs-popover-bg: rgba(255, 254, 249, 0.98);
+    --labs-popover-radius: 12px;
+    --labs-control-focus-ring-inset-color: #e91e8c;
+  }
+
+  /* UI catalog inherits :root tokens from appSharedThemes.css */
+
+  /* Wave 4 — flat profile */
+  .gesture-app {
+    --labs-popover-shadow: none;
+    --labs-popover-border: 1px solid
+      var(--gesture-border, rgba(47, 51, 44, 0.12));
+    --labs-popover-bg: var(--gesture-card-bg, #f7f5f1);
+    --labs-popover-radius: var(--gesture-card-radius, 0.625rem);
+    --labs-popover-backdrop: none;
+    --labs-control-focus-ring-inset-color: var(--gesture-accent, #5f8566);
+  }
+
+  .muscle-app {
+    --labs-popover-shadow: none;
+    --labs-popover-border: 1px solid
+      var(--muscle-border, rgba(26, 39, 68, 0.12));
+    --labs-popover-bg: var(--muscle-surface, #fff);
+    --labs-popover-radius: 8px;
+    --labs-popover-backdrop: none;
+    --labs-control-focus-ring-inset-color: var(--muscle-lapis, #2563eb);
+  }
+
+  .zinebox-app {
+    --labs-popover-shadow: none;
+    --labs-popover-border: 1px solid
+      var(--zinebox-border-strong, rgba(72, 68, 64, 0.18));
+    --labs-popover-bg: var(
+      --zinebox-chrome-bg,
+      var(--zinebox-surface, #fdfcfb)
+    );
+    --labs-popover-radius: var(--zinebox-radius, 6px);
+    --labs-popover-backdrop: none;
+    --labs-control-focus-ring-inset-color: var(--zinebox-accent, #ff1493);
+  }
+
+  .sight-app {
+    --labs-popover-shadow: none;
+    --labs-popover-border: 1px solid var(--sight-border, #2e2e34);
+    --labs-popover-bg: var(--sight-panel, #1a1a1e);
+    --labs-popover-radius: 8px;
+    --labs-popover-backdrop: none;
+    --labs-control-focus-ring-inset-color: var(--sight-accent, #a78bfa);
+  }
+
+  /* Wave 5 — remaining */
+  .pulse-app {
+    --labs-popover-shadow: 4px 4px 16px rgba(0, 0, 0, 0.8);
+    --labs-popover-border: 1px solid var(--pulse-accent, #00ff41);
+    --labs-popover-bg: var(--pulse-bg, #0a0a0a);
+    --labs-popover-radius: 0;
+    --labs-control-focus-ring-inset-color: var(--pulse-accent, #00ff41);
+  }
+
+  .agility-root {
+    --labs-popover-shadow: 4px 4px 0 rgba(41, 37, 36, 0.22);
+    --labs-popover-border: var(--ag-panel-border-width, 3px) solid
+      var(--ag-panel-border, #292524);
+    --labs-popover-bg: var(--ag-panel-bg, #fffefb);
+    --labs-popover-radius: var(--ag-panel-radius, 4px);
+    --labs-control-focus-ring-inset-color: var(--ag-accent, #dc2626);
+  }
+
+  .forms-app {
+    --labs-popover-shadow: 0 12px 28px rgba(15, 23, 42, 0.35);
+    --labs-popover-border: 1px solid var(--border-color, #334155);
+    --labs-popover-bg: var(--bg-card, #1e293b);
+    --labs-popover-radius: 8px;
+    --labs-control-focus-ring-inset-color: var(--primary, #6366f1);
+  }
+
+  /* Cats, Corp, Story, Zines — standard profile via appSharedThemes :root defaults */
+}

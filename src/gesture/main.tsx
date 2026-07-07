@@ -14,6 +14,8 @@ import { getAppTheme } from '../shared/ui/theme/appTheme';
 import { initMaterialIconRuntime } from '../shared/ui/icons/materialIconsBootstrap';
 import App from './App';
 import { installGestureE2eSeedHook } from './e2e/gestureE2eSeed';
+import '../shared/components/music/appSharedThemes.css';
+import '../shared/styles/labsChrome.css';
 import './gesture.css';
 
 installServerLogger('GESTURE');
