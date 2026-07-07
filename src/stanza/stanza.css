@@ -41,8 +41,8 @@
   --stanza-paper-wash: #f3ebe2;
   --stanza-paper-elevated: rgba(255, 251, 245, 0.9);
   --stanza-paper-elevated-strong: rgba(255, 251, 245, 0.96);
-  --stanza-paper-line: rgba(49, 43, 38, 0.1);
-  --stanza-paper-line-faint: rgba(49, 43, 38, 0.06);
+  --stanza-paper-line: rgba(49, 43, 38, 0.13);
+  --stanza-paper-line-faint: rgba(49, 43, 38, 0.09);
 
   /* Ink (warm) */
   --stanza-ink: #2a2622;

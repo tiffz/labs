@@ -47,7 +47,7 @@ export const INLINE_DARBUKA_LINK_UX = {
  * and keep theming local (`notationStyle`, wrapper className).
  *
  * - **settings-panel** — chord playback popovers (Encore Originals, Chords chart).
- * - **practice-rail** — preset chip grid + audible playback (Stanza practice rail).
+ * - **practice-rail** — preset chip grid behind Edit toggle + audible playback (Stanza practice rail).
  * - **sidebar-compact** — full preset grid + audible playback (Piano sidebar).
  *
  * Host-owned pattern fields (Words section template row): spread the profile then override
@@ -68,7 +68,8 @@ export const INLINE_DRUM_PROFILES: Record<InlineDrumUxProfile, InlineDrumUxProfi
     showRandomizeButtons: true,
     hidePatternInput: false,
     presetLayout: 'grid',
-    patternEditing: 'inline',
+    /** Collapsed inline disclosure (Edit/Done) — not a portaled MUI popover. See stanza/PRACTICE_RAIL.md. */
+    patternEditing: 'popover',
     audioEnabled: true,
     notationHeight: 72,
     drumSymbolScale: 0.62,

@@ -4,6 +4,7 @@
  */
 
 import type { StanzaSong } from '../db/stanzaDb';
+import { mergePracticePlaybackToggle } from '../utils/stanzaSongMetadataMerge';
 import {
   driveCreateJsonFile,
   driveGetMedia,
@@ -128,6 +129,15 @@ export function mergeStanzaPracticeOverlayIntoRows(
     for (const key of OVERLAY_FIELDS) {
       if (key === 'updatedAt') {
         if (entry.updatedAt >= row.updatedAt) merged.updatedAt = entry.updatedAt;
+        continue;
+      }
+      if (key === 'drumsEnabled' || key === 'metronomeEnabled') {
+        const overlayValue = entry[key];
+        const localValue = row[key];
+        const mergedToggle = mergePracticePlaybackToggle(localValue, overlayValue);
+        if (mergedToggle !== undefined) {
+          (merged as unknown as Record<string, unknown>)[key] = mergedToggle;
+        }
         continue;
       }
       const value = entry[key as keyof StanzaPracticeOverlayEntry];

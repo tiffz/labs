@@ -3,8 +3,10 @@ import { BEAT_ANALYSIS_VERSION } from '../../shared/beat/analysisVersion';
 import type { StanzaSong } from '../db/stanzaDb';
 import { stanzaSongPracticeCustomizationScore } from './stanzaSongCustomizationScore';
 import {
+  mergePracticePlaybackToggle,
   mergeStanzaRicherSongMetadata,
   mergeStanzaRicherSongMetadataWithReport,
+  mergeStanzaSongWithRemotePreference,
   resolveDriveSourceFileIdForMerge,
 } from './stanzaSongMetadataMerge';
 
@@ -57,6 +59,23 @@ describe('resolveDriveSourceFileIdForMerge', () => {
         { driveSourceFileId: 'remote-file' },
       ),
     ).toBe('local-file');
+  });
+});
+
+describe('mergePracticePlaybackToggle', () => {
+  it('keeps enabled when either side is true', () => {
+    expect(mergePracticePlaybackToggle(true, false)).toBe(true);
+    expect(mergePracticePlaybackToggle(false, true)).toBe(true);
+    expect(mergePracticePlaybackToggle(undefined, true)).toBe(true);
+  });
+
+  it('returns false only when both sides are false or one is false', () => {
+    expect(mergePracticePlaybackToggle(false, false)).toBe(false);
+    expect(mergePracticePlaybackToggle(false, undefined)).toBe(false);
+  });
+
+  it('returns undefined when neither side set a value', () => {
+    expect(mergePracticePlaybackToggle(undefined, undefined)).toBeUndefined();
   });
 });
 
@@ -144,6 +163,26 @@ describe('mergeStanzaRicherSongMetadata', () => {
     };
     const merged = mergeStanzaRicherSongMetadata(local, remote);
     expect(merged.drumPattern).toBe('D-T-K-T-');
+  });
+
+  it('keeps local drumsEnabled when remote wins with explicit false', () => {
+    const local = song({
+      id: '1',
+      title: 'Local',
+      updatedAt: 5,
+      drumsEnabled: true,
+    });
+    const remote = {
+      id: '1',
+      ytId: 'vid',
+      title: 'Remote',
+      markers: [],
+      stats: {},
+      updatedAt: 100,
+      drumsEnabled: false,
+    };
+    const merged = mergeStanzaSongWithRemotePreference(local, remote, remote);
+    expect(merged.song.drumsEnabled).toBe(true);
   });
 
   it('merges per-section drum overrides from both sides', () => {

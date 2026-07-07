@@ -5,7 +5,7 @@
 
 .shared-export-popover.shared-export-popover-stanza {
   border-radius: var(--stanza-radius-panel, 18px) !important;
-  border: 1px solid rgba(49, 43, 38, 0.1) !important;
+  border: 1px solid rgba(49, 43, 38, 0.13) !important;
   box-shadow: 0 12px 32px rgba(42, 38, 34, 0.12) !important;
   background: rgba(255, 251, 245, 0.96) !important;
   color: #2a2622 !important;
@@ -62,7 +62,7 @@
 }
 
 .shared-export-panel-stanza .shared-export-format-row {
-  border-color: rgba(49, 43, 38, 0.1);
+  border-color: rgba(49, 43, 38, 0.13);
   border-radius: 11px;
   background: rgba(255, 255, 255, 0.42);
   min-height: 36px;
@@ -97,14 +97,14 @@
 
 .shared-export-panel-stanza .shared-export-row input,
 .shared-export-panel-stanza .shared-export-row select {
-  border-color: rgba(49, 43, 38, 0.1);
+  border-color: rgba(49, 43, 38, 0.13);
   border-radius: 11px;
   background: rgba(255, 255, 255, 0.72);
   color: #2a2622;
 }
 
 .shared-export-panel-stanza .shared-export-stems {
-  border-color: rgba(49, 43, 38, 0.1);
+  border-color: rgba(49, 43, 38, 0.13);
   border-radius: 11px;
   background: rgba(255, 255, 255, 0.42);
 }

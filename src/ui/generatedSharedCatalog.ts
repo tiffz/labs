@@ -7652,7 +7652,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "Behavior defaults for inline drum embeds. Hosts pass a profile via and keep theming local (`notationStyle`, wrapper className). - **settings-panel** — chord playback popovers (Encore Originals, Chords chart). - **practice-rail** — preset chip grid + audible playback (Stanza practice rail). - **sidebar-compact** — full preset grid + audible playback (Piano sidebar). Host-owned pattern fields (Words section template row): spread the profile then override `{ hidePatternInput: true, hideDarbukaLink: true }`.",
+    "description": "Behavior defaults for inline drum embeds. Hosts pass a profile via and keep theming local (`notationStyle`, wrapper className). - **settings-panel** — chord playback popovers (Encore Originals, Chords chart). - **practice-rail** — preset chip grid behind Edit toggle + audible playback (Stanza practice rail). - **sidebar-compact** — full preset grid + audible playback (Piano sidebar). Host-owned pattern fields (Words section template row): spread the profile then override `{ hidePatternInput: true, hideDarbukaLink: true }`.",
     "tags": [
       "components",
       "music",

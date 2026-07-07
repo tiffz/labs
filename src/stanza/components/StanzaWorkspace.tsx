@@ -3408,11 +3408,7 @@ export default function StanzaWorkspace() {
                               void persistSong({ id: selected.id, metronomeTimingScope: scope })
                             }
                             sectionDisplayName={railCalibSeg.label || `Section ${railCalibSeg.index + 1}`}
-                            sectionToggleLabel={
-                              (railCalibSeg.label || `Section ${railCalibSeg.index + 1}`).length > 14
-                                ? `${(railCalibSeg.label || `Section ${railCalibSeg.index + 1}`).slice(0, 13)}…`
-                                : railCalibSeg.label || `Section ${railCalibSeg.index + 1}`
-                            }
+                            sectionToggleLabel={railCalibSeg.label || `Section ${railCalibSeg.index + 1}`}
                             segmentCalibration={selected.metronomeBySegmentId?.[railCalibSeg.id]}
                             songCalibration={selected.metronomeSongCalibration}
                             liveRailBpm={
@@ -3424,35 +3420,10 @@ export default function StanzaWorkspace() {
                           />
                         }
                         grooveFooter={
-                          <Box
-                            className={[
-                              'stanza-rail-groove-drums',
-                              drumInheritanceMode === 'custom' ? 'stanza-rail-groove-drums--custom' : '',
-                            ]
-                              .filter(Boolean)
-                              .join(' ')}
-                          >
+                          <Box className="stanza-rail-groove-drums">
                             <Box className="stanza-rail-groove-drums__head">
-                              <Box className="stanza-rail-groove-drums__head-main">
-                                <Typography component="span" className="stanza-rail-groove-drums__label">
-                                  Drums
-                                </Typography>
-                                {practiceTimingScope === 'section' ? (
-                                  <StanzaRailInheritanceHint
-                                    mode={drumInheritanceMode}
-                                    onResetToParent={
-                                      drumInheritanceMode === 'custom'
-                                        ? clearRailSegmentDrumPattern
-                                        : undefined
-                                    }
-                                    resetLabel="Use song pattern"
-                                    inheritLabel="From whole song"
-                                    customLabel="Custom pattern"
-                                  />
-                                ) : null}
-                              </Box>
                               <FormControlLabel
-                                className="stanza-rail-section-toggle"
+                                className="stanza-rail-section-toggle stanza-rail-groove-drums__toggle"
                                 control={
                                   <Checkbox
                                     size="small"
@@ -3467,7 +3438,7 @@ export default function StanzaWorkspace() {
                                     sx={{ p: 0.25 }}
                                   />
                                 }
-                                label="On"
+                                label="Add drums"
                               />
                             </Box>
                             {selected.drumsEnabled ? (
@@ -3490,7 +3461,39 @@ export default function StanzaWorkspace() {
                                   notationWidth={STANZA_DRUMS_NOTATION_WIDTH}
                                   notationHeight={STANZA_DRUMS_NOTATION_HEIGHT}
                                   notationStyle={STANZA_DRUMS_NOTATION_STYLE}
-                                  notationFrameClassName="stanza-drums-notation-frame"
+                                  notationFrameClassName={[
+                                    'stanza-drums-notation-frame',
+                                    practiceTimingScope === 'section'
+                                      ? 'stanza-rail-groove-drums__pattern-shell'
+                                      : '',
+                                    practiceTimingScope === 'section' && drumInheritanceMode === 'inherit'
+                                      ? 'stanza-rail-groove-drums__pattern-shell--inherit'
+                                      : '',
+                                    practiceTimingScope === 'section' && drumInheritanceMode === 'custom'
+                                      ? 'stanza-rail-groove-drums__pattern-shell--custom'
+                                      : '',
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' ')}
+                                  notationToolbarLeading={
+                                    practiceTimingScope === 'section' && drumInheritanceMode === 'inherit' ? (
+                                      <StanzaRailInheritanceHint
+                                        mode="inherit"
+                                        inheritLabel="From whole song"
+                                        variant="embedded"
+                                      />
+                                    ) : undefined
+                                  }
+                                  notationToolbarExtra={
+                                    practiceTimingScope === 'section' && drumInheritanceMode === 'custom' ? (
+                                      <StanzaRailInheritanceHint
+                                        mode="custom"
+                                        onResetToParent={clearRailSegmentDrumPattern}
+                                        resetLabel="Use song pattern"
+                                        showCustomStatus={false}
+                                      />
+                                    ) : undefined
+                                  }
                                   scheduler={stanzaDrumScheduler}
                                 />
                               </Box>

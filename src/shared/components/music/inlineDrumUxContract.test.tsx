@@ -2,7 +2,8 @@
  * Contract tests: profile props → expected DOM affordances per host.
  * Catches regressions when a host hides pattern input or misplaces the Darbuka link.
  */
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
+import { useState, type ReactElement } from 'react';
 import { describe, expect, it } from 'vitest';
 import DrumAccompaniment from './DrumAccompaniment';
 import { getInlineDrumUxProps } from './inlineDrumUxDefaults';
@@ -39,19 +40,74 @@ describe('inline drum UX host contracts (DrumAccompaniment)', () => {
     expect(view.queryByText('Edit in Darbuka Trainer')).not.toBeInTheDocument();
   });
 
-  it('Stanza practice-rail: inline pattern input, preset chip grid, audio enabled in profile', () => {
+  it('Stanza practice-rail: popover pattern editor, preset chip grid, audio enabled in profile', () => {
     const stanzaRailUx = getInlineDrumUxProps('practice-rail');
     expect(stanzaRailUx.presetLayout).toBe('grid');
     expect(stanzaRailUx.audioEnabled).toBe(true);
     expect(stanzaRailUx.hidePatternInput).toBe(false);
-    expect(stanzaRailUx.patternEditing).toBe('inline');
+    expect(stanzaRailUx.patternEditing).toBe('popover');
 
     const view = render(
       <DrumAccompaniment {...stanzaRailUx} {...basePlaybackProps} audioEnabled />,
     );
+    expect(view.queryByPlaceholderText('D-T-K-T- or paste Darbuka Trainer URL')).not.toBeInTheDocument();
+    expect(view.getByRole('button', { name: /Edit drum pattern/i })).toBeInTheDocument();
+    expect(view.queryByRole('button', { name: /Use Maqsum drum preset/i })).not.toBeInTheDocument();
+  });
+
+  it('Stanza practice-rail: collapsed pattern editor expands inline (no portaled popover)', () => {
+    const view = render(
+      <DrumAccompaniment {...getInlineDrumUxProps('practice-rail')} {...basePlaybackProps} audioEnabled />,
+    );
+    fireEvent.click(view.getByRole('button', { name: /Edit drum pattern/i }));
     expect(view.getByPlaceholderText('D-T-K-T- or paste Darbuka Trainer URL')).toBeInTheDocument();
-    expect(view.queryByRole('button', { name: /Edit pattern/i })).not.toBeInTheDocument();
-    expect(view.getByRole('button', { name: /Use Maqsum drum preset/i })).toBeInTheDocument();
+    expect(view.getByRole('button', { name: /Done editing drum pattern/i })).toBeInTheDocument();
+    expect(document.querySelector('.stanza-drums-pattern-editor-panel')).toBeTruthy();
+    expect(document.querySelector('.MuiPopover-root')).toBeNull();
+  });
+
+  it('Stanza practice-rail pattern editor stays open when clicking outside the card', () => {
+    const view = render(
+      <div>
+        <button type="button">Outside control</button>
+        <DrumAccompaniment {...getInlineDrumUxProps('practice-rail')} {...basePlaybackProps} audioEnabled />
+      </div>,
+    );
+    fireEvent.click(view.getByRole('button', { name: /Edit drum pattern/i }));
+    fireEvent.pointerDown(view.getByRole('button', { name: 'Outside control' }));
+    expect(view.getByRole('button', { name: /Done editing drum pattern/i })).toBeInTheDocument();
+  });
+
+  it('Stanza practice-rail pattern editor closes via Done', () => {
+    const view = render(
+      <DrumAccompaniment {...getInlineDrumUxProps('practice-rail')} {...basePlaybackProps} audioEnabled />,
+    );
+    fireEvent.click(view.getByRole('button', { name: /Edit drum pattern/i }));
+    fireEvent.click(view.getByRole('button', { name: /Done editing drum pattern/i }));
+    expect(view.queryByPlaceholderText('D-T-K-T- or paste Darbuka Trainer URL')).not.toBeInTheDocument();
+    expect(view.getByRole('button', { name: /Edit drum pattern/i })).toBeInTheDocument();
+  });
+
+  it('Stanza practice-rail popover survives invalid pattern edits without unmounting anchor', () => {
+    function PopoverDrumHarness(): ReactElement {
+      const [pattern, setPattern] = useState('D---D---D---D---');
+      return (
+        <DrumAccompaniment
+          {...getInlineDrumUxProps('practice-rail')}
+          {...basePlaybackProps}
+          notationValue={pattern}
+          onNotationValueChange={setPattern}
+          audioEnabled
+        />
+      );
+    }
+    const view = render(<PopoverDrumHarness />);
+    fireEvent.click(view.getByRole('button', { name: /Edit drum pattern/i }));
+    const input = view.getByPlaceholderText('D-T-K-T- or paste Darbuka Trainer URL');
+    fireEvent.change(input, { target: { value: '!!!' } });
+    expect(view.getByText('Enter a valid rhythm pattern')).toBeInTheDocument();
+    expect(document.querySelector('.stanza-drums-notation-trigger')).toBeTruthy();
+    expect(input).toBeInTheDocument();
   });
 
   it('Words host-input: no pattern field in DrumAccompaniment; preset row remains', () => {

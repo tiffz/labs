@@ -85,6 +85,16 @@ function mergePracticeMetronomeSongCalibration(
   return local.metronomeSongCalibration ?? remote.metronomeSongCalibration;
 }
 
+/** Once enabled on either side, stay enabled — stale remote `false` must not clear local practice toggles. */
+export function mergePracticePlaybackToggle(
+  local: boolean | undefined,
+  remote: boolean | undefined,
+): boolean | undefined {
+  if (local === true || remote === true) return true;
+  if (local === false || remote === false) return local ?? remote;
+  return undefined;
+}
+
 function mergePracticeMarkers(local: StanzaSong, remote: MergeSide): StanzaSong['markers'] {
   const lMarkers = local.markers ?? [];
   const rMarkers = remote.markers ?? [];
@@ -152,10 +162,10 @@ export function mergeStanzaRicherSongMetadataWithReport(
       metronomeBySegmentId,
       metronomeSongCalibration,
       metronomeTimingScope: local.metronomeTimingScope ?? remote.metronomeTimingScope,
-      metronomeEnabled: local.metronomeEnabled ?? remote.metronomeEnabled,
+      metronomeEnabled: mergePracticePlaybackToggle(local.metronomeEnabled, remote.metronomeEnabled),
       metronomeGain: local.metronomeGain ?? remote.metronomeGain,
       metronomeMuted: local.metronomeMuted ?? remote.metronomeMuted,
-      drumsEnabled: local.drumsEnabled ?? remote.drumsEnabled,
+      drumsEnabled: mergePracticePlaybackToggle(local.drumsEnabled, remote.drumsEnabled),
       drumPattern: local.drumPattern ?? remote.drumPattern,
       drumPatternBySegmentId,
       drumsGain: local.drumsGain ?? remote.drumsGain,
@@ -195,10 +205,10 @@ export function mergeStanzaSongWithRemotePreference(
       primaryGain: remote.primaryGain ?? local.primaryGain,
       primaryMuted: remote.primaryMuted ?? local.primaryMuted,
       metronomeTimingScope: remote.metronomeTimingScope ?? local.metronomeTimingScope,
-      metronomeEnabled: remote.metronomeEnabled ?? local.metronomeEnabled,
+      metronomeEnabled: mergePracticePlaybackToggle(local.metronomeEnabled, remote.metronomeEnabled),
       metronomeGain: remote.metronomeGain ?? local.metronomeGain,
       metronomeMuted: remote.metronomeMuted ?? local.metronomeMuted,
-      drumsEnabled: remote.drumsEnabled ?? local.drumsEnabled,
+      drumsEnabled: mergePracticePlaybackToggle(local.drumsEnabled, remote.drumsEnabled),
       drumPattern: remote.drumPattern ?? local.drumPattern,
       drumPatternBySegmentId:
         remote.drumPatternBySegmentId ?? local.drumPatternBySegmentId,

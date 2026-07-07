@@ -42,6 +42,9 @@ export function stanzaSongPracticeCustomizationScore(row: ScoreInput): number {
 
   if (row.metronomeSongCalibration) score += 5;
 
+  if (row.metronomeEnabled) score += 3;
+  if (row.drumsEnabled) score += 3;
+
   return score;
 }
 
