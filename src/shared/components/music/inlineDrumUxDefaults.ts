@@ -68,7 +68,7 @@ export const INLINE_DRUM_PROFILES: Record<InlineDrumUxProfile, InlineDrumUxProfi
     showRandomizeButtons: true,
     hidePatternInput: false,
     presetLayout: 'grid',
-    patternEditing: 'popover',
+    patternEditing: 'inline',
     audioEnabled: true,
     notationHeight: 72,
     drumSymbolScale: 0.62,

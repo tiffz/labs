@@ -163,10 +163,34 @@ test.describe('Playback UI regressions', () => {
     await page.getByRole('button', { name: 'New Original' }).click();
     const titleField = page.getByPlaceholder('Untitled original');
     await expect(titleField).toBeVisible({ timeout: 10_000 });
+    await titleField.fill('E2E reload smoke');
+    await expect(titleField).toHaveValue('E2E reload smoke');
     await expect
       .poll(() => page.url(), { timeout: 15_000 })
       .toMatch(/#\/originals\/(?!new)[^/?#]+$/);
     const songUrl = page.url();
+    const songId = songUrl.match(/#\/originals\/([^/?#]+)$/)?.[1];
+    expect(songId).toBeTruthy();
+    await expect
+      .poll(
+        () =>
+          page.evaluate(async (id) => {
+            if (!id) return false;
+            return new Promise<boolean>((resolve) => {
+              const req = indexedDB.open('encore-repertoire');
+              req.onerror = () => resolve(false);
+              req.onsuccess = () => {
+                const db = req.result;
+                const tx = db.transaction('originals', 'readonly');
+                const get = tx.objectStore('originals').get(id);
+                get.onerror = () => resolve(false);
+                get.onsuccess = () => resolve(!!get.result);
+              };
+            });
+          }, songId),
+        { timeout: 15_000, message: 'original should persist to IndexedDB before reload' },
+      )
+      .toBe(true);
 
     await page.reload();
     await expect(page).toHaveURL(songUrl);

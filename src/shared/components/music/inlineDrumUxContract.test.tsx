@@ -39,19 +39,19 @@ describe('inline drum UX host contracts (DrumAccompaniment)', () => {
     expect(view.queryByText('Edit in Darbuka Trainer')).not.toBeInTheDocument();
   });
 
-  it('Stanza practice-rail: popover pattern editor, preset chip grid, audio enabled in profile', () => {
+  it('Stanza practice-rail: inline pattern input, preset chip grid, audio enabled in profile', () => {
     const stanzaRailUx = getInlineDrumUxProps('practice-rail');
     expect(stanzaRailUx.presetLayout).toBe('grid');
     expect(stanzaRailUx.audioEnabled).toBe(true);
     expect(stanzaRailUx.hidePatternInput).toBe(false);
-    expect(stanzaRailUx.patternEditing).toBe('popover');
+    expect(stanzaRailUx.patternEditing).toBe('inline');
 
     const view = render(
       <DrumAccompaniment {...stanzaRailUx} {...basePlaybackProps} audioEnabled />,
     );
-    expect(view.queryByPlaceholderText('D-T-K-T- or paste Darbuka Trainer URL')).not.toBeInTheDocument();
-    expect(view.getByRole('button', { name: /Edit pattern/i })).toBeInTheDocument();
-    expect(view.queryByRole('button', { name: /Use Maqsum drum preset/i })).not.toBeInTheDocument();
+    expect(view.getByPlaceholderText('D-T-K-T- or paste Darbuka Trainer URL')).toBeInTheDocument();
+    expect(view.queryByRole('button', { name: /Edit pattern/i })).not.toBeInTheDocument();
+    expect(view.getByRole('button', { name: /Use Maqsum drum preset/i })).toBeInTheDocument();
   });
 
   it('Words host-input: no pattern field in DrumAccompaniment; preset row remains', () => {
