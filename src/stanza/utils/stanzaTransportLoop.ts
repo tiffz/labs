@@ -1,5 +1,6 @@
 import type { StanzaPlaybackLoopMode } from './stanzaPlaybackLoop';
-import { STANZA_LOOP_WRAP_TOLERANCE_SEC } from './stanzaPlaybackLoop';
+import { resolveEffectiveStanzaLoopMode } from './stanzaPlaybackFocus';
+import { shouldWrapLoopSelection, STANZA_LOOP_WRAP_TOLERANCE_SEC } from './stanzaPlaybackLoop';
 import { decideStanzaLoopWrap } from './stanzaLoopWrapDecision';
 import {
   isSegmentSkipped,
@@ -30,11 +31,12 @@ export function resolveStanzaLoopPlaybackWindow(opts: {
   skipped: SkippedSegmentSet;
 }): StanzaLoopPlaybackWindow | null {
   const { loopMode, duration, selectionSpan, segments, skipped } = opts;
-  if (loopMode === 'loopAll' && duration > 0) {
+  const effectiveLoopMode = resolveEffectiveStanzaLoopMode({ loopMode, selectionSpan });
+  if (effectiveLoopMode === 'loopAll' && duration > 0) {
     const { start, end } = resolvePlayableWindowAnchors(segments, skipped, 0, duration);
     return { windowStart: 0, windowEnd: duration, loop: true, loopWrapStart: start, loopWrapEnd: end };
   }
-  if (loopMode === 'loopSelection' && selectionSpan) {
+  if (effectiveLoopMode === 'loopSelection' && selectionSpan) {
     const { start, end } = resolvePlayableWindowAnchors(
       segments,
       skipped,
@@ -49,7 +51,7 @@ export function resolveStanzaLoopPlaybackWindow(opts: {
       loopWrapEnd: end,
     };
   }
-  if (loopMode === 'through') {
+  if (effectiveLoopMode === 'through') {
     const windowEnd = duration > 0 ? duration : 0;
     return { windowStart: 0, windowEnd, loop: false, loopWrapStart: 0, loopWrapEnd: windowEnd };
   }
@@ -98,6 +100,7 @@ export function evaluateStanzaTransportLoopTick(input: StanzaTransportLoopTickIn
   } = input;
 
   let clearUserEnteredSection = false;
+  const effectiveLoopMode = resolveEffectiveStanzaLoopMode({ loopMode, selectionSpan: span });
 
   if (skipped) {
     const idx = findSegmentIndexAtTime(segs, tLive);
@@ -109,9 +112,9 @@ export function evaluateStanzaTransportLoopTick(input: StanzaTransportLoopTickIn
       let windowStart = 0;
       let windowEnd = d > 0 ? d : seg.end;
       let loop = false;
-      if (loopMode === 'loopAll' && d > 0) {
+      if (effectiveLoopMode === 'loopAll' && d > 0) {
         loop = true;
-      } else if (loopMode === 'loopSelection' && span) {
+      } else if (effectiveLoopMode === 'loopSelection' && span) {
         windowStart = span.start;
         windowEnd = span.end;
         loop = true;
@@ -150,14 +153,14 @@ export function evaluateStanzaTransportLoopTick(input: StanzaTransportLoopTickIn
   }
 
   const playbackWindow = resolveStanzaLoopPlaybackWindow({
-    loopMode,
+    loopMode: effectiveLoopMode,
     duration: d,
     selectionSpan: span,
     segments: segs,
     skipped,
   });
 
-  if (loopMode === 'loopAll' && d > 0) {
+  if (effectiveLoopMode === 'loopAll' && d > 0) {
     const loopWrapEnd = playbackWindow?.loopWrapEnd ?? d;
     const wrapDecision = decideStanzaLoopWrap({
       transportTime: tLive,
@@ -181,25 +184,32 @@ export function evaluateStanzaTransportLoopTick(input: StanzaTransportLoopTickIn
     };
   }
 
-  if (loopMode === 'loopSelection' && span && playbackWindow) {
+  if (effectiveLoopMode === 'loopSelection' && span && playbackWindow) {
+    const loopWrapEnd = playbackWindow.loopWrapEnd;
     const { start } = resolvePlayableWindowAnchors(segs, skipped, span.start, span.end);
-    const wrapDecision = decideStanzaLoopWrap({
-      transportTime: tLive,
-      loopEnd: playbackWindow.loopWrapEnd,
-      reportedDuration: d,
-      previousTransportTime,
-      stalledFrames,
-    });
-    const grownDuration = wrapDecision.duration > d ? wrapDecision.duration : null;
+
+    if (shouldWrapLoopSelection(tLive, loopWrapEnd)) {
+      return {
+        skipSeekTarget: null,
+        skipExhaustedPause: false,
+        wrapSeekTarget: start,
+        seekBeforeLoopStart: null,
+        grownDuration: null,
+        nextPreviousTransportTime: null,
+        nextStalledFrames: 0,
+        clearUserEnteredSection,
+      };
+    }
+
     return {
       skipSeekTarget: null,
       skipExhaustedPause: false,
-      wrapSeekTarget: wrapDecision.shouldWrap ? start : null,
+      wrapSeekTarget: null,
       seekBeforeLoopStart:
-        !wrapDecision.shouldWrap && tLive < start - STANZA_LOOP_WRAP_TOLERANCE_SEC ? start : null,
-      grownDuration,
-      nextPreviousTransportTime: wrapDecision.shouldWrap ? null : wrapDecision.previousTransportTime,
-      nextStalledFrames: wrapDecision.shouldWrap ? 0 : wrapDecision.stalledFrames,
+        tLive < start - STANZA_LOOP_WRAP_TOLERANCE_SEC ? start : null,
+      grownDuration: null,
+      nextPreviousTransportTime: tLive,
+      nextStalledFrames: 0,
       clearUserEnteredSection,
     };
   }

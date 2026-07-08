@@ -76,7 +76,7 @@ const LabsYouTubePlayer: React.FC<LabsYouTubePlayerProps> = ({
     const player = playerRef.current;
     const YT = readYouTubeIframeApi();
     if (!player || !onStateChangeRef.current || !YT) return;
-    // The 280ms poll (and YouTube's own onStateChange) can fire while the iframe is mid-teardown or
+    // The 500ms poll (and YouTube's own onStateChange) can fire while the iframe is mid-teardown or
     // in a broken state after a video/network/ad error — `getPlayerState()` etc. then throw across
     // the iframe boundary. Swallow so it never surfaces as an `Uncaught` in LabsYouTubePlayer.
     try {
@@ -88,12 +88,17 @@ const LabsYouTubePlayer: React.FC<LabsYouTubePlayerProps> = ({
       }
       prevYtPlayerStateRef.current = st;
       const playing = st === (YT.PlayerState?.PLAYING ?? 1);
-      onStateChangeRef.current({
+      const nextState = {
         currentTime: player.getCurrentTime() || 0,
         duration: player.getDuration() || 0,
         isPlaying: playing,
         playbackRate: player.getPlaybackRate?.() || 1,
-      });
+      };
+      try {
+        onStateChangeRef.current(nextState);
+      } catch (err) {
+        console.warn('[labs-youtube] onStateChange handler failed', err);
+      }
     } catch {
       /* iframe not ready / torn down — skip this tick */
     }
@@ -191,9 +196,10 @@ const LabsYouTubePlayer: React.FC<LabsYouTubePlayerProps> = ({
           },
         });
         playerRef.current = player;
+        /** Transport RAF reads live time; UI paint is throttled via mergeStanzaPlaybackSnapshot. */
         pollTimerRef.current = window.setInterval(() => {
           emitState();
-        }, 280);
+        }, 500);
       })
       .catch((error) => {
         console.error('LabsYouTubePlayer: failed to init YouTube player', error);

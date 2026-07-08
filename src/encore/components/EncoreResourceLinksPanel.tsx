@@ -81,6 +81,8 @@ export type EncoreResourceLinksPanelProps = {
   readOnly?: boolean;
   /** Renders before resource chips (practice-list / hub layouts). */
   prepend?: ReactNode;
+  /** Wrap each practice-list chip (e.g. drag-and-drop). */
+  wrapResourceChip?: (resource: EncoreMiscResource, chip: ReactElement) => ReactElement;
 };
 
 export function EncoreResourceLinksPanel({
@@ -99,6 +101,7 @@ export function EncoreResourceLinksPanel({
   fillHeight = false,
   readOnly = false,
   prepend,
+  wrapResourceChip,
 }: EncoreResourceLinksPanelProps): ReactElement {
   const theme = useTheme();
   const { googleAccessToken } = useEncoreAuth();
@@ -222,7 +225,7 @@ export function EncoreResourceLinksPanel({
     };
 
     if (isHubCard || isPracticeList) {
-      return (
+      const row = (
         <EncoreMediaLinkRow
           key={resource.id}
           slot="reference"
@@ -237,6 +240,7 @@ export function EncoreResourceLinksPanel({
           {...playback}
         />
       );
+      return wrapResourceChip ? wrapResourceChip(resource, row) : row;
     }
 
     const row = (

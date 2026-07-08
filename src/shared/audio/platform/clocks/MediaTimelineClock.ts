@@ -48,12 +48,14 @@ export class MediaTimelineClock implements AudioClockSource {
 
   mediaTimeToBeatIndex(mediaTime: number): number {
     const { anchorMediaTime, bpm } = this.opts;
+    if (!(bpm > 0) || !Number.isFinite(bpm)) return 0;
     const period = 60 / bpm;
     return Math.floor((mediaTime - anchorMediaTime) / period + 1e-9);
   }
 
   beatIndexToMediaTime(beatIndex: number): number {
     const { anchorMediaTime, bpm } = this.opts;
+    if (!(bpm > 0) || !Number.isFinite(bpm)) return anchorMediaTime;
     return anchorMediaTime + beatIndex * (60 / bpm);
   }
 
@@ -61,6 +63,7 @@ export class MediaTimelineClock implements AudioClockSource {
     const mediaTime = referenceTimeSec - (this.opts.mediaToAudioOffsetSec ?? 0);
     const beatIndex = this.mediaTimeToBeatIndex(mediaTime);
     const { bpm } = this.opts;
+    if (!(bpm > 0) || !Number.isFinite(bpm)) return beatIndex;
     const period = 60 / bpm;
     const beatStartMedia = this.beatIndexToMediaTime(beatIndex);
     const frac = (mediaTime - beatStartMedia) / period;
@@ -71,7 +74,11 @@ export class MediaTimelineClock implements AudioClockSource {
     const beatIndex = Math.floor(beat);
     const mediaTime = this.beatIndexToMediaTime(beatIndex);
     const frac = beat - beatIndex;
-    const period = 60 / this.opts.bpm;
+    const bpm = this.opts.bpm;
+    if (!(bpm > 0) || !Number.isFinite(bpm)) {
+      return audioCtx.currentTime;
+    }
+    const period = 60 / bpm;
     return (
       audioCtx.currentTime +
       (mediaTime + frac * period - this.opts.getMediaTime()) +

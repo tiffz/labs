@@ -107,6 +107,25 @@ export function encoreKeyboardShortcutSections(): LabsKeyboardShortcutSection[] 
   ];
 }
 
+/** Stanza — shared undo stack plus section editing shortcuts. */
+export function stanzaKeyboardShortcutSections(): LabsKeyboardShortcutSection[] {
+  return [
+    labsCommonEditingShortcutSection(),
+    {
+      title: 'Sections',
+      shortcuts: [
+        { id: 'split-playhead', label: 'Split at playhead', keys: ['M'] },
+        {
+          id: 'delete-boundary',
+          label: 'Delete boundary at selected section start',
+          keys: ['Delete'],
+        },
+      ],
+    },
+    labsCommonHelpShortcutSection(),
+  ];
+}
+
 /** Audit note: add app-specific sections here as shortcuts are documented. */
 export const KEYBOARD_SHORTCUTS_AUDIT_APPS = [
   'words',
@@ -129,8 +148,8 @@ export function keyboardShortcutsAuditStatus(): Record<
   return {
     words: 'documented',
     drums: 'documented',
-    stanza: 'partial',
-    encore: 'partial',
+    stanza: 'documented',
+    encore: 'documented',
     sight: 'documented',
     scales: 'partial',
     cats: 'pending',

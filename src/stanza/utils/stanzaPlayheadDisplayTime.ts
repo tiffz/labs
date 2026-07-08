@@ -26,7 +26,9 @@ export function resolveStanzaTimelineTransport(
 
 /**
  * Time value that matches the painted timeline playhead (loop-selection clamp, etc.).
- * Use for split-at-playhead and other UI actions that should align with what the user sees.
+ * Clamps only for display when transport briefly runs past the selection end before the
+ * transport RAF issues an immediate loop wrap seek — keeps the knob from painting past
+ * the pink span for a frame or two.
  */
 export function stanzaPlayheadDisplayTime(
   transportTime: number,

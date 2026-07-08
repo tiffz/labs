@@ -3,10 +3,11 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import type { ReactElement, ReactNode } from 'react';
-
+import type { EncoreSong } from '../../types';
 import { PracticeResourcesPanel } from './PracticeResourcesPanel';
-import type { SongPageMediaHubFileDropConfig } from './practiceResourceGroups';
-import type { PracticeResourceGroup } from './practiceResourceGroups';
+import { PracticeResourcesPanelWithDnD } from './PracticeResourcesPanelWithDnD';
+import type { PracticeResourceGroup, SongPageMediaHubFileDropConfig } from './practiceResourceGroups';
+import type { PracticeResourceSongChange } from './usePracticeResourceDnD';
 
 export type SongPageHeroBlocks = {
   albumArt: ReactNode;
@@ -31,8 +32,13 @@ export function SongPageSongTopSection(props: {
   blocks: SongPageTopHalfBlocks;
   /** When set, hub cards accept drag-and-drop uploads (Song page only). */
   mediaHubFileDrop?: SongPageMediaHubFileDropConfig;
+  /** When set, chips can be reordered and moved across Listen / Play sections. */
+  practiceResourceDnD?: {
+    song: EncoreSong;
+    onSongChange: PracticeResourceSongChange;
+  } | null;
 }): ReactElement {
-  const { blocks, mediaHubFileDrop } = props;
+  const { blocks, mediaHubFileDrop, practiceResourceDnD } = props;
   const { spotifyAlerts, resourceGroups, catalogStrip, searchWebFooter, ...heroBlocks } = blocks;
   const { albumArt, titleField, artistField, tagsKeyPractice } = heroBlocks;
   const theme = useTheme();
@@ -138,7 +144,15 @@ export function SongPageSongTopSection(props: {
           >
             Practice resources
           </Typography>
-          <PracticeResourcesPanel groups={resourceGroups} fileDrop={mediaHubFileDrop} />
+          {practiceResourceDnD ? (
+            <PracticeResourcesPanelWithDnD
+              groups={resourceGroups}
+              fileDrop={mediaHubFileDrop}
+              practiceResourceDnD={practiceResourceDnD}
+            />
+          ) : (
+            <PracticeResourcesPanel groups={resourceGroups} fileDrop={mediaHubFileDrop} />
+          )}
         </Stack>
       </Stack>
     </Stack>

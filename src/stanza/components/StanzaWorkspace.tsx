@@ -49,7 +49,6 @@ import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
-import LabsUndoControls from '../../shared/undo/LabsUndoControls';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import {
   stanzaDb,
@@ -91,10 +90,14 @@ import {
   resolveStanzaTimelineTransport,
   stanzaPlayheadDisplayTime,
 } from '../utils/stanzaPlayheadDisplayTime';
+import {
+  resolveEffectiveStanzaLoopMode,
+  resolveStanzaSkipTarget,
+  type StanzaPlaybackFocus,
+} from '../utils/stanzaPlaybackFocus';
 import { snapSegmentBoundaryMarkersToBeats, commitSelectionSpanToHullBoundaryMarkers } from '../utils/stanzaBeatGrid';
 import { canPlaceMarkerAtTime, markerTimesEqual } from '../utils/stanzaMarkerSpacing';
 import type { StanzaMarkersChangeContext } from './StanzaTimeline';
-import { resolvePlayableWindowAnchors } from '../utils/stanzaSkippedSections';
 import { useStanzaLocalPlaybackObjectUrls } from '../hooks/useStanzaLocalPlaybackObjectUrls';
 import {
   stanzaPrimaryLocalBlobKey,
@@ -140,6 +143,7 @@ import {
 } from '../utils/stanzaDriveUrlParams';
 import { stripStanzaYoutubeSearchParamPreservingDrive } from '../utils/stanzaUrlYoutube';
 import StanzaYouTubePlayer, { type StanzaYouTubeController } from './StanzaYouTubePlayer';
+import { StanzaViewerErrorBoundary } from './StanzaViewerErrorBoundary';
 import StanzaAccountMenu from './StanzaAccountMenu';
 import StanzaAudioDownloadButton from './StanzaAudioDownloadButton';
 import StanzaTimeline from './StanzaTimeline';
@@ -169,6 +173,7 @@ import type { UseStanzaTransportLoopRefs } from '../hooks/useStanzaTransportLoop
 import { useStanzaPlaybackWakeLock } from '../hooks/useStanzaPlaybackWakeLock';
 import { useStanzaPracticeStatsTracker } from '../hooks/useStanzaPracticeStatsTracker';
 import { mergeStanzaPlaybackSnapshot } from '../utils/stanzaPlaybackStateMerge';
+import { labsPlaybackSafeCall } from '../../shared/utils/labsPlaybackSafeCall';
 import { applyStanzaYoutubeControllerMix } from '../utils/stanzaYoutubeMixVolume';
 import { useBeatLibraryMigration } from '../hooks/useBeatLibraryMigration';
 import { useStanzaPlaybackBootstrap } from '../hooks/useStanzaPlaybackBootstrap';
@@ -993,6 +998,14 @@ export default function StanzaWorkspace() {
     );
   }, [segmentSelectionLoopHull, sectionSelectionExtend, playback.duration]);
 
+  const playbackFocus = useMemo(
+    (): StanzaPlaybackFocus => ({
+      loopMode,
+      selectionSpan: effectiveSelectionSpan,
+    }),
+    [effectiveSelectionSpan, loopMode],
+  );
+
   const loopModeRef = useRef(loopMode);
   loopModeRef.current = loopMode;
   const effectiveSelectionSpanRef = useRef(effectiveSelectionSpan);
@@ -1791,7 +1804,15 @@ export default function StanzaWorkspace() {
     const live = readLiveTransportTime();
     const transport = resolveStanzaTimelineTransport(live, seekDisplayPendingRef.current);
     if (!(d > 0)) return transport;
-    return stanzaPlayheadDisplayTime(transport, d, loopModeRef.current, effectiveSelectionSpanRef.current);
+    return stanzaPlayheadDisplayTime(
+      transport,
+      d,
+      resolveEffectiveStanzaLoopMode({
+        loopMode: loopModeRef.current,
+        selectionSpan: effectiveSelectionSpanRef.current,
+      }),
+      effectiveSelectionSpanRef.current,
+    );
   }, [readLiveTransportTime]);
 
   const seekUnified = useCallback(
@@ -2206,7 +2227,15 @@ export default function StanzaWorkspace() {
     setSelectedSegmentIndices([]);
     setSegmentSelectionAnchor(null);
     setSectionSelectionExtend({ startDelta: 0, endDelta: 0 });
+    setLoopMode((m) => (m === 'loopSelection' ? 'through' : m));
   }, []);
+
+  /** Loop selection without a span is invalid — fall back to play-through. */
+  useEffect(() => {
+    if (selectedSegmentIndices.length === 0 && loopMode === 'loopSelection') {
+      setLoopMode('through');
+    }
+  }, [loopMode, selectedSegmentIndices.length]);
 
   const nudgeSectionSelectionExtend = useCallback((axis: 'start' | 'end', deltaSec: number) => {
     setSectionSelectionExtend((prev) =>
@@ -2477,40 +2506,24 @@ export default function StanzaWorkspace() {
   );
 
   const skipToLoopStart = useCallback(() => {
-    const d = durationRef.current;
-    const skipped = selected?.skippedBySegmentId;
-    if (loopMode === 'through' || loopMode === 'loopAll') {
-      const windowEnd = d > 0 ? d : 0;
-      const { start } = resolvePlayableWindowAnchors(segments, skipped, 0, windowEnd);
-      userSeekUnified(start);
-    } else if (effectiveSelectionSpan) {
-      const { start } = resolvePlayableWindowAnchors(
-        segments,
-        skipped,
-        effectiveSelectionSpan.start,
-        effectiveSelectionSpan.end,
-      );
-      userSeekUnified(start);
-    }
-  }, [effectiveSelectionSpan, loopMode, segments, selected?.skippedBySegmentId, userSeekUnified]);
+    const target = resolveStanzaSkipTarget('start', {
+      focus: playbackFocus,
+      duration: durationRef.current,
+      segments,
+      skipped: selected?.skippedBySegmentId,
+    });
+    if (target != null) userSeekUnified(target);
+  }, [playbackFocus, segments, selected?.skippedBySegmentId, userSeekUnified]);
 
   const skipToLoopEnd = useCallback(() => {
-    const d = durationRef.current;
-    const skipped = selected?.skippedBySegmentId;
-    if (!(d > 0) && loopMode !== 'loopSelection') return;
-    if (loopMode === 'through' || loopMode === 'loopAll') {
-      const { end } = resolvePlayableWindowAnchors(segments, skipped, 0, d);
-      userSeekUnified(end);
-    } else if (effectiveSelectionSpan) {
-      const { end } = resolvePlayableWindowAnchors(
-        segments,
-        skipped,
-        effectiveSelectionSpan.start,
-        effectiveSelectionSpan.end,
-      );
-      userSeekUnified(end);
-    }
-  }, [effectiveSelectionSpan, loopMode, segments, selected?.skippedBySegmentId, userSeekUnified]);
+    const target = resolveStanzaSkipTarget('end', {
+      focus: playbackFocus,
+      duration: durationRef.current,
+      segments,
+      skipped: selected?.skippedBySegmentId,
+    });
+    if (target != null) userSeekUnified(target);
+  }, [playbackFocus, segments, selected?.skippedBySegmentId, userSeekUnified]);
 
   const metronomeEnabledForPlayback =
     Boolean(selected?.metronomeEnabled) || stanzaBeatAnalysisModalOpen || stanzaTapMetronomePreviewActive;
@@ -2635,14 +2648,14 @@ export default function StanzaWorkspace() {
   }, [drumsHasGrid, drumsBpm, drumsAnchorMediaTime, getTime, drumsActuallyPlaying]);
 
   const analysisAudioContextRef = useRef<AudioContext | null>(null);
-  const getAnalysisAudioContext = useCallback(() => {
+  const getAnalysisAudioContext = useCallback((): AudioContext | null => {
     if (!analysisAudioContextRef.current) {
       const Ctx =
         window.AudioContext ||
         (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (Ctx) analysisAudioContextRef.current = new Ctx();
     }
-    return analysisAudioContextRef.current!;
+    return analysisAudioContextRef.current;
   }, []);
 
   const stanzaCanAnalyze = !isYoutube && Boolean(selected?.localAudioBlob && localUrl);
@@ -2921,6 +2934,7 @@ export default function StanzaWorkspace() {
       )}
 
       {selected && (
+        <StanzaViewerErrorBoundary>
         <StanzaViewerLayout
           alerts={driveDeepLinkAlerts}
           header={
@@ -2953,7 +2967,6 @@ export default function StanzaWorkspace() {
                 gap: 0.5,
               }}
             >
-              <LabsUndoControls />
               {selected.localAudioBlob && !selected.ytId ? (
                 <StanzaAudioDownloadButton
                   song={selected}
@@ -3102,12 +3115,14 @@ export default function StanzaWorkspace() {
                           }
                         }}
                         onStateChange={(s) => {
-                          setPlayback((p) => mergeStanzaPlaybackSnapshot(p, s));
-                          if (!s.isPlaying) {
-                            pauseStemAudios();
-                          } else if ((selected.stems?.length ?? 0) > 0) {
-                            scheduleAlignStemAudiosToMain();
-                          }
+                          labsPlaybackSafeCall('YouTube onStateChange', () => {
+                            setPlayback((p) => mergeStanzaPlaybackSnapshot(p, s));
+                            if (!s.isPlaying) {
+                              pauseStemAudios();
+                            } else if ((selected.stems?.length ?? 0) > 0) {
+                              scheduleAlignStemAudiosToMain();
+                            }
+                          });
                         }}
                       />
                     )}
@@ -3650,6 +3665,7 @@ export default function StanzaWorkspace() {
             />
           ) : null}
         </StanzaViewerLayout>
+        </StanzaViewerErrorBoundary>
       )}
 
       <Menu

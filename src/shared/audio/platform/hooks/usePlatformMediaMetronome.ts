@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ensureAudioContextRunning } from '../../../playback/audioContextLifecycle';
+import { labsPlaybackSafeCallAsync } from '../../../utils/labsPlaybackSafeCall';
 import { MediaTimelineClock } from '../clocks';
 import type { MetronomePreferences } from '../metronome/preferences';
 import type { TimeSignature } from '../../../rhythm/types';
@@ -98,27 +99,22 @@ export function usePlatformMediaMetronome(opts: UsePlatformMediaMetronomeOptions
 
     let raf = 0;
     const tick = () => {
-      if (!audioEnabled || mutedRef.current) {
-        raf = window.requestAnimationFrame(tick);
-        return;
-      }
+      void labsPlaybackSafeCallAsync('metronome RAF tick', async () => {
+        try {
+          if (!audioEnabled || mutedRef.current) return;
 
-      const ctx = sharedClickCtx ?? getClickContext();
-      if (ctx) {
-        sharedClickCtx = ctx;
-        const mediaTime = getMediaTime();
-        const prefs = prefsRef.current as GridMetronomePlaybackPrefs;
-        const legacyMetVolume = prefs.masterMuted ? 0 : prefs.masterVolume;
-        void schedulerRef.current.pollTimeline(
-          ctx,
-          mediaTime,
-          prefs,
-          legacyMetVolume,
-          0,
-        );
-      }
-
-      raf = window.requestAnimationFrame(tick);
+          const ctx = sharedClickCtx ?? getClickContext();
+          if (ctx) {
+            sharedClickCtx = ctx;
+            const mediaTime = getMediaTime();
+            const prefs = prefsRef.current as GridMetronomePlaybackPrefs;
+            const legacyMetVolume = prefs.masterMuted ? 0 : prefs.masterVolume;
+            await schedulerRef.current.pollTimeline(ctx, mediaTime, prefs, legacyMetVolume, 0);
+          }
+        } finally {
+          raf = window.requestAnimationFrame(tick);
+        }
+      });
     };
 
     raf = window.requestAnimationFrame(tick);

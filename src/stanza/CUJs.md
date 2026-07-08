@@ -77,10 +77,10 @@ UX sketch skill: [`labs-ux-journey`](../../.cursor/skills/labs-ux-journey/SKILL.
 
 ### Automation
 
-| Type  | Artifact                                   |
-| ----- | ------------------------------------------ |
-| Smoke | `e2e/smoke/stanza-loop-whole-song.spec.ts` |
-| Unit  | `stanzaTransportLoop.integration.test.ts`  |
+| Type  | Artifact                                                                             |
+| ----- | ------------------------------------------------------------------------------------ |
+| Smoke | `e2e/smoke/stanza-loop-whole-song.spec.ts`, `e2e/smoke/stanza-playback-soak.spec.ts` |
+| Unit  | `stanzaTransportLoop.integration.test.ts`                                            |
 
 See [`docs/STANZA_PLAYBACK.md`](../../docs/STANZA_PLAYBACK.md) for transport invariants.
 

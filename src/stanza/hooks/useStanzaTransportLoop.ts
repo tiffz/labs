@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 
+import { labsPlaybackSafeCall } from '../../shared/utils/labsPlaybackSafeCall';
+
 import type { DerivedSegment } from '../utils/segments';
 import {
   isPastLoopWrapPoint,
@@ -8,6 +10,7 @@ import {
 } from '../utils/stanzaPlaybackLoop';
 import type { StanzaPlaybackSnapshot } from '../utils/stanzaPlaybackStateMerge';
 import { createStanzaLoopWrapGuard } from '../utils/stanzaLoopWrapGuard';
+import { resolveEffectiveStanzaLoopMode } from '../utils/stanzaPlaybackFocus';
 import { resolvePlayableWindowAnchors, type SkippedSegmentSet } from '../utils/stanzaSkippedSections';
 import { evaluateStanzaTransportLoopTick, type StanzaSelectionSpan } from '../utils/stanzaTransportLoop';
 import type { StanzaYouTubeController } from '../components/StanzaYouTubePlayer';
@@ -57,22 +60,21 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
   const handleLoopAtMediaEnd = useCallback(() => {
     const refs = refsRef.current;
     const mode = refs.loopModeRef.current;
+    const span = refs.effectiveSelectionSpanRef.current;
+    const effective = resolveEffectiveStanzaLoopMode({ loopMode: mode, selectionSpan: span });
     const segs = refs.segmentsRef.current;
     const skipped = refs.skippedBySegmentIdRef.current;
-    if (mode === 'through') return;
-    if (mode === 'loopAll') {
+    if (effective === 'through') return;
+    if (effective === 'loopAll') {
       const d = refs.durationRef.current;
       if (!(d > 0)) return;
       const { start } = resolvePlayableWindowAnchors(segs, skipped, 0, d);
       performLoopWrap(start);
       return;
     }
-    if (mode === 'loopSelection') {
-      const span = refs.effectiveSelectionSpanRef.current;
-      if (span != null && span.end - span.start >= STANZA_MIN_LOOP_SPAN_SEC) {
-        const { start } = resolvePlayableWindowAnchors(segs, skipped, span.start, span.end);
-        performLoopWrap(start);
-      }
+    if (effective === 'loopSelection' && span != null && span.end - span.start >= STANZA_MIN_LOOP_SPAN_SEC) {
+      const { start } = resolvePlayableWindowAnchors(segs, skipped, span.start, span.end);
+      performLoopWrap(start);
     }
   }, [performLoopWrap, refsRef]);
 
@@ -99,80 +101,80 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
     };
 
     const tick = () => {
-      const refs = refsRef.current;
-      const loopMode = refs.loopModeRef.current;
-      const hasAnySkipped = refs.hasAnySkippedSectionRef.current;
-      const idle = loopMode === 'through' && !hasAnySkipped && !refs.playingRef.current;
-      if (idle) {
-        scheduleNext(true);
-        return;
-      }
-      if (!refs.playingRef.current) {
-        pausedForSkipExhausted = false;
-        loopWrapPrevTimeRef.current = null;
-        loopWrapStallFramesRef.current = 0;
-        scheduleNext(true);
-        return;
-      }
-
-      const tLive = readLiveTransportTime();
-      refs.timeRef.current = tLive;
-      const d = refs.durationRef.current;
-      const segs = refs.segmentsRef.current;
-      const skipped = refs.skippedBySegmentIdRef.current;
-      const span = refs.effectiveSelectionSpanRef.current;
-
-      const tickResult = evaluateStanzaTransportLoopTick({
-        transportTime: tLive,
-        duration: d,
-        loopMode,
-        segments: segs,
-        skipped,
-        selectionSpan: span,
-        previousTransportTime: loopWrapPrevTimeRef.current,
-        stalledFrames: loopWrapStallFramesRef.current,
-        userEnteredSectionId: refs.lastUserEnteredSectionIdRef.current,
-      });
-
-      if (tickResult.clearUserEnteredSection) {
-        refs.lastUserEnteredSectionIdRef.current = null;
-      }
-
-      if (tickResult.skipSeekTarget != null) {
-        pausedForSkipExhausted = false;
-        try {
-          refs.seekUnifiedRef.current(tickResult.skipSeekTarget, { flushPlaybackState: true });
-        } catch (err) {
-          console.warn('[stanza] skip-advance seek failed', err);
+      labsPlaybackSafeCall('transport RAF tick', () => {
+        const refs = refsRef.current;
+        const loopMode = refs.loopModeRef.current;
+        const hasAnySkipped = refs.hasAnySkippedSectionRef.current;
+        const idle = loopMode === 'through' && !hasAnySkipped && !refs.playingRef.current;
+        if (idle) {
+          scheduleNext(true);
+          return;
         }
-        scheduleNext(false);
-        return;
-      }
+        if (!refs.playingRef.current) {
+          pausedForSkipExhausted = false;
+          loopWrapPrevTimeRef.current = null;
+          loopWrapStallFramesRef.current = 0;
+          scheduleNext(true);
+          return;
+        }
 
-      if (tickResult.skipExhaustedPause) {
-        if (!pausedForSkipExhausted) {
-          pausedForSkipExhausted = true;
+        const tLive = readLiveTransportTime();
+        refs.timeRef.current = tLive;
+        const d = refs.durationRef.current;
+        const segs = refs.segmentsRef.current;
+        const skipped = refs.skippedBySegmentIdRef.current;
+        const span = refs.effectiveSelectionSpanRef.current;
+
+        const tickResult = evaluateStanzaTransportLoopTick({
+          transportTime: tLive,
+          duration: d,
+          loopMode,
+          segments: segs,
+          skipped,
+          selectionSpan: span,
+          previousTransportTime: loopWrapPrevTimeRef.current,
+          stalledFrames: loopWrapStallFramesRef.current,
+          userEnteredSectionId: refs.lastUserEnteredSectionIdRef.current,
+        });
+
+        if (tickResult.clearUserEnteredSection) {
+          refs.lastUserEnteredSectionIdRef.current = null;
+        }
+
+        if (tickResult.skipSeekTarget != null) {
+          pausedForSkipExhausted = false;
           try {
-            if (refs.isYoutubeRef.current) refs.ytControllerRef.current?.pause();
-            else {
-              const main = getLocalMainMedia();
-              main?.pause();
-              refs.pauseStemAudiosRef.current();
-              refs.transposeMirrorStopRef.current?.();
-              refs.transposeStemBusStopRef.current?.();
-            }
-            setPlayback((p) => (p.isPlaying ? { ...p, isPlaying: false } : p));
+            refs.seekUnifiedRef.current(tickResult.skipSeekTarget, { flushPlaybackState: true });
           } catch (err) {
-            console.warn('[stanza] skip-advance pause failed', err);
+            console.warn('[stanza] skip-advance seek failed', err);
           }
+          scheduleNext(false);
+          return;
         }
-        scheduleNext(false);
-        return;
-      }
 
-      pausedForSkipExhausted = false;
+        if (tickResult.skipExhaustedPause) {
+          if (!pausedForSkipExhausted) {
+            pausedForSkipExhausted = true;
+            try {
+              if (refs.isYoutubeRef.current) refs.ytControllerRef.current?.pause();
+              else {
+                const main = getLocalMainMedia();
+                main?.pause();
+                refs.pauseStemAudiosRef.current();
+                refs.transposeMirrorStopRef.current?.();
+                refs.transposeStemBusStopRef.current?.();
+              }
+              setPlayback((p) => (p.isPlaying ? { ...p, isPlaying: false } : p));
+            } catch (err) {
+              console.warn('[stanza] skip-advance pause failed', err);
+            }
+          }
+          scheduleNext(false);
+          return;
+        }
 
-      try {
+        pausedForSkipExhausted = false;
+
         if (tickResult.grownDuration != null) {
           refs.durationRef.current = tickResult.grownDuration;
           setPlayback((p) =>
@@ -187,11 +189,9 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
         } else if (tickResult.wrapSeekTarget != null) {
           performLoopWrap(tickResult.wrapSeekTarget);
         }
-      } catch (err) {
-        console.warn('[stanza] loop-wrap seek failed', err);
-      }
 
-      scheduleNext(false);
+        scheduleNext(false);
+      });
     };
     scheduleNext(false);
     return () => cancelScheduled();
@@ -210,12 +210,13 @@ export function shouldReanchorStanzaPlayhead(opts: {
   skipped: SkippedSegmentSet;
 }): number | null {
   const { loopMode, transportTime: t, duration: d, selectionSpan: span, segments, skipped } = opts;
-  if (loopMode === 'loopAll' && d > 0) {
+  const effectiveLoopMode = resolveEffectiveStanzaLoopMode({ loopMode, selectionSpan: span });
+  if (effectiveLoopMode === 'loopAll' && d > 0) {
     const { start, end } = resolvePlayableWindowAnchors(segments, skipped, 0, d);
     if (t < 0 || isPastLoopWrapPoint(t, end)) return start;
     return null;
   }
-  if (loopMode === 'loopSelection' && span) {
+  if (effectiveLoopMode === 'loopSelection' && span) {
     const { start, end } = resolvePlayableWindowAnchors(segments, skipped, span.start, span.end);
     if (t < start - 0.05 || isPastLoopWrapPoint(t, end)) return start;
     return null;

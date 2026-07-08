@@ -49,6 +49,7 @@ import { effectiveBeatGridForSegment, sectionBoundaryBeatMisaligned } from '../u
 import { clampMarkerTimeBetweenNeighbours } from '../utils/stanzaMarkerSpacing';
 import type { StanzaPlaybackLoopMode } from '../utils/stanzaPlaybackLoop';
 import { computeLoopHull } from '../utils/stanzaPlaybackLoop';
+import { resolveEffectiveStanzaLoopMode } from '../utils/stanzaPlaybackFocus';
 import { stanzaPlayheadDisplayTime } from '../utils/stanzaPlayheadDisplayTime';
 import {
   formatStanzaTimelineClock,
@@ -182,6 +183,7 @@ export default function StanzaTimeline({
     [segments, selectedSegmentIndices],
   );
   const selectionSpan = selectionTimeSpan ?? markerSelectionHull;
+  const effectiveLoopMode = resolveEffectiveStanzaLoopMode({ loopMode, selectionSpan });
 
   const selectionNudgeStepSec = useMemo(() => {
     if (
@@ -520,7 +522,7 @@ export default function StanzaTimeline({
   const playheadDisplaySec = stanzaPlayheadDisplayTime(
     playheadTransportSec,
     duration,
-    loopMode,
+    effectiveLoopMode,
     selectionSpan,
   );
   const playheadPct = (playheadDisplaySec / duration) * 100;
@@ -531,9 +533,9 @@ export default function StanzaTimeline({
     ? ((selectionSpan.end - selectionSpan.start) / duration) * 100
     : 0;
   const loopPlaybackSpan =
-    loopMode === 'loopAll' && duration > 0
+    effectiveLoopMode === 'loopAll' && duration > 0
       ? { start: 0, end: duration }
-      : loopMode === 'loopSelection' && selectionSpan != null
+      : effectiveLoopMode === 'loopSelection' && selectionSpan != null
         ? selectionSpan
         : null;
   const showLoopPlaybackRing = loopPlaybackSpan != null;
@@ -686,9 +688,9 @@ export default function StanzaTimeline({
             <Box className="stanza-playback-chip stanza-playback-chip--transport" role="group" aria-label="Transport">
               <AppTooltip
                 title={
-                  loopMode === 'through'
+                  effectiveLoopMode === 'through'
                     ? 'Jump to start of video'
-                    : loopMode === 'loopAll'
+                    : effectiveLoopMode === 'loopAll'
                       ? 'Jump to start of track'
                       : 'Jump to start of selected time span'
                 }
@@ -717,7 +719,7 @@ export default function StanzaTimeline({
               </AppTooltip>
               <AppTooltip
                 title={
-                  loopMode === 'through' || loopMode === 'loopAll'
+                  effectiveLoopMode === 'through' || effectiveLoopMode === 'loopAll'
                     ? 'Jump to end of video (just before the end)'
                     : 'Jump to end of selected time span (just before wrap)'
                 }

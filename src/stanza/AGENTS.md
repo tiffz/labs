@@ -8,7 +8,8 @@ Nested **`AGENTS.md`** for Stanza. Root policy: [`../../AGENTS.md`](../../AGENTS
 2. [`LAYOUT.md`](LAYOUT.md) — viewer shell tokens and layer table (**canonical for layout**).
 3. [`../../docs/STANZA_PLAYBACK.md`](../../docs/STANZA_PLAYBACK.md) — transport clocks, loop/skip invariants, test map.
 4. [`../../docs/STANZA_RESILIENCE.md`](../../docs/STANZA_RESILIENCE.md) — long-session stability, wake lock, crash observability.
-5. `.cursor/rules/stanza-viewer-layout.mdc` — no viewer width in `sx`; CSS tokens only.
+5. **Undo:** [`../shared/undo/README.md`](../shared/undo/README.md) — keyboard-first; `persistSong` commit boundaries.
+6. `.cursor/rules/stanza-viewer-layout.mdc` — no viewer width in `sx`; CSS tokens only.
 
 ## Layout contract
 

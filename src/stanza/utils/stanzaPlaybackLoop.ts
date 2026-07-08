@@ -19,6 +19,17 @@ export function isPastLoopWrapPoint(
   return loopEnd > 0 && Number.isFinite(currentTime) && currentTime >= loopEnd - toleranceSec;
 }
 
+/**
+ * Loop selection uses explicit marker bounds — wrap as soon as transport crosses the end.
+ * (Unlike loop-all, which waits for stall near a possibly-short reported duration.)
+ */
+export function shouldWrapLoopSelection(
+  transportTime: number,
+  loopWrapEnd: number,
+): boolean {
+  return isPastLoopWrapPoint(transportTime, loopWrapEnd);
+}
+
 /** Minimum span after applying trim (seconds). */
 export const STANZA_MIN_LOOP_SPAN_SEC = 0.12;
 

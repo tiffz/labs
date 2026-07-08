@@ -24,6 +24,7 @@ export {
   labsKeyboardShortcutsHelpEntry,
   labsUndoRedoShortcutEntries,
   sightKeyboardShortcutSections,
+  stanzaKeyboardShortcutSections,
   wordsKeyboardShortcutSections,
 } from './commonShortcuts';
 export {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import AppTooltip from '../../shared/components/AppTooltip';
 import { MetronomeSplitControl } from '../../shared/audio/platform/metronome';
@@ -45,21 +45,6 @@ export default function StanzaMetronomeStrip({
   onPreferencesChange,
   timeSignature = { numerator: 4, denominator: 4 },
 }: StanzaMetronomeStripProps) {
-  const [, setRafTick] = useState(0);
-
-  useEffect(() => {
-    if (!enabled || !isPlaying || !bpm || bpm <= 0 || anchorMediaTime == null || !Number.isFinite(anchorMediaTime)) {
-      return;
-    }
-    let raf = 0;
-    const tick = () => {
-      setRafTick((n) => (n + 1) % 10000);
-      raf = window.requestAnimationFrame(tick);
-    };
-    raf = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(raf);
-  }, [enabled, isPlaying, bpm, anchorMediaTime]);
-
   const showBeats = Boolean(enabled && bpm && bpm > 0 && anchorMediaTime != null && Number.isFinite(anchorMediaTime));
 
   const measureLabels = useMemo(
@@ -74,15 +59,48 @@ export default function StanzaMetronomeStrip({
 
   const showSubdivisions = preferences.subdivisionLevel !== 1;
 
-  const activeSlotIndex = showBeats
-    ? activeMetronomeRailSlotIndex({
-        mediaTime: getMediaTime(),
-        anchorMediaTime: anchorMediaTime as number,
-        bpm: bpm as number,
-        slotCount: measureLabels.length,
-        slotDurationSec: gridSubdivDurationSec(bpm as number, timeSignature, preferences.subdivisionLevel),
-      })
-    : 0;
+  const slotDurationSec =
+    showBeats && bpm
+      ? gridSubdivDurationSec(bpm, timeSignature, preferences.subdivisionLevel)
+      : 0;
+
+  const resolveActiveSlotIndex = useCallback(
+    () =>
+      showBeats
+        ? activeMetronomeRailSlotIndex({
+            mediaTime: getMediaTime(),
+            anchorMediaTime: anchorMediaTime as number,
+            bpm: bpm as number,
+            slotCount: measureLabels.length,
+            slotDurationSec,
+          })
+        : 0,
+    [showBeats, getMediaTime, anchorMediaTime, bpm, measureLabels.length, slotDurationSec],
+  );
+
+  const [, setBeatTick] = useState(0);
+  const lastActiveSlotRef = useRef(-1);
+
+  useEffect(() => {
+    if (!showBeats || !isPlaying) {
+      lastActiveSlotRef.current = -1;
+      return;
+    }
+    let raf = 0;
+    const tick = () => {
+      const slot = resolveActiveSlotIndex();
+      if (slot !== lastActiveSlotRef.current) {
+        lastActiveSlotRef.current = slot;
+        setBeatTick((n) => n + 1);
+      }
+      raf = window.requestAnimationFrame(tick);
+    };
+    lastActiveSlotRef.current = resolveActiveSlotIndex();
+    raf = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(raf);
+  }, [showBeats, isPlaying, resolveActiveSlotIndex]);
+
+  const activeSlotIndex = showBeats ? resolveActiveSlotIndex() : 0;
 
   const placeholderHint =
     enabled && needsCalibration ? 'Set BPM and Beat 1 below to start the click.' : undefined;

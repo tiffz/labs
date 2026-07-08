@@ -29,7 +29,7 @@ Words is the first app on the shared chrome contract — dropdown shadows, butto
 - Spacebar toggles play/stop (ignored while typing in form fields).
 - BPM editing is lenient while typing; value clamps only on blur/enter.
 - Time signature: **4/4** and **3/4**. Changing meter resets section templates to the first preset for the new meter and remaps incompatible chord styles.
-- **Undo / redo:** header controls plus ⌘Z / Ctrl+Z (shared `LabsUndoProvider`). Covers section edits, chord progressions (commit on blur), lyric import, chorus linking, and randomize-everything. Chord typing uses live preview without pushing undo until you leave the field.
+- **Undo / redo:** ⌘Z / Ctrl+Z (shared `LabsUndoProvider`). Covers section edits, chord progressions (commit on blur), lyric import, chorus linking, and randomize-everything. Chord typing uses live preview without pushing undo until you leave the field. See **Help → Keyboard shortcuts** (⌘?).
 
 ## Chord playback
 

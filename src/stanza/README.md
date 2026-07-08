@@ -15,9 +15,12 @@ play a drum groove that follows the metronome BPM.
 - Storage: Dexie (`stanza-practice` database). Legacy practice **takes** rows may
   still exist from older builds.
 - **Undo:** Section splits, boundary drags, joins, renames, mix settings, and other
-  song edits go through `persistSong` with the shared Labs undo stack (header buttons
-  plus ⌘Z / Ctrl+Z). Boundary drags record undo from where the drag started. The stack
-  resets when you open a different song.
+  song edits go through `persistSong` with the shared Labs undo stack (⌘Z / Ctrl+Z).
+  Boundary drags record undo from where the drag started. The stack resets when you
+  open a different song. See **Keyboard shortcuts** (⌘? / Ctrl+?) for the full list.
+- **Playback focus:** Loop mode + section selection form one focus object (`stanzaPlaybackFocus.ts`).
+  Loop-selection without a selected span falls back to play-through; skip-to-start/end and
+  transport loop math all derive from that effective focus (not raw `loopMode` alone).
 - **Splits:** New boundaries must be at least **0.5s** from an existing split (prevents
   stacked handles). **Split at playhead** and **M** are blocked with a short notice when
   too close.

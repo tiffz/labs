@@ -14,17 +14,17 @@ Index of cross-app patterns — **reuse by default**, diverge in app `DESIGN.md`
 
 ## Pattern registry
 
-| Pattern                      | Canonical implementation                        | Allowed divergence                                 |
-| ---------------------------- | ----------------------------------------------- | -------------------------------------------------- |
-| **App shell**                | `AppShellLayout` + `SkipToMain` + `main#main`   | App `*-layout.css`, density bucket                 |
-| **Upload / sync progress**   | `LabsBlockingJobContext` snackbar               | Encore completion toasts only                      |
-| **Empty vs loading (Dexie)** | `resolveDexieLiveQuery`, `LabsListLoadingState` | App-specific empty copy                            |
-| **Drive account**            | `LabsDriveAccountMenu`                          | OAuth scope split per app README                   |
-| **Keyboard shortcuts**       | `LabsKeyboardShortcutsDialog` + app sections    | App-specific shortcut rows                         |
-| **Undo (CRUD apps)**         | `LabsUndoProvider`, `LabsUndoControls`          | —                                                  |
-| **Error recovery**           | `LabsErrorBoundary` in `main.tsx`               | Panel-level boundaries for isolated panels (Zines) |
-| **Crash log (local)**        | `labsCrashLog.ts` + debug export                | Prod telemetry: ADR 0016 (deferred)                |
-| **Layout verification**      | `npm run verify:layout`                         | Opt-out: `data-labs-allow-horizontal-scroll`       |
+| Pattern                      | Canonical implementation                        | Allowed divergence                                    |
+| ---------------------------- | ----------------------------------------------- | ----------------------------------------------------- |
+| **App shell**                | `AppShellLayout` + `SkipToMain` + `main#main`   | App `*-layout.css`, density bucket                    |
+| **Upload / sync progress**   | `LabsBlockingJobContext` snackbar               | Encore completion toasts only                         |
+| **Empty vs loading (Dexie)** | `resolveDexieLiveQuery`, `LabsListLoadingState` | App-specific empty copy                               |
+| **Drive account**            | `LabsDriveAccountMenu`                          | OAuth scope split per app README                      |
+| **Keyboard shortcuts**       | `LabsKeyboardShortcutsDialog` + app sections    | App-specific shortcut rows                            |
+| **Undo (CRUD apps)**         | `LabsUndoProvider`, keyboard shortcuts help     | Optional `LabsUndoControls` in notation toolbars only |
+| **Error recovery**           | `LabsErrorBoundary` in `main.tsx`               | Panel-level boundaries for isolated panels (Zines)    |
+| **Crash log (local)**        | `labsCrashLog.ts` + debug export                | Prod telemetry: ADR 0016 (deferred)                   |
+| **Layout verification**      | `npm run verify:layout`                         | Opt-out: `data-labs-allow-horizontal-scroll`          |
 
 ## When to diverge
 

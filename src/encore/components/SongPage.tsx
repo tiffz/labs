@@ -35,6 +35,7 @@ import {
   encoreNoAlbumArtSurfaceSx,
 } from '../utils/encoreNoAlbumArtSurface';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
+import { useEncoreSongDraftUndo } from '../hooks/useEncoreSongDraftUndo';
 import { useEncoreBlockingJobs } from '../context/EncoreBlockingJobContext';
 import { useEncore, useEncoreSong } from '../context/EncoreContext';
 import { encoreMaxWidthPage, encorePerformanceDropHintSx, encorePerformanceSectionDropSx } from '../theme/encoreUiTokens';
@@ -100,7 +101,7 @@ export function SongPage(props: {
     spotifyLinked,
   } = useEncore();
   const { withBlockingJob } = useEncoreBlockingJobs();
-  const { push: pushUndo } = useLabsUndo();
+  const { push: pushUndo, clear: clearUndoStack } = useLabsUndo();
   const clientId =
     (import.meta.env.VITE_SPOTIFY_CLIENT_ID as string | undefined)?.trim() ??
     '';
@@ -356,6 +357,22 @@ export function SongPage(props: {
     };
   }, [songRouteKey, pushUndo, saveSong, deleteSong]);
 
+  const { applySongDraftChange } = useEncoreSongDraftUndo({
+    draft,
+    setDraft,
+    persist: persistSongNow,
+  });
+
+  const prevRouteSongIdRef = useRef<string | null>(null);
+  const activeRouteSongId = route.kind === 'song' ? route.id : null;
+  useEffect(() => {
+    const prev = prevRouteSongIdRef.current;
+    prevRouteSongIdRef.current = activeRouteSongId;
+    if (prev && activeRouteSongId && prev !== activeRouteSongId) {
+      clearUndoStack();
+    }
+  }, [activeRouteSongId, clearUndoStack]);
+
   const mediaHub = useSongPageMediaHub({
     draft,
     setDraft,
@@ -368,6 +385,7 @@ export function SongPage(props: {
     spotifyLinked,
     driveUploadFolderOverrides: repertoireExtras.driveUploadFolderOverrides,
     persistAfterMetadataRefresh: persistSongNow,
+    applySongDraftChange,
   });
   const { uploadFilesToMediaSlot } = mediaHub;
 
@@ -871,6 +889,7 @@ export function SongPage(props: {
             <SongPageSongTopSection
               blocks={songTopHalfBlocks}
               mediaHubFileDrop={mediaHubFileDrop}
+              practiceResourceDnD={mediaHub.practiceResourceDnD}
             />
           </Box>
         </Paper>

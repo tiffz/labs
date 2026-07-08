@@ -10,7 +10,7 @@ export interface UseStanzaSongKeyDetectionParams {
   mediaUrl: string;
   isLocalVideo: boolean;
   onPersistOriginalKey?: (key: MusicKey) => void;
-  getAudioContext: () => AudioContext;
+  getAudioContext: () => AudioContext | null;
 }
 
 /** Local-file key detection for Stanza (uploaded audio/video only). */
@@ -33,6 +33,11 @@ export function useStanzaSongKeyDetection(params: UseStanzaSongKeyDetectionParam
     setKeyDetectError(null);
     setKeyDetectBusy(true);
     try {
+      const audioContext = getAudioContext();
+      if (!audioContext) {
+        setKeyDetectError('Web Audio is not available in this browser.');
+        return;
+      }
       const file = new File([localAudioBlob], localSongTitle || 'stanza-audio', {
         type: localAudioBlob.type || (isLocalVideo ? 'video/mp4' : 'audio/mpeg'),
       });
@@ -40,7 +45,7 @@ export function useStanzaSongKeyDetection(params: UseStanzaSongKeyDetectionParam
         file,
         mediaType: isLocalVideo ? 'video' : 'audio',
         mediaUrl,
-        audioContext: getAudioContext(),
+        audioContext,
       });
       const detected = await detectSongKeyFromBuffer(buffer);
       onPersistOriginalKey?.(musicKeyFromDetected(detected));

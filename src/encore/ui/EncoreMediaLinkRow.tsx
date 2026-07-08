@@ -11,6 +11,10 @@ import PauseIcon from '@mui/icons-material/Pause';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { useMemo, type ReactElement, type ReactNode } from 'react';
 import type { EncoreMediaLink, EncoreMediaSource } from '../types';
+import {
+  shouldSuppressPracticeResourceChipNavigation,
+  usePracticeResourceDragState,
+} from '../components/song/practiceResourceDragContext';
 import { GoogleDriveBrandIcon, SpotifyBrandIcon, YouTubeBrandIcon } from '../components/EncoreBrandIcon';
 import { useYoutubeOembedForMediaChip } from '../youtube/useYoutubeOembedForMediaChip';
 import {
@@ -24,19 +28,19 @@ import {
 } from '../theme/encoreUiTokens';
 import { stanzaPracticeHrefFromEncoreMediaLink } from '../youtube/stanzaPracticeOpenUrl';
 import type { EncoreHoverCardPlayProps } from '../media/encoreMediaPlaybackTargets';
+import {
+  ENCORE_MEDIA_LINK_PRIMARY_COPY,
+  type EncoreMediaLinkRowSlot,
+} from './encoreMediaLinkPrimaryCopy';
+
+export type { EncoreMediaLinkRowSlot };
 
 /**
  * Which "primary" facet the row belongs to. Drives:
- *   - the active-star tooltip ("Primary reference" / "Primary backing" / "Primary chart")
- *   - the "make primary" affordance tooltip + aria-label ("Make primary reference", etc.)
+ *   - the active-star tooltip and hover-card label
+ *   - the "make primary" affordance tooltip + aria-label
  */
-export type EncoreMediaLinkRowSlot = 'reference' | 'backing' | 'chart';
-
-const PRIMARY_COPY: Record<EncoreMediaLinkRowSlot, { active: string; promote: string }> = {
-  reference: { active: 'Primary reference', promote: 'Make primary reference' },
-  backing: { active: 'Primary backing', promote: 'Make primary backing' },
-  chart: { active: 'Primary chart', promote: 'Make primary chart' },
-};
+const PRIMARY_COPY = ENCORE_MEDIA_LINK_PRIMARY_COPY;
 
 const REMOVE_COPY: Record<EncoreMediaLinkRowSlot, string> = {
   reference: 'Remove reference',
@@ -126,6 +130,12 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
     playDisabledReason,
   } = props;
   const isListLayout = layout === 'list';
+  const { blockChipNavigation, dragging } = usePracticeResourceDragState();
+  /** Swap links to inert spans only after drop — DOM changes mid-drag break dnd-kit. */
+  const suppressLinkNavigation = shouldSuppressPracticeResourceChipNavigation(
+    blockChipNavigation,
+    dragging,
+  );
   const source = sourceProp ?? link?.source;
   const youtubeWatchUrlForChip =
     caption === undefined &&
@@ -244,15 +254,26 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
   );
 
   const stripInner = openUrl ? (
-    <Box
-      component="a"
-      href={openUrl}
-      {...encoreExternalToolLinkProps}
-      aria-label={openAriaLabel ?? 'Open link'}
-      sx={stripLinkSx}
-    >
-      {stripBody}
-    </Box>
+    suppressLinkNavigation ? (
+      <Box
+        component="span"
+        role="presentation"
+        aria-label={openAriaLabel ?? 'Open link'}
+        sx={{ ...stripLinkSx, cursor: 'grab' }}
+      >
+        {stripBody}
+      </Box>
+    ) : (
+      <Box
+        component="a"
+        href={openUrl}
+        {...encoreExternalToolLinkProps}
+        aria-label={openAriaLabel ?? 'Open link'}
+        sx={stripLinkSx}
+      >
+        {stripBody}
+      </Box>
+    )
   ) : onStripClick ? (
     <Box
       component="button"
@@ -348,16 +369,29 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
       ) : null}
       {stanzaHref ? (
         <Tooltip title={stanzaTooltip}>
-          <IconButton
-            component="a"
-            href={stanzaHref}
-            {...encoreExternalToolLinkProps}
-            size="small"
-            aria-label="Open practice in Stanza (Segno)"
-            sx={iconBtnSx}
-          >
-            <OpenInNewIcon sx={{ fontSize: 15 }} aria-hidden />
-          </IconButton>
+          {suppressLinkNavigation ? (
+            <span>
+              <IconButton
+                size="small"
+                disabled
+                aria-label="Open practice in Stanza (Segno)"
+                sx={iconBtnSx}
+              >
+                <OpenInNewIcon sx={{ fontSize: 15 }} aria-hidden />
+              </IconButton>
+            </span>
+          ) : (
+            <IconButton
+              component="a"
+              href={stanzaHref}
+              {...encoreExternalToolLinkProps}
+              size="small"
+              aria-label="Open practice in Stanza (Segno)"
+              sx={iconBtnSx}
+            >
+              <OpenInNewIcon sx={{ fontSize: 15 }} aria-hidden />
+            </IconButton>
+          )}
         </Tooltip>
       ) : null}
       {!isPrimary && onMakePrimary ? (

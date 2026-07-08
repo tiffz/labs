@@ -166,7 +166,7 @@ LabsUndoProvider                       // src/shared/undo/LabsUndoContext.tsx
                       └─ EncoreActionsProvider // CRUD + bulk ops + dirty-row marking
 ```
 
-- `LabsUndoProvider` owns the keyboard shortcut (Ctrl/Cmd-Z, Ctrl/Cmd-Shift-Z) and a small per-app stack (`labsUndoStack`). It is shared across labs apps; see [`src/shared/undo/README.md`](../shared/undo/README.md).
+- `LabsUndoProvider` owns keyboard undo/redo (Ctrl/Cmd-Z, Ctrl/Cmd-Shift-Z / Ctrl-Y) and a per-app stack (`labsUndoStack`). **No header undo buttons** — discoverability is via **Keyboard shortcuts** (Ctrl/Cmd+?). See [`src/shared/undo/README.md`](../shared/undo/README.md).
 - `EncoreBlockingJobProvider` exposes `useEncoreBlockingJobs().withBlockingJob(label, fn)`. Any background work that the user shouldn't navigate away from goes through it. The provider renders a single bottom snackbar with progress + a "keep this tab open" caption (see [§ Long-running jobs](#long-running-jobs)) and registers a `beforeunload` warning **only while at least one non-silent job is running** (silent jobs such as debounced Drive push do not trigger “Leave site?”).
 - The four Encore providers are split by responsibility so each consumer only re-renders on the slice it cares about. New code should reach for the specialized hooks (`useEncoreAuth`, `useEncoreLibrary`, `useEncoreSync`, `useEncoreActions`); `useEncore()` remains as a back-compat façade that flattens all four.
 - The library context is reactive: it subscribes to the Dexie `songs`, `performances`, and `repertoireExtras` tables via `dexie-react-hooks#useLiveQuery`, so writes from anywhere (other tabs included) propagate without an explicit refresh call.

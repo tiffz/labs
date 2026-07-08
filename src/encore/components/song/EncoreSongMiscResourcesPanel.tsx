@@ -12,6 +12,7 @@ export type EncoreSongMiscResourcesPanelProps = {
   onUploadFiles: (files: File[]) => void | Promise<void>;
   driveUploading?: boolean;
   canUploadToDrive?: boolean;
+  wrapResourceChip?: (resource: EncoreMiscResource, chip: ReactElement) => ReactElement;
 };
 
 export function EncoreSongMiscResourcesPanel({
@@ -21,6 +22,7 @@ export function EncoreSongMiscResourcesPanel({
   onUploadFiles,
   driveUploading = false,
   canUploadToDrive = true,
+  wrapResourceChip,
 }: EncoreSongMiscResourcesPanelProps): ReactElement {
   return (
     <EncoreResourceLinksPanel
@@ -35,6 +37,7 @@ export function EncoreSongMiscResourcesPanel({
       fileAccept={MISC_FILE_ACCEPT}
       driveUploading={driveUploading}
       canUploadToDrive={canUploadToDrive}
+      wrapResourceChip={wrapResourceChip}
     />
   );
 }

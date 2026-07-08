@@ -82,30 +82,35 @@ describe('evaluateStanzaTransportLoopTick', () => {
     expect(second.grownDuration).toBeGreaterThan(reported);
   });
 
+  it('wraps loopSelection immediately when transport passes the playable end (even while advancing)', () => {
+    const result = evaluateStanzaTransportLoopTick({
+      transportTime: 29.99,
+      duration: 50,
+      loopMode: 'loopSelection',
+      segments,
+      skipped: undefined,
+      selectionSpan: { start: 20, end: 30 },
+      previousTransportTime: 29.96,
+      stalledFrames: 0,
+      userEnteredSectionId: null,
+    });
+    expect(result.wrapSeekTarget).toBe(20);
+  });
+
   it('wraps loopSelection at the playable end, not the skipped marker span end', () => {
-    let prev: number | null = 29.9;
-    let stalled = 0;
     const playableEnd = 30 - 0.02;
-    let wrapTarget: number | null = null;
-
-    for (let i = 0; i < 6 && wrapTarget == null; i++) {
-      const step = evaluateStanzaTransportLoopTick({
-        transportTime: playableEnd - STANZA_LOOP_WRAP_TOLERANCE_SEC * 0.25,
-        duration: 50,
-        loopMode: 'loopSelection',
-        segments,
-        skipped: { 'seg-3': true, 'seg-4': true },
-        selectionSpan: { start: 20, end: 50 },
-        previousTransportTime: prev,
-        stalledFrames: stalled,
-        userEnteredSectionId: null,
-      });
-      wrapTarget = step.wrapSeekTarget;
-      prev = step.nextPreviousTransportTime;
-      stalled = step.nextStalledFrames;
-    }
-
-    expect(wrapTarget).toBe(20);
+    const result = evaluateStanzaTransportLoopTick({
+      transportTime: playableEnd - STANZA_LOOP_WRAP_TOLERANCE_SEC * 0.25,
+      duration: 50,
+      loopMode: 'loopSelection',
+      segments,
+      skipped: { 'seg-3': true, 'seg-4': true },
+      selectionSpan: { start: 20, end: 50 },
+      previousTransportTime: playableEnd - 0.1,
+      stalledFrames: 0,
+      userEnteredSectionId: null,
+    });
+    expect(result.wrapSeekTarget).toBe(20);
   });
 });
 

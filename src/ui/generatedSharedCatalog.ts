@@ -12432,6 +12432,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-stanzakeyboardshortcutsections",
+    "name": "stanzaKeyboardShortcutSections",
+    "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Stanza — shared undo stack plus section editing shortcuts.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-wordskeyboardshortcutsections",
     "name": "wordsKeyboardShortcutSections",
     "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
@@ -12731,6 +12744,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-keyboardshortcuts-index-ts-sightkeyboardshortcutsections",
     "name": "sightKeyboardShortcutSections",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-stanzakeyboardshortcutsections",
+    "name": "stanzaKeyboardShortcutSections",
     "path": "src/shared/keyboardShortcuts/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -24866,38 +24895,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-undo-labsundocontrols-tsx-labsundocontrols",
-    "name": "LabsUndoControls",
-    "path": "src/shared/undo/LabsUndoControls.tsx",
-    "kind": "utility",
-    "stability": "stable",
-    "owner": "shared-core",
-    "description": "Undo / redo icon buttons wired to . Hotkeys remain active app-wide; these controls expose the same stack in the UI.",
-    "tags": [
-      "api",
-      "react"
-    ],
-    "appsUsing": [],
-    "exportType": "default",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-undo-labsundocontrols-tsx-labsundocontrolsprops",
-    "name": "LabsUndoControlsProps",
-    "path": "src/shared/undo/LabsUndoControls.tsx",
-    "kind": "model",
-    "stability": "stable",
-    "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "api",
-      "react"
-    ],
-    "appsUsing": [],
-    "exportType": "type",
-    "demoId": null
-  },
-  {
     "id": "src-shared-undo-labsundoshortcutlabel-ts-labsredoshortcutlabel",
     "name": "labsRedoShortcutLabel",
     "path": "src/shared/undo/labsUndoShortcutLabel.ts",
@@ -25498,6 +25495,36 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "drums"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsplaybacksafecall-ts-labsplaybacksafecall",
+    "name": "labsPlaybackSafeCall",
+    "path": "src/shared/utils/labsPlaybackSafeCall.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Defensive wrappers for playback hot paths (RAF, media poll, Web Audio). Failures are logged and swallowed so one bad tick does not take down the app.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labsplaybacksafecall-ts-labsplaybacksafecallasync",
+    "name": "labsPlaybackSafeCallAsync",
+    "path": "src/shared/utils/labsPlaybackSafeCall.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Defensive wrappers for playback hot paths (RAF, media poll, Web Audio). Failures are logged and swallowed so one bad tick does not take down the app.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {

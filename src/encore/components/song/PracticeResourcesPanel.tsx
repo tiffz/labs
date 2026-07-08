@@ -4,6 +4,10 @@ import { alpha, useTheme } from '@mui/material/styles';
 import type { DragEvent, ReactElement } from 'react';
 import AppTooltip from '../../../shared/components/AppTooltip';
 import {
+  parsePracticeResourceDragId,
+  sectionAcceptsPracticeResourceDrag,
+} from '../../repertoire/practiceResourceDragIds';
+import {
   encoreHairline,
   practiceResourceSectionGridSx,
   practiceResourceSectionLabelRailSx,
@@ -16,20 +20,30 @@ import {
   type PracticeResourceGroupId,
   type ResourceGroupsFileDropConfig,
 } from './practiceResourceGroups';
+import { PracticeResourceSectionDropZone } from './PracticeResourceDnD';
+import { usePracticeResourceDragState } from './practiceResourceDragContext';
+import type { SongMediaUploadSlot } from './songMediaUploadSlot';
 
 export type PracticeResourcesPanelProps<T extends string = string> = {
   groups: PracticeResourceGroup[];
   fileDrop?: ResourceGroupsFileDropConfig<T>;
   /** Accessible name when not repertoire practice resources. */
   ariaLabel?: string;
+  /** When true, section bodies accept chip drag targets for reorder / cross-section moves. */
+  chipDragEnabled?: boolean;
 };
 
 function PracticeResourceGroupSection<T extends string>(props: {
   group: PracticeResourceGroup;
   fileDrop?: ResourceGroupsFileDropConfig<T>;
+  chipDragEnabled?: boolean;
 }): ReactElement {
   const theme = useTheme();
-  const { group, fileDrop } = props;
+  const { group, fileDrop, chipDragEnabled } = props;
+  const { activeDragId, song } = usePracticeResourceDragState();
+  const activeParsed = activeDragId ? parsePracticeResourceDragId(activeDragId) : null;
+  const chipDropEligible =
+    !activeParsed || sectionAcceptsPracticeResourceDrag(group.id as SongMediaUploadSlot, activeParsed, song);
   const slotId = group.id as T;
   const repertoireMeta =
     group.id in PRACTICE_RESOURCE_GROUP_META
@@ -39,6 +53,9 @@ function PracticeResourceGroupSection<T extends string>(props: {
   const isEmpty = group.itemCount === 0;
 
   const dropHighlight = (() => {
+    if (activeParsed && !chipDropEligible) {
+      return { opacity: 0.4, pointerEvents: 'none' as const };
+    }
     if (!fileDrop?.globalFileDragActive) return {};
     const elig = fileDrop.eligibleSlots;
     if (elig && !elig.has(slotId)) {
@@ -118,7 +135,13 @@ function PracticeResourceGroupSection<T extends string>(props: {
         )}
       </Box>
       <Box id={`${anchorId}-body`} sx={{ minWidth: 0 }}>
-        {group.body}
+        {chipDragEnabled ? (
+          <PracticeResourceSectionDropZone section={group.id as SongMediaUploadSlot}>
+            {group.body}
+          </PracticeResourceSectionDropZone>
+        ) : (
+          group.body
+        )}
         {group.footer ? (
           <Box sx={{ pt: 0.375, color: 'text.secondary', '& .MuiTypography-root': { lineHeight: 1.45 } }}>
             {group.footer}
@@ -135,7 +158,7 @@ function PracticeResourceGroupSection<T extends string>(props: {
 export function PracticeResourcesPanel<T extends string = string>(
   props: PracticeResourcesPanelProps<T>,
 ): ReactElement {
-  const { groups, fileDrop, ariaLabel = 'Practice resources' } = props;
+  const { groups, fileDrop, ariaLabel = 'Practice resources', chipDragEnabled = false } = props;
 
   return (
     <Box
@@ -163,7 +186,7 @@ export function PracticeResourcesPanel<T extends string = string>(
               : undefined
           }
         >
-          <PracticeResourceGroupSection<T> group={group} fileDrop={fileDrop} />
+          <PracticeResourceGroupSection<T> group={group} fileDrop={fileDrop} chipDragEnabled={chipDragEnabled} />
         </Box>
       ))}
     </Box>

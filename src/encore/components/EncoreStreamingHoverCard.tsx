@@ -3,6 +3,8 @@ import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
 import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import Tooltip, { tooltipClasses, type TooltipProps } from '@mui/material/Tooltip';
@@ -10,6 +12,7 @@ import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import { useCallback, useEffect, useRef, useState, type FocusEvent, type MutableRefObject, type ReactElement, type ReactNode } from 'react';
 import { LABS_POPOVER_CHROME_SX } from '../../shared/components/anchoredPopoverChrome';
+import { useSuppressEncoreHoverCardWhileDragging } from './useSuppressEncoreHoverCardWhileDragging';
 import { ensureSpotifyAccessToken } from '../spotify/pkce';
 import { fetchSpotifyTrack } from '../spotify/spotifyApi';
 import type { EncoreMediaSource } from '../types';
@@ -257,6 +260,41 @@ function hoverCardPopperSlotProps(popperPinned: boolean) {
   };
 }
 
+function EncoreHoverCardPrimaryControl(props: {
+  isPrimary: boolean;
+  onMakePrimary?: () => void;
+  primaryActiveLabel: string;
+  primaryPromoteLabel: string;
+}): ReactElement | null {
+  const { isPrimary, onMakePrimary, primaryActiveLabel, primaryPromoteLabel } = props;
+  if (!onMakePrimary && !isPrimary) return null;
+
+  if (isPrimary) {
+    return (
+      <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <StarIcon sx={{ fontSize: 16, color: 'text.primary' }} aria-hidden />
+        <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.primary', lineHeight: 1.4 }}>
+          {primaryActiveLabel}
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ mt: 1 }}>
+      <Button
+        size="small"
+        variant="text"
+        startIcon={<StarBorderIcon fontSize="small" />}
+        onClick={() => onMakePrimary?.()}
+        sx={{ px: 0.75, minWidth: 0, justifyContent: 'flex-start' }}
+      >
+        {primaryPromoteLabel}
+      </Button>
+    </Box>
+  );
+}
+
 export type EncoreStreamingHoverCardProps = {
   kind: EncoreStreamingHoverCardKind;
   spotifyTrackId?: string | null;
@@ -276,6 +314,10 @@ export type EncoreStreamingHoverCardProps = {
   isPlaying?: boolean;
   playDisabled?: boolean;
   playDisabledReason?: string;
+  isPrimary?: boolean;
+  onMakePrimary?: () => void;
+  primaryActiveLabel?: string;
+  primaryPromoteLabel?: string;
 };
 
 /**
@@ -306,6 +348,10 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
     isPlaying = false,
     playDisabled = false,
     playDisabledReason,
+    isPrimary = false,
+    onMakePrimary,
+    primaryActiveLabel = 'Preferred',
+    primaryPromoteLabel = 'Make preferred',
   } = props;
 
   // Seed meta from the module cache synchronously so the very first open paints with the cached
@@ -332,6 +378,7 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
   });
 
   const handleClose = useHoverCardCloseHandler(resourceEdits.editingRef, resourceEdits.commitAll, setOpen);
+  const hoverCardOpen = useSuppressEncoreHoverCardWhileDragging(open, setOpen);
 
   useEffect(() => {
     if (!open) return;
@@ -422,6 +469,14 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
           </Button>
         </Box>
       ) : null}
+      {onMakePrimary || isPrimary ? (
+        <EncoreHoverCardPrimaryControl
+          isPrimary={isPrimary}
+          onMakePrimary={onMakePrimary}
+          primaryActiveLabel={primaryActiveLabel}
+          primaryPromoteLabel={primaryPromoteLabel}
+        />
+      ) : null}
       {onEditNicknameChange || onResourceNotesChange ? (
         <EncoreHoverCardResourceEditFields edits={resourceEdits} />
       ) : null}
@@ -436,10 +491,11 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
       enterDelay={280}
       enterNextDelay={120}
       leaveDelay={resourceEdits.popperPinned ? 900 : 220}
-      open={open}
+      open={hoverCardOpen.open}
       onOpen={() => setOpen(true)}
       onClose={handleClose}
       disableFocusListener
+      disableHoverListener={hoverCardOpen.disableHoverListener}
       // Tooltip's default `disableInteractive` is false, so the mouse can move from trigger into
       // the tooltip without closing it. Keeping it interactive is what makes this read as a hover
       // *card* rather than a pure tooltip.
@@ -482,6 +538,10 @@ export type EncoreStaticResourceHoverCardProps = {
   onDownload?: () => void | Promise<void>;
   downloadDisabled?: boolean;
   downloadDisabledReason?: string;
+  isPrimary?: boolean;
+  onMakePrimary?: () => void;
+  primaryActiveLabel?: string;
+  primaryPromoteLabel?: string;
 };
 
 /**
@@ -503,6 +563,10 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
     onDownload,
     downloadDisabled = false,
     downloadDisabledReason,
+    isPrimary = false,
+    onMakePrimary,
+    primaryActiveLabel = 'Preferred',
+    primaryPromoteLabel = 'Make preferred',
   } = props;
   const [open, setOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -515,6 +579,7 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
   });
 
   const handleClose = useHoverCardCloseHandler(resourceEdits.editingRef, resourceEdits.commitAll, setOpen);
+  const hoverCardOpen = useSuppressEncoreHoverCardWhileDragging(open, setOpen);
 
   const handleDownload = async () => {
     if (!onDownload || downloading || downloadDisabled) return;
@@ -576,6 +641,14 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
           ) : null}
         </Box>
       ) : null}
+      {onMakePrimary || isPrimary ? (
+        <EncoreHoverCardPrimaryControl
+          isPrimary={isPrimary}
+          onMakePrimary={onMakePrimary}
+          primaryActiveLabel={primaryActiveLabel}
+          primaryPromoteLabel={primaryPromoteLabel}
+        />
+      ) : null}
       {onEditNicknameChange || onResourceNotesChange ? (
         <EncoreHoverCardResourceEditFields
           edits={resourceEdits}
@@ -593,10 +666,11 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
       enterDelay={280}
       enterNextDelay={120}
       leaveDelay={resourceEdits.popperPinned ? 900 : 220}
-      open={open}
+      open={hoverCardOpen.open}
       onOpen={() => setOpen(true)}
       onClose={handleClose}
       disableFocusListener
+      disableHoverListener={hoverCardOpen.disableHoverListener}
       disableInteractive={false}
       slotProps={hoverCardPopperSlotProps(resourceEdits.popperPinned)}
     >

@@ -352,9 +352,9 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
    * The action is intentionally one-click + reversible rather than guarded by a confirm dialog:
    *   - It's a low-stakes toggle (no data loss; the song stays in the library and keeps every
    *     other field — exercises, milestones, journal, attachments).
-   *   - `saveSong` already pushes a `LabsUndoContext` entry, so the existing global undo bar is
-   *     the recovery affordance. Adding a confirm dialog here would just slow down the common
-   *     case (cleaning up after a finished practice cycle) without adding meaningful safety.
+   *   - `saveSong` already pushes a `LabsUndoContext` entry, so ⌘Z / Ctrl+Z is the recovery
+   *     affordance. Adding a confirm dialog here would just slow down the common case (cleaning
+   *     up after a finished practice cycle) without adding meaningful safety.
    *
    * When the removed song was the focused one, fall back to the next remaining practicing song
    * (or none) so the right-pane doesn't hang on a stale id while the URL settles.
@@ -389,10 +389,13 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
 
   const persistPracticeMediaNow = useCallback(
     async (song: EncoreSong) => {
-      await saveSong({
-        ...mergeJournalForPracticeSave(song),
-        updatedAt: new Date().toISOString(),
-      });
+      await saveSong(
+        {
+          ...mergeJournalForPracticeSave(song),
+          updatedAt: new Date().toISOString(),
+        },
+        { silentUndo: true },
+      );
     },
     [saveSong, mergeJournalForPracticeSave],
   );

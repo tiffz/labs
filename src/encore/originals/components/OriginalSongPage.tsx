@@ -4,10 +4,13 @@ import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { useEncoreOriginalsActions } from '../../context/EncoreOriginalsActionsContext';
 import { useEncoreOriginal } from '../../context/EncoreOriginalsLibraryContext';
+import { useEncoreOriginalDraftUndo } from '../../hooks/useEncoreOriginalDraftUndo';
 import { navigateEncore } from '../../routes/encoreAppHash';
+import { useLabsUndo } from '../../../shared/undo/LabsUndoContext';
 import { encoreHairline, encoreMaxWidthPage, encoreRadius, encoreShadowSurface } from '../../theme/encoreUiTokens';
 import { encorePagePaddingTop, encorePageSectionGap, encoreScreenPaddingX, encoreSurfacePadX } from '../../theme/encoreM3Layout';
 import { takePendingOriginalDraft } from '../pendingOriginalDraft';
+import { originalAutosaveDirty } from '../originalSongPageHelpers';
 import { mergeIdleChartSnapshot, restoreOriginalFromSnapshot } from '../originalsSnapshot';
 import { createBlankOriginalSong, type EncoreOriginalSong } from '../types';
 import { OriginalsSongHeader, type OriginalsPageMode } from './OriginalsSongHeader';
@@ -46,6 +49,7 @@ function initialDraftForRoute(id: string, isNew: boolean): EncoreOriginalSong | 
 export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactElement {
   const live = useEncoreOriginal(isNew ? null : id);
   const { saveOriginal, deleteOriginal } = useEncoreOriginalsActions();
+  const { push: pushUndo, clear: clearUndoStack } = useLabsUndo();
   const [draft, setDraft] = useState<EncoreOriginalSong | null>(() => initialDraftForRoute(id, isNew));
   const [mode, setMode] = useState<OriginalsPageMode>(() => readPageMode(id));
   const [workflowStage, setWorkflowStage] = useState<OriginalsWorkflowStage>(
@@ -56,6 +60,10 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
   const saveChainRef = useRef(Promise.resolve());
   /** Bind draft from Dexie once per song id; later live updates must not clobber in-flight edits. */
   const hydratedOriginalIdRef = useRef<string | null>(null);
+  /** Snapshot when the editor opened — used for commit-time undo on navigate-away. */
+  const originalOriginalRef = useRef<EncoreOriginalSong | null>(null);
+  /** Latest autosaved version (silentUndo) — redo target for commit-time undo. */
+  const latestSavedRef = useRef<EncoreOriginalSong | null>(null);
 
   useEffect(() => {
     if (!isNew || !draft) return;
@@ -75,8 +83,17 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
     // Re-bind when the route id changes; Dexie live updates for the same row do not reset draft.
     if (hydratedOriginalIdRef.current === live.song.id) return;
     hydratedOriginalIdRef.current = live.song.id;
+    originalOriginalRef.current = structuredClone(live.song);
+    latestSavedRef.current = structuredClone(live.song);
     setDraft(live.song);
-  }, [isNew, live]);
+  }, [isNew, live, id]);
+
+  useEffect(() => {
+    if (!isNew || !draft) return;
+    originalOriginalRef.current = null;
+    latestSavedRef.current = null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when /new draft id changes only
+  }, [isNew, draft?.id]);
 
   useEffect(() => {
     setMode(readPageMode(id));
@@ -106,19 +123,33 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
     (next: EncoreOriginalSong, opts?: { silentUndo?: boolean }) => {
       saveChainRef.current = saveChainRef.current
         .catch(() => undefined)
-        .then(() => saveOriginal(next, opts));
+        .then(async () => {
+          await saveOriginal(next, opts);
+          latestSavedRef.current = structuredClone(next);
+        });
       return saveChainRef.current;
     },
     [saveOriginal],
   );
 
-  const persist = useCallback(
-    (next: EncoreOriginalSong, opts?: { silentUndo?: boolean }) => {
-      setDraft(next);
-      latestChartRef.current = next.lyricsAndChords;
-      void enqueueSave(next, opts);
+  const persistOriginalNow = useCallback(
+    async (next: EncoreOriginalSong) => {
+      await enqueueSave(next, { silentUndo: true });
     },
     [enqueueSave],
+  );
+
+  const { applyOriginalDraftChange } = useEncoreOriginalDraftUndo({
+    draft,
+    setDraft,
+    persist: persistOriginalNow,
+  });
+
+  const persistStructural = useCallback(
+    (next: EncoreOriginalSong) => {
+      applyOriginalDraftChange((before) => (before === next ? before : next));
+    },
+    [applyOriginalDraftChange],
   );
 
   const cancelIdleSnapshot = useCallback(() => {
@@ -158,6 +189,38 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
   }, [cancelIdleSnapshot, runIdleSnapshot]);
 
   useEffect(() => () => cancelIdleSnapshot(), [cancelIdleSnapshot]);
+
+  useEffect(() => {
+    void id;
+    return () => {
+      const original = originalOriginalRef.current;
+      const latest = latestSavedRef.current;
+      if (!latest) return;
+      if (!originalAutosaveDirty(original, latest)) return;
+      const songId = latest.id;
+      pushUndo({
+        undo: async () => {
+          if (original) {
+            await saveOriginal(original, { silentUndo: true });
+          } else {
+            await deleteOriginal(songId);
+          }
+        },
+        redo: async () => {
+          await saveOriginal(latest, { silentUndo: true });
+        },
+      });
+    };
+  }, [id, pushUndo, saveOriginal, deleteOriginal]);
+
+  const prevOriginalIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevOriginalIdRef.current;
+    prevOriginalIdRef.current = id;
+    if (prev && prev !== id) {
+      clearUndoStack();
+    }
+  }, [id, clearUndoStack]);
 
   const update = useCallback(
     (patch: Partial<EncoreOriginalSong>) => {
@@ -230,7 +293,7 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
       mode={mode}
       onModeChange={setMode}
       onChange={update}
-      onRestoreSnapshot={(snap) => void persist(restoreOriginalFromSnapshot(activeSong, snap))}
+      onRestoreSnapshot={(snap) => persistStructural(restoreOriginalFromSnapshot(activeSong, snap))}
       onDelete={async () => {
         if (!window.confirm('Delete this original?')) return;
         await deleteOriginal(activeSong.id);
@@ -302,7 +365,7 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
       onBeforeWorkflowStageChange={flushIdleSnapshot}
       onChartChange={onChartChange}
       onSongChange={(patch) => update(patch)}
-      onPersist={(next) => persist(next)}
+      onPersist={(next) => persistStructural(next)}
     />
   );
 

@@ -1,5 +1,6 @@
 import type { DrumScheduler } from '../../../components/music/DrumAccompaniment';
 import type { TimeSignature } from '../../../rhythm/types';
+import { labsPlaybackSafeCall, labsPlaybackSafeCallAsync } from '../../../utils/labsPlaybackSafeCall';
 import { createDrumAudioPlayer } from '../players/createDrumAudioPlayer';
 import { MediaTimelineClock } from '../clocks';
 import type { DrumSchedulerCallback } from '../scheduling/scheduleDrumPatternWindow';
@@ -34,30 +35,36 @@ export function createMediaTimelineDrumScheduler(
     });
 
   const tick = () => {
-    if (!storedCallback || !opts.isPlaying) {
+    if (!storedCallback || !opts.isPlaying || !(opts.bpm > 0) || !Number.isFinite(opts.bpm)) {
       raf = 0;
       return;
     }
-    void player.ensureReady().then(() => {
+    void labsPlaybackSafeCallAsync('drum scheduler RAF tick', async () => {
+      await player.ensureReady();
       const ctx = player.getAudioContext();
       if (!ctx || !storedCallback) return;
 
-      const mediaTime = opts.getMediaTime();
-      const beatIndex = clock().mediaTimeToBeatIndex(mediaTime);
-      const frac =
-        mediaTime - clock().beatIndexToMediaTime(beatIndex) > 0
-          ? (mediaTime - clock().beatIndexToMediaTime(beatIndex)) / (60 / opts.bpm)
-          : 0;
-      const currentBeat = beatIndex + frac;
-      const lookAhead = 0.5;
-      const startBeat = scheduledUpToBeat < 0 ? currentBeat : scheduledUpToBeat;
-      const endBeat = currentBeat + lookAhead;
+      labsPlaybackSafeCall('drum scheduler callback', () => {
+        const mediaTime = opts.getMediaTime();
+        const clockInstance = clock();
+        const beatIndex = clockInstance.mediaTimeToBeatIndex(mediaTime);
+        const beatStart = clockInstance.beatIndexToMediaTime(beatIndex);
+        const period = 60 / opts.bpm;
+        const frac = mediaTime - beatStart > 0 ? (mediaTime - beatStart) / period : 0;
+        const currentBeat = beatIndex + frac;
+        const lookAhead = 0.5;
+        const startBeat = scheduledUpToBeat < 0 ? currentBeat : scheduledUpToBeat;
+        const endBeat = currentBeat + lookAhead;
 
-      if (endBeat > startBeat) {
-        const startAudioTime = ctx.currentTime;
-        storedCallback(startBeat, endBeat, startAudioTime - currentBeat * (60 / opts.bpm), opts.bpm, ctx);
-        scheduledUpToBeat = endBeat;
-      }
+        if (endBeat > startBeat) {
+          const startAudioTime = ctx.currentTime;
+          const callback = storedCallback;
+          if (callback) {
+            callback(startBeat, endBeat, startAudioTime - currentBeat * period, opts.bpm, ctx);
+            scheduledUpToBeat = endBeat;
+          }
+        }
+      });
     });
 
     raf = window.requestAnimationFrame(tick);

@@ -17,7 +17,9 @@ import {
 } from '../theme/encoreUiTokens';
 import { songWithSyncedLegacyDriveIds } from '../utils/songAttachments';
 import type { EncoreMilestoneDefinition, EncoreSong } from '../types';
+import { useEncoreSongDraftUndo } from '../hooks/useEncoreSongDraftUndo';
 import { PracticeResourcesPanel } from './song/PracticeResourcesPanel';
+import { PracticeResourcesPanelWithDnD } from './song/PracticeResourcesPanelWithDnD';
 import { useSongPageMediaHub } from './song/useSongPageMediaHub';
 
 export type SongResourcesEditSection =
@@ -85,6 +87,12 @@ export function SongResourcesEditDialog(props: {
     [milestoneTemplate, saveSong],
   );
 
+  const { applySongDraftChange } = useEncoreSongDraftUndo({
+    draft,
+    setDraft,
+    persist: persistAfterMetadataRefresh,
+  });
+
   const mediaHub = useSongPageMediaHub({
     draft,
     setDraft,
@@ -97,6 +105,7 @@ export function SongResourcesEditDialog(props: {
     spotifyLinked,
     driveUploadFolderOverrides: repertoireExtras.driveUploadFolderOverrides,
     persistAfterMetadataRefresh,
+    applySongDraftChange,
   });
 
   useEffect(() => {
@@ -130,7 +139,14 @@ export function SongResourcesEditDialog(props: {
           <Stack spacing={2} sx={{ pt: 0.5 }}>
             {mediaHub.spotifyAlerts}
             <Box id="encore-media-hub-spotify">{mediaHub.catalogStrip}</Box>
-            <PracticeResourcesPanel groups={mediaHub.resourceGroups} />
+            {mediaHub.practiceResourceDnD ? (
+              <PracticeResourcesPanelWithDnD
+                groups={mediaHub.resourceGroups}
+                practiceResourceDnD={mediaHub.practiceResourceDnD}
+              />
+            ) : (
+              <PracticeResourcesPanel groups={mediaHub.resourceGroups} />
+            )}
             {mediaHub.searchWebFooter}
           </Stack>
         ) : null}
