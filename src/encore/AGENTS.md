@@ -34,4 +34,4 @@ Nested **`AGENTS.md`** for Project Encore. Root policy: [`../../AGENTS.md`](../.
 - Performance routes: `e2e/smoke/encore-performance-routes.spec.ts` (via `npm run test:e2e:smoke`)
 - Library tab latency: `e2e/smoke/encore-library-interaction.spec.ts`, `e2e/smoke/encore-tab-navigation-interaction.spec.ts` (CUJ-001)
 - Performance video UX (unit): `components/performance/*.test.tsx`, `utils/performanceVideoModel.test.ts`, `utils/performancePlaybackTarget.test.ts`, `drive/guestSnapshotLoadError.test.ts`
-- Practice resource DnD: `repertoire/practiceResourceOrder.test.ts`, `repertoire/practiceResourceDragIds.test.ts`, `components/song/practiceResourceDragContext.test.ts`
+- Practice resource DnD: `repertoire/practiceResourceOrder.test.ts`, `repertoire/practiceResourceDragIds.test.ts`, `components/song/practiceResourceDragContext.test.ts`, `e2e/smoke/encore-practice-resource-dnd.spec.ts`

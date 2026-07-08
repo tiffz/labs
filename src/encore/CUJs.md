@@ -222,3 +222,29 @@ Lyric edits defer chord realignment until **800 ms idle** or leaving Write (`ORI
 | ----- | ------------------------------------------------------------------- |
 | Smoke | `e2e/smoke/encore-add-track-menu.spec.ts`                           |
 | UX    | [`PERFORMANCE_UX.md`](PERFORMANCE_UX.md) § Add-track menu checklist |
+
+---
+
+## CUJ-008: Song page — practice resource drag-and-drop
+
+**Primary goal:** Move a Listen chip into Play via drag-and-drop.  
+**Persona:** Musician reorganizing reference vs backing tracks on the song page.
+
+### Steps
+
+1. Open a song with at least one Listen chip.
+2. Drag the chip onto the **Play** section.
+3. Chip appears under Play; Listen no longer shows it.
+
+### Success criteria
+
+- Drop completes (dnd-kit receives pointer release; no mid-drag DOM swap).
+- Cross-section move persists in draft (`backingLinks` gains the row).
+
+### Automation
+
+| Type  | Artifact                                                               |
+| ----- | ---------------------------------------------------------------------- |
+| Smoke | `e2e/smoke/encore-practice-resource-dnd.spec.ts`                       |
+| Unit  | `practiceResourceOrder.test.ts`, `practiceResourceDragContext.test.ts` |
+| Rule  | `.cursor/rules/encore-practice-resource-dnd.mdc`                       |

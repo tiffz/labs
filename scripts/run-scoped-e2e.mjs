@@ -18,6 +18,7 @@ const APP_SMOKE_SPECS = {
     'e2e/smoke/encore-originals-brainstorm-chip.spec.ts',
     'e2e/smoke/encore-library-interaction.spec.ts',
     'e2e/smoke/encore-add-track-menu.spec.ts',
+    'e2e/smoke/encore-practice-resource-dnd.spec.ts',
     'e2e/smoke/drive-sync-merge-guards.spec.ts',
     'e2e/smoke/encore-tab-navigation-interaction.spec.ts',
     'e2e/smoke/layout-heuristics-encore.spec.ts',

@@ -234,6 +234,7 @@ export function PracticeResourceSectionDropZone(props: PracticeResourceSectionDr
   return (
     <Box
       ref={setNodeRef}
+      data-testid={`encore-practice-section-drop-${section}`}
       sx={{
         minWidth: 0,
         borderRadius: 0.75,

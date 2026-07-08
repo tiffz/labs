@@ -27,6 +27,13 @@ Registry: [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) — update when addi
 - Stubs: `e2e/helpers/gesturePreviewFixtures.ts` — 1×1 PNG for Drive thumbnail URLs
 - Playbook: [`docs/GESTURE_MEDIA_STABILITY.md`](GESTURE_MEDIA_STABILITY.md) — invariant map + when to extend tests/audits
 
+### Example: Encore practice resource DnD
+
+- Helper: `e2e/helpers/encorePracticeResourceDnD.ts` — pointer mouse drag (not HTML5 `dragTo`) for dnd-kit
+- Spec: `e2e/smoke/encore-practice-resource-dnd.spec.ts` — paste YouTube link under Listen, drag chip to Play
+- Drop targets: `data-testid="encore-practice-section-drop-<slot>"` on `PracticeResourceSectionDropZone`
+- Rule: `.cursor/rules/encore-practice-resource-dnd.mdc`
+
 ### Example: Encore guest share preview (P0)
 
 - Helper: `e2e/helpers/encoreGuestShare.ts` — fixture snapshot JSON; stubs dev proxy + BFF; aborts direct `googleapis.com/drive` `alt=media`
