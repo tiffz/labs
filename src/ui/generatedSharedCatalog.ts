@@ -10249,6 +10249,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsdriveportfoliolayout-ts-labs-drive-app-folder-lyrefly",
+    "name": "LABS_DRIVE_APP_FOLDER_LYREFLY",
+    "path": "src/shared/drive/labsDrivePortfolioLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Portfolio Drive layout for Tiff Zhang Labs micro-apps (separate from Encore's `Encore_App` tree). Requesting `https://www.googleapis.com/auth/drive.file` only (via the app's GIS token request). This app cannot see files created by other apps or the user's personal documents outside what Drive's `drive.file` scope allows — only files the app creates or opens through this flow.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-labsdriveportfoliolayout-ts-labs-drive-app-folder-scales",
     "name": "LABS_DRIVE_APP_FOLDER_SCALES",
     "path": "src/shared/drive/labsDrivePortfolioLayout.ts",

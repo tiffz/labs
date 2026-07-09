@@ -19,6 +19,7 @@ export const LABS_DRIVE_APP_FOLDER_SCALES = 'LearnYourScales';
 export const LABS_DRIVE_APP_FOLDER_STANZA = 'Stanza';
 export const LABS_DRIVE_APP_FOLDER_GESTURE = 'Gesture';
 export const LABS_DRIVE_APP_FOLDER_ZINEBOX = 'ZineBox';
+export const LABS_DRIVE_APP_FOLDER_LYREFLY = 'Lyrefly';
 export const LABS_DRIVE_PROGRESS_FILE = 'progress.json';
 
 function qFolderInParent(name: string, parentId: string): string {

@@ -130,6 +130,14 @@
       "iconClass": "zinebox"
     },
     {
+      "path": "/lyrefly/",
+      "title": "Lyrefly",
+      "shortDescription": "Indie comic studio — brainstorm, script, art revisions, and publishing",
+      "stage": "unlisted",
+      "category": "art",
+      "iconClass": "lyrefly"
+    },
+    {
       "path": "/forms/",
       "title": "Form Intersections",
       "shortDescription": "3D visualization for Drawabox form intersections",

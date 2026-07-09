@@ -24,6 +24,7 @@ export type AppThemeId =
   | 'sight'
   | 'gesture'
   | 'zinebox'
+  | 'lyrefly'
   | 'muscle';
 
 interface AppThemeConfig {
@@ -494,6 +495,19 @@ const THEMES: Record<AppThemeId, Theme> = {
     textSecondary: '#9c9691',
     divider: 'rgba(72, 68, 64, 0.1)',
     radius: 6,
+    spacingBase: 4,
+  }),
+  lyrefly: buildTheme({
+    mode: 'light',
+    fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+    primary: '#ff2d95',
+    secondary: '#00d4aa',
+    backgroundDefault: '#fafafa',
+    backgroundPaper: '#ffffff',
+    textPrimary: '#171717',
+    textSecondary: '#737373',
+    divider: 'rgba(23, 23, 23, 0.1)',
+    radius: 2,
     spacingBase: 4,
   }),
   muscle: buildTheme({

@@ -22,7 +22,7 @@ Instructions for AI coding assistants (Cursor, Claude, Codex, Gemini, etc.). [`G
 
 ### Nested `AGENTS.md`
 
-[`src/encore/`](src/encore/AGENTS.md) · [`src/gesture/`](src/gesture/AGENTS.md) · [`src/stanza/`](src/stanza/AGENTS.md) · [`src/shared/`](src/shared/AGENTS.md) · [`src/words/`](src/words/AGENTS.md) · [`src/drums/`](src/drums/AGENTS.md) · [`src/piano/`](src/piano/AGENTS.md) · [`src/chords/`](src/chords/AGENTS.md) · [`src/cats/`](src/cats/AGENTS.md) · [`src/scales/`](src/scales/AGENTS.md) · [`src/sight/`](src/sight/AGENTS.md) · [`src/zinebox/`](src/zinebox/AGENTS.md) · [`src/muscle/`](src/muscle/AGENTS.md) · [`src/midi/`](src/midi/AGENTS.md)
+[`src/encore/`](src/encore/AGENTS.md) · [`src/gesture/`](src/gesture/AGENTS.md) · [`src/lyrefly/`](src/lyrefly/AGENTS.md) · [`src/stanza/`](src/stanza/AGENTS.md) · [`src/shared/`](src/shared/AGENTS.md) · [`src/words/`](src/words/AGENTS.md) · [`src/drums/`](src/drums/AGENTS.md) · [`src/piano/`](src/piano/AGENTS.md) · [`src/chords/`](src/chords/AGENTS.md) · [`src/cats/`](src/cats/AGENTS.md) · [`src/scales/`](src/scales/AGENTS.md) · [`src/sight/`](src/sight/AGENTS.md) · [`src/zinebox/`](src/zinebox/AGENTS.md) · [`src/muscle/`](src/muscle/AGENTS.md) · [`src/midi/`](src/midi/AGENTS.md)
 
 Apps without nested `AGENTS.md` → app `README.md` + this file.
 

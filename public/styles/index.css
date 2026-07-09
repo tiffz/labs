@@ -306,6 +306,16 @@ body {
   box-shadow: 2px 3px 0 rgba(255, 20, 147, 0.2);
 }
 
+.app-icon.lyrefly {
+  background-color: #fafafa;
+  background-image: url('/icons/lyrefly-feather.png');
+  background-size: 88% 88%;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: 2px solid rgba(255, 45, 149, 0.35);
+  box-shadow: 2px 3px 0 rgba(0, 212, 170, 0.18);
+}
+
 .app-icon.beat {
   background-image: url('/icons/favicon-beat.svg');
 }

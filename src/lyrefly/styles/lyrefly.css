@@ -1,0 +1,534 @@
+.lyrefly-app {
+  --lyrefly-script-font: 'IBM Plex Mono', ui-monospace, monospace;
+  --lyrefly-ink: #171717;
+  --lyrefly-paper: #ffffff;
+  --lyrefly-surface: #fafafa;
+  --lyrefly-gallery-bg: #f5f5f5;
+  --lyrefly-muted: #737373;
+  --lyrefly-accent: #ff2d95;
+  --lyrefly-accent-soft: #00d4aa;
+  --lyrefly-accent-cool: #dc2626;
+  --lyrefly-border: color-mix(in srgb, var(--lyrefly-ink) 10%, transparent);
+  --lyrefly-border-strong: color-mix(
+    in srgb,
+    var(--lyrefly-ink) 16%,
+    transparent
+  );
+  --lyrefly-frame: rgba(255, 45, 149, 0.22);
+  --lyrefly-glow: rgba(0, 212, 170, 0.18);
+  --lyrefly-radius: 2px;
+  --lyrefly-title-font: 'Helvetica Neue', 'Arial', sans-serif;
+  --lyrefly-title-weight: 300;
+  --lyrefly-body-font: 'Inter', system-ui, sans-serif;
+  --lyrefly-app-bg: #fafafa;
+  --lyrefly-header-bg: rgba(255, 255, 255, 0.92);
+  --lyrefly-shadow-cover:
+    3px 4px 0 rgba(255, 45, 149, 0.28), -2px 2px 0 rgba(0, 212, 170, 0.2);
+  --lyrefly-shadow-cover-hover:
+    4px 5px 0 rgba(255, 45, 149, 0.32), -3px 3px 0 rgba(0, 212, 170, 0.24),
+    0 0 0 1px rgba(220, 38, 38, 0.12);
+  --lyrefly-cover-wash: linear-gradient(
+    125deg,
+    rgba(255, 45, 149, 0.22),
+    rgba(0, 212, 170, 0.18) 48%,
+    rgba(255, 212, 0, 0.14)
+  );
+  --lyrefly-cover-glow: none;
+  --lyrefly-workbench-wash: linear-gradient(
+    135deg,
+    rgba(255, 45, 149, 0.05),
+    transparent 42%
+  );
+  --lyrefly-shelf-min: 148px;
+  --lyrefly-shelf-gap: clamp(18px, 2.5vw, 28px);
+  min-height: 100%;
+  color: var(--lyrefly-ink);
+  background: var(--lyrefly-app-bg);
+  font-family: var(--lyrefly-body-font);
+}
+
+/* —— Header —— */
+
+.lyrefly-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--lyrefly-border);
+}
+
+.lyrefly-header__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.lyrefly-header__brand:focus-visible {
+  outline: 2px solid var(--lyrefly-accent);
+  outline-offset: 4px;
+  border-radius: var(--lyrefly-radius);
+}
+
+.lyrefly-header__brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.lyrefly-header__title {
+  font-family: var(--lyrefly-title-font);
+  font-weight: var(--lyrefly-title-weight);
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.lyrefly-header__tagline {
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lyrefly-header__nav-item {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--lyrefly-muted);
+  letter-spacing: 0.02em;
+}
+
+.lyrefly-header__nav-button {
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--lyrefly-body-font);
+  cursor: pointer;
+}
+
+.lyrefly-header__nav-button:hover {
+  color: var(--lyrefly-ink);
+}
+
+.lyrefly-header__nav-button:focus-visible {
+  outline: 2px solid var(--lyrefly-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.lyrefly-header__nav-item--current {
+  color: var(--lyrefly-ink);
+  font-weight: 600;
+}
+
+.lyrefly-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* —— Studio / showcase —— */
+
+.lyrefly-studio {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-top: clamp(20px, 4vw, 36px);
+}
+
+.lyrefly-studio__masthead {
+  margin-bottom: clamp(24px, 4vw, 40px);
+  max-width: 36rem;
+}
+
+.lyrefly-studio__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-studio__title {
+  margin: 0;
+  font-family: var(--lyrefly-title-font);
+  font-weight: var(--lyrefly-title-weight);
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.lyrefly-studio__lede {
+  margin: 0.85rem 0 0;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--lyrefly-muted);
+  max-width: 32rem;
+}
+
+.lyrefly-studio__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.25rem;
+  max-width: 28rem;
+  padding: clamp(28px, 5vw, 48px);
+  border-radius: calc(var(--lyrefly-radius) * 1.25);
+  border: 1px solid var(--lyrefly-border);
+  background: color-mix(in srgb, var(--lyrefly-surface) 72%, transparent);
+}
+
+.lyrefly-studio__empty p {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-studio__cta {
+  padding: 10px 18px;
+  border: 0;
+  border-radius: calc(var(--lyrefly-radius) * 0.75);
+  background: var(--lyrefly-accent);
+  color: color-mix(in srgb, var(--lyrefly-paper) 92%, black);
+  font-family: var(--lyrefly-body-font);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lyrefly-studio__cta:hover {
+  filter: brightness(1.06);
+}
+
+.lyrefly-studio__cta:focus-visible {
+  outline: 2px solid var(--lyrefly-accent-cool);
+  outline-offset: 3px;
+}
+
+.lyrefly-studio__loading {
+  color: var(--lyrefly-muted);
+}
+
+/* —— Shelf grid —— */
+
+.lyrefly-shelf {
+  flex: 1;
+  min-height: 0;
+}
+
+.lyrefly-shelf__grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(var(--lyrefly-shelf-min), 1fr)
+  );
+  gap: var(--lyrefly-shelf-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lyrefly-shelf__item {
+  min-width: 0;
+}
+
+.lyrefly-shelf__comic {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.lyrefly-shelf__open {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.lyrefly-shelf__open:focus-visible {
+  outline: 2px solid var(--lyrefly-accent);
+  outline-offset: 4px;
+  border-radius: var(--lyrefly-radius);
+}
+
+.lyrefly-shelf__cover-wrap {
+  position: relative;
+}
+
+.lyrefly-shelf__cover {
+  aspect-ratio: 2 / 3;
+  border-radius: var(--lyrefly-radius);
+  border: 1px solid var(--lyrefly-border-strong);
+  background:
+    var(--lyrefly-cover-wash),
+    linear-gradient(180deg, var(--lyrefly-surface), var(--lyrefly-paper));
+  box-shadow: var(--lyrefly-shadow-cover);
+  transform: rotate(-0.4deg);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.lyrefly-shelf__ledge {
+  height: 6px;
+  margin: 6px 10% 0;
+  border-radius: 0 0 3px 3px;
+  background: color-mix(in srgb, var(--lyrefly-border-strong) 80%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lyrefly-shelf__open:hover .lyrefly-shelf__cover,
+  .lyrefly-shelf__open:focus-visible .lyrefly-shelf__cover {
+    transform: rotate(0.35deg) translateY(-4px);
+    border-color: color-mix(in srgb, var(--lyrefly-accent) 28%, transparent);
+    box-shadow: var(--lyrefly-shadow-cover-hover);
+  }
+}
+
+.lyrefly-shelf__title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.lyrefly-shelf__subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-shelf__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.lyrefly-shelf__status {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--lyrefly-muted) 16%, transparent);
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-shelf__status--wip {
+  background: color-mix(in srgb, var(--lyrefly-accent-cool) 18%, transparent);
+  color: color-mix(in srgb, var(--lyrefly-accent-cool) 88%, var(--lyrefly-ink));
+}
+
+.lyrefly-shelf__status--finished {
+  background: color-mix(in srgb, var(--lyrefly-accent) 18%, transparent);
+  color: color-mix(in srgb, var(--lyrefly-accent) 90%, var(--lyrefly-ink));
+}
+
+.lyrefly-shelf__status--archived {
+  background: color-mix(in srgb, var(--lyrefly-muted) 12%, transparent);
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-shelf__pages {
+  font-size: 0.6875rem;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-shelf__quick-link {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--lyrefly-accent) 88%, var(--lyrefly-ink));
+  font-family: var(--lyrefly-body-font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.lyrefly-shelf__quick-link:hover {
+  color: var(--lyrefly-accent);
+}
+
+.lyrefly-shelf__quick-link:focus-visible {
+  outline: 2px solid var(--lyrefly-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.lyrefly-shelf__add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  padding: 1rem;
+  border-radius: var(--lyrefly-radius);
+  border: 1px dashed color-mix(in srgb, var(--lyrefly-accent) 36%, transparent);
+  background: color-mix(in srgb, var(--lyrefly-surface) 50%, transparent);
+  color: var(--lyrefly-muted);
+  font-family: var(--lyrefly-body-font);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.lyrefly-shelf__add:hover {
+  border-color: color-mix(in srgb, var(--lyrefly-accent) 55%, transparent);
+  color: var(--lyrefly-ink);
+  background: color-mix(in srgb, var(--lyrefly-surface) 78%, transparent);
+}
+
+.lyrefly-shelf__add:focus-visible {
+  outline: 2px solid var(--lyrefly-accent);
+  outline-offset: 3px;
+}
+
+.lyrefly-shelf__add-icon {
+  font-size: 1.75rem;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--lyrefly-accent);
+}
+
+.lyrefly-shelf__add-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+/* —— Project workbench —— */
+
+.lyrefly-workbench {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: min(88vh, 960px);
+  min-width: 0;
+  border-top: 1px solid var(--lyrefly-border);
+}
+
+.lyrefly-workbench__chrome {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: clamp(16px, 2.5vw, 24px) 0 1rem;
+  border-bottom: 1px solid var(--lyrefly-border);
+}
+
+.lyrefly-workbench__back.MuiButton-root {
+  flex-shrink: 0;
+  min-width: 0;
+  padding-inline: 0.5rem;
+  color: var(--lyrefly-muted);
+  font-weight: 600;
+  text-transform: none;
+}
+
+.lyrefly-workbench__title-input {
+  font-family: var(--lyrefly-title-font);
+  font-size: clamp(1.15rem, 2.5vw, 1.45rem);
+  font-weight: var(--lyrefly-title-weight);
+  letter-spacing: -0.02em;
+}
+
+.lyrefly-workbench__progress {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.lyrefly-workbench__stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.lyrefly-workflow-stepper {
+  padding-inline: 0;
+}
+
+.lyrefly-workflow-stepper__step:hover .lyrefly-workflow-stepper__circle {
+  transform: scale(1.04);
+}
+
+.lyrefly-workflow-stepper__circle {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.lyrefly-stage-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--lyrefly-border);
+  background: color-mix(in srgb, var(--lyrefly-surface) 82%, transparent);
+  padding: clamp(14px, 2vw, 20px) 0;
+}
+
+.lyrefly-brainstorm-canvas .shared-rich-text-editor,
+.lyrefly-script-rich-editor {
+  border-radius: var(--lyrefly-radius);
+}
+
+.lyrefly-visual-dev-card {
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.lyrefly-visual-dev-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--lyrefly-accent) 40%, transparent);
+}
+
+.lyrefly-art-page-card {
+  transition: box-shadow 180ms ease;
+}
+
+.lyrefly-art-page-card:hover {
+  box-shadow: var(--lyrefly-shadow-cover-hover);
+}
+
+.lyrefly-script-editor-shell {
+  padding: 0.5rem 0 1rem;
+}
+
+.lyrefly-script-pacing-meter:empty {
+  display: none;
+}

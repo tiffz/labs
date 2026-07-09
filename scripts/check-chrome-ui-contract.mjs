@@ -59,6 +59,7 @@ const allAppsRequiringChrome = [
   'src/gesture/main.tsx',
   'src/muscle/main.tsx',
   'src/zinebox/main.tsx',
+  'src/lyrefly/main.tsx',
   'src/sight/main.tsx',
   'src/count/main.tsx',
   'src/cats/main.tsx',

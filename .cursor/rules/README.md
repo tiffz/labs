@@ -26,6 +26,7 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | [`encore-originals-layout.mdc`](encore-originals-layout.mdc)                 | `encore/originals/**`                    | `originals/DEVELOPMENT.md`                     | —                            |
 | [`gesture-linen-design.mdc`](gesture-linen-design.mdc)                       | `gesture/**`                             | `src/gesture/DESIGN.md`                        | —                            |
 | [`gesture-media-tiers.mdc`](gesture-media-tiers.mdc)                         | Gesture media / preview / session        | `src/gesture/AGENTS.md` § Media tiers          | —                            |
+| [`lyrefly-riso-cube-design.mdc`](lyrefly-riso-cube-design.mdc)               | `lyrefly/**`                             | `src/lyrefly/DESIGN.md`                        | —                            |
 | [`muscle-canvas-perf.mdc`](muscle-canvas-perf.mdc)                           | `muscle/components/canvas/**`            | `src/muscle/CUJs.md` CUJ-001                   | `labs-performance`           |
 | [`dexie-live-query-empty-states.mdc`](dexie-live-query-empty-states.mdc)     | Dexie `useLiveQuery` surfaces            | `resolveDexieLiveQuery.ts`, Encore library     | —                            |
 | [`stanza-viewer-layout.mdc`](stanza-viewer-layout.mdc)                       | `stanza/**`                              | `stanza/LAYOUT.md`                             | —                            |

@@ -178,6 +178,14 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     notes: 'smoke only',
   },
   {
+    route: '/lyrefly/',
+    title: /Lyrefly/i,
+    visibleSelector: '[data-testid="lyrefly-showcase"]',
+    smoke: true,
+    visual: false,
+    notes: 'smoke only',
+  },
+  {
     route: '/muscle/',
     title: /Muscle Memory/i,
     visibleSelector: '[data-testid="muscle-app"]',
