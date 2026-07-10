@@ -222,6 +222,37 @@ describe('uploadDriveFileResumableChunked', () => {
     expect(dataPuts).toBeGreaterThanOrEqual(4);
   });
 
+  it('throws immediately when offline so callers can show waiting UI', async () => {
+    const file = new Blob(['offline'], { type: 'video/mp4' });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response('', {
+          status: 200,
+          headers: { Location: 'https://www.googleapis.com/upload/session/offline' },
+        }),
+      ),
+    );
+    vi.stubGlobal('navigator', { onLine: false } as Navigator);
+
+    const put = vi.fn(async () => {
+      throw new TypeError('Failed to fetch');
+    });
+
+    await expect(
+      uploadDriveFileResumableChunked({
+        accessToken: 'tok',
+        file,
+        parents: ['folder'],
+        fileName: 'clip.mp4',
+        mimeType: 'video/mp4',
+        chunkBytes: DRIVE_RESUMABLE_CHUNK_MULTIPLE_BYTES,
+        put,
+      }),
+    ).rejects.toThrow('Failed to fetch');
+    expect(put).toHaveBeenCalledTimes(1);
+  });
+
   it('restarts the session when Drive returns 404 for a stale upload URI', async () => {
     vi.useFakeTimers();
     const file = new Blob(['abc'], { type: 'video/mp4' });

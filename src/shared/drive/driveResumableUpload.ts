@@ -126,6 +126,13 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** When offline, bubble up immediately so outer `driveUploadFileWithNetworkRetry` can show waiting UI. */
+function throwIfBrowserOffline(lastError: unknown): void {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    throw lastError instanceof Error ? lastError : new TypeError('Failed to fetch');
+  }
+}
+
 /** After a network failure: wait for the tab to be foreground, then a short backoff. */
 async function waitBeforeUploadRetry(delayMs: number): Promise<void> {
   await waitForDocumentVisible();
@@ -246,6 +253,7 @@ async function uploadChunksFromOffset(opts: {
 
     for (let attempt = 0; attempt < CHUNK_RETRY_DELAYS_MS.length; attempt += 1) {
       if (attempt > 0) {
+        throwIfBrowserOffline(lastError);
         await waitBeforeUploadRetry(CHUNK_RETRY_DELAYS_MS[attempt]!);
       }
       try {
@@ -303,6 +311,8 @@ async function uploadChunksFromOffset(opts: {
           throw err;
         }
         if (!isRetryableDriveUploadNetworkError(err)) throw err;
+
+        throwIfBrowserOffline(err);
 
         await waitForDocumentVisible();
 
@@ -376,7 +386,10 @@ async function defaultInitSession(args: {
   const UPLOAD_BASE = 'https://www.googleapis.com/upload/drive/v3';
   let lastError: unknown = null;
   for (let attempt = 0; attempt < CHUNK_RETRY_DELAYS_MS.length; attempt += 1) {
-    if (attempt > 0) await waitBeforeUploadRetry(CHUNK_RETRY_DELAYS_MS[attempt]!);
+    if (attempt > 0) {
+      throwIfBrowserOffline(lastError);
+      await waitBeforeUploadRetry(CHUNK_RETRY_DELAYS_MS[attempt]!);
+    }
     try {
       const init = await fetch(`${UPLOAD_BASE}/files?uploadType=resumable&fields=id&supportsAllDrives=true`, {
         method: 'POST',
@@ -414,6 +427,7 @@ async function defaultInitSession(args: {
       lastError = err;
       if (err instanceof DriveHttpError && !isTransientDriveHttpStatus(err.status)) throw err;
       if (!isRetryableDriveUploadNetworkError(err) && !(err instanceof DriveHttpError)) throw err;
+      throwIfBrowserOffline(err);
     }
   }
   throw lastError instanceof Error
