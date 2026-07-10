@@ -20,4 +20,55 @@ describe('shouldReanchorStanzaPlayhead', () => {
     });
     expect(target).toBe(20);
   });
+
+  it('re-anchors loopAll when past the playable end', () => {
+    const target = shouldReanchorStanzaPlayhead({
+      loopMode: 'loopAll',
+      transportTime: 49.99,
+      duration: 50,
+      selectionSpan: null,
+      segments,
+      skipped: {},
+    });
+    expect(target).toBe(0);
+  });
+
+  it('does not re-anchor play-through', () => {
+    expect(
+      shouldReanchorStanzaPlayhead({
+        loopMode: 'through',
+        transportTime: 49,
+        duration: 50,
+        selectionSpan: null,
+        segments,
+        skipped: {},
+      }),
+    ).toBeNull();
+  });
+
+  it('re-anchors loopSelection when before the selection start', () => {
+    expect(
+      shouldReanchorStanzaPlayhead({
+        loopMode: 'loopSelection',
+        transportTime: 5,
+        duration: 50,
+        selectionSpan: { start: 20, end: 40 },
+        segments,
+        skipped: {},
+      }),
+    ).toBe(20);
+  });
+
+  it('skips re-anchor when still inside the playable loopAll window', () => {
+    expect(
+      shouldReanchorStanzaPlayhead({
+        loopMode: 'loopAll',
+        transportTime: 12,
+        duration: 50,
+        selectionSpan: null,
+        segments,
+        skipped: {},
+      }),
+    ).toBeNull();
+  });
 });

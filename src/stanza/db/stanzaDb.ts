@@ -83,6 +83,11 @@ export interface StanzaSong {
   metronomeSongCalibration?: StanzaSegmentMetronomeCalibration;
   /** User pitch shift for uploaded audio only (−12…+12 semitones); uses decoded-buffer detune (main + stems when layered). */
   localTransposeSemitones?: number;
+  /**
+   * Which primary source drives playback when both {@link ytId} and {@link localAudioBlob} exist.
+   * Defaults to YouTube when `ytId` is set, otherwise local file.
+   */
+  practiceSource?: 'youtube' | 'local';
   /** Detected or user-selected original key for local uploads (pitch class only). */
   /** User-set key for pitch shift / playback display (`C major`, `Am`, …). */
   localOriginalKey?: SongKey;

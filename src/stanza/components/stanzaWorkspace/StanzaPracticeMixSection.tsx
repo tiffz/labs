@@ -23,7 +23,8 @@ import {
 
 export interface StanzaPracticeMixSectionProps {
   selected: StanzaSong;
-  isYoutube: boolean;
+  /** Active primary track for mix labels (video vs uploaded file). */
+  primaryTrackKind: 'video' | 'file';
   metronomeUserMuted: boolean;
   metronomeUserGain: number;
   mixMetronomeGainDraft: number | null;
@@ -62,7 +63,7 @@ export interface StanzaPracticeMixSectionProps {
 
 export default function StanzaPracticeMixSection({
   selected,
-  isYoutube,
+  primaryTrackKind,
   metronomeUserMuted,
   metronomeUserGain,
   mixMetronomeGainDraft,
@@ -98,6 +99,7 @@ export default function StanzaPracticeMixSection({
   stemFileInputRef,
   onAddStemFromFile,
 }: StanzaPracticeMixSectionProps) {
+  const primaryIsVideo = primaryTrackKind === 'video';
   return (
     <Box className="stanza-rail-section stanza-rail-section--mix">
       <Box className="stanza-rail-section-head">
@@ -106,7 +108,7 @@ export default function StanzaPracticeMixSection({
         </Typography>
         <AppTooltip
           title={
-            isYoutube
+            primaryIsVideo
               ? 'Add an audio layer to mix over the video (e.g. an instrumental)'
               : 'Add another audio layer (e.g. an instrumental or vocal stem)'
           }
@@ -207,10 +209,10 @@ export default function StanzaPracticeMixSection({
           <AppTooltip
             title={
               primaryPlaybackMuted(selected)
-                ? isYoutube
+                ? primaryIsVideo
                   ? 'Unmute video'
                   : 'Unmute main track'
-                : isYoutube
+                : primaryIsVideo
                   ? 'Mute video'
                   : 'Mute main track'
             }
@@ -219,10 +221,10 @@ export default function StanzaPracticeMixSection({
               size="small"
               aria-label={
                 primaryPlaybackMuted(selected)
-                  ? isYoutube
+                  ? primaryIsVideo
                     ? 'Unmute video'
                     : 'Unmute main track'
-                  : isYoutube
+                  : primaryIsVideo
                     ? 'Mute video'
                     : 'Mute main track'
               }
@@ -239,10 +241,10 @@ export default function StanzaPracticeMixSection({
           <Typography
             component="span"
             noWrap
-            title={isYoutube ? 'Video' : 'Main file'}
+            title={primaryIsVideo ? 'Video' : 'Main file'}
             className="stanza-mix-row__label"
           >
-            {isYoutube ? 'Video' : 'Main'}
+            {primaryIsVideo ? 'Video' : 'Main'}
           </Typography>
           <AppLinearVolumeSlider
             value={mixPrimaryGainDraft ?? stanzaSanitizeLinearBusGain(selected.primaryGain)}
@@ -250,7 +252,7 @@ export default function StanzaPracticeMixSection({
             onChangeCommitted={async (_, v) => {
               await onPrimaryGainCommit(stanzaSanitizeLinearBusGain(v as number));
             }}
-            aria-label={isYoutube ? 'Video level' : 'Main track level'}
+            aria-label={primaryIsVideo ? 'Video level' : 'Main track level'}
             className={[
               'stanza-mix-row__slider',
               primaryPlaybackMuted(selected) ? 'stanza-mix-row__slider--muted' : '',

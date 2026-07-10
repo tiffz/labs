@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { EncoreSyncContext, type EncoreSyncContextValue } from './EncoreSyncContext';
+import { EncoreSyncContext, type EncoreSyncContextValue } from './encoreSyncContextStore';
 
 export function useEncoreSync(): EncoreSyncContextValue {
   const ctx = useContext(EncoreSyncContext);

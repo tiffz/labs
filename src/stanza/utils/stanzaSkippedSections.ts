@@ -24,6 +24,11 @@ import { STANZA_TIME_EPS } from './segments';
 
 export type SkippedSegmentSet = Record<string, true> | undefined;
 
+export function hasSkippedSections(skipped: SkippedSegmentSet): boolean {
+  if (!skipped) return false;
+  return Object.keys(skipped).length > 0;
+}
+
 export function isSegmentSkipped(seg: DerivedSegment, skipped: SkippedSegmentSet): boolean {
   if (!skipped) return false;
   return skipped[seg.id] === true;
@@ -36,7 +41,7 @@ export function hasPlayableTimeInWindow(
   windowStart: number,
   windowEnd: number,
 ): boolean {
-  if (segments.length === 0 || !skipped) return true;
+  if (segments.length === 0 || !hasSkippedSections(skipped)) return true;
 
   for (const seg of segments) {
     if (seg.end <= windowStart + STANZA_TIME_EPS) continue;
@@ -67,7 +72,7 @@ export function firstPlayableTimeInWindow(
   windowStart: number,
   windowEnd: number,
 ): number {
-  if (segments.length === 0 || !skipped) return windowStart;
+  if (segments.length === 0 || !hasSkippedSections(skipped)) return windowStart;
 
   for (const seg of segments) {
     if (seg.end <= windowStart + STANZA_TIME_EPS) continue;
@@ -90,7 +95,7 @@ export function lastPlayableTimeInWindow(
   windowEnd: number,
 ): number {
   const fallback = Math.max(windowStart, windowEnd - STANZA_TIME_EPS);
-  if (segments.length === 0 || !skipped) return fallback;
+  if (segments.length === 0 || !hasSkippedSections(skipped)) return fallback;
 
   for (let i = segments.length - 1; i >= 0; i--) {
     const seg = segments[i]!;

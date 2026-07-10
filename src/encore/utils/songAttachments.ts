@@ -56,6 +56,35 @@ export function setPrimaryChartByDriveFileId(s: EncoreSong, driveFileId: string)
   });
 }
 
+export function removeSongAttachment(
+  s: EncoreSong,
+  kind: EncoreSongAttachment['kind'],
+  driveFileId: string,
+): EncoreSong {
+  const fid = driveFileId.trim();
+  const attachments = [...(s.attachments ?? [])];
+  const index = attachments.findIndex((a) => a.kind === kind && a.driveFileId === fid);
+  if (index < 0) return s;
+  const [removed] = attachments.splice(index, 1);
+  if (!removed) return s;
+
+  let next = attachments;
+  if (kind === 'chart' && removed.isPrimaryChart) {
+    const nextChart = next.find((a) => a.kind === 'chart');
+    if (nextChart) {
+      next = next.map((a) =>
+        a.kind === 'chart' ? { ...a, isPrimaryChart: a.driveFileId === nextChart.driveFileId } : a,
+      );
+    }
+  }
+
+  return songWithSyncedLegacyDriveIds({
+    ...s,
+    attachments: next,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 export function addSongAttachment(s: EncoreSong, att: EncoreSongAttachment): EncoreSong {
   const cur = [...(s.attachments ?? [])];
   if (!cur.some((a) => a.driveFileId === att.driveFileId)) {

@@ -173,6 +173,10 @@ describe('lastPlayableTimeInWindow', () => {
     seg(3, 30, 40),
   ];
 
+  it('uses the full window end when skip map is empty (not undefined)', () => {
+    expect(lastPlayableTimeInWindow(segments, {}, 0, 180)).toBeCloseTo(180 - 0.02);
+  });
+
   it('returns the end of the last playable section before the window end', () => {
     expect(lastPlayableTimeInWindow(segments, { 'seg-3': true }, 0, 40)).toBeCloseTo(30 - 0.02);
   });

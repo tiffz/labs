@@ -18,6 +18,20 @@ Canonical reference for how Labs micro-apps sync user data with Google Drive. So
 
 No other micro-apps use Drive JSON backup today. Encore also uses Drive for uploads, picker, public snapshot, and guest reads — separate from the JSON sync loops below.
 
+## Binary uploads (resumable)
+
+Large media (Encore performance videos, Stanza stems, Gesture packs, Zine PDFs) go through [`driveUploadFileResumable`](../src/shared/drive/driveFetch.ts) → [`uploadDriveFileResumableChunked`](../src/shared/drive/driveResumableUpload.ts).
+
+**Invariants:**
+
+1. **Chunk PUTs use XHR, not `fetch`.** Drive returns HTTP **308 Resume Incomplete** after non-final chunks. Browser `fetch` treats 308 as a redirect and fails the request even when Drive accepted the bytes (`drive-resumable-308`).
+2. **Resume after suspend.** On network errors (including Chrome `ERR_NETWORK_IO_SUSPENDED`), wait until the document is visible, query session status (`Content-Range: bytes */N`), then continue from Drive’s cursor (`network-io-suspended`).
+3. **Progress + wake lock.** Callers should pass `onProgress` into the blocking job; the uploader requests a screen wake lock for the transfer duration.
+
+Do not reintroduce a single full-file `fetch` PUT for “simplicity” — it looked fine for multi‑GB one-shot uploads until chunked resume was required, and `fetch`+308 silently breaks every multi-chunk browser upload.
+
+**Diagnose before blaming Drive rate limits:** if `google.com` / Drive fails in a normal Chrome profile but works in Incognito (or another browser), treat it as **extension / profile network interference**, not API quota. Confirm outbound HTTPS from a shell (`curl -I https://www.googleapis.com`) before changing upload code.
+
 ## Principles
 
 1. **Local-first** — Dexie / in-memory progress is the working copy. Apps work offline without Google.

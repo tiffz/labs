@@ -93,6 +93,7 @@ describe('practiceResourceOrder', () => {
     expect(canDropPracticeResource(s, `link:${linkId}`, 'att:chart:chart1')).toBe(false);
     expect(canDropPracticeResource(s, 'att:chart:chart1', `link:${linkId}`)).toBe(false);
     expect(canDropPracticeResource(s, 'att:chart:chart1', 'section:takes')).toBe(true);
+    expect(canDropPracticeResource(s, 'att:chart:chart1', 'section:play')).toBe(true);
     expect(canDropPracticeResource(s, 'att:chart:chart1', 'section:misc')).toBe(true);
     expect(canDropPracticeResource(s, 'att:chart:chart1', 'section:charts')).toBe(true);
   });
@@ -155,5 +156,17 @@ describe('practiceResourceOrder', () => {
       over: { id: 'misc:a' },
     } as Parameters<typeof applyPracticeResourceDragEnd>[1]);
     expect(next.miscResources?.map((r) => r.id)).toEqual(['b', 'a']);
+  });
+
+  it('moveAttachmentToPlay moves chart attachment to backing links', () => {
+    const s = minimalSong({
+      attachments: [{ kind: 'chart', driveFileId: 'chart-audio', label: 'Backing.mp3' }],
+    });
+    const next = applyPracticeResourceDragEnd(s, {
+      active: { id: 'att:chart:chart-audio' },
+      over: { id: 'section:play' },
+    } as Parameters<typeof applyPracticeResourceDragEnd>[1]);
+    expect(next.attachments?.some((a) => a.driveFileId === 'chart-audio')).toBe(false);
+    expect(next.backingLinks?.some((l) => l.driveFileId === 'chart-audio')).toBe(true);
   });
 });

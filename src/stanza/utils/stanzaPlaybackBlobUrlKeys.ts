@@ -2,7 +2,7 @@ import type { StanzaSong, StanzaStemTrack } from '../db/stanzaDb';
 
 /** Primary local blob identity: id + size (omit MIME — Drive/Dexie hydrate can flip type). */
 export function stanzaPrimaryLocalBlobKey(selected: StanzaSong | null): string {
-  if (!selected || selected.ytId || !selected.localAudioBlob) return '';
+  if (!selected?.localAudioBlob) return '';
   return `${selected.id}:${selected.localAudioBlob.size}`;
 }
 

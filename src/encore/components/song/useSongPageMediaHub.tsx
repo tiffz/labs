@@ -54,6 +54,7 @@ import {
   effectiveSongAttachments,
   primaryChartAttachment,
   setPrimaryChartByDriveFileId,
+  removeSongAttachment,
 } from '../../utils/songAttachments';
 import {
   appendDriveBackingLink,
@@ -1796,6 +1797,9 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                           fullCaption={fullCaption}
                           onMakePrimary={() =>
                             setDraft((d) => (d ? setPrimaryChartByDriveFileId(d, a.driveFileId) : d))
+                          }
+                          onRemove={() =>
+                            updateDraft((d) => removeSongAttachment(d, 'chart', a.driveFileId))
                           }
                           openUrl={driveFileWebUrl(a.driveFileId)}
                           openAriaLabel="Open chart in new tab"

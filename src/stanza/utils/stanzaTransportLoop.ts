@@ -3,11 +3,13 @@ import { resolveEffectiveStanzaLoopMode } from './stanzaPlaybackFocus';
 import { shouldWrapLoopSelection, STANZA_LOOP_WRAP_TOLERANCE_SEC } from './stanzaPlaybackLoop';
 import { decideStanzaLoopWrap } from './stanzaLoopWrapDecision';
 import {
+  hasSkippedSections,
   isSegmentSkipped,
   nextNonSkippedTimeForwardPlayback,
   resolvePlayableWindowAnchors,
   type SkippedSegmentSet,
 } from './stanzaSkippedSections';
+import { STANZA_TIME_EPS } from './segments';
 import type { DerivedSegment } from './segments';
 import { findSegmentIndexAtTime } from './segments';
 
@@ -34,7 +36,10 @@ export function resolveStanzaLoopPlaybackWindow(opts: {
   const effectiveLoopMode = resolveEffectiveStanzaLoopMode({ loopMode, selectionSpan });
   if (effectiveLoopMode === 'loopAll' && duration > 0) {
     const { start, end } = resolvePlayableWindowAnchors(segments, skipped, 0, duration);
-    return { windowStart: 0, windowEnd: duration, loop: true, loopWrapStart: start, loopWrapEnd: end };
+    const loopWrapEnd = hasSkippedSections(skipped)
+      ? end
+      : Math.max(start, duration - STANZA_TIME_EPS);
+    return { windowStart: 0, windowEnd: duration, loop: true, loopWrapStart: start, loopWrapEnd };
   }
   if (effectiveLoopMode === 'loopSelection' && selectionSpan) {
     const { start, end } = resolvePlayableWindowAnchors(
@@ -102,7 +107,7 @@ export function evaluateStanzaTransportLoopTick(input: StanzaTransportLoopTickIn
   let clearUserEnteredSection = false;
   const effectiveLoopMode = resolveEffectiveStanzaLoopMode({ loopMode, selectionSpan: span });
 
-  if (skipped) {
+  if (hasSkippedSections(skipped)) {
     const idx = findSegmentIndexAtTime(segs, tLive);
     const seg = idx != null ? segs[idx] : null;
     if (seg && userEnteredSectionId && seg.id !== userEnteredSectionId) {

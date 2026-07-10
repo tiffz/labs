@@ -59,14 +59,15 @@ describe('practiceResourceDragIds drop eligibility', () => {
     expect(sectionAcceptsPracticeResourceDrag('takes', active, song)).toBe(true);
   });
 
-  it('chart attachments may target Charts, Takes, and Misc', () => {
+  it('chart attachments may target Charts, Takes, Play, and Misc', () => {
     const song = minimalSong();
     const active = { kind: 'attachment' as const, attachmentKind: 'chart' as const, driveFileId: 'd1' };
     expect(eligibleSectionsForPracticeResourceDrag(active, song)).toEqual(
-      new Set(['charts', 'takes', 'misc']),
+      new Set(['charts', 'takes', 'play', 'misc']),
     );
     expect(sectionAcceptsPracticeResourceDrag('charts', active, song)).toBe(true);
     expect(sectionAcceptsPracticeResourceDrag('takes', active, song)).toBe(true);
+    expect(sectionAcceptsPracticeResourceDrag('play', active, song)).toBe(true);
     expect(sectionAcceptsPracticeResourceDrag('misc', active, song)).toBe(true);
     expect(sectionAcceptsPracticeResourceDrag('listen', active, song)).toBe(false);
   });

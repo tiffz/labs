@@ -45,28 +45,49 @@ describe('decideStanzaLoopWrap', () => {
     expect(decision.loopEnd).toBe(t);
   });
 
-  it('wraps after transport stalls near the (extended) loop end', () => {
+  it('does not wrap on stall while frozen at reported metadata duration (audible tail may continue)', () => {
     const reported = 180;
-    const near = reported - STANZA_LOOP_WRAP_TOLERANCE_SEC * 0.25;
-    let prev: number | null = 179.95;
-    let stalled = 0;
-
-    const approach = decideStanzaLoopWrap({
-      transportTime: near,
+    const frozen = reported - STANZA_LOOP_WRAP_TOLERANCE_SEC * 0.25;
+    const prev: number | null = frozen - 0.01;
+    const stalled = 0;
+    let wrap = decideStanzaLoopWrap({
+      transportTime: frozen,
       loopEnd: reported,
       reportedDuration: reported,
       previousTransportTime: prev,
       stalledFrames: stalled,
     });
-    expect(approach.shouldWrap).toBe(false);
-    prev = approach.previousTransportTime;
-    stalled = approach.stalledFrames;
+    for (let i = 0; i < STANZA_LOOP_TRANSPORT_STALL_FRAME_THRESHOLD + 2; i++) {
+      wrap = decideStanzaLoopWrap({
+        transportTime: frozen,
+        loopEnd: reported,
+        reportedDuration: reported,
+        previousTransportTime: wrap.previousTransportTime,
+        stalledFrames: wrap.stalledFrames,
+      });
+    }
+    expect(wrap.shouldWrap).toBe(false);
+  });
 
-    let wrap = approach;
+  it('wraps after transport stalls past reported metadata at the extended loop end', () => {
+    const reported = 180;
+    const extended = 181.2;
+    let prev: number | null = extended - 0.05;
+    let stalled = 0;
+    let wrap = decideStanzaLoopWrap({
+      transportTime: extended,
+      loopEnd: reported,
+      reportedDuration: reported,
+      previousTransportTime: prev,
+      stalledFrames: 0,
+    });
+    expect(wrap.duration).toBe(extended);
+    prev = wrap.previousTransportTime;
+    stalled = wrap.stalledFrames;
     for (let i = 0; i < STANZA_LOOP_TRANSPORT_STALL_FRAME_THRESHOLD; i++) {
       wrap = decideStanzaLoopWrap({
-        transportTime: near,
-        loopEnd: reported,
+        transportTime: extended,
+        loopEnd: wrap.loopEnd,
         reportedDuration: reported,
         previousTransportTime: prev,
         stalledFrames: stalled,

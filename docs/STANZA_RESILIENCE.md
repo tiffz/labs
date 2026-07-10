@@ -6,18 +6,18 @@ Related: [`STANZA_PLAYBACK.md`](STANZA_PLAYBACK.md), [`../src/stanza/CUJs.md`](.
 
 ## Known stability risks (and mitigations)
 
-| Risk                                           | Symptom                                                              | Mitigation                                                                                                                                    |
-| ---------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Per-second Dexie writes during playback**    | Tab crash / freeze after many loop iterations; library grid thrashes | `useStanzaPracticeStatsTracker` batches stats in memory, flushes every 15s with `touchUpdatedAt: false`                                       |
-| **Bulk media hydrate during Merge and upload** | Tab OOM / freeze when many Drive-linked songs download at once       | Manual merge uses `skipBulkHydrate`; recordings hydrate lazily when you open a song                                                           |
-| **Auto-push during manual merge+flush**        | Concurrent Drive writes / React churn / rare tab death               | `stanzaDriveSyncOperationInProgress` + blocking job suppress debounced auto-push for the whole operation                                      |
-| **60fps RAF while paused**                     | Unnecessary wakeups on idle viewer                                   | `useStanzaTransportLoop` throttles to 250ms when not playing and loop mode is `through`                                                       |
-| **Duplicate loop wraps**                       | Seek storms at loop boundary                                         | `stanzaLoopWrapGuard` coalesces RAF + `onEnded` wraps                                                                                         |
-| **Skip-all-in-window**                         | Infinite seek loop                                                   | `hasPlayableTimeInWindow` + pause-on-exhaust in transport policy                                                                              |
-| **Unhandled render errors**                    | White screen                                                         | `LabsErrorBoundary` in `stanza/main.tsx` + `StanzaViewerErrorBoundary` around viewer shell                                                    |
-| **RAF / Web Audio tick throws**                | Silent tab death mid-playback                                        | `labsPlaybackSafeCall` in transport loop, metronome RAF, drum scheduler, YouTube `onStateChange`                                              |
-| **Invalid BPM in media-slaved clocks**         | `Infinity` / NaN in beat math                                        | `MediaTimelineClock` guards when `bpm <= 0`                                                                                                   |
-| **High-frequency playback React paint**        | Full Chrome tab crash ("Oh snap") mid-playback on long songs         | `mergeStanzaPlaybackSnapshot` uses ~200ms time epsilon while playing; metronome strip re-renders only on beat-slot change; YouTube poll 500ms |
+| Risk                                           | Symptom                                                              | Mitigation                                                                                                 |
+| ---------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Per-second Dexie writes during playback**    | Tab crash / freeze after many loop iterations; library grid thrashes | `useStanzaPracticeStatsTracker` batches stats in memory, flushes every 15s with `touchUpdatedAt: false`    |
+| **Bulk media hydrate during Merge and upload** | Tab OOM / freeze when many Drive-linked songs download at once       | Manual merge uses `skipBulkHydrate`; recordings hydrate lazily when you open a song                        |
+| **Auto-push during manual merge+flush**        | Concurrent Drive writes / React churn / rare tab death               | `stanzaDriveSyncOperationInProgress` + blocking job suppress debounced auto-push for the whole operation   |
+| **60fps RAF while paused**                     | Unnecessary wakeups on idle viewer                                   | `useStanzaTransportLoop` throttles to 250ms when not playing and loop mode is `through`                    |
+| **Duplicate loop wraps**                       | Seek storms at loop boundary                                         | `stanzaLoopWrapGuard` coalesces RAF + `onEnded` wraps                                                      |
+| **Skip-all-in-window**                         | Infinite seek loop                                                   | `hasPlayableTimeInWindow` + pause-on-exhaust in transport policy                                           |
+| **Unhandled render errors**                    | White screen                                                         | `LabsErrorBoundary` in `stanza/main.tsx` + `StanzaViewerErrorBoundary` around viewer shell                 |
+| **RAF / Web Audio tick throws**                | Silent tab death mid-playback                                        | `labsPlaybackSafeCall` in transport loop, metronome RAF, drum scheduler, YouTube `onStateChange`           |
+| **Invalid BPM in media-slaved clocks**         | `Infinity` / NaN in beat math                                        | `MediaTimelineClock` guards when `bpm <= 0`                                                                |
+| **Premature HTML5 `ended` (VBR)**              | Song stops early in play-through despite more audio                  | Decoded `AudioBuffer.duration` + fingerprint horizon; evidence-only resume (`stanza-playthrough-tail` e2e) |
 
 ## Screen wake lock (mobile practice)
 
@@ -45,13 +45,17 @@ These encode invariants; extend them **before** changing wrap/skip/stats behavio
 
 ### Layer 2 — Hook characterization
 
-- `useStanzaTransportLoop.test.ts` — RAF scheduling, skip pause, wrap dedup wiring
+- `useStanzaTransportLoop.test.ts` — RAF scheduling, skip pause, wrap dedup wiring, re-anchor policy
+- `stanzaLocalAudiblePath.test.ts` — transpose / stems / mixer mute matrix
+- `stanzaPracticeSourceSwitch.test.ts` — dual-source seek clamp on source switch
+- `stanzaLocalMainDecodeCache.test.ts` — shared decode for duration + transpose
 
-Run: `npx vitest run src/stanza/hooks/useStanzaTransportLoop.test.ts`
+Run: `npx vitest run src/stanza/hooks/useStanzaTransportLoop.test.ts src/stanza/utils/stanzaLocalAudiblePath.test.ts`
 
 ### Layer 3 — E2e smokes (journey-level)
 
 - `e2e/smoke/stanza-loop-whole-song.spec.ts` — loop-all tail + wrap
+- `e2e/smoke/stanza-playthrough-tail.spec.ts` — play-through past spoofed short metadata
 - `e2e/stanza-viewer-layout.spec.ts` — shell regressions
 
 Run scoped: `node scripts/run-scoped-e2e.mjs` after Stanza playback changes.
@@ -90,6 +94,6 @@ Long-loop manual checklist (≈10 min):
 
 ## Future improvements (not yet implemented)
 
-- Soak e2e: 20-loop Playwright run with heap snapshot guard
 - `performance.memory` telemetry in debug mode during loop sessions
 - Stem / YouTube drift alignment tests (see `STANZA_PLAYBACK.md` metronome vs drums note)
+- Dual-source (YouTube ↔ upload) e2e smoke covering transport horizon reset (unit coverage: `stanzaPracticeSourceSwitch.test.ts`)

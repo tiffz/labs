@@ -2,9 +2,17 @@ import { useCallback, useEffect, useRef, type Dispatch, type MutableRefObject, t
 
 import { labsPlaybackSafeCall } from '../../shared/utils/labsPlaybackSafeCall';
 
+import {
+  readBestKnownMediaDurationSec,
+  readMediaBufferedEndSec,
+  readMediaSeekableEndSec,
+  readPositiveFiniteMediaDurationSec,
+  resolvePrematureMediaEndResume,
+} from '../utils/stanzaMediaDuration';
 import type { DerivedSegment } from '../utils/segments';
 import {
   isPastLoopWrapPoint,
+  STANZA_LOOP_WRAP_TOLERANCE_SEC,
   STANZA_MIN_LOOP_SPAN_SEC,
   type StanzaPlaybackLoopMode,
 } from '../utils/stanzaPlaybackLoop';
@@ -19,6 +27,8 @@ export type UseStanzaTransportLoopRefs = {
   playingRef: MutableRefObject<boolean>;
   timeRef: MutableRefObject<number>;
   durationRef: MutableRefObject<number>;
+  /** Probed fingerprint / layout horizon — may exceed HTML5 metadata on VBR files. */
+  knownHorizonSecRef: MutableRefObject<number>;
   loopModeRef: MutableRefObject<StanzaPlaybackLoopMode>;
   effectiveSelectionSpanRef: MutableRefObject<StanzaSelectionSpan | null>;
   segmentsRef: MutableRefObject<DerivedSegment[]>;
@@ -43,6 +53,7 @@ export type UseStanzaTransportLoopOptions = {
 
 export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
   handleLoopAtMediaEnd: () => void;
+  handleLocalMediaEnded: () => void;
 } {
   const { refsRef, readLiveTransportTime, getLocalMainMedia, setPlayback } = opts;
   const loopWrapPrevTimeRef = useRef<number | null>(null);
@@ -57,6 +68,61 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
     loopWrapStallFramesRef.current = 0;
   }, [refsRef]);
 
+  const resolveReportedTransportDuration = useCallback((): number => {
+    const refs = refsRef.current;
+    let d = Math.max(refs.durationRef.current, refs.knownHorizonSecRef.current);
+    if (!refs.isYoutubeRef.current) {
+      const el = getLocalMainMedia();
+      const fd = el ? readBestKnownMediaDurationSec(el) : null;
+      if (fd != null) d = Math.max(d, fd);
+    }
+    return d;
+  }, [getLocalMainMedia, refsRef]);
+
+  /**
+   * Local `<audio>` / `<video>` `ended` — resume past premature metadata ends when we have
+   * evidence (decoded/fingerprint horizon or longer seekable/buffered), else loop wrap.
+   */
+  const tryResumePastPrematureLocalEnd = useCallback((): boolean => {
+    if (refsRef.current.isYoutubeRef.current) return false;
+    const el = getLocalMainMedia();
+    if (!el) return false;
+    const t = Number.isFinite(el.currentTime) ? el.currentTime : refsRef.current.timeRef.current;
+    const reported = readPositiveFiniteMediaDurationSec(el);
+    const knownHorizon = Math.max(
+      refsRef.current.knownHorizonSecRef.current,
+      refsRef.current.durationRef.current,
+    );
+    const resume = resolvePrematureMediaEndResume({
+      currentTime: t,
+      reportedDuration: reported,
+      seekableEnd: readMediaSeekableEndSec(el),
+      bufferedEnd: readMediaBufferedEndSec(el),
+      knownHorizonSec: knownHorizon > 0 ? knownHorizon : null,
+    });
+    if (!resume) return false;
+
+    refsRef.current.durationRef.current = Math.max(
+      refsRef.current.durationRef.current,
+      resume.nextDuration,
+    );
+    setPlayback((p) =>
+      p.duration >= resume.nextDuration
+        ? { ...p, isPlaying: true }
+        : { ...p, duration: resume.nextDuration, isPlaying: true },
+    );
+    try {
+      el.currentTime = resume.seekTo;
+    } catch (err) {
+      console.warn('[stanza] premature-end seek failed', err);
+      return false;
+    }
+    refsRef.current.timeRef.current = resume.seekTo;
+    // Use playUnified so transpose mirror / stems restart after onEnded stopped them.
+    requestAnimationFrame(() => refsRef.current.playUnifiedRef.current());
+    return true;
+  }, [getLocalMainMedia, refsRef, setPlayback]);
+
   const handleLoopAtMediaEnd = useCallback(() => {
     const refs = refsRef.current;
     const mode = refs.loopModeRef.current;
@@ -66,7 +132,11 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
     const skipped = refs.skippedBySegmentIdRef.current;
     if (effective === 'through') return;
     if (effective === 'loopAll') {
-      const d = refs.durationRef.current;
+      const d = resolveReportedTransportDuration();
+      const t = refs.timeRef.current;
+      if (d > 0 && t < d - STANZA_LOOP_WRAP_TOLERANCE_SEC * 2) {
+        return;
+      }
       if (!(d > 0)) return;
       const { start } = resolvePlayableWindowAnchors(segs, skipped, 0, d);
       performLoopWrap(start);
@@ -76,7 +146,12 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
       const { start } = resolvePlayableWindowAnchors(segs, skipped, span.start, span.end);
       performLoopWrap(start);
     }
-  }, [performLoopWrap, refsRef]);
+  }, [performLoopWrap, refsRef, resolveReportedTransportDuration]);
+
+  const handleLocalMediaEnded = useCallback(() => {
+    if (tryResumePastPrematureLocalEnd()) return;
+    handleLoopAtMediaEnd();
+  }, [handleLoopAtMediaEnd, tryResumePastPrematureLocalEnd]);
 
   useEffect(() => {
     let raf = 0;
@@ -120,10 +195,23 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
 
         const tLive = readLiveTransportTime();
         refs.timeRef.current = tLive;
-        const d = refs.durationRef.current;
+        const d = resolveReportedTransportDuration();
+        if (d > refs.durationRef.current) {
+          refs.durationRef.current = d;
+        }
         const segs = refs.segmentsRef.current;
         const skipped = refs.skippedBySegmentIdRef.current;
         const span = refs.effectiveSelectionSpanRef.current;
+
+        const effectiveLoopMode = resolveEffectiveStanzaLoopMode({ loopMode, selectionSpan: span });
+        if (
+          effectiveLoopMode === 'through' &&
+          Number.isFinite(tLive) &&
+          tLive > d + STANZA_LOOP_WRAP_TOLERANCE_SEC
+        ) {
+          refs.durationRef.current = Math.max(refs.durationRef.current, tLive);
+          setPlayback((p) => (p.duration >= tLive ? p : { ...p, duration: tLive }));
+        }
 
         const tickResult = evaluateStanzaTransportLoopTick({
           transportTime: tLive,
@@ -195,9 +283,9 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
     };
     scheduleNext(false);
     return () => cancelScheduled();
-  }, [getLocalMainMedia, performLoopWrap, readLiveTransportTime, refsRef, setPlayback]);
+  }, [getLocalMainMedia, performLoopWrap, readLiveTransportTime, refsRef, resolveReportedTransportDuration, setPlayback]);
 
-  return { handleLoopAtMediaEnd };
+  return { handleLoopAtMediaEnd, handleLocalMediaEnded };
 }
 
 /** Re-anchor playhead before resuming when past the playable loop end. */

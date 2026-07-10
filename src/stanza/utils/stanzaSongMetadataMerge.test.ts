@@ -4,6 +4,7 @@ import type { StanzaSong } from '../db/stanzaDb';
 import { stanzaSongPracticeCustomizationScore } from './stanzaSongCustomizationScore';
 import {
   mergePracticePlaybackToggle,
+  mergePracticeSkippedBySegmentId,
   mergeStanzaRicherSongMetadata,
   mergeStanzaRicherSongMetadataWithReport,
   mergeStanzaSongWithRemotePreference,
@@ -76,6 +77,35 @@ describe('mergePracticePlaybackToggle', () => {
 
   it('returns undefined when neither side set a value', () => {
     expect(mergePracticePlaybackToggle(undefined, undefined)).toBeUndefined();
+  });
+});
+
+describe('mergePracticeSkippedBySegmentId', () => {
+  it('keeps a newer local clear over a stale remote skip map', () => {
+    expect(
+      mergePracticeSkippedBySegmentId(
+        { updatedAt: 200, skippedBySegmentId: undefined },
+        { updatedAt: 100, skippedBySegmentId: { 'seg-end': true } },
+      ),
+    ).toBeUndefined();
+  });
+
+  it('takes a newer remote skip map', () => {
+    expect(
+      mergePracticeSkippedBySegmentId(
+        { updatedAt: 50, skippedBySegmentId: undefined },
+        { updatedAt: 100, skippedBySegmentId: { 'seg-a': true } },
+      ),
+    ).toEqual({ 'seg-a': true });
+  });
+
+  it('does not union-merge skips when clocks are equal (prefers local)', () => {
+    expect(
+      mergePracticeSkippedBySegmentId(
+        { updatedAt: 100, skippedBySegmentId: undefined },
+        { updatedAt: 100, skippedBySegmentId: { 'seg-end': true } },
+      ),
+    ).toBeUndefined();
   });
 });
 

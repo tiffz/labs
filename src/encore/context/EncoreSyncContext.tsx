@@ -1,6 +1,4 @@
-/* eslint-disable react-refresh/only-export-components -- file exports Provider + context only; useEncoreSync lives in useEncoreSync.ts for Fast Refresh */
 import {
-  createContext,
   useCallback,
   useEffect,
   useMemo,
@@ -31,42 +29,15 @@ import {
 import { useEncoreAuth } from './EncoreAuthContext';
 import { useEncoreBlockingJobs } from './EncoreBlockingJobContext';
 import { useEncoreLibraryReady } from './EncoreLibraryContext';
+import {
+  EncoreSyncContext,
+  type EncoreSyncContextValue,
+  type SilentAutoMergeSummary,
+  type SyncUiState,
+} from './encoreSyncContextStore';
 
-export type SyncUiState = 'idle' | 'syncing' | 'error' | 'conflict';
-
-/** Fired after the merge half of a silent auto-merge completes; consumers can show a toast. */
-export type SilentAutoMergeSummary = {
-  localOnlyCount: number;
-  remoteOnlyCount: number;
-};
-
-/**
- * Sync surface: Drive sync state machine, conflict view, debounced background push.
- */
-export interface EncoreSyncContextValue {
-  syncState: SyncUiState;
-  syncMessage: string | null;
-  /** Re-run Drive bootstrap / pull. No-op when not signed in. */
-  retryDriveSync: () => Promise<void>;
-  /** Debounced silent push of `repertoire_data.json`. Coalesces rapid local writes. */
-  scheduleBackgroundSync: () => void;
-  /** Set when `runInitialSyncIfPossible` returns a row-level conflict that needs user input. */
-  conflict: SyncCheckResult | null;
-  /** Detailed analysis (which rows conflict / which are auto-mergeable) — populated alongside `conflict`. */
-  conflictAnalysis: ConflictAnalysis | null;
-  /** Resolve every "both edited" row at once with the user's per-row choice. */
-  resolveConflictWithChoices: (choices: Map<string, 'local' | 'remote'>) => Promise<void>;
-  /** Convenience: pick "use Drive everywhere". */
-  resolveConflictRemote: () => Promise<void>;
-  /** Convenience: pick "keep this device everywhere". */
-  resolveConflictLocal: () => Promise<void>;
-  dismissConflict: () => void;
-  /** Most recent silent auto-merge summary; cleared after toasting. */
-  lastSilentMerge: SilentAutoMergeSummary | null;
-  acknowledgeSilentMerge: () => void;
-}
-
-export const EncoreSyncContext = createContext<EncoreSyncContextValue | null>(null);
+export type { SyncUiState, SilentAutoMergeSummary, EncoreSyncContextValue };
+export { EncoreSyncContext };
 
 function waitForNextPaint(): Promise<void> {
   return new Promise((resolve) => {

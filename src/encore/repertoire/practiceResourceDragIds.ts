@@ -117,6 +117,9 @@ export function eligibleSectionsForPracticeResourceDrag(
     if (active.attachmentKind === 'chart' || active.attachmentKind === 'recording') {
       sections.add('takes');
     }
+    if (active.attachmentKind === 'chart') {
+      sections.add('play');
+    }
     return sections;
   }
   return new Set();

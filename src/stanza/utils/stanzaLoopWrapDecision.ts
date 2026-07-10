@@ -52,7 +52,19 @@ export function decideStanzaLoopWrap(input: StanzaLoopWrapDecisionInput): Stanza
 
   const nextStalledFrames = advancing ? 0 : stalledFrames + 1;
   const nearEnd = isPastLoopWrapPoint(transportTime, loopEnd, STANZA_LOOP_WRAP_TOLERANCE_SEC);
-  const shouldWrap = nearEnd && !advancing && nextStalledFrames >= STANZA_LOOP_TRANSPORT_STALL_FRAME_THRESHOLD;
+
+  // HTML5 often freezes currentTime at reported metadata duration while the audible tail still
+  // plays. Defer stall-based wrap until transport exceeds metadata (or onEnded handles it).
+  const atMetadataCeiling =
+    Number.isFinite(transportTime) &&
+    transportTime <= reportedDuration + STANZA_LOOP_WRAP_TOLERANCE_SEC &&
+    duration <= reportedDuration;
+
+  const shouldWrap =
+    nearEnd &&
+    !advancing &&
+    !atMetadataCeiling &&
+    nextStalledFrames >= STANZA_LOOP_TRANSPORT_STALL_FRAME_THRESHOLD;
 
   return {
     shouldWrap,

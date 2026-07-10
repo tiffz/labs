@@ -481,7 +481,8 @@ export function PerformanceEditorDialog(props: {
       setUploading(true);
       setShortcutMsg(null);
       try {
-        await withBlockingJob('Uploading performance video…', async () => {
+        await withBlockingJob('Uploading performance video…', async (setProgress) => {
+          setProgress(0);
           const layout = await ensureEncoreDriveLayout(googleAccessToken);
           const parent =
             resolveDriveUploadFolderId('performances', layout, repertoireExtras.driveUploadFolderOverrides) ??
@@ -491,8 +492,10 @@ export function PerformanceEditorDialog(props: {
           }
           const venueForNaming = draft.venueTag.trim() || 'Venue';
           const perfLabel = `${draft.venueTag.trim() || 'Venue'} · Video`;
+          const fileCount = deviceFilesToUpload.length;
 
-          for (const file of deviceFilesToUpload) {
+          for (let fileIndex = 0; fileIndex < fileCount; fileIndex += 1) {
+            const file = deviceFilesToUpload[fileIndex]!;
             const { extension } = splitFileNameExtension(file.name);
             const desiredName = buildPerformanceVideoName(
               { date: draft.date, venueTag: venueForNaming },
@@ -507,6 +510,12 @@ export function PerformanceEditorDialog(props: {
                   file,
                   [parent.trim()],
                   desiredName,
+                  {
+                    onProgress: ({ bytesSent, bytesTotal }) => {
+                      const fileFrac = bytesTotal > 0 ? bytesSent / bytesTotal : 0;
+                      setProgress((fileIndex + fileFrac) / fileCount);
+                    },
+                  },
                 );
                 await registerUploadedDriveFile(created.id, perfLabel);
                 return created.id;
@@ -520,6 +529,7 @@ export function PerformanceEditorDialog(props: {
               setUploading(false);
               return;
             }
+            setProgress((fileIndex + 1) / fileCount);
             const uploadedVideo = newPerformanceVideo({ videoTargetDriveFileId: uploadedId });
             if (videos.length === 0) {
               videos = [uploadedVideo];
@@ -529,6 +539,7 @@ export function PerformanceEditorDialog(props: {
               primaryVideoId = primaryVideoId ?? videos[0]?.id;
             }
           }
+          setProgress(1);
         });
       } catch (e) {
         setShortcutMsg(`Upload failed: ${e instanceof Error ? e.message : String(e)}`);
