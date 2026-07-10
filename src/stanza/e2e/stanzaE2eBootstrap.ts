@@ -115,6 +115,9 @@ async function buildE2eSongWithDrumsPlayback(): Promise<StanzaSong> {
 export const STANZA_E2E_LOOP_SONG_ID = '__stanza_e2e_loop__';
 export const STANZA_E2E_LOOP_SONG_TITLE = 'E2E Loop Song';
 
+export const STANZA_E2E_PLAYTHROUGH_SONG_ID = '__stanza_e2e_playthrough__';
+export const STANZA_E2E_PLAYTHROUGH_SONG_TITLE = 'E2E Playthrough Song';
+
 async function buildE2eSongWithLoopPlayback(): Promise<StanzaSong> {
   const primary = createMinimalWavBlobForStanzaE2e(2.5);
   return {
@@ -128,10 +131,27 @@ async function buildE2eSongWithLoopPlayback(): Promise<StanzaSong> {
   };
 }
 
+/** ~3s local WAV for play-through / premature-metadata e2e. */
+async function buildE2eSongWithPlaythrough(): Promise<StanzaSong> {
+  const durationSec = 3;
+  const primary = createMinimalWavBlobForStanzaE2e(durationSec);
+  return {
+    id: STANZA_E2E_PLAYTHROUGH_SONG_ID,
+    ytId: null,
+    title: STANZA_E2E_PLAYTHROUGH_SONG_TITLE,
+    markers: [],
+    stats: {},
+    updatedAt: Date.now(),
+    localAudioBlob: primary,
+    localMediaFingerprint: `${primary.size}:${durationSec.toFixed(2)}`,
+  };
+}
+
 export type StanzaE2eWindowHooks = {
   seedSongWithStems: () => Promise<string>;
   seedSongWithDrumsPlayback: () => Promise<string>;
   seedSongWithLoopPlayback: () => Promise<string>;
+  seedSongWithPlaythrough: () => Promise<string>;
   seedSongWithPracticeRail: () => Promise<string>;
 };
 
@@ -161,6 +181,12 @@ export function installStanzaE2eHooks(): void {
     },
     async seedSongWithLoopPlayback() {
       const row = await buildE2eSongWithLoopPlayback();
+      await stanzaDb.songs.put(row);
+      writeStanzaLastSelectedSongId(row.id);
+      return row.id;
+    },
+    async seedSongWithPlaythrough() {
+      const row = await buildE2eSongWithPlaythrough();
       await stanzaDb.songs.put(row);
       writeStanzaLastSelectedSongId(row.id);
       return row.id;

@@ -26,7 +26,7 @@ export function useStanzaLocalPlaybackObjectUrls({
     if (!primaryLocalBlobKey) return null;
     const sel = selectedRef.current;
     const blob = sel?.localAudioBlob;
-    if (!blob || sel?.ytId) return null;
+    if (!blob) return null;
     return URL.createObjectURL(blob);
     // `selectedRef` is stable; blob identity is fully captured by `primaryLocalBlobKey`.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional ref read when key changes

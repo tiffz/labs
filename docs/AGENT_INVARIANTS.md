@@ -61,6 +61,8 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 | Layout padding/contrast on Encore/Gesture home surfaces                                                    | `layout-heuristics-*.spec.ts`                                                                                      |
 | No unintended horizontal scroll on primary surfaces                                                        | `horizontalScrollHeuristicCore.ts`, `layout-heuristics-*.spec.ts`, `.cursor/rules/layout-no-horizontal-scroll.mdc` |
 | HMR is not proof — hard-refresh affected routes                                                            | `pre-commit-checks.mdc`                                                                                            |
+| React context objects used across Provider + hook modules must stay HMR-stable (`globalThis` pin)          | `encoreSyncContextStore.ts` pattern; symptom: “outside Provider” while Provider is mounted after Fast Refresh      |
+| Drive resumable **chunk** PUTs use XHR, not `fetch` (browser `fetch` treats HTTP 308 as redirect)          | `driveResumableUpload.ts`, `driveResumableUpload.test.ts`                                                          |
 | Control + heavy grid → isolate interaction state                                                           | `react-interaction-perf.mdc`, `docs/PERFORMANCE.md`                                                                |
 
 ## Process
@@ -73,6 +75,6 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 
 ## Root cause classes (grep labels)
 
-`stale state` · `portal styling` · `render order` · `async race` · `empty-state logic` · `fake stopAll` · `missing invariant` · `test gap` · `ux revision churn` · `hmr false confidence` · `wrong-io-tier` · `revoked-blob-display` · `static-hosting-cors` · `ux-gestalt` · `ux-redundancy` · `ux-visual-weight` · `ux-journey-overload` · `ux-spec-violation` · `render-cascade` · `main-thread-jank` · `warmup-storm` · `optimistic-ui-gap`
+`stale state` · `portal styling` · `render order` · `async race` · `empty-state logic` · `fake stopAll` · `missing invariant` · `test gap` · `ux revision churn` · `hmr false confidence` · `hmr-context-identity` · `wrong-io-tier` · `revoked-blob-display` · `static-hosting-cors` · `ux-gestalt` · `ux-redundancy` · `ux-visual-weight` · `ux-journey-overload` · `ux-spec-violation` · `render-cascade` · `main-thread-jank` · `warmup-storm` · `optimistic-ui-gap` · `drive-resumable-308` · `network-io-suspended`
 
 Add a new class only when several future issues would share it.

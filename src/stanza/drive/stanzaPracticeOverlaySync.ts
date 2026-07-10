@@ -4,7 +4,10 @@
  */
 
 import type { StanzaSong } from '../db/stanzaDb';
-import { mergePracticePlaybackToggle } from '../utils/stanzaSongMetadataMerge';
+import {
+  mergePracticePlaybackToggle,
+  mergePracticeSkippedBySegmentId,
+} from '../utils/stanzaSongMetadataMerge';
 import {
   driveCreateJsonFile,
   driveGetMedia,
@@ -90,6 +93,15 @@ function entryFromSong(row: StanzaSong): StanzaPracticeOverlayEntry {
   };
   for (const key of OVERLAY_FIELDS) {
     if (key === 'updatedAt') continue;
+    // Always persist skip map (including empty) so clearing a skip survives Drive round-trip.
+    // Absent keys on older overlays are ignored on merge (see mergeStanzaPracticeOverlayIntoRows).
+    if (key === 'skippedBySegmentId') {
+      entry.skippedBySegmentId =
+        row.skippedBySegmentId && Object.keys(row.skippedBySegmentId).length > 0
+          ? row.skippedBySegmentId
+          : {};
+      continue;
+    }
     const value = row[key as keyof StanzaSong];
     if (value !== undefined) {
       (entry as Record<string, unknown>)[key] = value;
@@ -138,6 +150,22 @@ export function mergeStanzaPracticeOverlayIntoRows(
         if (mergedToggle !== undefined) {
           (merged as unknown as Record<string, unknown>)[key] = mergedToggle;
         }
+        continue;
+      }
+      // Skip clears remove keys — never blindly copy a stale overlay map over a newer local clear.
+      if (key === 'skippedBySegmentId') {
+        if (!Object.prototype.hasOwnProperty.call(entry, 'skippedBySegmentId')) {
+          continue;
+        }
+        const nextSkip = mergePracticeSkippedBySegmentId(row, {
+          updatedAt: entry.updatedAt,
+          skippedBySegmentId:
+            entry.skippedBySegmentId && Object.keys(entry.skippedBySegmentId).length > 0
+              ? entry.skippedBySegmentId
+              : undefined,
+        });
+        if (nextSkip) merged.skippedBySegmentId = nextSkip;
+        else delete merged.skippedBySegmentId;
         continue;
       }
       const value = entry[key as keyof StanzaPracticeOverlayEntry];

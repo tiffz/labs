@@ -42,4 +42,17 @@ export function patchStanzaDriveSyncMeta(patch: Partial<StanzaDriveSyncMeta>): S
   return next;
 }
 
+/** Prefer the most recent local push time for account-menu "Last backup" copy. */
+export function stanzaDriveLastBackupDisplayIso(meta: StanzaDriveSyncMeta): string | undefined {
+  const pushAt = meta.lastAutoPushAt;
+  const exported = meta.lastBackupExportedAt?.trim();
+  if (pushAt != null && pushAt > 0) {
+    const exportedMs = exported ? Date.parse(exported) : Number.NaN;
+    if (!Number.isFinite(exportedMs) || pushAt > exportedMs) {
+      return new Date(pushAt).toISOString();
+    }
+  }
+  return exported || undefined;
+}
+
 export { labsDriveFolderUrl as stanzaDriveFolderUrl } from '../../shared/drive/labsDriveFolderUrl';

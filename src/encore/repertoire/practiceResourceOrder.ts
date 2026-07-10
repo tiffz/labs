@@ -12,7 +12,7 @@ import {
   type PracticeResourceLinkSection,
 } from './practiceResourceDragIds';
 import { miscResourceFromAttachment, miscResourceFromMediaLink } from './practiceResourceConversions';
-import { ensureSongHasDerivedMediaLinks, syncSongLegacyMediaIds } from './songMediaLinks';
+import { ensureSongHasDerivedMediaLinks, syncSongLegacyMediaIds, appendDriveBackingLink } from './songMediaLinks';
 
 function moveArrayItemByKey<T>(
   items: T[],
@@ -368,10 +368,35 @@ export function moveAttachmentToMisc(
   return appendMiscResourceOrdered(removed.song, misc, insertBeforeMiscId);
 }
 
+export function moveAttachmentToPlay(
+  song: EncoreSong,
+  fromKind: EncoreSongAttachment['kind'],
+  driveFileId: string,
+  insertBeforeLinkId?: string | null,
+): EncoreSong {
+  const removed = removeAttachmentFromSong(song, fromKind, driveFileId);
+  if (!removed) return song;
+  const fid = removed.attachment.driveFileId;
+  const label = removed.attachment.label;
+  const next = appendDriveBackingLink(removed.song, fid, { label });
+  if (!insertBeforeLinkId) return next;
+  const backing = [...(next.backingLinks ?? [])];
+  const added = backing.find((l) => l.source === 'drive' && l.driveFileId === fid);
+  if (!added) return next;
+  const without = backing.filter((l) => l.id !== added.id);
+  const insertAt = without.findIndex((l) => l.id === insertBeforeLinkId);
+  const reordered =
+    insertAt >= 0
+      ? [...without.slice(0, insertAt), added, ...without.slice(insertAt)]
+      : [...without, added];
+  return syncSongLegacyMediaIds({ ...next, backingLinks: reordered });
+}
+
 type PracticeResourceDropResolution =
   | { kind: 'link-section'; section: PracticeResourceLinkSection; insertBeforeLinkId: string | null }
   | { kind: 'attachment-reorder'; attachmentKind: EncoreSongAttachment['kind']; overDriveFileId: string | null }
   | { kind: 'takes'; insertBeforeDriveFileId: string | null }
+  | { kind: 'play'; insertBeforeLinkId: string | null }
   | { kind: 'misc'; insertBeforeMiscId: string | null };
 
 function resolvePracticeResourceDrop(
@@ -419,6 +444,9 @@ function resolvePracticeResourceDrop(
       if (over.section === 'takes' && (active.attachmentKind === 'chart' || active.attachmentKind === 'recording')) {
         return { kind: 'takes', insertBeforeDriveFileId: null };
       }
+      if (over.section === 'play' && active.attachmentKind === 'chart') {
+        return { kind: 'play', insertBeforeLinkId: null };
+      }
       if (over.section === 'misc') {
         return { kind: 'misc', insertBeforeMiscId: null };
       }
@@ -434,6 +462,13 @@ function resolvePracticeResourceDrop(
       }
       if (over.attachmentKind === 'recording' && active.attachmentKind === 'chart') {
         return { kind: 'takes', insertBeforeDriveFileId: over.driveFileId };
+      }
+      return null;
+    }
+    if (over.kind === 'link') {
+      const section = linkSectionForSong(song, over.linkId);
+      if (section === 'play' && active.attachmentKind === 'chart') {
+        return { kind: 'play', insertBeforeLinkId: over.linkId };
       }
       return null;
     }
@@ -522,6 +557,14 @@ export function applyPracticeResourceDragEnd(song: EncoreSong, event: DragEndEve
         activeParsed.attachmentKind,
         activeParsed.driveFileId,
         drop.insertBeforeDriveFileId,
+      );
+    }
+    if (drop.kind === 'play') {
+      return moveAttachmentToPlay(
+        song,
+        activeParsed.attachmentKind,
+        activeParsed.driveFileId,
+        drop.insertBeforeLinkId,
       );
     }
     if (drop.kind === 'misc') {

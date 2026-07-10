@@ -5,7 +5,7 @@ import {
   replaceLocalhostWithLoopbackOrigin,
   shouldRedirectLocalhostToLoopbackInDev,
 } from './devLocalhostToLoopbackRedirect';
-import { useEncore } from './context/EncoreContext';
+import { useEncoreAuth } from './context/EncoreAuthContext';
 import { AccessRestrictedScreen, SignInLanding } from './components/AccessGateScreens';
 import { EncoreMainShell } from './components/EncoreMainShell';
 import { GuestShareView } from './components/GuestShareView';
@@ -32,7 +32,7 @@ function EncoreSignedInRouter(): React.ReactElement {
     googleSignInPending,
     continueWithoutGoogle,
     retryAccessGate,
-  } = useEncore();
+  } = useEncoreAuth();
   const clientConfigured = Boolean((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim());
   const canUseMainShell =
     Boolean(googleAccessToken) || googleGateBypassed || !clientConfigured;

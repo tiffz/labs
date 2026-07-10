@@ -80,9 +80,31 @@ UX sketch skill: [`labs-ux-journey`](../../.cursor/skills/labs-ux-journey/SKILL.
 | Type  | Artifact                                                                             |
 | ----- | ------------------------------------------------------------------------------------ |
 | Smoke | `e2e/smoke/stanza-loop-whole-song.spec.ts`, `e2e/smoke/stanza-playback-soak.spec.ts` |
-| Unit  | `stanzaTransportLoop.integration.test.ts`                                            |
+| Unit  | `stanzaTransportLoop.integration.test.ts`, `stanzaMediaDuration.test.ts`             |
 
 See [`docs/STANZA_PLAYBACK.md`](../../docs/STANZA_PLAYBACK.md) for transport invariants.
+
+---
+
+## CUJ-003b: Play through without premature stop
+
+**Primary goal:** With **Play through** (loop off), local audio reaches the real file end — not a short metadata `ended`.  
+**Persona:** Singer listening once end-to-end.
+
+### Success criteria
+
+- Timeline duration uses decoded PCM / fingerprint when HTML5 metadata is short.
+- If HTML5 fires `ended` early while a known horizon still extends, playback resumes past that point.
+- No speculative resume without evidence (decode, fingerprint, or longer seekable/buffered).
+
+### Automation
+
+| Type  | Artifact                                    |
+| ----- | ------------------------------------------- |
+| Smoke | `e2e/smoke/stanza-playthrough-tail.spec.ts` |
+| Unit  | `stanzaMediaDuration.test.ts`               |
+
+See [`docs/STANZA_PLAYBACK.md`](../../docs/STANZA_PLAYBACK.md) § Duration trust model.
 
 ---
 

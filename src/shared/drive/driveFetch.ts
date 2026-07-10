@@ -1,53 +1,21 @@
 import { inferMediaMimeType } from './inferMediaMimeType';
+import {
+  DriveHttpError,
+  formatDriveRequestFailure,
+  isTransientDriveHttpStatus,
+} from './driveFetchErrors';
+import { uploadDriveFileResumableChunked } from './driveResumableUpload';
+
+export {
+  DriveHttpError,
+  formatDriveRequestFailure,
+  summarizeDriveApiErrorBody,
+} from './driveFetchErrors';
 
 const DRIVE_BASE = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_BASE = 'https://www.googleapis.com/upload/drive/v3';
 
-export class DriveHttpError extends Error {
-  constructor(
-    message: string,
-    public status: number,
-    public body?: string
-  ) {
-    super(message);
-    this.name = 'DriveHttpError';
-  }
-}
-
-/** Extract a human-readable line from a Drive v3 JSON error body (falls back to trimmed text). */
-export function summarizeDriveApiErrorBody(body: string, maxLen = 320): string {
-  const t = body.trim();
-  if (!t) return '';
-  try {
-    const j = JSON.parse(t) as {
-      error?: { message?: string; errors?: Array<{ message?: string; reason?: string }> };
-    };
-    const primary = j.error?.errors?.[0]?.message || j.error?.message;
-    if (primary) return primary.length > maxLen ? `${primary.slice(0, maxLen)}…` : primary;
-  } catch {
-    /* not JSON */
-  }
-  return t.length > maxLen ? `${t.slice(0, maxLen)}…` : t;
-}
-
-function isTransientDriveHttpStatus(status: number): boolean {
-  return status === 408 || status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
-}
-
 const TRANSIENT_RETRY_DELAYS_MS = [0, 500, 1500] as const;
-
-export function formatDriveRequestFailure(method: string, path: string, status: number, body: string): string {
-  const detail = summarizeDriveApiErrorBody(body);
-  const head = `Drive ${method} ${path} (${status})`;
-  if (!detail) return head;
-  if (status === 403 && /insufficient|scope|authentication|access denied|forbidden/i.test(detail)) {
-    return `${head}: ${detail} If you recently changed Google permissions for Encore, open Account → Sign in again, or Disconnect then sign in.`;
-  }
-  if (status === 401) {
-    return `${head}: ${detail} Open Account (top right), then under Google choose Sign in again.`;
-  }
-  return `${head}: ${detail}`;
-}
 
 /** Drive v3 rejects `etag` in `fields` masks; use the HTTP `ETag` response header for concurrency (`If-Match`). */
 export function etagFromDriveResponse(res: Response): string | undefined {
@@ -235,56 +203,26 @@ export async function driveListFiles(
   return driveGetJson(accessToken, '/files', query);
 }
 
-/** Resumable upload (single PUT) for arbitrary binary size within browser memory. */
+/**
+ * Resumable Drive upload in 256 KiB–aligned chunks with status-query resume after
+ * network suspend / transient failures (replaces the old single full-file PUT).
+ */
 export async function driveUploadFileResumable(
   accessToken: string,
   file: File,
   parents: string[],
   name?: string,
+  options?: { onProgress?: (progress: { bytesSent: number; bytesTotal: number }) => void },
 ): Promise<{ id: string }> {
   const fileName = name?.trim() || file.name || 'upload';
-  if (file.size <= 0) {
-    throw new DriveHttpError('Cannot upload an empty file (0 bytes).', 400);
-  }
-  const mimeType = inferMediaMimeType(file);
-  const init = await fetch(`${UPLOAD_BASE}/files?uploadType=resumable&fields=id&supportsAllDrives=true`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json; charset=UTF-8',
-      'X-Upload-Content-Type': mimeType,
-      'X-Upload-Content-Length': String(file.size),
-    },
-    body: JSON.stringify({ name: fileName, parents }),
+  return uploadDriveFileResumableChunked({
+    accessToken,
+    file,
+    parents,
+    fileName,
+    mimeType: inferMediaMimeType(file),
+    onProgress: options?.onProgress,
   });
-  const initText = await init.text();
-  if (!init.ok) {
-    throw new DriveHttpError(formatDriveRequestFailure('POST', 'upload/resumable (init)', init.status, initText), init.status, initText);
-  }
-  const location = init.headers.get('Location');
-  if (!location) {
-    throw new DriveHttpError(formatDriveRequestFailure('POST', 'upload/resumable (no Location)', init.status, initText), init.status, initText);
-  }
-  const putHeaders: Record<string, string> = {
-    'Content-Length': String(file.size),
-    'Content-Type': mimeType,
-    /** Required when uploading the full object in one PUT; without it, Drive may accept but store 0 bytes. */
-    'Content-Range': `bytes 0-${file.size - 1}/${file.size}`,
-  };
-  const put = await fetch(location, {
-    method: 'PUT',
-    headers: putHeaders,
-    body: file,
-  });
-  const putText = await put.text();
-  if (!put.ok) {
-    throw new DriveHttpError(formatDriveRequestFailure('PUT', 'upload/resumable', put.status, putText), put.status, putText);
-  }
-  try {
-    return JSON.parse(putText) as { id: string };
-  } catch {
-    throw new DriveHttpError(formatDriveRequestFailure('PUT', 'upload/resumable (parse)', put.status, putText), put.status, putText);
-  }
 }
 
 export async function driveCreateJsonFile(

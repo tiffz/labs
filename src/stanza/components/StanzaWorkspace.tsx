@@ -59,11 +59,12 @@ import {
 } from '../db/stanzaDb';
 import {
   buildLocalAudioStanzaSong,
-  isAudioFileForStanza,
+  buildLocalPracticeAudioPatch,
+  isLocalMediaFileForStanza,
   isStanzaBlobLikeVideo,
   stanzaSongTitleFromFileName,
 } from '../db/stanzaLocalAudioImport';
-import { computeStanzaLocalMediaFingerprint } from '../utils/stanzaLocalMediaFingerprint';
+import { computeStanzaLocalMediaFingerprint, stanzaFingerprintDurationSec } from '../utils/stanzaLocalMediaFingerprint';
 import { getStanzaLocalMainMediaElement } from '../utils/stanzaLocalMainMediaElement';
 import { runStanzaLibraryDedupeMigrationOnce } from '../db/stanzaConsolidateLocalLibrary';
 import { useStanzaFileDrop } from '../hooks/useStanzaFileDrop';
@@ -77,6 +78,7 @@ import {
   sanitizeStanzaMarkers,
   STANZA_TIME_EPS,
 } from '../utils/segments';
+import { stanzaSegmentLayoutDuration } from '../utils/stanzaSegmentLayoutDuration';
 import { pickRandomSectionIndex } from '../utils/pickRandomSectionIndex';
 import {
   applySectionSelectionExtend,
@@ -88,24 +90,24 @@ import {
 } from '../utils/stanzaPlaybackLoop';
 import {
   resolveStanzaTimelineTransport,
-  stanzaPlayheadDisplayTime,
 } from '../utils/stanzaPlayheadDisplayTime';
 import {
-  resolveEffectiveStanzaLoopMode,
   resolveStanzaSkipTarget,
   type StanzaPlaybackFocus,
 } from '../utils/stanzaPlaybackFocus';
 import { snapSegmentBoundaryMarkersToBeats, commitSelectionSpanToHullBoundaryMarkers } from '../utils/stanzaBeatGrid';
 import { canPlaceMarkerAtTime, markerTimesEqual } from '../utils/stanzaMarkerSpacing';
 import type { StanzaMarkersChangeContext } from './StanzaTimeline';
+import { useStanzaLocalDecodedDuration } from '../hooks/useStanzaLocalDecodedDuration';
 import { useStanzaLocalPlaybackObjectUrls } from '../hooks/useStanzaLocalPlaybackObjectUrls';
 import {
   stanzaPrimaryLocalBlobKey,
   stanzaStemBlobIdentityKeySorted,
   stanzaStemUrlKeyFromSong,
 } from '../utils/stanzaPlaybackBlobUrlKeys';
-import { readPositiveFiniteMediaDurationSec } from '../utils/stanzaMediaDuration';
+import { readBestKnownMediaDurationSec, readPositiveFiniteMediaDurationSec } from '../utils/stanzaMediaDuration';
 import { primaryPlaybackMuted, stanzaSanitizeLinearBusGain, stemPlaybackMuted } from '../utils/stanzaPlaybackMute';
+import { pruneStanzaSkippedBySegmentId, stanzaSkippedMapsEqual } from '../utils/stanzaSkippedMapPrune';
 import { migrateStanzaSongSegmentKeysIfNeeded } from '../utils/stanzaSegmentMigration';
 import { resolveStanzaMetronomeGridSync } from '../utils/stanzaMetronomeResolution';
 import {
@@ -147,7 +149,6 @@ import { StanzaViewerErrorBoundary } from './StanzaViewerErrorBoundary';
 import StanzaAccountMenu from './StanzaAccountMenu';
 import StanzaAudioDownloadButton from './StanzaAudioDownloadButton';
 import StanzaTimeline from './StanzaTimeline';
-import { clampStanzaPlaybackRate } from '../utils/stanzaPlaybackRateLimits';
 import StanzaMetronomeStrip from './StanzaMetronomeStrip';
 import StanzaSectionMetronomeRail from './StanzaSectionMetronomeRail';
 import StanzaScopeInheritanceControl from './stanzaWorkspace/StanzaScopeInheritanceControl';
@@ -167,9 +168,16 @@ import { useStanzaSongKeyDetection } from '../hooks/useStanzaSongAnalysis';
 import { StanzaLocalTransposeMirror } from '../audio/stanzaLocalTransposeMirror';
 import { StanzaLocalTransposeStemBus } from '../audio/stanzaLocalTransposeStemBus';
 import { decodeStanzaLocalBlobForPlayback } from '../audio/decodeStanzaLocalBlob';
+import { getStanzaLocalMainDecodedBuffer } from '../audio/stanzaLocalMainDecodeCache';
 import { readInitialStanzaViewerIntent } from '../utils/readInitialStanzaViewerIntent';
-import { shouldReanchorStanzaPlayhead, useStanzaTransportLoop } from '../hooks/useStanzaTransportLoop';
+import { useStanzaTransportLoop } from '../hooks/useStanzaTransportLoop';
 import type { UseStanzaTransportLoopRefs } from '../hooks/useStanzaTransportLoop';
+import { useStanzaUnifiedTransport } from '../hooks/useStanzaUnifiedTransport';
+import {
+  resolveStanzaLocalAudiblePath,
+  stanzaLocalElementMixForPath,
+} from '../utils/stanzaLocalAudiblePath';
+import { resolvePracticeSourceSwitchSeek } from '../utils/stanzaPracticeSourceSwitch';
 import { useStanzaPlaybackWakeLock } from '../hooks/useStanzaPlaybackWakeLock';
 import { useStanzaPracticeStatsTracker } from '../hooks/useStanzaPracticeStatsTracker';
 import { mergeStanzaPlaybackSnapshot } from '../utils/stanzaPlaybackStateMerge';
@@ -178,6 +186,13 @@ import { applyStanzaYoutubeControllerMix } from '../utils/stanzaYoutubeMixVolume
 import { useBeatLibraryMigration } from '../hooks/useBeatLibraryMigration';
 import { useStanzaPlaybackBootstrap } from '../hooks/useStanzaPlaybackBootstrap';
 import StanzaSuggestSectionsDialog from './StanzaSuggestSectionsDialog';
+import {
+  resolveStanzaPracticeSource,
+  songHasDualPracticeSources,
+  type StanzaPracticeSource,
+} from '../utils/stanzaPracticeSource';
+import { stanzaSongAfterRemovingUploadedPracticeAudio } from '../utils/stanzaRemoveUploadedPracticeAudio';
+import { StanzaPracticeSourceSwitch } from './StanzaPracticeSourceSwitch';
 import StanzaYoutubeLocalFeaturesNotice from './StanzaYoutubeLocalFeaturesNotice';
 import StanzaDriveDeepLinkAlerts from './stanzaWorkspace/StanzaDriveDeepLinkAlerts';
 import StanzaLibraryGrid from './stanzaWorkspace/StanzaLibraryGrid';
@@ -196,7 +211,6 @@ import {
   describeYoutubePlayerError,
   reorderStemsById,
   songHasPractice,
-  STANZA_STEM_ALIGN_DRIFT_SEC,
 } from './stanzaWorkspace/stanzaWorkspaceHelpers';
 
 const STANZA_EMPTY_STEMS: StanzaStemTrack[] = [];
@@ -273,6 +287,7 @@ export default function StanzaWorkspace() {
     files: File[];
     rows: { name: string; durationSec: number }[];
     refSec: number;
+    hasYoutube: boolean;
   } | null>(null);
   /** Inline mix-rail label edit (stem id + draft value). */
   const [stemInlineEdit, setStemInlineEdit] = useState<{ stemId: string; value: string } | null>(null);
@@ -315,7 +330,12 @@ export default function StanzaWorkspace() {
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const isYoutube = Boolean(selected?.ytId);
-  isYoutubeForSeekRef.current = isYoutube;
+  const practiceSource = resolveStanzaPracticeSource(selected);
+  const hasDualPracticeSources = songHasDualPracticeSources(selected);
+  const usesYoutubeTransport = practiceSource === 'youtube';
+  const showYoutubePlayer = Boolean(selected?.ytId && practiceSource === 'youtube');
+  const showLocalPlayer = Boolean(selected?.localAudioBlob && practiceSource === 'local');
+  isYoutubeForSeekRef.current = usesYoutubeTransport;
 
   /** Identifies local media for beat-analysis cache (same song + same file → reuse analysis). */
   const stanzaBeatAnalysisCacheKey = useMemo(() => {
@@ -698,6 +718,16 @@ export default function StanzaWorkspace() {
     selectedRef,
   });
 
+  /** Authoritative local duration from decoded PCM — preferred over short HTML5 metadata. */
+  const decodedLocalDurationSec = useStanzaLocalDecodedDuration({
+    enabled: practiceSource === 'local' && Boolean(selected?.localAudioBlob),
+    mediaKey: primaryLocalBlobKey,
+    blob: selected?.localAudioBlob,
+    mediaUrl: localUrl,
+    title: selected?.title ?? 'Stanza track',
+    isVideo: isLocalVideo,
+  });
+
   /** Pitch-shift playback reuses one decode per media identity; avoid re-decoding on unrelated Dexie churn. */
   const transposeBuffersWanted = persistedTransposeSemitones !== 0;
 
@@ -707,7 +737,7 @@ export default function StanzaWorkspace() {
     const t = song?.localTransposeSemitones ?? 0;
     const blob = song?.localAudioBlob;
     const stems = song?.stems ?? [];
-    if (!song?.id || song.ytId || t === 0 || !blob || !localUrl) {
+    if (!song?.id || resolveStanzaPracticeSource(song) !== 'local' || t === 0 || !blob || !localUrl) {
       transposeMirrorRef.current?.setBuffer(null);
       transposeStemBusRef.current?.setBuffers(null, new Map());
       setTransposeBuffer(null);
@@ -723,7 +753,8 @@ export default function StanzaWorkspace() {
     setTransposeDecodeError(null);
     void (async () => {
       try {
-        const mainBuf = await decodeStanzaLocalBlobForPlayback({
+        const mainBuf = await getStanzaLocalMainDecodedBuffer({
+          mediaKey: primaryLocalBlobKey,
           blob,
           title: song.title || 'Stanza track',
           mediaUrl: localUrl,
@@ -770,7 +801,7 @@ export default function StanzaWorkspace() {
     };
   }, [localUrl, isLocalVideo, stemUrlById, transposeBuffersWanted, primaryLocalBlobKey, stemUrlKey, selectedId]);
 
-  /** New song or new primary blob. avoid carrying the previous track's duration into `timeupdate` NaN windows. */
+  /** New song — reset transport; avoid carrying the previous track's duration into `timeupdate` NaN windows. */
   useEffect(() => {
     setPlayback({
       currentTime: 0,
@@ -778,7 +809,16 @@ export default function StanzaWorkspace() {
       isPlaying: false,
       playbackRate: 1,
     });
-  }, [selectedId, primaryLocalBlobKey]);
+  }, [selectedId]);
+
+  /** New primary blob on the same song — seek to start but keep duration so section markers stay visible. */
+  useEffect(() => {
+    setPlayback((p) => ({
+      ...p,
+      currentTime: 0,
+      isPlaying: false,
+    }));
+  }, [primaryLocalBlobKey]);
 
   /** Mix slider drafts apply to audible output immediately; Dexie persists on commit. */
   const playbackPrimaryGain = stanzaSanitizeLinearBusGain(mixPrimaryGainDraft ?? selected?.primaryGain);
@@ -802,7 +842,7 @@ export default function StanzaWorkspace() {
 
   const stemWebAudioMixerEnabled = Boolean(
     selected &&
-      !selected.ytId &&
+      !usesYoutubeTransport &&
       (selected.stems?.length ?? 0) > 0 &&
       Boolean(stemUrlKey) &&
       (selected.localTransposeSemitones ?? 0) === 0,
@@ -810,7 +850,7 @@ export default function StanzaWorkspace() {
 
   const transposeMirrorPlaybackActive = Boolean(
     selected &&
-      !selected.ytId &&
+      !usesYoutubeTransport &&
       (selected.stems?.length ?? 0) === 0 &&
       (selected.localTransposeSemitones ?? 0) !== 0 &&
       transposeBuffer != null,
@@ -818,7 +858,7 @@ export default function StanzaWorkspace() {
 
   const transposeStemBusPlaybackActive = Boolean(
     selected &&
-      !selected.ytId &&
+      !usesYoutubeTransport &&
       (selected.stems?.length ?? 0) > 0 &&
       (selected.localTransposeSemitones ?? 0) !== 0 &&
       transposeStemMixPackage != null,
@@ -826,7 +866,7 @@ export default function StanzaWorkspace() {
 
   /** If Web Audio graph setup fails (or is abandoned), restore audible levels on the underlying media elements. */
   const restoreHtmlStemVolumes = useCallback(() => {
-    if (!selected || selected.ytId) return;
+    if (!selected || usesYoutubeTransport) return;
     const main = getLocalMainMedia();
     if (main) {
       main.volume = stanzaSanitizeLinearBusGain(selected.primaryGain);
@@ -838,7 +878,7 @@ export default function StanzaWorkspace() {
       el.volume = stanzaSanitizeLinearBusGain(stem.gain);
       el.muted = stemPlaybackMuted(stem);
     }
-  }, [selected, getLocalMainMedia]);
+  }, [selected, usesYoutubeTransport, getLocalMainMedia]);
 
   const { webAudioMixReady, prepareStemMixerForPlaySync, finalizeStemMixerResume, abandonWebAudioMix } =
     useStanzaLocalStemMixer({
@@ -857,51 +897,32 @@ export default function StanzaWorkspace() {
     });
 
   useEffect(() => {
-    if (!selected || selected.ytId) return;
+    if (!selected || usesYoutubeTransport) return;
     const main = getLocalMainMedia();
     if (!main) return;
 
-    const audibleTranspose = transposeMirrorPlaybackActive || transposeStemBusPlaybackActive;
-    if ((selected.localTransposeSemitones ?? 0) !== 0 && !audibleTranspose) {
-      main.volume = 0;
-      main.muted = false;
-      for (const stem of selected.stems ?? []) {
-        const el = stemAudioRefs.current.get(stem.id);
-        if (!el) continue;
-        el.volume = 0;
-        el.muted = false;
-      }
-      return;
-    }
+    const path = resolveStanzaLocalAudiblePath({
+      transposeSemitones: selected.localTransposeSemitones ?? 0,
+      stemCount: selected.stems?.length ?? 0,
+      stemMixerEnabled: stemWebAudioMixerEnabled,
+      stemMixerReady: webAudioMixReady,
+      transposeMirrorReady: transposeMirrorPlaybackActive,
+      transposeStemBusReady: transposeStemBusPlaybackActive,
+    });
+    const mix = stanzaLocalElementMixForPath(path, {
+      primaryGain: playbackPrimaryGain,
+      primaryMuted: primaryPlaybackMuted(selected),
+      stemMuted: stemPlaybackMuted,
+    });
 
-    const viaWebAudio = stemWebAudioMixerEnabled && webAudioMixReady;
-
-    if (viaWebAudio) {
-      // See StanzaLocalStemMixer: MEA follows element volume — keep at 1; mix/mute via Web Audio only.
-      main.volume = 1;
-      main.muted = false;
-    } else if (transposeStemBusPlaybackActive || transposeMirrorPlaybackActive) {
-      // Audible output comes from decoded-buffer Web Audio; keep media elements as transport clock only.
-      main.volume = 0;
-      main.muted = false;
-    } else {
-      main.volume = playbackPrimaryGain;
-      main.muted = primaryPlaybackMuted(selected);
-    }
+    main.volume = mix.mainVolume;
+    main.muted = mix.mainMuted;
 
     for (const stem of playbackStems) {
       const el = stemAudioRefs.current.get(stem.id);
       if (!el) continue;
-      if (viaWebAudio) {
-        el.volume = 1;
-        el.muted = false;
-      } else if (transposeStemBusPlaybackActive) {
-        el.volume = 0;
-        el.muted = false;
-      } else {
-        el.volume = stanzaSanitizeLinearBusGain(stem.gain);
-        el.muted = stemPlaybackMuted(stem);
-      }
+      el.volume = mix.stemVolume(stem);
+      el.muted = mix.stemMuted(stem);
     }
   }, [
     primaryMixKey,
@@ -913,26 +934,29 @@ export default function StanzaWorkspace() {
     webAudioMixReady,
     transposeMirrorPlaybackActive,
     transposeStemBusPlaybackActive,
+    usesYoutubeTransport,
     getLocalMainMedia,
   ]);
 
   useEffect(() => {
-    if (!isYoutube || !selected) return;
+    if (!usesYoutubeTransport || !selected) return;
     applyStanzaYoutubeControllerMix(ytControllerRef.current, {
       muted: primaryPlaybackMuted(selected),
       linearGain: playbackPrimaryGain,
     });
-  }, [isYoutube, selected, primaryMixKey, playbackPrimaryGain]);
+  }, [usesYoutubeTransport, selected, primaryMixKey, playbackPrimaryGain]);
 
   useEffect(() => {
-    if (!isYoutube || !selected) return;
+    if (!usesYoutubeTransport || !selected) return;
     for (const stem of playbackStems) {
       const el = stemAudioRefs.current.get(stem.id);
       if (!el) continue;
       el.volume = stanzaSanitizeLinearBusGain(stem.gain);
       el.muted = stemPlaybackMuted(stem);
     }
-  }, [isYoutube, selected, stemMixKey, playbackStems]);
+  }, [usesYoutubeTransport, selected, stemMixKey, playbackStems]);
+
+  const prevPracticeSourceRef = useRef<StanzaPracticeSource | null>(null);
 
   useEffect(() => {
     if (!stemUrlKey) return;
@@ -949,18 +973,51 @@ export default function StanzaWorkspace() {
         });
       });
     };
-    if (isYoutube) {
+    if (usesYoutubeTransport) {
       syncStems(timeRef.current, playingRef.current);
       return;
     }
     const main = getLocalMainMedia();
     if (!main) return;
     syncStems(main.currentTime, !main.paused);
-  }, [stemUrlKey, isYoutube, getLocalMainMedia]);
+  }, [stemUrlKey, usesYoutubeTransport, getLocalMainMedia]);
+
+  const sectionLayoutDuration = useMemo(
+    () =>
+      stanzaSegmentLayoutDuration({
+        markers: selected?.markers,
+        playbackDuration: playback.duration,
+        localMediaFingerprint: selected?.localMediaFingerprint,
+      }),
+    [selected?.markers, selected?.localMediaFingerprint, playback.duration],
+  );
+
+  const sectionLayoutDurationRef = useRef(0);
+  sectionLayoutDurationRef.current = sectionLayoutDuration;
+  const knownHorizonSecRef = useRef(0);
+  // Decoded PCM + fingerprint + live transport — not marker layout (YouTube sections can exceed the local file).
+  knownHorizonSecRef.current = Math.max(
+    playback.duration > 0 ? playback.duration : 0,
+    decodedLocalDurationSec,
+    stanzaFingerprintDurationSec(selected?.localMediaFingerprint) ?? 0,
+  );
+
+  useEffect(() => {
+    if (!(decodedLocalDurationSec > 0)) return;
+    setPlayback((p) =>
+      p.duration >= decodedLocalDurationSec - 0.01 ? p : { ...p, duration: decodedLocalDurationSec },
+    );
+    durationRef.current = Math.max(durationRef.current, decodedLocalDurationSec);
+  }, [decodedLocalDurationSec]);
 
   useEffect(() => {
     timeRef.current = playback.currentTime;
-    durationRef.current = playback.duration;
+    const transportDuration = playback.duration;
+    if (transportDuration > 0) {
+      durationRef.current = Math.max(durationRef.current, transportDuration);
+    } else {
+      durationRef.current = 0;
+    }
     playingRef.current = playback.isPlaying;
   }, [playback]);
 
@@ -980,8 +1037,12 @@ export default function StanzaWorkspace() {
   }, [selectedSegmentsKey]);
 
   const segments = useMemo(
-    () => deriveSegments(selected?.markers ?? [], playback.duration),
-    [selected?.markers, playback.duration],
+    () =>
+      deriveSegments(
+        selected?.markers ?? [],
+        Math.max(sectionLayoutDuration, playback.duration > 0 ? playback.duration : 0),
+      ),
+    [selected?.markers, sectionLayoutDuration, playback.duration],
   );
 
   const segmentSelectionLoopHull = useMemo(
@@ -1016,6 +1077,9 @@ export default function StanzaWorkspace() {
   // every downstream `useCallback`.
   const segmentsRef = useRef(segments);
   segmentsRef.current = segments;
+  /** Mirrored early so unified transport can read skips without ordering issues. */
+  const skippedBySegmentIdRef = useRef(selected?.skippedBySegmentId);
+  skippedBySegmentIdRef.current = selected?.skippedBySegmentId;
 
   const playbackSegIdx = useMemo(
     () => (segments.length > 0 ? findSegmentIndexAtTime(segments, playback.currentTime) : null),
@@ -1113,11 +1177,11 @@ export default function StanzaWorkspace() {
   }, [selectedId]);
 
   useEffect(() => {
-    if (!selectedId || playback.duration <= 0 || !songs) return;
+    if (!selectedId || sectionLayoutDuration <= 0 || !songs) return;
     const song = songs.find((s) => s.id === selectedId);
     if (!song) return;
-    void migrateStanzaSongSegmentKeysIfNeeded(song, playback.duration);
-  }, [selectedId, playback.duration, songs]);
+    void migrateStanzaSongSegmentKeysIfNeeded(song, sectionLayoutDuration);
+  }, [selectedId, sectionLayoutDuration, songs]);
 
   useEffect(() => {
     clearUndoStack();
@@ -1157,7 +1221,12 @@ export default function StanzaWorkspace() {
       const prevSnap = recordUndo ? structuredClone(row) : null;
       const nextMarkers =
         patch.markers != null
-          ? sanitizeStanzaMarkers(ensureMarkerIds(patch.markers), durationRef.current)
+          ? sanitizeStanzaMarkers(
+              ensureMarkerIds(patch.markers),
+              sectionLayoutDurationRef.current > 0
+                ? sectionLayoutDurationRef.current
+                : durationRef.current,
+            )
           : row.markers;
       const next: StanzaSong = {
         ...row,
@@ -1212,13 +1281,13 @@ export default function StanzaWorkspace() {
 
   /** One-time cleanup for redundant 0:00 / track-end markers left from older builds or hover rename. */
   useEffect(() => {
-    if (!selected || !(playback.duration > 0)) return;
+    if (!selected || !(sectionLayoutDuration > 0)) return;
     const raw = selected.markers ?? [];
-    const clean = sanitizeStanzaMarkers(ensureMarkerIds(raw), playback.duration);
+    const clean = sanitizeStanzaMarkers(ensureMarkerIds(raw), sectionLayoutDuration);
     if (!markerTimesEqual(raw, clean)) {
       void persistSong({ id: selected.id, markers: clean }, { recordUndo: false });
     }
-  }, [selected, playback.duration, persistSong]);
+  }, [selected, sectionLayoutDuration, persistSong]);
 
   const commitMarkers = useCallback(
     async (markers: StanzaMarker[], context?: StanzaMarkersChangeContext) => {
@@ -1390,7 +1459,10 @@ export default function StanzaWorkspace() {
   const addStemFromFile = useCallback(
     async (file: File) => {
       if (!selected) return;
-      if (!isAudioFileForStanza(file)) return;
+      if (!isLocalMediaFileForStanza(file)) {
+        setLocalUploadError(`Not a supported recording: ${file.name || 'unnamed file'}`);
+        return;
+      }
       const blob = new Blob([await file.arrayBuffer()], { type: file.type || 'audio/mpeg' });
       const stem: StanzaStemTrack = {
         id: crypto.randomUUID(),
@@ -1410,7 +1482,7 @@ export default function StanzaWorkspace() {
       if (!row) return;
       const newStems: StanzaStemTrack[] = [];
       for (const file of files) {
-        if (!isAudioFileForStanza(file)) continue;
+        if (!isLocalMediaFileForStanza(file)) continue;
         const blob = new Blob([await file.arrayBuffer()], { type: file.type || 'audio/mpeg' });
         newStems.push({
           id: crypto.randomUUID(),
@@ -1420,8 +1492,31 @@ export default function StanzaWorkspace() {
           muted: false,
         });
       }
-      if (newStems.length === 0) return;
+      if (newStems.length === 0) {
+        setLocalUploadError('No supported audio or video files to add as layers.');
+        return;
+      }
       await persistSong({ id: songId, stems: [...(row.stems ?? []), ...newStems] });
+    },
+    [persistSong],
+  );
+
+  const attachLocalPracticeAudio = useCallback(
+    async (songId: string, file: File, opts?: { replaceYoutube?: boolean }) => {
+      setLocalUploadError(null);
+      try {
+        const patch = await buildLocalPracticeAudioPatch(file);
+        const row = await stanzaDb.songs.get(songId);
+        if (!row) return;
+        await persistSong({
+          id: songId,
+          ...patch,
+          practiceSource: 'local',
+          ...(opts?.replaceYoutube ? { ytId: null } : {}),
+        });
+      } catch (e) {
+        setLocalUploadError(e instanceof Error ? e.message : String(e));
+      }
     },
     [persistSong],
   );
@@ -1585,6 +1680,7 @@ export default function StanzaWorkspace() {
           files: matching.map((m) => m.file),
           rows: matching.map((m) => ({ name: m.file.name, durationSec: m.dur! })),
           refSec: refDur,
+          hasYoutube: Boolean(row?.ytId),
         });
       } catch (e) {
         setLocalUploadError(e instanceof Error ? e.message : String(e));
@@ -1663,405 +1759,127 @@ export default function StanzaWorkspace() {
     [selectedId, isReplayingRef, pushUndo],
   );
 
-  const syncTransposeMirrorFromMain = useCallback(() => {
-    const mirror = transposeMirrorRef.current;
-    const bus = transposeStemBusRef.current;
-    const main = getLocalMainMedia();
-    const row = selectedRef.current;
-    const mix = playbackMixRef.current;
-    if (!main || !row || row.ytId) {
-      mirror?.stop();
-      bus?.stop();
-      return;
-    }
-    const stemsLen = row.stems?.length ?? 0;
-    const transpose = row.localTransposeSemitones ?? 0;
-    if (transpose === 0) {
-      mirror?.stop();
-      bus?.stop();
-      return;
-    }
-    const primaryMuted = primaryPlaybackMuted(row);
-    if (stemsLen === 0) {
-      bus?.stop();
-      if (!mirror?.getBuffer()) {
-        mirror?.stop();
-        return;
-      }
-      const linear = primaryMuted ? 0 : mix.primaryGain;
-      if (main.paused || linear <= 0) {
-        mirror.stop();
-        return;
-      }
-      if (mirror.hasActiveSource()) {
-        mirror.setLinearGain(linear);
-        return;
-      }
-      mirror.startOrRestart(main.currentTime, main.playbackRate, transpose, linear);
-      return;
-    }
-    mirror?.stop();
-    if (!bus?.getMainBuffer()) {
-      bus?.stop();
-      return;
-    }
-    if (!transposeStemMixPackageRef.current) {
-      bus.stop();
-      return;
-    }
-    if (main.paused) {
-      bus.stop();
-      return;
-    }
-    if (bus.hasActiveSources()) {
-      bus.updateMix(primaryMuted, mix.primaryGain, mix.stems);
-      return;
-    }
-    bus.startOrRestart(
-      main.currentTime,
-      main.playbackRate,
-      transpose,
-      primaryMuted,
-      mix.primaryGain,
-      mix.stems,
-    );
-  }, [getLocalMainMedia]);
-
-  useEffect(() => {
-    if (!transposeMirrorPlaybackActive && !transposeStemBusPlaybackActive) return;
-    const main = getLocalMainMedia();
-    if (!main || main.paused) return;
-    syncTransposeMirrorFromMain();
-  }, [
-    primaryMixKey,
-    stemMixKey,
-    transposeMirrorPlaybackActive,
-    transposeStemBusPlaybackActive,
+  const {
     syncTransposeMirrorFromMain,
-    getLocalMainMedia,
-  ]);
-
-  const applyPlaybackRate = useCallback(
-    (rate: number) => {
-      const clamped = clampStanzaPlaybackRate(rate);
-      if (isYoutube) {
-        ytControllerRef.current?.setPlaybackRate(clamped);
-        stemAudioRefs.current.forEach((a) => {
-          a.playbackRate = clamped;
-        });
-      } else {
-        const el = getLocalMainMedia();
-        if (el) el.playbackRate = clamped;
-        stemAudioRefs.current.forEach((a) => {
-          a.playbackRate = clamped;
-        });
-        if (el && !el.paused) {
-          window.requestAnimationFrame(() => {
-            syncTransposeMirrorFromMain();
-          });
-        }
-      }
-      setPlayback((p) => ({ ...p, playbackRate: clamped }));
-    },
-    [isYoutube, syncTransposeMirrorFromMain, getLocalMainMedia],
-  );
-
-  const scheduleSeekFrame = useCallback(() => {
-    if (seekDisplayRafRef.current !== 0) return;
-    seekDisplayRafRef.current = window.requestAnimationFrame(() => {
-      seekDisplayRafRef.current = 0;
-      const tt = seekDisplayPendingRef.current;
-      seekDisplayPendingRef.current = null;
-      if (tt == null || !Number.isFinite(tt)) return;
-      if (isYoutubeForSeekRef.current) {
-        ytControllerRef.current?.seekTo(tt);
-      }
-      setPlayback((p) => (p.currentTime === tt ? p : { ...p, currentTime: tt }));
-    });
-  }, []);
-
-  const readLiveTransportTime = useCallback((): number => {
-    if (isYoutube) {
-      try {
-        const fn = ytControllerRef.current?.getCurrentTime;
-        if (typeof fn === 'function') {
-          const x = fn();
-          if (Number.isFinite(x)) return Math.max(0, x);
-        }
-      } catch {
-        /* ignore */
-      }
-    } else {
-      const el = getLocalMainMedia();
-      if (el && Number.isFinite(el.currentTime)) return el.currentTime;
-    }
-    return timeRef.current;
-  }, [isYoutube, getLocalMainMedia]);
-
-  /** Align marker placement with the painted timeline playhead (loop clamp + scrub display). */
-  const resolvePlayheadTimeForMarkers = useCallback((): number => {
-    const d = durationRef.current;
-    const live = readLiveTransportTime();
-    const transport = resolveStanzaTimelineTransport(live, seekDisplayPendingRef.current);
-    if (!(d > 0)) return transport;
-    return stanzaPlayheadDisplayTime(
-      transport,
-      d,
-      resolveEffectiveStanzaLoopMode({
-        loopMode: loopModeRef.current,
-        selectionSpan: effectiveSelectionSpanRef.current,
-      }),
-      effectiveSelectionSpanRef.current,
-    );
-  }, [readLiveTransportTime]);
-
-  const seekUnified = useCallback(
-    (tRaw: number, opts?: { flushPlaybackState?: boolean }) => {
-      const flush = opts?.flushPlaybackState === true;
-      const d = durationRef.current;
-      const t =
-        d > 0 && Number.isFinite(tRaw) ? Math.max(0, Math.min(d - STANZA_TIME_EPS * 0.5, tRaw)) : Math.max(0, tRaw);
-      timeRef.current = t;
-
-      if (flush) {
-        if (seekDisplayRafRef.current !== 0) {
-          window.cancelAnimationFrame(seekDisplayRafRef.current);
-          seekDisplayRafRef.current = 0;
-        }
-        seekDisplayPendingRef.current = null;
-      } else {
-        seekDisplayPendingRef.current = t;
-      }
-
-      if (isYoutube) {
-        if (flush) {
-          ytControllerRef.current?.seekTo(t);
-        } else {
-          scheduleSeekFrame();
-        }
-        stemAudioRefs.current.forEach((a) => {
-          try {
-            a.currentTime = t;
-          } catch {
-            /* ignore */
-          }
-        });
-        setPlayback((p) => (p.currentTime === t ? p : { ...p, currentTime: t }));
-        return;
-      }
-      const el = getLocalMainMedia();
-      if (el) {
-        el.currentTime = t;
-      }
-      stemAudioRefs.current.forEach((a) => {
-        try {
-          a.currentTime = t;
-        } catch {
-          /* ignore */
-        }
-      });
-      transposeMirrorRef.current?.stop();
-      transposeStemBusRef.current?.stop();
-      const elPlaying = getLocalMainMedia();
-      if (elPlaying && !elPlaying.paused) {
-        window.requestAnimationFrame(() => {
-          syncTransposeMirrorFromMain();
-        });
-      }
-      setPlayback((p) => (p.currentTime === t ? p : { ...p, currentTime: t }));
-    },
-    [isYoutube, scheduleSeekFrame, syncTransposeMirrorFromMain, getLocalMainMedia],
-  );
-
-  /**
-   * Section the user explicitly entered via a UI seek (section button click,
-   * scrub on the timeline, transport prev/next, hover-card play). The skip-
-   * playback RAF treats that section as "user wants to hear this" and skips
-   * suppression — even if it's marked skip — until the playhead naturally
-   * crosses into a different section. Programmatic seeks (loop wraps,
-   * out-of-window play() re-anchors) intentionally do NOT update this ref so
-   * skip still applies on the wrap target.
-   */
-  const lastUserEnteredSectionIdRef = useRef<string | null>(null);
-
-  /**
-   * Wrapper around `seekUnified` for user-initiated seeks. Records the destination
-   * section in {@link lastUserEnteredSectionIdRef} so the skipped-section RAF
-   * doesn't bounce the user out of a section they just chose.
-   *
-   * Reads `segments` from {@link segmentsRef} (not the closure) so this callback
-   * stays referentially stable across marker drags and Dexie writes — keeps the
-   * downstream `useCallback` chain (`handleSelectSegments`, `skipToLoopStart`,
-   * `skipToLoopEnd`) from invalidating every render.
-   */
-  const userSeekUnified = useCallback(
-    (tRaw: number, opts?: { flushPlaybackState?: boolean }) => {
-      const segs = segmentsRef.current;
-      const idx = findSegmentIndexAtTime(segs, tRaw);
-      lastUserEnteredSectionIdRef.current = idx != null ? segs[idx]?.id ?? null : null;
-      seekUnified(tRaw, opts);
-    },
-    [seekUnified],
-  );
-
-  const pauseStemAudios = useCallback(() => {
-    stemAudioRefs.current.forEach((a) => {
-      a.pause();
-    });
-  }, []);
-
-  /** Hard-sync stem clocks to the transport and start playback (YouTube or local main). */
-  const snapStemsToMainAndPlay = useCallback(() => {
-    const mt = isYoutube ? readLiveTransportTime() : getLocalMainMedia()?.currentTime;
-    if (mt == null || !Number.isFinite(mt)) return;
-    stemAudioRefs.current.forEach((a) => {
-      try {
-        a.currentTime = mt;
-      } catch {
-        /* ignore */
-      }
-      void a.play().catch(() => {
-        /* ignore autoplay / decode races */
-      });
-    });
-  }, [isYoutube, readLiveTransportTime, getLocalMainMedia]);
-
-  /**
-   * While transport is playing: resume paused stems and correct large clock drift only.
-   * Do **not** pause stems from here — `pauseUnified` / main `onPause` handle that.
-   */
-  const alignStemAudiosToMain = useCallback(() => {
-    if (isYoutube) {
-      if (!playingRef.current) return;
-    } else {
-      const main = getLocalMainMedia();
-      if (!main || main.paused) return;
-    }
-    const mt = isYoutube ? readLiveTransportTime() : getLocalMainMedia()?.currentTime;
-    if (mt == null || !Number.isFinite(mt)) return;
-
-    stemAudioRefs.current.forEach((a) => {
-      if (a.paused) void a.play().catch(() => {});
-      try {
-        if (Math.abs(a.currentTime - mt) > STANZA_STEM_ALIGN_DRIFT_SEC) a.currentTime = mt;
-      } catch {
-        /* ignore */
-      }
-    });
-  }, [isYoutube, readLiveTransportTime, getLocalMainMedia]);
-
-  /** Deferred drift pass after transport (main clock stable). */
-  const scheduleAlignStemAudiosToMain = useCallback(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        alignStemAudiosToMain();
-      });
-    });
-  }, [alignStemAudiosToMain]);
-
-  const playUnified = useCallback(() => {
-    primeStanzaMetronomeAudio();
-    const t = readLiveTransportTime();
-    timeRef.current = t;
-    const d = durationRef.current;
-    const mode = loopModeRef.current;
-    const span = effectiveSelectionSpanRef.current;
-    const segs = segmentsRef.current;
-    const skipped = skippedBySegmentIdRef.current;
-    const reanchorTarget = shouldReanchorStanzaPlayhead({
-      loopMode: mode,
-      transportTime: t,
-      duration: d,
-      selectionSpan: span,
-      segments: segs,
-      skipped,
-    });
-    if (reanchorTarget != null) seekUnified(reanchorTarget, { flushPlaybackState: true });
-    if (isYoutube) {
-      ytControllerRef.current?.play();
-      if ((selected?.stems?.length ?? 0) > 0) {
-        snapStemsToMainAndPlay();
-        scheduleAlignStemAudiosToMain();
-      }
-    } else {
-      const main = getLocalMainMedia();
-      if (!main) return;
-      let stemMixerPrepared = false;
-      if (stemWebAudioMixerEnabled) {
-        stemMixerPrepared = prepareStemMixerForPlaySync();
-        if (!stemMixerPrepared) {
-          restoreHtmlStemVolumes();
-        }
-      }
-      const pr = main.play();
-      if (stemWebAudioMixerEnabled && stemMixerPrepared) {
-        finalizeStemMixerResume();
-      }
-      // Same synchronous turn as the user gesture (transport / keyboard) so stem.play() keeps activation.
-      snapStemsToMainAndPlay();
-      const afterMainPlaying = () => {
-        snapStemsToMainAndPlay();
-        scheduleAlignStemAudiosToMain();
-        syncTransposeMirrorFromMain();
-      };
-      if (pr !== undefined && typeof (pr as Promise<void>).then === 'function') {
-        void (pr as Promise<void>).then(afterMainPlaying).catch((err: unknown) => {
-          // Play button "dead after a long-open tab, fixed by refresh": capture the concrete reason
-          // (media error code / readyState / network state) so it can be root-caused on the next
-          // repro instead of failing silently. See Stanza playback debugging notes.
-          console.error('[Stanza] main media play() rejected', {
-            reason: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
-            mediaErrorCode: main.error?.code ?? null,
-            readyState: main.readyState,
-            networkState: main.networkState,
-            currentSrc: main.currentSrc ? main.currentSrc.slice(0, 24) : '(none)',
-            paused: main.paused,
-          });
-          pauseStemAudios();
-          if (stemWebAudioMixerEnabled && stemMixerPrepared) {
-            abandonWebAudioMix();
-            restoreHtmlStemVolumes();
-          }
-        });
-      } else {
-        scheduleAlignStemAudiosToMain();
-        syncTransposeMirrorFromMain();
-      }
-    }
-  }, [
-    abandonWebAudioMix,
-    finalizeStemMixerResume,
-    isYoutube,
-    selected?.stems?.length,
+    applyPlaybackRate,
     readLiveTransportTime,
+    resolvePlayheadTimeForMarkers,
+    userSeekUnified,
     pauseStemAudios,
-    prepareStemMixerForPlaySync,
-    restoreHtmlStemVolumes,
-    seekUnified,
     snapStemsToMainAndPlay,
     scheduleAlignStemAudiosToMain,
-    stemWebAudioMixerEnabled,
-    syncTransposeMirrorFromMain,
+    playUnified,
+    pauseUnified,
+    playUnifiedRef,
+    seekUnifiedRef,
+    lastUserEnteredSectionIdRef,
+  } = useStanzaUnifiedTransport({
+    usesYoutubeTransport,
     getLocalMainMedia,
-  ]);
+    setPlayback,
+    selectedRef,
+    stemCount: selected?.stems?.length ?? 0,
+    ytControllerRef,
+    stemAudioRefs,
+    transposeMirrorRef,
+    transposeStemBusRef,
+    transposeStemMixPackageRef,
+    playbackMixRef,
+    timeRef,
+    durationRef,
+    playingRef,
+    loopModeRef,
+    effectiveSelectionSpanRef,
+    segmentsRef,
+    skippedBySegmentIdRef,
+    seekDisplayRafRef,
+    seekDisplayPendingRef,
+    isYoutubeForSeekRef,
+    stemWebAudioMixerEnabled,
+    prepareStemMixerForPlaySync,
+    finalizeStemMixerResume,
+    abandonWebAudioMix,
+    restoreHtmlStemVolumes,
+    transposeMirrorPlaybackActive,
+    transposeStemBusPlaybackActive,
+    primaryMixKey,
+    stemMixKey,
+  });
 
-  const playUnifiedRef = useRef(playUnified);
-  playUnifiedRef.current = playUnified;
+  const setPracticeSource = useCallback(
+    async (source: StanzaPracticeSource) => {
+      if (!selected || source === practiceSource) return;
+      pauseUnified();
+      setPlayback((p) => ({ ...p, isPlaying: false }));
+      await persistSong({ id: selected.id, practiceSource: source });
+    },
+    [persistSong, practiceSource, selected, pauseUnified],
+  );
 
-  const seekUnifiedRef = useRef(seekUnified);
-  seekUnifiedRef.current = seekUnified;
-
-  const pauseUnified = useCallback(() => {
-    if (isYoutube) {
-      ytControllerRef.current?.pause();
-      pauseStemAudios();
-    } else {
-      transposeMirrorRef.current?.stop();
-      transposeStemBusRef.current?.stop();
-      getLocalMainMedia()?.pause();
-      pauseStemAudios();
+  useEffect(() => {
+    if (!selected || !practiceSource) {
+      prevPracticeSourceRef.current = practiceSource;
+      return;
     }
-  }, [isYoutube, pauseStemAudios, getLocalMainMedia]);
+    const prev = prevPracticeSourceRef.current;
+    prevPracticeSourceRef.current = practiceSource;
+    if (prev == null || prev === practiceSource) return;
+
+    const t = timeRef.current;
+    let cancelled = false;
+    const run = () => {
+      if (cancelled) return;
+      const el = getLocalMainMedia();
+      const fd = el ? readPositiveFiniteMediaDurationSec(el) : null;
+      const d = fd ?? durationRef.current;
+      const clamped = resolvePracticeSourceSwitchSeek({
+        previousTime: t,
+        destinationDurationSec: d > 0 ? d : null,
+        timeEps: STANZA_TIME_EPS,
+      });
+      seekUnifiedRef.current(clamped, { flushPlaybackState: true });
+      setPlayback((p) => ({
+        ...p,
+        currentTime: clamped,
+        isPlaying: false,
+        ...(fd != null ? { duration: fd } : {}),
+      }));
+    };
+
+    const id = window.requestAnimationFrame(() => window.requestAnimationFrame(run));
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(id);
+    };
+  }, [practiceSource, selected, getLocalMainMedia, seekUnifiedRef]);
+
+  const removeUploadedPracticeAudio = useCallback(async () => {
+    if (!selected?.localAudioBlob) return;
+    if (
+      !window.confirm(
+        'Remove the uploaded file from this song? YouTube playback and your sections stay.',
+      )
+    ) {
+      return;
+    }
+    const row = await stanzaDb.songs.get(selected.id);
+    if (!row?.localAudioBlob) return;
+    const prevSnap = structuredClone(row);
+    const next = stanzaSongAfterRemovingUploadedPracticeAudio(row);
+    pauseUnified();
+    setPlayback((p) => ({ ...p, isPlaying: false }));
+    await stanzaDb.songs.put(next);
+    if (!isReplayingRef.current) {
+      pushUndo({
+        undo: async () => {
+          await stanzaDb.songs.put(prevSnap);
+        },
+        redo: async () => {
+          await stanzaDb.songs.put(next);
+        },
+      });
+    }
+  }, [isReplayingRef, pauseUnified, pushUndo, selected]);
 
   const getTime = useCallback(() => {
     if (playingRef.current) {
@@ -2083,12 +1901,11 @@ export default function StanzaWorkspace() {
   // once and read live values inside the tick. (`segmentsRef`,
   // `effectiveSelectionSpanRef`, `loopModeRef` are mirrored earlier in this
   // component for the same reason.)
-  const skippedBySegmentIdRef = useRef(skippedBySegmentId);
   skippedBySegmentIdRef.current = skippedBySegmentId;
   const hasAnySkippedSectionRef = useRef(hasAnySkippedSection);
   hasAnySkippedSectionRef.current = hasAnySkippedSection;
-  const isYoutubeRef = useRef(isYoutube);
-  isYoutubeRef.current = isYoutube;
+  const isYoutubeRef = useRef(usesYoutubeTransport);
+  isYoutubeRef.current = usesYoutubeTransport;
   const pauseStemAudiosRef = useRef(pauseStemAudios);
   pauseStemAudiosRef.current = pauseStemAudios;
 
@@ -2105,6 +1922,7 @@ export default function StanzaWorkspace() {
     playingRef,
     timeRef,
     durationRef,
+    knownHorizonSecRef,
     loopModeRef,
     effectiveSelectionSpanRef,
     segmentsRef,
@@ -2120,7 +1938,7 @@ export default function StanzaWorkspace() {
     transposeStemBusStopRef,
   };
 
-  const { handleLoopAtMediaEnd } = useStanzaTransportLoop({
+  const { handleLoopAtMediaEnd, handleLocalMediaEnded } = useStanzaTransportLoop({
     refsRef: transportLoopRefsRef,
     readLiveTransportTime,
     getLocalMainMedia,
@@ -2221,7 +2039,7 @@ export default function StanzaWorkspace() {
     lastUserEnteredSectionIdRef.current = seg.id;
     userSeekUnified(seg.start, { flushPlaybackState: true });
     requestAnimationFrame(() => playUnifiedRef.current());
-  }, [userSeekUnified]);
+  }, [userSeekUnified, lastUserEnteredSectionIdRef, playUnifiedRef]);
 
   const clearSegmentSelection = useCallback(() => {
     setSelectedSegmentIndices([]);
@@ -2479,6 +2297,17 @@ export default function StanzaWorkspace() {
     [persistSong, playback.duration, selected, segments],
   );
 
+  /** Drop orphaned skip flags when section ids change (duration / dual-source layout). */
+  useEffect(() => {
+    if (!selected) return;
+    const pruned = pruneStanzaSkippedBySegmentId(selected.skippedBySegmentId, segments);
+    if (stanzaSkippedMapsEqual(pruned, selected.skippedBySegmentId)) return;
+    void persistSong(
+      { id: selected.id, skippedBySegmentId: pruned },
+      { recordUndo: false },
+    );
+  }, [persistSong, segments, selected]);
+
   /**
    * Toggle "skip during playback" for a section. Stored as a sparse
    * `{ [segmentId]: true }` map so the on-disk record only carries skipped
@@ -2658,12 +2487,13 @@ export default function StanzaWorkspace() {
     return analysisAudioContextRef.current;
   }, []);
 
-  const stanzaCanAnalyze = !isYoutube && Boolean(selected?.localAudioBlob && localUrl);
-  const stanzaAnalysisDisabledReason = isYoutube
-    ? 'Upload audio or video for auto detection and key shift.'
-    : !selected?.localAudioBlob
-      ? 'Add a local audio or video file to use analysis.'
-      : undefined;
+  const stanzaCanAnalyze = practiceSource === 'local' && Boolean(selected?.localAudioBlob && localUrl);
+  const stanzaAnalysisDisabledReason =
+    practiceSource !== 'local' && isYoutube
+      ? 'Switch to your uploaded file or add one to use pitch and key tools.'
+      : !selected?.localAudioBlob
+        ? 'Add a local audio or video file to use analysis.'
+        : undefined;
 
   const keyDetection = useStanzaSongKeyDetection({
     canAnalyze: stanzaCanAnalyze,
@@ -2956,6 +2786,14 @@ export default function StanzaWorkspace() {
               <button type="button" className="stanza-link-quiet stanza-viewer-back-link" onClick={goHome} aria-label="Back to library">
                 ← Back to library
               </button>
+              {hasDualPracticeSources && practiceSource ? (
+                <StanzaPracticeSourceSwitch
+                  active={practiceSource}
+                  localLabel="Uploaded file"
+                  onChange={(source) => void setPracticeSource(source)}
+                  onRemoveUpload={() => void removeUploadedPracticeAudio()}
+                />
+              ) : null}
             </Box>
             <Box
               sx={{
@@ -2967,7 +2805,7 @@ export default function StanzaWorkspace() {
                 gap: 0.5,
               }}
             >
-              {selected.localAudioBlob && !selected.ytId ? (
+              {selected.localAudioBlob && practiceSource === 'local' ? (
                 <StanzaAudioDownloadButton
                   song={selected}
                   playbackRate={playback.playbackRate}
@@ -3070,29 +2908,28 @@ export default function StanzaWorkspace() {
         >
               <Box ref={viewerMainColumnRef} className="stanza-viewer-main-column">
               <Box className="stanza-viewer-media-stack">
-                <Box className="stanza-video-column">
-                  {isYoutube && selected.ytId && youtubePlayerErrorCode != null && (
-                    <Alert severity="warning" sx={{ mb: 1.5 }}>
-                      <Typography variant="body2" sx={{ mb: 0.75 }}>
-                        {describeYoutubePlayerError(youtubePlayerErrorCode)}
-                      </Typography>
-                      <Link
-                        href={`https://www.youtube.com/watch?v=${encodeURIComponent(selected.ytId)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        variant="body2"
-                        underline="hover"
-                      >
-                        Open this video on YouTube
-                      </Link>
-                    </Alert>
-                  )}
                   <Box className="stanza-video-column">
-                    {isYoutube && selected.ytId && (
+                    {isYoutube && selected.ytId && youtubePlayerErrorCode != null && practiceSource === 'youtube' && (
+                      <Alert severity="warning" sx={{ mb: 1.5 }}>
+                        <Typography variant="body2" sx={{ mb: 0.75 }}>
+                          {describeYoutubePlayerError(youtubePlayerErrorCode)}
+                        </Typography>
+                        <Link
+                          href={`https://www.youtube.com/watch?v=${encodeURIComponent(selected.ytId)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          variant="body2"
+                          underline="hover"
+                        >
+                          Open this video on YouTube
+                        </Link>
+                      </Alert>
+                    )}
+                    {showYoutubePlayer && selected.ytId && (
                       <StanzaYouTubePlayer
                         videoId={selected.ytId}
                         onPlayerError={setYoutubePlayerErrorCode}
-                        onEnded={handleLoopAtMediaEnd}
+                        onEnded={usesYoutubeTransport ? handleLoopAtMediaEnd : undefined}
                         onControllerReady={(c) => {
                           ytControllerRef.current = c;
                           if (!c) return;
@@ -3115,6 +2952,7 @@ export default function StanzaWorkspace() {
                           }
                         }}
                         onStateChange={(s) => {
+                          if (!usesYoutubeTransport) return;
                           labsPlaybackSafeCall('YouTube onStateChange', () => {
                             setPlayback((p) => mergeStanzaPlaybackSnapshot(p, s));
                             if (!s.isPlaying) {
@@ -3126,7 +2964,7 @@ export default function StanzaWorkspace() {
                         }}
                       />
                     )}
-                    {!isYoutube && localUrl && (
+                    {showLocalPlayer && localUrl && (
                       <>
                         {isLocalVideo ? (
                           /* eslint-disable-next-line jsx-a11y/media-has-caption -- user recording; no captions */
@@ -3146,7 +2984,7 @@ export default function StanzaWorkspace() {
                             onTimeUpdate={() => {
                               const el = localVideoRef.current;
                               if (!el) return;
-                              const fd = readPositiveFiniteMediaDurationSec(el);
+                              const fd = readBestKnownMediaDurationSec(el);
                               setPlayback((p) =>
                                 mergeStanzaPlaybackSnapshot(p, {
                                   currentTime: el.currentTime,
@@ -3159,7 +2997,7 @@ export default function StanzaWorkspace() {
                             onLoadedMetadata={() => {
                               const el = localVideoRef.current;
                               if (!el) return;
-                              const fd = readPositiveFiniteMediaDurationSec(el);
+                              const fd = readBestKnownMediaDurationSec(el);
                               setPlayback((p) => ({
                                 ...p,
                                 duration: fd ?? p.duration,
@@ -3169,7 +3007,7 @@ export default function StanzaWorkspace() {
                             onDurationChange={() => {
                               const el = localVideoRef.current;
                               if (!el) return;
-                              const fd = readPositiveFiniteMediaDurationSec(el);
+                              const fd = readBestKnownMediaDurationSec(el);
                               if (fd == null) return;
                               setPlayback((p) => (p.duration === fd ? p : { ...p, duration: fd }));
                             }}
@@ -3188,7 +3026,7 @@ export default function StanzaWorkspace() {
                             onEnded={() => {
                               transposeMirrorRef.current?.stop();
                               transposeStemBusRef.current?.stop();
-                              handleLoopAtMediaEnd();
+                              handleLocalMediaEnded();
                             }}
                           />
                         ) : (
@@ -3203,7 +3041,7 @@ export default function StanzaWorkspace() {
                             onTimeUpdate={() => {
                               const el = localAudioRef.current;
                               if (!el) return;
-                              const fd = readPositiveFiniteMediaDurationSec(el);
+                              const fd = readBestKnownMediaDurationSec(el);
                               setPlayback((p) =>
                                 mergeStanzaPlaybackSnapshot(p, {
                                   currentTime: el.currentTime,
@@ -3216,7 +3054,7 @@ export default function StanzaWorkspace() {
                             onLoadedMetadata={() => {
                               const el = localAudioRef.current;
                               if (!el) return;
-                              const fd = readPositiveFiniteMediaDurationSec(el);
+                              const fd = readBestKnownMediaDurationSec(el);
                               setPlayback((p) => ({
                                 ...p,
                                 duration: fd ?? p.duration,
@@ -3226,7 +3064,7 @@ export default function StanzaWorkspace() {
                             onDurationChange={() => {
                               const el = localAudioRef.current;
                               if (!el) return;
-                              const fd = readPositiveFiniteMediaDurationSec(el);
+                              const fd = readBestKnownMediaDurationSec(el);
                               if (fd == null) return;
                               setPlayback((p) => (p.duration === fd ? p : { ...p, duration: fd }));
                             }}
@@ -3245,7 +3083,7 @@ export default function StanzaWorkspace() {
                             onEnded={() => {
                               transposeMirrorRef.current?.stop();
                               transposeStemBusRef.current?.stop();
-                              handleLoopAtMediaEnd();
+                              handleLocalMediaEnded();
                             }}
                           />
                         )}
@@ -3273,7 +3111,6 @@ export default function StanzaWorkspace() {
                     })}
                   </Box>
                 </Box>
-              </Box>
 
               <Box className="stanza-viewer-timeline-slot">
                 {markerEditNotice ? (
@@ -3310,7 +3147,9 @@ export default function StanzaWorkspace() {
                   onSkipToLoopEnd={skipToLoopEnd}
                   onAddMarker={addMarkerAtCurrentTime}
                   onSuggestSections={
-                    selected.localAudioBlob && !selected.ytId ? () => setSuggestSectionsOpen(true) : undefined
+                    selected.localAudioBlob && practiceSource === 'local'
+                      ? () => setSuggestSectionsOpen(true)
+                      : undefined
                   }
                   onJoinSections={joinSelectedContiguousSections}
                   joinSectionsEnabled={areContiguousSegmentIndices(selectedSegmentIndices)}
@@ -3341,7 +3180,6 @@ export default function StanzaWorkspace() {
                   }
                 />
               </Box>
-
               </Box>
 
               <Paper
@@ -3364,6 +3202,12 @@ export default function StanzaWorkspace() {
                   }}
                 >
                 <Stack className="stanza-rail-stack" spacing={0}>
+                  {isYoutube && practiceSource === 'youtube' && hasDualPracticeSources ? (
+                    <StanzaYoutubeLocalFeaturesNotice
+                      hasUploadedFile
+                      onSwitchToUploaded={() => void setPracticeSource('local')}
+                    />
+                  ) : null}
                   <Box className="stanza-rail-section stanza-rail-section--tempo">
                     <StanzaMetronomeStrip
                       enabled={Boolean(selected.metronomeEnabled)}
@@ -3519,8 +3363,8 @@ export default function StanzaWorkspace() {
                     ) : null}
                   </Box>
 
-                  {isYoutube ? (
-                    <StanzaYoutubeLocalFeaturesNotice />
+                  {isYoutube && practiceSource === 'youtube' ? (
+                    hasDualPracticeSources ? null : <StanzaYoutubeLocalFeaturesNotice />
                   ) : (
                     <StanzaPracticePitchSection
                       selected={selected}
@@ -3580,7 +3424,7 @@ export default function StanzaWorkspace() {
                   )}
                   <StanzaPracticeMixSection
                     selected={selected}
-                    isYoutube={isYoutube}
+                    primaryTrackKind={practiceSource === 'youtube' ? 'video' : 'file'}
                     metronomeUserMuted={metronomeUserMuted}
                     metronomeUserGain={metronomeUserGain}
                     mixMetronomeGainDraft={mixMetronomeGainDraft}
@@ -3650,7 +3494,7 @@ export default function StanzaWorkspace() {
                 </Stack>
                 </Box>
               </Paper>
-          {selected.localAudioBlob && !selected.ytId ? (
+          {selected.localAudioBlob && practiceSource === 'local' ? (
             <StanzaSuggestSectionsDialog
               open={suggestSectionsOpen}
               onClose={() => setSuggestSectionsOpen(false)}
@@ -3717,14 +3561,20 @@ export default function StanzaWorkspace() {
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle id="stanza-stem-drop-title">Add as mix layers?</DialogTitle>
+        <DialogTitle id="stanza-stem-drop-title">
+          {stemDropConfirm?.hasYoutube ? 'How should this file be used?' : 'Add as mix layers?'}
+        </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.55 }}>
-            {stemDropConfirm
-              ? `Each file is about the same length as the loaded track (${stemDropConfirm.refSec.toFixed(
+            {stemDropConfirm?.hasYoutube
+              ? `This file matches your track (${stemDropConfirm.refSec.toFixed(
                   1,
-                )} s, within ±${STANZA_STEM_DURATION_MATCH_EPS_SEC.toFixed(2)} s). That usually means an alternate mix (for example, an instrumental).`
-              : null}
+                )} s). Add it as a mix layer, switch practice to the upload, or replace the YouTube video. Your sections stay on this song.`
+              : stemDropConfirm
+                ? `Each file is about the same length as the loaded track (${stemDropConfirm.refSec.toFixed(
+                    1,
+                  )} s, within ±${STANZA_STEM_DURATION_MATCH_EPS_SEC.toFixed(2)} s). That usually means an alternate mix (for example, an instrumental).`
+                : null}
           </Typography>
           <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 600 }}>
             Matched files
@@ -3757,16 +3607,51 @@ export default function StanzaWorkspace() {
           >
             New song instead
           </Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              const p = stemDropConfirm;
-              setStemDropConfirm(null);
-              if (p) void appendStemsFromFiles(p.songId, p.files);
-            }}
-          >
-            Add as layers
-          </Button>
+          {stemDropConfirm?.hasYoutube ? (
+            <>
+              <Button
+                color="inherit"
+                onClick={() => {
+                  const p = stemDropConfirm;
+                  setStemDropConfirm(null);
+                  if (p) void appendStemsFromFiles(p.songId, p.files);
+                }}
+              >
+                Add as mix layer
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  const p = stemDropConfirm;
+                  setStemDropConfirm(null);
+                  if (p?.files[0]) void attachLocalPracticeAudio(p.songId, p.files[0]);
+                }}
+              >
+                Switch to uploaded file
+              </Button>
+              <Button
+                color="inherit"
+                onClick={() => {
+                  const p = stemDropConfirm;
+                  setStemDropConfirm(null);
+                  if (p?.files[0]) void attachLocalPracticeAudio(p.songId, p.files[0], { replaceYoutube: true });
+                }}
+              >
+                Replace YouTube with file
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="contained"
+              onClick={() => {
+                const p = stemDropConfirm;
+                setStemDropConfirm(null);
+                if (p) void appendStemsFromFiles(p.songId, p.files);
+              }}
+            >
+              Add as layers
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>

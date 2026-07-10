@@ -49,6 +49,7 @@ const APP_SMOKE_SPECS = {
     'e2e/smoke/stanza-practice-rail.spec.ts',
     'e2e/smoke/stanza-library.spec.ts',
     'e2e/smoke/stanza-loop-whole-song.spec.ts',
+    'e2e/smoke/stanza-playthrough-tail.spec.ts',
     'e2e/smoke/stanza-playback-soak.spec.ts',
     'e2e/smoke/layout-heuristics-stanza.spec.ts',
     'e2e/smoke/scroll-sanity-stanza.spec.ts',

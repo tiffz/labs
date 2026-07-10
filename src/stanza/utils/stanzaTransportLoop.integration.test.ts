@@ -20,6 +20,18 @@ const segments: DerivedSegment[] = [
 ];
 
 describe('resolveStanzaLoopPlaybackWindow', () => {
+  it('uses full transport duration for loopAll when no sections are skipped', () => {
+    const window = resolveStanzaLoopPlaybackWindow({
+      loopMode: 'loopAll',
+      duration: 180,
+      selectionSpan: null,
+      segments: [seg(0, 0, 90)],
+      skipped: {},
+    });
+    expect(window?.loopWrapEnd).toBeCloseTo(180 - 0.02);
+    expect(window?.windowEnd).toBe(180);
+  });
+
   it('uses playable anchors for loopSelection when the tail is skipped', () => {
     const window = resolveStanzaLoopPlaybackWindow({
       loopMode: 'loopSelection',
@@ -80,6 +92,74 @@ describe('evaluateStanzaTransportLoopTick', () => {
     });
     expect(second.wrapSeekTarget).toBeNull();
     expect(second.grownDuration).toBeGreaterThan(reported);
+  });
+
+  it('does not wrap loopAll at a short section span when skip map is empty', () => {
+    const reported = 180;
+    const frozen = 89.5;
+    let prev: number | null = frozen - 0.01;
+    let stalled = 0;
+    let result = evaluateStanzaTransportLoopTick({
+      transportTime: frozen,
+      duration: reported,
+      loopMode: 'loopAll',
+      segments: [seg(0, 0, 90)],
+      skipped: {},
+      selectionSpan: null,
+      previousTransportTime: prev,
+      stalledFrames: stalled,
+      userEnteredSectionId: null,
+    });
+    for (let i = 0; i < 6; i++) {
+      prev = result.nextPreviousTransportTime;
+      stalled = result.nextStalledFrames;
+      result = evaluateStanzaTransportLoopTick({
+        transportTime: frozen,
+        duration: reported,
+        loopMode: 'loopAll',
+        segments: [seg(0, 0, 90)],
+        skipped: {},
+        selectionSpan: null,
+        previousTransportTime: prev,
+        stalledFrames: stalled,
+        userEnteredSectionId: null,
+      });
+    }
+    expect(result.wrapSeekTarget).toBeNull();
+  });
+
+  it('does not wrap loopAll at a short fingerprint duration while sections extend further', () => {
+    const reported = 170;
+    const frozen = reported - STANZA_LOOP_WRAP_TOLERANCE_SEC * 0.25;
+    let prev: number | null = frozen - 0.01;
+    let stalled = 0;
+    let result = evaluateStanzaTransportLoopTick({
+      transportTime: frozen,
+      duration: reported,
+      loopMode: 'loopAll',
+      segments: [seg(0, 0, 200)],
+      skipped: undefined,
+      selectionSpan: null,
+      previousTransportTime: prev,
+      stalledFrames: stalled,
+      userEnteredSectionId: null,
+    });
+    for (let i = 0; i < 6; i++) {
+      prev = result.nextPreviousTransportTime;
+      stalled = result.nextStalledFrames;
+      result = evaluateStanzaTransportLoopTick({
+        transportTime: frozen,
+        duration: reported,
+        loopMode: 'loopAll',
+        segments: [seg(0, 0, 200)],
+        skipped: undefined,
+        selectionSpan: null,
+        previousTransportTime: prev,
+        stalledFrames: stalled,
+        userEnteredSectionId: null,
+      });
+    }
+    expect(result.wrapSeekTarget).toBeNull();
   });
 
   it('wraps loopSelection immediately when transport passes the playable end (even while advancing)', () => {

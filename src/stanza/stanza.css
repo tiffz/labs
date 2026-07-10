@@ -610,6 +610,76 @@ a.stanza-library-card {
   width: 100%;
 }
 
+.stanza-practice-source-switch {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.625rem;
+  margin-top: 0.625rem;
+}
+
+.stanza-practice-source-switch__label {
+  color: var(--stanza-paper-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.stanza-practice-source-switch__group {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--stanza-radius-chip);
+  background: var(--stanza-tray-bg);
+  box-shadow: inset 0 0 0 1px var(--stanza-tray-divider);
+}
+
+.stanza-practice-source-switch__option {
+  appearance: none;
+  border: none;
+  margin: 0;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: calc(var(--stanza-radius-chip) - 2px);
+  background: transparent;
+  color: var(--stanza-ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.stanza-practice-source-switch__option:hover {
+  background: var(--stanza-tray-bg-hover);
+}
+
+.stanza-practice-source-switch__option:focus-visible {
+  outline: var(--stanza-focus-ring);
+  outline-offset: var(--stanza-focus-ring-offset);
+}
+
+.stanza-practice-source-switch__option--active {
+  background: var(--labs-selection-secondary-bg);
+  color: var(--stanza-rose);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--stanza-rose) 14%, transparent),
+    inset 0 0 0 1px var(--labs-selection-secondary-border);
+}
+
+.stanza-practice-source-switch__option--active:hover {
+  background: var(--labs-selection-secondary-hover-bg);
+  color: var(--stanza-rose);
+}
+
+.stanza-practice-source-switch__remove {
+  margin-left: 0.25rem;
+  font-size: 0.8125rem;
+}
+
 .stanza-viewer-header {
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--stanza-paper-line-faint);

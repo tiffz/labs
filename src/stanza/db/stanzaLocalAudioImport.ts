@@ -119,7 +119,9 @@ export function stanzaSongTitleFromFileName(name: string): string {
  *
  * @throws if `crypto.randomUUID` is unavailable (very old browsers); no other failure modes.
  */
-export async function buildLocalAudioStanzaSong(file: File): Promise<StanzaSong> {
+export async function buildLocalPracticeAudioPatch(
+  file: File,
+): Promise<Pick<StanzaSong, 'localAudioBlob' | 'localMediaFingerprint'>> {
   if (!isLocalMediaFileForStanza(file)) {
     throw new Error(`Not a supported recording: ${file.name || 'unnamed file'}`);
   }
@@ -131,17 +133,24 @@ export async function buildLocalAudioStanzaSong(file: File): Promise<StanzaSong>
   }
   const blob = new Blob([await file.arrayBuffer()], { type: file.type || 'audio/mpeg' });
   return {
-    id: crypto.randomUUID(),
-    ytId: null,
-    title: stanzaSongTitleFromFileName(file.name),
-    markers: [],
-    stats: {},
-    updatedAt: Date.now(),
     localAudioBlob: blob,
     localMediaFingerprint: computeStanzaLocalMediaFingerprint({
       sizeBytes: blob.size,
       durationSec,
       fileName: file.name,
     }),
+  };
+}
+
+export async function buildLocalAudioStanzaSong(file: File): Promise<StanzaSong> {
+  const patch = await buildLocalPracticeAudioPatch(file);
+  return {
+    id: crypto.randomUUID(),
+    ytId: null,
+    title: stanzaSongTitleFromFileName(file.name),
+    markers: [],
+    stats: {},
+    updatedAt: Date.now(),
+    ...patch,
   };
 }

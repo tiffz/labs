@@ -25,11 +25,18 @@ function fingerprintByteSize(token: string): string | null {
   return size && /^\d+$/.test(size) ? size : null;
 }
 
-function fingerprintDurationSec(token: string): number | null {
-  const parts = token.split(':');
+/** Parses `size:duration` fingerprints produced by {@link computeStanzaLocalMediaFingerprint}. */
+export function stanzaFingerprintDurationSec(token: string | undefined | null): number | null {
+  const trimmed = token?.trim();
+  if (!trimmed) return null;
+  const parts = trimmed.split(':');
   if (parts.length !== 2) return null;
   const dur = Number(parts[1]);
   return Number.isFinite(dur) && dur > 0 ? dur : null;
+}
+
+function fingerprintDurationSec(token: string): number | null {
+  return stanzaFingerprintDurationSec(token);
 }
 
 function fingerprintNameHint(token: string): string | null {

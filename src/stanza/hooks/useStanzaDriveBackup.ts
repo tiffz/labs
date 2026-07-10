@@ -353,7 +353,7 @@ export function useStanzaDriveBackup() {
         lastBackupExportedAt: envelope.exportedAt,
         driveAppFolderId: refs.appFolderId,
         driveProgressFileId: refs.progressFileId,
-        lastAutoPushAt: opts?.silent ? Date.now() : undefined,
+        lastAutoPushAt: Date.now(),
       });
       setSyncMetaTick((n) => n + 1);
       setLatestRemoteEnvelope(envelope);

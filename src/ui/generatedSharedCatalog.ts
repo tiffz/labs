@@ -9624,7 +9624,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "api"
     ],
     "appsUsing": [],
-    "exportType": "class",
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -9766,7 +9766,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Resumable upload (single PUT) for arbitrary binary size within browser memory.",
+    "description": "Resumable Drive upload in 256 KiB–aligned chunks with status-query resume after network suspend / transient failures (replaces the old single full-file PUT).",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -9795,7 +9795,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "description": "No JSDoc summary provided.",
     "tags": [],
     "appsUsing": [],
-    "exportType": "function",
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -9833,7 +9833,253 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-drivefetcherrors-ts-drivehttperror",
+    "name": "DriveHttpError",
+    "path": "src/shared/drive/driveFetchErrors.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-drivefetcherrors-ts-formatdriverequestfailure",
+    "name": "formatDriveRequestFailure",
+    "path": "src/shared/drive/driveFetchErrors.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-drivefetcherrors-ts-istransientdrivehttpstatus",
+    "name": "isTransientDriveHttpStatus",
+    "path": "src/shared/drive/driveFetchErrors.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-drivefetcherrors-ts-summarizedriveapierrorbody",
+    "name": "summarizeDriveApiErrorBody",
+    "path": "src/shared/drive/driveFetchErrors.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
     "description": "Extract a human-readable line from a Drive v3 JSON error body (falls back to trimmed text).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveresumableupload-ts-drive-resumable-chunk-bytes",
+    "name": "DRIVE_RESUMABLE_CHUNK_BYTES",
+    "path": "src/shared/drive/driveResumableUpload.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "~5 MiB chunks — large enough to be efficient, small enough to survive tab suspend.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveresumableupload-ts-drive-resumable-chunk-multiple-bytes",
+    "name": "DRIVE_RESUMABLE_CHUNK_MULTIPLE_BYTES",
+    "path": "src/shared/drive/driveResumableUpload.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Drive requires non-final chunks to be multiples of 256 KiB.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveresumableupload-ts-driveresumableuploadinit",
+    "name": "DriveResumableUploadInit",
+    "path": "src/shared/drive/driveResumableUpload.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Drive requires non-final chunks to be multiples of 256 KiB.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveresumableupload-ts-driveuploadhttpresult",
+    "name": "DriveUploadHttpResult",
+    "path": "src/shared/drive/driveResumableUpload.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Drive requires non-final chunks to be multiples of 256 KiB.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveresumableupload-ts-driveuploadprogress",
+    "name": "DriveUploadProgress",
+    "path": "src/shared/drive/driveResumableUpload.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Drive requires non-final chunks to be multiples of 256 KiB.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveresumableupload-ts-driveuploadxhrput",
+    "name": "driveUploadXhrPut",
+    "path": "src/shared/drive/driveResumableUpload.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "PUT via XHR — required because browser `fetch()` treats HTTP 308 as a redirect. Drive's resumable protocol uses 308 Resume Incomplete (often with no Location), which makes `fetch` fail the request even when the chunk was accepted.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveresumableupload-ts-isretryabledriveuploadnetworkerror",
+    "name": "isRetryableDriveUploadNetworkError",
+    "path": "src/shared/drive/driveResumableUpload.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Drive requires non-final chunks to be multiples of 256 KiB.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveresumableupload-ts-nextbyteafterdriverange",
+    "name": "nextByteAfterDriveRange",
+    "path": "src/shared/drive/driveResumableUpload.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Next byte offset to upload after a Range header (0 when nothing received yet).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveresumableupload-ts-parsedriveresumablerangeheader",
+    "name": "parseDriveResumableRangeHeader",
+    "path": "src/shared/drive/driveResumableUpload.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parse `Range: bytes=0-N` from a 308 response; returns last received byte index, or -1 if none.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveresumableupload-ts-querydriveresumableuploadstatus",
+    "name": "queryDriveResumableUploadStatus",
+    "path": "src/shared/drive/driveResumableUpload.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Empty PUT to learn how many bytes Drive already has for this session.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveresumableupload-ts-resolveoffsetafterchunk308",
+    "name": "resolveOffsetAfterChunk308",
+    "path": "src/shared/drive/driveResumableUpload.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "After a successful chunk PUT that returned 308: prefer Drive's Range cursor. If Range is missing (CORS), assume the chunk we just sent was accepted — otherwise multi-chunk browser uploads stall forever on the first chunk.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveresumableupload-ts-uploaddrivefileresumablechunked",
+    "name": "uploadDriveFileResumableChunked",
+    "path": "src/shared/drive/driveResumableUpload.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Chunked Drive resumable upload with status-query resume after network suspend / transient errors. Session URI expiry (404/410) restarts the upload from byte 0 a limited number of times. Chunk PUTs use XHR (not fetch): browser fetch treats Drive's 308 Resume Incomplete as a redirect and fails multi-chunk uploads even when Drive accepted the bytes.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveresumableupload-ts-waitfordocumentvisible",
+    "name": "waitForDocumentVisible",
+    "path": "src/shared/drive/driveResumableUpload.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Wait until the document is visible (Chrome suspends network when the tab is hidden).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveresumableupload-ts-xhrtimeoutmsforbytes",
+    "name": "xhrTimeoutMsForBytes",
+    "path": "src/shared/drive/driveResumableUpload.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Drive requires non-final chunks to be multiples of 256 KiB.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

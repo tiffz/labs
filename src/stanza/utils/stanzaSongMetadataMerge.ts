@@ -59,19 +59,26 @@ function mergePracticeMetronomeBySegmentId(
   return merged && Object.keys(merged).length > 0 ? merged : undefined;
 }
 
-function mergePracticeSkippedBySegmentId(
-  local: StanzaSong,
-  remote: MergeSide,
+/**
+ * Skip maps are sparse `{ [segmentId]: true }` — clearing a skip removes the key.
+ * Union-merge would resurrect cleared skips from a stale remote/overlay copy.
+ * Prefer the newer `updatedAt` side's map wholesale (including empty/undefined).
+ */
+export function mergePracticeSkippedBySegmentId(
+  local: Pick<StanzaSong, 'updatedAt' | 'skippedBySegmentId'>,
+  remote: Pick<MergeSide, 'updatedAt' | 'skippedBySegmentId'>,
 ): StanzaSong['skippedBySegmentId'] {
-  const localScore = stanzaSongPracticeCustomizationScore(local);
-  const remoteScore = stanzaSongPracticeCustomizationScore(remote);
-  if (localScore > 0 && remoteScore === 0) return local.skippedBySegmentId;
-  if (remoteScore > 0 && localScore === 0) return remote.skippedBySegmentId;
-  const merged =
-    remote.skippedBySegmentId || local.skippedBySegmentId
-      ? { ...remote.skippedBySegmentId, ...local.skippedBySegmentId }
-      : undefined;
-  return merged && Object.keys(merged).length > 0 ? merged : undefined;
+  if (local.updatedAt > remote.updatedAt) return normalizeSkippedMap(local.skippedBySegmentId);
+  if (remote.updatedAt > local.updatedAt) return normalizeSkippedMap(remote.skippedBySegmentId);
+  // Equal clocks: prefer local wholesale (including an explicit clear).
+  return normalizeSkippedMap(local.skippedBySegmentId);
+}
+
+function normalizeSkippedMap(
+  map: StanzaSong['skippedBySegmentId'],
+): StanzaSong['skippedBySegmentId'] {
+  if (!map) return undefined;
+  return Object.keys(map).length > 0 ? map : undefined;
 }
 
 function mergePracticeMetronomeSongCalibration(

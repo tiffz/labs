@@ -35,17 +35,26 @@ Both paths share the same guard so duplicate seeks do not fire in the same turn.
 - **Forward playback / loop wraps** use `nextNonSkippedTimeForwardPlayback` and `resolvePlayableWindowAnchors`.
 - If **no playable section** overlaps the loop window, skip advance returns `null` and transport **pauses once** (no infinite seek loop).
 
-## Duration drift
+## Duration trust model (local files)
 
-When live transport runs past reported `duration`, the RAF path grows `durationRef` and React `playback.duration` before wrapping. Do not clamp seeks to stale metadata during tail playback.
+**Source of truth for “how long is this file?”** (highest wins):
+
+1. **Decoded `AudioBuffer.duration`** — `useStanzaLocalDecodedDuration` (PCM length; ignores short HTML5 metadata).
+2. **Probed fingerprint duration** — `size:duration` from import (`stanzaFingerprintDurationSec`).
+3. **Live element** — `max(HTMLMediaElement.duration, seekable.end)`.
+4. **Grown transport** — RAF may extend `durationRef` if the playhead runs past reported metadata.
+
+**Marker / section layout duration is separate** — it may be longer than the local file (YouTube markers on a dual-source song) and must **not** drive loop/play-through end.
+
+**Play-through premature `ended`:** Resume only with **evidence** (longer seekable/buffered, or known horizon from decode/fingerprint). No speculative nudges without evidence. Resume uses `playUnified` so transpose/stems restart.
 
 ## Tests
 
-| Layer       | Files                                                                                                                          |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Policy      | `stanzaPlaybackLoop.test.ts`, `stanzaSkippedSections.test.ts`, `stanzaLoopWrapDecision.test.ts`, `stanzaLoopWrapGuard.test.ts` |
-| Integration | `stanzaTransportLoop.integration.test.ts`, `useStanzaTransportLoop.test.ts`                                                    |
-| E2e         | `e2e/smoke/stanza-loop-whole-song.spec.ts`                                                                                     |
+| Layer       | Files                                                                                                                                                         |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Policy      | `stanzaPlaybackLoop.test.ts`, `stanzaSkippedSections.test.ts`, `stanzaLoopWrapDecision.test.ts`, `stanzaLoopWrapGuard.test.ts`, `stanzaMediaDuration.test.ts` |
+| Integration | `stanzaTransportLoop.integration.test.ts`, `useStanzaTransportLoop.test.ts`                                                                                   |
+| E2e         | `e2e/smoke/stanza-loop-whole-song.spec.ts`, `e2e/smoke/stanza-playthrough-tail.spec.ts`                                                                       |
 
 When changing wrap or skip semantics, update the integration tests first, then the hook.
 
@@ -55,4 +64,5 @@ When changing wrap or skip semantics, update the integration tests first, then t
 2. Loop wrap must use **playable anchors**, not raw marker span ends, when skips exist.
 3. New wrap entry points must go through **`createStanzaLoopWrapGuard`** (or `useStanzaTransportLoop`).
 4. Local pause paths must stop **transpose mirror / stem bus** (same as `pauseUnified`).
-5. Shell / provider changes → run `npm run presubmit` and scoped e2e (`stanza-loop-whole-song` when touching transport).
+5. Shell / provider changes → run `npm run presubmit` and scoped e2e (`stanza-loop-whole-song` / `stanza-playthrough-tail` when touching transport).
+6. Local duration trust: prefer decoded PCM / fingerprint over HTML5 metadata; never drive play-through end from marker layout duration.

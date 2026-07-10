@@ -7,12 +7,16 @@ import type { LabsDriveBackupUiProps } from '../../shared/google/labsDriveBackup
 import { stanzaGoogleClientConfigured, useStanzaDriveBackup } from '../hooks/useStanzaDriveBackup';
 import { formatStanzaDriveUndoSnapshotTrigger, parseSnapshotEnvelope } from '../drive/stanzaDriveUndoSnapshots';
 import { summarizeEnvelopeSections } from '../drive/stanzaDriveMarkerSummary';
+import { stanzaDriveLastBackupDisplayIso } from '../drive/stanzaDriveSyncMeta';
 
 export default function StanzaAccountMenu() {
   const backup = useStanzaDriveBackup();
+  const lastBackupDisplayIso = useMemo(
+    () => stanzaDriveLastBackupDisplayIso(backup.lastMeta),
+    [backup.lastMeta],
+  );
 
   const drive = useMemo((): LabsDriveBackupUiProps => {
-    const meta = backup.lastMeta;
     const driveSummary = backup.latestRemoteEnvelope
       ? summarizeEnvelopeSections(backup.latestRemoteEnvelope.songs)
       : null;
@@ -34,7 +38,7 @@ export default function StanzaAccountMenu() {
             } · ${driveSummary?.sectionCount ?? 0} section${(driveSummary?.sectionCount ?? 0) === 1 ? '' : 's'}`,
           }
         : null,
-      lastBackupExportedAt: meta.lastBackupExportedAt,
+      lastBackupExportedAt: lastBackupDisplayIso,
       undoSnapshots: backup.undoSnapshots.map((s) => {
         let secondary = formatStanzaDriveUndoSnapshotTrigger(s.trigger);
         try {
@@ -62,11 +66,10 @@ export default function StanzaAccountMenu() {
           'Merges metadata into this library. Section markers are kept when one copy has sections and the other does not. Local audio stays on device.',
       },
     };
-  }, [backup]);
+  }, [backup, lastBackupDisplayIso]);
 
   if (!stanzaGoogleClientConfigured()) return null;
 
-  const meta = backup.lastMeta;
   const googleButtonSx: SxProps<Theme> = {
     borderColor: 'rgba(60, 60, 67, 0.22)',
     bgcolor: 'rgba(255, 253, 250, 0.98)',
@@ -92,7 +95,7 @@ export default function StanzaAccountMenu() {
           onDismissMessage: backup.dismissMessage,
           onBackup: backup.onBackup,
           onSignIn: backup.onSignIn,
-          lastBackupExportedAt: meta.lastBackupExportedAt,
+          lastBackupExportedAt: lastBackupDisplayIso,
           scopeSummary:
             'Sections, BPM, mix, and skip flags. Drive recordings re-download when you open them.',
           scopeTooltip:
