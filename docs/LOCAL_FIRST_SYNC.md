@@ -30,6 +30,8 @@ Large media (Encore performance videos, Stanza stems, Gesture packs, Zine PDFs) 
 
 Do not reintroduce a single full-file `fetch` PUT for “simplicity” — it looked fine for multi‑GB one-shot uploads until chunked resume was required, and `fetch`+308 silently breaks every multi-chunk browser upload.
 
+**Diagnose before blaming Drive rate limits:** if `google.com` / Drive fails in a normal Chrome profile but works in Incognito (or another browser), treat it as **extension / profile network interference**, not API quota. Confirm outbound HTTPS from a shell (`curl -I https://www.googleapis.com`) before changing upload code.
+
 ## Principles
 
 1. **Local-first** — Dexie / in-memory progress is the working copy. Apps work offline without Google.
