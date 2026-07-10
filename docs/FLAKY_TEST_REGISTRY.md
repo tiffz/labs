@@ -21,7 +21,9 @@ Track known flaky tests so they get fixed or quarantined — not masked with ret
 | `e2e/smoke/muscle-study-journey.spec.ts` | `full body atlas shows structure card` — 60s timeout clicking `M Pectoralis major` in 498-row browse on CI | agent | resolved | Filter browse via search + 90s test budget; wait for layer status before index (2026-06-30) |
 | `e2e/smoke/muscle-study-journey.spec.ts` | `fill` hangs on full-body browse — 498-row mount blocks main thread before search is actionable | agent | resolved | Defer browse list until user types when count > 48 (`StudyIndex`); e2e asserts defer hint then filters (2026-06-30) |
 
-| `e2e/smoke/muscle-study-journey.spec.ts` | `muscle-layer-status` slow under parallel GLB load | agent | resolved | Wait for canvas before layer status (2026-06-22) |
+| `e2e/smoke/muscle-study-journey.spec.ts` | `full body atlas shows structure card` — `.muscle-canvas-wrap.is-ready` 40s timeout on main CI push after #19 (parallel GLB load) | agent | resolved | CI canvas gate 90s; serial describe mode (2026-07-10) |
+
+| `e2e/visual/apps.visual.spec.ts` | `home-mobile` baseline drift after Lyrefly catalog on `/` | agent | resolved | Import Linux nightly actual; `REGRESSION_WORKFLOW.md` § homepage catalog |
 
 | `e2e/smoke/layout-heuristics-stanza.spec.ts` | `missing content node` — headings not mounted when `main#main` visible | agent | resolved | `expectStanzaLibraryChrome` in `beforeEach` (2026-06-23) |
 

@@ -15,7 +15,8 @@ async function openStudyIndexIfCollapsed(page: import('@playwright/test').Page) 
 }
 
 test.describe('Muscle Memory study journey', () => {
-  test.describe.configure({ timeout: 180_000 });
+  // Full-body atlas GLB + fundamentals shoulder GLB contend on CI software WebGL when smokes run in parallel.
+  test.describe.configure({ mode: 'serial', timeout: 180_000 });
 
   test('fundamentals warmup shows skeleton peel count', async ({ page }) => {
     await page.goto('/muscle/?module=fundamentals');
