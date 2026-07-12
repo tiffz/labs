@@ -10,11 +10,13 @@ test.describe('Lyrefly gallery', () => {
 
   test('opens script stage from seeded project', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /Midnight Courier/i })).toBeVisible({ timeout: 15000 });
-    await page.getByRole('button', { name: /Continue script/i }).first().click();
-    await expect(page).toHaveURL(/#\/project\/.*\/script/, { timeout: 15000 });
+    await page.getByRole('button', { name: /Open Midnight Courier/i }).click();
+    await expect(page).toHaveURL(/#\/project\//, { timeout: 15000 });
     await expect(page.getByTestId('lyrefly-project-workbench')).toBeVisible();
-    await expect(page.getByTestId('lyrefly-script-editor')).toBeVisible();
+    await expect(page.getByTestId('lyrefly-script-editor')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('lyrefly-script-preview')).toBeVisible();
     await expect(page.getByTestId('lyrefly-workflow-stepper')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Script/i })).toBeVisible();
   });
 
   test('creates a new comic with brainstorm workflow', async ({ page }) => {
@@ -22,6 +24,11 @@ test.describe('Lyrefly gallery', () => {
     await expect(page).toHaveURL(/#\/project\//, { timeout: 15000 });
     await expect(page.getByTestId('lyrefly-project-workbench')).toBeVisible();
     await expect(page.getByTestId('lyrefly-brainstorm-stage')).toBeVisible();
+    await expect(page.getByTestId('lyrefly-brainstorm-board')).toBeVisible();
+    await expect(page.getByTestId('lyrefly-concept-shelf')).toBeVisible();
+    await expect(page.getByTestId('lyrefly-brainstorm-resources')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Concept art' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Add concept art/i })).toBeVisible();
     await expect(page.getByTestId('lyrefly-workflow-stepper')).toBeVisible();
     await expect(page.getByTestId('lyrefly-continue-next-stage')).toBeVisible();
   });

@@ -1,4 +1,5 @@
 import type { ScriptBlock } from '../types';
+import { DEFAULT_SCRIPT_HTML } from './defaultScriptSample';
 import { isScriptHtmlContent, parseScriptHtml } from './scriptHtmlParser';
 import { parseScriptMarkdown } from './scriptLineParser';
 import { analyzeScriptPacing } from './scriptPacingAnalyzer';
@@ -48,12 +49,13 @@ export async function ensureScriptDocumentForProject(
 ): Promise<ScriptDocument> {
   const existing = await lyreflyDb.scriptDocuments.get(scriptDocumentId);
   if (existing) return existing;
+  const { blocks, pacingWarnings } = parseAndAnalyzeScript(DEFAULT_SCRIPT_HTML);
   const created: ScriptDocument = {
     id: scriptDocumentId,
     projectId,
-    markdown: '',
-    blocks: [],
-    pacingWarnings: [],
+    markdown: DEFAULT_SCRIPT_HTML,
+    blocks,
+    pacingWarnings,
     updatedAt: new Date().toISOString(),
   };
   await lyreflyDb.scriptDocuments.put(created);

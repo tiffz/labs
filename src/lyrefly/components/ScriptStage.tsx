@@ -26,7 +26,14 @@ export function ScriptStage({ project }: ScriptStageProps): ReactElement {
   }, [project.id, project.scriptDocumentId]);
 
   if (loading || !document) {
-    return <div aria-busy="true" />;
+    return (
+      <div
+        className="lyrefly-script-editor-shell lyrefly-script-editor-shell--loading"
+        data-testid="lyrefly-script-editor"
+        aria-busy="true"
+        aria-label="Loading script editor"
+      />
+    );
   }
 
   return (

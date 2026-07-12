@@ -1,12 +1,49 @@
+.lyrefly-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.lyrefly-app:has(.lyrefly-workbench) {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+.lyrefly-app > main#main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .lyrefly-layout.app-shell-root {
   --app-shell-max-width: 88rem;
-  --app-shell-gutter: clamp(16px, 3vw, 32px);
+  --app-shell-gutter: clamp(24px, 4vw, 52px);
   --app-shell-scroll-pt: 0;
-  --app-shell-scroll-pb: clamp(24px, 5vw, 48px);
+  --app-shell-scroll-pb: 0;
+  --lyrefly-brand-mark-inset: calc(28px + 0.55rem);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .lyrefly-layout .app-shell-column {
-  min-height: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+.lyrefly-layout .app-shell-workbench {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .lyrefly-layout .app-shell-scroll {
@@ -14,11 +51,71 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  overflow-x: clip;
 }
 
-.lyrefly-layout .app-shell-content {
+.lyrefly-layout .app-shell-scroll:has(.lyrefly-workbench) {
+  overflow: hidden;
+}
+
+.lyrefly-layout .app-shell-content:has(.lyrefly-workbench) {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+/**
+ * One horizontal padding layer for header + workbench chrome.
+ * Inner rails only cap width — no extra inset (fixes the left-edge staircase).
+ */
+.lyrefly-shell-bar {
+  box-sizing: border-box;
+  width: 100%;
+  padding-inline: var(--app-shell-gutter);
+}
+
+.lyrefly-content-rail {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--app-shell-max-width);
+  margin-inline: auto;
+}
+
+/* Gallery / showcase — gutter on content, not on header (avoids double inset). */
+.lyrefly-layout .app-shell-column:not(:has(.lyrefly-workbench)) {
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+.lyrefly-layout
+  .app-shell-column:not(:has(.lyrefly-workbench))
+  .app-shell-scroll {
+  background: var(--lyrefly-gallery-floor);
+}
+
+.lyrefly-contained {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--app-shell-max-width);
+  margin-inline: auto;
+}
+
+/* Workbench stage content — same left edge as header brand + project title */
+.lyrefly-stage-body {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--app-shell-max-width);
+  margin-inline: auto;
+  padding-inline: var(--app-shell-gutter);
+  padding-block: clamp(1rem, 2vw, 1.5rem);
+}
+
+/* Legacy — prefer lyrefly-shell-bar; kept for any straggler full-bleed bars */
+.lyrefly-full-bleed {
+  box-sizing: border-box;
+  width: 100%;
+  padding-inline: var(--app-shell-gutter);
 }

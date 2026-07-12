@@ -1,20 +1,17 @@
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 
-import { isRichTextEmpty } from '../../shared/utils/richTextContent';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import { saveLyreflyProject } from '../db/lyreflyProjectMutations';
 import {
   useLyreflyArchive,
+  useLyreflyArtVersions,
   useLyreflyPageNodes,
   useLyreflyPageRevisions,
   useLyreflyProject,
-  useLyreflyScriptDocument,
   useLyreflyStageContext,
   useLyreflyVisualDevAssets,
 } from '../hooks/useLyreflyProjectData';
@@ -24,11 +21,10 @@ import {
   persistWorkflowStage,
   readPersistedWorkflowStage,
 } from '../workflow/lyreflyWorkflowStagePersistence';
-import { LYREFLY_WORKFLOW_STAGES, nextWorkflowStage, type LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
+import { nextWorkflowStage, type LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
 import { ArtStage } from './ArtStage';
 import { BrainstormStage } from './BrainstormStage';
-import { LyreflyStageFooter } from './LyreflyStageChrome';
-import { LyreflyWorkflowStepper } from './LyreflyWorkflowStepper';
+import { LyreflyWorkbenchChrome } from './LyreflyWorkbenchChrome';
 import { PublishStage } from './PublishStage';
 import { ScriptStage } from './ScriptStage';
 
@@ -41,17 +37,22 @@ export type ProjectWorkbenchProps = {
 };
 
 export function ProjectWorkbench({ projectId, initialStage, onBack }: ProjectWorkbenchProps): ReactElement {
+  const { clear } = useLabsUndo();
   const { project, projectHydrated } = useLyreflyProject(projectId);
   const ctx = useLyreflyStageContext(project);
   const { assets } = useLyreflyVisualDevAssets(projectId);
   const { pageNodes } = useLyreflyPageNodes(projectId);
   const pageNodeIds = useMemo(() => pageNodes.map((n) => n.id), [pageNodes]);
   const { revisions } = useLyreflyPageRevisions(pageNodeIds);
+  const { artVersions } = useLyreflyArtVersions(projectId);
   const { archive, archiveHydrated } = useLyreflyArchive(project?.archiveId);
-  const { script } = useLyreflyScriptDocument(project?.scriptDocumentId ?? null);
 
   const [stage, setStage] = useState<LyreflyWorkflowStage>('brainstorm');
   const brainstormTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    clear();
+  }, [projectId, clear]);
 
   useEffect(() => {
     if (!project) return;
@@ -131,51 +132,47 @@ export function ProjectWorkbench({ projectId, initialStage, onBack }: ProjectWor
       </Typography>
     );
   } else if (stage === 'art') {
-    stageContent = <ArtStage project={project} pageNodes={orderedPageNodes} revisions={revisions} />;
+    stageContent = (
+      <ArtStage
+        project={project}
+        pageNodes={orderedPageNodes}
+        revisions={revisions}
+        artVersions={artVersions}
+        onProjectChange={onPersistProject}
+      />
+    );
   } else {
     stageContent = (
-      <PublishStage project={project} archive={archive} archiveHydrated={archiveHydrated} />
+      <PublishStage
+        project={project}
+        pageNodes={orderedPageNodes}
+        revisions={revisions}
+        artVersions={artVersions}
+        archive={archive}
+        archiveHydrated={archiveHydrated}
+      />
     );
   }
 
-  const stageIndex = LYREFLY_WORKFLOW_STAGES.findIndex((s) => s.id === stage);
-  const stageMeta = LYREFLY_WORKFLOW_STAGES.find((s) => s.id === stage);
-
   return (
-    <div className="lyrefly-workbench" data-testid="lyrefly-project-workbench">
-      <header className="lyrefly-workbench__chrome">
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={{ xs: 1.5, md: 2 }} alignItems={{ md: 'center' }}>
-          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
-            <Button variant="text" className="lyrefly-workbench__back" onClick={onBack}>
-              Showcase
-            </Button>
-            <TextField
-              variant="standard"
-              value={project.title}
-              onChange={(e) => void onPersistProject({ ...project, title: e.target.value })}
-              inputProps={{ 'aria-label': 'Comic title', className: 'lyrefly-workbench__title-input' }}
-              sx={{ flex: 1, minWidth: 0 }}
-            />
-          </Stack>
-          <Typography variant="caption" color="text.secondary" className="lyrefly-workbench__progress">
-            Step {stageIndex + 1} of {LYREFLY_WORKFLOW_STAGES.length}
-            {stageMeta ? ` · ${stageMeta.label}` : ''}
-            {script?.markdown && !isRichTextEmpty(script.markdown) ? ' · Script saved' : ''}
-          </Typography>
-        </Stack>
-        <LyreflyWorkflowStepper project={project} stage={stage} onStageChange={onStageChange} ctx={ctx} />
-      </header>
+    <div
+      className={[
+        'lyrefly-workbench',
+        `lyrefly-workbench--${stage}`,
+      ].join(' ')}
+      data-testid="lyrefly-project-workbench"
+    >
+      <LyreflyWorkbenchChrome
+        project={project}
+        stage={stage}
+        ctx={ctx}
+        onTitleChange={(title) => void onPersistProject({ ...project, title })}
+        onStageChange={onStageChange}
+        onToggleComplete={onToggleStageComplete}
+        onContinue={onContinue}
+      />
 
-      <div className="lyrefly-workbench__stage">
-        {stageContent}
-        <LyreflyStageFooter
-          project={project}
-          stage={stage}
-          ctx={ctx}
-          onToggleComplete={onToggleStageComplete}
-          onContinue={onContinue}
-        />
-      </div>
+      <div className="lyrefly-workbench__stage">{stageContent}</div>
     </div>
   );
 }

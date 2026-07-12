@@ -40,17 +40,12 @@ export const DEFAULT_BLEED_CONFIG: BleedConfig = {
 // Booklet Mode Types (from comic-pdf)
 // ============================================
 
-export interface ParsedFile {
-  file: File;
-  pageNumber: number | null;
-  isSpread: boolean;
-  spreadPages?: [number, number];
-  displayName: string;
-  originalName: string;
-}
+import type { ParsedPageFile } from '../../shared/zine/pageFileParser';
+
+export type { ParsedPageFile as ParsedFile } from '../../shared/zine/pageFileParser';
 
 export interface BookletPageInfo {
-  parsedFile: ParsedFile;
+  parsedFile: ParsedPageFile;
   imageData: string;
   width: number;
   height: number;
@@ -59,7 +54,7 @@ export interface BookletPageInfo {
 }
 
 export interface SpreadInfo {
-  parsedFile: ParsedFile;
+  parsedFile: ParsedPageFile;
   imageData: string;
   width: number;
   height: number;

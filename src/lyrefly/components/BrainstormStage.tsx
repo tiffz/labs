@@ -1,12 +1,13 @@
 import Box from '@mui/material/Box';
-import { alpha, useTheme } from '@mui/material/styles';
-import type { ReactElement } from 'react';
+import { useMemo, useRef, useState, type KeyboardEvent, type ReactElement } from 'react';
 
-import { RichTextEditor } from '../../shared/components/RichTextEditor';
 import type { ComicProject, VisualDevAsset } from '../types';
-import { VisualDevPanel } from './VisualDevPanel';
-
-const sidebarWidth = 280;
+import { useConceptArtSelection } from '../hooks/useConceptArtSelection';
+import { useLyreflyVisualDevUndo } from '../hooks/useLyreflyVisualDevUndo';
+import { useConceptShelfFileIntake } from '../utils/conceptShelfFileIntake';
+import { partitionConceptShelfAssets } from '../utils/conceptShelfUtils';
+import { BrainstormBoard } from './BrainstormBoard';
+import { ConceptArtDetailDialog } from './ConceptArtDetailDialog';
 
 export type BrainstormStageProps = {
   project: ComicProject;
@@ -14,75 +15,79 @@ export type BrainstormStageProps = {
   onBrainstormHtmlChange: (html: string) => void;
 };
 
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+}
+
 export function BrainstormStage({ project, assets, onBrainstormHtmlChange }: BrainstormStageProps): ReactElement {
-  const theme = useTheme();
+  const stageRef = useRef<HTMLDivElement>(null);
+  const intake = useConceptShelfFileIntake({
+    projectId: project.id,
+    scopeRef: stageRef,
+  });
+  const { commitAssetUpdate, removeAsset } = useLyreflyVisualDevUndo();
+
+  const { gallery } = useMemo(() => partitionConceptShelfAssets(assets), [assets]);
+  const { selectedId, selected, setSelectedId, selectPrevious, selectNext } = useConceptArtSelection(gallery);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  const fileDragActive = intake.fileDragActive || intake.fileDragHover;
+
+  const onStageKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+    if (detailOpen) return;
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    if (isEditableTarget(event.target)) return;
+    if (gallery.length <= 1) return;
+    event.preventDefault();
+    if (event.key === 'ArrowLeft') selectPrevious();
+    else selectNext();
+  };
 
   return (
     <Box
-      className="lyrefly-brainstorm-stage"
+      ref={stageRef}
+      tabIndex={-1}
+      className={[
+        'lyrefly-brainstorm-stage',
+        'lyrefly-stage-body',
+        fileDragActive ? 'lyrefly-brainstorm-stage--file-drag' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       data-testid="lyrefly-brainstorm-stage"
-      sx={{
-        flex: 1,
-        minHeight: 0,
-        display: 'flex',
-        flexDirection: { xs: 'column', md: 'row' },
-        alignItems: 'stretch',
-      }}
+      onDragEnter={intake.onDragEnter}
+      onDragLeave={intake.onDragLeave}
+      onDragOver={intake.onDragOver}
+      onDrop={intake.onDrop}
+      onPaste={(e) => intake.onPaste(e.nativeEvent)}
+      onKeyDown={onStageKeyDown}
     >
-      <Box
-        className="lyrefly-brainstorm-canvas"
-        sx={{
-          flex: 1,
-          minWidth: 0,
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          p: { xs: 2, sm: 3 },
-          pr: { md: 2 },
-        }}
-      >
-        <RichTextEditor
-          className="shared-rich-text-editor--fill shared-rich-text-editor--canvas"
-          value={project.brainstormHtml ?? ''}
-          onChange={onBrainstormHtmlChange}
-          placeholder="Capture themes, character notes, scene fragments, and rough story beats…"
-          aria-label="Comic brainstorm"
-          sx={{
-            flex: 1,
-            minHeight: 0,
-            bgcolor: alpha(theme.palette.background.paper, 0.88),
-            borderColor: alpha(theme.palette.primary.main, 0.16),
-            boxShadow: `0 12px 40px ${alpha(theme.palette.primary.dark, 0.12)}`,
-            '& .shared-rich-text-surface': {
-              minHeight: 'min(68vh, 820px)',
-              px: { xs: 2.5, sm: 4 },
-              py: { xs: 3, sm: 4 },
-              fontSize: '1.0625rem',
-              lineHeight: 1.75,
-            },
-          }}
-        />
-      </Box>
+      <BrainstormBoard
+        projectId={project.id}
+        assets={assets}
+        projectBrainstormHtml={project.brainstormHtml ?? ''}
+        onBrainstormHtmlChange={onBrainstormHtmlChange}
+        intake={intake}
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+        onOpenDetail={() => setDetailOpen(true)}
+      />
 
-      <Box
-        className="lyrefly-brainstorm-sidebar"
-        sx={{
-          width: { xs: '100%', md: sidebarWidth },
-          flexShrink: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 0,
-          maxHeight: { xs: 420, md: 'none' },
-          borderLeft: { md: 1 },
-          borderTop: { xs: 1, md: 0 },
-          borderColor: alpha(theme.palette.primary.main, 0.12),
-          p: { xs: 2, sm: 2.5 },
-          bgcolor: alpha(theme.palette.background.default, 0.45),
-          overflowY: { md: 'auto' },
+      <ConceptArtDetailDialog
+        asset={selected}
+        open={detailOpen && Boolean(selected)}
+        onClose={() => setDetailOpen(false)}
+        onNotesCommit={(before, after) => void commitAssetUpdate(before, after)}
+        onRemove={(item) => {
+          void removeAsset(item);
+          setDetailOpen(false);
         }}
-      >
-        <VisualDevPanel projectId={project.id} assets={assets} />
-      </Box>
+        showNavigationHint={gallery.length > 1}
+        onNavigatePrevious={selectPrevious}
+        onNavigateNext={selectNext}
+      />
     </Box>
   );
 }

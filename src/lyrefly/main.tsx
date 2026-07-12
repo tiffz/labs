@@ -1,4 +1,5 @@
 import '../shared/ui/fonts/appFonts';
+import './fonts/lyreflyFonts';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -10,6 +11,7 @@ import { LabsBlockingJobProvider } from '../shared/jobs/LabsBlockingJobContext';
 import '../shared/components/music/appSharedThemes.css';
 import '../shared/styles/labsChrome.css';
 import '../shared/layout/app-shell-layout.css';
+import '../shared/zine/comicScrollReader.css';
 import './lyrefly-layout.css';
 import './styles/lyrefly.css';
 import App from './App';

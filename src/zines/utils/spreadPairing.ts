@@ -1,4 +1,13 @@
 import type { BookletPageInfo, SpreadInfo } from '../types';
+import { getBookletPageFileStem, getBookletPageLabel } from '../../shared/zine/bookletPageLabels';
+import {
+  buildBookletReadingPages,
+  calculateRequiredContentPages,
+} from '../../shared/zine/bookletReadingOrder';
+import {
+  createMixamPageFileName as createPageFileNameShared,
+  createMixamSpreadFileName as createSpreadFileNameShared,
+} from '../../shared/zine/mixamFileNames';
 
 /**
  * Calculate the required number of content pages to make the total booklet
@@ -8,13 +17,7 @@ import type { BookletPageInfo, SpreadInfo } from '../types';
  * Total = 4 (covers) + content pages
  * For multiple of 4: content pages must be a multiple of 4
  */
-export function calculateRequiredContentPages(uploadedMaxPage: number): number {
-  // If no content pages uploaded, return 0 (just covers)
-  if (uploadedMaxPage <= 0) return 0;
-  
-  // Round up to next multiple of 4
-  return Math.ceil(uploadedMaxPage / 4) * 4;
-}
+export { calculateRequiredContentPages };
 
 // A print spread represents two facing pages in the printed booklet
 export interface PrintSpread {
@@ -29,36 +32,16 @@ export interface PrintSpread {
 }
 
 // Get label for a page number
-export const getPageLabel = (pageNum: number): string => {
-  if (pageNum === 0) return 'Front Cover';
-  if (pageNum === -0.5) return 'Inner Front';
-  if (pageNum === -1) return 'Inner Back';
-  if (pageNum === -2 || pageNum === -3) return 'Back Cover';
-  if (pageNum > 0) return `Page ${pageNum}`;
-  return `Page ${pageNum}`;
-};
+export const getPageLabel = getBookletPageLabel;
 
 // Convert a page number to a filename component that will be parsed correctly
-export const getPageFileName = (pageNum: number): string => {
-  if (pageNum === 0) return 'front';
-  if (pageNum === -0.5) return 'innerfront';
-  if (pageNum === -1) return 'innerback';
-  if (pageNum === -2 || pageNum === -3) return 'back';
-  return `page${pageNum}`;
-};
+export const getPageFileName = getBookletPageFileStem;
 
 // Create a single page filename from a page number
-export const createPageFileName = (pageNum: number): string => {
-  return `${getPageFileName(pageNum)}.png`;
-};
+export const createPageFileName = createPageFileNameShared;
 
 // Create a spread filename from two page numbers
-export const createSpreadFileName = (leftPageNum: number, rightPageNum: number): string => {
-  const left = getPageFileName(leftPageNum);
-  const right = getPageFileName(rightPageNum);
-  // Use hyphen format: "back-front.png" or "page2-page3.png"
-  return `${left}-${right}.png`;
-};
+export const createSpreadFileName = createSpreadFileNameShared;
 
 // Get reading order priority for a page number
 export const getReadingOrder = (pageNum: number): number => {
@@ -330,124 +313,26 @@ export function buildBookPages(
   isBlank: boolean;
   isSpread?: boolean;
 }> {
-  const bookPages: Array<{
-    id: string;
-    imageData: string;
-    label: string;
-    isBlank: boolean;
-    isSpread?: boolean;
-  }> = [];
-  
-  // Create a map of page numbers to pages
-  const pageMap = new Map<number, BookletPageInfo>();
-  for (const page of pages) {
-    const pageNum = page.parsedFile.pageNumber;
-    if (pageNum !== null) {
-      pageMap.set(pageNum, page);
-    }
-  }
-  
-  // Track which pages are in explicit spreads
-  const pagesInSpreads = new Set<number>();
-  const spreadMap = new Map<number, SpreadInfo>();
-  for (const spread of spreads) {
-    pagesInSpreads.add(spread.pages[0]);
-    pagesInSpreads.add(spread.pages[1]);
-    // Map both page numbers to the spread for easier lookup
-    spreadMap.set(spread.pages[0], spread);
-    spreadMap.set(spread.pages[1], spread);
-  }
-  
-  // Helper to check if a page is part of a spread and get the spread
-  const getSpreadForPage = (pageNum: number): SpreadInfo | undefined => {
-    if (!pagesInSpreads.has(pageNum)) return undefined;
-    return spreadMap.get(pageNum);
-  };
-  
-  // Helper to add a page (or spread if the page is part of one)
-  // Returns true if a spread was added
-  const addedSpreads = new Set<string>();
-  
-  const addPage = (pageNum: number, label: string): void => {
-    const spread = getSpreadForPage(pageNum);
-    if (spread) {
-      // This page is part of a spread - add the spread if not already added
-      const spreadId = `spread-${spread.pages[0]}-${spread.pages[1]}`;
-      if (!addedSpreads.has(spreadId)) {
-        addedSpreads.add(spreadId);
-        // Add spread with isSpread flag - BookReader will split it
-        bookPages.push({
-          id: spreadId,
-          imageData: spread.imageData,
-          label: `${getPageLabel(spread.pages[0])} – ${getPageLabel(spread.pages[1])} (Spread)`,
-          isBlank: false,
-          isSpread: true,
-        });
-        // Add placeholder for the second half (BookReader handles the actual split)
-        bookPages.push({
-          id: `${spreadId}-placeholder`,
-          imageData: '',
-          label: '',
-          isBlank: true,
-        });
-      }
-      return;
-    }
-    
-    // Regular page (not in a spread)
-    const page = pageMap.get(pageNum);
-    bookPages.push({
-      id: `page-${pageNum}`,
-      imageData: page?.imageData || '',
-      label,
-      isBlank: !page,
-    });
-  };
-  
-  // Start with blank so front cover appears on right
-  bookPages.push({ id: 'blank-start', imageData: '', label: '', isBlank: true });
-  
-  // Front Cover (page 0) - may be part of outer cover spread
-  addPage(0, 'Front Cover');
-  
-  // Inner Front (page -0.5)
-  addPage(-0.5, 'Inner Front');
-  
-  // Page 1
-  addPage(1, 'Page 1');
-  
-  // Content pages 2, 3, 4, etc.
-  // Find max page number from uploaded content
-  let uploadedMaxPage = 1;
-  for (const page of pages) {
-    const num = page.parsedFile.pageNumber;
-    if (num !== null && num > uploadedMaxPage) {
-      uploadedMaxPage = num;
-    }
-  }
-  for (const spread of spreads) {
-    if (spread.pages[0] > 0) uploadedMaxPage = Math.max(uploadedMaxPage, spread.pages[0]);
-    if (spread.pages[1] > 0) uploadedMaxPage = Math.max(uploadedMaxPage, spread.pages[1]);
-  }
-  
-  // Calculate required content pages for proper booklet folding (multiple of 4)
-  const maxPage = calculateRequiredContentPages(uploadedMaxPage);
-  
-  // Add pages 2 onwards (including blank padding pages as needed)
-  for (let i = 2; i <= maxPage; i++) {
-    addPage(i, `Page ${i}`);
-  }
-  
-  // Inner Back (page -1)
-  addPage(-1, 'Inner Back');
-  
-  // Back Cover (page -2) - may be part of outer cover spread
-  addPage(-2, 'Back Cover');
-  
-  // Ensure even number of pages for proper spread display
-  if (bookPages.length % 2 !== 0) {
-    bookPages.push({ id: 'blank-end', imageData: '', label: '', isBlank: true });
-  }
-  
-  return bookPages;
+  const pageSlots = pages
+    .filter((page) => page.parsedFile.pageNumber !== null)
+    .map((page) => ({
+      id: `page-${page.parsedFile.pageNumber}`,
+      pageNumber: page.parsedFile.pageNumber!,
+      imageUrl: page.imageData,
+      label: getPageLabel(page.parsedFile.pageNumber!),
+    }));
+
+  const spreadSlots = spreads.map((spread) => ({
+    id: `spread-${spread.pages[0]}-${spread.pages[1]}`,
+    pages: spread.pages,
+    imageUrl: spread.imageData,
+  }));
+
+  return buildBookletReadingPages(pageSlots, spreadSlots).map((page) => ({
+    id: page.id,
+    imageData: page.imageUrl,
+    label: page.label,
+    isBlank: page.isBlank,
+    isSpread: page.isSpread,
+  }));
 }

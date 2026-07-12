@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 
 import { resolveDexieLiveQuery } from '../../shared/dexie/resolveDexieLiveQuery';
 import { lyreflyDb } from '../db/lyreflyDb';
-import type { ComicArchiveBinder, ComicProject, PageNode, PageRevision, ScriptDocument, VisualDevAsset } from '../types';
+import type { ComicArchiveBinder, ComicArtVersion, ComicProject, PageNode, PageRevision, ScriptDocument, VisualDevAsset } from '../types';
 import type { LyreflyStageCompletionContext } from '../workflow/lyreflyWorkflowCompletion';
 
 export function useLyreflyProject(projectId: string | null): {
@@ -86,6 +86,19 @@ export function useLyreflyArchive(archiveId: string | null | undefined): {
   return { archive: value, archiveHydrated: hydrated };
 }
 
+export function useLyreflyArtVersions(projectId: string | null): {
+  artVersions: ComicArtVersion[];
+  artVersionsHydrated: boolean;
+} {
+  const raw = useLiveQuery(async () => {
+    if (!projectId) return [];
+    const rows = await lyreflyDb.artVersions.where('projectId').equals(projectId).toArray();
+    return rows.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }, [projectId]);
+  const { value, hydrated } = resolveDexieLiveQuery(raw, []);
+  return { artVersions: value, artVersionsHydrated: hydrated };
+}
+
 export function useLyreflyStageContext(project: ComicProject | null): LyreflyStageCompletionContext {
   const { script } = useLyreflyScriptDocument(project?.scriptDocumentId ?? null);
   const { assets } = useLyreflyVisualDevAssets(project?.id ?? null);
@@ -99,7 +112,7 @@ export function useLyreflyStageContext(project: ComicProject | null): LyreflySta
       script,
       visualDevCount: assets.length,
       pageNodeCount: pageNodes.length,
-      finalRevisionCount: revisions.filter((r) => r.stage === 'final').length,
+      revisionCount: revisions.length,
       archive,
     }),
     [script, assets.length, pageNodes.length, revisions, archive],

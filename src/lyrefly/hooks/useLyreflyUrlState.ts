@@ -1,18 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import {
-  lyreflyGalleryHref,
-  lyreflyProjectHref,
-  lyreflyScriptHref,
-  parseLyreflyHash,
-  type LyreflyRoute,
-} from '../routes/lyreflyHash';
+import { lyreflyGalleryHref, lyreflyProjectHref, lyreflyProjectProfileHref, lyreflyScriptHref, parseLyreflyHash, type LyreflyRoute } from '../routes/lyreflyHash';
 
 export function useLyreflyUrlState(): {
   route: LyreflyRoute;
   openGallery: () => void;
   openProject: (projectId: string) => void;
   openScript: (projectId: string) => void;
+  openProfile: (projectId: string) => void;
 } {
   const [route, setRoute] = useState<LyreflyRoute>(() =>
     typeof window !== 'undefined' ? parseLyreflyHash(window.location.hash) : { kind: 'gallery' },
@@ -41,5 +36,10 @@ export function useLyreflyUrlState(): {
     setRoute({ kind: 'script', projectId });
   }, []);
 
-  return { route, openGallery, openProject, openScript };
+  const openProfile = useCallback((projectId: string) => {
+    window.location.hash = lyreflyProjectProfileHref(projectId);
+    setRoute({ kind: 'profile', projectId });
+  }, []);
+
+  return { route, openGallery, openProject, openScript, openProfile };
 }

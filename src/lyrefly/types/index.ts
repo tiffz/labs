@@ -2,6 +2,7 @@
 // Lyrefly — core domain types
 // ============================================
 
+import { DEFAULT_SCRIPT_HTML } from '../script/defaultScriptSample';
 import type { LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
 
 export type LyreflyProjectStatus = 'draft' | 'wip' | 'finished' | 'archived';
@@ -58,6 +59,10 @@ export interface ComicProject {
   scriptDocumentId: string;
   /** Macro snapshot ids, newest last. */
   snapshotIds: string[];
+  /** Saved full-comic art versions (page → revision pointers). */
+  artVersionIds?: string[];
+  /** Version used for export / profile preview when set. */
+  finalArtVersionId?: string;
   /** Publish / press / sales live in archive module. */
   archiveId?: string;
   /** Brainstorm canvas — rich text ideas doc (HTML). */
@@ -166,6 +171,8 @@ export interface ScriptPanelBlock extends ScriptBlockBase {
   type: 'panel';
   pageNumber: number;
   panelNumber: number;
+  /** Panel row label from the source list (e.g. "Opening spread"). */
+  caption?: string;
 }
 
 export interface ScriptDialogueBlock extends ScriptBlockBase {
@@ -216,6 +223,25 @@ export interface ScriptDocument {
   updatedAt: string;
 }
 
+/** How a saved art version was created. */
+export type ComicArtVersionSource = 'snapshot' | 'upload';
+
+/** Frozen map of which page revision belongs to a saved comic art version. */
+export interface ComicArtVersion {
+  id: string;
+  projectId: string;
+  label: string;
+  notes?: string;
+  /** Snapshot of current page picks, or a bulk-uploaded page set. */
+  source?: ComicArtVersionSource;
+  /** Page node id → revision id for this version. */
+  pageRevisions: Record<string, string>;
+  /** When this version was completed — inferred from files or edited manually. */
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Macro draft archive — frozen pointer map, not a full duplicate of every byte. */
 export interface ComicMacroSnapshot {
   id: string;
@@ -239,6 +265,7 @@ export interface PressMemorabiliaEntry {
   id: string;
   title: string;
   markdown: string;
+  url?: string;
   occurredAt?: string;
 }
 
@@ -268,6 +295,7 @@ export type LyreflyDirtySyncKind =
   | 'page_revision'
   | 'visual_dev'
   | 'snapshot'
+  | 'art_version'
   | 'archive';
 
 export interface LyreflyDirtySyncRow {
@@ -325,6 +353,7 @@ export function createBlankComicProject(now = new Date().toISOString()): ComicPr
     layoutOrder: [],
     scriptDocumentId,
     snapshotIds: [],
+    artVersionIds: [],
     createdAt: now,
     updatedAt: now,
   };
@@ -334,7 +363,7 @@ export function createBlankScriptDocument(projectId: string, now = new Date().to
   return {
     id: crypto.randomUUID(),
     projectId,
-    markdown: '',
+    markdown: DEFAULT_SCRIPT_HTML,
     blocks: [],
     pacingWarnings: [],
     updatedAt: now,

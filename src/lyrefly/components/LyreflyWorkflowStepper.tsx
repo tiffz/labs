@@ -10,21 +10,24 @@ import type { LyreflyStageCompletionContext } from '../workflow/lyreflyWorkflowC
 import { LYREFLY_WORKFLOW_STAGES, type LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
 
 const STEP_ICON_SIZE = 28;
+const STEP_ICON_SIZE_COMPACT = 22;
 
 export type LyreflyWorkflowStepperProps = {
   project: ComicProject;
   stage: LyreflyWorkflowStage;
   onStageChange: (stage: LyreflyWorkflowStage) => void;
   ctx: LyreflyStageCompletionContext;
+  compact?: boolean;
 };
 
 type StepCircleProps = {
   stepNumber: number;
   active: boolean;
   completed: boolean;
+  iconSize: number;
 };
 
-function StepCircle({ stepNumber, active, completed }: StepCircleProps): ReactElement {
+function StepCircle({ stepNumber, active, completed, iconSize }: StepCircleProps): ReactElement {
   const theme = useTheme();
   const showCheck = completed && !active;
   const primary = theme.palette.primary.main;
@@ -38,7 +41,7 @@ function StepCircle({ stepNumber, active, completed }: StepCircleProps): ReactEl
     borderColor = primary;
     bgcolor = primary;
     color = theme.palette.primary.contrastText;
-    boxShadow = `0 0 0 3px ${alpha(primary, 0.22)}, 0 0 0 5px ${alpha(primary, 0.08)}`;
+    boxShadow = `0 0 0 2px ${alpha(primary, 0.16)}`;
   } else if (completed) {
     borderColor = alpha(primary, 0.42);
     bgcolor = theme.palette.background.paper;
@@ -62,8 +65,8 @@ function StepCircle({ stepNumber, active, completed }: StepCircleProps): ReactEl
         .filter(Boolean)
         .join(' ')}
       sx={{
-        width: STEP_ICON_SIZE,
-        height: STEP_ICON_SIZE,
+        width: iconSize,
+        height: iconSize,
         borderRadius: '50%',
         display: 'grid',
         placeItems: 'center',
@@ -91,9 +94,19 @@ type StepButtonProps = {
   active: boolean;
   completed: boolean;
   onClick: () => void;
+  iconSize: number;
+  compact: boolean;
 };
 
-function StepButton({ stepNumber, label, active, completed, onClick }: StepButtonProps): ReactElement {
+function StepButton({
+  stepNumber,
+  label,
+  active,
+  completed,
+  onClick,
+  iconSize,
+  compact,
+}: StepButtonProps): ReactElement {
   const theme = useTheme();
   const primary = theme.palette.primary.main;
   const labelColor = active
@@ -119,12 +132,12 @@ function StepButton({ stepNumber, label, active, completed, onClick }: StepButto
       sx={{
         flex: '1 1 0',
         minWidth: 0,
-        maxWidth: '7.5rem',
+        maxWidth: '9.5rem',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 0.75,
-        px: { xs: 0.25, sm: 0.5 },
+        gap: compact ? 0.3 : 0.55,
+        px: { xs: 0.35, sm: 0.65 },
         py: 0,
         border: 0,
         bgcolor: 'transparent',
@@ -137,17 +150,17 @@ function StepButton({ stepNumber, label, active, completed, onClick }: StepButto
         },
       }}
     >
-      <StepCircle stepNumber={stepNumber} active={active} completed={completed} />
+      <StepCircle stepNumber={stepNumber} active={active} completed={completed} iconSize={iconSize} />
       <Typography
         variant="caption"
         component="span"
         aria-hidden
         sx={{
           fontWeight: active ? 700 : 500,
-          fontSize: { xs: '0.6875rem', sm: '0.75rem' },
+          fontSize: { xs: '0.75rem', sm: '0.8125rem' },
           lineHeight: 1.25,
           textAlign: 'center',
-          maxWidth: '6.75rem',
+          maxWidth: '8.5rem',
         }}
       >
         {label}
@@ -161,18 +174,25 @@ export function LyreflyWorkflowStepper({
   stage,
   onStageChange,
   ctx,
+  compact = false,
 }: LyreflyWorkflowStepperProps): ReactElement {
   const theme = useTheme();
   const stepCount = LYREFLY_WORKFLOW_STAGES.length;
   const emphasisIndex = LYREFLY_WORKFLOW_STAGES.findIndex((s) => s.id === stage);
   const trackProgress = stepCount <= 1 ? 0 : Math.max(0, emphasisIndex) / (stepCount - 1);
   const trackInset = `${50 / stepCount}%`;
+  const iconSize = compact ? STEP_ICON_SIZE_COMPACT : STEP_ICON_SIZE;
 
   return (
     <Box
       role="group"
       aria-label="Comic workflow"
-      className="lyrefly-workflow-stepper"
+      className={[
+        'lyrefly-workflow-stepper',
+        compact ? 'lyrefly-workflow-stepper--compact' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       data-testid="lyrefly-workflow-stepper"
       sx={{
         position: 'relative',
@@ -180,8 +200,8 @@ export function LyreflyWorkflowStepper({
         alignItems: 'flex-start',
         justifyContent: 'space-between',
         width: 1,
-        px: { xs: 0.5, sm: 1 },
-        pb: 0.25,
+        px: { xs: 0.25, sm: compact ? 0.25 : 0.75 },
+        pb: compact ? 0 : 0.35,
       }}
     >
       <Box
@@ -189,7 +209,7 @@ export function LyreflyWorkflowStepper({
         className="lyrefly-workflow-stepper__track"
         sx={{
           position: 'absolute',
-          top: STEP_ICON_SIZE / 2,
+          top: iconSize / 2,
           left: trackInset,
           right: trackInset,
           height: 2,
@@ -223,6 +243,8 @@ export function LyreflyWorkflowStepper({
             active={active}
             completed={completed}
             onClick={() => onStageChange(step.id)}
+            iconSize={iconSize}
+            compact={compact}
           />
         );
       })}

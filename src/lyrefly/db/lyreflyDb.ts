@@ -2,6 +2,7 @@ import Dexie, { type EntityTable } from 'dexie';
 
 import type {
   ComicArchiveBinder,
+  ComicArtVersion,
   ComicMacroSnapshot,
   ComicProject,
   LyreflyDirtySyncRow,
@@ -31,6 +32,7 @@ export class LyreflyDb extends Dexie {
   visualDevBlobs!: EntityTable<LyreflyVisualDevBlob, 'assetId'>;
   scriptDocuments!: EntityTable<ScriptDocument, 'id'>;
   snapshots!: EntityTable<ComicMacroSnapshot, 'id'>;
+  artVersions!: EntityTable<ComicArtVersion, 'id'>;
   archives!: EntityTable<ComicArchiveBinder, 'id'>;
   dirtySync!: EntityTable<LyreflyDirtySyncRow, 'id'>;
 
@@ -45,6 +47,19 @@ export class LyreflyDb extends Dexie {
       visualDevBlobs: 'assetId',
       scriptDocuments: 'id, projectId',
       snapshots: 'id, projectId',
+      archives: 'id, projectId',
+      dirtySync: 'id, kind, projectId, updatedAt',
+    });
+    this.version(2).stores({
+      projects: 'id, status, updatedAt',
+      pageNodes: 'id, projectId',
+      pageRevisions: 'id, pageNodeId',
+      revisionBlobs: 'revisionId',
+      visualDevAssets: 'id, projectId',
+      visualDevBlobs: 'assetId',
+      scriptDocuments: 'id, projectId',
+      snapshots: 'id, projectId',
+      artVersions: 'id, projectId',
       archives: 'id, projectId',
       dirtySync: 'id, kind, projectId, updatedAt',
     });

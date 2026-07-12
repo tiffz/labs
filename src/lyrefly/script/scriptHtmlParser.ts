@@ -132,16 +132,17 @@ function processPanelList(
     if (!(child instanceof HTMLLIElement)) continue;
     ctx.lineCounter += 1;
     ctx.panelNumber += 1;
+    const label = getLiLabel(child);
+    const contentList = child.querySelector(':scope > ul, :scope > ol');
     blocks.push({
       type: 'panel',
       id: newBlockId(),
       pageNumber: ctx.pageNumber,
       panelNumber: ctx.panelNumber,
+      caption: contentList && label ? label : undefined,
       sourceLineStart: ctx.lineCounter,
       sourceLineEnd: ctx.lineCounter,
     });
-    const label = getLiLabel(child);
-    const contentList = child.querySelector(':scope > ul, :scope > ol');
     if (contentList instanceof HTMLUListElement || contentList instanceof HTMLOListElement) {
       processContentList(contentList, blocks, ctx);
     } else if (label) {
@@ -246,4 +247,4 @@ export function isScriptHtmlContent(value: string): boolean {
   return t.startsWith('<') && (t.includes('<ul') || t.includes('<ol') || t.includes('<p'));
 }
 
-export const DEFAULT_SCRIPT_HTML = `<ul><li>Page 1<ul><li>Opening<ul><li>Courier receives a sealed package.</li></ul></li></ul></li><li>Page 2<ul><li>Chase<ul><li>Neon alleys, pursuit.</li></ul></li></ul></li></ul>`;
+export { DEFAULT_SCRIPT_HTML } from './defaultScriptSample';

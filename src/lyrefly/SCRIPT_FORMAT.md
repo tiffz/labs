@@ -6,7 +6,7 @@ Lyrefly aligns with that habit instead of inventing markup.
 
 ## How to write (low overhead)
 
-Use the **script editor’s nested bullet list** — same muscle memory as Google Docs:
+Use the **script editor’s nested bullet list** on the left — same muscle memory as Google Docs. A **formatted script preview** updates live on the right.
 
 | Indent level      | Meaning     | Example                           |
 | ----------------- | ----------- | --------------------------------- |

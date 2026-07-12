@@ -7,7 +7,8 @@ export type LyreflyStageCompletionContext = {
   script?: ScriptDocument | null;
   visualDevCount?: number;
   pageNodeCount?: number;
-  finalRevisionCount?: number;
+  /** Any uploaded page revision (replaces legacy final-only count). */
+  revisionCount?: number;
   archive?: ComicArchiveBinder | null;
 };
 
@@ -29,7 +30,7 @@ export function isWorkflowStageComplete(
     case 'script':
       return Boolean(ctx.script?.markdown && !isRichTextEmpty(ctx.script.markdown));
     case 'art':
-      return (ctx.finalRevisionCount ?? 0) > 0 || (ctx.pageNodeCount ?? 0) > 0;
+      return (ctx.revisionCount ?? 0) > 0 || (ctx.pageNodeCount ?? 0) > 0;
     case 'publish':
       return (ctx.archive?.publishLog.length ?? 0) > 0;
     default:

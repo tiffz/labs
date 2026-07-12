@@ -8,6 +8,8 @@ Merged from user-selected preview themes **White Cube** (Bauhaus gallery minimal
 
 **White walls, back-room riso** — crisp gallery spacing and neutral surfaces with hot pink, teal, and scarlet accents. Feels like a clean white-cube exhibition where the comics were printed downstairs on a misregistered risograph.
 
+**Gallery pride** — the showcase should feel like a place you are happy to see your work: warm floor, soft spotlight, unique riso washes per comic, and real concept-art previews on covers when available.
+
 ## Tokens
 
 - TypeScript: [`design/risoCubeTheme.ts`](design/risoCubeTheme.ts)
@@ -16,23 +18,24 @@ Merged from user-selected preview themes **White Cube** (Bauhaus gallery minimal
 
 ## Palette
 
-| Role        | Token / value                     | Use                              |
-| ----------- | --------------------------------- | -------------------------------- |
-| Canvas      | `#fafafa` `--lyrefly-app-bg`      | Page background (White Cube)     |
-| Surface     | `#ffffff` / `#fafafa`             | Paper, cards                     |
-| Ink         | `#171717` `--lyrefly-ink`         | Headings, body                   |
-| Muted       | `#737373` `--lyrefly-muted`       | Meta, secondary copy             |
-| Accent      | `#ff2d95` `--lyrefly-accent`      | Primary CTA, links (Riso pink)   |
-| Accent soft | `#00d4aa` `--lyrefly-accent-soft` | Secondary highlights (Riso teal) |
-| Accent cool | `#dc2626` `--lyrefly-accent-cool` | Scarlet punch (White Cube)       |
-| Riso yellow | `#ffd400`                         | Cover washes only                |
+| Role          | Token / value                     | Use                                  |
+| ------------- | --------------------------------- | ------------------------------------ |
+| Canvas        | `#f7f6f3` `--lyrefly-app-bg`      | Page background (warm gallery white) |
+| Surface       | `#ffffff` / `#f3f2ef`             | Paper, side panels                   |
+| Gallery floor | `#eceae5` `--lyrefly-gallery-bg`  | Shelf plinth zone                    |
+| Ink           | `#171717` `--lyrefly-ink`         | Headings, body                       |
+| Muted         | `#737373` `--lyrefly-muted`       | Meta, secondary copy                 |
+| Accent        | `#ff2d95` `--lyrefly-accent`      | Primary CTA, links (Riso pink)       |
+| Accent soft   | `#00d4aa` `--lyrefly-accent-soft` | Secondary highlights (Riso teal)     |
+| Accent cool   | `#dc2626` `--lyrefly-accent-cool` | Scarlet punch (White Cube)           |
+| Riso yellow   | `#ffd400`                         | Cover washes only                    |
 
 **Do not** reintroduce the multi-theme preview picker or dark purple museum defaults.
 
 ## Typography
 
-- **Display:** Helvetica Neue, weight 300 — masthead titles (White Cube)
-- **UI / body:** Inter
+- **Display / titles:** System UI stack (`SF Pro Display` on Apple, Inter fallback) — wordmark, comic titles, section headings; weight 500, tight negative tracking
+- **UI / body:** System UI stack (`SF Pro Text` on Apple, Inter fallback) — chrome, forms, meta copy
 - **Script editor:** IBM Plex Mono (`--lyrefly-script-font`)
 - Section eyebrows: 0.6875rem, uppercase, wide letter-spacing
 
@@ -46,12 +49,12 @@ Merged from user-selected preview themes **White Cube** (Bauhaus gallery minimal
 ## Layout (structural)
 
 - **Shell:** 88rem max width, generous gutters
-- **Showcase:** Editorial masthead + shelf grid; “New comic” as first grid slot
-- **Workbench:** Flat chrome (no heavy bordered card); stepper + stage footer only
+- **Your comics:** Editorial masthead + shelf on warm gallery floor; per-comic riso palette or first concept-art preview on cover; “New comic” as first grid slot
+- **Workbench:** Flat chrome (title + stepper + actions); white paper stage; hairline dividers only
 
 ## Brand mark
 
-**Feather emoji** (Android 17.0 style) — `public/icons/lyrefly-feather.png`. Rendered via [`components/LyreflyLogomark.tsx`](components/LyreflyLogomark.tsx) in the header. Favicon and Labs catalog icon use the same asset.
+**Feather emoji** (Android 17.0 style) — `public/icons/lyrefly-feather.png` uses the **riso-accent** preset (`#ff2d95`, same as UI accents). Re-tint: `python3 tools/lyrefly/recolor-feather-icon.py <preset-id>` (see `tools/lyrefly/feather_logo_presets.py`).
 
 ## Script editor
 

@@ -19,6 +19,28 @@
   max-height: none;
 }
 
+/* Compact notes / sidebar fields — no tall canvas stretch. */
+.shared-rich-text-editor--compact {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.shared-rich-text-editor--compact > div:last-child {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.shared-rich-text-editor--compact .shared-rich-text-surface,
+.shared-rich-text-editor--compact .tiptap,
+.shared-rich-text-editor--compact .ProseMirror {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
 /* Tall document canvas — brainstorm / long-form editing. */
 .shared-rich-text-editor--canvas {
   flex: 1;
@@ -38,6 +60,40 @@
 
 .shared-rich-text-editor .shared-rich-text-surface a {
   cursor: pointer;
+}
+
+/* Nested bullet lists — script editor and other list-nesting surfaces */
+.shared-rich-text-editor--list-nesting .shared-rich-text-surface ul,
+.shared-rich-text-editor--list-nesting .ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.35em 0;
+}
+
+.shared-rich-text-editor--list-nesting .shared-rich-text-surface ul ul,
+.shared-rich-text-editor--list-nesting .ProseMirror ul ul {
+  list-style-type: circle;
+}
+
+.shared-rich-text-editor--list-nesting .shared-rich-text-surface ul ul ul,
+.shared-rich-text-editor--list-nesting .ProseMirror ul ul ul {
+  list-style-type: square;
+}
+
+.shared-rich-text-editor--list-nesting .shared-rich-text-surface ol,
+.shared-rich-text-editor--list-nesting .ProseMirror ol {
+  padding-left: 1.5rem;
+  margin: 0.35em 0;
+}
+
+.shared-rich-text-editor--list-nesting .shared-rich-text-surface li,
+.shared-rich-text-editor--list-nesting .ProseMirror li {
+  margin: 0.12em 0;
+}
+
+.shared-rich-text-editor--list-nesting .shared-rich-text-surface li > p,
+.shared-rich-text-editor--list-nesting .ProseMirror li > p {
+  margin: 0;
 }
 
 .shared-rich-text-editor--canvas .shared-rich-text-surface,

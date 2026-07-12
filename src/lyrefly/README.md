@@ -8,7 +8,7 @@ Nested-bullet comic script (Google Docs style). See [`SCRIPT_FORMAT.md`](SCRIPT_
 
 ## Routes
 
-- `#/gallery` — Showcase shelf (default)
+- `#/gallery` — Your comics shelf (default)
 - `#/project/:id` — Project workbench (brainstorm → script → art → publish)
 - `#/project/:id/script` — Script stage (also reachable via workbench stepper)
 

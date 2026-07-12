@@ -13,33 +13,36 @@ export function LyreflyAppHeader({ route }: LyreflyAppHeaderProps): ReactElement
   const onGallery = route.kind === 'gallery';
 
   return (
-    <header className="lyrefly-header">
-      <button
-        type="button"
-        className="lyrefly-header__brand"
-        onClick={() => navigateLyreflyHash(lyreflyGalleryHref())}
-        aria-label="Lyrefly, back to studio showcase"
-      >
-        <LyreflyLogomark size={32} />
-        <span className="lyrefly-header__brand-text">
-          <span className="lyrefly-header__title">Lyrefly</span>
-          <span className="lyrefly-header__tagline">Indie comic studio</span>
-        </span>
-      </button>
-
-      <nav className="lyrefly-header__nav" aria-label="Studio">
+    <header className="lyrefly-header lyrefly-shell-bar">
+      <div className="lyrefly-content-rail lyrefly-header__inner">
         <button
           type="button"
-          className={['lyrefly-header__nav-item', 'lyrefly-header__nav-button', onGallery ? 'lyrefly-header__nav-item--current' : ''].join(' ')}
-          aria-current={onGallery ? 'page' : undefined}
+          className="lyrefly-header__brand"
           onClick={() => navigateLyreflyHash(lyreflyGalleryHref())}
+          aria-label="Lyrefly, back to your comics"
         >
-          Showcase
+          <LyreflyLogomark size={28} />
+          <span className="lyrefly-header__title">Lyrefly</span>
         </button>
-      </nav>
 
-      <div className="lyrefly-header__actions">
-        <LyreflyAccountMenu />
+        <nav className="lyrefly-header__nav" aria-label="Lyrefly">
+          <button
+            type="button"
+            className={[
+              'lyrefly-header__nav-item',
+              'lyrefly-header__nav-button',
+              onGallery ? 'lyrefly-header__nav-item--current' : '',
+            ].join(' ')}
+            aria-current={onGallery ? 'page' : undefined}
+            onClick={() => navigateLyreflyHash(lyreflyGalleryHref())}
+          >
+            Your comics
+          </button>
+        </nav>
+
+        <div className="lyrefly-header__actions">
+          <LyreflyAccountMenu />
+        </div>
       </div>
     </header>
   );

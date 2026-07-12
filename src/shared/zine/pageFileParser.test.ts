@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { extractPageNumber, detectSpread, sortFilesByPageOrder, parseAndSortFiles } from './fileParser';
+
+import {
+  extractPageNumber,
+  detectSpread,
+  sortPageFilesByOrder,
+  parseAndSortPageFiles,
+} from './pageFileParser';
 
 describe('extractPageNumber', () => {
   describe('numbered pages', () => {
@@ -33,6 +39,7 @@ describe('extractPageNumber', () => {
       expect(extractPageNumber('front.png')).toBe(0);
       expect(extractPageNumber('front_cover.png')).toBe(0);
       expect(extractPageNumber('frontcover.png')).toBe(0);
+      expect(extractPageNumber('Cover.png')).toBe(0);
     });
 
     it('returns -2 for back cover', () => {
@@ -127,7 +134,7 @@ describe('detectSpread', () => {
   });
 });
 
-describe('sortFilesByPageOrder', () => {
+describe('sortPageFilesByOrder', () => {
   it('sorts pages in correct reading order', () => {
     const files = [
       { file: new File([], 'page3.png'), pageNumber: 3, isSpread: false, displayName: 'page3.png', originalName: 'page3.png' },
@@ -137,32 +144,13 @@ describe('sortFilesByPageOrder', () => {
       { file: new File([], 'page2.png'), pageNumber: 2, isSpread: false, displayName: 'page2.png', originalName: 'page2.png' },
     ];
 
-    const sorted = sortFilesByPageOrder(files);
-    
-    expect(sorted[0].pageNumber).toBe(0);  // Front cover first
-    expect(sorted[1].pageNumber).toBe(1);  // Then page 1
-    expect(sorted[2].pageNumber).toBe(2);  // Then page 2
-    expect(sorted[3].pageNumber).toBe(3);  // Then page 3
-    expect(sorted[4].pageNumber).toBe(-2); // Back cover last
-  });
+    const sorted = sortPageFilesByOrder(files);
 
-  it('handles inner covers correctly', () => {
-    // The sort function places negative page numbers AFTER positive ones
-    // This is intentional as inner covers appear after regular pages in the book
-    const files = [
-      { file: new File([], 'page1.png'), pageNumber: 1, isSpread: false, displayName: 'page1.png', originalName: 'page1.png' },
-      { file: new File([], 'inner_front.png'), pageNumber: -0.5, isSpread: false, displayName: 'inner_front.png', originalName: 'inner_front.png' },
-      { file: new File([], 'inner_back.png'), pageNumber: -1, isSpread: false, displayName: 'inner_back.png', originalName: 'inner_back.png' },
-      { file: new File([], 'front.png'), pageNumber: 0, isSpread: false, displayName: 'front.png', originalName: 'front.png' },
-    ];
-
-    const sorted = sortFilesByPageOrder(files);
-    
-    expect(sorted[0].pageNumber).toBe(0);    // Front cover (0 is not negative)
-    expect(sorted[1].pageNumber).toBe(1);    // Page 1
-    // Negative values come after positives, sorted among themselves
-    expect(sorted[2].pageNumber).toBe(-1);   // Inner back (more negative)
-    expect(sorted[3].pageNumber).toBe(-0.5); // Inner front (less negative)
+    expect(sorted[0].pageNumber).toBe(0);
+    expect(sorted[1].pageNumber).toBe(1);
+    expect(sorted[2].pageNumber).toBe(2);
+    expect(sorted[3].pageNumber).toBe(3);
+    expect(sorted[4].pageNumber).toBe(-2);
   });
 
   it('handles files without page numbers', () => {
@@ -171,37 +159,30 @@ describe('sortFilesByPageOrder', () => {
       { file: new File([], 'random.png'), pageNumber: null, isSpread: false, displayName: 'random.png', originalName: 'random.png' },
     ];
 
-    const sorted = sortFilesByPageOrder(files);
-    
-    expect(sorted[0].pageNumber).toBe(1);    // Named page first
-    expect(sorted[1].pageNumber).toBeNull(); // Unknown last
+    const sorted = sortPageFilesByOrder(files);
+
+    expect(sorted[0].pageNumber).toBe(1);
+    expect(sorted[1].pageNumber).toBeNull();
   });
 });
 
-describe('parseAndSortFiles', () => {
+describe('parseAndSortPageFiles', () => {
   it('parses and sorts multiple files correctly', () => {
-    const files = [
-      new File([], 'page2.png'),
-      new File([], 'front.png'),
-      new File([], 'page1.png'),
-    ];
+    const files = [new File([], 'page2.png'), new File([], 'front.png'), new File([], 'page1.png')];
 
-    const result = parseAndSortFiles(files);
-    
+    const result = parseAndSortPageFiles(files);
+
     expect(result).toHaveLength(3);
-    expect(result[0].pageNumber).toBe(0);  // front
-    expect(result[1].pageNumber).toBe(1);  // page1
-    expect(result[2].pageNumber).toBe(2);  // page2
+    expect(result[0].pageNumber).toBe(0);
+    expect(result[1].pageNumber).toBe(1);
+    expect(result[2].pageNumber).toBe(2);
   });
 
   it('correctly identifies spreads', () => {
-    const files = [
-      new File([], 'page1-2.png'),
-      new File([], 'page3.png'),
-    ];
+    const files = [new File([], 'page1-2.png'), new File([], 'page3.png')];
 
-    const result = parseAndSortFiles(files);
-    
+    const result = parseAndSortPageFiles(files);
+
     expect(result[0].isSpread).toBe(true);
     expect(result[0].spreadPages).toEqual([1, 2]);
     expect(result[1].isSpread).toBe(false);

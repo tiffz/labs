@@ -26609,5 +26609,502 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "appsUsing": [],
     "exportType": "interface",
     "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bookletpagelabels-ts-getbookletpagefilestem",
+    "name": "getBookletPageFileStem",
+    "path": "src/shared/zine/bookletPageLabels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Filename stem for a booklet page number (parsed by ).",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bookletpagelabels-ts-getbookletpagelabel",
+    "name": "getBookletPageLabel",
+    "path": "src/shared/zine/bookletPageLabels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Human-readable label for a booklet page number (Mixam / Zine Studio naming).",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bookletpagelabels-ts-labeltobookletpagenumber",
+    "name": "labelToBookletPageNumber",
+    "path": "src/shared/zine/bookletPageLabels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Reverse of for Lyrefly display names.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bookletpagelabels-ts-spreadlabelstopagepair",
+    "name": "spreadLabelsToPagePair",
+    "path": "src/shared/zine/bookletPageLabels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parse spread display names like \"Back Cover - Front Cover\".",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bookletreadingorder-ts-bookletexplicitspread",
+    "name": "BookletExplicitSpread",
+    "path": "src/shared/zine/bookletReadingOrder.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Calculate the required number of content pages to make the total booklet a multiple of 4 (required for proper booklet folding).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bookletreadingorder-ts-bookletpageslot",
+    "name": "BookletPageSlot",
+    "path": "src/shared/zine/bookletReadingOrder.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Calculate the required number of content pages to make the total booklet a multiple of 4 (required for proper booklet folding).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bookletreadingorder-ts-bookletreadingpage",
+    "name": "BookletReadingPage",
+    "path": "src/shared/zine/bookletReadingOrder.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Calculate the required number of content pages to make the total booklet a multiple of 4 (required for proper booklet folding).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bookletreadingorder-ts-bookletreadingpagestospreadviews",
+    "name": "bookletReadingPagesToSpreadViews",
+    "path": "src/shared/zine/bookletReadingOrder.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pair reading-order pages into left/right spread views.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bookletreadingorder-ts-buildbookletreadingpages",
+    "name": "buildBookletReadingPages",
+    "path": "src/shared/zine/bookletReadingOrder.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Build booklet pages for READING order (Zine Studio book preview). - Front cover appears on the right of the first spread (blank left) - Inner front, content pages, inner back, back cover follow",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bookletreadingorder-ts-calculaterequiredcontentpages",
+    "name": "calculateRequiredContentPages",
+    "path": "src/shared/zine/bookletReadingOrder.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Calculate the required number of content pages to make the total booklet a multiple of 4 (required for proper booklet folding).",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-buildmixamzip-ts-buildmixamzipblob",
+    "name": "buildMixamZipBlob",
+    "path": "src/shared/zine/buildMixamZip.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Build a ZIP blob from Mixam-named page files.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-buildmixamzip-ts-downloadblob",
+    "name": "downloadBlob",
+    "path": "src/shared/zine/buildMixamZip.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Trigger a browser download for a ZIP blob.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-buildmixamzip-ts-mixamzipentry",
+    "name": "MixamZipEntry",
+    "path": "src/shared/zine/buildMixamZip.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-comicscrollreader-tsx-comicscrollreader",
+    "name": "ComicScrollReader",
+    "path": "src/shared/zine/ComicScrollReader.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Vertical scroll comic reader — shared between Lyrefly preview and future Zine handoff.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-comicscrollreader-tsx-comicscrollreaderpage",
+    "name": "ComicScrollReaderPage",
+    "path": "src/shared/zine/ComicScrollReader.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-comicscrollreader-tsx-comicscrollreaderprops",
+    "name": "ComicScrollReaderProps",
+    "path": "src/shared/zine/ComicScrollReader.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-comicscrollreader-tsx-comicscrollreadervariant",
+    "name": "ComicScrollReaderVariant",
+    "path": "src/shared/zine/ComicScrollReader.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-mixamfilenames-ts-createmixampagefilename",
+    "name": "createMixamPageFileName",
+    "path": "src/shared/zine/mixamFileNames.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Single-page Mixam filename stem + extension (e.g. `page1.png`).",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-mixamfilenames-ts-createmixamspreadfilename",
+    "name": "createMixamSpreadFileName",
+    "path": "src/shared/zine/mixamFileNames.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Spread Mixam filename (e.g. `page2-page3.png`).",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-mixamfilenames-ts-mixamfilenamefromdisplayname",
+    "name": "mixamFileNameFromDisplayName",
+    "path": "src/shared/zine/mixamFileNames.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Derive a Mixam-style filename from a Lyrefly page display name. Falls back to a slug when the label is not a standard booklet name.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-pagefileparser-ts-detectspread",
+    "name": "detectSpread",
+    "path": "src/shared/zine/pageFileParser.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Detects if a filename represents a double page spread.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-pagefileparser-ts-extractpagenumber",
+    "name": "extractPageNumber",
+    "path": "src/shared/zine/pageFileParser.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Extracts page number from filename using naming conventions. Handles flexible naming patterns: - \"page1.png\", \"page_1.png\", \"1.png\" for single pages - \"file1.pdf\", \"page2.pdf\" for numbered pages - Special keywords: \"front\", \"back\", \"rear\", \"last\", \"inner\"",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-pagefileparser-ts-parseandsortpagefiles",
+    "name": "parseAndSortPageFiles",
+    "path": "src/shared/zine/pageFileParser.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parsed comic page upload (Zine Studio / Mixam filename conventions). Shared across Zine Studio and Lyrefly art import.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-pagefileparser-ts-parsedpagefile",
+    "name": "ParsedPageFile",
+    "path": "src/shared/zine/pageFileParser.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parsed comic page upload (Zine Studio / Mixam filename conventions). Shared across Zine Studio and Lyrefly art import.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-pagefileparser-ts-parsepagefile",
+    "name": "parsePageFile",
+    "path": "src/shared/zine/pageFileParser.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parsed comic page upload (Zine Studio / Mixam filename conventions). Shared across Zine Studio and Lyrefly art import.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-pagefileparser-ts-sortpagefilesbyorder",
+    "name": "sortPageFilesByOrder",
+    "path": "src/shared/zine/pageFileParser.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parsed comic page upload (Zine Studio / Mixam filename conventions). Shared across Zine Studio and Lyrefly art import.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-pdfexport-ts-blobtodataurl",
+    "name": "blobToDataUrl",
+    "path": "src/shared/zine/pdfExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Convert a Blob to a data URL (for PDF embedding).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-pdfexport-ts-createdistributionpdf",
+    "name": "createDistributionPdf",
+    "path": "src/shared/zine/pdfExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Sequential single-page PDF for digital reading (distribution format).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-pdfexport-ts-distributionpdfpage",
+    "name": "DistributionPdfPage",
+    "path": "src/shared/zine/pdfExport.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-platformresize-ts-comic-platform-presets",
+    "name": "COMIC_PLATFORM_PRESETS",
+    "path": "src/shared/zine/platformResize.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-platformresize-ts-comicplatformpreset",
+    "name": "ComicPlatformPreset",
+    "path": "src/shared/zine/platformResize.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-platformresize-ts-comicplatformpresetid",
+    "name": "ComicPlatformPresetId",
+    "path": "src/shared/zine/platformResize.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-platformresize-ts-resizeimageblobforplatform",
+    "name": "resizeImageBlobForPlatform",
+    "path": "src/shared/zine/platformResize.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Resize an image blob to a platform width preset (no-op when maxWidthPx is 0).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
   }
 ] as const;

@@ -1,4 +1,6 @@
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
+import FormatIndentDecreaseIcon from '@mui/icons-material/FormatIndentDecrease';
+import FormatIndentIncreaseIcon from '@mui/icons-material/FormatIndentIncrease';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
@@ -34,6 +36,15 @@ export type RichTextEditorProps = {
   placeholder?: string;
   /** When this returns true, default paste is cancelled (e.g. chord chart import). */
   onPastePlainText?: (text: string) => boolean;
+  /** When this returns true, default paste is cancelled (e.g. image → concept shelf). Runs before {@link onPastePlainText}. */
+  onPasteCapture?: (event: ClipboardEvent) => boolean;
+  /**
+   * Skip parent→editor content sync immediately after internal edits so TipTap history (⌘Z) is preserved.
+   * Use for long-form/script editors with autosave round-trips.
+   */
+  preserveEditorHistory?: boolean;
+  /** Tab / Shift+Tab list indent + toolbar outdent controls (script-style nested bullets). */
+  enableListNesting?: boolean;
   'aria-label': string;
   className?: string;
   sx?: SxProps<Theme>;
@@ -49,6 +60,9 @@ function RichTextEditorInner({
   readOnly = false,
   placeholder,
   onPastePlainText,
+  onPasteCapture,
+  preserveEditorHistory = false,
+  enableListNesting = false,
   'aria-label': ariaLabel,
   className,
   sx,
@@ -56,8 +70,18 @@ function RichTextEditorInner({
   const [linkAnchor, setLinkAnchor] = useState<HTMLElement | null>(null);
   const [linkDraft, setLinkDraft] = useState('');
   const linkHoverPopoverRef = useRef<HTMLDivElement | null>(null);
+  const editorInstanceRef = useRef<NonNullable<ReturnType<typeof useEditor>>>(null);
+  const skipExternalSyncRef = useRef(false);
   const onPastePlainTextRef = useRef(onPastePlainText);
   onPastePlainTextRef.current = onPastePlainText;
+  const onPasteCaptureRef = useRef(onPasteCapture);
+  onPasteCaptureRef.current = onPasteCapture;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const preserveEditorHistoryRef = useRef(preserveEditorHistory);
+  preserveEditorHistoryRef.current = preserveEditorHistory;
+  const enableListNestingRef = useRef(enableListNesting);
+  enableListNestingRef.current = enableListNesting;
 
   const extensions = useMemo(
     () => [
@@ -92,6 +116,11 @@ function RichTextEditorInner({
         },
         handlePaste: (_view, event) => {
           if (readOnly) return false;
+          const capture = onPasteCaptureRef.current;
+          if (capture?.(event)) {
+            event.preventDefault();
+            return true;
+          }
           const handler = onPastePlainTextRef.current;
           if (!handler) return false;
           const raw = event.clipboardData?.getData('text/plain') ?? '';
@@ -115,9 +144,32 @@ function RichTextEditorInner({
           }
           return false;
         },
+        handleKeyDown: (_view, event) => {
+          if (!enableListNestingRef.current) return false;
+          if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey) return false;
+          const ed = editorInstanceRef.current;
+          if (!ed?.isActive('listItem')) return false;
+          const handled = event.shiftKey
+            ? ed.chain().focus().liftListItem('listItem').run()
+            : ed.chain().focus().sinkListItem('listItem').run();
+          if (handled) {
+            event.preventDefault();
+            return true;
+          }
+          return false;
+        },
+      },
+      onCreate: ({ editor: ed }) => {
+        editorInstanceRef.current = ed;
+      },
+      onDestroy: () => {
+        editorInstanceRef.current = null;
       },
       onUpdate: ({ editor: ed }) => {
-        onChange(ed.getHTML());
+        if (preserveEditorHistoryRef.current) {
+          skipExternalSyncRef.current = true;
+        }
+        onChangeRef.current(ed.getHTML());
       },
     },
     [extensions],
@@ -125,10 +177,14 @@ function RichTextEditorInner({
 
   useEffect(() => {
     if (!editor) return;
+    if (preserveEditorHistory && skipExternalSyncRef.current) {
+      skipExternalSyncRef.current = false;
+      return;
+    }
     const next = plainOrHtmlToEditorHtml(value);
     if (editor.getHTML() === next) return;
     editor.commands.setContent(next, false);
-  }, [value, editor]);
+  }, [value, editor, preserveEditorHistory]);
 
   useEffect(() => {
     if (!editor) return;
@@ -178,7 +234,13 @@ function RichTextEditorInner({
 
   return (
     <Box
-      className={['shared-rich-text-editor', className].filter(Boolean).join(' ')}
+      className={[
+        'shared-rich-text-editor',
+        enableListNesting ? 'shared-rich-text-editor--list-nesting' : '',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
       sx={[
         (theme) => ({
           border: 1,
@@ -285,6 +347,32 @@ function RichTextEditorInner({
               <FormatListBulletedIcon fontSize="small" />
             </IconButton>
           </Tooltip>
+          {enableListNesting ? (
+            <>
+              <Tooltip title="Indent list item (Tab)">
+                <IconButton
+                  size="small"
+                  aria-label="Indent list item"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => editor.chain().focus().sinkListItem('listItem').run()}
+                  sx={toolbarIconSx(false)}
+                >
+                  <FormatIndentIncreaseIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Outdent list item (Shift+Tab)">
+                <IconButton
+                  size="small"
+                  aria-label="Outdent list item"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => editor.chain().focus().liftListItem('listItem').run()}
+                  sx={toolbarIconSx(false)}
+                >
+                  <FormatIndentDecreaseIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </>
+          ) : null}
           <Tooltip title="Numbered list">
             <IconButton
               size="small"

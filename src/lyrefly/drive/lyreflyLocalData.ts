@@ -36,6 +36,7 @@ export async function writeLyreflyLocalPayload(payload: LyreflySyncPayload): Pro
           layoutOrder: [],
           scriptDocumentId: crypto.randomUUID(),
           snapshotIds: [],
+          artVersionIds: [],
           pageCount: summary.pageCount,
           projectFolderId: summary.projectFolderId,
           createdAt: summary.updatedAt,

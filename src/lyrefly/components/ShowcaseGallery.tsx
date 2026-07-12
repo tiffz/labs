@@ -4,11 +4,14 @@ import type { ReactElement } from 'react';
 import { lyreflyDb } from '../db/lyreflyDb';
 import { notifyLyreflyLocalChange } from '../db/lyreflyChangeBus';
 import { useLyreflyProjects } from '../hooks/useLyreflyProjects';
+import { useLyreflyShelfPreviews, workflowStageShelfLabel } from '../hooks/useLyreflyShelfPreviews';
 import { createBlankComicProject, createBlankScriptDocument, type ComicProject } from '../types';
+import type { LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
+import { LyreflyShelfCover } from './LyreflyShelfCover';
 
 export type ShowcaseGalleryProps = {
   onOpenProject: (projectId: string) => void;
-  onOpenScript: (projectId: string) => void;
+  onOpenProfile: (projectId: string) => void;
 };
 
 async function seedDemoProjectIfEmpty(): Promise<void> {
@@ -21,8 +24,6 @@ async function seedDemoProjectIfEmpty(): Promise<void> {
   project.brainstormHtml = '<p>Neon alleys, sealed packages, and a courier who never looks back.</p>';
   const script = createBlankScriptDocument(project.id);
   script.id = project.scriptDocumentId;
-  script.markdown =
-    '<ul><li>Page 1<ul><li>Opening<ul><li>Courier receives a sealed package.</li></ul></li></ul></li><li>Page 2<ul><li>Chase<ul><li>Neon alleys, pursuit.</li></ul></li></ul></li></ul>';
   await lyreflyDb.transaction('rw', lyreflyDb.projects, lyreflyDb.scriptDocuments, async () => {
     await lyreflyDb.projects.put(project);
     await lyreflyDb.scriptDocuments.put(script);
@@ -39,12 +40,16 @@ function statusLabel(status: ComicProject['status']): string {
 
 function ProjectCard({
   project,
-  onOpenProject,
-  onOpenScript,
+  coverRevisionId,
+  conceptAssetId,
+  workflowStage,
+  onOpen,
 }: {
   project: ComicProject;
-  onOpenProject: (id: string) => void;
-  onOpenScript: (id: string) => void;
+  coverRevisionId?: string;
+  conceptAssetId?: string;
+  workflowStage: LyreflyWorkflowStage;
+  onOpen: (id: string) => void;
 }): ReactElement {
   return (
     <li className="lyrefly-shelf__item">
@@ -52,12 +57,15 @@ function ProjectCard({
         <button
           type="button"
           className="lyrefly-shelf__open"
-          onClick={() => onOpenProject(project.id)}
+          onClick={() => onOpen(project.id)}
           aria-label={`Open ${project.title}`}
         >
           <div className="lyrefly-shelf__cover-wrap">
-            <div className="lyrefly-shelf__cover" aria-hidden />
-            <div className="lyrefly-shelf__ledge" aria-hidden />
+            <LyreflyShelfCover
+              project={project}
+              coverRevisionId={coverRevisionId}
+              conceptAssetId={conceptAssetId}
+            />
           </div>
           <div className="lyrefly-shelf__info">
             <h2 className="lyrefly-shelf__title">{project.title}</h2>
@@ -66,28 +74,21 @@ function ProjectCard({
               <span className={`lyrefly-shelf__status lyrefly-shelf__status--${project.status}`}>
                 {statusLabel(project.status)}
               </span>
+              <span className="lyrefly-shelf__stage">{workflowStageShelfLabel(workflowStage)}</span>
               {project.pageCount != null ? (
                 <span className="lyrefly-shelf__pages">{project.pageCount} pages</span>
               ) : null}
             </div>
           </div>
         </button>
-        {project.modules.script ? (
-          <button
-            type="button"
-            className="lyrefly-shelf__quick-link"
-            onClick={() => onOpenScript(project.id)}
-          >
-            Continue script
-          </button>
-        ) : null}
       </article>
     </li>
   );
 }
 
-export function ShowcaseGallery({ onOpenProject, onOpenScript }: ShowcaseGalleryProps): ReactElement {
+export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGalleryProps): ReactElement {
   const { projects, projectsHydrated } = useLyreflyProjects();
+  const { previewByProject } = useLyreflyShelfPreviews(projects);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -108,10 +109,19 @@ export function ShowcaseGallery({ onOpenProject, onOpenScript }: ShowcaseGallery
     onOpenProject(project.id);
   };
 
+  const handleOpenComic = (projectId: string): void => {
+    const preview = previewByProject.get(projectId);
+    if ((preview?.publishLogCount ?? 0) > 0) {
+      onOpenProfile(projectId);
+      return;
+    }
+    onOpenProject(projectId);
+  };
+
   if (!projectsHydrated) {
     return (
-      <div className="lyrefly-studio lyrefly-studio--loading" aria-busy="true" aria-label="Loading showcase">
-        <p className="lyrefly-studio__loading">Loading showcase…</p>
+      <div className="lyrefly-studio lyrefly-studio--loading" aria-busy="true" aria-label="Loading your comics">
+        <p className="lyrefly-studio__loading">Loading your comics…</p>
       </div>
     );
   }
@@ -121,18 +131,17 @@ export function ShowcaseGallery({ onOpenProject, onOpenScript }: ShowcaseGallery
   return (
     <section className="lyrefly-studio" data-testid="lyrefly-showcase">
       <header className="lyrefly-studio__masthead">
-        <p className="lyrefly-studio__eyebrow">Your studio</p>
-        <h1 className="lyrefly-studio__title">Showcase</h1>
+        <h1 className="lyrefly-studio__title">Your comics</h1>
         <p className="lyrefly-studio__lede">
           {empty
-            ? 'A shelf for finished comics and works in progress.'
+            ? 'A quiet shelf for finished comics and brave works in progress.'
             : `${projects.length} comic${projects.length === 1 ? '' : 's'} on your shelf.`}
         </p>
       </header>
 
       {empty ? (
         <div className="lyrefly-studio__empty">
-          <p>Start with a blank comic: brainstorm, script, draw, and publish at your own pace.</p>
+          <p>Your shelf is waiting for its first comic. Start blank and move at your own pace.</p>
           <button type="button" className="lyrefly-studio__cta" onClick={() => void handleNewProject()}>
             New comic
           </button>
@@ -153,14 +162,19 @@ export function ShowcaseGallery({ onOpenProject, onOpenScript }: ShowcaseGallery
                 <span className="lyrefly-shelf__add-label">New comic</span>
               </button>
             </li>
-            {projects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                onOpenProject={onOpenProject}
-                onOpenScript={onOpenScript}
-              />
-            ))}
+            {projects.map((project) => {
+              const preview = previewByProject.get(project.id);
+              return (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  coverRevisionId={preview?.coverRevisionId}
+                  conceptAssetId={preview?.conceptAssetId}
+                  workflowStage={preview?.workflowStage ?? 'brainstorm'}
+                  onOpen={handleOpenComic}
+                />
+              );
+            })}
           </ul>
         </div>
       )}

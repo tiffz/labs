@@ -1,173 +1,44 @@
-import AddPhotoAlternateOutlinedIcon from '@mui/icons-material/AddPhotoAlternateOutlined';
-import CheckIcon from '@mui/icons-material/Check';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { alpha, useTheme } from '@mui/material/styles';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ChangeEvent, ReactElement } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import type { ReactElement } from 'react';
 
-import type { ComicProject, PageNode, PageRevision } from '../types';
-import {
-  addPageRevisionFromFile,
-  createPageNode,
-  loadRevisionBlobUrl,
-  setActivePageRevision,
-  setPageRevisionStage,
-} from '../db/lyreflyProjectMutations';
+import { DragDropFileUpload } from '../../shared/components/DragDropFileUpload';
+import type { ComicProject, ComicArtVersion, PageNode, PageRevision } from '../types';
+import { createPageNode, createPageNodesFromFiles } from '../db/lyreflyProjectMutations';
+import { revisionMapForArtVersionView, type ArtVersionViewId } from '../utils/artVersionUtils';
+import { ArtPageGrid, PAGE_IMAGE_ACCEPT } from './ArtPageGrid';
+import { ArtVersionPanel } from './ArtVersionPanel';
 
 export type ArtStageProps = {
   project: ComicProject;
   pageNodes: PageNode[];
   revisions: PageRevision[];
+  artVersions: ComicArtVersion[];
+  onProjectChange: (project: ComicProject) => void;
 };
 
-function RevisionThumb({ revisionId }: { revisionId: string }): ReactElement {
-  const [url, setUrl] = useState<string | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    let objectUrl: string | null = null;
-    void loadRevisionBlobUrl(revisionId).then((loaded) => {
-      if (cancelled) return;
-      objectUrl = loaded;
-      setUrl(loaded);
-    });
-    return () => {
-      cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [revisionId]);
+const BULK_UPLOAD_HELPER =
+  'Drop a folder of page art. Files are sorted by Mixam-style names like front.png, page1.png, page2-3.jpg.';
 
-  if (!url) {
-    return (
-      <Box sx={{ width: 72, height: 96, borderRadius: 1, bgcolor: alpha('#fff', 0.06) }} aria-hidden />
-    );
-  }
-  return (
-    <Box
-      component="img"
-      src={url}
-      alt=""
-      sx={{ width: 72, height: 96, objectFit: 'cover', borderRadius: 1, border: 1, borderColor: 'divider' }}
-    />
-  );
-}
-
-function PageArtCard({
-  node,
+export function ArtStage({
+  project,
+  pageNodes,
   revisions,
-}: {
-  node: PageNode;
-  revisions: PageRevision[];
-}): ReactElement {
-  const theme = useTheme();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
-  const nodeRevisions = revisions.filter((r) => r.pageNodeId === node.id);
-
-  const onUpload = useCallback(
-    async (event: ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-      setBusy(true);
-      try {
-        const label = `v${nodeRevisions.length + 1}`;
-        await addPageRevisionFromFile(node, file, label, nodeRevisions.length === 0 ? 'pencil' : 'inks');
-      } finally {
-        setBusy(false);
-        event.target.value = '';
-      }
-    },
-    [node, nodeRevisions.length],
-  );
-
-  return (
-    <Box
-      className="lyrefly-art-page-card"
-      sx={{
-        p: 2,
-        borderRadius: 2,
-        border: 1,
-        borderColor: alpha(theme.palette.primary.main, 0.14),
-        bgcolor: alpha(theme.palette.background.paper, 0.72),
-      }}
-    >
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-          {node.displayName ?? 'Page'}
-        </Typography>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<AddPhotoAlternateOutlinedIcon />}
-          disabled={busy}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          Upload version
-        </Button>
-        <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={(e) => void onUpload(e)} />
-      </Stack>
-
-      {nodeRevisions.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          Upload roughs, pencils, or finals — keep every version until you mark one final.
-        </Typography>
-      ) : (
-        <Stack spacing={1.5}>
-          {nodeRevisions.map((revision) => {
-            const isActive = node.activeRevisionId === revision.id;
-            const isFinal = revision.stage === 'final';
-            return (
-              <Stack
-                key={revision.id}
-                direction="row"
-                spacing={1.5}
-                alignItems="center"
-                sx={{
-                  p: 1,
-                  borderRadius: 1.5,
-                  bgcolor: isActive ? alpha(theme.palette.primary.main, 0.08) : 'transparent',
-                }}
-              >
-                <RevisionThumb revisionId={revision.id} />
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {revision.label}
-                  </Typography>
-                  <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }} flexWrap="wrap">
-                    <Chip size="small" label={revision.stage} variant="outlined" />
-                    {isFinal ? <Chip size="small" color="primary" icon={<CheckIcon />} label="Final" /> : null}
-                  </Stack>
-                </Box>
-                <Stack direction="row" spacing={0.5}>
-                  {!isActive ? (
-                    <Button size="small" onClick={() => void setActivePageRevision(node, revision.id)}>
-                      Set active
-                    </Button>
-                  ) : null}
-                  {!isFinal ? (
-                    <Button
-                      size="small"
-                      variant="contained"
-                      onClick={() => void setPageRevisionStage(revision, 'final')}
-                    >
-                      Mark final
-                    </Button>
-                  ) : null}
-                </Stack>
-              </Stack>
-            );
-          })}
-        </Stack>
-      )}
-    </Box>
-  );
-}
-
-export function ArtStage({ project, pageNodes, revisions }: ArtStageProps): ReactElement {
+  artVersions,
+  onProjectChange,
+}: ArtStageProps): ReactElement {
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [viewingVersionId, setViewingVersionId] = useState<ArtVersionViewId>('current');
+
+  const viewingRevisionByPageId = useMemo(
+    () => revisionMapForArtVersionView(viewingVersionId, artVersions),
+    [artVersions, viewingVersionId],
+  );
+  const strictVersionView = viewingVersionId !== 'current';
 
   const handleAddPage = async (): Promise<void> => {
     setAdding(true);
@@ -178,32 +49,99 @@ export function ArtStage({ project, pageNodes, revisions }: ArtStageProps): Reac
     }
   };
 
+  const handleBulkUpload = useCallback(
+    async (files: File[]): Promise<void> => {
+      if (files.length === 0) return;
+      setImporting(true);
+      setImportStatus(null);
+      try {
+        const { created, skippedNonImage } = await createPageNodesFromFiles(project, files);
+        if (created.length === 0) {
+          setImportStatus('No image files found. Use PNG, JPG, or WebP page art.');
+          return;
+        }
+        const skippedNote = skippedNonImage > 0 ? ` (${skippedNonImage} non-image skipped)` : '';
+        setImportStatus(`Added ${created.length} page${created.length === 1 ? '' : 's'}${skippedNote}.`);
+      } finally {
+        setImporting(false);
+      }
+    },
+    [project],
+  );
+
+  const busy = adding || importing;
+
   return (
-    <Box className="lyrefly-art-stage" data-testid="lyrefly-art-stage" sx={{ p: { xs: 2, sm: 3 }, flex: 1, overflow: 'auto' }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: '36rem' }}>
-          Build pages one at a time. Upload new versions freely — mark a revision final when it is ready for publishing.
+    <Box
+      className="lyrefly-art-stage lyrefly-stage-body"
+      data-testid="lyrefly-art-stage"
+      sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}
+    >
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25, maxWidth: '44rem', lineHeight: 1.5 }}>
+        Pick a version above, then review or edit pages below. Upload art per tile, or add more pages at the end of the
+        grid.
+      </Typography>
+
+      {importStatus ? (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }} aria-live="polite">
+          {importStatus}
         </Typography>
-        <Button variant="outlined" disabled={adding} onClick={() => void handleAddPage()}>
-          Add page
-        </Button>
-      </Stack>
+      ) : null}
 
       {pageNodes.length === 0 ? (
-        <Stack spacing={2} alignItems="flex-start">
-          <Typography variant="body1" color="text.secondary">
-            No pages yet. Add your first page to start uploading art.
-          </Typography>
-          <Button variant="contained" disabled={adding} onClick={() => void handleAddPage()}>
-            Add first page
+        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <DragDropFileUpload
+            tone="neutral"
+            multiple
+            expandOnDrag
+            accept={PAGE_IMAGE_ACCEPT}
+            disabled={busy}
+            label="Upload your page art"
+            helperText={BULK_UPLOAD_HELPER}
+            ariaLabel="Upload comic page images"
+            onFiles={(files) => void handleBulkUpload(files)}
+            sx={{ flex: 1, minHeight: 'min(52vh, 420px)' }}
+          />
+          <Button
+            variant="text"
+            size="small"
+            disabled={busy}
+            onClick={() => void handleAddPage()}
+            sx={{ alignSelf: 'flex-start', mt: 1.5 }}
+          >
+            Or add a blank page
           </Button>
-        </Stack>
+        </Box>
       ) : (
-        <Stack spacing={2}>
-          {pageNodes.map((node) => (
-            <PageArtCard key={node.id} node={node} revisions={revisions} />
-          ))}
-        </Stack>
+        <>
+          <ArtVersionPanel
+            project={project}
+            pageNodes={pageNodes}
+            revisions={revisions}
+            artVersions={artVersions}
+            viewingVersionId={viewingVersionId}
+            onViewingVersionChange={setViewingVersionId}
+            onProjectChange={onProjectChange}
+          />
+          <Typography component="h3" className="lyrefly-section-eyebrow" sx={{ mt: 1.75, mb: 0.75 }}>
+            Pages
+            {strictVersionView ? (
+              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1, fontWeight: 500 }}>
+                Viewing a saved version. Switch to Current picks to edit live art.
+              </Typography>
+            ) : null}
+          </Typography>
+          <ArtPageGrid
+            project={project}
+            pageNodes={pageNodes}
+            revisions={revisions}
+            busy={busy}
+            onBulkUpload={strictVersionView ? undefined : (files) => void handleBulkUpload(files)}
+            onAddBlankPage={strictVersionView ? undefined : () => void handleAddPage()}
+            viewingRevisionByPageId={viewingRevisionByPageId}
+            strictVersionView={strictVersionView}
+          />
+        </>
       )}
     </Box>
   );

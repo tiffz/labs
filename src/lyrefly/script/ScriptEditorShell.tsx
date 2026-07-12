@@ -1,14 +1,12 @@
 import Box from '@mui/material/Box';
-import Collapse from '@mui/material/Collapse';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { alpha, useTheme } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 
-import { isRichTextEmpty } from '../../shared/utils/richTextContent';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import type { ComicProject, ScriptDocument } from '../types';
+import { ScriptFormattedPreview } from './ScriptFormattedPreview';
 import { ScriptPacingMeter } from './ScriptPacingMeter';
 import { ScriptRichTextEditor } from './ScriptRichTextEditor';
 import { parseAndAnalyzeScript, saveScriptDocument } from './useScriptDocument';
@@ -28,14 +26,17 @@ export function ScriptEditorShell({
   onDocumentSaved,
   variant = 'embedded',
 }: ScriptEditorShellProps): ReactElement {
-  const theme = useTheme();
   const { push, clear } = useLabsUndo();
   const [localHtml, setLocalHtml] = useState(document.markdown);
   const [committedHtml, setCommittedHtml] = useState(document.markdown);
   const [saving, setSaving] = useState(false);
   const saveTimerRef = useRef<number | null>(null);
 
+  const loadedDocumentIdRef = useRef<string | null>(null);
+
   useEffect(() => {
+    if (loadedDocumentIdRef.current === document.id) return;
+    loadedDocumentIdRef.current = document.id;
     setLocalHtml(document.markdown);
     setCommittedHtml(document.markdown);
     clear();
@@ -98,61 +99,72 @@ export function ScriptEditorShell({
     };
   }, []);
 
-  const isEmpty = isRichTextEmpty(localHtml);
-
   return (
     <Box
-      className="lyrefly-script-editor-shell"
+      className={[
+        'lyrefly-script-editor-shell',
+        variant === 'embedded' ? 'lyrefly-stage-body' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       data-testid="lyrefly-script-editor"
       sx={{
         flex: 1,
         minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
-        p: variant === 'embedded' ? { xs: 2, sm: 2.5 } : 0,
       }}
     >
       {variant !== 'embedded' ? (
         <Typography variant="subtitle1" component="h2" sx={{ mb: 1 }}>
-          Script — {project.title}
+          Script: {project.title}
         </Typography>
       ) : null}
 
-      <Stack spacing={1} sx={{ mb: 1.5, flexShrink: 0 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: '42rem', lineHeight: 1.6 }}>
-          Nested bullets, like a Google Doc: <strong>page</strong> → <strong>panel</strong> → action or{' '}
-          <strong>CHARACTER: line</strong>. Tab to indent, Shift+Tab to outdent. No special markup required.
+      <Stack spacing={0.75} className="lyrefly-script-editor-shell__intro">
+        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: '48rem', lineHeight: 1.55 }}>
+          Nested bullets on the left; formatted script on the right. Tab to indent pages → panels → lines.
         </Typography>
-        {isEmpty ? (
-          <Typography variant="caption" color="text.secondary">
-            Tip: toolbar bullet list, then Tab inside a page to add panels.
-          </Typography>
-        ) : null}
-        {saving ? (
-          <Typography variant="caption" color="text.secondary">
-            Saving…
-          </Typography>
-        ) : null}
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          className="lyrefly-script-editor-shell__status"
+          aria-live="polite"
+        >
+          {saving ? 'Saving…' : '\u00a0'}
+        </Typography>
       </Stack>
 
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        <ScriptRichTextEditor value={localHtml} onChange={handleChange} disabled={saving} />
-      </Box>
-
-      <Collapse in={showPacing}>
-        <Box
-          sx={{
-            mt: 2,
-            p: 1.5,
-            borderRadius: 1.5,
-            bgcolor: alpha(theme.palette.warning.main, 0.08),
-            border: 1,
-            borderColor: alpha(theme.palette.warning.main, 0.2),
-          }}
-        >
-          <ScriptPacingMeter warnings={parsed.pacingWarnings} />
+      <Box className="lyrefly-script-split">
+        <Box className="lyrefly-script-split__column lyrefly-script-split__source">
+          <Typography component="h3" className="lyrefly-script-split__label">
+            Source
+          </Typography>
+          <Box className="lyrefly-script-split__editor">
+            <ScriptRichTextEditor value={localHtml} onChange={handleChange} />
+          </Box>
         </Box>
-      </Collapse>
+
+        <Box className="lyrefly-script-split__column lyrefly-script-split__preview">
+          <Typography component="h3" className="lyrefly-script-split__label">
+            Formatted script
+          </Typography>
+          <Box className="lyrefly-script-split__preview-scroll">
+            <ScriptFormattedPreview blocks={parsed.blocks} />
+          </Box>
+          <Box
+            className={[
+              'lyrefly-script-split__pacing',
+              showPacing ? 'lyrefly-script-split__pacing--visible' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            aria-hidden={!showPacing}
+          >
+            <ScriptPacingMeter warnings={parsed.pacingWarnings} />
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 }
