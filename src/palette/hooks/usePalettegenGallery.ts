@@ -133,6 +133,7 @@ export function usePalettegenGallery(): {
   const entriesRef = useRef<PalettegenGalleryEntry[]>([]);
   const modeRef = useRef<PalettegenMode>('random');
   const randomSeedRef = useRef(randomSeed);
+  const sharedFromUrlRef = useRef(false);
 
   activeIdRef.current = activeId;
   entriesRef.current = entries;
@@ -199,7 +200,7 @@ export function usePalettegenGallery(): {
       }
       return next;
     });
-    setStatus(message);
+    setStatus(message ? message : (prev) => prev);
     hasGeneratedRef.current = true;
     window.setTimeout(() => {
       settingsRefreshReadyRef.current = true;
@@ -218,12 +219,14 @@ export function usePalettegenGallery(): {
       setStatus('Loaded shared palette.');
       hasGeneratedRef.current = true;
       settingsRefreshReadyRef.current = true;
+      sharedFromUrlRef.current = !state.mode;
     }
   }, []);
 
   const generateFromImages = useCallback(
     async (files: File[], keepIndex = false, variationSeed?: number) => {
       if (files.length === 0) return;
+      sharedFromUrlRef.current = false;
       imageFilesRef.current = files;
       setSourceFiles(files);
       setBusy(true);
@@ -247,6 +250,7 @@ export function usePalettegenGallery(): {
 
   const generateFromSeed = useCallback(
     (variationSeed?: number, keepIndex = false) => {
+      sharedFromUrlRef.current = false;
       const variation = variationSeed ?? seedVariationRef.current;
       const proposals = generatePaletteFromSeedHex(seedHex, profile, swatchCount, {
         variationSeed: variation > 0 ? variation : undefined,
@@ -263,6 +267,7 @@ export function usePalettegenGallery(): {
 
   const useColorAsSeed = useCallback(
     (hex: string) => {
+      sharedFromUrlRef.current = false;
       const color = hexToColorState(hex);
       if (!color) {
         setStatus('Could not use that color as a seed.');
@@ -287,6 +292,7 @@ export function usePalettegenGallery(): {
 
   const generateRandom = useCallback(
     (keepIndex = false) => {
+      sharedFromUrlRef.current = false;
       const proposals = generateRandomPalettes(profile, {
         count: 8,
         swatches: swatchCount,
@@ -300,6 +306,7 @@ export function usePalettegenGallery(): {
   );
 
   const refreshFromSettings = useCallback(() => {
+    if (sharedFromUrlRef.current) return;
     if (!hasGeneratedRef.current || entries.length === 0) return;
     if (mode === 'image' && imageFilesRef.current.length > 0) {
       void generateFromImages(imageFilesRef.current, true);
@@ -327,6 +334,7 @@ export function usePalettegenGallery(): {
   }, [profile, swatchCount, randomTemplates, refreshFromSettings]);
 
   const regenerate = useCallback(() => {
+    sharedFromUrlRef.current = false;
     if (entriesRef.current.length > 0) {
       pushGalleryHistory();
     }
@@ -384,6 +392,11 @@ export function usePalettegenGallery(): {
     }
   }, []);
 
+  const setModeAndUnlock = useCallback((next: PalettegenMode) => {
+    sharedFromUrlRef.current = false;
+    setMode(next);
+  }, []);
+
   const activeEntry = entries.find((entry) => entry.id === activeId) ?? entries[0] ?? null;
 
   const updateProfile = useCallback((patch: Partial<PaletteGenerationProfile>) => {
@@ -393,7 +406,7 @@ export function usePalettegenGallery(): {
 
   return {
     mode,
-    setMode,
+    setMode: setModeAndUnlock,
     entries,
     activeEntry,
     activeId: activeEntry?.id ?? null,

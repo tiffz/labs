@@ -8031,6 +8031,51 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-index-ts-bubblequalitythresholds",
+    "name": "BubbleQualityThresholds",
+    "path": "src/shared/comic/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-bubblequalityviolation",
+    "name": "BubbleQualityViolation",
+    "path": "src/shared/comic/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-bubblequalityviolationcode",
+    "name": "BubbleQualityViolationCode",
+    "path": "src/shared/comic/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-index-ts-buildpanellayout",
     "name": "buildPanelLayout",
     "path": "src/shared/comic/index.ts",
@@ -8059,6 +8104,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-index-ts-default-bubble-quality-thresholds",
+    "name": "DEFAULT_BUBBLE_QUALITY_THRESHOLDS",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-index-ts-defaultfillsforlayout",
     "name": "defaultFillsForLayout",
     "path": "src/shared/comic/index.ts",
@@ -8074,6 +8134,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-comic-index-ts-defaultgeneratedlayout",
     "name": "defaultGeneratedLayout",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-formatbubblequalityreport",
+    "name": "formatBubbleQualityReport",
     "path": "src/shared/comic/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -8797,6 +8870,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-comic-index-ts-validatereadingorder",
     "name": "validateReadingOrder",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-validatespeechbubblequality",
+    "name": "validateSpeechBubbleQuality",
     "path": "src/shared/comic/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -9552,6 +9638,111 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-speechbubblepath-ts-bubble-pad-x",
+    "name": "BUBBLE_PAD_X",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-bubble-pad-x-compact",
+    "name": "BUBBLE_PAD_X_COMPACT",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-bubble-pad-y",
+    "name": "BUBBLE_PAD_Y",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-bubble-pad-y-compact",
+    "name": "BUBBLE_PAD_Y_COMPACT",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-bubble-padding-compact",
+    "name": "BUBBLE_PADDING_COMPACT",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-bubble-padding-minimal",
+    "name": "BUBBLE_PADDING_MINIMAL",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-bubble-padding-standard",
+    "name": "BUBBLE_PADDING_STANDARD",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-speechbubblepath-ts-bubblebodybbox",
     "name": "bubbleBodyBBox",
     "path": "src/shared/comic/speechBubblePath.ts",
@@ -9582,6 +9773,34 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-comic-speechbubblepath-ts-bubblemetricsforlines",
     "name": "bubbleMetricsForLines",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-bubblepadding",
+    "name": "BubblePadding",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-bubbletextblockheight",
+    "name": "bubbleTextBlockHeight",
     "path": "src/shared/comic/speechBubblePath.ts",
     "kind": "utility",
     "stability": "stable",
@@ -9626,6 +9845,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Fit dialogue into panel width, shrinking font and re-wrapping until lines fit.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-fitdialoguelineswithinhalfh",
+    "name": "fitDialogueLinesWithinHalfH",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Refit dialogue when vertical stack caps bubble height (shrink font / lines until text fits).",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -9681,6 +9913,120 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblequality-ts-bubblequalitythresholds",
+    "name": "BubbleQualityThresholds",
+    "path": "src/shared/comic/speechBubbleQuality.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Speech-bubble layout quality rules — benchmarks for readable comic dialogue. Used by fuzz/stress tests and CI; extend when a visual defect becomes a rule.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblequality-ts-bubblequalityviolation",
+    "name": "BubbleQualityViolation",
+    "path": "src/shared/comic/speechBubbleQuality.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Speech-bubble layout quality rules — benchmarks for readable comic dialogue. Used by fuzz/stress tests and CI; extend when a visual defect becomes a rule.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblequality-ts-bubblequalityviolationcode",
+    "name": "BubbleQualityViolationCode",
+    "path": "src/shared/comic/speechBubbleQuality.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Speech-bubble layout quality rules — benchmarks for readable comic dialogue. Used by fuzz/stress tests and CI; extend when a visual defect becomes a rule.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblequality-ts-default-bubble-quality-thresholds",
+    "name": "DEFAULT_BUBBLE_QUALITY_THRESHOLDS",
+    "path": "src/shared/comic/speechBubbleQuality.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Speech-bubble layout quality rules — benchmarks for readable comic dialogue. Used by fuzz/stress tests and CI; extend when a visual defect becomes a rule.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblequality-ts-expectbubblequality",
+    "name": "expectBubbleQuality",
+    "path": "src/shared/comic/speechBubbleQuality.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Speech-bubble layout quality rules — benchmarks for readable comic dialogue. Used by fuzz/stress tests and CI; extend when a visual defect becomes a rule.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblequality-ts-formatbubblequalityreport",
+    "name": "formatBubbleQualityReport",
+    "path": "src/shared/comic/speechBubbleQuality.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Speech-bubble layout quality rules — benchmarks for readable comic dialogue. Used by fuzz/stress tests and CI; extend when a visual defect becomes a rule.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblequality-ts-validatespeechbubblequality",
+    "name": "validateSpeechBubbleQuality",
+    "path": "src/shared/comic/speechBubbleQuality.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Stricter validation: geometry invariants + readability benchmarks.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblequality-ts-validatespeechbubblequalityoptions",
+    "name": "ValidateSpeechBubbleQualityOptions",
+    "path": "src/shared/comic/speechBubbleQuality.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Speech-bubble layout quality rules — benchmarks for readable comic dialogue. Used by fuzz/stress tests and CI; extend when a visual defect becomes a rule.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {

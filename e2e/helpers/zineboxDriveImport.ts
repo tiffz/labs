@@ -11,6 +11,14 @@ export const E2E_ZINEBOX_DRIVE_FOLDER_URL =
 
 const E2E_FOLDER_ID = 'e2eZineboxImportFolderId01';
 const E2E_PDF_ID = 'e2eZineboxImportPdfFile0001';
+/** Keep blocking-job UI visible long enough for smoke assertions under parallel CI. */
+const E2E_PDF_DOWNLOAD_DELAY_MS = 500;
+
+function delayPdfDownload(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, E2E_PDF_DOWNLOAD_DELAY_MS);
+  });
+}
 
 /** Minimal valid PDF for IndexedDB import (cover extraction may fail; import still proceeds). */
 const MINIMAL_PDF_BYTES = Buffer.from(
@@ -101,6 +109,7 @@ export async function stubZineboxDriveFolderImportApi(page: Page): Promise<void>
       url.includes(E2E_PDF_ID)
     ) {
       if (url.includes('alt=media')) {
+        await delayPdfDownload();
         await route.fulfill({
           status: 200,
           contentType: 'application/pdf',
@@ -177,6 +186,7 @@ export async function stubZineboxDriveFolderImportApi(page: Page): Promise<void>
       url.includes('alt=media')
     ) {
       // Fallback for URL shapes that omit the file id in the matched segment above.
+      await delayPdfDownload();
       await route.fulfill({
         status: 200,
         contentType: 'application/pdf',

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 import { throttledReplaceState } from '../../shared/utils/urlHistory';
 import { parsePalettegenUrl, serializePalettegenUrl } from '../utils/palettegenUrlParams';
@@ -7,7 +7,6 @@ import type { usePalettegenGallery } from './usePalettegenGallery';
 type Gallery = ReturnType<typeof usePalettegenGallery>;
 
 export function usePalettegenUrlState(gallery: Gallery): void {
-  const bootedRef = useRef(false);
   const {
     activeEntry,
     mode,
@@ -18,9 +17,6 @@ export function usePalettegenUrlState(gallery: Gallery): void {
   } = gallery;
 
   useEffect(() => {
-    if (bootedRef.current) return;
-    bootedRef.current = true;
-
     const parsed = parsePalettegenUrl();
     if (parsed) {
       loadFromUrl(parsed);
@@ -31,7 +27,9 @@ export function usePalettegenUrlState(gallery: Gallery): void {
     }
 
     generateRandom();
-  }, [generateFromSeed, generateRandom, loadFromUrl]);
+    // Boot only — do not re-run when gallery callbacks change or URL-loaded palettes reset.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-only hydration
+  }, []);
 
   useEffect(() => {
     if (!activeEntry) return;
