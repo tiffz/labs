@@ -25,6 +25,8 @@ const APP_DIRS = new Set([
   'gesture',
   'zinebox',
   'lyrefly',
+  'palette',
+  'scrapboard',
   'muscle',
   'midi',
 ]);

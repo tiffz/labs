@@ -1,6 +1,6 @@
 # Lyrefly
 
-Local-first workspace for scripting, laying out, and archiving short-form comics and zines.
+Local-first comic workbench for tracking projects from sketchbook through script, thumbs, art, and publishing.
 
 ## Script
 

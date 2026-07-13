@@ -82,7 +82,16 @@ const APP_SMOKE_SPECS = {
   ],
   lyrefly: [
     'e2e/smoke/lyrefly-gallery.spec.ts',
+    'e2e/smoke/lyrefly-thumbs.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/lyrefly/' },
+  ],
+  palette: [
+    'e2e/smoke/palettegen.spec.ts',
+    { file: 'e2e/smoke/app-shells.spec.ts', grep: '/palette/' },
+  ],
+  scrapboard: [
+    'e2e/smoke/scrapboard.spec.ts',
+    { file: 'e2e/smoke/app-shells.spec.ts', grep: '/scrapboard/' },
   ],
   muscle: [
     'e2e/smoke/muscle-shell.spec.ts',

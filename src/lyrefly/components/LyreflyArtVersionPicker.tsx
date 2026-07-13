@@ -54,7 +54,7 @@ export function LyreflyArtVersionPicker({
         renderValue={
           compact
             ? (selected) => {
-                if (selected === 'current') return 'Current picks';
+                if (selected === 'current') return 'Latest';
                 const version = artVersions.find((entry) => entry.id === selected);
                 if (!version) return 'Version';
                 return project.finalArtVersionId === version.id ? `${version.label} (final)` : version.label;
@@ -62,7 +62,7 @@ export function LyreflyArtVersionPicker({
             : undefined
         }
       >
-        <MenuItem value="current">Current page picks</MenuItem>
+        <MenuItem value="current">Latest page picks</MenuItem>
         {artVersions.map((version) => (
           <MenuItem key={version.id} value={version.id}>
             {version.label}

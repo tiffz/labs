@@ -11,6 +11,10 @@ describe('parseLyreflyHash', () => {
     expect(parseLyreflyHash('#/logo-gallery')).toEqual({ kind: 'gallery' });
   });
 
+  it('parses sketchbook', () => {
+    expect(parseLyreflyHash('#/sketchbook')).toEqual({ kind: 'sketchbook' });
+  });
+
   it('parses project with stage', () => {
     expect(parseLyreflyHash('#/project/abc/script')).toEqual({
       kind: 'project',

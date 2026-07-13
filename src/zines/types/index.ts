@@ -15,26 +15,11 @@ export interface PaperConfig {
   dpi: number;
 }
 
-export interface BleedConfig {
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
-  unit: 'in' | 'mm';
-  // Quiet area (safe zone) - distance from trim line where important content should not be placed
-  quietArea: number;
-}
+import type { BleedConfig } from '../../shared/zine/bleedConfig';
+import { DEFAULT_BLEED_CONFIG } from '../../shared/zine/bleedConfig';
 
-// Mixam standard bleed: 0.125" (1/8 inch) on all sides
-// Mixam quiet area (safe zone): 0.25" from trim line
-export const DEFAULT_BLEED_CONFIG: BleedConfig = {
-  top: 0.125,
-  bottom: 0.125,
-  left: 0.125,
-  right: 0.125,
-  unit: 'in',
-  quietArea: 0.25, // 1/4 inch from trim line
-};
+export type { BleedConfig } from '../../shared/zine/bleedConfig';
+export { DEFAULT_BLEED_CONFIG };
 
 // ============================================
 // Booklet Mode Types (from comic-pdf)

@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   buildAppBasePathsFromEntryPaths,
   getCanonicalTrailingSlashRedirect,
+  getLegacyAppRedirect,
   getLegacyBeatRedirect,
+  getLegacyPalettegenRedirect,
 } from './trailingSlashRouting';
 
 describe('trailingSlashRouting', () => {
@@ -38,5 +40,19 @@ describe('trailingSlashRouting', () => {
     expect(getLegacyBeatRedirect('/beat?v=dQw4w9WgXcQ')).toBe('/stanza/?v=dQw4w9WgXcQ');
     expect(getLegacyBeatRedirect('/beat/?v=dQw4w9WgXcQ')).toBe('/stanza/?v=dQw4w9WgXcQ');
     expect(getLegacyBeatRedirect('/stanza/')).toBeNull();
+  });
+
+  it('redirects legacy Palette Generator routes to /palette/', () => {
+    expect(getLegacyPalettegenRedirect('/palettegen')).toBe('/palette/');
+    expect(getLegacyPalettegenRedirect('/palettegen/')).toBe('/palette/');
+    expect(getLegacyPalettegenRedirect('/palettegen?colors=ff0000')).toBe('/palette/?colors=ff0000');
+    expect(getLegacyPalettegenRedirect('/palettegen/?colors=ff0000')).toBe('/palette/?colors=ff0000');
+    expect(getLegacyPalettegenRedirect('/palette/')).toBeNull();
+  });
+
+  it('combines legacy app redirects', () => {
+    expect(getLegacyAppRedirect('/beat/')).toBe('/stanza/');
+    expect(getLegacyAppRedirect('/palettegen/?colors=abc')).toBe('/palette/?colors=abc');
+    expect(getLegacyAppRedirect('/words/')).toBeNull();
   });
 });

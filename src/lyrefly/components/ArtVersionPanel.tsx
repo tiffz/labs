@@ -1,24 +1,26 @@
 import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined';
-import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import PreviewOutlinedIcon from '@mui/icons-material/PreviewOutlined';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
-import ViewAgendaOutlinedIcon from '@mui/icons-material/ViewAgendaOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useMemo, useRef, useState, type ChangeEvent, type ReactElement } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactElement } from 'react';
 
 import AppTooltip from '../../shared/components/AppTooltip';
 import type { ComicArtVersion, ComicProject, PageNode, PageRevision } from '../types';
@@ -28,18 +30,21 @@ import {
   deleteComicArtVersion,
   importComicArtVersionFromFiles,
   reorderArtVersion,
+  resetLyreflyPageArt,
   setFinalArtVersion,
   updateComicArtVersion,
 } from '../db/lyreflyArtVersionMutations';
 import {
-  artVersionSourceLabel,
+  lyreflyVersionShareUrl,
+  publishLyreflyVersionShare,
+} from '../drive/lyreflyVersionShareSnapshot';
+import {
   buildPageRevisionMapFromNodes,
   orderArtVersions,
   type ArtVersionViewId,
 } from '../utils/artVersionUtils';
 import { PAGE_IMAGE_ACCEPT } from './ArtPageGrid';
-import { LyreflyComicBookPreviewDialog } from './LyreflyComicBookPreviewDialog';
-import { LyreflyComicReaderDialog } from './LyreflyComicReaderDialog';
+import { LyreflyVersionPreviewDialog } from './LyreflyVersionPreviewDialog';
 import { PublishDateChip } from './PublishDateChip';
 
 export type ArtVersionPanelProps = {
@@ -52,7 +57,7 @@ export type ArtVersionPanelProps = {
   onProjectChange: (project: ComicProject) => void;
 };
 
-type PreviewKind = 'book' | 'scroll';
+type PreviewTab = 'book' | 'scroll';
 
 export function ArtVersionPanel({
   project,
@@ -64,14 +69,17 @@ export function ArtVersionPanel({
   onProjectChange,
 }: ArtVersionPanelProps): ReactElement {
   const uploadInputRef = useRef<HTMLInputElement>(null);
-  const [previewVersion, setPreviewVersion] = useState<ComicArtVersion | null>(null);
-  const [bookOpen, setBookOpen] = useState(false);
-  const [scrollOpen, setScrollOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewTab, setPreviewTab] = useState<PreviewTab>('book');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
-  const [editOpen, setEditOpen] = useState(false);
+  const [stripMenuAnchor, setStripMenuAnchor] = useState<HTMLElement | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteArtToo, setDeleteArtToo] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetStep, setResetStep] = useState<1 | 2>(1);
+  const [resetConfirmTitle, setResetConfirmTitle] = useState('');
   const [labelDraft, setLabelDraft] = useState('');
   const [notesDraft, setNotesDraft] = useState('');
 
@@ -88,10 +96,19 @@ export function ArtVersionPanel({
     [pageNodes],
   );
 
-  const openPreview = (version: ComicArtVersion, kind: PreviewKind): void => {
-    setPreviewVersion(version);
-    if (kind === 'book') setBookOpen(true);
-    else setScrollOpen(true);
+  useEffect(() => {
+    if (!selectedVersion) {
+      setLabelDraft('');
+      setNotesDraft('');
+      return;
+    }
+    setLabelDraft(selectedVersion.label);
+    setNotesDraft(selectedVersion.notes ?? '');
+  }, [selectedVersion]);
+
+  const openPreview = (kind: PreviewTab): void => {
+    setPreviewTab(kind);
+    setPreviewOpen(true);
   };
 
   const onSnapshot = async (): Promise<void> => {
@@ -122,7 +139,7 @@ export function ArtVersionPanel({
           ? ` ${result.skippedFileCount} file${result.skippedFileCount === 1 ? '' : 's'} did not match a page on the grid.`
           : '';
       setStatus(
-        `Matched ${result.matchedPageCount} page${result.matchedPageCount === 1 ? '' : 's'} as "${result.version.label}". Your current page picks were not changed.${extra}`,
+        `Matched ${result.matchedPageCount} page${result.matchedPageCount === 1 ? '' : 's'} as "${result.version.label}". Your latest page picks were not changed.${extra}`,
       );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Upload failed');
@@ -133,11 +150,12 @@ export function ArtVersionPanel({
 
   const onApplyToPicks = async (): Promise<void> => {
     if (!selectedVersion) return;
+    setMenuAnchor(null);
     setBusy(true);
     try {
       await applyComicArtVersion(selectedVersion, pageNodes);
       onViewingVersionChange('current');
-      setStatus(`Applied "${selectedVersion.label}" to your current page picks.`);
+      setStatus(`Applied "${selectedVersion.label}" to your latest page picks.`);
     } finally {
       setBusy(false);
     }
@@ -160,10 +178,32 @@ export function ArtVersionPanel({
     setDeleteOpen(false);
     setBusy(true);
     try {
-      const next = await deleteComicArtVersion(project, selectedVersion.id);
+      const next = await deleteComicArtVersion(project, selectedVersion.id, {
+        deleteAssociatedArt: deleteArtToo,
+      });
       onProjectChange(next);
       onViewingVersionChange('current');
-      setStatus(`Removed version "${selectedVersion.label}". Page art on the grid was not deleted.`);
+      setStatus(
+        deleteArtToo
+          ? `Removed "${selectedVersion.label}" and deleted its uploaded art.`
+          : `Removed "${selectedVersion.label}". Page art on the grid was kept.`,
+      );
+      setDeleteArtToo(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onResetAllPages = async (): Promise<void> => {
+    setResetOpen(false);
+    setResetStep(1);
+    setResetConfirmTitle('');
+    setBusy(true);
+    try {
+      const next = await resetLyreflyPageArt(project);
+      onProjectChange(next);
+      onViewingVersionChange('current');
+      setStatus('Removed all pages and versions. Upload a new page set to start over.');
     } finally {
       setBusy(false);
     }
@@ -181,42 +221,161 @@ export function ArtVersionPanel({
     }
   };
 
-  const onSaveEdit = async (): Promise<void> => {
+  const onCommitInlineLabel = async (): Promise<void> => {
     if (!selectedVersion) return;
+    const trimmed = labelDraft.trim();
+    if (!trimmed || trimmed === selectedVersion.label) return;
     setBusy(true);
     try {
-      await updateComicArtVersion(selectedVersion, { label: labelDraft, notes: notesDraft });
-      setEditOpen(false);
+      await updateComicArtVersion(selectedVersion, { label: trimmed });
     } finally {
       setBusy(false);
     }
   };
 
-  const previewRevisionMap = previewVersion?.pageRevisions;
+  const onCommitNotes = async (): Promise<void> => {
+    if (!selectedVersion) return;
+    const trimmed = notesDraft.trim();
+    if (trimmed === (selectedVersion.notes ?? '').trim()) return;
+    setBusy(true);
+    try {
+      await updateComicArtVersion(selectedVersion, { notes: trimmed || undefined });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onPublishShare = async (): Promise<void> => {
+    if (!selectedVersion) return;
+    setMenuAnchor(null);
+    setBusy(true);
+    setStatus(null);
+    try {
+      const result = await publishLyreflyVersionShare(project, selectedVersion, pageNodes, revisions);
+      await updateComicArtVersion(selectedVersion, {
+        shareEnabled: true,
+        shareSnapshotDriveFileId: result.fileId,
+      });
+      const url = lyreflyVersionShareUrl(result.fileId);
+      try {
+        await navigator.clipboard.writeText(url);
+        setStatus(
+          result.warning
+            ? `Share link copied, but guests may not be able to open it yet: ${result.warning}`
+            : 'Share link copied to clipboard.',
+        );
+      } catch {
+        setStatus(result.warning ? `Share published with warning: ${result.warning}` : `Share link: ${url}`);
+      }
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not publish share link.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onCopyShareLink = async (): Promise<void> => {
+    if (!selectedVersion?.shareSnapshotDriveFileId) return;
+    setMenuAnchor(null);
+    const url = lyreflyVersionShareUrl(selectedVersion.shareSnapshotDriveFileId);
+    try {
+      await navigator.clipboard.writeText(url);
+      setStatus('Share link copied to clipboard.');
+    } catch {
+      setStatus(`Share link: ${url}`);
+    }
+  };
+
+  const onDisableShare = async (): Promise<void> => {
+    if (!selectedVersion) return;
+    setMenuAnchor(null);
+    setBusy(true);
+    try {
+      await updateComicArtVersion(selectedVersion, {
+        shareEnabled: false,
+        shareSnapshotDriveFileId: undefined,
+      });
+      setStatus(`Sharing disabled for "${selectedVersion.label}". The old link will stop working after Drive permissions change.`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const canUploadSet = pageNodes.length > 0;
   const canSnapshot = currentPickCount > 0;
   const selectedIndex = selectedVersion
     ? (project.artVersionIds ?? []).indexOf(selectedVersion.id)
     : -1;
+  const resetTitleMatches = resetConfirmTitle.trim() === project.title.trim();
+  const viewingLatest = viewingVersionId === 'current';
 
   return (
-    <Box className="lyrefly-art-versions" data-testid="lyrefly-art-versions">
-      <Typography component="h3" className="lyrefly-section-eyebrow">
-        Comic versions
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1, lineHeight: 1.5, maxWidth: '44rem' }}>
-        Switch versions to preview older page sets on the grid below. Upload set imports a folder by page name; snapshot
-        saves today&apos;s picks.
-      </Typography>
+    <Box className="lyrefly-version-panel" data-testid="lyrefly-art-versions">
+      <div className="lyrefly-version-panel__header">
+        <Typography component="h3" className="lyrefly-section-eyebrow">
+          Comic versions
+        </Typography>
+        <div className="lyrefly-version-panel__toolbar">
+          <AppTooltip title="Upload a page set from a folder" placement="top">
+            <span>
+              <button
+                type="button"
+                className="lyrefly-version-strip__action"
+                disabled={busy || !canUploadSet}
+                data-testid="lyrefly-art-version-upload"
+                onClick={() => uploadInputRef.current?.click()}
+              >
+                <UploadFileOutlinedIcon fontSize="small" aria-hidden />
+                <span>Upload set</span>
+              </button>
+            </span>
+          </AppTooltip>
+          <AppTooltip title="Snapshot latest page picks" placement="top">
+            <span>
+              <button
+                type="button"
+                className="lyrefly-version-strip__action"
+                disabled={busy || !canSnapshot}
+                data-testid="lyrefly-art-version-snapshot"
+                onClick={() => void onSnapshot()}
+              >
+                <CameraAltOutlinedIcon fontSize="small" aria-hidden />
+                <span>Snapshot</span>
+              </button>
+            </span>
+          </AppTooltip>
+          <AppTooltip title="More version actions" placement="top">
+            <span>
+              <button
+                type="button"
+                className="lyrefly-version-strip__action lyrefly-version-strip__action--icon"
+                disabled={busy || pageNodes.length === 0}
+                aria-label="More version actions"
+                onClick={(event) => setStripMenuAnchor(event.currentTarget)}
+              >
+                <MoreVertIcon fontSize="small" aria-hidden />
+              </button>
+            </span>
+          </AppTooltip>
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept={PAGE_IMAGE_ACCEPT}
+            multiple
+            hidden
+            onChange={(e) => void onUploadInput(e)}
+          />
+        </div>
+      </div>
 
       <div className="lyrefly-version-strip" role="tablist" aria-label="Comic versions">
         <button
           type="button"
           role="tab"
-          aria-selected={viewingVersionId === 'current'}
+          aria-selected={viewingLatest}
           className={[
             'lyrefly-version-strip__chip',
-            viewingVersionId === 'current' ? 'lyrefly-version-strip__chip--active' : '',
+            viewingLatest ? 'lyrefly-version-strip__chip--active' : '',
           ]
             .filter(Boolean)
             .join(' ')}
@@ -224,7 +383,8 @@ export function ArtVersionPanel({
           disabled={busy}
           onClick={() => onViewingVersionChange('current')}
         >
-          Current picks
+          <span className="lyrefly-version-strip__chip-label">Latest</span>
+          <span className="lyrefly-version-strip__chip-meta">{currentPickCount}p live</span>
         </button>
         {orderedVersions.map((version) => {
           const isFinal = project.finalArtVersionId === version.id;
@@ -245,166 +405,171 @@ export function ArtVersionPanel({
               disabled={busy}
               onClick={() => onViewingVersionChange(version.id)}
             >
-              <span className="lyrefly-version-strip__chip-label">{version.label}</span>
+              <span className="lyrefly-version-strip__chip-label">
+                {version.label}
+                {isFinal ? <StarIcon className="lyrefly-version-strip__chip-final" aria-label="Final" /> : null}
+              </span>
               <span className="lyrefly-version-strip__chip-meta">
-                {pageCount}p{isFinal ? ' · final' : ''}
+                {pageCount}p{version.shareEnabled ? ' · shared' : ''}
               </span>
             </button>
           );
         })}
-        <span className="lyrefly-version-strip__spacer" aria-hidden />
-        <AppTooltip title="Upload a page set from a folder" placement="top">
-          <span>
-            <button
-              type="button"
-              className="lyrefly-version-strip__action"
-              disabled={busy || !canUploadSet}
-              data-testid="lyrefly-art-version-upload"
-              onClick={() => uploadInputRef.current?.click()}
-            >
-              <UploadFileOutlinedIcon fontSize="small" aria-hidden />
-              <span>Upload set</span>
-            </button>
-          </span>
-        </AppTooltip>
-        <AppTooltip title="Snapshot current page picks" placement="top">
-          <span>
-            <button
-              type="button"
-              className="lyrefly-version-strip__action"
-              disabled={busy || !canSnapshot}
-              data-testid="lyrefly-art-version-snapshot"
-              onClick={() => void onSnapshot()}
-            >
-              <CameraAltOutlinedIcon fontSize="small" aria-hidden />
-              <span>Snapshot</span>
-            </button>
-          </span>
-        </AppTooltip>
-        <input
-          ref={uploadInputRef}
-          type="file"
-          accept={PAGE_IMAGE_ACCEPT}
-          multiple
-          hidden
-          onChange={(e) => void onUploadInput(e)}
-        />
       </div>
 
-      {selectedVersion ? (
-        <Stack
-          direction="row"
-          spacing={0.75}
-          flexWrap="wrap"
-          useFlexGap
-          alignItems="center"
-          className="lyrefly-version-strip__details"
-        >
-          <Typography variant="caption" color="text.secondary" className="lyrefly-version-strip__source">
-            {artVersionSourceLabel(selectedVersion.source)}
-          </Typography>
-          <div className="lyrefly-art-version-card__date-row lyrefly-version-strip__date">
-            <span className="lyrefly-publish-card__date-label">Completed</span>
-            <PublishDateChip
-              isoValue={selectedVersion.completedAt ?? new Date().toISOString()}
-              ariaLabel={`Completed date for ${selectedVersion.label}`}
+      {viewingLatest ? (
+        <p className="lyrefly-version-panel__latest-hint">
+          Latest picks — edits on the page grid below apply here. Snapshot or upload set to save a named version.
+        </p>
+      ) : selectedVersion ? (
+        <section className="lyrefly-version-detail" aria-label={`Details for ${selectedVersion.label}`}>
+          <div className="lyrefly-version-detail__head">
+            <TextField
+              variant="standard"
+              size="small"
+              value={labelDraft}
+              onChange={(event) => setLabelDraft(event.target.value)}
+              onBlur={() => void onCommitInlineLabel()}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  void onCommitInlineLabel();
+                }
+              }}
               disabled={busy}
-              onCommit={(iso) => void updateComicArtVersion(selectedVersion, { completedAt: iso })}
+              className="lyrefly-version-detail__label"
+              inputProps={{
+                'aria-label': `Version label for ${selectedVersion.label}`,
+                'data-testid': 'lyrefly-art-version-inline-label',
+              }}
             />
+            <div className="lyrefly-version-detail__actions">
+              <AppTooltip title="Preview book and scroll" placement="top">
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label={`Preview ${selectedVersion.label}`}
+                    disabled={busy}
+                    onClick={() => openPreview('book')}
+                  >
+                    <PreviewOutlinedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </AppTooltip>
+              <AppTooltip
+                title={
+                  project.finalArtVersionId === selectedVersion.id
+                    ? 'Clear final version'
+                    : 'Mark as final version for export'
+                }
+                placement="top"
+              >
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label={
+                      project.finalArtVersionId === selectedVersion.id
+                        ? `Clear final mark for ${selectedVersion.label}`
+                        : `Mark ${selectedVersion.label} as final`
+                    }
+                    disabled={busy}
+                    onClick={() => void onToggleFinal()}
+                  >
+                    {project.finalArtVersionId === selectedVersion.id ? (
+                      <StarIcon fontSize="small" />
+                    ) : (
+                      <StarBorderIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                </span>
+              </AppTooltip>
+              <AppTooltip title="More actions" placement="top">
+                <span>
+                  <IconButton
+                    size="small"
+                    aria-label={`More actions for ${selectedVersion.label}`}
+                    onClick={(event) => setMenuAnchor(event.currentTarget)}
+                  >
+                    <MoreVertIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </AppTooltip>
+            </div>
           </div>
-          {selectedVersion.notes?.trim() ? (
-            <Typography variant="caption" color="text.secondary" className="lyrefly-version-strip__notes">
-              {selectedVersion.notes.trim()}
-            </Typography>
-          ) : null}
-          <Stack direction="row" spacing={0.25} className="lyrefly-version-strip__icon-actions">
-            <AppTooltip title="Book preview" placement="top">
-              <span>
-                <IconButton
-                  size="small"
-                  aria-label={`Book preview for ${selectedVersion.label}`}
-                  disabled={busy}
-                  onClick={() => openPreview(selectedVersion, 'book')}
-                >
-                  <MenuBookOutlinedIcon fontSize="small" />
-                </IconButton>
-              </span>
-            </AppTooltip>
-            <AppTooltip title="Scroll preview" placement="top">
-              <span>
-                <IconButton
-                  size="small"
-                  aria-label={`Scroll preview for ${selectedVersion.label}`}
-                  disabled={busy}
-                  onClick={() => openPreview(selectedVersion, 'scroll')}
-                >
-                  <ViewAgendaOutlinedIcon fontSize="small" />
-                </IconButton>
-              </span>
-            </AppTooltip>
-            <AppTooltip
-              title={
-                project.finalArtVersionId === selectedVersion.id
-                  ? 'Clear final version'
-                  : 'Mark as final version for export'
-              }
-              placement="top"
-            >
-              <span>
-                <IconButton
-                  size="small"
-                  aria-label={
-                    project.finalArtVersionId === selectedVersion.id
-                      ? `Clear final mark for ${selectedVersion.label}`
-                      : `Mark ${selectedVersion.label} as final`
-                  }
-                  disabled={busy}
-                  onClick={() => void onToggleFinal()}
-                >
-                  {project.finalArtVersionId === selectedVersion.id ? (
-                    <StarIcon fontSize="small" />
-                  ) : (
-                    <StarBorderIcon fontSize="small" />
-                  )}
-                </IconButton>
-              </span>
-            </AppTooltip>
-            <AppTooltip title="More actions" placement="top">
-              <span>
-                <IconButton
-                  size="small"
-                  aria-label={`More actions for ${selectedVersion.label}`}
-                  onClick={(event) => setMenuAnchor(event.currentTarget)}
-                >
-                  <MoreVertIcon fontSize="small" />
-                </IconButton>
-              </span>
-            </AppTooltip>
-          </Stack>
-          <Button size="small" variant="outlined" disabled={busy} onClick={() => void onApplyToPicks()}>
-            Apply to current picks
-          </Button>
-        </Stack>
+
+          <div className="lyrefly-version-detail__meta">
+            <div className="lyrefly-art-version-card__date-row">
+              <span className="lyrefly-publish-card__date-label">Completed</span>
+              <PublishDateChip
+                isoValue={selectedVersion.completedAt ?? new Date().toISOString()}
+                ariaLabel={`Completed date for ${selectedVersion.label}`}
+                disabled={busy}
+                onCommit={(iso) => void updateComicArtVersion(selectedVersion, { completedAt: iso })}
+              />
+            </div>
+            <span className="lyrefly-version-detail__meta-sep" aria-hidden>
+              ·
+            </span>
+            <span className="lyrefly-version-detail__meta-item">
+              {Object.keys(selectedVersion.pageRevisions).length} pages in this version
+            </span>
+            {project.finalArtVersionId === selectedVersion.id ? (
+              <>
+                <span className="lyrefly-version-detail__meta-sep" aria-hidden>
+                  ·
+                </span>
+                <span className="lyrefly-version-detail__meta-item lyrefly-version-detail__meta-item--accent">
+                  Final for export
+                </span>
+              </>
+            ) : null}
+            {selectedVersion.shareEnabled ? (
+              <>
+                <span className="lyrefly-version-detail__meta-sep" aria-hidden>
+                  ·
+                </span>
+                <span className="lyrefly-version-detail__meta-item">Shared</span>
+              </>
+            ) : null}
+          </div>
+
+          <label className="lyrefly-version-detail__notes-field">
+            <span className="lyrefly-version-detail__notes-label">Notes</span>
+            <textarea
+              className="lyrefly-version-detail__notes-input"
+              value={notesDraft}
+              disabled={busy}
+              rows={3}
+              placeholder="Rough thumbnails, pencil pass, sent to editor…"
+              data-testid="lyrefly-art-version-notes"
+              onChange={(event) => setNotesDraft(event.target.value)}
+              onBlur={() => void onCommitNotes()}
+            />
+          </label>
+        </section>
       ) : null}
 
       {status ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }} aria-live="polite">
+        <Typography variant="body2" color="text.secondary" className="lyrefly-version-panel__status" aria-live="polite">
           {status}
         </Typography>
       ) : null}
 
-      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
+      <Menu anchorEl={stripMenuAnchor} open={Boolean(stripMenuAnchor)} onClose={() => setStripMenuAnchor(null)}>
         <MenuItem
           onClick={() => {
-            setMenuAnchor(null);
-            if (!selectedVersion) return;
-            setLabelDraft(selectedVersion.label);
-            setNotesDraft(selectedVersion.notes ?? '');
-            setEditOpen(true);
+            setStripMenuAnchor(null);
+            setResetStep(1);
+            setResetConfirmTitle('');
+            setResetOpen(true);
           }}
         >
-          Edit label and notes
+          Remove all pages and start over…
         </MenuItem>
+      </Menu>
+
+      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
+        <MenuItem onClick={() => void onApplyToPicks()}>Use as latest page picks</MenuItem>
         <MenuItem disabled={selectedIndex <= 0} onClick={() => void onReorder('earlier')}>
           Move earlier
         </MenuItem>
@@ -414,9 +579,22 @@ export function ArtVersionPanel({
         >
           Move later
         </MenuItem>
+        <MenuItem onClick={() => void onPublishShare()}>
+          {selectedVersion?.shareEnabled ? 'Update share link' : 'Publish share link…'}
+        </MenuItem>
+        {selectedVersion?.shareSnapshotDriveFileId ? (
+          <MenuItem onClick={() => void onCopyShareLink()}>
+            <LinkOutlinedIcon fontSize="small" sx={{ mr: 1 }} aria-hidden />
+            Copy share link
+          </MenuItem>
+        ) : null}
+        {selectedVersion?.shareEnabled ? (
+          <MenuItem onClick={() => void onDisableShare()}>Disable sharing</MenuItem>
+        ) : null}
         <MenuItem
           onClick={() => {
             setMenuAnchor(null);
+            setDeleteArtToo(false);
             setDeleteOpen(true);
           }}
         >
@@ -424,44 +602,22 @@ export function ArtVersionPanel({
         </MenuItem>
       </Menu>
 
-      <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="xs">
-        <DialogTitle>Edit version</DialogTitle>
-        <DialogContent>
-          <Stack spacing={1.25} sx={{ pt: 0.5 }}>
-            <TextField
-              label="Label"
-              size="small"
-              value={labelDraft}
-              onChange={(e) => setLabelDraft(e.target.value)}
-              fullWidth
-            />
-            <TextField
-              label="Notes"
-              size="small"
-              value={notesDraft}
-              onChange={(e) => setNotesDraft(e.target.value)}
-              fullWidth
-              multiline
-              minRows={3}
-              placeholder="Rough thumbnails, pencil pass, convention-ready…"
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditOpen(false)}>Cancel</Button>
-          <Button variant="contained" disabled={busy || !labelDraft.trim()} onClick={() => void onSaveEdit()}>
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
-
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle>Remove version?</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Remove &ldquo;{selectedVersion?.label}&rdquo;? Page art on the grid is not deleted. Only this saved
-            version bookmark goes away.
+          <DialogContentText sx={{ mb: 1.5 }}>
+            Remove &ldquo;{selectedVersion?.label}&rdquo;? This only deletes the saved version bookmark unless you also
+            remove its art below.
           </DialogContentText>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={deleteArtToo}
+                onChange={(event) => setDeleteArtToo(event.target.checked)}
+              />
+            }
+            label="Also delete art revisions uploaded for this version"
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteOpen(false)}>Cancel</Button>
@@ -471,23 +627,74 @@ export function ArtVersionPanel({
         </DialogActions>
       </Dialog>
 
-      <LyreflyComicBookPreviewDialog
-        open={bookOpen}
-        onClose={() => setBookOpen(false)}
+      <Dialog
+        open={resetOpen}
+        onClose={() => {
+          setResetOpen(false);
+          setResetStep(1);
+          setResetConfirmTitle('');
+        }}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>{resetStep === 1 ? 'Remove all pages?' : 'Confirm removal'}</DialogTitle>
+        <DialogContent>
+          {resetStep === 1 ? (
+            <DialogContentText>
+              This removes every page, revision, and saved version for &ldquo;{project.title}&rdquo;. You will need to
+              upload art again. This cannot be undone.
+            </DialogContentText>
+          ) : (
+            <Stack spacing={1.25} sx={{ pt: 0.5 }}>
+              <DialogContentText>
+                Type the comic title <strong>{project.title}</strong> to confirm.
+              </DialogContentText>
+              <TextField
+                size="small"
+                label="Comic title"
+                value={resetConfirmTitle}
+                onChange={(event) => setResetConfirmTitle(event.target.value)}
+                fullWidth
+              />
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setResetOpen(false);
+              setResetStep(1);
+              setResetConfirmTitle('');
+            }}
+          >
+            Cancel
+          </Button>
+          {resetStep === 1 ? (
+            <Button color="error" onClick={() => setResetStep(2)}>
+              Continue
+            </Button>
+          ) : (
+            <Button
+              color="error"
+              variant="contained"
+              disabled={busy || !resetTitleMatches}
+              onClick={() => void onResetAllPages()}
+            >
+              Remove all pages
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      <LyreflyVersionPreviewDialog
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
         project={project}
         pageNodes={pageNodes}
         revisions={revisions}
-        revisionByPageId={previewRevisionMap}
-        titleSuffix={previewVersion?.label}
-      />
-      <LyreflyComicReaderDialog
-        open={scrollOpen}
-        onClose={() => setScrollOpen(false)}
-        project={project}
-        pageNodes={pageNodes}
-        revisions={revisions}
-        revisionByPageId={previewRevisionMap}
-        titleSuffix={previewVersion?.label}
+        artVersions={artVersions}
+        initialVersionId={viewingVersionId}
+        initialTab={previewTab}
       />
     </Box>
   );

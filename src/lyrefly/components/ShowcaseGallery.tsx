@@ -3,11 +3,13 @@ import type { ReactElement } from 'react';
 
 import { lyreflyDb } from '../db/lyreflyDb';
 import { notifyLyreflyLocalChange } from '../db/lyreflyChangeBus';
+import { seedLyreflyE2eProjectIfEmpty } from '../e2e/lyreflyE2eSeed';
 import { useLyreflyProjects } from '../hooks/useLyreflyProjects';
 import { useLyreflyShelfPreviews, workflowStageShelfLabel } from '../hooks/useLyreflyShelfPreviews';
 import { createBlankComicProject, createBlankScriptDocument, type ComicProject } from '../types';
 import type { LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
 import { LyreflyShelfCover } from './LyreflyShelfCover';
+import { GalleryPipelineQueue } from './SketchbookTab';
 
 export type ShowcaseGalleryProps = {
   onOpenProject: (projectId: string) => void;
@@ -15,20 +17,7 @@ export type ShowcaseGalleryProps = {
 };
 
 async function seedDemoProjectIfEmpty(): Promise<void> {
-  const count = await lyreflyDb.projects.count();
-  if (count > 0) return;
-  const project = createBlankComicProject();
-  project.title = 'Midnight Courier';
-  project.subtitle = '8-page sci-fi zine';
-  project.status = 'wip';
-  project.brainstormHtml = '<p>Neon alleys, sealed packages, and a courier who never looks back.</p>';
-  const script = createBlankScriptDocument(project.id);
-  script.id = project.scriptDocumentId;
-  await lyreflyDb.transaction('rw', lyreflyDb.projects, lyreflyDb.scriptDocuments, async () => {
-    await lyreflyDb.projects.put(project);
-    await lyreflyDb.scriptDocuments.put(script);
-  });
-  notifyLyreflyLocalChange({ immediate: true });
+  await seedLyreflyE2eProjectIfEmpty();
 }
 
 function statusLabel(status: ComicProject['status']): string {
@@ -138,6 +127,8 @@ export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGaller
             : `${projects.length} comic${projects.length === 1 ? '' : 's'} on your shelf.`}
         </p>
       </header>
+
+      <GalleryPipelineQueue />
 
       {empty ? (
         <div className="lyrefly-studio__empty">

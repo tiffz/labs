@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 
 import { resolveDexieLiveQuery } from '../../shared/dexie/resolveDexieLiveQuery';
 import { lyreflyDb } from '../db/lyreflyDb';
-import type { ComicArchiveBinder, ComicArtVersion, ComicProject, PageNode, PageRevision, ScriptDocument, VisualDevAsset } from '../types';
+import type { ComicArchiveBinder, ComicArtVersion, ComicCharacter, ComicProject, PageMockup, PageNode, PageReference, PageRevision, ScriptDocument, SketchbookSeed, VisualDevAsset } from '../types';
 import type { LyreflyStageCompletionContext } from '../workflow/lyreflyWorkflowCompletion';
 
 export function useLyreflyProject(projectId: string | null): {
@@ -99,6 +99,56 @@ export function useLyreflyArtVersions(projectId: string | null): {
   return { artVersions: value, artVersionsHydrated: hydrated };
 }
 
+export function useLyreflyComicCharacters(projectId: string | null): {
+  characters: ComicCharacter[];
+  charactersHydrated: boolean;
+} {
+  const raw = useLiveQuery(async () => {
+    if (!projectId) return [] as ComicCharacter[];
+    return lyreflyDb.comicCharacters.where('projectId').equals(projectId).toArray();
+  }, [projectId]);
+  const { value, hydrated } = resolveDexieLiveQuery(raw, []);
+  return { characters: value, charactersHydrated: hydrated };
+}
+
+export function useLyreflyPageMockups(projectId: string | null): {
+  mockups: PageMockup[];
+  mockupsHydrated: boolean;
+} {
+  const raw = useLiveQuery(async () => {
+    if (!projectId) return [] as PageMockup[];
+    return lyreflyDb.pageMockups.where('projectId').equals(projectId).toArray();
+  }, [projectId]);
+  const { value, hydrated } = resolveDexieLiveQuery(raw, []);
+  return { mockups: value, mockupsHydrated: hydrated };
+}
+
+export function useLyreflyPageReferences(projectId: string | null): {
+  pageReferences: PageReference[];
+  pageReferencesHydrated: boolean;
+} {
+  const raw = useLiveQuery(async () => {
+    if (!projectId) return [] as PageReference[];
+    return lyreflyDb.pageReferences.where('projectId').equals(projectId).toArray();
+  }, [projectId]);
+  const { value, hydrated } = resolveDexieLiveQuery(raw, []);
+  return { pageReferences: value, pageReferencesHydrated: hydrated };
+}
+
+export function useSketchbookSeeds(): {
+  seeds: SketchbookSeed[];
+  seedsHydrated: boolean;
+} {
+  const raw = useLiveQuery(async () => {
+    const rows = await lyreflyDb.sketchbookSeeds.toArray();
+    return rows
+      .filter((s) => s.status === 'active')
+      .sort((a, b) => a.sortOrder - b.sortOrder || b.updatedAt.localeCompare(a.updatedAt));
+  }, []);
+  const { value, hydrated } = resolveDexieLiveQuery(raw, []);
+  return { seeds: value, seedsHydrated: hydrated };
+}
+
 export function useLyreflyStageContext(project: ComicProject | null): LyreflyStageCompletionContext {
   const { script } = useLyreflyScriptDocument(project?.scriptDocumentId ?? null);
   const { assets } = useLyreflyVisualDevAssets(project?.id ?? null);
@@ -106,6 +156,8 @@ export function useLyreflyStageContext(project: ComicProject | null): LyreflySta
   const pageNodeIds = useMemo(() => pageNodes.map((n) => n.id), [pageNodes]);
   const { revisions } = useLyreflyPageRevisions(pageNodeIds);
   const { archive } = useLyreflyArchive(project?.archiveId);
+  const { characters } = useLyreflyComicCharacters(project?.id ?? null);
+  const { mockups } = useLyreflyPageMockups(project?.id ?? null);
 
   return useMemo(
     () => ({
@@ -114,7 +166,9 @@ export function useLyreflyStageContext(project: ComicProject | null): LyreflySta
       pageNodeCount: pageNodes.length,
       revisionCount: revisions.length,
       archive,
+      characterCount: characters.length,
+      mockupCount: mockups.length,
     }),
-    [script, assets.length, pageNodes.length, revisions, archive],
+    [script, assets.length, pageNodes.length, revisions, archive, characters.length, mockups.length],
   );
 }

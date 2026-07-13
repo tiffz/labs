@@ -45,7 +45,12 @@ export async function captureComicArtVersion(
 
 export async function updateComicArtVersion(
   version: ComicArtVersion,
-  patch: Partial<Pick<ComicArtVersion, 'label' | 'notes' | 'completedAt'>>,
+  patch: Partial<
+    Pick<
+      ComicArtVersion,
+      'label' | 'notes' | 'completedAt' | 'shareEnabled' | 'shareSnapshotDriveFileId'
+    >
+  >,
 ): Promise<ComicArtVersion> {
   const updated: ComicArtVersion = {
     ...version,
@@ -63,13 +68,78 @@ export async function updateComicArtVersion(
 export async function deleteComicArtVersion(
   project: ComicProject,
   versionId: string,
+  options?: { deleteAssociatedArt?: boolean },
 ): Promise<ComicProject> {
+  const version = await lyreflyDb.artVersions.get(versionId);
+  if (options?.deleteAssociatedArt && version) {
+    await deleteArtRevisionsForVersion(version);
+  }
   await lyreflyDb.artVersions.delete(versionId);
   await markLyreflyDirtyRow('art_version', versionId, 'delete', project.id);
   const artVersionIds = (project.artVersionIds ?? []).filter((id) => id !== versionId);
   const finalArtVersionId =
     project.finalArtVersionId === versionId ? undefined : project.finalArtVersionId;
   const updatedProject = await saveLyreflyProject({ ...project, artVersionIds, finalArtVersionId });
+  notifyLyreflyLocalChange({ immediate: true });
+  return updatedProject;
+}
+
+async function deleteArtRevisionsForVersion(version: ComicArtVersion): Promise<void> {
+  const revisionIds = [...new Set(Object.values(version.pageRevisions))];
+  for (const revisionId of revisionIds) {
+    const revision = await lyreflyDb.pageRevisions.get(revisionId);
+    if (!revision) continue;
+    const node = await lyreflyDb.pageNodes.get(revision.pageNodeId);
+    if (!node) continue;
+
+    await lyreflyDb.revisionBlobs.delete(revisionId);
+    await lyreflyDb.pageRevisions.delete(revisionId);
+    await markLyreflyDirtyRow('page_revision', revisionId, 'delete', version.projectId);
+
+    const revisionIdsLeft = node.revisionIds.filter((id) => id !== revisionId);
+    const activeRevisionId =
+      node.activeRevisionId === revisionId
+        ? revisionIdsLeft[revisionIdsLeft.length - 1] ?? null
+        : node.activeRevisionId;
+    const updatedNode: PageNode = {
+      ...node,
+      revisionIds: revisionIdsLeft,
+      activeRevisionId,
+      updatedAt: new Date().toISOString(),
+    };
+    await lyreflyDb.pageNodes.put(updatedNode);
+    await markLyreflyDirtyRow('page_node', updatedNode.id, 'upsert', version.projectId);
+  }
+}
+
+/** Remove every page, revision, and saved art version for a comic (start upload over). */
+export async function resetLyreflyPageArt(project: ComicProject): Promise<ComicProject> {
+  const nodes = await lyreflyDb.pageNodes.where('projectId').equals(project.id).toArray();
+  for (const node of nodes) {
+    const revisions = await lyreflyDb.pageRevisions.where('pageNodeId').equals(node.id).toArray();
+    for (const revision of revisions) {
+      await lyreflyDb.revisionBlobs.delete(revision.id);
+      await lyreflyDb.pageRevisions.delete(revision.id);
+      await markLyreflyDirtyRow('page_revision', revision.id, 'delete', project.id);
+    }
+    await lyreflyDb.pageNodes.delete(node.id);
+    await markLyreflyDirtyRow('page_node', node.id, 'delete', project.id);
+  }
+
+  const versions = await lyreflyDb.artVersions.where('projectId').equals(project.id).toArray();
+  for (const version of versions) {
+    await lyreflyDb.artVersions.delete(version.id);
+    await markLyreflyDirtyRow('art_version', version.id, 'delete', project.id);
+  }
+
+  const updatedProject = await saveLyreflyProject({
+    ...project,
+    layoutOrder: [],
+    pageCount: 0,
+    artVersionIds: [],
+    finalArtVersionId: undefined,
+    updatedAt: new Date().toISOString(),
+  });
   notifyLyreflyLocalChange({ immediate: true });
   return updatedProject;
 }

@@ -25,6 +25,8 @@ export type AppThemeId =
   | 'gesture'
   | 'zinebox'
   | 'lyrefly'
+  | 'palettegen'
+  | 'scrapboard'
   | 'muscle';
 
 interface AppThemeConfig {
@@ -508,6 +510,32 @@ const THEMES: Record<AppThemeId, Theme> = {
     textSecondary: '#737373',
     divider: 'rgba(23, 23, 23, 0.1)',
     radius: 2,
+    spacingBase: 4,
+  }),
+  palettegen: buildTheme({
+    mode: 'light',
+    fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+    primary: '#7c3aed',
+    secondary: '#ec4899',
+    backgroundDefault: '#fafafa',
+    backgroundPaper: '#ffffff',
+    textPrimary: '#1e293b',
+    textSecondary: '#64748b',
+    divider: 'rgba(30, 41, 59, 0.1)',
+    radius: 12,
+    spacingBase: 4,
+  }),
+  scrapboard: buildTheme({
+    mode: 'light',
+    fontFamily: "'Nunito', system-ui, sans-serif",
+    primary: '#333333',
+    secondary: '#f4d03f',
+    backgroundDefault: '#f5f5f0',
+    backgroundPaper: '#fffef8',
+    textPrimary: '#333333',
+    textSecondary: '#666666',
+    divider: 'rgba(51, 51, 51, 0.15)',
+    radius: 4,
     spacingBase: 4,
   }),
   muscle: buildTheme({

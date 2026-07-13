@@ -8,6 +8,7 @@ export type VisualRouteSpec = {
   route: string;
   title: RegExp;
   readySelector: string;
+  visibleTimeoutMs?: number;
 };
 
 const BLOCKED_EXTERNAL_REGEX = /google-analytics|googletagmanager|fonts\.googleapis|fonts\.gstatic/;
@@ -498,7 +499,7 @@ export async function warmUpCatsTabbedPanelMaterialFonts(page: Page): Promise<vo
 export async function waitForVisualReady(page: Page, spec: VisualRouteSpec): Promise<Locator> {
   await expect(page).toHaveTitle(spec.title);
   const root = page.locator(spec.readySelector);
-  await expect(root).toBeVisible();
+  await expect(root).toBeVisible({ timeout: spec.visibleTimeoutMs ?? 5_000 });
 
   // Pass 1: above-the-fold (initial route mount).
   await stabilizeFontsAndMaterialGlyphs(page, { glyphTimeoutMs: 15_000 });

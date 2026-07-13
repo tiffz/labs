@@ -18,6 +18,8 @@ export type RouteSpec = {
   visualTitle?: RegExp;
   /** Optional visibility timeout for smoke shell boot (default Playwright 5s). */
   smokeVisibleTimeoutMs?: number;
+  /** Optional visibility timeout for visual regression (default Playwright 5s). */
+  visualVisibleTimeoutMs?: number;
   notes?: string;
 };
 
@@ -183,7 +185,54 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     visibleSelector: '[data-testid="lyrefly-showcase"]',
     smoke: true,
     visual: false,
-    notes: 'smoke only',
+    notes: 'smoke shell',
+  },
+  {
+    route: '/palette/',
+    title: /Palette Generator/i,
+    visibleSelector: '[data-testid="palettegen-app"]',
+    smoke: true,
+    visual: false,
+    notes: 'palette from images and links',
+  },
+  {
+    route: '/scrapboard/',
+    title: /Scrapboard/i,
+    visibleSelector: '[data-testid="scrapboard-app"]',
+    smoke: true,
+    visual: false,
+    notes: 'comic panel mockups',
+  },
+  {
+    route: '/lyrefly/?e2eSeed=1',
+    title: /Lyrefly/i,
+    visibleSelector: '[data-testid="lyrefly-showcase"]',
+    smoke: false,
+    visual: true,
+    visualId: 'lyrefly-gallery',
+    notes: 'Gallery shelf with e2e seed',
+  },
+  {
+    route: '/lyrefly/?e2eSeed=1#/project/e2e00000-0000-4000-8000-00000e2e0001/profile',
+    title: /Lyrefly/i,
+    visibleSelector: '[data-testid="lyrefly-comic-profile"]',
+    smoke: false,
+    visual: true,
+    visualId: 'lyrefly-profile',
+    visualReadySelector: '[data-testid="lyrefly-comic-profile"]',
+    visualVisibleTimeoutMs: 15_000,
+    notes: 'Comic profile with seeded pages and version',
+  },
+  {
+    route: '/lyrefly/?e2eSeed=1#/project/e2e00000-0000-4000-8000-00000e2e0001/art',
+    title: /Lyrefly/i,
+    visibleSelector: '[data-testid="lyrefly-art-stage"]',
+    smoke: false,
+    visual: true,
+    visualId: 'lyrefly-draw',
+    visualReadySelector: '[data-testid="lyrefly-art-page-grid"]',
+    visualVisibleTimeoutMs: 15_000,
+    notes: 'Draw stage with version strip and page grid',
   },
   {
     route: '/muscle/',
@@ -236,6 +285,7 @@ export type VisualRouteFromRegistry = {
   route: string;
   title: RegExp;
   readySelector: string;
+  visibleTimeoutMs?: number;
 };
 
 export const VISUAL_ROUTE_SPECS: VisualRouteFromRegistry[] = APP_ROUTE_REGISTRY.filter(
@@ -245,4 +295,5 @@ export const VISUAL_ROUTE_SPECS: VisualRouteFromRegistry[] = APP_ROUTE_REGISTRY.
   route: r.route,
   title: r.visualTitle ?? r.title,
   readySelector: r.visualReadySelector ?? r.visibleSelector,
+  visibleTimeoutMs: r.visualVisibleTimeoutMs,
 }));

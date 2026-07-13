@@ -6662,6 +6662,3384 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-color-convert-ts-colorstatetocss",
+    "name": "colorStateToCss",
+    "path": "src/shared/color/convert.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-convert-ts-colorstatetohex",
+    "name": "colorStateToHex",
+    "path": "src/shared/color/convert.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-convert-ts-hextocolorstate",
+    "name": "hexToColorState",
+    "path": "src/shared/color/convert.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-convert-ts-normalizehex",
+    "name": "normalizeHex",
+    "path": "src/shared/color/convert.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-extractpalette-ts-extractcolorsbymethod",
+    "name": "extractColorsByMethod",
+    "path": "src/shared/color/extractPalette.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-extractpalette-ts-extractdominantcolors",
+    "name": "extractDominantColors",
+    "path": "src/shared/color/extractPalette.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-extractpalette-ts-loadimagetoimagedata",
+    "name": "loadImageToImageData",
+    "path": "src/shared/color/extractPalette.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-extractpalette-ts-proposepalettesfromcolors",
+    "name": "proposePalettesFromColors",
+    "path": "src/shared/color/extractPalette.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-extractpalette-ts-proposepalettesfromimagefiles",
+    "name": "proposePalettesFromImageFiles",
+    "path": "src/shared/color/extractPalette.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-extractpalette-ts-proposepalettesfrompixels",
+    "name": "proposePalettesFromPixels",
+    "path": "src/shared/color/extractPalette.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-extractpalette-ts-sampleimagedatatopixels",
+    "name": "sampleImageDataToPixels",
+    "path": "src/shared/color/extractPalette.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-formatoklch-ts-clampcolorstate",
+    "name": "clampColorState",
+    "path": "src/shared/color/formatOklch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Lightness as 0–100% for CSS `oklch()` syntax.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-formatoklch-ts-formatoklchcss",
+    "name": "formatOklchCss",
+    "path": "src/shared/color/formatOklch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Standard CSS Color Level 4 oklch() string.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-formatoklch-ts-formatoklchlightnesspercent",
+    "name": "formatOklchLightnessPercent",
+    "path": "src/shared/color/formatOklch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Lightness as 0–100% for CSS `oklch()` syntax.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-harmony-ts-colorsfromharmony",
+    "name": "colorsFromHarmony",
+    "path": "src/shared/color/harmony.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-harmony-ts-harmonyoffsets",
+    "name": "harmonyOffsets",
+    "path": "src/shared/color/harmony.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-harmony-ts-mutedbridgepalette",
+    "name": "mutedBridgePalette",
+    "path": "src/shared/color/harmony.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-clampcolorstate",
+    "name": "clampColorState",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-clamptoprofile",
+    "name": "clampToProfile",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-colorsfromharmony",
+    "name": "colorsFromHarmony",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-colorstate",
+    "name": "ColorState",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-colorstatetocss",
+    "name": "colorStateToCss",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-colorstatetohex",
+    "name": "colorStateToHex",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-dedupepaletteproposals",
+    "name": "dedupePaletteProposals",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-default-palette-profile",
+    "name": "DEFAULT_PALETTE_PROFILE",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-extractcolorsbymethod",
+    "name": "extractColorsByMethod",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-extractdominantcolors",
+    "name": "extractDominantColors",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-fitcolortogamut",
+    "name": "fitColorToGamut",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-fitpalettetogamut",
+    "name": "fitPaletteToGamut",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-formatoklchcss",
+    "name": "formatOklchCss",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-formatoklchlightnesspercent",
+    "name": "formatOklchLightnessPercent",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-generatepalettefromseed",
+    "name": "generatePaletteFromSeed",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-generatepalettefromseedhex",
+    "name": "generatePaletteFromSeedHex",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-generaterandompalettes",
+    "name": "generateRandomPalettes",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-harmonyoffsets",
+    "name": "harmonyOffsets",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-harmonysystem",
+    "name": "HarmonySystem",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-hextocolorstate",
+    "name": "hexToColorState",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-huedistance",
+    "name": "hueDistance",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-injectcontrastanchors",
+    "name": "injectContrastAnchors",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-lerpoklch",
+    "name": "lerpOklch",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-loadimagetoimagedata",
+    "name": "loadImageToImageData",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-mutedbridgepalette",
+    "name": "mutedBridgePalette",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-normalizehex",
+    "name": "normalizeHex",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-palette-mixed-mood-pool",
+    "name": "PALETTE_MIXED_MOOD_POOL",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-palette-mood-presets",
+    "name": "PALETTE_MOOD_PRESETS",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-palette-random-templates",
+    "name": "PALETTE_RANDOM_TEMPLATES",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-paletteextractionmethod",
+    "name": "PaletteExtractionMethod",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-palettegamutmode",
+    "name": "PaletteGamutMode",
+    "path": "src/shared/color/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-palettegenerationprofile",
+    "name": "PaletteGenerationProfile",
+    "path": "src/shared/color/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-palettemoodpreset",
+    "name": "PaletteMoodPreset",
+    "path": "src/shared/color/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-paletteproposal",
+    "name": "PaletteProposal",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-paletterandomtemplate",
+    "name": "PaletteRandomTemplate",
+    "path": "src/shared/color/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-pickmixedmoodprofile",
+    "name": "pickMixedMoodProfile",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-proposepalettesfromcolors",
+    "name": "proposePalettesFromColors",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-proposepalettesfromimagefiles",
+    "name": "proposePalettesFromImageFiles",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-proposepalettesfrompixels",
+    "name": "proposePalettesFromPixels",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-resolvepaletteprofile",
+    "name": "resolvePaletteProfile",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-sampleimagedatatopixels",
+    "name": "sampleImageDataToPixels",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-lerpoklch-ts-huedistance",
+    "name": "hueDistance",
+    "path": "src/shared/color/lerpOklch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-lerpoklch-ts-lerpoklch",
+    "name": "lerpOklch",
+    "path": "src/shared/color/lerpOklch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-palettegamut-ts-fitcolortogamut",
+    "name": "fitColorToGamut",
+    "path": "src/shared/color/paletteGamut.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Reduce chroma until the color round-trips through sRGB hex without drift.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-palettegamut-ts-fitpalettetogamut",
+    "name": "fitPaletteToGamut",
+    "path": "src/shared/color/paletteGamut.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-palettegenerate-ts-dedupepaletteproposals",
+    "name": "dedupePaletteProposals",
+    "path": "src/shared/color/paletteGenerate.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-palettegenerate-ts-generatepalettefromseed",
+    "name": "generatePaletteFromSeed",
+    "path": "src/shared/color/paletteGenerate.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-palettegenerate-ts-generatepalettefromseedhex",
+    "name": "generatePaletteFromSeedHex",
+    "path": "src/shared/color/paletteGenerate.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-palettegenerate-ts-generaterandompalettes",
+    "name": "generateRandomPalettes",
+    "path": "src/shared/color/paletteGenerate.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-palettegenerate-ts-injectcontrastanchors",
+    "name": "injectContrastAnchors",
+    "path": "src/shared/color/paletteGenerate.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Synthesize tinted ink/paper extremes and optional neon accent from the palette hue story.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-palettepolish-ts-polishpalettecolors",
+    "name": "polishPaletteColors",
+    "path": "src/shared/color/palettePolish.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Push palettes toward clearer hue separation and stronger chroma.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-paletteprofile-ts-clamptoprofile",
+    "name": "clampToProfile",
+    "path": "src/shared/color/paletteProfile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-paletteprofile-ts-default-palette-profile",
+    "name": "DEFAULT_PALETTE_PROFILE",
+    "path": "src/shared/color/paletteProfile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-paletteprofile-ts-huewithinprofile",
+    "name": "hueWithinProfile",
+    "path": "src/shared/color/paletteProfile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-paletteprofile-ts-palette-mixed-mood-pool",
+    "name": "PALETTE_MIXED_MOOD_POOL",
+    "path": "src/shared/color/paletteProfile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Moods sampled when the Mixed preset is active (one per random gallery row).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-paletteprofile-ts-palette-mood-presets",
+    "name": "PALETTE_MOOD_PRESETS",
+    "path": "src/shared/color/paletteProfile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-paletteprofile-ts-palette-random-templates",
+    "name": "PALETTE_RANDOM_TEMPLATES",
+    "path": "src/shared/color/paletteProfile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-paletteprofile-ts-palettegamutmode",
+    "name": "PaletteGamutMode",
+    "path": "src/shared/color/paletteProfile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "How aggressively to clip generated colors to sRGB display gamut.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-paletteprofile-ts-palettegenerationprofile",
+    "name": "PaletteGenerationProfile",
+    "path": "src/shared/color/paletteProfile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-paletteprofile-ts-palettemoodpreset",
+    "name": "PaletteMoodPreset",
+    "path": "src/shared/color/paletteProfile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-paletteprofile-ts-paletterandomtemplate",
+    "name": "PaletteRandomTemplate",
+    "path": "src/shared/color/paletteProfile.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-paletteprofile-ts-pickmixedmoodprofile",
+    "name": "pickMixedMoodProfile",
+    "path": "src/shared/color/paletteProfile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-paletteprofile-ts-resolvepaletteprofile",
+    "name": "resolvePaletteProfile",
+    "path": "src/shared/color/paletteProfile.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-types-ts-colorstate",
+    "name": "ColorState",
+    "path": "src/shared/color/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Oklch color state used across Labs color tools.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-types-ts-harmonysystem",
+    "name": "HarmonySystem",
+    "path": "src/shared/color/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Oklch color state used across Labs color tools.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-types-ts-paletteextractionmethod",
+    "name": "PaletteExtractionMethod",
+    "path": "src/shared/color/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Oklch color state used across Labs color tools.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-types-ts-paletteproposal",
+    "name": "PaletteProposal",
+    "path": "src/shared/color/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Oklch color state used across Labs color tools.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-blobshapes-ts-bendaydots",
+    "name": "benDayDots",
+    "path": "src/shared/comic/blobShapes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Procedural blob paths for low-fi comic mockups (no external assets).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-blobshapes-ts-blobellipsepath",
+    "name": "blobEllipsePath",
+    "path": "src/shared/comic/blobShapes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Procedural blob paths for low-fi comic mockups (no external assets).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-blobshapes-ts-blobheadpath",
+    "name": "blobHeadPath",
+    "path": "src/shared/comic/blobShapes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Procedural blob paths for low-fi comic mockups (no external assets).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-blobshapes-ts-bloblimbpath",
+    "name": "blobLimbPath",
+    "path": "src/shared/comic/blobShapes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Procedural blob paths for low-fi comic mockups (no external assets).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-blobshapes-ts-blobtorsopath",
+    "name": "blobTorsoPath",
+    "path": "src/shared/comic/blobShapes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Procedural blob paths for low-fi comic mockups (no external assets).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-blobshapes-ts-cityskylinepath",
+    "name": "citySkylinePath",
+    "path": "src/shared/comic/blobShapes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Procedural blob paths for low-fi comic mockups (no external assets).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-blobshapes-ts-naturehillspath",
+    "name": "natureHillsPath",
+    "path": "src/shared/comic/blobShapes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Procedural blob paths for low-fi comic mockups (no external assets).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-charactermarkers-tsx-character-marker-labels",
+    "name": "CHARACTER_MARKER_LABELS",
+    "path": "src/shared/comic/characterMarkers.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-charactermarkers-tsx-character-marker-slots",
+    "name": "CHARACTER_MARKER_SLOTS",
+    "path": "src/shared/comic/characterMarkers.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-charactermarkers-tsx-characterheadpoint",
+    "name": "characterHeadPoint",
+    "path": "src/shared/comic/characterMarkers.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Tail target — top of character marker (head).",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-charactermarkers-tsx-charactermarkerbox",
+    "name": "characterMarkerBox",
+    "path": "src/shared/comic/characterMarkers.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-charactermarkers-tsx-charactermarkerbox",
+    "name": "CharacterMarkerBox",
+    "path": "src/shared/comic/characterMarkers.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-charactermarkers-tsx-charactermarkerlayoutbox",
+    "name": "characterMarkerLayoutBox",
+    "path": "src/shared/comic/characterMarkers.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Layout overlap uses body box — excludes decorative shape tips above the head.",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-charactermarkers-tsx-charactermarkerpoint",
+    "name": "characterMarkerPoint",
+    "path": "src/shared/comic/characterMarkers.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-charactermarkers-tsx-rendercharactermarker",
+    "name": "renderCharacterMarker",
+    "path": "src/shared/comic/characterMarkers.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-charactermarkers-tsx-renderhorizonscene",
+    "name": "renderHorizonScene",
+    "path": "src/shared/comic/characterMarkers.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-buildpanellayout",
+    "name": "buildPanelLayout",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-comicboarddocument",
+    "name": "ComicBoardDocument",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-defaultfillsforlayout",
+    "name": "defaultFillsForLayout",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-defaultgeneratedlayout",
+    "name": "defaultGeneratedLayout",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-generatedpanellayout",
+    "name": "GeneratedPanelLayout",
+    "path": "src/shared/comic/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-generatelayoutsforpanelcount",
+    "name": "generateLayoutsForPanelCount",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-getlayoutsafeinsets",
+    "name": "getLayoutSafeInsets",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-getlayoutsaferegion",
+    "name": "getLayoutSafeRegion",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-layoutgenerateoptions",
+    "name": "LayoutGenerateOptions",
+    "path": "src/shared/comic/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-layoutheuristicid",
+    "name": "LayoutHeuristicId",
+    "path": "src/shared/comic/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-layoutpaneltextblocks",
+    "name": "layoutPanelTextBlocks",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-layoutviolation",
+    "name": "LayoutViolation",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-layoutviolationcode",
+    "name": "LayoutViolationCode",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-mockupdimensionsforprintspec",
+    "name": "mockupDimensionsForPrintSpec",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-normalizepanelfill",
+    "name": "normalizePanelFill",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-pagemockupspec",
+    "name": "PageMockupSpec",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panel-character-ids",
+    "name": "PANEL_CHARACTER_IDS",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panel-composition-ids",
+    "name": "PANEL_COMPOSITION_IDS",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panel-composition-labels",
+    "name": "PANEL_COMPOSITION_LABELS",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panel-layout-presets",
+    "name": "PANEL_LAYOUT_PRESETS",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelbleedmode",
+    "name": "PanelBleedMode",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelcaptionblock",
+    "name": "PanelCaptionBlock",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelcharacterid",
+    "name": "PanelCharacterId",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelcircleclipattrs",
+    "name": "panelCircleClipAttrs",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelclippoint",
+    "name": "PanelClipPoint",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelcompositionid",
+    "name": "PanelCompositionId",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-paneldialogueblock",
+    "name": "PanelDialogueBlock",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelfillkind",
+    "name": "PanelFillKind",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelfillspec",
+    "name": "PanelFillSpec",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panellayoutpresetid",
+    "name": "PanelLayoutPresetId",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panellayoutspec",
+    "name": "PanelLayoutSpec",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelmockupsvg",
+    "name": "PanelMockupSvg",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelpixelbounds",
+    "name": "panelPixelBounds",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelrect",
+    "name": "PanelRect",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelsfxblock",
+    "name": "PanelSfxBlock",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelshapeid",
+    "name": "PanelShapeId",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelsvgpointsattr",
+    "name": "panelSvgPointsAttr",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-paneltextblock",
+    "name": "PanelTextBlock",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-paneltextkind",
+    "name": "PanelTextKind",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-paneltextoverlay",
+    "name": "PanelTextOverlay",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-random-composition-pool",
+    "name": "RANDOM_COMPOSITION_POOL",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-randomcompositionid",
+    "name": "randomCompositionId",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-randomcompositionsforpanels",
+    "name": "randomCompositionsForPanels",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-readingorderforpanels",
+    "name": "readingOrderForPanels",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-rendermockupcomposition",
+    "name": "renderMockupComposition",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-resolvepanelclip",
+    "name": "resolvePanelClip",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-resolvepanelcomposition",
+    "name": "resolvePanelComposition",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-resolvepaneltext",
+    "name": "resolvePanelText",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-resolvepaneltextblocks",
+    "name": "resolvePanelTextBlocks",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-silhouettesvg",
+    "name": "silhouetteSvg",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-stick-pose-ids",
+    "name": "STICK_POSE_IDS",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-stickfiguresvg",
+    "name": "stickFigureSvg",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-stickposeid",
+    "name": "StickPoseId",
+    "path": "src/shared/comic/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-validatepaneltextlayout",
+    "name": "validatePanelTextLayout",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-validatereadingorder",
+    "name": "validateReadingOrder",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-layoutgenerate-ts-defaultgeneratedlayout",
+    "name": "defaultGeneratedLayout",
+    "path": "src/shared/comic/layoutGenerate.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-layoutgenerate-ts-generatedpanellayout",
+    "name": "GeneratedPanelLayout",
+    "path": "src/shared/comic/layoutGenerate.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-layoutgenerate-ts-generatelayoutsforpanelcount",
+    "name": "generateLayoutsForPanelCount",
+    "path": "src/shared/comic/layoutGenerate.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-layoutgenerate-ts-layoutgenerateoptions",
+    "name": "LayoutGenerateOptions",
+    "path": "src/shared/comic/layoutGenerate.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-layoutgenerate-ts-layoutheuristicid",
+    "name": "LayoutHeuristicId",
+    "path": "src/shared/comic/layoutGenerate.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-layoutpresets-ts-buildpanellayout",
+    "name": "buildPanelLayout",
+    "path": "src/shared/comic/layoutPresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-layoutpresets-ts-defaultfillsforlayout",
+    "name": "defaultFillsForLayout",
+    "path": "src/shared/comic/layoutPresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-layoutpresets-ts-panel-layout-presets",
+    "name": "PANEL_LAYOUT_PRESETS",
+    "path": "src/shared/comic/layoutPresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-layoutpresets-ts-validatereadingorder",
+    "name": "validateReadingOrder",
+    "path": "src/shared/comic/layoutPresets.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-mockupcompositioncatalog-ts-panel-composition-labels",
+    "name": "PANEL_COMPOSITION_LABELS",
+    "path": "src/shared/comic/mockupCompositionCatalog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-mockupcompositioncatalog-ts-random-composition-pool",
+    "name": "RANDOM_COMPOSITION_POOL",
+    "path": "src/shared/comic/mockupCompositionCatalog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-mockupcompositioncatalog-ts-randomcompositionid",
+    "name": "randomCompositionId",
+    "path": "src/shared/comic/mockupCompositionCatalog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-mockupcompositioncatalog-ts-randomcompositionsforpanels",
+    "name": "randomCompositionsForPanels",
+    "path": "src/shared/comic/mockupCompositionCatalog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-mockupcompositions-tsx-compositionbounds",
+    "name": "CompositionBounds",
+    "path": "src/shared/comic/mockupCompositions.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-mockupcompositions-tsx-rendermockupcomposition",
+    "name": "renderMockupComposition",
+    "path": "src/shared/comic/mockupCompositions.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelclippath-ts-panelcircleclipattrs",
+    "name": "panelCircleClipAttrs",
+    "path": "src/shared/comic/panelClipPath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelclippath-ts-panelcliptopixelpoints",
+    "name": "panelClipToPixelPoints",
+    "path": "src/shared/comic/panelClipPath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelclippath-ts-panelpixelbounds",
+    "name": "panelPixelBounds",
+    "path": "src/shared/comic/panelClipPath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Expand trim-space panel bounds when explicitly marked full-bleed.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelclippath-ts-panelpixelbounds",
+    "name": "PanelPixelBounds",
+    "path": "src/shared/comic/panelClipPath.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelclippath-ts-panelsvgpointsattr",
+    "name": "panelSvgPointsAttr",
+    "path": "src/shared/comic/panelClipPath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelclippath-ts-resolvepanelclip",
+    "name": "resolvePanelClip",
+    "path": "src/shared/comic/panelClipPath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Resolve polygon clip for a panel (normalized 0–1 inside its bounding box).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelfillresolve-ts-islegacystickfill",
+    "name": "isLegacyStickFill",
+    "path": "src/shared/comic/panelFillResolve.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelfillresolve-ts-legacystickpose",
+    "name": "legacyStickPose",
+    "path": "src/shared/comic/panelFillResolve.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelfillresolve-ts-normalizepanelfill",
+    "name": "normalizePanelFill",
+    "path": "src/shared/comic/panelFillResolve.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelfillresolve-ts-resolvepanelcomposition",
+    "name": "resolvePanelComposition",
+    "path": "src/shared/comic/panelFillResolve.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelfillresolve-ts-resolvepaneltext",
+    "name": "resolvePanelText",
+    "path": "src/shared/comic/panelFillResolve.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelfillresolve-ts-resolvepaneltextblocks",
+    "name": "resolvePanelTextBlocks",
+    "path": "src/shared/comic/panelFillResolve.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Resolve ordered text blocks, migrating legacy single `text` overlay when needed.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panellayoutregion-ts-getlayoutsafeinsets",
+    "name": "getLayoutSafeInsets",
+    "path": "src/shared/comic/panelLayoutRegion.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Quiet-zone insets for generated panel layouts (Mixam-style best practice).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panellayoutregion-ts-getlayoutsaferegion",
+    "name": "getLayoutSafeRegion",
+    "path": "src/shared/comic/panelLayoutRegion.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Normalized trim-space insets where panel gutters should stay inside (quiet zone).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panellayoutregion-ts-layoutsafeinsets",
+    "name": "LayoutSafeInsets",
+    "path": "src/shared/comic/panelLayoutRegion.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Normalized trim-space insets where panel gutters should stay inside (quiet zone).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panellayoutregion-ts-layoutsaferegion",
+    "name": "LayoutSafeRegion",
+    "path": "src/shared/comic/panelLayoutRegion.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Normalized trim-space insets where panel gutters should stay inside (quiet zone).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelmockupdimensions-ts-mockupdimensionsforprintspec",
+    "name": "mockupDimensionsForPrintSpec",
+    "path": "src/shared/comic/panelMockupDimensions.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelmockupsvg-tsx-panelmockupsvg",
+    "name": "PanelMockupSvg",
+    "path": "src/shared/comic/PanelMockupSvg.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelmockupsvg-tsx-panelmockupsvgprops",
+    "name": "PanelMockupSvgProps",
+    "path": "src/shared/comic/PanelMockupSvg.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-panelreadingorder-ts-readingorderforpanels",
+    "name": "readingOrderForPanels",
+    "path": "src/shared/comic/panelReadingOrder.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Western comic reading order: group panels into horizontal rows by vertical overlap, sort rows top-to-bottom, panels within each row left-to-right.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-paneltextlayoutinvariants-ts-layoutviolation",
+    "name": "LayoutViolation",
+    "path": "src/shared/comic/panelTextLayoutInvariants.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-paneltextlayoutinvariants-ts-layoutviolationcode",
+    "name": "LayoutViolationCode",
+    "path": "src/shared/comic/panelTextLayoutInvariants.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-paneltextlayoutinvariants-ts-validatepaneltextlayout",
+    "name": "validatePanelTextLayout",
+    "path": "src/shared/comic/panelTextLayoutInvariants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-paneltextlayoutinvariants-ts-validatepaneltextlayoutoptions",
+    "name": "ValidatePanelTextLayoutOptions",
+    "path": "src/shared/comic/panelTextLayoutInvariants.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-paneltextzones-ts-clampx",
+    "name": "clampX",
+    "path": "src/shared/comic/panelTextZones.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-paneltextzones-ts-maxbubblehalfwidth",
+    "name": "maxBubbleHalfWidth",
+    "path": "src/shared/comic/panelTextZones.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-paneltextzones-ts-paneltextzones",
+    "name": "panelTextZones",
+    "path": "src/shared/comic/panelTextZones.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Vertical bands for caption/dialogue vs character markers.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-paneltextzones-ts-paneltextzones",
+    "name": "PanelTextZones",
+    "path": "src/shared/comic/panelTextZones.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblelayout-ts-captionlayout",
+    "name": "CaptionLayout",
+    "path": "src/shared/comic/speechBubbleLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblelayout-ts-layoutbounds",
+    "name": "LayoutBounds",
+    "path": "src/shared/comic/speechBubbleLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblelayout-ts-layoutpaneltextblocks",
+    "name": "layoutPanelTextBlocks",
+    "path": "src/shared/comic/speechBubbleLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Place captions, dialogue bubbles, and SFX in reading order with zoned layout.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblelayout-ts-paneltextlayout",
+    "name": "PanelTextLayout",
+    "path": "src/shared/comic/speechBubbleLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblelayout-ts-paneltextlayoutitem",
+    "name": "PanelTextLayoutItem",
+    "path": "src/shared/comic/speechBubbleLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblelayout-ts-paneltextlayoutoptions",
+    "name": "PanelTextLayoutOptions",
+    "path": "src/shared/comic/speechBubbleLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblelayout-ts-sfxlayout",
+    "name": "SfxLayout",
+    "path": "src/shared/comic/speechBubbleLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblelayout-ts-speechbubblelayout",
+    "name": "SpeechBubbleLayout",
+    "path": "src/shared/comic/speechBubbleLayout.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-bubble-font-family",
+    "name": "BUBBLE_FONT_FAMILY",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-bubble-font-size",
+    "name": "BUBBLE_FONT_SIZE",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-bubblebodybbox",
+    "name": "bubbleBodyBBox",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-bubblemetrics",
+    "name": "BubbleMetrics",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-bubblemetricsforlines",
+    "name": "bubbleMetricsForLines",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-charwidthforfont",
+    "name": "charWidthForFont",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-fitbubblemetrics",
+    "name": "fitBubbleMetrics",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-fitdialoguelines",
+    "name": "fitDialogueLines",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Fit dialogue into panel width, shrinking font and re-wrapping until lines fit.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-lineheightforfont",
+    "name": "lineHeightForFont",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-maxcharsforwidth",
+    "name": "maxCharsForWidth",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-speechbubblepathd",
+    "name": "speechBubblePathD",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Ellipse body with a curved tail aimed at (tailX, tailY).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-wrapdialoguetext",
+    "name": "wrapDialogueText",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-stickfigures-ts-silhouettesvg",
+    "name": "silhouetteSvg",
+    "path": "src/shared/comic/stickFigures.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-stickfigures-ts-stick-pose-ids",
+    "name": "STICK_POSE_IDS",
+    "path": "src/shared/comic/stickFigures.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-stickfigures-ts-stickfiguresvg",
+    "name": "stickFigureSvg",
+    "path": "src/shared/comic/stickFigures.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-stickfigures-ts-stickposeid",
+    "name": "StickPoseId",
+    "path": "src/shared/comic/stickFigures.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-comicboarddocument",
+    "name": "ComicBoardDocument",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-pagemockupspec",
+    "name": "PageMockupSpec",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panel-character-ids",
+    "name": "PANEL_CHARACTER_IDS",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panel-composition-ids",
+    "name": "PANEL_COMPOSITION_IDS",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panelbleedmode",
+    "name": "PanelBleedMode",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panelcaptionblock",
+    "name": "PanelCaptionBlock",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panelcharacterid",
+    "name": "PanelCharacterId",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panelclippoint",
+    "name": "PanelClipPoint",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panelcompositionid",
+    "name": "PanelCompositionId",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-paneldialogueblock",
+    "name": "PanelDialogueBlock",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panelfillkind",
+    "name": "PanelFillKind",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panelfillspec",
+    "name": "PanelFillSpec",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panellayoutpresetid",
+    "name": "PanelLayoutPresetId",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panellayoutspec",
+    "name": "PanelLayoutSpec",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panelrect",
+    "name": "PanelRect",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panelsfxblock",
+    "name": "PanelSfxBlock",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panelshapeid",
+    "name": "PanelShapeId",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-paneltextblock",
+    "name": "PanelTextBlock",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-paneltextkind",
+    "name": "PanelTextKind",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-paneltextoverlay",
+    "name": "PanelTextOverlay",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-anchoredpopover-tsx-anchoredpopover",
     "name": "AnchoredPopover",
     "path": "src/shared/components/AnchoredPopover.tsx",
@@ -21526,6 +24904,360 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-palette-applypalettetomockup-ts-applypalettetomockup",
+    "name": "applyPaletteToMockup",
+    "path": "src/shared/palette/applyPaletteToMockup.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-applypalettetomockup-ts-mockuppaletteapplyresult",
+    "name": "MockupPaletteApplyResult",
+    "path": "src/shared/palette/applyPaletteToMockup.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-applypalettetomockup-ts-mockuptintspec",
+    "name": "MockupTintSpec",
+    "path": "src/shared/palette/applyPaletteToMockup.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-applypalettetomockup-ts-mockuptinttarget",
+    "name": "MockupTintTarget",
+    "path": "src/shared/palette/applyPaletteToMockup.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-exportpalette-ts-exportpaletteascssvars",
+    "name": "exportPaletteAsCssVars",
+    "path": "src/shared/palette/exportPalette.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-exportpalette-ts-exportpaletteashexrow",
+    "name": "exportPaletteAsHexRow",
+    "path": "src/shared/palette/exportPalette.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-exportpalette-ts-exportpaletteasjson",
+    "name": "exportPaletteAsJson",
+    "path": "src/shared/palette/exportPalette.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-applypalettetomockup",
+    "name": "applyPaletteToMockup",
+    "path": "src/shared/palette/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-comicpalette",
+    "name": "ComicPalette",
+    "path": "src/shared/palette/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-createpalettefromhexes",
+    "name": "createPaletteFromHexes",
+    "path": "src/shared/palette/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-exportpaletteascssvars",
+    "name": "exportPaletteAsCssVars",
+    "path": "src/shared/palette/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-exportpaletteashexrow",
+    "name": "exportPaletteAsHexRow",
+    "path": "src/shared/palette/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-exportpaletteasjson",
+    "name": "exportPaletteAsJson",
+    "path": "src/shared/palette/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-mockuppaletteapplyresult",
+    "name": "MockupPaletteApplyResult",
+    "path": "src/shared/palette/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-paletteswatch",
+    "name": "PaletteSwatch",
+    "path": "src/shared/palette/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-parsecoolorsurl",
+    "name": "parseCoolorsUrl",
+    "path": "src/shared/palette/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-parsehexlistpaste",
+    "name": "parseHexListPaste",
+    "path": "src/shared/palette/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-parsepalettepaste",
+    "name": "parsePalettePaste",
+    "path": "src/shared/palette/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-parsecoolorsurl-ts-parsecoolorsurl",
+    "name": "parseCoolorsUrl",
+    "path": "src/shared/palette/parseCoolorsUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parse Coolors palette URL or path like `cdb4db-ffc8dd-ffafcc`.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-parsecoolorsurl-ts-parsecssvariablespaste",
+    "name": "parseCssVariablesPaste",
+    "path": "src/shared/palette/parseCoolorsUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-parsecoolorsurl-ts-parsehexlistpaste",
+    "name": "parseHexListPaste",
+    "path": "src/shared/palette/parseCoolorsUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-parsecoolorsurl-ts-parsepalettegenurlpaste",
+    "name": "parsePalettegenUrlPaste",
+    "path": "src/shared/palette/parseCoolorsUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-parsecoolorsurl-ts-parsepalettepaste",
+    "name": "parsePalettePaste",
+    "path": "src/shared/palette/parseCoolorsUrl.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-types-ts-comicpalette",
+    "name": "ComicPalette",
+    "path": "src/shared/palette/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-types-ts-createpalettefromhexes",
+    "name": "createPaletteFromHexes",
+    "path": "src/shared/palette/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-types-ts-paletteswatch",
+    "name": "PaletteSwatch",
+    "path": "src/shared/palette/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-playback-audiocontextlifecycle-ts-attachaudiocontextlifecycle",
     "name": "attachAudioContextLifecycle",
     "path": "src/shared/playback/audioContextLifecycle.ts",
@@ -26195,6 +29927,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-trailingslashrouting-ts-getlegacyappredirect",
+    "name": "getLegacyAppRedirect",
+    "path": "src/shared/utils/trailingSlashRouting.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-trailingslashrouting-ts-getlegacybeatredirect",
     "name": "getLegacyBeatRedirect",
     "path": "src/shared/utils/trailingSlashRouting.ts",
@@ -26202,6 +29949,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Legacy Find the Beat URLs → Stanza (query preserved; hash handled by static redirect HTML).",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-trailingslashrouting-ts-getlegacypalettegenredirect",
+    "name": "getLegacyPalettegenRedirect",
+    "path": "src/shared/utils/trailingSlashRouting.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Legacy Palette Generator URLs → /palette/ (query preserved; hash handled by static redirect HTML).",
     "tags": [
       "utils"
     ],
@@ -26611,6 +30373,411 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-zine-bleedconfig-ts-artworkdimensionswithbleed",
+    "name": "artworkDimensionsWithBleed",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-bleedconfig",
+    "name": "BleedConfig",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-bleedforbinding",
+    "name": "bleedForBinding",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-bleedguidepageside",
+    "name": "BleedGuidePageSide",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-bleedoverlaypercents",
+    "name": "bleedOverlayPercents",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-bleedoverlaypercents",
+    "name": "BleedOverlayPercents",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-bleedvalueintrimunits",
+    "name": "bleedValueInTrimUnits",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-convertprintunits",
+    "name": "convertPrintUnits",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-default-bleed-config",
+    "name": "DEFAULT_BLEED_CONFIG",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-default-mixam-trim-preset",
+    "name": "DEFAULT_MIXAM_TRIM_PRESET",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-formatprintdimensions",
+    "name": "formatPrintDimensions",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-mixam-binding-gutter-in",
+    "name": "MIXAM_BINDING_GUTTER_IN",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Gutter (inner binding margin) per Mixam binding table. Staple: N/A.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-mixam-binding-labels",
+    "name": "MIXAM_BINDING_LABELS",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-mixam-standard-bleed-in",
+    "name": "MIXAM_STANDARD_BLEED_IN",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Mixam standard bleed for interior pages (most items).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-mixam-standard-quiet-in",
+    "name": "MIXAM_STANDARD_QUIET_IN",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Mixam standard quiet area on outer edges (staple-bound default).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-mixam-trim-presets",
+    "name": "MIXAM_TRIM_PRESETS",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Mixam industry-standard trim sizes (finished page, without bleed).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-mixambindingtype",
+    "name": "MixamBindingType",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-mixamtrimpreset",
+    "name": "MixamTrimPreset",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-pixelsatdpi",
+    "name": "pixelsAtDpi",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-printunit",
+    "name": "PrintUnit",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-trimpresetbyid",
+    "name": "trimPresetById",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedconfig-ts-trimsize",
+    "name": "TrimSize",
+    "path": "src/shared/zine/bleedConfig.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedguideoverlay-tsx-bleedguideoverlay",
+    "name": "BleedGuideOverlay",
+    "path": "src/shared/zine/BleedGuideOverlay.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bleedguideoverlay-tsx-bleedguideoverlayprops",
+    "name": "BleedGuideOverlayProps",
+    "path": "src/shared/zine/BleedGuideOverlay.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-bookletpagelabels-ts-bookletreadingorderkey",
+    "name": "bookletReadingOrderKey",
+    "path": "src/shared/zine/bookletPageLabels.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Reading-order sort key for Mixam booklet page numbers (cover first, back last).",
+    "tags": [],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-zine-bookletpagelabels-ts-getbookletpagefilestem",
     "name": "getBookletPageFileStem",
     "path": "src/shared/zine/bookletPageLabels.ts",
@@ -26869,6 +31036,342 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-downloadbleedtemplate-ts-bleedtemplatedownloadinput",
+    "name": "BleedTemplateDownloadInput",
+    "path": "src/shared/zine/downloadBleedTemplate.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-downloadbleedtemplate-ts-bleedtemplatefilename",
+    "name": "bleedTemplateFileName",
+    "path": "src/shared/zine/downloadBleedTemplate.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-downloadbleedtemplate-ts-downloadbleedtemplatepng",
+    "name": "downloadBleedTemplatePng",
+    "path": "src/shared/zine/downloadBleedTemplate.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-index-ts-bleedconfigforlabsprintspec",
+    "name": "bleedConfigForLabsPrintSpec",
+    "path": "src/shared/zine/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-index-ts-bleedguideoverlay",
+    "name": "BleedGuideOverlay",
+    "path": "src/shared/zine/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-index-ts-bleedguideoverlayprops",
+    "name": "BleedGuideOverlayProps",
+    "path": "src/shared/zine/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-index-ts-bleedinchesforlabsprintspec",
+    "name": "bleedInchesForLabsPrintSpec",
+    "path": "src/shared/zine/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-index-ts-bleedtemplatedownloadinput",
+    "name": "BleedTemplateDownloadInput",
+    "path": "src/shared/zine/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-index-ts-bleedtemplatefilename",
+    "name": "bleedTemplateFileName",
+    "path": "src/shared/zine/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-index-ts-default-labs-print-spec",
+    "name": "DEFAULT_LABS_PRINT_SPEC",
+    "path": "src/shared/zine/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-index-ts-downloadbleedtemplatepng",
+    "name": "downloadBleedTemplatePng",
+    "path": "src/shared/zine/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-index-ts-labs-bleed-presets",
+    "name": "LABS_BLEED_PRESETS",
+    "path": "src/shared/zine/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-index-ts-labs-dpi-presets",
+    "name": "LABS_DPI_PRESETS",
+    "path": "src/shared/zine/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-index-ts-labsprintspec",
+    "name": "LabsPrintSpec",
+    "path": "src/shared/zine/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-index-ts-labsprintspecsummary",
+    "name": "labsPrintSpecSummary",
+    "path": "src/shared/zine/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-index-ts-trimsizefromlabsprintspec",
+    "name": "trimSizeFromLabsPrintSpec",
+    "path": "src/shared/zine/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-labsprintspec-ts-bleedconfigforlabsprintspec",
+    "name": "bleedConfigForLabsPrintSpec",
+    "path": "src/shared/zine/labsPrintSpec.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Mixam-oriented trim + export settings (shared by Scrapboard, Lyrefly, Zine Studio).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-labsprintspec-ts-bleedinchesforlabsprintspec",
+    "name": "bleedInchesForLabsPrintSpec",
+    "path": "src/shared/zine/labsPrintSpec.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Mixam-oriented trim + export settings (shared by Scrapboard, Lyrefly, Zine Studio).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-labsprintspec-ts-default-labs-print-spec",
+    "name": "DEFAULT_LABS_PRINT_SPEC",
+    "path": "src/shared/zine/labsPrintSpec.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Mixam-oriented trim + export settings (shared by Scrapboard, Lyrefly, Zine Studio).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-labsprintspec-ts-labs-bleed-presets",
+    "name": "LABS_BLEED_PRESETS",
+    "path": "src/shared/zine/labsPrintSpec.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Mixam-oriented trim + export settings (shared by Scrapboard, Lyrefly, Zine Studio).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-labsprintspec-ts-labs-dpi-presets",
+    "name": "LABS_DPI_PRESETS",
+    "path": "src/shared/zine/labsPrintSpec.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Mixam-oriented trim + export settings (shared by Scrapboard, Lyrefly, Zine Studio).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-labsprintspec-ts-labsprintspec",
+    "name": "LabsPrintSpec",
+    "path": "src/shared/zine/labsPrintSpec.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Mixam-oriented trim + export settings (shared by Scrapboard, Lyrefly, Zine Studio).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-labsprintspec-ts-labsprintspecsummary",
+    "name": "labsPrintSpecSummary",
+    "path": "src/shared/zine/labsPrintSpec.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Mixam-oriented trim + export settings (shared by Scrapboard, Lyrefly, Zine Studio).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-labsprintspec-ts-trimsizefromlabsprintspec",
+    "name": "trimSizeFromLabsPrintSpec",
+    "path": "src/shared/zine/labsPrintSpec.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Mixam-oriented trim + export settings (shared by Scrapboard, Lyrefly, Zine Studio).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {

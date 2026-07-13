@@ -12,7 +12,7 @@ import { compression } from 'vite-plugin-compression2';
 import {
   buildAppBasePathsFromEntryPaths,
   getCanonicalTrailingSlashRedirect,
-  getLegacyBeatRedirect,
+  getLegacyAppRedirect,
 } from './src/shared/utils/trailingSlashRouting';
 import {
   parseDebugLogPostBody,
@@ -52,6 +52,8 @@ const MULTI_APP_INPUTS = {
   gesture: resolve(__dirname, 'src/gesture/index.html'),
   zinebox: resolve(__dirname, 'src/zinebox/index.html'),
   lyrefly: resolve(__dirname, 'src/lyrefly/index.html'),
+  palette: resolve(__dirname, 'src/palette/index.html'),
+  scrapboard: resolve(__dirname, 'src/scrapboard/index.html'),
   muscle: resolve(__dirname, 'src/muscle/index.html'),
   midi: resolve(__dirname, 'src/midi/index.html'),
 } as const;
@@ -211,7 +213,7 @@ function labsCookieConsentVitePlugin(): Plugin {
   };
 }
 
-function applyLegacyBeatRedirect(
+function applyLegacyAppRedirect(
   req: IncomingMessage,
   res: ServerResponse,
   next: Connect.NextFunction
@@ -220,7 +222,7 @@ function applyLegacyBeatRedirect(
     next();
     return;
   }
-  const redirectTarget = getLegacyBeatRedirect(req.url);
+  const redirectTarget = getLegacyAppRedirect(req.url);
   if (!redirectTarget) {
     next();
     return;
@@ -351,12 +353,12 @@ export default defineConfig({
     encoreDrivePublicDevProxyPlugin(),
     labsCookieConsentVitePlugin(),
     {
-      name: 'legacy-beat-redirect',
+      name: 'legacy-app-redirect',
       configureServer(server: ViteDevServer) {
-        server.middlewares.use(applyLegacyBeatRedirect);
+        server.middlewares.use(applyLegacyAppRedirect);
       },
       configurePreviewServer(server: PreviewServer) {
-        server.middlewares.use(applyLegacyBeatRedirect);
+        server.middlewares.use(applyLegacyAppRedirect);
       },
     },
     {

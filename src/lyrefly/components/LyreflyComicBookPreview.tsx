@@ -9,6 +9,15 @@ import { useCallback, useEffect, useMemo, useState, type KeyboardEvent, type Rea
 import type { ComicProject, PageNode, PageRevision } from '../types';
 import { loadLyreflyExportPages } from '../exports/lyreflyComicExport';
 import { buildComicSpreadViews, type ComicPreviewPage } from '../utils/comicSpreadViews';
+import {
+  bleedConfigForPrintSpec,
+  resolveLyreflyPrintSpec,
+  trimSizeFromPrintSpec,
+} from '../utils/lyreflyPrintSpec';
+import { BleedGuideOverlay } from '../../shared/zine/BleedGuideOverlay';
+import { bleedOverlayPercents as computeBleedOverlayPercents, type BleedGuidePageSide } from '../../shared/zine/bleedConfig';
+
+import '../../shared/zine/bleedGuideOverlay.css';
 
 export type LyreflyComicBookPreviewProps = {
   project: ComicProject;
@@ -18,6 +27,8 @@ export type LyreflyComicBookPreviewProps = {
   revisionByPageId?: Record<string, string>;
   /** When true, ←/→ flip pages while this preview is mounted (dialog or active studio tab). */
   captureArrowKeys?: boolean;
+  /** Overlay Mixam trim / bleed / safe-zone guides on page art. */
+  showBleedGuides?: boolean;
 };
 
 function isEditableKeyboardTarget(target: EventTarget | null): boolean {
@@ -56,6 +67,7 @@ export function LyreflyComicBookPreview({
   revisions,
   revisionByPageId,
   captureArrowKeys = false,
+  showBleedGuides = false,
 }: LyreflyComicBookPreviewProps): ReactElement {
   const [loading, setLoading] = useState(true);
   const [spreadIndex, setSpreadIndex] = useState(0);
@@ -63,6 +75,28 @@ export function LyreflyComicBookPreview({
   const revisionMapKey = useMemo(() => JSON.stringify(revisionByPageId ?? null), [revisionByPageId]);
 
   const spreadViews = useMemo(() => buildComicSpreadViews(pages), [pages]);
+  const guidePercents = useMemo(() => {
+    const spec = resolveLyreflyPrintSpec(project);
+    return computeBleedOverlayPercents(trimSizeFromPrintSpec(spec), bleedConfigForPrintSpec(spec));
+  }, [project]);
+
+  const renderGuidedImage = (
+    page: ComicPreviewPage,
+    pageSide: BleedGuidePageSide,
+    className: string,
+  ): ReactElement | null => {
+    if (page.isBlank || !page.imageUrl) return null;
+    return (
+      <div className="lyrefly-book-preview__page-frame">
+        <img src={page.imageUrl} alt={page.label} className={className} />
+        <BleedGuideOverlay
+          percents={guidePercents}
+          show={showBleedGuides}
+          pageSide={pageSide}
+        />
+      </div>
+    );
+  };
 
   const goPrev = useCallback(() => {
     setSpreadIndex((index) => Math.max(0, index - 1));
@@ -171,30 +205,14 @@ export function LyreflyComicBookPreview({
 
         <figure className={['lyrefly-book-preview__spread', spreadClass].join(' ')}>
           {current.isSpread ? (
-            current.left.imageUrl ? (
-              <img
-                src={current.left.imageUrl}
-                alt={current.left.label}
-                className="lyrefly-book-preview__image lyrefly-book-preview__image--spread"
-              />
-            ) : null
+            renderGuidedImage(current.left, 'spread', 'lyrefly-book-preview__image lyrefly-book-preview__image--spread')
           ) : (
             <>
               {current.isOpening ? <span className="lyrefly-book-preview__blank" aria-hidden /> : null}
-              {!current.left.isBlank && current.left.imageUrl ? (
-                <img
-                  src={current.left.imageUrl}
-                  alt={current.left.label}
-                  className="lyrefly-book-preview__image"
-                />
-              ) : null}
-              {current.right && !current.right.isBlank && current.right.imageUrl ? (
-                <img
-                  src={current.right.imageUrl}
-                  alt={current.right.label}
-                  className="lyrefly-book-preview__image"
-                />
-              ) : null}
+              {renderGuidedImage(current.left, current.right ? 'left' : 'single', 'lyrefly-book-preview__image')}
+              {current.right
+                ? renderGuidedImage(current.right, 'right', 'lyrefly-book-preview__image')
+                : null}
             </>
           )}
         </figure>

@@ -42,4 +42,42 @@ describe('artPageMatchUtils', () => {
 
     expect(matches.map((match) => match.node.id).sort()).toEqual(['back', 'front']);
   });
+
+  it('does not match Cover.png to Back Cover via substring', () => {
+    const nodes = [
+      node('front', 'Front Cover'),
+      node('back', 'Back Cover'),
+    ];
+    const cover = parsePageFile(new File([''], 'Cover.png', { type: 'image/png' }));
+    expect(findPageNodeForParsedFile(cover, nodes)?.id).toBe('front');
+  });
+
+  it('matches shorthand Cover and Back display names', () => {
+    const nodes = [
+      node('front', 'Cover'),
+      node('p1', 'Page 1'),
+      node('back', 'Back'),
+    ];
+    const files = ['Cover.png', '1.png', 'Back.png'].map(
+      (name) => parsePageFile(new File([''], name, { type: 'image/png' })),
+    );
+    const { matches } = matchParsedFilesToPageNodes(files, nodes);
+    expect(matches.map((match) => match.node.id).sort()).toEqual(['back', 'front', 'p1']);
+  });
+
+  it('matches a full uploaded page set by name', () => {
+    const nodes = [
+      node('front', 'Front Cover'),
+      ...Array.from({ length: 6 }, (_, index) => node(`p${index + 1}`, `Page ${index + 1}`)),
+      node('back', 'Back Cover'),
+    ];
+    const files = ['Cover.png', '1.png', '2.png', '3.png', '4.png', '5.png', '6.png', 'Back.png'].map(
+      (name) => parsePageFile(new File([''], name, { type: 'image/png' })),
+    );
+    const { matches, unmatchedFiles } = matchParsedFilesToPageNodes(files, nodes);
+    expect(unmatchedFiles).toHaveLength(0);
+    expect(matches).toHaveLength(8);
+    expect(matches.find((match) => match.parsed.originalName === 'Cover.png')?.node.id).toBe('front');
+    expect(matches.find((match) => match.parsed.originalName === 'Back.png')?.node.id).toBe('back');
+  });
 });

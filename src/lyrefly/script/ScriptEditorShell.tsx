@@ -1,4 +1,5 @@
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -9,6 +10,8 @@ import type { ComicProject, ScriptDocument } from '../types';
 import { ScriptFormattedPreview } from './ScriptFormattedPreview';
 import { ScriptPacingMeter } from './ScriptPacingMeter';
 import { ScriptRichTextEditor } from './ScriptRichTextEditor';
+import { DEFAULT_SCRIPT_HTML } from './defaultScriptSample';
+import { isScriptContentEmpty } from './scriptEmpty';
 import { parseAndAnalyzeScript, saveScriptDocument } from './useScriptDocument';
 
 export type ScriptEditorShellProps = {
@@ -44,6 +47,7 @@ export function ScriptEditorShell({
 
   const parsed = useMemo(() => parseAndAnalyzeScript(localHtml), [localHtml]);
   const showPacing = parsed.pacingWarnings.length > 0;
+  const scriptIsEmpty = useMemo(() => isScriptContentEmpty(localHtml), [localHtml]);
 
   const persistHtml = useCallback(
     async (html: string, recordUndo: boolean): Promise<void> => {
@@ -86,6 +90,10 @@ export function ScriptEditorShell({
     [committedHtml, persistHtml],
   );
 
+  const onInsertSampleScript = (): void => {
+    void persistHtml(DEFAULT_SCRIPT_HTML, true);
+  };
+
   const handleChange = (html: string): void => {
     setLocalHtml(html);
     scheduleSave(html);
@@ -125,6 +133,21 @@ export function ScriptEditorShell({
         <Typography variant="body2" color="text.secondary" sx={{ maxWidth: '48rem', lineHeight: 1.55 }}>
           Nested bullets on the left; formatted script on the right. Tab to indent pages → panels → lines.
         </Typography>
+        {scriptIsEmpty ? (
+          <Box className="lyrefly-script-empty-banner" data-testid="lyrefly-script-empty-banner">
+            <Typography variant="body2" color="text.secondary">
+              Start from a sample script to see the page → panel → line format.
+            </Typography>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={onInsertSampleScript}
+              data-testid="lyrefly-insert-sample-script"
+            >
+              Insert sample script
+            </Button>
+          </Box>
+        ) : null}
         <Typography
           variant="caption"
           color="text.secondary"

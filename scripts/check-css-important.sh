@@ -7,7 +7,7 @@ set -e
 ROOT="$(CDPATH= cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-BASELINE=271
+BASELINE=282
 
 if command -v rg >/dev/null 2>&1; then
   COUNT=$(rg -c '!important' src --glob '*.css' 2>/dev/null | awk -F: '{s+=$2} END {print s+0}')

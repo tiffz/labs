@@ -11,6 +11,11 @@ const root = process.cwd();
 const srcRoot = path.join(root, 'src');
 const failures = [];
 
+function routePathname(route) {
+  const base = route.split('?')[0].split('#')[0];
+  return base.endsWith('/') ? base : `${base}/`;
+}
+
 function read(relPath) {
   return fs.readFileSync(path.join(root, relPath), 'utf8');
 }
@@ -50,8 +55,8 @@ function listAppEntryPaths() {
 }
 
 const registry = parseRouteRegistry(root);
-const smokeRoutes = new Set(registry.filter((r) => r.smoke).map((r) => r.route));
-const allRoutes = new Set(registry.map((r) => r.route));
+const smokeRoutes = new Set(registry.filter((r) => r.smoke).map((r) => routePathname(r.route)));
+const allRoutes = new Set(registry.map((r) => routePathname(r.route)));
 const appEntries = listAppEntryPaths();
 const viteConfig = read('vite.config.ts');
 
@@ -102,13 +107,14 @@ for (const entry of appEntries) {
 }
 
 for (const { route } of registry) {
-  if (route === '/') {
+  const pathname = routePathname(route);
+  if (pathname === '/') {
     if (!exists('src/index.html')) {
       failures.push('routeRegistry / requires src/index.html');
     }
     continue;
   }
-  const normalized = route.endsWith('/') ? route.slice(1, -1) : route.slice(1);
+  const normalized = pathname.endsWith('/') ? pathname.slice(1, -1) : pathname.slice(1);
   const htmlPath = `src/${normalized}/index.html`;
   if (!exists(htmlPath)) {
     failures.push(`routeRegistry ${route} has no matching ${htmlPath}`);

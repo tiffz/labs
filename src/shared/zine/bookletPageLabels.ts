@@ -11,13 +11,26 @@ export function getBookletPageLabel(pageNum: number): string {
 /** Reverse of {@link getBookletPageLabel} for Lyrefly display names. */
 export function labelToBookletPageNumber(label: string): number | null {
   const trimmed = label.trim();
-  if (trimmed === 'Front Cover') return 0;
-  if (trimmed === 'Inner Front') return -0.5;
-  if (trimmed === 'Inner Back') return -1;
-  if (trimmed === 'Back Cover') return -2;
+  const lower = trimmed.toLowerCase();
+  if (trimmed === 'Front Cover' || lower === 'front' || lower === 'cover') return 0;
+  if (trimmed === 'Inner Front' || lower === 'inner front' || lower === 'innerfront') return -0.5;
+  if (trimmed === 'Inner Back' || lower === 'inner back' || lower === 'innerback') return -1;
+  if (trimmed === 'Back Cover' || lower === 'back' || lower === 'rear') return -2;
   const pageMatch = trimmed.match(/^Page (\d+)$/i);
   if (pageMatch) return Number(pageMatch[1]);
+  const bareNumber = trimmed.match(/^(\d+)$/);
+  if (bareNumber) return Number(bareNumber[1]);
   return null;
+}
+
+/** Reading-order sort key for Mixam booklet page numbers (cover first, back last). */
+export function bookletReadingOrderKey(pageNum: number): number {
+  if (pageNum === 0) return -2;
+  if (pageNum === -0.5) return -1;
+  if (pageNum > 0) return pageNum;
+  if (pageNum === -1) return 10_000;
+  if (pageNum === -2 || pageNum === -3) return 10_001;
+  return 5000;
 }
 
 /** Parse spread display names like "Back Cover - Front Cover". */

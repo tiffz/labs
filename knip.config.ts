@@ -19,6 +19,8 @@ const config: KnipConfig = {
     'src/gesture/index.html',
     'src/zinebox/index.html',
     'src/lyrefly/index.html',
+    'src/palette/index.html',
+    'src/scrapboard/index.html',
     'src/muscle/index.html',
     'src/midi/index.html',
     'src/pitch/index.html',
@@ -49,6 +51,8 @@ const config: KnipConfig = {
     'src/gesture/main.tsx',
     'src/zinebox/main.tsx',
     'src/lyrefly/main.tsx',
+    'src/palette/main.tsx',
+    'src/scrapboard/main.tsx',
     'src/muscle/main.tsx',
     'src/midi/main.tsx',
     'src/ui/main.tsx',
@@ -86,6 +90,12 @@ const config: KnipConfig = {
     'src/shared/test/mocks/**',
     // Shared module barrel exports (may have unused exports that are part of public API)
     'src/shared/audio/index.ts',
+    // Palette generator color theory helpers (shared public API)
+    'src/shared/color/**',
+    // Comic mockup layout + speech bubbles (shared public API)
+    'src/shared/comic/**',
+    // Comic palette tint types (shared public API)
+    'src/shared/palette/**',
     // Shared audio utilities (standalone metronome player for future use)
     'src/shared/audio/audioPlayer.ts',
     // Shared notation components

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 
 import SkipToMain from '../shared/components/SkipToMain';
@@ -11,6 +11,8 @@ import { LyreflyAppHeader } from './components/LyreflyAppHeader';
 import { LyreflyProfileChrome } from './components/LyreflyProfileChrome';
 import { ProjectWorkbench } from './components/ProjectWorkbench';
 import { ShowcaseGallery } from './components/ShowcaseGallery';
+import { SketchbookTab } from './components/SketchbookTab';
+import { LyreflyVersionShareView } from './components/LyreflyVersionShareView';
 import { LyreflyDriveBackupProvider } from './context/LyreflyDriveBackupContext';
 import { applyLyreflyRisoCubeCssVars } from './design/risoCubeTheme';
 import {
@@ -26,6 +28,7 @@ import { useLyreflyUrlState } from './hooks/useLyreflyUrlState';
 import { lyreflyKeyboardShortcutSections } from './keyboard/lyreflyKeyboardShortcuts';
 import { inferredWorkflowStage } from './workflow/lyreflyWorkflowCompletion';
 import { lyreflyGalleryHref, navigateLyreflyHash } from './routes/lyreflyHash';
+import { seedLyreflyE2eProjectIfEmpty } from './e2e/lyreflyE2eSeed';
 
 function ComicProfileRoute({ projectId }: { projectId: string }): ReactElement {
   const { project, projectHydrated } = useLyreflyProject(projectId);
@@ -75,6 +78,9 @@ function ComicProfileRoute({ projectId }: { projectId: string }): ReactElement {
 export default function App(): ReactElement {
   const appRef = useRef<HTMLDivElement>(null);
   const { route, openGallery, openProject, openProfile } = useLyreflyUrlState();
+  const e2eSeedRequested =
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('e2eSeed') === '1';
+  const [e2eSeedReady, setE2eSeedReady] = useState(() => !e2eSeedRequested);
 
   useLayoutEffect(() => {
     if (appRef.current) applyLyreflyRisoCubeCssVars(appRef.current);
@@ -82,13 +88,24 @@ export default function App(): ReactElement {
 
   useEffect(() => {
     touchLabsGoogleSessionConsumer('lyrefly');
+    if (e2eSeedRequested) {
+      void seedLyreflyE2eProjectIfEmpty().finally(() => setE2eSeedReady(true));
+    }
     if (!window.location.hash) {
       navigateLyreflyHash(lyreflyGalleryHref());
     }
-  }, []);
+  }, [e2eSeedRequested]);
 
   let mainContent: ReactElement;
-  if (route.kind === 'script') {
+  if (!e2eSeedReady) {
+    mainContent = (
+      <div className="lyrefly-workbench lyrefly-workbench--profile">
+        <ComicProfileLoading />
+      </div>
+    );
+  } else if (route.kind === 'share') {
+    mainContent = <LyreflyVersionShareView fileId={route.fileId} />;
+  } else if (route.kind === 'script') {
     mainContent = (
       <ProjectWorkbench projectId={route.projectId} initialStage="script" onBack={openGallery} />
     );
@@ -102,6 +119,8 @@ export default function App(): ReactElement {
         onBack={openGallery}
       />
     );
+  } else if (route.kind === 'sketchbook') {
+    mainContent = <SketchbookTab onOpenProject={openProject} />;
   } else {
     mainContent = <ShowcaseGallery onOpenProject={openProject} onOpenProfile={openProfile} />;
   }

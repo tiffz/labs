@@ -10,6 +10,33 @@ function normalizePageLabel(label: string): string {
   return label.trim().toLowerCase();
 }
 
+function normalizeStem(stem: string): string {
+  return stem.trim().toLowerCase().replace(/[_\s-]+/g, '');
+}
+
+/** Map filename stems like Cover.png or back.png to booklet page numbers. */
+function stemToBookletPageNumber(stem: string): number | null {
+  const normalized = normalizeStem(stem);
+  if (!normalized) return null;
+  const aliases: Record<string, number> = {
+    cover: 0,
+    front: 0,
+    frontcover: 0,
+    innerfront: -0.5,
+    innerback: -1,
+    back: -2,
+    rear: -2,
+    backcover: -2,
+    last: -3,
+  };
+  if (normalized in aliases) return aliases[normalized]!;
+  const pageMatch = normalized.match(/^page(\d+)$/);
+  if (pageMatch) return Number(pageMatch[1]);
+  const bareNumber = normalized.match(/^(\d+)$/);
+  if (bareNumber) return Number(bareNumber[1]);
+  return null;
+}
+
 function pageNodeBookletNumber(node: PageNode): number | null {
   if (node.isSpread) {
     const pair = spreadLabelsToPagePair(node.displayName ?? '');
@@ -53,7 +80,14 @@ export function findPageNodeForParsedFile(
 
   const stem = parsed.originalName.replace(/\.[^/.]+$/, '').trim().toLowerCase();
   if (!stem) return undefined;
-  return pageNodes.find((node) => normalizePageLabel(node.displayName ?? '').includes(stem));
+
+  const stemPage = stemToBookletPageNumber(stem);
+  if (stemPage !== null) {
+    return pageNodes.find((node) => pageNodeBookletNumber(node) === stemPage);
+  }
+
+  const normalizedStem = normalizeStem(stem);
+  return pageNodes.find((node) => normalizeStem(node.displayName ?? '') === normalizedStem);
 }
 
 export type ParsedFilePageMatch = {

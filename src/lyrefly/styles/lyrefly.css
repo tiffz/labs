@@ -192,6 +192,39 @@
   margin-left: auto;
 }
 
+.lyrefly-app #lyrefly-account-menu-button[aria-expanded='true'] {
+  border-color: color-mix(
+    in srgb,
+    var(--lyrefly-accent) 45%,
+    var(--lyrefly-border)
+  );
+  color: var(--lyrefly-ink);
+  background: color-mix(
+    in srgb,
+    var(--lyrefly-paper) 88%,
+    var(--lyrefly-accent) 12%
+  );
+}
+
+.lyrefly-app .MuiPaper-root.lyrefly-account-menu {
+  margin-top: 0.5rem;
+  border: 1px solid var(--lyrefly-border-strong);
+  border-radius: 0.5rem;
+  background: var(--lyrefly-paper);
+  box-shadow:
+    0 18px 44px -12px color-mix(in srgb, var(--lyrefly-ink) 22%, transparent),
+    0 4px 12px -4px color-mix(in srgb, var(--lyrefly-ink) 12%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #fff 85%, transparent);
+}
+
+.lyrefly-app .lyrefly-account-menu .MuiDivider-root {
+  border-color: var(--lyrefly-border);
+}
+
+.lyrefly-app .MuiModal-backdrop {
+  background-color: color-mix(in srgb, var(--lyrefly-ink) 10%, transparent);
+}
+
 /* —— Studio / showcase —— */
 
 .lyrefly-studio {
@@ -557,7 +590,7 @@
 
 .lyrefly-workbench__nav-bar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(22rem, 42rem) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(22rem, 42rem) auto;
   gap: 1rem 1.75rem;
   align-items: center;
   width: 100%;
@@ -583,6 +616,8 @@
 .lyrefly-workbench__nav-bar > .lyrefly-workbench__actions {
   grid-column: 3;
   justify-self: end;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 @media (max-width: 899px) {
@@ -1473,6 +1508,1062 @@
   box-shadow: var(--lyrefly-shadow-cover-hover);
 }
 
+/* —— Print size + bleed (Draw) —— */
+
+.lyrefly-print-spec {
+  margin-bottom: 0.85rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: 0.5rem;
+  background: color-mix(
+    in srgb,
+    var(--lyrefly-surface) 22%,
+    var(--lyrefly-paper)
+  );
+  overflow: hidden;
+}
+
+.lyrefly-print-spec__summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.55rem 0.75rem;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+}
+
+.lyrefly-print-spec__summary-leading {
+  display: none;
+}
+
+.lyrefly-print-spec__summary-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 0.15rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.lyrefly-print-spec__icon-btn {
+  padding: 0.2rem;
+}
+
+.lyrefly-print-spec__thumb-btn {
+  display: block;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 0.2rem;
+}
+
+.lyrefly-print-spec__thumb-btn:hover .lyrefly-print-spec__thumb,
+.lyrefly-print-spec__thumb-btn:focus-visible .lyrefly-print-spec__thumb {
+  outline: 2px solid color-mix(in srgb, var(--lyrefly-accent) 55%, transparent);
+  outline-offset: 1px;
+}
+
+.lyrefly-print-spec__dim-link {
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--lyrefly-muted) 45%,
+    transparent
+  );
+  text-underline-offset: 0.12em;
+}
+
+.lyrefly-print-spec__dim-link:hover,
+.lyrefly-print-spec__dim-link:focus-visible {
+  color: var(--lyrefly-accent);
+}
+
+@media (max-width: 640px) {
+  .lyrefly-print-spec__summary {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+}
+
+.lyrefly-print-spec__thumb {
+  position: relative;
+  width: 2.1rem;
+  height: auto;
+  max-height: 2.75rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: 0.2rem;
+  background: #fff;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.lyrefly-print-spec__readout {
+  min-width: 0;
+}
+
+.lyrefly-print-spec__readout-primary,
+.lyrefly-print-spec__readout-secondary {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.lyrefly-print-spec__readout-primary {
+  font-size: 0.8125rem;
+  color: var(--lyrefly-ink);
+}
+
+.lyrefly-print-spec__readout-primary strong {
+  font-weight: 700;
+}
+
+.lyrefly-print-spec__readout-secondary {
+  margin-top: 0.1rem;
+  font-size: 0.6875rem;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-print-spec__readout-sep {
+  margin-inline: 0.28rem;
+  opacity: 0.55;
+}
+
+.lyrefly-print-spec__summary-actions .MuiButton-root {
+  min-width: 0;
+  padding-inline: 0.55rem;
+  font-size: 0.75rem;
+}
+
+.lyrefly-print-spec__popover {
+  max-width: min(28rem, calc(100vw - 1.5rem));
+}
+
+.lyrefly-print-spec__popover-inner {
+  padding: 1rem 1.1rem 1.15rem;
+  max-width: 28rem;
+}
+
+.lyrefly-print-spec__hint--dialog {
+  margin-top: 0.65rem;
+  margin-bottom: 0;
+}
+
+.lyrefly-print-spec__drawer {
+  padding: 0.55rem 0.65rem 0.65rem;
+  border-top: 1px solid var(--lyrefly-border);
+  background: color-mix(
+    in srgb,
+    var(--lyrefly-paper) 88%,
+    var(--lyrefly-surface)
+  );
+}
+
+.lyrefly-print-spec__drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.lyrefly-print-spec__drawer-title {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.lyrefly-print-spec__presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+
+.lyrefly-print-spec__preset {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  min-height: 3.1rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: 0.55rem;
+  background: var(--lyrefly-paper);
+  color: var(--lyrefly-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lyrefly-print-spec__preset:hover,
+.lyrefly-print-spec__preset:focus-visible {
+  border-color: color-mix(
+    in srgb,
+    var(--lyrefly-accent) 45%,
+    var(--lyrefly-border)
+  );
+}
+
+.lyrefly-print-spec__preset--active {
+  border-color: color-mix(
+    in srgb,
+    var(--lyrefly-accent) 70%,
+    var(--lyrefly-border)
+  );
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--lyrefly-accent) 35%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--lyrefly-accent) 10%,
+    var(--lyrefly-paper)
+  );
+}
+
+.lyrefly-print-spec__preset-size {
+  font-weight: 500;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-print-spec__edit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.55rem 0.65rem;
+  align-items: end;
+}
+
+.lyrefly-print-spec__field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.lyrefly-print-spec__field-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--lyrefly-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lyrefly-print-spec__chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.lyrefly-print-spec__mini-chip {
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: 999px;
+  background: var(--lyrefly-paper);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--lyrefly-muted);
+  cursor: pointer;
+}
+
+.lyrefly-print-spec__mini-chip--active {
+  border-color: var(--lyrefly-accent);
+  color: var(--lyrefly-ink);
+  background: color-mix(
+    in srgb,
+    var(--lyrefly-accent) 10%,
+    var(--lyrefly-paper)
+  );
+}
+
+.lyrefly-print-spec__download {
+  justify-self: start;
+  white-space: nowrap;
+}
+
+.lyrefly-print-spec__mixam-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--lyrefly-accent);
+  text-decoration: none;
+}
+
+.lyrefly-print-spec__mixam-link:hover,
+.lyrefly-print-spec__mixam-link:focus-visible {
+  text-decoration: underline;
+}
+
+.lyrefly-print-spec__hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-print-spec__aspect {
+  width: min(100%, 10rem);
+  margin-inline: auto;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: 0.35rem;
+  background: #fff;
+  overflow: hidden;
+}
+
+.lyrefly-print-spec__aspect--large {
+  width: min(100%, 14rem);
+  max-height: 20rem;
+}
+
+.lyrefly-print-spec__aspect-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 7rem;
+  background: #fff;
+}
+
+.lyrefly-print-spec__legend {
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.6875rem;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-print-spec__legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.lyrefly-print-spec__swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 0.15rem;
+  flex-shrink: 0;
+}
+
+.lyrefly-print-spec__swatch--bleed {
+  background: rgba(236, 72, 153, 0.45);
+}
+
+.lyrefly-print-spec__swatch--trim {
+  box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.85);
+  background: #fff;
+}
+
+.lyrefly-print-spec__swatch--quiet {
+  border: 2px dashed rgba(59, 130, 246, 0.65);
+  background: #fff;
+}
+
+.lyrefly-print-spec__swatch--gutter {
+  background: rgba(251, 146, 60, 0.55);
+}
+
+.lyrefly-studio__tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+}
+
+.lyrefly-studio__tab {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.lyrefly-studio__tab--active {
+  background: var(--lyrefly-ink);
+  color: var(--lyrefly-paper);
+  border-color: var(--lyrefly-ink);
+}
+
+.lyrefly-sketchbook__capture {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 28rem;
+  margin-bottom: 1rem;
+}
+
+.lyrefly-sketchbook__masthead {
+  margin-bottom: 1rem;
+}
+
+.lyrefly-sketchbook__composer {
+  margin-bottom: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--lyrefly-border) 80%, transparent);
+  border-radius: 0.75rem;
+  background: var(--lyrefly-paper);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 4%);
+  overflow: hidden;
+}
+
+.lyrefly-sketchbook__composer--drag-active {
+  border-color: color-mix(
+    in srgb,
+    var(--lyrefly-accent) 45%,
+    var(--lyrefly-border)
+  );
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--lyrefly-accent) 12%, transparent);
+}
+
+.lyrefly-sketchbook__composer-input {
+  display: block;
+  width: 100%;
+  min-height: 5.5rem;
+  padding: 0.85rem 1rem;
+  border: none;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.55;
+  color: var(--lyrefly-ink);
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.lyrefly-sketchbook__composer-input:focus {
+  outline: none;
+}
+
+.lyrefly-sketchbook__composer-input::placeholder {
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-sketchbook__composer-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.45rem 0.65rem 0.55rem;
+  border-top: 1px solid
+    color-mix(in srgb, var(--lyrefly-border) 70%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--lyrefly-surface) 18%,
+    var(--lyrefly-paper)
+  );
+}
+
+.lyrefly-sketchbook__attach {
+  padding: 0.2rem 0.45rem;
+  border: none;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--lyrefly-accent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lyrefly-sketchbook__attach:hover,
+.lyrefly-sketchbook__attach:focus-visible {
+  background: color-mix(in srgb, var(--lyrefly-accent) 8%, transparent);
+}
+
+.lyrefly-sketchbook__composer-hint {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.75rem;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-sketchbook__drop-hint {
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px dashed
+    color-mix(in srgb, var(--lyrefly-accent) 45%, var(--lyrefly-border));
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--lyrefly-accent);
+  background: color-mix(
+    in srgb,
+    var(--lyrefly-accent) 6%,
+    var(--lyrefly-paper)
+  );
+}
+
+.lyrefly-sketchbook__empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-sketchbook__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.75rem;
+}
+
+.lyrefly-sketchbook__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--lyrefly-border) 85%, transparent);
+  border-radius: 0.65rem;
+  background: var(--lyrefly-paper);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 3%);
+}
+
+.lyrefly-sketchbook__card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.lyrefly-sketchbook__kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-sketchbook__date {
+  font-size: 0.6875rem;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-sketchbook__card-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.lyrefly-sketchbook__seed-body,
+.lyrefly-sketchbook__seed-file {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--lyrefly-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.lyrefly-sketchbook__seed-link {
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.lyrefly-sketchbook__seed-image {
+  width: 100%;
+  max-height: 10rem;
+  object-fit: cover;
+  border-radius: 0.4rem;
+  border: 1px solid var(--lyrefly-border);
+}
+
+.lyrefly-sketchbook__card-actions {
+  margin-top: auto;
+  padding-top: 0.25rem;
+}
+
+.lyrefly-sketchbook__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.lyrefly-sketchbook__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: 0.5rem;
+  background: color-mix(
+    in srgb,
+    var(--lyrefly-surface) 40%,
+    var(--lyrefly-paper)
+  );
+}
+
+.lyrefly-sketchbook__logline {
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-pipeline {
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px dashed var(--lyrefly-border);
+  border-radius: 0.5rem;
+}
+
+.lyrefly-pipeline__title {
+  margin: 0 0 0.4rem;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.lyrefly-pipeline__list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8125rem;
+}
+
+.lyrefly-pipeline__status {
+  margin-left: 0.5rem;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-thumbs.lyrefly-stage-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.lyrefly-workbench--thumbs .lyrefly-workbench__stage {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.lyrefly-thumbs__header {
+  margin-bottom: 1rem;
+}
+
+.lyrefly-thumbs__lede {
+  margin: 0.35rem 0 0;
+  max-width: 40rem;
+}
+
+.lyrefly-thumbs__grid {
+  display: grid;
+  grid-template-columns: minmax(13rem, 17rem) minmax(0, 1fr);
+  gap: 1.15rem;
+  align-items: start;
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 800px) {
+  .lyrefly-thumbs__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.lyrefly-thumbs__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.lyrefly-thumbs__rail-section {
+  padding: 0.75rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: 0.6rem;
+  background: color-mix(
+    in srgb,
+    var(--lyrefly-surface) 25%,
+    var(--lyrefly-paper)
+  );
+}
+
+.lyrefly-thumbs__cast-add {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.lyrefly-thumbs__cast-list {
+  margin: 0.35rem 0 0;
+  padding-left: 1rem;
+  font-size: 0.8125rem;
+}
+
+.lyrefly-thumbs__board {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.85rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: 0.6rem;
+  background: color-mix(
+    in srgb,
+    var(--lyrefly-surface) 12%,
+    var(--lyrefly-paper)
+  );
+}
+
+.lyrefly-thumbs__board-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 0.85rem;
+}
+
+.lyrefly-thumbs__panel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.55rem;
+}
+
+.lyrefly-thumbs__panel-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: 0.45rem;
+  background: var(--lyrefly-paper);
+}
+
+.lyrefly-thumbs__panel-label {
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-thumbs__fill-row {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  margin-bottom: 0.35rem;
+  font-size: 0.8125rem;
+}
+
+.lyrefly-thumbs__preview {
+  margin: 0;
+  padding: 0.85rem;
+  display: flex;
+  justify-content: center;
+  overflow: auto;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: 0.55rem;
+  background: color-mix(
+    in srgb,
+    var(--lyrefly-surface) 30%,
+    var(--lyrefly-paper)
+  );
+}
+
+.lyrefly-thumbs__flag {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  margin: 0;
+}
+
+.lyrefly-script-empty-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 0.85rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px dashed var(--lyrefly-border);
+  border-radius: 0.45rem;
+  background: color-mix(
+    in srgb,
+    var(--lyrefly-surface) 20%,
+    var(--lyrefly-paper)
+  );
+}
+
+.lyrefly-palette-import__heading {
+  margin: 0 0 0.5rem;
+}
+
+.lyrefly-palette-import__seed-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.lyrefly-palette-import__seed-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-palette-import__seed-swatch {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: 0.35rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.lyrefly-palette-import__proposals {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.lyrefly-palette-import__proposal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: 0.4rem;
+  background: var(--lyrefly-paper);
+  cursor: pointer;
+  text-align: left;
+}
+
+.lyrefly-palette-import__proposal:hover,
+.lyrefly-palette-import__proposal:focus-visible {
+  border-color: color-mix(
+    in srgb,
+    var(--lyrefly-accent) 45%,
+    var(--lyrefly-border)
+  );
+}
+
+.lyrefly-palette-import__proposal-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.lyrefly-palette-import__proposal-swatches {
+  display: inline-flex;
+  gap: 0.2rem;
+}
+
+.lyrefly-palette-import__active {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.lyrefly-palette-import__active-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-palette-import__swatches {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0;
+  flex-wrap: wrap;
+}
+
+.lyrefly-palette-import__swatch {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 0.2rem;
+  border: 1px solid rgb(0 0 0 / 10%);
+}
+
+.lyrefly-wikimedia__results {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.lyrefly-wikimedia__result {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+}
+
+.lyrefly-wikimedia__thumb {
+  width: 2.5rem;
+  height: 2.5rem;
+  object-fit: cover;
+  border-radius: 0.25rem;
+  border: 1px solid var(--lyrefly-border);
+  flex-shrink: 0;
+}
+
+.lyrefly-wikimedia__result-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  font-size: 0.75rem;
+}
+
+.lyrefly-wikimedia__license {
+  color: var(--lyrefly-muted);
+  font-size: 0.6875rem;
+}
+
+.lyrefly-profile-studio__bleed-toggle {
+  margin: 0 0 0.5rem;
+  align-self: flex-start;
+}
+
+.lyrefly-book-preview__page-frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.lyrefly-book-preview__page-frame .lyrefly-book-preview__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: min(48vh, 380px);
+  object-fit: contain;
+}
+
+.lyrefly-art-empty__lede {
+  margin: 0 0 1rem;
+  max-width: 44rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-art-empty__secondary-action {
+  align-self: flex-start;
+  margin-top: 1rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--lyrefly-body-font);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--lyrefly-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--lyrefly-muted) 45%,
+    transparent
+  );
+  text-underline-offset: 0.18em;
+}
+
+.lyrefly-art-empty__secondary-action:hover:not(:disabled),
+.lyrefly-art-empty__secondary-action:focus-visible:not(:disabled) {
+  color: var(--lyrefly-accent);
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--lyrefly-accent) 45%,
+    transparent
+  );
+  outline: none;
+}
+
+.lyrefly-art-empty__secondary-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.lyrefly-art-empty-upload {
+  flex: 1;
+  min-height: min(52vh, 420px);
+  display: flex;
+  flex-direction: column;
+}
+
+.lyrefly-art-empty-upload__zone {
+  flex: 1;
+  min-height: min(48vh, 380px);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: clamp(2rem, 5vh, 3.5rem);
+  border: 1px dashed color-mix(in srgb, var(--lyrefly-ink) 14%, transparent);
+  border-radius: var(--lyrefly-radius);
+  background: var(--lyrefly-paper);
+  color: var(--lyrefly-ink);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.lyrefly-art-empty-upload__zone:hover,
+.lyrefly-art-empty-upload__zone:focus-visible,
+.lyrefly-art-empty-upload__zone--active {
+  border-color: color-mix(
+    in srgb,
+    var(--lyrefly-accent) 36%,
+    var(--lyrefly-border)
+  );
+  background: color-mix(
+    in srgb,
+    var(--lyrefly-surface) 42%,
+    var(--lyrefly-paper)
+  );
+  outline: none;
+}
+
+.lyrefly-art-empty-upload__zone:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lyrefly-art-empty-upload__icon {
+  font-size: 2.125rem;
+  color: color-mix(in srgb, var(--lyrefly-accent) 52%, var(--lyrefly-muted));
+  transition: color 160ms ease;
+}
+
+.lyrefly-art-empty-upload__zone:hover .lyrefly-art-empty-upload__icon,
+.lyrefly-art-empty-upload__zone:focus-visible .lyrefly-art-empty-upload__icon,
+.lyrefly-art-empty-upload__zone--active .lyrefly-art-empty-upload__icon {
+  color: color-mix(in srgb, var(--lyrefly-accent) 72%, var(--lyrefly-ink));
+}
+
+.lyrefly-art-empty-upload__title {
+  font-family: var(--lyrefly-title-font);
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  color: var(--lyrefly-ink);
+}
+
+.lyrefly-art-empty-upload__hint {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--lyrefly-muted);
+  max-width: 22rem;
+}
+
 .lyrefly-art-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
@@ -1659,11 +2750,47 @@
   );
 }
 
+.lyrefly-version-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.lyrefly-version-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.lyrefly-version-panel__toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.lyrefly-version-panel__latest-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--lyrefly-muted);
+  max-width: 44rem;
+}
+
+.lyrefly-version-panel__status {
+  margin: 0;
+}
+
 .lyrefly-version-strip {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-wrap: nowrap;
+  align-items: stretch;
   gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: thin;
 }
 
 .lyrefly-version-strip__chip {
@@ -1696,9 +2823,17 @@
 }
 
 .lyrefly-version-strip__chip-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
   font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1.2;
+}
+
+.lyrefly-version-strip__chip-final {
+  font-size: 0.75rem;
+  color: var(--lyrefly-accent);
 }
 
 .lyrefly-version-strip__chip-meta {
@@ -1712,6 +2847,10 @@
 .lyrefly-version-strip__spacer {
   flex: 1 1 0.5rem;
   min-width: 0.25rem;
+}
+
+.lyrefly-version-strip__action--icon {
+  padding-inline: 0.45rem;
 }
 
 .lyrefly-version-strip__action {
@@ -1746,6 +2885,126 @@
 
 .lyrefly-version-strip__action:disabled {
   opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.lyrefly-version-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: var(--lyrefly-radius);
+  background: color-mix(
+    in srgb,
+    var(--lyrefly-surface) 35%,
+    var(--lyrefly-paper)
+  );
+}
+
+.lyrefly-version-detail__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.lyrefly-version-detail__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 24rem;
+}
+
+.lyrefly-version-detail__label .MuiInput-input {
+  font-family: var(--lyrefly-title-font);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+}
+
+.lyrefly-version-detail__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
+.lyrefly-version-detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-version-detail__meta-sep {
+  opacity: 0.55;
+}
+
+.lyrefly-version-detail__meta-item--accent {
+  color: color-mix(in srgb, var(--lyrefly-accent) 78%, var(--lyrefly-ink));
+  font-weight: 600;
+}
+
+.lyrefly-version-detail__notes-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.lyrefly-version-detail__notes-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lyrefly-muted);
+}
+
+.lyrefly-version-detail__notes-input {
+  width: 100%;
+  min-height: 4.25rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--lyrefly-border);
+  border-radius: var(--lyrefly-radius);
+  background: var(--lyrefly-paper);
+  font-family: var(--lyrefly-body-font);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--lyrefly-ink);
+  resize: vertical;
+  box-sizing: border-box;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.lyrefly-version-detail__notes-input::placeholder {
+  color: color-mix(in srgb, var(--lyrefly-muted) 85%, transparent);
+}
+
+.lyrefly-version-detail__notes-input:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--lyrefly-ink) 18%,
+    var(--lyrefly-border)
+  );
+}
+
+.lyrefly-version-detail__notes-input:focus-visible {
+  outline: none;
+  border-color: color-mix(
+    in srgb,
+    var(--lyrefly-accent) 42%,
+    var(--lyrefly-border)
+  );
+  box-shadow: 0 0 0 1px
+    color-mix(in srgb, var(--lyrefly-accent) 18%, transparent);
+}
+
+.lyrefly-version-detail__notes-input:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
@@ -1812,6 +3071,17 @@
 
 .lyrefly-workbench__title-block {
   min-width: 0;
+}
+
+.lyrefly-workbench__title-block .lyrefly-project-mode-switch {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 520px) {
+  .lyrefly-workbench__nav-bar .lyrefly-workbench__title-block.MuiStack-root {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .lyrefly-workbench__title-display {
@@ -2643,6 +3913,29 @@
 
 .lyrefly-profile-studio__version-picker {
   margin: 0.15rem 0 0.35rem;
+}
+
+.lyrefly-version-strip__inline-label .MuiInput-input {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.lyrefly-version-preview-dialog .lyrefly-book-preview__stage {
+  min-height: min(68vh, 640px);
+}
+
+.lyrefly-version-preview-dialog .lyrefly-book-preview__image,
+.lyrefly-version-preview-dialog .lyrefly-book-preview__image--spread {
+  max-height: min(64vh, 600px);
+}
+
+.lyrefly-version-share__book-stage {
+  min-height: min(68vh, 640px);
+}
+
+.lyrefly-scroll-reader-dialog,
+.lyrefly-version-preview-dialog {
+  max-width: min(96vw, 1120px);
 }
 
 .lyrefly-scroll-reader-dialog {

@@ -32,6 +32,18 @@ export function getLegacyBeatRedirect(url: string | undefined): string | null {
   return `/stanza/${queryString ? `?${queryString}` : ''}`;
 }
 
+/** Legacy Palette Generator URLs → /palette/ (query preserved; hash handled by static redirect HTML). */
+export function getLegacyPalettegenRedirect(url: string | undefined): string | null {
+  if (!url) return null;
+  const [pathname, queryString = ''] = url.split('?');
+  if (pathname !== '/palettegen' && pathname !== '/palettegen/') return null;
+  return `/palette/${queryString ? `?${queryString}` : ''}`;
+}
+
+export function getLegacyAppRedirect(url: string | undefined): string | null {
+  return getLegacyBeatRedirect(url) ?? getLegacyPalettegenRedirect(url);
+}
+
 function normalizePath(input: string): string {
   return input.replace(/\\/g, '/');
 }

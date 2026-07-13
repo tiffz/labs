@@ -3,9 +3,20 @@
 // ============================================
 
 import { DEFAULT_SCRIPT_HTML } from '../script/defaultScriptSample';
+import { parseScriptHtml } from '../script/scriptHtmlParser';
+import { analyzeScriptPacing } from '../script/scriptPacingAnalyzer';
 import type { LyreflyWorkflowStage } from '../workflow/lyreflyWorkflowStages';
+import type { MixamBindingType } from '../../shared/zine/bleedConfig';
+import type { ComicPalette } from '../../shared/palette';
+import type { PageMockupSpec } from '../../shared/comic';
 
 export type LyreflyProjectStatus = 'draft' | 'wip' | 'finished' | 'archived';
+
+/** Gallery pipeline queue status (Story Tracker–aligned). */
+export type LyreflyPipelineStatus = 'fleshing_out' | 'ready_to_draw' | 'complete';
+
+export type SketchbookSeedKind = 'idea' | 'daily_flash' | 'link' | 'image' | 'file';
+export type SketchbookSeedStatus = 'active' | 'promoted' | 'archived';
 
 /** Optional pipeline stages — matrix checklist, not a rigid kanban. */
 export type LyreflyMilestoneId =
@@ -75,6 +86,14 @@ export interface ComicProject {
   distributionPdfDriveFileId?: string;
   /** Cached Drive folder id for projects/{id}/. */
   projectFolderId?: string;
+  /** Target trim size + binding for Mixam-ready page art (Draw stage). */
+  printSpec?: LyreflyPrintSpec;
+  /** Optional project color palette (Chromacle / Coolors import). */
+  colorPalette?: ComicPalette;
+  /** Gallery pipeline status when in active queue. */
+  pipelineStatus?: LyreflyPipelineStatus;
+  /** Lower sorts earlier in priority queue. */
+  priorityRank?: number;
   pageCount?: number;
   createdAt: string;
   updatedAt: string;
@@ -238,6 +257,10 @@ export interface ComicArtVersion {
   pageRevisions: Record<string, string>;
   /** When this version was completed — inferred from files or edited manually. */
   completedAt?: string;
+  /** When true, a public Drive snapshot is published for guest preview. */
+  shareEnabled?: boolean;
+  /** Drive file id for the published guest snapshot JSON. */
+  shareSnapshotDriveFileId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -287,6 +310,70 @@ export interface ComicArchiveBinder {
   salesLedger: SalesLedgerRow[];
 }
 
+export interface SketchbookSeed {
+  id: string;
+  kind: SketchbookSeedKind;
+  title?: string;
+  logline?: string;
+  bodyHtml?: string;
+  occurredOn?: string;
+  url?: string;
+  fileName?: string;
+  mimeType?: string;
+  tags: string[];
+  status: SketchbookSeedStatus;
+  promotedProjectId?: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ComicCharacter {
+  id: string;
+  projectId: string;
+  name: string;
+  displayName?: string;
+  aliases: string[];
+  notesHtml?: string;
+  colorToken?: string;
+  conceptAssetIds: string[];
+  source: 'manual' | 'script';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PageReference {
+  id: string;
+  projectId: string;
+  scriptPageKey: string;
+  title?: string;
+  notesHtml?: string;
+  conceptAssetIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PageMockup {
+  id: string;
+  projectId: string;
+  scriptPageKey: string;
+  mockup: PageMockupSpec;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Mixam-oriented trim + binding settings for Draw / export. */
+export interface LyreflyPrintSpec {
+  presetId: string;
+  trimWidth: number;
+  trimHeight: number;
+  unit: 'in';
+  dpi: number;
+  binding: MixamBindingType;
+  /** Per-side bleed in inches (Mixam default 0.125). */
+  bleedInches?: number;
+}
+
 export type LyreflyDirtySyncKind =
   | 'project'
   | 'layout'
@@ -296,7 +383,11 @@ export type LyreflyDirtySyncKind =
   | 'visual_dev'
   | 'snapshot'
   | 'art_version'
-  | 'archive';
+  | 'archive'
+  | 'sketchbook_seed'
+  | 'comic_character'
+  | 'page_reference'
+  | 'page_mockup';
 
 export interface LyreflyDirtySyncRow {
   id: string;
@@ -360,12 +451,14 @@ export function createBlankComicProject(now = new Date().toISOString()): ComicPr
 }
 
 export function createBlankScriptDocument(projectId: string, now = new Date().toISOString()): ScriptDocument {
+  const blocks = parseScriptHtml(DEFAULT_SCRIPT_HTML);
+  const pacingWarnings = analyzeScriptPacing(blocks);
   return {
     id: crypto.randomUUID(),
     projectId,
     markdown: DEFAULT_SCRIPT_HTML,
-    blocks: [],
-    pacingWarnings: [],
+    blocks,
+    pacingWarnings,
     updatedAt: now,
   };
 }

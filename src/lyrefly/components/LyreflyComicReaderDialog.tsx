@@ -67,7 +67,7 @@ export function LyreflyComicReaderDialog({
       open={open}
       onClose={onClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth="lg"
       aria-labelledby="lyrefly-comic-reader-title"
       data-testid="lyrefly-comic-reader-dialog"
       PaperProps={{ className: 'lyrefly-scroll-reader-dialog' }}

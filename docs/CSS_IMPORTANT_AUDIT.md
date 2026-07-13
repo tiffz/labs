@@ -4,7 +4,9 @@ Date: 2026-04-18
 
 ## Why this exists
 
-Across the labs codebase we have ~271 uses of `!important` in app stylesheets (baseline in `scripts/check-css-important.sh`). The vast majority fall into a small number of categories, most of which are a symptom of weak token boundaries or selector specificity wars rather than genuinely necessary overrides. This doc catalogs them, gives the prescribed fix per category, and lists the hotspot files so the Phase 4 split work can trim `!important` in the same PRs that refactor each surface (under visual-snapshot coverage).
+Across the labs codebase we have ~282 uses of `!important` in app stylesheets (baseline in `scripts/check-css-important.sh`). The vast majority fall into a small number of categories, most of which are a symptom of weak token boundaries or selector specificity wars rather than genuinely necessary overrides. This doc catalogs them, gives the prescribed fix per category, and lists the hotspot files so the Phase 4 split work can trim `!important` in the same PRs that refactor each surface (under visual-snapshot coverage).
+
+**2026-07:** +11 from Palette Generator MUI toolbar/popover overrides (`src/palette/styles/palettegen.css`).
 
 ## Raw counts by file
 

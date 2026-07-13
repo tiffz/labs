@@ -316,6 +316,20 @@ body {
   box-shadow: 2px 3px 0 rgba(0, 212, 170, 0.18);
 }
 
+.app-icon.palettegen {
+  background-image: url('/icons/favicon-palettegen.svg?v=4');
+  background-size: 100% 100%;
+  border: 2px solid rgba(167, 139, 250, 0.38);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%);
+}
+
+.app-icon.scrapboard {
+  background-image: url('/icons/favicon-scrapboard.svg?v=2');
+  background-size: 100% 100%;
+  border: 2px solid #1f1f1f;
+  box-shadow: 3px 4px 0 #f4d03f;
+}
+
 .app-icon.beat {
   background-image: url('/icons/favicon-beat.svg');
 }

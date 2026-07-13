@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { lyreflyGalleryHref, lyreflyProjectHref, lyreflyProjectProfileHref, lyreflyScriptHref, parseLyreflyHash, type LyreflyRoute } from '../routes/lyreflyHash';
+import { lyreflyGalleryHref, lyreflyProjectHref, lyreflyProjectProfileHref, lyreflyScriptHref, lyreflySketchbookHref, parseLyreflyHash, type LyreflyRoute } from '../routes/lyreflyHash';
 
 export function useLyreflyUrlState(): {
   route: LyreflyRoute;
   openGallery: () => void;
+  openSketchbook: () => void;
   openProject: (projectId: string) => void;
   openScript: (projectId: string) => void;
   openProfile: (projectId: string) => void;
@@ -26,6 +27,11 @@ export function useLyreflyUrlState(): {
     setRoute({ kind: 'gallery' });
   }, []);
 
+  const openSketchbook = useCallback(() => {
+    window.location.hash = lyreflySketchbookHref();
+    setRoute({ kind: 'sketchbook' });
+  }, []);
+
   const openProject = useCallback((projectId: string) => {
     window.location.hash = lyreflyProjectHref(projectId);
     setRoute({ kind: 'project', projectId });
@@ -41,5 +47,5 @@ export function useLyreflyUrlState(): {
     setRoute({ kind: 'profile', projectId });
   }, []);
 
-  return { route, openGallery, openProject, openScript, openProfile };
+  return { route, openGallery, openSketchbook, openProject, openScript, openProfile };
 }

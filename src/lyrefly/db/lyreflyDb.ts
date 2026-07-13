@@ -3,12 +3,16 @@ import Dexie, { type EntityTable } from 'dexie';
 import type {
   ComicArchiveBinder,
   ComicArtVersion,
+  ComicCharacter,
   ComicMacroSnapshot,
   ComicProject,
   LyreflyDirtySyncRow,
+  PageMockup,
   PageNode,
+  PageReference,
   PageRevision,
   ScriptDocument,
+  SketchbookSeed,
   VisualDevAsset,
 } from '../types';
 import { lyreflyDirtySyncRowKey } from '../types';
@@ -20,6 +24,11 @@ export type LyreflyRevisionBlob = {
 
 export type LyreflyVisualDevBlob = {
   assetId: string;
+  blob: Blob;
+};
+
+export type LyreflySketchbookBlob = {
+  seedId: string;
   blob: Blob;
 };
 
@@ -35,6 +44,11 @@ export class LyreflyDb extends Dexie {
   artVersions!: EntityTable<ComicArtVersion, 'id'>;
   archives!: EntityTable<ComicArchiveBinder, 'id'>;
   dirtySync!: EntityTable<LyreflyDirtySyncRow, 'id'>;
+  sketchbookSeeds!: EntityTable<SketchbookSeed, 'id'>;
+  comicCharacters!: EntityTable<ComicCharacter, 'id'>;
+  pageReferences!: EntityTable<PageReference, 'id'>;
+  pageMockups!: EntityTable<PageMockup, 'id'>;
+  sketchbookBlobs!: EntityTable<LyreflySketchbookBlob, 'seedId'>;
 
   constructor() {
     super('lyrefly');
@@ -62,6 +76,41 @@ export class LyreflyDb extends Dexie {
       artVersions: 'id, projectId',
       archives: 'id, projectId',
       dirtySync: 'id, kind, projectId, updatedAt',
+    });
+    this.version(3).stores({
+      projects: 'id, status, updatedAt, pipelineStatus, priorityRank',
+      pageNodes: 'id, projectId',
+      pageRevisions: 'id, pageNodeId',
+      revisionBlobs: 'revisionId',
+      visualDevAssets: 'id, projectId',
+      visualDevBlobs: 'assetId',
+      scriptDocuments: 'id, projectId',
+      snapshots: 'id, projectId',
+      artVersions: 'id, projectId',
+      archives: 'id, projectId',
+      dirtySync: 'id, kind, projectId, updatedAt',
+      sketchbookSeeds: 'id, status, sortOrder, updatedAt',
+      comicCharacters: 'id, projectId, name',
+      pageReferences: 'id, projectId, scriptPageKey',
+      pageMockups: 'id, projectId, scriptPageKey',
+    });
+    this.version(4).stores({
+      projects: 'id, status, updatedAt, pipelineStatus, priorityRank',
+      pageNodes: 'id, projectId',
+      pageRevisions: 'id, pageNodeId',
+      revisionBlobs: 'revisionId',
+      visualDevAssets: 'id, projectId',
+      visualDevBlobs: 'assetId',
+      scriptDocuments: 'id, projectId',
+      snapshots: 'id, projectId',
+      artVersions: 'id, projectId',
+      archives: 'id, projectId',
+      dirtySync: 'id, kind, projectId, updatedAt',
+      sketchbookSeeds: 'id, status, sortOrder, updatedAt',
+      sketchbookBlobs: 'seedId',
+      comicCharacters: 'id, projectId, name',
+      pageReferences: 'id, projectId, scriptPageKey',
+      pageMockups: 'id, projectId, scriptPageKey',
     });
   }
 }

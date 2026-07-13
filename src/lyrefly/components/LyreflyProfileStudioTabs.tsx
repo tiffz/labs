@@ -1,3 +1,5 @@
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Box from '@mui/material/Box';
@@ -85,6 +87,7 @@ export function LyreflyProfileStudioTabs({
   const [tab, setTab] = useState<StudioTabId>(() =>
     defaultStudioTab({ hasPageArt, hasScript, hasConcept, hasBrainstorm }),
   );
+  const [showBleedGuides, setShowBleedGuides] = useState(false);
 
   const onTabChange = (_event: SyntheticEvent, value: StudioTabId): void => {
     setTab(value);
@@ -139,6 +142,21 @@ export function LyreflyProfileStudioTabs({
         />
       ) : null}
 
+      {tab === 'preview' && hasPageArt ? (
+        <FormControlLabel
+          className="lyrefly-profile-studio__bleed-toggle"
+          control={
+            <Switch
+              size="small"
+              checked={showBleedGuides}
+              onChange={(event) => setShowBleedGuides(event.target.checked)}
+              inputProps={{ 'aria-label': 'Show bleed guides in book preview' }}
+            />
+          }
+          label="Bleed guides"
+        />
+      ) : null}
+
       <Box
         role="tabpanel"
         id="lyrefly-profile-studio-preview"
@@ -154,6 +172,7 @@ export function LyreflyProfileStudioTabs({
               revisions={revisions}
               revisionByPageId={revisionByPageId}
               captureArrowKeys={tab === 'preview'}
+              showBleedGuides={showBleedGuides}
             />
           ) : (
             <Typography variant="body2" color="text.secondary" className="lyrefly-profile-studio__empty">

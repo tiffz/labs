@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 
 import LyreflyAccountMenu from './LyreflyAccountMenu';
 import { LyreflyLogomark } from './LyreflyLogomark';
-import { lyreflyGalleryHref, navigateLyreflyHash } from '../routes/lyreflyHash';
+import { lyreflyGalleryHref, lyreflySketchbookHref, navigateLyreflyHash } from '../routes/lyreflyHash';
 import type { LyreflyRoute } from '../routes/lyreflyHash';
 
 export type LyreflyAppHeaderProps = {
@@ -11,6 +11,7 @@ export type LyreflyAppHeaderProps = {
 
 export function LyreflyAppHeader({ route }: LyreflyAppHeaderProps): ReactElement {
   const onGallery = route.kind === 'gallery';
+  const onSketchbook = route.kind === 'sketchbook';
 
   return (
     <header className="lyrefly-header lyrefly-shell-bar">
@@ -37,6 +38,19 @@ export function LyreflyAppHeader({ route }: LyreflyAppHeaderProps): ReactElement
             onClick={() => navigateLyreflyHash(lyreflyGalleryHref())}
           >
             Your comics
+          </button>
+          <button
+            type="button"
+            className={[
+              'lyrefly-header__nav-item',
+              'lyrefly-header__nav-button',
+              onSketchbook ? 'lyrefly-header__nav-item--current' : '',
+            ].join(' ')}
+            aria-current={onSketchbook ? 'page' : undefined}
+            onClick={() => navigateLyreflyHash(lyreflySketchbookHref())}
+            data-testid="lyrefly-sketchbook-tab"
+          >
+            Sketchbook
           </button>
         </nav>
 

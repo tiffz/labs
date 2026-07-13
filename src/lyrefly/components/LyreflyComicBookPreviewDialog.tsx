@@ -33,7 +33,7 @@ export function LyreflyComicBookPreviewDialog({
       open={open}
       onClose={onClose}
       fullWidth
-      maxWidth="md"
+      maxWidth="lg"
       aria-labelledby="lyrefly-book-preview-title"
       data-testid="lyrefly-book-preview-dialog"
     >

@@ -43,9 +43,10 @@ export function LyreflyStageActions({
       spacing={1}
       alignItems="center"
       justifyContent="flex-end"
-      flexWrap="wrap"
+      flexWrap="nowrap"
       className={className || undefined}
       data-testid="lyrefly-stage-actions"
+      sx={{ flexShrink: 0, minWidth: 0 }}
     >
       <Button
         size="small"

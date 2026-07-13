@@ -132,10 +132,26 @@
     {
       "path": "/lyrefly/",
       "title": "Lyrefly",
-      "shortDescription": "Indie comic studio — brainstorm, script, art revisions, and publishing",
+      "shortDescription": "Comic project workbench — track ideas, script, thumbs, art, and publishing",
       "stage": "unlisted",
       "category": "art",
       "iconClass": "lyrefly"
+    },
+    {
+      "path": "/palette/",
+      "title": "Palette Generator",
+      "shortDescription": "Generate color palettes from images, colors, and settings using color theory principles.",
+      "stage": "development",
+      "category": "art",
+      "iconClass": "palettegen"
+    },
+    {
+      "path": "/scrapboard/",
+      "title": "Scrapboard",
+      "shortDescription": "Rough comic panel mockups in seconds",
+      "stage": "unlisted",
+      "category": "art",
+      "iconClass": "scrapboard"
     },
     {
       "path": "/forms/",

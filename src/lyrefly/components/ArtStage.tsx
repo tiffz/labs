@@ -1,15 +1,15 @@
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { useCallback, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 
-import { DragDropFileUpload } from '../../shared/components/DragDropFileUpload';
 import type { ComicProject, ComicArtVersion, PageNode, PageRevision } from '../types';
 import { createPageNode, createPageNodesFromFiles } from '../db/lyreflyProjectMutations';
 import { revisionMapForArtVersionView, type ArtVersionViewId } from '../utils/artVersionUtils';
-import { ArtPageGrid, PAGE_IMAGE_ACCEPT } from './ArtPageGrid';
+import { ArtPageGrid } from './ArtPageGrid';
 import { ArtVersionPanel } from './ArtVersionPanel';
+import { LyreflyArtEmptyUpload } from './LyreflyArtEmptyUpload';
+import { LyreflyPrintSpecPanel } from './LyreflyPrintSpecPanel';
 
 export type ArtStageProps = {
   project: ComicProject;
@@ -18,9 +18,6 @@ export type ArtStageProps = {
   artVersions: ComicArtVersion[];
   onProjectChange: (project: ComicProject) => void;
 };
-
-const BULK_UPLOAD_HELPER =
-  'Drop a folder of page art. Files are sorted by Mixam-style names like front.png, page1.png, page2-3.jpg.';
 
 export function ArtStage({
   project,
@@ -77,40 +74,28 @@ export function ArtStage({
       data-testid="lyrefly-art-stage"
       sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}
     >
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25, maxWidth: '44rem', lineHeight: 1.5 }}>
-        Pick a version above, then review or edit pages below. Upload art per tile, or add more pages at the end of the
-        grid.
-      </Typography>
-
       {importStatus ? (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }} aria-live="polite">
           {importStatus}
         </Typography>
       ) : null}
 
+      <LyreflyPrintSpecPanel project={project} onProjectChange={onProjectChange} />
+
       {pageNodes.length === 0 ? (
         <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <DragDropFileUpload
-            tone="neutral"
-            multiple
-            expandOnDrag
-            accept={PAGE_IMAGE_ACCEPT}
-            disabled={busy}
-            label="Upload your page art"
-            helperText={BULK_UPLOAD_HELPER}
-            ariaLabel="Upload comic page images"
-            onFiles={(files) => void handleBulkUpload(files)}
-            sx={{ flex: 1, minHeight: 'min(52vh, 420px)' }}
-          />
-          <Button
-            variant="text"
-            size="small"
+          <p className="lyrefly-art-empty__lede">
+            Add your first pages from a folder, or start with one blank tile and build the grid by hand.
+          </p>
+          <LyreflyArtEmptyUpload disabled={busy} onFiles={(files) => void handleBulkUpload(files)} />
+          <button
+            type="button"
+            className="lyrefly-art-empty__secondary-action"
             disabled={busy}
             onClick={() => void handleAddPage()}
-            sx={{ alignSelf: 'flex-start', mt: 1.5 }}
           >
             Or add a blank page
-          </Button>
+          </button>
         </Box>
       ) : (
         <>
@@ -127,7 +112,7 @@ export function ArtStage({
             Pages
             {strictVersionView ? (
               <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1, fontWeight: 500 }}>
-                Viewing a saved version. Switch to Current picks to edit live art.
+                Viewing a saved version. Switch to Latest to edit live art.
               </Typography>
             ) : null}
           </Typography>

@@ -214,6 +214,8 @@ export function parsePageFile(file: File): ParsedPageFile {
   };
 }
 
+import { bookletReadingOrderKey } from './bookletPageLabels';
+
 export function sortPageFilesByOrder(files: ParsedPageFile[]): ParsedPageFile[] {
   return [...files].sort((a, b) => {
     const aPage = a.isSpread && a.spreadPages ? a.spreadPages[0] : a.pageNumber;
@@ -225,10 +227,10 @@ export function sortPageFilesByOrder(files: ParsedPageFile[]): ParsedPageFile[] 
     if (aPage === null) return 1;
     if (bPage === null) return -1;
 
-    if (aPage < 0 && bPage >= 0) return 1;
-    if (aPage >= 0 && bPage < 0) return -1;
+    const orderDiff = bookletReadingOrderKey(aPage) - bookletReadingOrderKey(bPage);
+    if (orderDiff !== 0) return orderDiff;
 
-    return aPage - bPage;
+    return a.originalName.localeCompare(b.originalName);
   });
 }
 

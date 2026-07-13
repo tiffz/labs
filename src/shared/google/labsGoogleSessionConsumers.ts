@@ -54,7 +54,7 @@ export const LABS_GOOGLE_SESSION_CONSUMERS: readonly LabsGoogleSessionConsumerMe
     id: 'lyrefly',
     label: 'Lyrefly',
     href: '/lyrefly/',
-    blurb: 'Comic scripting and zine archive workspace',
+    blurb: 'Comic project workbench and Drive backup',
   },
 ] as const;
 

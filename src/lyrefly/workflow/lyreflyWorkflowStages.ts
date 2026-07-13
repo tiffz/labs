@@ -1,8 +1,9 @@
-export type LyreflyWorkflowStage = 'brainstorm' | 'script' | 'art' | 'publish';
+export type LyreflyWorkflowStage = 'brainstorm' | 'script' | 'thumbs' | 'art' | 'publish';
 
 export const LYREFLY_WORKFLOW_STAGES: ReadonlyArray<{ id: LyreflyWorkflowStage; label: string; caption: string }> = [
   { id: 'brainstorm', label: 'Brainstorm', caption: 'Ideas, references, and concept art' },
   { id: 'script', label: 'Script', caption: 'Nested bullet script — pages, panels, dialogue' },
+  { id: 'thumbs', label: 'Thumbs', caption: 'Characters, pages, and rough panel mockups' },
   { id: 'art', label: 'Draw', caption: 'Page layouts and revision history' },
   { id: 'publish', label: 'Publish', caption: 'Release log and memorabilia' },
 ] as const;
