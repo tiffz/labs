@@ -329,6 +329,14 @@
   list-style: none;
 }
 
+/* Narrow phones: pin one column so scrollbar/gutter cannot flip auto-fill 2→1
+   (that height swing broke nightly visual baselines on 390px viewports). */
+@media (max-width: 479px) {
+  .lyrefly-shelf__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .lyrefly-shelf__item {
   min-width: 0;
 }
