@@ -306,7 +306,7 @@ const PaperConfiguration: React.FC<ExtendedPaperConfigurationProps> = memo(({
         
         <p className="text-xs text-amber-600">
           {mode === 'minizine' 
-            ? `Output pixels = paper × DPI (max ${maxDpi} for this size). Raise DPI to keep high-res page art sharp — each page is 1/8 of the sheet.`
+            ? `Output pixels = paper × DPI (max ${maxDpi} for this size). Raise DPI to keep high-res page art sharp. Each page is 1/8 of the sheet.`
             : `300 is fine for home print; 600+ for large source art (max ${maxDpi} for this page size).`}
         </p>
 
