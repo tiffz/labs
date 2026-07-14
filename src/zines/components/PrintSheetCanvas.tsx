@@ -152,9 +152,9 @@ const PrintSheetCanvas: React.FC<PrintSheetCanvasProps> = memo(({
         ctx.restore();
       });
       
-      // Cache the rendered result
+      // Cache the rendered preview as JPEG (much cheaper than PNG encode).
       try {
-        const dataUrl = canvas.toDataURL('image/png');
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
         canvasCache.set(cacheKey, dataUrl);
         // Limit cache size
         if (canvasCache.size > 10) {

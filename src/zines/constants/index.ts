@@ -26,4 +26,13 @@ export const DEFAULT_BOOKLET_PAPER_CONFIG = {
   height: 8.5,
   unit: 'in' as const,
   dpi: 300
-}; 
+};
+
+/** Soft ceiling when ingesting uploads — keep high-res print art intact. */
+export const MAX_IMAGE_DIMENSION = 12000;
+
+/** Browser canvas safety cap for a single export bitmap edge. */
+export const MAX_EXPORT_CANVAS_DIMENSION = 16000;
+
+/** Common print DPIs offered as one-click presets. */
+export const DPI_PRESETS = [300, 600, 900, 1200] as const; 

@@ -1,6 +1,8 @@
 /* eslint-disable react/prop-types */
 import React, { memo, useCallback, useMemo } from 'react';
 import type { PaperConfigurationProps, BleedConfig } from '../types';
+import { DPI_PRESETS } from '../constants';
+import { maxSafeExportDpi } from '../utils/pdfMetrics';
 
 interface SizePreset {
   name: string;
@@ -60,20 +62,38 @@ const PaperConfiguration: React.FC<ExtendedPaperConfigurationProps> = memo(({
   onBleedChange,
   mode = 'minizine' 
 }) => {
+  const maxDpi = useMemo(() => maxSafeExportDpi(paperConfig), [paperConfig]);
+
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
+    let nextValue: string | number = type === 'number' ? (parseFloat(value) || 0) : value;
+    if (name === 'dpi' && typeof nextValue === 'number') {
+      nextValue = Math.min(Math.max(72, Math.round(nextValue)), maxDpi);
+    }
     onConfigChange({
       ...paperConfig,
-      [name]: type === 'number' ? (parseFloat(value) || 0) : value
+      [name]: nextValue,
     });
-  }, [paperConfig, onConfigChange]);
+  }, [paperConfig, onConfigChange, maxDpi]);
+
+  const handleDpiPreset = useCallback((dpi: number) => {
+    onConfigChange({
+      ...paperConfig,
+      dpi: Math.min(dpi, maxDpi),
+    });
+  }, [paperConfig, onConfigChange, maxDpi]);
 
   const handlePresetSelect = useCallback((preset: SizePreset) => {
-    onConfigChange({
+    const next = {
       ...paperConfig,
       width: preset.width,
       height: preset.height,
       unit: preset.unit,
+    };
+    const safeMax = maxSafeExportDpi(next);
+    onConfigChange({
+      ...next,
+      dpi: Math.min(paperConfig.dpi, safeMax),
     });
     
     // Auto-set Mixam standard bleed for booklet presets
@@ -260,15 +280,34 @@ const PaperConfiguration: React.FC<ExtendedPaperConfigurationProps> = memo(({
               value={paperConfig.dpi}
               onChange={handleInputChange}
               className="input-field text-sm"
-              step="1"
+              step="50"
+              min={72}
+              max={maxDpi}
             />
           </div>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {DPI_PRESETS.filter((dpi) => dpi <= maxDpi).map((dpi) => (
+            <button
+              key={dpi}
+              type="button"
+              onClick={() => handleDpiPreset(dpi)}
+              className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                paperConfig.dpi === dpi
+                  ? 'bg-teal-500 text-white'
+                  : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
+              }`}
+            >
+              {dpi}
+            </button>
+          ))}
         </div>
         
         <p className="text-xs text-amber-600">
           {mode === 'minizine' 
-            ? 'Full paper size for printing. Each zine page is 1/8 of this sheet.'
-            : '300 DPI recommended for print quality.'}
+            ? `Output pixels = paper × DPI (max ${maxDpi} for this size). Raise DPI to keep high-res page art sharp — each page is 1/8 of the sheet.`
+            : `300 is fine for home print; 600+ for large source art (max ${maxDpi} for this page size).`}
         </p>
 
         {/* Bleed & Quiet Area Settings (Booklet only) */}

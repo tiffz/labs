@@ -36,5 +36,5 @@ export function clampX(center: number, halfW: number, bounds: LayoutBounds, side
 
 export function maxBubbleHalfWidth(bounds: LayoutBounds, sidePad = SIDE_PAD): number {
   const inner = bounds.w - sidePad * 2;
-  return Math.max(12, Math.min(inner / 2, inner * 0.28));
+  return Math.max(6, Math.min(inner / 2 - 1, inner * 0.46));
 }

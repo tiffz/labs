@@ -8,6 +8,11 @@ export type PalettegenUrlState = {
 
 const HEX_ROW = /^[0-9a-f]{6}(?:,[0-9a-f]{6})*$/i;
 
+/** Modes that can reconstitute a palette from URL params alone (no uploaded files). */
+export function isPalettegenShareableMode(mode: PalettegenMode | undefined): mode is 'seed' {
+  return mode === 'seed';
+}
+
 export function parsePalettegenUrl(): PalettegenUrlState | null {
   const params = new URLSearchParams(window.location.search);
   const colorsParam = params.get('colors');
@@ -21,8 +26,9 @@ export function parsePalettegenUrl(): PalettegenUrlState | null {
   if (colors.length < 2) return null;
 
   const modeParam = params.get('mode');
+  // Image files are never in the URL — treat legacy `mode=image` as colors-only shares.
   const mode =
-    modeParam === 'image' || modeParam === 'seed' || modeParam === 'random' ? modeParam : undefined;
+    modeParam === 'seed' || modeParam === 'random' ? modeParam : undefined;
   const seed = params.get('seed')?.replace(/^#/, '').toLowerCase();
 
   return {
@@ -32,26 +38,48 @@ export function parsePalettegenUrl(): PalettegenUrlState | null {
   };
 }
 
+function applyPalettegenSearchParams(
+  url: URL,
+  input: {
+    colors: string[];
+    mode?: PalettegenMode;
+    seed?: string;
+  },
+): void {
+  const hexes = input.colors.map((hex) => hex.replace(/^#/, '').toLowerCase());
+  url.searchParams.set('colors', hexes.join(','));
+
+  // Only seed mode is reconstructible from the URL. Image/random omit `mode`.
+  if (isPalettegenShareableMode(input.mode) && input.seed) {
+    url.searchParams.set('mode', 'seed');
+    url.searchParams.set('seed', input.seed.replace(/^#/, '').toLowerCase());
+  } else {
+    url.searchParams.delete('mode');
+    url.searchParams.delete('seed');
+  }
+}
+
+/** Relative path+query for live `history.replaceState` sync. */
 export function serializePalettegenUrl(input: {
   colors: string[];
   mode?: PalettegenMode;
   seed?: string;
 }): string {
   const url = new URL(window.location.href);
-  const hexes = input.colors.map((hex) => hex.replace(/^#/, '').toLowerCase());
-  url.searchParams.set('colors', hexes.join(','));
-
-  if (input.mode && input.mode !== 'random') {
-    url.searchParams.set('mode', input.mode);
-  } else {
-    url.searchParams.delete('mode');
-  }
-
-  if (input.mode === 'seed' && input.seed) {
-    url.searchParams.set('seed', input.seed.replace(/^#/, '').toLowerCase());
-  } else {
-    url.searchParams.delete('seed');
-  }
-
+  applyPalettegenSearchParams(url, input);
   return `${url.pathname}${url.search}`;
+}
+
+/**
+ * Absolute, normalized share link: `/palette/?colors=…` (+ seed when applicable).
+ * Drops unrelated query params and never embeds `mode=image`.
+ */
+export function buildPalettegenShareUrl(input: {
+  colors: string[];
+  mode?: PalettegenMode;
+  seed?: string;
+}): string {
+  const url = new URL('/palette/', window.location.origin);
+  applyPalettegenSearchParams(url, input);
+  return url.toString();
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   generateMadLibsBlocks,
+  generateMadLibsPage,
   madLibsTemplateKey,
 } from './scrapboardMadLibs';
 
@@ -28,5 +29,16 @@ describe('scrapboardMadLibs', () => {
       }
       previousKey = key;
     }
+  });
+
+  it('diversifies templates across a full page', () => {
+    const page = generateMadLibsPage(4242, 10);
+    const dialogueKeys = page
+      .flat()
+      .filter((block) => block.kind === 'dialogue')
+      .map((block) => block.content);
+    const unique = new Set(dialogueKeys);
+    // Page-level usedKeys + bigger template pool should avoid a sea of identical lines.
+    expect(unique.size).toBeGreaterThanOrEqual(Math.min(6, dialogueKeys.length));
   });
 });

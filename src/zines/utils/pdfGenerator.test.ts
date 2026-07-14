@@ -115,6 +115,49 @@ describe('formatFileSize', () => {
   });
 });
 
+describe('minizine export metrics', () => {
+  it('sizes letter landscape sheet at 300 DPI to full print pixels', async () => {
+    const { minizineExportPixelSize, estimateMinizineExportBytes, paperDimensionToPoints } =
+      await import('./pdfMetrics');
+    const paper = { width: 11, height: 8.5, unit: 'in' as const, dpi: 300 };
+    const size = minizineExportPixelSize(paper, 1);
+    expect(size.width).toBe(3300);
+    expect(size.height).toBe(2550);
+    expect(size.effectiveDpi).toBe(300);
+    expect(size.panelWidth).toBe(825);
+    expect(size.panelHeight).toBe(1275);
+
+    const estimated = estimateMinizineExportBytes(paper, { resolutionScale: 1, jpegQuality: 1 });
+    // Realistic PNG estimate — not uncompressed RGBA (~32MB)
+    expect(estimated).toBeGreaterThan(2 * 1024 * 1024);
+    expect(estimated).toBeLessThan(12 * 1024 * 1024);
+
+    expect(paperDimensionToPoints(11, 'in')).toBe(792);
+    expect(paperDimensionToPoints(8.5, 'in')).toBe(612);
+  });
+
+  it('supports 600 and 1200 DPI letter exports under the canvas cap', async () => {
+    const { minizineExportPixelSize, maxSafeExportDpi, suggestDpiFromSources } =
+      await import('./pdfMetrics');
+    const paper = { width: 11, height: 8.5, unit: 'in' as const, dpi: 600 };
+    const at600 = minizineExportPixelSize(paper, 1);
+    expect(at600.width).toBe(6600);
+    expect(at600.height).toBe(5100);
+    expect(at600.panelWidth).toBe(1650);
+    expect(at600.panelHeight).toBe(2550);
+
+    const at1200 = minizineExportPixelSize({ ...paper, dpi: 1200 }, 1);
+    expect(at1200.width).toBe(13200);
+    expect(at1200.height).toBe(10200);
+    expect(maxSafeExportDpi(paper)).toBeGreaterThanOrEqual(1200);
+
+    // 3450×5250 sources need ~1250 DPI to fill a letter panel without upscaling
+    const suggested = suggestDpiFromSources(paper, [{ width: 3450, height: 5250 }]);
+    expect(suggested).toBeGreaterThanOrEqual(1200);
+    expect(suggested).toBeLessThanOrEqual(maxSafeExportDpi(paper));
+  });
+});
+
 describe('PDFGenerationOptions type', () => {
   it('DEFAULT_PDF_OPTIONS has required fields', () => {
     expect(DEFAULT_PDF_OPTIONS.compressionPreset).toBeDefined();

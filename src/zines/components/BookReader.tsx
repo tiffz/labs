@@ -279,6 +279,11 @@ const BookReader: React.FC<BookReaderProps> = memo(({
           );
           processed.push({ ...page, imageData: resized });
         }
+
+        // Keep the UI responsive while decoding many pages
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, 0);
+        });
       }
       
       if (!cancelled) {

@@ -13,7 +13,7 @@ import {
   MIXAM_TRIM_PRESETS,
   type LabsPrintSpec,
 } from '../../shared/zine';
-import { generateMadLibsBlocks } from '../copy/scrapboardMadLibs';
+import { generateMadLibsPage } from '../copy/scrapboardMadLibs';
 
 function emptyFill(panelIndex: number): PanelFillSpec {
   return { panelIndex, composition: 'horizon-scene', blocks: [], text: { kind: 'none' } };
@@ -46,7 +46,7 @@ export function useScrapboardBoard(initialPanelCount = 4): ScrapboardBoardState 
   const [panelCount, setPanelCountState] = useState(initialPanelCount);
   const [printSpec, setPrintSpec] = useState<LabsPrintSpec>({ ...DEFAULT_LABS_PRINT_SPEC });
   const [allowFullBleedLayouts, setAllowFullBleedLayouts] = useState(false);
-  const [allowBubbleEscape, setAllowBubbleEscape] = useState(false);
+  const [allowBubbleEscape, setAllowBubbleEscape] = useState(true);
   const layoutOptions = useMemo(
     () => ({ printSpec, allowFullBleed: allowFullBleedLayouts }),
     [printSpec, allowFullBleedLayouts],
@@ -126,10 +126,11 @@ export function useScrapboardBoard(initialPanelCount = 4): ScrapboardBoardState 
 
   const randomizeText = useCallback(() => {
     const seed = Date.now();
+    const pageBlocks = generateMadLibsPage(seed, layout.panels.length);
     setFills(
       layout.panels.map((_, panelIndex) => ({
         ...emptyFill(panelIndex),
-        blocks: generateMadLibsBlocks(seed, panelIndex),
+        blocks: pageBlocks[panelIndex] ?? [],
       })),
     );
   }, [layout.panels]);
@@ -142,10 +143,11 @@ export function useScrapboardBoard(initialPanelCount = 4): ScrapboardBoardState 
     setPanelCountState(count);
     setSelectedLayoutId(pick.id);
     setSelectedPanelIndex(0);
+    const pageBlocks = generateMadLibsPage(seed, pick.panels.length);
     setFills(
       pick.panels.map((_, panelIndex) => ({
         ...emptyFill(panelIndex),
-        blocks: generateMadLibsBlocks(seed, panelIndex),
+        blocks: pageBlocks[panelIndex] ?? [],
       })),
     );
     const preset = MIXAM_TRIM_PRESETS[Math.abs(seed >> 5) % MIXAM_TRIM_PRESETS.length]!;

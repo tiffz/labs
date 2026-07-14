@@ -783,18 +783,27 @@ export function downloadBlob(blob: Blob, fileName: string): void {
 /**
  * Builds a single-page PDF blob from a rendered canvas. Used by minizine
  * export where the whole zine is captured on one sheet.
+ *
+ * When `pageSize` is provided, the PDF page uses physical sheet size in points
+ * (correct print DPI). Without it, falls back to canvas pixel dimensions as points
+ * (legacy).
  */
-export async function createSinglePagePDFBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+export async function createSinglePagePDFBlob(
+  canvas: HTMLCanvasElement,
+  pageSize?: { widthInPoints: number; heightInPoints: number },
+): Promise<Blob> {
   const dataURL = canvas.toDataURL('image/png');
   const pdfDoc = await PDFDocument.create();
   const pngImage = await pdfDoc.embedPng(dataURL);
 
-  const page = pdfDoc.addPage([canvas.width, canvas.height]);
+  const pageWidth = pageSize?.widthInPoints ?? canvas.width;
+  const pageHeight = pageSize?.heightInPoints ?? canvas.height;
+  const page = pdfDoc.addPage([pageWidth, pageHeight]);
   page.drawImage(pngImage, {
     x: 0,
     y: 0,
-    width: canvas.width,
-    height: canvas.height,
+    width: pageWidth,
+    height: pageHeight,
   });
 
   const pdfBytes = await pdfDoc.save();

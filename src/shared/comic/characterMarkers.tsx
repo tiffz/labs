@@ -69,7 +69,7 @@ function markerCenter(bounds: MarkerBounds, characterId: PanelCharacterId): { cx
 
 function trianglePath(cx: number, cy: number, size: number): string {
   const h = size * 1.15;
-  return `M ${cx} ${cy - h * 0.55} L ${cx + size} ${cy + h * 0.45} L ${cx - size} ${cy + h * 0.45} Z`;
+  return `M ${cx} ${cy - h * 0.62} L ${cx + size} ${cy + h * 0.45} L ${cx - size} ${cy + h * 0.45} Z`;
 }
 
 function squarePath(cx: number, cy: number, size: number): string {
@@ -114,13 +114,30 @@ export function renderCharacterMarker(
   );
 }
 
-/** Tail target — top of character marker (head). */
-export function characterHeadPoint(
+/** Tail target — shape-specific anchor (apex / circle top / square top). */
+export function characterTailAnchor(
   bounds: MarkerBounds,
   characterId: PanelCharacterId,
 ): { x: number; y: number } {
   const box = characterMarkerBox(bounds, characterId);
-  return { x: box.cx, y: box.top };
+  const { cx, cy, size } = box;
+  if (characterId === 'a') {
+    const h = size * 1.15;
+    return { x: cx, y: cy - h * 0.62 };
+  }
+  if (characterId === 'b') {
+    return { x: cx, y: cy - size * 1.05 };
+  }
+  const half = size * 0.88;
+  return { x: cx, y: cy - half * 1.02 };
+}
+
+/** @deprecated Use characterTailAnchor */
+export function characterHeadPoint(
+  bounds: MarkerBounds,
+  characterId: PanelCharacterId,
+): { x: number; y: number } {
+  return characterTailAnchor(bounds, characterId);
 }
 
 /** @deprecated Use characterHeadPoint */

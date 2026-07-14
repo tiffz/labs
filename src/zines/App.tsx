@@ -14,9 +14,16 @@ import type {
   ImageSizeWarning,
 } from './types';
 import { DEFAULT_PDF_OPTIONS, DEFAULT_BLEED_CONFIG } from './types';
-import { PAGE_SLOTS_CONFIG, DEFAULT_PAPER_CONFIG, DEFAULT_BOOKLET_PAPER_CONFIG } from './constants';
+import {
+  PAGE_SLOTS_CONFIG,
+  DEFAULT_PAPER_CONFIG,
+  DEFAULT_BOOKLET_PAPER_CONFIG,
+  MAX_IMAGE_DIMENSION,
+  MAX_EXPORT_CANVAS_DIMENSION,
+} from './constants';
 import { buildBookPages, createSpreadFileName, createPageFileName, getPageLabel } from './utils/spreadPairing';
 import { splitSpreadImage, combineToSpreadImage } from './utils/imageManipulation';
+import { paperDimensionToPoints, minizineSheetSizeInches, paperDimensionToInches } from './utils/pdfMetrics';
 import PaperConfiguration from './components/PaperConfiguration';
 import ImageUploaderSlot from './components/ImageUploaderSlot';
 import ModeToggle from './components/ModeToggle';
@@ -52,6 +59,8 @@ import { createAppAnalytics } from '../shared/utils/analytics';
 import SkipToMain from '../shared/components/SkipToMain';
 
 const analytics = createAppAnalytics('zines');
+
+const EMPTY_ASSIGNED_IMAGE_IDS = new Set<string>();
 
 // Shared uploaded file with loaded image data
 interface UploadedImage {
@@ -101,8 +110,7 @@ const generateThumbnail = (dataUrl: string, maxSize: number = 120): Promise<stri
   });
 };
 
-// Downscale image if too large (for memory optimization)
-const MAX_IMAGE_DIMENSION = 4000;
+// Downscale only extreme uploads that would blow memory before layout.
 const downscaleIfNeeded = (dataUrl: string, width: number, height: number): Promise<{ dataUrl: string; width: number; height: number }> => {
   return new Promise((resolve) => {
     // If image is within limits, return as-is
@@ -230,6 +238,23 @@ const App: React.FC = () => {
     }
     return result;
   }, [sharedImages, minizineSlotAssignments]);
+
+  /** Cheap URLs for edit-grid slots (thumbs); export/print keep full `images`. */
+  const previewImages = useMemo(() => {
+    const result: Record<string, string> = {};
+    for (const [slotId, imageId] of Object.entries(minizineSlotAssignments)) {
+      const image = sharedImages.find(img => img.id === imageId);
+      if (image) {
+        result[slotId] = image.thumbnailUrl || image.dataUrl;
+      }
+    }
+    return result;
+  }, [sharedImages, minizineSlotAssignments]);
+
+  const sourceImageSizes = useMemo(
+    () => sharedImages.map((img) => ({ width: img.width, height: img.height })),
+    [sharedImages],
+  );
   
   const hasMinizineImages = Object.keys(images).length > 0;
   
@@ -270,6 +295,7 @@ const App: React.FC = () => {
           spreads.push({
             parsedFile,
             imageData: image.dataUrl,
+            thumbnailUrl: image.thumbnailUrl,
             width: image.width,
             height: image.height,
             pages: parsedFile.spreadPages,
@@ -278,6 +304,7 @@ const App: React.FC = () => {
           pages.push({
             parsedFile,
             imageData: image.dataUrl,
+            thumbnailUrl: image.thumbnailUrl,
             width: image.width,
             height: image.height,
           });
@@ -352,21 +379,29 @@ const App: React.FC = () => {
       const warnings: ImageSizeWarning[] = [];
       const config = zineMode === 'minizine' ? minizinePaperConfig : bookletPaperConfig;
       
-      // For minizine, each page is 1/4 width and 1/2 height of sheet
-      const targetWidth = zineMode === 'minizine' ? config.width / 4 : config.width;
-      const targetHeight = zineMode === 'minizine' ? config.height / 2 : config.height;
+      // For minizine, each page is 1/4 width and 1/2 height of the landscape sheet
+      const sheetInches =
+        zineMode === 'minizine' ? minizineSheetSizeInches(config) : null;
+      const targetWidthInches =
+        zineMode === 'minizine' && sheetInches
+          ? sheetInches.width / 4
+          : paperDimensionToInches(config.width, config.unit);
+      const targetHeightInches =
+        zineMode === 'minizine' && sheetInches
+          ? sheetInches.height / 2
+          : paperDimensionToInches(config.height, config.unit);
       
-      if (targetWidth <= 0 || targetHeight <= 0) {
+      if (targetWidthInches <= 0 || targetHeightInches <= 0) {
         setImageSizeWarnings([]);
         return;
       }
       
-      const targetAspect = targetHeight / targetWidth;
-      const targetPixelWidth = targetWidth * config.dpi;
-      const targetPixelHeight = targetHeight * config.dpi;
+      const targetAspect = targetHeightInches / targetWidthInches;
+      const targetPixelWidth = targetWidthInches * config.dpi;
+      const targetPixelHeight = targetHeightInches * config.dpi;
       
       // For booklet mode, also calculate spread dimensions
-      const spreadTargetAspect = targetHeight / (targetWidth * 2);
+      const spreadTargetAspect = targetHeightInches / (targetWidthInches * 2);
       
       // Get set of spread image IDs for booklet mode
       const spreadImageIds = new Set<string>();
@@ -575,61 +610,45 @@ const App: React.FC = () => {
     
     try {
       const newImages: UploadedImage[] = [];
-      
-      // Process files in parallel batches for better performance
-      const batchSize = 4;
       const fileArray = Array.from(files);
-      
-      for (let i = 0; i < fileArray.length; i += batchSize) {
-        const batch = fileArray.slice(i, i + batchSize);
-        
-        const batchResults = await Promise.all(
-          batch.map(async (file) => {
-            // Skip if file with same name already exists
-            if (sharedImages.some(img => img.file?.name === file.name)) return null;
-            
-            try {
-              const loaded = await loadImage(file);
-              
-              // Downscale if image is too large to improve memory usage
-              const { dataUrl, width, height } = await downscaleIfNeeded(
-                loaded.dataUrl, 
-                loaded.width, 
-                loaded.height
-              );
-              
-              // Generate thumbnail for UI display
-              const thumbnailUrl = await generateThumbnail(dataUrl, 120);
-              
-              return {
-                file,
-                name: file.name,
-                dataUrl,
-                thumbnailUrl,
-                width,
-                height,
-                id: `${file.name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              };
-            } catch (error) {
-              console.error(`Failed to load image: ${file.name}`, error);
-              return null;
-            }
-          })
-        );
-        
-        const validResults = batchResults.filter((img): img is NonNullable<typeof img> => img !== null);
-        newImages.push(...validResults);
-        
-        // Yield to main thread between batches
-        await new Promise(resolve => setTimeout(resolve, 0));
+      const existingNames = new Set(
+        sharedImages.map((img) => img.file?.name).filter(Boolean) as string[],
+      );
+
+      // One file at a time so the UI can paint between heavy canvas encodes.
+      for (const file of fileArray) {
+        if (existingNames.has(file.name)) continue;
+
+        try {
+          const loaded = await loadImage(file);
+          const { dataUrl, width, height } = await downscaleIfNeeded(
+            loaded.dataUrl,
+            loaded.width,
+            loaded.height,
+          );
+          const thumbnailUrl = await generateThumbnail(dataUrl, 240);
+          const uploaded: UploadedImage = {
+            file,
+            name: file.name,
+            dataUrl,
+            thumbnailUrl,
+            width,
+            height,
+            id: `${file.name}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          };
+          newImages.push(uploaded);
+          existingNames.add(file.name);
+          setSharedImages((prev) => [...prev, uploaded]);
+        } catch (error) {
+          console.error(`Failed to load image: ${file.name}`, error);
+        }
+
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, 0);
+        });
       }
-      
-      if (newImages.length === 0) return;
-      
-      setSharedImages(prev => [...prev, ...newImages]);
-      
-      // Auto-assign to minizine slots
-      if (assignToMinizine) {
+
+      if (assignToMinizine && newImages.length > 0) {
         autoAssignToMinizineSlots(newImages);
       }
     } finally {
@@ -750,6 +769,7 @@ const App: React.FC = () => {
         
         // Combine the two images
         const combinedImageData = await combineToSpreadImage(leftPage.imageData, rightPage.imageData);
+        const combinedThumb = await generateThumbnail(combinedImageData, 240);
         
         // Use a filename that will be properly parsed as a spread
         const spreadFileName = createSpreadFileName(leftPageNum, rightPageNum);
@@ -771,7 +791,7 @@ const App: React.FC = () => {
             dataUrl: combinedImageData,
             width: leftPage.width + rightPage.width,
             height: Math.max(leftPage.height, rightPage.height),
-            thumbnailUrl: combinedImageData,
+            thumbnailUrl: combinedThumb,
           }];
         });
         // Success - UI will update automatically, no modal needed
@@ -788,6 +808,10 @@ const App: React.FC = () => {
         
         // Split the spread image
         const [leftImageData, rightImageData] = await splitSpreadImage(spread.imageData);
+        const [leftThumb, rightThumb] = await Promise.all([
+          generateThumbnail(leftImageData, 240),
+          generateThumbnail(rightImageData, 240),
+        ]);
         
         // Create unique IDs for the new pages
         const timestamp = Date.now();
@@ -815,7 +839,7 @@ const App: React.FC = () => {
               dataUrl: leftImageData,
               width: spread.width / 2,
               height: spread.height,
-              thumbnailUrl: leftImageData,
+              thumbnailUrl: leftThumb,
             },
             {
               id: rightId,
@@ -823,7 +847,7 @@ const App: React.FC = () => {
               dataUrl: rightImageData,
               width: spread.width / 2,
               height: spread.height,
-              thumbnailUrl: rightImageData,
+              thumbnailUrl: rightThumb,
             }
           ];
         });
@@ -934,19 +958,19 @@ const App: React.FC = () => {
         return;
       }
 
-      const isLandscape = canvasPaperConfig.width >= canvasPaperConfig.height;
-      const paperWidthInUnits = isLandscape ? canvasPaperConfig.width : canvasPaperConfig.height;
-      const paperHeightInUnits = isLandscape ? canvasPaperConfig.height : canvasPaperConfig.width;
-      
-      let pixelWidth = paperWidthInUnits * canvasPaperConfig.dpi;
-      let pixelHeight = paperHeightInUnits * canvasPaperConfig.dpi;
+      const sheetInches = minizineSheetSizeInches(canvasPaperConfig);
+
+      let pixelWidth = sheetInches.width * canvasPaperConfig.dpi;
+      let pixelHeight = sheetInches.height * canvasPaperConfig.dpi;
       
       pixelWidth *= exportOptions.resolutionScale;
       pixelHeight *= exportOptions.resolutionScale;
       
-      const MAX_CANVAS_DIM = 16000;
-      if (pixelWidth > MAX_CANVAS_DIM || pixelHeight > MAX_CANVAS_DIM) {
-        const scaleDown = Math.min(MAX_CANVAS_DIM / pixelWidth, MAX_CANVAS_DIM / pixelHeight);
+      if (pixelWidth > MAX_EXPORT_CANVAS_DIMENSION || pixelHeight > MAX_EXPORT_CANVAS_DIMENSION) {
+        const scaleDown = Math.min(
+          MAX_EXPORT_CANVAS_DIMENSION / pixelWidth,
+          MAX_EXPORT_CANVAS_DIMENSION / pixelHeight,
+        );
         pixelWidth *= scaleDown;
         pixelHeight *= scaleDown;
       }
@@ -1034,23 +1058,25 @@ const App: React.FC = () => {
     setGenerationError(null);
     
     try {
-      const existingCanvas = document.getElementById('printSheetCanvas') as HTMLCanvasElement;
-      let canvas: HTMLCanvasElement;
-
-      if (existingCanvas && minizineViewMode === 'print') {
-        canvas = existingCanvas;
-      } else {
-        canvas = await generateCanvasFromImages(images, imageFitModes, minizinePaperConfig, PAGE_SLOTS_CONFIG);
-      }
+      // Always render at export DPI — never reuse #printSheetCanvas (preview is ~1600px wide).
+      const canvas = await generateCanvasFromImages(
+        images,
+        imageFitModes,
+        minizinePaperConfig,
+        PAGE_SLOTS_CONFIG,
+      );
 
       const quality = exportOptions.jpegQuality;
-      const dataURL = quality < 1 
+      const useJpeg = quality < 1;
+      const dataURL = useJpeg
         ? canvas.toDataURL('image/jpeg', quality)
         : canvas.toDataURL('image/png');
       
+      const baseName = fileName.replace(/\.(png|jpe?g|pdf)$/i, '') || 'minizine';
+      const extension = useJpeg ? 'jpg' : 'png';
       const link = document.createElement('a');
       link.href = dataURL;
-      link.download = fileName.includes('.') ? fileName : `${fileName}.png`;
+      link.download = `${baseName}.${extension}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1060,7 +1086,7 @@ const App: React.FC = () => {
     } finally {
       setIsGenerating(false);
     }
-  }, [images, imageFitModes, minizinePaperConfig, minizineViewMode, generateCanvasFromImages, exportOptions.jpegQuality, fileName]);
+  }, [images, imageFitModes, minizinePaperConfig, generateCanvasFromImages, exportOptions.jpegQuality, fileName]);
 
   const handleExportPDF = useCallback(async (format: PDFExportFormat) => {
     analytics.trackEvent('export_pdf', { mode: zineMode, page_count: images.length });
@@ -1072,7 +1098,13 @@ const App: React.FC = () => {
       try {
         const canvas = await generateCanvasFromImages(images, imageFitModes, minizinePaperConfig, PAGE_SLOTS_CONFIG);
         const { createSinglePagePDFBlob, downloadBlob } = await loadPdfGenerator();
-        const blob = await createSinglePagePDFBlob(canvas);
+        const isLandscape = minizinePaperConfig.width >= minizinePaperConfig.height;
+        const sheetW = isLandscape ? minizinePaperConfig.width : minizinePaperConfig.height;
+        const sheetH = isLandscape ? minizinePaperConfig.height : minizinePaperConfig.width;
+        const blob = await createSinglePagePDFBlob(canvas, {
+          widthInPoints: paperDimensionToPoints(sheetW, minizinePaperConfig.unit),
+          heightInPoints: paperDimensionToPoints(sheetH, minizinePaperConfig.unit),
+        });
         downloadBlob(blob, fileName.includes('.') ? fileName : `${fileName}.pdf`);
       } catch (error) {
         console.error('Error generating PDF:', error);
@@ -1114,6 +1146,62 @@ const App: React.FC = () => {
       setGenerationProgress(0);
     }
   }, [zineMode, bookletPages, bookletSpreads, exportOptions, bookletValidation.isValid, fileName, images, imageFitModes, minizinePaperConfig, generateCanvasFromImages, blankPageColor]);
+
+  const runBookletImageExport = useCallback(
+    async (
+      kind: 'pages' | 'scroll' | 'spreads',
+      runner: () => Promise<unknown>,
+    ) => {
+      if (zineMode !== 'booklet') return;
+      if (!bookletValidation.isValid) {
+        setGenerationError('Please fix validation errors before downloading page images.');
+        return;
+      }
+
+      setIsGenerating(true);
+      setGenerationError(null);
+      try {
+        await runner();
+      } catch (error) {
+        console.error(`Error building booklet ${kind} export:`, error);
+        setGenerationError(
+          `Error exporting ${kind}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
+      } finally {
+        setIsGenerating(false);
+      }
+    },
+    [zineMode, bookletValidation.isValid],
+  );
+
+  const handleExportPagesZip = useCallback(() => {
+    void runBookletImageExport('pages', async () => {
+      const { downloadBookletPagesZip } = await import('./utils/bookletImageExports');
+      await downloadBookletPagesZip(bookletPages, bookletSpreads, fileName);
+    });
+  }, [runBookletImageExport, bookletPages, bookletSpreads, fileName]);
+
+  const handleExportVerticalScroll = useCallback(() => {
+    void runBookletImageExport('scroll', async () => {
+      const { downloadBookletVerticalScroll } = await import('./utils/bookletImageExports');
+      await downloadBookletVerticalScroll(bookletPages, bookletSpreads, fileName);
+    });
+  }, [runBookletImageExport, bookletPages, bookletSpreads, fileName]);
+
+  const handleExportSpreadsZip = useCallback(() => {
+    void runBookletImageExport('spreads', async () => {
+      const { downloadBookletSpreadsZip } = await import('./utils/bookletImageExports');
+      await downloadBookletSpreadsZip(bookletPages, bookletSpreads, fileName, blankPageColor);
+    });
+  }, [runBookletImageExport, bookletPages, bookletSpreads, fileName, blankPageColor]);
+
+  const handleBleedChange = useCallback((bleed: typeof DEFAULT_BLEED_CONFIG) => {
+    setExportOptions((prev) => ({ ...prev, bleed }));
+  }, []);
+
+  const handleApplyDpi = useCallback((dpi: number) => {
+    setMinizinePaperConfig((prev) => ({ ...prev, dpi }));
+  }, []);
 
   const handleRedownloadPDF = useCallback(async () => {
     if (pdfResult) {
@@ -1396,7 +1484,7 @@ const App: React.FC = () => {
               onConfigChange={setPaperConfig}
               mode={zineMode}
               bleedConfig={zineMode === 'booklet' ? exportOptions.bleed : undefined}
-              onBleedChange={zineMode === 'booklet' ? (bleed) => setExportOptions(prev => ({ ...prev, bleed })) : undefined}
+              onBleedChange={zineMode === 'booklet' ? handleBleedChange : undefined}
             />
             
             <ExportOptions
@@ -1407,6 +1495,9 @@ const App: React.FC = () => {
               onFileNameChange={setFileName}
               onExportPNG={handleExportPNG}
               onExportPDF={handleExportPDF}
+              onExportPagesZip={handleExportPagesZip}
+              onExportVerticalScroll={handleExportVerticalScroll}
+              onExportSpreadsZip={handleExportSpreadsZip}
               isGenerating={isGenerating}
               progress={generationProgress}
               isValid={zineMode === 'minizine' ? hasMinizineImages : bookletValidation.isValid}
@@ -1417,6 +1508,8 @@ const App: React.FC = () => {
               generationError={generationError}
               hasImages={hasMinizineImages}
               paperConfig={zineMode === 'minizine' ? minizinePaperConfig : bookletPaperConfig}
+              sourceImageSizes={zineMode === 'minizine' ? sourceImageSizes : undefined}
+              onApplyDpi={zineMode === 'minizine' ? handleApplyDpi : undefined}
             />
             
             <Instructions mode={zineMode} />
@@ -1426,7 +1519,7 @@ const App: React.FC = () => {
               onRemove={handleRemoveSharedImage}
               onClearAll={handleClearAllImages}
               onSelectForSlot={zineMode === 'minizine' ? handleSelectImageForSlot : undefined}
-              assignedImageIds={zineMode === 'minizine' ? assignedMinizineImageIds : new Set()}
+              assignedImageIds={zineMode === 'minizine' ? assignedMinizineImageIds : EMPTY_ASSIGNED_IMAGE_IDS}
               slotsFilledCount={zineMode === 'minizine' ? Object.keys(minizineSlotAssignments).length : undefined}
               totalSlots={zineMode === 'minizine' ? 8 : undefined}
               compact
@@ -1500,7 +1593,17 @@ const App: React.FC = () => {
             )}
 
             {isProcessingFiles && (
-              <div className="text-center text-gray-600 py-4">Processing images...</div>
+              <div
+                className="zine-processing-status"
+                role="status"
+                aria-live="polite"
+                aria-busy="true"
+              >
+                <span className="zine-processing-status__orb" aria-hidden />
+                <p className="zine-processing-status__label font-heading">
+                  Processing images…
+                </p>
+              </div>
             )}
             
             {/* =============================================
@@ -1537,7 +1640,7 @@ const App: React.FC = () => {
                             <ImageUploaderSlot
                               key={slot.id}
                               slot={slot}
-                              imageSrc={images[slot.id]}
+                              imageSrc={previewImages[slot.id]}
                               fitMode={imageFitModes[slot.id] || 'cover'}
                               rotation={slot.rotation}
                               onImageUpload={handleSingleImageUpload}

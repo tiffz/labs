@@ -25,16 +25,17 @@ Canonical pattern for syncing app state to the URL (shareable links, back/forwar
 
 ## App implementations
 
-| App      | Hook / module                              | Href builder                            | App-specific doc                                                    |
-| -------- | ------------------------------------------ | --------------------------------------- | ------------------------------------------------------------------- |
-| Drums    | `src/drums/hooks/useUrlState.ts`           | `src/drums/routes/drumsAppUrl.ts`       | [`src/drums/docs/URL_SHARING.md`](../src/drums/docs/URL_SHARING.md) |
-| Chords   | `src/chords/hooks/useUrlState.ts`          | —                                       | [`src/chords/README.md`](../src/chords/README.md)                   |
-| Words    | `src/words/hooks/useWordsUrlState.ts`      | —                                       | [`src/words/README.md`](../src/words/README.md)                     |
-| Stanza   | `src/stanza/utils/stanzaDriveUrlParams.ts` | `stanzaSongHref`                        | [`src/stanza/README.md`](../src/stanza/README.md)                   |
-| Encore   | Hash routing (`encoreAppHash.ts`)          | `encoreAppHref`                         | [`src/encore/README.md`](../src/encore/README.md)                   |
-| Gesture  | Hash routing (`gestureAppHash.ts`)         | `gestureAppHref`                        | [`src/gesture/README.md`](../src/gesture/README.md)                 |
-| Zine Box | `src/zinebox/hooks/useZineboxUrlState.ts`  | `zineboxLibraryHref`, `zineboxReadHref` | [`src/zinebox/README.md`](../src/zinebox/README.md)                 |
-| Muscle   | `src/muscle/routes/muscleAppUrl.ts`        | `muscleModuleHref`                      | [`src/muscle/README.md`](../src/muscle/README.md)                   |
+| App      | Hook / module                                | Href builder                            | App-specific doc                                                    |
+| -------- | -------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------- |
+| Drums    | `src/drums/hooks/useUrlState.ts`             | `src/drums/routes/drumsAppUrl.ts`       | [`src/drums/docs/URL_SHARING.md`](../src/drums/docs/URL_SHARING.md) |
+| Chords   | `src/chords/hooks/useUrlState.ts`            | —                                       | [`src/chords/README.md`](../src/chords/README.md)                   |
+| Words    | `src/words/hooks/useWordsUrlState.ts`        | —                                       | [`src/words/README.md`](../src/words/README.md)                     |
+| Stanza   | `src/stanza/utils/stanzaDriveUrlParams.ts`   | `stanzaSongHref`                        | [`src/stanza/README.md`](../src/stanza/README.md)                   |
+| Encore   | Hash routing (`encoreAppHash.ts`)            | `encoreAppHref`                         | [`src/encore/README.md`](../src/encore/README.md)                   |
+| Gesture  | Hash routing (`gestureAppHash.ts`)           | `gestureAppHref`                        | [`src/gesture/README.md`](../src/gesture/README.md)                 |
+| Zine Box | `src/zinebox/hooks/useZineboxUrlState.ts`    | `zineboxLibraryHref`, `zineboxReadHref` | [`src/zinebox/README.md`](../src/zinebox/README.md)                 |
+| Muscle   | `src/muscle/routes/muscleAppUrl.ts`          | `muscleModuleHref`                      | [`src/muscle/README.md`](../src/muscle/README.md)                   |
+| Palette  | `src/palette/hooks/usePalettegenUrlState.ts` | `buildPalettegenShareUrl`               | [`src/palette/README.md`](../src/palette/README.md)                 |
 
 ## Agent workflow
 

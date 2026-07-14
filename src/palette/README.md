@@ -9,7 +9,20 @@ Standalone Labs app for building color palettes from scratch — photos, seed co
 - **Random palettes** — mood presets (vivid, pastel, neon, jewel, earth, muted) with harmony templates
 - **Style profiles** — lightness/chroma bounds, sRGB gamut clipping, custom overrides
 - **Coolors-style UI** — full-bleed stripes + thumbnail strip navigation
+- **Share link** — toolbar share icon copies a normalized `/palette/?colors=…` URL (image-sourced palettes share colors only; source images stay local)
 - Export CSS variables, JSON, or hex row
+
+## URL params
+
+Synced via [`usePalettegenUrlState`](./hooks/usePalettegenUrlState.ts) ([URL state pattern](../../docs/URL_STATE_PATTERN.md)):
+
+| Param    | Meaning                                                         |
+| -------- | --------------------------------------------------------------- |
+| `colors` | Comma-separated lowercase hex without `#` (required for shares) |
+| `mode`   | Only `seed` is written; image/random are omitted                |
+| `seed`   | Seed hex when `mode=seed`                                       |
+
+Legacy links with `mode=image` still load the `colors` row and ignore the mode.
 
 ## Shared code
 

@@ -11,6 +11,11 @@ const ADJECTIVES = [
   'sleepy',
   'dramatic',
   'feral',
+  'damp',
+  'glowing',
+  'slightly cursed',
+  'budget',
+  'overconfident',
 ];
 
 const NOUNS = [
@@ -24,6 +29,11 @@ const NOUNS = [
   'houseplant',
   'accordion',
   'traffic cone',
+  'spare key',
+  'lunchbox',
+  'fog machine',
+  'library card',
+  'rubber chicken',
 ];
 
 const PLACES = [
@@ -35,6 +45,10 @@ const PLACES = [
   'low tide',
   'the wrong timeline',
   'backstage',
+  'the freight elevator',
+  'row G',
+  'the loading dock',
+  'nowhere useful',
 ];
 
 const CAPTION_TEMPLATES = [
@@ -43,6 +57,11 @@ const CAPTION_TEMPLATES = [
   'Cut to: {adjective} {noun}.',
   'Exactly {adjective} o’clock.',
   'Across {place}.',
+  'Elsewhere.',
+  'Not long after.',
+  'In {place}, somehow.',
+  'Behold: the {noun}.',
+  'Seconds later.',
 ];
 
 const DIALOGUE_TEMPLATES = [
@@ -52,6 +71,16 @@ const DIALOGUE_TEMPLATES = [
   'Quick, hide the {noun} behind the {place}.',
   'This is not how {place} works.',
   'We are absolutely not discussing the {noun} again.',
+  'I can explain the {noun}.',
+  'Please stop poking the {adjective} one.',
+  'That {noun} was not on the call sheet.',
+  'Who left {place} unlocked?',
+  'Pass me the {noun} — carefully.',
+  'If this is a prank, it is too {adjective}.',
+  'I refuse to name the {noun}.',
+  'Check {place} one more time.',
+  'My plan did not include a {noun}.',
+  'Keep the {noun} between us.',
 ];
 
 const EXCHANGE_PRESETS: Array<Array<{ speaker: PanelCharacterId; template: string }>> = [
@@ -68,7 +97,45 @@ const EXCHANGE_PRESETS: Array<Array<{ speaker: PanelCharacterId; template: strin
     { speaker: 'c', template: 'Who invited the {noun}?' },
     { speaker: 'a', template: 'It followed us from {place}.' },
   ],
+  [
+    { speaker: 'a', template: 'Do not look at the {noun}.' },
+    { speaker: 'b', template: 'Too late.' },
+  ],
+  [
+    { speaker: 'b', template: 'I found another {adjective} {noun}.' },
+    { speaker: 'c', template: 'Put it back.' },
+    { speaker: 'a', template: 'Or… collect them?' },
+  ],
+  [
+    { speaker: 'c', template: '{place} is compromised.' },
+    { speaker: 'a', template: 'By what?' },
+    { speaker: 'b', template: 'A very confident {noun}.' },
+  ],
+  [
+    { speaker: 'a', template: 'Trade you a {noun} for silence.' },
+    { speaker: 'b', template: 'Make it {adjective}.' },
+  ],
+  [
+    { speaker: 'b', template: 'Why is the {noun} humming?' },
+    { speaker: 'c', template: 'It always does that near {place}.' },
+  ],
+  [
+    { speaker: 'a', template: 'Plan B!' },
+    { speaker: 'b', template: 'We never finished Plan A.' },
+    { speaker: 'c', template: 'Good — skip to C.' },
+  ],
+  [
+    { speaker: 'c', template: 'Nobody panic.' },
+    { speaker: 'a', template: 'I am panicking about the {noun}.' },
+  ],
 ];
+
+const SFX_TEMPLATES = ['THONK', 'SKRR', 'WHOMP', 'PING', 'FWOOSH', 'CLACK', 'BZZT', 'SPLISH'];
+
+export type MadLibsOptions = {
+  /** Prefer templates/exchanges not already used on this page. */
+  usedKeys?: Set<string>;
+};
 
 function seeded(seed: number): () => number {
   let state = Math.abs(seed) >>> 0 || 1;
@@ -82,6 +149,17 @@ function pick<T>(rng: () => number, list: readonly T[]): T {
   return list[Math.floor(rng() * list.length)]!;
 }
 
+function pickFresh<T>(
+  rng: () => number,
+  list: readonly T[],
+  usedKeys: Set<string> | undefined,
+  keyFor: (item: T) => string,
+): T {
+  if (!usedKeys || usedKeys.size === 0) return pick(rng, list);
+  const fresh = list.filter((item) => !usedKeys.has(keyFor(item)));
+  return pick(rng, fresh.length > 0 ? fresh : list);
+}
+
 function fillTemplate(template: string, rng: () => number): string {
   return template
     .replaceAll('{adjective}', pick(rng, ADJECTIVES))
@@ -89,21 +167,33 @@ function fillTemplate(template: string, rng: () => number): string {
     .replaceAll('{place}', pick(rng, PLACES));
 }
 
-export function generateMadLibsBlocks(seed: number, panelIndex: number): PanelTextBlock[] {
-  const rng = seeded(seed + panelIndex * 131);
+function exchangeKey(exchange: Array<{ speaker: PanelCharacterId; template: string }>): string {
+  return `ex:${exchange.map((line) => `${line.speaker}:${line.template}`).join('|')}`;
+}
+
+export function generateMadLibsBlocks(
+  seed: number,
+  panelIndex: number,
+  options?: MadLibsOptions,
+): PanelTextBlock[] {
+  const rng = seeded(seed + panelIndex * 9973 + 7919);
+  const usedKeys = options?.usedKeys;
   const roll = rng();
-  if (roll < 0.12) return [];
+  if (roll < 0.1) return [];
 
   const blocks: PanelTextBlock[] = [];
-  if (roll < 0.35) {
+  if (roll < 0.28) {
+    const template = pickFresh(rng, CAPTION_TEMPLATES, usedKeys, (t) => `cap:${t}`);
+    usedKeys?.add(`cap:${template}`);
     blocks.push({
       kind: 'caption',
-      content: fillTemplate(pick(rng, CAPTION_TEMPLATES), rng),
+      content: fillTemplate(template, rng),
     });
   }
 
-  if (roll < 0.55) {
-    const exchange = pick(rng, EXCHANGE_PRESETS);
+  if (roll < 0.62) {
+    const exchange = pickFresh(rng, EXCHANGE_PRESETS, usedKeys, exchangeKey);
+    usedKeys?.add(exchangeKey(exchange));
     for (const line of exchange) {
       blocks.push({
         kind: 'dialogue',
@@ -111,24 +201,49 @@ export function generateMadLibsBlocks(seed: number, panelIndex: number): PanelTe
         content: fillTemplate(line.template, rng),
       });
     }
+    if (roll > 0.9) {
+      blocks.push({
+        kind: 'sfx',
+        content: pick(rng, SFX_TEMPLATES),
+      });
+    }
     return blocks;
   }
 
+  const firstTemplate = pickFresh(rng, DIALOGUE_TEMPLATES, usedKeys, (t) => `dlg:${t}`);
+  usedKeys?.add(`dlg:${firstTemplate}`);
   blocks.push({
     kind: 'dialogue',
     characterId: pick(rng, ['a', 'b', 'c'] as PanelCharacterId[]),
-    content: fillTemplate(pick(rng, DIALOGUE_TEMPLATES), rng),
+    content: fillTemplate(firstTemplate, rng),
   });
 
-  if (roll > 0.82) {
+  if (roll > 0.78) {
+    const secondTemplate = pickFresh(rng, DIALOGUE_TEMPLATES, usedKeys, (t) => `dlg:${t}`);
+    usedKeys?.add(`dlg:${secondTemplate}`);
     blocks.push({
       kind: 'dialogue',
       characterId: pick(rng, ['a', 'b', 'c'] as PanelCharacterId[]),
-      content: fillTemplate(pick(rng, DIALOGUE_TEMPLATES), rng),
+      content: fillTemplate(secondTemplate, rng),
+    });
+  }
+
+  if (roll > 0.92) {
+    blocks.push({
+      kind: 'sfx',
+      content: pick(rng, SFX_TEMPLATES),
     });
   }
 
   return blocks;
+}
+
+/** Generate one page of copy, minimizing repeated exchange/template keys across panels. */
+export function generateMadLibsPage(seed: number, panelCount: number): PanelTextBlock[][] {
+  const usedKeys = new Set<string>();
+  return Array.from({ length: panelCount }, (_, panelIndex) =>
+    generateMadLibsBlocks(seed, panelIndex, { usedKeys }),
+  );
 }
 
 export function madLibsTemplateKey(block: PanelTextBlock): string {

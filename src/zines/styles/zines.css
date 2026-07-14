@@ -138,6 +138,40 @@
     color: var(--color-primary);
   }
 
+  /* Page-image export menu (MUI Menu paper) */
+  .zine-page-image-menu.MuiPaper-root {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 24px rgba(68, 64, 60, 0.12);
+    overflow: hidden;
+  }
+
+  .zine-page-image-menu .MuiMenuItem-root {
+    padding: 10px 14px;
+    align-items: flex-start;
+    min-height: 0;
+  }
+
+  .zine-page-image-menu .MuiMenuItem-root:hover,
+  .zine-page-image-menu .MuiMenuItem-root.Mui-focusVisible {
+    background: var(--color-teal-50);
+  }
+
+  .zine-page-image-menu .MuiListItemText-primary {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-teal-500);
+    line-height: 1.2;
+  }
+
+  .zine-page-image-menu .MuiListItemText-secondary {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+  }
+
   .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -462,6 +496,54 @@
     );
     transition: width 0.2s ease-out;
     border-radius: 4px;
+  }
+
+  /* Compact upload status — light paint cost while decoding images */
+  .zine-processing-status {
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 0 auto 8px;
+    padding: 6px 12px;
+    text-align: center;
+    background: var(--color-teal-50);
+    border: 1px solid var(--color-teal-200);
+    border-radius: 9999px;
+  }
+
+  .zine-processing-status__orb {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--color-teal-500);
+    animation: zine-processing-pulse 1.1s ease-in-out infinite;
+  }
+
+  .zine-processing-status__label {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--color-teal-500);
+  }
+
+  @keyframes zine-processing-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .zine-processing-status__orb {
+      animation: none;
+    }
   }
 
   /* ============================================

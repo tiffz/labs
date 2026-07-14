@@ -13,7 +13,7 @@ import { panelCircleClipAttrs, panelPixelBounds, panelSvgPointsAttr, resolvePane
 import { renderMockupComposition } from './mockupCompositions';
 import { isLegacyStickFill, legacyStickPose, resolvePanelComposition, resolvePanelTextBlocks } from './panelFillResolve';
 import { layoutPanelTextBlocks, type PanelTextLayout, type PanelTextLayoutOptions } from './speechBubbleLayout';
-import { BUBBLE_FONT_FAMILY, speechBubblePathD } from './speechBubblePath';
+import { BUBBLE_FONT_FAMILY, bubbleTextOffsetY, speechBubblePathForLayout } from './speechBubblePath';
 import type { PanelCharacterId, PanelFillSpec, PanelLayoutSpec, PanelRect, PanelTextBlock } from './types';
 import { stickFigureSvg } from './stickFigures';
 
@@ -296,15 +296,28 @@ function renderPanelTextOverlay(
     }
     if (item.kind === 'bubble') {
       const bubble = item.layout;
-      const path = speechBubblePathD(
+      const path = speechBubblePathForLayout(
         bubble.cx,
         bubble.cy,
         bubble.halfW,
         bubble.halfH,
         bubble.tailX,
         bubble.tailY,
+        bubble.metrics.shape,
       );
-      const textTop = bubble.cy - ((bubble.lines.length - 1) * bubble.metrics.lineHeight) / 2;
+      const textOffsetY = bubbleTextOffsetY(
+        bubble.cx,
+        bubble.cy,
+        bubble.halfW,
+        bubble.halfH,
+        bubble.tailX,
+        bubble.tailY,
+        bubble.metrics.shape,
+      );
+      const textTop =
+        bubble.cy -
+        ((bubble.lines.length - 1) * bubble.metrics.lineHeight) / 2 +
+        textOffsetY;
       elements.push(
         <g key={`bubble-${index}`} className="comic-mockup-svg__bubble">
           <path

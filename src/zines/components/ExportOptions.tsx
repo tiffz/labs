@@ -1,7 +1,30 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import ListItemText from '@mui/material/ListItemText';
 import type { ZineMode, PDFGenerationOptions, PDFExportFormat, BookletPageInfo, SpreadInfo, PDFResult, PaperConfig } from '../types';
-import { estimateUncompressedSize, estimateCompressedSize, formatFileSize } from '../utils/pdfMetrics';
+import {
+  estimateUncompressedSize,
+  estimateCompressedSize,
+  formatFileSize,
+  estimateMinizineExportBytes,
+  minizineExportPixelSize,
+  suggestDpiFromSources,
+} from '../utils/pdfMetrics';
 import AppSlider from '../../shared/components/AppSlider';
+import { useLabsDisclosureMenu } from '../../shared/a11y/useLabsDisclosureMenu';
+
+type PageImageExportKind = 'pages' | 'scroll' | 'spreads';
+
+const PAGE_IMAGE_EXPORT_OPTIONS: Array<{
+  id: PageImageExportKind;
+  label: string;
+  hint: string;
+}> = [
+  { id: 'pages', label: 'Pages (ZIP)', hint: 'One image per page' },
+  { id: 'scroll', label: 'Vertical scroll', hint: 'Single long image' },
+  { id: 'spreads', label: 'Spreads (ZIP)', hint: 'Facing-page pairs' },
+];
 
 interface ExportOptionsProps {
   mode: ZineMode;
@@ -11,6 +34,9 @@ interface ExportOptionsProps {
   onFileNameChange: (fileName: string) => void;
   onExportPNG?: () => void;
   onExportPDF?: (format: PDFExportFormat) => void;
+  onExportPagesZip?: () => void;
+  onExportVerticalScroll?: () => void;
+  onExportSpreadsZip?: () => void;
   isGenerating: boolean;
   progress: number;
   isValid: boolean;
@@ -21,6 +47,9 @@ interface ExportOptionsProps {
   generationError?: string | null;
   hasImages?: boolean;
   paperConfig?: PaperConfig; // For minizine output dimension calculations
+  /** Source pixel sizes used to suggest a higher export DPI. */
+  sourceImageSizes?: Array<{ width: number; height: number }>;
+  onApplyDpi?: (dpi: number) => void;
 }
 
 const PDF_FORMAT_INFO: Record<PDFExportFormat, { label: string; description: string; icon: string }> = {
@@ -50,6 +79,9 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
   onFileNameChange,
   onExportPNG,
   onExportPDF,
+  onExportPagesZip,
+  onExportVerticalScroll,
+  onExportSpreadsZip,
   isGenerating,
   progress,
   isValid,
@@ -60,7 +92,30 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
   generationError,
   hasImages = false,
   paperConfig,
+  sourceImageSizes = [],
+  onApplyDpi,
 }) => {
+  const [pageImageMenuAnchor, setPageImageMenuAnchor] = useState<HTMLElement | null>(null);
+  const pageImageMenu = useLabsDisclosureMenu({ menuId: 'zine-page-image-export-menu' });
+  const pageImageMenuOpen = Boolean(pageImageMenuAnchor);
+
+  const pageImageChoices = useMemo(
+    () =>
+      PAGE_IMAGE_EXPORT_OPTIONS.filter((option) => {
+        if (option.id === 'pages') return Boolean(onExportPagesZip);
+        if (option.id === 'scroll') return Boolean(onExportVerticalScroll);
+        return Boolean(onExportSpreadsZip);
+      }),
+    [onExportPagesZip, onExportVerticalScroll, onExportSpreadsZip],
+  );
+
+  const runPageImageExport = (kind: PageImageExportKind) => {
+    setPageImageMenuAnchor(null);
+    if (kind === 'pages') onExportPagesZip?.();
+    else if (kind === 'scroll') onExportVerticalScroll?.();
+    else onExportSpreadsZip?.();
+  };
+
   // File size estimate for booklet mode
   const fileSizeEstimates = useMemo(() => {
     if (mode !== 'booklet' || (pages.length === 0 && spreads.length === 0)) return null;
@@ -79,35 +134,36 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
   // Minizine output dimensions and file size estimate
   const minizineOutputInfo = useMemo(() => {
     if (mode !== 'minizine' || !paperConfig || !hasImages) return null;
-    
-    // Calculate output dimensions based on paper config and resolution scale
-    const isLandscape = paperConfig.width >= paperConfig.height;
-    const baseWidth = isLandscape ? paperConfig.width : paperConfig.height;
-    const baseHeight = isLandscape ? paperConfig.height : paperConfig.width;
-    
-    // Full resolution dimensions
-    const fullWidth = Math.round(baseWidth * paperConfig.dpi);
-    const fullHeight = Math.round(baseHeight * paperConfig.dpi);
-    
-    // Scaled dimensions based on resolution setting
-    const scaledWidth = Math.round(fullWidth * options.resolutionScale);
-    const scaledHeight = Math.round(fullHeight * options.resolutionScale);
-    
-    // Effective DPI
-    const effectiveDpi = Math.round(paperConfig.dpi * options.resolutionScale);
-    
-    // Estimate file size (rough estimate: ~3 bytes per pixel for JPEG at quality, ~4 for PNG)
-    const pixelCount = scaledWidth * scaledHeight;
-    const bytesPerPixel = options.jpegQuality >= 1 ? 4 : (0.5 + options.jpegQuality * 2.5); // PNG vs JPEG estimate
-    const estimatedBytes = Math.round(pixelCount * bytesPerPixel);
-    
+
+    const { width, height, effectiveDpi, panelWidth, panelHeight } = minizineExportPixelSize(
+      paperConfig,
+      options.resolutionScale,
+    );
+    const estimatedBytes = estimateMinizineExportBytes(paperConfig, {
+      resolutionScale: options.resolutionScale,
+      jpegQuality: options.jpegQuality,
+    });
+    const suggestedDpi = suggestDpiFromSources(paperConfig, sourceImageSizes);
+    const showDpiNudge =
+      suggestedDpi != null && suggestedDpi > paperConfig.dpi + 25;
+
     return {
-      width: scaledWidth,
-      height: scaledHeight,
+      width,
+      height,
+      panelWidth,
+      panelHeight,
       dpi: effectiveDpi,
       estimatedSize: estimatedBytes,
+      suggestedDpi: showDpiNudge ? suggestedDpi : null,
     };
-  }, [mode, paperConfig, hasImages, options.resolutionScale, options.jpegQuality]);
+  }, [
+    mode,
+    paperConfig,
+    hasImages,
+    options.resolutionScale,
+    options.jpegQuality,
+    sourceImageSizes,
+  ]);
 
   const handleJpegQualityChange = (quality: number) => {
     onOptionsChange({
@@ -210,9 +266,15 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
           {minizineOutputInfo && (
             <div className="pt-2 border-t border-amber-200 space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-amber-700">Output:</span>
+                <span className="text-amber-700">Sheet:</span>
                 <span className="font-medium text-amber-800">
                   {minizineOutputInfo.width} × {minizineOutputInfo.height} px
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-amber-700">Per page:</span>
+                <span className="font-medium text-amber-800">
+                  {minizineOutputInfo.panelWidth} × {minizineOutputInfo.panelHeight} px
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs">
@@ -225,6 +287,17 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
                   {formatFileSize(minizineOutputInfo.estimatedSize)}
                 </span>
               </div>
+              {minizineOutputInfo.suggestedDpi != null && onApplyDpi && (
+                <button
+                  type="button"
+                  onClick={() => onApplyDpi(minizineOutputInfo.suggestedDpi!)}
+                  className="mt-2 w-full text-left text-xs px-2.5 py-2 rounded-md bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100 transition-colors"
+                >
+                  Your pages are larger than each panel. Set DPI to{' '}
+                  <span className="font-semibold">{minizineOutputInfo.suggestedDpi}</span> to
+                  keep source detail.
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -312,14 +385,82 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
           )}
           
           {mode === 'booklet' && onExportPDF && (
-            <button
-              onClick={() => onExportPDF(options.exportFormat)}
-              disabled={!isValid || isGenerating}
-              className="btn btn-primary w-full"
-            >
-              <span>{PDF_FORMAT_INFO[options.exportFormat].icon}</span>
-              {isGenerating ? 'Generating...' : `Download ${PDF_FORMAT_INFO[options.exportFormat].label}`}
-            </button>
+            <>
+              <button
+                onClick={() => onExportPDF(options.exportFormat)}
+                disabled={!isValid || isGenerating}
+                className="btn btn-primary w-full"
+              >
+                <span>{PDF_FORMAT_INFO[options.exportFormat].icon}</span>
+                {isGenerating ? 'Generating...' : `Download ${PDF_FORMAT_INFO[options.exportFormat].label}`}
+              </button>
+              {pageImageChoices.length > 0 && (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-secondary w-full"
+                    disabled={!isValid || isGenerating}
+                    onClick={(event) => setPageImageMenuAnchor(event.currentTarget)}
+                    {...pageImageMenu.getTriggerA11yProps(pageImageMenuOpen)}
+                  >
+                    Download page images
+                    <span className="ml-1 opacity-70" aria-hidden>
+                      ▾
+                    </span>
+                  </button>
+                  <Menu
+                    {...pageImageMenu.getMenuProps()}
+                    anchorEl={pageImageMenuAnchor}
+                    open={pageImageMenuOpen}
+                    onClose={() => setPageImageMenuAnchor(null)}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                    slotProps={{
+                      paper: {
+                        className: 'labs-popover-surface zine-page-image-menu',
+                        sx: {
+                          minWidth: pageImageMenuAnchor?.offsetWidth ?? 220,
+                          mt: 0.5,
+                          bgcolor: 'var(--color-bg-card)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: 'var(--radius)',
+                          boxShadow: '0 8px 24px rgba(68, 64, 60, 0.12)',
+                          backgroundImage: 'none',
+                          '& .MuiMenuItem-root:hover, & .MuiMenuItem-root.Mui-focusVisible': {
+                            bgcolor: 'var(--color-teal-50)',
+                          },
+                          '& .MuiListItemText-primary': {
+                            fontFamily: 'var(--font-heading)',
+                            fontSize: '1.05rem',
+                            fontWeight: 700,
+                            color: 'var(--color-teal-500)',
+                            lineHeight: 1.2,
+                          },
+                          '& .MuiListItemText-secondary': {
+                            fontSize: '0.7rem',
+                            color: 'var(--color-text-muted)',
+                            marginTop: '2px',
+                          },
+                        },
+                      },
+                    }}
+                  >
+                    {pageImageChoices.map((option) => (
+                      <MenuItem
+                        key={option.id}
+                        onClick={() => runPageImageExport(option.id)}
+                        dense
+                      >
+                        <ListItemText
+                          primary={option.label}
+                          secondary={option.hint}
+                        />
+                      </MenuItem>
+                    ))}
+                  </Menu>
+                </>
+              )}
+            </>
           )}
         </div>
 

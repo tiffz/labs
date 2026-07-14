@@ -219,7 +219,9 @@ export function usePalettegenGallery(): {
       setStatus('Loaded shared palette.');
       hasGeneratedRef.current = true;
       settingsRefreshReadyRef.current = true;
-      sharedFromUrlRef.current = !state.mode;
+      // Lock shared colors unless seed mode (style changes may regenerate from seed).
+      // Image/random shares are colors-only — do not overwrite with a fresh random set.
+      sharedFromUrlRef.current = state.mode !== 'seed';
     }
   }, []);
 
@@ -308,7 +310,9 @@ export function usePalettegenGallery(): {
   const refreshFromSettings = useCallback(() => {
     if (sharedFromUrlRef.current) return;
     if (!hasGeneratedRef.current || entries.length === 0) return;
-    if (mode === 'image' && imageFilesRef.current.length > 0) {
+    if (mode === 'image') {
+      // Without local files (e.g. opened a colors-only share while on Images), keep the palette.
+      if (imageFilesRef.current.length === 0) return;
       void generateFromImages(imageFilesRef.current, true);
       return;
     }

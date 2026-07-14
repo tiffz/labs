@@ -1,5 +1,6 @@
 import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import IosShareIcon from '@mui/icons-material/IosShare';
 import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import Button from '@mui/material/Button';
@@ -18,6 +19,7 @@ import {
   exportPaletteAsJson,
 } from '../../shared/palette';
 import type { PalettegenSourceImage, usePalettegenGallery } from '../hooks/usePalettegenGallery';
+import { buildPalettegenShareUrl } from '../utils/palettegenUrlParams';
 import { PalettegenImageLightbox } from './PalettegenImageLightbox';
 import { PalettegenLogo } from './PalettegenLogo';
 import { PalettegenStylePanel } from './PalettegenStylePanel';
@@ -73,6 +75,17 @@ export function PalettegenToolbar({ gallery, onCopied }: PalettegenToolbarProps)
     await navigator.clipboard.writeText(text);
     onCopied(`Copied ${label}.`);
     setCopyAnchor(null);
+  };
+
+  const copyShareUrl = async (): Promise<void> => {
+    if (!activeEntry) return;
+    const url = buildPalettegenShareUrl({
+      colors: activeEntry.palette.swatches.map((swatch) => swatch.hex),
+      mode,
+      seed: seedHex,
+    });
+    await navigator.clipboard.writeText(url);
+    onCopied('Share link copied.');
   };
 
   const openStyle = (event: MouseEvent<HTMLButtonElement>): void => setStyleAnchor(event.currentTarget);
@@ -241,6 +254,20 @@ export function PalettegenToolbar({ gallery, onCopied }: PalettegenToolbarProps)
               </IconButton>
             </Tooltip>
             <PalettegenStylePanel gallery={gallery} anchorEl={styleAnchor} onClose={() => setStyleAnchor(null)} />
+
+            <Tooltip title="Copy share link">
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={!activeEntry}
+                  onClick={() => void copyShareUrl()}
+                  aria-label="Copy share link"
+                  data-testid="palettegen-share-link"
+                >
+                  <IosShareIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
 
             <Tooltip title="Copy palette">
               <span>

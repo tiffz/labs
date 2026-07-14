@@ -11,6 +11,7 @@ import type {
 } from '../types';
 import IconButton from './IconButton';
 import { buildPrintSpreads, type PrintSpread } from '../utils/spreadPairing';
+import { bookletPreviewSrc } from '../utils/imageDisplay';
 
 interface SpreadPreviewProps {
   pages: BookletPageInfo[];
@@ -256,6 +257,7 @@ const SpreadPreview: React.FC<SpreadPreviewProps> = memo(({
               alt={pageInfo.label}
               className="w-full h-full object-cover"
               draggable={false}
+              decoding="async"
             />
             <BleedOverlay show={bleedWidthPercent > 0 || bleedHeightPercent > 0} />
             
@@ -347,6 +349,7 @@ const SpreadPreview: React.FC<SpreadPreviewProps> = memo(({
               alt={spread.displayLabel}
               className="w-full h-full object-cover"
               draggable={false}
+              decoding="async"
             />
             <BleedOverlay show={bleedWidthPercent > 0 || bleedHeightPercent > 0} />
             
@@ -556,10 +559,11 @@ const SpreadPreview: React.FC<SpreadPreviewProps> = memo(({
                 >
                   {isExplicit && spread.explicitSpread ? (
                     <img
-                      src={spread.explicitSpread.imageData}
+                      src={bookletPreviewSrc(spread.explicitSpread)}
                       alt={spread.displayLabel}
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      decoding="async"
                     />
                   ) : (
                     <>
@@ -569,10 +573,11 @@ const SpreadPreview: React.FC<SpreadPreviewProps> = memo(({
                       >
                         {spread.leftPage?.page ? (
                           <img
-                            src={spread.leftPage.page.imageData}
+                            src={bookletPreviewSrc(spread.leftPage.page)}
                             alt="Left"
                             className="w-full h-full object-cover"
                             loading="lazy"
+                            decoding="async"
                           />
                         ) : (
                           <span className="text-stone-400 text-[10px]">{spread.leftPage?.label || '+'}</span>
@@ -585,10 +590,11 @@ const SpreadPreview: React.FC<SpreadPreviewProps> = memo(({
                       >
                         {spread.rightPage?.page ? (
                           <img
-                            src={spread.rightPage.page.imageData}
+                            src={bookletPreviewSrc(spread.rightPage.page)}
                             alt="Right"
                             className="w-full h-full object-cover"
                             loading="lazy"
+                            decoding="async"
                           />
                         ) : (
                           <span className="text-stone-400 text-[10px]">{spread.rightPage?.label || '+'}</span>

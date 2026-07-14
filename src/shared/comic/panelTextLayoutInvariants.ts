@@ -1,5 +1,11 @@
 import { characterMarkerLayoutBox } from './characterMarkers';
-import { bubbleBodyBBox, charWidthForFont } from './speechBubblePath';
+import {
+  bubbleBodyBBox,
+  bubbleTextBlockHeight,
+  bubbleTextOffsetY,
+  charWidthForFont,
+} from './speechBubblePath';
+import type { SpeechBubbleLayout } from './speechBubbleLayout';
 import type {
   PanelTextLayout,
   PanelTextLayoutItem,
@@ -15,6 +21,7 @@ export type LayoutViolationCode =
   | 'bubble_in_bounds'
   | 'tail_inside_panel'
   | 'character_below_bubble'
+  | 'text_outside_panel'
   | 'no_character_overlap';
 
 export type LayoutViolation = {
@@ -59,12 +66,51 @@ function boxesOverlap(a: BBox, b: BBox): boolean {
   );
 }
 
+function bubbleTextBBox(bubble: SpeechBubbleLayout): BBox {
+  const offsetY = bubbleTextOffsetY(
+    bubble.cx,
+    bubble.cy,
+    bubble.halfW,
+    bubble.halfH,
+    bubble.tailX,
+    bubble.tailY,
+    bubble.metrics.shape,
+  );
+  const textTop =
+    bubble.cy -
+    ((bubble.lines.length - 1) * bubble.metrics.lineHeight) / 2 +
+    offsetY;
+  const textH = bubbleTextBlockHeight(
+    bubble.lines.length,
+    bubble.metrics.lineHeight,
+    bubble.metrics.fontSize,
+  );
+  const charW = charWidthForFont(bubble.metrics.fontSize);
+  const maxLineChars = Math.max(...bubble.lines.map((line) => line.length), 1);
+  const textW = maxLineChars * charW;
+  return {
+    left: bubble.cx - textW / 2 - bubble.metrics.padX * 0.25,
+    top: textTop - bubble.metrics.fontSize * 0.2,
+    right: bubble.cx + textW / 2 + bubble.metrics.padX * 0.25,
+    bottom: textTop + textH + bubble.metrics.fontSize * 0.15,
+  };
+}
+
 function pointInRect(x: number, y: number, bounds: LayoutBounds, pad = 0): boolean {
   return (
     x >= bounds.x - pad &&
     x <= bounds.x + bounds.w + pad &&
     y >= bounds.y - pad &&
     y <= bounds.y + bounds.h + pad
+  );
+}
+
+function textInsidePanel(textBox: BBox, bounds: LayoutBounds): boolean {
+  return (
+    textBox.left >= bounds.x - EPS &&
+    textBox.right <= bounds.x + bounds.w + EPS &&
+    textBox.top >= bounds.y - EPS &&
+    textBox.bottom <= bounds.y + bounds.h + EPS
   );
 }
 
@@ -106,8 +152,9 @@ export function validatePanelTextLayout(
     if (item.kind !== 'bubble') continue;
     const b = item.layout;
     const charW = charWidthForFont(b.metrics.fontSize);
+    const innerW = b.halfW * 2 - b.metrics.padX * 2;
     for (const line of b.lines) {
-      if (line.length * charW > b.halfW * 2 - 8) {
+      if (line.length * charW > innerW + 1) {
         violations.push({
           code: 'text_fits_bubble',
           message: `Bubble ${i + 1} line exceeds width`,
@@ -135,6 +182,14 @@ export function validatePanelTextLayout(
       violations.push({
         code: 'bubble_in_bounds',
         message: `Bubble ${i + 1} extends below panel`,
+        itemIndex: i,
+      });
+    }
+
+    if (allowBubbleEscape && !textInsidePanel(bubbleTextBBox(b), bounds)) {
+      violations.push({
+        code: 'text_outside_panel',
+        message: `Bubble ${i + 1} dialogue extends outside panel`,
         itemIndex: i,
       });
     }

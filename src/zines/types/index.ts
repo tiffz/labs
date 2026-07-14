@@ -32,6 +32,8 @@ export type { ParsedPageFile as ParsedFile } from '../../shared/zine/pageFilePar
 export interface BookletPageInfo {
   parsedFile: ParsedPageFile;
   imageData: string;
+  /** Small JPEG for grids / edit UI — prefer over imageData when painting thumbnails. */
+  thumbnailUrl?: string;
   width: number;
   height: number;
   fitMode?: 'cover' | 'contain';
@@ -41,6 +43,7 @@ export interface BookletPageInfo {
 export interface SpreadInfo {
   parsedFile: ParsedPageFile;
   imageData: string;
+  thumbnailUrl?: string;
   width: number;
   height: number;
   pages: [number, number];
