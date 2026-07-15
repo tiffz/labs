@@ -51,7 +51,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:changed-apps": "node scripts/run-changed-app-tests.mjs",
-    "test:bubble-quality": "vitest run src/shared/comic/speechBubblePath.test.ts src/shared/comic/speechBubblePathGeometry.test.ts src/shared/comic/speechBubbleLayout.test.ts src/shared/comic/speechBubbleForceLayout.test.ts src/shared/comic/speechBubbleQuality.test.ts src/shared/comic/speechBubbleValidationHarness.test.ts src/shared/comic/panelTextLayoutInvariants.test.ts",
+    "test:bubble-quality": "vitest run src/shared/comic/speechBubblePath.test.ts src/shared/comic/speechBubblePathGeometry.test.ts src/shared/comic/speechBubbleLayout.test.ts src/shared/comic/speechBubbleForceLayout.test.ts src/shared/comic/speechBubbleSlotLayout.test.ts src/shared/comic/speechBubbleTailOverlap.test.ts src/shared/comic/sfxLoudness.test.ts src/shared/comic/speechBubbleQuality.test.ts src/shared/comic/speechBubbleValidationHarness.test.ts src/shared/comic/panelTextLayoutInvariants.test.ts",
     "test:staged": "node scripts/run-staged-tests.mjs",
     "test:e2e:scoped": "node scripts/run-scoped-e2e.mjs",
     "test:e2e:smoke": "playwright test \"e2e/smoke/.*\\.spec\\.ts$\"",

@@ -42,6 +42,7 @@ Canonical module: [`media/gestureMediaPolicy.ts`](media/gestureMediaPolicy.ts). 
 - Refresh mid-upload leaves partial Drive folders — surface `InterruptedUploadBanner`; never silently delete Drive content.
 - Pack file index syncs via `progress.json`; after pull, **auto-reindex from Drive** fills any collection still missing photos (legacy backups or linked folders). Runs for all signed-in users, not only Drive backup testers.
 - Shared Google token storage with Encore/Stanza/Scales — do not narrow OAuth scopes in Gesture-only code paths.
+- **Practice tag filters:** activating a tag prunes selection to matching collections (no “ghost” packs left selected off-grid). Session queue uses only visible-eligible pack ids — see `gesturePracticeSelection.ts`.
 - **Skip vs complete:** skip does not write `drawHistory`; timer completion and **Mark done** (checkmark / Enter) record a draw with elapsed time.
 - **Session back:** prefetch window keeps prev + current + next; prefetch must not revoke `gestureMediaCache` blob URLs on LRU eviction.
 - **Session resolve order:** thumbnail `<img>` probe before OAuth `alt=media`; validate prefetch rows against live media cache blobs.
@@ -58,7 +59,8 @@ Canonical module: [`media/gestureMediaPolicy.ts`](media/gestureMediaPolicy.ts). 
 - Smoke: `/gesture/` in `e2e/routeRegistry.ts`; preview strip: `e2e/smoke/gesture-preview-strip.spec.ts` (dev-only `?e2eSeed=1` fixture — https `src`, no blob console errors)
 - Interaction: `e2e/smoke/gesture-practice-interaction.spec.ts` — CUJ-001 session controls latency (`src/gesture/CUJs.md`)
 - Layout: `e2e/smoke/layout-heuristics-gesture.spec.ts` — hash routes keep **both** tab panels mounted; assert collections via `aria-label`, not bare `.gesture-tab-panel`
-- **After changing:** preview strip count, tab mounting/hash routes, or collection card layout → `npm run test:e2e:scoped` (gesture) or `presubmit:push`
+- **After changing:** preview strip count, tab mounting/hash routes, collection card layout, or **responsive shell CSS** → `npm run test:e2e:scoped` (gesture) or `presubmit:push`. Mobile layout: `layout-heuristics-gesture.spec.ts` (390px + horizontal scroll).
+- **Responsive:** [`docs/RESPONSIVE_DESIGN.md`](../../docs/RESPONSIVE_DESIGN.md) — shell pad tokens + 640/480 collapses in `gesture.css`.
 
 ## Performance (Collections / Practice grids)
 

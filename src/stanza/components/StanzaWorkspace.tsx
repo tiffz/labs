@@ -105,7 +105,7 @@ import {
   stanzaStemBlobIdentityKeySorted,
   stanzaStemUrlKeyFromSong,
 } from '../utils/stanzaPlaybackBlobUrlKeys';
-import { readBestKnownMediaDurationSec, readPositiveFiniteMediaDurationSec } from '../utils/stanzaMediaDuration';
+import { readBestKnownMediaDurationSec, resolveStickyTransportDurationSec } from '../utils/stanzaMediaDuration';
 import { primaryPlaybackMuted, stanzaSanitizeLinearBusGain, stemPlaybackMuted } from '../utils/stanzaPlaybackMute';
 import { pruneStanzaSkippedBySegmentId, stanzaSkippedMapsEqual } from '../utils/stanzaSkippedMapPrune';
 import { migrateStanzaSongSegmentKeysIfNeeded } from '../utils/stanzaSegmentMigration';
@@ -1830,8 +1830,13 @@ export default function StanzaWorkspace() {
     const run = () => {
       if (cancelled) return;
       const el = getLocalMainMedia();
-      const fd = el ? readPositiveFiniteMediaDurationSec(el) : null;
-      const d = fd ?? durationRef.current;
+      const fd = el ? readBestKnownMediaDurationSec(el) : null;
+      const sticky = resolveStickyTransportDurationSec({
+        previousDurationSec: durationRef.current,
+        elementDurationSec: fd,
+        knownHorizonSec: knownHorizonSecRef.current,
+      });
+      const d = sticky > 0 ? sticky : durationRef.current;
       const clamped = resolvePracticeSourceSwitchSeek({
         previousTime: t,
         destinationDurationSec: d > 0 ? d : null,
@@ -1842,7 +1847,11 @@ export default function StanzaWorkspace() {
         ...p,
         currentTime: clamped,
         isPlaying: false,
-        ...(fd != null ? { duration: fd } : {}),
+        duration: resolveStickyTransportDurationSec({
+          previousDurationSec: p.duration,
+          elementDurationSec: fd,
+          knownHorizonSec: knownHorizonSecRef.current,
+        }),
       }));
     };
 
@@ -2988,7 +2997,11 @@ export default function StanzaWorkspace() {
                               setPlayback((p) =>
                                 mergeStanzaPlaybackSnapshot(p, {
                                   currentTime: el.currentTime,
-                                  duration: fd ?? p.duration,
+                                  duration: resolveStickyTransportDurationSec({
+                                    previousDurationSec: p.duration,
+                                    elementDurationSec: fd,
+                                    knownHorizonSec: knownHorizonSecRef.current,
+                                  }),
                                   isPlaying: !el.paused,
                                   playbackRate: el.playbackRate,
                                 }),
@@ -3000,7 +3013,11 @@ export default function StanzaWorkspace() {
                               const fd = readBestKnownMediaDurationSec(el);
                               setPlayback((p) => ({
                                 ...p,
-                                duration: fd ?? p.duration,
+                                duration: resolveStickyTransportDurationSec({
+                                  previousDurationSec: p.duration,
+                                  elementDurationSec: fd,
+                                  knownHorizonSec: knownHorizonSecRef.current,
+                                }),
                                 playbackRate: el.playbackRate,
                               }));
                             }}
@@ -3009,7 +3026,14 @@ export default function StanzaWorkspace() {
                               if (!el) return;
                               const fd = readBestKnownMediaDurationSec(el);
                               if (fd == null) return;
-                              setPlayback((p) => (p.duration === fd ? p : { ...p, duration: fd }));
+                              setPlayback((p) => {
+                                const next = resolveStickyTransportDurationSec({
+                                  previousDurationSec: p.duration,
+                                  elementDurationSec: fd,
+                                  knownHorizonSec: knownHorizonSecRef.current,
+                                });
+                                return p.duration === next ? p : { ...p, duration: next };
+                              });
                             }}
                             onPlay={() => {
                               snapStemsToMainAndPlay();
@@ -3045,7 +3069,11 @@ export default function StanzaWorkspace() {
                               setPlayback((p) =>
                                 mergeStanzaPlaybackSnapshot(p, {
                                   currentTime: el.currentTime,
-                                  duration: fd ?? p.duration,
+                                  duration: resolveStickyTransportDurationSec({
+                                    previousDurationSec: p.duration,
+                                    elementDurationSec: fd,
+                                    knownHorizonSec: knownHorizonSecRef.current,
+                                  }),
                                   isPlaying: !el.paused,
                                   playbackRate: el.playbackRate,
                                 }),
@@ -3057,7 +3085,11 @@ export default function StanzaWorkspace() {
                               const fd = readBestKnownMediaDurationSec(el);
                               setPlayback((p) => ({
                                 ...p,
-                                duration: fd ?? p.duration,
+                                duration: resolveStickyTransportDurationSec({
+                                  previousDurationSec: p.duration,
+                                  elementDurationSec: fd,
+                                  knownHorizonSec: knownHorizonSecRef.current,
+                                }),
                                 playbackRate: el.playbackRate,
                               }));
                             }}
@@ -3066,7 +3098,14 @@ export default function StanzaWorkspace() {
                               if (!el) return;
                               const fd = readBestKnownMediaDurationSec(el);
                               if (fd == null) return;
-                              setPlayback((p) => (p.duration === fd ? p : { ...p, duration: fd }));
+                              setPlayback((p) => {
+                                const next = resolveStickyTransportDurationSec({
+                                  previousDurationSec: p.duration,
+                                  elementDurationSec: fd,
+                                  knownHorizonSec: knownHorizonSecRef.current,
+                                });
+                                return p.duration === next ? p : { ...p, duration: next };
+                              });
                             }}
                             onPlay={() => {
                               snapStemsToMainAndPlay();

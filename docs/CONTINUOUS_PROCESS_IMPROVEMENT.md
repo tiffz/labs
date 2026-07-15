@@ -39,7 +39,7 @@ Structure findings as **symptom → root cause class → durable fix** (same fie
 - `test gap` — logic covered but not user-visible integration
 - `ux revision churn` — many human cycles on basic gestalt/theme parity; fix with scoped rule + living checklist
 - `hmr false confidence` — presubmit green but dev shell broken after hot reload; hard-refresh affected route
-- `wrong-io-tier` — preview UI used session-weight fetch (e.g. alt=media before thumbnails); fix with tier policy + regression test
+- `wrong-io-tier` — preview UI used session-weight I/O (e.g. Drive `alt=media` before thumbnails, or full-res `dataUrl`s in Zine Studio grids); fix with tier policy + regression test / app rule (`gesture-media-tiers.mdc`, `zines-image-display-tiers.mdc`)
 - `revoked-blob-display` — UI showed `blob:` URLs that LRU/cache eviction revoked (`ERR_FILE_NOT_FOUND`, blank thumbs, tab OOM); fix with https-only grid display + invariant tests (see [`GESTURE_MEDIA_STABILITY.md`](GESTURE_MEDIA_STABILITY.md))
 - `ux-gestalt` — related controls separated or parallel surfaces use different shells/verbs
 - `ux-redundancy` — duplicate copy, progress bars, or controls in one viewport
@@ -56,6 +56,9 @@ Structure findings as **symptom → root cause class → durable fix** (same fie
 - `ci-blocking-idle` — session time burned watching a CI/CD run (≈8–15 min) instead of backgrounding it. Fix: presubmit is the gate; after push arm auto-merge + background `npm run ci:watch` with a failure-only notification and keep working — see [`.cursor/rules/ci-background-watch.mdc`](../.cursor/rules/ci-background-watch.mdc), [`docs/PR_WORKFLOW.md`](PR_WORKFLOW.md) § CI without blocking.
 - `css-import-order` — extracted or moved `@import` below other rules; browsers silently drop the import and large UI regions lose all styles. Fix: keep `@import` at file top (after `@charset`/comments only); `npm run check:css-import-order`; document in app `DESIGN.md` when splitting CSS files.
 - `css-syntax-error` — orphan braces or missing selector from a partial CSS edit; Vite/PostCSS blocks the app shell at dev time. Fix: `npm run check:css-import-order` (PostCSS parse pass on every `src/**/*.css`).
+- `html5-duration-shrink` — media `timeupdate` / `durationchange` / `ended` writers overwrite transport duration with short HTML5 metadata below a longer decoded/fingerprint horizon, cutting off song tails. Fix: sticky max via `resolveStickyTransportDurationSec`; see [`STANZA_PLAYBACK.md`](STANZA_PLAYBACK.md) § Duration trust.
+- `product-naming-drift` — user-facing copy uses a legacy or adjacent name for a Labs app (e.g. calling Stanza “Segno”). Fix: [`USER_COPY_STYLE.md`](USER_COPY_STYLE.md) § Cross-app product names + app `AGENTS.md` pitfall + naming regression test.
+- `filter-selection-orphan` — a filter/chip narrows the visible set but leaves off-grid items selected, so counts/session queues disagree with what the user sees. Fix: prune selection to visible/eligible ids on filter change (see `gesturePracticeSelection.ts`).
 
 Add a new class only when several future bugs would share it.
 

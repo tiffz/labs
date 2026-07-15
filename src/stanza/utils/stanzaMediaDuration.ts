@@ -39,6 +39,35 @@ export function readBestKnownMediaDurationSec(el: HTMLMediaElement): number | nu
   return Math.max(meta ?? 0, seekable ?? 0);
 }
 
+/**
+ * Sticky transport duration: never let live HTML5 metadata shrink below a known
+ * floor (previous transport, decoded PCM, fingerprint horizon).
+ * See docs/STANZA_PLAYBACK.md § Duration trust model.
+ */
+export function resolveStickyTransportDurationSec(opts: {
+  previousDurationSec: number;
+  elementDurationSec: number | null | undefined;
+  knownHorizonSec?: number | null;
+}): number {
+  const prev =
+    Number.isFinite(opts.previousDurationSec) && opts.previousDurationSec > 0
+      ? opts.previousDurationSec
+      : 0;
+  const el =
+    opts.elementDurationSec != null &&
+    Number.isFinite(opts.elementDurationSec) &&
+    opts.elementDurationSec > 0
+      ? opts.elementDurationSec
+      : 0;
+  const known =
+    opts.knownHorizonSec != null &&
+    Number.isFinite(opts.knownHorizonSec) &&
+    opts.knownHorizonSec > 0
+      ? opts.knownHorizonSec
+      : 0;
+  return Math.max(prev, el, known);
+}
+
 const PREMATURE_END_EPS_SEC = 0.05;
 
 export type PrematureMediaEndResume = {

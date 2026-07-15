@@ -66,7 +66,8 @@ function boxesOverlap(a: BBox, b: BBox): boolean {
   );
 }
 
-function bubbleTextBBox(bubble: SpeechBubbleLayout): BBox {
+/** Axis-aligned dialogue text region used for escape/readability checks. */
+export function bubbleTextBBox(bubble: SpeechBubbleLayout): BBox {
   const offsetY = bubbleTextOffsetY(
     bubble.cx,
     bubble.cy,

@@ -1,5 +1,6 @@
 import { characterTailAnchor } from './characterMarkers';
 import { clampX, maxBubbleHalfWidth, panelTextZones } from './panelTextZones';
+import { sfxBaseFontSize, normalizeSfxLoudness } from './sfxLoudness';
 import {
   placeBubblesWithForce,
   postClampBubbles,
@@ -17,15 +18,19 @@ import {
   wrapDialogueText,
   type BubbleMetrics,
 } from './speechBubblePath';
-import type { PanelCharacterId, PanelTextBlock } from './types';
+import { placeItemsWithSlots } from './speechBubbleSlotLayout';
+import type { PanelCharacterId, PanelTextBlock, SfxLoudness } from './types';
 
 export type LayoutBounds = { x: number; y: number; w: number; h: number };
 
-export type PanelTextLayoutPlaceMode = 'force' | 'legacy';
+export type PanelTextLayoutPlaceMode = 'force' | 'legacy' | 'slots';
 
 export type PanelTextLayoutOptions = {
   allowBubbleEscape?: boolean;
-  /** Default `force`. Use `legacy` only for A/B regression tests. */
+  /**
+   * Default `force` for shared callers.
+   * Scrapboard sketchy boards use `slots` for ~98% hard-rule compliance.
+   */
   placeMode?: PanelTextLayoutPlaceMode;
 };
 
@@ -55,6 +60,7 @@ export type SfxLayout = {
   y: number;
   fontSize: number;
   text: string;
+  loudness: SfxLoudness;
 };
 
 export type PanelTextLayoutItem =
@@ -497,7 +503,12 @@ function compressStackToDialogueBand(
         item.layout.width = Math.min(box.width, bounds.w - zones.sidePad * 2 - 4);
         item.layout.height = box.height;
       } else if (item.kind === 'sfx' && block.kind === 'sfx') {
-        item.layout.fontSize = Math.max(MIN_BUBBLE_FONT, Math.min(fontCap + 2, bounds.w * 0.1));
+        const floor = sfxBaseFontSize(bounds.w, block.loudness);
+        item.layout.fontSize = Math.max(
+          MIN_BUBBLE_FONT,
+          Math.min(floor, Math.max(fontCap + 2, Math.round(floor * 0.85))),
+        );
+        item.layout.loudness = normalizeSfxLoudness(block.loudness);
         item.layout.text = block.content.slice(0, 14);
       }
     }
@@ -577,7 +588,9 @@ function applyMinimalStackFit(
       item.layout.width = Math.min(box.width, bounds.w - zones.sidePad * 2 - 4);
       item.layout.height = box.height;
     } else if (item.kind === 'sfx' && block.kind === 'sfx') {
-      item.layout.fontSize = MIN_BUBBLE_FONT;
+      const floor = sfxBaseFontSize(bounds.w, block.loudness);
+      item.layout.fontSize = Math.max(MIN_BUBBLE_FONT, Math.round(floor * 0.55));
+      item.layout.loudness = normalizeSfxLoudness(block.loudness);
       item.layout.text = block.content.slice(0, 6);
     }
   }
@@ -896,12 +909,14 @@ function seedPanelTextItems(
     }
 
     if (block.kind === 'sfx') {
-      const fontSize = Math.max(12, Math.min(22, bounds.w * 0.12));
+      const loudness = normalizeSfxLoudness(block.loudness);
+      const fontSize = sfxBaseFontSize(bounds.w, loudness);
       const layout: SfxLayout = {
         x: bounds.x + bounds.w * 0.5,
         y: cursorY + fontSize,
         fontSize,
         text: block.content.slice(0, 14),
+        loudness,
       };
       items.push({ kind: 'sfx', layout });
       cursorY += fontSize + BLOCK_GAP;
@@ -995,7 +1010,7 @@ function placeItemsLegacy(
 
 /**
  * Place captions, dialogue bubbles, and SFX in reading order with zoned layout.
- * Default placer is headless d3-force (`placeMode: 'force'`).
+ * Default placer is headless d3-force (`placeMode: 'force'`). Scrapboard uses `slots`.
  */
 export function layoutPanelTextBlocks(
   blocks: PanelTextBlock[],
@@ -1007,16 +1022,23 @@ export function layoutPanelTextBlocks(
   const placeMode = options?.placeMode ?? 'force';
   const items = seedPanelTextItems(blocks, bounds, allowEscape);
 
-  compressStackToDialogueBand(items, blocks, bounds, zones, allowEscape);
+  if (placeMode !== 'slots') {
+    // Force/legacy use stack compression. Slots owns shrink-to-fit itself.
+    compressStackToDialogueBand(items, blocks, bounds, zones, allowEscape);
+  }
 
   if (placeMode === 'legacy') {
     placeItemsLegacy(items, zones, allowEscape);
+  } else if (placeMode === 'slots') {
+    placeItemsWithSlots(items, blocks, bounds, allowEscape);
   } else {
     placeItemsWithForce(items, bounds, allowEscape);
   }
 
   syncCaptionSfxAfterPlacement(items, zones);
-  refitBubblesAtFinalPositions(items, blocks, bounds, zones);
+  if (placeMode !== 'slots') {
+    refitBubblesAtFinalPositions(items, blocks, bounds, zones);
+  }
   if (placeMode === 'force') {
     // Bottom-up pack owns band + tail gap + non-overlap. Skipping enforceBubbleTailGap /
     // clampBubblesToDialogueZone here — those clamp every bubble independently and can
@@ -1039,6 +1061,9 @@ export function layoutPanelTextBlocks(
       allowEscape,
       obstaclesFromItems(items),
     );
+    syncCaptionSfxAfterPlacement(items, zones);
+  } else if (placeMode === 'slots') {
+    // Slots reserves caption band and owns non-overlap; caption-bump would break the stack.
     syncCaptionSfxAfterPlacement(items, zones);
   } else {
     enforceBubbleTailGap(items);

@@ -33,6 +33,12 @@ fi
 # matches CI behavior and catches boundary regressions early.
 npm run check:import-boundaries
 
+# Em-dash / copy gate when UI components change (same check as full
+# presubmit — catch before pre-push so em dashes do not escape commit).
+if printf '%s\n' "$STAGED_FILES" | grep -Eq '\.tsx$'; then
+  npm run check:ui-copy
+fi
+
 # Doc/agent hygiene when guidance files change (matches presubmit subset).
 if printf '%s\n' "$STAGED_FILES" | grep -Eq '(^AGENTS\.md$|^docs/|^\.cursor/|/AGENTS\.md$)'; then
   npm run check:doc-links

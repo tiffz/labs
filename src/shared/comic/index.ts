@@ -12,13 +12,22 @@ export type {
   PanelCaptionBlock,
   PanelSfxBlock,
   PanelTextBlock,
+  SfxLoudness,
   PanelShapeId,
   PanelBleedMode,
   PanelClipPoint,
   PageMockupSpec,
   ComicBoardDocument,
 } from './types';
-export { PANEL_COMPOSITION_IDS, PANEL_CHARACTER_IDS } from './types';
+export { PANEL_COMPOSITION_IDS, PANEL_CHARACTER_IDS, SFX_LOUDNESS_LEVELS } from './types';
+export {
+  normalizeSfxLoudness,
+  sfxLoudnessFontScale,
+  sfxBaseFontSize,
+  sfxRenderStyle,
+} from './sfxLoudness';
+export { adaptBlocksToPanelBudget, maxDialogueBlocksForPanel } from './speechBubbleSlotLayout';
+export { bubblesTailsOverlap, anyBubbleTailsOverlap } from './speechBubbleTailOverlap';
 export {
   PANEL_LAYOUT_PRESETS,
   buildPanelLayout,

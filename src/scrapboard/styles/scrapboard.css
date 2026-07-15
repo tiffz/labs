@@ -444,6 +444,31 @@
   background: var(--scrapboard-accent-soft);
 }
 
+.scrapboard-sfx-loudness {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.scrapboard-sfx-loudness__chip {
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: 1.5px solid var(--scrapboard-line);
+  border-radius: 4px;
+  background: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--scrapboard-ink);
+  cursor: pointer;
+}
+
+.scrapboard-sfx-loudness__chip--active {
+  border-color: var(--scrapboard-accent);
+  background: var(--scrapboard-accent-soft);
+}
+
 .scrapboard-inline-input {
   width: 100%;
   min-height: 2.75rem;

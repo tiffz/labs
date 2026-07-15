@@ -48,7 +48,7 @@ Elevated defaults within the same family:
 - **Border radius:** `0.625rem` (`--gesture-card-radius`, `--gesture-button-radius`).
 - **Borders:** Hairline only when needed (`--gesture-border`). Collection cards are **borderless**.
 - **Shadows:** **None.** Never add `box-shadow` or zine offset shadows.
-- **Max content width:** `56rem` (`--gesture-shell-max`).
+- **Max content width:** `56rem` (`--gesture-shell-max`). Shell padding uses `--gesture-shell-pad-x` / `--gesture-shell-pad-y` and tightens under 900px / 640px ([`docs/RESPONSIVE_DESIGN.md`](../../docs/RESPONSIVE_DESIGN.md)). Under 640px: single-column grids, stacked header/toolbars, full-width Enter Room.
 
 ## Components
 
@@ -113,9 +113,10 @@ Checklist for agents:
 - [ ] Colors from `--gesture-*` tokens only
 - [ ] No box-shadow; no 2px+ black borders; no gradient titles
 - [ ] Sans-serif; title weight ≤ 600 (prefer 500)
-- [ ] Spacing: generous vertical rhythm (match `gesture-shell` / `gesture-tab-panel`)
+- [ ] Spacing: generous vertical rhythm (match `gesture-shell` / `gesture-tab-panel`); check ~390px width
 - [ ] Shared controls from `/ui/` catalog when available ([`SHARED_UI_CONVENTIONS.md`](../shared/SHARED_UI_CONVENTIONS.md))
 - [ ] Account or Drive chrome: reuse `GestureAccountMenu` / `LabsDriveAccountMenu` with Linen appearance — do not fork
+- [ ] Responsive: follow Labs breakpoints in `gesture.css` / [`RESPONSIVE_DESIGN.md`](../../docs/RESPONSIVE_DESIGN.md)
 
 ## Exploring alternatives (dev only)
 

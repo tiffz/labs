@@ -1,5 +1,40 @@
 import { describe, expect, it } from 'vitest';
-import { resolvePrematureMediaEndResume } from './stanzaMediaDuration';
+import {
+  resolvePrematureMediaEndResume,
+  resolveStickyTransportDurationSec,
+} from './stanzaMediaDuration';
+
+describe('resolveStickyTransportDurationSec', () => {
+  it('does not let short HTML5 metadata shrink a longer decoded duration', () => {
+    expect(
+      resolveStickyTransportDurationSec({
+        previousDurationSec: 188.2,
+        elementDurationSec: 175,
+        knownHorizonSec: 188.2,
+      }),
+    ).toBeCloseTo(188.2);
+  });
+
+  it('grows when the element reports a longer seekable/metadata duration', () => {
+    expect(
+      resolveStickyTransportDurationSec({
+        previousDurationSec: 120,
+        elementDurationSec: 182.4,
+        knownHorizonSec: 120,
+      }),
+    ).toBeCloseTo(182.4);
+  });
+
+  it('keeps previous when element duration is unavailable', () => {
+    expect(
+      resolveStickyTransportDurationSec({
+        previousDurationSec: 200,
+        elementDurationSec: null,
+        knownHorizonSec: null,
+      }),
+    ).toBe(200);
+  });
+});
 
 describe('resolvePrematureMediaEndResume', () => {
   it('resumes when seekable extends past a short metadata end', () => {

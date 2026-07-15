@@ -8048,6 +8048,45 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-index-ts-adaptblockstopanelbudget",
+    "name": "adaptBlocksToPanelBudget",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-anybubbletailsoverlap",
+    "name": "anyBubbleTailsOverlap",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-bubblestailsoverlap",
+    "name": "bubblesTailsOverlap",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-index-ts-buildpanellayout",
     "name": "buildPanelLayout",
     "path": "src/shared/comic/index.ts",
@@ -8229,6 +8268,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-index-ts-maxdialogueblocksforpanel",
+    "name": "maxDialogueBlocksForPanel",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-index-ts-mockupdimensionsforprintspec",
     "name": "mockupDimensionsForPrintSpec",
     "path": "src/shared/comic/index.ts",
@@ -8244,6 +8296,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-comic-index-ts-normalizepanelfill",
     "name": "normalizePanelFill",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-normalizesfxloudness",
+    "name": "normalizeSfxLoudness",
     "path": "src/shared/comic/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -8732,6 +8797,75 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-comic-index-ts-resolvepaneltextblocks",
     "name": "resolvePanelTextBlocks",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-sfx-loudness-levels",
+    "name": "SFX_LOUDNESS_LEVELS",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-sfxbasefontsize",
+    "name": "sfxBaseFontSize",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-sfxloudness",
+    "name": "SfxLoudness",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-sfxloudnessfontscale",
+    "name": "sfxLoudnessFontScale",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-sfxrenderstyle",
+    "name": "sfxRenderStyle",
     "path": "src/shared/comic/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -9309,6 +9443,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-paneltextlayoutinvariants-ts-bubbletextbbox",
+    "name": "bubbleTextBBox",
+    "path": "src/shared/comic/panelTextLayoutInvariants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Axis-aligned dialogue text region used for escape/readability checks.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-paneltextlayoutinvariants-ts-layoutviolation",
     "name": "LayoutViolation",
     "path": "src/shared/comic/panelTextLayoutInvariants.ts",
@@ -9421,6 +9568,105 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-sfxlayoutgraphic-tsx-sfxlayoutgraphic",
+    "name": "SfxLayoutGraphic",
+    "path": "src/shared/comic/SfxLayoutGraphic.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Wireframe-safe SFX type treatments by loudness.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-sfxlayoutgraphic-tsx-sfxlayoutgraphicprops",
+    "name": "SfxLayoutGraphicProps",
+    "path": "src/shared/comic/SfxLayoutGraphic.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-sfxloudness-ts-normalizesfxloudness",
+    "name": "normalizeSfxLoudness",
+    "path": "src/shared/comic/sfxLoudness.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "SFX loudness → layout scale + wireframe-safe render treatments.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-sfxloudness-ts-sfxbasefontsize",
+    "name": "sfxBaseFontSize",
+    "path": "src/shared/comic/sfxLoudness.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "SFX loudness → layout scale + wireframe-safe render treatments.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-sfxloudness-ts-sfxloudnessfontscale",
+    "name": "sfxLoudnessFontScale",
+    "path": "src/shared/comic/sfxLoudness.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Relative font scale vs panel baseline.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-sfxloudness-ts-sfxrenderstyle",
+    "name": "sfxRenderStyle",
+    "path": "src/shared/comic/sfxLoudness.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "SFX loudness → layout scale + wireframe-safe render treatments.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-sfxloudness-ts-sfxrenderstyle",
+    "name": "SfxRenderStyle",
+    "path": "src/shared/comic/sfxLoudness.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "SFX loudness → layout scale + wireframe-safe render treatments.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-speechbubbleforcelayout-ts-forceobstacle",
     "name": "ForceObstacle",
     "path": "src/shared/comic/speechBubbleForceLayout.ts",
@@ -9513,7 +9759,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Place captions, dialogue bubbles, and SFX in reading order with zoned layout. Default placer is headless d3-force (`placeMode: 'force'`).",
+    "description": "Place captions, dialogue bubbles, and SFX in reading order with zoned layout. Default placer is headless d3-force (`placeMode: 'force'`). Scrapboard uses `slots`.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -10252,13 +10498,91 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-speechbubbleslotlayout-ts-adaptblockstopanelbudget",
+    "name": "adaptBlocksToPanelBudget",
+    "path": "src/shared/comic/speechBubbleSlotLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Merge consecutive same-speaker lines, put captions first, then trim to dialogue budget.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubbleslotlayout-ts-maxdialogueblocksforpanel",
+    "name": "maxDialogueBlocksForPanel",
+    "path": "src/shared/comic/speechBubbleSlotLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Estimate how many active dialogue lines a panel can host at readable font.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubbleslotlayout-ts-placeitemswithslots",
+    "name": "placeItemsWithSlots",
+    "path": "src/shared/comic/speechBubbleSlotLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Place bubbles with column bias + vertical stack. Always writes a placement; prefers conflict-free stacks, otherwise last-resort tiny centered stack.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubbletailoverlap-ts-anybubbletailsoverlap",
+    "name": "anyBubbleTailsOverlap",
+    "path": "src/shared/comic/speechBubbleTailOverlap.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pairwise speech-bubble tail overlap checks (hard quality rule).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubbletailoverlap-ts-bubblestailsoverlap",
+    "name": "bubblesTailsOverlap",
+    "path": "src/shared/comic/speechBubbleTailOverlap.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when two bubbles’ tails cross or a tail cuts the other’s dialogue box.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubbletailoverlap-ts-segmentsintersect",
+    "name": "segmentsIntersect",
+    "path": "src/shared/comic/speechBubbleTailOverlap.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Proper segment intersection (including colinear overlap).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-speechbubblevalidationharness-ts-bubble-quality-soft-violations",
     "name": "BUBBLE_QUALITY_SOFT_VIOLATIONS",
     "path": "src/shared/comic/speechBubbleValidationHarness.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Batch runner for speech-bubble layout + quality validation. Used by Vitest matrix tests and `npm run test:bubble-quality`.",
+    "description": "Soft only when body may overhang with Bubble escape. Overlap, reading order, and tail_overlap are hard product rules (~98% bar).",
     "tags": [
       "api"
     ],
@@ -10734,6 +11058,36 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-sfx-loudness-levels",
+    "name": "SFX_LOUDNESS_LEVELS",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-sfxloudness",
+    "name": "SfxLoudness",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {

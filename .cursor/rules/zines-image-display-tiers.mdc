@@ -1,0 +1,30 @@
+---
+description: Zine Studio preview vs export image tiers — thumbnails for UI, full-res for print
+globs:
+  - src/zines/App.tsx
+  - src/zines/components/SpreadPreview.tsx
+  - src/zines/components/SharedImageLibrary.tsx
+  - src/zines/components/BookReader.tsx
+  - src/zines/components/PrintSheetCanvas.tsx
+  - src/zines/utils/imageDisplay.ts
+  - src/zines/utils/pdfMetrics.ts
+  - src/zines/utils/pdfGenerator.ts
+---
+
+# Zine Studio image / export tiers
+
+Canonical: [`src/zines/DEVELOPMENT.md`](../../src/zines/DEVELOPMENT.md) § Image display tiers and § Export DPI & size math.
+
+## Display (`wrong-io-tier`)
+
+- Grids, edit slots, spread thumbnails → `thumbnailUrl` / `bookletPreviewSrc` / `previewImages`.
+- Export, print sheet, PDF raster → full `dataUrl` / `imageData` only.
+- Regenerating thumbs after combine/split is required; never leave UI on full-res blobs.
+
+## Export math
+
+- Paper sizes live in **mm** in constants; convert with `paperDimensionToInches` before `× DPI`.
+- PDF size estimates use **compressed** bytes/pixel heuristics — not uncompressed RGBA.
+- Upload soft max and export canvas caps are in `constants/index.ts` (`MAX_IMAGE_DIMENSION`, `MAX_EXPORT_CANVAS_DIMENSION`).
+
+Root cause class: **`wrong-io-tier`** (same class as Gesture preview vs session media).

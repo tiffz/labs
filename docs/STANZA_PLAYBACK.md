@@ -48,6 +48,8 @@ Both paths share the same guard so duplicate seeks do not fire in the same turn.
 
 **Play-through premature `ended`:** Resume only with **evidence** (longer seekable/buffered, or known horizon from decode/fingerprint). No speculative nudges without evidence. Resume uses `playUnified` so transpose/stems restart.
 
+**Sticky duration:** Media `timeupdate` / `durationchange` / source-switch writers must use `resolveStickyTransportDurationSec` so short HTML5 metadata never shrinks a longer decoded/fingerprint horizon.
+
 ## Tests
 
 | Layer       | Files                                                                                                                                                         |

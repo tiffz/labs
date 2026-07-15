@@ -15,6 +15,7 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | [`app-entry-html.mdc`](app-entry-html.mdc)                                   | `src/**/index.html`                      | `app-index.starter.html`                       | —                            |
 | [`spa-css-conventions.mdc`](spa-css-conventions.mdc)                         | `**/*.css`                               | `STYLE_GUIDE.md`                               | —                            |
 | [`layout-no-horizontal-scroll.mdc`](layout-no-horizontal-scroll.mdc)         | `src/**/*.tsx`, `src/**/*.css`, e2e      | `docs/E2E_SMOKE_CONVENTIONS.md`                | —                            |
+| [`responsive-design.mdc`](responsive-design.mdc)                             | CSS / layout / layout-heuristics e2e     | `docs/RESPONSIVE_DESIGN.md`                    | —                            |
 | [`react-a11y.mdc`](react-a11y.mdc)                                           | `**/*.tsx`                               | `STYLE_GUIDE.md`, `spaGuardrails.test.ts`      | —                            |
 | [`architecture-decisions.mdc`](architecture-decisions.mdc)                   | ADR/routing/hosting paths                | `docs/adr/README.md`                           | `labs-write-adr`             |
 | [`playback-ui-regressions.mdc`](playback-ui-regressions.mdc)                 | playback, notation, renderers            | `PLAYBACK_HOOK_PATTERN.md`                     | `labs-playback-bugfix`       |
@@ -26,6 +27,7 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | [`encore-originals-layout.mdc`](encore-originals-layout.mdc)                 | `encore/originals/**`                    | `originals/DEVELOPMENT.md`                     | —                            |
 | [`gesture-linen-design.mdc`](gesture-linen-design.mdc)                       | `gesture/**`                             | `src/gesture/DESIGN.md`                        | —                            |
 | [`gesture-media-tiers.mdc`](gesture-media-tiers.mdc)                         | Gesture media / preview / session        | `src/gesture/AGENTS.md` § Media tiers          | —                            |
+| [`zines-image-display-tiers.mdc`](zines-image-display-tiers.mdc)             | Zine Studio preview / export images      | `src/zines/DEVELOPMENT.md` § Image display     | —                            |
 | [`lyrefly-riso-cube-design.mdc`](lyrefly-riso-cube-design.mdc)               | `lyrefly/**`                             | `src/lyrefly/DESIGN.md`                        | —                            |
 | [`muscle-canvas-perf.mdc`](muscle-canvas-perf.mdc)                           | `muscle/components/canvas/**`            | `src/muscle/CUJs.md` CUJ-001                   | `labs-performance`           |
 | [`dexie-live-query-empty-states.mdc`](dexie-live-query-empty-states.mdc)     | Dexie `useLiveQuery` surfaces            | `resolveDexieLiveQuery.ts`, Encore library     | —                            |

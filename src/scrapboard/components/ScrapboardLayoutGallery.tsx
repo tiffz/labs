@@ -36,8 +36,11 @@ export function ScrapboardLayoutGallery({
             >
               <PanelMockupSvg layout={layout} fills={[]} width={64} height={84} showReadingOrder={false} />
               <span className="scrapboard-layout-gallery__label">{layout.label ?? layout.id}</span>
-              <span className="scrapboard-layout-gallery__score">
-                {Math.round((layout.conventionality ?? 0) * 100)}%
+              <span
+                className="scrapboard-layout-gallery__score"
+                title="Layout familiarity, not speech-bubble quality"
+              >
+                {Math.round((layout.conventionality ?? 0) * 100)}% familiar
               </span>
             </button>
           );

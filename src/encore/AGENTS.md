@@ -25,6 +25,7 @@ Nested **`AGENTS.md`** for Project Encore. Root policy: [`../../AGENTS.md`](../.
 - **Loading vs missing:** `activeSong = draft ?? live.song`; spinner until `live.status === 'missing'`.
 - **Playback settings popover** can cover Play/Stop — E2E uses `{ force: true }` or open settings after play starts.
 - **Document `pointerdown` dismiss:** use `resolveEventTargetElement` before `.closest()` (text nodes break move-to-word).
+- **Stanza deep links:** user-facing labels say **Stanza** only (never “Segno”). MusicXML segno glyphs elsewhere are unrelated — see `docs/USER_COPY_STYLE.md` § Cross-app product names.
 
 ## Tests
 

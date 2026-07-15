@@ -188,8 +188,8 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
     stanzaHref == null
       ? ''
       : link?.source === 'youtube'
-        ? 'Practice this video in Stanza (Segno)'
-        : 'Practice this Drive file in Stanza (Segno). Audio or common recording formats (e.g. MP4/MOV with sound). Opens with your Google session when signed in, or a public link otherwise.';
+        ? 'Practice this video in Stanza'
+        : 'Practice this Drive file in Stanza. Audio or common recording formats (e.g. MP4/MOV with sound). Opens with your Google session when signed in, or a public link otherwise.';
 
   /*
    * The icon + caption strip is the row's primary "open the resource" affordance: when an
@@ -374,7 +374,7 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
               <IconButton
                 size="small"
                 disabled
-                aria-label="Open practice in Stanza (Segno)"
+                aria-label="Open practice in Stanza"
                 sx={iconBtnSx}
               >
                 <OpenInNewIcon sx={{ fontSize: 15 }} aria-hidden />
@@ -386,7 +386,7 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
               href={stanzaHref}
               {...encoreExternalToolLinkProps}
               size="small"
-              aria-label="Open practice in Stanza (Segno)"
+              aria-label="Open practice in Stanza"
               sx={iconBtnSx}
             >
               <OpenInNewIcon sx={{ fontSize: 15 }} aria-hidden />

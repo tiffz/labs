@@ -191,3 +191,41 @@ Some booklet designs require colored pages (e.g., salmon/pink for aesthetic cons
 - Design flexibility for users
 - Consistent appearance across preview and export
 - Simple UX (one color applies to all blank pages)
+
+## Image display tiers
+
+### Decision
+
+Keep **two image weights** per page/upload: a small JPEG `thumbnailUrl` for interactive UI and a full-res `dataUrl` / `imageData` for export and print.
+
+### Rationale
+
+Painting multi-megapixel data URLs into Spread grids and edit slots dominated decode/layout time (`wrong-io-tier`, same class as Gesture preview vs session media). Chrome profiles showed thumbnail `<img>` onload as the main non-idle work once thumbs were wired.
+
+### Implementation
+
+- Prefer `bookletPreviewSrc` / `previewImages` / `thumbnailUrl` in `SpreadPreview`, library chips, and edit slots.
+- Use full-res only for PDF export, print sheet capture, and booklet image ZIP/scroll/spreads downloads.
+- After combine/split, regenerate real thumbs (do not leave UI pointing at full-res blobs).
+- Cursor rule: `.cursor/rules/zines-image-display-tiers.mdc`.
+
+### Deferred
+
+- Blob URLs / IndexedDB for full-res storage (next memory win beyond thumbs).
+- BookReader still builds a full preprocess pass before PageFlip (yields between pages only).
+
+## Export DPI and size math
+
+### Decision
+
+Treat paper dimensions as **physical inches** after converting from mm; PDF size estimates use **compressed** photo bytes/pixel, not uncompressed RGBA.
+
+### Rationale
+
+Treating mm values as inches inflated pixel math; letter@300 DPI looked like an unexplained soft cap (3300×2550). RGBA-based estimates told users ~32 MB while downloads were ~3 MB JPEG/PDF.
+
+### Implementation
+
+- `paperDimensionToInches` / `minizineSheetSizeInches` in `pdfMetrics.ts` before `× DPI`.
+- Soft upload and canvas ceilings in `constants/index.ts` (`MAX_IMAGE_DIMENSION`, `MAX_EXPORT_CANVAS_DIMENSION`).
+- DPI presets + `maxSafeExportDpi` / `suggestDpiFromSources` in paper/export UI.

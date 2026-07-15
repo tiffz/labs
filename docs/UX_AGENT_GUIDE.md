@@ -77,6 +77,7 @@ Check before declaring UI done:
 - [ ] **Touch targets:** ≥44px on coarse pointers for icon buttons (STYLE_GUIDE).
 - [ ] **Density:** long help in tooltips, not repeated paragraphs (STYLE_GUIDE § Information density).
 - [ ] **Copy:** no repeated phrases on the same screen; follow USER_COPY_STYLE.
+- [ ] **Responsive:** ~390px and ~768px (or layout-heuristics mobile smoke) — no page horizontal scroll; stack toolbars; see [`RESPONSIVE_DESIGN.md`](RESPONSIVE_DESIGN.md).
 
 When feasible, capture **Playwright screenshot** or MCP browser snapshot for changed routes before done.
 
@@ -116,6 +117,7 @@ These inform our process; Labs enforcement is the docs/rules above.
 ## Related
 
 - [`docs/SELECTION_VISUAL_HIERARCHY.md`](SELECTION_VISUAL_HIERARCHY.md) — primary vs secondary selection tiers
+- [`docs/RESPONSIVE_DESIGN.md`](RESPONSIVE_DESIGN.md) — shared breakpoints + responsive checklist
 - [`docs/AGENT_INVARIANTS.md`](AGENT_INVARIANTS.md)
 - [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCESS_IMPROVEMENT.md)
 - [`src/encore/PERFORMANCE_UX.md`](../src/encore/PERFORMANCE_UX.md) — performance-specific UX checklist

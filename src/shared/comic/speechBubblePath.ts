@@ -463,12 +463,15 @@ function ellipsePoint(
 
 function tailMouthSpread(halfW: number, halfH: number, distance: number): number {
   const aspect = halfH / Math.max(halfW, 1);
-  let base = Math.min(0.38, Math.max(0.12, 7 / Math.max(halfW, halfH)));
+  // Wider mouths read as comic wedges; thin mouths become spaghetti on long reaches.
+  let base = Math.min(0.5, Math.max(0.2, 11 / Math.max(halfW, halfH)));
   if (aspect < 0.38) {
-    base *= 0.48;
+    base *= 0.72;
   }
-  if (distance < Math.max(halfH, halfW) * 1.4) {
-    return base * 0.62;
+  if (distance > Math.max(halfH, halfW) * 2.8) {
+    base = Math.min(0.55, base * 1.2);
+  } else if (distance < Math.max(halfH, halfW) * 1.25) {
+    base *= 0.78;
   }
   return base;
 }
@@ -554,17 +557,25 @@ export function roundRectBubblePathD(
   const rad = Math.min(halfH * 0.82, halfW * 0.18, 12);
   // Keep mouth near the center — far lateral attach + tip creates zig-zag elbows.
   const maxOffset = halfW * 0.42;
-  const attachX = Math.min(cx + maxOffset, Math.max(cx - maxOffset, (cx * 0.55 + tailX * 0.45)));
-  const mouthHalf = Math.min(7, halfW * 0.11, Math.max(3.5, halfH * 0.4));
+  const attachX = Math.min(cx + maxOffset, Math.max(cx - maxOffset, cx * 0.55 + tailX * 0.45));
+  const distToTip = Math.hypot(tailX - attachX, tailY - bottom);
+  const mouthHalf = Math.min(
+    halfW * 0.28,
+    Math.max(5.5, Math.min(16, halfH * 0.62 + Math.min(4, distToTip * 0.015))),
+  );
   const mL = { x: attachX - mouthHalf, y: bottom };
   const mR = { x: attachX + mouthHalf, y: bottom };
   const tip = { x: tailX, y: tailY };
   const midMouthX = (mL.x + mR.x) / 2;
   const dist = Math.hypot(tip.x - midMouthX, tip.y - bottom);
   const angle = Math.atan2(tip.y - bottom, tip.x - midMouthX);
-  const bulge = Math.min(16, Math.max(6, dist * 0.28));
+  // Long tails stay nearly straight — curves read as spaghetti.
+  const bulge =
+    dist > halfH * 3.5
+      ? Math.min(8, Math.max(3, dist * 0.06))
+      : Math.min(16, Math.max(6, dist * 0.22));
   const midX = midMouthX + Math.cos(angle) * bulge;
-  const midY = bottom + Math.sin(angle) * bulge + bulge * 0.15;
+  const midY = bottom + Math.sin(angle) * bulge + bulge * 0.08;
 
   let path = `M ${mL.x} ${mL.y}`;
   path += ` L ${left + rad} ${bottom}`;
@@ -616,9 +627,12 @@ export function speechBubblePathD(
     path += ` L ${point.x} ${point.y}`;
   }
 
-  const bulge = Math.min(14, Math.max(6, distance * 0.2, halfH * 0.55));
-  const midX = cx + Math.cos(angle) * (Math.max(halfW, halfH) + bulge * 0.25);
-  const midY = cy + Math.sin(angle) * (Math.max(halfW, halfH) + bulge * 0.25);
+  const bulge =
+    distance > halfH * 3.5
+      ? Math.min(8, Math.max(3, distance * 0.06))
+      : Math.min(14, Math.max(6, distance * 0.18, halfH * 0.5));
+  const midX = cx + Math.cos(angle) * (Math.max(halfW, halfH) + bulge * 0.2);
+  const midY = cy + Math.sin(angle) * (Math.max(halfW, halfH) + bulge * 0.2);
 
   const c1x = right.x + (midX - right.x) * 0.5;
   const c1y = right.y + (midY - right.y) * 0.5;

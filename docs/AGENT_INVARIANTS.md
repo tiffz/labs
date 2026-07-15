@@ -18,6 +18,7 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Dexie `undefined` = **loading**, not empty                                                  | `resolveDexieLiveQuery`, `dexie-live-query-empty-states.mdc`                                                                           |
 | Preview media ≠ session media I/O tier                                                      | `gestureMediaPolicy.ts`, `gesture-media-tiers.mdc`                                                                                     |
+| Zine Studio grids/edit slots use thumbnails, not full-res data URLs                         | `bookletPreviewSrc` / `previewImages`, `.cursor/rules/zines-image-display-tiers.mdc`, `src/zines/DEVELOPMENT.md`                       |
 | Preview grid `<img>` is https-only (no blob)                                                | `gesturePreviewDisplayInvariants.test.ts`, `gesture-preview-strip.spec.ts`, [`GESTURE_MEDIA_STABILITY.md`](GESTURE_MEDIA_STABILITY.md) |
 | Blob URL owner is the cache module only                                                     | `gesture-media-tiers.mdc`, preview display tests                                                                                       |
 | Never `fetch()` Google thumbnail URLs (CORS)                                                | `gestureMediaPolicy.ts`; use `<img>` / `probeImageUrlLoads`                                                                            |
@@ -39,6 +40,9 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 | Journey sketch in chat before non-trivial UI code                       | `labs-ux-journey`, `ux-journey-mandatory.mdc`                                                           |
 | App theme via tokens (`--*-`, MUI theme), not ad-hoc hex                | App `DESIGN.md`, `ux-agent-guide.mdc`                                                                   |
 | User copy voice                                                         | `docs/USER_COPY_STYLE.md`, `check:ui-copy`                                                              |
+| Product name for the timeline app is **Stanza** (never “Segno” in UI)   | `docs/USER_COPY_STYLE.md` § Cross-app product names; `EncoreMediaLinkRow` naming test                   |
+| Local media transport duration must not shrink below known horizon      | `resolveStickyTransportDurationSec`, [`STANZA_PLAYBACK.md`](STANZA_PLAYBACK.md) § Duration trust        |
+| Filtered grids must prune selection to visible/eligible ids             | `gesturePracticeSelection.ts`, Gesture `AGENTS.md` § Practice tag filters                               |
 | No new `!important` in CSS                                              | `check:css-important`                                                                                   |
 | CSS `@import` only at file top (before other rules)                     | `check:css-import-order`                                                                                |
 
@@ -53,6 +57,7 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 | App render errors → recovery UI                                                                            | `LabsErrorBoundary` in every `main.tsx`, `spaGuardrails.test.ts`                                                   |
 | Local crash log on uncaught errors                                                                         | `labsCrashLog.ts`, ADR 0016                                                                                        |
 | Layout/CSS changes → `npm run verify:layout`                                                               | `labs-ux-journey` step 5, `scripts/run-scoped-layout-heuristics.mjs`                                               |
+| Shared breakpoint scale (480 / 640 / 900) + mobile layout check                                            | [`docs/RESPONSIVE_DESIGN.md`](RESPONSIVE_DESIGN.md), `.cursor/rules/responsive-design.mdc`                         |
 | Muscle app registered → commit `public/muscle/` with source                                                | `musclePublicAssetsGuardrails.test.ts`, `muscle:validate-assets` in presubmit                                      |
 | Muscle full-body: no skin overlay; reference half = complete human (peel-independent), study half peelable | `FullBodyRegionModel.tsx`, `GlbAtlasMirrorMesh.tsx` (ignores `layerPeelDepth`), `src/muscle/AGENTS.md`, ADR `0018` |
 | Full-body muscle/bone runtime inventory completeness                                                       | `npm run muscle:inventory`, `fullBodyRuntimeInventory.test.ts`, `anatomyCoverageLedger.test.ts`, debug panel       |
@@ -75,6 +80,6 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 
 ## Root cause classes (grep labels)
 
-`stale state` · `portal styling` · `render order` · `async race` · `empty-state logic` · `fake stopAll` · `missing invariant` · `test gap` · `ux revision churn` · `hmr false confidence` · `hmr-context-identity` · `wrong-io-tier` · `revoked-blob-display` · `static-hosting-cors` · `ux-gestalt` · `ux-redundancy` · `ux-visual-weight` · `ux-journey-overload` · `ux-spec-violation` · `render-cascade` · `main-thread-jank` · `warmup-storm` · `optimistic-ui-gap` · `drive-resumable-308` · `network-io-suspended` · `e2e-port-collision`
+`stale state` · `portal styling` · `render order` · `async race` · `empty-state logic` · `fake stopAll` · `missing invariant` · `test gap` · `ux revision churn` · `hmr false confidence` · `hmr-context-identity` · `wrong-io-tier` · `revoked-blob-display` · `static-hosting-cors` · `ux-gestalt` · `ux-redundancy` · `ux-visual-weight` · `ux-journey-overload` · `ux-spec-violation` · `render-cascade` · `main-thread-jank` · `warmup-storm` · `optimistic-ui-gap` · `drive-resumable-308` · `network-io-suspended` · `e2e-port-collision` · `html5-duration-shrink` · `product-naming-drift` · `filter-selection-orphan`
 
 Add a new class only when several future issues would share it.

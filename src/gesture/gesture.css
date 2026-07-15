@@ -43,6 +43,8 @@
   --gesture-title-tracking: -0.015em;
   --gesture-title-transform: none;
   --gesture-shell-max: 56rem;
+  --gesture-shell-pad-x: 1.35rem;
+  --gesture-shell-pad-y: 2.75rem;
   --gesture-card-radius: 0.625rem;
   --gesture-card-border-width: 0;
   --gesture-button-radius: 0.625rem;
@@ -89,7 +91,10 @@ html:has(.gesture-app) {
 .gesture-shell {
   max-width: var(--gesture-shell-max);
   margin: 0 auto;
-  padding: 2.75rem 1.35rem 2.75rem;
+  padding: var(--gesture-shell-pad-y) var(--gesture-shell-pad-x);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
 }
 
 .gesture-header {
@@ -100,6 +105,7 @@ html:has(.gesture-app) {
   margin-bottom: 2.25rem;
   padding-bottom: 1.75rem;
   border-bottom: 1px solid var(--gesture-border);
+  min-width: 0;
 }
 
 /* Site logo lockup — Fraunces text-only (gallery option 8) */
@@ -219,6 +225,7 @@ html:has(.gesture-app) {
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1rem;
+  min-width: 0;
 }
 
 .gesture-tab-toolbar-actions {
@@ -227,6 +234,7 @@ html:has(.gesture-app) {
   align-items: flex-end;
   gap: 0.1rem;
   flex-shrink: 0;
+  min-width: 0;
 }
 
 .gesture-app .gesture-merge-entry-btn.MuiButton-root {
@@ -2219,8 +2227,9 @@ html:has(.gesture-app) {
   position: sticky;
   bottom: 0;
   z-index: 6;
-  margin: 0 -1.35rem;
-  padding: 1.35rem 1.35rem calc(0.65rem + env(safe-area-inset-bottom, 0px));
+  margin: 0 calc(-1 * var(--gesture-shell-pad-x));
+  padding: 1.35rem var(--gesture-shell-pad-x)
+    calc(0.65rem + env(safe-area-inset-bottom, 0px));
   background: linear-gradient(
     to top,
     var(--gesture-bg) 70%,
@@ -2674,6 +2683,160 @@ html:has(.gesture-app) {
 @media (pointer: coarse) {
   .gesture-zen-control-btn {
     opacity: 0.75;
+  }
+
+  .gesture-zen-control-btn,
+  .gesture-selection-bar-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .gesture-selection-bar-btn {
+    padding-inline: 0.75rem;
+  }
+}
+
+/* Responsive — docs/RESPONSIVE_DESIGN.md (640 = sm, 480 = xs) */
+@media (max-width: 900px) {
+  .gesture-app {
+    --gesture-shell-pad-x: 1.15rem;
+    --gesture-shell-pad-y: 1.85rem;
+    --gesture-grid-min: 10rem;
+    --gesture-grid-min-practice: 8.75rem;
+  }
+
+  .gesture-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .gesture-tabs {
+    width: 100%;
+  }
+
+  .gesture-tabs .MuiTabs-flexContainer {
+    width: 100%;
+  }
+
+  .gesture-tabs .MuiTab-root {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .gesture-practice-controls {
+    padding: 1rem 1.05rem;
+  }
+
+  .gesture-practice-control-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gesture-timer-controls,
+  .gesture-session-length-controls {
+    justify-content: flex-start;
+  }
+
+  .gesture-zen-image-wrap {
+    padding: 0.65rem 0.65rem 0.35rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .gesture-app {
+    --gesture-shell-pad-x: 0.9rem;
+    --gesture-shell-pad-y: 1.25rem;
+    --gesture-title-size: clamp(1.45rem, 7vw, 1.85rem);
+    --gesture-grid-min: 100%;
+    --gesture-grid-min-practice: 100%;
+  }
+
+  .gesture-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+  }
+
+  .gesture-header .MuiButton-root,
+  .gesture-header #gesture-account-menu-button {
+    align-self: flex-start;
+  }
+
+  .gesture-tab-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .gesture-tab-toolbar-actions {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .gesture-tab-toolbar-actions .MuiButton-root {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .gesture-collection-grid,
+  .gesture-collection-grid--compact,
+  .gesture-collection-grid--practice {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .gesture-tag-filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gesture-tag-filter-chips {
+    max-width: 100%;
+  }
+
+  .gesture-selection-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gesture-selection-bar-actions {
+    width: 100%;
+  }
+
+  .gesture-selection-bar-btn {
+    flex: 1 1 auto;
+  }
+
+  .gesture-practice-footer {
+    padding-top: 1rem;
+  }
+
+  .gesture-app .gesture-enter-btn.MuiButton-root {
+    width: 100%;
+    min-height: 3rem;
+  }
+
+  .gesture-zen-dock {
+    gap: 0.35rem;
+    padding-inline: max(0.65rem, env(safe-area-inset-left, 0px))
+      max(0.65rem, env(safe-area-inset-right, 0px));
+  }
+
+  .gesture-zen-image {
+    border-radius: 2px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+}
+
+@media (max-width: 480px) {
+  .gesture-lede,
+  .gesture-tab-lede {
+    font-size: 0.9rem;
+  }
+
+  .gesture-tabs .MuiTab-root {
+    padding-inline: 0.65rem;
+    font-size: 0.8rem;
   }
 }
 

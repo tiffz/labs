@@ -9,6 +9,7 @@ import {
   formatBubbleQualityReport,
   validateSpeechBubbleQuality,
 } from './speechBubbleQuality';
+import { adaptBlocksToPanelBudget } from './speechBubbleSlotLayout';
 import type { PanelCharacterId, PanelTextBlock } from './types';
 
 const PAGE_W = 524;
@@ -34,21 +35,24 @@ function assertQuality(
   blocks: PanelTextBlock[],
   bounds: { x: number; y: number; w: number; h: number },
 ): void {
+  const adapted = adaptBlocksToPanelBudget(blocks, bounds);
   const zones = panelTextZones(bounds);
-  if (zones.dialogueBottom - zones.dialogueTop < minDialogueZoneForBlocks(blocks)) {
+  if (zones.dialogueBottom - zones.dialogueTop < minDialogueZoneForBlocks(adapted)) {
     return;
   }
-  const layout = layoutPanelTextBlocks(blocks, bounds);
+  const layout = layoutPanelTextBlocks(adapted, bounds, {
+    placeMode: 'slots',
+    allowBubbleEscape: true,
+  });
   const violations = validateSpeechBubbleQuality(layout, {
     bounds,
-    blocks,
-    characterIds: characterIdsFromBlocks(blocks),
+    blocks: adapted,
+    characterIds: characterIdsFromBlocks(adapted),
+    allowBubbleEscape: true,
   });
+  // Soft: body overhang (escape) + intentional content trim.
   const hardViolations = violations.filter(
-    (violation) =>
-      violation.code !== 'no_overlap' &&
-      violation.code !== 'reading_order' &&
-      violation.code !== 'bubble_in_bounds',
+    (violation) => violation.code !== 'bubble_in_bounds' && violation.code !== 'blocks_dropped',
   );
   expect(hardViolations, `${label}: ${formatBubbleQualityReport(violations)}`).toEqual([]);
 }

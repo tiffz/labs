@@ -1,0 +1,35 @@
+/**
+ * Labs shared breakpoint scale (documentation + padding tokens).
+ *
+ * CSS media queries cannot use custom properties for widths — keep the
+ * numeric values below in sync with docs/RESPONSIVE_DESIGN.md when changing.
+ *
+ * Import from app CSS when you want shell padding tokens:
+ *   @import '../shared/layout/labs-breakpoints.css';
+ */
+
+:root {
+  /* Documentary — use these numbers in @media (max-width / min-width) */
+  --labs-bp-xs: 480px;
+  --labs-bp-sm: 640px;
+  --labs-bp-md: 900px;
+  --labs-bp-lg: 1200px;
+
+  /* Fluid shell padding defaults (apps may override on their root) */
+  --labs-shell-pad-x: 1.25rem;
+  --labs-shell-pad-y: 1.75rem;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --labs-shell-pad-x: 1.5rem;
+    --labs-shell-pad-y: 2.25rem;
+  }
+}
+
+@media (min-width: 900px) {
+  :root {
+    --labs-shell-pad-x: 1.75rem;
+    --labs-shell-pad-y: 2.75rem;
+  }
+}

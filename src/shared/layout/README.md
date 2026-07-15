@@ -35,6 +35,12 @@ Column → workbench → scroll → content + footer pattern for micro-apps with
 5. Use `<AppShellLayout>` when the app has header + scroll + optional footer
 6. Document app-specific grid areas in `src/<app>/LAYOUT.md` if non-trivial
 
+## Responsive defaults
+
+Shared breakpoint scale and checklist: [`docs/RESPONSIVE_DESIGN.md`](../../docs/RESPONSIVE_DESIGN.md) · tokens/comments in [`labs-breakpoints.css`](labs-breakpoints.css).
+
+Shell padding tokens (`--labs-shell-pad-*`) step at 640px / 900px. Apps should collapse toolbars and lower grid `minmax` under those widths rather than inventing one-off breakpoints.
+
 ## In-content sticky chrome
 
 When a panel scrolls but toolbars inside it should stick (not the global app header), use [`in-content-sticky.css`](in-content-sticky.css):

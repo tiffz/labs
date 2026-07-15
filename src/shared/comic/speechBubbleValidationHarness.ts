@@ -14,12 +14,17 @@ import {
   type BubbleQualityViolation,
   type BubbleQualityViolationCode,
 } from './speechBubbleQuality';
+import { adaptBlocksToPanelBudget } from './speechBubbleSlotLayout';
 import type { PanelCharacterId, PanelTextBlock } from './types';
 
+/**
+ * Soft only when body may overhang with Bubble escape.
+ * Overlap, reading order, and tail_overlap are hard product rules (~98% bar).
+ */
 export const BUBBLE_QUALITY_SOFT_VIOLATIONS: ReadonlySet<BubbleQualityViolationCode> = new Set([
-  'no_overlap',
-  'reading_order',
   'bubble_in_bounds',
+  // Intentional content reduction when a panel cannot host every line cleanly.
+  'blocks_dropped',
 ]);
 
 export type BubbleQualityCase = {
@@ -120,13 +125,19 @@ export function runBubbleQualityMatrix(
       continue;
     }
 
-    const layout = layoutPanelTextBlocks(testCase.blocks, testCase.bounds, testCase.options);
+    const layoutOptions: PanelTextLayoutOptions = {
+      placeMode: 'slots',
+      allowBubbleEscape: true,
+      ...testCase.options,
+    };
+    const blocks = adaptBlocksToPanelBudget(testCase.blocks, testCase.bounds);
+    const layout = layoutPanelTextBlocks(blocks, testCase.bounds, layoutOptions);
     const violations = filterViolations(
       validateSpeechBubbleQuality(layout, {
         bounds: testCase.bounds,
-        blocks: testCase.blocks,
-        characterIds: testCase.characterIds ?? characterIdsFromBlocks(testCase.blocks),
-        allowBubbleEscape: testCase.options?.allowBubbleEscape,
+        blocks,
+        characterIds: testCase.characterIds ?? characterIdsFromBlocks(blocks),
+        allowBubbleEscape: layoutOptions.allowBubbleEscape,
       }),
       soft,
     );

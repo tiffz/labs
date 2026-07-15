@@ -50,6 +50,10 @@ These are consistent with widely used guidance (clarity, concision, usefulness; 
 - **Errors**: state what went wrong in plain language, what the user can do next, without blame.
 - **Permissions**: short honest line on the screen; full scope list and caveats in app `README.md`.
 
+## Cross-app product names
+
+- The practice/timeline app is always **Stanza** in user-facing copy (tooltips, aria-labels, paste hints, empty states). Never call the app **Segno** — that word is only for MusicXML navigation glyphs, not the product name.
+
 ## Stanza (timeline and library)
 
 - Prefer **DAW-adjacent verbs** users recognize: **Split at playhead** (add a boundary at the playhead), **Join with previous** (merge into the prior section). **Shift+click** extends **section selection as a contiguous range** from the last normal click. **Loop mode** uses **icon toggles**; spell out meaning in **tooltips** (play through, loop whole song, loop selection) rather than cryptic symbols alone.

@@ -202,9 +202,11 @@ export function generateMadLibsBlocks(
       });
     }
     if (roll > 0.9) {
+      const word = pick(rng, SFX_TEMPLATES);
       blocks.push({
         kind: 'sfx',
-        content: pick(rng, SFX_TEMPLATES),
+        content: word,
+        loudness: pick(rng, ['normal', 'loud', 'loud', 'quiet'] as const),
       });
     }
     return blocks;
@@ -232,6 +234,7 @@ export function generateMadLibsBlocks(
     blocks.push({
       kind: 'sfx',
       content: pick(rng, SFX_TEMPLATES),
+      loudness: pick(rng, ['normal', 'loud', 'quiet'] as const),
     });
   }
 

@@ -20,6 +20,7 @@ import type {
   PanelTextLayoutOptions,
   SpeechBubbleLayout,
 } from './speechBubbleLayout';
+import { bubblesTailsOverlap } from './speechBubbleTailOverlap';
 import type { PanelCharacterId, PanelTextBlock } from './types';
 import { validatePanelTextLayout, type LayoutViolationCode } from './panelTextLayoutInvariants';
 
@@ -31,7 +32,8 @@ export type BubbleQualityViolationCode =
   | 'readable_line_length'
   | 'blocks_dropped'
   | 'tail_too_long'
-  | 'tail_crosses_interior';
+  | 'tail_crosses_interior'
+  | 'tail_overlap';
 
 export type BubbleQualityViolation = {
   code: BubbleQualityViolationCode;
@@ -198,9 +200,11 @@ export function validateSpeechBubbleQuality(
     });
   }
 
+  const bubbleEntries: Array<{ index: number; layout: SpeechBubbleLayout }> = [];
   for (let i = 0; i < layout.items.length; i++) {
     const item = layout.items[i]!;
     if (item.kind !== 'bubble') continue;
+    bubbleEntries.push({ index: i, layout: item.layout });
     base.push(...bubbleQualityViolations(item.layout, i, bounds, thresholds));
     for (const geometryViolation of validateSpeechBubbleGeometry(item.layout)) {
       base.push({
@@ -208,6 +212,22 @@ export function validateSpeechBubbleQuality(
         message: `Bubble ${i + 1}: ${geometryViolation.message}`,
         itemIndex: i,
       });
+    }
+  }
+
+  for (let i = 0; i < bubbleEntries.length; i++) {
+    for (let j = i + 1; j < bubbleEntries.length; j++) {
+      const a = bubbleEntries[i]!;
+      const b = bubbleEntries[j]!;
+      // Same speaker shares a mouth tip — wedge overlap is expected; skip pair check.
+      if (a.layout.characterId === b.layout.characterId) continue;
+      if (bubblesTailsOverlap(a.layout, b.layout)) {
+        base.push({
+          code: 'tail_overlap',
+          message: `Bubbles ${a.index + 1} and ${b.index + 1} have overlapping tails`,
+          itemIndex: a.index,
+        });
+      }
     }
   }
 

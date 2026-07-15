@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
+  adaptBlocksToPanelBudget,
   defaultFillsForLayout,
   defaultGeneratedLayout,
   generateLayoutsForPanelCount,
+  panelPixelBounds,
   type GeneratedPanelLayout,
   type PanelFillSpec,
   type PanelTextBlock,
@@ -14,6 +16,10 @@ import {
   type LabsPrintSpec,
 } from '../../shared/zine';
 import { generateMadLibsPage } from '../copy/scrapboardMadLibs';
+
+/** Board preview size used for mad-libs dialogue budgeting (matches main canvas). */
+const BUDGET_PAGE_W = 520;
+const BUDGET_PAGE_H = 720;
 
 function emptyFill(panelIndex: number): PanelFillSpec {
   return { panelIndex, composition: 'horizon-scene', blocks: [], text: { kind: 'none' } };
@@ -128,10 +134,13 @@ export function useScrapboardBoard(initialPanelCount = 4): ScrapboardBoardState 
     const seed = Date.now();
     const pageBlocks = generateMadLibsPage(seed, layout.panels.length);
     setFills(
-      layout.panels.map((_, panelIndex) => ({
-        ...emptyFill(panelIndex),
-        blocks: pageBlocks[panelIndex] ?? [],
-      })),
+      layout.panels.map((panel, panelIndex) => {
+        const bounds = panelPixelBounds(panel, BUDGET_PAGE_W, BUDGET_PAGE_H);
+        return {
+          ...emptyFill(panelIndex),
+          blocks: adaptBlocksToPanelBudget(pageBlocks[panelIndex] ?? [], bounds),
+        };
+      }),
     );
   }, [layout.panels]);
 
@@ -145,10 +154,13 @@ export function useScrapboardBoard(initialPanelCount = 4): ScrapboardBoardState 
     setSelectedPanelIndex(0);
     const pageBlocks = generateMadLibsPage(seed, pick.panels.length);
     setFills(
-      pick.panels.map((_, panelIndex) => ({
-        ...emptyFill(panelIndex),
-        blocks: pageBlocks[panelIndex] ?? [],
-      })),
+      pick.panels.map((panel, panelIndex) => {
+        const bounds = panelPixelBounds(panel, BUDGET_PAGE_W, BUDGET_PAGE_H);
+        return {
+          ...emptyFill(panelIndex),
+          blocks: adaptBlocksToPanelBudget(pageBlocks[panelIndex] ?? [], bounds),
+        };
+      }),
     );
     const preset = MIXAM_TRIM_PRESETS[Math.abs(seed >> 5) % MIXAM_TRIM_PRESETS.length]!;
     setPrintSpec((current) => ({

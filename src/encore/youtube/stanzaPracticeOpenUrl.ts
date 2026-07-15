@@ -13,7 +13,7 @@ export type StanzaPracticeHrefOptions = {
 };
 
 /**
- * Stanza (Segno) practice entry for Encore media rows: YouTube deep-links with `?v=`;
+ * Stanza practice entry for Encore media rows: YouTube deep-links with `?v=`;
  * Drive audio opens Stanza with `?df=<driveFileId>` (and optional `driveTitle=` from the media label).
  */
 export function stanzaPracticeHrefFromEncoreMediaLink(

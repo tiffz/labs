@@ -1,0 +1,36 @@
+---
+description: Labs shared breakpoint scale and responsive layout defaults — use when editing CSS/layout or adding app shells.
+globs:
+  - src/**/*.css
+  - src/**/*.tsx
+  - src/shared/templates/**
+  - e2e/smoke/layout-heuristics*.spec.ts
+alwaysApply: false
+---
+
+# Responsive design (Labs)
+
+Canonical: [`docs/RESPONSIVE_DESIGN.md`](../../docs/RESPONSIVE_DESIGN.md).
+
+## Breakpoints (do not invent new ones without DESIGN.md)
+
+| Name | Width  | Use |
+| ---- | ------ | --- |
+| xs   | 480px  | Single-column grids |
+| sm   | 640px  | Stack toolbars / denser chrome |
+| md   | 900px  | Collapse dual panes |
+| lg   | 1200px | Optional wide desktop |
+
+## Agent defaults
+
+1. **Mobile-check** primary surfaces after layout/CSS changes (~390px and ~768px, or layout-heuristics smoke).
+2. Prefer **stack** (column flex) over shrinking controls below readable size.
+3. Grids: lower `minmax` under 640px; consider `1fr` under 480px when two columns fight.
+4. Flex/grid children that shrink → `min-width: 0`; media → `max-width: 100%`.
+5. Sticky footers: negative horizontal margin must match shell pad tokens.
+6. No page-level `overflow-x: auto` as a “fix” — see `layout-no-horizontal-scroll.mdc`.
+7. Coarse pointer: icon hit targets ≥44px.
+
+## New apps
+
+Copy breakpoint comments from `src/shared/layout/labs-breakpoints.css`; extend layout-heuristics smoke with a **mobile** viewport + horizontal scroll on the shell.

@@ -14,12 +14,13 @@ import { renderMockupComposition } from './mockupCompositions';
 import { isLegacyStickFill, legacyStickPose, resolvePanelComposition, resolvePanelTextBlocks } from './panelFillResolve';
 import { layoutPanelTextBlocks, type PanelTextLayout, type PanelTextLayoutOptions } from './speechBubbleLayout';
 import { BUBBLE_FONT_FAMILY, bubbleTextOffsetY, speechBubblePathForLayout } from './speechBubblePath';
+import { SfxLayoutGraphic } from './SfxLayoutGraphic';
 import type { PanelCharacterId, PanelFillSpec, PanelLayoutSpec, PanelRect, PanelTextBlock } from './types';
 import { stickFigureSvg } from './stickFigures';
 
 const DEFAULT_WIDTH = 400;
 const SKETCH_STROKE = 3.25;
-const SKETCH_BUBBLE_STROKE = 2.75;
+const SKETCH_BUBBLE_STROKE = 3.1;
 
 export type PanelMockupSvgProps = {
   layout: PanelLayoutSpec;
@@ -36,6 +37,8 @@ export type PanelMockupSvgProps = {
   sketchy?: boolean;
   /** Let bubble bodies extend past panel edges; tails stay anchored in-panel. */
   allowBubbleEscape?: boolean;
+  /** Override placer (`slots` recommended for Scrapboard). */
+  placeMode?: PanelTextLayoutOptions['placeMode'];
 };
 
 function dialogueCharacterIds(blocks: PanelTextBlock[]): PanelCharacterId[] {
@@ -65,6 +68,7 @@ export function PanelMockupSvg({
   onPanelSelect,
   sketchy = false,
   allowBubbleEscape = false,
+  placeMode,
 }: PanelMockupSvgProps): ReactElement {
   const clipPrefix = useId().replace(/:/g, '');
   const clipId = (index: number): string => `${clipPrefix}-panel-clip-${index}`;
@@ -77,7 +81,10 @@ export function PanelMockupSvg({
   const accentColor = colors?.caption ?? '#666666';
   const panelStroke = sketchy ? SKETCH_STROKE : 2;
   const bubbleStroke = sketchy ? SKETCH_BUBBLE_STROKE : 1.75;
-  const textLayoutOptions: PanelTextLayoutOptions = { allowBubbleEscape };
+  const textLayoutOptions: PanelTextLayoutOptions = {
+    allowBubbleEscape,
+    placeMode: placeMode ?? (sketchy ? 'slots' : 'force'),
+  };
 
   const bleedPercents =
     printSpec && showBleedGuides
@@ -349,21 +356,7 @@ function renderPanelTextOverlay(
       continue;
     }
     if (item.kind === 'sfx') {
-      const sfx = item.layout;
-      elements.push(
-        <text
-          key={`sfx-${index}`}
-          x={sfx.x}
-          y={sfx.y}
-          textAnchor="middle"
-          fontSize={sfx.fontSize}
-          fontWeight="800"
-          fill="#333"
-          fontFamily="Impact, sans-serif"
-        >
-          {sfx.text}
-        </text>,
-      );
+      elements.push(<SfxLayoutGraphic key={`sfx-${index}`} sfx={item.layout} />);
     }
   }
 

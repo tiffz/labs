@@ -112,9 +112,14 @@ export interface PanelCaptionBlock {
   placement?: 'before' | 'after';
 }
 
+export const SFX_LOUDNESS_LEVELS = ['quiet', 'normal', 'loud'] as const;
+export type SfxLoudness = (typeof SFX_LOUDNESS_LEVELS)[number];
+
 export interface PanelSfxBlock {
   kind: 'sfx';
   content: string;
+  /** Visual “volume” — scales type and fun FX. Default `normal`. */
+  loudness?: SfxLoudness;
 }
 
 export type PanelTextBlock = PanelDialogueBlock | PanelCaptionBlock | PanelSfxBlock;

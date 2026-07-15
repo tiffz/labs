@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { stubGestureDriveThumbnailImages } from '../helpers/gesturePreviewFixtures';
 import { runLayoutHeuristicsInBrowser } from '../helpers/layoutHeuristics';
 import { runContrastAuditInBrowser } from '../helpers/contrastAudit';
+import { runHorizontalScrollHeuristicInBrowser } from '../helpers/horizontalScrollHeuristic';
 
 /**
  * Catches “obvious bad” layout: cramped shell padding and unreadable muted copy.
@@ -45,5 +46,39 @@ test.describe('Gesture layout heuristics', () => {
       rootSelector: '.gesture-lede',
     });
     expect(result.ok, result.ok ? '' : JSON.stringify(result)).toBe(true);
+  });
+
+  test('narrow phone practice shell stays padded without horizontal scroll', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await stubGestureDriveThumbnailImages(page);
+    await page.goto('/gesture/?e2eSeed=1');
+
+    await expect(page.locator('.gesture-shell')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.gesture-header')).toBeVisible({ timeout: 15_000 });
+
+    const layout = await page.evaluate(runLayoutHeuristicsInBrowser, {
+      containerSelector: '.gesture-shell',
+      contentSelector: '.gesture-header',
+      mutedTextSelector: '.gesture-lede',
+    });
+    expect(layout.ok, layout.ok ? '' : JSON.stringify(layout)).toBe(true);
+
+    const scroll = await page.evaluate(runHorizontalScrollHeuristicInBrowser, {
+      rootSelector: '.gesture-app',
+    });
+    expect(scroll.ok, scroll.ok ? '' : JSON.stringify(scroll)).toBe(true);
+  });
+
+  test('narrow phone collections shell has no horizontal scroll', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await stubGestureDriveThumbnailImages(page);
+    await page.goto('/gesture/?e2eSeed=1#/collections');
+
+    await expect(page.locator('.gesture-shell')).toBeVisible({ timeout: 15_000 });
+
+    const scroll = await page.evaluate(runHorizontalScrollHeuristicInBrowser, {
+      rootSelector: '.gesture-app',
+    });
+    expect(scroll.ok, scroll.ok ? '' : JSON.stringify(scroll)).toBe(true);
   });
 });

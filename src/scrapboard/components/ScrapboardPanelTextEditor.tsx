@@ -6,7 +6,12 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import type { ReactElement } from 'react';
 
-import { PANEL_CHARACTER_IDS, type PanelTextBlock } from '../../shared/comic';
+import {
+  PANEL_CHARACTER_IDS,
+  SFX_LOUDNESS_LEVELS,
+  type PanelTextBlock,
+  type SfxLoudness,
+} from '../../shared/comic';
 import type { ScrapboardBoardState } from '../hooks/useScrapboardBoard';
 
 export type ScrapboardPanelTextEditorProps = {
@@ -147,14 +152,44 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
               ) : null}
 
               {block.kind === 'sfx' ? (
-                <input
-                  type="text"
-                  className="scrapboard-inline-input scrapboard-inline-input--sfx"
-                  value={block.content}
-                  placeholder="POW!"
-                  onChange={(event) => updateBlock(index, { content: event.target.value })}
-                  data-testid={`scrapboard-sfx-text-${index}`}
-                />
+                <>
+                  <input
+                    type="text"
+                    className="scrapboard-inline-input scrapboard-inline-input--sfx"
+                    value={block.content}
+                    placeholder="POW!"
+                    onChange={(event) => updateBlock(index, { content: event.target.value })}
+                    data-testid={`scrapboard-sfx-text-${index}`}
+                  />
+                  <div
+                    className="scrapboard-sfx-loudness"
+                    role="radiogroup"
+                    aria-label="SFX loudness"
+                  >
+                    {SFX_LOUDNESS_LEVELS.map((level) => {
+                      const active = (block.loudness ?? 'normal') === level;
+                      return (
+                        <button
+                          key={level}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          className={[
+                            'scrapboard-sfx-loudness__chip',
+                            active ? 'scrapboard-sfx-loudness__chip--active' : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                          onClick={() => updateBlock(index, { loudness: level as SfxLoudness })}
+                          data-testid={`scrapboard-sfx-loudness-${index}-${level}`}
+                          title={`SFX ${level}`}
+                        >
+                          {level === 'quiet' ? 'Q' : level === 'loud' ? 'L' : 'N'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
               ) : null}
 
               <div className="scrapboard-text-block__actions">
@@ -204,7 +239,7 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
         <Button
           size="small"
           variant="outlined"
-          onClick={() => addBlock({ kind: 'sfx', content: '' })}
+          onClick={() => addBlock({ kind: 'sfx', content: '', loudness: 'normal' })}
           data-testid="scrapboard-add-sfx"
         >
           SFX

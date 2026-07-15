@@ -15,7 +15,6 @@ import {
   collectGestureTagsForFilterBar,
   countGestureCollectionsPerTagForFilterBar,
   countNsfwTaggedCollections,
-  packHasGestureTag,
   packMatchesGestureTagFilters,
   packPassesNsfwVisibility,
   packShouldBlurNsfwPreviews,
@@ -29,6 +28,12 @@ import { useGesturePackStats, resolveGesturePackCoverFileIds } from '../hooks/us
 import { useGesturePacks } from '../hooks/useGesturePacks';
 import { gestureAppHref, handleSpaLinkClick } from '../routes/gestureAppHash';
 import { readGesturePracticeSessionConfig } from '../practice/gesturePracticeConfigStorage';
+import {
+  formatPracticeSelectionHint,
+  prunePracticeSelectionState,
+  selectionAfterPracticeTagFilterChange,
+  sessionPackIdsFromSelection,
+} from '../practice/gesturePracticeSelection';
 import type { SessionConfig, GesturePack } from '../types';
 
 type PracticeCollectionGridProps = {
@@ -106,16 +111,7 @@ export default function PracticeTab({
     () => readGesturePracticeSessionConfig()?.selectedPackIds ?? [],
   );
 
-  const packFilesRaw = useLiveQuery(
-    () =>
-      selectedPackIds.length === 0
-        ? Promise.resolve(GESTURE_EMPTY_PACK_FILES)
-        : gestureDb.packFiles.where('packId').anyOf(selectedPackIds).toArray(),
-    [selectedPackIds.join(',')],
-    undefined,
-  );
   const drawHistoryRaw = useLiveQuery(() => gestureDb.drawHistory.toArray(), [], undefined);
-  const packFiles = packFilesRaw ?? GESTURE_EMPTY_PACK_FILES;
   const drawHistory = drawHistoryRaw ?? GESTURE_EMPTY_DRAW_HISTORY;
 
   const readyPacks = useMemo(
@@ -172,6 +168,11 @@ export default function PracticeTab({
     });
   }, [allPackIdsWithPhotos]);
 
+  // Drop packs that are filtered out or NSFW-hidden so the session cannot “ghost select”.
+  useEffect(() => {
+    setSelectedPackIds((prev) => prunePracticeSelectionState(prev, packIdsWithPhotos));
+  }, [packIdsWithPhotos]);
+
   const togglePack = useCallback((packId: string) => {
     const pack = gridPacks.find((entry) => entry.id === packId);
     if (pack && packShouldBlurNsfwPreviews(pack, showNsfwCollections)) return;
@@ -180,6 +181,19 @@ export default function PracticeTab({
     );
   }, [gridPacks, showNsfwCollections]);
 
+  const matchingPracticePackIdsForFilters = useCallback(
+    (filters: string[]) =>
+      readyPacks
+        .filter(
+          (pack) =>
+            (counts.get(pack.id) ?? 0) > 0 &&
+            packMatchesGestureTagFilters(pack, filters) &&
+            packPassesNsfwVisibility(pack, showNsfwCollections),
+        )
+        .map((pack) => pack.id),
+    [counts, readyPacks, showNsfwCollections],
+  );
+
   const toggleTagFilter = useCallback(
     (tag: string) => {
       const wasActive = activeTagFilters.includes(tag);
@@ -187,36 +201,63 @@ export default function PracticeTab({
         ? activeTagFilters.filter((t) => t !== tag)
         : [...activeTagFilters, tag];
       onActiveTagFiltersChange(nextFilters);
-
-      if (!wasActive) {
-        const matchingIds = readyPacks
-          .filter((pack) => (counts.get(pack.id) ?? 0) > 0 && packHasGestureTag(pack, tag))
-          .map((pack) => pack.id);
-        if (matchingIds.length > 0) {
-          setSelectedPackIds((prev) => [...new Set([...prev, ...matchingIds])]);
-        }
-      }
+      setSelectedPackIds((prev) =>
+        selectionAfterPracticeTagFilterChange({
+          previousSelectedIds: prev,
+          nextFilters,
+          matchingPracticePackIds: matchingPracticePackIdsForFilters(nextFilters),
+        }),
+      );
     },
-    [activeTagFilters, counts, onActiveTagFiltersChange, readyPacks],
+    [
+      activeTagFilters,
+      matchingPracticePackIdsForFilters,
+      onActiveTagFiltersChange,
+    ],
   );
 
+  const clearTagFilters = useCallback(() => {
+    onActiveTagFiltersChange([]);
+  }, [onActiveTagFiltersChange]);
+
   const selectAllVisible = useCallback(() => {
+    // Replace with the visible set when filtering so we never keep off-grid packs.
+    if (activeTagFilters.length > 0) {
+      setSelectedPackIds([...packIdsWithPhotos]);
+      return;
+    }
     setSelectedPackIds((prev) => [...new Set([...prev, ...packIdsWithPhotos])]);
-  }, [packIdsWithPhotos]);
+  }, [activeTagFilters.length, packIdsWithPhotos]);
 
   const deselectAllVisible = useCallback(() => {
     setSelectedPackIds((prev) => prev.filter((id) => !packIdsWithPhotos.includes(id)));
   }, [packIdsWithPhotos]);
+
+  const sessionPackIds = useMemo(
+    () => sessionPackIdsFromSelection(selectedPackIds, packIdsWithPhotos),
+    [packIdsWithPhotos, selectedPackIds],
+  );
+
+  const packFilesRaw = useLiveQuery(
+    () =>
+      sessionPackIds.length === 0
+        ? Promise.resolve(GESTURE_EMPTY_PACK_FILES)
+        : gestureDb.packFiles.where('packId').anyOf(sessionPackIds).toArray(),
+    [sessionPackIds.join(',')],
+    undefined,
+  );
+  const packFiles = packFilesRaw ?? GESTURE_EMPTY_PACK_FILES;
 
   const visibleSelectedCount = useMemo(
     () => packIdsWithPhotos.filter((id) => selectedSet.has(id)).length,
     [packIdsWithPhotos, selectedSet],
   );
 
-  const selectionHint =
-    packIdsWithPhotos.length > 0
-      ? `${visibleSelectedCount} of ${packIdsWithPhotos.length} selected`
-      : null;
+  const selectionHint = formatPracticeSelectionHint(
+    visibleSelectedCount,
+    packIdsWithPhotos.length,
+    sessionPackIds.length,
+  );
 
   const collectionsReady = packsHydrated && statsHydrated;
 
@@ -263,7 +304,7 @@ export default function PracticeTab({
           tagCounts={tagCounts}
           activeTags={activeTagFilters}
           onToggleTag={toggleTagFilter}
-          onClear={() => onActiveTagFiltersChange([])}
+          onClear={clearTagFilters}
           {...nsfwFilterBarProps}
         />
         <div className="gesture-empty-state">
@@ -278,7 +319,7 @@ export default function PracticeTab({
 
   return (
     <PracticeSessionConfigProvider
-      selectedPackIds={selectedPackIds}
+      selectedPackIds={sessionPackIds}
       activeTagFilters={activeTagFilters}
       packFiles={packFiles}
       drawHistory={drawHistory}
@@ -292,7 +333,7 @@ export default function PracticeTab({
           tagCounts={tagCounts}
           activeTags={activeTagFilters}
           onToggleTag={toggleTagFilter}
-          onClear={() => onActiveTagFiltersChange([])}
+          onClear={clearTagFilters}
           selectionHint={selectionHint}
           onSelectAllShown={packIdsWithPhotos.length > 0 ? selectAllVisible : undefined}
           onDeselectAllShown={packIdsWithPhotos.length > 0 ? deselectAllVisible : undefined}

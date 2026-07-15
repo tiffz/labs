@@ -14,9 +14,17 @@
   --app-shell-footer-gap: 20px;
 }
 
-@media (min-width: 600px) {
+/* Align with docs/RESPONSIVE_DESIGN.md (--labs-bp-sm = 640px). */
+@media (min-width: 640px) {
   .TODO_APP {
     --app-shell-gutter: 16px;
     --app-shell-footer-gap: 24px;
+  }
+}
+
+@media (min-width: 900px) {
+  .TODO_APP {
+    --app-shell-gutter: 20px;
+    --app-shell-footer-gap: 28px;
   }
 }

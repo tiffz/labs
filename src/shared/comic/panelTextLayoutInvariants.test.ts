@@ -5,6 +5,7 @@ import { panelPixelBounds } from './panelClipPath';
 import { panelTextZones } from './panelTextZones';
 import { validateSpeechBubbleQuality } from './speechBubbleQuality';
 import { layoutPanelTextBlocks } from './speechBubbleLayout';
+import { adaptBlocksToPanelBudget } from './speechBubbleSlotLayout';
 import type { PanelCharacterId, PanelTextBlock } from './types';
 
 const PAGE_W = 400;
@@ -138,21 +139,22 @@ describe('layoutPanelTextBlocks fuzz', () => {
         w: 40 + Math.floor(rng() * 360),
         h: 80 + Math.floor(rng() * 420),
       };
-      const blocks = randomBlocks(rng, 4);
+      const blocks = adaptBlocksToPanelBudget(randomBlocks(rng, 4), bounds);
       const zones = panelTextZones(bounds);
       const active = blocks.filter((block) => block.content.trim()).length;
       if (zones.dialogueBottom - zones.dialogueTop < active * 32) continue;
-      const layout = layoutPanelTextBlocks(blocks, bounds);
+      const layout = layoutPanelTextBlocks(blocks, bounds, {
+        placeMode: 'slots',
+        allowBubbleEscape: true,
+      });
       const violations = validateSpeechBubbleQuality(layout, {
         bounds,
         blocks,
         characterIds: characterIdsFromBlocks(blocks),
+        allowBubbleEscape: true,
       });
       const hardViolations = violations.filter(
-        (violation) =>
-          violation.code !== 'no_overlap' &&
-          violation.code !== 'reading_order' &&
-          violation.code !== 'bubble_in_bounds',
+        (violation) => violation.code !== 'bubble_in_bounds' && violation.code !== 'blocks_dropped',
       );
       expect(hardViolations, `case ${caseIndex}: ${JSON.stringify(violations)}`).toEqual([]);
     }
@@ -167,21 +169,23 @@ describe('layoutPanelTextBlocks fuzz', () => {
           const panel = generated.panels[panelIndex]!;
           const bounds = panelPixelBounds(panel, PAGE_W, PAGE_H, 2);
           if (bounds.w < 24 || bounds.h < 40) continue;
-          const blocks = randomBlocks(rng, 3);
+          const blocks = adaptBlocksToPanelBudget(randomBlocks(rng, 3), bounds);
           const zones = panelTextZones(bounds);
           const active = blocks.filter((block) => block.content.trim()).length;
           if (zones.dialogueBottom - zones.dialogueTop < active * 32) continue;
-          const layout = layoutPanelTextBlocks(blocks, bounds);
+          const layout = layoutPanelTextBlocks(blocks, bounds, {
+            placeMode: 'slots',
+            allowBubbleEscape: true,
+          });
           const violations = validateSpeechBubbleQuality(layout, {
             bounds,
             blocks,
             characterIds: characterIdsFromBlocks(blocks),
+            allowBubbleEscape: true,
           });
           const hardViolations = violations.filter(
             (violation) =>
-              violation.code !== 'no_overlap' &&
-              violation.code !== 'reading_order' &&
-              violation.code !== 'bubble_in_bounds',
+              violation.code !== 'bubble_in_bounds' && violation.code !== 'blocks_dropped',
           );
           expect(
             hardViolations,
