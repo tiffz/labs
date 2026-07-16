@@ -5,6 +5,7 @@ import { stanzaSongPracticeCustomizationScore } from './stanzaSongCustomizationS
 import {
   mergePracticePlaybackToggle,
   mergePracticeSkippedBySegmentId,
+  mergePracticeSource,
   mergeStanzaRicherSongMetadata,
   mergeStanzaRicherSongMetadataWithReport,
   mergeStanzaSongWithRemotePreference,
@@ -43,7 +44,7 @@ describe('resolveDriveSourceFileIdForMerge', () => {
   it('adopts remote Drive link when local row has metadata only', () => {
     expect(
       resolveDriveSourceFileIdForMerge(
-        { ytId: null, driveSourceFileId: undefined, localAudioBlob: undefined },
+        { driveSourceFileId: undefined, localAudioBlob: undefined },
         { driveSourceFileId: 'drive-main-1' },
       ),
     ).toBe('drive-main-1');
@@ -53,13 +54,33 @@ describe('resolveDriveSourceFileIdForMerge', () => {
     expect(
       resolveDriveSourceFileIdForMerge(
         {
-          ytId: null,
           driveSourceFileId: 'local-file',
           localAudioBlob: new Blob(['x'], { type: 'audio/mpeg' }),
         },
         { driveSourceFileId: 'remote-file' },
       ),
     ).toBe('local-file');
+  });
+
+  it('adopts remote Drive link for dual-source rows missing a local link', () => {
+    expect(
+      resolveDriveSourceFileIdForMerge(
+        {
+          driveSourceFileId: undefined,
+          localAudioBlob: new Blob(['x'], { type: 'audio/mpeg' }),
+        },
+        { driveSourceFileId: 'drive-dual' },
+      ),
+    ).toBe('drive-dual');
+  });
+
+  it('adopts remote Drive link when metadata-only dual-source needs hydration', () => {
+    expect(
+      resolveDriveSourceFileIdForMerge(
+        { driveSourceFileId: undefined, localAudioBlob: undefined },
+        { driveSourceFileId: 'drive-hydrate' },
+      ),
+    ).toBe('drive-hydrate');
   });
 });
 
@@ -77,6 +98,32 @@ describe('mergePracticePlaybackToggle', () => {
 
   it('returns undefined when neither side set a value', () => {
     expect(mergePracticePlaybackToggle(undefined, undefined)).toBeUndefined();
+  });
+});
+
+describe('mergePracticeSource', () => {
+  it('prefers the newer side when both set a source', () => {
+    expect(
+      mergePracticeSource(
+        { updatedAt: 200, practiceSource: 'local' },
+        { updatedAt: 100, practiceSource: 'youtube' },
+      ),
+    ).toBe('local');
+    expect(
+      mergePracticeSource(
+        { updatedAt: 50, practiceSource: 'local' },
+        { updatedAt: 100, practiceSource: 'youtube' },
+      ),
+    ).toBe('youtube');
+  });
+
+  it('takes whichever side set a source', () => {
+    expect(
+      mergePracticeSource(
+        { updatedAt: 1, practiceSource: 'local' },
+        { updatedAt: 2, practiceSource: undefined },
+      ),
+    ).toBe('local');
   });
 });
 

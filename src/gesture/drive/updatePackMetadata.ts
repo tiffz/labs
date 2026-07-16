@@ -6,8 +6,13 @@ import { sanitizePackFolderName } from './gesturePackMetadata';
 import { normalizeGestureTags } from './gesturePackTags';
 import { normalizePackSourceUrl } from './gesturePackSourceUrl';
 
+/**
+ * Persist pack metadata to Dexie first. Drive is only contacted when renaming
+ * the collection folder (`input.name`) — tags and source URL sync via portfolio
+ * `progress.json` auto-push when signed in.
+ */
 export async function updatePackMetadata(
-  accessToken: string,
+  accessToken: string | null | undefined,
   packId: string,
   input: GesturePackMetadataInput,
 ): Promise<GesturePack> {
@@ -17,7 +22,11 @@ export async function updatePackMetadata(
   const name = input.name !== undefined ? sanitizePackFolderName(input.name) : pack.name;
 
   if (name !== pack.name) {
-    await driveRenameFile(accessToken, pack.driveFolderId, name);
+    const token = accessToken?.trim();
+    if (!token) {
+      throw new Error('Sign in with Google to rename a collection on Drive.');
+    }
+    await driveRenameFile(token, pack.driveFolderId, name);
   }
 
   let sourceUrl = pack.sourceUrl;

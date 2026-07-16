@@ -41,24 +41,25 @@ No single layer is sufficient. **Agents must not remove or bypass a layer** with
 
 ## Guard parity matrix
 
-| Guard                                | Encore      | Stanza                 | Scales             | Gesture      | Zine Box       |
-| ------------------------------------ | ----------- | ---------------------- | ------------------ | ------------ | -------------- |
-| Auto-push gated until pull           | ✅          | ✅                     | ✅                 | ✅           | ✅             |
-| Pre-merge undo snapshot              | ✅          | ✅ (Dexie)             | ✅                 | ✅           | ✅             |
-| Delete tombstones + merge filter     | partial†    | ✅                     | n/a‡               | ✅           | ✅             |
-| Content-aware merge (filled > empty) | ✅ ADR 0019 | markers/mix heuristics | sparse-remote test | union + tags | union + stacks |
-| Conflict UI when stakes are high     | row review  | row review (ADR 0020)  | row review         | row review   | row review     |
-| 412 etag retry on push               | ✅          | ✅                     | ✅                 | ❌§          | ✅             |
-| Visibility/tab-close push flush      | ✅          | ✅¶                    | ✅¶                | ✅¶          | ✅¶            |
-| In-app Drive revision recovery       | ✅          | ❌ backlog             | ❌ backlog         | ❌ backlog   | ❌ backlog     |
-| Merge/delete regression tests        | ✅ unit     | ✅ unit                | ✅ unit            | ✅ unit      | ✅ unit        |
-| E2e merge/tombstone smoke            | ❌ backlog  | ❌ backlog             | ❌ backlog         | ❌ backlog   | ❌ backlog     |
+| Guard                                | Encore      | Stanza                 | Scales             | Gesture          | Zine Box       | Lyrefly    |
+| ------------------------------------ | ----------- | ---------------------- | ------------------ | ---------------- | -------------- | ---------- |
+| Auto-push gated until pull           | ✅          | ✅                     | ✅                 | ✅               | ✅             | ✅         |
+| Pre-merge undo snapshot              | ✅          | ✅ (Dexie)             | ✅                 | ✅               | ✅             | ✅         |
+| Delete tombstones + merge filter     | partial†    | ✅                     | n/a‡               | ✅               | ✅             | ✅         |
+| Content-aware merge (filled > empty) | ✅ ADR 0019 | markers/mix heuristics | sparse-remote test | union + tags     | union + stacks | union      |
+| Conflict UI when stakes are high     | row review  | row review (ADR 0020)  | row review         | row review       | row review     | row review |
+| 412 etag retry on push               | ✅          | ✅                     | ✅                 | ✅               | ✅             | ✅         |
+| Visibility/tab-close push flush      | ✅          | ✅¶                    | ✅¶                | ✅¶              | ✅¶            | ✅¶        |
+| In-app Drive revision recovery       | ✅          | ✅ portfolio MVP       | ✅ portfolio MVP   | ✅ portfolio MVP | ✅             | ✅         |
+| Core CRUD without Google             | ✅          | ✅                     | ✅                 | ❌ (packs)§      | ✅             | ✅         |
+| Merge/delete regression tests        | ✅ unit     | ✅ unit                | ✅ unit            | ✅ unit          | ✅ unit        | ✅ unit    |
+| E2e merge/tombstone smoke            | ❌ backlog  | ❌ backlog             | ❌ backlog         | ❌ backlog       | ❌ backlog     | ❌ backlog |
 
 † Encore exercise-run **deletes** can resurrect on merge (union by id — no run tombstones). Song/performance deletes propagate via `dirtySync`.
 
 ‡ Scales has no delete-progress UX yet; add tombstones before shipping reset/delete.
 
-§ Gesture `useGestureDriveBackup.ts` — migrate to factory or add 412 retry ([`PROCESS_BACKLOG.md`](PROCESS_BACKLOG.md)).
+§ Gesture pack upload/link is Drive-first; tags/source edit Dexie-first. Empty states say Google is required for new collections.
 
 ¶ Portfolio apps: shared flush in `useLabsDrivePortfolioAutoSync.ts` (same pattern as Encore).
 
@@ -117,11 +118,10 @@ Avoid: destructive actions without confirm; coarse LWW on compound rows; silent 
 
 | Priority | Gap                                     | Mitigation today                                       |
 | -------- | --------------------------------------- | ------------------------------------------------------ |
-| P0       | Portfolio revision-history UI           | Undo snapshots + Drive “restore latest”                |
-| P0       | Gesture 412 retry                       | Avoid multi-tab concurrent Gesture edits               |
 | P1       | Encore exercise-run delete resurrection | Do not delete runs expecting sync propagation          |
 | P1       | Stanza ↔ Encore dual stores             | Federated overlay ADR accepted; not wired              |
 | P1       | No e2e tombstone/merge smokes           | Strong unit tests per app                              |
+| P1       | Gesture local-blob packs                | Drive-first empty copy + Dexie-first tags/source       |
 | P2       | Scales delete UX                        | No delete shipped                                      |
 | P2       | Multi-tab same app                      | Document one tab per app                               |
 | P2       | Undo in localStorage (most portfolio)   | Stanza uses Dexie ring; others lost on clear-site-data |

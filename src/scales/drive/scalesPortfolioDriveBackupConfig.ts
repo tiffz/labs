@@ -118,4 +118,17 @@ export const scalesPortfolioDriveBackupConfig: LabsPortfolioDriveBackupConfig<
         Boolean(lastMeta.lastBackupExportedAt) ||
         undoSnapshots.length > 0),
   },
+  historyRecovery: {
+    entityNoun: 'exercise',
+    listEntityIds: (payload) => Object.keys(payload.exercises ?? {}),
+    getEntityLabel: (id, payload) => payload.exercises?.[id]?.exerciseId ?? id,
+    payloadWithEntity: (source, id) => {
+      const exercise = source.exercises?.[id];
+      if (!exercise) return null;
+      return {
+        ...source,
+        exercises: { [id]: exercise },
+      };
+    },
+  },
 };

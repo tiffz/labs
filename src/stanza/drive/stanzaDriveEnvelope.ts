@@ -12,7 +12,7 @@ import {
 
 export const STANZA_DRIVE_APP_ID = 'stanza' as const;
 
-/** Stem labels and mix settings only — blobs stay on device. */
+/** Stem labels and Drive file ids — blob bytes live under `stem_audio/`. */
 export type StanzaStemDriveRow = Omit<StanzaStemTrack, 'localBlob'>;
 
 /**

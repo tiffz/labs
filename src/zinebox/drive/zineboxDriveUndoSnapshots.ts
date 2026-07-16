@@ -4,7 +4,12 @@ import { parseZineboxDriveEnvelope, serializeZineboxDriveEnvelope } from './zine
 const STORAGE_KEY = 'labs_zinebox_drive_undo_snapshots_v1';
 const MAX = 20;
 
-export type ZineboxDriveUndoSnapshotTrigger = 'manual-backup' | 'pre-pull' | 'pre-restore' | 'pre-merge';
+export type ZineboxDriveUndoSnapshotTrigger =
+  | 'manual-backup'
+  | 'pre-pull'
+  | 'pre-restore'
+  | 'pre-merge'
+  | 'history-recovery';
 
 export type ZineboxDriveUndoSnapshot = {
   createdAt: number;
@@ -66,6 +71,8 @@ export function formatZineboxDriveUndoSnapshotTrigger(trigger: ZineboxDriveUndoS
       return 'Before restore';
     case 'pre-merge':
       return 'Before merge';
+    case 'history-recovery':
+      return 'Before history recovery';
     default:
       return trigger;
   }

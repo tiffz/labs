@@ -20,8 +20,12 @@ export function stanzaMainMediaBytesFingerprint(blob: Blob): string {
   return `${blob.size}:${type}`;
 }
 
-function mainMediaNeedsDriveUpload(row: StanzaSong): boolean {
-  if (row.ytId) return false;
+/**
+ * Upload whenever this device has main-recording bytes that Drive does not yet
+ * mirror. Dual-source songs keep `ytId` and still upload `localAudioBlob` so the
+ * linked file reaches other devices (prod IndexedDB is origin-isolated).
+ */
+export function mainMediaNeedsDriveUpload(row: StanzaSong): boolean {
   const blob = row.localAudioBlob;
   if (!blob?.size) return false;
   const fp = stanzaMainMediaBytesFingerprint(blob);
@@ -132,7 +136,7 @@ export async function hydrateStanzaSongMainMedia(opts: {
   const durationSec = await probeFileAudioDurationSeconds(probeFile);
   const next: StanzaSong = {
     ...row,
-    ytId: null,
+    // Keep ytId when present (YouTube + uploaded dual-source).
     localAudioBlob: blob,
     driveMainMediaBytesFingerprint: stanzaMainMediaBytesFingerprint(blob),
     localMediaFingerprint:

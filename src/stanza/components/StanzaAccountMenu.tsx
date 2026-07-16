@@ -60,10 +60,20 @@ export default function StanzaAccountMenu() {
       },
       undoLastSync: backup.restoreLatestPrePullSnapshot,
       canUndoLastSync: backup.canUndoLastSync,
+      historyRecovery: backup.historyRecovery
+        ? {
+            entityNoun: backup.historyRecovery.entityNoun,
+            historyRecoverOpen: backup.historyRecovery.historyRecoverOpen,
+            openHistoryRecover: backup.historyRecovery.openHistoryRecover,
+            closeHistoryRecover: backup.historyRecovery.closeHistoryRecover,
+            scanHistoryForRecovery: backup.historyRecovery.scanHistoryForRecovery,
+            restoreFromHistory: backup.historyRecovery.restoreFromHistory,
+          }
+        : undefined,
       copy: {
         title: 'Restore library',
         intro:
-          'Merges metadata into this library. Section markers are kept when one copy has sections and the other does not. Local audio stays on device.',
+          'Merges metadata into this library. Section markers are kept when one copy has sections and the other does not. Linked recordings re-download from Drive when missing on this device.',
       },
     };
   }, [backup, lastBackupDisplayIso]);
@@ -97,9 +107,9 @@ export default function StanzaAccountMenu() {
           onSignIn: backup.onSignIn,
           lastBackupExportedAt: lastBackupDisplayIso,
           scopeSummary:
-            'Sections, BPM, mix, and skip flags. Drive recordings re-download when you open them.',
+            'Sections, BPM, mix layers, and skip flags. Uploaded recordings and mix audio sync to Drive.',
           scopeTooltip:
-            'Metadata syncs to a Stanza folder on Drive. Recordings and mix layers stay on each device (drive.file).',
+            'Metadata and linked audio sync to a Stanza folder on Drive (progress.json, main_audio/, stem_audio/). Re-download happens when you open a song on another device.',
         }}
         drive={drive}
         ids={{ menu: 'stanza-account-menu', button: 'stanza-account-menu-button' }}

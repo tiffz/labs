@@ -23,6 +23,7 @@ Row analysis: [`labsPortfolioConflictAnalysis.ts`](../../src/shared/drive/labsPo
 | Scales   | `SCALES_PORTFOLIO_MERGE_PROMPT_POLICY`  | `silent_union`                                           |
 | Zine Box | `ZINEBOX_PORTFOLIO_MERGE_PROMPT_POLICY` | `silent_union`                                           |
 | Stanza   | `STANZA_PORTFOLIO_MERGE_PROMPT_POLICY`  | `silent_union`                                           |
+| Lyrefly  | `LYREFLY_PORTFOLIO_MERGE_PROMPT_POLICY` | `silent_union`                                           |
 | Encore   | —                                       | row-level review + content-aware merge (ADR 0019 / 0020) |
 
 **Deprecated:** `prompt_when_both_edited` (coarse Merge / Replace dialog). Do not use for new apps.
@@ -62,6 +63,7 @@ Do **not** reintroduce a coarse whole-library conflict dialog.
 | Scales   | `src/scales/hooks/useScalesDriveBackup.ts`   |
 | Gesture  | `src/gesture/hooks/useGestureDriveBackup.ts` |
 | Zine Box | `src/zinebox/hooks/useZineboxDriveBackup.ts` |
+| Lyrefly  | `src/lyrefly/hooks/useLyreflyDriveBackup.ts` |
 
 ## Workflow
 

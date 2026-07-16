@@ -281,7 +281,8 @@ export default function PracticeTab({
         <div className="gesture-empty-state">
           <Typography className="gesture-empty-title">Add a collection first</Typography>
           <Typography className="gesture-empty-copy">
-            Practice pulls photos from your collections. Upload or link a folder to begin.
+            Practice pulls photos from your collections. Sign in with Google to upload or link a
+            folder, then return here to practice.
           </Typography>
           <Button
             variant="contained"

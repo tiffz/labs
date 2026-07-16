@@ -15697,6 +15697,34 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-uselabsportfoliohistoryrecovery-ts-uselabsportfoliohistoryrecovery",
+    "name": "useLabsPortfolioHistoryRecovery",
+    "path": "src/shared/drive/useLabsPortfolioHistoryRecovery.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Drive `progress.json` revision scan + restore for portfolio apps that use a custom backup hook (Stanza, Gesture). Factory apps configure the same via `historyRecovery` on `createLabsPortfolioDriveBackup`.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-uselabsportfoliohistoryrecovery-ts-uselabsportfoliohistoryrecoveryoptions",
+    "name": "UseLabsPortfolioHistoryRecoveryOptions",
+    "path": "src/shared/drive/useLabsPortfolioHistoryRecovery.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-google-encoregoogletokenstorage-ts-clearpersistedgoogleidentity",
     "name": "clearPersistedGoogleIdentity",
     "path": "src/shared/google/encoreGoogleTokenStorage.ts",

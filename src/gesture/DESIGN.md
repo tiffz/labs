@@ -70,7 +70,7 @@ Card metadata edits should feel **light**, not form-heavy:
 
 - **Tags** — borderless sage chips (`gesture-pack-tag-chip`); **dashed** `+ Tag` pill (`gesture-pack-tag-add`); borderless inline input when adding. No MUI outlined combobox on the card.
 - **Autocomplete** — suggestions from `useGestureKnownTags` (Dexie packs + `gestureTagRegistry` session additions). Register local tags immediately so new labels appear on other cards without refresh.
-- **Persistence** — optimistic chip UI; debounced Drive save; do not disable the whole row while saving.
+- **Persistence** — optimistic chip UI; Dexie-first save (tags/source without OAuth); collection rename still needs Google for the Drive folder. Portfolio auto-push syncs metadata when signed in. Do not disable the whole row while saving.
 - **Source link** — ghost inline edit pattern (`InlinePackSourceLink`); match tag/name weight.
 
 ### Drop zone

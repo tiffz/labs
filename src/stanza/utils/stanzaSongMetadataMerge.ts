@@ -11,14 +11,25 @@ type MergeSide = StanzaSong | StanzaSongDriveRow;
 
 /** When this device has metadata only, adopt Drive's main-recording link so hydration can run. */
 export function resolveDriveSourceFileIdForMerge(
-  local: Pick<StanzaSong, 'ytId' | 'driveSourceFileId' | 'localAudioBlob'>,
+  local: Pick<StanzaSong, 'driveSourceFileId' | 'localAudioBlob'>,
   remote: Pick<StanzaSongDriveRow, 'driveSourceFileId'>,
 ): string | undefined {
   const localId = local.driveSourceFileId?.trim();
   const remoteId = remote.driveSourceFileId?.trim();
-  if (local.ytId) return localId;
+  // Bytes on device: keep local link, else adopt remote (dual-source uploads included).
   if (local.localAudioBlob?.size) return localId ?? remoteId;
   return remoteId ?? localId;
+}
+
+/** Prefer the newer practice-source choice when both sides set one. */
+export function mergePracticeSource(
+  local: Pick<StanzaSong, 'updatedAt' | 'practiceSource'>,
+  remote: Pick<MergeSide, 'updatedAt' | 'practiceSource'>,
+): StanzaSong['practiceSource'] {
+  if (local.practiceSource && remote.practiceSource) {
+    return local.updatedAt >= remote.updatedAt ? local.practiceSource : remote.practiceSource;
+  }
+  return local.practiceSource ?? remote.practiceSource;
 }
 
 function mergePracticeStats(local: StanzaSong, remote: MergeSide): StanzaSong['stats'] {
@@ -158,12 +169,14 @@ export function mergeStanzaRicherSongMetadataWithReport(
 
   const title = local.updatedAt >= remote.updatedAt ? local.title : remote.title;
   const driveSourceFileId = resolveDriveSourceFileIdForMerge(local, remote);
+  const practiceSource = mergePracticeSource(local, remote);
 
   return {
     song: {
       ...local,
       title,
       driveSourceFileId,
+      practiceSource,
       markers,
       stats,
       metronomeBySegmentId,
@@ -223,7 +236,8 @@ export function mergeStanzaSongWithRemotePreference(
       drumsMuted: remote.drumsMuted ?? local.drumsMuted,
       localTransposeSemitones: remote.localTransposeSemitones ?? local.localTransposeSemitones,
       localOriginalKey: remote.localOriginalKey ?? local.localOriginalKey,
-      driveSourceFileId: remote.driveSourceFileId ?? local.driveSourceFileId,
+      driveSourceFileId: resolveDriveSourceFileIdForMerge(local, remote),
+      practiceSource: mergePracticeSource(local, remote),
       updatedAt: Math.max(local.updatedAt, remote.updatedAt),
     },
     markersRecoveredFromLocal: practice.markersRecoveredFromLocal,

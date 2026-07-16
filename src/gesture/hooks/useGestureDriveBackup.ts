@@ -21,6 +21,7 @@ import {
 import { ensureLabsGoogleAccessTokenForDrive } from '../../shared/google/labsGoogleDriveAccess';
 import { isEmailAllowedLabsDriveBackup } from '../../shared/google/labsDriveTesterGate';
 import { useLabsEncoreGoogleIdentity } from '../../shared/google/useLabsEncoreGoogleSession';
+import { useLabsPortfolioHistoryRecovery } from '../../shared/drive/useLabsPortfolioHistoryRecovery';
 import { labsDriveFolderUrl } from '../../shared/drive/labsDriveFolderUrl';
 import { subscribeGestureLocalChanges } from '../db/gestureChangeBus';
 import {
@@ -467,6 +468,32 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
 
   const dismissMessage = useCallback(() => setMessage(null), []);
 
+  const historyRecovery = useLabsPortfolioHistoryRecovery<GestureDriveEnvelopeV1, GestureSyncPayload>({
+    entityNoun: 'collection',
+    appFolderName: LABS_DRIVE_APP_FOLDER_GESTURE,
+    ensureAccess: ({ interactive }) => ensureLabsGoogleAccessTokenForDrive({ interactive }),
+    parseEnvelope: parseGestureDriveEnvelope,
+    envelopeToPayload,
+    readLocalPayload: readGestureLocalPayload,
+    listEntityIds: (payload) => payload.packs.map((p) => p.id),
+    getEntityLabel: (id, payload) => payload.packs.find((p) => p.id === id)?.name,
+    payloadWithEntity: (source, id) => {
+      const pack = source.packs.find((p) => p.id === id);
+      if (!pack) return null;
+      return {
+        packs: [pack],
+        packFiles: source.packFiles.filter((f) => f.packId === id),
+        drawHistory: source.drawHistory.filter((d) => d.packId === id),
+      };
+    },
+    mergePayload: (local, remote) => mergeGestureSyncPayload(local, remote).payload,
+    onMergePayload: async (payload) => {
+      await applyMerged(payload, null);
+    },
+    snapshotBeforeMerge: (trigger) => snapshotBeforeMerge(trigger as 'history-recovery'),
+    flushDriveWrite,
+  });
+
   return {
     identity,
     testerOk,
@@ -497,5 +524,6 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
     canRestore: testerOk && Boolean(identity?.email),
     canUndoLastSync: undoSnapshots.some((s) => s.trigger === 'pre-pull'),
     flushDriveWrite,
+    historyRecovery,
   };
 }
