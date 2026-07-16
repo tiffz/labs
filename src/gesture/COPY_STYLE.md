@@ -10,7 +10,7 @@ Defer to [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md) first.
 
 ## Domain terms
 
-- **Collection** — a linked or uploaded Drive folder of photos.
+- **Collection** — a linked or uploaded Drive folder of photos. New collections require Google sign-in; tags and source links save on-device and sync with portfolio backup.
 - **Practice** — timed drawing session (zen mode / the room).
 - **Drawn** — user completed a timed slot for that photo (not sketched in-app). Track `sessionCount` per photo for least-drawn ordering.
 

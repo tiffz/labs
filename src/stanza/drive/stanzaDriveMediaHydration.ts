@@ -7,11 +7,13 @@ import { loadDriveFileAsStanzaLocalBlob } from './loadDriveSourceForStanza';
 /**
  * True when the row is Drive-linked but this device has not yet downloaded the media bytes.
  * After a Drive metadata pull, rows often have `driveSourceFileId` and markers only.
+ *
+ * Dual-source songs (`ytId` + uploaded file) still need hydration — do not skip
+ * merely because a YouTube id is present.
  */
 export function stanzaDriveSongNeedsMediaDownload(
-  song: Pick<StanzaSong, 'ytId' | 'driveSourceFileId' | 'localAudioBlob'>,
+  song: Pick<StanzaSong, 'driveSourceFileId' | 'localAudioBlob'>,
 ): boolean {
-  if (song.ytId) return false;
   const fileId = song.driveSourceFileId?.trim();
   if (!fileId) return false;
   return !song.localAudioBlob;
@@ -39,7 +41,7 @@ export async function hydrateStanzaDriveSongMedia(opts: {
   const durationSec = await probeFileAudioDurationSeconds(probeFile);
   const next: StanzaSong = {
     ...row,
-    ytId: null,
+    // Keep ytId when present (YouTube + uploaded dual-source).
     title: mediaTitle,
     localAudioBlob: blob,
     driveSourceFileId,

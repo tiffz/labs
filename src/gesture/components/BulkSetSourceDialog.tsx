@@ -8,10 +8,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import {
-  ensureLabsGoogleAccessTokenForDrive,
-  LabsGoogleInteractiveAuthRequiredError,
-} from '../../shared/google/labsGoogleDriveAccess';
 import { bulkSetSourceUrlOnPacks } from '../drive/bulkUpdatePackMetadata';
 
 type BulkSetSourceDialogProps = {
@@ -58,8 +54,7 @@ export default function BulkSetSourceDialog({
     setSaving(true);
     onError('');
     try {
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      await bulkSetSourceUrlOnPacks(token, packIds, clearSource ? null : sourceUrl.trim());
+      await bulkSetSourceUrlOnPacks(packIds, clearSource ? null : sourceUrl.trim());
       onComplete(
         clearSource
           ? `Removed source link from ${packCount} collection${packCount === 1 ? '' : 's'}.`
@@ -67,11 +62,7 @@ export default function BulkSetSourceDialog({
       );
       onClose();
     } catch (e) {
-      if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
-        onError(e.message);
-      } else {
-        onError(e instanceof Error ? e.message : 'Could not update source.');
-      }
+      onError(e instanceof Error ? e.message : 'Could not update source.');
     } finally {
       setSaving(false);
     }

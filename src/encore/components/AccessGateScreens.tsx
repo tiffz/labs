@@ -44,8 +44,13 @@ function EncoreWordmark({ size = 'lg' }: { size?: 'md' | 'lg' }): ReactElement {
   );
 }
 
-export function AccessRestrictedScreen(props: { message: string | null; onRetry: () => void }): ReactElement {
-  const { message, onRetry } = props;
+export function AccessRestrictedScreen(props: {
+  message: string | null;
+  onRetry: () => void;
+  /** When set, let the user open the library without Google after an allowlist/auth failure. */
+  onContinueLocalOnly?: () => void;
+}): ReactElement {
+  const { message, onRetry, onContinueLocalOnly } = props;
   const kind = accessDenialKind(message);
 
   const title =
@@ -120,6 +125,11 @@ export function AccessRestrictedScreen(props: { message: string | null; onRetry:
         <Button variant="contained" size="large" fullWidth onClick={onRetry}>
           {retryLabel}
         </Button>
+        {onContinueLocalOnly ? (
+          <Button variant="text" size="large" fullWidth sx={{ mt: 1 }} onClick={onContinueLocalOnly}>
+            Continue without Google
+          </Button>
+        ) : null}
       </Paper>
     </EncoreAppShell>
   );

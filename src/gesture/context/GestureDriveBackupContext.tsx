@@ -96,6 +96,16 @@ export function GestureDriveBackupProvider({ children }: { children: ReactNode }
       },
       undoLastSync: backup.restoreLatestPrePullSnapshot,
       canUndoLastSync: backup.canUndoLastSync,
+      historyRecovery: backup.historyRecovery
+        ? {
+            entityNoun: backup.historyRecovery.entityNoun,
+            historyRecoverOpen: backup.historyRecovery.historyRecoverOpen,
+            openHistoryRecover: backup.historyRecovery.openHistoryRecover,
+            closeHistoryRecover: backup.historyRecovery.closeHistoryRecover,
+            scanHistoryForRecovery: backup.historyRecovery.scanHistoryForRecovery,
+            restoreFromHistory: backup.historyRecovery.restoreFromHistory,
+          }
+        : undefined,
       copy: {
         title: 'Restore progress',
         intro:

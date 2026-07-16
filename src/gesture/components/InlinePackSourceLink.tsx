@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import LinkIcon from '@mui/icons-material/Link';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import {
-  ensureLabsGoogleAccessTokenForDrive,
-  LabsGoogleInteractiveAuthRequiredError,
-} from '../../shared/google/labsGoogleDriveAccess';
 import { displayPackSourceUrl, normalizePackSourceUrl } from '../drive/gesturePackSourceUrl';
 import { updatePackMetadata } from '../drive/updatePackMetadata';
 import type { GesturePack } from '../types';
@@ -47,16 +43,11 @@ export default function InlinePackSourceLink({
     }
     setBusy(true);
     try {
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      const updated = await updatePackMetadata(token, pack.id, { sourceUrl: normalized });
+      const updated = await updatePackMetadata(null, pack.id, { sourceUrl: normalized });
       onUpdated?.(updated);
       setEditing(false);
     } catch (e) {
-      if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
-        onError?.(e.message);
-      } else {
-        onError?.(e instanceof Error ? e.message : 'Could not save source link.');
-      }
+      onError?.(e instanceof Error ? e.message : 'Could not save source link.');
       setDraft(pack.sourceUrl ?? '');
       setEditing(false);
     } finally {

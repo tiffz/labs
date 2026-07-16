@@ -84,16 +84,24 @@ test('palettegen legacy /palettegen/ URL redirects to /palette/', async ({ page 
 test('palettegen regenerate undo restores previous gallery', async ({ page }) => {
   await page.goto('/palette/');
   await page.getByTestId('palettegen-regenerate').click();
-  const firstHex = await page.locator('.palettegen-bleed__stripe').first().evaluate(
-    (el) => getComputedStyle(el).backgroundColor,
-  );
-  await page.getByTestId('palettegen-regenerate').click();
-  const secondHex = await page.locator('.palettegen-bleed__stripe').first().evaluate(
-    (el) => getComputedStyle(el).backgroundColor,
-  );
-  expect(firstHex).not.toBe(secondHex);
-  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z');
-  await expect(page.locator('.palettegen-bleed__stripe').first()).toHaveCSS('background-color', firstHex);
+  const stripe = page.locator('.palettegen-bleed__stripe').first();
+  const firstHex = await stripe.evaluate((el) => getComputedStyle(el).backgroundColor);
+
+  // Random regenerate can rarely land on the same lead stripe; click until it changes.
+  let secondHex = firstHex;
+  let extraRegenerates = 0;
+  for (let attempt = 0; attempt < 8 && secondHex === firstHex; attempt++) {
+    await page.getByTestId('palettegen-regenerate').click();
+    extraRegenerates += 1;
+    secondHex = await stripe.evaluate((el) => getComputedStyle(el).backgroundColor);
+  }
+  expect(secondHex).not.toBe(firstHex);
+
+  const undoKey = process.platform === 'darwin' ? 'Meta+z' : 'Control+z';
+  for (let i = 0; i < extraRegenerates; i++) {
+    await page.keyboard.press(undoKey);
+  }
+  await expect(stripe).toHaveCSS('background-color', firstHex);
   await expect(page.locator('.palettegen-sr-status')).toContainText('Restored previous palettes');
 });
 

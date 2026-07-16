@@ -103,6 +103,8 @@ export function formatStanzaDriveUndoSnapshotTrigger(trigger: StanzaDriveUndoSna
       return 'Before restore';
     case 'pre-merge':
       return 'Before merge';
+    case 'history-recovery':
+      return 'Before history recovery';
     default:
       return 'Snapshot';
   }

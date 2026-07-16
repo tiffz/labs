@@ -4,7 +4,12 @@ import { parseScalesDriveEnvelope, serializeScalesDriveEnvelope } from './scales
 const STORAGE_KEY = 'labs_scales_drive_undo_snapshots_v2';
 const MAX = 20;
 
-export type ScalesDriveUndoSnapshotTrigger = 'manual-backup' | 'pre-pull' | 'pre-restore' | 'pre-merge';
+export type ScalesDriveUndoSnapshotTrigger =
+  | 'manual-backup'
+  | 'pre-pull'
+  | 'pre-restore'
+  | 'pre-merge'
+  | 'history-recovery';
 
 export type ScalesDriveUndoSnapshot = {
   createdAt: number;
@@ -68,6 +73,8 @@ export function formatScalesDriveUndoSnapshotTrigger(trigger: ScalesDriveUndoSna
       return 'Before restore';
     case 'pre-merge':
       return 'Before merge';
+    case 'history-recovery':
+      return 'Before history recovery';
     default:
       return trigger;
   }

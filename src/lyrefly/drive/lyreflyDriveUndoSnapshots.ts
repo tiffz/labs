@@ -4,7 +4,12 @@ import { parseLyreflyDriveEnvelope, serializeLyreflyDriveEnvelope } from './lyre
 const STORAGE_KEY = 'labs_lyrefly_drive_undo_snapshots_v1';
 const MAX = 20;
 
-export type LyreflyDriveUndoSnapshotTrigger = 'manual-backup' | 'pre-pull' | 'pre-restore' | 'pre-merge';
+export type LyreflyDriveUndoSnapshotTrigger =
+  | 'manual-backup'
+  | 'pre-pull'
+  | 'pre-restore'
+  | 'pre-merge'
+  | 'history-recovery';
 
 export type LyreflyDriveUndoSnapshot = {
   createdAt: number;
@@ -66,6 +71,8 @@ export function formatLyreflyDriveUndoSnapshotTrigger(trigger: LyreflyDriveUndoS
       return 'Before restore';
     case 'pre-merge':
       return 'Before merge';
+    case 'history-recovery':
+      return 'Before history recovery';
     default:
       return trigger;
   }

@@ -8,7 +8,8 @@ export type GestureDriveUndoSnapshotTrigger =
   | 'manual-backup'
   | 'pre-pull'
   | 'pre-restore'
-  | 'pre-merge';
+  | 'pre-merge'
+  | 'history-recovery';
 
 export type GestureDriveUndoSnapshot = {
   createdAt: number;
@@ -72,6 +73,8 @@ export function formatGestureDriveUndoSnapshotTrigger(
       return 'Before restore';
     case 'pre-merge':
       return 'Before merge';
+    case 'history-recovery':
+      return 'Before history recovery';
     default:
       return trigger;
   }

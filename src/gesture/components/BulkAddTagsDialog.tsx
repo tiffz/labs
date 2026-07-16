@@ -7,10 +7,6 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import {
-  ensureLabsGoogleAccessTokenForDrive,
-  LabsGoogleInteractiveAuthRequiredError,
-} from '../../shared/google/labsGoogleDriveAccess';
 import { bulkAddTagsToPacks } from '../drive/bulkUpdatePackMetadata';
 import { normalizeGestureTags } from '../drive/gesturePackTags';
 import { registerGestureLocalTags } from '../drive/gestureTagRegistry';
@@ -75,8 +71,7 @@ export default function BulkAddTagsDialog({
     onError('');
     try {
       registerGestureLocalTags(normalized);
-      const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-      const updated = await bulkAddTagsToPacks(token, packIds, normalized);
+      const updated = await bulkAddTagsToPacks(packIds, normalized);
       onComplete(
         updated > 0
           ? `Added tags to ${updated} collection${updated === 1 ? '' : 's'}.`
@@ -84,11 +79,7 @@ export default function BulkAddTagsDialog({
       );
       onClose();
     } catch (e) {
-      if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
-        onError(e.message);
-      } else {
-        onError(e instanceof Error ? e.message : 'Could not add tags.');
-      }
+      onError(e instanceof Error ? e.message : 'Could not add tags.');
     } finally {
       setSaving(false);
     }

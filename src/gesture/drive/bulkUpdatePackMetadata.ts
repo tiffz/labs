@@ -2,11 +2,8 @@ import { gestureDb } from '../db/gestureDb';
 import { normalizeGestureTags } from './gesturePackTags';
 import { updatePackMetadata } from './updatePackMetadata';
 
-export async function bulkAddTagsToPacks(
-  accessToken: string,
-  packIds: string[],
-  tagsToAdd: string[],
-): Promise<number> {
+/** Dexie-only — tags sync via portfolio backup when signed in. */
+export async function bulkAddTagsToPacks(packIds: string[], tagsToAdd: string[]): Promise<number> {
   const normalizedAdd = normalizeGestureTags(tagsToAdd);
   if (normalizedAdd.length === 0) return 0;
 
@@ -19,18 +16,18 @@ export async function bulkAddTagsToPacks(
     const unchanged =
       merged.length === existing.length && merged.every((tag, index) => tag === existing[index]);
     if (unchanged) continue;
-    await updatePackMetadata(accessToken, packId, { tags: merged });
+    await updatePackMetadata(null, packId, { tags: merged });
     updated += 1;
   }
   return updated;
 }
 
+/** Dexie-only — source URL syncs via portfolio backup when signed in. */
 export async function bulkSetSourceUrlOnPacks(
-  accessToken: string,
   packIds: string[],
   sourceUrl: string | null,
 ): Promise<void> {
   for (const packId of packIds) {
-    await updatePackMetadata(accessToken, packId, { sourceUrl });
+    await updatePackMetadata(null, packId, { sourceUrl });
   }
 }

@@ -2,11 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent 
 import type React from 'react';
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
-import {
-  ensureLabsGoogleAccessTokenForDrive,
-  LabsGoogleInteractiveAuthRequiredError,
-} from '../../shared/google/labsGoogleDriveAccess';
-import { readGestureDriveAccessToken } from '../drive/readGestureDriveAccessToken';
 import AppTooltip from '../../shared/components/AppTooltip';
 import {
   collectGestureTagAutocompleteOptions,
@@ -80,19 +75,11 @@ export default function InlinePackTags({
   const persistTags = useCallback(
     async (nextTags: string[]) => {
       try {
-        let token = await readGestureDriveAccessToken();
-        if (!token) {
-          token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-        }
-        const updated = await updatePackMetadata(token, pack.id, { tags: nextTags });
+        const updated = await updatePackMetadata(null, pack.id, { tags: nextTags });
         onUpdated?.(updated);
       } catch (e) {
         setLocalTags(serverTags);
-        if (e instanceof LabsGoogleInteractiveAuthRequiredError) {
-          onError?.(e.message);
-        } else {
-          onError?.(e instanceof Error ? e.message : 'Could not update tags.');
-        }
+        onError?.(e instanceof Error ? e.message : 'Could not update tags.');
       }
     },
     [onError, onUpdated, pack.id, serverTags],

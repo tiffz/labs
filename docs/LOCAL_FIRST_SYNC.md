@@ -8,15 +8,18 @@ Canonical reference for how Labs micro-apps sync user data with Google Drive. So
 
 ## Apps with Drive sync
 
-| App          | Model                                             | Drive location                                         | Local store         |
-| ------------ | ------------------------------------------------- | ------------------------------------------------------ | ------------------- |
-| **Encore**   | Continuous bidirectional repertoire + Originals   | `Encore_App/`                                          | Dexie (`encoreDb`)  |
-| **Stanza**   | Auto pull/push portfolio backup                   | `Tiff Zhang Labs/Stanza/progress.json` + `stem_audio/` | Dexie (`stanzaDb`)  |
-| **Scales**   | Same as Stanza                                    | `Tiff Zhang Labs/LearnYourScales/progress.json`        | Progress reducer    |
-| **Gesture**  | Portfolio backup (packs + draw history)           | `Tiff Zhang Labs/Gesture/progress.json`                | Dexie (`gestureDb`) |
-| **Zine Box** | Portfolio backup (comics + stacks + PDF sidecars) | `Tiff Zhang Labs/ZineBox/progress.json` + `comics/`    | Dexie (`zineboxDb`) |
+| App          | Model                                             | Drive location                                                         | Local store         | Signed-out / local-only                    |
+| ------------ | ------------------------------------------------- | ---------------------------------------------------------------------- | ------------------- | ------------------------------------------ |
+| **Encore**   | Continuous bidirectional repertoire + Originals   | `Encore_App/`                                                          | Dexie (`encoreDb`)  | Yes (Continue without Google)              |
+| **Stanza**   | Auto pull/push portfolio backup                   | `Tiff Zhang Labs/Stanza/progress.json` + `main_audio/` + `stem_audio/` | Dexie (`stanzaDb`)  | Yes (library CRUD + local/YT playback)     |
+| **Scales**   | Same as Stanza                                    | `Tiff Zhang Labs/LearnYourScales/progress.json`                        | Progress reducer    | Yes                                        |
+| **Gesture**  | **Drive-first** packs + portfolio backup          | `Tiff Zhang Labs/Gesture/progress.json` + Reference Packs              | Dexie (`gestureDb`) | Partial — pack upload/link requires Google |
+| **Zine Box** | Portfolio backup (comics + stacks + PDF sidecars) | `Tiff Zhang Labs/ZineBox/progress.json` + `comics/`                    | Dexie (`zineboxDb`) | Yes (local PDF drop)                       |
+| **Lyrefly**  | Portfolio backup (gallery / workbench)            | `Tiff Zhang Labs/Lyrefly/progress.json`                                | Dexie               | Yes                                        |
 
-No other micro-apps use Drive JSON backup today. Encore also uses Drive for uploads, picker, public snapshot, and guest reads — separate from the JSON sync loops below.
+Encore also uses Drive for uploads, picker, public snapshot, and guest reads — separate from the JSON sync loops below.
+
+**Graceful degradation:** Portfolio apps must remain usable without Google (sync off). Gesture is the documented exception until local-blob packs ship — empty states should say Google is required for new collections.
 
 ## Binary uploads (resumable)
 

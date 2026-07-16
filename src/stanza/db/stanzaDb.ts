@@ -137,7 +137,12 @@ export interface StanzaTake {
   createdAt: number;
 }
 
-export type StanzaDriveUndoSnapshotTrigger = 'manual-backup' | 'pre-pull' | 'pre-restore' | 'pre-merge';
+export type StanzaDriveUndoSnapshotTrigger =
+  | 'manual-backup'
+  | 'pre-pull'
+  | 'pre-restore'
+  | 'pre-merge'
+  | 'history-recovery';
 
 export interface StanzaDriveUndoSnapshotRow {
   id?: number;

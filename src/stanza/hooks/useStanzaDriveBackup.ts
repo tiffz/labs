@@ -97,6 +97,7 @@ import {
   LABS_DRIVE_SYNC_PAUSED_IDLE_MESSAGE,
 } from '../../shared/drive/labsDriveSyncMessages';
 import { useLabsDrivePortfolioAutoSync } from '../../shared/drive/useLabsDrivePortfolioAutoSync';
+import { useLabsPortfolioHistoryRecovery } from '../../shared/drive/useLabsPortfolioHistoryRecovery';
 import { labsBlockingJobsActive, useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
 
 export function stanzaGoogleClientConfigured(): boolean {
@@ -728,6 +729,42 @@ export function useStanzaDriveBackup() {
     return readStanzaDriveSyncMeta();
   }, [syncMetaTick]);
 
+  const historyRecovery = useLabsPortfolioHistoryRecovery<StanzaDriveEnvelopeV1, StanzaSong[]>({
+    entityNoun: 'song',
+    appFolderName: LABS_DRIVE_APP_FOLDER_STANZA,
+    ensureAccess: ({ interactive }) => ensureLabsGoogleAccessTokenForDrive({ interactive }),
+    parseEnvelope: parseStanzaDriveEnvelope,
+    envelopeToPayload: (envelope) => envelope.songs as StanzaSong[],
+    readLocalPayload: async () => stanzaDb.songs.toArray(),
+    listEntityIds: (songs) => songs.map((s) => s.id),
+    getEntityLabel: (id, songs) => songs.find((s) => s.id === id)?.title,
+    payloadWithEntity: (source, id) => {
+      const song = source.find((s) => s.id === id);
+      return song ? [song] : null;
+    },
+    mergePayload: async (local, remote) => {
+      const tombstoneFileIds = getStanzaDriveTombstoneFileIds();
+      const youtubeTombstoneVideoIds = getStanzaYoutubeTombstoneVideoIds();
+      const { nextRows, remappedIds, staleTombstoneFileIds } = mergeDriveRowsIntoLocalLibrary(
+        local,
+        remote,
+        { tombstoneFileIds, youtubeTombstoneVideoIds },
+      );
+      await remapStanzaTakesForConsolidation(remappedIds);
+      for (const fid of staleTombstoneFileIds) {
+        clearStanzaDriveTombstone(fid);
+      }
+      return nextRows;
+    },
+    onMergePayload: async (songs) => {
+      await persistMergedSongs(songs);
+      await tryHydrateLibraryFromDrive({ interactive: true });
+    },
+    snapshotBeforeMerge: (trigger) =>
+      snapshotLocalLibraryBeforeMerge(trigger as Parameters<typeof pushStanzaDriveUndoSnapshot>[1]),
+    flushDriveWrite,
+  });
+
   return {
     identity,
     testerOk,
@@ -763,5 +800,6 @@ export function useStanzaDriveBackup() {
     /** In-memory copy of the most recently fetched Drive envelope; used by the Restore dialog. */
     latestRemoteEnvelope,
     restoreLatestFromDrive,
+    historyRecovery,
   };
 }

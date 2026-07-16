@@ -34,7 +34,19 @@ describe('stanzaDriveSongNeedsMediaDownload', () => {
     ).toBe(false);
   });
 
-  it('is false for YouTube rows', () => {
+  it('is false for YouTube-only rows (no Drive link)', () => {
     expect(stanzaDriveSongNeedsMediaDownload(row({ ytId: 'abc12345678' }))).toBe(false);
+  });
+
+  it('is true for dual-source rows that still need the uploaded file', () => {
+    expect(
+      stanzaDriveSongNeedsMediaDownload(
+        row({
+          ytId: 'abc12345678',
+          driveSourceFileId: 'file-main',
+          practiceSource: 'local',
+        }),
+      ),
+    ).toBe(true);
   });
 });

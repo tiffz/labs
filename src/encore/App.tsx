@@ -47,6 +47,7 @@ function EncoreSignedInRouter(): React.ReactElement {
             onRetry={() => {
               retryAccessGate();
             }}
+            onContinueLocalOnly={clientConfigured ? continueWithoutGoogle : undefined}
           />
         </main>
       ) : !googleAuthReady ? (

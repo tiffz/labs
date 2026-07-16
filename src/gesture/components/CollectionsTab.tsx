@@ -315,7 +315,8 @@ export default function CollectionsTab({
 
       <div className="gesture-tab-toolbar">
         <Typography className="gesture-tab-lede">
-          Upload folders or photos, or link a Drive folder. Drop on a card to add photos to that collection.
+          Sign in with Google to upload or link a collection. Photos live in your Drive; tags and
+          source links save on this device and sync when you are signed in.
         </Typography>
         <div className="gesture-tab-toolbar-actions">
           <AddCollectionActions
@@ -359,7 +360,8 @@ export default function CollectionsTab({
         <div className="gesture-empty-state">
           <Typography className="gesture-empty-title">No collections yet</Typography>
           <Typography className="gesture-empty-copy">
-            Drag a folder here, or use Add to pick files. Everything saves to your Drive automatically.
+            Sign in with Google, then drag a folder here or use Add. New collections require Google
+            Drive; tags and source links still save on this device once you have collections.
           </Typography>
           <AddCollectionActions upload={upload} onComplete={onMessage} onError={onError} />
         </div>
