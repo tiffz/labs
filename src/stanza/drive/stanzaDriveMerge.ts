@@ -85,6 +85,7 @@ function stanzaPracticeFieldsFromDriveRow(row: StanzaSongDriveRow): Omit<
     localTransposeSemitones: row.localTransposeSemitones,
     localOriginalKey: row.localOriginalKey,
     skippedBySegmentId: row.skippedBySegmentId,
+    practiceSource: row.practiceSource,
   };
 }
 
@@ -129,22 +130,8 @@ export function stanzaSongFromDriveRow(row: StanzaSongDriveRow): StanzaSong | nu
       updatedAt: row.updatedAt,
       driveSourceFileId: row.driveSourceFileId,
       stems: stemsFromDriveRowMetadata(row.stems),
-      primaryGain: row.primaryGain,
-      primaryMuted: row.primaryMuted,
-      metronomeBySegmentId: row.metronomeBySegmentId,
-      metronomeSongCalibration: row.metronomeSongCalibration,
-      metronomeTimingScope: row.metronomeTimingScope,
-      metronomeEnabled: row.metronomeEnabled,
-      metronomeGain: row.metronomeGain,
-      metronomeMuted: row.metronomeMuted,
-      drumsEnabled: row.drumsEnabled,
-      drumPattern: row.drumPattern,
-      drumPatternBySegmentId: row.drumPatternBySegmentId,
-      drumsGain: row.drumsGain,
-      drumsMuted: row.drumsMuted,
-      localTransposeSemitones: row.localTransposeSemitones,
-      skippedBySegmentId: row.skippedBySegmentId,
       localMediaFingerprint: row.localMediaFingerprint,
+      ...stanzaPracticeFieldsFromDriveRow(row),
     };
   }
   if (row.driveSourceFileId?.trim()) {
@@ -157,22 +144,8 @@ export function stanzaSongFromDriveRow(row: StanzaSongDriveRow): StanzaSong | nu
       updatedAt: row.updatedAt,
       driveSourceFileId: row.driveSourceFileId,
       stems: stemsFromDriveRowMetadata(row.stems),
-      primaryGain: row.primaryGain,
-      primaryMuted: row.primaryMuted,
-      metronomeBySegmentId: row.metronomeBySegmentId,
-      metronomeSongCalibration: row.metronomeSongCalibration,
-      metronomeTimingScope: row.metronomeTimingScope,
-      metronomeEnabled: row.metronomeEnabled,
-      metronomeGain: row.metronomeGain,
-      metronomeMuted: row.metronomeMuted,
-      drumsEnabled: row.drumsEnabled,
-      drumPattern: row.drumPattern,
-      drumPatternBySegmentId: row.drumPatternBySegmentId,
-      drumsGain: row.drumsGain,
-      drumsMuted: row.drumsMuted,
-      localTransposeSemitones: row.localTransposeSemitones,
-      skippedBySegmentId: row.skippedBySegmentId,
       localMediaFingerprint: row.localMediaFingerprint,
+      ...stanzaPracticeFieldsFromDriveRow(row),
     };
   }
   return null;

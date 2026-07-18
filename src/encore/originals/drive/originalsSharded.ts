@@ -254,6 +254,8 @@ export async function pullChangedOriginalsShards(accessToken: string): Promise<n
 
   for (const [id, entry] of Object.entries(manifest.originals)) {
     const localRow = local.get(id);
+    // Skip network when local clock wins. Callers that bump `updatedAt` without user content
+    // (e.g. remap heals) must use `preserveUpdatedAt` so richer remote shards stay pullable.
     if (localRow && localRow.updatedAt >= entry.updatedAt) continue;
     const raw = await driveGetMedia(accessToken, entry.fileId);
     const remoteRow = normalizeEncoreOriginalSong(

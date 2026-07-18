@@ -7,7 +7,10 @@ import { useEncoreSync } from './useEncoreSync';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 
 export interface EncoreOriginalsActionsContextValue {
-  saveOriginal: (song: EncoreOriginalSong, options?: { silentUndo?: boolean }) => Promise<void>;
+  saveOriginal: (
+    song: EncoreOriginalSong,
+    options?: { silentUndo?: boolean; preserveUpdatedAt?: boolean },
+  ) => Promise<void>;
   deleteOriginal: (id: string) => Promise<void>;
 }
 
@@ -22,10 +25,19 @@ export function EncoreOriginalsActionsProvider({ children }: { children: ReactNo
   const { push: pushUndo, isReplayingRef } = useLabsUndo();
 
   const saveOriginal = useCallback(
-    async (song: EncoreOriginalSong, options?: { silentUndo?: boolean }) => {
+    async (
+      song: EncoreOriginalSong,
+      options?: { silentUndo?: boolean; preserveUpdatedAt?: boolean },
+    ) => {
       const previous = await encoreDb.originals.get(song.id);
       if (!isOriginalSongPersistable(song, previous)) return;
-      const next = normalizeEncoreOriginalSong({ ...song, updatedAt: new Date().toISOString() });
+      const updatedAt =
+        options?.preserveUpdatedAt && previous?.updatedAt
+          ? previous.updatedAt
+          : options?.preserveUpdatedAt && song.updatedAt
+            ? song.updatedAt
+            : new Date().toISOString();
+      const next = normalizeEncoreOriginalSong({ ...song, updatedAt });
       const willPushUndo = !isReplayingRef.current && !options?.silentUndo;
       const prevSnap = willPushUndo && previous ? cloneRow(previous) : undefined;
       const nextSnap = willPushUndo ? cloneRow(next) : undefined;

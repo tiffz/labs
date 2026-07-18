@@ -53,4 +53,32 @@ describe('labsDriveUndoRingDb', () => {
     expect(listed[0]?.payloadJson).toBe('{"legacy":true}');
     expect(localStorage.getItem('labs_scales_drive_undo_snapshots_v2')).toBeNull();
   });
+
+  it('unions legacy localStorage into an existing IndexedDB ring before clearing the key', async () => {
+    await pushLabsDriveUndoRingSnapshot('scales', '{"idb":true}', 'pre-pull', 'idb');
+    localStorage.setItem(
+      'labs_scales_drive_undo_snapshots_v2',
+      JSON.stringify([
+        {
+          createdAt: 1,
+          label: 'legacy',
+          trigger: 'manual-backup',
+          envelopeJson: '{"legacy":true}',
+        },
+        {
+          createdAt: 2,
+          label: 'dup',
+          trigger: 'pre-pull',
+          envelopeJson: '{"idb":true}',
+        },
+      ]),
+    );
+    await migrateLegacyLocalStorageUndoRing({
+      appId: 'scales',
+      legacyStorageKey: 'labs_scales_drive_undo_snapshots_v2',
+    });
+    const listed = await listLabsDriveUndoRingSnapshots('scales');
+    expect(listed.map((r) => r.payloadJson).sort()).toEqual(['{"idb":true}', '{"legacy":true}']);
+    expect(localStorage.getItem('labs_scales_drive_undo_snapshots_v2')).toBeNull();
+  });
 });

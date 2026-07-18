@@ -596,6 +596,9 @@ export function EncoreAuthProvider({ children }: { children: ReactNode }): React
   const continueWithoutGoogle = useCallback(() => {
     writeGoogleGateBypassed(true);
     setGoogleGateBypassed(true);
+    // Clear the access-restricted gate so local-only continue can leave AccessRestrictedScreen.
+    setAccessDenied(false);
+    setAccessDeniedMessage(null);
   }, []);
 
   const signOut = useCallback(() => {

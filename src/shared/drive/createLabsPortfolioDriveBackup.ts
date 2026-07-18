@@ -27,6 +27,7 @@ import type { LabsPortfolioConflictChoice } from '../google/LabsPortfolioConflic
 import { useLabsDrivePortfolioAutoSync } from './useLabsDrivePortfolioAutoSync';
 import {
   assessPortfolioHistoryRecovery,
+  pickNewestHistoryEntitySlice,
   scanPortfolioProgressRevisions,
   type PortfolioProgressRevisionSnapshot,
 } from './labsPortfolioDriveHistoryRecovery';
@@ -537,16 +538,18 @@ export function createLabsPortfolioDriveBackup<
         let local: TPayload = await config.readLocalPayload();
         let restoredCount = 0;
         for (const id of ids) {
-          let remoteSlice: TPayload | null = null;
-          for (const snap of historySnapshotsRef.current) {
-            const payload = config.envelopeToPayload(snap.envelope);
-            const slice = historyRecovery.payloadWithEntity(payload, id);
-            if (slice) remoteSlice = slice;
-          }
+          const remoteSlice = pickNewestHistoryEntitySlice({
+            id,
+            snapshots: historySnapshotsRef.current,
+            envelopeToPayload: config.envelopeToPayload,
+            payloadWithEntity: historyRecovery.payloadWithEntity,
+          });
           if (!remoteSlice) continue;
+          const beforeIds = new Set(historyRecovery.listEntityIds(local));
           const { payload: merged } = config.mergePayload(local, remoteSlice);
           local = merged;
-          restoredCount += 1;
+          const afterIds = new Set(historyRecovery.listEntityIds(local));
+          if (!beforeIds.has(id) && afterIds.has(id)) restoredCount += 1;
         }
         if (restoredCount > 0) {
           await onMergePayload(local);
