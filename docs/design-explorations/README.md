@@ -1,22 +1,13 @@
 # Design explorations
 
-**Purpose:** Hold **non-binding** design notes—options, tradeoffs, and future directions that are useful to revisit but are **not** repo policy until promoted.
+**Non-binding** spikes and options. **Not policy** until promoted to an ADR or `DEVELOPMENT.md`.
 
-**Precedence:** These docs sit **below** enforced config, `DEVELOPMENT.md`, and [`docs/adr/`](../adr/README.md). If an exploration hardens into a decision, capture it in a numbered ADR (or update `DEVELOPMENT.md`) and trim or archive the exploration so one place stays canonical.
+**Precedence:** Below enforced config, `DEVELOPMENT.md`, and [`docs/adr/`](../adr/README.md). When a decision ships, **promote** and **trim or delete** the exploration so agents are not pulled two ways. See [`DOCUMENTATION_STRATEGY.md`](../DOCUMENTATION_STRATEGY.md) § Lifecycle.
 
-**What belongs here**
+| Document                                                                   | Status                                                               | Summary                                       |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------- |
+| [`local-first-session-and-bff.md`](local-first-session-and-bff.md)         | **Superseded** → [ADR 0014](../adr/0014-google-oauth-session-bff.md) | Historical OAuth/BFF options (stub only)      |
+| [`stanza-encore-overlay-migration.md`](stanza-encore-overlay-migration.md) | Active deferred checklist                                            | Federated Stanza↔Encore dual-read (not wired) |
+| [`performance-detail-page.md`](performance-detail-page.md)                 | Exploration                                                          | Encore performance detail route (not shipped) |
 
-- Architecture spikes, “if we ever…” write-ups, comparisons of third-party approaches.
-- Anything that would clutter ADRs with “maybe later” without a firm decision.
-
-**What does not belong here**
-
-- User-facing copy rules, CI behavior, or anything that must stay in lockstep with automation—use the paths in [`docs/SOURCE_OF_TRUTH.md`](../SOURCE_OF_TRUTH.md).
-
-## Contents (examples)
-
-| Document                                                           | Summary                                                                                                                          |
-| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| [`local-first-session-and-bff.md`](local-first-session-and-bff.md) | Browser OAuth vs local-first data, token refresh / BFF options, growing backend surface without a second silent source of truth. |
-
-Add new files to this table when you drop another exploration here.
+Closed no-go spikes (e.g. 3D mannequin) are deleted — use [`.cursor/rules/feasibility-first.mdc`](../../.cursor/rules/feasibility-first.mdc) and git history.

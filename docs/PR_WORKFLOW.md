@@ -1,38 +1,24 @@
 # Pull request workflow (solo developer)
 
-Labs has **no human code review**. Pull requests exist for three reasons:
+Labs has **no human code review**. PRs exist for: (1) **CI gate**, (2) **audit trail** (squash commit), (3) **scoped rollback**. Bots are optional signal; **green CI + local presubmit** is the merge bar.
 
-1. **CI gate** — GitHub Actions runs lint, typecheck, tests, e2e smoke, and build before code lands on `main`.
-2. **Audit trail** — Each merge is a squash commit with a PR title/body you (or an agent) can search later.
-3. **Scoped rollback** — One PR ≈ one revert unit if production misbehaves.
-
-Bots (e.g. CodeRabbit) are **optional signal**, not approvers. They can rate-limit or miss context; **green CI + local presubmit** is the merge bar.
-
-Canonical merge policy for this repo: **squash merge** into `main`, **delete the branch** after merge.
+Canonical merge: **squash** into `main`, **delete branch** after merge.
 
 ## When to open a PR vs push to `main`
 
-| Situation                                                                 | Prefer                                                                                   |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Feature, refactor, multi-file change, or anything that should run full CI | **PR**                                                                                   |
-| Agent batch work (decomposition series, roadmap slices)                   | **PR per slice** — skill `labs-split-to-prs`                                             |
-| Docs-only typo on `main` you want live in 30 seconds                      | Direct commit to `main` is OK if you accept skipping PR CI (still run presubmit locally) |
-| Visual/audio baseline updates                                             | **PR + explicit human review** of snapshot diffs — never silent baseline refresh         |
-| Hotfix for broken `main`                                                  | Branch + PR (or hotfix branch); use [rollback workflow](ROLLBACK.md) if already deployed |
+| Situation                              | Prefer                                                                    |
+| -------------------------------------- | ------------------------------------------------------------------------- |
+| Feature, refactor, multi-file, full CI | **PR**                                                                    |
+| Agent batch / roadmap slices           | **PR per slice** — skill `labs-split-to-prs`                              |
+| Docs-only typo, need live in seconds   | Direct `main` OK if you accept skipping PR CI (still `npm run presubmit`) |
+| Visual/audio baseline updates          | **PR + explicit human review** of diffs — never silent refresh            |
+| Hotfix for broken `main`               | Branch + PR; [ROLLBACK.md](ROLLBACK.md) if already deployed               |
 
-Default for agents: **branch → PR → merge**, unless you explicitly say “commit/push to main.”
+Default for agents: **branch → PR → merge**, unless told “commit/push to main.”
 
 ## Branch naming
 
-```
-refactor/<short-topic>     # behavior-preserving splits
-fix/<short-topic>          # bug fixes
-feat/<short-topic>         # user-visible features
-docs/<short-topic>         # docs-only
-chore/<short-topic>        # tooling, deps, CI
-```
-
-One logical change per branch. Prefer **≤ ~400 lines** diff when splitting is easy (see `labs-split-to-prs`).
+`refactor/|fix/|feat/|docs/|chore/<short-topic>` — one logical change; prefer ≤ ~400 lines when splitting is easy (`labs-split-to-prs`).
 
 ## End-to-end loop
 
@@ -41,31 +27,27 @@ flowchart LR
   A[Branch from main] --> B[Implement]
   B --> C["npm run presubmit"]
   C --> D[Push + open PR]
-  D --> E[CI green]
-  E --> F[Triage bot comments]
-  F --> G{Merge bar met?}
-  G -->|yes| H[Squash merge]
+  D --> E[Arm auto-merge]
+  E --> F[Background CI watch]
+  F --> G{Green?}
+  G -->|yes| H[Squash merges]
   G -->|no| B
-  H --> I[Delete branch + pull main]
 ```
 
 ### 1. Branch
 
 ```bash
-git fetch origin
-git checkout main && git pull
-git checkout -b refactor/my-topic
+git fetch origin && git checkout main && git pull
+git checkout -b feat/my-topic
 ```
 
-### 2. Implement + verify locally
-
-Before **every** push that you intend to merge:
+### 2. Presubmit (before every merge-intended push)
 
 ```bash
 npm run presubmit
 ```
 
-Presubmit matches the Husky pre-commit hook (import boundaries, lint, knip, typecheck, fast tests). CI also runs e2e smoke and other checks — see `.github/workflows/ci.yml`.
+Matches Husky pre-commit. CI also runs e2e smoke/build — see `.github/workflows/ci.yml`.
 
 ### 3. Push and open PR
 
@@ -77,163 +59,56 @@ gh pr create --title "Short imperative title" --body "$(cat <<'EOF'
 
 ## Test plan
 - [x] `npm run presubmit`
-- [ ] …
 EOF
 )"
 ```
 
-Use the [PR template](../.github/pull_request_template.md). For solo work, **Summary + Test plan** are enough; skip Bug-fix handoff unless it was a regression fix.
+Use [`.github/pull_request_template.md`](../.github/pull_request_template.md). Summary + Test plan are enough for solo work.
 
-### 4. CI without blocking the session
+### 4. Auto-merge + CI without blocking
 
-CI takes **≈8–15 min**. Agents and humans should not sit idle watching checks unless babysitting a merge.
-
-| Do locally (before push)                                | Defer to CI                                |
-| ------------------------------------------------------- | ------------------------------------------ |
-| `npm run presubmit`                                     | Full Vitest (`npm test`), e2e smoke, build |
-| `npm run test:e2e:smoke` when touching routes/shells    | Visual regression (advisory)               |
-| Hard-refresh affected hash routes after provider wiring | Pages deploy                               |
-
-**Agent workflow — fire-and-forget + fix on failure** (default; rule [`ci-background-watch.mdc`](../.cursor/rules/ci-background-watch.mdc))
-
-1. Run **presubmit** on the final commit; fix failures before push. This is the real gate — CI is the safety net.
-2. **Push + open PR**; tell the user the PR URL.
-3. **Arm auto-merge** so green merges itself, no agent action needed:
-   ```bash
-   gh pr merge <n> --auto --squash --delete-branch
-   ```
-4. **Background-watch for failure only** — start `ci:watch` as a backgrounded job and keep working:
-   ```bash
-   npm run ci:watch -- <n>   # silent while pending; prints one CI_WATCH: PASS|FAIL|… sentinel
-   npm run ci:watch -- main  # direct push to main (no PR)
-   ```
-   Agents: run it with `block_until_ms: 0` and a `notify_on_output` regex `^CI_WATCH: (FAIL|TIMEOUT|ERROR)`. **Do not** poll CI in chat or `AwaitShell` the watcher.
-5. **Immediately continue** the next unit of work. On a failure ping: `npm run report:ci-failure -- <run-id>`, fix within the PR's scope, push again (auto-merge re-arms), restart `ci:watch`.
-6. Prefer **small PRs** (`labs-split-to-prs`) so CI surface area stays small and failures are easier to attribute.
-7. **Direct push to `main`** only for trivial docs typos when skipping PR CI is acceptable — still run presubmit locally.
-
-Block synchronously (foreground babysit) **only** when the user asked to merge now, it's a hotfix for broken `main`, or it's the last action of the session. Honest hand-off: backgrounded watchers are session-scoped — auto-merge still lands green PRs after the session ends, but a _failure_ after the session ends stays a red open PR (caught by `gh pr list` next session or the Nightly detector). Never claim a PR merged/green that you did not observe.
-
-**Human workflow**
-
-- Enable GitHub **allow auto-merge** (one-time): `gh api repos/tiffz/labs -X PATCH -f allow_auto_merge=true` — see [`docs/PR_WORKFLOW.md`](docs/PR_WORKFLOW.md) § Auto-merge.
-- Queue **auto-merge squash** on PRs you trust: `gh pr merge <n> --auto --squash --delete-branch`.
-- Re-run failed **`test`** once for known Vitest teardown flakes (`docs/CI_RELIABILITY.md`); fix if persistent.
-- Use **`gh pr checks --watch`** only when actively babysitting — not as default agent idle time.
-
-See also: [`docs/CI_RELIABILITY.md`](CI_RELIABILITY.md) (concurrency cancellation, deploy retry).
-
-### 5. Wait for CI (when babysitting)
-
-Watch the **`test`** job on the PR (≈8–15 min). CodeRabbit may comment; treat inline suggestions as a **second pair of eyes**, not a veto.
-
-**Merge blockers**
-
-- Any required CI check failed
-- You have not run presubmit on the latest commit
-- Visual/audio snapshot changes you have not inspected
-- Known flaky failure you have not confirmed is unrelated (re-run CI once; merge latest `main` if branch is stale)
-
-**Not merge blockers**
-
-- CodeRabbit rate limit / “review skipped”
-- CodeRabbit nit with no CI impact (still fix quick wins like syntax errors)
-- Empty human review (there are no human reviewers)
-
-### 6. Triage feedback
-
-Skill: **`labs-babysit-pr`**.
-
-1. Read **inline review comments** and **CI logs** only — ignore bot walkthrough noise unless it points at a real bug.
-2. Fix valid issues on the PR branch; push; wait for CI again.
-3. Reply on fixed threads when the bot asked for a specific change (optional; helps future you).
-
-Do **not** weaken CI, skip hooks, or `--no-verify` to merge.
-
-### 7. Merge
-
-When CI is green and presubmit passed on HEAD:
+**Default agent flow** (do not idle on CI): rule [`.cursor/rules/ci-background-watch.mdc`](../.cursor/rules/ci-background-watch.mdc).
 
 ```bash
-gh pr merge <number> --squash --delete-branch
-git checkout main && git pull
+gh pr merge <n> --auto --squash --delete-branch
+npm run ci:watch -- <n>   # background; notify on FAIL only
 ```
 
-### Auto-merge (optional, recommended)
+Presubmit is the real gate; CI is the safety net. On failure: `npm run report:ci-failure -- <run-id>`, fix in PR scope, push, restart watch. Foreground babysit only when user asked to merge now, hotfix for broken `main`, or last action of the session — skill **`labs-babysit-pr`**.
 
-Enable once per repo so PRs merge automatically when required checks pass:
+**One-time repo setting** (admin): `gh api repos/tiffz/labs -X PATCH -f allow_auto_merge=true`.
 
-```bash
-# One-time repo setting (requires admin)
-gh api repos/tiffz/labs -X PATCH -f allow_auto_merge=true
+| Do locally before push                               | Defer to CI                   |
+| ---------------------------------------------------- | ----------------------------- |
+| `npm run presubmit`                                  | Full Vitest, e2e smoke, build |
+| `npm run test:e2e:smoke` when touching routes/shells | Visual regression (advisory)  |
 
-# Per PR — queue squash merge when CI green (after push)
-gh pr merge <number> --auto --squash --delete-branch
-```
+Honest limits: background watchers are session-scoped; auto-merge still lands green PRs after the session ends. Never claim merged/green without observing it. Reliability notes: [`CI_RELIABILITY.md`](CI_RELIABILITY.md).
 
-**Requirements:** Branch protection on `main` with required status checks (`test` job). Auto-merge waits for green CI; it does not skip presubmit locally.
+### 5. Merge bar (solo)
 
-If `allow_auto_merge` is already true, only the per-PR `--auto` step is needed.
+| Block merge                            | Not a blocker                                 |
+| -------------------------------------- | --------------------------------------------- |
+| Required CI failed                     | CodeRabbit rate limit / no human review       |
+| Presubmit not run on HEAD              | Style nits with no CI impact (fix if trivial) |
+| Unreviewed visual/audio snapshot diffs | Empty human review                            |
 
-Merge **stacked PRs in dependency order** (foundation first). After merging PR _n_, rebase or merge `main` into downstream branches before merging _n+1_.
+Never weaken CI, skip hooks, or `--no-verify` to merge. Agents merge only when the user asked (or babysit through merge).
 
-**Rapid merges:** Merging several PRs back-to-back triggers multiple `CI/CD` runs; workflow **concurrency** cancels superseded runs — check the **latest** run on `main`. Pages **deploy** uses its own concurrency group; transient `in progress deployment` errors are auto-retried once (see [`docs/CI_RELIABILITY.md`](CI_RELIABILITY.md)).
-
-Agents: merge only when the user asked to merge (or babysit through merge-ready **and** merge).
-
-### 7. After merge
-
-- Confirm [open PRs](https://github.com/tiffz/labs/pulls) list is clean for that batch.
-- Continue decomposition/refactor series from updated `main`.
-- Optional: note process learnings in PR § Process improvements or skill `labs-session-retrospective`.
-
-## Review signal hierarchy (solo)
-
-| Priority | Signal                                                         | Action                            |
-| -------- | -------------------------------------------------------------- | --------------------------------- |
-| 1        | CI failed                                                      | Fix or abort merge                |
-| 2        | Local presubmit failed                                         | Fix before push                   |
-| 3        | Guardrail / regression test you added                          | Must pass                         |
-| 4        | CodeRabbit inline **actionable** bug (syntax, logic, security) | Fix if valid                      |
-| 5        | CodeRabbit style/nit                                           | Fix if trivial; otherwise backlog |
-| 6        | CodeRabbit rate limit                                          | Ignore for merge decision         |
+Stacked PRs: merge foundation first; rebase/merge `main` into downstream before next. Rapid merges cancel superseded CI runs — check the **latest** run on `main`.
 
 ## Splitting large work
 
-Use skill **`labs-split-to-prs`**:
-
-- Propose slices → get approval → one PR per slice → presubmit each → merge in order.
-- Example series: route registry → SessionScreen helpers → ScoreDisplay helpers.
-
-Do not open five PRs and merge all at once without checking CI on each; merge sequentially reduces “everything broke at once” debugging.
-
-### Velocity: split feature trains
-
-When a session touches **CI + multiple apps + e2e + docs** (common agent batch), split before push:
-
-1. **Infra slice** — workflows, presubmit scripts, agent docs (no product UI).
-2. **App slice(s)** — one micro-app or subsystem per PR (`labs-split-to-prs`).
-3. **Baselines slice** — visual/audio PNG updates alone when possible.
-
-Each slice: `npm run presubmit:push` → push → wait for green CI → merge → next slice. Monolithic commits save chat time but cost **one full CI cycle per fix** when smokes drift.
-
-Set `LABS_PRESUBMIT_PUSH=1` in your shell profile to enforce e2e smokes on every push via Husky (see `.husky/pre-push`).
+Skill **`labs-split-to-prs`**. Feature trains that touch CI + multiple apps + e2e: infra slice → app slice(s) → baselines slice. Merge sequentially (green CI each). Set `LABS_PRESUBMIT_PUSH=1` to enforce e2e on every push via Husky.
 
 ## Agent + user conventions
 
-| Action            | Default                                                   |
-| ----------------- | --------------------------------------------------------- |
-| Commit            | Ask first (unless you said “commit”)                      |
-| Push              | Ask first (unless you said “push”)                        |
-| Open PR           | Ask first (unless you said “open a PR”)                   |
-| Merge             | Ask first (unless you said “merge” / “babysit and merge”) |
-| Force-push `main` | Never without explicit request                            |
+| Action                          | Default                                |
+| ------------------------------- | -------------------------------------- |
+| Commit / push / open PR / merge | Ask first (unless user said that verb) |
+| Force-push `main`               | Never without explicit request         |
 
-## Related docs
+## Related
 
-- [`docs/CI_RELIABILITY.md`](CI_RELIABILITY.md) — Actions reliability, deploy path, triage
-- [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — what CI actually runs
-- [`docs/REGRESSION_WORKFLOW.md`](REGRESSION_WORKFLOW.md) — visual/audio baselines
-- [`docs/ROLLBACK.md`](ROLLBACK.md) — production rollback
-- [`AGENTS.md`](../AGENTS.md) — agent boundaries and task routing
+- [`CI_RELIABILITY.md`](CI_RELIABILITY.md) · [`REGRESSION_WORKFLOW.md`](REGRESSION_WORKFLOW.md) · [`ROLLBACK.md`](ROLLBACK.md)
 - Skills: `labs-babysit-pr`, `labs-split-to-prs`

@@ -5,9 +5,10 @@ Nested **`AGENTS.md`** for Drums. Root policy: [`../../AGENTS.md`](../../AGENTS.
 ## Start here
 
 1. [`README.md`](README.md) — editing, playback, URL state.
-2. [`DEVELOPMENT.md`](DEVELOPMENT.md) — deep architecture when touching sequencer/notation.
-3. **Shared notation:** [`../shared/notation/`](../shared/notation/) — `DrumNotationMini`, `drawDrumSymbol`, `vexFlowDuration.ts` (do not duplicate symbol paths or sixteenth→VexFlow mapping).
-4. **Shared UI:** [`../shared/SHARED_UI_CONVENTIONS.md`](../shared/SHARED_UI_CONVENTIONS.md) — BPM/sound pickers, volume sliders.
+2. [`DEVELOPMENT.md`](DEVELOPMENT.md) — sequencer/repeats, time signatures, randomization (read when touching those).
+3. **Deep guides (stubs):** [`docs/TAB_IMPORT.md`](docs/TAB_IMPORT.md), [`docs/DRAG_AND_DROP_ARCHITECTURE.md`](docs/DRAG_AND_DROP_ARCHITECTURE.md), [`docs/URL_SHARING.md`](docs/URL_SHARING.md) → repo URL-state pattern.
+4. **Shared notation:** [`../shared/notation/`](../shared/notation/) — `DrumNotationMini`, `drawDrumSymbol`, `vexFlowDuration.ts`.
+5. **Shared UI:** [`../shared/SHARED_UI_CONVENTIONS.md`](../shared/SHARED_UI_CONVENTIONS.md).
 
 ## Pitfalls
 

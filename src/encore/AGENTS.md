@@ -4,15 +4,14 @@ Nested **`AGENTS.md`** for Project Encore. Root policy: [`../../AGENTS.md`](../.
 
 ## Start here
 
-1. [`README.md`](README.md) — product scope, sync, Originals vs repertoire.
-2. [`ARCHITECTURE.md`](ARCHITECTURE.md) — routing, Dexie, Drive layout.
-3. **Originals chord paint:** [`originals/DEVELOPMENT.md`](originals/DEVELOPMENT.md) + `.cursor/rules/encore-originals-chord-paint.mdc`.
-4. **Copy voice:** [`COPY_STYLE.md`](COPY_STYLE.md).
-5. **Performance UX (log / edit / video):** [`PERFORMANCE_UX.md`](PERFORMANCE_UX.md) — Gestalt grouping, modal vs detail page.
-6. **CUJs:** [`CUJs.md`](CUJs.md) — library, practice, originals, performance budgets.
-7. **UI primitives:** [`UI_PRIMITIVES.md`](UI_PRIMITIVES.md) — media rows, integration cards, Spotify sync panels.
-8. **Undo:** [`../shared/undo/README.md`](../shared/undo/README.md) — keyboard-first; `EncoreActionsContext` + draft undo hooks.
-9. **Practice resource DnD:** `PracticeResourceDnD.tsx` + `practiceResourceOrder.ts` — click suppression is **post-drop only** (`shouldSuppressPracticeResourceChipNavigation`); never swap link DOM or intercept `pointerup` mid-drag.
+1. [`README.md`](README.md) — entry, env/ops, product constraints (link out for depth).
+2. [`ARCHITECTURE.md`](ARCHITECTURE.md) — Dexie/Drive/sync contracts only (read when changing sync/data).
+3. [`CUJs.md`](CUJs.md) — journeys + budgets only (no architecture walkthroughs).
+4. **Originals chord paint:** [`originals/DEVELOPMENT.md`](originals/DEVELOPMENT.md) + `.cursor/rules/encore-originals-chord-paint.mdc`.
+5. **Performance UX:** [`PERFORMANCE_UX.md`](PERFORMANCE_UX.md).
+6. **Copy / UI primitives:** [`COPY_STYLE.md`](COPY_STYLE.md), [`UI_PRIMITIVES.md`](UI_PRIMITIVES.md).
+7. **Undo:** [`../shared/undo/README.md`](../shared/undo/README.md).
+8. **Practice resource DnD:** `practiceResourceOrder.ts` — click suppression **post-drop only**; never swap link DOM mid-drag.
 
 ## Entry & routing
 

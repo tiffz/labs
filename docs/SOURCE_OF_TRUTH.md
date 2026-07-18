@@ -47,10 +47,11 @@ When **AI agents** receive conflicting instructions, use [`AGENTS.md`](../AGENTS
   - Feature behavior, app-specific architecture, known constraints.
   - Must not redefine global policy.
 - `docs/design-explorations/`
-  - Non-binding design notes and spikes (see [`docs/design-explorations/README.md`](design-explorations/README.md)). Below ADRs and `DEVELOPMENT.md` in precedence. Example: [`local-first-session-and-bff.md`](design-explorations/local-first-session-and-bff.md) (OAuth / BFF / source-of-truth options).
+  - Non-binding spikes (see [`design-explorations/README.md`](design-explorations/README.md)). Below ADRs and `DEVELOPMENT.md`. Prefer **superseded stubs** over long obsolete option essays.
 - AI helper docs
-  - Task-oriented guidance for agents: root [`AGENTS.md`](../AGENTS.md), nested `src/<app>/AGENTS.md` where present, [`.cursor/rules/README.md`](../.cursor/rules/README.md), [`.cursor/skills/README.md`](../.cursor/skills/README.md).
-  - Should reference canonical docs instead of duplicating policy text (see [`DOCUMENTATION_STRATEGY.md`](DOCUMENTATION_STRATEGY.md) § Agent context map).
+  - Root [`AGENTS.md`](../AGENTS.md), nested `src/<app>/AGENTS.md`, [`.cursor/rules/README.md`](../.cursor/rules/README.md), [`.cursor/skills/README.md`](../.cursor/skills/README.md).
+  - Link canonical policy; do not duplicate (see [`DOCUMENTATION_STRATEGY.md`](DOCUMENTATION_STRATEGY.md) § Agent context map).
+  - App `GEMINI.md` files are **redirects only**.
 
 ## Consistency Rules
 
@@ -58,6 +59,17 @@ When **AI agents** receive conflicting instructions, use [`AGENTS.md`](../AGENTS
 - Avoid duplicating policy across multiple files; prefer linking to one canonical section.
 - Keep examples accurate to current versions and commands.
 - Remove stale migration notes once migration is complete.
+- Prefer fixing **broken links / matrix drift** over adding new prose.
+- [`PROCESS_BACKLOG.md`](PROCESS_BACKLOG.md): Open/Deferred only — delete Done rows when shipping.
+- Agent maintenance checklist: [`DOCUMENTATION_STRATEGY.md`](DOCUMENTATION_STRATEGY.md) § Maintaining docs (agents) — progressive disclosure, no invented ADR slugs, delete/supersede stubs over archive essays.
+- Prefer **delete / superseded stubs** over long archived essays.
+- **Never invent ADR filenames** — cite only real paths from [`adr/README.md`](adr/README.md).
+
+## Maintaining docs (agents)
+
+Full checklist: [`DOCUMENTATION_STRATEGY.md`](DOCUMENTATION_STRATEGY.md) § Maintaining docs (agents).
+
+Short form: `AGENTS.md` routes → skill/rule → one canonical doc. Add what the agent lacks; omit what it knows ([Agent Skills](https://agentskills.io/home) progressive disclosure). When paths change, update nested `src/<app>/AGENTS.md` Start-here lists in the same PR.
 
 ## Audit Targets
 

@@ -2,6 +2,8 @@
 
 Rough comic page mockups: generated panel layouts, page cast + arrangements, and print-aware export.
 
+**Agents:** [`AGENTS.md`](AGENTS.md)
+
 ## Features
 
 - **Panel count → layout gallery** — enter 1–12 panels; browse and switch layouts anytime from the right rail
