@@ -16759,6 +16759,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsportfoliodrivehistoryrecovery-ts-picknewesthistoryentityslice",
+    "name": "pickNewestHistoryEntitySlice",
+    "path": "src/shared/drive/labsPortfolioDriveHistoryRecovery.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pick the entity slice from the newest revision (by `modifiedTime`) that still holds `id`. Matches 's \"last seen\" labeling.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-labsportfoliodrivehistoryrecovery-ts-portfoliohistoryrecoveryentry",
     "name": "PortfolioHistoryRecoveryEntry",
     "path": "src/shared/drive/labsPortfolioDriveHistoryRecovery.ts",

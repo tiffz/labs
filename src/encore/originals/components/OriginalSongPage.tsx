@@ -122,7 +122,7 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
   }, [draft]);
 
   const enqueueSave = useCallback(
-    (next: EncoreOriginalSong, opts?: { silentUndo?: boolean }) => {
+    (next: EncoreOriginalSong, opts?: { silentUndo?: boolean; preserveUpdatedAt?: boolean }) => {
       saveChainRef.current = saveChainRef.current
         .catch(() => undefined)
         .then(async () => {
@@ -140,29 +140,41 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
     if (isNew) return;
     if (healedPlaybackOverridesForIdRef.current === id) return;
     let cancelled = false;
-    void (async () => {
-      const raw = await encoreDb.originals.get(id);
-      if (cancelled || !raw) return;
-      if (
-        !sectionPlaybackOverridesNeedRemap(raw.lyricsAndChords, raw.sectionPlaybackOverrides)
-      ) {
+    // Chain after in-flight autosaves so we heal the freshest draft, not a stale Dexie snapshot.
+    saveChainRef.current = saveChainRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        if (cancelled) return;
+        const current =
+          latestSavedRef.current?.id === id
+            ? latestSavedRef.current
+            : ((await encoreDb.originals.get(id)) ?? null);
+        if (!current) return;
+        if (
+          !sectionPlaybackOverridesNeedRemap(
+            current.lyricsAndChords,
+            current.sectionPlaybackOverrides,
+          )
+        ) {
+          healedPlaybackOverridesForIdRef.current = id;
+          return;
+        }
+        const healed = normalizeEncoreOriginalSong(current);
+        // Keep the content clock so a remap heal does not block content-aware Drive pulls.
+        await saveOriginal(healed, { silentUndo: true, preserveUpdatedAt: true });
+        if (cancelled) return;
+        latestSavedRef.current = structuredClone(healed);
         healedPlaybackOverridesForIdRef.current = id;
-        return;
-      }
-      const healed = normalizeEncoreOriginalSong(raw);
-      await enqueueSave(healed, { silentUndo: true });
-      if (cancelled) return;
-      healedPlaybackOverridesForIdRef.current = id;
-      setDraft((prev) =>
-        prev?.id === healed.id
-          ? { ...prev, sectionPlaybackOverrides: healed.sectionPlaybackOverrides }
-          : prev,
-      );
-    })();
+        setDraft((prev) =>
+          prev?.id === healed.id
+            ? { ...prev, sectionPlaybackOverrides: healed.sectionPlaybackOverrides }
+            : prev,
+        );
+      });
     return () => {
       cancelled = true;
     };
-  }, [enqueueSave, id, isNew]);
+  }, [id, isNew, saveOriginal]);
 
   const persistOriginalNow = useCallback(
     async (next: EncoreOriginalSong) => {

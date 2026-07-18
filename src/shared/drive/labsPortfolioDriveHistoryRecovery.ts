@@ -89,3 +89,26 @@ export function assessPortfolioHistoryRecovery<TPayload, TEnvelope>(args: {
 
   return [...richest.values()].sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
 }
+
+/**
+ * Pick the entity slice from the newest revision (by `modifiedTime`) that still holds `id`.
+ * Matches {@link assessPortfolioHistoryRecovery}'s "last seen" labeling.
+ */
+export function pickNewestHistoryEntitySlice<TPayload, TEnvelope>(args: {
+  id: string;
+  snapshots: readonly PortfolioProgressRevisionSnapshot<TEnvelope>[];
+  envelopeToPayload: (envelope: TEnvelope) => TPayload;
+  payloadWithEntity: (source: TPayload, id: string) => TPayload | null;
+}): TPayload | null {
+  let best: { modifiedTime: string; slice: TPayload } | null = null;
+  for (const snap of args.snapshots) {
+    const payload = args.envelopeToPayload(snap.envelope);
+    const slice = args.payloadWithEntity(payload, args.id);
+    if (!slice) continue;
+    const modifiedTime = snap.modifiedTime ?? '';
+    if (!best || modifiedTime > best.modifiedTime) {
+      best = { modifiedTime, slice };
+    }
+  }
+  return best?.slice ?? null;
+}

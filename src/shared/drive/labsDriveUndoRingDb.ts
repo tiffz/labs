@@ -106,27 +106,27 @@ export async function migrateLegacyLocalStorageUndoRing(opts: {
       window.localStorage.removeItem(opts.legacyStorageKey);
       return;
     }
-    const existing = await labsDriveUndoRingDb.snapshots.where('appId').equals(opts.appId).count();
-    if (existing === 0) {
-      for (const item of parsed) {
-        if (!item || typeof item !== 'object') continue;
-        const row = item as Record<string, unknown>;
-        const payloadJson =
-          opts.payloadFromLegacy?.(row) ??
-          (typeof row.envelopeJson === 'string'
-            ? row.envelopeJson
-            : typeof row.wireJson === 'string'
-              ? row.wireJson
-              : null);
-        if (!payloadJson) continue;
-        await labsDriveUndoRingDb.snapshots.add({
-          appId: opts.appId,
-          createdAt: typeof row.createdAt === 'number' ? row.createdAt : Date.now(),
-          label: typeof row.label === 'string' ? row.label : new Date().toISOString(),
-          trigger: typeof row.trigger === 'string' ? row.trigger : 'manual-backup',
-          payloadJson,
-        });
-      }
+    const existingRows = await labsDriveUndoRingDb.snapshots.where('appId').equals(opts.appId).toArray();
+    const seenPayloads = new Set(existingRows.map((r) => r.payloadJson));
+    for (const item of parsed) {
+      if (!item || typeof item !== 'object') continue;
+      const row = item as Record<string, unknown>;
+      const payloadJson =
+        opts.payloadFromLegacy?.(row) ??
+        (typeof row.envelopeJson === 'string'
+          ? row.envelopeJson
+          : typeof row.wireJson === 'string'
+            ? row.wireJson
+            : null);
+      if (!payloadJson || seenPayloads.has(payloadJson)) continue;
+      seenPayloads.add(payloadJson);
+      await labsDriveUndoRingDb.snapshots.add({
+        appId: opts.appId,
+        createdAt: typeof row.createdAt === 'number' ? row.createdAt : Date.now(),
+        label: typeof row.label === 'string' ? row.label : new Date().toISOString(),
+        trigger: typeof row.trigger === 'string' ? row.trigger : 'manual-backup',
+        payloadJson,
+      });
     }
     window.localStorage.removeItem(opts.legacyStorageKey);
   } catch {

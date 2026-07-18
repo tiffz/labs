@@ -25,9 +25,11 @@ describe('stanzaSongFromDriveRow', () => {
       markers: [],
       stats: {},
       updatedAt: 1,
+      practiceSource: 'local',
     };
     const s = stanzaSongFromDriveRow(row);
     expect(s?.ytId).toBe('abc');
+    expect(s?.practiceSource).toBe('local');
   });
 
   it('returns Drive-linked row when driveSourceFileId set', () => {
