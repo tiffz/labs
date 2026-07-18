@@ -72,8 +72,9 @@ test('scrapboard cast, speakers, and arrangement', async ({ page }) => {
 
   await page.getByTestId('scrapboard-add-dialogue').click();
   await page.getByTestId('scrapboard-dialogue-text-0').fill('Cast line');
+  /* SVG <tspan> textContent often joins without spaces — match either form. */
   await expect(page.getByTestId('scrapboard-board').locator('.comic-mockup-svg__bubble')).toContainText(
-    /Cast\s+line/i,
+    /Cast\s*line/i,
   );
 });
 
