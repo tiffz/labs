@@ -2,6 +2,8 @@
 
 This document records major architectural decisions for the Cat Clicker micro-app.
 
+**Furniture / world SVG placement:** [`components/rendering/UNIFIED_RENDERING_GUIDE.md`](components/rendering/UNIFIED_RENDERING_GUIDE.md) — use `UnifiedFurnitureRenderer`; do not revive per-item scale multipliers.
+
 ## Entity-Component-System (ECS) Architecture
 
 ### Decision
@@ -61,9 +63,11 @@ Creates immersive environment similar to "Night in the Woods" with proper depth 
 
 ## Furniture Placement System
 
+**SVG render path:** [`UNIFIED_RENDERING_GUIDE.md`](components/rendering/UNIFIED_RENDERING_GUIDE.md). This section is placement/collision only.
+
 ### Decision
 
-Implement sophisticated furniture placement system with layered collision detection.
+Implement furniture placement with layered collision detection.
 
 ### Rationale
 

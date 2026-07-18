@@ -156,10 +156,6 @@ Dev server, hard refresh.
 | Originals list | route → first paint | ≤ 3 s        | manual / smoke |
 | Grid play tap  | click → audio start | ≤ 1 s        | manual         |
 
-### Write-mode chord reconcile
-
-Lyric edits defer chord realignment until **800 ms idle** or leaving Write (`ORIGINALS_WRITE_RECONCILE_DEBOUNCE_MS` in `useOriginalsChartLayout.ts`).
-
 ---
 
 ## CUJ-006: Guest share preview (P0)
@@ -175,8 +171,7 @@ Lyric edits defer chord realignment until **800 ms idle** or leaving Write (`ORI
 
 ### Success criteria
 
-- Production fetches snapshot JSON via **session BFF** (`VITE_LABS_SESSION_BFF_URL`), not direct `googleapis.com` from the browser.
-- Worker has **`GOOGLE_API_KEY`** secret (same browser key, server-side only).
+- Guest can read published snapshot without signing in (production path: session BFF — see [`README.md`](README.md) § Browser API key + guest reads).
 
 ### Performance budgets
 
@@ -186,17 +181,16 @@ Lyric edits defer chord realignment until **800 ms idle** or leaving Write (`ORI
 
 ### Known traps
 
-- Local Vite proxy masks production-only CORS failures (`static-hosting-cors`).
-- Deploying Worker without `GOOGLE_API_KEY` → 503 on BFF guest routes.
+- Local Vite proxy masks production-only CORS failures.
+- Worker missing `GOOGLE_API_KEY` → 503 on BFF guest routes.
 
 ### Automation
 
-| Type   | Artifact                                                                                          |
-| ------ | ------------------------------------------------------------------------------------------------- |
-| Smoke  | `e2e/smoke/encore-guest-share.spec.ts`                                                            |
-| Policy | `src/shared/drive/publicDriveFetchPolicy.test.ts`                                                 |
-| Worker | `src/shared/drive/publicDriveProxyWorker.test.ts`                                                 |
-| BFF    | [`workers/labs-session-bff/README.md`](../../workers/labs-session-bff/README.md) post-deploy curl |
+| Type            | Artifact                                                                         |
+| --------------- | -------------------------------------------------------------------------------- |
+| Smoke           | `e2e/smoke/encore-guest-share.spec.ts`                                           |
+| Policy / Worker | `publicDriveFetchPolicy.test.ts`, `publicDriveProxyWorker.test.ts`               |
+| Ops             | [`workers/labs-session-bff/README.md`](../../workers/labs-session-bff/README.md) |
 
 ---
 

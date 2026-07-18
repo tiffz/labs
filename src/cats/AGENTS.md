@@ -5,8 +5,9 @@ Nested **`AGENTS.md`** for Cat Clicker. Root policy: [`../../AGENTS.md`](../../A
 ## Start here
 
 1. [`README.md`](README.md) — game loop, mechanics.
-2. [`DEVELOPMENT.md`](DEVELOPMENT.md) — ECS architecture, ADRs for simulation systems.
-3. **Copy:** [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md) (playful OK; still no em-dash essay voice).
+2. [`DEVELOPMENT.md`](DEVELOPMENT.md) — ECS / simulation ADRs.
+3. **Furniture rendering:** [`components/rendering/UNIFIED_RENDERING_GUIDE.md`](components/rendering/UNIFIED_RENDERING_GUIDE.md) — invariants only (read when placing furniture).
+4. **Copy:** [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md) (playful OK; still no em-dash essay voice).
 
 ## Pitfalls
 

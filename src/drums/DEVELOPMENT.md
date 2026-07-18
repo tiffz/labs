@@ -54,92 +54,18 @@ Material Icons and Noto Music fonts caused icon text to flash as regular text be
 - Stable layout without shifts
 - Better Core Web Vitals scores
 
-## Beaming System
+## Time signatures, beaming, randomization
 
-### Decision
+**Read when:** changing meter UI, beaming, accents, or the randomize button.
 
-Fix beaming logic to correctly handle different time signature denominators.
+- **Beat grouping:** `/4` → groups in sixteenths; `/8` compound (numerator ÷ 3) → groups of 3 eighths → ×2 to sixteenths; asymmetric `/8` → additive defaults (e.g. 7/8 → 3+2+2) or custom `3+3+3+2` that must sum to the numerator. Source: `timeSignatureUtils.ts` (`getBeatGroupingInSixteenths`).
+- **Beaming / measure width:** VexFlow beams follow those groups; measure width scales with note count (avoid cramped 16ths).
+- **Playback accents:** stronger volume on beat-1 / group starts (see Audio System above).
+- **Smart randomize:** generate within beat groups ~80% of the time; weighted D/T/K/rest; durations that fit remaining sixteenths. Prefer unit tests near the randomize helper over expanding this section.
 
-### Rationale
+URL params (`rhythm` / `bpm` / `time`): stub [`docs/URL_SHARING.md`](docs/URL_SHARING.md) → [`docs/URL_STATE_PATTERN.md`](../../docs/URL_STATE_PATTERN.md).
 
-Beaming logic incorrectly handled `/8` vs `/4` time signatures, causing incorrect beaming for compound and asymmetric time signatures.
-
-### Implementation
-
-- `/8` time: Beat groupings in eighth notes, convert to sixteenths by multiplying by 2
-- `/4` time: Beat groupings already in sixteenths, use directly
-
-### Benefits
-
-- Correct beaming for all time signature types
-- Supports simple, compound, and asymmetric time signatures
-
-## URL Sharing Feature
-
-### Decision
-
-Implement URL-based state sharing for rhythms, BPM, and time signature.
-
-### Rationale
-
-Enables easy sharing with students, bookmarkable favorites, and collaboration.
-
-### Implementation
-
-- Rhythm, BPM, and time signature encoded in URL parameters
-- URL updates automatically as user changes rhythm
-- Browser navigation (back/forward) works correctly
-- URL optimization removes default values
-
-### Benefits
-
-- Easy sharing with students
-- Bookmarkable favorites
-- Collaboration support
-
-## Custom Hooks Architecture
-
-### Decision
-
-Extract complex stateful logic into custom hooks (`useNotationHistory`, `usePlayback`).
-
-### Rationale
-
-`App.tsx` was becoming too large (~600 lines), mixing multiple concerns (notation, history, playback, URL syncing).
-
-### Implementation
-
-- `useNotationHistory`: Manages notation state, history stack, undo/redo
-- `usePlayback`: Manages playback state and rhythmPlayer interactions
-
-### Benefits
-
-- Reduced `App.tsx` complexity (~300 lines)
-- Better separation of concerns
-- Easier to test hooks independently
-- Reusable logic
-
-## Notation System Architecture
-
-### Decision
-
-Use text-based notation system with utility functions for time signature calculations.
-
-### Rationale
-
-Eliminates duplicate calculations across codebase and provides single source of truth for time signature logic.
-
-### Implementation
-
-- Text notation: `D`=Dum, `T`=Tak, `K`=Ka, `S`=Slap, `_`=rest, `-`=duration
-- `timeSignatureUtils.ts`: `getSixteenthsPerMeasure()`, `getBeatGroupingInSixteenths()`
-- `notationUtils.ts`: `calculateRemainingBeats()`
-
-### Benefits
-
-- Single source of truth for time signature logic
-- Eliminates duplicate calculations
-- Consistent behavior across all components
+Notation helpers: `notationUtils.ts`, text alphabet in [`README.md`](README.md). Hooks: `useNotationHistory`, `usePlayback`.
 
 ## Sequencer Architecture & Coordinate Systems
 

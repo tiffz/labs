@@ -36,7 +36,7 @@ When the journey ships, **promote** steps + success criteria to `src/<app>/CUJs.
 
 ### Workbench: selection inspector vs page finish
 
-When a stage has a **selected item** (panel, pack, page), the primary side rail must be **selection-scoped only** (that item’s content/scene/lines). Page- or board-level finish controls (palette, print/export settings, whole-page photo, expert toggles) belong in a **separate chip bar or header/overflow menu** — not stacked unlabeled in the same inspector. Reference: Scrapboard Page finish bar + panel-only left rail (`src/scrapboard/README.md` § Chrome model).
+When a stage has a **selected item** (panel, pack, page), the primary side rail must be **selection-scoped only** (that item’s content — e.g. speakers, arrangement, lines). Page- or board-level finish controls (cast, palette, print/export settings, whole-page photo, expert toggles) belong in a **separate chip bar or header/overflow menu** — not stacked unlabeled in the same inspector. Reference: Scrapboard Page finish bar + panel-only left rail (`src/scrapboard/README.md` § Chrome model).
 
 ### Always-available pickers stay open
 
