@@ -170,14 +170,26 @@ describe('useLabsDrivePortfolioAutoSync', () => {
     expect(flush).not.toHaveBeenCalled();
   });
 
-  it('respects allowAutoPush gate', async () => {
+  it('queues push while gated and flushes after pull unlocks', async () => {
     let onChange: ((event?: { immediate?: boolean }) => void) | undefined;
+    let allow = false;
+    let resolvePull: (() => void) | undefined;
     const flush = vi.fn().mockResolvedValue(undefined);
+    const pull = vi.fn().mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolvePull = () => {
+            allow = true;
+            resolve();
+          };
+        }),
+    );
     renderHook(() =>
       useLabsDrivePortfolioAutoSync(
         baseOptions({
-          allowAutoPush: () => false,
+          allowAutoPush: () => allow,
           flushDriveWrite: flush,
+          pullFromDriveAndMerge: pull,
           subscribeLocalChanges: (cb) => {
             onChange = cb;
             return () => {};
@@ -186,14 +198,24 @@ describe('useLabsDrivePortfolioAutoSync', () => {
       ),
     );
 
-    await flushPromises();
-    act(() => onChange?.());
-    act(() => onChange?.());
+    // Pull is in flight; edits while still gated should not flush yet.
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(pull).toHaveBeenCalled();
+    act(() => onChange?.({ immediate: true }));
     await act(async () => {
       vi.advanceTimersByTime(LABS_DRIVE_AUTO_PUSH_DEBOUNCE_MS);
       await Promise.resolve();
     });
     expect(flush).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolvePull?.();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(flush).toHaveBeenCalled();
   });
 
   it('notifyAutoPushCompleted allows another debounced push', async () => {

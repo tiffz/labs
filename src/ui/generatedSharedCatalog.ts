@@ -7895,6 +7895,131 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-characterarrangements-ts-arrangementdef",
+    "name": "arrangementDef",
+    "path": "src/shared/comic/characterArrangements.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Normalized slot inside a panel (0–1).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-characterarrangements-ts-arrangementdef",
+    "name": "ArrangementDef",
+    "path": "src/shared/comic/characterArrangements.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Normalized slot inside a panel (0–1).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-characterarrangements-ts-arrangementsforspeakercount",
+    "name": "arrangementsForSpeakerCount",
+    "path": "src/shared/comic/characterArrangements.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Normalized slot inside a panel (0–1).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-characterarrangements-ts-arrangementslot",
+    "name": "ArrangementSlot",
+    "path": "src/shared/comic/characterArrangements.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Normalized slot inside a panel (0–1).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-characterarrangements-ts-character-arrangements",
+    "name": "CHARACTER_ARRANGEMENTS",
+    "path": "src/shared/comic/characterArrangements.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Normalized slot inside a panel (0–1).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-characterarrangements-ts-characteridforspeakerindex",
+    "name": "characterIdForSpeakerIndex",
+    "path": "src/shared/comic/characterArrangements.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Normalized slot inside a panel (0–1).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-characterarrangements-ts-defaultarrangementforcount",
+    "name": "defaultArrangementForCount",
+    "path": "src/shared/comic/characterArrangements.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Normalized slot inside a panel (0–1).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-characterarrangements-ts-markerplacement",
+    "name": "MarkerPlacement",
+    "path": "src/shared/comic/characterArrangements.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Map arrangement slots onto placement slots a/b/c for bubble geometry.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-characterarrangements-ts-markerplacementfromarrangement",
+    "name": "markerPlacementFromArrangement",
+    "path": "src/shared/comic/characterArrangements.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Normalized slot inside a panel (0–1).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-charactermarkers-tsx-character-marker-labels",
     "name": "CHARACTER_MARKER_LABELS",
     "path": "src/shared/comic/characterMarkers.tsx",
@@ -8024,7 +8149,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Legacy geometric A/B/C markers (Lyrefly / non-emoji path).",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-charactermarkers-tsx-renderemojicharactermarker",
+    "name": "renderEmojiCharacterMarker",
+    "path": "src/shared/comic/characterMarkers.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Emoji cast marker — native color emoji only (no tinted halos; those read as grey discs).",
     "tags": [
       "react"
     ],
@@ -8043,6 +8183,233 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "react"
     ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-comiccast-ts-castmemberbyid",
+    "name": "castMemberById",
+    "path": "src/shared/comic/comicCast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-comiccast-ts-createdefaultcast",
+    "name": "createDefaultCast",
+    "path": "src/shared/comic/comicCast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-comiccast-ts-default-cast-emojis",
+    "name": "DEFAULT_CAST_EMOJIS",
+    "path": "src/shared/comic/comicCast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-comiccast-ts-defaultfillforpanel",
+    "name": "defaultFillForPanel",
+    "path": "src/shared/comic/comicCast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-comiccast-ts-emojibyslot",
+    "name": "emojiBySlot",
+    "path": "src/shared/comic/comicCast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-comiccast-ts-newcastmemberid",
+    "name": "newCastMemberId",
+    "path": "src/shared/comic/comicCast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-comiccast-ts-normalizedialogueblocks",
+    "name": "normalizeDialogueBlocks",
+    "path": "src/shared/comic/comicCast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Ensure dialogue blocks have castMemberId + slot aligned with speakerIds.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-comiccast-ts-placementforfill",
+    "name": "placementForFill",
+    "path": "src/shared/comic/comicCast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-comiccast-ts-resolvepanelarrangement",
+    "name": "resolvePanelArrangement",
+    "path": "src/shared/comic/comicCast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-comiccast-ts-resolvepanelspeakerids",
+    "name": "resolvePanelSpeakerIds",
+    "path": "src/shared/comic/comicCast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-comiccast-ts-slotforspeakerindex",
+    "name": "slotForSpeakerIndex",
+    "path": "src/shared/comic/comicCast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Placement slot for a speaker index within the panel (0→a, 1→b, 2→c).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-comiccast-ts-speakerindexforslot",
+    "name": "speakerIndexForSlot",
+    "path": "src/shared/comic/comicCast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-duotonefilter-ts-duotone-grayscale-matrix",
+    "name": "DUOTONE_GRAYSCALE_MATRIX",
+    "path": "src/shared/comic/duotoneFilter.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Grayscale (luminance) matrix feeding the component-transfer duotone remap.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-duotonefilter-ts-duotonecomponenttables",
+    "name": "duotoneComponentTables",
+    "path": "src/shared/comic/duotoneFilter.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "`feComponentTransfer` `tableValues` for an SVG duotone filter mapping dark → light hex.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-duotonefilter-ts-duotonecomponenttables",
+    "name": "DuotoneComponentTables",
+    "path": "src/shared/comic/duotoneFilter.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Palette-driven duotone wash for photo fills (Wikimedia backgrounds), so a real photo reads as part of the same rough color-theory mockup instead of a literal, semantically-recolored photo. Classic two-stop technique: desaturate to luminance, then remap through a dark→light gradient built from the mockup's own ink (dark) and paper/background (light) colors.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-duotonefilter-ts-softemojiwashtables",
+    "name": "softEmojiWashTables",
+    "path": "src/shared/comic/duotoneFilter.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Soft emoji wash: mild desaturate + remap toward palette tint so colorful glyphs still read as board-tinted without becoming flat silhouettes.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-duotonefilter-ts-softphotoduotonetables",
+    "name": "softPhotoDuotoneTables",
+    "path": "src/shared/comic/duotoneFilter.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Soft photo wash: pull ink toward mid-neutral and light toward near-white so Wikimedia photos stay readable instead of becoming a flat two-tone poster.",
+    "tags": [],
     "appsUsing": [],
     "exportType": "function",
     "demoId": null
@@ -8074,6 +8441,49 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-index-ts-arrangementdef",
+    "name": "ArrangementDef",
+    "path": "src/shared/comic/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-arrangementsforspeakercount",
+    "name": "arrangementsForSpeakerCount",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-arrangementslot",
+    "name": "ArrangementSlot",
+    "path": "src/shared/comic/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-index-ts-bubblestailsoverlap",
     "name": "bubblesTailsOverlap",
     "path": "src/shared/comic/index.ts",
@@ -8100,6 +8510,64 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-index-ts-castmemberbyid",
+    "name": "castMemberById",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-character-arrangement-ids",
+    "name": "CHARACTER_ARRANGEMENT_IDS",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-character-arrangements",
+    "name": "CHARACTER_ARRANGEMENTS",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-characterarrangementid",
+    "name": "CharacterArrangementId",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-index-ts-comicboarddocument",
     "name": "ComicBoardDocument",
     "path": "src/shared/comic/index.ts",
@@ -8110,6 +8578,75 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "api"
     ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-comiccastmember",
+    "name": "ComicCastMember",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-createdefaultcast",
+    "name": "createDefaultCast",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-default-cast-emojis",
+    "name": "DEFAULT_CAST_EMOJIS",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-defaultarrangementforcount",
+    "name": "defaultArrangementForCount",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-defaultfillforpanel",
+    "name": "defaultFillForPanel",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
     "appsUsing": [],
     "exportType": "named",
     "demoId": null
@@ -8130,6 +8667,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-comic-index-ts-defaultgeneratedlayout",
     "name": "defaultGeneratedLayout",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-duotonecomponenttables",
+    "name": "duotoneComponentTables",
     "path": "src/shared/comic/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -8268,6 +8818,34 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-index-ts-markerplacement",
+    "name": "MarkerPlacement",
+    "path": "src/shared/comic/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-markerplacementfromarrangement",
+    "name": "markerPlacementFromArrangement",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-index-ts-maxdialogueblocksforpanel",
     "name": "maxDialogueBlocksForPanel",
     "path": "src/shared/comic/index.ts",
@@ -8281,8 +8859,109 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-index-ts-min-panel-caption-width",
+    "name": "MIN_PANEL_CAPTION_WIDTH",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-min-panel-dialogue-width",
+    "name": "MIN_PANEL_DIALOGUE_WIDTH",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-min-panel-text-width",
+    "name": "MIN_PANEL_TEXT_WIDTH",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-index-ts-mockupdimensionsforprintspec",
     "name": "mockupDimensionsForPrintSpec",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-mockupfitcanvas",
+    "name": "MockupFitCanvas",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-mockupfitcanvasprops",
+    "name": "MockupFitCanvasProps",
+    "path": "src/shared/comic/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-newcastmemberid",
+    "name": "newCastMemberId",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-normalizedialogueblocks",
+    "name": "normalizeDialogueBlocks",
     "path": "src/shared/comic/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -8382,6 +9061,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-comic-index-ts-panel-layout-presets",
     "name": "PANEL_LAYOUT_PRESETS",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-panelbackgroundimage",
+    "name": "PanelBackgroundImage",
     "path": "src/shared/comic/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -8756,6 +9450,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-index-ts-resolvepanelarrangement",
+    "name": "resolvePanelArrangement",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-index-ts-resolvepanelclip",
     "name": "resolvePanelClip",
     "path": "src/shared/comic/index.ts",
@@ -8771,6 +9478,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-comic-index-ts-resolvepanelcomposition",
     "name": "resolvePanelComposition",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-resolvepanelspeakerids",
+    "name": "resolvePanelSpeakerIds",
     "path": "src/shared/comic/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -8879,6 +9599,45 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-comic-index-ts-silhouettesvg",
     "name": "silhouetteSvg",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-slotforspeakerindex",
+    "name": "slotForSpeakerIndex",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-softemojiwashtables",
+    "name": "softEmojiWashTables",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-softphotoduotonetables",
+    "name": "softPhotoDuotoneTables",
     "path": "src/shared/comic/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -9084,6 +9843,32 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-markerplacementscope-ts-activemarkerplacement",
+    "name": "activeMarkerPlacement",
+    "path": "src/shared/comic/markerPlacementScope.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Sync scope so bubble placers see arrangement slots without threading every call site.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-markerplacementscope-ts-withmarkerplacement",
+    "name": "withMarkerPlacement",
+    "path": "src/shared/comic/markerPlacementScope.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Sync scope so bubble placers see arrangement slots without threading every call site.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-mockupcompositioncatalog-ts-panel-composition-labels",
     "name": "PANEL_COMPOSITION_LABELS",
     "path": "src/shared/comic/mockupCompositionCatalog.ts",
@@ -9168,6 +9953,38 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-mockupfitcanvas-tsx-mockupfitcanvas",
+    "name": "MockupFitCanvas",
+    "path": "src/shared/comic/MockupFitCanvas.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Scales a print-spec-aware mockup to fit the available stage space (shared by Scrapboard and Lyrefly Thumbs so neither app hand-rolls its own ResizeObserver fit logic).",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-mockupfitcanvas-tsx-mockupfitcanvasprops",
+    "name": "MockupFitCanvasProps",
+    "path": "src/shared/comic/MockupFitCanvas.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {
@@ -9626,6 +10443,34 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-sfxloudness-ts-sfxbbox",
+    "name": "SfxBBox",
+    "path": "src/shared/comic/sfxLoudness.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "SFX loudness → layout scale + wireframe-safe render treatments.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-sfxloudness-ts-sfxlayoutbbox",
+    "name": "sfxLayoutBBox",
+    "path": "src/shared/comic/sfxLoudness.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Approximate SFX bounding box — shared by overlap invariants and placement obstacles. Width scales with glyph count (Impact-ish caps); height includes a little ascent/descender pad.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-sfxloudness-ts-sfxloudnessfontscale",
     "name": "sfxLoudnessFontScale",
     "path": "src/shared/comic/sfxLoudness.ts",
@@ -9907,7 +10752,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Comic speech bubble path + text-aware sizing.",
+    "description": "Comfortable balsamiq balloon padding — keep readable bubbles from feeling letterboxed.",
     "tags": [
       "api"
     ],
@@ -10077,6 +10922,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-speechbubblepath-ts-bubblepathpair",
+    "name": "BubblePathPair",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "`body` is the single continuous balloon outline (bubble + tail, one stroke). `tail` is empty in the unified path model (kept for API / legacy validators).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-speechbubblepath-ts-bubbleshape",
     "name": "BubbleShape",
     "path": "src/shared/comic/speechBubblePath.ts",
@@ -10111,7 +10971,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Nudge dialogue upward when the tail exits from the lower arc.",
+    "description": "Vertical offset added to the geometric first-line center (`cy - (lineCount - 1) * lineHeight / 2`) when `dominantBaseline=\"middle\"`. Design intent (balsamiq balloons): sit in the padded content box. Informal faces need a slight downward optical settle — avoid lifting copy into the top half.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -10125,6 +10985,45 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Comic speech bubble path + text-aware sizing.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-ellipsebubblebodypathd",
+    "name": "ellipseBubbleBodyPathD",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pure closed ellipse body — full arc walked with line segments, no tail notch.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-ellipsebubbletailpathd",
+    "name": "ellipseBubbleTailPathD",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Filled curved tail for an ellipse body (unit tests / probes).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-ellipsebubbleunifiedpathd",
+    "name": "ellipseBubbleUnifiedPathD",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "One continuous ellipse outline with a notched mouth that swoops to the tip.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -10170,6 +11069,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-speechbubblepath-ts-isdialoguedisplaytruncated",
+    "name": "isDialogueDisplayTruncated",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when displayed lines omit part of the source dialogue (ellipsis / line cap).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-speechbubblepath-ts-lineheightforfont",
     "name": "lineHeightForFont",
     "path": "src/shared/comic/speechBubblePath.ts",
@@ -10202,33 +11114,59 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Prefer rounded rects when vertical dialogue space is tight.",
+    "description": "Phase 1: rounded rectangles are the forced default body shape for all new layouts. Ellipse is retained only for explicit/legacy callers — it is never picked here.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
   {
-    "id": "src-shared-comic-speechbubblepath-ts-roundrectbubblepathd",
-    "name": "roundRectBubblePathD",
+    "id": "src-shared-comic-speechbubblepath-ts-roundrectbubblebodypathd",
+    "name": "roundRectBubbleBodyPathD",
     "path": "src/shared/comic/speechBubblePath.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Rounded-rectangle body with a smooth cubic tail aimed at the speaker. Attachment stays near the bottom-center so sideways tips don't form sharp elbows.",
+    "description": "Pure closed rounded-rectangle body — no tail notch cut into the outline.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },
   {
-    "id": "src-shared-comic-speechbubblepath-ts-speechbubblepathd",
-    "name": "speechBubblePathD",
+    "id": "src-shared-comic-speechbubblepath-ts-roundrectbubbletailpathd",
+    "name": "roundRectBubbleTailPathD",
     "path": "src/shared/comic/speechBubblePath.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Ellipse body with an integrated tail wedge aimed at (tailX, tailY). The body follows the ellipse arc between mouth points; the tail never chords through the interior.",
+    "description": "Filled curved tail for a rounded-rect body — closed wedge (unit tests / probes).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-roundrectbubbleunifiedpathd",
+    "name": "roundRectBubbleUnifiedPathD",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "One continuous outline: round-rect perimeter with a notched bottom that swoops out to the tip and back — single stroke, no mouth-chord seam.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubblepath-ts-roundrecttailmouth",
+    "name": "roundRectTailMouth",
+    "path": "src/shared/comic/speechBubblePath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Mouth + tip for roundRect tails (bottom attach) — used by path build and overlap checks.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -10241,7 +11179,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Comic speech bubble path + text-aware sizing.",
+    "description": "Continuous balloon outline in `body` (bubble + tail, one stroke). `tail` is empty — kept on the pair type for validators/e2e.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -10308,7 +11246,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Browser/e2e helper — audit path `d` attributes without importing layout code.",
+    "description": "DOM path audit shared with Scrapboard e2e smoke.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -10351,7 +11289,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Validate a bubble path `d` string against expected geometry.",
+    "description": "Validate a bubble path pair. Unified model: `body` is the continuous outline (includes tip); `tail` is empty. Legacy separate-tail pairs (non-empty `tail`) still validate closed wedges.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -10504,7 +11442,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Merge consecutive same-speaker lines, put captions first, then trim to dialogue budget.",
+    "description": "Merge consecutive same-speaker lines and trim to what the panel can host. Captions are emitted before dialogue (placement-stable reading stack).",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -10524,13 +11462,58 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-speechbubbleslotlayout-ts-min-panel-caption-width",
+    "name": "MIN_PANEL_CAPTION_WIDTH",
+    "path": "src/shared/comic/speechBubbleSlotLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Captions need room for a short phrase without sideways escape soup.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubbleslotlayout-ts-min-panel-dialogue-width",
+    "name": "MIN_PANEL_DIALOGUE_WIDTH",
+    "path": "src/shared/comic/speechBubbleSlotLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Dialogue balloons need a bit more than captions.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubbleslotlayout-ts-min-panel-text-width",
+    "name": "MIN_PANEL_TEXT_WIDTH",
+    "path": "src/shared/comic/speechBubbleSlotLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Below this width, comic lettering cannot read — drop all text chrome.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-speechbubbleslotlayout-ts-placeitemswithslots",
     "name": "placeItemsWithSlots",
     "path": "src/shared/comic/speechBubbleSlotLayout.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Place bubbles with column bias + vertical stack. Always writes a placement; prefers conflict-free stacks, otherwise last-resort tiny centered stack.",
+    "description": "Place bubbles with column bias + vertical stack. Always writes a placement; prefers conflict-free stacks. If captions make the band infeasible, drop them and retry — never leave seed positions that overlap captions.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -10556,7 +11539,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "True when two bubbles’ tails cross or a tail cuts the other’s dialogue box.",
+    "description": "True when two bubbles’ tails cross, or a tail cuts the other’s body / dialogue.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -10761,6 +11744,36 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-types-ts-character-arrangement-ids",
+    "name": "CHARACTER_ARRANGEMENT_IDS",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Character arrangement ids — filtered by speaker count (1–3). Scrapboard uses these instead of procedural scenery compositions.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-characterarrangementid",
+    "name": "CharacterArrangementId",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-types-ts-comicboarddocument",
     "name": "ComicBoardDocument",
     "path": "src/shared/comic/types.ts",
@@ -10768,6 +11781,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-comiccastmember",
+    "name": "ComicCastMember",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Page-level cast member (emoji character). Growable beyond three.",
     "tags": [
       "api"
     ],
@@ -10818,6 +11846,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-types-ts-panelbackgroundimage",
+    "name": "PanelBackgroundImage",
+    "path": "src/shared/comic/types.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "A user-picked photo (e.g. Wikimedia Commons) used as a panel or page background wash.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
     "demoId": null
   },
   {
@@ -11976,6 +13019,137 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-music-drumpatterneditmenu-ts-drum-pattern-edit-menu-class",
+    "name": "DRUM_PATTERN_EDIT_MENU_CLASS",
+    "path": "src/shared/components/music/drumPatternEditMenu.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Portaled drum pattern editor paper (`AnchoredPopover` + `paperClassName`).",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-drumpatterneditmenu-ts-drum-pattern-edit-menu-open-body-class",
+    "name": "DRUM_PATTERN_EDIT_MENU_OPEN_BODY_CLASS",
+    "path": "src/shared/components/music/drumPatternEditMenu.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Body class while the drum pattern editor is open. Hosts (Encore chart) use this to suppress pointer hit-testing behind the menu.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-drumpatterneditmenu-ts-drum-pattern-edit-menu-root-class",
+    "name": "DRUM_PATTERN_EDIT_MENU_ROOT_CLASS",
+    "path": "src/shared/components/music/drumPatternEditMenu.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Full-screen Popover/Modal root — include in outside-click exemptions.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-drumpatterneditmenu-ts-drum-pattern-edit-menu-z-index",
+    "name": "DRUM_PATTERN_EDIT_MENU_Z_INDEX",
+    "path": "src/shared/components/music/drumPatternEditMenu.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Above host floating panels (Encore section playback ~1300, field selects 1500).",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-drumpatterneditmenu-ts-drum-pattern-edit-tip-z-index",
+    "name": "DRUM_PATTERN_EDIT_TIP_Z_INDEX",
+    "path": "src/shared/components/music/drumPatternEditMenu.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Dice/hover tips must sit above the portaled edit menu paper.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-drumpatterneditmenu-ts-drumpatterneditmenuanchorposition",
+    "name": "drumPatternEditMenuAnchorPosition",
+    "path": "src/shared/components/music/drumPatternEditMenu.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Freeze popover at the Edit control’s bottom-end corner (placement bottom-end).",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-drumpatterneditmenu-ts-isdrumpatterneditmenutarget",
+    "name": "isDrumPatternEditMenuTarget",
+    "path": "src/shared/components/music/drumPatternEditMenu.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "True when the event target is inside the portaled drum pattern edit menu (paper or root).",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-music-inlinedrumuxdefaults-ts-deprecatedinlinedarbukalinkplacement",
     "name": "DeprecatedInlineDarbukaLinkPlacement",
     "path": "src/shared/components/music/inlineDrumUxDefaults.ts",
@@ -12081,7 +13255,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "Behavior defaults for inline drum embeds. Hosts pass a profile via and keep theming local (`notationStyle`, wrapper className). - **settings-panel** — chord playback popovers (Encore Originals, Chords chart). - **practice-rail** — preset chip grid behind Edit toggle + audible playback (Stanza practice rail). - **sidebar-compact** — full preset grid + audible playback (Piano sidebar). Host-owned pattern fields (Words section template row): spread the profile then override `{ hidePatternInput: true, hideDarbukaLink: true }`.",
+    "description": "Behavior defaults for inline drum embeds. Hosts pass a profile via and keep theming local (`notationStyle`, wrapper className). Dense **menu** editing is the default for every profile: notation first, presets/field in a dropdown opened via Edit or clicking the staff. Host-owned pattern fields (Words section template row): spread the profile then override `{ hidePatternInput: true, hideDarbukaLink: true }`.",
     "tags": [
       "components",
       "music",
@@ -12102,6 +13276,26 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-ui",
     "description": "Where the compact Darbuka Trainer link renders inside .",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "piano",
+      "words"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-inlinedrumuxdefaults-ts-inlinedrumpatternediting",
+    "name": "InlineDrumPatternEditing",
+    "path": "src/shared/components/music/inlineDrumUxDefaults.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "How preset/pattern editors are shown. - `menu` — dense default: notation first; Edit / click opens a dropdown with presets + field - `inline` — always-expanded (deprecated; prefer `menu`) - `popover` — deprecated alias for `menu` (kept for older call sites)",
     "tags": [
       "components",
       "music",
@@ -12162,6 +13356,25 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-ui",
     "description": "Where the compact Darbuka Trainer link renders inside .",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-inlinedrumuxdefaults-ts-resolvepatterneditingmode",
+    "name": "resolvePatternEditingMode",
+    "path": "src/shared/components/music/inlineDrumUxDefaults.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Normalize deprecated `popover` alias to `menu`.",
     "tags": [
       "components",
       "music"
@@ -13618,7 +14831,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "owner": "shared-core",
     "description": "True when the event target lies inside an element matching `selector` (or inside `root`).",
     "tags": [],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -13631,7 +14846,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "owner": "shared-core",
     "description": "Resolve a pointer/focus event target to an Element for DOM traversal (`closest`, `matches`). Clicks on text inside buttons often set `event.target` to a Text node, which has no `closest`.",
     "tags": [],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -13782,6 +14999,32 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveancestry-ts-drivefileisunderanyancestor",
+    "name": "driveFileIsUnderAnyAncestor",
+    "path": "src/shared/drive/driveAncestry.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Walk Drive parents from `fileId` upward. Used to refuse trash/overwrite outside Labs-owned trees (stewardship of user Drive data the app did not create).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driveancestry-ts-filterdrivefileidsunderancestors",
+    "name": "filterDriveFileIdsUnderAncestors",
+    "path": "src/shared/drive/driveAncestry.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -14515,6 +15758,47 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-driverevisionpinning-ts-driveupdaterevisionkeepforever",
+    "name": "driveUpdateRevisionKeepForever",
+    "path": "src/shared/drive/driveRevisionPinning.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pin (or unpin) a Drive file revision. Pinned revisions survive Drive's automatic pruning (~100 revisions / ~30 days for unpinned binary/JSON uploads).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driverevisionpinning-ts-labs-daily-pinned-revision-retention",
+    "name": "LABS_DAILY_PINNED_REVISION_RETENTION",
+    "path": "src/shared/drive/driveRevisionPinning.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Keep this many daily pinned revisions (~1 week of dense overwrite recovery).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driverevisionpinning-ts-maybepindailydrivefilerevision",
+    "name": "maybePinDailyDriveFileRevision",
+    "path": "src/shared/drive/driveRevisionPinning.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Once per UTC day after a successful progress/repertoire write, pin the newest revision (`keepForever`) and unpin pins older than days. Best-effort: failures never fail the sync write.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-fetchpublicdrivemediabytes-ts-fetchpublicdrivefilemetadata",
     "name": "fetchPublicDriveFileMetadata",
     "path": "src/shared/drive/fetchPublicDriveMediaBytes.ts",
@@ -15162,6 +16446,116 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveundoringdb-ts-findlatestlabsdriveundoringprepull",
+    "name": "findLatestLabsDriveUndoRingPrePull",
+    "path": "src/shared/drive/labsDriveUndoRingDb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared IndexedDB undo ring for portfolio Drive sync snapshots. Quota: envelopes can exceed localStorage (~5MB). Clear site data still wipes this DB — Drive revision pins + Recover UI remain the recovery path after a full site wipe.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveundoringdb-ts-labsdriveundoringappid",
+    "name": "LabsDriveUndoRingAppId",
+    "path": "src/shared/drive/labsDriveUndoRingDb.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared IndexedDB undo ring for portfolio Drive sync snapshots. Quota: envelopes can exceed localStorage (~5MB). Clear site data still wipes this DB — Drive revision pins + Recover UI remain the recovery path after a full site wipe.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveundoringdb-ts-labsdriveundoringdb",
+    "name": "labsDriveUndoRingDb",
+    "path": "src/shared/drive/labsDriveUndoRingDb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared IndexedDB undo ring for portfolio Drive sync snapshots. Quota: envelopes can exceed localStorage (~5MB). Clear site data still wipes this DB — Drive revision pins + Recover UI remain the recovery path after a full site wipe.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveundoringdb-ts-labsdriveundoringrow",
+    "name": "LabsDriveUndoRingRow",
+    "path": "src/shared/drive/labsDriveUndoRingDb.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared IndexedDB undo ring for portfolio Drive sync snapshots. Quota: envelopes can exceed localStorage (~5MB). Clear site data still wipes this DB — Drive revision pins + Recover UI remain the recovery path after a full site wipe.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveundoringdb-ts-labsdriveundoringsnapshot",
+    "name": "LabsDriveUndoRingSnapshot",
+    "path": "src/shared/drive/labsDriveUndoRingDb.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared IndexedDB undo ring for portfolio Drive sync snapshots. Quota: envelopes can exceed localStorage (~5MB). Clear site data still wipes this DB — Drive revision pins + Recover UI remain the recovery path after a full site wipe.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveundoringdb-ts-listlabsdriveundoringsnapshots",
+    "name": "listLabsDriveUndoRingSnapshots",
+    "path": "src/shared/drive/labsDriveUndoRingDb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared IndexedDB undo ring for portfolio Drive sync snapshots. Quota: envelopes can exceed localStorage (~5MB). Clear site data still wipes this DB — Drive revision pins + Recover UI remain the recovery path after a full site wipe.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveundoringdb-ts-migratelegacylocalstorageundoring",
+    "name": "migrateLegacyLocalStorageUndoRing",
+    "path": "src/shared/drive/labsDriveUndoRingDb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "One-time migrate from a legacy localStorage JSON array into the shared ring.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveundoringdb-ts-pushlabsdriveundoringsnapshot",
+    "name": "pushLabsDriveUndoRingSnapshot",
+    "path": "src/shared/drive/labsDriveUndoRingDb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared IndexedDB undo ring for portfolio Drive sync snapshots. Quota: envelopes can exceed localStorage (~5MB). Clear site data still wipes this DB — Drive revision pins + Recover UI remain the recovery path after a full site wipe.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -17937,6 +19331,279 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-index-ts-classifywikimedialicense",
+    "name": "classifyWikimediaLicense",
+    "path": "src/shared/media/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-index-ts-labswikimediaimagefield",
+    "name": "LabsWikimediaImageField",
+    "path": "src/shared/media/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-index-ts-labswikimediaimagefieldprops",
+    "name": "LabsWikimediaImageFieldProps",
+    "path": "src/shared/media/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-index-ts-labswikimediaimagefieldvalue",
+    "name": "LabsWikimediaImageFieldValue",
+    "path": "src/shared/media/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-index-ts-labswikimediaimageresult",
+    "name": "LabsWikimediaImageResult",
+    "path": "src/shared/media/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-index-ts-labswikimediaimagesearch",
+    "name": "LabsWikimediaImageSearch",
+    "path": "src/shared/media/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-index-ts-labswikimediaimagesearchprops",
+    "name": "LabsWikimediaImageSearchProps",
+    "path": "src/shared/media/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-index-ts-labswikimediaimagesearchvariant",
+    "name": "LabsWikimediaImageSearchVariant",
+    "path": "src/shared/media/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-index-ts-labswikimedialicensefilter",
+    "name": "LabsWikimediaLicenseFilter",
+    "path": "src/shared/media/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-labswikimediaimagefield-tsx-labswikimediaimagefield",
+    "name": "LabsWikimediaImageField",
+    "path": "src/shared/media/LabsWikimediaImageField.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Dense Wikimedia picker: closed state shows a thumbnail (or empty slot); click opens an `AnchoredPopover` with .",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-labswikimediaimagefield-tsx-labswikimediaimagefieldprops",
+    "name": "LabsWikimediaImageFieldProps",
+    "path": "src/shared/media/LabsWikimediaImageField.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-labswikimediaimagefield-tsx-labswikimediaimagefieldvalue",
+    "name": "LabsWikimediaImageFieldValue",
+    "path": "src/shared/media/LabsWikimediaImageField.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-labswikimediaimagesearch-tsx-labswikimediaimageresult",
+    "name": "LabsWikimediaImageResult",
+    "path": "src/shared/media/LabsWikimediaImageSearch.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "A single Wikimedia Commons search result.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-labswikimediaimagesearch-tsx-labswikimediaimagesearch",
+    "name": "LabsWikimediaImageSearch",
+    "path": "src/shared/media/LabsWikimediaImageSearch.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Wikimedia Commons photo search with a client-side license filter. Native controls (not MUI) so host skins — especially Scrapboard `sketchy` — can match the rail.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-labswikimediaimagesearch-tsx-labswikimediaimagesearchprops",
+    "name": "LabsWikimediaImageSearchProps",
+    "path": "src/shared/media/LabsWikimediaImageSearch.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "A single Wikimedia Commons search result.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-labswikimediaimagesearch-tsx-labswikimediaimagesearchvariant",
+    "name": "LabsWikimediaImageSearchVariant",
+    "path": "src/shared/media/LabsWikimediaImageSearch.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "A single Wikimedia Commons search result.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-wikimedialicense-ts-classifywikimedialicense",
+    "name": "classifyWikimediaLicense",
+    "path": "src/shared/media/wikimediaLicense.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Classify a Wikimedia `LicenseShortName` string into a coarse family for client-side filtering.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-wikimedialicense-ts-labswikimedialicensefilter",
+    "name": "LabsWikimediaLicenseFilter",
+    "path": "src/shared/media/wikimediaLicense.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Coarse license family used for client-side filtering of Wikimedia Commons results.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {
@@ -25989,7 +27656,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Map a palette onto comic mockup roles using color-theory heuristics: - `background` / `bubble` — stay neutral paper / white (not palette-washed) - `sky` / `ground` — pastel scene bands from the palette - `figure` — darkest swatch (reads as ink / character fill) - `caption` — mid-chroma accent for props/details - `sfx` — highest-chroma swatch (pops for onomatopoeia) - `panelFills` — soft sky-adjacent underfills",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -26160,8 +27827,113 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-palette-index-ts-labspalettebuilder",
+    "name": "LabsPaletteBuilder",
+    "path": "src/shared/palette/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-labspalettebuilderprops",
+    "name": "LabsPaletteBuilderProps",
+    "path": "src/shared/palette/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-labspalettebuildervariant",
+    "name": "LabsPaletteBuilderVariant",
+    "path": "src/shared/palette/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-labspalettefield",
+    "name": "LabsPaletteField",
+    "path": "src/shared/palette/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-labspalettefieldprops",
+    "name": "LabsPaletteFieldProps",
+    "path": "src/shared/palette/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-palette-index-ts-mockuppaletteapplyresult",
     "name": "MockupPaletteApplyResult",
+    "path": "src/shared/palette/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-mockuptintspec",
+    "name": "MockupTintSpec",
+    "path": "src/shared/palette/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-index-ts-mockuptinttarget",
+    "name": "MockupTintTarget",
     "path": "src/shared/palette/index.ts",
     "kind": "model",
     "stability": "stable",
@@ -26226,6 +27998,86 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-labspalettebuilder-tsx-labspalettebuilder",
+    "name": "LabsPaletteBuilder",
+    "path": "src/shared/palette/LabsPaletteBuilder.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Dropdown/popover-friendly panel for generating and applying comic color palettes: mood presets, fully random \"surprise me\", seed-from-color, and seed-from-image. Shared across comic apps.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-labspalettebuilder-tsx-labspalettebuilderprops",
+    "name": "LabsPaletteBuilderProps",
+    "path": "src/shared/palette/LabsPaletteBuilder.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-labspalettebuilder-tsx-labspalettebuildervariant",
+    "name": "LabsPaletteBuilderVariant",
+    "path": "src/shared/palette/LabsPaletteBuilder.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-labspalettefield-tsx-labspalettefield",
+    "name": "LabsPaletteField",
+    "path": "src/shared/palette/LabsPaletteField.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Dense palette control: closed state is a swatch strip; click opens an `AnchoredPopover` with (moods, surprise, seed, image) and optional paste.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-palette-labspalettefield-tsx-labspalettefieldprops",
+    "name": "LabsPaletteFieldProps",
+    "path": "src/shared/palette/LabsPaletteField.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {
@@ -32159,6 +34011,58 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-zine-imagecanvas-ts-blankpagedataurl",
+    "name": "blankPageDataUrl",
+    "path": "src/shared/zine/imageCanvas.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Solid-color page placeholder (blank booklet pads).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-imagecanvas-ts-combinetospreadimage",
+    "name": "combineToSpreadImage",
+    "path": "src/shared/zine/imageCanvas.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Combine two page images into one facing spread.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-imagecanvas-ts-loadimagefromdataurl",
+    "name": "loadImageFromDataUrl",
+    "path": "src/shared/zine/imageCanvas.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Load an image from a data URL.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-imagecanvas-ts-splitspreadimage",
+    "name": "splitSpreadImage",
+    "path": "src/shared/zine/imageCanvas.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Split a spread image into left and right halves.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-zine-index-ts-bleedconfigforlabsprintspec",
     "name": "bleedConfigForLabsPrintSpec",
     "path": "src/shared/zine/index.ts",
@@ -32713,6 +34617,92 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-spreadpdfexport-ts-createfacingspreadpdf",
+    "name": "createFacingSpreadPdf",
+    "path": "src/shared/zine/spreadPdfExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Composite booklet spread views into PDF pages (one facing spread per PDF page).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-spreadpdfexport-ts-facingspreadpdfformat",
+    "name": "FacingSpreadPdfFormat",
+    "path": "src/shared/zine/spreadPdfExport.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Facing-spread PDF builders for book-style downloads (Lyrefly book preview / Zine-aligned). - **digital**: facing spreads for screen reading; omit blank-only pads when both sides empty - **print**: keep booklet pads (white blanks) so printer spreads match Mixam-style facing pages",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-spreadpdfexport-ts-facingspreadpdfinputpage",
+    "name": "FacingSpreadPdfInputPage",
+    "path": "src/shared/zine/spreadPdfExport.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Facing-spread PDF builders for book-style downloads (Lyrefly book preview / Zine-aligned). - **digital**: facing spreads for screen reading; omit blank-only pads when both sides empty - **print**: keep booklet pads (white blanks) so printer spreads match Mixam-style facing pages",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-spreadpdfexport-ts-facingspreadpdfview",
+    "name": "FacingSpreadPdfView",
+    "path": "src/shared/zine/spreadPdfExport.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Facing-spread PDF builders for book-style downloads (Lyrefly book preview / Zine-aligned). - **digital**: facing spreads for screen reading; omit blank-only pads when both sides empty - **print**: keep booklet pads (white blanks) so printer spreads match Mixam-style facing pages",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-verticalscrollexport-ts-composeverticalscrollblob",
+    "name": "composeVerticalScrollBlob",
+    "path": "src/shared/zine/verticalScrollExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Stack page images into one long vertical scroll JPEG.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-zine-verticalscrollexport-ts-labs-max-export-canvas-dimension",
+    "name": "LABS_MAX_EXPORT_CANVAS_DIMENSION",
+    "path": "src/shared/zine/verticalScrollExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Soft ceiling shared with Zine Studio export canvas limits.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
     "demoId": null
   }
 ] as const;

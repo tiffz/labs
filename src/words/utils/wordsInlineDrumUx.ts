@@ -1,7 +1,10 @@
 import { getInlineDrumUxProps } from '../../shared/components/music/inlineDrumUxDefaults';
 import type { NotationStyle } from '../../shared/notation/DrumNotationMini';
 
-/** Words hosts the rhythm template text field; DrumAccompaniment supplies presets + preview. */
+/**
+ * Words keeps a host rhythm `<input>` outside the control; `hidePatternInput` removes the
+ * outer DrumAccompaniment field. The Edit menu still includes the pattern string for editing.
+ */
 export const WORDS_HOST_INPUT_DRUM_UX = getInlineDrumUxProps('settings-panel', {
   hidePatternInput: true,
   hideDarbukaLink: true,

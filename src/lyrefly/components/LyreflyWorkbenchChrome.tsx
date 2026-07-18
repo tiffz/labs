@@ -58,6 +58,7 @@ export function LyreflyWorkbenchChrome({
               stage={stage}
               onStageChange={onStageChange}
               ctx={ctx}
+              compact
             />
           </div>
           <LyreflyStageActions

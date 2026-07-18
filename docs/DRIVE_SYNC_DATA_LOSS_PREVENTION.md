@@ -27,13 +27,14 @@ No single layer is sufficient. **Agents must not remove or bypass a layer** with
 
 ## Synced vs local-only (by app)
 
-| App          | Synced to Drive                                                                                                               | Local-only (not in backup)                   |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| **Encore**   | Repertoire JSON (songs, performances, extras, exercise runs, media **refs**); Originals shards; upload bytes in `Encore_App/` | Dirty-sync queue; upload caches              |
-| **Stanza**   | `progress.json`; `main_audio/`, `stem_audio/` blobs; tombstones                                                               | `localAudioBlob`, thumbnails, analysis cache |
-| **Scales**   | Full progress envelope (exercises, tiers, history)                                                                            | Session snapshot, audio prefs                |
-| **Gesture**  | `progress.json`; pack metadata + `packFiles` index; draw history; tombstones; photo bytes in Drive folders                    | Preview/session media cache; upload staging  |
-| **Zine Box** | `progress.json`; comic PDFs in `comics/`; tombstones + stack membership removals                                              | Sample fixtures; blobs until uploaded        |
+| App          | Synced to Drive                                                                                                                                                                          | Local-only (not in backup)                                                    |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Encore**   | Repertoire JSON (songs, performances, extras, exercise runs, media **refs**); Originals shards; upload bytes in `Encore_App/`                                                            | Dirty-sync queue; upload caches                                               |
+| **Stanza**   | `progress.json`; `main_audio/`, `stem_audio/` blobs; tombstones                                                                                                                          | `localAudioBlob`, thumbnails, analysis cache                                  |
+| **Scales**   | Full progress envelope (exercises, tiers, history)                                                                                                                                       | Session snapshot, audio prefs                                                 |
+| **Gesture**  | `progress.json`; pack metadata + `packFiles` index; draw history; tombstones; photo bytes in Drive folders                                                                               | Preview/session media cache; upload staging                                   |
+| **Zine Box** | `progress.json`; comic PDFs in `comics/`; tombstones + stack membership removals                                                                                                         | Sample fixtures; blobs until uploaded                                         |
+| **Lyrefly**  | `progress.json` (gallery summaries + project tombstones); full project package (`project.json`, layout, script, page/visual-dev JSON + blobs, archive, snapshots) under `projects/{id}/` | `dirtySync` ledger; page reference/mockup/character rows (not in package yet) |
 
 **Rule:** If the UI shows it as “saved” or “backed up,” it must appear in the envelope **or** a documented sidecar path with upload **before** envelope write. See Stanza `main_audio/` parity in `stanza-drive-sync.mdc`.
 
@@ -114,17 +115,34 @@ Avoid: destructive actions without confirm; coarse LWW on compound rows; silent 
 
 ---
 
+## Stress scenarios (stewardship + ≤1-day blast radius)
+
+| Scenario                                                   | Expected defense                                                                   | Status                                                        |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Fresh/empty device auto-pushes and clobbers rich cloud     | Auto-push gated until pull / manual backup                                         | ✅ `labsDriveSyncGuard`                                       |
+| Bad merge on this device                                   | Pre-merge undo snapshot + Undo last sync                                           | ✅                                                            |
+| Accidental empty overwrite of `progress.json` / repertoire | Drive revision history + **daily `keepForever` pin**                               | ✅ pin via `maybePinDailyDriveFileRevision`                   |
+| Gesture “delete Drive photos” on a linked personal folder  | Refuse trash unless under Gesture Reference Packs                                  | ✅ `GestureDriveTrashStewardshipError`                        |
+| Encore organize-duplicates trash in a user override folder | Trash only files under `Encore_App/`                                               | ✅ ancestry filter in dedup                                   |
+| Permanent delete of foreign Drive files                    | Labs only **trashes** (never `files.delete`)                                       | ✅                                                            |
+| Clear site data                                            | Undo rings wiped (localStorage **and** IndexedDB); Drive + pinned revisions remain | ✅ Honest limit — recover via Drive history / pins            |
+| Encore Originals whole-row LWW                             | Newer sparse shard can beat richer older                                           | ✅ `mergeOriginalSongPreservingContent` on pull               |
+| Lyrefly same-row cross-device edits after hydrate          | Local wins; remote improvements not merged                                         | ✅ package field merge + re-download when summary clock newer |
+
+**Honest limit:** We cannot make “impossible to write a bug” absolute while OAuth can open user-picked folders. We **can** refuse high-blast trash outside Labs trees and keep cloud history dense enough that a bad day is recoverable.
+
 ## Known gaps (tracked)
 
-| Priority | Gap                                     | Mitigation today                                       |
-| -------- | --------------------------------------- | ------------------------------------------------------ |
-| P1       | Encore exercise-run delete resurrection | Do not delete runs expecting sync propagation          |
-| P1       | Stanza ↔ Encore dual stores             | Federated overlay ADR accepted; not wired              |
-| P1       | No e2e tombstone/merge smokes           | Strong unit tests per app                              |
-| P1       | Gesture local-blob packs                | Drive-first empty copy + Dexie-first tags/source       |
-| P2       | Scales delete UX                        | No delete shipped                                      |
-| P2       | Multi-tab same app                      | Document one tab per app                               |
-| P2       | Undo in localStorage (most portfolio)   | Stanza uses Dexie ring; others lost on clear-site-data |
+| Priority | Gap                                                | Mitigation today                                                                                                         |
+| -------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| P1       | Stanza ↔ Encore dual stores                        | Federated overlay ADR accepted; not wired                                                                                |
+| P1       | No e2e tombstone/merge smokes                      | Strong unit tests per app                                                                                                |
+| P1       | Gesture local-blob packs                           | Drive-first empty copy + Dexie-first tags/source                                                                         |
+| P2       | Scales delete UX                                   | No delete shipped                                                                                                        |
+| P2       | Multi-tab same app                                 | Document one tab per app                                                                                                 |
+| P2       | Clear site data wipes undo rings                   | Expected — rings are IndexedDB (`labs-drive-undo-ring` + Stanza Dexie); recovery = Drive revisions / pins / Recover UI   |
+| P2       | Lyrefly project delete has no UI yet               | `deleteLyreflyProject()` (tombstone-wired) exists in `lyreflyProjectMutations.ts`; no gallery delete action calls it yet |
+| P2       | Lyrefly package bytes outside envelope revision UI | Drive file versions on `projects/{id}/` files; envelope recovery covers gallery only                                     |
 
 Add rows to [`PROCESS_BACKLOG.md`](PROCESS_BACKLOG.md) when discovered; remove when fixed.
 
@@ -138,10 +156,12 @@ Add rows to [`PROCESS_BACKLOG.md`](PROCESS_BACKLOG.md) when discovered; remove w
 - Encore: `encoreRepertoireMerge.test.ts`, `encoreDataRecovery.test.ts` (Because of You regression)
 - Shared: `labsDriveSyncGuard.test.ts`, `useLabsDrivePortfolioAutoSync.test.ts`
 
-**E2e (backlog — do not claim coverage exists):**
+**E2e (Node merge guards — no OAuth):** [`e2e/smoke/drive-sync-merge-guards.spec.ts`](../e2e/smoke/drive-sync-merge-guards.spec.ts)
 
-- Template: device A deletes entity → B pulls → entity absent
-- Template: empty local must not overwrite filled remote on first sync
+- Tombstones: Zinebox comics, Lyrefly projects, Encore exercise runs
+- Empty-device auto-push gate (`labsDriveAutoPushAllowed`)
+- Content-aware: Originals lyrics + repertoire exercise answers vs newer sparse
+- Scoped on encore / zinebox / gesture / stanza / lyrefly via `APP_SMOKE_SPECS`
 
 ---
 

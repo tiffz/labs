@@ -3,14 +3,20 @@ import { loadRevisionBlobUrl } from '../db/lyreflyProjectMutations';
 import {
   blobToDataUrl,
   buildMixamZipBlob,
+  composeVerticalScrollBlob,
   createDistributionPdf,
+  createFacingSpreadPdf,
   downloadBlob,
   mixamFileNameFromDisplayName,
   resizeImageBlobForPlatform,
+  splitSpreadImage,
   type ComicPlatformPreset,
   type ComicPlatformPresetId,
+  type FacingSpreadPdfFormat,
   COMIC_PLATFORM_PRESETS,
 } from '../../shared/zine';
+import { buildLabsDownloadFileName } from '../../shared/utils/labsDownloadFileName';
+import { buildComicSpreadViews } from '../utils/comicSpreadViews';
 
 export type LyreflyExportPage = {
   node: PageNode;
@@ -91,8 +97,47 @@ export async function downloadLyreflyDistributionPdf(
     })),
     onProgress,
   );
-  const safeTitle = project.title.replace(/[^\w\s-]+/g, '').trim() || 'comic';
-  downloadBlob(pdf, `${safeTitle}.pdf`);
+  downloadBlob(pdf, buildLabsDownloadFileName([project.title || 'comic'], 'pdf'));
+}
+
+/** Single long JPEG matching scroll preview order (spreads split left→right). */
+export async function downloadLyreflyScrollImage(
+  project: ComicProject,
+  pages: readonly LyreflyExportPage[],
+): Promise<void> {
+  const segments: string[] = [];
+  for (const page of pages) {
+    if (page.node.isSpread) {
+      const [left, right] = await splitSpreadImage(page.dataUrl);
+      segments.push(left, right);
+    } else {
+      segments.push(page.dataUrl);
+    }
+  }
+  const blob = await composeVerticalScrollBlob(segments);
+  downloadBlob(blob, buildLabsDownloadFileName([project.title || 'comic', 'Scroll'], 'jpg'));
+}
+
+/** Book-preview PDF: facing spreads — digital (screen) or print-ready (keeps blank pads). */
+export async function downloadLyreflyBookSpreadPdf(
+  project: ComicProject,
+  pages: readonly LyreflyExportPage[],
+  format: FacingSpreadPdfFormat,
+  onProgress?: (progress: number) => void,
+): Promise<void> {
+  const previewPages = pages.map((page) => ({
+    id: page.node.id,
+    label: page.node.displayName ?? 'Page',
+    imageUrl: page.dataUrl,
+    isSpread: page.node.isSpread,
+  }));
+  const views = buildComicSpreadViews(previewPages);
+  const pdf = await createFacingSpreadPdf(views, format, onProgress);
+  const formatLabel = format === 'print' ? 'Print' : 'Digital';
+  downloadBlob(
+    pdf,
+    buildLabsDownloadFileName([project.title || 'comic', 'Book', formatLabel], 'pdf'),
+  );
 }
 
 export async function downloadLyreflyPlatformZip(

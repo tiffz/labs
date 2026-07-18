@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from '@testing-library/react';
+import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import DrumAccompaniment from './DrumAccompaniment';
 import {
@@ -6,6 +6,11 @@ import {
   INLINE_DRUM_PANEL_UX,
 } from './inlineDrumUxDefaults';
 import { getRhythmTemplatePresets } from '../../rhythm/presetDatabase';
+
+function openDrumPatternEditor(view: ReturnType<typeof render>) {
+  fireEvent.click(view.getByRole('button', { name: /Edit drum pattern/i }));
+  return view.getByRole('dialog', { name: /Drum pattern editor/i });
+}
 
 describe('DrumAccompaniment playback highlighting', () => {
   it('advances mini notation highlight as currentBeatTime progresses', async () => {
@@ -89,8 +94,9 @@ describe('DrumAccompaniment playback highlighting', () => {
       />,
     );
 
+    const dialog = openDrumPatternEditor(view);
     expect(
-      view.getByPlaceholderText('D-T-K-T- or paste Darbuka Trainer URL'),
+      within(dialog).getByPlaceholderText('D-T-K-T- or paste Darbuka Trainer URL'),
     ).toBeInTheDocument();
   });
 
@@ -112,7 +118,8 @@ describe('DrumAccompaniment playback highlighting', () => {
       />,
     );
 
-    const picker = view.getByRole('button', {
+    const dialog = openDrumPatternEditor(view);
+    const picker = within(dialog).getByRole('button', {
       name: new RegExp(`Choose rhythm preset, currently ${presets[0]!.label}`, 'i'),
     });
     fireEvent.click(picker);
@@ -120,7 +127,7 @@ describe('DrumAccompaniment playback highlighting', () => {
 
     await waitFor(() => {
       expect(
-        view.getByRole('button', {
+        within(dialog).getByRole('button', {
           name: new RegExp(`Choose rhythm preset, currently ${secondPreset.label}`, 'i'),
         }),
       ).toBeInTheDocument();
@@ -142,7 +149,8 @@ describe('DrumAccompaniment playback highlighting', () => {
       />,
     );
 
-    const link = view.getByRole('link', { name: 'Customize in Darbuka trainer' });
+    const dialog = openDrumPatternEditor(view);
+    const link = within(dialog).getByRole('link', { name: 'Customize in Darbuka trainer' });
     expect(link).toHaveAttribute('href', expect.stringContaining('/drums/?'));
     expect(link).toHaveAttribute('target', '_blank');
     expect(view.queryByText('Edit in Darbuka Trainer')).not.toBeInTheDocument();

@@ -48,7 +48,7 @@ export function PublishDateChip({
     <>
       <Box ref={anchorRef} sx={{ display: 'inline-flex', maxWidth: '100%', minWidth: 0 }}>
         <Chip
-          className="lyrefly-publish-date-chip"
+          className="lyrefly-date-chip lyrefly-publish-date-chip"
           size="small"
           clickable={!disabled}
           disabled={disabled}

@@ -37,7 +37,9 @@
 
         notifyParent();
         if (!window.closed) {
-          document.body.textContent = error ? 'Sign-in failed.' : 'Finishing sign-in…';
+          document.body.textContent = error
+            ? 'Sign-in failed: ' + error
+            : 'Finishing sign-in…';
           window.setTimeout(function () {
             window.close();
           }, 200);

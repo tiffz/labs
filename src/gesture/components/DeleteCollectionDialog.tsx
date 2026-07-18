@@ -234,7 +234,8 @@ export default function DeleteCollectionDialog({
               <span>
                 <strong>App and Drive photos</strong>
                 <Typography component="span" variant="body2" color="text.secondary" display="block">
-                  Trashes photos and collection folders on Drive (recoverable in Drive trash ~30 days).
+                  Trashes photos and folders under Gesture Reference Packs only (Drive trash ~30 days).
+                  Folders linked from elsewhere stay on Drive — use App only.
                 </Typography>
               </span>
             }

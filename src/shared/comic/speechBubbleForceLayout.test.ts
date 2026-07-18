@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { placeBubblesWithForce } from './speechBubbleForceLayout';
 import { layoutPanelTextBlocks, type SpeechBubbleLayout } from './speechBubbleLayout';
+import { bubblesTailsOverlap } from './speechBubbleTailOverlap';
 import type { PanelTextBlock } from './types';
 
 const BOUNDS = { x: 0, y: 0, w: 220, h: 180 };
@@ -94,6 +95,33 @@ describe('placeBubblesWithForce', () => {
     placeBubblesWithForce(bubbles, { bounds: BOUNDS });
     expect(bubbles[0]!.cy + bubbles[0]!.halfH).toBeLessThan(bubbles[0]!.tailY - 2);
   });
+
+  it('resolves crossing tails for facing speakers (same hard bar as slots)', () => {
+    // Seeded so each bubble's tail points toward the *other* speaker — a guaranteed
+    // cross unless the force path actively fans/stacks bubbles apart.
+    const bubbles = [
+      seedBubble('a', 60, 50, 34, 20, 150, 140),
+      seedBubble('b', 160, 50, 34, 20, 70, 140),
+    ];
+    placeBubblesWithForce(bubbles, { bounds: { x: 0, y: 0, w: 240, h: 200 }, ticks: 100 });
+    expect(bubblesTailsOverlap(bubbles[0]!, bubbles[1]!)).toBe(false);
+  });
+
+  it('resolves crossing tails for a dense three-speaker panel', () => {
+    const wide = { x: 0, y: 0, w: 300, h: 220 };
+    const bubbles = [
+      seedBubble('a', 80, 50, 30, 18, 220, 170),
+      seedBubble('b', 220, 50, 30, 18, 80, 170),
+      seedBubble('c', 150, 45, 28, 16, 150, 175),
+    ];
+    placeBubblesWithForce(bubbles, { bounds: wide, ticks: 100 });
+    for (let i = 0; i < bubbles.length; i++) {
+      for (let j = i + 1; j < bubbles.length; j++) {
+        if (bubbles[i]!.characterId === bubbles[j]!.characterId) continue;
+        expect(bubblesTailsOverlap(bubbles[i]!, bubbles[j]!)).toBe(false);
+      }
+    }
+  });
 });
 
 describe('layoutPanelTextBlocks force mode', () => {
@@ -155,6 +183,28 @@ describe('layoutPanelTextBlocks force mode', () => {
         };
         expect(boxesOverlap(captionBox, bubble)).toBe(false);
       }
+    }
+  });
+
+  it('treats a leading SFX block as a first-class obstacle, not just a post-sync bump', () => {
+    const bounds = { x: 0, y: 0, w: 240, h: 220 };
+    const blocks: PanelTextBlock[] = [
+      { kind: 'sfx', content: 'CRASH', loudness: 'loud' },
+      { kind: 'dialogue', characterId: 'a', content: 'Was that the good vase?' },
+    ];
+    const layout = layoutPanelTextBlocks(blocks, bounds);
+    const sfx = layout.items.find((item) => item.kind === 'sfx');
+    const bubble = layout.items.find((item) => item.kind === 'bubble');
+    expect(sfx?.kind).toBe('sfx');
+    expect(bubble?.kind).toBe('bubble');
+    if (sfx?.kind === 'sfx' && bubble?.kind === 'bubble') {
+      const sfxBox = {
+        cx: sfx.layout.x,
+        cy: sfx.layout.y - sfx.layout.fontSize / 2,
+        halfW: sfx.layout.fontSize * 0.55,
+        halfH: sfx.layout.fontSize / 2,
+      };
+      expect(boxesOverlap(sfxBox, bubble.layout)).toBe(false);
     }
   });
 });

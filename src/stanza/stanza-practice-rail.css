@@ -1495,11 +1495,23 @@
 }
 
 /* Preset row: six columns — compact chips in the ~360px practice rail. */
+.stanza-drums-panel .drum-presets-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 4px;
+  min-width: 0;
+}
+
 .stanza-drums-panel .drum-presets {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 3px;
-  margin-bottom: 4px;
+  margin-bottom: 0;
+}
+
+.stanza-drums-panel .drum-presets__random-row {
+  gap: 3px;
 }
 
 .stanza-drums-panel .drum-presets--compact {
@@ -1917,85 +1929,97 @@
   outline: none;
 }
 
-.stanza-drums-pattern-editor-panel {
-  margin-top: 6px;
-  padding-top: 8px;
-  border-top: 1px solid var(--stanza-paper-line-faint);
-}
-
-.stanza-drums-pattern-editor-panel .stanza-drums-pattern-editor {
-  min-width: 0;
-}
-
-.stanza-drums-pattern-editor-panel .drum-presets {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
-  margin-bottom: 6px;
-}
-
-.stanza-drums-pattern-editor-panel .preset-btn {
-  background: var(--stanza-rail-control-bg, var(--stanza-tray-bg-strong));
-  border: 1px solid
-    var(--stanza-rail-control-border, var(--stanza-paper-line-faint));
-  border-radius: 6px;
+/*
+ * Portaled drum edit menu (outside the rail DOM) — mirror Stanza tokens like
+ * `.stanza-bpm-dropdown` so shared `.drum-pattern-edit-menu` chrome picks up rose.
+ */
+.drum-pattern-edit-menu.labs-popover-surface {
+  --stanza-rose: #e848a0;
+  --stanza-rose-strong: #c4176e;
+  --stanza-rose-wash: rgba(232, 72, 160, 0.12);
+  --stanza-rose-line: rgba(232, 72, 160, 0.28);
+  --stanza-ink: #312b26;
+  --stanza-ink-muted: #5c534c;
+  --stanza-paper-line: rgba(49, 43, 38, 0.12);
+  --stanza-paper-line-faint: rgba(49, 43, 38, 0.08);
+  --stanza-tray-bg-strong: rgba(255, 255, 255, 0.92);
+  --stanza-font-ui:
+    'Source Sans 3', 'Source Sans Pro', system-ui, -apple-system, 'Segoe UI',
+    Roboto, sans-serif;
+  --theme-font-ui: var(--stanza-font-ui);
+  --theme-primary: var(--stanza-rose);
+  --theme-primary-hover: var(--stanza-rose-strong);
+  --theme-text: var(--stanza-ink);
+  --theme-text-secondary: var(--stanza-ink-muted);
+  --theme-border: var(--stanza-paper-line);
+  --theme-surface: var(--stanza-tray-bg-strong);
+  --theme-bg: #f7f1e8;
+  --theme-radius-sm: var(--stanza-radius-chip, 11px);
+  --theme-radius-md: var(--stanza-radius-chip, 11px);
+  --theme-radius-lg: var(--stanza-radius-panel, 18px);
+  --labs-popover-border: 1px solid var(--stanza-paper-line-faint);
+  --labs-popover-bg: #fff;
+  --labs-popover-shadow: var(
+    --stanza-shadow-popover,
+    0 12px 28px rgba(49, 43, 38, 0.14)
+  );
+  --labs-popover-radius: var(--stanza-radius-panel, 18px);
+  --labs-selection-secondary-bg: var(--stanza-rose-wash);
+  --labs-selection-secondary-fg: var(--stanza-rose-strong);
+  --labs-selection-secondary-border: var(--stanza-rose-line);
+  --labs-selection-secondary-hover-bg: color-mix(
+    in srgb,
+    var(--stanza-rose) 20%,
+    #fff
+  );
+  --labs-control-focus-ring-inset-color: var(--stanza-rose);
+  --labs-btn-border: var(--stanza-paper-line-faint);
+  --labs-btn-bg: var(--stanza-tray-bg-strong, rgba(255, 255, 255, 0.92));
+  --labs-btn-fg: var(--stanza-ink);
+  --labs-btn-bg-hover: var(--stanza-rose-wash);
+  border: var(--labs-popover-border);
+  background: var(--labs-popover-bg);
+  box-shadow: var(--labs-popover-shadow);
+  border-radius: var(--labs-popover-radius);
+  font-family: var(--stanza-font-ui);
   color: var(--stanza-ink);
-  font-family: inherit;
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  padding: 0 3px;
-  min-height: 1.5rem;
-  cursor: pointer;
-  line-height: 1.2;
-  transition:
-    background-color 0.12s ease,
-    border-color 0.12s ease,
-    color 0.12s ease;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.stanza-drums-pattern-editor-panel .preset-btn:hover:not(.active) {
+.drum-pattern-edit-menu__preview {
+  border-color: var(--stanza-paper-line-faint);
+  border-radius: var(--stanza-radius-chip, 11px);
+  background: color-mix(in srgb, var(--stanza-rose) 5%, #fff);
+}
+
+.drum-pattern-edit-menu__body .drum-pattern-input input {
+  min-height: var(--stanza-rail-control-height, 2rem);
+  height: var(--stanza-rail-control-height, 2rem);
+  background: var(--stanza-rail-control-bg, rgba(255, 255, 255, 0.92));
+  border-color: var(
+    --stanza-rail-control-border,
+    var(--stanza-paper-line-faint)
+  );
+}
+
+.drum-pattern-edit-menu__variations .rhythm-template-variation-counter {
+  color: var(--stanza-ink-muted);
+}
+
+.drum-pattern-edit-menu__variations .rhythm-template-variation-arrow {
+  border-color: var(--stanza-paper-line-faint);
+  background: var(--stanza-tray-bg-strong, #fff);
+  color: var(--stanza-ink);
+}
+
+.drum-pattern-edit-menu__variations .rhythm-template-variation-arrow:hover {
   border-color: var(--stanza-rose-line);
   background: var(--stanza-rose-wash);
+  color: var(--stanza-rose-strong);
 }
 
-.stanza-drums-pattern-editor-panel .preset-btn.active {
-  background: var(--stanza-rose);
-  color: #fff;
-  border-color: var(--stanza-rose);
-}
-
-.stanza-drums-pattern-editor-panel .preset-btn-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-  min-height: 1.5rem;
-  padding: 0;
-}
-
-.stanza-drums-pattern-editor-panel .drum-pattern-input input {
-  width: 100%;
-  box-sizing: border-box;
-  font-family: var(--stanza-font-ui);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  min-height: var(--stanza-rail-control-height, 2rem);
-  padding: 0 8px;
-  border-radius: var(--stanza-rail-control-radius, 8px);
-  border: 1px solid var(--stanza-paper-line-faint);
-  background: var(--stanza-rail-control-bg, rgba(255, 255, 255, 0.72));
-  color: var(--stanza-ink);
-}
-
-.stanza-drums-pattern-editor-panel .drum-pattern-input-row,
-.stanza-drums-pattern-editor-panel .drum-pattern-input {
-  margin-top: 0;
-  margin-bottom: 0;
+.drum-pattern-edit-menu__done.labs-btn:hover:not(:disabled) {
+  border-color: var(--stanza-rose-line);
+  color: var(--stanza-rose-strong);
 }
 
 .stanza-drums-panel .stanza-drums-notation-frame .drum-notation-mini-x-scroll {

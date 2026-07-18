@@ -1,6 +1,7 @@
 import type { PopoverProps } from '@mui/material/Popover';
 import type { SystemStyleObject } from '@mui/system';
 import type { WheelEvent as ReactWheelEvent } from 'react';
+import { resolveEventTargetElement } from '../../dom/resolveEventTargetElement';
 import { LABS_POPOVER_CHROME_SX } from '../anchoredPopoverChrome';
 
 /** Shared closed-trigger + menu shell appearance for playback pickers (sound, chord style, …). */
@@ -38,7 +39,8 @@ export const PLAYBACK_FIELD_SELECT_POPOVER_CLASS = 'shared-playback-field-select
 
 /** True when `target` is inside a portaled playback field select menu (sound, style, …). */
 export function isPlaybackFieldSelectPopoverTarget(target: EventTarget | null): boolean {
-  return target instanceof Element && Boolean(target.closest(`.${PLAYBACK_FIELD_SELECT_POPOVER_CLASS}`));
+  const el = resolveEventTargetElement(target);
+  return Boolean(el?.closest(`.${PLAYBACK_FIELD_SELECT_POPOVER_CLASS}`));
 }
 
 /** Above floating panels (e.g. Encore playback settings) so nested menus paint on top. */

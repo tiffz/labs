@@ -1,3 +1,8 @@
+import {
+  listLabsDriveUndoRingSnapshots,
+  migrateLegacyLocalStorageUndoRing,
+  pushLabsDriveUndoRingSnapshot,
+} from '../../shared/drive/labsDriveUndoRingDb';
 import { encoreDb } from '../db/encoreDb';
 import {
   buildWireFromTables,
@@ -5,7 +10,7 @@ import {
   serializeRepertoireWire,
 } from './repertoireWire';
 
-const STORAGE_KEY = 'encore_drive_undo_snapshots_v1';
+const LEGACY_KEY = 'encore_drive_undo_snapshots_v1';
 const MAX = 10;
 
 export type EncoreDriveUndoSnapshotTrigger = 'pre-pull' | 'pre-merge' | 'manual-backup';
@@ -17,15 +22,16 @@ export type EncoreDriveUndoSnapshot = {
   wireJson: string;
 };
 
-function readAll(): EncoreDriveUndoSnapshot[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as EncoreDriveUndoSnapshot[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+let legacyMigrated = false;
+
+async function ensureMigrated(): Promise<void> {
+  if (legacyMigrated) return;
+  legacyMigrated = true;
+  await migrateLegacyLocalStorageUndoRing({
+    appId: 'encore',
+    legacyStorageKey: LEGACY_KEY,
+    payloadFromLegacy: (row) => (typeof row.wireJson === 'string' ? row.wireJson : null),
+  });
 }
 
 /**
@@ -33,27 +39,34 @@ function readAll(): EncoreDriveUndoSnapshot[] {
  * source alongside Drive revision history — a snapshot taken before a destructive merge on *this*
  * device can hold content that Drive has since pruned (Drive auto-expires unpinned JSON revisions).
  */
-export function readEncoreDriveUndoSnapshots(): EncoreDriveUndoSnapshot[] {
-  return readAll().sort((a, b) => b.createdAt - a.createdAt);
+export async function readEncoreDriveUndoSnapshots(): Promise<EncoreDriveUndoSnapshot[]> {
+  await ensureMigrated();
+  const rows = await listLabsDriveUndoRingSnapshots('encore', MAX);
+  return rows.map((r) => ({
+    createdAt: r.createdAt,
+    label: r.label,
+    trigger: r.trigger as EncoreDriveUndoSnapshotTrigger,
+    wireJson: r.payloadJson,
+  }));
 }
 
 export async function snapshotEncoreRepertoireBeforeSync(
   trigger: EncoreDriveUndoSnapshotTrigger,
 ): Promise<void> {
   try {
+    await ensureMigrated();
     const songs = await encoreDb.songs.toArray();
     const performances = await encoreDb.performances.toArray();
     const now = new Date().toISOString();
     const extras = (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(now);
     const wire = buildWireFromTables(songs, performances, extras);
-    const row: EncoreDriveUndoSnapshot = {
-      createdAt: Date.now(),
-      label: new Date(now).toLocaleString(),
+    await pushLabsDriveUndoRingSnapshot(
+      'encore',
+      serializeRepertoireWire(wire),
       trigger,
-      wireJson: serializeRepertoireWire(wire),
-    };
-    const rows = [row, ...readAll()].slice(0, MAX);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
+      new Date(now).toLocaleString(),
+      MAX,
+    );
   } catch {
     /* quota */
   }

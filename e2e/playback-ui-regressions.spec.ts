@@ -69,10 +69,11 @@ test.describe('Playback UI regressions', () => {
     await page.getByRole('button', { name: 'Playback settings' }).click();
     const notation = page.locator('.shared-chord-playback-settings__drums-notation');
     await expect(notation).toBeVisible({ timeout: 5_000 });
-    await expect(
-      page.getByPlaceholder('D-T-K-T- or paste Darbuka Trainer URL'),
-    ).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Customize in Darbuka trainer' })).toBeVisible();
+    await page.getByRole('button', { name: /Edit drum pattern/i }).click();
+    const drumEditor = page.getByRole('dialog', { name: /Drum pattern editor/i });
+    await expect(drumEditor.getByPlaceholder('D-T-K-T- or paste Darbuka Trainer URL')).toBeVisible();
+    await expect(drumEditor.getByRole('link', { name: 'Customize in Darbuka trainer' })).toBeVisible();
+    await drumEditor.getByRole('button', { name: /^Done$/i }).click();
 
     const readHighlightLeft = async (): Promise<number | null> =>
       notation.locator('[data-highlighted="true"]').first().evaluate((el) => {
@@ -119,12 +120,12 @@ test.describe('Playback UI regressions', () => {
     });
 
     await clickStanzaLibraryCard(page, 'E2E Drums Song');
-    const drumEditDone = page.locator('button.drum-pattern-edit-btn[aria-expanded="true"]');
     await page.getByRole('button', { name: /Edit drum pattern/i }).click();
-    await expect(page.getByPlaceholder('D-T-K-T- or paste Darbuka Trainer URL')).toBeVisible({
+    const drumEditor = page.getByRole('dialog', { name: /Drum pattern editor/i });
+    await expect(drumEditor.getByPlaceholder('D-T-K-T- or paste Darbuka Trainer URL')).toBeVisible({
       timeout: 15_000,
     });
-    await drumEditDone.click();
+    await drumEditor.getByRole('button', { name: /^Done$/i }).click();
     await expect(page.getByRole('button', { name: /Edit drum pattern/i })).toBeVisible();
 
     await page.locator('button.stanza-play-btn').click();
@@ -156,8 +157,10 @@ test.describe('Playback UI regressions', () => {
 
     await page.getByRole('button', { name: 'Verse settings' }).click();
     await expect(page.getByPlaceholder('D---T---D-D-T---')).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByRole('button', { name: /Use Maqsum drum preset/i })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Customize in Darbuka trainer' })).toBeVisible();
+    await page.getByRole('button', { name: /Edit drum pattern/i }).click();
+    const drumEditor = page.getByRole('dialog', { name: /Drum pattern editor/i });
+    await expect(drumEditor.getByRole('button', { name: /Use Maqsum drum preset/i })).toBeVisible();
   });
 
   test('existing original loads with spinner, not Song not found flash', async ({ page }) => {

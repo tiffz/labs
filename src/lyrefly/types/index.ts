@@ -18,6 +18,20 @@ export type LyreflyPipelineStatus = 'fleshing_out' | 'ready_to_draw' | 'complete
 export type SketchbookSeedKind = 'idea' | 'daily_flash' | 'link' | 'image' | 'file';
 export type SketchbookSeedStatus = 'active' | 'promoted' | 'archived';
 
+/** Extra materials on a sketchbook entry (notes live on the seed; these are art/links/files). */
+export type SketchbookAttachmentKind = 'image' | 'file' | 'link';
+
+export interface SketchbookAttachment {
+  id: string;
+  kind: SketchbookAttachmentKind;
+  title?: string;
+  notes?: string;
+  url?: string;
+  fileName?: string;
+  mimeType?: string;
+  createdAt: string;
+}
+
 /** Optional pipeline stages — matrix checklist, not a rigid kanban. */
 export type LyreflyMilestoneId =
   | 'brainstorm'
@@ -320,6 +334,8 @@ export interface SketchbookSeed {
   url?: string;
   fileName?: string;
   mimeType?: string;
+  /** Optional art / links / files attached to this idea (in addition to legacy single-url/file fields). */
+  attachments?: SketchbookAttachment[];
   tags: string[];
   status: SketchbookSeedStatus;
   promotedProjectId?: string;

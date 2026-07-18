@@ -1,5 +1,6 @@
 import { lyreflyDb, markLyreflyDirtyRow } from '../db/lyreflyDb';
 import { notifyLyreflyLocalChange } from '../db/lyreflyChangeBus';
+import { recordLyreflyProjectTombstone } from '../drive/lyreflyDriveTombstones';
 import { parseAndSortPageFiles } from '../../shared/zine/pageFileParser';
 import {
   displayNameFromParsedPageFile,
@@ -20,7 +21,7 @@ import type {
 
 export async function saveLyreflyProject(
   project: ComicProject,
-  options?: { notifySync?: boolean },
+  options?: { notifySync?: boolean; immediate?: boolean },
 ): Promise<ComicProject> {
   const updated: ComicProject = {
     ...project,
@@ -29,9 +30,47 @@ export async function saveLyreflyProject(
   await lyreflyDb.projects.put(updated);
   await markLyreflyDirtyRow('project', updated.id, 'upsert', updated.id);
   if (options?.notifySync !== false) {
-    notifyLyreflyLocalChange();
+    notifyLyreflyLocalChange(options?.immediate ? { immediate: true } : undefined);
   }
   return updated;
+}
+
+/**
+ * Deletes a project and all local rows scoped to it, then records a Drive tombstone so union merge
+ * does not resurrect it on another device (see `lyreflyDriveTombstones.ts` + `lyreflyDriveMerge.ts`).
+ * Drive package bytes under `projects/{id}/` are left in place (harmless orphan) — see
+ * `docs/DRIVE_SYNC_DATA_LOSS_PREVENTION.md` § Known gaps.
+ */
+export async function deleteLyreflyProject(project: ComicProject): Promise<void> {
+  const pageNodes = await lyreflyDb.pageNodes.where('projectId').equals(project.id).toArray();
+  for (const node of pageNodes) {
+    const revisions = await lyreflyDb.pageRevisions.where('pageNodeId').equals(node.id).toArray();
+    for (const revision of revisions) {
+      await lyreflyDb.revisionBlobs.delete(revision.id);
+      await lyreflyDb.pageRevisions.delete(revision.id);
+    }
+    await lyreflyDb.pageNodes.delete(node.id);
+  }
+
+  const visualDevAssets = await lyreflyDb.visualDevAssets.where('projectId').equals(project.id).toArray();
+  for (const asset of visualDevAssets) {
+    await lyreflyDb.visualDevBlobs.delete(asset.id);
+    await lyreflyDb.visualDevAssets.delete(asset.id);
+  }
+
+  await lyreflyDb.scriptDocuments.where('projectId').equals(project.id).delete();
+  await lyreflyDb.snapshots.where('projectId').equals(project.id).delete();
+  await lyreflyDb.artVersions.where('projectId').equals(project.id).delete();
+  await lyreflyDb.comicCharacters.where('projectId').equals(project.id).delete();
+  await lyreflyDb.pageReferences.where('projectId').equals(project.id).delete();
+  await lyreflyDb.pageMockups.where('projectId').equals(project.id).delete();
+  if (project.archiveId) {
+    await lyreflyDb.archives.delete(project.archiveId);
+  }
+  await lyreflyDb.projects.delete(project.id);
+
+  recordLyreflyProjectTombstone(project.id);
+  notifyLyreflyLocalChange({ immediate: true });
 }
 
 export async function ensureLyreflyArchive(project: ComicProject): Promise<ComicArchiveBinder> {

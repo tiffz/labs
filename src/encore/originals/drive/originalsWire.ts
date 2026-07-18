@@ -1,4 +1,5 @@
 import { normalizeEncoreOriginalSong, type EncoreOriginalSong } from '../types';
+import { mergeOriginalSongRecords } from './encoreOriginalsMerge';
 
 export interface OriginalsWirePayload {
   version: 1;
@@ -26,17 +27,12 @@ export function parseOriginalsWire(json: string): OriginalsWirePayload {
   };
 }
 
+/** Content-aware merge (ADR 0019-shaped). Name kept for call sites / tests. */
 export function mergeOriginalsByUpdatedAt(
   local: EncoreOriginalSong[],
   remote: EncoreOriginalSong[],
 ): EncoreOriginalSong[] {
-  const map = new Map<string, EncoreOriginalSong>();
-  for (const row of remote) map.set(row.id, row);
-  for (const row of local) {
-    const prev = map.get(row.id);
-    if (!prev || row.updatedAt >= prev.updatedAt) map.set(row.id, row);
-  }
-  return [...map.values()];
+  return mergeOriginalSongRecords(local, remote);
 }
 
 export function maxOriginalsClock(songs: EncoreOriginalSong[]): string {

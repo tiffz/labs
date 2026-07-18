@@ -12,7 +12,9 @@ import { encorePagePaddingTop, encorePageSectionGap, encoreScreenPaddingX, encor
 import { takePendingOriginalDraft } from '../pendingOriginalDraft';
 import { originalAutosaveDirty } from '../originalSongPageHelpers';
 import { mergeIdleChartSnapshot, restoreOriginalFromSnapshot } from '../originalsSnapshot';
-import { createBlankOriginalSong, type EncoreOriginalSong } from '../types';
+import { encoreDb } from '../../db/encoreDb';
+import { sectionPlaybackOverridesNeedRemap } from '../remapSectionPlaybackOverrides';
+import { createBlankOriginalSong, normalizeEncoreOriginalSong, type EncoreOriginalSong } from '../types';
 import { OriginalsSongHeader, type OriginalsPageMode } from './OriginalsSongHeader';
 import { OriginalsSongViewMode } from './OriginalsSongViewMode';
 import { OriginalsSongWorkspace } from './OriginalsSongWorkspace';
@@ -131,6 +133,36 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
     },
     [saveOriginal],
   );
+
+  /** Re-attach orphaned section drum/style overrides after chart reorder/rename, then persist. */
+  const healedPlaybackOverridesForIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (isNew) return;
+    if (healedPlaybackOverridesForIdRef.current === id) return;
+    let cancelled = false;
+    void (async () => {
+      const raw = await encoreDb.originals.get(id);
+      if (cancelled || !raw) return;
+      if (
+        !sectionPlaybackOverridesNeedRemap(raw.lyricsAndChords, raw.sectionPlaybackOverrides)
+      ) {
+        healedPlaybackOverridesForIdRef.current = id;
+        return;
+      }
+      const healed = normalizeEncoreOriginalSong(raw);
+      await enqueueSave(healed, { silentUndo: true });
+      if (cancelled) return;
+      healedPlaybackOverridesForIdRef.current = id;
+      setDraft((prev) =>
+        prev?.id === healed.id
+          ? { ...prev, sectionPlaybackOverrides: healed.sectionPlaybackOverrides }
+          : prev,
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [enqueueSave, id, isNew]);
 
   const persistOriginalNow = useCallback(
     async (next: EncoreOriginalSong) => {

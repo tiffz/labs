@@ -1,8 +1,9 @@
-import TextField from '@mui/material/TextField';
 import { useCallback, useMemo, useRef, useState, type ReactElement } from 'react';
 
 import SkipToMain from '../shared/components/SkipToMain';
-import { applyPaletteToMockup, createPaletteFromHexes, parsePalettePaste, type ComicPalette } from '../shared/palette';
+import type { PanelBackgroundImage } from '../shared/comic';
+import type { LabsWikimediaImageResult } from '../shared/media';
+import { applyPaletteToMockup, type ComicPalette } from '../shared/palette';
 import {
   artworkDimensionsWithBleed,
   convertPrintUnits,
@@ -11,9 +12,10 @@ import {
   trimSizeFromLabsPrintSpec,
 } from '../shared/zine';
 import { ScrapboardBoardEditor, type ScrapboardBoardEditorProps } from './components/ScrapboardBoardEditor';
+import { ScrapboardExportSheet } from './components/ScrapboardExportSheet';
 import { ScrapboardLayoutGallery } from './components/ScrapboardLayoutGallery';
+import { ScrapboardPageFinishBar } from './components/ScrapboardPageFinishBar';
 import { ScrapboardPanelTextEditor } from './components/ScrapboardPanelTextEditor';
-import { ScrapboardPrintSpecPanel } from './components/ScrapboardPrintSpecPanel';
 import { ScrapboardToolbar } from './components/ScrapboardToolbar';
 import { useScrapboardBoard } from './hooks/useScrapboardBoard';
 
@@ -21,9 +23,9 @@ export { ScrapboardBoardEditor, type ScrapboardBoardEditorProps };
 
 export default function App(): ReactElement {
   const board = useScrapboardBoard(4);
-  const [palettePaste, setPalettePaste] = useState('');
   const [palette, setPalette] = useState<ComicPalette | null>(null);
-  const [printOpen, setPrintOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportSettingsOpen, setExportSettingsOpen] = useState(false);
   const svgRef = useRef<HTMLDivElement>(null);
 
   const colors = useMemo(
@@ -31,13 +33,20 @@ export default function App(): ReactElement {
     [board.layout.panels.length, palette],
   );
 
-  const onApplyPalette = (): void => {
-    const hexes = parsePalettePaste(palettePaste);
-    if (!hexes) return;
-    setPalette(createPaletteFromHexes(hexes, 'Board palette', 'import'));
-  };
+  const onSelectPageBackgroundImage = useCallback(
+    (result: LabsWikimediaImageResult): void => {
+      const image: PanelBackgroundImage = {
+        url: result.url,
+        thumbUrl: result.thumbUrl,
+        title: result.title,
+        license: result.license,
+      };
+      board.setPageBackgroundImage(image);
+    },
+    [board],
+  );
 
-  const onExportPng = useCallback(async (): Promise<void> => {
+  const runExportPng = useCallback(async (): Promise<void> => {
     const svg = svgRef.current?.querySelector('svg');
     if (!svg) return;
     const trim = trimSizeFromLabsPrintSpec(board.printSpec);
@@ -66,7 +75,6 @@ export default function App(): ReactElement {
           a.click();
         });
       }
-      URL.revokeObjectURL(url);
     };
     img.src = url;
   }, [board.printSpec, colors.background]);
@@ -79,57 +87,30 @@ export default function App(): ReactElement {
           <h1 className="scrapboard-title">Scrapboard</h1>
           <p className="scrapboard-tagline">Panel layouts and rough comps, fast.</p>
         </div>
-        <ScrapboardToolbar board={board} onExportPng={() => void onExportPng()} />
+        <ScrapboardToolbar board={board} onExportPng={() => setExportOpen(true)} />
       </header>
 
+      <div className="scrapboard-page-finish-wrap">
+        <ScrapboardPageFinishBar
+          palette={palette}
+          onPaletteApply={setPalette}
+          cast={board.cast}
+          onAddCastMember={() => board.addCastMember()}
+          onUpdateCastMember={board.updateCastMember}
+          onRemoveCastMember={board.removeCastMember}
+          pageBackgroundImage={board.pageBackgroundImage}
+          onSelectPageBackgroundImage={onSelectPageBackgroundImage}
+          onClearPageBackgroundImage={() => board.setPageBackgroundImage(null)}
+          printSpec={board.printSpec}
+          onPrintSpecChange={board.setPrintSpec}
+          showBleedGuides={board.showBleedGuides}
+          onShowBleedGuidesChange={board.setShowBleedGuides}
+        />
+      </div>
+
       <main id="main" className="scrapboard-main">
-        <aside className="scrapboard-controls" aria-label="Generation controls">
+        <aside className="scrapboard-controls" aria-label="Panel inspector">
           <ScrapboardPanelTextEditor board={board} />
-
-          <section className="scrapboard-controls__section scrapboard-palette">
-            <h2 className="scrapboard-section-title">Palette tint</h2>
-            <TextField
-              size="small"
-              fullWidth
-              label="Palette source"
-              placeholder="Hex row, Coolors, or /palette/ link"
-              value={palettePaste}
-              onChange={(e) => setPalettePaste(e.target.value)}
-              className="scrapboard-mui-field"
-              data-testid="scrapboard-palette-input"
-            />
-            <button type="button" className="scrapboard-btn scrapboard-btn--ghost" onClick={onApplyPalette}>
-              Apply palette
-            </button>
-          </section>
-
-          <section
-            className={[
-              'scrapboard-controls__section',
-              'scrapboard-print-wrap',
-              printOpen ? 'scrapboard-print-wrap--open' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-          >
-            <button
-              type="button"
-              className="scrapboard-disclosure"
-              aria-expanded={printOpen}
-              onClick={() => setPrintOpen((open) => !open)}
-              data-testid="scrapboard-print-toggle"
-            >
-              Page &amp; export settings
-            </button>
-            {printOpen ? (
-              <ScrapboardPrintSpecPanel
-                printSpec={board.printSpec}
-                onChange={board.setPrintSpec}
-                showBleedGuides={board.showBleedGuides}
-                onShowBleedGuidesChange={board.setShowBleedGuides}
-              />
-            ) : null}
-          </section>
         </aside>
 
         <section className="scrapboard-stage" aria-label="Page preview">
@@ -137,12 +118,14 @@ export default function App(): ReactElement {
             <ScrapboardBoardEditor
               layout={board.layout}
               fills={board.fills}
+              cast={board.cast}
               colors={colors}
               printSpec={board.printSpec}
               showBleedGuides={board.showBleedGuides}
               allowBubbleEscape={board.allowBubbleEscape}
               selectedPanelIndex={board.selectedPanelIndex}
               onPanelSelect={board.setSelectedPanelIndex}
+              pageBackgroundImage={board.pageBackgroundImage ?? undefined}
             />
           </div>
         </section>
@@ -155,6 +138,21 @@ export default function App(): ReactElement {
           />
         </aside>
       </main>
+
+      <ScrapboardExportSheet
+        open={exportOpen}
+        onClose={() => {
+          setExportOpen(false);
+          setExportSettingsOpen(false);
+        }}
+        printSpec={board.printSpec}
+        onPrintSpecChange={board.setPrintSpec}
+        showBleedGuides={board.showBleedGuides}
+        onShowBleedGuidesChange={board.setShowBleedGuides}
+        onConfirmExport={() => void runExportPng()}
+        showSettings={exportSettingsOpen}
+        onShowSettingsChange={setExportSettingsOpen}
+      />
     </div>
   );
 }

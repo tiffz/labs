@@ -92,8 +92,12 @@ function buildUniformGrid(safe: LayoutSafeRegion, cols: number, rows: number): P
 function gridConventionality(cols: number, rows: number, n: number): number {
   const aspect = cols / rows;
   const squareness = 1 - Math.min(1, Math.abs(Math.log(aspect)) / Math.log(Math.max(n, 2)));
-  const stripPenalty = rows === 1 && cols > 4 ? 0.12 : rows > 1 && cols === 1 ? 0.18 : 0;
-  return 0.72 + squareness * 0.22 - stripPenalty;
+  // Extreme 1×N / N×1 strips make unreadably skinny/flat panels — bury them in the gallery.
+  let stripPenalty = 0;
+  if (rows === 1 && cols > 4) stripPenalty += 0.12 + (cols - 4) * 0.1;
+  if (cols === 1 && rows > 4) stripPenalty += 0.18 + (rows - 4) * 0.1;
+  if (cols >= 6 || rows >= 6) stripPenalty += 0.2;
+  return Math.max(0.08, 0.72 + squareness * 0.22 - stripPenalty);
 }
 
 function horizontalStrip(safe: LayoutSafeRegion, n: number): PanelRect[] {
@@ -397,7 +401,7 @@ export function generateLayoutsForPanelCount(
         `strip-h-${n}`,
         `${n} horizontal strip`,
         'horizontal-strip',
-        n <= 4 ? 0.68 : 0.52,
+        n <= 4 ? 0.68 : Math.max(0.1, 0.52 - (n - 4) * 0.08),
         horizontalStrip(safe, n),
       ),
     );
@@ -406,7 +410,7 @@ export function generateLayoutsForPanelCount(
         `strip-v-${n}`,
         `${n} vertical stack`,
         'vertical-stack',
-        0.48,
+        n <= 4 ? 0.48 : Math.max(0.1, 0.4 - (n - 4) * 0.06),
         verticalStack(safe, n),
       ),
     );

@@ -21,6 +21,18 @@ vi.mock('../../shared/drive/driveFetch', () => ({
   driveTrashFile: vi.fn(),
 }));
 
+vi.mock('./bootstrapFolders', () => ({
+  ensureEncoreDriveLayout: vi.fn(async () => ({ rootFolderId: 'encore-root' })),
+}));
+
+vi.mock('../../shared/drive/driveAncestry', () => ({
+  filterDriveFileIdsUnderAncestors: vi.fn(async (_token: string, ids: string[]) => ({
+    allowed: ids,
+    blocked: [] as string[],
+  })),
+}));
+
+import { filterDriveFileIdsUnderAncestors } from '../../shared/drive/driveAncestry';
 import { driveTrashFile } from '../../shared/drive/driveFetch';
 import { encoreDb, markDirtyRow } from '../db/encoreDb';
 import { applyEncoreDriveDuplicateDedup } from './driveDuplicateDedup';
@@ -117,8 +129,27 @@ describe('applyEncoreDriveDuplicateDedup', () => {
 
     expect(markDirtyRow).toHaveBeenCalledWith('song', 's1', 'upsert');
     expect(markDirtyRow).toHaveBeenCalledWith('performance', 'p1', 'upsert');
+    expect(filterDriveFileIdsUnderAncestors).toHaveBeenCalledWith(
+      'tok',
+      expect.arrayContaining(['dup-media', 'raw-dup']),
+      new Set(['encore-root']),
+    );
     expect(driveTrashFile).toHaveBeenCalledWith('tok', 'dup-media');
     expect(driveTrashFile).toHaveBeenCalledWith('tok', 'raw-dup');
+  });
+
+  it('does not trash duplicates outside the Encore_App tree', async () => {
+    (encoreDb.songs.toArray as any).mockResolvedValue([]);
+    (encoreDb.performances.toArray as any).mockResolvedValue([]);
+    (filterDriveFileIdsUnderAncestors as any).mockResolvedValueOnce({
+      allowed: [],
+      blocked: ['dup-media', 'raw-dup'],
+    });
+
+    const result = await applyEncoreDriveDuplicateDedup('tok', [duplicateGroup()]);
+
+    expect(result.trashed).toBe(0);
+    expect(driveTrashFile).not.toHaveBeenCalled();
   });
 
   it('returns zeros when there is nothing to replace', async () => {

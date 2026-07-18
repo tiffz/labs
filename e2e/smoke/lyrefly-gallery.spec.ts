@@ -16,7 +16,7 @@ test.describe('Lyrefly gallery', () => {
     await expect(page.getByTestId('lyrefly-script-editor')).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId('lyrefly-script-preview')).toBeVisible();
     await expect(page.getByTestId('lyrefly-workflow-stepper')).toBeVisible();
-    await expect(page.getByRole('button', { name: /Script/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Script (current step)' })).toBeVisible();
   });
 
   test('creates a new comic with brainstorm workflow', async ({ page }) => {
@@ -36,5 +36,14 @@ test.describe('Lyrefly gallery', () => {
   test('uses riso cube theme on app root', async ({ page }) => {
     await expect(page.getByTestId('lyrefly-app')).toHaveAttribute('data-lyrefly-theme', 'risocube');
     await expect(page.getByTestId('lyrefly-design-picker')).toHaveCount(0);
+  });
+
+  test('switches between shelf and table views with shared toolbar', async ({ page }) => {
+    await expect(page.getByTestId('lyrefly-shelf-toolbar')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('lyrefly-shelf-view-grid')).toHaveAttribute('aria-pressed', 'true');
+    await page.getByTestId('lyrefly-shelf-view-table').click();
+    await expect(page.getByTestId('lyrefly-shelf-table')).toBeVisible();
+    await page.getByTestId('lyrefly-shelf-view-grid').click();
+    await expect(page.getByRole('button', { name: /Open Midnight Courier/i })).toBeVisible();
   });
 });

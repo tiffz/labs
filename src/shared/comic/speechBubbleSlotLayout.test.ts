@@ -1,9 +1,24 @@
 import { describe, expect, it } from 'vitest';
 
+import { characterMarkerLayoutBox } from './characterMarkers';
 import { layoutPanelTextBlocks } from './speechBubbleLayout';
 import { adaptBlocksToPanelBudget, maxDialogueBlocksForPanel } from './speechBubbleSlotLayout';
 import { validateSpeechBubbleQuality } from './speechBubbleQuality';
+import { sfxLayoutBBox } from './sfxLoudness';
 import type { PanelTextBlock } from './types';
+
+function boxesOverlap(
+  a: { left: number; top: number; right: number; bottom: number },
+  b: { left: number; top: number; right: number; bottom: number },
+  margin = 4,
+): boolean {
+  return !(
+    a.right + margin <= b.left ||
+    b.right + margin <= a.left ||
+    a.bottom + margin <= b.top ||
+    b.bottom + margin <= a.top
+  );
+}
 
 describe('speechBubbleSlotLayout', () => {
   it('places multi-speaker dialogue without hard overlap/tail violations', () => {
@@ -29,6 +44,28 @@ describe('speechBubbleSlotLayout', () => {
         v.code === 'no_character_overlap',
     );
     expect(violations).toEqual([]);
+  });
+
+  it('drops all text on ultra-narrow strip panels instead of "…" balloons', () => {
+    const bounds = { x: 0, y: 0, w: 48, h: 520 };
+    expect(maxDialogueBlocksForPanel(bounds)).toBe(0);
+    const adapted = adaptBlocksToPanelBudget(
+      [
+        { kind: 'caption', content: 'Behold: the library card' },
+        { kind: 'dialogue', characterId: 'c', content: 'I can explain the spare key.' },
+      ],
+      bounds,
+    );
+    expect(adapted).toEqual([]);
+    const layout = layoutPanelTextBlocks(
+      [
+        { kind: 'caption', content: 'Behold: the library card' },
+        { kind: 'dialogue', characterId: 'c', content: 'I can explain the spare key.' },
+      ],
+      bounds,
+      { placeMode: 'slots', allowBubbleEscape: true },
+    );
+    expect(layout.items).toEqual([]);
   });
 
   it('budgets dialogue lines for short panels', () => {
@@ -70,6 +107,59 @@ describe('speechBubbleSlotLayout', () => {
     }
   });
 
+  it('dodges a leading SFX obstacle instead of overlapping it', () => {
+    const bounds = { x: 0, y: 0, w: 200, h: 220 };
+    const blocks: PanelTextBlock[] = [
+      { kind: 'sfx', content: 'BOOM', loudness: 'loud' },
+      { kind: 'dialogue', characterId: 'a', content: 'Did you hear that?' },
+    ];
+    const layout = layoutPanelTextBlocks(blocks, bounds, { placeMode: 'slots' });
+    const sfx = layout.items.find((item) => item.kind === 'sfx');
+    const bubble = layout.items.find((item) => item.kind === 'bubble');
+    expect(sfx?.kind).toBe('sfx');
+    expect(bubble?.kind).toBe('bubble');
+    if (sfx?.kind === 'sfx' && bubble?.kind === 'bubble') {
+      const sfxBox = sfxLayoutBBox(sfx.layout);
+      const bubbleBox = {
+        left: bubble.layout.cx - bubble.layout.halfW,
+        top: bubble.layout.cy - bubble.layout.halfH,
+        right: bubble.layout.cx + bubble.layout.halfW,
+        bottom: bubble.layout.cy + bubble.layout.halfH,
+      };
+      expect(boxesOverlap(sfxBox, bubbleBox)).toBe(false);
+    }
+  });
+
+  it('keeps loud center-ish SFX off character markers', () => {
+    const bounds = { x: 0, y: 0, w: 200, h: 220 };
+    const blocks: PanelTextBlock[] = [
+      { kind: 'dialogue', characterId: 'c', content: 'Who left that open?' },
+      { kind: 'sfx', content: 'FWOOSH', loudness: 'loud' },
+    ];
+    const layout = layoutPanelTextBlocks(blocks, bounds, {
+      placeMode: 'slots',
+      allowBubbleEscape: true,
+    });
+    const sfx = layout.items.find((item) => item.kind === 'sfx');
+    expect(sfx?.kind).toBe('sfx');
+    if (sfx?.kind !== 'sfx') return;
+    const marker = characterMarkerLayoutBox(bounds, 'c');
+    const markerBox = {
+      left: marker.left,
+      top: marker.top,
+      right: marker.right,
+      bottom: marker.bottom,
+    };
+    expect(boxesOverlap(sfxLayoutBBox(sfx.layout), markerBox)).toBe(false);
+    const characterHits = validateSpeechBubbleQuality(layout, {
+      bounds,
+      blocks,
+      characterIds: ['c'],
+      allowBubbleEscape: true,
+    }).filter((v) => v.code === 'no_character_overlap');
+    expect(characterHits).toEqual([]);
+  });
+
   it('keeps multi-speaker tails short on tall panels', () => {
     const bounds = { x: 0, y: 0, w: 260, h: 700 };
     const blocks: PanelTextBlock[] = [
@@ -90,6 +180,63 @@ describe('speechBubbleSlotLayout', () => {
       expect(tailLen).toBeLessThan(bounds.h * 0.38);
       expect(tailLen).toBeGreaterThan(2);
       expect(item.layout.metrics.fontSize).toBeGreaterThanOrEqual(9);
+    }
+  });
+
+  it('never leaves caption text under a dialogue bubble on short strip panels', () => {
+    const bounds = { x: 200, y: 0, w: 140, h: 95 };
+    const blocks: PanelTextBlock[] = [
+      { kind: 'caption', content: 'Meanwhile…' },
+      { kind: 'dialogue', characterId: 'b', content: 'Why is the lunchbox humming?' },
+    ];
+    const adapted = adaptBlocksToPanelBudget(blocks, bounds);
+    const layout = layoutPanelTextBlocks(adapted, bounds, {
+      placeMode: 'slots',
+      allowBubbleEscape: true,
+    });
+    const hard = validateSpeechBubbleQuality(layout, {
+      bounds,
+      blocks: adapted,
+      characterIds: ['b'],
+      allowBubbleEscape: true,
+    }).filter((v) => v.code === 'no_overlap' || v.code === 'reading_order');
+    expect(hard).toEqual([]);
+    const caption = layout.items.find((item) => item.kind === 'caption');
+    const bubble = layout.items.find((item) => item.kind === 'bubble');
+    if (caption?.kind === 'caption' && bubble?.kind === 'bubble') {
+      const captionBox = {
+        left: caption.layout.x,
+        top: caption.layout.y,
+        right: caption.layout.x + caption.layout.width,
+        bottom: caption.layout.y + caption.layout.height,
+      };
+      const bubbleBox = {
+        left: bubble.layout.cx - bubble.layout.halfW,
+        top: bubble.layout.cy - bubble.layout.halfH,
+        right: bubble.layout.cx + bubble.layout.halfW,
+        bottom: bubble.layout.cy + bubble.layout.halfH,
+      };
+      expect(boxesOverlap(captionBox, bubbleBox)).toBe(false);
+    } else {
+      // Budget may drop the caption on infeasible strips — dialogue must remain.
+      expect(bubble?.kind).toBe('bubble');
+    }
+  });
+
+  it('keeps escaped bubble bodies from spilling deep into the next strip', () => {
+    const bounds = { x: 0, y: 100, w: 180, h: 90 };
+    const blocks: PanelTextBlock[] = [
+      { kind: 'dialogue', characterId: 'a', content: 'This bubble should stay on its strip.' },
+    ];
+    const layout = layoutPanelTextBlocks(blocks, bounds, {
+      placeMode: 'slots',
+      allowBubbleEscape: true,
+    });
+    const bubble = layout.items.find((item) => item.kind === 'bubble');
+    expect(bubble?.kind).toBe('bubble');
+    if (bubble?.kind === 'bubble') {
+      expect(bubble.layout.cy + bubble.layout.halfH).toBeLessThanOrEqual(bounds.y + bounds.h + 6.5);
+      expect(bubble.layout.cy - bubble.layout.halfH).toBeGreaterThanOrEqual(bounds.y - 6.5);
     }
   });
 });

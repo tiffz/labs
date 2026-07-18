@@ -2511,11 +2511,23 @@ body {
   overflow: hidden;
   margin-top: calc(-1 * var(--sp-2));
 }
+.sb-drum-section .drum-presets-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-2);
+  min-width: 0;
+}
+
 .sb-drum-section .drum-presets {
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-1);
-  margin-bottom: var(--sp-2);
+  margin-bottom: 0;
+}
+
+.sb-drum-section .drum-presets__random-row {
+  gap: var(--sp-1);
 }
 .sb-drum-section .preset-btn {
   font-size: var(--text-sm);

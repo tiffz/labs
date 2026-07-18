@@ -93,11 +93,13 @@ describe('validatePanelTextLayout', () => {
   });
 
   it('passes for a narrow tall panel', () => {
-    const bounds = { x: 0, y: 0, w: 64, h: 160 };
+    // Wide enough for one readable balloon; still skinny vs a strip cell.
+    const bounds = { x: 0, y: 0, w: 100, h: 220 };
     const blocks: PanelTextBlock[] = [
       { kind: 'dialogue', characterId: 'a', content: 'Skinny panel.' },
     ];
     const layout = layoutPanelTextBlocks(blocks, bounds);
+    expect(layout.items.some((item) => item.kind === 'bubble')).toBe(true);
     const violations = validateSpeechBubbleQuality(layout, {
       bounds,
       blocks,
@@ -118,7 +120,8 @@ describe('validatePanelTextLayout', () => {
         { kind: 'caption' as const, content: 'To be continued.' },
       ],
     ]) {
-      const layout = layoutPanelTextBlocks(blocks, bounds);
+      // skipBudget: caption-after is a supported placement order; budget trim prefers caption-first.
+      const layout = layoutPanelTextBlocks(blocks, bounds, { skipBudget: true });
       const violations = validateSpeechBubbleQuality(layout, {
         bounds,
         blocks,

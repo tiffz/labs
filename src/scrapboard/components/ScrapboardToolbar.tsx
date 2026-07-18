@@ -1,11 +1,14 @@
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import CasinoOutlinedIcon from '@mui/icons-material/CasinoOutlined';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
+import MoreHorizOutlinedIcon from '@mui/icons-material/MoreHorizOutlined';
 import RemoveOutlinedIcon from '@mui/icons-material/RemoveOutlined';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import MenuItem from '@mui/material/MenuItem';
 import Switch from '@mui/material/Switch';
-import type { ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 
+import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import type { ScrapboardBoardState } from '../hooks/useScrapboardBoard';
 
 export type ScrapboardToolbarProps = {
@@ -13,6 +16,9 @@ export type ScrapboardToolbarProps = {
   onExportPng: () => void;
 };
 
+/**
+ * Header chrome: panel count, randomize menu, overflow (expert toggles), Export primary.
+ */
 export function ScrapboardToolbar({ board, onExportPng }: ScrapboardToolbarProps): ReactElement {
   const {
     panelCount,
@@ -24,6 +30,11 @@ export function ScrapboardToolbar({ board, onExportPng }: ScrapboardToolbarProps
     allowBubbleEscape,
     setAllowBubbleEscape,
   } = board;
+
+  const [randomizeOpen, setRandomizeOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const randomizeRef = useRef<HTMLButtonElement | null>(null);
+  const moreRef = useRef<HTMLButtonElement | null>(null);
 
   return (
     <div className="scrapboard-toolbar" data-testid="scrapboard-toolbar">
@@ -52,52 +63,40 @@ export function ScrapboardToolbar({ board, onExportPng }: ScrapboardToolbarProps
         </div>
       </div>
 
-      <div className="scrapboard-toolbar__group scrapboard-toolbar__group--toggles">
-        <FormControlLabel
-          className="scrapboard-toolbar__toggle"
-          control={
-            <Switch
-              size="small"
-              checked={allowFullBleedLayouts}
-              onChange={(_, checked) => setAllowFullBleedLayouts(checked)}
-              data-testid="scrapboard-full-bleed-toggle"
-            />
-          }
-          label="Full-bleed layouts"
-        />
-        <FormControlLabel
-          className="scrapboard-toolbar__toggle"
-          control={
-            <Switch
-              size="small"
-              checked={allowBubbleEscape}
-              onChange={(_, checked) => setAllowBubbleEscape(checked)}
-              data-testid="scrapboard-bubble-escape-toggle"
-            />
-          }
-          label="Bubble escape"
-        />
-      </div>
-
       <div className="scrapboard-toolbar__group scrapboard-toolbar__group--actions">
         <button
+          ref={randomizeRef}
           type="button"
           className="scrapboard-btn scrapboard-btn--ghost scrapboard-btn--icon"
-          onClick={randomizeText}
-          data-testid="scrapboard-randomize-text"
+          aria-haspopup="menu"
+          aria-expanded={randomizeOpen}
+          data-testid="scrapboard-randomize-menu"
+          onClick={() => {
+            setMoreOpen(false);
+            setRandomizeOpen((open) => !open);
+          }}
         >
           <CasinoOutlinedIcon fontSize="small" />
-          Randomize copy
+          Randomize
         </button>
+
         <button
+          ref={moreRef}
           type="button"
           className="scrapboard-btn scrapboard-btn--ghost scrapboard-btn--icon"
-          onClick={randomizeAll}
-          data-testid="scrapboard-randomize-all"
+          aria-label="More options"
+          aria-haspopup="menu"
+          aria-expanded={moreOpen}
+          data-testid="scrapboard-more-menu"
+          onClick={() => {
+            setRandomizeOpen(false);
+            setMoreOpen((open) => !open);
+          }}
         >
-          <CasinoOutlinedIcon fontSize="small" />
-          Randomize all
+          <MoreHorizOutlinedIcon fontSize="small" />
+          More
         </button>
+
         <button
           type="button"
           className="scrapboard-btn scrapboard-btn--primary scrapboard-btn--icon"
@@ -108,6 +107,80 @@ export function ScrapboardToolbar({ board, onExportPng }: ScrapboardToolbarProps
           Export PNG
         </button>
       </div>
+
+      <AnchoredPopover
+        open={randomizeOpen}
+        anchorEl={randomizeRef.current}
+        onClose={() => setRandomizeOpen(false)}
+        placement="bottom-end"
+        paperClassName="scrapboard-toolbar__menu"
+        disableRestoreFocus
+        disableScrollLock
+        marginThreshold={8}
+        transitionDuration={0}
+      >
+        <div role="menu" className="scrapboard-toolbar__menu-body">
+          <MenuItem
+            role="menuitem"
+            data-testid="scrapboard-randomize-text"
+            onClick={() => {
+              randomizeText();
+              setRandomizeOpen(false);
+            }}
+          >
+            Randomize copy
+          </MenuItem>
+          <MenuItem
+            role="menuitem"
+            data-testid="scrapboard-randomize-all"
+            onClick={() => {
+              randomizeAll();
+              setRandomizeOpen(false);
+            }}
+          >
+            Randomize all
+          </MenuItem>
+        </div>
+      </AnchoredPopover>
+
+      <AnchoredPopover
+        open={moreOpen}
+        anchorEl={moreRef.current}
+        onClose={() => setMoreOpen(false)}
+        placement="bottom-end"
+        paperClassName="scrapboard-toolbar__menu"
+        disableRestoreFocus
+        disableScrollLock
+        marginThreshold={8}
+        transitionDuration={0}
+      >
+        <div role="menu" className="scrapboard-toolbar__menu-body scrapboard-toolbar__menu-body--more">
+          <FormControlLabel
+            className="scrapboard-toolbar__toggle"
+            control={
+              <Switch
+                size="small"
+                checked={allowFullBleedLayouts}
+                onChange={(_, checked) => setAllowFullBleedLayouts(checked)}
+                data-testid="scrapboard-full-bleed-toggle"
+              />
+            }
+            label="Full-bleed layouts"
+          />
+          <FormControlLabel
+            className="scrapboard-toolbar__toggle"
+            control={
+              <Switch
+                size="small"
+                checked={allowBubbleEscape}
+                onChange={(_, checked) => setAllowBubbleEscape(checked)}
+                data-testid="scrapboard-bubble-escape-toggle"
+              />
+            }
+            label="Bubble escape"
+          />
+        </div>
+      </AnchoredPopover>
     </div>
   );
 }

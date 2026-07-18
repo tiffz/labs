@@ -5,6 +5,7 @@ import { DEFAULT_TIME_SIGNATURE, normalizeTimeSignature } from '../../shared/mus
 import type { TimeSignature } from '../../shared/rhythm/types';
 import type { EncoreMiscResource } from '../types';
 import type { OriginalsWorkflowStage } from './originalsWorkflowStages';
+import { remapSectionPlaybackOverridesForChordPro } from './remapSectionPlaybackOverrides';
 import type { OriginalsSectionPlaybackOverride } from './sectionPlaybackOverrides';
 
 /** Brainstorm reference links and files — same shape as repertoire misc practice resources. */
@@ -146,7 +147,10 @@ export function normalizeEncoreOriginalSong(raw: LegacyOriginalRow): EncoreOrigi
     songReferences: song.songReferences ?? [],
     stageCompletion: song.stageCompletion ?? {},
     timeSignature: normalizeTimeSignature(song.timeSignature),
-    sectionPlaybackOverrides: song.sectionPlaybackOverrides,
+    sectionPlaybackOverrides: remapSectionPlaybackOverridesForChordPro(
+      song.lyricsAndChords,
+      song.sectionPlaybackOverrides,
+    ),
   };
 }
 

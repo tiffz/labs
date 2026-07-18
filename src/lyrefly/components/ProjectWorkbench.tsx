@@ -16,6 +16,7 @@ import {
   useLyreflyVisualDevAssets,
 } from '../hooks/useLyreflyProjectData';
 import { lyreflyGalleryHref, lyreflyProjectStageHref, navigateLyreflyHash } from '../routes/lyreflyHash';
+import { withSyncedLyreflyProjectStatus } from '../workflow/lyreflyProjectProgress';
 import { toggleWorkflowStageCompletion } from '../workflow/lyreflyWorkflowCompletion';
 import {
   persistWorkflowStage,
@@ -92,7 +93,8 @@ export function ProjectWorkbench({ projectId, initialStage, onBack }: ProjectWor
 
   const onToggleStageComplete = useCallback(() => {
     if (!project) return;
-    void onPersistProject(toggleWorkflowStageCompletion(project, stage, ctx));
+    const next = toggleWorkflowStageCompletion(project, stage, ctx);
+    void onPersistProject(withSyncedLyreflyProjectStatus(next, ctx));
   }, [ctx, onPersistProject, project, stage]);
 
   const onContinue = useCallback(() => {

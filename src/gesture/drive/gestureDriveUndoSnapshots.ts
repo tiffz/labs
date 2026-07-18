@@ -1,8 +1,13 @@
+import {
+  findLatestLabsDriveUndoRingPrePull,
+  listLabsDriveUndoRingSnapshots,
+  migrateLegacyLocalStorageUndoRing,
+  pushLabsDriveUndoRingSnapshot,
+} from '../../shared/drive/labsDriveUndoRingDb';
 import type { GestureDriveEnvelopeV1 } from './gestureDriveEnvelope';
 import { parseGestureDriveEnvelope, serializeGestureDriveEnvelope } from './gestureDriveEnvelope';
 
-const STORAGE_KEY = 'labs_gesture_drive_undo_snapshots_v1';
-const MAX = 20;
+const LEGACY_KEY = 'labs_gesture_drive_undo_snapshots_v1';
 
 export type GestureDriveUndoSnapshotTrigger =
   | 'manual-backup'
@@ -18,47 +23,48 @@ export type GestureDriveUndoSnapshot = {
   envelopeJson: string;
 };
 
-function readAll(): GestureDriveUndoSnapshot[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as GestureDriveUndoSnapshot[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+let legacyMigrated = false;
+
+async function ensureMigrated(): Promise<void> {
+  if (legacyMigrated) return;
+  legacyMigrated = true;
+  await migrateLegacyLocalStorageUndoRing({ appId: 'gesture', legacyStorageKey: LEGACY_KEY });
 }
 
-function writeAll(rows: GestureDriveUndoSnapshot[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(rows.slice(0, MAX)));
-}
-
-export function pushGestureDriveUndoSnapshot(
+export async function pushGestureDriveUndoSnapshot(
   envelope: GestureDriveEnvelopeV1,
   trigger: GestureDriveUndoSnapshotTrigger,
-): void {
+): Promise<void> {
+  await ensureMigrated();
   const label = new Date(envelope.exportedAt || Date.now()).toLocaleString();
-  const row: GestureDriveUndoSnapshot = {
-    createdAt: Date.now(),
-    label,
-    trigger,
-    envelopeJson: serializeGestureDriveEnvelope(envelope),
-  };
-  const rows = readAll();
-  rows.unshift(row);
-  writeAll(rows);
+  await pushLabsDriveUndoRingSnapshot('gesture', serializeGestureDriveEnvelope(envelope), trigger, label);
 }
 
-export function listGestureDriveUndoSnapshots(): GestureDriveUndoSnapshot[] {
-  return readAll();
+export async function listGestureDriveUndoSnapshots(): Promise<GestureDriveUndoSnapshot[]> {
+  await ensureMigrated();
+  const rows = await listLabsDriveUndoRingSnapshots('gesture');
+  return rows.map((r) => ({
+    createdAt: r.createdAt,
+    label: r.label,
+    trigger: r.trigger as GestureDriveUndoSnapshotTrigger,
+    envelopeJson: r.payloadJson,
+  }));
 }
 
 export function parseGestureSnapshotEnvelope(snap: GestureDriveUndoSnapshot): GestureDriveEnvelopeV1 {
   return parseGestureDriveEnvelope(snap.envelopeJson);
 }
 
-export function findLatestGesturePrePullSnapshot(): GestureDriveUndoSnapshot | null {
-  return readAll().find((r) => r.trigger === 'pre-pull') ?? null;
+export async function findLatestGesturePrePullSnapshot(): Promise<GestureDriveUndoSnapshot | null> {
+  await ensureMigrated();
+  const row = await findLatestLabsDriveUndoRingPrePull('gesture');
+  if (!row) return null;
+  return {
+    createdAt: row.createdAt,
+    label: row.label,
+    trigger: row.trigger as GestureDriveUndoSnapshotTrigger,
+    envelopeJson: row.payloadJson,
+  };
 }
 
 export function formatGestureDriveUndoSnapshotTrigger(

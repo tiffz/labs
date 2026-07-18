@@ -99,14 +99,15 @@ Do not turn every typo fix into a process initiative. Scale effort to session co
 
 ## Examples already in the repo
 
-| Session pain                      | What we codified                                                                    |
-| --------------------------------- | ----------------------------------------------------------------------------------- |
-| Portaled sound menu wrong color   | `SHARED_UI_CONVENTIONS.md` checklist + `playback-ui-regressions.mdc` + e2e smoke    |
-| Drum highlight / stop latency     | `PLAYBACK_HOOK_PATTERN.md` + generation-token tests                                 |
-| “Song not found” flash            | Empty-state rule + e2e smoke                                                        |
-| Encore chord paint selection bugs | `encore-originals-chord-paint.mdc` + `originals/DEVELOPMENT.md`                     |
-| Performance UX revision churn     | `PERFORMANCE_UX.md` checklist + `encore-performance-ux.mdc` + component map         |
-| UI shipped broken until manual QA | `presubmit` + `npm run build` for shell changes + `encore-performance-routes` smoke |
-| Dexie `undefined` → false empty   | `resolveDexieLiveQuery` + `dexie-live-query-empty-states.mdc` + `*Hydrated` flags   |
+| Session pain                              | What we codified                                                                                                                        |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Portaled sound menu wrong color           | `SHARED_UI_CONVENTIONS.md` checklist + `playback-ui-regressions.mdc` + e2e smoke                                                        |
+| Drum highlight / stop latency             | `PLAYBACK_HOOK_PATTERN.md` + generation-token tests                                                                                     |
+| “Song not found” flash                    | Empty-state rule + e2e smoke                                                                                                            |
+| Encore chord paint selection bugs         | `encore-originals-chord-paint.mdc` + `originals/DEVELOPMENT.md`                                                                         |
+| Nested drum Edit closes host menu / jumps | `isDrumPatternEditMenuTarget` + `resolveEventTargetElement`; frozen `anchorPosition`; `inline-drum-ux.mdc` + SHARED_UI nested checklist |
+| Performance UX revision churn             | `PERFORMANCE_UX.md` checklist + `encore-performance-ux.mdc` + component map                                                             |
+| UI shipped broken until manual QA         | `presubmit` + `npm run build` for shell changes + `encore-performance-routes` smoke                                                     |
+| Dexie `undefined` → false empty           | `resolveDexieLiveQuery` + `dexie-live-query-empty-states.mdc` + `*Hydrated` flags                                                       |
 
 Use these as templates for the **kind** of artifact to add next time—not as a mandate to duplicate structure.

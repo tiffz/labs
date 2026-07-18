@@ -1,7 +1,7 @@
 import { isRichTextEmpty } from '../../shared/utils/richTextContent';
 import type { ComicArchiveBinder, ComicProject, ScriptDocument } from '../types';
 import type { LyreflyWorkflowStage } from './lyreflyWorkflowStages';
-import { LYREFLY_WORKFLOW_STAGES } from './lyreflyWorkflowStages';
+import { LYREFLY_WORKFLOW_STAGES, workflowStageIndex } from './lyreflyWorkflowStages';
 
 export type LyreflyStageCompletionContext = {
   script?: ScriptDocument | null;
@@ -14,7 +14,8 @@ export type LyreflyStageCompletionContext = {
   characterCount?: number;
 };
 
-export function isWorkflowStageComplete(
+/** Manual override + stage heuristic only (no later-stage implication). */
+export function isWorkflowStageCompleteDirect(
   project: ComicProject,
   stage: LyreflyWorkflowStage,
   ctx: LyreflyStageCompletionContext = {},
@@ -25,10 +26,7 @@ export function isWorkflowStageComplete(
 
   switch (stage) {
     case 'brainstorm':
-      return (
-        !isRichTextEmpty(project.brainstormHtml) ||
-        (ctx.visualDevCount ?? 0) > 0
-      );
+      return !isRichTextEmpty(project.brainstormHtml) || (ctx.visualDevCount ?? 0) > 0;
     case 'script':
       return Boolean(ctx.script?.markdown && !isRichTextEmpty(ctx.script.markdown));
     case 'thumbs':
@@ -40,6 +38,25 @@ export function isWorkflowStageComplete(
     default:
       return false;
   }
+}
+
+/**
+ * Stage complete for UI / inference. If any later stage is complete (direct), earlier stages
+ * are treated as complete so the stepper and shelf do not strand the user on Brainstorm when
+ * they already have Draw or Publish content.
+ */
+export function isWorkflowStageComplete(
+  project: ComicProject,
+  stage: LyreflyWorkflowStage,
+  ctx: LyreflyStageCompletionContext = {},
+): boolean {
+  const index = workflowStageIndex(stage);
+  if (index < 0) return false;
+  for (let i = index + 1; i < LYREFLY_WORKFLOW_STAGES.length; i += 1) {
+    const later = LYREFLY_WORKFLOW_STAGES[i]!.id;
+    if (isWorkflowStageCompleteDirect(project, later, ctx)) return true;
+  }
+  return isWorkflowStageCompleteDirect(project, stage, ctx);
 }
 
 export function inferredWorkflowStage(
@@ -65,12 +82,20 @@ export function toggleWorkflowStageCompletion(
   ctx: LyreflyStageCompletionContext = {},
 ): ComicProject {
   const currentlyComplete = isWorkflowStageComplete(project, stage, ctx);
+  const nextComplete = !currentlyComplete;
+  const stageCompletion: NonNullable<ComicProject['stageCompletion']> = {
+    ...project.stageCompletion,
+    [stage]: nextComplete,
+  };
+  if (nextComplete) {
+    const index = workflowStageIndex(stage);
+    for (let i = 0; i < index; i += 1) {
+      stageCompletion[LYREFLY_WORKFLOW_STAGES[i]!.id] = true;
+    }
+  }
   return {
     ...project,
-    stageCompletion: {
-      ...project.stageCompletion,
-      [stage]: !currentlyComplete,
-    },
+    stageCompletion,
     updatedAt: new Date().toISOString(),
   };
 }

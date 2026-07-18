@@ -32,13 +32,13 @@ export type SfxRenderStyle = {
   burstTicks: boolean;
 };
 
-export function sfxRenderStyle(loudness?: SfxLoudness | null, text = ''): SfxRenderStyle {
+export function sfxRenderStyle(loudness?: SfxLoudness | null, text = '', colorOverride?: string): SfxRenderStyle {
   const level = normalizeSfxLoudness(loudness);
   if (level === 'quiet') {
     return {
       loudness: level,
       fontWeight: 600,
-      fill: '#666666',
+      fill: colorOverride ?? '#666666',
       letterSpacing: 0.5,
       rotateDeg: 0,
       outline: false,
@@ -53,7 +53,7 @@ export function sfxRenderStyle(loudness?: SfxLoudness | null, text = ''): SfxRen
     return {
       loudness: level,
       fontWeight: 900,
-      fill: '#222222',
+      fill: colorOverride ?? '#222222',
       letterSpacing: 1.6,
       rotateDeg,
       outline: true,
@@ -63,7 +63,7 @@ export function sfxRenderStyle(loudness?: SfxLoudness | null, text = ''): SfxRen
   return {
     loudness: level,
     fontWeight: 800,
-    fill: '#333333',
+    fill: colorOverride ?? '#333333',
     letterSpacing: 0.8,
     rotateDeg: 0,
     outline: false,
@@ -78,4 +78,27 @@ export function sfxBaseFontSize(panelWidth: number, loudness?: SfxLoudness | nul
   if (normalizeSfxLoudness(loudness) === 'loud') return Math.max(scaled, 16);
   if (normalizeSfxLoudness(loudness) === 'quiet') return Math.min(scaled, 14);
   return scaled;
+}
+
+export type SfxBBox = { left: number; top: number; right: number; bottom: number };
+
+/**
+ * Approximate SFX bounding box — shared by overlap invariants and placement obstacles.
+ * Width scales with glyph count (Impact-ish caps); height includes a little ascent/descender pad.
+ */
+export function sfxLayoutBBox(sfx: {
+  x: number;
+  y: number;
+  fontSize: number;
+  text?: string;
+}): SfxBBox {
+  const chars = Math.max(1, (sfx.text ?? 'XX').length);
+  const halfW = Math.max(sfx.fontSize * 0.65, chars * sfx.fontSize * 0.36);
+  const ascent = sfx.fontSize * 1.05;
+  return {
+    left: sfx.x - halfW,
+    top: sfx.y - ascent,
+    right: sfx.x + halfW,
+    bottom: sfx.y + sfx.fontSize * 0.08,
+  };
 }

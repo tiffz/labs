@@ -37,22 +37,24 @@ Apps remap **brand tint only** (same as `--theme-primary`). Do not add per-toggl
 | Metronome split **on**                          | `--metro-primary-active-bg` → primary (solid)                                                                                                        |
 | MUI contained CTA                               | `variant="contained"` + `color="primary"`                                                                                                            |
 | Drums / Encore floating menu chips `.is-active` | secondary tint (match chip-active)                                                                                                                   |
+| Drum pattern edit menu `.preset-btn.active`     | `--labs-selection-secondary-*` on `.drum-pattern-edit-menu` (portaled; Stanza mirrors rose)                                                          |
 
 ## Inventory (current patterns)
 
-| Pattern                                       | Location                                             | Tier                                      | Notes                                |
-| --------------------------------------------- | ---------------------------------------------------- | ----------------------------------------- | ------------------------------------ |
-| `.labs-btn--primary`                          | `labsChrome.css`                                     | Primary CTA                               | One loud commit per region           |
-| Metronome split primary segment `.active`     | `metronome-control.css`, `--metro-primary-active-*`  | Primary                                   | Transport on-state                   |
-| Metronome settings `ToggleButtonGroup`        | `metronome-control.css`, `--metro-toggle-selected-*` | **Secondary**                             | Advanced settings popover            |
-| `--bpm-chip-active-*`                         | `bpmInput.css`, app themes                           | Secondary                                 | Preset / tempo chips                 |
-| `--key-chip-active-*`                         | `keyInput.css`, app themes                           | Secondary                                 | Key grid selection                   |
-| `--cp-chip-active-*` / `--cs-chip-active-*`   | chord inputs                                         | Secondary                                 | Progression / style presets          |
-| `drums-floating-menu__chip.is-active`         | `drums.css`                                          | Secondary                                 | Menus match BPM chips                |
-| Encore `--bpm-chip-active-*`                  | `encore.css`                                         | Secondary                                 | Repertoire pickers                   |
-| Stanza playback chips / rose tint             | `stanza.css`                                         | Secondary                                 | Brand via tint, not solid fill       |
-| MUI `ToggleButton` default (solid purple)     | **Avoid** in settings panels                         | Was primary — migrate to secondary tokens |
-| Piano `--key-chip-active-bg: primary` (solid) | `piano.css`                                          | **Exception**                             | Legacy; new work uses secondary tint |
+| Pattern                                        | Location                                             | Tier                                      | Notes                                |
+| ---------------------------------------------- | ---------------------------------------------------- | ----------------------------------------- | ------------------------------------ |
+| `.labs-btn--primary`                           | `labsChrome.css`                                     | Primary CTA                               | One loud commit per region           |
+| Metronome split primary segment `.active`      | `metronome-control.css`, `--metro-primary-active-*`  | Primary                                   | Transport on-state                   |
+| Metronome settings `ToggleButtonGroup`         | `metronome-control.css`, `--metro-toggle-selected-*` | **Secondary**                             | Advanced settings popover            |
+| `--bpm-chip-active-*`                          | `bpmInput.css`, app themes                           | Secondary                                 | Preset / tempo chips                 |
+| `--key-chip-active-*`                          | `keyInput.css`, app themes                           | Secondary                                 | Key grid selection                   |
+| `--cp-chip-active-*` / `--cs-chip-active-*`    | chord inputs                                         | Secondary                                 | Progression / style presets          |
+| `drums-floating-menu__chip.is-active`          | `drums.css`                                          | Secondary                                 | Menus match BPM chips                |
+| `.drum-pattern-edit-menu … .preset-btn.active` | `drumAccompaniment.css` (+ Stanza portal mirror)     | Secondary                                 | Edit dropdown presets                |
+| Encore `--bpm-chip-active-*`                   | `encore.css`                                         | Secondary                                 | Repertoire pickers                   |
+| Stanza playback chips / rose tint              | `stanza.css`                                         | Secondary                                 | Brand via tint, not solid fill       |
+| MUI `ToggleButton` default (solid purple)      | **Avoid** in settings panels                         | Was primary — migrate to secondary tokens |
+| Piano `--key-chip-active-bg: primary` (solid)  | `piano.css`                                          | **Exception**                             | Legacy; new work uses secondary tint |
 
 When touching a row marked **Avoid** or **Exception**, prefer migrating to `--labs-selection-secondary-*` unless the control is truly a primary transport state.
 

@@ -95,12 +95,21 @@ export function createLabsPortfolioDriveBackup<
       setSyncPaused(false);
     }, []);
 
+    const undoMountedRef = useRef(true);
+    useEffect(() => {
+      undoMountedRef.current = true;
+      return () => {
+        undoMountedRef.current = false;
+      };
+    }, []);
+
     const refreshUndoSnapshots = useCallback(async () => {
       if (!config.undo) {
-        setUndoSnapshots([]);
+        if (undoMountedRef.current) setUndoSnapshots([]);
         return;
       }
-      setUndoSnapshots(config.undo.listSnapshots());
+      const snaps = await config.undo.listSnapshots();
+      if (undoMountedRef.current) setUndoSnapshots(snaps);
     }, []);
 
     useEffect(() => {
@@ -132,7 +141,7 @@ export function createLabsPortfolioDriveBackup<
         try {
           const local = await config.readLocalPayload();
           const envelope = config.buildEnvelope(local);
-          config.undo.pushSnapshot(envelope, trigger);
+          await config.undo.pushSnapshot(envelope, trigger);
           setSyncMetaTick((n) => n + 1);
         } catch {
           /* quota */
@@ -418,7 +427,7 @@ export function createLabsPortfolioDriveBackup<
 
     const restoreLatestPrePullSnapshot = useCallback(async () => {
       if (!config.undo) return;
-      const snap = config.undo.findLatestPrePull();
+      const snap = await config.undo.findLatestPrePull();
       if (!snap) {
         setMessage('No undo-last-sync snapshot yet. Snapshots are saved before each Drive sync.');
         return;
@@ -466,6 +475,17 @@ export function createLabsPortfolioDriveBackup<
         mergeInProgressRef.current || driveSyncInProgressRef.current || labsBlockingJobsActive(),
       onAutoPullError: handleAutoPullError,
       onAutoPushError: (msg) => setMessage(msg),
+      // After first pull unlocks auto-push, flush so local-only work (other origin / pre-sign-in
+      // edits) lands on Drive. Sidecar upload no-ops when nothing is dirty and every project
+      // already has a Drive folder.
+      afterSilentAutoPull: async () => {
+        if (!allowAutoPush()) return;
+        try {
+          await flushDriveWrite({ silent: true });
+        } catch (e) {
+          setMessage(formatLabsDriveSyncError(e, 'auto-push'));
+        }
+      },
       shouldDeferAutoPull: () => deferPullRef.current?.() ?? false,
       subscribeLocalChanges: (onChange) =>
         config.subscribeLocalChanges((event) => {

@@ -9,8 +9,10 @@ import {
 } from 'd3-force';
 
 import { characterMarkerLayoutBox, characterTailAnchor } from './characterMarkers';
+import { activeMarkerPlacement } from './markerPlacementScope';
 import { clampX, panelTextZones, type PanelTextZones } from './panelTextZones';
 import type { LayoutBounds, SpeechBubbleLayout } from './speechBubbleLayout';
+import { bubblesTailsOverlap } from './speechBubbleTailOverlap';
 import type { PanelCharacterId } from './types';
 
 const COLLIDE_MARGIN = 5;
@@ -63,7 +65,8 @@ function preferredBubbleCx(
   tailX: number,
   sidePad: number,
 ): number {
-  const columnX = bounds.x + bounds.w * CHARACTER_CX_RATIO[characterId];
+  const ratio = activeMarkerPlacement()?.[characterId]?.x ?? CHARACTER_CX_RATIO[characterId];
+  const columnX = bounds.x + bounds.w * ratio;
   const blended = tailX * 0.28 + columnX * 0.72;
   return clampX(blended, halfW, bounds, sidePad);
 }
@@ -270,13 +273,14 @@ export function postClampBubbles(
     }
   }
 
-  // Horizontal separation for different speakers when width allows.
+  // Horizontal separation for different speakers when width allows — also triggers on
+  // tail crossing alone (bodies clear but tails still cross toward opposite characters).
   for (let i = 0; i < bubbles.length; i++) {
     for (let j = i + 1; j < bubbles.length; j++) {
       const a = bubbles[i]!;
       const b = bubbles[j]!;
       if (a.characterId === b.characterId) continue;
-      if (!boxesOverlap(a, b) && !horizontalOverlap(a, b)) continue;
+      if (!boxesOverlap(a, b) && !horizontalOverlap(a, b) && !bubblesTailsOverlap(a, b)) continue;
       const availableW = zones.bounds.w - zones.sidePad * 2;
       const needW = a.halfW + b.halfW + OVERLAP_MARGIN;
       if (needW > availableW * 0.92) continue;
@@ -293,6 +297,87 @@ export function postClampBubbles(
   }
 
   packBubblesBottomUp(bubbles, zones, allowEscape, obstacles);
+  resolveTailOverlaps(bubbles, zones, allowEscape, obstacles);
+}
+
+/**
+ * Hard bar match for `speechBubbleTailOverlap` (same rule slots enforces): different-speaker
+ * tails must never cross. Fan sideways first, then widen vertical separation if width is too
+ * tight — but never at the cost of reintroducing a body-box overlap (that invariant outranks
+ * tail-crossing, since two visibly-overlapping bubbles is the worse failure mode).
+ */
+function resolveTailOverlaps(
+  bubbles: SpeechBubbleLayout[],
+  zones: PanelTextZones,
+  allowEscape: boolean,
+  obstacles: ForceObstacle[],
+): void {
+  for (let pass = 0; pass < 6; pass++) {
+    let changed = false;
+    for (let i = 0; i < bubbles.length; i++) {
+      for (let j = i + 1; j < bubbles.length; j++) {
+        const a = bubbles[i]!;
+        const b = bubbles[j]!;
+        if (a.characterId === b.characterId) continue;
+        if (!bubblesTailsOverlap(a, b)) continue;
+        changed = true;
+
+        const prevACx = a.cx;
+        const prevBCx = b.cx;
+        const dir = a.cx <= b.cx ? -1 : 1;
+        const nudge = Math.max(6, Math.min(a.halfW, b.halfW) * 0.35);
+        a.cx += dir * nudge;
+        b.cx -= dir * nudge;
+        if (!allowEscape) {
+          a.cx = clampX(a.cx, a.halfW, zones.bounds, zones.sidePad);
+          b.cx = clampX(b.cx, b.halfW, zones.bounds, zones.sidePad);
+        }
+        if (boxesOverlap(a, b)) {
+          a.cx = prevACx;
+          b.cx = prevBCx;
+        }
+
+        // Sideways fan alone didn't clear it — widen the existing vertical gap between
+        // whichever bubble already sits above the other (by current cy, not tailY).
+        if (bubblesTailsOverlap(a, b)) {
+          const upper = a.cy <= b.cy ? a : b;
+          const lower = upper === a ? b : a;
+          const prevUpperCy = upper.cy;
+          const prevLowerCy = lower.cy;
+          const step = Math.max(8, Math.min(upper.halfH, lower.halfH) * 0.3);
+          const upperMin = minBubbleCy(upper, zones, allowEscape, obstacles);
+          const lowerMax = maxBubbleCy(lower, zones);
+          upper.cy = Math.max(upperMin, upper.cy - step);
+          lower.cy = Math.min(lowerMax, lower.cy + step);
+          if (boxesOverlap(a, b)) {
+            upper.cy = prevUpperCy;
+            lower.cy = prevLowerCy;
+          }
+        }
+
+        // Tails point at each other's territory (mid/tip x-order transposed) — no amount
+        // of fanning apart in the same left-right order can uncross them. Swap which side
+        // each bubble sits on instead; keep the swap only if it actually clears the cross.
+        if (bubblesTailsOverlap(a, b)) {
+          const beforeACx = a.cx;
+          const beforeBCx = b.cx;
+          a.cx = beforeBCx;
+          b.cx = beforeACx;
+          if (!allowEscape) {
+            a.cx = clampX(a.cx, a.halfW, zones.bounds, zones.sidePad);
+            b.cx = clampX(b.cx, b.halfW, zones.bounds, zones.sidePad);
+          }
+          if (boxesOverlap(a, b) || bubblesTailsOverlap(a, b)) {
+            a.cx = beforeACx;
+            b.cx = beforeBCx;
+          }
+        }
+      }
+    }
+    if (!changed) break;
+  }
+
+  enforceTailClearance(bubbles);
 }
 
 function packBubblesBottomUp(

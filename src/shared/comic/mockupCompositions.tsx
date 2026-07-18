@@ -47,6 +47,7 @@ export function renderMockupComposition(
   bounds: CompositionBounds,
   color: string,
   accent = '#888',
+  sceneColors?: { sky?: string; ground?: string },
 ): ReactElement | null {
   if (id === 'empty') return null;
   const { x, y, w, h } = bounds;
@@ -211,10 +212,12 @@ export function renderMockupComposition(
       );
     case 'horizon-scene': {
       const horizonY = y + h * 0.56;
+      const sky = sceneColors?.sky ?? '#dce9f5';
+      const ground = sceneColors?.ground ?? '#e8dcc8';
       return (
         <g>
-          <rect x={x} y={y} width={w} height={horizonY - y} fill="#dce9f5" />
-          <rect x={x} y={horizonY} width={w} height={y + h - horizonY} fill="#e8dcc8" />
+          <rect x={x} y={y} width={w} height={horizonY - y} fill={sky} />
+          <rect x={x} y={horizonY} width={w} height={y + h - horizonY} fill={ground} />
           <line
             x1={x + w * 0.04}
             y1={horizonY}

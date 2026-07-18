@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react';
 
-import { PanelMockupSvg } from '../../shared/comic';
-import type { GeneratedPanelLayout } from '../../shared/comic';
+import { PanelMockupSvg, type GeneratedPanelLayout } from '../../shared/comic';
 
 export type ScrapboardLayoutGalleryProps = {
   layouts: GeneratedPanelLayout[];
@@ -34,14 +33,14 @@ export function ScrapboardLayoutGallery({
               aria-pressed={active}
               data-testid={`scrapboard-layout-${layout.id}`}
             >
-              <PanelMockupSvg layout={layout} fills={[]} width={64} height={84} showReadingOrder={false} />
+              <PanelMockupSvg
+                layout={layout}
+                fills={[]}
+                width={64}
+                height={84}
+                showReadingOrder={false}
+              />
               <span className="scrapboard-layout-gallery__label">{layout.label ?? layout.id}</span>
-              <span
-                className="scrapboard-layout-gallery__score"
-                title="Layout familiarity, not speech-bubble quality"
-              >
-                {Math.round((layout.conventionality ?? 0) * 100)}% familiar
-              </span>
             </button>
           );
         })}

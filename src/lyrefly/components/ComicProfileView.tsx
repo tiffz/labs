@@ -23,13 +23,6 @@ export type ComicProfileViewProps = {
   archiveHydrated: boolean;
 };
 
-function statusLabel(status: ComicProject['status']): string {
-  if (status === 'wip') return 'In progress';
-  if (status === 'finished') return 'Finished';
-  if (status === 'archived') return 'Archived';
-  return 'Draft';
-}
-
 export function ComicProfileView({
   project,
   script,
@@ -85,7 +78,9 @@ export function ComicProfileView({
               </Typography>
               <ul className="lyrefly-profile-hero__chips" aria-label="Project summary">
                 <li className="lyrefly-profile-hero__chip">{workflowStageShelfLabel(workflowStage)}</li>
-                <li className="lyrefly-profile-hero__chip">{statusLabel(project.status)}</li>
+                {project.status === 'archived' ? (
+                  <li className="lyrefly-profile-hero__chip">Archived</li>
+                ) : null}
                 <li className="lyrefly-profile-hero__chip">
                   {project.pageCount ?? orderedPageNodes.length} pages
                 </li>

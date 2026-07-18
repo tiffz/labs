@@ -6,16 +6,33 @@ import { bleedOverlayPercents } from '../zine/bleedConfig';
 import { bleedConfigForLabsPrintSpec, trimSizeFromLabsPrintSpec } from '../zine/labsPrintSpec';
 import {
   renderCharacterMarker,
+  renderEmojiCharacterMarker,
   renderHorizonScene,
 } from './characterMarkers';
+import {
+  emojiBySlot,
+  placementForFill,
+  resolvePanelSpeakerIds,
+  slotForSpeakerIndex,
+} from './comicCast';
+import { DUOTONE_GRAYSCALE_MATRIX, softPhotoDuotoneTables } from './duotoneFilter';
 import { mockupDimensionsForPrintSpec } from './panelMockupDimensions';
 import { panelCircleClipAttrs, panelPixelBounds, panelSvgPointsAttr, resolvePanelClip } from './panelClipPath';
 import { renderMockupComposition } from './mockupCompositions';
 import { isLegacyStickFill, legacyStickPose, resolvePanelComposition, resolvePanelTextBlocks } from './panelFillResolve';
 import { layoutPanelTextBlocks, type PanelTextLayout, type PanelTextLayoutOptions } from './speechBubbleLayout';
 import { BUBBLE_FONT_FAMILY, bubbleTextOffsetY, speechBubblePathForLayout } from './speechBubblePath';
+import { adaptBlocksToPanelBudget } from './speechBubbleSlotLayout';
 import { SfxLayoutGraphic } from './SfxLayoutGraphic';
-import type { PanelCharacterId, PanelFillSpec, PanelLayoutSpec, PanelRect, PanelTextBlock } from './types';
+import type {
+  ComicCastMember,
+  PanelBackgroundImage,
+  PanelCharacterId,
+  PanelFillSpec,
+  PanelLayoutSpec,
+  PanelRect,
+  PanelTextBlock,
+} from './types';
 import { stickFigureSvg } from './stickFigures';
 
 const DEFAULT_WIDTH = 400;
@@ -33,12 +50,19 @@ export type PanelMockupSvgProps = {
   showBleedGuides?: boolean;
   selectedPanelIndex?: number | null;
   onPanelSelect?: (panelIndex: number) => void;
+  /** Photo shown through panel gutters/page background, palette-tinted (duotone). */
+  pageBackgroundImage?: PanelBackgroundImage;
   /** Hand-drawn wireframe strokes (Scrapboard). */
   sketchy?: boolean;
   /** Let bubble bodies extend past panel edges; tails stay anchored in-panel. */
   allowBubbleEscape?: boolean;
   /** Override placer (`slots` recommended for Scrapboard). */
   placeMode?: PanelTextLayoutOptions['placeMode'];
+  /**
+   * Page cast for emoji markers (Scrapboard). When set with `sketchy`, skips procedural
+   * scenery and renders arrangement-driven emoji characters.
+   */
+  cast?: ComicCastMember[];
 };
 
 function dialogueCharacterIds(blocks: PanelTextBlock[]): PanelCharacterId[] {
@@ -66,12 +90,15 @@ export function PanelMockupSvg({
   showBleedGuides = false,
   selectedPanelIndex = null,
   onPanelSelect,
+  pageBackgroundImage,
   sketchy = false,
   allowBubbleEscape = false,
   placeMode,
+  cast,
 }: PanelMockupSvgProps): ReactElement {
   const clipPrefix = useId().replace(/:/g, '');
   const clipId = (index: number): string => `${clipPrefix}-panel-clip-${index}`;
+  const duotoneFilterId = `${clipPrefix}-duotone`;
   const dims = mockupDimensionsForPrintSpec(printSpec, widthProp ?? DEFAULT_WIDTH);
   const width = widthProp ?? dims.width;
   const height = heightProp ?? dims.height;
@@ -79,12 +106,13 @@ export function PanelMockupSvg({
   const panelColors = colors?.panelFills ?? layout.panels.map(() => '#f5f5f0');
   const figureColor = colors?.figure ?? '#333333';
   const accentColor = colors?.caption ?? '#666666';
+  const backgroundColor = colors?.background ?? '#ebe8e0';
+  const skyColor = colors?.sky ?? '#dce9f5';
+  const groundColor = colors?.ground ?? '#e8dcc8';
+  const duotoneTables = softPhotoDuotoneTables(figureColor, skyColor);
+  const characterFirst = Boolean(sketchy && cast && cast.length > 0);
   const panelStroke = sketchy ? SKETCH_STROKE : 2;
   const bubbleStroke = sketchy ? SKETCH_BUBBLE_STROKE : 1.75;
-  const textLayoutOptions: PanelTextLayoutOptions = {
-    allowBubbleEscape,
-    placeMode: placeMode ?? (sketchy ? 'slots' : 'force'),
-  };
 
   const bleedPercents =
     printSpec && showBleedGuides
@@ -108,13 +136,32 @@ export function PanelMockupSvg({
       w: bounds.w,
       h: bounds.h,
     };
-    const textBlocks = resolvePanelTextBlocks(fill);
+    // Re-budget against *rendered* panel pixels so gallery switches / strip layouts
+    // never keep wide-panel mad-libs that collapse to "…" spaghetti balloons.
+    const textBlocks = adaptBlocksToPanelBudget(resolvePanelTextBlocks(fill), inner);
     const characterIds = sketchy ? dialogueCharacterIds(textBlocks) : [];
     const composition = resolvePanelComposition(fill);
+    const hasBackgroundImage = Boolean(fill?.backgroundImage);
+    const markerPlacement =
+      characterFirst && cast ? placementForFill(fill, cast) : undefined;
+    const speakerIds =
+      characterFirst && cast ? resolvePanelSpeakerIds(fill, cast) : [];
+    const emojisBySlot = characterFirst && cast ? emojiBySlot(fill, cast) : {};
+    const slotIds: PanelCharacterId[] =
+      characterFirst && speakerIds.length > 0
+        ? speakerIds.map((_, i) => slotForSpeakerIndex(i))
+        : characterIds;
     const showHorizon =
+      !hasBackgroundImage &&
       sketchy &&
-      (composition === 'horizon-scene' || composition === 'empty') &&
-      characterIds.length > 0;
+      (characterFirst
+        ? speakerIds.length > 0
+        : (composition === 'horizon-scene' || composition === 'empty') && characterIds.length > 0);
+    const textLayoutOptions: PanelTextLayoutOptions = {
+      allowBubbleEscape,
+      placeMode: placeMode ?? (sketchy ? 'slots' : 'force'),
+      markerPlacement,
+    };
     const textLayout = layoutPanelTextBlocks(textBlocks, inner, textLayoutOptions);
     const textOverlay = renderPanelTextOverlay(
       textLayout,
@@ -122,6 +169,7 @@ export function PanelMockupSvg({
       sketchy,
       bubbleStroke,
       index,
+      colors?.sfx,
     );
 
     if (allowBubbleEscape && textOverlay) {
@@ -165,12 +213,56 @@ export function PanelMockupSvg({
           ) : (
             <polygon points={points} fill={panelColors[index] ?? '#f5f5f0'} stroke="none" />
           )}
-          {showHorizon
-            ? renderHorizonScene(inner, figureColor, panelStroke * 0.85)
-            : renderPanelComposition(fill, inner, figureColor, accentColor, sketchy)}
-          {characterIds.map((characterId) =>
-            renderCharacterMarker(characterId, inner, figureColor, panelStroke * 0.9),
-          )}
+          {fill?.backgroundImage ? (
+            <>
+              <image
+                href={fill.backgroundImage.url}
+                x={inner.x}
+                y={inner.y}
+                width={inner.w}
+                height={inner.h}
+                preserveAspectRatio="xMidYMid slice"
+                opacity={0.55}
+                crossOrigin="anonymous"
+                className="comic-mockup-svg__panel-background comic-mockup-svg__panel-background--base"
+              />
+              <image
+                href={fill.backgroundImage.url}
+                x={inner.x}
+                y={inner.y}
+                width={inner.w}
+                height={inner.h}
+                preserveAspectRatio="xMidYMid slice"
+                filter={`url(#${duotoneFilterId})`}
+                opacity={0.72}
+                crossOrigin="anonymous"
+                className="comic-mockup-svg__panel-background"
+              />
+            </>
+          ) : null}
+          {hasBackgroundImage
+            ? null
+            : showHorizon
+              ? renderHorizonScene(inner, figureColor, panelStroke * 0.85, skyColor, groundColor)
+              : characterFirst
+                ? null
+                : renderPanelComposition(fill, inner, figureColor, accentColor, sketchy)}
+          {characterFirst
+            ? slotIds.map((characterId) => {
+                const emoji = emojisBySlot[characterId];
+                if (!emoji) return null;
+                return renderEmojiCharacterMarker(
+                  characterId,
+                  inner,
+                  emoji,
+                  figureColor,
+                  undefined,
+                  markerPlacement,
+                );
+              })
+            : characterIds.map((characterId) =>
+                renderCharacterMarker(characterId, inner, figureColor, panelStroke * 0.9),
+              )}
         </g>
         {isCircle && circle ? (
           <circle
@@ -179,7 +271,7 @@ export function PanelMockupSvg({
             r={circle.r}
             fill="none"
             stroke={selectedPanelIndex === index ? '#f4a000' : '#333'}
-            strokeWidth={selectedPanelIndex === index ? panelStroke + 0.75 : panelStroke}
+            strokeWidth={selectedPanelIndex === index ? panelStroke + 1.5 : panelStroke}
             vectorEffect="non-scaling-stroke"
           />
         ) : (
@@ -187,7 +279,7 @@ export function PanelMockupSvg({
             points={points}
             fill="none"
             stroke={selectedPanelIndex === index ? '#f4a000' : '#333'}
-            strokeWidth={selectedPanelIndex === index ? panelStroke + 0.75 : panelStroke}
+            strokeWidth={selectedPanelIndex === index ? panelStroke + 1.5 : panelStroke}
             strokeLinejoin="round"
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
@@ -219,8 +311,16 @@ export function PanelMockupSvg({
       xmlns="http://www.w3.org/2000/svg"
       shapeRendering="geometricPrecision"
     >
-      <rect width={width} height={height} fill={colors?.background ?? '#ebe8e0'} />
+      <rect width={width} height={height} fill={backgroundColor} />
       <defs>
+        <filter id={duotoneFilterId} colorInterpolationFilters="sRGB">
+          <feColorMatrix type="matrix" values={DUOTONE_GRAYSCALE_MATRIX} />
+          <feComponentTransfer>
+            <feFuncR type="table" tableValues={duotoneTables.r} />
+            <feFuncG type="table" tableValues={duotoneTables.g} />
+            <feFuncB type="table" tableValues={duotoneTables.b} />
+          </feComponentTransfer>
+        </filter>
         {layout.panels.map((panel, index) => {
           const bounds = panelPixelBounds(panel, width, height, 2);
           const clip = resolvePanelClip(panel);
@@ -236,6 +336,33 @@ export function PanelMockupSvg({
           );
         })}
       </defs>
+      {pageBackgroundImage ? (
+        <>
+          <image
+            href={pageBackgroundImage.url}
+            x={0}
+            y={0}
+            width={width}
+            height={height}
+            preserveAspectRatio="xMidYMid slice"
+            opacity={0.45}
+            crossOrigin="anonymous"
+            className="comic-mockup-svg__page-background comic-mockup-svg__page-background--base"
+          />
+          <image
+            href={pageBackgroundImage.url}
+            x={0}
+            y={0}
+            width={width}
+            height={height}
+            preserveAspectRatio="xMidYMid slice"
+            filter={`url(#${duotoneFilterId})`}
+            opacity={0.65}
+            crossOrigin="anonymous"
+            className="comic-mockup-svg__page-background"
+          />
+        </>
+      ) : null}
       {panelNodes}
       {allowBubbleEscape && textOverlays.length > 0 ? (
         <g className="comic-mockup-svg__text-escape">{textOverlays}</g>
@@ -287,6 +414,7 @@ function renderPanelTextOverlay(
   sketchy: boolean,
   bubbleStroke: number,
   panelIndex: number,
+  sfxColor?: string,
 ): ReactElement | null {
   if (layout.items.length === 0) return null;
 
@@ -303,7 +431,7 @@ function renderPanelTextOverlay(
     }
     if (item.kind === 'bubble') {
       const bubble = item.layout;
-      const path = speechBubblePathForLayout(
+      const paths = speechBubblePathForLayout(
         bubble.cx,
         bubble.cy,
         bubble.halfW,
@@ -320,43 +448,51 @@ function renderPanelTextOverlay(
         bubble.tailX,
         bubble.tailY,
         bubble.metrics.shape,
+        bubble.metrics.padY,
+        bubble.metrics.fontSize,
       );
       const textTop =
         bubble.cy -
         ((bubble.lines.length - 1) * bubble.metrics.lineHeight) / 2 +
         textOffsetY;
+      const fullText = bubble.sourceContent?.trim() || bubble.lines.join(' ');
+      const showFullTextTitle = Boolean(bubble.truncated && fullText);
       elements.push(
-        <g key={`bubble-${index}`} className="comic-mockup-svg__bubble">
-          <path
-            d={path}
-            fill={bubbleFill}
-            stroke="#333"
-            strokeWidth={bubbleStroke}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-          <text
-            x={bubble.cx}
-            y={textTop}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize={bubble.metrics.fontSize}
-            fill="#333"
-            fontFamily={BUBBLE_FONT_FAMILY}
-          >
-            {bubble.lines.map((line, lineIndex) => (
-              <tspan key={lineIndex} x={bubble.cx} dy={lineIndex === 0 ? 0 : bubble.metrics.lineHeight}>
-                {line}
-              </tspan>
-            ))}
-          </text>
+        <g key={`bubble-${index}`} className="comic-mockup-svg__bubble-group">
+          {/* Single continuous outline (body + tail) — one stroke, no mouth-chord seam. */}
+          <g className="comic-mockup-svg__bubble">
+            {showFullTextTitle ? <title>{fullText}</title> : null}
+            <path
+              d={paths.body}
+              fill={bubbleFill}
+              stroke="#333"
+              strokeWidth={bubbleStroke}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+            <text
+              x={bubble.cx}
+              y={textTop}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize={bubble.metrics.fontSize}
+              fill="#333"
+              fontFamily={BUBBLE_FONT_FAMILY}
+            >
+              {bubble.lines.map((line, lineIndex) => (
+                <tspan key={lineIndex} x={bubble.cx} dy={lineIndex === 0 ? 0 : bubble.metrics.lineHeight}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
+          </g>
         </g>,
       );
       continue;
     }
     if (item.kind === 'sfx') {
-      elements.push(<SfxLayoutGraphic key={`sfx-${index}`} sfx={item.layout} />);
+      elements.push(<SfxLayoutGraphic key={`sfx-${index}`} sfx={item.layout} color={sfxColor} />);
     }
   }
 
@@ -391,19 +527,29 @@ function renderCaptionBox(
         fill="#fff"
         stroke="#333"
         strokeWidth={captionStroke}
-        rx={sketchy ? 3 : 2}
+        rx={sketchy ? 6 : 3}
         vectorEffect="non-scaling-stroke"
       />
       <text
-        x={caption.x + 8}
-        y={caption.y + 14}
+        x={caption.x + caption.width / 2}
+        y={
+          caption.y +
+          caption.height / 2 -
+          ((Math.max(caption.lines.length, 1) - 1) * 11) / 2
+        }
+        textAnchor="middle"
+        dominantBaseline="middle"
         fontSize={10}
         fill="#444"
         fontStyle="italic"
         fontFamily={captionFont}
       >
         {caption.lines.map((line, lineIndex) => (
-          <tspan key={lineIndex} x={caption.x + 8} dy={lineIndex === 0 ? 0 : 11}>
+          <tspan
+            key={lineIndex}
+            x={caption.x + caption.width / 2}
+            dy={lineIndex === 0 ? 0 : 11}
+          >
             {line}
           </tspan>
         ))}

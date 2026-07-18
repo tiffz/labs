@@ -1,16 +1,15 @@
 import type { MixamZipEntry } from '../../shared/zine';
 import {
+  blankPageDataUrl,
   buildMixamZipBlob,
   bookletReadingPagesToSpreadViews,
-  downloadBlob,
-} from '../../shared/zine';
-import { MAX_EXPORT_CANVAS_DIMENSION } from '../constants';
-import type { BookletPageInfo, SpreadInfo } from '../types';
-import {
   combineToSpreadImage,
+  composeVerticalScrollBlob,
+  downloadBlob,
   loadImageFromDataUrl,
   splitSpreadImage,
-} from './imageManipulation';
+} from '../../shared/zine';
+import type { BookletPageInfo, SpreadInfo } from '../types';
 import { buildBookPages } from './spreadPairing';
 import {
   buildBookletPageZipEntries,
@@ -18,23 +17,10 @@ import {
 } from './bookletPagesZip';
 
 export { buildBookletPageZipEntries, downloadBookletPagesZip };
-
-const DEFAULT_STRIP_MAX_WIDTH = 1200;
-const DEFAULT_JPEG_QUALITY = 0.92;
+export { composeVerticalScrollBlob } from '../../shared/zine';
 
 function safeBaseName(baseFileName: string): string {
   return baseFileName.replace(/\.[^.]+$/, '').trim() || 'booklet';
-}
-
-function blankDataUrl(width: number, height: number, color: string): string {
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.round(width));
-  canvas.height = Math.max(1, Math.round(height));
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas unavailable');
-  ctx.fillStyle = color || '#FFFFFF';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL('image/png');
 }
 
 function slugLabel(label: string): string {
@@ -64,74 +50,6 @@ export async function collectVerticalScrollSegments(
     }
   }
   return segments;
-}
-
-/** Stack page images into one long vertical scroll JPEG. */
-export async function composeVerticalScrollBlob(
-  segmentDataUrls: readonly string[],
-  options?: { maxWidthPx?: number; jpegQuality?: number },
-): Promise<Blob> {
-  if (segmentDataUrls.length === 0) {
-    throw new Error('No page images to stitch');
-  }
-
-  const maxWidthPx = options?.maxWidthPx ?? DEFAULT_STRIP_MAX_WIDTH;
-  const jpegQuality = options?.jpegQuality ?? DEFAULT_JPEG_QUALITY;
-  const images = await Promise.all(segmentDataUrls.map((url) => loadImageFromDataUrl(url)));
-
-  const targetWidth = Math.min(
-    maxWidthPx,
-    Math.max(...images.map((img) => img.width)),
-    MAX_EXPORT_CANVAS_DIMENSION,
-  );
-
-  const scaledHeights = images.map((img) =>
-    Math.max(1, Math.round((img.height * targetWidth) / img.width)),
-  );
-  let totalHeight = scaledHeights.reduce((sum, h) => sum + h, 0);
-  let width = targetWidth;
-  let heightScale = 1;
-
-  if (totalHeight > MAX_EXPORT_CANVAS_DIMENSION) {
-    heightScale = MAX_EXPORT_CANVAS_DIMENSION / totalHeight;
-    width = Math.max(1, Math.round(targetWidth * heightScale));
-    totalHeight = MAX_EXPORT_CANVAS_DIMENSION;
-  }
-
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = totalHeight;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas unavailable');
-
-  ctx.fillStyle = '#FFFFFF';
-  ctx.fillRect(0, 0, width, totalHeight);
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-
-  let y = 0;
-  for (let i = 0; i < images.length; i++) {
-    const img = images[i]!;
-    const drawH = Math.max(1, Math.round(scaledHeights[i]! * heightScale));
-    const drawW = width;
-    ctx.drawImage(img, 0, y, drawW, drawH);
-    y += drawH;
-  }
-
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (result) => {
-        if (!result) {
-          reject(new Error('Failed to encode vertical scroll image'));
-          return;
-        }
-        resolve(result);
-      },
-      'image/jpeg',
-      jpegQuality,
-    );
-  });
-  return blob;
 }
 
 export async function downloadBookletVerticalScroll(
@@ -196,11 +114,11 @@ export async function buildBookletSpreadZipEntries(
     const leftUrl =
       left && !left.isBlank && left.imageUrl
         ? left.imageUrl
-        : blankDataUrl(refWidth, refHeight, blankPageColor);
+        : blankPageDataUrl(refWidth, refHeight, blankPageColor);
     const rightUrl =
       right && !right.isBlank && right.imageUrl
         ? right.imageUrl
-        : blankDataUrl(refWidth, refHeight, blankPageColor);
+        : blankPageDataUrl(refWidth, refHeight, blankPageColor);
 
     const combined = await combineToSpreadImage(leftUrl, rightUrl);
     const blob = await fetch(combined).then((r) => r.blob());

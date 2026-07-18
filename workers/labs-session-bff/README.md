@@ -127,8 +127,19 @@ curl -s "https://labs-session-bff.tiffz.workers.dev/v1/oauth/google/start?return
 3. Account menu → **Sign in with Google** (or **Sign in again**).
 4. DevTools → **Network** → filter `labs-session-bff`:
    - `GET …/v1/oauth/google/start` → 200 with `authUrl`
-   - After popup completes: `GET …/v1/session/google/access-token` may appear on refresh
+   - After Google consent: callback returns bridge HTML with the access token embedded (no second `/access-token` fetch required for sign-in completion)
+   - Later tab reloads may call `GET …/v1/session/google/access-token` for refresh
 5. Confirm identity in the account menu; try a Google feature (e.g. Drive backup indicator).
+
+### Troubleshooting `"Sign-in failed."`
+
+That text comes from the BFF popup bridge (`popup-done` or `/google-oauth-done.html`), not from Labs app chrome. Common causes:
+
+| Symptom                                                           | Likely cause                                                              | Fix                                                                                                                                                |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Failed right after consent; Network shows `/access-token` **429** | IP rate limit on redundant post-consent refresh                           | Current Worker embeds the code-exchange token in the callback HTML so sign-in skips that fetch. Redeploy the Worker if you still see the old path. |
+| Failed with cookie / "Not signed in"                              | Set-Cookie on 302 not visible to follow-up fetch                          | Same embed path avoids the follow-up fetch.                                                                                                        |
+| Works once, then "Sign in again" after reload                     | Third-party cookie blocked on cross-site refresh from app origin → Worker | Longer-term: custom domain under `labs.tiffzhang.com` for the BFF.                                                                                 |
 
 ### Layer 3 — Production (after merge + Pages deploy)
 

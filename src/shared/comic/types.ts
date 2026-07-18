@@ -94,6 +94,34 @@ export type PanelTextKind = 'none' | 'caption' | 'dialogue' | 'sfx';
 export const PANEL_CHARACTER_IDS = ['a', 'b', 'c'] as const;
 export type PanelCharacterId = (typeof PANEL_CHARACTER_IDS)[number];
 
+/** Page-level cast member (emoji character). Growable beyond three. */
+export interface ComicCastMember {
+  id: string;
+  emoji: string;
+  label?: string;
+}
+
+/**
+ * Character arrangement ids — filtered by speaker count (1–3).
+ * Scrapboard uses these instead of procedural scenery compositions.
+ */
+export const CHARACTER_ARRANGEMENT_IDS = [
+  'closeup',
+  'medium',
+  'full-center',
+  'full-left',
+  'small-distant',
+  'facing',
+  'side-by-side',
+  'over-shoulder',
+  'staggered',
+  'trio-row',
+  'triangle',
+  'two-plus-one',
+] as const;
+
+export type CharacterArrangementId = (typeof CHARACTER_ARRANGEMENT_IDS)[number];
+
 export interface PanelTextOverlay {
   kind: PanelTextKind;
   content?: string;
@@ -101,7 +129,10 @@ export interface PanelTextOverlay {
 
 export interface PanelDialogueBlock {
   kind: 'dialogue';
+  /** Placement slot within the panel (index into speakerIds → a/b/c). */
   characterId: PanelCharacterId;
+  /** Page cast member this line belongs to (preferred over slot alone). */
+  castMemberId?: string;
   content: string;
 }
 
@@ -124,9 +155,22 @@ export interface PanelSfxBlock {
 
 export type PanelTextBlock = PanelDialogueBlock | PanelCaptionBlock | PanelSfxBlock;
 
+/** A user-picked photo (e.g. Wikimedia Commons) used as a panel or page background wash. */
+export interface PanelBackgroundImage {
+  url: string;
+  /** Optional preview URL (e.g. Wikimedia thumb) for compact field triggers. */
+  thumbUrl?: string;
+  title?: string;
+  license?: string;
+}
+
 export interface PanelFillSpec {
   panelIndex: number;
   composition?: PanelCompositionId;
+  /** Ordered cast members present in this panel (1–3). Scrapboard character-first. */
+  speakerIds?: string[];
+  /** Character arrangement for speakerIds.length; preferred over scenery composition. */
+  arrangement?: CharacterArrangementId;
   /** Ordered text blocks — captions, dialogue, and SFX in one panel. */
   blocks?: PanelTextBlock[];
   text?: PanelTextOverlay;
@@ -134,12 +178,18 @@ export interface PanelFillSpec {
   kind?: PanelFillKind;
   poseId?: string;
   noteText?: string;
+  /** Photo fill for this panel, palette-tinted (duotone) rather than composited literally. */
+  backgroundImage?: PanelBackgroundImage;
 }
 
 export interface PageMockupSpec {
   layout: PanelLayoutSpec;
   fills: PanelFillSpec[];
+  /** Growable page cast (emoji characters). */
+  cast?: ComicCastMember[];
   paletteId?: string;
+  /** Photo shown through panel gutters/page background, palette-tinted. */
+  pageBackgroundImage?: PanelBackgroundImage;
 }
 
 export interface ComicBoardDocument {

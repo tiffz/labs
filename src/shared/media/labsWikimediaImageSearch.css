@@ -1,0 +1,313 @@
+.labs-wikimedia-search {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.labs-wikimedia-search__heading {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6b7280);
+}
+
+.labs-wikimedia-search__toolbar {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.labs-wikimedia-search__field {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.labs-wikimedia-search__field-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted, #6b7280);
+}
+
+.labs-wikimedia-search__input,
+.labs-wikimedia-search__select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border-subtle, #d5d9e2);
+  border-radius: 0.4rem;
+  background: var(--surface-elevated, #fff);
+  color: inherit;
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.labs-wikimedia-search__input:focus,
+.labs-wikimedia-search__select:focus {
+  outline: 2px solid var(--labs-focus-ring, #7c3aed);
+  outline-offset: 1px;
+}
+
+.labs-wikimedia-search__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.labs-wikimedia-search__search-btn {
+  margin: 0;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border-subtle, #d5d9e2);
+  border-radius: 999px;
+  background: var(--surface-elevated, #fff);
+  color: inherit;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.labs-wikimedia-search__search-btn--secondary {
+  border-style: dashed;
+}
+
+.labs-wikimedia-search__search-btn:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--accent-primary, #7c3aed) 40%,
+    var(--border-subtle, #d5d9e2)
+  );
+}
+
+.labs-wikimedia-search__search-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.labs-wikimedia-search__error {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-muted, #6b7280);
+}
+
+.labs-wikimedia-search__results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+  max-height: 14rem;
+  overflow: auto;
+}
+
+.labs-wikimedia-search__result {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  padding: 0.3rem;
+  border: 1px solid var(--border-subtle, #e5e7eb);
+  border-radius: 0.4rem;
+  background: var(--surface-elevated, #fff);
+}
+
+.labs-wikimedia-search__thumb-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  flex-shrink: 0;
+}
+
+.labs-wikimedia-search__thumb {
+  width: 2.5rem;
+  height: 2.5rem;
+  object-fit: cover;
+  border-radius: 0.25rem;
+  border: 1px solid var(--border-subtle, #d5d9e2);
+  flex-shrink: 0;
+  display: block;
+}
+
+.labs-wikimedia-search__thumb-button:focus-visible
+  .labs-wikimedia-search__thumb {
+  outline: 2px solid var(--labs-focus-ring, #7c3aed);
+  outline-offset: 1px;
+}
+
+.labs-wikimedia-search__thumb-button:hover .labs-wikimedia-search__thumb {
+  border-color: color-mix(
+    in srgb,
+    var(--accent-primary, #7c3aed) 45%,
+    var(--border-subtle, #d5d9e2)
+  );
+}
+
+.labs-wikimedia-search__result-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  font-size: 0.75rem;
+}
+
+.labs-wikimedia-search__result-body a {
+  color: inherit;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.labs-wikimedia-search__license {
+  color: var(--text-muted, #6b7280);
+  font-size: 0.6875rem;
+}
+
+/* Lyrefly — Riso Cube tokens */
+.labs-wikimedia-search--lyrefly .labs-wikimedia-search__heading,
+.labs-wikimedia-search--lyrefly .labs-wikimedia-search__field-label,
+.labs-wikimedia-search--lyrefly .labs-wikimedia-search__license,
+.labs-wikimedia-search--lyrefly .labs-wikimedia-search__error {
+  color: var(--lyrefly-muted, #6b7280);
+}
+
+.labs-wikimedia-search--lyrefly .labs-wikimedia-search__input,
+.labs-wikimedia-search--lyrefly .labs-wikimedia-search__select,
+.labs-wikimedia-search--lyrefly .labs-wikimedia-search__search-btn,
+.labs-wikimedia-search--lyrefly .labs-wikimedia-search__result,
+.labs-wikimedia-search--lyrefly .labs-wikimedia-search__thumb {
+  border-color: var(--lyrefly-border, #d5d9e2);
+  background: var(--lyrefly-paper, #fff);
+}
+
+.labs-wikimedia-search--lyrefly
+  .labs-wikimedia-search__search-btn:hover:not(:disabled),
+.labs-wikimedia-search--lyrefly
+  .labs-wikimedia-search__thumb-button:hover
+  .labs-wikimedia-search__thumb {
+  border-color: color-mix(
+    in srgb,
+    var(--lyrefly-accent, #ff44a1) 45%,
+    var(--lyrefly-border, #d5d9e2)
+  );
+}
+
+.labs-wikimedia-search--lyrefly .labs-wikimedia-search__input:focus,
+.labs-wikimedia-search--lyrefly .labs-wikimedia-search__select:focus,
+.labs-wikimedia-search--lyrefly
+  .labs-wikimedia-search__thumb-button:focus-visible
+  .labs-wikimedia-search__thumb {
+  outline-color: var(--lyrefly-accent, #ff44a1);
+}
+
+/* Scrapboard sketchy — thick ink, offset shadow; host may set --labs-wikimedia-sketch-* */
+.labs-wikimedia-search--sketchy {
+  gap: 0.4rem;
+}
+
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__heading,
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__field-label,
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__license,
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__error {
+  color: var(--labs-wikimedia-sketch-muted, #6d665e);
+}
+
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__heading {
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__input,
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__select {
+  min-height: 2.1rem;
+  border: 2px solid var(--labs-wikimedia-sketch-line, #c9bfb3);
+  border-radius: 5px;
+  background: var(--labs-wikimedia-sketch-surface, #fffdf8);
+  color: var(--labs-wikimedia-sketch-ink, #2a2622);
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: inset 1px 1px 0 rgb(42 38 34 / 4%);
+}
+
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__input:focus,
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__select:focus {
+  outline: none;
+  border-color: var(--labs-wikimedia-sketch-accent, #f4a000);
+}
+
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__search-btn {
+  border: 2px solid var(--labs-wikimedia-sketch-ink, #2a2622);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--labs-wikimedia-sketch-ink, #2a2622);
+  font-size: 0.74rem;
+  font-weight: 800;
+  box-shadow: var(
+    --labs-wikimedia-sketch-shadow,
+    2px 2px 0 rgb(42 38 34 / 12%)
+  );
+}
+
+.labs-wikimedia-search--sketchy
+  .labs-wikimedia-search__search-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: var(--labs-wikimedia-sketch-soft, #fff4d6);
+  border-color: var(--labs-wikimedia-sketch-ink, #2a2622);
+}
+
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__result {
+  border: 2px solid var(--labs-wikimedia-sketch-ink, #2a2622);
+  border-radius: 2px;
+  box-shadow: var(
+    --labs-wikimedia-sketch-shadow,
+    2px 2px 0 rgb(42 38 34 / 12%)
+  );
+  background: var(--labs-wikimedia-sketch-surface, #fffdf8);
+  padding: 0.35rem;
+}
+
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__result:hover {
+  background: var(--labs-wikimedia-sketch-soft, #fff4d6);
+}
+
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__thumb {
+  border: 2px solid var(--labs-wikimedia-sketch-ink, #2a2622);
+  border-radius: 2px;
+  box-shadow: var(
+    --labs-wikimedia-sketch-shadow,
+    2px 2px 0 rgb(42 38 34 / 12%)
+  );
+}
+
+.labs-wikimedia-search--sketchy
+  .labs-wikimedia-search__thumb-button:hover
+  .labs-wikimedia-search__thumb {
+  border-color: var(--labs-wikimedia-sketch-ink, #2a2622);
+}
+
+.labs-wikimedia-search--sketchy
+  .labs-wikimedia-search__thumb-button:focus-visible
+  .labs-wikimedia-search__thumb {
+  outline: 2px solid var(--labs-wikimedia-sketch-accent, #f4a000);
+  outline-offset: 1px;
+}
+
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__result-body a {
+  color: var(--labs-wikimedia-sketch-ink, #2a2622);
+  font-weight: 800;
+}
+
+.labs-wikimedia-search--sketchy .labs-wikimedia-search__results {
+  max-height: 11.5rem;
+}

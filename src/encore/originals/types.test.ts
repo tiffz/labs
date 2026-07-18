@@ -67,10 +67,24 @@ describe('normalizeEncoreOriginalSong', () => {
   it('preserves sectionPlaybackOverrides when present', () => {
     const song = normalizeEncoreOriginalSong({
       ...createBlankOriginalSong(),
+      lyricsAndChords: '[Chorus]\n[C]Hey',
       sectionPlaybackOverrides: {
         'chorus-0': { customPlayback: true, chordStyleId: 'jazz' },
       },
     });
     expect(song.sectionPlaybackOverrides?.['chorus-0']?.chordStyleId).toBe('jazz');
+  });
+
+  it('remaps orphaned sectionPlaybackOverrides after section reorder', () => {
+    const song = normalizeEncoreOriginalSong({
+      ...createBlankOriginalSong(),
+      lyricsAndChords: '[Chorus]\nHey\n\n[Verse]\nHi',
+      sectionPlaybackOverrides: {
+        'verse-0': { customPlayback: true, drumPattern: 'D-T-K-T-' },
+        'chorus-1': { customPlayback: true, drumPattern: 'TkTk' },
+      },
+    });
+    expect(song.sectionPlaybackOverrides?.['chorus-0']?.drumPattern).toBe('TkTk');
+    expect(song.sectionPlaybackOverrides?.['verse-1']?.drumPattern).toBe('D-T-K-T-');
   });
 });

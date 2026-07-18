@@ -5,6 +5,7 @@ import {
   clearDirtyRows,
   encoreDb,
   getSyncMeta,
+  markDirtyRow,
   patchSyncMeta,
   takeDirtyRows,
   type DirtySyncRow,
@@ -27,6 +28,7 @@ import {
   ENCORE_ORIGINALS_SHARD_SONG_FOLDER,
 } from '../../drive/constants';
 import { normalizeEncoreOriginalSong, type EncoreOriginalSong } from '../types';
+import { mergeOriginalSongPreservingContent } from './encoreOriginalsMerge';
 import { maxOriginalsClock } from './originalsWire';
 
 export interface OriginalsShardEntry {
@@ -254,14 +256,20 @@ export async function pullChangedOriginalsShards(accessToken: string): Promise<n
     const localRow = local.get(id);
     if (localRow && localRow.updatedAt >= entry.updatedAt) continue;
     const raw = await driveGetMedia(accessToken, entry.fileId);
-    const row = normalizeEncoreOriginalSong(
+    const remoteRow = normalizeEncoreOriginalSong(
       JSON.parse(raw) as EncoreOriginalSong & {
         tags?: string[];
         status?: string;
         brainstormMarkdown?: string;
       },
     );
+    // Content-aware: newer sparse shard must not wipe richer local compound fields (ADR 0019).
+    const row = localRow ? mergeOriginalSongPreservingContent(localRow, remoteRow) : remoteRow;
     await encoreDb.originals.put(row);
+    // If merge preserved local-only content, push so Drive gets the healed shard.
+    if (localRow && JSON.stringify(row) !== JSON.stringify(remoteRow)) {
+      await markDirtyRow('original', row.id, 'upsert');
+    }
     pulled += 1;
   }
 

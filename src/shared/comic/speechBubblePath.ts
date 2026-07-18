@@ -3,14 +3,16 @@
 export const BUBBLE_FONT_SIZE = 11;
 export const BUBBLE_MIN_READABLE_FONT = 9;
 export const BUBBLE_FONT_FAMILY = '"Comic Sans MS", "Comic Neue", cursive, sans-serif';
-export const BUBBLE_PAD_X = 12;
+/** Comfortable balsamiq balloon padding — keep readable bubbles from feeling letterboxed. */
+export const BUBBLE_PAD_X = 13;
 export const BUBBLE_PAD_Y = 10;
-export const BUBBLE_PAD_X_COMPACT = 8;
-export const BUBBLE_PAD_Y_COMPACT = 5;
+export const BUBBLE_PAD_X_COMPACT = 10;
+export const BUBBLE_PAD_Y_COMPACT = 7;
 const MAX_ASPECT_ELLIPSE = 0.55;
 const MAX_ASPECT_ROUND_RECT = 0.72;
 const MIN_HEIGHT_RATIO_ELLIPSE = 0.28;
-const MIN_HEIGHT_RATIO_ROUND_RECT = 0.34;
+/** Slightly less tall-for-width so short lines don’t float in empty air. */
+const MIN_HEIGHT_RATIO_ROUND_RECT = 0.3;
 const MIN_FONT_SIZE = 6;
 const HARD_MIN_FONT_SIZE = 5;
 
@@ -28,15 +30,17 @@ export const BUBBLE_PADDING_COMPACT: BubblePadding = {
   padY: BUBBLE_PAD_Y_COMPACT,
 };
 
-export const BUBBLE_PADDING_MINIMAL: BubblePadding = { padX: 5, padY: 3 };
-export const BUBBLE_PADDING_MICRO: BubblePadding = { padX: 3, padY: 2 };
+export const BUBBLE_PADDING_MINIMAL: BubblePadding = { padX: 8, padY: 5 };
+export const BUBBLE_PADDING_MICRO: BubblePadding = { padX: 6, padY: 4 };
 
+/** Normal fit prefers breathable padding; MICRO is hard-fit only. */
 const PADDING_TIERS: BubblePadding[] = [
   BUBBLE_PADDING_STANDARD,
   BUBBLE_PADDING_COMPACT,
   BUBBLE_PADDING_MINIMAL,
-  BUBBLE_PADDING_MICRO,
 ];
+
+const HARD_FIT_PADDING_TIERS: BubblePadding[] = [...PADDING_TIERS, BUBBLE_PADDING_MICRO];
 
 export type BubbleMetrics = {
   halfW: number;
@@ -56,16 +60,19 @@ function minHeightRatioForShape(shape: BubbleShape): number {
   return shape === 'roundRect' ? MIN_HEIGHT_RATIO_ROUND_RECT : MIN_HEIGHT_RATIO_ELLIPSE;
 }
 
-/** Prefer rounded rects when vertical dialogue space is tight. */
+/**
+ * Phase 1: rounded rectangles are the forced default body shape for all new layouts.
+ * Ellipse is retained only for explicit/legacy callers — it is never picked here.
+ */
 export function pickBubbleShape(
   panelHeight: number,
   dialogueZoneHeight: number,
   maxHalfH: number,
 ): BubbleShape {
-  if (dialogueZoneHeight < 72 || panelHeight < 96 || maxHalfH < 28) {
+  if (panelHeight <= 0 && dialogueZoneHeight <= 0 && maxHalfH <= 0) {
     return 'roundRect';
   }
-  return 'ellipse';
+  return 'roundRect';
 }
 
 function minHalfWForText(fontSize: number, padding: BubblePadding, minChars = 1): number {
@@ -74,11 +81,32 @@ function minHalfWForText(fontSize: number, padding: BubblePadding, minChars = 1)
 }
 
 export function charWidthForFont(fontSize: number): number {
-  return fontSize * 0.56;
+  // Slightly tight vs Comic Sans so wrap uses available balloon width before ellipsis.
+  // Bubble padX still keeps glyphs off the stroke.
+  return fontSize * 0.5;
+}
+
+/** True when displayed lines omit part of the source dialogue (ellipsis / line cap). */
+export function isDialogueDisplayTruncated(content: string, lines: string[]): boolean {
+  const source = content.trim().replace(/\s+/g, ' ');
+  if (!source) return false;
+  const displayed = lines
+    .join(' ')
+    .replace(/…/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (lines.some((line) => line.includes('…')) && displayed.length < source.length) {
+    return true;
+  }
+  // Reconstruct without ellipsis markers — any shorter display means truncation.
+  const sourceCompact = source.replace(/\s+/g, '');
+  const displayedCompact = displayed.replace(/\s+/g, '');
+  return displayedCompact.length > 0 && displayedCompact.length < sourceCompact.length;
 }
 
 export function lineHeightForFont(fontSize: number): number {
-  return fontSize * 1.28;
+  // A hair looser than 1.28 so multi-line balloons breathe inside the pad box.
+  return fontSize * 1.32;
 }
 
 export function maxCharsForWidth(
@@ -99,10 +127,30 @@ export function bubbleTextBlockHeight(
   return (lineCount - 1) * lineHeight + fontSize;
 }
 
+/** Prefer even line lengths so centered dialogue doesn’t look left- or right-heavy. */
+function balanceTwoLineWrap(lines: string[], maxChars: number): string[] {
+  if (lines.length !== 2) return lines;
+  const words = [...lines[0]!.split(/\s+/), ...lines[1]!.split(/\s+/)].filter(Boolean);
+  if (words.length < 2) return lines;
+  let best = lines;
+  let bestScore = Math.abs(lines[0]!.length - lines[1]!.length);
+  for (let split = 1; split < words.length; split++) {
+    const a = words.slice(0, split).join(' ');
+    const b = words.slice(split).join(' ');
+    if (a.length > maxChars || b.length > maxChars) continue;
+    const score = Math.abs(a.length - b.length);
+    if (score < bestScore) {
+      bestScore = score;
+      best = [a, b];
+    }
+  }
+  return best;
+}
+
 export function wrapDialogueText(
   content: string,
   maxChars: number,
-  maxLines = 6,
+  maxLines = 8,
 ): string[] {
   const effectiveMaxChars = Math.max(1, maxChars);
   const words = content.trim().split(/\s+/).filter(Boolean);
@@ -127,6 +175,7 @@ export function wrapDialogueText(
     const last = capped[capped.length - 1]!;
     capped[capped.length - 1] = last.length > 1 ? `${last.slice(0, Math.max(1, effectiveMaxChars - 1))}…` : '…';
   }
+  if (capped.length === 2) return balanceTwoLineWrap(capped, effectiveMaxChars);
   return capped;
 }
 
@@ -146,7 +195,7 @@ export function bubbleMetricsForLines(
 ): BubbleMetrics {
   const fontSize = options?.fontSize ?? BUBBLE_FONT_SIZE;
   const padding = options?.padding ?? BUBBLE_PADDING_STANDARD;
-  const shape = options?.shape ?? 'ellipse';
+  const shape = options?.shape ?? 'roundRect';
   const maxAspect = maxAspectForShape(shape);
   const minHeightRatio = minHeightRatioForShape(shape);
   const lineHeight = lineHeightForFont(fontSize);
@@ -278,7 +327,7 @@ function hardFitBubbleToBox(
   panelInnerWidth: number,
   shape: BubbleShape = 'roundRect',
 ): { lines: string[]; metrics: BubbleMetrics } {
-  for (const padding of PADDING_TIERS) {
+  for (const padding of HARD_FIT_PADDING_TIERS) {
     for (let fontSize = BUBBLE_FONT_SIZE; fontSize >= HARD_MIN_FONT_SIZE; fontSize--) {
       const halfW = Math.min(
         maxHalfW,
@@ -360,8 +409,8 @@ export function fitDialogueLines(
   maxHalfW: number,
   panelInnerWidth: number,
   maxFontSize = BUBBLE_FONT_SIZE,
-  maxLines = 6,
-  shape: BubbleShape = 'ellipse',
+  maxLines = 8,
+  shape: BubbleShape = 'roundRect',
 ): { lines: string[]; metrics: BubbleMetrics } {
   const fontFloor = shape === 'roundRect' ? MIN_FONT_SIZE : BUBBLE_MIN_READABLE_FONT;
   for (const padding of PADDING_TIERS) {
@@ -389,13 +438,13 @@ export function fitDialogueLinesWithinHalfH(
   maxHalfH: number,
   panelInnerWidth: number,
   maxFontSize = BUBBLE_FONT_SIZE,
-  shape: BubbleShape = 'ellipse',
+  shape: BubbleShape = 'roundRect',
 ): { lines: string[]; metrics: BubbleMetrics } {
   const fontFloor = shape === 'roundRect' ? MIN_FONT_SIZE : BUBBLE_MIN_READABLE_FONT;
   for (const padding of PADDING_TIERS) {
     let fontSize = maxFontSize;
     while (fontSize >= fontFloor) {
-      for (let lineCap = 6; lineCap >= 1; lineCap--) {
+      for (let lineCap = 8; lineCap >= 1; lineCap--) {
         const wrapWidth = Math.min(panelInnerWidth, maxHalfW * 2);
         let maxChars = maxCharsForWidth(wrapWidth, fontSize, padding);
         let lines = wrapAndClampLines(content, maxChars, lineCap);
@@ -519,7 +568,13 @@ export function tailMouthChordCrossesInterior(
   return nx * nx + ny * ny < 0.62;
 }
 
-/** Nudge dialogue upward when the tail exits from the lower arc. */
+/**
+ * Vertical offset added to the geometric first-line center
+ * (`cy - (lineCount - 1) * lineHeight / 2`) when `dominantBaseline="middle"`.
+ *
+ * Design intent (balsamiq balloons): sit in the padded content box. Informal faces
+ * need a slight downward optical settle — avoid lifting copy into the top half.
+ */
 export function bubbleTextOffsetY(
   cx: number,
   cy: number,
@@ -527,22 +582,155 @@ export function bubbleTextOffsetY(
   halfH: number,
   tailX: number,
   tailY: number,
-  shape: BubbleShape = 'ellipse',
+  shape: BubbleShape = 'roundRect',
+  padY: number = BUBBLE_PAD_Y,
+  fontSize: number = BUBBLE_FONT_SIZE,
 ): number {
-  const angle = Math.atan2(tailY - cy, tailX - cx);
-  if (Math.sin(angle) <= 0.2) return 0;
-  if (shape === 'roundRect') {
-    return -Math.min(halfH * 0.18, 6);
-  }
-  const spread = tailMouthSpread(halfW, halfH, Math.hypot(tailX - cx, tailY - cy));
-  return -Math.min(halfH * 0.2, halfH * Math.sin(spread) * 0.65);
+  void halfW;
+  void cy;
+  void padY;
+  void shape;
+  void tailX;
+  void tailY;
+  // Comic Sans / Comic Neue: em-box middle reads high → settle into the pad box.
+  return fontSize * 0.12;
 }
 
 /**
- * Rounded-rectangle body with a smooth cubic tail aimed at the speaker.
- * Attachment stays near the bottom-center so sideways tips don't form sharp elbows.
+ * `body` is the single continuous balloon outline (bubble + tail, one stroke).
+ * `tail` is empty in the unified path model (kept for API / legacy validators).
  */
-export function roundRectBubblePathD(
+export type BubblePathPair = { body: string; tail: string };
+
+/** Mouth + tip for roundRect tails (bottom attach) — used by path build and overlap checks. */
+export function roundRectTailMouth(
+  cx: number,
+  cy: number,
+  halfW: number,
+  halfH: number,
+  tailX: number,
+  tailY: number,
+): TailMouthGeometry {
+  const bottom = cy + halfH;
+  const left = cx - halfW;
+  const right = cx + halfW;
+  const rad = Math.min(halfH * 0.88, halfW * 0.22, 13);
+  // Mouth on the bottom edge — unified outline never strokes a chord across the join.
+  const attachY = bottom;
+  const maxOffset = halfW * 0.42;
+  let attachX = Math.min(cx + maxOffset, Math.max(cx - maxOffset, cx * 0.55 + tailX * 0.45));
+  const distToTip = Math.hypot(tailX - attachX, tailY - attachY);
+  const mouthHalf = Math.min(
+    halfW * 0.3,
+    Math.max(7, Math.min(15, halfH * 0.7 + Math.min(5, distToTip * 0.02))),
+  );
+  const minX = left + rad + 1;
+  const maxX = right - rad - 1;
+  attachX = Math.min(maxX - mouthHalf, Math.max(minX + mouthHalf, attachX));
+  const dx = tailX - attachX;
+  const dy = tailY - attachY;
+  const angle = Math.atan2(dy, dx);
+  return {
+    angle,
+    spread: mouthHalf / Math.max(halfW, 1),
+    left: { x: attachX - mouthHalf, y: attachY },
+    right: { x: attachX + mouthHalf, y: attachY },
+    tip: { x: tailX, y: tailY },
+  };
+}
+
+/** Pure closed rounded-rectangle body — no tail notch cut into the outline. */
+export function roundRectBubbleBodyPathD(
+  cx: number,
+  cy: number,
+  halfW: number,
+  halfH: number,
+): string {
+  const left = cx - halfW;
+  const right = cx + halfW;
+  const top = cy - halfH;
+  const bottom = cy + halfH;
+  // Soft comic-balloon corners — still sketchy, not stadium-pill.
+  const rad = Math.min(halfH * 0.88, halfW * 0.22, 13);
+
+  let path = `M ${left + rad} ${top}`;
+  path += ` L ${right - rad} ${top}`;
+  path += ` Q ${right} ${top} ${right} ${top + rad}`;
+  path += ` L ${right} ${bottom - rad}`;
+  path += ` Q ${right} ${bottom} ${right - rad} ${bottom}`;
+  path += ` L ${left + rad} ${bottom}`;
+  path += ` Q ${left} ${bottom} ${left} ${bottom - rad}`;
+  path += ` L ${left} ${top + rad}`;
+  path += ` Q ${left} ${top} ${left + rad} ${top}`;
+  path += ' Z';
+  return path;
+}
+
+/**
+ * Co-directional cubic sides for a tail (mouthRight → tip → mouthLeft), no Z.
+ */
+function curvedTailPathSegment(
+  mouthLeft: { x: number; y: number },
+  mouthRight: { x: number; y: number },
+  tip: { x: number; y: number },
+  options?: { maxBend?: number },
+): string {
+  const midMouthX = (mouthLeft.x + mouthRight.x) / 2;
+  const midMouthY = (mouthLeft.y + mouthRight.y) / 2;
+  const dx = tip.x - midMouthX;
+  const dy = tip.y - midMouthY;
+  const dist = Math.hypot(dx, dy);
+  if (dist < 1e-3) {
+    return ` L ${tip.x} ${tip.y} L ${mouthLeft.x} ${mouthLeft.y}`;
+  }
+  const angle = Math.atan2(dy, dx);
+  const perpX = -Math.sin(angle);
+  const perpY = Math.cos(angle);
+  const lateral = dx === 0 ? (midMouthX >= tip.x ? -1 : 1) : Math.sign(dx);
+  const maxBend = options?.maxBend ?? 10;
+  const bendAmt =
+    dist > 90 ? Math.min(5.5, Math.max(2.5, dist * 0.04)) : Math.min(maxBend, Math.max(3.5, dist * 0.11));
+  const flowX = perpX * bendAmt * lateral;
+  const flowY = perpY * bendAmt * lateral;
+  const along = (t: number) => ({
+    x: midMouthX + dx * t,
+    y: midMouthY + dy * t,
+  });
+  const spineA = along(0.32);
+  const spineB = along(0.68);
+  const c1x = spineA.x + flowX + (mouthRight.x - midMouthX) * 0.35;
+  const c1y = spineA.y + flowY + (mouthRight.y - midMouthY) * 0.15;
+  const c2x = spineB.x + flowX * 0.35;
+  const c2y = spineB.y + flowY * 0.35;
+  const c3x = spineB.x + flowX * 0.35;
+  const c3y = spineB.y + flowY * 0.35;
+  const c4x = spineA.x + flowX + (mouthLeft.x - midMouthX) * 0.35;
+  const c4y = spineA.y + flowY + (mouthLeft.y - midMouthY) * 0.15;
+  return (
+    ` C ${c1x} ${c1y} ${c2x} ${c2y} ${tip.x} ${tip.y}` +
+    ` C ${c3x} ${c3y} ${c4x} ${c4y} ${mouthLeft.x} ${mouthLeft.y}`
+  );
+}
+
+/** Closed filled-tail wedge (legacy helper / overlap probes). */
+function curvedFilledTailPathD(
+  mouthLeft: { x: number; y: number },
+  mouthRight: { x: number; y: number },
+  tip: { x: number; y: number },
+  options?: { maxBend?: number },
+): string {
+  return (
+    `M ${mouthRight.x} ${mouthRight.y}` +
+    curvedTailPathSegment(mouthLeft, mouthRight, tip, options) +
+    ' Z'
+  );
+}
+
+/**
+ * One continuous outline: round-rect perimeter with a notched bottom that
+ * swoops out to the tip and back — single stroke, no mouth-chord seam.
+ */
+export function roundRectBubbleUnifiedPathD(
   cx: number,
   cy: number,
   halfW: number,
@@ -554,59 +742,64 @@ export function roundRectBubblePathD(
   const right = cx + halfW;
   const top = cy - halfH;
   const bottom = cy + halfH;
-  const rad = Math.min(halfH * 0.82, halfW * 0.18, 12);
-  // Keep mouth near the center — far lateral attach + tip creates zig-zag elbows.
-  const maxOffset = halfW * 0.42;
-  const attachX = Math.min(cx + maxOffset, Math.max(cx - maxOffset, cx * 0.55 + tailX * 0.45));
-  const distToTip = Math.hypot(tailX - attachX, tailY - bottom);
-  const mouthHalf = Math.min(
-    halfW * 0.28,
-    Math.max(5.5, Math.min(16, halfH * 0.62 + Math.min(4, distToTip * 0.015))),
-  );
-  const mL = { x: attachX - mouthHalf, y: bottom };
-  const mR = { x: attachX + mouthHalf, y: bottom };
-  const tip = { x: tailX, y: tailY };
-  const midMouthX = (mL.x + mR.x) / 2;
-  const dist = Math.hypot(tip.x - midMouthX, tip.y - bottom);
-  const angle = Math.atan2(tip.y - bottom, tip.x - midMouthX);
-  // Long tails stay nearly straight — curves read as spaghetti.
-  const bulge =
-    dist > halfH * 3.5
-      ? Math.min(8, Math.max(3, dist * 0.06))
-      : Math.min(16, Math.max(6, dist * 0.22));
-  const midX = midMouthX + Math.cos(angle) * bulge;
-  const midY = bottom + Math.sin(angle) * bulge + bulge * 0.08;
+  const rad = Math.min(halfH * 0.88, halfW * 0.22, 13);
+  const mouth = roundRectTailMouth(cx, cy, halfW, halfH, tailX, tailY);
+  const mL = mouth.left;
+  const mR = mouth.right;
+  const tip = mouth.tip;
 
-  let path = `M ${mL.x} ${mL.y}`;
-  path += ` L ${left + rad} ${bottom}`;
-  path += ` Q ${left} ${bottom} ${left} ${bottom - rad}`;
-  path += ` L ${left} ${top + rad}`;
-  path += ` Q ${left} ${top} ${left + rad} ${top}`;
+  let path = `M ${left + rad} ${top}`;
   path += ` L ${right - rad} ${top}`;
   path += ` Q ${right} ${top} ${right} ${top + rad}`;
   path += ` L ${right} ${bottom - rad}`;
   path += ` Q ${right} ${bottom} ${right - rad} ${bottom}`;
   path += ` L ${mR.x} ${mR.y}`;
-  // Two cubic sides with distinct control points (same pattern as ellipse tails).
-  const c1x = mR.x + (midX - mR.x) * 0.45;
-  const c1y = mR.y + (midY - mR.y) * 0.45;
-  const c2x = tip.x + (midX - tip.x) * 0.35;
-  const c2y = tip.y + (midY - tip.y) * 0.35;
-  path += ` C ${c1x} ${c1y} ${c2x} ${c2y} ${tip.x} ${tip.y}`;
-  const c3x = tip.x + (midX - tip.x) * 0.35;
-  const c3y = tip.y + (midY - tip.y) * 0.35;
-  const c4x = mL.x + (midX - mL.x) * 0.45;
-  const c4y = mL.y + (midY - mL.y) * 0.45;
-  path += ` C ${c3x} ${c3y} ${c4x} ${c4y} ${mL.x} ${mL.y}`;
+  path += curvedTailPathSegment(mL, mR, tip);
+  path += ` L ${left + rad} ${bottom}`;
+  path += ` Q ${left} ${bottom} ${left} ${bottom - rad}`;
+  path += ` L ${left} ${top + rad}`;
+  path += ` Q ${left} ${top} ${left + rad} ${top}`;
   path += ' Z';
   return path;
 }
 
 /**
- * Ellipse body with an integrated tail wedge aimed at (tailX, tailY).
- * The body follows the ellipse arc between mouth points; the tail never chords through the interior.
+ * Filled curved tail for a rounded-rect body — closed wedge (unit tests / probes).
  */
-export function speechBubblePathD(
+export function roundRectBubbleTailPathD(
+  cx: number,
+  cy: number,
+  halfW: number,
+  halfH: number,
+  tipX: number,
+  tipY: number,
+): string {
+  const mouth = roundRectTailMouth(cx, cy, halfW, halfH, tipX, tipY);
+  return curvedFilledTailPathD(mouth.left, mouth.right, mouth.tip);
+}
+
+/** Pure closed ellipse body — full arc walked with line segments, no tail notch. */
+export function ellipseBubbleBodyPathD(
+  cx: number,
+  cy: number,
+  halfW: number,
+  halfH: number,
+): string {
+  const steps = 32;
+  let path = '';
+  for (let step = 0; step <= steps; step++) {
+    const t = (step / steps) * 2 * Math.PI;
+    const point = ellipsePoint(cx, cy, halfW, halfH, t);
+    path += step === 0 ? `M ${point.x} ${point.y}` : ` L ${point.x} ${point.y}`;
+  }
+  path += ' Z';
+  return path;
+}
+
+/**
+ * One continuous ellipse outline with a notched mouth that swoops to the tip.
+ */
+export function ellipseBubbleUnifiedPathD(
   cx: number,
   cy: number,
   halfW: number,
@@ -615,40 +808,42 @@ export function speechBubblePathD(
   tailY: number,
 ): string {
   const mouth = tailMouthGeometry(cx, cy, halfW, halfH, tailX, tailY);
-  const { left, right, tip, angle, spread } = mouth;
-  const distance = Math.hypot(tip.x - cx, tip.y - cy);
-  const bodySpan = 2 * Math.PI - spread * 2;
-  const bodySteps = 28;
-
-  let path = `M ${left.x} ${left.y}`;
-  for (let step = 1; step <= bodySteps; step++) {
-    const t = angle - spread + (step / bodySteps) * bodySpan;
+  const angleR = Math.atan2(mouth.right.y - cy, mouth.right.x - cx);
+  const angleL = Math.atan2(mouth.left.y - cy, mouth.left.x - cx);
+  // Walk the long way (over the top) from mouth-left to mouth-right, then swoop to tip.
+  let end = angleR;
+  while (end <= angleL) end += 2 * Math.PI;
+  const steps = 36;
+  let path = `M ${mouth.left.x} ${mouth.left.y}`;
+  for (let step = 1; step <= steps; step++) {
+    const t = angleL + ((end - angleL) * step) / steps;
     const point = ellipsePoint(cx, cy, halfW, halfH, t);
     path += ` L ${point.x} ${point.y}`;
   }
-
-  const bulge =
-    distance > halfH * 3.5
-      ? Math.min(8, Math.max(3, distance * 0.06))
-      : Math.min(14, Math.max(6, distance * 0.18, halfH * 0.5));
-  const midX = cx + Math.cos(angle) * (Math.max(halfW, halfH) + bulge * 0.2);
-  const midY = cy + Math.sin(angle) * (Math.max(halfW, halfH) + bulge * 0.2);
-
-  const c1x = right.x + (midX - right.x) * 0.5;
-  const c1y = right.y + (midY - right.y) * 0.5;
-  const c2x = tip.x + (midX - tip.x) * 0.35;
-  const c2y = tip.y + (midY - tip.y) * 0.35;
-  path += ` C ${c1x} ${c1y} ${c2x} ${c2y} ${tip.x} ${tip.y}`;
-
-  const c3x = tip.x + (midX - tip.x) * 0.35;
-  const c3y = tip.y + (midY - tip.y) * 0.35;
-  const c4x = left.x + (midX - left.x) * 0.5;
-  const c4y = left.y + (midY - left.y) * 0.5;
-  path += ` C ${c3x} ${c3y} ${c4x} ${c4y} ${left.x} ${left.y}`;
+  path += curvedTailPathSegment(mouth.left, mouth.right, mouth.tip, { maxBend: 12 });
   path += ' Z';
   return path;
 }
 
+/**
+ * Filled curved tail for an ellipse body (unit tests / probes).
+ */
+export function ellipseBubbleTailPathD(
+  cx: number,
+  cy: number,
+  halfW: number,
+  halfH: number,
+  tailX: number,
+  tailY: number,
+): string {
+  const mouth = tailMouthGeometry(cx, cy, halfW, halfH, tailX, tailY);
+  return curvedFilledTailPathD(mouth.left, mouth.right, mouth.tip, { maxBend: 12 });
+}
+
+/**
+ * Continuous balloon outline in `body` (bubble + tail, one stroke).
+ * `tail` is empty — kept on the pair type for validators/e2e.
+ */
 export function speechBubblePathForLayout(
   cx: number,
   cy: number,
@@ -656,12 +851,18 @@ export function speechBubblePathForLayout(
   halfH: number,
   tailX: number,
   tailY: number,
-  shape: BubbleShape = 'ellipse',
-): string {
+  shape: BubbleShape = 'roundRect',
+): BubblePathPair {
   if (shape === 'roundRect') {
-    return roundRectBubblePathD(cx, cy, halfW, halfH, tailX, tailY);
+    return {
+      body: roundRectBubbleUnifiedPathD(cx, cy, halfW, halfH, tailX, tailY),
+      tail: '',
+    };
   }
-  return speechBubblePathD(cx, cy, halfW, halfH, tailX, tailY);
+  return {
+    body: ellipseBubbleUnifiedPathD(cx, cy, halfW, halfH, tailX, tailY),
+    tail: '',
+  };
 }
 
 export function bubbleBodyBBox(

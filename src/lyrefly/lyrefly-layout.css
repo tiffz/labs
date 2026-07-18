@@ -4,7 +4,13 @@
   min-height: 100dvh;
 }
 
-.lyrefly-app:has(.lyrefly-workbench) {
+/*
+ * Art/thumbs/brainstorm/publish lock the viewport and scroll their own
+ * bounded panels. The script stage instead scrolls as a normal page —
+ * the workbench chrome (title, stepper) moves away with the editor
+ * content and only the app header stays put — so it is excluded here.
+ */
+.lyrefly-app:has(.lyrefly-workbench):not(:has(.lyrefly-workbench--script)) {
   height: 100dvh;
   max-height: 100dvh;
   overflow: hidden;
@@ -54,16 +60,28 @@
   overflow-x: clip;
 }
 
-.lyrefly-layout .app-shell-scroll:has(.lyrefly-workbench) {
+.lyrefly-layout
+  .app-shell-scroll:has(.lyrefly-workbench):not(
+    :has(.lyrefly-workbench--script)
+  ) {
   overflow: hidden;
 }
 
-.lyrefly-layout .app-shell-content:has(.lyrefly-workbench) {
+.lyrefly-layout
+  .app-shell-content:has(.lyrefly-workbench):not(
+    :has(.lyrefly-workbench--script)
+  ) {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* Script stage: let the page scroll (chrome + editor move together). */
+.lyrefly-layout .app-shell-content:has(.lyrefly-workbench--script) {
+  display: flex;
+  flex-direction: column;
 }
 
 /**

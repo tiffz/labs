@@ -1,3 +1,4 @@
+import { driveFileIsUnderAnyAncestor } from '../../shared/drive/driveAncestry';
 import { driveTrashFile } from '../../shared/drive/driveFetch';
 import { gestureDb } from '../db/gestureDb';
 import { notifyGestureLocalChange } from '../db/gestureChangeBus';
@@ -5,7 +6,18 @@ import {
   addGestureDriveFileTombstones,
   addGestureDriveFolderTombstone,
 } from './gestureDriveTombstones';
+import {
+  ensureGestureReferencePacksLayout,
+  listAllGestureReferencePacksRootIds,
+} from './gestureDriveLayout';
 import { listImageFileIdsInPackFolderRecursive } from './gesturePackFolderListing';
+
+export class GestureDriveTrashStewardshipError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'GestureDriveTrashStewardshipError';
+  }
+}
 
 async function deletePackLocalRows(packId: string, driveFolderId?: string): Promise<void> {
   const packFiles = await gestureDb.packFiles.where('packId').equals(packId).toArray();
@@ -91,7 +103,11 @@ export async function deleteCollectionFromApp(packId: string): Promise<void> {
   await deletePackLocalRows(packId, pack?.driveFolderId);
 }
 
-/** Remove from app and trash photos in the Drive folder plus the folder itself. */
+/**
+ * Remove from app and trash photos in the Drive folder plus the folder itself.
+ * Stewardship: only folders under Gesture `Reference Packs` may be trashed — linked personal
+ * folders must use App-only delete so Labs never wipes foreign Drive trees.
+ */
 export async function deleteCollectionAndDrivePhotos(
   accessToken: string,
   packId: string,
@@ -99,6 +115,22 @@ export async function deleteCollectionAndDrivePhotos(
 ): Promise<DeleteCollectionResult> {
   const pack = await gestureDb.packs.get(packId);
   if (!pack) throw new Error('Collection not found.');
+
+  if (pack.driveFolderId?.trim()) {
+    const layout = await ensureGestureReferencePacksLayout(accessToken);
+    const rootIds = new Set(await listAllGestureReferencePacksRootIds(accessToken, layout.appFolderId));
+    if (rootIds.size === 0) rootIds.add(layout.referencePacksFolderId);
+    const underReferencePacks = await driveFileIsUnderAnyAncestor(
+      accessToken,
+      pack.driveFolderId,
+      rootIds,
+    );
+    if (!underReferencePacks) {
+      throw new GestureDriveTrashStewardshipError(
+        'Drive photo delete is only allowed for collections under Gesture Reference Packs. Use App only for folders linked from elsewhere.',
+      );
+    }
+  }
 
   onProgress?.({ phase: 'listing' });
   const fileIds = pack.driveFolderId

@@ -1,7 +1,9 @@
+import { filterDriveFileIdsUnderAncestors } from '../../shared/drive/driveAncestry';
 import { driveTrashFile } from '../../shared/drive/driveFetch';
 import { encoreDb, markDirtyRow } from '../db/encoreDb';
 import type { EncoreMediaLink, EncoreMiscResource, EncorePerformance, EncoreSong, EncoreSongAttachment } from '../types';
 import { songWithSyncedLegacyDriveIds } from '../utils/songAttachments';
+import { ensureEncoreDriveLayout } from './bootstrapFolders';
 import {
   buildDuplicateReplacementMap,
   type DriveDuplicateGroup,
@@ -143,9 +145,17 @@ export async function applyEncoreDriveDuplicateDedup(
     }
   }
 
+  // Stewardship: only trash duplicates under Encore_App — never user override / foreign folders.
+  const layout = await ensureEncoreDriveLayout(accessToken);
+  const { allowed: trashableIds } = await filterDriveFileIdsUnderAncestors(
+    accessToken,
+    [...toTrash],
+    new Set([layout.rootFolderId]),
+  );
+
   let trashed = 0;
   let trashErrors = 0;
-  for (const fileId of toTrash) {
+  for (const fileId of trashableIds) {
     try {
       await driveTrashFile(accessToken, fileId);
       trashed += 1;
