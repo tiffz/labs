@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   adaptBlocksToPanelBudget,
+  arrangementsForSpeakerCount,
   createDefaultCast,
   defaultArrangementForCount,
   defaultFillForPanel,
@@ -22,7 +23,33 @@ import {
   MIXAM_TRIM_PRESETS,
   type LabsPrintSpec,
 } from '../../shared/zine';
-import { generateMadLibsPage } from '../copy/scrapboardMadLibs';
+import { fetchScenicWikimediaImageForQuery } from '../../shared/media';
+import {
+  generateStoryPage,
+  groupPanelsByScene,
+  photoQueryFromBlocks,
+  pickWeightedLayout,
+  pickWeightedPanelCount,
+  type StoryPagePlan,
+} from '../copy/scrapboardStoryGenerate';
+import {
+  DEFAULT_SCRAPBOARD_RANDOMIZE_LOCKS,
+  SCRAPBOARD_CAST_POOL,
+  type ScrapboardRandomizeLocks,
+  type ScrapboardRandomizeScope,
+} from './scrapboardRandomizeLocks';
+
+function scenicResultToPanelBackground(
+  result: Awaited<ReturnType<typeof fetchScenicWikimediaImageForQuery>>,
+): PanelBackgroundImage | undefined {
+  if (!result) return undefined;
+  return {
+    url: result.url,
+    thumbUrl: result.thumbUrl,
+    title: result.title,
+    license: result.license,
+  };
+}
 
 /** Board preview size used for mad-libs dialogue budgeting (matches main canvas). */
 const BUDGET_PAGE_W = 520;
@@ -93,8 +120,18 @@ export type ScrapboardBoardState = {
   setPanelBackgroundImage: (panelIndex: number, image: PanelBackgroundImage | null) => void;
   pageBackgroundImage: PanelBackgroundImage | null;
   setPageBackgroundImage: (image: PanelBackgroundImage | null) => void;
+  randomizeLocks: ScrapboardRandomizeLocks;
+  toggleRandomizeLock: (scope: ScrapboardRandomizeScope) => void;
   randomizeText: () => void;
-  randomizeAll: () => void;
+  randomizePanelCopy: (panelIndex: number) => void;
+  randomizeCast: () => void;
+  randomizePanelStaging: (panelIndex: number) => void;
+  randomizeLayout: () => void;
+  randomizeTrim: () => void;
+  /** Scenic Wikimedia backgrounds for each panel + page photo. */
+  randomizePhotos: () => void;
+  /** Randomize every unlocked scope. Optional palette callback (palette lives in App). */
+  randomizeAll: (opts?: { randomizePalette?: () => void }) => void;
 };
 
 export function useScrapboardBoard(initialPanelCount = 4): ScrapboardBoardState {
@@ -116,6 +153,13 @@ export function useScrapboardBoard(initialPanelCount = 4): ScrapboardBoardState 
     fillsForLayout(defaultGeneratedLayout(initialPanelCount, layoutOptions), createDefaultCast()),
   );
   const [pageBackgroundImage, setPageBackgroundImage] = useState<PanelBackgroundImage | null>(null);
+  const [randomizeLocks, setRandomizeLocks] = useState<ScrapboardRandomizeLocks>(
+    () => ({ ...DEFAULT_SCRAPBOARD_RANDOMIZE_LOCKS }),
+  );
+
+  const toggleRandomizeLock = useCallback((scope: ScrapboardRandomizeScope) => {
+    setRandomizeLocks((current) => ({ ...current, [scope]: !current[scope] }));
+  }, []);
 
   const layoutCandidates = useMemo(
     () => generateLayoutsForPanelCount(panelCount, layoutOptions),
@@ -286,85 +330,346 @@ export function useScrapboardBoard(initialPanelCount = 4): ScrapboardBoardState 
     });
   }, [cast]);
 
+  const mapMadLibsToSpeakers = useCallback(
+    (
+      madLibs: PanelTextBlock[],
+      speakerIds: string[],
+      castRows: ComicCastMember[],
+    ): PanelTextBlock[] =>
+      madLibs.map((block) => {
+        if (block.kind !== 'dialogue') return block;
+        const idx = Math.max(0, ['a', 'b', 'c'].indexOf(block.characterId)) % Math.max(1, speakerIds.length);
+        const castMemberId = speakerIds[idx] ?? speakerIds[0] ?? castRows[0]?.id;
+        return {
+          ...block,
+          castMemberId,
+          characterId: slotForSpeakerIndex(Math.max(0, speakerIds.indexOf(castMemberId ?? ''))),
+        };
+      }),
+    [],
+  );
+
   const randomizeText = useCallback(() => {
+    if (randomizeLocks.copy) return;
     const seed = Date.now();
-    const pageBlocks = generateMadLibsPage(seed, layout.panels.length);
+    const plan = generateStoryPage(seed, layout, { cast, randomizeCast: false });
     setFills((current) => {
       const byIndex = new Map(current.map((f) => [f.panelIndex, f]));
-      return layout.panels.map((panel, panelIndex) => {
-        const existing = byIndex.get(panelIndex);
+      return plan.panels.map((panelPlan) => {
+        const existing = byIndex.get(panelPlan.panelIndex);
         const speakerIds =
-          existing?.speakerIds && existing.speakerIds.length > 0
-            ? existing.speakerIds
-            : cast.slice(0, 2).map((c) => c.id);
-        const bounds = panelPixelBounds(panel, BUDGET_PAGE_W, BUDGET_PAGE_H);
-        const madLibs = pageBlocks[panelIndex] ?? [];
-        const mapped: PanelTextBlock[] = madLibs.map((block) => {
-          if (block.kind !== 'dialogue') return block;
-          const idx = Math.max(0, ['a', 'b', 'c'].indexOf(block.characterId));
-          const castMemberId = speakerIds[idx] ?? speakerIds[0] ?? cast[0]?.id;
-          return {
-            ...block,
-            castMemberId,
-            characterId: slotForSpeakerIndex(Math.max(0, speakerIds.indexOf(castMemberId ?? ''))),
-          };
-        });
+          !randomizeLocks.staging && panelPlan.speakerIds.length > 0
+            ? panelPlan.speakerIds
+            : existing?.speakerIds && existing.speakerIds.length > 0
+              ? existing.speakerIds
+              : cast.slice(0, 2).map((c) => c.id);
+        const mapped = mapMadLibsToSpeakers(panelPlan.blocks, speakerIds, cast);
         return {
-          panelIndex,
+          panelIndex: panelPlan.panelIndex,
           speakerIds,
-          arrangement: existing?.arrangement ?? defaultArrangementForCount(speakerIds.length || 1),
-          blocks: normalizeDialogueBlocks(adaptBlocksToPanelBudget(mapped, bounds), speakerIds, cast),
+          arrangement:
+            !randomizeLocks.staging
+              ? panelPlan.arrangement
+              : existing?.arrangement ?? defaultArrangementForCount(speakerIds.length || 1),
+          blocks: normalizeDialogueBlocks(mapped, speakerIds, cast),
           text: { kind: 'none' as const },
           backgroundImage: existing?.backgroundImage,
+          sceneId: panelPlan.sceneId,
+          photoQuery: panelPlan.photoQuery,
         };
       });
     });
-  }, [layout.panels, cast]);
+  }, [layout, cast, randomizeLocks.copy, randomizeLocks.staging, mapMadLibsToSpeakers]);
 
-  const randomizeAll = useCallback(() => {
-    const seed = Date.now();
-    const count = 3 + (Math.abs(seed) % 8);
-    const layouts = generateLayoutsForPanelCount(count, layoutOptions);
-    const pick = layouts[Math.abs(seed >> 3) % layouts.length]!;
-    setPanelCountState(count);
-    setSelectedLayoutId(pick.id);
-    setSelectedPanelIndex(0);
-    const pageBlocks = generateMadLibsPage(seed, pick.panels.length);
-    const nextCast = createDefaultCast();
-    setCastState(nextCast);
-    setFills(
-      pick.panels.map((panel, panelIndex) => {
-        const speakerCount = 1 + (Math.abs(seed + panelIndex * 17) % Math.min(3, nextCast.length));
-        const speakerIds = nextCast.slice(0, speakerCount).map((c) => c.id);
-        const bounds = panelPixelBounds(panel, BUDGET_PAGE_W, BUDGET_PAGE_H);
-        const madLibs = pageBlocks[panelIndex] ?? [];
-        const mapped: PanelTextBlock[] = madLibs.map((block) => {
-          if (block.kind !== 'dialogue') return block;
-          const idx = Math.max(0, ['a', 'b', 'c'].indexOf(block.characterId)) % speakerIds.length;
-          const castMemberId = speakerIds[idx]!;
-          return {
-            ...block,
-            castMemberId,
-            characterId: slotForSpeakerIndex(idx),
-          };
-        });
-        return {
+  const randomizePanelCopy = useCallback(
+    (panelIndex: number) => {
+      if (randomizeLocks.copy) return;
+      const seed = Date.now() + panelIndex * 97;
+      const plan = generateStoryPage(seed, layout, { cast, randomizeCast: false });
+      const panelPlan = plan.panels[panelIndex];
+      if (!panelPlan) return;
+      setFills((current) => {
+        const next = [...current];
+        const existingIndex = next.findIndex((f) => f.panelIndex === panelIndex);
+        const existing =
+          existingIndex >= 0 ? next[existingIndex]! : defaultFillForPanel(panelIndex, cast);
+        const speakerIds =
+          existing.speakerIds && existing.speakerIds.length > 0
+            ? existing.speakerIds
+            : cast.slice(0, 2).map((c) => c.id);
+        const mapped = mapMadLibsToSpeakers(panelPlan.blocks, speakerIds, cast);
+        const row: PanelFillSpec = {
+          ...existing,
           panelIndex,
           speakerIds,
-          arrangement: defaultArrangementForCount(speakerIds.length),
-          blocks: normalizeDialogueBlocks(adaptBlocksToPanelBudget(mapped, bounds), speakerIds, nextCast),
-          text: { kind: 'none' as const },
+          arrangement: existing.arrangement ?? defaultArrangementForCount(speakerIds.length || 1),
+          blocks: normalizeDialogueBlocks(mapped, speakerIds, cast),
+          text: { kind: 'none' },
+          sceneId: panelPlan.sceneId,
+          photoQuery: panelPlan.photoQuery,
         };
-      }),
-    );
-    const preset = MIXAM_TRIM_PRESETS[Math.abs(seed >> 5) % MIXAM_TRIM_PRESETS.length]!;
+        if (existingIndex >= 0) next[existingIndex] = row;
+        else next.push(row);
+        return next;
+      });
+    },
+    [cast, layout, mapMadLibsToSpeakers, randomizeLocks.copy],
+  );
+
+  const randomizeCast = useCallback(() => {
+    if (randomizeLocks.cast) return;
+    const seed = Date.now();
+    setCastState((current) => {
+      const count = Math.max(1, current.length);
+      const shuffled = [...SCRAPBOARD_CAST_POOL].sort(
+        (a, b) => ((seed + a.label.charCodeAt(0)) % 97) - ((seed + b.label.charCodeAt(0)) % 97),
+      );
+      return Array.from({ length: count }, (_, index) => {
+        const pick = shuffled[index % shuffled.length]!;
+        const existing = current[index];
+        return {
+          id: existing?.id ?? `cast-${index}`,
+          emoji: pick.emoji,
+          label: pick.label,
+        };
+      });
+    });
+  }, [randomizeLocks.cast]);
+
+  const randomizePanelStaging = useCallback(
+    (panelIndex: number) => {
+      if (randomizeLocks.staging) return;
+      const seed = Date.now() + panelIndex * 31;
+      setFills((current) => {
+        const next = [...current];
+        const existingIndex = next.findIndex((f) => f.panelIndex === panelIndex);
+        const existing =
+          existingIndex >= 0 ? next[existingIndex]! : defaultFillForPanel(panelIndex, cast);
+        const speakerCount = 1 + (Math.abs(seed) % Math.min(3, cast.length));
+        const offset = Math.abs(seed >> 2) % cast.length;
+        const speakerIds = Array.from({ length: speakerCount }, (_, i) => cast[(offset + i) % cast.length]!.id);
+        const options = arrangementsForSpeakerCount(speakerCount);
+        const arrangement =
+          options[Math.abs(seed >> 3) % Math.max(1, options.length)]?.id ??
+          defaultArrangementForCount(speakerCount);
+        const row: PanelFillSpec = {
+          ...existing,
+          panelIndex,
+          speakerIds,
+          arrangement,
+          blocks: normalizeDialogueBlocks(existing.blocks ?? [], speakerIds, cast),
+        };
+        if (existingIndex >= 0) next[existingIndex] = row;
+        else next.push(row);
+        return next;
+      });
+    },
+    [cast, randomizeLocks.staging],
+  );
+
+  const randomizeLayout = useCallback(() => {
+    if (randomizeLocks.layout) return;
+    if (layoutCandidates.length === 0) return;
+    const seed = Date.now();
+    const pick = pickWeightedLayout(seed, layoutCandidates, selectedLayoutId);
+    setSelectedLayoutId(pick.id);
+    setFills((current) => fillsForLayout(pick, cast, current));
+    setSelectedPanelIndex((current) => Math.min(current, pick.panels.length - 1));
+  }, [cast, layoutCandidates, randomizeLocks.layout, selectedLayoutId]);
+
+  const randomizeTrim = useCallback(() => {
+    if (randomizeLocks.trim) return;
+    const seed = Date.now();
+    const preset = MIXAM_TRIM_PRESETS[Math.abs(seed) % MIXAM_TRIM_PRESETS.length]!;
     setPrintSpec((current) => ({
       ...current,
       presetId: preset.id,
       trimWidth: preset.width,
       trimHeight: preset.height,
     }));
-  }, [layoutOptions]);
+  }, [randomizeLocks.trim]);
+
+  const applyStoryPhotos = useCallback(
+    async (
+      seed: number,
+      panelPlans: Array<{
+        panelIndex: number;
+        sceneId?: string;
+        photoQuery?: string;
+        blocks?: PanelTextBlock[];
+      }>,
+      pageOpts?: { usePageBackground: boolean; pagePhotoQuery: string | null },
+    ) => {
+      try {
+        const groups = groupPanelsByScene(panelPlans);
+        const sceneImage = new Map<string, PanelBackgroundImage | undefined>();
+        let sceneOrdinal = 0;
+        for (const [sceneId, indices] of groups) {
+          const sample = panelPlans.find((p) => p.panelIndex === indices[0]);
+          const query =
+            sample?.photoQuery ??
+            photoQueryFromBlocks(sample?.blocks, seed + sceneOrdinal * 41);
+          const result = await fetchScenicWikimediaImageForQuery(query, seed + sceneOrdinal * 97);
+          sceneImage.set(sceneId, scenicResultToPanelBackground(result));
+          sceneOrdinal += 1;
+        }
+        setFills((current) =>
+          current.map((fill) => {
+            const plan = panelPlans.find((p) => p.panelIndex === fill.panelIndex);
+            const sceneId = plan?.sceneId ?? fill.sceneId;
+            const groupsKey =
+              [...groups.entries()].find(([, idxs]) => idxs.includes(fill.panelIndex))?.[0] ??
+              sceneId;
+            const image = groupsKey ? sceneImage.get(groupsKey) : undefined;
+            return {
+              ...fill,
+              sceneId: plan?.sceneId ?? fill.sceneId,
+              photoQuery: plan?.photoQuery ?? fill.photoQuery,
+              backgroundImage: image ?? fill.backgroundImage,
+            };
+          }),
+        );
+
+        if (pageOpts?.usePageBackground && pageOpts.pagePhotoQuery) {
+          const pagePick = await fetchScenicWikimediaImageForQuery(
+            pageOpts.pagePhotoQuery,
+            seed + 401,
+          );
+          setPageBackgroundImage(scenicResultToPanelBackground(pagePick) ?? null);
+        } else if (pageOpts && !pageOpts.usePageBackground) {
+          setPageBackgroundImage(null);
+        }
+      } catch {
+        /* Scenic fetch is best-effort — leave prior photos if Commons is unreachable. */
+      }
+    },
+    [],
+  );
+
+  const randomizePhotos = useCallback(() => {
+    if (randomizeLocks.photos) return;
+    const seed = Date.now();
+    void applyStoryPhotos(
+      seed,
+      fills.map((fill) => ({
+        panelIndex: fill.panelIndex,
+        sceneId: fill.sceneId,
+        photoQuery: fill.photoQuery ?? photoQueryFromBlocks(fill.blocks, seed + fill.panelIndex),
+        blocks: fill.blocks,
+      })),
+      {
+        /* Photos-only dice: uncommon page background (~12%). */
+        usePageBackground: seed % 100 < 12,
+        pagePhotoQuery: photoQueryFromBlocks(fills[0]?.blocks, seed + 401),
+      },
+    );
+  }, [applyStoryPhotos, fills, randomizeLocks.photos]);
+
+  const randomizeAll = useCallback(
+    (opts?: { randomizePalette?: () => void }) => {
+      const seed = Date.now();
+      let nextLayout = layout;
+      const workingLayoutOptions = layoutOptions;
+
+      if (!randomizeLocks.layout) {
+        const nextCount = pickWeightedPanelCount(seed);
+        const layouts = generateLayoutsForPanelCount(nextCount, workingLayoutOptions);
+        nextLayout = pickWeightedLayout(seed >> 3, layouts);
+        setPanelCountState(nextCount);
+        setSelectedLayoutId(nextLayout.id);
+        setSelectedPanelIndex(0);
+      }
+
+      if (!randomizeLocks.trim) {
+        const preset = MIXAM_TRIM_PRESETS[Math.abs(seed >> 5) % MIXAM_TRIM_PRESETS.length]!;
+        setPrintSpec((current) => ({
+          ...current,
+          presetId: preset.id,
+          trimWidth: preset.width,
+          trimHeight: preset.height,
+        }));
+      }
+
+      if (!randomizeLocks.palette) {
+        opts?.randomizePalette?.();
+      }
+
+      const plan: StoryPagePlan = generateStoryPage(seed, nextLayout, {
+        cast,
+        randomizeCast: !randomizeLocks.cast,
+      });
+      const nextCast = !randomizeLocks.cast ? plan.cast : cast;
+      if (!randomizeLocks.cast) {
+        setCastState(nextCast);
+      }
+
+      const nextFills: PanelFillSpec[] = nextLayout.panels.map((panel, panelIndex) => {
+        const prior = fills.find((f) => f.panelIndex === panelIndex);
+        const panelPlan = plan.panels[panelIndex];
+        let speakerIds =
+          prior?.speakerIds && prior.speakerIds.length > 0
+            ? prior.speakerIds.filter((id) => nextCast.some((c) => c.id === id))
+            : nextCast.slice(0, 2).map((c) => c.id);
+        let arrangement =
+          prior?.arrangement ?? defaultArrangementForCount(speakerIds.length || 1);
+
+        if (!randomizeLocks.staging && panelPlan) {
+          speakerIds = panelPlan.speakerIds.filter((id) => nextCast.some((c) => c.id === id));
+          arrangement = panelPlan.arrangement;
+        }
+        if (speakerIds.length === 0) {
+          speakerIds = nextCast.slice(0, 1).map((c) => c.id);
+        }
+
+        const bounds = panelPixelBounds(panel, BUDGET_PAGE_W, BUDGET_PAGE_H);
+        let blocks = prior?.blocks ?? [];
+        if (!randomizeLocks.copy && panelPlan) {
+          const mapped = mapMadLibsToSpeakers(panelPlan.blocks, speakerIds, nextCast);
+          blocks = adaptBlocksToPanelBudget(mapped, bounds);
+        } else {
+          blocks = adaptBlocksToPanelBudget(blocks, bounds);
+        }
+
+        return {
+          panelIndex,
+          speakerIds,
+          arrangement,
+          blocks: normalizeDialogueBlocks(blocks, speakerIds, nextCast),
+          text: { kind: 'none' as const },
+          backgroundImage: prior?.backgroundImage,
+          sceneId: panelPlan?.sceneId,
+          photoQuery: panelPlan?.photoQuery,
+        };
+      });
+
+      setFills(nextFills);
+
+      if (!randomizeLocks.photos) {
+        void applyStoryPhotos(
+          seed,
+          plan.panels.map((p) => ({
+            panelIndex: p.panelIndex,
+            sceneId: p.sceneId,
+            photoQuery: p.photoQuery,
+            blocks: p.blocks,
+          })),
+          {
+            usePageBackground: plan.usePageBackground,
+            pagePhotoQuery: plan.pagePhotoQuery,
+          },
+        );
+      }
+    },
+    [
+      cast,
+      fills,
+      layout,
+      layoutOptions,
+      mapMadLibsToSpeakers,
+      randomizeLocks,
+      applyStoryPhotos,
+    ],
+  );
 
   return {
     panelCount,
@@ -395,7 +700,15 @@ export function useScrapboardBoard(initialPanelCount = 4): ScrapboardBoardState 
     setPanelBackgroundImage,
     pageBackgroundImage,
     setPageBackgroundImage,
+    randomizeLocks,
+    toggleRandomizeLock,
     randomizeText,
+    randomizePanelCopy,
+    randomizeCast,
+    randomizePanelStaging,
+    randomizeLayout,
+    randomizeTrim,
+    randomizePhotos,
     randomizeAll,
   };
 }

@@ -116,15 +116,16 @@ export function ScrapboardPrintSpecPanel({
         {summary.bleedReadout}
       </p>
 
-      <label className="scrapboard-toggle-row">
+      <label className="scrapboard-sketch-toggle">
         <input
           type="checkbox"
-          className="scrapboard-toggle-row__input"
+          className="scrapboard-sketch-toggle__input"
           checked={showBleedGuides}
           onChange={(event) => onShowBleedGuidesChange(event.target.checked)}
           data-testid="scrapboard-trim-guides-toggle"
         />
-        <span className="scrapboard-toggle-row__label">Show trim guides</span>
+        <span className="scrapboard-sketch-toggle__box" aria-hidden />
+        <span className="scrapboard-sketch-toggle__label">Show trim guides</span>
       </label>
     </section>
   );

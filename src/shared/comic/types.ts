@@ -180,6 +180,10 @@ export interface PanelFillSpec {
   noteText?: string;
   /** Photo fill for this panel, palette-tinted (duotone) rather than composited literally. */
   backgroundImage?: PanelBackgroundImage;
+  /** Story-generation continuity: panels sharing a sceneId reuse one photo when possible. */
+  sceneId?: string;
+  /** Preferred Wikimedia query for this panel’s background (keyword bias, not vision match). */
+  photoQuery?: string;
 }
 
 export interface PageMockupSpec {

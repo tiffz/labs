@@ -164,18 +164,171 @@
 
 /* Scrapboard "sketchy" — thick ink borders, offset shadow, hand-drawn feel. */
 .labs-palette-builder--sketchy {
-  --labs-palette-builder-sketch-ink: #2a2622;
-  --labs-palette-builder-sketch-shadow: 2px 2px 0 rgb(42 38 34 / 12%);
+  --labs-palette-builder-sketch-ink: var(--scrapboard-ink, #2a2622);
+  --labs-palette-builder-sketch-muted: var(--scrapboard-muted, #6d665e);
+  --labs-palette-builder-sketch-line: var(--scrapboard-line, #c9bfb3);
+  --labs-palette-builder-sketch-soft: var(--scrapboard-accent-soft, #fff4d6);
+  --labs-palette-builder-sketch-shadow: var(
+    --scrapboard-sketch-shadow,
+    2px 2px 0 rgb(42 38 34 / 12%)
+  );
+  font-family: 'Nunito', system-ui, sans-serif;
+  color: var(--labs-palette-builder-sketch-ink);
+  gap: 0.65rem;
+}
+
+.labs-palette-builder--sketchy .labs-palette-builder__heading {
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--labs-palette-builder-sketch-ink);
+}
+
+.labs-palette-builder--sketchy .labs-palette-builder__mood-row {
+  align-items: stretch;
+  gap: 0.45rem;
+}
+
+.labs-palette-builder--sketchy .labs-palette-builder__seed-row {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.labs-palette-builder--sketchy .labs-palette-builder__seed-label {
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--labs-palette-builder-sketch-muted);
+}
+
+.labs-palette-builder--sketchy .labs-palette-builder__seed-swatch {
+  width: 1.85rem;
+  height: 1.85rem;
+  border: 2px solid var(--labs-palette-builder-sketch-ink);
+  border-radius: 0.2rem 0.35rem 0.15rem 0.3rem / 0.3rem 0.15rem 0.35rem 0.2rem;
+  box-shadow: var(--labs-palette-builder-sketch-shadow);
 }
 
 .labs-palette-builder--sketchy .labs-palette-builder__upload,
 .labs-palette-builder--sketchy .labs-palette-builder__proposal {
   border: 2px solid var(--labs-palette-builder-sketch-ink);
-  border-radius: 2px;
+  border-radius: 0.2rem 0.4rem 0.15rem 0.35rem / 0.35rem 0.15rem 0.4rem 0.2rem;
   box-shadow: var(--labs-palette-builder-sketch-shadow);
+  background: #fff;
+  font-family: inherit;
+  font-weight: 800;
+  color: var(--labs-palette-builder-sketch-ink);
+}
+
+.labs-palette-builder--sketchy .labs-palette-builder__proposal {
+  align-items: center;
+  min-height: 2.1rem;
+  padding: 0.35rem 0.5rem;
+}
+
+.labs-palette-builder--sketchy .labs-palette-builder__proposal-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--labs-palette-builder-sketch-ink);
+}
+
+.labs-palette-builder--sketchy .labs-palette-builder__proposal-swatches {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex: 0 0 auto;
+}
+
+.labs-palette-builder--sketchy .labs-palette-builder__upload:hover,
+.labs-palette-builder--sketchy .labs-palette-builder__proposal:hover,
+.labs-palette-builder--sketchy .labs-palette-builder__proposal:focus-visible {
+  background: var(--labs-palette-builder-sketch-soft);
+  border-color: var(--scrapboard-accent, #f4a000);
 }
 
 .labs-palette-builder--sketchy .labs-palette-builder__swatch {
-  border-radius: 1px;
-  border-color: rgb(42 38 34 / 25%);
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 0.1rem;
+  border: 1.5px solid rgb(42 38 34 / 35%);
+}
+
+.labs-palette-builder--sketchy .MuiButton-root {
+  font-family: inherit;
+  font-weight: 800;
+  text-transform: none;
+  border: 2px solid var(--labs-palette-builder-sketch-ink);
+  border-radius: 0.2rem 0.4rem 0.15rem 0.3rem / 0.3rem 0.15rem 0.35rem 0.2rem;
+  box-shadow: var(--labs-palette-builder-sketch-shadow);
+  color: var(--labs-palette-builder-sketch-ink);
+  background: #fff;
+  min-height: 1.85rem;
+}
+
+.labs-palette-builder--sketchy .MuiButton-root:hover {
+  background: var(--labs-palette-builder-sketch-soft);
+  border-color: var(--scrapboard-accent, #f4a000);
+}
+
+.labs-palette-builder--sketchy .MuiOutlinedInput-root,
+.labs-palette-builder--sketchy .MuiInputBase-root {
+  font-family: inherit;
+  font-weight: 700;
+  color: var(--labs-palette-builder-sketch-ink);
+  background: #fff;
+}
+
+.labs-palette-builder--sketchy .MuiOutlinedInput-notchedOutline {
+  border-width: 2px;
+  border-color: var(--labs-palette-builder-sketch-ink);
+}
+
+.labs-palette-builder--sketchy .MuiOutlinedInput-root {
+  border-radius: 0.2rem 0.35rem 0.15rem 0.3rem / 0.3rem 0.15rem 0.35rem 0.2rem;
+}
+
+.labs-palette-builder--sketchy .MuiInputLabel-root {
+  font-family: inherit;
+  font-weight: 800;
+  color: var(--labs-palette-builder-sketch-muted);
+}
+
+.labs-palette-builder--sketchy .MuiFormLabel-root.Mui-focused,
+.labs-palette-builder--sketchy
+  .MuiOutlinedInput-root.Mui-focused
+  .MuiOutlinedInput-notchedOutline {
+  color: var(--labs-palette-builder-sketch-ink);
+  border-color: var(--scrapboard-accent, #f4a000);
+}
+
+.labs-palette-builder--sketchy .labs-palette-builder__active-label {
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--labs-palette-builder-sketch-muted);
+}
+
+.labs-palette-builder__mood-menu.MuiPaper-root {
+  font-family: 'Nunito', system-ui, sans-serif;
+  border: 2px solid var(--scrapboard-ink, #2a2622);
+  border-radius: 0.25rem 0.55rem 0.2rem 0.45rem / 0.4rem 0.2rem 0.5rem 0.25rem;
+  box-shadow: 3px 3px 0 rgba(42, 38, 34, 0.22);
+  background: var(--scrapboard-surface, #fffdf8);
+}
+
+.labs-palette-builder__mood-menu .MuiMenuItem-root {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.78rem;
+  min-height: 1.85rem;
 }

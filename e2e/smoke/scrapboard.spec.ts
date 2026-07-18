@@ -14,7 +14,6 @@ test('scrapboard app loads', async ({ page }) => {
 test('scrapboard panel count updates layout gallery', async ({ page }) => {
   await page.goto('/scrapboard/');
   await expect(page.getByTestId('scrapboard-layout-gallery')).toBeVisible();
-  await page.getByTestId('scrapboard-randomize-menu').click();
   await page.getByTestId('scrapboard-randomize-all').click();
   await expect(page.getByTestId('scrapboard-board').getByTestId('comic-mockup-svg')).toBeVisible();
 });
@@ -38,9 +37,17 @@ test('scrapboard main canvas renders all panels', async ({ page }) => {
 
 test('scrapboard randomize copy', async ({ page }) => {
   await page.goto('/scrapboard/');
-  await page.getByTestId('scrapboard-randomize-menu').click();
   await page.getByTestId('scrapboard-randomize-text').click();
   await expect(page.getByTestId('scrapboard-board').getByTestId('comic-mockup-svg')).toBeVisible();
+});
+
+test('scrapboard section dice and locks are available', async ({ page }) => {
+  await page.goto('/scrapboard/');
+  await expect(page.getByTestId('scrapboard-cast-randomize')).toBeVisible();
+  await expect(page.getByTestId('scrapboard-palette-randomize')).toBeVisible();
+  await expect(page.getByTestId('scrapboard-layout-randomize')).toBeVisible();
+  await page.getByTestId('scrapboard-palette-lock').click();
+  await expect(page.getByTestId('scrapboard-palette-randomize')).toBeDisabled();
 });
 
 test('scrapboard cast, speakers, and arrangement', async ({ page }) => {

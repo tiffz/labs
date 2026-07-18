@@ -20,20 +20,22 @@ without exporting.
 
 ## CUJ-004 — Randomize
 
-Header **Randomize** menu: **Randomize copy** shuffles dialogue/captions only (keeps cast and
-speakers). **Randomize all** also picks panel count, layout, arrangements, and trim preset.
+Header **Randomize all** (multi-dice) rolls every unlocked scope. Per-section dice + lock sit
+next to Cast, Palette, Trim, Layout, panel Who’s here, and Lines. Locked scopes stay put.
+Header **Copy** dice randomizes dialogue/captions only.
 
 ## CUJ-005 — Palette tint
 
-Open the **Palette** chip in the Page finish bar and apply a proposal (moods, surprise, seed,
-upload, or paste). Applied via `applyPaletteToMockup` with comic-convention roles; emoji
-markers get a soft wash.
+Open the **Palette** chip and pick a preset, or use the palette dice for an immediate random
+apply (distinct from browsing presets). Applied via `applyPaletteToMockup`; cast markers use
+Noto Color Emoji rasterized with a soft wash filter.
 
 ## CUJ-006 — Wikimedia background photo
 
 In the panel inspector, open **Background photo** to search Commons or hit **Random** for a
-scenic pick. Whole-page background lives under the **Page photo** chip (secondary). Photos
-use a soft palette wash. Panels without a photo keep a simple horizon under the cast.
+scenic pick. Whole-page background lives under the **Page photo** chip — search is **inline**
+in that menu (no nested dropdown). Photos use a soft palette wash. Panels without a photo
+keep a simple horizon under the cast.
 
 ## CUJ-007 — Page cast + panel arrangement
 

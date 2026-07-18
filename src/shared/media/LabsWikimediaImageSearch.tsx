@@ -1,15 +1,16 @@
 import { useId, useMemo, useState, type ReactElement } from 'react';
 
-import { classifyWikimediaLicense, type LabsWikimediaLicenseFilter } from './wikimediaLicense';
+import type { LabsWikimediaLicenseFilter } from './wikimediaLicense';
+import {
+  fetchRandomScenicWikimediaImage,
+  fetchWikimediaResults,
+  filterWikimediaResultsByLicense,
+  RANDOM_SCENIC_QUERIES,
+  type LabsWikimediaImageResult,
+} from './labsWikimediaScenic';
 import './labsWikimediaImageSearch.css';
 
-/** A single Wikimedia Commons search result. */
-export interface LabsWikimediaImageResult {
-  title: string;
-  url: string;
-  thumbUrl?: string;
-  license: string;
-}
+export type { LabsWikimediaImageResult };
 
 export type LabsWikimediaImageSearchVariant = 'default' | 'lyrefly' | 'sketchy';
 
@@ -31,89 +32,9 @@ const LICENSE_FILTER_OPTIONS: Array<{ value: LabsWikimediaLicenseFilter; label: 
   { value: 'cc-by-sa', label: 'CC BY-SA' },
 ];
 
-/** Scenic seeds when Random has no search query — favor photo-like backgrounds. */
-const RANDOM_SCENIC_QUERIES = [
-  'city street photograph',
-  'forest path landscape',
-  'beach horizon photograph',
-  'mountain landscape photograph',
-  'rainy street photograph',
-  'park pathway photograph',
-  'skyline photograph',
-  'countryside field photograph',
-  'cafe interior photograph',
-  'library interior photograph',
-  'bridge city photograph',
-  'desert landscape photograph',
-] as const;
-
-function stripHtml(value: string): string {
-  return value.replace(/<[^>]+>/g, '').trim();
-}
-
-interface WikimediaApiPage {
-  title?: string;
-  imageinfo?: Array<{
-    url?: string;
-    thumburl?: string;
-    mime?: string;
-    extmetadata?: Record<string, { value?: string }>;
-  }>;
-}
-
-interface WikimediaApiResponse {
-  query?: { pages?: Record<string, WikimediaApiPage> };
-}
-
-function pagesToResults(pages: Record<string, WikimediaApiPage>): LabsWikimediaImageResult[] {
-  const next: LabsWikimediaImageResult[] = [];
-  for (const page of Object.values(pages)) {
-    const info = page.imageinfo?.[0];
-    if (!info?.url) continue;
-    const mime = info.mime ?? '';
-    if (mime && !mime.startsWith('image/')) continue;
-    if (mime.includes('svg')) continue;
-    const licenseRaw = info.extmetadata?.LicenseShortName?.value ?? 'See Commons';
-    next.push({
-      title: (page.title ?? 'Image').replace(/^File:/, ''),
-      url: info.url,
-      thumbUrl: info.thumburl,
-      license: stripHtml(licenseRaw),
-    });
-  }
-  return next;
-}
-
-async function fetchWikimediaResults(query: string): Promise<LabsWikimediaImageResult[]> {
-  const params = new URLSearchParams({
-    action: 'query',
-    format: 'json',
-    generator: 'search',
-    gsrsearch: query,
-    gsrnamespace: '6',
-    gsrlimit: '12',
-    prop: 'imageinfo',
-    iiprop: 'url|extmetadata|mime',
-    iiurlwidth: '160',
-    origin: '*',
-  });
-  const res = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`);
-  if (!res.ok) throw new Error('request failed');
-  const data = (await res.json()) as WikimediaApiResponse;
-  return pagesToResults(data.query?.pages ?? {});
-}
-
 function pickRandom<T>(items: readonly T[]): T | undefined {
   if (items.length === 0) return undefined;
   return items[Math.floor(Math.random() * items.length)];
-}
-
-function filterByLicense(
-  results: LabsWikimediaImageResult[],
-  licenseFilter: LabsWikimediaLicenseFilter,
-): LabsWikimediaImageResult[] {
-  if (licenseFilter === 'any') return results;
-  return results.filter((result) => classifyWikimediaLicense(result.license) === licenseFilter);
 }
 
 /**
@@ -156,18 +77,17 @@ export function LabsWikimediaImageSearch({
     setBusy(true);
     setError('');
     try {
-      const q = query.trim() || pickRandom(RANDOM_SCENIC_QUERIES) || 'landscape photograph';
-      if (!query.trim()) setQuery(q);
-      const next = await fetchWikimediaResults(q);
-      const licensed = filterByLicense(next, licenseFilter);
-      const pool = licensed.length > 0 ? licensed : next;
-      setResults(pool);
-      if (pool.length === 0) {
+      if (!query.trim()) {
+        const scenic = pickRandom(RANDOM_SCENIC_QUERIES) ?? 'landscape photograph';
+        setQuery(scenic);
+      }
+      const chosen = await fetchRandomScenicWikimediaImage(Date.now(), licenseFilter);
+      if (!chosen) {
         setError('No random photo found. Try another search.');
         return;
       }
-      const chosen = pickRandom(pool);
-      if (chosen && onSelectImage) onSelectImage(chosen);
+      setResults([chosen]);
+      onSelectImage?.(chosen);
     } catch {
       setError('Random photo failed. Check your connection.');
     } finally {
@@ -176,7 +96,7 @@ export function LabsWikimediaImageSearch({
   };
 
   const filteredResults = useMemo(() => {
-    return filterByLicense(results, licenseFilter);
+    return filterWikimediaResultsByLicense(results, licenseFilter);
   }, [results, licenseFilter]);
 
   const rootClassName = [

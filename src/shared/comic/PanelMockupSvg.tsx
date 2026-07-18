@@ -4,12 +4,10 @@ import type { MockupPaletteApplyResult } from '../palette';
 import type { LabsPrintSpec } from '../zine/labsPrintSpec';
 import { bleedOverlayPercents } from '../zine/bleedConfig';
 import { bleedConfigForLabsPrintSpec, trimSizeFromLabsPrintSpec } from '../zine/labsPrintSpec';
+import { renderCharacterMarker, renderHorizonScene } from './characterMarkers';
+import { EmojiCharacterMarker } from './EmojiCharacterMarker';
 import {
-  renderCharacterMarker,
-  renderEmojiCharacterMarker,
-  renderHorizonScene,
-} from './characterMarkers';
-import {
+  castLabelBySlot,
   emojiBySlot,
   placementForFill,
   resolvePanelSpeakerIds,
@@ -17,7 +15,13 @@ import {
 } from './comicCast';
 import { DUOTONE_GRAYSCALE_MATRIX, softPhotoDuotoneTables } from './duotoneFilter';
 import { mockupDimensionsForPrintSpec } from './panelMockupDimensions';
-import { panelCircleClipAttrs, panelPixelBounds, panelSvgPointsAttr, resolvePanelClip } from './panelClipPath';
+import {
+  markerLayoutBounds,
+  panelCircleClipAttrs,
+  panelPixelBounds,
+  panelSvgPointsAttr,
+  resolvePanelClip,
+} from './panelClipPath';
 import { renderMockupComposition } from './mockupCompositions';
 import { isLegacyStickFill, legacyStickPose, resolvePanelComposition, resolvePanelTextBlocks } from './panelFillResolve';
 import { layoutPanelTextBlocks, type PanelTextLayout, type PanelTextLayoutOptions } from './speechBubbleLayout';
@@ -147,6 +151,7 @@ export function PanelMockupSvg({
     const speakerIds =
       characterFirst && cast ? resolvePanelSpeakerIds(fill, cast) : [];
     const emojisBySlot = characterFirst && cast ? emojiBySlot(fill, cast) : {};
+    const labelsBySlot = characterFirst && cast ? castLabelBySlot(fill, cast) : {};
     const slotIds: PanelCharacterId[] =
       characterFirst && speakerIds.length > 0
         ? speakerIds.map((_, i) => slotForSpeakerIndex(i))
@@ -185,7 +190,6 @@ export function PanelMockupSvg({
         data-panel-index={index}
         data-panel-bleed={panel.bleedMode ?? 'trim'}
         data-panel-shape={panel.shape ?? 'rect'}
-        clipPath={allowBubbleEscape ? undefined : `url(#${clipId(index)})`}
         className={onPanelSelect ? 'comic-mockup-svg__panel--interactive' : undefined}
         onClick={onPanelSelect ? () => onPanelSelect(index) : undefined}
         role={onPanelSelect ? 'button' : undefined}
@@ -247,22 +251,8 @@ export function PanelMockupSvg({
               : characterFirst
                 ? null
                 : renderPanelComposition(fill, inner, figureColor, accentColor, sketchy)}
-          {characterFirst
-            ? slotIds.map((characterId) => {
-                const emoji = emojisBySlot[characterId];
-                if (!emoji) return null;
-                return renderEmojiCharacterMarker(
-                  characterId,
-                  inner,
-                  emoji,
-                  figureColor,
-                  undefined,
-                  markerPlacement,
-                );
-              })
-            : characterIds.map((characterId) =>
-                renderCharacterMarker(characterId, inner, figureColor, panelStroke * 0.9),
-              )}
+          {/* Clip dialogue when escape is off; markers stay outside so slant clips never crop cast. */}
+          {!allowBubbleEscape ? textOverlay : null}
         </g>
         {isCircle && circle ? (
           <circle
@@ -285,7 +275,30 @@ export function PanelMockupSvg({
             vectorEffect="non-scaling-stroke"
           />
         )}
-        {!allowBubbleEscape ? textOverlay : null}
+        {/* Markers after stroke so thick borders never cover heads; bounds are shape-aware. */}
+        {characterFirst
+          ? slotIds.map((characterId) => {
+              const emoji = emojisBySlot[characterId];
+              if (!emoji) return null;
+              return (
+                <EmojiCharacterMarker
+                  key={`emoji-marker-${characterId}`}
+                  characterId={characterId}
+                  bounds={markerLayoutBounds(inner, panel.shape ?? 'rect', panelStroke)}
+                  emoji={emoji}
+                  placement={markerPlacement}
+                  name={labelsBySlot[characterId]}
+                />
+              );
+            })
+          : characterIds.map((characterId) =>
+              renderCharacterMarker(
+                characterId,
+                markerLayoutBounds(inner, panel.shape ?? 'rect', panelStroke),
+                figureColor,
+                panelStroke * 0.9,
+              ),
+            )}
         {showReadingOrder && orderIndex >= 0 ? (
           <text
             x={bounds.x + 10}
@@ -293,6 +306,10 @@ export function PanelMockupSvg({
             fontSize={14}
             fontWeight="700"
             fill={accentColor}
+            stroke="#ffffff"
+            strokeWidth={3.25}
+            paintOrder="stroke fill"
+            className="comic-mockup-svg__panel-index"
           >
             {orderIndex + 1}
           </text>
@@ -451,9 +468,12 @@ function renderPanelTextOverlay(
         bubble.metrics.padY,
         bubble.metrics.fontSize,
       );
+      /* Top-anchor inside the pad box — centered blocks overflow when halfH was capped. */
       const textTop =
         bubble.cy -
-        ((bubble.lines.length - 1) * bubble.metrics.lineHeight) / 2 +
+        bubble.halfH +
+        bubble.metrics.padY +
+        bubble.metrics.fontSize * 0.5 +
         textOffsetY;
       const fullText = bubble.sourceContent?.trim() || bubble.lines.join(' ');
       const showFullTextTitle = Boolean(bubble.truncated && fullText);

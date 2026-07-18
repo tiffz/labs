@@ -13,12 +13,13 @@ import type {
 import { PANEL_CHARACTER_IDS } from './types';
 
 export const DEFAULT_CAST_EMOJIS = ['🧑', '👩', '🧒'] as const;
+const DEFAULT_CAST_LABELS = ['Alex', 'Riley', 'Sam'] as const;
 
 export function createDefaultCast(): ComicCastMember[] {
   return DEFAULT_CAST_EMOJIS.map((emoji, index) => ({
     id: `cast-${PANEL_CHARACTER_IDS[index] ?? index}`,
     emoji,
-    label: (PANEL_CHARACTER_IDS[index] ?? String(index)).toUpperCase(),
+    label: DEFAULT_CAST_LABELS[index] ?? (PANEL_CHARACTER_IDS[index] ?? String(index)).toUpperCase(),
   }));
 }
 
@@ -92,6 +93,21 @@ export function emojiBySlot(
     const slot = slotForSpeakerIndex(index);
     const member = castMemberById(cast, id);
     if (member) out[slot] = member.emoji;
+  });
+  return out;
+}
+
+/** Cast display names keyed by panel slot (for marker hover titles). */
+export function castLabelBySlot(
+  fill: PanelFillSpec | undefined,
+  cast: ComicCastMember[],
+): Partial<Record<PanelCharacterId, string>> {
+  const speakers = resolvePanelSpeakerIds(fill, cast);
+  const out: Partial<Record<PanelCharacterId, string>> = {};
+  speakers.forEach((id, index) => {
+    const slot = slotForSpeakerIndex(index);
+    const member = castMemberById(cast, id);
+    if (member) out[slot] = member.label?.trim() || member.emoji;
   });
   return out;
 }

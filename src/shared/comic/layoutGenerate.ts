@@ -13,9 +13,10 @@ export type LayoutHeuristicId =
   | 'l-shape'
   | 't-shape'
   | 'mosaic-columns'
-  |   'diagonal-stagger'
+  | 'diagonal-stagger'
   | 'diagonal-slice'
   | 'slant-row'
+  | 'slant-column'
   | 'diagonal-slash'
   | 'angular-stack'
   | 'wedge-pinwheel'
@@ -243,12 +244,33 @@ function diagonalSliceGrid(safe: LayoutSafeRegion, n: number): PanelRect[] | nul
   return null;
 }
 
+/** Classic inverted-triangle of equal circles. */
 function circleTrio(safe: LayoutSafeRegion): PanelRect[] {
   const d = 0.4;
   return [
     mapToSafe(safe, 0.5 - d / 2, 0.04, d, d, { shape: 'circle' }),
     mapToSafe(safe, 0.06, 0.5, d, d, { shape: 'circle' }),
     mapToSafe(safe, 0.94 - d, 0.5, d, d, { shape: 'circle' }),
+  ];
+}
+
+/** Large hero circle + two smaller satellites (asymmetric sizes). */
+function circleTrioAsymmetric(safe: LayoutSafeRegion): PanelRect[] {
+  const big = 0.52;
+  const small = 0.3;
+  return [
+    mapToSafe(safe, 0.04, 0.08, big, big, { shape: 'circle' }),
+    mapToSafe(safe, 0.62, 0.08, small, small, { shape: 'circle' }),
+    mapToSafe(safe, 0.58, 0.52, small + 0.06, small + 0.06, { shape: 'circle' }),
+  ];
+}
+
+/** Vertical stack of unequal circles. */
+function circleTrioStack(safe: LayoutSafeRegion): PanelRect[] {
+  return [
+    mapToSafe(safe, 0.22, 0.02, 0.56, 0.32, { shape: 'circle' }),
+    mapToSafe(safe, 0.12, 0.34, 0.76, 0.34, { shape: 'circle' }),
+    mapToSafe(safe, 0.28, 0.68, 0.44, 0.3, { shape: 'circle' }),
   ];
 }
 
@@ -262,12 +284,35 @@ function circleQuartet(safe: LayoutSafeRegion): PanelRect[] {
   ];
 }
 
+/** 2×2 of mixed circle sizes (experimental). */
+function circleQuartetMixed(safe: LayoutSafeRegion): PanelRect[] {
+  return [
+    mapToSafe(safe, 0.02, 0.02, 0.48, 0.48, { shape: 'circle' }),
+    mapToSafe(safe, 0.58, 0.06, 0.36, 0.36, { shape: 'circle' }),
+    mapToSafe(safe, 0.08, 0.56, 0.34, 0.34, { shape: 'circle' }),
+    mapToSafe(safe, 0.48, 0.48, 0.5, 0.5, { shape: 'circle' }),
+  ];
+}
+
 function slantRow(safe: LayoutSafeRegion, n: number): PanelRect[] | null {
   if (n < 3) return null;
-  const gw = GUTTER;
+  // Extra gutter so inset parallelograms keep a clear ink gap between panels.
+  const gw = Math.max(GUTTER, 0.028);
   const cellW = (1 - gw * (n - 1)) / n;
   return Array.from({ length: n }, (_, i) =>
     mapToSafe(safe, i * (cellW + gw), 0, cellW, 1, {
+      shape: 'parallelogram',
+      diagonalBias: i % 2 === 0 ? 0.14 : -0.14,
+    }),
+  );
+}
+
+function slantColumn(safe: LayoutSafeRegion, n: number): PanelRect[] | null {
+  if (n < 3) return null;
+  const gh = Math.max(GUTTER, 0.028);
+  const cellH = (1 - gh * (n - 1)) / n;
+  return Array.from({ length: n }, (_, i) =>
+    mapToSafe(safe, 0, i * (cellH + gh), 1, cellH, {
       shape: 'parallelogram',
       diagonalBias: i % 2 === 0 ? 0.12 : -0.12,
     }),
@@ -452,14 +497,27 @@ export function generateLayoutsForPanelCount(
 
   if (n === 3) {
     candidates.push(finalize('circle-trio-3', 'Circle trio', 'circle-trio', 0.2, circleTrio(safe)));
+    candidates.push(
+      finalize('circle-trio-asym-3', 'Circle trio mix', 'circle-trio', 0.17, circleTrioAsymmetric(safe)),
+    );
+    candidates.push(
+      finalize('circle-trio-stack-3', 'Circle stack', 'circle-trio', 0.16, circleTrioStack(safe)),
+    );
   }
   if (n === 4) {
     candidates.push(finalize('circle-quartet-4', 'Circle quartet', 'circle-quartet', 0.18, circleQuartet(safe)));
+    candidates.push(
+      finalize('circle-quartet-mix-4', 'Circle mix', 'circle-quartet', 0.15, circleQuartetMixed(safe)),
+    );
   }
 
   const slant = slantRow(safe, n);
   if (slant) {
     candidates.push(finalize(`slant-${n}`, 'Slant row', 'slant-row', 0.2, slant));
+  }
+  const slantCol = slantColumn(safe, n);
+  if (slantCol) {
+    candidates.push(finalize(`slant-col-${n}`, 'Slant column', 'slant-column', 0.18, slantCol));
   }
 
   const slash = diagonalSlash(safe, n);

@@ -1,9 +1,15 @@
 import { useCallback, useMemo, useRef, useState, type ReactElement } from 'react';
 
 import SkipToMain from '../shared/components/SkipToMain';
+import {
+  PALETTE_MOOD_PRESETS,
+  colorStateToHex,
+  generateRandomPalettes,
+  polishPaletteHexesForComicA11y,
+} from '../shared/color';
 import type { PanelBackgroundImage } from '../shared/comic';
 import type { LabsWikimediaImageResult } from '../shared/media';
-import { applyPaletteToMockup, type ComicPalette } from '../shared/palette';
+import { applyPaletteToMockup, createPaletteFromHexes, type ComicPalette } from '../shared/palette';
 import {
   artworkDimensionsWithBleed,
   convertPrintUnits,
@@ -46,6 +52,21 @@ export default function App(): ReactElement {
     [board],
   );
 
+  const onRandomizePalette = useCallback((): void => {
+    if (board.randomizeLocks.palette) return;
+    const seed = Date.now();
+    // Bias toward contrast mood often enough that ink stays readable on balloons.
+    const mood = seed % 5 === 0 ? PALETTE_MOOD_PRESETS.contrast : PALETTE_MOOD_PRESETS.mixed;
+    const proposals = generateRandomPalettes(mood, {
+      seed,
+      swatches: 5,
+    });
+    const first = proposals[0];
+    if (!first) return;
+    const polished = polishPaletteHexesForComicA11y(first.colors.map((c) => colorStateToHex(c)));
+    setPalette(createPaletteFromHexes(polished, first.label || 'Random palette', 'manual'));
+  }, [board.randomizeLocks.palette]);
+
   const runExportPng = useCallback(async (): Promise<void> => {
     const svg = svgRef.current?.querySelector('svg');
     if (!svg) return;
@@ -87,17 +108,27 @@ export default function App(): ReactElement {
           <h1 className="scrapboard-title">Scrapboard</h1>
           <p className="scrapboard-tagline">Panel layouts and rough comps, fast.</p>
         </div>
-        <ScrapboardToolbar board={board} onExportPng={() => setExportOpen(true)} />
+        <ScrapboardToolbar
+          board={board}
+          onExportPng={() => setExportOpen(true)}
+          onRandomizePalette={onRandomizePalette}
+        />
       </header>
 
       <div className="scrapboard-page-finish-wrap">
         <ScrapboardPageFinishBar
           palette={palette}
           onPaletteApply={setPalette}
+          onRandomizePalette={onRandomizePalette}
           cast={board.cast}
           onAddCastMember={() => board.addCastMember()}
           onUpdateCastMember={board.updateCastMember}
           onRemoveCastMember={board.removeCastMember}
+          onRandomizeCast={board.randomizeCast}
+          castLocked={board.randomizeLocks.cast}
+          paletteLocked={board.randomizeLocks.palette}
+          onToggleCastLock={() => board.toggleRandomizeLock('cast')}
+          onTogglePaletteLock={() => board.toggleRandomizeLock('palette')}
           pageBackgroundImage={board.pageBackgroundImage}
           onSelectPageBackgroundImage={onSelectPageBackgroundImage}
           onClearPageBackgroundImage={() => board.setPageBackgroundImage(null)}
@@ -105,6 +136,12 @@ export default function App(): ReactElement {
           onPrintSpecChange={board.setPrintSpec}
           showBleedGuides={board.showBleedGuides}
           onShowBleedGuidesChange={board.setShowBleedGuides}
+          onRandomizeTrim={board.randomizeTrim}
+          trimLocked={board.randomizeLocks.trim}
+          onToggleTrimLock={() => board.toggleRandomizeLock('trim')}
+          onRandomizePhotos={board.randomizePhotos}
+          photosLocked={board.randomizeLocks.photos}
+          onTogglePhotosLock={() => board.toggleRandomizeLock('photos')}
         />
       </div>
 
@@ -135,6 +172,9 @@ export default function App(): ReactElement {
             layouts={board.layoutCandidates}
             selectedId={board.selectedLayoutId}
             onSelect={board.selectLayout}
+            onRandomizeLayout={board.randomizeLayout}
+            layoutLocked={board.randomizeLocks.layout}
+            onToggleLayoutLock={() => board.toggleRandomizeLock('layout')}
           />
         </aside>
       </main>

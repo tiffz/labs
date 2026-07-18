@@ -187,8 +187,10 @@ export function validateBubbleTextPlacement(bubble: SpeechBubbleLayout): PathGeo
     metrics.padY,
     metrics.fontSize,
   );
-  // First line uses dominantBaseline="middle"; block center is cy + offsetY.
-  const textCenterY = cy + offsetY;
+  /* Match PanelMockupSvg top-anchored first line; block center is mid-stack. */
+  const firstLineCenterY = cy - halfH + metrics.padY + metrics.fontSize * 0.5 + offsetY;
+  const textCenterY =
+    firstLineCenterY + ((Math.max(lines.length, 1) - 1) * metrics.lineHeight) / 2;
   const textCenter: Point = { x: cx, y: textCenterY };
 
   const mouth = tailMouthGeometry(cx, cy, halfW, halfH, bubble.tailX, bubble.tailY);

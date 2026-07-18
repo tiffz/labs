@@ -55,7 +55,7 @@ export function ScrapboardArrangementField({
         anchorEl={triggerRef.current}
         onClose={() => setOpen(false)}
         placement="bottom-start"
-        paperClassName="scrapboard-arrangement-field__menu"
+        paperClassName="scrapboard-popover scrapboard-arrangement-field__menu"
         disableRestoreFocus
         disableScrollLock
         marginThreshold={12}

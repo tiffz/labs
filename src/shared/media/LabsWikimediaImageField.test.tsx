@@ -18,6 +18,20 @@ describe('LabsWikimediaImageField', () => {
     vi.unstubAllGlobals();
   });
 
+  it('embeds search inline without a nested trigger when presentation=inline', () => {
+    render(
+      <LabsWikimediaImageField
+        variant="sketchy"
+        presentation="inline"
+        label="Page photo"
+        onSelectImage={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('labs-wikimedia-field-inline')).toBeInTheDocument();
+    expect(screen.queryByTestId('labs-wikimedia-field-trigger')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Search photos')).toBeInTheDocument();
+  });
+
   it('shows a thumbnail when a photo is selected and opens search on click', async () => {
     mockFetchOnce({
       '1': {

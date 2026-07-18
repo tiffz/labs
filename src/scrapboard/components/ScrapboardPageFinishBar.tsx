@@ -13,14 +13,21 @@ import {
 import { labsPrintSpecSummary, type LabsPrintSpec } from '../../shared/zine';
 import { ScrapboardEmojiPicker } from './ScrapboardEmojiPicker';
 import { ScrapboardPrintSpecPanel } from './ScrapboardPrintSpecPanel';
+import { ScrapboardScopeActions } from './ScrapboardScopeActions';
 
 export type ScrapboardPageFinishBarProps = {
   palette: ComicPalette | null;
   onPaletteApply: (palette: ComicPalette) => void;
+  onRandomizePalette: () => void;
   cast: ComicCastMember[];
   onAddCastMember: () => void;
   onUpdateCastMember: (id: string, patch: Partial<ComicCastMember>) => void;
   onRemoveCastMember: (id: string) => void;
+  onRandomizeCast: () => void;
+  castLocked: boolean;
+  paletteLocked: boolean;
+  onToggleCastLock: () => void;
+  onTogglePaletteLock: () => void;
   pageBackgroundImage: PanelBackgroundImage | null;
   onSelectPageBackgroundImage: (result: LabsWikimediaImageResult) => void;
   onClearPageBackgroundImage: () => void;
@@ -28,6 +35,12 @@ export type ScrapboardPageFinishBarProps = {
   onPrintSpecChange: (next: LabsPrintSpec) => void;
   showBleedGuides: boolean;
   onShowBleedGuidesChange: (show: boolean) => void;
+  onRandomizeTrim: () => void;
+  trimLocked: boolean;
+  onToggleTrimLock: () => void;
+  onRandomizePhotos: () => void;
+  photosLocked: boolean;
+  onTogglePhotosLock: () => void;
 };
 
 type FinishMenu = 'cast' | 'palette' | 'page-photo' | 'page-settings' | null;
@@ -39,10 +52,16 @@ type FinishMenu = 'cast' | 'palette' | 'page-photo' | 'page-settings' | null;
 export function ScrapboardPageFinishBar({
   palette,
   onPaletteApply,
+  onRandomizePalette,
   cast,
   onAddCastMember,
   onUpdateCastMember,
   onRemoveCastMember,
+  onRandomizeCast,
+  castLocked,
+  paletteLocked,
+  onToggleCastLock,
+  onTogglePaletteLock,
   pageBackgroundImage,
   onSelectPageBackgroundImage,
   onClearPageBackgroundImage,
@@ -50,6 +69,12 @@ export function ScrapboardPageFinishBar({
   onPrintSpecChange,
   showBleedGuides,
   onShowBleedGuidesChange,
+  onRandomizeTrim,
+  trimLocked,
+  onToggleTrimLock,
+  onRandomizePhotos,
+  photosLocked,
+  onTogglePhotosLock,
 }: ScrapboardPageFinishBarProps): ReactElement {
   const [menu, setMenu] = useState<FinishMenu>(null);
   const [pasteOpen, setPasteOpen] = useState(false);
@@ -88,101 +113,167 @@ export function ScrapboardPageFinishBar({
     <div className="scrapboard-page-finish" data-testid="scrapboard-page-finish">
       <span className="scrapboard-page-finish__label">Page</span>
       <div className="scrapboard-page-finish__chips" role="toolbar" aria-label="Page finish">
-        <button
-          ref={castRef}
-          type="button"
+        <div
           className={[
-            'scrapboard-page-finish__chip',
-            menu === 'cast' ? 'scrapboard-page-finish__chip--open' : '',
-            'scrapboard-page-finish__chip--set',
+            'scrapboard-page-finish__chip-wrap',
+            menu === 'cast' ? 'scrapboard-page-finish__chip-wrap--open' : '',
           ]
             .filter(Boolean)
             .join(' ')}
-          aria-expanded={menu === 'cast'}
-          aria-haspopup="dialog"
-          data-testid="scrapboard-page-finish-cast"
-          onClick={() => setMenu((current) => (current === 'cast' ? null : 'cast'))}
         >
-          <span className="scrapboard-page-finish__cast-preview" aria-hidden>
-            {cast.slice(0, 4).map((member) => (
-              <span key={member.id}>{member.emoji}</span>
-            ))}
-          </span>
-          <span className="scrapboard-page-finish__chip-text">{castChipLabel}</span>
-        </button>
-
-        <button
-          ref={paletteRef}
-          type="button"
-          className={[
-            'scrapboard-page-finish__chip',
-            menu === 'palette' ? 'scrapboard-page-finish__chip--open' : '',
-            palette ? 'scrapboard-page-finish__chip--set' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-          aria-expanded={menu === 'palette'}
-          aria-haspopup="dialog"
-          data-testid="scrapboard-page-finish-palette"
-          onClick={() => setMenu((current) => (current === 'palette' ? null : 'palette'))}
-        >
-          {palette ? (
-            <span className="scrapboard-page-finish__swatches" aria-hidden>
-              {palette.swatches.slice(0, 5).map((swatch) => (
-                <span
-                  key={swatch.id}
-                  className="scrapboard-page-finish__swatch"
-                  style={{ background: swatch.hex }}
-                />
+          <button
+            ref={castRef}
+            type="button"
+            className={[
+              'scrapboard-page-finish__chip',
+              menu === 'cast' ? 'scrapboard-page-finish__chip--open' : '',
+              'scrapboard-page-finish__chip--set',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            aria-expanded={menu === 'cast'}
+            aria-haspopup="dialog"
+            data-testid="scrapboard-page-finish-cast"
+            onClick={() => setMenu((current) => (current === 'cast' ? null : 'cast'))}
+          >
+            <span className="scrapboard-page-finish__cast-preview" aria-hidden>
+              {cast.slice(0, 4).map((member) => (
+                <span key={member.id} className="scrapboard-emoji scrapboard-emoji--sm">
+                  {member.emoji}
+                </span>
               ))}
             </span>
-          ) : null}
-          <span className="scrapboard-page-finish__chip-text">{paletteChipLabel}</span>
-        </button>
+            <span className="scrapboard-page-finish__chip-text">{castChipLabel}</span>
+          </button>
+          <ScrapboardScopeActions
+            scopeLabel="cast"
+            locked={castLocked}
+            onToggleLock={onToggleCastLock}
+            onRandomize={onRandomizeCast}
+            testIdPrefix="scrapboard-cast"
+          />
+        </div>
 
-        <button
-          ref={photoRef}
-          type="button"
+        <div
           className={[
-            'scrapboard-page-finish__chip',
-            menu === 'page-photo' ? 'scrapboard-page-finish__chip--open' : '',
-            pageBackgroundImage ? 'scrapboard-page-finish__chip--set' : '',
+            'scrapboard-page-finish__chip-wrap',
+            menu === 'palette' ? 'scrapboard-page-finish__chip-wrap--open' : '',
           ]
             .filter(Boolean)
             .join(' ')}
-          aria-expanded={menu === 'page-photo'}
-          aria-haspopup="dialog"
-          data-testid="scrapboard-page-finish-photo"
-          onClick={() => setMenu((current) => (current === 'page-photo' ? null : 'page-photo'))}
         >
-          {pageBackgroundImage?.thumbUrl || pageBackgroundImage?.url ? (
-            <img
-              src={pageBackgroundImage.thumbUrl || pageBackgroundImage.url}
-              alt=""
-              className="scrapboard-page-finish__thumb"
-            />
-          ) : null}
-          <span className="scrapboard-page-finish__chip-text">{photoChipLabel}</span>
-        </button>
+          <button
+            ref={paletteRef}
+            type="button"
+            className={[
+              'scrapboard-page-finish__chip',
+              menu === 'palette' ? 'scrapboard-page-finish__chip--open' : '',
+              palette ? 'scrapboard-page-finish__chip--set' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            aria-expanded={menu === 'palette'}
+            aria-haspopup="dialog"
+            data-testid="scrapboard-page-finish-palette"
+            onClick={() => setMenu((current) => (current === 'palette' ? null : 'palette'))}
+          >
+            {palette ? (
+              <span className="scrapboard-page-finish__swatches" aria-hidden>
+                {palette.swatches.slice(0, 5).map((swatch) => (
+                  <span
+                    key={swatch.id}
+                    className="scrapboard-page-finish__swatch"
+                    style={{ background: swatch.hex }}
+                  />
+                ))}
+              </span>
+            ) : null}
+            <span className="scrapboard-page-finish__chip-text">{paletteChipLabel}</span>
+          </button>
+          <ScrapboardScopeActions
+            scopeLabel="palette"
+            locked={paletteLocked}
+            onToggleLock={onTogglePaletteLock}
+            onRandomize={onRandomizePalette}
+            testIdPrefix="scrapboard-palette"
+          />
+        </div>
 
-        <button
-          ref={settingsRef}
-          type="button"
+        <div
           className={[
-            'scrapboard-page-finish__chip',
-            menu === 'page-settings' ? 'scrapboard-page-finish__chip--open' : '',
+            'scrapboard-page-finish__chip-wrap',
+            menu === 'page-photo' ? 'scrapboard-page-finish__chip-wrap--open' : '',
           ]
             .filter(Boolean)
             .join(' ')}
-          aria-expanded={menu === 'page-settings'}
-          aria-haspopup="dialog"
-          data-testid="scrapboard-page-finish-settings"
-          onClick={() =>
-            setMenu((current) => (current === 'page-settings' ? null : 'page-settings'))
-          }
         >
-          <span className="scrapboard-page-finish__chip-text">{settingsChipLabel}</span>
-        </button>
+          <button
+            ref={photoRef}
+            type="button"
+            className={[
+              'scrapboard-page-finish__chip',
+              menu === 'page-photo' ? 'scrapboard-page-finish__chip--open' : '',
+              pageBackgroundImage ? 'scrapboard-page-finish__chip--set' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            aria-expanded={menu === 'page-photo'}
+            aria-haspopup="dialog"
+            data-testid="scrapboard-page-finish-photo"
+            onClick={() => setMenu((current) => (current === 'page-photo' ? null : 'page-photo'))}
+          >
+            {pageBackgroundImage?.thumbUrl || pageBackgroundImage?.url ? (
+              <img
+                src={pageBackgroundImage.thumbUrl || pageBackgroundImage.url}
+                alt=""
+                className="scrapboard-page-finish__thumb"
+              />
+            ) : null}
+            <span className="scrapboard-page-finish__chip-text">{photoChipLabel}</span>
+          </button>
+          <ScrapboardScopeActions
+            scopeLabel="photos"
+            locked={photosLocked}
+            onToggleLock={onTogglePhotosLock}
+            onRandomize={onRandomizePhotos}
+            testIdPrefix="scrapboard-photos"
+          />
+        </div>
+
+        <div
+          className={[
+            'scrapboard-page-finish__chip-wrap',
+            menu === 'page-settings' ? 'scrapboard-page-finish__chip-wrap--open' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <button
+            ref={settingsRef}
+            type="button"
+            className={[
+              'scrapboard-page-finish__chip',
+              menu === 'page-settings' ? 'scrapboard-page-finish__chip--open' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            aria-expanded={menu === 'page-settings'}
+            aria-haspopup="dialog"
+            data-testid="scrapboard-page-finish-settings"
+            onClick={() =>
+              setMenu((current) => (current === 'page-settings' ? null : 'page-settings'))
+            }
+          >
+            <span className="scrapboard-page-finish__chip-text">{settingsChipLabel}</span>
+          </button>
+          <ScrapboardScopeActions
+            scopeLabel="trim"
+            locked={trimLocked}
+            onToggleLock={onToggleTrimLock}
+            onRandomize={onRandomizeTrim}
+            testIdPrefix="scrapboard-trim"
+          />
+        </div>
       </div>
 
       <AnchoredPopover
@@ -190,7 +281,7 @@ export function ScrapboardPageFinishBar({
         anchorEl={castRef.current}
         onClose={close}
         placement="bottom-start"
-        paperClassName="scrapboard-page-finish__menu"
+        paperClassName="scrapboard-popover scrapboard-page-finish__menu"
         disableRestoreFocus
         disableScrollLock
         marginThreshold={12}
@@ -215,7 +306,9 @@ export function ScrapboardPageFinishBar({
                   }
                   aria-label={`Change emoji for ${member.label ?? 'character'}`}
                 >
-                  {member.emoji}
+                  <span className="scrapboard-emoji scrapboard-emoji--md" aria-hidden>
+                    {member.emoji}
+                  </span>
                 </button>
                 <input
                   type="text"
@@ -228,7 +321,7 @@ export function ScrapboardPageFinishBar({
                 />
                 <button
                   type="button"
-                  className="scrapboard-btn scrapboard-btn--ghost"
+                  className="scrapboard-btn scrapboard-btn--ghost scrapboard-cast-list__remove"
                   disabled={cast.length <= 1}
                   onClick={() => onRemoveCastMember(member.id)}
                 >
@@ -248,7 +341,7 @@ export function ScrapboardPageFinishBar({
           ) : null}
           <button
             type="button"
-            className="scrapboard-btn scrapboard-btn--ghost"
+            className="scrapboard-btn scrapboard-btn--ghost scrapboard-cast-list__add"
             data-testid="scrapboard-cast-add"
             onClick={() => onAddCastMember()}
           >
@@ -262,7 +355,7 @@ export function ScrapboardPageFinishBar({
         anchorEl={paletteRef.current}
         onClose={close}
         placement="bottom-start"
-        paperClassName="scrapboard-page-finish__menu"
+        paperClassName="scrapboard-popover scrapboard-page-finish__menu"
         disableRestoreFocus
         disableScrollLock
         marginThreshold={12}
@@ -275,6 +368,10 @@ export function ScrapboardPageFinishBar({
           className="scrapboard-page-finish__menu-body"
           data-testid="scrapboard-page-finish-palette-menu"
         >
+          <p className="scrapboard-section-hint">
+            Dice next to Palette applies a random palette immediately. Presets below let you pick a
+            named set.
+          </p>
           <LabsPaletteBuilder
             variant="sketchy"
             value={palette}
@@ -322,7 +419,7 @@ export function ScrapboardPageFinishBar({
         anchorEl={photoRef.current}
         onClose={close}
         placement="bottom-start"
-        paperClassName="scrapboard-page-finish__menu"
+        paperClassName="scrapboard-popover scrapboard-page-finish__menu scrapboard-page-finish__menu--photo"
         disableRestoreFocus
         disableScrollLock
         marginThreshold={12}
@@ -331,13 +428,14 @@ export function ScrapboardPageFinishBar({
         <div
           id={`${panelId}-photo`}
           role="dialog"
-          aria-label="Whole-page background photo"
+          aria-label="Page photo"
           className="scrapboard-page-finish__menu-body"
           data-testid="scrapboard-page-finish-photo-menu"
         >
           <LabsWikimediaImageField
             variant="sketchy"
-            label="Whole-page background photo"
+            presentation="inline"
+            label="Page photo"
             hint="Shows through gutters; softly tinted. Prefer panel photos for scene detail."
             value={
               pageBackgroundImage
@@ -363,7 +461,7 @@ export function ScrapboardPageFinishBar({
         anchorEl={settingsRef.current}
         onClose={close}
         placement="bottom-end"
-        paperClassName="scrapboard-page-finish__menu scrapboard-page-finish__menu--settings"
+        paperClassName="scrapboard-popover scrapboard-page-finish__menu scrapboard-page-finish__menu--settings"
         disableRestoreFocus
         disableScrollLock
         marginThreshold={12}

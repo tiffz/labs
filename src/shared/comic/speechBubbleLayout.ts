@@ -21,7 +21,11 @@ import {
   wrapDialogueText,
   type BubbleMetrics,
 } from './speechBubblePath';
-import { adaptBlocksToPanelBudget, placeItemsWithSlots } from './speechBubbleSlotLayout';
+import {
+  adaptBlocksToPanelBudget,
+  placeItemsWithSlots,
+  sanitizeSlotTextItems,
+} from './speechBubbleSlotLayout';
 import type { PanelCharacterId, PanelTextBlock, SfxLoudness } from './types';
 
 export type LayoutBounds = { x: number; y: number; w: number; h: number };
@@ -940,12 +944,15 @@ function syncCaptionSfxAfterPlacement(items: PanelTextLayoutItem[], zones: Retur
         if (previous.kind === 'bubble') {
           minBaseline = Math.max(
             minBaseline,
-            previous.layout.cy + previous.layout.halfH + item.layout.fontSize + BLOCK_GAP,
+            previous.layout.cy +
+              previous.layout.halfH +
+              item.layout.fontSize * 1.05 +
+              BLOCK_GAP,
           );
         } else if (previous.kind === 'caption') {
           minBaseline = Math.max(
             minBaseline,
-            previous.layout.y + previous.layout.height + item.layout.fontSize + BLOCK_GAP,
+            previous.layout.y + previous.layout.height + item.layout.fontSize * 1.05 + BLOCK_GAP,
           );
         }
       }
@@ -1206,6 +1213,7 @@ export function layoutPanelTextBlocks(
   } else if (placeMode === 'slots') {
     // Slots reserves caption band and owns non-overlap; caption-bump would break the stack.
     syncCaptionSfxAfterPlacement(items, zones);
+    sanitizeSlotTextItems(items, bounds);
   } else {
     enforceBubbleTailGap(items);
     clampBubblesToDialogueZone(items, zones, allowEscape);
@@ -1221,6 +1229,10 @@ export function layoutPanelTextBlocks(
   }
 
   resolveSfxCharacterOverlaps(items, bounds);
+  /* SFX nudge can re-overlap balloons — slots prefer dropping chrome over illegible stacks. */
+  if (placeMode === 'slots') {
+    sanitizeSlotTextItems(items, bounds);
+  }
 
   return { items };
   });

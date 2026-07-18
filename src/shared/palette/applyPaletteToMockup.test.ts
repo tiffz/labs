@@ -35,13 +35,14 @@ describe('applyPaletteToMockup', () => {
     expect(result.panelFills.every((hex) => hex === result.sky)).toBe(true);
   });
 
-  it('maps sfx to the highest-chroma swatch', () => {
+  it('maps sfx to the highest-chroma swatch (may nudge L for paper contrast)', () => {
     const palette = createPaletteFromHexes(['#1a1a1a', '#ffe9f2', '#ff2d95', '#7c3aed', '#0ea5e9']);
     const result = applyPaletteToMockup(palette, 4);
 
     const chromaOf = (hex: string): number => hexToColorState(hex)?.c ?? 0;
     const swatchChroma = palette.swatches.map((s) => chromaOf(s.hex));
-    expect(chromaOf(result.sfx)).toBeCloseTo(Math.max(...swatchChroma), 5);
+    // Luminosity may shift slightly for a11y vs paper; chroma should stay near the vivid pick.
+    expect(chromaOf(result.sfx)).toBeGreaterThan(Math.max(...swatchChroma) - 0.02);
   });
 
   it('keeps the bubble pure white even for saturated palettes', () => {

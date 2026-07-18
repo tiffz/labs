@@ -153,6 +153,15 @@ export function LabsPaletteBuilder({
             value={mood}
             onChange={(e) => onMoodChange(e.target.value as PaletteMoodPreset)}
             data-testid="labs-palette-builder-mood"
+            MenuProps={
+              variant === 'sketchy'
+                ? {
+                    PaperProps: {
+                      className: 'scrapboard-popover labs-palette-builder__mood-menu',
+                    },
+                  }
+                : undefined
+            }
           >
             {Object.values(PALETTE_MOOD_PRESETS).map((preset) => (
               <MenuItem key={preset.id} value={preset.id}>

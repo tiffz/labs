@@ -1,14 +1,27 @@
 import type { ReactElement } from 'react';
 
 import type { MarkerPlacement } from './characterArrangements';
+import { emojiRasterImageSize } from './emojiRasterize';
 import { activeMarkerPlacement } from './markerPlacementScope';
 import type { PanelCharacterId } from './types';
 
+/** Geometric A/B/C defaults (Lyrefly). Scrapboard emoji uses arrangement slots instead. */
 export const CHARACTER_MARKER_SLOTS: Record<PanelCharacterId, { x: number; y: number }> = {
   a: { x: 0.26, y: 0.8 },
   b: { x: 0.74, y: 0.8 },
   c: { x: 0.5, y: 0.84 },
 };
+
+/** Must stay in sync with EmojiCharacterMarker glyph + outline sizing. */
+const EMOJI_GLYPH_SIZE_RATIO = 1.55;
+const EMOJI_OUTLINE_RATIO = 0.1;
+
+/** Half of the painted emoji bitmap (glyph + solid outline pad). */
+export function emojiPaintHalfExtent(markerSize: number): number {
+  const fontSize = Math.max(14, markerSize * EMOJI_GLYPH_SIZE_RATIO);
+  const outlinePx = Math.max(2, Math.round(fontSize * EMOJI_OUTLINE_RATIO));
+  return emojiRasterImageSize(fontSize, outlinePx) / 2;
+}
 
 export const CHARACTER_MARKER_LABELS: Record<PanelCharacterId, string> = {
   a: 'A',
@@ -48,35 +61,73 @@ export function characterMarkerBox(
   characterId: PanelCharacterId,
   placement?: MarkerPlacement,
 ): CharacterMarkerBox {
-  const { cx, cy } = markerCenter(bounds, characterId, placement);
+  let { cx, cy } = markerCenter(bounds, characterId, placement);
   const scale = slotPosition(characterId, placement).scale;
-  const size = markerSize(bounds) * scale;
+  const size = markerSize(bounds, characterId, placement) * scale;
+  const emoji = Boolean(resolvePlacement(placement)?.[characterId]);
+  if (emoji) {
+    /* Keep the full painted bitmap inside layout bounds — otherwise feet clip under
+       the panel stroke or get covered by the next panel’s fill in a grid. */
+    const half = emojiPaintHalfExtent(size);
+    const pad = 2;
+    const minX = bounds.x + half + pad;
+    const maxX = bounds.x + bounds.w - half - pad;
+    const minY = bounds.y + half + pad;
+    const maxY = bounds.y + bounds.h - half - pad;
+    if (minX <= maxX) cx = Math.min(maxX, Math.max(minX, cx));
+    if (minY <= maxY) cy = Math.min(maxY, Math.max(minY, cy));
+  }
+  const extent = emoji ? emojiPaintHalfExtent(size) / size : 1.1;
   return {
     cx,
     cy,
     size,
-    top: cy - size * 1.1,
-    bottom: cy + size * 1.1,
-    left: cx - size * 1.1,
-    right: cx + size * 1.1,
+    top: cy - size * extent,
+    bottom: cy + size * extent,
+    left: cx - size * extent,
+    right: cx + size * extent,
   };
 }
 
-/** Layout overlap uses body box — excludes decorative shape tips above the head. */
+/**
+ * Layout overlap box for bubbles/SFX.
+ * Emoji / arrangement markers paint a full bitmap around `cy` — use that extent so
+ * balloons cannot sit on heads. Geometric A/B/C markers still ignore decorative tips.
+ */
 export function characterMarkerLayoutBox(
   bounds: MarkerBounds,
   characterId: PanelCharacterId,
   placement?: MarkerPlacement,
 ): CharacterMarkerBox {
   const box = characterMarkerBox(bounds, characterId, placement);
+  if (resolvePlacement(placement)?.[characterId]) {
+    const half = emojiPaintHalfExtent(box.size);
+    return {
+      ...box,
+      top: box.cy - half,
+      bottom: box.cy + half,
+      left: box.cx - half,
+      right: box.cx + half,
+    };
+  }
+  /* Geometric markers: ignore decorative tips above the head. */
   return {
     ...box,
     top: box.cy - box.size * 0.2,
   };
 }
 
-function markerSize(bounds: MarkerBounds): number {
-  return Math.min(bounds.w, bounds.h) * 0.1;
+function markerSize(
+  bounds: MarkerBounds,
+  characterId?: PanelCharacterId,
+  placement?: MarkerPlacement,
+): number {
+  const minSide = Math.min(bounds.w, bounds.h);
+  /* Scrapboard emoji cast reads as characters; geometric A/B/C stay compact for Lyrefly. */
+  if (characterId && resolvePlacement(placement)?.[characterId]) {
+    return minSide * 0.185;
+  }
+  return minSide * 0.1;
 }
 
 function markerCenter(
@@ -85,9 +136,13 @@ function markerCenter(
   placement?: MarkerPlacement,
 ): { cx: number; cy: number } {
   const slot = slotPosition(characterId, placement);
+  /* Prefer mid-lower band; paint-extent clamp in characterMarkerBox is the hard stop. */
+  const edge = resolvePlacement(placement)?.[characterId] ? 0.18 : 0;
+  const x = edge > 0 ? Math.min(1 - edge, Math.max(edge, slot.x)) : slot.x;
+  const y = edge > 0 ? Math.min(0.76, Math.max(0.2, slot.y)) : slot.y;
   return {
-    cx: bounds.x + bounds.w * slot.x,
-    cy: bounds.y + bounds.h * slot.y,
+    cx: bounds.x + bounds.w * x,
+    cy: bounds.y + bounds.h * y,
   };
 }
 
@@ -140,37 +195,6 @@ export function renderCharacterMarker(
   );
 }
 
-/**
- * Emoji cast marker — native color emoji only (no tinted halos; those read as grey discs).
- */
-export function renderEmojiCharacterMarker(
-  characterId: PanelCharacterId,
-  bounds: MarkerBounds,
-  emoji: string,
-  _tintColor: string,
-  _washFilterId: string | undefined,
-  placement?: MarkerPlacement,
-): ReactElement {
-  const { cx, cy, size } = characterMarkerBox(bounds, characterId, placement);
-  const fontSize = Math.max(14, size * 1.85);
-  return (
-    <g
-      key={`emoji-marker-${characterId}`}
-      className="comic-mockup-svg__character-marker comic-mockup-svg__character-marker--emoji"
-    >
-      <text
-        x={cx}
-        y={cy + fontSize * 0.32}
-        textAnchor="middle"
-        fontSize={fontSize}
-        style={{ fontFamily: '"Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif' }}
-      >
-        {emoji}
-      </text>
-    </g>
-  );
-}
-
 /** Tail target — shape-specific anchor (apex / circle top / square top). */
 export function characterTailAnchor(
   bounds: MarkerBounds,
@@ -180,8 +204,8 @@ export function characterTailAnchor(
   const box = characterMarkerBox(bounds, characterId, placement);
   const { cx, cy, size } = box;
   if (resolvePlacement(placement)?.[characterId]) {
-    // Emoji / arrangement: tip just above the glyph.
-    return { x: cx, y: cy - size * 0.95 };
+    // Emoji / arrangement: tip above the glyph so the balloon body clears the head.
+    return { x: cx, y: cy - size * 1.2 };
   }
   if (characterId === 'a') {
     const h = size * 1.15;

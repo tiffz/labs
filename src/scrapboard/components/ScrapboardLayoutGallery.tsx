@@ -1,21 +1,38 @@
 import type { ReactElement } from 'react';
 
 import { PanelMockupSvg, type GeneratedPanelLayout } from '../../shared/comic';
+import { ScrapboardScopeActions } from './ScrapboardScopeActions';
 
 export type ScrapboardLayoutGalleryProps = {
   layouts: GeneratedPanelLayout[];
   selectedId: string;
   onSelect: (id: string) => void;
+  onRandomizeLayout: () => void;
+  layoutLocked: boolean;
+  onToggleLayoutLock: () => void;
 };
 
 export function ScrapboardLayoutGallery({
   layouts,
   selectedId,
   onSelect,
+  onRandomizeLayout,
+  layoutLocked,
+  onToggleLayoutLock,
 }: ScrapboardLayoutGalleryProps): ReactElement {
   return (
     <div className="scrapboard-layout-gallery" data-testid="scrapboard-layout-gallery">
-      <p className="scrapboard-layout-gallery__hint">Layouts</p>
+      <div className="scrapboard-layout-gallery__header">
+        <p className="scrapboard-layout-gallery__hint">Layouts</p>
+        <ScrapboardScopeActions
+          scopeLabel="layout"
+          locked={layoutLocked}
+          onToggleLock={onToggleLayoutLock}
+          onRandomize={onRandomizeLayout}
+          testIdPrefix="scrapboard-layout"
+          density="plain"
+        />
+      </div>
       <div className="scrapboard-layout-gallery__strip" role="list">
         {layouts.map((layout) => {
           const active = layout.id === selectedId;

@@ -190,6 +190,7 @@ export function validateSpeechBubbleQuality(
     bounds,
     allowBubbleEscape: options.allowBubbleEscape,
     characterIds,
+    markerPlacement: options.markerPlacement,
   }) as BubbleQualityViolation[];
 
   const active = activeBlocks(blocks);

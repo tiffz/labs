@@ -20,10 +20,14 @@ import type { LayoutBounds, PanelTextLayoutItem, SpeechBubbleLayout } from './sp
 import type { PanelCharacterId, PanelTextBlock } from './types';
 
 const ABOVE_GAP = 8;
+const ABOVE_GAP_EMOJI = 26;
 const STACK_GAP = 6;
 const CAPTION_GAP = 6;
 const EPS = 1.5;
 const OBSTACLE_MARGIN = 4;
+/** Extra air between bubble body bottom and marker top. */
+const MARKER_CLEARANCE = 4;
+const MARKER_CLEARANCE_EMOJI = 22;
 /** Bubble escape may overhang sideways; vertical escape into the next strip is capped. */
 const VERTICAL_ESCAPE_SLOP = 6;
 const MIN_CAPTION_BAND = 26;
@@ -120,6 +124,14 @@ function findOverlappingObstacle(
   return null;
 }
 
+function markerClearanceFor(characterId: PanelCharacterId): number {
+  return activeMarkerPlacement()?.[characterId] ? MARKER_CLEARANCE_EMOJI : MARKER_CLEARANCE;
+}
+
+function aboveGapFor(characterId: PanelCharacterId): number {
+  return activeMarkerPlacement()?.[characterId] ? ABOVE_GAP_EMOJI : ABOVE_GAP;
+}
+
 function maxCyForBubble(
   bounds: LayoutBounds,
   zones: PanelTextZones,
@@ -130,9 +142,42 @@ function maxCyForBubble(
   const marker = characterMarkerLayoutBox(bounds, characterId);
   return Math.min(
     zones.dialogueBottom - halfH,
-    tipY - ABOVE_GAP - halfH,
-    marker.top - halfH - 4,
+    tipY - aboveGapFor(characterId) - halfH,
+    marker.top - halfH - markerClearanceFor(characterId),
   );
+}
+
+/** Active cast slots only — do not reserve empty default a/b/c geometry. */
+function markerIdsToClear(): PanelCharacterId[] {
+  const placement = activeMarkerPlacement();
+  if (placement) {
+    return (['a', 'b', 'c'] as PanelCharacterId[]).filter((id) => placement[id]);
+  }
+  return ['a', 'b', 'c'];
+}
+
+/** Match panelTextLayoutInvariants boxesOverlap MARGIN so placer and validator agree. */
+const MARKER_OVERLAP_MARGIN = 4;
+
+function bubbleOverlapsAnyMarker(bubble: SpeechBubbleLayout, bounds: LayoutBounds): boolean {
+  for (const characterId of markerIdsToClear()) {
+    const marker = characterMarkerLayoutBox(bounds, characterId);
+    const left = bubble.cx - bubble.halfW;
+    const right = bubble.cx + bubble.halfW;
+    const top = bubble.cy - bubble.halfH;
+    const bottom = bubble.cy + bubble.halfH;
+    if (
+      !(
+        right + MARKER_OVERLAP_MARGIN <= marker.left ||
+        marker.right + MARKER_OVERLAP_MARGIN <= left ||
+        bottom + MARKER_OVERLAP_MARGIN <= marker.top ||
+        marker.bottom + MARKER_OVERLAP_MARGIN <= top
+      )
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function fitBubble(
@@ -225,8 +270,10 @@ function maxBodyBottom(bounds: LayoutBounds, allowEscape: boolean): number {
   return bounds.y + bounds.h + (allowEscape ? VERTICAL_ESCAPE_SLOP : 0);
 }
 
-function minBodyTop(bounds: LayoutBounds, allowEscape: boolean): number {
-  return bounds.y - (allowEscape ? VERTICAL_ESCAPE_SLOP : 0);
+function minBodyTop(bounds: LayoutBounds, _allowEscape: boolean): number {
+  /* Never escape upward — panel strokes / gutters clip the top of balloons. */
+  void _allowEscape;
+  return bounds.y;
 }
 
 /** Keep body from spilling into the previous/next strip; sideways escape stays allowed. */
@@ -260,6 +307,7 @@ function hardConflicts(
     if (a.cy - a.halfH < minBodyTop(bounds, allowEscape) - EPS) return true;
     if (allowEscape && !textInsidePanel(a, bounds)) return true;
     if (findOverlappingObstacle(a, obstacles)) return true;
+    if (bubbleOverlapsAnyMarker(a, bounds)) return true;
     for (let j = i + 1; j < bubbles.length; j++) {
       const b = bubbles[j]!;
       if (bodiesOverlap(a, b)) return true;
@@ -294,20 +342,28 @@ function fitWorkingBubbles(
   const innerWidth = bounds.w - zones.sidePad * 2;
   const bandBottom = zones.dialogueBottom;
   const bandH = Math.max(12, bandBottom - reservedTop);
-  // Near-speaker packing needs modest heights; width stays generous so lines don’t truncate.
-  // Cap half-height so we fail over to fewer bubbles instead of micro-ellipses.
-  const maxHalfH = Math.max(
-    12,
-    Math.min(bandH * 0.2, 34, (bandH - (n - 1) * STACK_GAP) / (2 * Math.max(1, n - 0.35))),
-  );
   const maxHalfW = Math.min(
     maxBubbleHalfWidth(bounds, zones.sidePad) * maxHalfWScale,
-    bounds.w * (n >= 3 ? 0.24 : n === 2 ? 0.34 : 0.42),
+    bounds.w * (n >= 3 ? 0.34 : n === 2 ? 0.44 : 0.52),
   );
 
   const fitted: FittedSeed[] = [];
   for (let i = 0; i < n; i++) {
     const seed = working[i]!;
+    /* Size to the air actually available above this speaker — avoids tall balloons that
+       later hard-fit with ellipsis / overflow into the cast band. */
+    const anchor = characterTailAnchor(bounds, seed.characterId);
+    const clearGap = aboveGapFor(seed.characterId) + markerClearanceFor(seed.characterId);
+    const roomToTip = Math.max(18, anchor.y - reservedTop - clearGap);
+    const maxHalfH = Math.max(
+      12,
+      Math.min(
+        roomToTip / 2,
+        bandH * (n === 1 ? 0.52 : n === 2 ? 0.36 : 0.26),
+        n === 1 ? 72 : n === 2 ? 50 : 38,
+        (bandH - (n - 1) * STACK_GAP) / (2 * Math.max(1, n - 0.35)),
+      ),
+    );
     let metrics = fitBubble(
       seed.content,
       fontSize,
@@ -352,7 +408,6 @@ function fitWorkingBubbles(
       );
       widthTries++;
     }
-    const anchor = characterTailAnchor(bounds, seed.characterId);
     const maxCy = maxCyForBubble(bounds, zones, seed.characterId, metrics.halfH, anchor.y);
     if (maxCy < reservedTop + metrics.halfH) return null;
     fitted.push({ ...seed, metrics, anchor, maxCy });
@@ -476,10 +531,21 @@ function tryStack(
         candidate.cy + candidate.halfH <= candidate.tailY - 4 &&
         candidate.tailY - (candidate.cy + candidate.halfH) <= maxTail + 1;
       const textOk = !allowEscape || textInsidePanel(candidate, bounds);
+      const markerOk = !bubbleOverlapsAnyMarker(candidate, bounds);
 
-      if (!conflict && tailOk && textOk) {
+      if (!conflict && tailOk && textOk && markerOk) {
         resolved = true;
         break;
+      }
+
+      if (!markerOk) {
+        // Lift above the marker band — never leave balloons parked on cast heads.
+        const marker = characterMarkerLayoutBox(bounds, seed.characterId);
+        const lifted = marker.top - markerClearanceFor(seed.characterId) - candidate.halfH;
+        if (lifted >= minCy) {
+          candidate = { ...candidate, cy: Math.min(tipFloor, lifted) };
+          continue;
+        }
       }
 
       if (conflict === 'body' && conflictPrev) {
@@ -490,10 +556,9 @@ function tryStack(
         }
         // Lift the earlier bubble to make room near the tip.
         const lift = needCy - tipFloor;
-        conflictPrev.cy = Math.max(
-          reservedTop + conflictPrev.halfH,
-          conflictPrev.cy - lift,
-        );
+        const minPrevCy = Math.max(reservedTop, minBodyTop(bounds, allowEscape)) + conflictPrev.halfH;
+        conflictPrev.cy = Math.max(minPrevCy, conflictPrev.cy - lift);
+        clampBubbleVerticalEscape(conflictPrev, bounds, allowEscape);
         candidate = { ...candidate, cy: tipFloor };
         continue;
       }
@@ -535,6 +600,7 @@ function tryStack(
     if (candidate.tailY - (candidate.cy + candidate.halfH) > maxTail + 1) return null;
     if (candidate.cy + candidate.halfH > maxBodyBottom(bounds, allowEscape) + EPS) return null;
     if (findOverlappingObstacle(candidate, obstacles)) return null;
+    if (bubbleOverlapsAnyMarker(candidate, bounds)) return null;
     for (const prev of placed) {
       if (bodiesOverlap(candidate, prev)) return null;
       if (
@@ -650,6 +716,71 @@ function removeOverlappingBubbles(items: PanelTextLayoutItem[]): void {
   }
 }
 
+function chromeBox(item: PanelTextLayoutItem): SlotObstacle | null {
+  if (item.kind === 'caption') {
+    return {
+      left: item.layout.x,
+      top: item.layout.y,
+      right: item.layout.x + item.layout.width,
+      bottom: item.layout.y + item.layout.height,
+    };
+  }
+  if (item.kind === 'sfx') return sfxLayoutBBox(item.layout);
+  return null;
+}
+
+/** Drop captions/SFX that cover cast — prefer visible characters over chrome. */
+function dropChromeOverlappingMarkers(items: PanelTextLayoutItem[], bounds: LayoutBounds): void {
+  for (let i = items.length - 1; i >= 0; i--) {
+    const box = chromeBox(items[i]!);
+    if (!box) continue;
+    let hits = false;
+    for (const characterId of markerIdsToClear()) {
+      const marker = characterMarkerLayoutBox(bounds, characterId);
+      if (
+        !(
+          box.right + MARKER_OVERLAP_MARGIN <= marker.left ||
+          marker.right + MARKER_OVERLAP_MARGIN <= box.left ||
+          box.bottom + MARKER_OVERLAP_MARGIN <= marker.top ||
+          marker.bottom + MARKER_OVERLAP_MARGIN <= box.top
+        )
+      ) {
+        hits = true;
+        break;
+      }
+    }
+    if (hits) items.splice(i, 1);
+  }
+}
+
+/** Drop later caption/SFX when two chrome items still overlap. */
+function dropOverlappingChromePairs(items: PanelTextLayoutItem[]): void {
+  for (let pass = 0; pass < 4; pass++) {
+    let removed = false;
+    for (let i = 0; i < items.length; i++) {
+      const a = chromeBox(items[i]!);
+      if (!a) continue;
+      for (let j = i + 1; j < items.length; j++) {
+        const b = chromeBox(items[j]!);
+        if (!b || !boxOverlapsObstacle(a, b, 2)) continue;
+        items.splice(j, 1);
+        removed = true;
+        break;
+      }
+      if (removed) break;
+    }
+    if (!removed) break;
+  }
+}
+
+/** Public cleanup after caption/SFX sync — keeps slots layouts audit-clean. */
+export function sanitizeSlotTextItems(items: PanelTextLayoutItem[], bounds: LayoutBounds): void {
+  dropObstaclesOverlappingBubbles(items);
+  removeOverlappingBubbles(items);
+  dropChromeOverlappingMarkers(items, bounds);
+  dropOverlappingChromePairs(items);
+}
+
 /**
  * Place bubbles with column bias + vertical stack. Always writes a placement;
  * prefers conflict-free stacks. If captions make the band infeasible, drop them and
@@ -663,7 +794,10 @@ export function placeItemsWithSlots(
 ): void {
   const zones = panelTextZones(bounds);
   const working = collectWorkingBubbles(items, blocks);
-  if (working.length === 0) return;
+  if (working.length === 0) {
+    sanitizeSlotTextItems(items, bounds);
+    return;
+  }
 
   const attempt = (dropCaptions: boolean) => {
     if (dropCaptions) {
@@ -684,9 +818,11 @@ export function placeItemsWithSlots(
   }
 
   if (!result) {
-    // Never leave seed bubbles painted over captions — drop chrome first, then bubbles.
-    dropObstaclesOverlappingBubbles(items);
-    removeOverlappingBubbles(items);
+    // Prefer empty dialogue over seed geometry that clips off-panel or covers cast.
+    for (let i = items.length - 1; i >= 0; i--) {
+      if (items[i]!.kind === 'bubble') items.splice(i, 1);
+    }
+    sanitizeSlotTextItems(items, bounds);
     return;
   }
 
@@ -697,6 +833,8 @@ export function placeItemsWithSlots(
     if (item.kind !== 'bubble') continue;
     Object.assign(item.layout, best[i]!);
     clampBubbleVerticalEscape(item.layout, bounds, allowEscape);
+    clampTextIntoPanel(item.layout, bounds);
+    clampBubbleVerticalEscape(item.layout, bounds, allowEscape);
   }
   for (let i = items.length - 1; i >= 0; i--) {
     const item = items[i]!;
@@ -704,8 +842,17 @@ export function placeItemsWithSlots(
       items.splice(i, 1);
     }
   }
-  dropObstaclesOverlappingBubbles(items);
-  removeOverlappingBubbles(items);
+  // Last resort: drop any bubble that still violates hard vertical / cast clearance.
+  const obstacles = obstacleBoxesFromItems(items);
+  const placedBubbles = items
+    .filter((item): item is { kind: 'bubble'; layout: SpeechBubbleLayout } => item.kind === 'bubble')
+    .map((item) => item.layout);
+  if (hardConflicts(placedBubbles, bounds, allowEscape, obstacles)) {
+    for (let i = items.length - 1; i >= 0; i--) {
+      if (items[i]!.kind === 'bubble') items.splice(i, 1);
+    }
+  }
+  sanitizeSlotTextItems(items, bounds);
 }
 
 /** Estimate how many active dialogue lines a panel can host at readable font. */

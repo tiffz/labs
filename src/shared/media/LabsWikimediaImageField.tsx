@@ -3,9 +3,9 @@ import { useId, useRef, useState, type ReactElement } from 'react';
 import AnchoredPopover from '../components/AnchoredPopover';
 import {
   LabsWikimediaImageSearch,
-  type LabsWikimediaImageResult,
   type LabsWikimediaImageSearchVariant,
 } from './LabsWikimediaImageSearch';
+import type { LabsWikimediaImageResult } from './labsWikimediaScenic';
 import './labsWikimediaImageField.css';
 
 export type LabsWikimediaImageFieldValue = {
@@ -15,6 +15,8 @@ export type LabsWikimediaImageFieldValue = {
   license?: string;
 };
 
+export type LabsWikimediaImageFieldPresentation = 'popover' | 'inline';
+
 export type LabsWikimediaImageFieldProps = {
   className?: string;
   variant?: LabsWikimediaImageSearchVariant;
@@ -22,13 +24,18 @@ export type LabsWikimediaImageFieldProps = {
   value?: LabsWikimediaImageFieldValue | null;
   onSelectImage: (result: LabsWikimediaImageResult) => void;
   onClear?: () => void;
-  /** Hint under the closed field. */
+  /** Hint under the closed field (popover) or above search (inline). */
   hint?: string;
+  /**
+   * `popover` (default): closed trigger opens a nested search popover — fine in a page rail.
+   * `inline`: search UI is embedded (use when this field already lives inside a popover).
+   */
+  presentation?: LabsWikimediaImageFieldPresentation;
 };
 
 /**
  * Dense Wikimedia picker: closed state shows a thumbnail (or empty slot); click opens
- * an `AnchoredPopover` with {@link LabsWikimediaImageSearch}.
+ * an `AnchoredPopover` with {@link LabsWikimediaImageSearch} — or embed search inline.
  */
 export function LabsWikimediaImageField({
   className,
@@ -38,6 +45,7 @@ export function LabsWikimediaImageField({
   onSelectImage,
   onClear,
   hint,
+  presentation = 'popover',
 }: LabsWikimediaImageFieldProps): ReactElement {
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -58,10 +66,63 @@ export function LabsWikimediaImageField({
   const rootClassName = [
     'labs-wikimedia-field',
     variant !== 'default' ? `labs-wikimedia-field--${variant}` : '',
+    presentation === 'inline' ? 'labs-wikimedia-field--inline' : '',
     className,
   ]
     .filter(Boolean)
     .join(' ');
+
+  const search = (
+    <LabsWikimediaImageSearch
+      variant={variant}
+      showHeading={false}
+      onSelectImage={handleSelect}
+    />
+  );
+
+  if (presentation === 'inline') {
+    return (
+      <div className={rootClassName} data-testid="labs-wikimedia-field" data-variant={variant}>
+        <span className="labs-wikimedia-field__label" id={`${panelId}-label`}>
+          {label}
+        </span>
+        {value ? (
+          <div className="labs-wikimedia-field__current" data-testid="labs-wikimedia-field-current">
+            <span className="labs-wikimedia-field__preview" aria-hidden>
+              {thumbSrc ? (
+                <img
+                  src={thumbSrc}
+                  alt=""
+                  className="labs-wikimedia-field__thumb"
+                  data-testid="labs-wikimedia-field-thumb"
+                />
+              ) : null}
+            </span>
+            <span className="labs-wikimedia-field__meta">
+              <span className="labs-wikimedia-field__title">{value.title}</span>
+              {value.license ? (
+                <span className="labs-wikimedia-field__license">{value.license}</span>
+              ) : null}
+            </span>
+            {onClear ? (
+              <button
+                type="button"
+                className="labs-wikimedia-field__clear"
+                onClick={onClear}
+                data-testid="labs-wikimedia-field-clear"
+              >
+                Remove
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+        {hint ? <p className="labs-wikimedia-field__hint">{hint}</p> : null}
+        <div className="labs-wikimedia-field__inline-search" data-testid="labs-wikimedia-field-inline">
+          {search}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={rootClassName} data-testid="labs-wikimedia-field" data-variant={variant}>
@@ -133,7 +194,12 @@ export function LabsWikimediaImageField({
         anchorEl={triggerRef.current}
         onClose={close}
         placement="bottom-start"
-        paperClassName="labs-wikimedia-field__menu"
+        paperClassName={[
+          'labs-wikimedia-field__menu',
+          variant === 'sketchy' ? 'labs-wikimedia-field__menu--sketchy' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         disableRestoreFocus
         disableScrollLock
         marginThreshold={12}
@@ -146,11 +212,7 @@ export function LabsWikimediaImageField({
           className="labs-wikimedia-field__menu-body"
           data-testid="labs-wikimedia-field-menu"
         >
-          <LabsWikimediaImageSearch
-            variant={variant}
-            showHeading={false}
-            onSelectImage={handleSelect}
-          />
+          {search}
         </div>
       </AnchoredPopover>
     </div>

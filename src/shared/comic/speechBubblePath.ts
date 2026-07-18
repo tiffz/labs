@@ -4,10 +4,10 @@ export const BUBBLE_FONT_SIZE = 11;
 export const BUBBLE_MIN_READABLE_FONT = 9;
 export const BUBBLE_FONT_FAMILY = '"Comic Sans MS", "Comic Neue", cursive, sans-serif';
 /** Comfortable balsamiq balloon padding — keep readable bubbles from feeling letterboxed. */
-export const BUBBLE_PAD_X = 13;
-export const BUBBLE_PAD_Y = 10;
-export const BUBBLE_PAD_X_COMPACT = 10;
-export const BUBBLE_PAD_Y_COMPACT = 7;
+export const BUBBLE_PAD_X = 14;
+export const BUBBLE_PAD_Y = 12;
+export const BUBBLE_PAD_X_COMPACT = 11;
+export const BUBBLE_PAD_Y_COMPACT = 9;
 const MAX_ASPECT_ELLIPSE = 0.55;
 const MAX_ASPECT_ROUND_RECT = 0.72;
 const MIN_HEIGHT_RATIO_ELLIPSE = 0.28;
@@ -30,8 +30,8 @@ export const BUBBLE_PADDING_COMPACT: BubblePadding = {
   padY: BUBBLE_PAD_Y_COMPACT,
 };
 
-export const BUBBLE_PADDING_MINIMAL: BubblePadding = { padX: 8, padY: 5 };
-export const BUBBLE_PADDING_MICRO: BubblePadding = { padX: 6, padY: 4 };
+export const BUBBLE_PADDING_MINIMAL: BubblePadding = { padX: 9, padY: 7 };
+export const BUBBLE_PADDING_MICRO: BubblePadding = { padX: 7, padY: 5 };
 
 /** Normal fit prefers breathable padding; MICRO is hard-fit only. */
 const PADDING_TIERS: BubblePadding[] = [
@@ -81,9 +81,8 @@ function minHalfWForText(fontSize: number, padding: BubblePadding, minChars = 1)
 }
 
 export function charWidthForFont(fontSize: number): number {
-  // Slightly tight vs Comic Sans so wrap uses available balloon width before ellipsis.
-  // Bubble padX still keeps glyphs off the stroke.
-  return fontSize * 0.5;
+  // Wide vs Comic Sans averages so SVG paint rarely exceeds the padded inner width.
+  return fontSize * 0.58;
 }
 
 /** True when displayed lines omit part of the source dialogue (ellipsis / line cap). */
@@ -124,7 +123,8 @@ export function bubbleTextBlockHeight(
   fontSize: number,
 ): number {
   if (lineCount <= 0) return 0;
-  return (lineCount - 1) * lineHeight + fontSize;
+  // Descenders + roundRect bottom mouth notch — keep glyphs inside the stroke.
+  return (lineCount - 1) * lineHeight + fontSize * 1.24;
 }
 
 /** Prefer even line lengths so centered dialogue doesn’t look left- or right-heavy. */
@@ -210,18 +210,16 @@ export function bubbleMetricsForLines(
   }
 
   const neededHalfH = neededHalfHForLines(lineCount, lineHeight, fontSize, padding);
-  if (halfH < neededHalfH) {
-    halfH = neededHalfH;
-  }
-  if (halfH > halfW * maxAspect) {
-    const widenedHalfW = Math.min(options?.maxHalfW ?? halfW, neededHalfH / maxAspect);
-    halfW = Math.max(halfW, widenedHalfW);
-    halfH = Math.min(neededHalfH, halfW * maxAspect);
-  }
+  halfH = Math.max(halfH, neededHalfH, halfW * minHeightRatio);
 
-  halfH = Math.max(halfH, halfW * minHeightRatio);
+  // Prefer widening over shrinking height — short halfH is what clips dialogue into the stroke.
   if (halfH > halfW * maxAspect) {
-    halfH = halfW * maxAspect;
+    const widenedHalfW = neededHalfH / maxAspect;
+    const maxW = options?.maxHalfW ?? widenedHalfW;
+    halfW = Math.max(halfW, Math.min(maxW, widenedHalfW));
+    halfH = Math.max(neededHalfH, Math.min(halfH, halfW * maxAspect));
+    // If still capped by maxHalfW, keep text height (upstream fit will shrink font / wrap).
+    if (halfH < neededHalfH) halfH = neededHalfH;
   }
 
   return { halfW, halfH, fontSize, lineHeight, padX: padding.padX, padY: padding.padY, shape };
@@ -307,16 +305,16 @@ function buildBubbleFromLines(
     padding,
   );
   const halfW = Math.min(metrics.halfW, maxHalfW);
-  const halfH = Math.min(Math.max(neededHalfH, metrics.halfH), maxHalfH);
-  let next = clampBubbleAspect(
+  /* If text needs more height than allowed, keep halfH capped so linesFitBubble fails and
+     the caller re-wraps / shrinks — never paint overflowing glyphs. */
+  const halfH =
+    neededHalfH > maxHalfH + 0.5
+      ? maxHalfH
+      : Math.min(maxHalfH, Math.max(neededHalfH, metrics.halfH));
+  return clampBubbleAspect(
     { ...metrics, halfW, halfH, padX: padding.padX, padY: padding.padY },
     maxHalfW,
   );
-  if (neededHalfH > maxHalfH + 0.5) {
-    return next;
-  }
-  next = { ...next, halfH: Math.min(maxHalfH, Math.max(neededHalfH, next.halfH)) };
-  return clampBubbleAspect(next, maxHalfW);
 }
 
 /** Guaranteed single-line fit for impossible stacks (compact padding + ellipsis). */
@@ -333,15 +331,19 @@ function hardFitBubbleToBox(
         maxHalfW,
         Math.max(minHalfWForText(fontSize, padding), panelInnerWidth / 2, 6),
       );
-      const maxChars = maxCharsForWidth(halfW * 2, fontSize, padding);
-      const lines = wrapAndClampLines(content, maxChars, 1);
       const lineHeight = lineHeightForFont(fontSize);
-      const neededHalfH = neededHalfHForLines(1, lineHeight, fontSize, padding);
+      const maxLinesForH = Math.max(
+        1,
+        Math.floor((maxHalfH * 2 - padding.padY * 2) / Math.max(lineHeight, fontSize * 1.24)),
+      );
+      const maxChars = maxCharsForWidth(halfW * 2, fontSize, padding);
+      const lines = wrapAndClampLines(content, maxChars, maxLinesForH);
+      const neededHalfH = neededHalfHForLines(lines.length, lineHeight, fontSize, padding);
       if (neededHalfH > maxHalfH + 0.5) continue;
       const metrics = clampBubbleAspect(
         {
           halfW,
-          halfH: neededHalfH,
+          halfH: Math.min(maxHalfH, neededHalfH),
           fontSize,
           lineHeight,
           padX: padding.padX,
@@ -364,8 +366,13 @@ function hardFitBubbleToBox(
   for (let fontSize = HARD_MIN_FONT_SIZE; fontSize >= HARD_MIN_FONT_SIZE; fontSize--) {
     const lineHeight = lineHeightForFont(fontSize);
     const maxChars = Math.max(1, maxCharsForWidth(halfW * 2, fontSize, padding));
-    const lines = [truncateLineToWidth(content.trim() || '…', maxChars)];
-    const neededHalfH = neededHalfHForLines(1, lineHeight, fontSize, padding);
+    /* Prefer a short readable phrase over a glyph that paints outside the stroke. */
+    const maxLinesForH = Math.max(
+      1,
+      Math.floor((maxHalfH * 2 - padding.padY * 2) / Math.max(lineHeight, fontSize * 1.24)),
+    );
+    const lines = wrapAndClampLines(content.trim() || '…', maxChars, maxLinesForH);
+    const neededHalfH = neededHalfHForLines(lines.length, lineHeight, fontSize, padding);
     if (neededHalfH > maxHalfH + 0.5) continue;
     const metrics = clampBubbleAspect(
       {
@@ -572,8 +579,8 @@ export function tailMouthChordCrossesInterior(
  * Vertical offset added to the geometric first-line center
  * (`cy - (lineCount - 1) * lineHeight / 2`) when `dominantBaseline="middle"`.
  *
- * Design intent (balsamiq balloons): sit in the padded content box. Informal faces
- * need a slight downward optical settle — avoid lifting copy into the top half.
+ * Keep near zero — a downward settle previously ate bottom padY and clipped the last line
+ * into the roundRect stroke / tail mouth. Sizing already includes descender slack.
  */
 export function bubbleTextOffsetY(
   cx: number,
@@ -586,14 +593,16 @@ export function bubbleTextOffsetY(
   padY: number = BUBBLE_PAD_Y,
   fontSize: number = BUBBLE_FONT_SIZE,
 ): number {
-  void halfW;
+  void cx;
   void cy;
+  void halfW;
+  void halfH;
   void padY;
   void shape;
   void tailX;
   void tailY;
-  // Comic Sans / Comic Neue: em-box middle reads high → settle into the pad box.
-  return fontSize * 0.12;
+  void fontSize;
+  return 0;
 }
 
 /**

@@ -17,23 +17,24 @@ export type ArrangementDef = {
 };
 
 export const CHARACTER_ARRANGEMENTS: ArrangementDef[] = [
-  { id: 'closeup', label: 'Close-up', speakerCount: 1, slots: [{ x: 0.5, y: 0.62, scale: 1.85 }] },
-  { id: 'medium', label: 'Medium', speakerCount: 1, slots: [{ x: 0.5, y: 0.72, scale: 1.35 }] },
-  { id: 'full-center', label: 'Full center', speakerCount: 1, slots: [{ x: 0.5, y: 0.8, scale: 1 }] },
-  { id: 'full-left', label: 'Full left', speakerCount: 1, slots: [{ x: 0.3, y: 0.8, scale: 1 }] },
+  /* y kept mid-lower so paint-extent clamp has room above the panel stroke. */
+  { id: 'closeup', label: 'Close-up', speakerCount: 1, slots: [{ x: 0.5, y: 0.55, scale: 1.65 }] },
+  { id: 'medium', label: 'Medium', speakerCount: 1, slots: [{ x: 0.5, y: 0.66, scale: 1.35 }] },
+  { id: 'full-center', label: 'Full center', speakerCount: 1, slots: [{ x: 0.5, y: 0.72, scale: 1.2 }] },
+  { id: 'full-left', label: 'Full left', speakerCount: 1, slots: [{ x: 0.3, y: 0.72, scale: 1.2 }] },
   {
     id: 'small-distant',
     label: 'Small distant',
     speakerCount: 1,
-    slots: [{ x: 0.5, y: 0.78, scale: 0.55 }],
+    slots: [{ x: 0.5, y: 0.7, scale: 0.7 }],
   },
   {
     id: 'facing',
     label: 'Facing',
     speakerCount: 2,
     slots: [
-      { x: 0.28, y: 0.8, scale: 1.05 },
-      { x: 0.72, y: 0.8, scale: 1.05 },
+      { x: 0.28, y: 0.72, scale: 1.2 },
+      { x: 0.72, y: 0.72, scale: 1.2 },
     ],
   },
   {
@@ -41,8 +42,8 @@ export const CHARACTER_ARRANGEMENTS: ArrangementDef[] = [
     label: 'Side by side',
     speakerCount: 2,
     slots: [
-      { x: 0.38, y: 0.82, scale: 1 },
-      { x: 0.62, y: 0.82, scale: 1 },
+      { x: 0.38, y: 0.72, scale: 1.15 },
+      { x: 0.62, y: 0.72, scale: 1.15 },
     ],
   },
   {
@@ -50,8 +51,8 @@ export const CHARACTER_ARRANGEMENTS: ArrangementDef[] = [
     label: 'Over shoulder',
     speakerCount: 2,
     slots: [
-      { x: 0.22, y: 0.86, scale: 1.25 },
-      { x: 0.68, y: 0.7, scale: 0.85 },
+      { x: 0.28, y: 0.72, scale: 1.25 },
+      { x: 0.68, y: 0.64, scale: 1.0 },
     ],
   },
   {
@@ -59,8 +60,8 @@ export const CHARACTER_ARRANGEMENTS: ArrangementDef[] = [
     label: 'Staggered',
     speakerCount: 2,
     slots: [
-      { x: 0.32, y: 0.78, scale: 1 },
-      { x: 0.7, y: 0.84, scale: 0.95 },
+      { x: 0.32, y: 0.68, scale: 1.2 },
+      { x: 0.7, y: 0.72, scale: 1.1 },
     ],
   },
   {
@@ -68,9 +69,9 @@ export const CHARACTER_ARRANGEMENTS: ArrangementDef[] = [
     label: 'Trio row',
     speakerCount: 3,
     slots: [
-      { x: 0.22, y: 0.82, scale: 0.95 },
-      { x: 0.5, y: 0.82, scale: 0.95 },
-      { x: 0.78, y: 0.82, scale: 0.95 },
+      { x: 0.24, y: 0.72, scale: 1.05 },
+      { x: 0.5, y: 0.72, scale: 1.05 },
+      { x: 0.76, y: 0.72, scale: 1.05 },
     ],
   },
   {
@@ -78,9 +79,9 @@ export const CHARACTER_ARRANGEMENTS: ArrangementDef[] = [
     label: 'Triangle',
     speakerCount: 3,
     slots: [
-      { x: 0.5, y: 0.68, scale: 1 },
-      { x: 0.26, y: 0.86, scale: 0.95 },
-      { x: 0.74, y: 0.86, scale: 0.95 },
+      { x: 0.5, y: 0.6, scale: 1.15 },
+      { x: 0.28, y: 0.72, scale: 1.05 },
+      { x: 0.72, y: 0.72, scale: 1.05 },
     ],
   },
   {
@@ -88,9 +89,9 @@ export const CHARACTER_ARRANGEMENTS: ArrangementDef[] = [
     label: 'Two + one',
     speakerCount: 3,
     slots: [
-      { x: 0.28, y: 0.8, scale: 1 },
-      { x: 0.5, y: 0.8, scale: 1 },
-      { x: 0.78, y: 0.72, scale: 0.85 },
+      { x: 0.28, y: 0.72, scale: 1.15 },
+      { x: 0.5, y: 0.72, scale: 1.15 },
+      { x: 0.76, y: 0.66, scale: 0.95 },
     ],
   },
 ];

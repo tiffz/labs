@@ -4,6 +4,12 @@ export { lerpOklch, hueDistance } from './lerpOklch';
 export { harmonyOffsets, colorsFromHarmony, mutedBridgePalette } from './harmony';
 export { colorStateToHex, hexToColorState, colorStateToCss, normalizeHex } from './convert';
 export {
+  relativeLuminance,
+  contrastRatio,
+  ensureContrastHex,
+  polishPaletteHexesForComicA11y,
+} from './contrast';
+export {
   PALETTE_MOOD_PRESETS,
   PALETTE_MIXED_MOOD_POOL,
   DEFAULT_PALETTE_PROFILE,

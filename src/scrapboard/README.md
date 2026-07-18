@@ -14,19 +14,20 @@ Rough comic page mockups: generated panel layouts, page cast + arrangements, and
 - **Text overlays** — caption, dialogue balloon, and SFX; dialogue chips use cast emojis
 - **Force bubble placement** — dialogue balloons placed with a headless fixed-tick `d3-force` collide solver (see [`SPEECH_BUBBLE_VALIDATION.md`](../shared/comic/SPEECH_BUBBLE_VALIDATION.md))
 - **Print / export** — Export PNG opens a confirm sheet with trim/bleed/DPI summary
-- **Randomize** — copy only (keeps cast), or everything (count + layout + arrangements + trim)
-- **Palette** — Page chip → mood presets, surprise, seed, image, paste; soft wash on emoji markers
-- **Background photo** — Wikimedia field on panel + page chip (search or **Random**); panels without a photo get a simple sky/ground horizon so cast isn’t floating
+- **Randomize** — dice + lock per section (cast, palette, panel copy, staging, layout, trim, photos); header **Randomize all** skips locked scopes. Generation uses weighted panel counts, story-shaped mad-libs (cast names + scene beats sized to each panel), scene-continuous Wikimedia keywords, and uncommon page/full-bleed backgrounds
+- **Palette** — Page chip → mood presets, surprise, seed, image, paste; palette dice applies a random set with luminosity tweaks for WCAG AA ink-on-balloon contrast
+- **Cast markers** — [Noto Color Emoji](https://fonts.google.com/noto/specimen/Noto+Color+Emoji), rasterized for a soft palette wash that survives PNG export
+- **Background photo** — Wikimedia field on panel (popover) + **Page photo** chip with **inline** search (no nested dropdown); panels without a photo get a simple sky/ground horizon so cast isn’t floating
 
 ## Chrome model
 
-| Zone            | Scope                                                           |
-| --------------- | --------------------------------------------------------------- |
-| Header          | Panels · Randomize menu · More (expert toggles) · Export        |
-| Page finish bar | Cast · Palette · Page photo · Trim preset chip                  |
-| Left rail       | Selected panel only (speakers, arrangement, lines, panel photo) |
-| Stage           | Mockup only (selection via orange panel + sidebar **PANEL N**)  |
-| Right rail      | Layouts (always visible)                                        |
+| Zone            | Scope                                                                    |
+| --------------- | ------------------------------------------------------------------------ |
+| Header          | Panels · Randomize all / Randomize copy · More (expert toggles) · Export |
+| Page finish bar | Cast · Palette · Page photo · Trim preset chip                           |
+| Left rail       | Selected panel only (speakers, arrangement, lines, panel photo)          |
+| Stage           | Mockup only (selection via orange panel + sidebar **PANEL N**)           |
+| Right rail      | Layouts (always visible)                                                 |
 
 ## Shared code
 
@@ -46,7 +47,7 @@ npm run dev
 # open /scrapboard/
 ```
 
-Bubble quality gate:
+Bubble quality gate (shared matrix + **100 Scrapboard story pages**):
 
 ```bash
 npm run test:bubble-quality

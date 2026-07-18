@@ -84,4 +84,34 @@ describe('resolvePanelClip', () => {
     const tl = resolvePanelClip({ x: 0, y: 0, width: 1, height: 1, shape: 'diagonal-split-tl' });
     expect(tl).toHaveLength(3);
   });
+
+  it('keeps parallelogram clips inside the unit box (no slant overlap)', () => {
+    for (const bias of [0.14, -0.14, 0.2, -0.08]) {
+      const clip = resolvePanelClip({
+        x: 0,
+        y: 0,
+        width: 1,
+        height: 1,
+        shape: 'parallelogram',
+        diagonalBias: bias,
+      });
+      for (const point of clip) {
+        expect(point.x).toBeGreaterThanOrEqual(0);
+        expect(point.x).toBeLessThanOrEqual(1);
+        expect(point.y).toBeGreaterThanOrEqual(0);
+        expect(point.y).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+});
+
+describe('slant and circle layout variety', () => {
+  it('offers multiple circle variants and a slant column', () => {
+    const three = generateLayoutsForPanelCount(3, { printSpec: DEFAULT_LABS_PRINT_SPEC });
+    const circleIds = three.filter((row) => row.heuristic === 'circle-trio').map((row) => row.id);
+    expect(circleIds.length).toBeGreaterThanOrEqual(2);
+    const four = generateLayoutsForPanelCount(4, { printSpec: DEFAULT_LABS_PRINT_SPEC });
+    expect(four.some((row) => row.heuristic === 'slant-column')).toBe(true);
+    expect(four.some((row) => row.id.includes('circle-quartet-mix'))).toBe(true);
+  });
 });

@@ -28,10 +28,34 @@ describe('speechBubblePath', () => {
     expect(metrics.shape).toBe('roundRect');
   });
 
-  it('keeps roundRect dialogue settled slightly below em-box middle', () => {
+  it('does not shift dialogue downward into bottom pad (avoids stroke clipping)', () => {
     const offset = bubbleTextOffsetY(100, 40, 45, 18, 100, 90, 'roundRect', 10, 11);
-    expect(offset).toBeGreaterThan(0);
-    expect(offset).toBeLessThanOrEqual(3);
+    expect(offset).toBe(0);
+  });
+
+  it('keeps multi-line dialogue inside the padded bubble box', () => {
+    const content = 'Why is the lunchbox humming? It always does that near nowhere useful.';
+    const fitted = fitDialogueLines(content, 70, 160);
+    const textH =
+      (fitted.lines.length - 1) * fitted.metrics.lineHeight + fitted.metrics.fontSize * 1.24;
+    const innerH = fitted.metrics.halfH * 2 - fitted.metrics.padY * 2;
+    const offset = bubbleTextOffsetY(
+      100,
+      40,
+      fitted.metrics.halfW,
+      fitted.metrics.halfH,
+      100,
+      90,
+      fitted.metrics.shape,
+      fitted.metrics.padY,
+      fitted.metrics.fontSize,
+    );
+    expect(textH + Math.abs(offset)).toBeLessThanOrEqual(innerH + 0.5);
+    for (const line of fitted.lines) {
+      expect(line.length * fitted.metrics.fontSize * 0.58).toBeLessThanOrEqual(
+        fitted.metrics.halfW * 2 - fitted.metrics.padX * 2 + 0.5,
+      );
+    }
   });
 
   it('balances two-line wraps for even centered text', () => {

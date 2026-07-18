@@ -1,3 +1,8 @@
+/*
+ * Tokens on :root too — AnchoredPopover portals under body, outside .scrapboard-app,
+ * so menus otherwise lose ink/accent vars and fall back to UA serif + faint borders.
+ */
+:root,
 .scrapboard-app {
   --scrapboard-ink: #2a2622;
   --scrapboard-muted: #6d665e;
@@ -7,6 +12,8 @@
   --scrapboard-accent: #f4a000;
   --scrapboard-accent-soft: #fff4d6;
   --scrapboard-sketch-shadow: 2px 2px 0 rgba(42, 38, 34, 0.12);
+  /* Shared control rhythm — toolbar, chips, tabs, add-line pills. */
+  --scrapboard-control-h: 1.85rem;
   --labs-wikimedia-sketch-ink: var(--scrapboard-ink);
   --labs-wikimedia-sketch-muted: var(--scrapboard-muted);
   --labs-wikimedia-sketch-line: var(--scrapboard-line);
@@ -15,6 +22,9 @@
   --labs-wikimedia-sketch-surface: var(--scrapboard-surface);
   --labs-wikimedia-sketch-paper: var(--scrapboard-paper);
   --labs-wikimedia-sketch-shadow: var(--scrapboard-sketch-shadow);
+}
+
+.scrapboard-app {
   min-height: 100dvh;
   max-height: 100dvh;
   display: grid;
@@ -22,6 +32,14 @@
   background: var(--scrapboard-paper);
   color: var(--scrapboard-ink);
   font-family: 'Nunito', system-ui, sans-serif;
+}
+
+/* Native controls do not inherit font-family by default — keep Scrapboard on Nunito. */
+.scrapboard-app button,
+.scrapboard-app input,
+.scrapboard-app select,
+.scrapboard-app textarea {
+  font-family: inherit;
 }
 
 .scrapboard-header {
@@ -55,7 +73,7 @@
 
 .scrapboard-main {
   display: grid;
-  grid-template-columns: minmax(14rem, 17.5rem) minmax(0, 1fr) minmax(
+  grid-template-columns: minmax(18rem, 22rem) minmax(0, 1fr) minmax(
       10.5rem,
       12.5rem
     );
@@ -151,12 +169,56 @@
   color: var(--scrapboard-ink);
 }
 
-.scrapboard-toolbar__menu.labs-popover-surface {
+/*
+ * Portaled popover shell — always include `scrapboard-popover` on AnchoredPopover
+ * paperClassName. Tokens live on :root (above) so body-portaled menus keep ink/font.
+ */
+.scrapboard-popover.labs-popover-surface.MuiPaper-root,
+.scrapboard-toolbar__menu.labs-popover-surface.MuiPaper-root,
+.scrapboard-page-finish__menu.labs-popover-surface.MuiPaper-root,
+.scrapboard-arrangement-field__menu.labs-popover-surface.MuiPaper-root {
+  --labs-popover-bg: var(--scrapboard-surface);
+  --labs-popover-backdrop: none;
+  --labs-popover-shadow: 3px 3px 0 rgba(42, 38, 34, 0.22);
+  --labs-popover-border: 2px solid var(--scrapboard-ink);
+  --labs-popover-radius: 0.25rem 0.55rem 0.2rem 0.45rem / 0.4rem 0.2rem 0.5rem
+    0.25rem;
   border: 2px solid var(--scrapboard-ink);
   border-radius: 0.25rem 0.55rem 0.2rem 0.45rem / 0.4rem 0.2rem 0.5rem 0.25rem;
   background: var(--scrapboard-surface);
-  box-shadow: 2px 2px 0 rgba(42, 38, 34, 0.18);
-  padding: 0.25rem;
+  background-color: var(--scrapboard-surface);
+  box-shadow: 3px 3px 0 rgba(42, 38, 34, 0.22);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  opacity: 1;
+  padding: 0.45rem;
+  color: var(--scrapboard-ink);
+  font-family: 'Nunito', system-ui, sans-serif;
+}
+
+.scrapboard-popover.labs-popover-surface.MuiPaper-root button,
+.scrapboard-popover.labs-popover-surface.MuiPaper-root label,
+.scrapboard-popover.labs-popover-surface.MuiPaper-root input,
+.scrapboard-popover.labs-popover-surface.MuiPaper-root select,
+.scrapboard-toolbar__menu.labs-popover-surface.MuiPaper-root button,
+.scrapboard-toolbar__menu.labs-popover-surface.MuiPaper-root label,
+.scrapboard-page-finish__menu.labs-popover-surface.MuiPaper-root button,
+.scrapboard-page-finish__menu.labs-popover-surface.MuiPaper-root label,
+.scrapboard-page-finish__menu.labs-popover-surface.MuiPaper-root input,
+.scrapboard-page-finish__menu.labs-popover-surface.MuiPaper-root select,
+.scrapboard-arrangement-field__menu.labs-popover-surface.MuiPaper-root button {
+  font-family: inherit;
+}
+
+/* Nested dashed card is for in-rail panels only — strip when already inside a popover. */
+.scrapboard-popover .scrapboard-print-spec,
+.scrapboard-page-finish__menu .scrapboard-print-spec {
+  margin-top: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .scrapboard-toolbar__menu-body {
@@ -166,9 +228,16 @@
 }
 
 .scrapboard-toolbar__menu-body--more {
-  min-width: 12.5rem;
-  gap: 0.15rem;
-  padding: 0.25rem 0.15rem;
+  min-width: 13.5rem;
+  gap: 0.1rem;
+  padding: 0.2rem 0.1rem;
+}
+
+.scrapboard-toolbar__menu-divider {
+  height: 0;
+  margin: 0.35rem 0.25rem;
+  border: 0;
+  border-top: 1.5px dashed var(--scrapboard-line);
 }
 
 .scrapboard-toolbar__label {
@@ -218,6 +287,12 @@
 }
 
 .scrapboard-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  box-sizing: border-box;
+  min-height: var(--scrapboard-control-h, 1.85rem);
   border-radius: 6px;
   border: 2px solid var(--scrapboard-ink);
   background: #fff;
@@ -225,7 +300,8 @@
   font: inherit;
   font-size: 0.74rem;
   font-weight: 800;
-  padding: 0.35rem 0.7rem;
+  line-height: 1.2;
+  padding: 0.2rem 0.7rem;
   cursor: pointer;
   box-shadow: var(--scrapboard-sketch-shadow);
 }
@@ -394,13 +470,20 @@
 }
 
 .scrapboard-panel-tab {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--scrapboard-control-h);
+  min-height: var(--scrapboard-control-h);
   border: 2px solid var(--scrapboard-line);
   border-radius: 6px;
   background: #fff;
-  padding: 0.15rem 0.55rem;
+  padding: 0 0.45rem;
   font: inherit;
   font-size: 0.72rem;
   font-weight: 800;
+  line-height: 1;
   cursor: pointer;
   box-shadow: 1px 1px 0 rgba(42, 38, 34, 0.08);
 }
@@ -424,8 +507,40 @@
 }
 
 .scrapboard-text-block--compact {
-  padding: 0.2rem 0;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.35rem 0;
   border-bottom: 1px dashed var(--scrapboard-line);
+}
+
+.scrapboard-text-block__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.4rem;
+  min-width: 0;
+}
+
+.scrapboard-text-block__meta .scrapboard-speaker-chips {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.scrapboard-text-block__meta .scrapboard-text-block__actions {
+  margin-left: auto;
+}
+
+.scrapboard-text-block__sfx-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.scrapboard-text-block__sfx-row .scrapboard-inline-input {
+  flex: 1 1 8rem;
+  min-width: 0;
 }
 
 .scrapboard-text-block__inline {
@@ -475,9 +590,13 @@
 }
 
 .scrapboard-speaker-chip--emoji {
-  min-width: 1.7rem;
-  height: 1.7rem;
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0.15rem;
+  overflow: visible;
 }
 
 .scrapboard-sfx-loudness {
@@ -506,10 +625,11 @@
 }
 
 .scrapboard-inline-input {
+  box-sizing: border-box;
   width: 100%;
-  min-height: 2.75rem;
+  min-height: 3.25rem;
   margin: 0;
-  padding: 0.25rem 0.4rem;
+  padding: 0.35rem 0.45rem;
   border: 2px solid var(--scrapboard-line);
   border-radius: 5px;
   background: #fff;
@@ -543,12 +663,16 @@
 }
 
 .scrapboard-text-add--compact .MuiButton-root {
+  box-sizing: border-box;
   min-width: 0;
-  padding: 0.12rem 0.45rem;
-  font-size: 0.68rem;
+  min-height: var(--scrapboard-control-h);
+  padding: 0.15rem 0.55rem;
+  font-size: 0.72rem;
   font-weight: 700;
+  line-height: 1.2;
   text-transform: none;
   border-width: 2px;
+  border-radius: 6px;
 }
 
 .scrapboard-text-block {
@@ -621,16 +745,19 @@
 }
 
 .scrapboard-select {
+  box-sizing: border-box;
   width: 100%;
-  border: 2px solid var(--scrapboard-line);
+  min-height: 2.25rem;
+  border: 2px solid var(--scrapboard-ink);
   border-radius: 6px;
-  padding: 0.35rem 0.45rem;
+  padding: 0.35rem 0.5rem;
   font: inherit;
+  font-family: inherit;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 800;
   background: #fff;
   color: var(--scrapboard-ink);
-  box-shadow: inset 1px 1px 0 rgba(42, 38, 34, 0.04);
+  box-shadow: var(--scrapboard-sketch-shadow);
   cursor: pointer;
 }
 
@@ -647,8 +774,9 @@
 
 .scrapboard-option-chip {
   min-width: 2.35rem;
-  padding: 0.28rem 0.45rem;
-  border: 2px solid var(--scrapboard-line);
+  min-height: var(--scrapboard-control-h, 1.85rem);
+  padding: 0.28rem 0.5rem;
+  border: 2px solid var(--scrapboard-ink);
   border-radius: 6px;
   background: #fff;
   font: inherit;
@@ -657,7 +785,7 @@
   line-height: 1.1;
   cursor: pointer;
   color: var(--scrapboard-ink);
-  box-shadow: 1px 1px 0 rgba(42, 38, 34, 0.06);
+  box-shadow: 1px 1px 0 rgba(42, 38, 34, 0.08);
 }
 
 .scrapboard-option-chip:hover {
@@ -862,6 +990,46 @@
   flex-wrap: wrap;
   gap: 0.35rem;
   min-width: 0;
+  align-items: center;
+}
+
+/* Chip + quiet dice/lock read as one control. */
+.scrapboard-page-finish__chip-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  max-width: min(18rem, 100%);
+  min-width: 0;
+  min-height: var(--scrapboard-control-h);
+  padding: 0 0.28rem 0 0;
+  border: 2px solid var(--scrapboard-ink);
+  border-radius: 0.2rem 0.45rem 0.15rem 0.35rem / 0.35rem 0.15rem 0.4rem 0.2rem;
+  background: #fff;
+  box-shadow: var(--scrapboard-sketch-shadow);
+  overflow: visible;
+}
+
+.scrapboard-page-finish__chip-wrap:hover,
+.scrapboard-page-finish__chip-wrap--open {
+  background: var(--scrapboard-accent-soft);
+  border-color: var(--scrapboard-accent);
+}
+
+.scrapboard-page-finish__chip-wrap .scrapboard-page-finish__chip {
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
+  max-width: none;
+  min-width: 0;
+  flex: 1 1 auto;
+  min-height: calc(var(--scrapboard-control-h) - 4px);
+}
+
+.scrapboard-page-finish__chip-wrap .scrapboard-page-finish__chip:hover,
+.scrapboard-page-finish__chip-wrap .scrapboard-page-finish__chip--open {
+  background: transparent;
+  border-color: transparent;
 }
 
 .scrapboard-page-finish__chip {
@@ -869,7 +1037,7 @@
   align-items: center;
   gap: 0.35rem;
   max-width: 14rem;
-  min-height: 1.85rem;
+  min-height: var(--scrapboard-control-h);
   padding: 0.2rem 0.5rem;
   border: 2px solid var(--scrapboard-ink);
   border-radius: 0.2rem 0.45rem 0.15rem 0.35rem / 0.35rem 0.15rem 0.4rem 0.2rem;
@@ -877,6 +1045,7 @@
   font: inherit;
   font-size: 0.7rem;
   font-weight: 800;
+  line-height: 1.2;
   cursor: pointer;
   box-shadow: var(--scrapboard-sketch-shadow);
   color: var(--scrapboard-ink);
@@ -892,7 +1061,13 @@
   background: color-mix(in srgb, #fff 70%, var(--scrapboard-accent-soft));
 }
 
+.scrapboard-page-finish__chip-wrap .scrapboard-page-finish__chip--set {
+  background: transparent;
+}
+
 .scrapboard-page-finish__chip-text {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -929,14 +1104,19 @@
   padding: 0.65rem 0.7rem;
 }
 
+.scrapboard-page-finish__menu--photo {
+  max-width: min(94vw, 22rem);
+  min-width: min(18rem, 90vw);
+}
+
 .scrapboard-page-finish__menu--settings {
   max-width: min(92vw, 20rem);
 }
 
 .scrapboard-page-finish__menu-body {
-  min-width: min(16rem, 78vw);
+  min-width: min(18.5rem, 92vw);
   display: grid;
-  gap: 0.45rem;
+  gap: 0.65rem;
 }
 
 .scrapboard-page-finish__paste {
@@ -979,20 +1159,23 @@
 }
 
 .scrapboard-cast-chip {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
-  min-height: 1.85rem;
-  padding: 0.15rem 0.45rem;
+  gap: 0.3rem;
+  min-height: var(--scrapboard-control-h);
+  padding: 0.2rem 0.55rem 0.2rem 0.4rem;
   border: 2px solid var(--scrapboard-line);
-  border-radius: 0.2rem 0.45rem 0.2rem 0.35rem / 0.35rem 0.2rem 0.4rem 0.25rem;
+  border-radius: 6px;
   background: #fff;
   cursor: pointer;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
+  overflow: visible;
   font-weight: 800;
+  line-height: 1.2;
   color: var(--scrapboard-ink);
-  box-shadow: var(--scrapboard-sketch-shadow);
+  box-shadow: 1px 1px 0 rgba(42, 38, 34, 0.08);
 }
 
 .scrapboard-cast-chip--active {
@@ -1025,17 +1208,21 @@
 }
 
 .scrapboard-arrangement-field__trigger {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 0.4rem;
   width: 100%;
-  min-height: 2.5rem;
-  padding: 0.3rem 0.45rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.5rem;
   border: 2px solid var(--scrapboard-ink);
-  border-radius: 0.2rem 0.5rem 0.2rem 0.4rem / 0.4rem 0.2rem 0.45rem 0.25rem;
+  border-radius: 6px;
   background: #fff;
   cursor: pointer;
   text-align: left;
+  font: inherit;
+  font-weight: 800;
+  color: var(--scrapboard-ink);
   box-shadow: var(--scrapboard-sketch-shadow);
 }
 
@@ -1106,9 +1293,11 @@
 /* Page cast */
 .scrapboard-page-finish__cast-preview {
   display: inline-flex;
-  gap: 0.1rem;
-  font-size: 0.95rem;
+  align-items: center;
+  gap: 0.12rem;
+  padding: 0.05rem 0.05rem 0.05rem 0;
   line-height: 1;
+  overflow: visible;
 }
 
 .scrapboard-cast-list {
@@ -1116,33 +1305,55 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.35rem;
+  gap: 0.45rem;
 }
 
 .scrapboard-cast-list__row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 0.35rem;
+  gap: 0.4rem;
   align-items: center;
 }
 
 .scrapboard-cast-list__emoji {
-  min-width: 2.25rem;
-  min-height: 2.25rem;
-  padding: 0.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0.2rem;
   border: 2px solid var(--scrapboard-ink);
-  border-radius: 0.25rem;
+  border-radius: 0.3rem;
   background: #fff;
-  font-size: 1.25rem;
+  overflow: visible;
   cursor: pointer;
   box-shadow: var(--scrapboard-sketch-shadow);
 }
 
+.scrapboard-cast-list__emoji:hover,
+.scrapboard-cast-list__emoji:focus-visible {
+  border-color: var(--scrapboard-accent);
+  background: var(--scrapboard-accent-soft);
+}
+
+.scrapboard-cast-list__remove {
+  min-height: 2rem;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+}
+
+.scrapboard-cast-list__add {
+  margin-top: 0.55rem;
+  width: 100%;
+  justify-content: center;
+}
+
 .scrapboard-emoji-picker {
   display: grid;
-  gap: 0.4rem;
-  margin: 0.35rem 0;
-  padding: 0.45rem;
+  gap: 0.45rem;
+  margin: 0.45rem 0 0.15rem;
+  padding: 0.5rem;
   border: 2px dashed var(--scrapboard-line);
   border-radius: 0.35rem;
   background: #fff;
@@ -1151,16 +1362,21 @@
 .scrapboard-emoji-picker__grid {
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 0.2rem;
+  gap: 0.25rem;
 }
 
 .scrapboard-emoji-picker__option {
-  min-height: 1.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0.15rem;
   border: 1.5px solid transparent;
-  border-radius: 0.2rem;
+  border-radius: 0.25rem;
   background: transparent;
   cursor: pointer;
-  font-size: 1.1rem;
+  overflow: visible;
+  line-height: 1;
 }
 
 .scrapboard-emoji-picker__option:hover,
@@ -1175,6 +1391,17 @@
   font-size: 0.68rem;
   font-weight: 800;
   color: var(--scrapboard-muted);
+}
+
+.scrapboard-emoji-picker__custom input {
+  min-height: var(--scrapboard-control-h);
+  padding: 0.25rem 0.45rem;
+  border: 2px solid var(--scrapboard-ink);
+  border-radius: 0.2rem;
+  background: #fff;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  box-shadow: var(--scrapboard-sketch-shadow);
 }
 
 /* Export sheet */
@@ -1231,4 +1458,191 @@
 .scrapboard-export-sheet .scrapboard-export-sheet__actions {
   padding: 0.65rem 1rem 1rem;
   gap: 0.45rem;
+}
+
+/* Sketchy checkbox toggles (replace glassy MUI Switch) */
+.scrapboard-sketch-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.4rem 0.45rem;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 0.2rem;
+  min-height: 1.85rem;
+}
+
+.scrapboard-sketch-toggle:hover {
+  background: var(--scrapboard-accent-soft);
+}
+
+.scrapboard-sketch-toggle__input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.scrapboard-sketch-toggle__box {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  border: 2px solid var(--scrapboard-ink, #2a2622);
+  border-radius: 0.15rem 0.3rem 0.15rem 0.25rem / 0.28rem 0.15rem 0.32rem
+    0.18rem;
+  background: #fff;
+  box-shadow: 1px 1px 0 rgba(42, 38, 34, 0.16);
+  position: relative;
+  align-self: center;
+}
+
+.scrapboard-sketch-toggle__input:checked + .scrapboard-sketch-toggle__box {
+  background: var(--scrapboard-accent-soft);
+}
+
+.scrapboard-sketch-toggle__input:checked
+  + .scrapboard-sketch-toggle__box::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 0.26rem;
+  height: 0.48rem;
+  border: solid var(--scrapboard-ink);
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -55%) rotate(40deg);
+}
+
+.scrapboard-sketch-toggle__label {
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--scrapboard-ink, #2a2622);
+  padding-top: 0.05rem;
+}
+
+.scrapboard-scope-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  flex: 0 0 auto;
+}
+
+.scrapboard-scope-actions__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  /* Ink on paper ≈ WCAG UI 3:1+; keep borderless but not washed out. */
+  color: var(--scrapboard-ink);
+  cursor: pointer;
+  box-shadow: none;
+  font-size: 0.95rem;
+  opacity: 0.82;
+}
+
+.scrapboard-scope-actions__btn:hover:not(:disabled) {
+  background: var(--scrapboard-accent-soft);
+  opacity: 1;
+}
+
+.scrapboard-scope-actions__btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.scrapboard-scope-actions__btn--locked {
+  background: var(--scrapboard-accent-soft);
+  opacity: 1;
+}
+
+.scrapboard-page-finish__chip-wrap .scrapboard-scope-actions {
+  flex: 0 0 auto;
+  margin-right: 0.05rem;
+}
+
+.scrapboard-section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  margin: 0 0 0.35rem;
+  min-width: 0;
+}
+
+.scrapboard-section-title-row .scrapboard-section-title {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.scrapboard-section-title-row .scrapboard-scope-actions {
+  flex: 0 0 auto;
+}
+
+.scrapboard-layout-gallery__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.scrapboard-layout-gallery__header .scrapboard-layout-gallery__hint {
+  margin: 0;
+}
+
+/* One emoji face across chrome — Noto first (loaded in scrapboard/index.html). */
+.scrapboard-app,
+.scrapboard-popover,
+.scrapboard-page-finish__menu,
+.scrapboard-toolbar__menu {
+  --scrapboard-emoji-font:
+    'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', sans-serif;
+}
+
+/*
+ * Shared emoji face — never clip with overflow:hidden on the parent.
+ * Sizes stay on .scrapboard-emoji--* so cast chip / list / picker match.
+ */
+.scrapboard-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-family: var(--scrapboard-emoji-font);
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
+  overflow: visible;
+  speak: never;
+}
+
+.scrapboard-emoji--sm {
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: 1.15rem;
+}
+
+.scrapboard-emoji--md {
+  width: 1.55rem;
+  height: 1.55rem;
+  font-size: 1.4rem;
+}
+
+.scrapboard-emoji-picker__custom input {
+  font-family: var(--scrapboard-emoji-font);
 }

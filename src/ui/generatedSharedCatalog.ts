@@ -6664,6 +6664,58 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-color-contrast-ts-contrastratio",
+    "name": "contrastRatio",
+    "path": "src/shared/color/contrast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "WCAG contrast ratio between two colors (≥1).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-contrast-ts-ensurecontrasthex",
+    "name": "ensureContrastHex",
+    "path": "src/shared/color/contrast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Nudge OKLCH lightness of `fg` until contrast vs `bg` meets `minRatio` (default AA body 4.5). Prefers darkening when fg is already darker than bg; otherwise lightens.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-contrast-ts-polishpalettehexesforcomica11y",
+    "name": "polishPaletteHexesForComicA11y",
+    "path": "src/shared/color/contrast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Polish a comic palette so figure/caption/sfx ink meet AA contrast on bubble + paper. Adjusts luminosity only (hue/chroma preserved as much as culori allows).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-contrast-ts-relativeluminance",
+    "name": "relativeLuminance",
+    "path": "src/shared/color/contrast.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "WCAG 2 relative luminance for sRGB hex (0–1).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-color-convert-ts-colorstatetocss",
     "name": "colorStateToCss",
     "path": "src/shared/color/convert.ts",
@@ -6965,6 +7017,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-color-index-ts-contrastratio",
+    "name": "contrastRatio",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-color-index-ts-dedupepaletteproposals",
     "name": "dedupePaletteProposals",
     "path": "src/shared/color/index.ts",
@@ -6988,6 +7053,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "api"
     ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-ensurecontrasthex",
+    "name": "ensureContrastHex",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
     "appsUsing": [],
     "exportType": "named",
     "demoId": null
@@ -7377,6 +7455,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-color-index-ts-polishpalettehexesforcomica11y",
+    "name": "polishPaletteHexesForComicA11y",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-color-index-ts-proposepalettesfromcolors",
     "name": "proposePalettesFromColors",
     "path": "src/shared/color/index.ts",
@@ -7405,6 +7496,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-color-index-ts-proposepalettesfrompixels",
     "name": "proposePalettesFromPixels",
+    "path": "src/shared/color/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-index-ts-relativeluminance",
+    "name": "relativeLuminance",
     "path": "src/shared/color/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -8026,7 +8130,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Geometric A/B/C defaults (Lyrefly). Scrapboard emoji uses arrangement slots instead.",
     "tags": [
       "api",
       "react"
@@ -8042,7 +8146,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Geometric A/B/C defaults (Lyrefly). Scrapboard emoji uses arrangement slots instead.",
     "tags": [
       "api",
       "react"
@@ -8058,7 +8162,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Geometric A/B/C defaults (Lyrefly). Scrapboard emoji uses arrangement slots instead.",
     "tags": [
       "react"
     ],
@@ -8073,7 +8177,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Geometric A/B/C defaults (Lyrefly). Scrapboard emoji uses arrangement slots instead.",
     "tags": [
       "react"
     ],
@@ -8088,7 +8192,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Geometric A/B/C defaults (Lyrefly). Scrapboard emoji uses arrangement slots instead.",
     "tags": [
       "api",
       "react"
@@ -8104,7 +8208,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Layout overlap uses body box — excludes decorative shape tips above the head.",
+    "description": "Layout overlap box for bubbles/SFX. Emoji / arrangement markers paint a full bitmap around `cy` — use that extent so balloons cannot sit on heads. Geometric A/B/C markers still ignore decorative tips.",
     "tags": [
       "react"
     ],
@@ -8119,7 +8223,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Geometric A/B/C defaults (Lyrefly). Scrapboard emoji uses arrangement slots instead.",
     "tags": [
       "react"
     ],
@@ -8143,6 +8247,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-charactermarkers-tsx-emojipainthalfextent",
+    "name": "emojiPaintHalfExtent",
+    "path": "src/shared/comic/characterMarkers.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Half of the painted emoji bitmap (glyph + solid outline pad).",
+    "tags": [
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-charactermarkers-tsx-rendercharactermarker",
     "name": "renderCharacterMarker",
     "path": "src/shared/comic/characterMarkers.tsx",
@@ -8158,13 +8277,13 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-comic-charactermarkers-tsx-renderemojicharactermarker",
-    "name": "renderEmojiCharacterMarker",
+    "id": "src-shared-comic-charactermarkers-tsx-renderhorizonscene",
+    "name": "renderHorizonScene",
     "path": "src/shared/comic/characterMarkers.tsx",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Emoji cast marker — native color emoji only (no tinted halos; those read as grey discs).",
+    "description": "Geometric A/B/C defaults (Lyrefly). Scrapboard emoji uses arrangement slots instead.",
     "tags": [
       "react"
     ],
@@ -8173,16 +8292,14 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-comic-charactermarkers-tsx-renderhorizonscene",
-    "name": "renderHorizonScene",
-    "path": "src/shared/comic/characterMarkers.tsx",
+    "id": "src-shared-comic-comiccast-ts-castlabelbyslot",
+    "name": "castLabelBySlot",
+    "path": "src/shared/comic/comicCast.ts",
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "react"
-    ],
+    "description": "Cast display names keyed by panel slot (for marker hover titles).",
+    "tags": [],
     "appsUsing": [],
     "exportType": "function",
     "demoId": null
@@ -8415,6 +8532,133 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-emojicharactermarker-tsx-emojicharactermarker",
+    "name": "EmojiCharacterMarker",
+    "path": "src/shared/comic/EmojiCharacterMarker.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Emoji cast marker — rasterized Noto bitmap with a crisp solid white outline baked into the PNG. No wash overlay (it softened the outline into a glow).",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-emojicharactermarker-tsx-emojicharactermarkerprops",
+    "name": "EmojiCharacterMarkerProps",
+    "path": "src/shared/comic/EmojiCharacterMarker.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-emojirasterize-ts-clearemojirastercache",
+    "name": "clearEmojiRasterCache",
+    "path": "src/shared/comic/emojiRasterize.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Test helper — clear the in-memory raster cache.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-emojirasterize-ts-emoji-font-stack",
+    "name": "EMOJI_FONT_STACK",
+    "path": "src/shared/comic/emojiRasterize.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Noto first for brand consistency; system fonts as ink-capable fallbacks.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-emojirasterize-ts-emojirastercachekey",
+    "name": "emojiRasterCacheKey",
+    "path": "src/shared/comic/emojiRasterize.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Rasterize [Noto Color Emoji](https://fonts.google.com/noto/specimen/Noto+Color+Emoji) (or system color emoji) to a PNG data URL so SVG filters can wash the bitmap. Live color-font `<text>` nodes ignore feColorMatrix. Prefer Noto when it paints ink; fall back to Apple/Segoe when the loaded Noto face draws blank (common with some CBDT/@fontsource builds). Never cache blank frames. Optional solid white outline is baked into the bitmap (dilated alpha) — crisp on photos, not a blurry SVG glow.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-emojirasterize-ts-emojirasterimagesize",
+    "name": "emojiRasterImageSize",
+    "path": "src/shared/comic/emojiRasterize.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Logical image size (CSS px) for a rasterized glyph including outline padding.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-emojirasterize-ts-emojirasteroptions",
+    "name": "EmojiRasterOptions",
+    "path": "src/shared/comic/emojiRasterize.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Rasterize [Noto Color Emoji](https://fonts.google.com/noto/specimen/Noto+Color+Emoji) (or system color emoji) to a PNG data URL so SVG filters can wash the bitmap. Live color-font `<text>` nodes ignore feColorMatrix. Prefer Noto when it paints ink; fall back to Apple/Segoe when the loaded Noto face draws blank (common with some CBDT/@fontsource builds). Never cache blank frames. Optional solid white outline is baked into the bitmap (dilated alpha) — crisp on photos, not a blurry SVG glow.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-emojirasterize-ts-rasterizeemojitodataurl",
+    "name": "rasterizeEmojiToDataUrl",
+    "path": "src/shared/comic/emojiRasterize.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Draw a single emoji glyph to an offscreen canvas; returns a PNG data URL (or null).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-emojirasterize-ts-rasterizeemojitodataurlasync",
+    "name": "rasterizeEmojiToDataUrlAsync",
+    "path": "src/shared/comic/emojiRasterize.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Async variant — waits for emoji fonts so the first paint is not a blank cache entry.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-index-ts-adaptblockstopanelbudget",
     "name": "adaptBlocksToPanelBudget",
     "path": "src/shared/comic/index.ts",
@@ -8510,6 +8754,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-index-ts-castlabelbyslot",
+    "name": "castLabelBySlot",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-index-ts-castmemberbyid",
     "name": "castMemberById",
     "path": "src/shared/comic/index.ts",
@@ -8563,6 +8820,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "api"
     ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-clearemojirastercache",
+    "name": "clearEmojiRasterCache",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
     "appsUsing": [],
     "exportType": "named",
     "demoId": null
@@ -8691,6 +8961,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-index-ts-emoji-font-stack",
+    "name": "EMOJI_FONT_STACK",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-index-ts-generatedpanellayout",
     "name": "GeneratedPanelLayout",
     "path": "src/shared/comic/index.ts",
@@ -8813,6 +9098,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [
       "api"
     ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-markerlayoutbounds",
+    "name": "markerLayoutBounds",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
     "appsUsing": [],
     "exportType": "named",
     "demoId": null
@@ -9424,6 +9722,32 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-index-ts-rasterizeemojitodataurl",
+    "name": "rasterizeEmojiToDataUrl",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-index-ts-rasterizeemojitodataurlasync",
+    "name": "rasterizeEmojiToDataUrlAsync",
+    "path": "src/shared/comic/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-index-ts-readingorderforpanels",
     "name": "readingOrderForPanels",
     "path": "src/shared/comic/index.ts",
@@ -9988,6 +10312,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-comic-panelclippath-ts-markerlayoutbounds",
+    "name": "markerLayoutBounds",
+    "path": "src/shared/comic/panelClipPath.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Layout box for cast markers / dialogue anchors. Circle panels use an inscribed square (inset for stroke) so slot y≈0.8 stays inside the disc instead of the AABB corners that sit outside the circle.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-comic-panelclippath-ts-panelcircleclipattrs",
     "name": "panelCircleClipAttrs",
     "path": "src/shared/comic/panelClipPath.ts",
@@ -10266,7 +10603,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Axis-aligned dialogue text region used for escape/readability checks.",
+    "description": "Axis-aligned dialogue text region used for escape/readability checks. Must match PanelMockupSvg: top-anchored inside the pad box (not cy-centered).",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -10971,7 +11308,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Vertical offset added to the geometric first-line center (`cy - (lineCount - 1) * lineHeight / 2`) when `dominantBaseline=\"middle\"`. Design intent (balsamiq balloons): sit in the padded content box. Informal faces need a slight downward optical settle — avoid lifting copy into the top half.",
+    "description": "Vertical offset added to the geometric first-line center (`cy - (lineCount - 1) * lineHeight / 2`) when `dominantBaseline=\"middle\"`. Keep near zero — a downward settle previously ate bottom padY and clipped the last line into the roundRect stroke / tail mouth. Sizing already includes descender slack.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -11514,6 +11851,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Place bubbles with column bias + vertical stack. Always writes a placement; prefers conflict-free stacks. If captions make the band infeasible, drop them and retry — never leave seed positions that overlap captions.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-comic-speechbubbleslotlayout-ts-sanitizeslottextitems",
+    "name": "sanitizeSlotTextItems",
+    "path": "src/shared/comic/speechBubbleSlotLayout.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Public cleanup after caption/SFX sync — keeps slots layouts audit-clean.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -19360,6 +19710,45 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-media-index-ts-fetchrandomscenicwikimediaimage",
+    "name": "fetchRandomScenicWikimediaImage",
+    "path": "src/shared/media/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-index-ts-fetchscenicwikimediaimageforquery",
+    "name": "fetchScenicWikimediaImageForQuery",
+    "path": "src/shared/media/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-index-ts-fetchwikimediaresults",
+    "name": "fetchWikimediaResults",
+    "path": "src/shared/media/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-media-index-ts-labswikimediaimagefield",
     "name": "LabsWikimediaImageField",
     "path": "src/shared/media/index.ts",
@@ -19372,6 +19761,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-index-ts-labswikimediaimagefieldpresentation",
+    "name": "LabsWikimediaImageFieldPresentation",
+    "path": "src/shared/media/index.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {
@@ -19486,13 +19890,29 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Dense Wikimedia picker: closed state shows a thumbnail (or empty slot); click opens an `AnchoredPopover` with .",
+    "description": "Dense Wikimedia picker: closed state shows a thumbnail (or empty slot); click opens an `AnchoredPopover` with — or embed search inline.",
     "tags": [
       "api",
       "react"
     ],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-labswikimediaimagefield-tsx-labswikimediaimagefieldpresentation",
+    "name": "LabsWikimediaImageFieldPresentation",
+    "path": "src/shared/media/LabsWikimediaImageField.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {
@@ -19531,16 +19951,16 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "id": "src-shared-media-labswikimediaimagesearch-tsx-labswikimediaimageresult",
     "name": "LabsWikimediaImageResult",
     "path": "src/shared/media/LabsWikimediaImageSearch.tsx",
-    "kind": "model",
+    "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "A single Wikimedia Commons search result.",
+    "description": "No JSDoc summary provided.",
     "tags": [
       "api",
       "react"
     ],
     "appsUsing": [],
-    "exportType": "interface",
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -19566,7 +19986,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "A single Wikimedia Commons search result.",
+    "description": "No JSDoc summary provided.",
     "tags": [
       "api",
       "react"
@@ -19582,13 +20002,95 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "A single Wikimedia Commons search result.",
+    "description": "No JSDoc summary provided.",
     "tags": [
       "api",
       "react"
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-labswikimediascenic-ts-fetchrandomscenicwikimediaimage",
+    "name": "fetchRandomScenicWikimediaImage",
+    "path": "src/shared/media/labsWikimediaScenic.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "One scenic Commons pick for Scrapboard Randomize-all / Random buttons. Prefer filtered licenses when present; otherwise any result from the scenic query.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-labswikimediascenic-ts-fetchscenicwikimediaimageforquery",
+    "name": "fetchScenicWikimediaImageForQuery",
+    "path": "src/shared/media/labsWikimediaScenic.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Scenic Commons pick for a specific search query (story scene / dialogue keyword bias). Prefer filtered licenses when present; otherwise any result from the query.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-labswikimediascenic-ts-fetchwikimediaresults",
+    "name": "fetchWikimediaResults",
+    "path": "src/shared/media/labsWikimediaScenic.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "A single Wikimedia Commons search result.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-labswikimediascenic-ts-filterwikimediaresultsbylicense",
+    "name": "filterWikimediaResultsByLicense",
+    "path": "src/shared/media/labsWikimediaScenic.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "A single Wikimedia Commons search result.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-labswikimediascenic-ts-labswikimediaimageresult",
+    "name": "LabsWikimediaImageResult",
+    "path": "src/shared/media/labsWikimediaScenic.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "A single Wikimedia Commons search result.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-media-labswikimediascenic-ts-random-scenic-queries",
+    "name": "RANDOM_SCENIC_QUERIES",
+    "path": "src/shared/media/labsWikimediaScenic.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Scenic seeds when Random has no search query — favor photo-like backgrounds.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
     "demoId": null
   },
   {

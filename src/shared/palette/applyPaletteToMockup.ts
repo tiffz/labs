@@ -1,4 +1,9 @@
-import { colorStateToHex, hexToColorState, type ColorState } from '../color';
+import {
+  colorStateToHex,
+  ensureContrastHex,
+  hexToColorState,
+  type ColorState,
+} from '../color';
 import type { ComicPalette, PaletteSwatch } from './types';
 
 export type MockupTintTarget = 'panelFill' | 'background' | 'bubble' | 'figure' | 'caption' | 'sfx' | 'sky' | 'ground';
@@ -110,13 +115,15 @@ export function applyPaletteToMockup(
     midEntry !== lightEntry ? midEntry.state : byChromaDesc[Math.min(1, byChromaDesc.length - 1)]!.state,
   );
 
+  const bubble = DEFAULT_GRAY.bubble;
+  const background = DEFAULT_GRAY.background;
   return {
     panelFills: Array.from({ length: panelCount }, () => sky),
-    background: DEFAULT_GRAY.background,
-    bubble: DEFAULT_GRAY.bubble,
-    figure: figureEntry.swatch.hex,
-    caption: captionEntry.swatch.hex,
-    sfx: sfxEntry.swatch.hex,
+    background,
+    bubble,
+    figure: ensureContrastHex(figureEntry.swatch.hex, bubble, 4.5),
+    caption: ensureContrastHex(captionEntry.swatch.hex, bubble, 4.5),
+    sfx: ensureContrastHex(sfxEntry.swatch.hex, background, 3),
     sky,
     ground,
   };

@@ -4,8 +4,9 @@ import { generateLayoutsForPanelCount } from './layoutGenerate';
 import { panelPixelBounds } from './panelClipPath';
 import { panelTextZones } from './panelTextZones';
 import { validateSpeechBubbleQuality } from './speechBubbleQuality';
-import { layoutPanelTextBlocks } from './speechBubbleLayout';
+import { layoutPanelTextBlocks, type SpeechBubbleLayout } from './speechBubbleLayout';
 import { adaptBlocksToPanelBudget } from './speechBubbleSlotLayout';
+import { bubbleTextBBox, validatePanelTextLayout } from './panelTextLayoutInvariants';
 import type { PanelCharacterId, PanelTextBlock } from './types';
 
 const PAGE_W = 400;
@@ -197,5 +198,37 @@ describe('layoutPanelTextBlocks fuzz', () => {
         }
       }
     }
+  });
+
+  it('flags bubbles whose top-anchored dialogue would clip above the panel', () => {
+    const bounds = { x: 0, y: 100, w: 180, h: 160 };
+    const bubble: SpeechBubbleLayout = {
+      cx: 90,
+      cy: 110,
+      halfW: 50,
+      halfH: 28,
+      tailX: 90,
+      tailY: 200,
+      lines: ['Pass me the lunchbox carefully!'],
+      characterId: 'a',
+      metrics: {
+        halfW: 50,
+        halfH: 28,
+        fontSize: 13,
+        lineHeight: 17,
+        padX: 14,
+        padY: 12,
+        shape: 'roundRect',
+      },
+    };
+    const textBox = bubbleTextBBox(bubble);
+    expect(textBox.top).toBeLessThan(bounds.y);
+    const violations = validatePanelTextLayout(
+      { items: [{ kind: 'bubble', layout: bubble }] },
+      [{ kind: 'dialogue', characterId: 'a', content: 'Pass me the lunchbox carefully!' }],
+      { bounds, allowBubbleEscape: true, characterIds: ['a'] },
+    );
+    expect(violations.some((v) => v.code === 'bubble_above_panel')).toBe(true);
+    expect(violations.some((v) => v.code === 'text_outside_panel')).toBe(true);
   });
 });

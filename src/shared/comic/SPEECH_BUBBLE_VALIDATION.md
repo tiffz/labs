@@ -13,8 +13,8 @@ Must hold for Scrapboard (and matrix with `placeMode: 'slots'`):
 5. Bubble does not cover the character marker.
 6. Reading order preserved (`reading_order`).
 
-Soft (ok when Bubble escape is on): bubble **body** outside panel horizontally (`bubble_in_bounds`).
-Vertical body escape is capped (~6px) so strip layouts do not paint over the next panel.
+Soft (ok when Bubble escape is on): bubble **body** outside panel horizontally / slightly below (`bubble_in_bounds`).
+**Never** escape upward — `bubble_above_panel` and `text_outside_panel` are hard (top clip makes dialogue invisible).
 
 ## Placement pipeline
 
@@ -45,11 +45,13 @@ npm run test:bubble-quality
 
 - `no_overlap` — bubble/caption boxes intersect (**hard**)
 - `reading_order` — later item visually above earlier item (**hard**)
-- `bubble_in_bounds` — body outside panel (**soft** when escape)
+- `bubble_in_bounds` — body outside panel left/right/below (**soft** when escape)
+- `bubble_above_panel` — body extends above panel (**hard** — clips under stroke/gutter)
 - `tail_inside_panel` — tail anchor outside panel
 - `character_below_bubble` — bubble intrudes on character band
 - `no_character_overlap` — bubble covers character marker
-- `text_outside_panel` — dialogue text leaves panel when escape is on
+- `text_outside_panel` — dialogue text leaves panel (**hard**; bbox matches top-anchored render)
+- `character_in_panel` — emoji/arrangement marker extends outside panel (**hard**)
 
 ### Readability (`speechBubbleQuality`)
 
@@ -91,6 +93,12 @@ Soft violations (not matrix failures):
 - `blocks_dropped` — intentional trim when the panel cannot host every line cleanly
 
 Hard among feasible cases: target **≥98%** pass; slots + budget path aims for zero hard failures.
+
+### Scrapboard story audit (100 pages)
+
+`src/scrapboard/audits/scrapboardLayoutAudit.ts` generates ~100 Randomize-all story pages
+(weighted panel counts + layouts + `generateStoryPage`) and validates every panel with
+arrangement-aware marker placement. Included in `npm run test:bubble-quality`.
 
 **Conflict resolution order:** both placers prefer **fan** (nudge apart horizontally) → **nudge** (widen vertical gap / push along the stack) → **shrink** (rewrap/resize) over **truncation** (`blocks_dropped`). Truncation is a last resort, not a first-line strategy, and stays a soft violation when it does happen.
 

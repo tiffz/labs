@@ -17,13 +17,24 @@ export function resolvePanelClip(panel: PanelRect): PanelClipPoint[] {
 
   const bias = panel.diagonalBias ?? 0.14;
   switch (panel.shape ?? 'rect') {
-    case 'parallelogram':
+    case 'parallelogram': {
+      // Keep slanted edges inside the AABB so adjacent slant-row panels never overlap.
+      const b = Math.min(0.28, Math.max(0.06, Math.abs(bias)));
+      if (bias >= 0) {
+        return [
+          { x: b, y: 0 },
+          { x: 1, y: 0 },
+          { x: 1 - b, y: 1 },
+          { x: 0, y: 1 },
+        ];
+      }
       return [
-        { x: bias, y: 0 },
-        { x: 1 + bias, y: 0 },
-        { x: 1 - bias, y: 1 },
-        { x: -bias, y: 1 },
+        { x: 0, y: 0 },
+        { x: 1 - b, y: 0 },
+        { x: 1, y: 1 },
+        { x: b, y: 1 },
       ];
+    }
     case 'trapezoid-top-narrow':
       return [
         { x: bias, y: 0 },
@@ -120,6 +131,39 @@ export function panelCircleClipAttrs(bounds: PanelPixelBounds): { cx: number; cy
     cx: bounds.x + bounds.w / 2,
     cy: bounds.y + bounds.h / 2,
     r,
+  };
+}
+
+/**
+ * Layout box for cast markers / dialogue anchors.
+ * Circle panels use an inscribed square (inset for stroke) so slot y≈0.8 stays inside the disc
+ * instead of the AABB corners that sit outside the circle.
+ */
+export function markerLayoutBounds(
+  bounds: PanelPixelBounds,
+  shape: PanelRect['shape'] | undefined,
+  strokePad = 4,
+): PanelPixelBounds {
+  if (shape === 'circle') {
+    const { cx, cy, r } = panelCircleClipAttrs(bounds);
+    const usable = Math.max(8, r - strokePad - Math.max(3, r * 0.08));
+    const half = usable / Math.SQRT2;
+    return {
+      x: cx - half,
+      y: cy - half,
+      w: half * 2,
+      h: half * 2,
+    };
+  }
+  /* Deep bottom inset — tall emoji bitmaps must not spill into the next grid cell. */
+  const padX = Math.min(bounds.w * 0.14, 26);
+  const padBottom = Math.min(bounds.h * 0.26, 56);
+  const padTop = Math.min(bounds.h * 0.08, 16);
+  return {
+    x: bounds.x + padX,
+    y: bounds.y + padTop,
+    w: Math.max(8, bounds.w - padX * 2),
+    h: Math.max(8, bounds.h - padTop - padBottom),
   };
 }
 

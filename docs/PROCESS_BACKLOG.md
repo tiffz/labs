@@ -17,6 +17,7 @@
 | P3       | `e2e-port-collision`   | Pre-push: detect occupied `:5173` and print a one-line fix                                                              | Deferred — note in `FLAKY_TESTS.md`                     |
 | P3       | `tech-debt`            | Remove stale `atlas_skin` region from muscle export scripts (skin dropped, ADR 0018)                                    | Deferred                                                |
 | P3       | `portal styling`       | Audit Piano/Chords/Stanza document-dismiss handlers if they embed dense drum Edit — same allowlist as Words             | Deferred — apply when a host grows dismiss around drums |
+| P3       | `ux-visual-weight`     | Scrapboard: optional CSS lint that `.scrapboard-emoji` parents never set `overflow: hidden`                             | Deferred — AGENTS note landed; automate if clip recurs  |
 
 ## Ongoing operations (not one-shot code)
 

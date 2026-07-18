@@ -19,6 +19,7 @@ import {
 import { LabsWikimediaImageField, type LabsWikimediaImageResult } from '../../shared/media';
 import type { ScrapboardBoardState } from '../hooks/useScrapboardBoard';
 import { ScrapboardArrangementField } from './ScrapboardArrangementField';
+import { ScrapboardScopeActions } from './ScrapboardScopeActions';
 
 export type ScrapboardPanelTextEditorProps = {
   board: ScrapboardBoardState;
@@ -45,6 +46,11 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
     setPanelSpeakers,
     setPanelArrangement,
     setPanelBackgroundImage,
+    randomizeLocks,
+    toggleRandomizeLock,
+    randomizePanelCopy,
+    randomizePanelStaging,
+    randomizePhotos,
   } = board;
   const fill = fills.find((row) => row.panelIndex === selectedPanelIndex);
   const blocks = fill?.blocks ?? [];
@@ -151,7 +157,17 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
       </div>
 
       <div className="scrapboard-panel-speakers" data-testid="scrapboard-panel-speakers">
-        <span className="scrapboard-section-title">Who’s here</span>
+        <div className="scrapboard-section-title-row">
+          <span className="scrapboard-section-title">Who’s here</span>
+          <ScrapboardScopeActions
+            scopeLabel="cast & arrangement"
+            locked={randomizeLocks.staging}
+            onToggleLock={() => toggleRandomizeLock('staging')}
+            onRandomize={() => randomizePanelStaging(selectedPanelIndex)}
+            testIdPrefix="scrapboard-panel-staging"
+            density="plain"
+          />
+        </div>
         <div className="scrapboard-panel-speakers__chips" role="group" aria-label="Panel cast">
           {cast.map((member) => {
             const active = speakerIds.includes(member.id);
@@ -170,7 +186,9 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
                 data-testid={`scrapboard-panel-speaker-${member.id}`}
                 onClick={() => toggleSpeaker(member.id)}
               >
-                <span aria-hidden>{member.emoji}</span>
+                <span className="scrapboard-emoji scrapboard-emoji--sm" aria-hidden>
+                  {member.emoji}
+                </span>
                 <span className="scrapboard-cast-chip__label">{member.label ?? ''}</span>
               </button>
             );
@@ -185,6 +203,18 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
         onChange={(next) => setPanelArrangement(selectedPanelIndex, next)}
       />
 
+      <div className="scrapboard-section-title-row">
+        <span className="scrapboard-section-title">Lines</span>
+        <ScrapboardScopeActions
+          scopeLabel="panel copy"
+          locked={randomizeLocks.copy}
+          onToggleLock={() => toggleRandomizeLock('copy')}
+          onRandomize={() => randomizePanelCopy(selectedPanelIndex)}
+          testIdPrefix="scrapboard-panel-copy"
+          density="plain"
+        />
+      </div>
+
       <div className="scrapboard-text-blocks">
         {blocks.length === 0 ? (
           <p className="scrapboard-text-empty">Add lines below. Order matches read order on the panel.</p>
@@ -195,7 +225,7 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
             className="scrapboard-text-block scrapboard-text-block--compact"
             data-testid={`scrapboard-text-block-${index}`}
           >
-            <div className="scrapboard-text-block__inline">
+            <div className="scrapboard-text-block__meta">
               <span className="scrapboard-text-block__order" title="Reading order">
                 {index + 1}
               </span>
@@ -221,7 +251,9 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
                         data-testid={`scrapboard-dialogue-character-${index}-${member.id}`}
                         title={member.label ?? member.emoji}
                       >
-                        {member.emoji}
+                        <span className="scrapboard-emoji scrapboard-emoji--sm" aria-hidden>
+                          {member.emoji}
+                        </span>
                       </button>
                     );
                   })}
@@ -229,69 +261,6 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
               ) : (
                 <span className="scrapboard-text-block__type">{blockTypeTag(block)}</span>
               )}
-
-              {block.kind === 'dialogue' ? (
-                <textarea
-                  className="scrapboard-inline-input"
-                  rows={2}
-                  value={block.content}
-                  placeholder="Dialogue…"
-                  onChange={(event) => updateBlock(index, { content: event.target.value })}
-                  data-testid={`scrapboard-dialogue-text-${index}`}
-                />
-              ) : null}
-
-              {block.kind === 'caption' ? (
-                <textarea
-                  className="scrapboard-inline-input scrapboard-inline-input--caption"
-                  rows={2}
-                  value={block.content}
-                  placeholder="Caption…"
-                  onChange={(event) => updateBlock(index, { content: event.target.value })}
-                  data-testid={`scrapboard-caption-text-${index}`}
-                />
-              ) : null}
-
-              {block.kind === 'sfx' ? (
-                <>
-                  <input
-                    type="text"
-                    className="scrapboard-inline-input scrapboard-inline-input--sfx"
-                    value={block.content}
-                    placeholder="POW!"
-                    onChange={(event) => updateBlock(index, { content: event.target.value })}
-                    data-testid={`scrapboard-sfx-text-${index}`}
-                  />
-                  <div
-                    className="scrapboard-sfx-loudness"
-                    role="radiogroup"
-                    aria-label="SFX loudness"
-                  >
-                    {SFX_LOUDNESS_LEVELS.map((level) => {
-                      const active = (block.loudness ?? 'normal') === level;
-                      return (
-                        <button
-                          key={level}
-                          type="button"
-                          role="radio"
-                          aria-checked={active}
-                          className={[
-                            'scrapboard-sfx-loudness__chip',
-                            active ? 'scrapboard-sfx-loudness__chip--active' : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' ')}
-                          onClick={() => updateBlock(index, { loudness: level as SfxLoudness })}
-                          data-testid={`scrapboard-sfx-loudness-${index}-${level}`}
-                          title={`SFX ${level}`}
-                        >
-                          {level === 'quiet' ? 'Q' : level === 'loud' ? 'L' : 'N'}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : null}
 
               <div className="scrapboard-text-block__actions">
                 <IconButton
@@ -315,6 +284,65 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
                 </IconButton>
               </div>
             </div>
+
+            {block.kind === 'dialogue' ? (
+              <textarea
+                className="scrapboard-inline-input"
+                rows={3}
+                value={block.content}
+                placeholder="Dialogue…"
+                onChange={(event) => updateBlock(index, { content: event.target.value })}
+                data-testid={`scrapboard-dialogue-text-${index}`}
+              />
+            ) : null}
+
+            {block.kind === 'caption' ? (
+              <textarea
+                className="scrapboard-inline-input scrapboard-inline-input--caption"
+                rows={2}
+                value={block.content}
+                placeholder="Caption…"
+                onChange={(event) => updateBlock(index, { content: event.target.value })}
+                data-testid={`scrapboard-caption-text-${index}`}
+              />
+            ) : null}
+
+            {block.kind === 'sfx' ? (
+              <div className="scrapboard-text-block__sfx-row">
+                <input
+                  type="text"
+                  className="scrapboard-inline-input scrapboard-inline-input--sfx"
+                  value={block.content}
+                  placeholder="POW!"
+                  onChange={(event) => updateBlock(index, { content: event.target.value })}
+                  data-testid={`scrapboard-sfx-text-${index}`}
+                />
+                <div className="scrapboard-sfx-loudness" role="radiogroup" aria-label="SFX loudness">
+                  {SFX_LOUDNESS_LEVELS.map((level) => {
+                    const active = (block.loudness ?? 'normal') === level;
+                    return (
+                      <button
+                        key={level}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        className={[
+                          'scrapboard-sfx-loudness__chip',
+                          active ? 'scrapboard-sfx-loudness__chip--active' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        onClick={() => updateBlock(index, { loudness: level as SfxLoudness })}
+                        data-testid={`scrapboard-sfx-loudness-${index}-${level}`}
+                        title={`SFX ${level}`}
+                      >
+                        {level === 'quiet' ? 'Q' : level === 'loud' ? 'L' : 'N'}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
           </div>
         ))}
       </div>
@@ -357,9 +385,20 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
       </div>
 
       <div className="scrapboard-panel-photo" data-testid="scrapboard-panel-photo">
+        <div className="scrapboard-section-title-row">
+          <span className="scrapboard-section-title">Background photo</span>
+          <ScrapboardScopeActions
+            scopeLabel="photos"
+            locked={randomizeLocks.photos}
+            onToggleLock={() => toggleRandomizeLock('photos')}
+            onRandomize={randomizePhotos}
+            testIdPrefix="scrapboard-panel-photos"
+            density="plain"
+          />
+        </div>
         <LabsWikimediaImageField
           variant="sketchy"
-          label="Background photo"
+          label=""
           hint="Wikimedia scenery, softly tinted. Prefer photos over empty panels."
           value={
             panelBackground

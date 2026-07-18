@@ -1,4 +1,4 @@
-import { characterMarkerLayoutBox } from './characterMarkers';
+import { characterMarkerBox, characterMarkerLayoutBox } from './characterMarkers';
 import { sfxLayoutBBox } from './sfxLoudness';
 import {
   bubbleBodyBBox,
@@ -20,10 +20,12 @@ export type LayoutViolationCode =
   | 'no_overlap'
   | 'text_fits_bubble'
   | 'bubble_in_bounds'
+  | 'bubble_above_panel'
   | 'tail_inside_panel'
   | 'character_below_bubble'
   | 'text_outside_panel'
-  | 'no_character_overlap';
+  | 'no_character_overlap'
+  | 'character_in_panel';
 
 export type LayoutViolation = {
   code: LayoutViolationCode;
@@ -61,7 +63,10 @@ function boxesOverlap(a: BBox, b: BBox): boolean {
   );
 }
 
-/** Axis-aligned dialogue text region used for escape/readability checks. */
+/**
+ * Axis-aligned dialogue text region used for escape/readability checks.
+ * Must match PanelMockupSvg: top-anchored inside the pad box (not cy-centered).
+ */
 export function bubbleTextBBox(bubble: SpeechBubbleLayout): BBox {
   const offsetY = bubbleTextOffsetY(
     bubble.cx,
@@ -74,9 +79,12 @@ export function bubbleTextBBox(bubble: SpeechBubbleLayout): BBox {
     bubble.metrics.padY,
     bubble.metrics.fontSize,
   );
-  const textTop =
+  /* First line: dominantBaseline="middle" at this y (see PanelMockupSvg). */
+  const firstLineCenterY =
     bubble.cy -
-    ((bubble.lines.length - 1) * bubble.metrics.lineHeight) / 2 +
+    bubble.halfH +
+    bubble.metrics.padY +
+    bubble.metrics.fontSize * 0.5 +
     offsetY;
   const textH = bubbleTextBlockHeight(
     bubble.lines.length,
@@ -86,11 +94,12 @@ export function bubbleTextBBox(bubble: SpeechBubbleLayout): BBox {
   const charW = charWidthForFont(bubble.metrics.fontSize);
   const maxLineChars = Math.max(...bubble.lines.map((line) => line.length), 1);
   const textW = maxLineChars * charW;
+  const visualTop = firstLineCenterY - bubble.metrics.fontSize * 0.5;
   return {
     left: bubble.cx - textW / 2 - bubble.metrics.padX * 0.25,
-    top: textTop - bubble.metrics.fontSize * 0.2,
+    top: visualTop,
     right: bubble.cx + textW / 2 + bubble.metrics.padX * 0.25,
-    bottom: textTop + textH + bubble.metrics.fontSize * 0.15,
+    bottom: visualTop + textH,
   };
 }
 
@@ -118,7 +127,7 @@ export function validatePanelTextLayout(
   options: ValidatePanelTextLayoutOptions,
 ): LayoutViolation[] {
   const violations: LayoutViolation[] = [];
-  const { bounds, allowBubbleEscape, characterIds = [] } = options;
+  const { bounds, allowBubbleEscape, characterIds = [], markerPlacement } = options;
 
   for (let i = 0; i < layout.items.length - 1; i++) {
     const a = itemBBox(layout.items[i]!);
@@ -163,11 +172,18 @@ export function validatePanelTextLayout(
     }
 
     const box = bubbleBodyBBox(b.cx, b.cy, b.halfW, b.halfH);
+    /* Upward escape clips text under panel strokes / previous gutters — always hard. */
+    if (box.top < bounds.y - EPS) {
+      violations.push({
+        code: 'bubble_above_panel',
+        message: `Bubble ${i + 1} extends above panel (dialogue would clip)`,
+        itemIndex: i,
+      });
+    }
     if (!allowBubbleEscape) {
       if (
         box.left < bounds.x - EPS ||
         box.right > bounds.x + bounds.w + EPS ||
-        box.top < bounds.y - EPS ||
         box.bottom > bounds.y + bounds.h + EPS
       ) {
         violations.push({
@@ -184,7 +200,7 @@ export function validatePanelTextLayout(
       });
     }
 
-    if (allowBubbleEscape && !textInsidePanel(bubbleTextBBox(b), bounds)) {
+    if (!textInsidePanel(bubbleTextBBox(b), bounds)) {
       violations.push({
         code: 'text_outside_panel',
         message: `Bubble ${i + 1} dialogue extends outside panel`,
@@ -211,13 +227,28 @@ export function validatePanelTextLayout(
   }
 
   for (const characterId of characterIds) {
-    const marker = characterMarkerLayoutBox(bounds, characterId);
+    const marker = characterMarkerLayoutBox(bounds, characterId, markerPlacement);
     const markerBox: BBox = {
       left: marker.left,
       top: marker.top,
       right: marker.right,
       bottom: marker.bottom,
     };
+    /* Painted marker (tighter than overlap clearance box) must stay mostly in-panel. */
+    const painted = characterMarkerBox(bounds, characterId, markerPlacement);
+    const paintSlop = Math.max(4, painted.size * 0.35);
+    if (
+      !pointInRect(painted.cx, painted.cy, bounds, 0) ||
+      painted.top < bounds.y - paintSlop ||
+      painted.bottom > bounds.y + bounds.h + paintSlop ||
+      painted.left < bounds.x - paintSlop ||
+      painted.right > bounds.x + bounds.w + paintSlop
+    ) {
+      violations.push({
+        code: 'character_in_panel',
+        message: `Character ${characterId.toUpperCase()} is not visibly inside the panel`,
+      });
+    }
     for (let i = 0; i < layout.items.length; i++) {
       const item = layout.items[i]!;
       if (item.kind !== 'bubble' && item.kind !== 'sfx') continue;

@@ -46,9 +46,16 @@ export {
   resolvePanelArrangement,
   normalizeDialogueBlocks,
   castMemberById,
+  castLabelBySlot,
   slotForSpeakerIndex,
   DEFAULT_CAST_EMOJIS,
 } from './comicCast';
+export {
+  rasterizeEmojiToDataUrl,
+  rasterizeEmojiToDataUrlAsync,
+  clearEmojiRasterCache,
+  EMOJI_FONT_STACK,
+} from './emojiRasterize';
 export {
   normalizeSfxLoudness,
   sfxLoudnessFontScale,
@@ -78,7 +85,13 @@ export {
 } from './layoutGenerate';
 export { getLayoutSafeInsets, getLayoutSafeRegion } from './panelLayoutRegion';
 export { readingOrderForPanels } from './panelReadingOrder';
-export { resolvePanelClip, panelPixelBounds, panelSvgPointsAttr, panelCircleClipAttrs } from './panelClipPath';
+export {
+  resolvePanelClip,
+  panelPixelBounds,
+  panelSvgPointsAttr,
+  panelCircleClipAttrs,
+  markerLayoutBounds,
+} from './panelClipPath';
 export {
   PANEL_COMPOSITION_LABELS,
   RANDOM_COMPOSITION_POOL,

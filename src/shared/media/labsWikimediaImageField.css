@@ -14,6 +14,10 @@
   color: var(--text-muted, #6b7280);
 }
 
+.labs-wikimedia-field__label:empty {
+  display: none;
+}
+
 .labs-wikimedia-field__row {
   display: flex;
   align-items: stretch;
@@ -34,6 +38,9 @@
   background: var(--surface-elevated, #fff);
   cursor: pointer;
   text-align: left;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
 }
 
 .labs-wikimedia-field__trigger:hover,
@@ -152,6 +159,22 @@
   min-width: min(18rem, 78vw);
 }
 
+.labs-wikimedia-field__current {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  margin-bottom: 0.35rem;
+}
+
+.labs-wikimedia-field__inline-search {
+  margin-top: 0.15rem;
+}
+
+.labs-wikimedia-field--inline .labs-wikimedia-field__hint {
+  margin-bottom: 0.45rem;
+}
+
 .labs-wikimedia-field--sketchy .labs-wikimedia-field__label {
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -189,6 +212,7 @@
 .labs-wikimedia-field--sketchy .labs-wikimedia-field__title,
 .labs-wikimedia-field--sketchy .labs-wikimedia-field__empty-copy {
   color: var(--labs-wikimedia-sketch-ink, #2a2622);
+  font-family: inherit;
   font-weight: 800;
 }
 
@@ -204,10 +228,32 @@
   color: var(--labs-wikimedia-sketch-muted, #6d665e);
 }
 
+.labs-wikimedia-field__menu--sketchy.labs-popover-surface,
 .labs-wikimedia-field--sketchy
   .labs-wikimedia-field__menu.labs-popover-surface {
   border: 2px solid var(--labs-wikimedia-sketch-ink, #2a2622);
   border-radius: 0.25rem 0.6rem 0.25rem 0.5rem / 0.45rem 0.25rem 0.55rem 0.3rem;
   background: var(--labs-wikimedia-sketch-surface, #fffdf8);
   box-shadow: 3px 3px 0 rgb(42 38 34 / 20%);
+  color: var(--labs-wikimedia-sketch-ink, #2a2622);
+  font-family: 'Nunito', system-ui, sans-serif;
+}
+
+.labs-wikimedia-field__menu--sketchy.labs-popover-surface button,
+.labs-wikimedia-field__menu--sketchy.labs-popover-surface input,
+.labs-wikimedia-field__menu--sketchy.labs-popover-surface select,
+.labs-wikimedia-field__menu--sketchy.labs-popover-surface label {
+  font-family: inherit;
+}
+
+.labs-wikimedia-field--inline.labs-wikimedia-field--sketchy
+  .labs-wikimedia-field__current {
+  padding: 0.35rem 0.4rem;
+  border: 2px solid var(--labs-wikimedia-sketch-ink, #2a2622);
+  border-radius: 0.2rem 0.45rem 0.2rem 0.35rem / 0.35rem 0.2rem 0.4rem 0.25rem;
+  background: var(--labs-wikimedia-sketch-surface, #fffdf8);
+  box-shadow: var(
+    --labs-wikimedia-sketch-shadow,
+    2px 2px 0 rgb(42 38 34 / 12%)
+  );
 }

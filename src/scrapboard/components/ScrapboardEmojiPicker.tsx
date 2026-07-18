@@ -54,7 +54,9 @@ export function ScrapboardEmojiPicker({ value, onChange }: ScrapboardEmojiPicker
                 .join(' ')}
               onClick={() => onChange(emoji)}
             >
-              {emoji}
+              <span className="scrapboard-emoji scrapboard-emoji--sm" aria-hidden>
+                {emoji}
+              </span>
             </button>
           );
         })}

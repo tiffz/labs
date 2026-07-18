@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { markerPlacementFromArrangement } from './characterArrangements';
 import { characterMarkerLayoutBox } from './characterMarkers';
 import { layoutPanelTextBlocks } from './speechBubbleLayout';
 import { adaptBlocksToPanelBudget, maxDialogueBlocksForPanel } from './speechBubbleSlotLayout';
@@ -128,6 +129,42 @@ describe('speechBubbleSlotLayout', () => {
       };
       expect(boxesOverlap(sfxBox, bubbleBox)).toBe(false);
     }
+  });
+
+  it('keeps dialogue balloons clear of emoji arrangement markers', () => {
+    const bounds = { x: 0, y: 0, w: 200, h: 240 };
+    const blocks: PanelTextBlock[] = [
+      {
+        kind: 'dialogue',
+        characterId: 'a',
+        content: 'Why is the lunchbox humming near the fountain?',
+      },
+    ];
+    const placement = markerPlacementFromArrangement('medium', 1);
+    const layout = layoutPanelTextBlocks(blocks, bounds, {
+      placeMode: 'slots',
+      allowBubbleEscape: true,
+      markerPlacement: placement,
+    });
+    const bubble = layout.items.find((item) => item.kind === 'bubble');
+    expect(bubble?.kind).toBe('bubble');
+    if (bubble?.kind !== 'bubble') return;
+    const marker = characterMarkerLayoutBox(bounds, 'a', placement);
+    const bubbleBox = {
+      left: bubble.layout.cx - bubble.layout.halfW,
+      top: bubble.layout.cy - bubble.layout.halfH,
+      right: bubble.layout.cx + bubble.layout.halfW,
+      bottom: bubble.layout.cy + bubble.layout.halfH,
+    };
+    expect(
+      boxesOverlap(bubbleBox, {
+        left: marker.left,
+        top: marker.top,
+        right: marker.right,
+        bottom: marker.bottom,
+      }),
+    ).toBe(false);
+    expect(bubbleBox.bottom).toBeLessThanOrEqual(marker.top - 8);
   });
 
   it('keeps loud center-ish SFX off character markers', () => {
