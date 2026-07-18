@@ -53,6 +53,8 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
   const autoPullStartedRef = useRef(false);
   const autoPushTimerRef = useRef<number | null>(null);
   const autoPushInFlightRef = useRef(false);
+  /** Edits that scheduled a push while allowAutoPush was false (before first pull). */
+  const pendingPushWhileGatedRef = useRef(false);
   const lastAutoPushAtRef = useRef(0);
   const lastAutoPullAtRef = useRef(0);
   const periodicPullTimerRef = useRef<number | null>(null);
@@ -77,11 +79,17 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
   onAutoPushErrorRef.current = onAutoPushError;
 
   const startAutoPush = useCallback((opts?: { force?: boolean }) => {
-    if (!allowPushRef.current() || autoPushInFlightRef.current || mergeBusyRef.current()) return;
+    if (autoPushInFlightRef.current || mergeBusyRef.current()) return;
+    if (!allowPushRef.current()) {
+      // Remember that local edits need a flush once the first pull/backup unlocks auto-push.
+      pendingPushWhileGatedRef.current = true;
+      return;
+    }
     if (!opts?.force) {
       const sinceLast = Date.now() - lastAutoPushAtRef.current;
       if (sinceLast < LABS_DRIVE_AUTO_PUSH_MIN_INTERVAL_MS) return;
     }
+    pendingPushWhileGatedRef.current = false;
     autoPushInFlightRef.current = true;
     void (async () => {
       try {
@@ -111,12 +119,16 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
       const result = await pullRef.current({ silent: true });
       lastAutoPullAtRef.current = Date.now();
       await afterPullRef.current?.(result);
+      // First successful pull unlocks allowAutoPush — flush any edits that piled up while gated.
+      if (pendingPushWhileGatedRef.current) {
+        startAutoPush({ force: true });
+      }
     } catch (e) {
       onAutoPullErrorRef.current(formatLabsDriveSyncError(e, 'auto-pull'));
     } finally {
       pullInFlightRef.current = false;
     }
-  }, []);
+  }, [startAutoPush]);
 
   useEffect(() => {
     if (!enabled || autoPullStartedRef.current) return;

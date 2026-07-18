@@ -10,6 +10,7 @@ import {
   repertoireExtrasFromWire,
   serializeRepertoireWire,
 } from './repertoireWire';
+import { maybePinDailyDriveFileRevision } from '../../shared/drive/driveRevisionPinning';
 import { driveGetFileMetadata, driveGetMedia, drivePatchJsonMedia } from './driveFetch';
 import { ensureEncoreDriveLayout } from './bootstrapFolders';
 import { snapshotEncoreRepertoireBeforeSync } from './encoreDriveUndoSnapshots';
@@ -164,6 +165,7 @@ export async function pushRepertoireToDrive(
     lastSuccessfulPushAt: new Date().toISOString(),
     lastSyncedLocalMaxUpdatedAt: maxRepertoireClock(songs, performances, extrasRow.updatedAt),
   });
+  void maybePinDailyDriveFileRevision(accessToken, repertoireFileId);
   onProgress?.(1);
 }
 

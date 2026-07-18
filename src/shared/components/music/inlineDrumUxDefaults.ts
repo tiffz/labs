@@ -12,12 +12,20 @@ export type DeprecatedInlineDarbukaLinkPlacement = 'below-notation';
 /** Host picks a profile — not individual layout props. */
 export type InlineDrumUxProfile = 'sidebar-compact' | 'settings-panel' | 'practice-rail';
 
+/**
+ * How preset/pattern editors are shown.
+ * - `menu` — dense default: notation first; Edit / click opens a dropdown with presets + field
+ * - `inline` — always-expanded (deprecated; prefer `menu`)
+ * - `popover` — deprecated alias for `menu` (kept for older call sites)
+ */
+export type InlineDrumPatternEditing = 'menu' | 'inline' | 'popover';
+
 /** Props bundled by {@link INLINE_DRUM_PROFILES} / {@link getInlineDrumUxProps}. */
 export type InlineDrumUxProfileProps = {
   showRandomizeButtons: boolean;
   hidePatternInput: boolean;
   presetLayout: 'grid' | 'compact';
-  patternEditing: 'inline' | 'popover';
+  patternEditing: InlineDrumPatternEditing;
   audioEnabled: boolean;
   notationHeight: number;
   drumSymbolScale: number;
@@ -36,6 +44,14 @@ export function resolveDarbukaLinkPlacement(
   return hidePatternInput ? 'inline-notation' : 'inline-pattern';
 }
 
+/** Normalize deprecated `popover` alias to `menu`. */
+export function resolvePatternEditingMode(
+  patternEditing: InlineDrumPatternEditing | undefined,
+): 'menu' | 'inline' {
+  if (patternEditing === 'inline') return 'inline';
+  return 'menu';
+}
+
 /** Shared Darbuka deep-link props for inline drum panels (icon + tooltip). */
 export const INLINE_DARBUKA_LINK_UX = {
   hideDarbukaLink: false,
@@ -46,9 +62,8 @@ export const INLINE_DARBUKA_LINK_UX = {
  * Behavior defaults for inline drum embeds. Hosts pass a profile via {@link getInlineDrumUxProps}
  * and keep theming local (`notationStyle`, wrapper className).
  *
- * - **settings-panel** — chord playback popovers (Encore Originals, Chords chart).
- * - **practice-rail** — preset chip grid behind Edit toggle + audible playback (Stanza practice rail).
- * - **sidebar-compact** — full preset grid + audible playback (Piano sidebar).
+ * Dense **menu** editing is the default for every profile: notation first, presets/field in a
+ * dropdown opened via Edit or clicking the staff.
  *
  * Host-owned pattern fields (Words section template row): spread the profile then override
  * `{ hidePatternInput: true, hideDarbukaLink: true }`.
@@ -58,7 +73,7 @@ export const INLINE_DRUM_PROFILES: Record<InlineDrumUxProfile, InlineDrumUxProfi
     showRandomizeButtons: true,
     hidePatternInput: false,
     presetLayout: 'grid',
-    patternEditing: 'inline',
+    patternEditing: 'menu',
     audioEnabled: false,
     notationHeight: 72,
     drumSymbolScale: 0.68,
@@ -68,8 +83,7 @@ export const INLINE_DRUM_PROFILES: Record<InlineDrumUxProfile, InlineDrumUxProfi
     showRandomizeButtons: true,
     hidePatternInput: false,
     presetLayout: 'grid',
-    /** Collapsed inline disclosure (Edit/Done) — not a portaled MUI popover. See stanza/PRACTICE_RAIL.md. */
-    patternEditing: 'popover',
+    patternEditing: 'menu',
     audioEnabled: true,
     notationHeight: 72,
     drumSymbolScale: 0.62,
@@ -79,7 +93,7 @@ export const INLINE_DRUM_PROFILES: Record<InlineDrumUxProfile, InlineDrumUxProfi
     showRandomizeButtons: true,
     hidePatternInput: false,
     presetLayout: 'grid',
-    patternEditing: 'inline',
+    patternEditing: 'menu',
     audioEnabled: true,
     notationHeight: 72,
     drumSymbolScale: 0.68,

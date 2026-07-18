@@ -111,31 +111,105 @@ export function OriginalsPaintSectionHeading({
     section.sectionId,
   );
 
+  const closePlayback = () => {
+    setPlaybackOpen(false);
+  };
+
   if (readOnly) {
+    const drumsOn = sectionPlaybackOverride?.drumsEnabled !== false;
+    const chipLabel =
+      hasCustomPlayback && drumsOn && sectionPlaybackOverride?.drumPattern
+        ? 'Custom drums'
+        : 'Custom';
+    const globalPlaybackSettings = readGlobalPlaybackSettings();
+
     return (
-      <div
-        className={[
-          'encore-originals-paint-section-heading',
-          hasCustomPlayback ? 'has-custom-playback' : '',
-          sectionIsPlaying ? 'is-section-looping' : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
-      >
-        <span className="encore-originals-paint-section-heading-label">{label}</span>
-        <div className="encore-originals-paint-section-heading-actions">
-          {sectionPlayButton}
-          {hasCustomPlayback ? (
-            <span
-              className="encore-originals-paint-section-playback-chip encore-originals-paint-section-playback-chip--read-only"
-              aria-label={`Custom playback for ${label}`}
-            >
-              <TuneOutlinedIcon sx={{ fontSize: 13 }} aria-hidden />
-              <span className="encore-originals-paint-section-playback-chip-label">Custom</span>
-            </span>
-          ) : null}
+      <>
+        <div
+          className={[
+            'encore-originals-paint-section-heading',
+            hasCustomPlayback ? 'has-custom-playback' : '',
+            sectionIsPlaying ? 'is-section-looping' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <span className="encore-originals-paint-section-heading-label">{label}</span>
+          <div className="encore-originals-paint-section-heading-actions">
+            {sectionPlayButton}
+            {hasCustomPlayback ? (
+              <Tooltip title={`View custom playback for ${label}`}>
+                <button
+                  type="button"
+                  ref={playbackButtonRef}
+                  className="encore-originals-paint-section-playback-chip encore-originals-paint-section-playback-chip--read-only"
+                  aria-label={`View custom playback for ${label}`}
+                  aria-haspopup="dialog"
+                  aria-expanded={playbackOpen}
+                  onClick={() => setPlaybackOpen((open) => !open)}
+                >
+                  <TuneOutlinedIcon sx={{ fontSize: 13 }} aria-hidden />
+                  <span className="encore-originals-paint-section-playback-chip-label">{chipLabel}</span>
+                </button>
+              </Tooltip>
+            ) : null}
+          </div>
         </div>
-      </div>
+
+        <AnchoredPopover
+          open={playbackOpen}
+          onClose={closePlayback}
+          action={playbackPopoverActionRef}
+          anchorEl={popoverAnchorEl(playbackButtonRef)}
+          placement="bottom-start"
+          disableAutoFocus
+          disableEnforceFocus
+          disableRestoreFocus
+          disableScrollLock
+          marginThreshold={12}
+          slotProps={{
+            ...playbackFloatingPanelSlotProps({
+              paperClassName:
+                'encore-originals-chords-playback-settings-menu encore-originals-section-playback-menu',
+              paperSx: {
+                width: 420,
+                maxWidth: 'min(420px, calc(100vw - 24px))',
+                maxHeight:
+                  'calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+                mt: 0.75,
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                borderRadius: 3,
+              },
+            }),
+            paper: {
+              onMouseDown: (event: MouseEvent<HTMLDivElement>) => event.stopPropagation(),
+            },
+          }}
+        >
+          <Box
+            sx={{
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              overscrollBehavior: 'contain',
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            <OriginalsSectionPlaybackSettingsPanel
+              sectionLabel={label}
+              hasCustomPlayback={hasCustomPlayback}
+              override={sectionPlaybackOverride}
+              globalSettings={globalPlaybackSettings}
+              tempo={tempo}
+              timeSignature={timeSignature}
+              viewOnly
+              onCustomPlaybackChange={() => undefined}
+              onOverrideChange={() => undefined}
+            />
+          </Box>
+        </AnchoredPopover>
+      </>
     );
   }
 
@@ -145,10 +219,6 @@ export function OriginalsPaintSectionHeading({
   const closeProgression = () => {
     setProgressionOpen(false);
     setError(null);
-  };
-
-  const closePlayback = () => {
-    setPlaybackOpen(false);
   };
 
   const applyProgression = () => {

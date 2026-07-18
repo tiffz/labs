@@ -38,7 +38,9 @@ export async function writeLyreflyLocalPayload(payload: LyreflySyncPayload): Pro
           snapshotIds: [],
           artVersionIds: [],
           pageCount: summary.pageCount,
-          projectFolderId: summary.projectFolderId,
+          // Do not copy projectFolderId onto brand-new stubs. Sidecar download uses
+          // summary.projectFolderId, and leaving the local row unset keeps first-hydrate
+          // detection accurate (see applyLyreflyProjectPackageToDb / downloadMissing…).
           createdAt: summary.updatedAt,
           updatedAt: summary.updatedAt,
         };

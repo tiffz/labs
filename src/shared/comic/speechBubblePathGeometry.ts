@@ -7,10 +7,10 @@
 
 import type { SpeechBubbleLayout } from './speechBubbleLayout';
 import {
-  bubbleTextBlockHeight,
   bubbleTextOffsetY,
   speechBubblePathForLayout,
   tailMouthGeometry,
+  type BubblePathPair,
   type BubbleShape,
 } from './speechBubblePath';
 
@@ -18,6 +18,8 @@ export type PathGeometryViolationCode =
   | 'path_not_closed'
   | 'path_legacy_ellipse_arc'
   | 'path_missing_tail_tip'
+  | 'tail_not_closed'
+  | 'tail_not_unified'
   | 'mouth_off_ellipse'
   | 'tail_misaimed'
   | 'text_in_tail_wedge';
@@ -81,44 +83,68 @@ function angleInWedge(target: number, left: number, right: number): boolean {
   return t >= l - 0.05 || t <= r + 0.05;
 }
 
-/** Validate a bubble path `d` string against expected geometry. */
+/**
+ * Validate a bubble path pair.
+ * Unified model: `body` is the continuous outline (includes tip); `tail` is empty.
+ * Legacy separate-tail pairs (non-empty `tail`) still validate closed wedges.
+ */
 export function validateBubblePathD(
-  pathD: string,
+  paths: BubblePathPair,
   cx: number,
   cy: number,
   halfW: number,
   halfH: number,
-  tailX: number,
-  tailY: number,
-  shape: BubbleShape = 'ellipse',
+  tipX: number,
+  tipY: number,
+  shape: BubbleShape = 'roundRect',
 ): PathGeometryViolation[] {
   const violations: PathGeometryViolation[] = [];
-  const trimmed = pathD.trim();
+  const body = paths.body.trim();
+  const tail = paths.tail.trim();
+  const tipToken = `${tipX} ${tipY}`;
 
-  if (!trimmed.endsWith('Z')) {
+  if (!body.endsWith('Z')) {
     violations.push({
       code: 'path_not_closed',
-      message: 'Bubble path is not closed',
+      message: 'Bubble body path is not closed',
     });
   }
 
-  if (shape === 'ellipse' && /\sA\s/i.test(trimmed)) {
+  if (tail) {
+    // Legacy separate-tail pair (tests / probes).
+    if (!tail.endsWith('Z')) {
+      violations.push({
+        code: 'tail_not_closed',
+        message: 'Bubble tail path is not closed — tails must be filled closed wedges',
+      });
+    }
+    if (!tail.includes(tipToken)) {
+      violations.push({
+        code: 'path_missing_tail_tip',
+        message: `Bubble tail path does not reach tail tip (${tipX}, ${tipY})`,
+      });
+    }
+  } else if (!body.includes(tipToken)) {
+    violations.push({
+      code: 'path_missing_tail_tip',
+      message: `Unified bubble outline does not reach tail tip (${tipX}, ${tipY})`,
+    });
+  } else if (!body.includes('C ')) {
+    violations.push({
+      code: 'tail_not_unified',
+      message: 'Unified bubble outline is missing the curved tail segment',
+    });
+  }
+
+  if (shape === 'ellipse' && (/\sA\s/i.test(body) || /\sA\s/i.test(tail))) {
     violations.push({
       code: 'path_legacy_ellipse_arc',
       message: 'Bubble path uses legacy elliptical arc commands',
     });
   }
 
-  const tipToken = `${tailX} ${tailY}`;
-  if (!trimmed.includes(tipToken)) {
-    violations.push({
-      code: 'path_missing_tail_tip',
-      message: `Bubble path does not reach tail tip (${tailX}, ${tailY})`,
-    });
-  }
-
   if (shape === 'ellipse') {
-    const mouth = tailMouthGeometry(cx, cy, halfW, halfH, tailX, tailY);
+    const mouth = tailMouthGeometry(cx, cy, halfW, halfH, tipX, tipY);
     if (!pointOnEllipseBoundary(mouth.left, cx, cy, halfW, halfH)) {
       violations.push({
         code: 'mouth_off_ellipse',
@@ -132,7 +158,7 @@ export function validateBubblePathD(
       });
     }
 
-    const tailAngle = Math.atan2(tailY - cy, tailX - cx);
+    const tailAngle = Math.atan2(tipY - cy, tipX - cx);
     if (!angleInWedge(tailAngle, mouth.angle - mouth.spread, mouth.angle + mouth.spread)) {
       violations.push({
         code: 'tail_misaimed',
@@ -147,17 +173,25 @@ export function validateBubblePathD(
 /** Check dialogue block center is not inside the tail wedge below the bubble body. */
 export function validateBubbleTextPlacement(bubble: SpeechBubbleLayout): PathGeometryViolation[] {
   const violations: PathGeometryViolation[] = [];
-  const { cx, cy, halfW, halfH, tailX, tailY, lines, metrics } = bubble;
+  const { cx, cy, halfW, halfH, lines, metrics } = bubble;
   if (lines.length === 0) return violations;
 
-  const offsetY = bubbleTextOffsetY(cx, cy, halfW, halfH, tailX, tailY, metrics.shape);
-  const textTop =
-    cy - ((lines.length - 1) * metrics.lineHeight) / 2 + offsetY;
-  const textH = bubbleTextBlockHeight(lines.length, metrics.lineHeight, metrics.fontSize);
-  const textCenterY = textTop + textH / 2;
+  const offsetY = bubbleTextOffsetY(
+    cx,
+    cy,
+    halfW,
+    halfH,
+    bubble.tailX,
+    bubble.tailY,
+    metrics.shape,
+    metrics.padY,
+    metrics.fontSize,
+  );
+  // First line uses dominantBaseline="middle"; block center is cy + offsetY.
+  const textCenterY = cy + offsetY;
   const textCenter: Point = { x: cx, y: textCenterY };
 
-  const mouth = tailMouthGeometry(cx, cy, halfW, halfH, tailX, tailY);
+  const mouth = tailMouthGeometry(cx, cy, halfW, halfH, bubble.tailX, bubble.tailY);
   const inWedge = pointInTriangle(textCenter, mouth.left, mouth.right, mouth.tip);
   const belowBody = textCenterY > cy - halfH * 0.15;
 
@@ -174,7 +208,7 @@ export function validateBubbleTextPlacement(bubble: SpeechBubbleLayout): PathGeo
 /** Full path + text geometry for one laid-out bubble. */
 export function validateSpeechBubbleGeometry(bubble: SpeechBubbleLayout): PathGeometryViolation[] {
   const shape = bubble.metrics.shape;
-  const pathD = speechBubblePathForLayout(
+  const paths = speechBubblePathForLayout(
     bubble.cx,
     bubble.cy,
     bubble.halfW,
@@ -185,7 +219,7 @@ export function validateSpeechBubbleGeometry(bubble: SpeechBubbleLayout): PathGe
   );
   return [
     ...validateBubblePathD(
-      pathD,
+      paths,
       bubble.cx,
       bubble.cy,
       bubble.halfW,
@@ -198,16 +232,16 @@ export function validateSpeechBubbleGeometry(bubble: SpeechBubbleLayout): PathGe
   ];
 }
 
-/** Browser/e2e helper — audit path `d` attributes without importing layout code. */
-export function auditBubblePathElement(pathD: string | null | undefined): {
+/** DOM path audit shared with Scrapboard e2e smoke. */
+export function auditBubblePathElement(d: string): {
   closed: boolean;
   hasLegacyArc: boolean;
   commandCount: number;
 } {
-  const d = (pathD ?? '').trim();
+  const trimmed = d.trim();
   return {
-    closed: d.endsWith('Z'),
-    hasLegacyArc: /\sA\s/i.test(d),
-    commandCount: (d.match(/[MLQZ]/gi) ?? []).length,
+    closed: trimmed.endsWith('Z'),
+    hasLegacyArc: /\sA\s/i.test(trimmed),
+    commandCount: (trimmed.match(/[MLQZC]/gi) ?? []).length,
   };
 }

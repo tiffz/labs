@@ -105,20 +105,21 @@ export function computeMiniNotationLayout(
   symbolGap: number;
   metronomeDotGap: number;
 } {
-  const edgePadding = 2;
+  const edgePadding = height >= 110 ? 4 : 2;
   const isUltraCompact = height <= 68;
   /** Room above the top staff line for time-signature numerals. */
-  const timeSignatureSpace = isUltraCompact ? 4 : 8;
+  const timeSignatureSpace = isUltraCompact ? 4 : height >= 110 ? 10 : 8;
   /** Stems, flags, and noteheads extend below the bottom staff line. */
   const noteBottomPad = isUltraCompact ? 16 : 20;
   /** Metronome dots render below the bottom staff line (see draw loop). */
   const metronomeDotRadius = 5;
-  const symbolGap = height <= 68 ? 5 : height <= 72 ? 6 : height <= 90 ? 7 : 8;
+  const symbolGap = height <= 68 ? 5 : height <= 72 ? 6 : height <= 90 ? 7 : 9;
   const metronomeDotGap = height <= 68 ? 9 : height <= 72 ? 11 : height <= 90 ? 14 : 18;
+  // Menu / rail previews need extra headroom so doodle articulations aren’t clipped.
   const symbolSpace = options.showDrumSymbols
     ? isUltraCompact
       ? Math.round(Math.min(12, Math.max(7, height * 0.12)))
-      : Math.round(Math.min(14, Math.max(9, height * 0.14)))
+      : Math.round(Math.min(20, Math.max(12, height * 0.155)))
     : 0;
   const staveY = symbolSpace + timeSignatureSpace + edgePadding;
   const belowStaffPad = options.showMetronomeDots

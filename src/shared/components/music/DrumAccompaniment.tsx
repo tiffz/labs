@@ -14,11 +14,22 @@ import DiceIcon from '../DiceIcon';
 import { DRUM_SAMPLE_URLS } from '../../audio/drumSampleUrls';
 import { resolveDrumPlaybackNotePointer } from '../../rhythm/drumPlaybackNotePointer';
 import { scheduleDrumPatternWindow } from '../../audio/platform/scheduling/scheduleDrumPatternWindow';
+import AnchoredPopover from '../AnchoredPopover';
 import {
   resolveDarbukaLinkPlacement,
+  resolvePatternEditingMode,
   type InlineDarbukaLinkPlacement,
   type DeprecatedInlineDarbukaLinkPlacement,
+  type InlineDrumPatternEditing,
 } from './inlineDrumUxDefaults';
+import {
+  DRUM_PATTERN_EDIT_MENU_CLASS,
+  DRUM_PATTERN_EDIT_MENU_OPEN_BODY_CLASS,
+  DRUM_PATTERN_EDIT_MENU_ROOT_CLASS,
+  DRUM_PATTERN_EDIT_MENU_Z_INDEX,
+  DRUM_PATTERN_EDIT_TIP_Z_INDEX,
+  drumPatternEditMenuAnchorPosition,
+} from './drumPatternEditMenu';
 import './darbukaTrainerIconLink.css';
 import './drumAccompaniment.css';
 
@@ -90,8 +101,15 @@ interface DrumAccompanimentProps {
   audioEnabled?: boolean;
   /** Grid shows all preset pills; compact uses a single picker menu (sidebars). */
   presetLayout?: 'grid' | 'compact';
-  /** Inline shows preset grid + pattern field in the panel; collapsed hides them behind Edit until expanded (Stanza rail). */
-  patternEditing?: 'inline' | 'popover';
+  /**
+   * How preset/pattern editors appear.
+   * - `menu` (default via profiles) — notation first; Edit / click opens a dropdown
+   * - `inline` — always-expanded (deprecated)
+   * - `popover` — deprecated alias for `menu`
+   */
+  patternEditing?: InlineDrumPatternEditing;
+  /** Notation-only (no Edit control / pattern menu). Used for view-only section playback. */
+  readOnly?: boolean;
 }
 
 const DRUM_SOUNDS = { ...DRUM_SAMPLE_URLS } as const;
@@ -153,18 +171,31 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
   notationValue,
   onNotationValueChange,
   presetLayout = 'grid',
-  patternEditing = 'inline',
+  patternEditing = 'menu',
+  readOnly = false,
 }) => {
   const isControlled = onNotationValueChange !== undefined;
+  const editingMode = resolvePatternEditingMode(patternEditing);
+  const denseMenuEditing = editingMode === 'menu' && !readOnly;
+  const showInlineEditing = editingMode === 'inline' && !readOnly;
   const [selectedPreset, setSelectedPreset] = useState(0);
   const [presetMenuAnchor, setPresetMenuAnchor] = useState<HTMLElement | null>(null);
   const [patternEditOpen, setPatternEditOpen] = useState(false);
+  const [patternMenuAnchor, setPatternMenuAnchor] = useState<HTMLElement | null>(null);
+  const [patternMenuPosition, setPatternMenuPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const patternEditorPanelId = React.useId();
   const notationFrameRef = useRef<HTMLDivElement | null>(null);
+  const editButtonRef = useRef<HTMLButtonElement | null>(null);
   const [customNotation, setCustomNotation] = useState<string | null>(null);
-  const [hoverTip, setHoverTip] = useState<{ text: string; x: number; y: number } | null>(
-    null
-  );
+  const [hoverTip, setHoverTip] = useState<{
+    text: string;
+    x: number;
+    y: number;
+    placement: 'above' | 'below';
+  } | null>(null);
   const presetRhythms = useMemo(() => getRhythmTemplatePresets(timeSignature), [timeSignature]);
 
   const internalNotation = useMemo(() => {
@@ -324,6 +355,20 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
     };
   }, [parsedRhythm, currentMeasureIndex]);
 
+  const showValidNotation = parsedRhythm.isValid && parsedRhythm.measures.length > 0;
+  /** Keep last good staff while the edit menu is open so invalid keystrokes don't reflow the rail. */
+  const lastValidDisplayRhythmRef = useRef(displayRhythm);
+  if (showValidNotation) {
+    lastValidDisplayRhythmRef.current = displayRhythm;
+  }
+  const stageDisplayRhythm =
+    patternEditOpen && !showValidNotation ? lastValidDisplayRhythmRef.current : displayRhythm;
+  const stageShowValidNotation =
+    showValidNotation ||
+    (patternEditOpen &&
+      lastValidDisplayRhythmRef.current.isValid &&
+      lastValidDisplayRhythmRef.current.measures.length > 0);
+
   const handlePresetChange = useCallback(
     (index: number) => {
       setSelectedPreset(index);
@@ -367,13 +412,16 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
   const showTip = useCallback(
     (event: React.MouseEvent<HTMLButtonElement> | React.FocusEvent<HTMLButtonElement>, text: string) => {
       const rect = event.currentTarget.getBoundingClientRect();
+      // Inside the edit menu, tip below the dice sits under the paper — place above instead.
+      const placeAbove = patternEditOpen;
       setHoverTip({
         text,
         x: rect.left + rect.width / 2,
-        y: rect.bottom + 10,
+        y: placeAbove ? rect.top - 8 : rect.bottom + 10,
+        placement: placeAbove ? 'above' : 'below',
       });
     },
-    []
+    [patternEditOpen],
   );
   const hideTip = useCallback(() => setHoverTip(null), []);
 
@@ -437,38 +485,45 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
     // If not a URL, allow normal paste behavior
   }, [parseRhythmFromUrl, handleNotationChange]);
 
-  const togglePatternEditor = useCallback(() => {
-    setPatternEditOpen((open) => !open);
-  }, []);
-
-  const openPatternEditor = useCallback(() => {
-    setPatternEditOpen(true);
-  }, []);
-
   const closePatternEditor = useCallback(() => {
     setPatternEditOpen(false);
+    setPatternMenuAnchor(null);
+    setPatternMenuPosition(null);
   }, []);
 
+  const openPatternEditor = useCallback((anchor?: HTMLElement | null) => {
+    if (readOnly) return;
+    void anchor; // Call sites may pass a node; we always prefer Edit for stable popover placement.
+    // Prefer the Edit control — the staff resizes as the pattern changes and would jump the popover.
+    const nextAnchor = editButtonRef.current ?? notationFrameRef.current;
+    if (nextAnchor) {
+      // Freeze screen coords so MUI’s every-render reposition can’t chase a moving Edit button.
+      setPatternMenuPosition(drumPatternEditMenuAnchorPosition(nextAnchor));
+    } else {
+      setPatternMenuPosition(null);
+    }
+    setPatternMenuAnchor(nextAnchor);
+    setPatternEditOpen(true);
+  }, [readOnly]);
+
   useEffect(() => {
-    if (!patternEditOpen || patternEditing !== 'popover') return undefined;
-
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      event.stopPropagation();
-      closePatternEditor();
-    };
-
-    document.addEventListener('keydown', handleKeyDown, true);
+    if (!patternEditOpen) return undefined;
+    document.body.classList.add(DRUM_PATTERN_EDIT_MENU_OPEN_BODY_CLASS);
     return () => {
-      document.removeEventListener('keydown', handleKeyDown, true);
+      document.body.classList.remove(DRUM_PATTERN_EDIT_MENU_OPEN_BODY_CLASS);
     };
-  }, [closePatternEditor, patternEditOpen, patternEditing]);
+  }, [patternEditOpen]);
 
-  const activePreset = presetRhythms[selectedPreset];
-  const activePresetLabel = activePreset?.label ?? 'Rhythm';
-  const patternEditingPopover = patternEditing === 'popover';
-  const showInlineEditing = !patternEditingPopover;
+  const togglePatternEditor = useCallback(() => {
+    if (patternEditOpen) {
+      closePatternEditor();
+      return;
+    }
+    openPatternEditor(editButtonRef.current);
+  }, [closePatternEditor, openPatternEditor, patternEditOpen]);
+
+  const activePreset = selectedPreset >= 0 ? presetRhythms[selectedPreset] : undefined;
+  const activePresetLabel = activePreset?.label ?? 'Custom';
 
   const randomizeButtons = showRandomizeButtons ? (
     <>
@@ -498,6 +553,17 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
       </TemplateButton>
     </>
   ) : null;
+
+  const randomizeRow =
+    randomizeButtons != null ? (
+      <div
+        className="drum-presets__random-row"
+        role="group"
+        aria-label="Randomize drum pattern"
+      >
+        {randomizeButtons}
+      </div>
+    ) : null;
 
   const presetSelector =
     presetLayout === 'compact' ? (
@@ -542,43 +608,30 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
             </MenuItem>
           ))}
         </Menu>
-        {randomizeButtons}
+        {randomizeRow}
       </div>
     ) : (
-      <div className="drum-presets">
-        {presetRhythms.map((preset, index) => (
-          <TemplateButton
-            key={preset.id}
-            onClick={() => handlePresetChange(index)}
-            isActive={selectedPreset === index}
-            className={`preset-btn ${templateButtonClassName ?? ''}`.trim()}
-            ariaLabel={`Use ${preset.label} drum preset`}
-          >
-            {preset.label}
-          </TemplateButton>
-        ))}
-        {randomizeButtons}
+      <div className="drum-presets-block">
+        <div className="drum-presets">
+          {presetRhythms.map((preset, index) => (
+            <TemplateButton
+              key={preset.id}
+              onClick={() => handlePresetChange(index)}
+              isActive={selectedPreset === index}
+              className={`preset-btn ${templateButtonClassName ?? ''}`.trim()}
+              ariaLabel={`Use ${preset.label} drum preset`}
+            >
+              {preset.label}
+            </TemplateButton>
+          ))}
+        </div>
+        {randomizeRow}
       </div>
     );
 
-  const patternInput = hidePatternInput ? null : showInlinePatternDarbukaLink ? (
-    <div className="drum-pattern-input-row">
-      <div className="drum-pattern-input">
-        <input
-          type="text"
-          placeholder="D-T-K-T- or paste Darbuka Trainer URL"
-          value={notation}
-          onChange={(e) => handleNotationChange(e.target.value)}
-          onPaste={handlePaste}
-        />
-      </div>
-      <DarbukaTrainerIconLink
-        href={darbukaHref}
-        className={darbukaLinkClassName}
-        tooltip={darbukaLinkTooltip}
-      />
-    </div>
-  ) : (
+  // Hosts may own an outer pattern field (`hidePatternInput`), but the Edit menu always
+  // includes the notation string so users can tweak while picking presets.
+  const patternInputInner = (
     <div className="drum-pattern-input">
       <input
         type="text"
@@ -589,55 +642,83 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
       />
     </div>
   );
+  const patternInputForMenu =
+    showInlinePatternDarbukaLink && !hidePatternInput ? (
+      <div className="drum-pattern-input-row">
+        {patternInputInner}
+        <DarbukaTrainerIconLink
+          href={darbukaHref}
+          className={darbukaLinkClassName}
+          tooltip={darbukaLinkTooltip}
+        />
+      </div>
+    ) : (
+      patternInputInner
+    );
+  const patternInput = hidePatternInput ? null : patternInputForMenu;
 
-  const showValidNotation = parsedRhythm.isValid && parsedRhythm.measures.length > 0;
-
-  const patternEditToolbarButton = patternEditingPopover ? (
+  const patternEditToolbarButton = denseMenuEditing ? (
     <button
+      ref={editButtonRef}
       type="button"
       className="drum-pattern-edit-btn"
       aria-expanded={patternEditOpen}
       aria-controls={patternEditorPanelId}
-      aria-label={patternEditOpen ? 'Done editing drum pattern' : 'Edit drum pattern'}
+      aria-haspopup="dialog"
+      aria-label="Edit drum pattern"
       onClick={togglePatternEditor}
     >
-      {patternEditOpen ? 'Done' : 'Edit'}
+      Edit
     </button>
   ) : null;
 
   const patternEditTriggerHit =
-    patternEditingPopover && !patternEditOpen ? (
+    denseMenuEditing && !patternEditOpen ? (
       <button
         type="button"
         className="stanza-drums-notation-trigger__hit"
         aria-expanded={false}
         aria-controls={patternEditorPanelId}
+        aria-haspopup="dialog"
         aria-label={
           showValidNotation
             ? `Drum pattern: ${activePresetLabel}. Edit pattern.`
             : 'Enter a drum pattern'
         }
-        onClick={openPatternEditor}
+        onClick={() => openPatternEditor(editButtonRef.current ?? notationFrameRef.current)}
       />
     ) : null;
 
+  const variationControls =
+    selectedPresetData && templateVariations.length > 1 ? (
+      <RhythmTemplateVariationControls
+        presetLabel={selectedPresetData.label}
+        variations={templateVariations}
+        activeVariationIndex={activeVariationIndex}
+        onPrevious={() => cycleTemplateVariation(-1)}
+        onNext={() => cycleTemplateVariation(1)}
+      />
+    ) : null;
+
+  // Named preset / variations only — never a redundant "Rhythm" placeholder over the staff.
+  // Prefer variation prev/next on the stage; do not show a bare preset-name header in dense mode.
   const notationToolbarMain = notationToolbarLeading ? (
     notationToolbarLeading
-  ) : selectedPresetData && templateVariations.length > 1 ? (
-    <RhythmTemplateVariationControls
-      presetLabel={selectedPresetData.label}
-      variations={templateVariations}
-      activeVariationIndex={activeVariationIndex}
-      onPrevious={() => cycleTemplateVariation(-1)}
-      onNext={() => cycleTemplateVariation(1)}
-    />
-  ) : (
-    <span className="drum-pattern-active-summary" title={activePresetLabel}>
-      {activePresetLabel}
+  ) : variationControls ? (
+    variationControls
+  ) : selectedPresetData && !readOnly && !denseMenuEditing ? (
+    <span className="drum-pattern-active-summary" title={selectedPresetData.label}>
+      {selectedPresetData.label}
     </span>
-  );
+  ) : null;
 
-  const notationToolbar = (
+  const showNotationToolbar =
+    Boolean(notationToolbarMain) ||
+    Boolean(notationToolbarExtra) ||
+    showInlineNotationDarbukaLink ||
+    Boolean(patternEditToolbarButton);
+
+  const notationToolbar = showNotationToolbar ? (
     <div className="drum-notation-mini-header-row stanza-drums-notation-toolbar">
       <div className="drum-notation-mini-header-row__main">{notationToolbarMain}</div>
       <div className="stanza-drums-notation-toolbar__trail">
@@ -652,52 +733,146 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
         {patternEditToolbarButton}
       </div>
     </div>
-  );
+  ) : null;
 
-  const notationMini = showValidNotation ? (
-    <>
-      {parsedRhythm.measures.length > 1 ? (
-        <div className="measure-indicator">
-          {parsedRhythm.measures.map((_, idx) => (
-            <span
-              key={idx}
-              className={`measure-dot ${idx === currentMeasureIndex ? 'active' : ''}`}
-              title={`Measure ${idx + 1}`}
-            />
-          ))}
+  const resolvedNotationStyle: NotationStyle =
+    notationStyle ??
+    ({
+      inkColor: '#c8c4d8',
+      highlightColor: '#22c55e',
+    } as NotationStyle);
+
+  const renderNotationMini = (opts: {
+    width: number;
+    height: number;
+    showMetronomeDots: boolean;
+    rhythm: typeof displayRhythm;
+    valid: boolean;
+    /** Multi-measure dots — omit in the edit menu so preview height stays fixed. */
+    showMeasureIndicator?: boolean;
+  }) =>
+    opts.valid ? (
+      <>
+        {opts.showMeasureIndicator && parsedRhythm.measures.length > 1 ? (
+          <div className="measure-indicator">
+            {parsedRhythm.measures.map((_, idx) => (
+              <span
+                key={idx}
+                className={`measure-dot ${idx === currentMeasureIndex ? 'active' : ''}`}
+                title={`Measure ${idx + 1}`}
+              />
+            ))}
+          </div>
+        ) : null}
+        <DrumNotationMini
+          rhythm={opts.rhythm}
+          currentNoteIndex={opts.valid && showValidNotation ? currentNoteIndex : null}
+          width={opts.width}
+          height={opts.height}
+          style={resolvedNotationStyle}
+          showDrumSymbols={true}
+          drumSymbolScale={drumSymbolScale}
+          showMetronomeDots={opts.showMetronomeDots}
+          currentBeat={currentBeat}
+          isPlaying={isPlaying && showValidNotation}
+        />
+      </>
+    ) : (
+      <div className="drum-display-error drum-display-error--inline">
+        <p>Enter a valid rhythm pattern</p>
+        {parsedRhythm.error ? <span className="error-detail">{parsedRhythm.error}</span> : null}
+      </div>
+    );
+
+  const stageNotationWidth = notationWidth ?? 320;
+  const stageNotationHeight = notationHeight ?? (metronomeEnabled ? 120 : 100);
+  // Menu preview needs room for articulations + end bar; keep fixed so the popover doesn’t jump.
+  // Width > 300 so DrumNotationMini uses the wider stave side pad (less flush barlines).
+  const menuNotationWidth = Math.min(Math.max(stageNotationWidth, 304), 340);
+  const menuNotationHeight = 132;
+
+  const notationMini = renderNotationMini({
+    width: stageNotationWidth,
+    height: stageNotationHeight,
+    showMetronomeDots: notationShowMetronomeDots ?? metronomeEnabled,
+    rhythm: stageDisplayRhythm,
+    valid: stageShowValidNotation,
+    showMeasureIndicator: true,
+  });
+
+  const patternEditMenu =
+    denseMenuEditing && patternEditOpen ? (
+      <AnchoredPopover
+        open
+        anchorEl={patternMenuAnchor}
+        anchorReference={patternMenuPosition ? 'anchorPosition' : 'anchorEl'}
+        anchorPosition={patternMenuPosition ?? undefined}
+        onClose={closePatternEditor}
+        placement="bottom-end"
+        paperClassName={DRUM_PATTERN_EDIT_MENU_CLASS}
+        disableRestoreFocus
+        disableScrollLock
+        marginThreshold={12}
+        slotProps={{
+          root: {
+            className: DRUM_PATTERN_EDIT_MENU_ROOT_CLASS,
+            sx: { zIndex: DRUM_PATTERN_EDIT_MENU_Z_INDEX },
+          },
+        }}
+      >
+        <div
+          id={patternEditorPanelId}
+          role="dialog"
+          aria-label="Drum pattern editor"
+          className="drum-pattern-edit-menu__body"
+        >
+          <div
+            className="drum-pattern-edit-menu__preview"
+            aria-live="polite"
+            style={
+              {
+                '--drum-edit-menu-preview-height': `${menuNotationHeight}px`,
+              } as React.CSSProperties
+            }
+          >
+            {renderNotationMini({
+              width: menuNotationWidth,
+              height: menuNotationHeight,
+              showMetronomeDots: false,
+              rhythm: displayRhythm,
+              valid: showValidNotation,
+              showMeasureIndicator: false,
+            })}
+          </div>
+          {presetSelector}
+          {/* Always reserve the variations row so preset switches don’t resize the menu. */}
+          <div
+            className="drum-pattern-edit-menu__variations"
+            aria-hidden={variationControls ? undefined : true}
+          >
+            {variationControls ?? (
+              <div className="drum-pattern-edit-menu__variations-spacer" />
+            )}
+          </div>
+          {patternInputForMenu}
+          <div className="drum-pattern-edit-menu__footer">
+            <button
+              type="button"
+              className="labs-btn drum-pattern-edit-menu__done"
+              onClick={closePatternEditor}
+            >
+              Done
+            </button>
+          </div>
         </div>
-      ) : null}
-      <DrumNotationMini
-        rhythm={displayRhythm}
-        currentNoteIndex={currentNoteIndex}
-        width={notationWidth ?? 320}
-        height={notationHeight ?? (metronomeEnabled ? 120 : 100)}
-        style={
-          notationStyle ??
-          ({
-            inkColor: '#c8c4d8',
-            highlightColor: '#22c55e',
-          } as NotationStyle)
-        }
-        showDrumSymbols={true}
-        drumSymbolScale={drumSymbolScale}
-        showMetronomeDots={notationShowMetronomeDots ?? metronomeEnabled}
-        currentBeat={currentBeat}
-        isPlaying={isPlaying}
-      />
-    </>
-  ) : (
-    <div className="drum-display-error drum-display-error--inline">
-      <p>Enter a valid rhythm pattern</p>
-      {parsedRhythm.error ? <span className="error-detail">{parsedRhythm.error}</span> : null}
-    </div>
-  );
+      </AnchoredPopover>
+    ) : null;
 
   return (
     <div
       className={[
         'drum-accompaniment',
-        patternEditingPopover ? 'drum-accompaniment--playback-focus' : '',
+        denseMenuEditing || readOnly ? 'drum-accompaniment--playback-focus' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -705,8 +880,8 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
       {showInlineEditing ? presetSelector : null}
       {showInlineEditing ? patternInput : null}
 
-      {/* Rhythm display — collapsed-edit mode keeps one stable shell across valid/invalid edits. */}
-      {patternEditingPopover ? (
+      {/* Dense / read-only: notation first; edit controls live in a dropdown menu. */}
+      {denseMenuEditing || readOnly ? (
         <div
           className={['vexflow-mini-container', notationFrameClassName].filter(Boolean).join(' ')}
         >
@@ -715,29 +890,22 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
             ref={notationFrameRef}
             className={[
               'stanza-drums-notation-stage',
-              'stanza-drums-notation-trigger',
+              denseMenuEditing ? 'stanza-drums-notation-trigger' : '',
               patternEditOpen ? 'is-editing' : '',
             ]
               .filter(Boolean)
               .join(' ')}
+            style={
+              patternEditOpen
+                ? { minHeight: stageNotationHeight }
+                : undefined
+            }
           >
             {patternEditTriggerHit}
             {notationMini}
           </div>
           {notationFooter}
-          {patternEditOpen ? (
-            <div
-              id={patternEditorPanelId}
-              role="region"
-              aria-label="Drum pattern editor"
-              className="stanza-drums-pattern-editor-panel stanza-drums-panel"
-            >
-              <div className="stanza-drums-pattern-editor">
-                {presetSelector}
-                {patternInput}
-              </div>
-            </div>
-          ) : null}
+          {patternEditMenu}
         </div>
       ) : showValidNotation ? (
         <div
@@ -823,11 +991,15 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
       {hoverTip && typeof document !== 'undefined'
         ? createPortal(
             <div
+              data-testid="drum-accompaniment-hover-tip"
               style={{
                 position: 'fixed',
                 left: `${hoverTip.x}px`,
                 top: `${hoverTip.y}px`,
-                transform: 'translateX(-50%)',
+                transform:
+                  hoverTip.placement === 'above'
+                    ? 'translate(-50%, -100%)'
+                    : 'translateX(-50%)',
                 background: '#374151',
                 color: '#f9fafb',
                 borderRadius: '6px',
@@ -835,7 +1007,7 @@ const DrumAccompaniment: React.FC<DrumAccompanimentProps> = ({
                 fontWeight: 600,
                 lineHeight: 1.2,
                 padding: '8px 10px',
-                zIndex: 420,
+                zIndex: DRUM_PATTERN_EDIT_TIP_Z_INDEX,
                 pointerEvents: 'none',
                 boxShadow: '0 8px 18px rgba(15, 23, 42, 0.28)',
                 whiteSpace: 'nowrap',

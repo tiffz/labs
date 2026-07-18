@@ -1,8 +1,13 @@
+import {
+  findLatestLabsDriveUndoRingPrePull,
+  listLabsDriveUndoRingSnapshots,
+  migrateLegacyLocalStorageUndoRing,
+  pushLabsDriveUndoRingSnapshot,
+} from '../../shared/drive/labsDriveUndoRingDb';
 import type { ScalesDriveEnvelopeV1 } from './scalesDriveEnvelope';
 import { parseScalesDriveEnvelope, serializeScalesDriveEnvelope } from './scalesDriveEnvelope';
 
-const STORAGE_KEY = 'labs_scales_drive_undo_snapshots_v2';
-const MAX = 20;
+const LEGACY_KEY = 'labs_scales_drive_undo_snapshots_v2';
 
 export type ScalesDriveUndoSnapshotTrigger =
   | 'manual-backup'
@@ -18,49 +23,48 @@ export type ScalesDriveUndoSnapshot = {
   envelopeJson: string;
 };
 
-type StoredRow = ScalesDriveUndoSnapshot;
+let legacyMigrated = false;
 
-function readAll(): StoredRow[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as StoredRow[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+async function ensureMigrated(): Promise<void> {
+  if (legacyMigrated) return;
+  legacyMigrated = true;
+  await migrateLegacyLocalStorageUndoRing({ appId: 'scales', legacyStorageKey: LEGACY_KEY });
 }
 
-function writeAll(rows: StoredRow[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(rows.slice(0, MAX)));
-}
-
-export function pushScalesDriveUndoSnapshot(
+export async function pushScalesDriveUndoSnapshot(
   envelope: ScalesDriveEnvelopeV1,
   trigger: ScalesDriveUndoSnapshotTrigger,
-): void {
+): Promise<void> {
+  await ensureMigrated();
   const label = new Date(envelope.exportedAt || Date.now()).toLocaleString();
-  const row: StoredRow = {
-    createdAt: Date.now(),
-    label,
-    trigger,
-    envelopeJson: serializeScalesDriveEnvelope(envelope),
-  };
-  const rows = readAll();
-  rows.unshift(row);
-  writeAll(rows);
+  await pushLabsDriveUndoRingSnapshot('scales', serializeScalesDriveEnvelope(envelope), trigger, label);
 }
 
-export function listScalesDriveUndoSnapshots(): ScalesDriveUndoSnapshot[] {
-  return readAll();
+export async function listScalesDriveUndoSnapshots(): Promise<ScalesDriveUndoSnapshot[]> {
+  await ensureMigrated();
+  const rows = await listLabsDriveUndoRingSnapshots('scales');
+  return rows.map((r) => ({
+    createdAt: r.createdAt,
+    label: r.label,
+    trigger: r.trigger as ScalesDriveUndoSnapshotTrigger,
+    envelopeJson: r.payloadJson,
+  }));
 }
 
 export function parseScalesSnapshotEnvelope(snap: ScalesDriveUndoSnapshot): ScalesDriveEnvelopeV1 {
   return parseScalesDriveEnvelope(snap.envelopeJson);
 }
 
-export function findLatestScalesPrePullSnapshot(): ScalesDriveUndoSnapshot | null {
-  return readAll().find((r) => r.trigger === 'pre-pull') ?? null;
+export async function findLatestScalesPrePullSnapshot(): Promise<ScalesDriveUndoSnapshot | null> {
+  await ensureMigrated();
+  const row = await findLatestLabsDriveUndoRingPrePull('scales');
+  if (!row) return null;
+  return {
+    createdAt: row.createdAt,
+    label: row.label,
+    trigger: row.trigger as ScalesDriveUndoSnapshotTrigger,
+    envelopeJson: row.payloadJson,
+  };
 }
 
 export function formatScalesDriveUndoSnapshotTrigger(trigger: ScalesDriveUndoSnapshotTrigger): string {

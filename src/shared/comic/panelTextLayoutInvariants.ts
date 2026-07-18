@@ -1,4 +1,5 @@
 import { characterMarkerLayoutBox } from './characterMarkers';
+import { sfxLayoutBBox } from './sfxLoudness';
 import {
   bubbleBodyBBox,
   bubbleTextBlockHeight,
@@ -48,13 +49,7 @@ function itemBBox(item: PanelTextLayoutItem): BBox {
   if (item.kind === 'bubble') {
     return bubbleBodyBBox(item.layout.cx, item.layout.cy, item.layout.halfW, item.layout.halfH);
   }
-  const s = item.layout;
-  return {
-    left: s.x - s.fontSize * 0.55,
-    top: s.y - s.fontSize,
-    right: s.x + s.fontSize * 0.55,
-    bottom: s.y,
-  };
+  return sfxLayoutBBox(item.layout);
 }
 
 function boxesOverlap(a: BBox, b: BBox): boolean {
@@ -76,6 +71,8 @@ export function bubbleTextBBox(bubble: SpeechBubbleLayout): BBox {
     bubble.tailX,
     bubble.tailY,
     bubble.metrics.shape,
+    bubble.metrics.padY,
+    bubble.metrics.fontSize,
   );
   const textTop =
     bubble.cy -
@@ -223,11 +220,11 @@ export function validatePanelTextLayout(
     };
     for (let i = 0; i < layout.items.length; i++) {
       const item = layout.items[i]!;
-      if (item.kind !== 'bubble') continue;
+      if (item.kind !== 'bubble' && item.kind !== 'sfx') continue;
       if (boxesOverlap(itemBBox(item), markerBox)) {
         violations.push({
           code: 'no_character_overlap',
-          message: `Bubble ${i + 1} overlaps character ${characterId.toUpperCase()}`,
+          message: `${item.kind === 'sfx' ? 'SFX' : 'Bubble'} ${i + 1} overlaps character ${characterId.toUpperCase()}`,
           itemIndex: i,
         });
       }

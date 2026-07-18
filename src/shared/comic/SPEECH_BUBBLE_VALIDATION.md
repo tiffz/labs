@@ -13,14 +13,15 @@ Must hold for Scrapboard (and matrix with `placeMode: 'slots'`):
 5. Bubble does not cover the character marker.
 6. Reading order preserved (`reading_order`).
 
-Soft (ok when Bubble escape is on): bubble **body** outside panel (`bubble_in_bounds`).
+Soft (ok when Bubble escape is on): bubble **body** outside panel horizontally (`bubble_in_bounds`).
+Vertical body escape is capped (~6px) so strip layouts do not paint over the next panel.
 
 ## Placement pipeline
 
-1. **Size/fit** — heuristic wrap + `fitDialogueLines*` (`speechBubblePath.ts`); no DOM measure.
-2. **Place** — Scrapboard sketchy boards use discrete **`slots`** (`speechBubbleSlotLayout.ts`). Shared default remains headless `d3-force` (`speechBubbleForceLayout.ts`). Legacy stack via `placeMode: 'legacy'` for A/B only.
-3. **Post-sync** — caption/SFX sync + caption overlap resolve; force path also runs `postClampBubbles`.
-4. **Draw** — `speechBubblePathForLayout` + SVG compose in `PanelMockupSvg`; SFX via `SfxLayoutGraphic` + loudness.
+1. **Size/fit** — heuristic wrap + `fitDialogueLines*` (`speechBubblePath.ts`); no DOM measure. Bodies default to **`roundRect`** (`pickBubbleShape` always returns `roundRect`) — ellipse is legacy-only, kept for the `shape` param and its validation branch.
+2. **Place** — Scrapboard sketchy boards use discrete **`slots`** (`speechBubbleSlotLayout.ts`). Shared default remains headless `d3-force` (`speechBubbleForceLayout.ts`). Legacy stack via `placeMode: 'legacy'` for A/B only. Both placers treat **captions and SFX as first-class obstacles** during placement (`obstacleBoxesFromItems` in slots, `ForceObstacle[]` in force), not just a post-sync bump.
+3. **Post-sync** — caption/SFX sync + caption overlap resolve; force path also runs `postClampBubbles` → `resolveTailOverlaps`, which fans, then widens vertical gap, then swaps left/right order as needed so different-speaker tails never cross (same hard bar `bubblesTailsOverlap` enforces for `slots`). Body-box non-overlap is never sacrificed to clear a tail cross — if no fan/nudge/swap can clear it without reintroducing overlap, the tail cross is left in place rather than regressing the harder invariant.
+4. **Draw** — `speechBubblePathForLayout` returns a `{ body, tail }` pair where **`body` is one continuous outline** (bubble + tail, single stroke) and `tail` is empty. The mouth is notched into the bottom edge so there is no chord seam. SFX via `SfxLayoutGraphic` + loudness; `sfxLayoutBBox` is the single source of truth for SFX obstacle/overlap boxes.
 
 ## Validation layers
 
@@ -58,15 +59,19 @@ npm run test:bubble-quality
 - `blocks_dropped` — layout omitted active text blocks
 - `tail_too_long` — tail spans too much of panel height
 - `tail_crosses_interior` — mouth chord cuts through body (legacy path bug)
-- `tail_overlap` — pairwise tails cross or cut another bubble’s text (**hard**)
+- `tail_overlap` — pairwise tails cross, or a tail cuts another bubble’s **body** or text (**hard**)
 
 ### Path geometry (`speechBubblePathGeometry`)
 
-- `path_not_closed` — SVG path missing `Z`
-- `path_legacy_ellipse_arc` — old `A` arc commands (tail through text)
-- `path_missing_tail_tip` — path does not reach character head
-- `mouth_off_ellipse` — tail mouth not on ellipse boundary
-- `tail_misaimed` — tail angle outside mouth wedge
+`validateBubblePathD` takes the `{ body, tail }` pair from `speechBubblePathForLayout`.
+
+- `path_not_closed` — body path missing `Z`
+- `tail_not_closed` — legacy separate tail path missing `Z`
+- `path_legacy_ellipse_arc` — old `A` arc commands (ellipse shape only)
+- `path_missing_tail_tip` — unified outline (or legacy tail) does not reach character head
+- `tail_not_unified` — unified outline missing the curved tail segment
+- `mouth_off_ellipse` — tail mouth not on ellipse boundary (ellipse shape only)
+- `tail_misaimed` — tail angle outside mouth wedge (ellipse shape only)
 - `text_in_tail_wedge` — dialogue center inside tail triangle
 
 ## Matrix harness
@@ -87,6 +92,8 @@ Soft violations (not matrix failures):
 
 Hard among feasible cases: target **≥98%** pass; slots + budget path aims for zero hard failures.
 
+**Conflict resolution order:** both placers prefer **fan** (nudge apart horizontally) → **nudge** (widen vertical gap / push along the stack) → **shrink** (rewrap/resize) over **truncation** (`blocks_dropped`). Truncation is a last resort, not a first-line strategy, and stays a soft violation when it does happen.
+
 ## SFX loudness
 
 `PanelSfxBlock.loudness`: `quiet` | `normal` | `loud` (default `normal`).
@@ -94,7 +101,7 @@ Hard among feasible cases: target **≥98%** pass; slots + budget path aims for 
 - Layout: `sfxBaseFontSize` / `sfxLoudnessFontScale` in `sfxLoudness.ts`
 - Render: `SfxLayoutGraphic` (size, letter-spacing, tilt, burst ticks, outline for loud)
 - Scrapboard editor: Q / N / L chips
-- Mad-libs: occasional loud punch words; mad-libs page copy is **budgeted** via `adaptBlocksToPanelBudget`
+- Mad-libs: occasional loud punch words; mad-libs page copy is **budgeted** via `adaptBlocksToPanelBudget` (also applied at layout/render time). Panels narrower than ~72px drop all text rather than emitting `…` micro-balloons with spaghetti tails. Extreme 1×N / N×1 page grids are demoted in layout ranking.
 
 ## Adding a new check
 

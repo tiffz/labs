@@ -1,0 +1,213 @@
+.labs-wikimedia-field {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.labs-wikimedia-field__label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted, #6b7280);
+}
+
+.labs-wikimedia-field__row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.labs-wikimedia-field__trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 2.5rem;
+  padding: 0.25rem 0.4rem 0.25rem 0.3rem;
+  border: 1px solid var(--border-subtle, #d5d9e2);
+  border-radius: 0.45rem;
+  background: var(--surface-elevated, #fff);
+  cursor: pointer;
+  text-align: left;
+}
+
+.labs-wikimedia-field__trigger:hover,
+.labs-wikimedia-field__trigger:focus-visible {
+  border-color: color-mix(
+    in srgb,
+    var(--accent-primary, #7c3aed) 40%,
+    var(--border-subtle, #d5d9e2)
+  );
+}
+
+.labs-wikimedia-field__trigger--open {
+  border-color: color-mix(
+    in srgb,
+    var(--accent-primary, #7c3aed) 55%,
+    var(--border-subtle, #d5d9e2)
+  );
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--accent-primary, #7c3aed) 28%, transparent);
+}
+
+.labs-wikimedia-field__preview {
+  flex: 0 0 auto;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 0.3rem;
+  border: 1px solid rgb(0 0 0 / 12%);
+  overflow: hidden;
+  background: #f3f4f6;
+  display: grid;
+  place-items: center;
+}
+
+.labs-wikimedia-field__thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.labs-wikimedia-field__placeholder {
+  font-size: 0.55rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--text-muted, #6b7280);
+  padding: 0.15rem;
+}
+
+.labs-wikimedia-field__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.labs-wikimedia-field__title,
+.labs-wikimedia-field__empty-copy {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.labs-wikimedia-field__license {
+  font-size: 0.62rem;
+  color: var(--text-muted, #6b7280);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.labs-wikimedia-field__chevron {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  line-height: 1;
+  color: var(--text-muted, #6b7280);
+}
+
+.labs-wikimedia-field__clear {
+  flex: 0 0 auto;
+  align-self: center;
+  margin: 0;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--border-subtle, #d5d9e2);
+  border-radius: 0.35rem;
+  background: transparent;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--text-muted, #6b7280);
+}
+
+.labs-wikimedia-field__clear:hover,
+.labs-wikimedia-field__clear:focus-visible {
+  color: var(--text-primary, #111827);
+  border-color: var(--text-muted, #6b7280);
+}
+
+.labs-wikimedia-field__hint {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--text-muted, #6b7280);
+}
+
+.labs-wikimedia-field__menu.labs-popover-surface {
+  max-width: min(92vw, 22rem);
+  padding: 0.65rem 0.7rem 0.7rem;
+}
+
+.labs-wikimedia-field__menu-body {
+  min-width: min(18rem, 78vw);
+}
+
+.labs-wikimedia-field--sketchy .labs-wikimedia-field__label {
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--labs-wikimedia-sketch-muted, #6d665e);
+}
+
+.labs-wikimedia-field--sketchy .labs-wikimedia-field__trigger {
+  border: 2px solid var(--labs-wikimedia-sketch-ink, #2a2622);
+  border-radius: 0.2rem 0.5rem 0.2rem 0.4rem / 0.4rem 0.2rem 0.45rem 0.25rem;
+  background: var(--labs-wikimedia-sketch-surface, #fffdf8);
+  box-shadow: var(
+    --labs-wikimedia-sketch-shadow,
+    2px 2px 0 rgb(42 38 34 / 12%)
+  );
+}
+
+.labs-wikimedia-field--sketchy .labs-wikimedia-field__trigger:hover,
+.labs-wikimedia-field--sketchy .labs-wikimedia-field__trigger--open {
+  background: var(--labs-wikimedia-sketch-soft, #fff4d6);
+  border-color: var(--labs-wikimedia-sketch-accent, #f4a000);
+}
+
+.labs-wikimedia-field--sketchy .labs-wikimedia-field__trigger--open {
+  box-shadow: 3px 3px 0 rgb(42 38 34 / 16%);
+}
+
+.labs-wikimedia-field--sketchy .labs-wikimedia-field__preview {
+  border: 1.5px solid var(--labs-wikimedia-sketch-ink, #2a2622);
+  border-radius: 0.2rem;
+  background: var(--labs-wikimedia-sketch-paper, #f3ebe2);
+}
+
+.labs-wikimedia-field--sketchy .labs-wikimedia-field__title,
+.labs-wikimedia-field--sketchy .labs-wikimedia-field__empty-copy {
+  color: var(--labs-wikimedia-sketch-ink, #2a2622);
+  font-weight: 800;
+}
+
+.labs-wikimedia-field--sketchy .labs-wikimedia-field__clear {
+  border: 1.5px solid var(--labs-wikimedia-sketch-ink, #2a2622);
+  border-radius: 0.2rem;
+  color: var(--labs-wikimedia-sketch-ink, #2a2622);
+  background: var(--labs-wikimedia-sketch-surface, #fffdf8);
+  font-weight: 800;
+}
+
+.labs-wikimedia-field--sketchy .labs-wikimedia-field__hint {
+  color: var(--labs-wikimedia-sketch-muted, #6d665e);
+}
+
+.labs-wikimedia-field--sketchy
+  .labs-wikimedia-field__menu.labs-popover-surface {
+  border: 2px solid var(--labs-wikimedia-sketch-ink, #2a2622);
+  border-radius: 0.25rem 0.6rem 0.25rem 0.5rem / 0.45rem 0.25rem 0.55rem 0.3rem;
+  background: var(--labs-wikimedia-sketch-surface, #fffdf8);
+  box-shadow: 3px 3px 0 rgb(42 38 34 / 20%);
+}

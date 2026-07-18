@@ -52,13 +52,16 @@ export function useLyreflyShelfPreviews(projects: ComicProject[]): {
     if (projects.length === 0) return new Map<string, LyreflyShelfPreview>();
     const idSet = new Set(projects.map((project) => project.id));
 
-    const [pageNodes, revisions, visualAssets, scripts, archives] = await Promise.all([
-      lyreflyDb.pageNodes.toArray(),
-      lyreflyDb.pageRevisions.toArray(),
-      lyreflyDb.visualDevAssets.toArray(),
-      lyreflyDb.scriptDocuments.toArray(),
-      lyreflyDb.archives.toArray(),
-    ]);
+    const [pageNodes, revisions, visualAssets, scripts, archives, mockups, characters] =
+      await Promise.all([
+        lyreflyDb.pageNodes.toArray(),
+        lyreflyDb.pageRevisions.toArray(),
+        lyreflyDb.visualDevAssets.toArray(),
+        lyreflyDb.scriptDocuments.toArray(),
+        lyreflyDb.archives.toArray(),
+        lyreflyDb.pageMockups.toArray(),
+        lyreflyDb.comicCharacters.toArray(),
+      ]);
 
     const revisionsByProject = new Map<string, number>();
     for (const revision of revisions) {
@@ -88,6 +91,19 @@ export function useLyreflyShelfPreviews(projects: ComicProject[]): {
       list.push(node);
       pageNodesByProject.set(node.projectId, list);
     }
+    const mockupCountByProject = new Map<string, number>();
+    for (const mockup of mockups) {
+      if (!idSet.has(mockup.projectId)) continue;
+      mockupCountByProject.set(mockup.projectId, (mockupCountByProject.get(mockup.projectId) ?? 0) + 1);
+    }
+    const characterCountByProject = new Map<string, number>();
+    for (const character of characters) {
+      if (!idSet.has(character.projectId)) continue;
+      characterCountByProject.set(
+        character.projectId,
+        (characterCountByProject.get(character.projectId) ?? 0) + 1,
+      );
+    }
 
     const map = new Map<string, LyreflyShelfPreview>();
     for (const project of projects) {
@@ -100,6 +116,8 @@ export function useLyreflyShelfPreviews(projects: ComicProject[]): {
         pageNodeCount: projectNodes.length,
         revisionCount: revisionsByProject.get(project.id) ?? 0,
         archive,
+        mockupCount: mockupCountByProject.get(project.id) ?? 0,
+        characterCount: characterCountByProject.get(project.id) ?? 0,
       });
 
       map.set(project.id, {

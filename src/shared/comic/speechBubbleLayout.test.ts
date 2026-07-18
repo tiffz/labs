@@ -45,7 +45,7 @@ describe('layoutPanelTextBlocks', () => {
       { kind: 'dialogue', characterId: 'a', content: 'Done.' },
       { kind: 'caption', content: 'To be continued.' },
     ];
-    const layout = layoutPanelTextBlocks(blocks, BOUNDS);
+    const layout = layoutPanelTextBlocks(blocks, BOUNDS, { skipBudget: true });
     expect(layout.items[0]!.kind).toBe('bubble');
     expect(layout.items[1]!.kind).toBe('caption');
     const bubble = bubbleItems(layout)[0]!;

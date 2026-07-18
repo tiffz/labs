@@ -34,6 +34,18 @@ When the journey ships, **promote** steps + success criteria to `src/<app>/CUJs.
 | **Theme**          | Use app CSS variables and MUI theme tokens. Read app `DESIGN.md` first. No one-off hex/radius/shadow unless the design doc allows it.                                                                               |
 | **Selection tier** | Popover/settings toggles and preset chips → **secondary** selected (tint + brand text). Transport on-state and one CTA → **primary** (solid). See [`SELECTION_VISUAL_HIERARCHY.md`](SELECTION_VISUAL_HIERARCHY.md). |
 
+### Workbench: selection inspector vs page finish
+
+When a stage has a **selected item** (panel, pack, page), the primary side rail must be **selection-scoped only** (that item’s content/scene/lines). Page- or board-level finish controls (palette, print/export settings, whole-page photo, expert toggles) belong in a **separate chip bar or header/overflow menu** — not stacked unlabeled in the same inspector. Reference: Scrapboard Page finish bar + panel-only left rail (`src/scrapboard/README.md` § Chrome model).
+
+### Always-available pickers stay open
+
+If the primary journey is **pick anytime** (layout gallery, cast strip, arrangement options), do **not** collapse the chooser behind a secondary CTA (“Change layout”, “Done”). Collapsing to free stage width is a false win when it adds a re-entry step. Keep the strip visible; shrink thumbnails before hiding the whole rail. Root cause class: `ux-journey-overload`.
+
+### Mockup cast grounding
+
+Character-first comic mockups (emoji cast) need a **simple ground plane** (sky/horizon/ground or a photo) when no Wikimedia fill is set — bare white makes figures float. Prefer native color emoji without opaque tint discs/halos (those read as grey circles). Soft palette wash belongs on photos, not as a silhouette behind glyphs.
+
 ## Redundancy (copy & UI)
 
 **Never duplicate in one viewport:**

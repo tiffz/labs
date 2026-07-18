@@ -87,4 +87,45 @@ describe('speechBubbleTailOverlap', () => {
     });
     expect(bubblesTailsOverlap(left, right)).toBe(false);
   });
+
+  it('flags a tail that cuts through another bubble body', () => {
+    const upper = bubble({
+      cx: 60,
+      cy: 36,
+      halfW: 36,
+      halfH: 18,
+      tailX: 40,
+      tailY: 100,
+      characterId: 'a',
+      metrics: {
+        halfW: 36,
+        halfH: 18,
+        fontSize: 11,
+        lineHeight: 13,
+        padX: BUBBLE_PADDING_STANDARD.padX,
+        padY: BUBBLE_PADDING_STANDARD.padY,
+        shape: 'roundRect',
+      },
+    });
+    const lower = bubble({
+      cx: 100,
+      cy: 70,
+      halfW: 40,
+      halfH: 18,
+      tailX: 120,
+      tailY: 110,
+      characterId: 'c',
+      metrics: {
+        halfW: 40,
+        halfH: 18,
+        fontSize: 11,
+        lineHeight: 13,
+        padX: BUBBLE_PADDING_STANDARD.padX,
+        padY: BUBBLE_PADDING_STANDARD.padY,
+        shape: 'roundRect',
+      },
+    });
+    // Lower bubble's tip path crosses the upper body when pulled leftward.
+    expect(bubblesTailsOverlap(upper, lower)).toBe(true);
+  });
 });

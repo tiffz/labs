@@ -2,7 +2,7 @@
  * Pairwise speech-bubble tail overlap checks (hard quality rule).
  */
 
-import { tailMouthGeometry } from './speechBubblePath';
+import { roundRectTailMouth, tailMouthGeometry } from './speechBubblePath';
 import type { SpeechBubbleLayout } from './speechBubbleLayout';
 
 type Point = { x: number; y: number };
@@ -63,8 +63,18 @@ function trianglesIntersect(a: [Point, Point, Point], b: [Point, Point, Point]):
   return false;
 }
 
-function tailWedge(bubble: SpeechBubbleLayout): [Point, Point, Point] {
-  const mouth = tailMouthGeometry(
+function tailMouthForBubble(bubble: SpeechBubbleLayout) {
+  if (bubble.metrics.shape === 'roundRect') {
+    return roundRectTailMouth(
+      bubble.cx,
+      bubble.cy,
+      bubble.halfW,
+      bubble.halfH,
+      bubble.tailX,
+      bubble.tailY,
+    );
+  }
+  return tailMouthGeometry(
     bubble.cx,
     bubble.cy,
     bubble.halfW,
@@ -72,18 +82,15 @@ function tailWedge(bubble: SpeechBubbleLayout): [Point, Point, Point] {
     bubble.tailX,
     bubble.tailY,
   );
+}
+
+function tailWedge(bubble: SpeechBubbleLayout): [Point, Point, Point] {
+  const mouth = tailMouthForBubble(bubble);
   return [mouth.left, mouth.right, mouth.tip];
 }
 
 function mouthMidToTip(bubble: SpeechBubbleLayout): [Point, Point] {
-  const mouth = tailMouthGeometry(
-    bubble.cx,
-    bubble.cy,
-    bubble.halfW,
-    bubble.halfH,
-    bubble.tailX,
-    bubble.tailY,
-  );
+  const mouth = tailMouthForBubble(bubble);
   return [
     { x: (mouth.left.x + mouth.right.x) / 2, y: (mouth.left.y + mouth.right.y) / 2 },
     mouth.tip,
@@ -101,12 +108,29 @@ function pointInBubbleTextAabb(p: Point, bubble: SpeechBubbleLayout, margin = 2)
   );
 }
 
-function segmentHitsTextAabb(a: Point, b: Point, bubble: SpeechBubbleLayout): boolean {
-  if (pointInBubbleTextAabb(a, bubble) || pointInBubbleTextAabb(b, bubble)) return true;
-  const left = bubble.cx - bubble.halfW + bubble.metrics.padX;
-  const right = bubble.cx + bubble.halfW - bubble.metrics.padX;
-  const top = bubble.cy - bubble.halfH + bubble.metrics.padY;
-  const bottom = bubble.cy + bubble.halfH - bubble.metrics.padY;
+function pointInBubbleBody(p: Point, bubble: SpeechBubbleLayout, margin = 1): boolean {
+  return (
+    p.x >= bubble.cx - bubble.halfW - margin &&
+    p.x <= bubble.cx + bubble.halfW + margin &&
+    p.y >= bubble.cy - bubble.halfH - margin &&
+    p.y <= bubble.cy + bubble.halfH + margin
+  );
+}
+
+function segmentHitsAabb(
+  a: Point,
+  b: Point,
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+): boolean {
+  if (
+    (a.x >= left && a.x <= right && a.y >= top && a.y <= bottom) ||
+    (b.x >= left && b.x <= right && b.y >= top && b.y <= bottom)
+  ) {
+    return true;
+  }
   const corners: Point[] = [
     { x: left, y: top },
     { x: right, y: top },
@@ -119,7 +143,41 @@ function segmentHitsTextAabb(a: Point, b: Point, bubble: SpeechBubbleLayout): bo
   return false;
 }
 
-/** True when two bubbles’ tails cross or a tail cuts the other’s dialogue box. */
+function segmentHitsTextAabb(a: Point, b: Point, bubble: SpeechBubbleLayout): boolean {
+  if (pointInBubbleTextAabb(a, bubble) || pointInBubbleTextAabb(b, bubble)) return true;
+  const left = bubble.cx - bubble.halfW + bubble.metrics.padX;
+  const right = bubble.cx + bubble.halfW - bubble.metrics.padX;
+  const top = bubble.cy - bubble.halfH + bubble.metrics.padY;
+  const bottom = bubble.cy + bubble.halfH - bubble.metrics.padY;
+  return segmentHitsAabb(a, b, left, top, right, bottom);
+}
+
+/** Tail wedge overlaps another bubble's body (not just dialogue text). */
+function wedgeHitsBubbleBody(wedge: [Point, Point, Point], bubble: SpeechBubbleLayout): boolean {
+  const [left, right, tip] = wedge;
+  // Mouth sits on the owner — only tip / spine samples count against the other body.
+  if (pointInBubbleBody(tip, bubble)) return true;
+  const midMouth = { x: (left.x + right.x) / 2, y: (left.y + right.y) / 2 };
+  const mid = {
+    x: midMouth.x * 0.35 + tip.x * 0.65,
+    y: midMouth.y * 0.35 + tip.y * 0.65,
+  };
+  if (pointInBubbleBody(mid, bubble)) return true;
+  const bodyLeft = bubble.cx - bubble.halfW;
+  const bodyRight = bubble.cx + bubble.halfW;
+  const bodyTop = bubble.cy - bubble.halfH;
+  const bodyBottom = bubble.cy + bubble.halfH;
+  const edges: Array<[Point, Point]> = [
+    [left, tip],
+    [right, tip],
+  ];
+  for (const [p, q] of edges) {
+    if (segmentHitsAabb(p, q, bodyLeft, bodyTop, bodyRight, bodyBottom)) return true;
+  }
+  return false;
+}
+
+/** True when two bubbles’ tails cross, or a tail cuts the other’s body / dialogue. */
 export function bubblesTailsOverlap(a: SpeechBubbleLayout, b: SpeechBubbleLayout): boolean {
   const [aMid, aTip] = mouthMidToTip(a);
   const [bMid, bTip] = mouthMidToTip(b);
@@ -127,6 +185,8 @@ export function bubblesTailsOverlap(a: SpeechBubbleLayout, b: SpeechBubbleLayout
   if (trianglesIntersect(tailWedge(a), tailWedge(b))) return true;
   if (segmentHitsTextAabb(aMid, aTip, b)) return true;
   if (segmentHitsTextAabb(bMid, bTip, a)) return true;
+  if (wedgeHitsBubbleBody(tailWedge(a), b)) return true;
+  if (wedgeHitsBubbleBody(tailWedge(b), a)) return true;
   return false;
 }
 

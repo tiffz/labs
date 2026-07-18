@@ -1,0 +1,181 @@
+.labs-palette-builder {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 260px;
+  max-width: 340px;
+}
+
+.labs-palette-builder__heading {
+  margin: 0;
+}
+
+.labs-palette-builder__mood-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.4rem;
+}
+
+.labs-palette-builder__random-btn {
+  justify-content: center;
+}
+
+.labs-palette-builder__seed-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.labs-palette-builder__seed-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted, #6b7280);
+}
+
+.labs-palette-builder__seed-swatch {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--border-subtle, #d5d9e2);
+  border-radius: 0.35rem;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.labs-palette-builder__upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px dashed var(--border-subtle, #d5d9e2);
+  border-radius: 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+
+.labs-palette-builder__upload:hover {
+  border-color: var(--accent-primary, #7c3aed);
+}
+
+.labs-palette-builder__upload-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.labs-palette-builder__error {
+  margin-top: -0.15rem;
+}
+
+.labs-palette-builder__proposals {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.labs-palette-builder__proposal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border-subtle, #d5d9e2);
+  border-radius: 0.4rem;
+  background: var(--surface-elevated, #fff);
+  cursor: pointer;
+  text-align: left;
+}
+
+.labs-palette-builder__proposal:hover,
+.labs-palette-builder__proposal:focus-visible {
+  border-color: color-mix(
+    in srgb,
+    var(--accent-primary, #7c3aed) 45%,
+    var(--border-subtle, #d5d9e2)
+  );
+}
+
+.labs-palette-builder__proposal-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.labs-palette-builder__proposal-swatches {
+  display: inline-flex;
+  gap: 0.2rem;
+}
+
+.labs-palette-builder__active {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.labs-palette-builder__active-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #6b7280);
+}
+
+.labs-palette-builder__swatches {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.labs-palette-builder__swatch {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 0.2rem;
+  border: 1px solid rgb(0 0 0 / 10%);
+}
+
+/* Lyrefly — Riso Cube tokens. */
+.labs-palette-builder--lyrefly .labs-palette-builder__seed-label,
+.labs-palette-builder--lyrefly .labs-palette-builder__active-label {
+  color: var(--lyrefly-muted, #6b7280);
+}
+
+.labs-palette-builder--lyrefly .labs-palette-builder__seed-swatch,
+.labs-palette-builder--lyrefly .labs-palette-builder__upload,
+.labs-palette-builder--lyrefly .labs-palette-builder__proposal {
+  border-color: var(--lyrefly-border, #d5d9e2);
+  background: var(--lyrefly-paper, #fff);
+}
+
+.labs-palette-builder--lyrefly .labs-palette-builder__upload:hover,
+.labs-palette-builder--lyrefly .labs-palette-builder__proposal:hover,
+.labs-palette-builder--lyrefly .labs-palette-builder__proposal:focus-visible {
+  border-color: color-mix(
+    in srgb,
+    var(--lyrefly-accent, #ff44a1) 45%,
+    var(--lyrefly-border, #d5d9e2)
+  );
+}
+
+/* Scrapboard "sketchy" — thick ink borders, offset shadow, hand-drawn feel. */
+.labs-palette-builder--sketchy {
+  --labs-palette-builder-sketch-ink: #2a2622;
+  --labs-palette-builder-sketch-shadow: 2px 2px 0 rgb(42 38 34 / 12%);
+}
+
+.labs-palette-builder--sketchy .labs-palette-builder__upload,
+.labs-palette-builder--sketchy .labs-palette-builder__proposal {
+  border: 2px solid var(--labs-palette-builder-sketch-ink);
+  border-radius: 2px;
+  box-shadow: var(--labs-palette-builder-sketch-shadow);
+}
+
+.labs-palette-builder--sketchy .labs-palette-builder__swatch {
+  border-radius: 1px;
+  border-color: rgb(42 38 34 / 25%);
+}

@@ -14,18 +14,45 @@ import Select from '@mui/material/Select';
 import Switch from '@mui/material/Switch';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 
+import type { FacingSpreadPdfFormat } from '../../shared/zine';
 import { ComicScrollReader } from '../../shared/zine/ComicScrollReader';
 import type { ComicScrollReaderPage } from '../../shared/zine/ComicScrollReader';
 import type { ComicArtVersion, ComicProject, PageNode, PageRevision } from '../types';
-import { loadLyreflyExportPages } from '../exports/lyreflyComicExport';
+import {
+  downloadLyreflyBookSpreadPdf,
+  downloadLyreflyScrollImage,
+  loadLyreflyExportPages,
+} from '../exports/lyreflyComicExport';
 import {
   orderArtVersions,
   revisionMapForArtVersionView,
   type ArtVersionViewId,
 } from '../utils/artVersionUtils';
 import { LyreflyComicBookPreview } from './LyreflyComicBookPreview';
+import { LyreflyPreviewDownloadMenu } from './LyreflyPreviewDownloadMenu';
+
+const BOOK_DOWNLOAD_OPTIONS = [
+  {
+    id: 'digital',
+    label: 'Digital PDF (spreads)',
+    hint: 'Facing pages for reading on screen',
+  },
+  {
+    id: 'print',
+    label: 'Print-ready PDF (spreads)',
+    hint: 'Facing pages with blank pads for print',
+  },
+] as const;
+
+const SCROLL_DOWNLOAD_OPTIONS = [
+  {
+    id: 'scroll-jpg',
+    label: 'Vertical scroll image',
+    hint: 'One long JPEG, top to bottom',
+  },
+] as const;
 
 export type LyreflyVersionPreviewDialogProps = {
   open: boolean;
@@ -55,6 +82,8 @@ export function LyreflyVersionPreviewDialog({
   const [showBleedGuides, setShowBleedGuides] = useState(false);
   const [scrollPages, setScrollPages] = useState<ComicScrollReaderPage[]>([]);
   const [scrollLoading, setScrollLoading] = useState(false);
+  const [downloadBusy, setDownloadBusy] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const orderedVersions = useMemo(
     () => orderArtVersions(project, artVersions),
@@ -103,26 +132,59 @@ export function LyreflyVersionPreviewDialog({
     setTab(initialTab);
   };
 
+  const handleDownload = useCallback(
+    async (optionId: string) => {
+      setDownloadBusy(true);
+      setDownloadError(null);
+      try {
+        const pages = await loadLyreflyExportPages(project, pageNodes, revisions, {
+          revisionByPageId,
+          strictRevisionMap: previewVersionId !== 'current',
+        });
+        if (pages.length === 0) {
+          setDownloadError('No page art to download yet.');
+          return;
+        }
+        if (tab === 'scroll') {
+          await downloadLyreflyScrollImage(project, pages);
+          return;
+        }
+        await downloadLyreflyBookSpreadPdf(project, pages, optionId as FacingSpreadPdfFormat);
+      } catch (e) {
+        setDownloadError(e instanceof Error ? e.message : 'Download failed.');
+      } finally {
+        setDownloadBusy(false);
+      }
+    },
+    [pageNodes, previewVersionId, project, revisionByPageId, revisions, tab],
+  );
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
       fullWidth
-      maxWidth="lg"
+      maxWidth={false}
       TransitionProps={{ onEntered: handleEntered }}
       aria-labelledby="lyrefly-version-preview-title"
       data-testid="lyrefly-version-preview-dialog"
       PaperProps={{ className: 'lyrefly-version-preview-dialog' }}
     >
-      <DialogTitle id="lyrefly-version-preview-title" sx={{ pr: 6 }}>
-        Preview: {project.title}
-        <IconButton
-          aria-label="Close preview"
-          onClick={onClose}
-          sx={{ position: 'absolute', right: 12, top: 12 }}
-        >
-          <CloseIcon />
-        </IconButton>
+      <DialogTitle id="lyrefly-version-preview-title" component="div">
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box component="h2" sx={{ m: 0, flex: 1, minWidth: 0, font: 'inherit' }}>
+            Preview: {project.title}
+          </Box>
+          <LyreflyPreviewDownloadMenu
+            options={tab === 'book' ? BOOK_DOWNLOAD_OPTIONS : SCROLL_DOWNLOAD_OPTIONS}
+            busy={downloadBusy}
+            onSelect={(id) => void handleDownload(id)}
+            ariaLabel={tab === 'book' ? 'Download book PDF' : 'Download scroll image'}
+          />
+          <IconButton aria-label="Close preview" onClick={onClose} edge="end">
+            <CloseIcon />
+          </IconButton>
+        </Box>
       </DialogTitle>
       <DialogContent dividers sx={{ bgcolor: tab === 'scroll' ? '#0f0f10' : 'background.default', p: 0 }}>
         <Box
@@ -206,7 +268,21 @@ export function LyreflyVersionPreviewDialog({
           ) : null}
         </Box>
 
-        <Box sx={{ p: tab === 'book' ? 2 : 0, minHeight: 'min(72vh, 720px)' }}>
+        {downloadError ? (
+          <Box
+            role="alert"
+            sx={{
+              px: 2,
+              py: 1,
+              fontSize: '0.875rem',
+              color: tab === 'scroll' ? '#ffb4b4' : 'error.main',
+              bgcolor: tab === 'scroll' ? '#1a1010' : 'transparent',
+            }}
+          >
+            {downloadError}
+          </Box>
+        ) : null}
+        <Box sx={{ p: tab === 'book' ? 2 : 0, minHeight: 'min(78vh, 820px)' }}>
           {tab === 'book' ? (
             <LyreflyComicBookPreview
               project={project}

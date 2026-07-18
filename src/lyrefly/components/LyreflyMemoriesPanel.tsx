@@ -18,6 +18,7 @@ import {
 } from '../db/lyreflyProjectMutations';
 import { inferMemoryTitleFromUrl, normalizeMemoryUrl } from '../utils/inferMemoryTitleFromUrl';
 import { parsePublishDateText } from '../utils/publishDateUtils';
+import { LyreflyDateChip } from './LyreflyDateChip';
 
 export type LyreflyMemoriesPanelProps = {
   project: ComicProject;
@@ -26,13 +27,6 @@ export type LyreflyMemoriesPanelProps = {
   onArchiveChange: (archive: ComicArchiveBinder) => void;
 };
 
-function formatMemoryDate(iso?: string): string | null {
-  if (!iso) return null;
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
 function MemoryCard({
   entry,
   onDelete,
@@ -40,7 +34,7 @@ function MemoryCard({
   entry: PressMemorabiliaEntry;
   onDelete: (entryId: string) => void;
 }): ReactElement {
-  const when = formatMemoryDate(entry.occurredAt);
+  const when = entry.occurredAt?.trim() || null;
   const titleBody = entry.url ? (
     <a
       className="lyrefly-memory-card__title-link"
@@ -72,7 +66,7 @@ function MemoryCard({
       {when ? (
         <div className="lyrefly-memory-card__date-row">
           <span className="lyrefly-publish-card__date-label">When</span>
-          <span className="lyrefly-memory-card__date">{when}</span>
+          <LyreflyDateChip value={when} ariaLabel="Memory date" />
         </div>
       ) : null}
       {entry.markdown.trim() ? (

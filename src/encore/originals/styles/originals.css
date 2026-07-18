@@ -577,6 +577,20 @@
   background: #fff;
 }
 
+/*
+ * While the portaled drum pattern editor is open, chart tokens behind the menu must not
+ * receive hover (or paint “through” interaction). Body class is set by DrumAccompaniment.
+ */
+body.labs-drum-pattern-edit-menu-open .encore-originals-paint-scroll,
+body.labs-drum-pattern-edit-menu-open .encore-originals-paint-editor {
+  pointer-events: none;
+}
+
+body.labs-drum-pattern-edit-menu-open .encore-originals-chord-badge,
+body.labs-drum-pattern-edit-menu-open .encore-originals-lyric-token {
+  pointer-events: none;
+}
+
 .encore-originals-chords-playback-settings-menu
   .shared-chord-playback-settings--encore {
   background: transparent;
@@ -1056,8 +1070,7 @@
 }
 
 .encore-originals-paint-section-playback-chip--read-only {
-  cursor: default;
-  pointer-events: none;
+  cursor: pointer;
 }
 
 .encore-originals-chart-read-view {

@@ -1,14 +1,31 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { gestureDb } from '../db/gestureDb';
-import { deleteCollectionAndDrivePhotos } from './gestureDeleteCollection';
+import {
+  deleteCollectionAndDrivePhotos,
+  GestureDriveTrashStewardshipError,
+} from './gestureDeleteCollection';
 
 vi.mock('../../shared/drive/driveFetch', () => ({
   driveListFiles: vi.fn(),
   driveTrashFile: vi.fn(),
 }));
 
+vi.mock('../../shared/drive/driveAncestry', () => ({
+  driveFileIsUnderAnyAncestor: vi.fn(),
+}));
+
+vi.mock('./gestureDriveLayout', () => ({
+  ensureGestureReferencePacksLayout: vi.fn().mockResolvedValue({
+    rootFolderId: 'labs-root',
+    appFolderId: 'gesture-app',
+    referencePacksFolderId: 'ref-packs',
+  }),
+  listAllGestureReferencePacksRootIds: vi.fn().mockResolvedValue(['ref-packs']),
+}));
+
 import { driveListFiles, driveTrashFile } from '../../shared/drive/driveFetch';
+import { driveFileIsUnderAnyAncestor } from '../../shared/drive/driveAncestry';
 
 describe('deleteCollectionAndDrivePhotos', () => {
   beforeEach(async () => {
@@ -17,6 +34,7 @@ describe('deleteCollectionAndDrivePhotos', () => {
     await gestureDb.packFiles.clear();
     await gestureDb.drawHistory.clear();
     await gestureDb.uploadManifestFiles.clear();
+    (driveFileIsUnderAnyAncestor as ReturnType<typeof vi.fn>).mockResolvedValue(true);
   });
 
   it('reports trash progress while removing Drive photos', async () => {
@@ -47,5 +65,22 @@ describe('deleteCollectionAndDrivePhotos', () => {
     expect(driveTrashFile).toHaveBeenCalledWith('token', 'photo-2');
     expect(driveTrashFile).toHaveBeenCalledWith('token', 'folder-1');
     expect(await gestureDb.packs.get('pack-1')).toBeUndefined();
+  });
+
+  it('refuses Drive trash for folders outside Reference Packs', async () => {
+    await gestureDb.packs.add({
+      id: 'pack-2',
+      name: 'Personal album',
+      driveFolderId: 'foreign-folder',
+      linkedAt: new Date().toISOString(),
+      lastIndexedAt: new Date().toISOString(),
+    });
+    (driveFileIsUnderAnyAncestor as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+
+    await expect(deleteCollectionAndDrivePhotos('token', 'pack-2')).rejects.toBeInstanceOf(
+      GestureDriveTrashStewardshipError,
+    );
+    expect(driveTrashFile).not.toHaveBeenCalled();
+    expect(await gestureDb.packs.get('pack-2')).toBeDefined();
   });
 });

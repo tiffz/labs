@@ -31,6 +31,7 @@ const APP_SMOKE_SPECS = {
     'e2e/smoke/gesture-upload-skip-empty.spec.ts',
     'e2e/smoke/gesture-practice-interaction.spec.ts',
     'e2e/smoke/gesture-collections-scroll.spec.ts',
+    'e2e/smoke/drive-sync-merge-guards.spec.ts',
     'e2e/smoke/layout-heuristics-gesture.spec.ts',
     'e2e/smoke/scroll-sanity-gesture.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/gesture/' },
@@ -51,6 +52,7 @@ const APP_SMOKE_SPECS = {
     'e2e/smoke/stanza-loop-whole-song.spec.ts',
     'e2e/smoke/stanza-playthrough-tail.spec.ts',
     'e2e/smoke/stanza-playback-soak.spec.ts',
+    'e2e/smoke/drive-sync-merge-guards.spec.ts',
     'e2e/smoke/layout-heuristics-stanza.spec.ts',
     'e2e/smoke/scroll-sanity-stanza.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/stanza/' },
@@ -83,6 +85,7 @@ const APP_SMOKE_SPECS = {
   lyrefly: [
     'e2e/smoke/lyrefly-gallery.spec.ts',
     'e2e/smoke/lyrefly-thumbs.spec.ts',
+    'e2e/smoke/drive-sync-merge-guards.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/lyrefly/' },
   ],
   palette: [

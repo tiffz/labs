@@ -3,12 +3,18 @@ import type { ReactElement } from 'react';
 import { PanelMockupSvg } from '../../shared/comic';
 import type { MockupPaletteApplyResult } from '../../shared/palette';
 import type { LabsPrintSpec } from '../../shared/zine';
-import type { PanelFillSpec, PanelLayoutSpec } from '../../shared/comic';
+import type {
+  ComicCastMember,
+  PanelBackgroundImage,
+  PanelFillSpec,
+  PanelLayoutSpec,
+} from '../../shared/comic';
 import { ScrapboardFitCanvas } from './ScrapboardFitCanvas';
 
 export type ScrapboardBoardEditorProps = {
   layout: PanelLayoutSpec;
   fills: PanelFillSpec[];
+  cast?: ComicCastMember[];
   colors?: MockupPaletteApplyResult;
   printSpec?: LabsPrintSpec;
   showBleedGuides?: boolean;
@@ -16,12 +22,15 @@ export type ScrapboardBoardEditorProps = {
   className?: string;
   selectedPanelIndex?: number;
   onPanelSelect?: (panelIndex: number) => void;
+  pageBackgroundImage?: PanelBackgroundImage;
 };
 
-/** Embeddable Scrapboard mockup canvas (standalone + Lyrefly Thumbs). */
+/** Scrapboard's own mockup canvas (sketchy skin). Lyrefly Thumbs renders the shared
+ * `src/shared/comic` engine directly instead of embedding this component. */
 export function ScrapboardBoardEditor({
   layout,
   fills,
+  cast,
   colors,
   printSpec,
   showBleedGuides = false,
@@ -29,6 +38,7 @@ export function ScrapboardBoardEditor({
   className,
   selectedPanelIndex,
   onPanelSelect,
+  pageBackgroundImage,
 }: ScrapboardBoardEditorProps): ReactElement {
   return (
     <div className={['scrapboard-board', className].filter(Boolean).join(' ')} data-testid="scrapboard-board">
@@ -37,6 +47,7 @@ export function ScrapboardBoardEditor({
           <PanelMockupSvg
             layout={layout}
             fills={fills}
+            cast={cast}
             colors={colors}
             width={size.width}
             height={size.height}
@@ -45,6 +56,7 @@ export function ScrapboardBoardEditor({
             allowBubbleEscape={allowBubbleEscape}
             selectedPanelIndex={selectedPanelIndex}
             onPanelSelect={onPanelSelect}
+            pageBackgroundImage={pageBackgroundImage}
             sketchy
           />
         )}

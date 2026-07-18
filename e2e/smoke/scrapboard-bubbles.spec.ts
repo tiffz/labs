@@ -31,6 +31,7 @@ function auditBubblePathsInBrowser(): {
 
 test('scrapboard mad-libs bubbles use closed non-legacy paths', async ({ page }) => {
   await page.goto('/scrapboard/');
+  await page.getByTestId('scrapboard-randomize-menu').click();
   await page.getByTestId('scrapboard-randomize-text').click();
   await expect(page.getByTestId('scrapboard-board').getByTestId('comic-mockup-svg')).toBeVisible();
 
@@ -49,6 +50,7 @@ test('scrapboard 10-panel grid bubbles pass path audit after mad-libs fill', asy
   await expect(page.getByTestId('scrapboard-panel-count')).toContainText('10');
   await expect(page.getByTestId('scrapboard-board').locator('[data-panel-index]')).toHaveCount(10);
 
+  await page.getByTestId('scrapboard-randomize-menu').click();
   await page.getByTestId('scrapboard-randomize-text').click();
   await expect(page.getByTestId('scrapboard-board').getByTestId('comic-mockup-svg')).toBeVisible();
 

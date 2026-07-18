@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
+import { resolveEventTargetElement } from '../../shared/dom/resolveEventTargetElement';
+import { isDrumPatternEditMenuTarget } from '../../shared/components/music/drumPatternEditMenu';
 import { isPlaybackFieldSelectPopoverTarget } from '../../shared/components/music/playbackFieldSelect';
 
 export type WordsMenuDismissRefs = {
@@ -49,32 +51,39 @@ export function useWordsMenuDismiss(
       }
       const inSoundMenu = refs.soundMenuRef.current?.contains(target);
       const inSoundButton = refs.soundButtonRef.current?.contains(target);
-      if (!inSoundMenu && !inSoundButton && !isPlaybackFieldSelectPopoverTarget(target)) {
+      const inDrumPatternEditMenu = isDrumPatternEditMenuTarget(target);
+      if (
+        !inSoundMenu &&
+        !inSoundButton &&
+        !isPlaybackFieldSelectPopoverTarget(target) &&
+        !inDrumPatternEditMenu
+      ) {
         actions.setSoundMenuOpen(false);
       }
-      const inSectionSettingsAnchor =
-        target instanceof Element &&
-        target.closest('.words-section-settings-anchor');
+      const targetEl = resolveEventTargetElement(target);
+      const inSectionSettingsAnchor = Boolean(targetEl?.closest('.words-section-settings-anchor'));
       const inSectionSettingsMenu = refs.sectionSettingsMenuRef.current?.contains(target);
-      const inSectionChordPopover =
-        target instanceof Element &&
-        Boolean(
-          target.closest('.words-section-chord-dropdown-root') ||
-          target.closest('.words-section-style-dropdown-root')
-        );
-      if (!inSectionSettingsAnchor && !inSectionSettingsMenu && !inSectionChordPopover) {
+      const inSectionChordPopover = Boolean(
+        targetEl?.closest('.words-section-chord-dropdown-root') ||
+          targetEl?.closest('.words-section-style-dropdown-root'),
+      );
+      // Drum edit menu portals to body — treat it as still "inside" section settings.
+      if (
+        !inSectionSettingsAnchor &&
+        !inSectionSettingsMenu &&
+        !inSectionChordPopover &&
+        !inDrumPatternEditMenu
+      ) {
         actions.setOpenSectionSettingsId(null);
       }
-      const inSectionRandomizeAnchor =
-        target instanceof Element &&
-        target.closest('.words-section-randomize-anchor');
+      const inSectionRandomizeAnchor = Boolean(targetEl?.closest('.words-section-randomize-anchor'));
       const inSectionRandomizeMenu = refs.sectionRandomizeMenuRef.current?.contains(target);
       if (!inSectionRandomizeAnchor && !inSectionRandomizeMenu) {
         actions.setSectionRandomizeMenuId(null);
       }
-      const inSectionChorusLinkAnchor =
-        target instanceof Element &&
-        target.closest('.words-section-chorus-link-anchor');
+      const inSectionChorusLinkAnchor = Boolean(
+        targetEl?.closest('.words-section-chorus-link-anchor'),
+      );
       const inSectionChorusLinkMenu = refs.sectionChorusLinkMenuRef.current?.contains(target);
       if (!inSectionChorusLinkAnchor && !inSectionChorusLinkMenu) {
         actions.setSectionChorusLinkMenuId(null);
@@ -84,9 +93,7 @@ export function useWordsMenuDismiss(
         actions.setExportMenuOpen(false);
       }
       const inRandomizeButton = refs.randomizeButtonRef.current?.contains(target);
-      const inRandomizeMenu =
-        target instanceof Element &&
-        Boolean(target.closest('.words-randomize-menu'));
+      const inRandomizeMenu = Boolean(targetEl?.closest('.words-randomize-menu'));
       if (!inRandomizeButton && !inRandomizeMenu) {
         actions.setRandomizeMenuOpen(false);
       }

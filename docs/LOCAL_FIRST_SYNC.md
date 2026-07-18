@@ -15,11 +15,33 @@ Canonical reference for how Labs micro-apps sync user data with Google Drive. So
 | **Scales**   | Same as Stanza                                    | `Tiff Zhang Labs/LearnYourScales/progress.json`                        | Progress reducer    | Yes                                        |
 | **Gesture**  | **Drive-first** packs + portfolio backup          | `Tiff Zhang Labs/Gesture/progress.json` + Reference Packs              | Dexie (`gestureDb`) | Partial — pack upload/link requires Google |
 | **Zine Box** | Portfolio backup (comics + stacks + PDF sidecars) | `Tiff Zhang Labs/ZineBox/progress.json` + `comics/`                    | Dexie (`zineboxDb`) | Yes (local PDF drop)                       |
-| **Lyrefly**  | Portfolio backup (gallery / workbench)            | `Tiff Zhang Labs/Lyrefly/progress.json`                                | Dexie               | Yes                                        |
+| **Lyrefly**  | Portfolio backup + full project packages          | `Tiff Zhang Labs/Lyrefly/progress.json` + `projects/{id}/`             | Dexie               | Yes                                        |
 
 Encore also uses Drive for uploads, picker, public snapshot, and guest reads — separate from the JSON sync loops below.
 
 **Graceful degradation:** Portfolio apps must remain usable without Google (sync off). Gesture is the documented exception until local-blob packs ship — empty states should say Google is required for new collections.
+
+### Lyrefly project packages
+
+`progress.json` only ever held gallery-card summaries (`ComicProjectSummary[]`) — title, status,
+pageCount, a project folder id. The actual comic content (pages, visual dev, script, archive) syncs
+as a separate **flat-file package** per project, uploaded/downloaded via `uploadSidecars` /
+`downloadSidecars` on [`lyreflyPortfolioDriveBackupConfig.ts`](../src/lyrefly/drive/lyreflyPortfolioDriveBackupConfig.ts):
+
+- **Layout:** `Tiff Zhang Labs/Lyrefly/projects/{projectId}/` — `project.json`, `layout.json`,
+  `script/script.{md,json}`, `pages/{nodeId}/{node.json,revisions.json,revisions/{fileName}}`,
+  `visual-dev/{index.json,assets/{fileName}}`, `archive/archive.json`, `snapshots/{id}.json`.
+  Wire schema: [`projectPackage.ts`](../src/lyrefly/drive/projectPackage.ts) + `projectPackageWire.ts`.
+- **Upload** ([`lyreflyProjectPackageDriveSync.ts`](../src/lyrefly/drive/lyreflyProjectPackageDriveSync.ts))
+  is driven by the `dirtySync` Dexie ledger (`markLyreflyDirtyRow` on every mutation) — an idle device
+  does no Drive work on auto-push. Sidecars before envelope: page/visual-dev blobs upload first (id
+  cached on the `PageRevision` / `VisualDevAsset` row), then JSON is (re)written so it carries those ids.
+- **Download** re-hydrates a project when its local page count looks behind the synced summary's
+  `pageCount`, **or** when the gallery summary `updatedAt` is newer than the local project clock
+  (so same-row remote edits re-apply). Merge is content-aware (see `lyreflyPackageFieldMerge.ts` +
+  `lyreflyProjectPackageDb.ts`): id lists union; same-id pages/assets/scripts field-merge with
+  content-beats-empty + newer-`updatedAt`. Blobs download only when the local blob is missing
+  (never re-fetch/overwrite existing bytes — "Eliza's Wish" class).
 
 ## Binary uploads (resumable)
 
@@ -332,6 +354,8 @@ Until overlay migration lands:
 **Uploads:** Stanza direct uploads stay common; Encore should reuse existing Drive files (dedup prompt) rather than upload duplicates. Full Encore↔Stanza upload linking is a follow-up after overlay migration.
 
 **OAuth BFF:** [ADR 0014](./adr/0014-google-oauth-session-bff.md) — optional Cloudflare Worker when `VITE_LABS_SESSION_BFF_URL` is set. GIS silent refresh stays off (ADR 0010/0011); BFF refresh uses HTTPS only.
+
+**Loopback origins:** `http://127.0.0.1:5173` and `http://localhost:5173` are different browser origins (separate IndexedDB and Google session storage). Drive sync is the bridge: Back up on one, Sign in / Restore on the other. Prefer `127.0.0.1` for local Labs (matches Google OAuth loopback / Vite default).
 
 ## Known gaps
 

@@ -117,8 +117,17 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
     setSyncPaused(false);
   }, []);
 
+  const undoMountedRef = useRef(true);
+  useEffect(() => {
+    undoMountedRef.current = true;
+    return () => {
+      undoMountedRef.current = false;
+    };
+  }, []);
+
   const refreshUndoSnapshots = useCallback(async () => {
-    setUndoSnapshots(listGestureDriveUndoSnapshots());
+    const snaps = await listGestureDriveUndoSnapshots();
+    if (undoMountedRef.current) setUndoSnapshots(snaps);
   }, []);
 
   useEffect(() => {
@@ -149,7 +158,7 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
       try {
         const local = await readGestureLocalPayload();
         const envelope = buildGestureDriveEnvelope(local);
-        pushGestureDriveUndoSnapshot(envelope, trigger);
+        await pushGestureDriveUndoSnapshot(envelope, trigger);
         setSyncMetaTick((n) => n + 1);
       } catch {
         /* quota */
@@ -406,7 +415,7 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
   );
 
   const restoreLatestPrePullSnapshot = useCallback(async () => {
-    const snap = findLatestGesturePrePullSnapshot();
+    const snap = await findLatestGesturePrePullSnapshot();
     if (!snap) {
       setMessage('No undo-last-sync snapshot yet. Snapshots are saved before each Drive sync.');
       return;

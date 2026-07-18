@@ -7,12 +7,18 @@ import IconButton from '@mui/material/IconButton';
 import type { ReactElement } from 'react';
 
 import {
-  PANEL_CHARACTER_IDS,
+  defaultArrangementForCount,
+  resolvePanelArrangement,
+  resolvePanelSpeakerIds,
+  slotForSpeakerIndex,
   SFX_LOUDNESS_LEVELS,
+  type PanelBackgroundImage,
   type PanelTextBlock,
   type SfxLoudness,
 } from '../../shared/comic';
+import { LabsWikimediaImageField, type LabsWikimediaImageResult } from '../../shared/media';
 import type { ScrapboardBoardState } from '../hooks/useScrapboardBoard';
+import { ScrapboardArrangementField } from './ScrapboardArrangementField';
 
 export type ScrapboardPanelTextEditorProps = {
   board: ScrapboardBoardState;
@@ -29,9 +35,32 @@ function blockTypeTag(block: PanelTextBlock): string {
 }
 
 export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorProps): ReactElement {
-  const { layout, fills, selectedPanelIndex, setSelectedPanelIndex, setPanelBlocks } = board;
+  const {
+    layout,
+    fills,
+    cast,
+    selectedPanelIndex,
+    setSelectedPanelIndex,
+    setPanelBlocks,
+    setPanelSpeakers,
+    setPanelArrangement,
+    setPanelBackgroundImage,
+  } = board;
   const fill = fills.find((row) => row.panelIndex === selectedPanelIndex);
   const blocks = fill?.blocks ?? [];
+  const panelBackground = fill?.backgroundImage ?? null;
+  const speakerIds = resolvePanelSpeakerIds(fill, cast);
+  const arrangement = resolvePanelArrangement(fill, speakerIds.length || 1);
+
+  const onSelectPanelPhoto = (result: LabsWikimediaImageResult): void => {
+    const image: PanelBackgroundImage = {
+      url: result.url,
+      thumbUrl: result.thumbUrl,
+      title: result.title,
+      license: result.license,
+    };
+    setPanelBackgroundImage(selectedPanelIndex, image);
+  };
 
   const updateBlocks = (next: PanelTextBlock[]): void => {
     setPanelBlocks(selectedPanelIndex, next);
@@ -43,6 +72,12 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
     );
     updateBlocks(next);
   };
+
+  const defaultCastMemberId = speakerIds[0] ?? cast[0]?.id;
+  const lastDialogueCastId = [...blocks]
+    .reverse()
+    .find((block): block is Extract<PanelTextBlock, { kind: 'dialogue' }> => block.kind === 'dialogue')
+    ?.castMemberId;
 
   const addBlock = (block: PanelTextBlock): void => {
     updateBlocks([...blocks, block]);
@@ -61,9 +96,38 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
     updateBlocks(next);
   };
 
+  const toggleSpeaker = (castId: string): void => {
+    if (speakerIds.includes(castId)) {
+      if (speakerIds.length <= 1) return;
+      setPanelSpeakers(
+        selectedPanelIndex,
+        speakerIds.filter((id) => id !== castId),
+      );
+      return;
+    }
+    if (speakerIds.length >= 3) return;
+    setPanelSpeakers(selectedPanelIndex, [...speakerIds, castId]);
+  };
+
+  const assignDialogueSpeaker = (blockIndex: number, castMemberId: string): void => {
+    const speakerIndex = speakerIds.indexOf(castMemberId);
+    let nextSpeakers = speakerIds;
+    if (speakerIndex < 0) {
+      if (speakerIds.length >= 3) return;
+      nextSpeakers = [...speakerIds, castMemberId];
+      setPanelSpeakers(selectedPanelIndex, nextSpeakers);
+    }
+    const slotIndex = Math.max(0, nextSpeakers.indexOf(castMemberId));
+    updateBlock(blockIndex, {
+      castMemberId,
+      characterId: slotForSpeakerIndex(slotIndex),
+    });
+  };
+
   return (
     <section className="scrapboard-panel-text scrapboard-controls__section" data-testid="scrapboard-panel-text">
-      <h2 className="scrapboard-section-title">Panel copy</h2>
+      <h2 className="scrapboard-section-title">Panel {selectedPanelIndex + 1}</h2>
+      <p className="scrapboard-section-hint">Click a panel on the page, or pick a tab.</p>
 
       <div className="scrapboard-panel-tabs" role="tablist" aria-label="Panels">
         {layout.panels.map((_, index) => {
@@ -86,6 +150,41 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
         })}
       </div>
 
+      <div className="scrapboard-panel-speakers" data-testid="scrapboard-panel-speakers">
+        <span className="scrapboard-section-title">Who’s here</span>
+        <div className="scrapboard-panel-speakers__chips" role="group" aria-label="Panel cast">
+          {cast.map((member) => {
+            const active = speakerIds.includes(member.id);
+            return (
+              <button
+                key={member.id}
+                type="button"
+                className={[
+                  'scrapboard-cast-chip',
+                  active ? 'scrapboard-cast-chip--active' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                aria-pressed={active}
+                title={member.label ?? member.emoji}
+                data-testid={`scrapboard-panel-speaker-${member.id}`}
+                onClick={() => toggleSpeaker(member.id)}
+              >
+                <span aria-hidden>{member.emoji}</span>
+                <span className="scrapboard-cast-chip__label">{member.label ?? ''}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="scrapboard-section-hint">Up to 3 characters per panel.</p>
+      </div>
+
+      <ScrapboardArrangementField
+        speakerCount={speakerIds.length || 1}
+        value={arrangement ?? defaultArrangementForCount(speakerIds.length || 1)}
+        onChange={(next) => setPanelArrangement(selectedPanelIndex, next)}
+      />
+
       <div className="scrapboard-text-blocks">
         {blocks.length === 0 ? (
           <p className="scrapboard-text-empty">Add lines below. Order matches read order on the panel.</p>
@@ -103,24 +202,26 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
 
               {block.kind === 'dialogue' ? (
                 <div className="scrapboard-speaker-chips" role="radiogroup" aria-label="Speaker">
-                  {PANEL_CHARACTER_IDS.map((id) => {
-                    const active = block.characterId === id;
+                  {cast.map((member) => {
+                    const active = block.castMemberId === member.id;
                     return (
                       <button
-                        key={id}
+                        key={member.id}
                         type="button"
                         role="radio"
                         aria-checked={active}
                         className={[
                           'scrapboard-speaker-chip',
+                          'scrapboard-speaker-chip--emoji',
                           active ? 'scrapboard-speaker-chip--active' : '',
                         ]
                           .filter(Boolean)
                           .join(' ')}
-                        onClick={() => updateBlock(index, { characterId: id })}
-                        data-testid={`scrapboard-dialogue-character-${index}-${id}`}
+                        onClick={() => assignDialogueSpeaker(index, member.id)}
+                        data-testid={`scrapboard-dialogue-character-${index}-${member.id}`}
+                        title={member.label ?? member.emoji}
                       >
-                        {id.toUpperCase()}
+                        {member.emoji}
                       </button>
                     );
                   })}
@@ -223,7 +324,16 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
           size="small"
           variant="outlined"
           startIcon={<AddOutlinedIcon sx={{ fontSize: 16 }} />}
-          onClick={() => addBlock({ kind: 'dialogue', characterId: 'a', content: '' })}
+          onClick={() => {
+            const castMemberId = lastDialogueCastId ?? defaultCastMemberId;
+            const slotIndex = Math.max(0, speakerIds.indexOf(castMemberId ?? ''));
+            addBlock({
+              kind: 'dialogue',
+              characterId: slotForSpeakerIndex(slotIndex),
+              castMemberId,
+              content: '',
+            });
+          }}
           data-testid="scrapboard-add-dialogue"
         >
           Line
@@ -244,6 +354,26 @@ export function ScrapboardPanelTextEditor({ board }: ScrapboardPanelTextEditorPr
         >
           SFX
         </Button>
+      </div>
+
+      <div className="scrapboard-panel-photo" data-testid="scrapboard-panel-photo">
+        <LabsWikimediaImageField
+          variant="sketchy"
+          label="Background photo"
+          hint="Wikimedia scenery, softly tinted. Prefer photos over empty panels."
+          value={
+            panelBackground
+              ? {
+                  url: panelBackground.url,
+                  thumbUrl: panelBackground.thumbUrl,
+                  title: panelBackground.title ?? 'Photo',
+                  license: panelBackground.license,
+                }
+              : null
+          }
+          onSelectImage={onSelectPanelPhoto}
+          onClear={() => setPanelBackgroundImage(selectedPanelIndex, null)}
+        />
       </div>
     </section>
   );

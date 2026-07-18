@@ -1,7 +1,12 @@
-import { fireEvent, render } from '@testing-library/react';
+import { fireEvent, render, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { ChordPlaybackSettingsPanel } from './ChordPlaybackSettingsPanel';
 import { DEFAULT_CHORD_PLAYBACK_SETTINGS } from '../../music/chordPlaybackSettings';
+
+function openDrumPatternEditor(view: ReturnType<typeof render>) {
+  fireEvent.click(view.getByRole('button', { name: /Edit drum pattern/i }));
+  return view.getByRole('dialog', { name: /Drum pattern editor/i });
+}
 
 describe('ChordPlaybackSettingsPanel', () => {
   it('shows custom drum notation input when drums are enabled', () => {
@@ -13,10 +18,12 @@ describe('ChordPlaybackSettingsPanel', () => {
       />,
     );
 
+    expect(view.queryByPlaceholderText('D-T-K-T- or paste Darbuka Trainer URL')).not.toBeInTheDocument();
+    const dialog = openDrumPatternEditor(view);
     expect(
-      view.getByPlaceholderText('D-T-K-T- or paste Darbuka Trainer URL'),
+      within(dialog).getByPlaceholderText('D-T-K-T- or paste Darbuka Trainer URL'),
     ).toBeInTheDocument();
-    expect(view.getByRole('link', { name: 'Customize in Darbuka trainer' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('link', { name: 'Customize in Darbuka trainer' })).toBeInTheDocument();
   });
 
   it('persists drum pattern edits via onChange', () => {
@@ -31,7 +38,8 @@ describe('ChordPlaybackSettingsPanel', () => {
       />,
     );
 
-    const input = view.getByPlaceholderText('D-T-K-T- or paste Darbuka Trainer URL');
+    const dialog = openDrumPatternEditor(view);
+    const input = within(dialog).getByPlaceholderText('D-T-K-T- or paste Darbuka Trainer URL');
     fireEvent.change(input, { target: { value: 'D-T-K-T-' } });
     expect(drumPattern).toBe('D-T-K-T-');
   });

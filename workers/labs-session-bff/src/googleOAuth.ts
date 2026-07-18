@@ -108,11 +108,50 @@ function popupDoneRedirectUrl(returnOrigin: string, error?: string): string {
   return url.toString();
 }
 
-/** Success popup: stay on the worker origin so the session cookie is first-party for token fetch. */
-function popupSuccessRedirectUrl(request: Request, returnOrigin: string): string {
-  const url = new URL('/v1/oauth/google/popup-done', request.url);
-  url.searchParams.set('return_origin', returnOrigin);
-  return url.toString();
+/**
+ * Popup success bridge HTML. Embeds the code-exchange access token so the popup does not need a
+ * second `/access-token` refresh (that path is rate-limited per IP and was a common "Sign-in failed." flake).
+ */
+function buildPopupSuccessBridgeHtml(input: {
+  returnOrigin: string;
+  accessToken: string;
+  expiresIn: number;
+  email: string;
+  displayName: string;
+}): string {
+  const safeReturnOrigin = JSON.stringify(input.returnOrigin);
+  const safePayload = JSON.stringify({
+    type: LABS_GOOGLE_OAUTH_DONE_MESSAGE,
+    access_token: input.accessToken,
+    expires_in: input.expiresIn,
+    email: input.email,
+    display_name: input.displayName,
+  });
+  return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8" /><title>Signing in…</title></head><body>
+<script>
+(function () {
+  var returnOrigin = ${safeReturnOrigin};
+  var CHANNEL = ${JSON.stringify(LABS_GOOGLE_OAUTH_BROADCAST_CHANNEL)};
+  var payload = ${safePayload};
+
+  function notify(message) {
+    if (window.opener && !window.opener.closed) {
+      try { window.opener.postMessage(message, returnOrigin); } catch (e) { /* ignore */ }
+    }
+    try {
+      var bc = new BroadcastChannel(CHANNEL);
+      bc.postMessage(message);
+      bc.close();
+    } catch (e) { /* ignore */ }
+  }
+
+  notify(payload);
+  document.body.textContent = 'Finishing sign-in…';
+  window.setTimeout(function () { window.close(); }, 200);
+})();
+</script>
+</body></html>`;
 }
 
 function popupDoneResponse(input: {
@@ -121,6 +160,13 @@ function popupDoneResponse(input: {
   popup: boolean;
   cookie?: string;
   error?: string;
+  /** When set with popup success, return bridge HTML directly (no second token fetch). */
+  bootstrap?: {
+    accessToken: string;
+    expiresIn: number;
+    email: string;
+    displayName: string;
+  };
   /** Legacy inline HTML when popup mode is off. */
   html?: string;
 }): Response {
@@ -128,10 +174,28 @@ function popupDoneResponse(input: {
   if (input.cookie) headers.append('Set-Cookie', input.cookie);
 
   if (input.popup) {
-    const location = input.error
-      ? popupDoneRedirectUrl(input.returnOrigin, input.error)
-      : popupSuccessRedirectUrl(input.request, input.returnOrigin);
-    headers.set('Location', location);
+    if (input.error) {
+      headers.set('Location', popupDoneRedirectUrl(input.returnOrigin, input.error));
+      return new Response(null, { status: 302, headers });
+    }
+    if (input.bootstrap) {
+      headers.set('Content-Type', 'text/html; charset=utf-8');
+      headers.set('Cache-Control', 'no-store');
+      return new Response(
+        buildPopupSuccessBridgeHtml({
+          returnOrigin: input.returnOrigin,
+          accessToken: input.bootstrap.accessToken,
+          expiresIn: input.bootstrap.expiresIn,
+          email: input.bootstrap.email,
+          displayName: input.bootstrap.displayName,
+        }),
+        { status: 200, headers },
+      );
+    }
+    // Legacy fallback: redirect to popup-done (still does a first-party token fetch).
+    const url = new URL('/v1/oauth/google/popup-done', input.request.url);
+    url.searchParams.set('return_origin', input.returnOrigin);
+    headers.set('Location', url.toString());
     return new Response(null, { status: 302, headers });
   }
 
@@ -246,21 +310,29 @@ export async function handleGoogleOAuthCallback(request: Request, env: Env): Pro
     });
   }
 
+  const displayName = profile.name?.trim() || profile.email;
   const sessionId = await storeSession(env.SESSION_KV, {
     googleSub: profile.sub,
     email: profile.email,
-    displayName: profile.name?.trim() || profile.email,
+    displayName,
     refreshToken: token.refresh_token,
     scope: token.scope ?? LABS_GOOGLE_OAUTH_SCOPES,
     encryptionKeyHex: env.REFRESH_ENCRYPTION_KEY,
   });
   const cookie = await buildSessionCookie(sessionId, profile.sub, env.SESSION_SIGNING_KEY);
+  const expiresIn = token.expires_in ?? 3600;
 
   return popupDoneResponse({
     request,
     returnOrigin: stateRecord.returnOrigin,
     popup: stateRecord.popup,
     cookie,
+    bootstrap: {
+      accessToken: token.access_token,
+      expiresIn,
+      email: profile.email,
+      displayName,
+    },
   });
 }
 
@@ -294,15 +366,16 @@ export async function handleGoogleOAuthPopupDone(request: Request, env: Env): Pr
 
   fetch('/v1/session/google/access-token', { credentials: 'include' })
     .then(function (res) {
-      return res.json().then(function (body) { return { ok: res.ok, body: body }; });
+      return res.json().then(function (body) { return { ok: res.ok, status: res.status, body: body }; });
     })
     .then(function (result) {
       if (!result.ok || !result.body || !result.body.access_token) {
+        var detail = (result.body && result.body.error) || ('HTTP ' + result.status);
         notify({
           type: MESSAGE_TYPE,
-          error: (result.body && result.body.error) || 'Session refresh failed after sign-in.',
+          error: detail || 'Session refresh failed after sign-in.',
         });
-        document.body.textContent = 'Sign-in failed.';
+        document.body.textContent = 'Sign-in failed: ' + detail;
         return;
       }
       notify({
@@ -317,7 +390,7 @@ export async function handleGoogleOAuthPopupDone(request: Request, env: Env): Pr
     })
     .catch(function () {
       notify({ type: MESSAGE_TYPE, error: 'Session refresh failed after sign-in.' });
-      document.body.textContent = 'Sign-in failed.';
+      document.body.textContent = 'Sign-in failed: network error.';
     });
 })();
 </script>

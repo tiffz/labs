@@ -2,17 +2,18 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import type { ReactElement } from 'react';
 
-import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import type { ComicProject, ScriptDocument } from '../types';
+import { ScriptFormatHelp } from './ScriptFormatHelp';
 import { ScriptFormattedPreview } from './ScriptFormattedPreview';
 import { ScriptPacingMeter } from './ScriptPacingMeter';
 import { ScriptRichTextEditor } from './ScriptRichTextEditor';
 import { DEFAULT_SCRIPT_HTML } from './defaultScriptSample';
 import { isScriptContentEmpty } from './scriptEmpty';
-import { parseAndAnalyzeScript, saveScriptDocument } from './useScriptDocument';
+import { parseAndAnalyzeScript } from './useScriptDocument';
+import { useScriptAutosave } from './useScriptAutosave';
 
 export type ScriptEditorShellProps = {
   project: ComicProject;
@@ -21,91 +22,21 @@ export type ScriptEditorShellProps = {
   variant?: 'standalone' | 'embedded';
 };
 
-const AUTOSAVE_MS = 600;
-
 export function ScriptEditorShell({
   project,
   document,
   onDocumentSaved,
   variant = 'embedded',
 }: ScriptEditorShellProps): ReactElement {
-  const { push, clear } = useLabsUndo();
-  const [localHtml, setLocalHtml] = useState(document.markdown);
-  const [committedHtml, setCommittedHtml] = useState(document.markdown);
-  const [saving, setSaving] = useState(false);
-  const saveTimerRef = useRef<number | null>(null);
-
-  const loadedDocumentIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (loadedDocumentIdRef.current === document.id) return;
-    loadedDocumentIdRef.current = document.id;
-    setLocalHtml(document.markdown);
-    setCommittedHtml(document.markdown);
-    clear();
-  }, [document.id, document.markdown, clear]);
+  const { localHtml, saving, handleChange, persistNow } = useScriptAutosave(document, onDocumentSaved);
 
   const parsed = useMemo(() => parseAndAnalyzeScript(localHtml), [localHtml]);
   const showPacing = parsed.pacingWarnings.length > 0;
   const scriptIsEmpty = useMemo(() => isScriptContentEmpty(localHtml), [localHtml]);
 
-  const persistHtml = useCallback(
-    async (html: string, recordUndo: boolean): Promise<void> => {
-      const previous = committedHtml;
-      setSaving(true);
-      try {
-        const saved = await saveScriptDocument({ ...document, markdown: html });
-        setLocalHtml(html);
-        setCommittedHtml(html);
-        onDocumentSaved(saved);
-        if (recordUndo) {
-          push({
-            undo: () => {
-              void persistHtml(previous, false);
-            },
-            redo: () => {
-              void persistHtml(html, false);
-            },
-          });
-        }
-      } finally {
-        setSaving(false);
-      }
-    },
-    [committedHtml, document, onDocumentSaved, push],
-  );
-
-  const scheduleSave = useCallback(
-    (html: string) => {
-      if (saveTimerRef.current != null) {
-        window.clearTimeout(saveTimerRef.current);
-      }
-      saveTimerRef.current = window.setTimeout(() => {
-        if (html !== committedHtml) {
-          void persistHtml(html, true);
-        }
-        saveTimerRef.current = null;
-      }, AUTOSAVE_MS);
-    },
-    [committedHtml, persistHtml],
-  );
-
   const onInsertSampleScript = (): void => {
-    void persistHtml(DEFAULT_SCRIPT_HTML, true);
+    void persistNow(DEFAULT_SCRIPT_HTML);
   };
-
-  const handleChange = (html: string): void => {
-    setLocalHtml(html);
-    scheduleSave(html);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (saveTimerRef.current != null) {
-        window.clearTimeout(saveTimerRef.current);
-      }
-    };
-  }, []);
 
   return (
     <Box
@@ -130,9 +61,6 @@ export function ScriptEditorShell({
       ) : null}
 
       <Stack spacing={0.75} className="lyrefly-script-editor-shell__intro">
-        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: '48rem', lineHeight: 1.55 }}>
-          Nested bullets on the left; formatted script on the right. Tab to indent pages → panels → lines.
-        </Typography>
         {scriptIsEmpty ? (
           <Box className="lyrefly-script-empty-banner" data-testid="lyrefly-script-empty-banner">
             <Typography variant="body2" color="text.secondary">
@@ -160,9 +88,17 @@ export function ScriptEditorShell({
 
       <Box className="lyrefly-script-split">
         <Box className="lyrefly-script-split__column lyrefly-script-split__source">
-          <Typography component="h3" className="lyrefly-script-split__label">
-            Source
-          </Typography>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={0.25}
+            className="lyrefly-script-split__label-row"
+          >
+            <Typography component="h3" className="lyrefly-script-split__label">
+              Source
+            </Typography>
+            <ScriptFormatHelp />
+          </Stack>
           <Box className="lyrefly-script-split__editor">
             <ScriptRichTextEditor value={localHtml} onChange={handleChange} />
           </Box>

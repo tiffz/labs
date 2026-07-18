@@ -24,6 +24,11 @@ import {
 } from './lyreflyDriveMerge';
 import { readLyreflyDriveSyncMeta, writeLyreflyDriveSyncMeta } from './lyreflyDriveSyncMeta';
 import {
+  downloadMissingLyreflyProjectSidecars,
+  lyreflyNeedsSidecarDownload,
+  uploadLyreflyProjectSidecars,
+} from './lyreflyProjectPackageDriveSync';
+import {
   findLatestLyreflyPrePullSnapshot,
   formatLyreflyDriveUndoSnapshotTrigger,
   listLyreflyDriveUndoSnapshots,
@@ -94,16 +99,12 @@ export const lyreflyPortfolioDriveBackupConfig: LabsPortfolioDriveBackupConfig<
   writeSyncMeta: writeLyreflyDriveSyncMeta,
   subscribeLocalChanges: (onChange) =>
     subscribeLyreflyLocalChanges((event) => onChange(event ?? {})),
-  uploadSidecars: async (_token, _appFolderId, _local, onLabel) => {
-    onLabel('Project assets sync is queued locally.');
-  },
-  downloadSidecars: async () => {
-    /* Project package sidecars pulled lazily when opening a project. */
-  },
-  needsSidecarDownload: () => false,
+  uploadSidecars: uploadLyreflyProjectSidecars,
+  downloadSidecars: downloadMissingLyreflyProjectSidecars,
+  needsSidecarDownload: lyreflyNeedsSidecarDownload,
   messages: {
     emptyPull: 'No Lyrefly backup on Drive yet.',
-    saved: 'Gallery saved to Google Drive.',
+    saved: 'Projects saved to Google Drive.',
     silentPullChanged:
       'Drive backup changed on another device. Open your account menu to choose how to merge.',
     alreadyInSync: 'Already in sync with Drive.',

@@ -13,6 +13,7 @@ import {
   driveListFiles,
   drivePatchJsonMedia,
 } from './driveFetch';
+import { maybePinDailyDriveFileRevision } from './driveRevisionPinning';
 
 export const LABS_DRIVE_ROOT_FOLDER = 'Tiff Zhang Labs';
 export const LABS_DRIVE_APP_FOLDER_SCALES = 'LearnYourScales';
@@ -101,6 +102,9 @@ export async function writeLabsDriveProgressJson(
   ifMatch: string | undefined,
 ): Promise<{ etag?: string; modifiedTime?: string }> {
   const r = await drivePatchJsonMedia(accessToken, progressFileId, body, ifMatch);
+  // Best-effort daily keepForever pin so an accidental empty overwrite remains recoverable
+  // beyond Drive's unpinned revision prune window.
+  void maybePinDailyDriveFileRevision(accessToken, progressFileId);
   return { etag: r.etag, modifiedTime: r.modifiedTime };
 }
 

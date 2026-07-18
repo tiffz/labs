@@ -92,9 +92,9 @@ export function LyreflyDriveBackupProvider({ children }: { children: ReactNode }
       undoLastSync: backup.restoreLatestPrePullSnapshot,
       canUndoLastSync: backup.canUndoLastSync,
       copy: {
-        title: 'Restore gallery',
+        title: 'Restore projects',
         intro:
-          'Merges comic projects into this browser. Local-only items are kept when possible. Use Undo last sync to roll back a bad merge.',
+          'Merges comic projects, pages, visual dev, and script into this browser. Local-only items are kept when possible. Use Undo last sync to roll back a bad merge.',
       },
       historyRecovery: backup.historyRecovery
         ? {
@@ -121,8 +121,9 @@ export function LyreflyDriveBackupProvider({ children }: { children: ReactNode }
       onBackup: backup.onBackup,
       onSignIn: backup.syncPaused ? backup.retryPullFromDrive : backup.onSignIn,
       lastBackupExportedAt: backup.lastMeta.lastBackupExportedAt,
-      scopeSummary: 'Gallery backup to Google Drive.',
-      scopeTooltip: 'Google sign-in covers portfolio backup (drive.file) for Lyrefly project packages.',
+      scopeSummary: 'Project backup to Google Drive.',
+      scopeTooltip:
+        "Google sign-in covers portfolio backup (drive.file): gallery info plus each project's pages, visual dev, and script.",
     };
   }, [allowlistEmpty, backup]);
 

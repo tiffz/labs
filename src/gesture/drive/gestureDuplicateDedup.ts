@@ -1,6 +1,11 @@
+import { filterDriveFileIdsUnderAncestors } from '../../shared/drive/driveAncestry';
 import { driveTrashFile } from '../../shared/drive/driveFetch';
 import { gestureDb } from '../db/gestureDb';
 import { notifyGestureLocalChange } from '../db/gestureChangeBus';
+import {
+  ensureGestureReferencePacksLayout,
+  listAllGestureReferencePacksRootIds,
+} from './gestureDriveLayout';
 import { addGestureDriveFileTombstones } from './gestureDriveTombstones';
 import type { GestureDuplicateGroup } from './gestureDuplicateDetection';
 
@@ -69,10 +74,22 @@ export async function applyGestureDuplicateDedup(
     }
   }
 
+  const layout = await ensureGestureReferencePacksLayout(accessToken);
+  const rootIds = new Set(await listAllGestureReferencePacksRootIds(accessToken, layout.appFolderId));
+  if (rootIds.size === 0) rootIds.add(layout.referencePacksFolderId);
+  // Also allow Gesture app folder (packs nested under Reference Packs walk through it).
+  rootIds.add(layout.appFolderId);
+
+  const { allowed: trashableIds } = await filterDriveFileIdsUnderAncestors(
+    accessToken,
+    [...replacements.keys()],
+    rootIds,
+  );
+
   let trashed = 0;
   let trashErrors = 0;
   const trashedIds: string[] = [];
-  for (const trashId of replacements.keys()) {
+  for (const trashId of trashableIds) {
     try {
       await driveTrashFile(accessToken, trashId);
       trashed += 1;

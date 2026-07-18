@@ -5,11 +5,13 @@ import type { SfxLayout } from './speechBubbleLayout';
 
 export type SfxLayoutGraphicProps = {
   sfx: SfxLayout;
+  /** Palette-driven fill override (see `applyPaletteToMockup`). Falls back to wireframe grays. */
+  color?: string;
 };
 
 /** Wireframe-safe SFX type treatments by loudness. */
-export function SfxLayoutGraphic({ sfx }: SfxLayoutGraphicProps): ReactElement {
-  const style = sfxRenderStyle(sfx.loudness, sfx.text);
+export function SfxLayoutGraphic({ sfx, color }: SfxLayoutGraphicProps): ReactElement {
+  const style = sfxRenderStyle(sfx.loudness, sfx.text, color);
   const burst =
     style.burstTicks ? (
       <g className="comic-mockup-svg__sfx-burst" opacity={0.55} aria-hidden>

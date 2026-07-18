@@ -42,9 +42,9 @@ async function resolveRepertoireFileId(accessToken: string): Promise<string> {
 }
 
 /** Parse local undo snapshots into recovery sources. Drive prunes old revisions; these may not be. */
-function readLocalSnapshots(): RepertoireHistorySnapshot[] {
+async function readLocalSnapshots(): Promise<RepertoireHistorySnapshot[]> {
   const snapshots: RepertoireHistorySnapshot[] = [];
-  for (const snap of readEncoreDriveUndoSnapshots()) {
+  for (const snap of await readEncoreDriveUndoSnapshots()) {
     try {
       const wire = parseRepertoireWire(snap.wireJson);
       snapshots.push({
@@ -90,7 +90,7 @@ export async function scanRepertoireHistoryForRecovery(
     }
   }
 
-  const localSnapshots = readLocalSnapshots();
+  const localSnapshots = await readLocalSnapshots();
   snapshots.push(...localSnapshots);
 
   const current = {

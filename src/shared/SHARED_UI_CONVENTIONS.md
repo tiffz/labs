@@ -215,16 +215,29 @@ For **labeled mix rows with mute + 0–100 slider**, use `PlaybackVolumeRow` (`s
 
 Hosts embed [`DrumAccompaniment`](components/music/DrumAccompaniment.tsx) with a **profile** from [`getInlineDrumUxProps`](components/music/inlineDrumUxDefaults.ts) — never hand-roll layout flags unless the host owns the pattern text field.
 
-| Host                           | Profile                                                                | Pattern input      | Darbuka link                             | Audible drums |
-| ------------------------------ | ---------------------------------------------------------------------- | ------------------ | ---------------------------------------- | ------------- |
-| Encore Originals / Chords      | `settings-panel`                                                       | in panel           | inline icon                              | no            |
-| Stanza practice rail           | `practice-rail`                                                        | in panel           | inline icon                              | yes           |
-| Piano sidebar                  | `sidebar-compact`                                                      | in panel           | inline icon                              | yes           |
-| Words section / sound settings | `settings-panel` + `{ hidePatternInput: true, hideDarbukaLink: true }` | **host `<input>`** | on host field (`DarbukaTrainerIconLink`) | no            |
+**Dense menu editing is the default** for every profile: show notation first; **Edit** (or click the staff) opens an `AnchoredPopover` with a **live notation preview**, preset chips (secondary selection), **variation prev/next** when the active preset has multiple variations, and the pattern field. Pass `readOnly` for view-only surfaces (no Edit). Do not use always-expanded `patternEditing: 'inline'` for new hosts. Portaled menu chrome uses `--theme-*` / `--labs-selection-secondary-*`; hosts that theme outside `:root` (Stanza) must mirror tokens onto `.drum-pattern-edit-menu`.
+
+#### Nested Edit menu checklist (`portal styling`)
+
+When `DrumAccompaniment` Edit opens from inside a host floating panel (Words section/sound settings, Encore section playback):
+
+1. **Click-outside allowlist** — host document `mousedown` handlers must treat the portaled editor as in-panel via [`isDrumPatternEditMenuTarget`](components/music/drumPatternEditMenu.ts) (paper class **and** modal root). Mirror the existing `isPlaybackFieldSelectPopoverTarget` pattern.
+2. **Text-node targets** — resolve with [`resolveEventTargetElement`](dom/resolveEventTargetElement.ts) before `.closest()`; chip label clicks often set `event.target` to a Text node.
+3. **Stable position** — freeze with `anchorReference="anchorPosition"` at open; reserve a fixed variations row in the menu so single↔multi-variation preset switches do not resize the paper. MUI Popover repositions on every render when `anchorEl` moves. Stage may show variation prev/next; do **not** add a bare preset-name header in dense mode.
+4. **Hover tips** — dice tooltips must use `DRUM_PATTERN_EDIT_TIP_Z_INDEX` (above the menu) and prefer placement above the control while the menu is open.
+5. **Host content under the menu** — while open, `DrumAccompaniment` sets body class `labs-drum-pattern-edit-menu-open`. Chart/canvas hosts (Encore) should set `pointer-events: none` on underlying interactive tokens so hover labels cannot bleed through. Keep the edit paper **opaque** (`background-color: #fff`; no frosted `backdrop-filter` on `.drum-pattern-edit-menu`).
+6. **`hidePatternInput`** — hides the outer/inline field only; the Edit menu still shows the notation string (Words host-input profile).
+
+| Host                           | Profile                                                                | Pattern input                       | Darbuka link                             | Audible drums |
+| ------------------------------ | ---------------------------------------------------------------------- | ----------------------------------- | ---------------------------------------- | ------------- |
+| Encore Originals / Chords      | `settings-panel`                                                       | in Edit menu                        | inline icon in menu                      | no            |
+| Stanza practice rail           | `practice-rail`                                                        | in Edit menu                        | inline icon in menu                      | yes           |
+| Piano sidebar                  | `sidebar-compact`                                                      | in Edit menu                        | inline icon in menu                      | yes           |
+| Words section / sound settings | `settings-panel` + `{ hidePatternInput: true, hideDarbukaLink: true }` | **host `<input>`**; presets in menu | on host field (`DarbukaTrainerIconLink`) | no            |
 
 - **Contract tests:** `inlineDrumUxContract.test.tsx`, `inlineDrumUxDefaults.test.ts`
 - **Cursor rule:** `.cursor/rules/inline-drum-ux.mdc`
-- **Deprecated:** `below-notation` Darbuka placement — use inline icon only.
+- **Deprecated:** `below-notation` Darbuka placement; `patternEditing: 'inline'` / `'popover'` (alias of `menu`)
 
 ### AppSlider value labels (thumb tooltips)
 
@@ -251,7 +264,7 @@ Closed playback pickers (sound, chord style trigger, similar single-choice field
 - **Audio regression tests** — `src/shared/playback/audioContextLifecycle.test.ts`, `scorePlayback.audio.test.ts`, `chordInstrumentSession.test.ts`, `scheduleStyledChordMeasure.test.ts`, and `playbackFieldSelect.test.ts` guard silent-playback failures (suspended context, zero-velocity schedule, portaled menu dismissal).
 - **`ChordStyleInput`** — uses the shared trigger for its closed state; maps `appearance="encore"` (and host skins like `piano` / `words` / `chords`) onto shared `--pfs-*` CSS variables for the trigger while keeping its grid menu for rich style cards.
 - **Helpers** (`playbackFieldSelect.ts`): `PlaybackFieldSelectAppearance`, `playbackFieldSelectPopoverSlotProps`, `playbackFloatingPanelSlotProps`, `forwardWheelToPageScroller`, `resolvePlaybackFieldSelectAppearance`.
-- **Floating panels + nested menus**: use `playbackFloatingPanelSlotProps` on the outer popover and `playbackFieldSelectPopoverSlotProps` on field selects (`PLAYBACK_FIELD_SELECT_Z_INDEX` keeps menus above the panel). Backdrop wheel events forward to `.in-scroll-region` so the page still scrolls while a menu is open; backdrop clicks close as usual. Pair floating popovers with `usePopoverScrollAnchorSync` + `popoverAnchorEl()` so menus track anchors inside nested scroll regions (Encore `.in-scroll-region`).
+- **Floating panels + nested menus**: use `playbackFloatingPanelSlotProps` on the outer popover and `playbackFieldSelectPopoverSlotProps` on field selects (`PLAYBACK_FIELD_SELECT_Z_INDEX` keeps menus above the panel). Backdrop wheel events forward to `.in-scroll-region` so the page still scrolls while a menu is open; backdrop clicks close as usual. Pair floating popovers with `usePopoverScrollAnchorSync` + `popoverAnchorEl()` so menus track anchors inside nested scroll regions (Encore `.in-scroll-region`). Nested **drum Edit** menus also need the [Nested Edit menu checklist](#nested-edit-menu-checklist-portal-styling) above (`isDrumPatternEditMenuTarget`, frozen `anchorPosition`).
 - **Custom menus**: reuse `playbackFieldSelectPopoverSlotProps(appearance)` on MUI `Popover` `slotProps` and put options in `.shared-playback-field-select__menu-list` / `.shared-playback-field-select__option` when you need a simple list; override `--pfs-*` on a parent selector for app tint without forking the trigger markup.
 
 #### Portaled appearance checklist
@@ -275,6 +288,14 @@ Use shared **`KeyInput`** (`src/shared/components/music/KeyInput.tsx`) for any m
 - **App theming** — pass `className` + `dropdownClassName` (see `stanza-key-dropdown`, `encore-repertoire-key-dropdown`, `words-key-dropdown` in app CSS).
 - **Transpose helpers** — `transposeSongKey` / `formatSongKeyDisplay` in `songKeyFormat.ts` preserve quality when shifting pitch.
 
+### Comic palette field (`LabsPaletteField`)
+
+Dense hosts (Scrapboard rail) use [`LabsPaletteField`](palette/LabsPaletteField.tsx): closed **swatch strip** → `AnchoredPopover` with [`LabsPaletteBuilder`](palette/LabsPaletteBuilder.tsx) (+ optional paste). Keep Lyrefly/workbench inline `LabsPaletteBuilder` when the stage already budgets vertical space for the full panel. See [`palette/README.md`](palette/README.md).
+
+### Wikimedia image field (`LabsWikimediaImageField`)
+
+Dense hosts use [`LabsWikimediaImageField`](media/LabsWikimediaImageField.tsx): closed **thumbnail + title** trigger → `AnchoredPopover` with [`LabsWikimediaImageSearch`](media/LabsWikimediaImageSearch.tsx). Prefer this over always-inline search lists in side rails. Keep inline `LabsWikimediaImageSearch` only when the surface already budgets vertical space for results.
+
 ## Interaction patterns (pickers vs editors)
 
 See [`docs/CHROME_UI_CONTRACT.md`](../docs/CHROME_UI_CONTRACT.md) for chrome profiles and the full matrix.
@@ -282,6 +303,8 @@ See [`docs/CHROME_UI_CONTRACT.md`](../docs/CHROME_UI_CONTRACT.md) for chrome pro
 | UI need                                | Use                                                        |
 | -------------------------------------- | ---------------------------------------------------------- |
 | Compact anchored picker                | `AnchoredPopover` + portaled token mirror on paper class   |
+| Comic palette in a dense side rail     | `LabsPaletteField` (swatch trigger → builder menu)         |
+| Wikimedia photo in a dense side rail   | `LabsWikimediaImageField` (thumb trigger → search menu)    |
 | Multi-row editor inside scrolling rail | Inline disclosure (Edit/Done) — **not** a portaled popover |
 | Full app shell on portaled node        | **Never** — mirror tokens on dropdown root only            |
 

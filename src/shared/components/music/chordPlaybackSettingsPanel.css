@@ -32,11 +32,27 @@
 
 .shared-chord-playback-settings--encore
   .shared-chord-playback-settings__drums-panel
+  .drum-presets-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+  min-width: 0;
+}
+
+.shared-chord-playback-settings--encore
+  .shared-chord-playback-settings__drums-panel
   .drum-presets {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 4px;
-  margin-bottom: 6px;
+  margin-bottom: 0;
+}
+
+.shared-chord-playback-settings--encore
+  .shared-chord-playback-settings__drums-panel
+  .drum-presets__random-row {
+  gap: 4px;
 }
 
 .shared-chord-playback-settings--encore

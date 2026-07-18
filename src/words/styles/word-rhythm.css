@@ -1723,12 +1723,24 @@ body,
   margin-top: 6px;
 }
 
+.words-inline-drum-panel .drum-presets-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 6px;
+  min-width: 0;
+}
+
 .words-inline-drum-panel .drum-presets {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-bottom: 6px;
+  margin-bottom: 0;
+}
+
+.words-inline-drum-panel .drum-presets__random-row {
+  gap: 6px;
 }
 
 .words-inline-drum-panel .drum-display-error {

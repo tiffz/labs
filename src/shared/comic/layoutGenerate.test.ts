@@ -22,6 +22,15 @@ describe('generateLayoutsForPanelCount', () => {
     }
   });
 
+  it('prefers readable grids over ultra-narrow 8-strips as the default', () => {
+    const layouts = generateLayoutsForPanelCount(8, { printSpec: DEFAULT_LABS_PRINT_SPEC });
+    const top = layouts[0]!;
+    expect(top.id === 'grid-2x4-8' || top.id === 'grid-4x2-8').toBe(true);
+    const strip = layouts.find((row) => row.id === 'grid-8x1-8' || row.id === 'strip-h-8');
+    expect(strip).toBeTruthy();
+    expect(strip!.conventionality).toBeLessThan(top.conventionality - 0.25);
+  });
+
   it('keeps panels inside the safe region by default', () => {
     const layouts = generateLayoutsForPanelCount(4, { printSpec: DEFAULT_LABS_PRINT_SPEC });
     const insets = getLayoutSafeInsets(DEFAULT_LABS_PRINT_SPEC);

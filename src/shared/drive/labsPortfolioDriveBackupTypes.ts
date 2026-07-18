@@ -102,9 +102,13 @@ export type LabsPortfolioDriveBackupConfig<
     silentSyncedPrefix: string;
   };
   undo?: {
-    listSnapshots: () => TUndoSnapshot[];
-    pushSnapshot: (envelope: TEnvelope, trigger: string) => void;
-    findLatestPrePull: () => TUndoSnapshot | null | undefined;
+    listSnapshots: () => TUndoSnapshot[] | Promise<TUndoSnapshot[]>;
+    pushSnapshot: (envelope: TEnvelope, trigger: string) => void | Promise<void>;
+    findLatestPrePull: () =>
+      | TUndoSnapshot
+      | null
+      | undefined
+      | Promise<TUndoSnapshot | null | undefined>;
     parseSnapshotEnvelope: (snap: TUndoSnapshot) => TEnvelope;
     formatSnapshotTrigger: (trigger: string) => string;
     canRestore: (args: {

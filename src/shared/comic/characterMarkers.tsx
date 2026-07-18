@@ -1,5 +1,7 @@
 import type { ReactElement } from 'react';
 
+import type { MarkerPlacement } from './characterArrangements';
+import { activeMarkerPlacement } from './markerPlacementScope';
 import type { PanelCharacterId } from './types';
 
 export const CHARACTER_MARKER_SLOTS: Record<PanelCharacterId, { x: number; y: number }> = {
@@ -26,12 +28,29 @@ export type CharacterMarkerBox = {
   right: number;
 };
 
+function resolvePlacement(placement?: MarkerPlacement): MarkerPlacement | undefined {
+  return placement ?? activeMarkerPlacement();
+}
+
+function slotPosition(
+  characterId: PanelCharacterId,
+  placement?: MarkerPlacement,
+): { x: number; y: number; scale: number } {
+  const resolved = resolvePlacement(placement);
+  const override = resolved?.[characterId];
+  if (override) return override;
+  const fallback = CHARACTER_MARKER_SLOTS[characterId];
+  return { x: fallback.x, y: fallback.y, scale: 1 };
+}
+
 export function characterMarkerBox(
   bounds: MarkerBounds,
   characterId: PanelCharacterId,
+  placement?: MarkerPlacement,
 ): CharacterMarkerBox {
-  const { cx, cy } = markerCenter(bounds, characterId);
-  const size = markerSize(bounds);
+  const { cx, cy } = markerCenter(bounds, characterId, placement);
+  const scale = slotPosition(characterId, placement).scale;
+  const size = markerSize(bounds) * scale;
   return {
     cx,
     cy,
@@ -47,8 +66,9 @@ export function characterMarkerBox(
 export function characterMarkerLayoutBox(
   bounds: MarkerBounds,
   characterId: PanelCharacterId,
+  placement?: MarkerPlacement,
 ): CharacterMarkerBox {
-  const box = characterMarkerBox(bounds, characterId);
+  const box = characterMarkerBox(bounds, characterId, placement);
   return {
     ...box,
     top: box.cy - box.size * 0.2,
@@ -59,8 +79,12 @@ function markerSize(bounds: MarkerBounds): number {
   return Math.min(bounds.w, bounds.h) * 0.1;
 }
 
-function markerCenter(bounds: MarkerBounds, characterId: PanelCharacterId): { cx: number; cy: number } {
-  const slot = CHARACTER_MARKER_SLOTS[characterId];
+function markerCenter(
+  bounds: MarkerBounds,
+  characterId: PanelCharacterId,
+  placement?: MarkerPlacement,
+): { cx: number; cy: number } {
+  const slot = slotPosition(characterId, placement);
   return {
     cx: bounds.x + bounds.w * slot.x,
     cy: bounds.y + bounds.h * slot.y,
@@ -76,13 +100,15 @@ function squarePath(cx: number, cy: number, size: number): string {
   return `M ${cx - size} ${cy - size} H ${cx + size} V ${cy + size} H ${cx - size} Z`;
 }
 
+/** Legacy geometric A/B/C markers (Lyrefly / non-emoji path). */
 export function renderCharacterMarker(
   characterId: PanelCharacterId,
   bounds: MarkerBounds,
   color: string,
   strokeWidth: number,
+  placement?: MarkerPlacement,
 ): ReactElement {
-  const { cx, cy, size } = characterMarkerBox(bounds, characterId);
+  const { cx, cy, size } = characterMarkerBox(bounds, characterId, placement);
   const label = CHARACTER_MARKER_LABELS[characterId];
 
   let shape: ReactElement;
@@ -114,51 +140,91 @@ export function renderCharacterMarker(
   );
 }
 
+/**
+ * Emoji cast marker — native color emoji only (no tinted halos; those read as grey discs).
+ */
+export function renderEmojiCharacterMarker(
+  characterId: PanelCharacterId,
+  bounds: MarkerBounds,
+  emoji: string,
+  _tintColor: string,
+  _washFilterId: string | undefined,
+  placement?: MarkerPlacement,
+): ReactElement {
+  const { cx, cy, size } = characterMarkerBox(bounds, characterId, placement);
+  const fontSize = Math.max(14, size * 1.85);
+  return (
+    <g
+      key={`emoji-marker-${characterId}`}
+      className="comic-mockup-svg__character-marker comic-mockup-svg__character-marker--emoji"
+    >
+      <text
+        x={cx}
+        y={cy + fontSize * 0.32}
+        textAnchor="middle"
+        fontSize={fontSize}
+        style={{ fontFamily: '"Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif' }}
+      >
+        {emoji}
+      </text>
+    </g>
+  );
+}
+
 /** Tail target — shape-specific anchor (apex / circle top / square top). */
 export function characterTailAnchor(
   bounds: MarkerBounds,
   characterId: PanelCharacterId,
+  placement?: MarkerPlacement,
 ): { x: number; y: number } {
-  const box = characterMarkerBox(bounds, characterId);
+  const box = characterMarkerBox(bounds, characterId, placement);
   const { cx, cy, size } = box;
+  if (resolvePlacement(placement)?.[characterId]) {
+    // Emoji / arrangement: tip just above the glyph.
+    return { x: cx, y: cy - size * 0.95 };
+  }
   if (characterId === 'a') {
     const h = size * 1.15;
-    return { x: cx, y: cy - h * 0.62 };
+    return { x: cx, y: cy - h * 0.48 };
   }
   if (characterId === 'b') {
-    return { x: cx, y: cy - size * 1.05 };
+    return { x: cx, y: cy - size * 0.88 };
   }
   const half = size * 0.88;
-  return { x: cx, y: cy - half * 1.02 };
+  return { x: cx, y: cy - half * 0.82 };
 }
 
 /** @deprecated Use characterTailAnchor */
 export function characterHeadPoint(
   bounds: MarkerBounds,
   characterId: PanelCharacterId,
+  placement?: MarkerPlacement,
 ): { x: number; y: number } {
-  return characterTailAnchor(bounds, characterId);
+  return characterTailAnchor(bounds, characterId, placement);
 }
 
 /** @deprecated Use characterHeadPoint */
 export function characterMarkerPoint(
   bounds: MarkerBounds,
   characterId: PanelCharacterId,
+  placement?: MarkerPlacement,
 ): { x: number; y: number } {
-  return characterHeadPoint(bounds, characterId);
+  return characterHeadPoint(bounds, characterId, placement);
 }
 
 export function renderHorizonScene(
   bounds: MarkerBounds,
   inkColor: string,
   strokeWidth: number,
+  skyColor = '#dce9f5',
+  groundColor = '#e8dcc8',
 ): ReactElement {
   const { x, y, w, h } = bounds;
   const horizonY = y + h * 0.56;
   return (
     <g className="comic-mockup-svg__horizon">
-      <rect x={x} y={y} width={w} height={horizonY - y} fill="#dce9f5" />
-      <rect x={x} y={horizonY} width={w} height={y + h - horizonY} fill="#e8dcc8" />
+      <rect x={x} y={y} width={w} height={horizonY - y} fill={skyColor} />
+      <rect x={x} y={horizonY} width={w} height={y + h - horizonY} fill={groundColor} />
       <line
         x1={x + w * 0.04}
         y1={horizonY}

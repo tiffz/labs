@@ -6,23 +6,36 @@ import WbSunnyOutlinedIcon from '@mui/icons-material/WbSunnyOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ClipboardEvent as ReactClipboardEvent, type KeyboardEvent, type ReactElement } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ClipboardEvent as ReactClipboardEvent,
+  type KeyboardEvent,
+  type ReactElement,
+} from 'react';
 
 import { useDragDropHighlight } from '../../shared/hooks/useDragDropHighlight';
-import { loadSketchbookBlob, putSketchbookSeed } from '../db/sketchbookMutations';
+import { loadSketchbookBlob, putSketchbookSeed, putSketchbookSeeds } from '../db/sketchbookMutations';
 import { lyreflyDb } from '../db/lyreflyDb';
-import { notifyLyreflyLocalChange } from '../db/lyreflyChangeBus';
-import { createBlankComicProject, createBlankScriptDocument, type SketchbookSeed } from '../types';
+import type { SketchbookAttachment, SketchbookSeed } from '../types';
 import {
   collectImageFilesFromDataTransfer,
   collectFilesFromDataTransfer,
 } from '../utils/conceptShelfFileIntake';
+import { promoteSketchbookSeed } from '../utils/promoteSketchbookSeed';
 import {
   inferSketchbookCaptureFromText,
   isSketchbookAttachableFile,
   isSketchbookImageFile,
   sketchbookKindLabel,
 } from '../utils/sketchbookCaptureUtils';
+import { isSketchbookImportFileName, parseSketchbookImportFile } from '../utils/sketchbookImportParser';
+import { LyreflyDateChip } from './LyreflyDateChip';
+import { SketchbookSeedEditor } from './SketchbookSeedEditor';
 
 export type SketchbookTabProps = {
   onOpenProject: (projectId: string) => void;
@@ -42,16 +55,34 @@ function SketchbookKindIcon({ kind }: { kind: SketchbookSeed['kind'] }): ReactEl
   return <NotesOutlinedIcon fontSize="inherit" aria-hidden />;
 }
 
+function materialCount(seed: SketchbookSeed): number {
+  let count = seed.attachments?.length ?? 0;
+  if (seed.url) count += 1;
+  // Legacy single-file seeds store the blob on the seed itself (no attachments array).
+  if (
+    (seed.kind === 'image' || seed.kind === 'file') &&
+    (seed.fileName || seed.mimeType) &&
+    (seed.attachments?.length ?? 0) === 0
+  ) {
+    count += 1;
+  }
+  return count;
+}
+
 function SketchbookSeedPreview({ seed }: { seed: SketchbookSeed }): ReactElement | null {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const imageAttachment = seed.attachments?.find((item) => item.kind === 'image');
+  const blobId =
+    imageAttachment?.id ??
+    (seed.kind === 'image' || seed.kind === 'file' ? seed.id : undefined);
 
   useEffect(() => {
-    if (seed.kind !== 'image' && seed.kind !== 'file') return;
+    if (!blobId) return;
     let cancelled = false;
     let objectUrl: string | null = null;
-    void loadSketchbookBlob(seed.id).then((blob) => {
+    void loadSketchbookBlob(blobId).then((blob) => {
       if (cancelled || !blob) return;
-      if (seed.kind === 'image' || blob.type.startsWith('image/')) {
+      if (blob.type.startsWith('image/') || seed.kind === 'image' || imageAttachment) {
         objectUrl = URL.createObjectURL(blob);
         setPreviewUrl(objectUrl);
       }
@@ -60,18 +91,19 @@ function SketchbookSeedPreview({ seed }: { seed: SketchbookSeed }): ReactElement
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [seed.id, seed.kind]);
-
-  if (seed.kind === 'link' && seed.url) {
-    return (
-      <a className="lyrefly-sketchbook__seed-link" href={seed.url} target="_blank" rel="noopener noreferrer">
-        {seed.url}
-      </a>
-    );
-  }
+  }, [blobId, imageAttachment, seed.kind]);
 
   if (previewUrl) {
     return <img src={previewUrl} alt="" className="lyrefly-sketchbook__seed-image" loading="lazy" />;
+  }
+
+  const link = seed.url || seed.attachments?.find((item) => item.kind === 'link')?.url;
+  if (link) {
+    return (
+      <a className="lyrefly-sketchbook__seed-link" href={link} target="_blank" rel="noopener noreferrer">
+        {link}
+      </a>
+    );
   }
 
   if (seed.kind === 'file' && seed.fileName) {
@@ -91,25 +123,100 @@ function SketchbookSeedPreview({ seed }: { seed: SketchbookSeed }): ReactElement
 
 function SketchbookSeedCard({
   seed,
+  expanded,
+  busy,
+  setBusy,
+  onExpand,
+  onCollapse,
+  onChanged,
+  onPromoted,
   onPromote,
 }: {
   seed: SketchbookSeed;
+  expanded: boolean;
+  busy: boolean;
+  setBusy: (busy: boolean) => void;
+  onExpand: (seed: SketchbookSeed) => void;
+  onCollapse: () => void;
+  onChanged: (seed: SketchbookSeed | null) => void;
+  onPromoted: (projectId: string) => void;
   onPromote: (seed: SketchbookSeed) => void;
 }): ReactElement {
+  const materials = materialCount(seed);
+  const cardRef = useRef<HTMLLIElement>(null);
+
+  useEffect(() => {
+    if (!expanded) return;
+    cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [expanded]);
+
+  if (expanded) {
+    return (
+      <li
+        ref={cardRef}
+        className="lyrefly-sketchbook__card lyrefly-sketchbook__card--expanded"
+        data-testid={`lyrefly-sketchbook-seed-${seed.id}`}
+      >
+        <div className="lyrefly-sketchbook__card-head lyrefly-sketchbook__card-head--expanded">
+          <span className={`lyrefly-sketchbook__kind lyrefly-sketchbook__kind--${seed.kind}`}>
+            <SketchbookKindIcon kind={seed.kind} />
+            {sketchbookKindLabel(seed.kind)}
+          </span>
+          {seed.occurredOn ? (
+            <LyreflyDateChip value={seed.occurredOn} ariaLabel="Idea date" />
+          ) : null}
+        </div>
+        <SketchbookSeedEditor
+          seed={seed}
+          busy={busy}
+          setBusy={setBusy}
+          onCollapse={onCollapse}
+          onChanged={onChanged}
+          onPromoted={onPromoted}
+        />
+      </li>
+    );
+  }
+
   return (
-    <li className="lyrefly-sketchbook__card" data-testid={`lyrefly-sketchbook-seed-${seed.id}`}>
-      <div className="lyrefly-sketchbook__card-head">
-        <span className={`lyrefly-sketchbook__kind lyrefly-sketchbook__kind--${seed.kind}`}>
-          <SketchbookKindIcon kind={seed.kind} />
-          {sketchbookKindLabel(seed.kind)}
-        </span>
-        {seed.occurredOn ? <span className="lyrefly-sketchbook__date">{seed.occurredOn}</span> : null}
-      </div>
-      <h3 className="lyrefly-sketchbook__card-title">{seed.title ?? 'Untitled'}</h3>
-      <SketchbookSeedPreview seed={seed} />
+    <li
+      ref={cardRef}
+      className="lyrefly-sketchbook__card"
+      data-testid={`lyrefly-sketchbook-seed-${seed.id}`}
+    >
+      <button
+        type="button"
+        className="lyrefly-sketchbook__card-open"
+        onClick={() => onExpand(seed)}
+        aria-label={`Expand ${seed.title ?? 'idea'}`}
+      >
+        <div className="lyrefly-sketchbook__card-head">
+          <span className={`lyrefly-sketchbook__kind lyrefly-sketchbook__kind--${seed.kind}`}>
+            <SketchbookKindIcon kind={seed.kind} />
+            {sketchbookKindLabel(seed.kind)}
+          </span>
+          {seed.occurredOn ? (
+            <LyreflyDateChip value={seed.occurredOn} ariaLabel="Idea date" />
+          ) : null}
+        </div>
+        <h3 className="lyrefly-sketchbook__card-title">{seed.title ?? 'Untitled'}</h3>
+        <SketchbookSeedPreview seed={seed} />
+        {materials > 0 ? (
+          <p className="lyrefly-sketchbook__card-materials">
+            {materials} material{materials === 1 ? '' : 's'}
+          </p>
+        ) : null}
+      </button>
       <div className="lyrefly-sketchbook__card-actions">
-        <Button size="small" onClick={() => onPromote(seed)} data-testid={`lyrefly-promote-${seed.id}`}>
-          Promote to comic
+        <Button
+          size="small"
+          onClick={(event) => {
+            event.stopPropagation();
+            onPromote(seed);
+          }}
+          data-testid={`lyrefly-promote-${seed.id}`}
+        >
+          Promote
         </Button>
       </div>
     </li>
@@ -117,16 +224,25 @@ function SketchbookSeedCard({
 }
 
 export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactElement {
-  const seeds = useLiveQuery(() => lyreflyDb.sketchbookSeeds.where('status').equals('active').sortBy('sortOrder'), []);
+  const seeds = useLiveQuery(
+    () => lyreflyDb.sketchbookSeeds.where('status').equals('active').sortBy('sortOrder'),
+    [],
+  );
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
+  const [importSummary, setImportSummary] = useState<string | null>(null);
+  const [editingSeedId, setEditingSeedId] = useState<string | null>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const activeSeeds = useMemo(() => seeds ?? [], [seeds]);
 
   const createSeed = useCallback(
-    async (partial: Omit<SketchbookSeed, 'id' | 'sortOrder' | 'createdAt' | 'updatedAt' | 'status' | 'tags'>, blob?: Blob) => {
+    async (
+      partial: Omit<SketchbookSeed, 'id' | 'sortOrder' | 'createdAt' | 'updatedAt' | 'status' | 'tags'>,
+      options?: { blob?: Blob | null; attachmentBlobs?: Map<string, Blob>; openEditor?: boolean },
+    ) => {
       const now = new Date().toISOString();
       const seed: SketchbookSeed = {
         id: crypto.randomUUID(),
@@ -138,13 +254,15 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
         url: partial.url,
         fileName: partial.fileName,
         mimeType: partial.mimeType,
+        attachments: partial.attachments,
         tags: [],
         status: 'active',
         sortOrder: (seeds?.length ?? 0) + 1,
         createdAt: now,
         updatedAt: now,
       };
-      await putSketchbookSeed(seed, blob ?? null);
+      await putSketchbookSeed(seed, options?.blob ?? null, options?.attachmentBlobs);
+      if (options?.openEditor) setEditingSeedId(seed.id);
       return seed;
     },
     [seeds?.length],
@@ -155,14 +273,17 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
     if (!capture) return;
     setBusy(true);
     try {
-      await createSeed({
-        kind: capture.kind,
-        title: capture.title,
-        bodyHtml: capture.bodyHtml,
-        url: capture.url,
-        occurredOn: capture.occurredOn,
-        logline: capture.kind === 'idea' ? undefined : capture.bodyHtml?.split('\n')[0],
-      });
+      await createSeed(
+        {
+          kind: capture.kind,
+          title: capture.title,
+          bodyHtml: capture.bodyHtml,
+          url: capture.url,
+          occurredOn: capture.occurredOn,
+          logline: capture.kind === 'idea' ? undefined : capture.bodyHtml?.split('\n')[0],
+        },
+        { openEditor: true },
+      );
       setDraft('');
       composerRef.current?.focus();
     } finally {
@@ -170,27 +291,117 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
     }
   };
 
-  const onAttachFiles = useCallback(async (files: File[]): Promise<void> => {
-    const usable = files.filter(isSketchbookAttachableFile);
-    if (usable.length === 0) return;
-    setBusy(true);
-    try {
-      for (const file of usable) {
-        const kind = isSketchbookImageFile(file) ? 'image' : 'file';
+  const onAttachFiles = useCallback(
+    async (files: File[]): Promise<void> => {
+      const usable = files.filter(isSketchbookAttachableFile);
+      if (usable.length === 0) return;
+      setBusy(true);
+      try {
+        const noteText = draft.trim();
+        const attachments: SketchbookAttachment[] = usable.map((file) => ({
+          id: crypto.randomUUID(),
+          kind: isSketchbookImageFile(file) ? 'image' : 'file',
+          title: file.name.replace(/\.[^.]+$/, '') || 'Attachment',
+          fileName: file.name,
+          mimeType: file.type || undefined,
+          createdAt: new Date().toISOString(),
+        }));
+        const attachmentBlobs = new Map(
+          attachments.map((attachment, index) => [attachment.id, usable[index]! as Blob]),
+        );
+        const first = usable[0]!;
+        const titleFromNote = noteText.split('\n')[0]?.slice(0, 80);
         await createSeed(
           {
-            kind,
-            title: file.name.replace(/\.[^.]+$/, '') || 'Attachment',
-            fileName: file.name,
-            mimeType: file.type || undefined,
+            kind: noteText ? 'idea' : isSketchbookImageFile(first) ? 'image' : 'file',
+            title: titleFromNote || first.name.replace(/\.[^.]+$/, '') || 'Untitled',
+            bodyHtml: noteText || undefined,
+            logline: noteText ? noteText.split('\n')[0] : undefined,
+            attachments,
           },
-          file,
+          { attachmentBlobs, openEditor: true },
         );
+        setDraft('');
+      } finally {
+        setBusy(false);
       }
-    } finally {
-      setBusy(false);
-    }
-  }, [createSeed]);
+    },
+    [createSeed, draft],
+  );
+
+  const onImportFiles = useCallback(
+    async (files: File[]): Promise<void> => {
+      if (files.length === 0) return;
+      setBusy(true);
+      setImportSummary(null);
+      try {
+        let unsupportedCount = 0;
+        let skippedCount = 0;
+        const importedItems: {
+          kind: SketchbookSeed['kind'];
+          title: string;
+          bodyHtml?: string;
+          occurredOn?: string;
+        }[] = [];
+
+        for (const file of files) {
+          if (!isSketchbookImportFileName(file.name)) {
+            unsupportedCount += 1;
+            continue;
+          }
+          const text = await file.text();
+          const result = parseSketchbookImportFile(file.name, text);
+          if (!result) {
+            unsupportedCount += 1;
+            continue;
+          }
+          importedItems.push(...result.items);
+          skippedCount += result.skippedCount;
+        }
+
+        if (importedItems.length === 0) {
+          setImportSummary(
+            unsupportedCount > 0
+              ? 'No ideas found. Export PDFs to text or Markdown first, then import that file.'
+              : 'No ideas found in that file.',
+          );
+          return;
+        }
+
+        const now = new Date().toISOString();
+        const baseSortOrder = seeds?.length ?? 0;
+        const newSeeds: SketchbookSeed[] = importedItems.map((item, index) => ({
+          id: crypto.randomUUID(),
+          kind: item.kind,
+          title: item.title,
+          bodyHtml: item.bodyHtml,
+          occurredOn: item.occurredOn,
+          tags: [],
+          status: 'active',
+          sortOrder: baseSortOrder + index + 1,
+          createdAt: now,
+          updatedAt: now,
+        }));
+        await putSketchbookSeeds(newSeeds);
+
+        const summary = [
+          importedItems.length === 1 ? 'Imported 1 idea.' : `Imported ${importedItems.length} ideas.`,
+        ];
+        if (skippedCount > 0) {
+          summary.push(`Skipped ${skippedCount} unreadable line${skippedCount === 1 ? '' : 's'}.`);
+        }
+        if (unsupportedCount > 0) {
+          summary.push(
+            `${unsupportedCount} file${unsupportedCount === 1 ? '' : 's'} not supported. Export PDFs to text or Markdown first.`,
+          );
+        }
+        setImportSummary(summary.join(' '));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [seeds?.length],
+  );
 
   const { dragActive, handlers } = useDragDropHighlight({
     disabled: busy,
@@ -201,7 +412,9 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
     const onPaste = (event: ClipboardEvent): void => {
       if (document.activeElement === composerRef.current) return;
       const target = event.target;
-      if (target instanceof Element && target.closest('input, textarea, [contenteditable="true"]')) return;
+      if (target instanceof Element && target.closest('input, textarea, [contenteditable="true"]')) {
+        return;
+      }
       const clipboard = event.clipboardData;
       if (!clipboard) return;
       const files = collectImageFilesFromDataTransfer(clipboard);
@@ -237,36 +450,25 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
   };
 
   const onPromote = async (seed: SketchbookSeed): Promise<void> => {
-    const project = createBlankComicProject();
-    project.title = seed.title ?? 'Untitled comic';
-    project.subtitle = seed.logline ?? seed.bodyHtml?.split('\n')[0];
-    project.pipelineStatus = 'fleshing_out';
-    project.brainstormHtml = seed.bodyHtml;
-    const script = createBlankScriptDocument(project.id);
-    script.id = project.scriptDocumentId;
-    const now = new Date().toISOString();
-    await lyreflyDb.transaction(
-      'rw',
-      [lyreflyDb.projects, lyreflyDb.scriptDocuments, lyreflyDb.sketchbookSeeds],
-      async () => {
-        await lyreflyDb.projects.put(project);
-        await lyreflyDb.scriptDocuments.put(script);
-        await lyreflyDb.sketchbookSeeds.put({
-          ...seed,
-          status: 'promoted',
-          promotedProjectId: project.id,
-          updatedAt: now,
-        });
-      },
-    );
-    notifyLyreflyLocalChange();
-    onOpenProject(project.id);
+    setBusy(true);
+    try {
+      const project = await promoteSketchbookSeed(seed);
+      onOpenProject(project.id);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const onFileInput = (event: ChangeEvent<HTMLInputElement>): void => {
     const files = event.target.files ? [...event.target.files] : [];
     event.target.value = '';
     void onAttachFiles(files);
+  };
+
+  const onImportFileInput = (event: ChangeEvent<HTMLInputElement>): void => {
+    const files = event.target.files ? [...event.target.files] : [];
+    event.target.value = '';
+    void onImportFiles(files);
   };
 
   const onComposerContainerKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
@@ -280,11 +482,41 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
   return (
     <section className="lyrefly-sketchbook lyrefly-studio" data-testid="lyrefly-sketchbook">
       <header className="lyrefly-sketchbook__masthead">
-        <h1 className="lyrefly-studio__title">Sketchbook</h1>
-        <p className="lyrefly-studio__lede">
-          Jot notes, flashes, links, concept art, and files. Promote anything when it is ready to become a comic.
-        </p>
+        <div className="lyrefly-sketchbook__masthead-text">
+          <h1 className="lyrefly-studio__title">Sketchbook</h1>
+          <p className="lyrefly-studio__lede">
+            Catch scraps as they come. Click a card to expand it on the board and keep adding.
+          </p>
+        </div>
+        <Button
+          size="small"
+          variant="text"
+          onClick={() => importInputRef.current?.click()}
+          disabled={busy}
+          data-testid="lyrefly-sketchbook-import"
+        >
+          Import ideas
+        </Button>
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".md,.txt,.jsonl"
+          multiple
+          hidden
+          onChange={onImportFileInput}
+          data-testid="lyrefly-sketchbook-import-input"
+        />
       </header>
+
+      {importSummary ? (
+        <p
+          className="lyrefly-sketchbook__import-summary"
+          aria-live="polite"
+          data-testid="lyrefly-sketchbook-import-summary"
+        >
+          {importSummary}
+        </p>
+      ) : null}
 
       <Box
         className={[
@@ -308,7 +540,7 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={onComposerKeyDown}
           onPaste={onComposerPaste}
-          placeholder="Type an idea, paste a link, or drop art and files…"
+          placeholder="Type a scrap, paste a link, or drop art… Enter adds it to the board."
           rows={3}
           data-testid="lyrefly-sketchbook-input"
           disabled={busy}
@@ -322,7 +554,9 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
           >
             Attach file
           </button>
-          <span className="lyrefly-sketchbook__composer-hint">Enter to save · Shift+Enter for a new line</span>
+          <span className="lyrefly-sketchbook__composer-hint">
+            Drop files onto a note to keep them together · Shift+Enter for a new line
+          </span>
           <Button
             size="small"
             variant="contained"
@@ -330,7 +564,7 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
             onClick={() => void onCaptureText()}
             data-testid="lyrefly-sketchbook-add"
           >
-            Save note
+            Save scrap
           </Button>
         </div>
         <input ref={fileInputRef} type="file" multiple hidden onChange={onFileInput} />
@@ -343,11 +577,30 @@ export function SketchbookTab({ onOpenProject }: SketchbookTabProps): ReactEleme
       ) : null}
 
       {activeSeeds.length === 0 ? (
-        <p className="lyrefly-sketchbook__empty">Nothing here yet. Start typing or drop a reference image.</p>
+        <p className="lyrefly-sketchbook__empty">
+          Nothing here yet. Start typing, paste a link, or drop a reference image.
+        </p>
       ) : (
         <ul className="lyrefly-sketchbook__grid">
           {activeSeeds.map((seed) => (
-            <SketchbookSeedCard key={seed.id} seed={seed} onPromote={(row) => void onPromote(row)} />
+            <SketchbookSeedCard
+              key={seed.id}
+              seed={seed}
+              expanded={editingSeedId === seed.id}
+              busy={busy}
+              setBusy={setBusy}
+              onExpand={(row) => setEditingSeedId(row.id)}
+              onCollapse={() =>
+                setEditingSeedId((current) => (current === seed.id ? null : current))
+              }
+              onChanged={(next) => {
+                if (!next) {
+                  setEditingSeedId((current) => (current === seed.id ? null : current));
+                }
+              }}
+              onPromoted={onOpenProject}
+              onPromote={(row) => void onPromote(row)}
+            />
           ))}
         </ul>
       )}

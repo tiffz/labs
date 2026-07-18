@@ -1,6 +1,8 @@
-import { characterTailAnchor } from './characterMarkers';
+import type { MarkerPlacement } from './characterArrangements';
+import { characterMarkerLayoutBox, characterTailAnchor } from './characterMarkers';
+import { activeMarkerPlacement, withMarkerPlacement } from './markerPlacementScope';
 import { clampX, maxBubbleHalfWidth, panelTextZones } from './panelTextZones';
-import { sfxBaseFontSize, normalizeSfxLoudness } from './sfxLoudness';
+import { sfxBaseFontSize, sfxLayoutBBox, normalizeSfxLoudness } from './sfxLoudness';
 import {
   placeBubblesWithForce,
   postClampBubbles,
@@ -13,15 +15,29 @@ import {
   bubbleTextBlockHeight,
   fitDialogueLines,
   fitDialogueLinesWithinHalfH,
+  isDialogueDisplayTruncated,
   maxCharsForWidth,
   pickBubbleShape,
   wrapDialogueText,
   type BubbleMetrics,
 } from './speechBubblePath';
-import { placeItemsWithSlots } from './speechBubbleSlotLayout';
+import { adaptBlocksToPanelBudget, placeItemsWithSlots } from './speechBubbleSlotLayout';
 import type { PanelCharacterId, PanelTextBlock, SfxLoudness } from './types';
 
 export type LayoutBounds = { x: number; y: number; w: number; h: number };
+
+function assignDialogueLines(
+  layout: SpeechBubbleLayout,
+  content: string,
+  fitted: { lines: string[]; metrics: BubbleMetrics },
+): void {
+  layout.lines = fitted.lines;
+  layout.metrics = fitted.metrics;
+  layout.halfW = fitted.metrics.halfW;
+  layout.halfH = fitted.metrics.halfH;
+  layout.sourceContent = content;
+  layout.truncated = isDialogueDisplayTruncated(content, fitted.lines);
+}
 
 export type PanelTextLayoutPlaceMode = 'force' | 'legacy' | 'slots';
 
@@ -32,6 +48,10 @@ export type PanelTextLayoutOptions = {
    * Scrapboard sketchy boards use `slots` for ~98% hard-rule compliance.
    */
   placeMode?: PanelTextLayoutPlaceMode;
+  /** Skip width/height budget trim (tests that assert exact block order). */
+  skipBudget?: boolean;
+  /** Arrangement-driven marker positions (Scrapboard character-first). */
+  markerPlacement?: MarkerPlacement;
 };
 
 export type SpeechBubbleLayout = {
@@ -44,6 +64,10 @@ export type SpeechBubbleLayout = {
   lines: string[];
   characterId: PanelCharacterId;
   metrics: BubbleMetrics;
+  /** Full dialogue string before wrap/ellipsis (for hover tooltips). */
+  sourceContent?: string;
+  /** True when `lines` omit part of `sourceContent`. */
+  truncated?: boolean;
 };
 
 export type CaptionLayout = {
@@ -87,6 +111,24 @@ const CHARACTER_CX_RATIO: Record<PanelCharacterId, number> = {
   c: 0.5,
 };
 
+function cxRatio(characterId: PanelCharacterId, placement?: MarkerPlacement): number {
+  const resolved = placement ?? activeMarkerPlacement();
+  return resolved?.[characterId]?.x ?? CHARACTER_CX_RATIO[characterId];
+}
+
+/** Seed SFX away from the densest marker column so center “FWOOSH” doesn’t sit on C. */
+function preferredSfxX(bounds: LayoutBounds, characterIds: PanelCharacterId[]): number {
+  const ids = new Set(characterIds);
+  if (ids.has('c')) {
+    if (!ids.has('a')) return bounds.x + bounds.w * cxRatio('a');
+    if (!ids.has('b')) return bounds.x + bounds.w * cxRatio('b');
+    return bounds.x + bounds.w * 0.16;
+  }
+  if (ids.has('a') && !ids.has('b')) return bounds.x + bounds.w * cxRatio('b');
+  if (ids.has('b') && !ids.has('a')) return bounds.x + bounds.w * cxRatio('a');
+  return bounds.x + bounds.w * 0.5;
+}
+
 type BBox = { left: number; top: number; right: number; bottom: number };
 
 function preferredBubbleCx(
@@ -96,7 +138,7 @@ function preferredBubbleCx(
   tailX: number,
   sidePad: number,
 ): number {
-  const columnX = bounds.x + bounds.w * CHARACTER_CX_RATIO[characterId];
+  const columnX = bounds.x + bounds.w * cxRatio(characterId);
   const blended = tailX * 0.42 + columnX * 0.58;
   return clampX(blended, halfW, bounds, sidePad);
 }
@@ -126,13 +168,7 @@ function itemBBox(item: PanelTextLayoutItem): BBox {
       bottom: b.cy + b.halfH,
     };
   }
-  const s = item.layout;
-  return {
-    left: s.x - s.fontSize * 0.55,
-    top: s.y - s.fontSize,
-    right: s.x + s.fontSize * 0.55,
-    bottom: s.y,
-  };
+  return sfxLayoutBBox(item.layout);
 }
 
 function boxesOverlap(a: BBox, b: BBox, margin = OVERLAP_MARGIN): boolean {
@@ -314,7 +350,7 @@ function countVerticalBubbleLanes(
   for (let i = 0; i < n; i++) {
     const bi = bubbleItems[i]!.layout;
     const halfW = bi.halfW > 0 ? bi.halfW : conservativeBubbleHalfW(innerWidth, maxHalfW);
-    const cx = bi.cx > 0 ? bi.cx : bounds.x + bounds.w * CHARACTER_CX_RATIO[bi.characterId];
+    const cx = bi.cx > 0 ? bi.cx : bounds.x + bounds.w * cxRatio(bi.characterId);
     const boxI = { left: cx - halfW, right: cx + halfW };
     for (let j = i + 1; j < n; j++) {
       const bj = bubbleItems[j]!.layout;
@@ -323,7 +359,7 @@ function countVerticalBubbleLanes(
         continue;
       }
       const halfWj = bj.halfW > 0 ? bj.halfW : conservativeBubbleHalfW(innerWidth, maxHalfW);
-      const cxj = bj.cx > 0 ? bj.cx : bounds.x + bounds.w * CHARACTER_CX_RATIO[bj.characterId];
+      const cxj = bj.cx > 0 ? bj.cx : bounds.x + bounds.w * cxRatio(bj.characterId);
       const boxJ = { left: cxj - halfWj, right: cxj + halfWj };
       if (boxI.right + OVERLAP_MARGIN > boxJ.left && boxJ.right + OVERLAP_MARGIN > boxI.left) {
         union(i, j);
@@ -484,10 +520,7 @@ function compressStackToDialogueBand(
             );
           }
         }
-        item.layout.lines = fitted.lines;
-        item.layout.metrics = fitted.metrics;
-        item.layout.halfW = fitted.metrics.halfW;
-        item.layout.halfH = fitted.metrics.halfH;
+        assignDialogueLines(item.layout, block.content, fitted);
         item.layout.cx = preferredBubbleCx(
           bounds,
           item.layout.characterId,
@@ -570,10 +603,7 @@ function applyMinimalStackFit(
           bubbleShape,
         );
       }
-      item.layout.lines = fitted.lines;
-      item.layout.halfW = fitted.metrics.halfW;
-      item.layout.halfH = fitted.metrics.halfH;
-      item.layout.metrics = fitted.metrics;
+      assignDialogueLines(item.layout, block.content, fitted);
       item.layout.cx = preferredBubbleCx(
         bounds,
         item.layout.characterId,
@@ -765,7 +795,7 @@ function refitBubblesAtFinalPositions(
       maxHalfW,
       innerWidth,
       item.layout.metrics.fontSize,
-      6,
+      8,
       bubbleShape,
     );
     if (fitted.metrics.halfH > maxHalfH + 0.5) {
@@ -778,10 +808,7 @@ function refitBubblesAtFinalPositions(
         bubbleShape,
       );
     }
-    item.layout.lines = fitted.lines;
-    item.layout.metrics = fitted.metrics;
-    item.layout.halfW = fitted.metrics.halfW;
-    item.layout.halfH = fitted.metrics.halfH;
+    assignDialogueLines(item.layout, block.content, fitted);
     // Keep force/legacy cx — only clamp within the panel after size changes.
     item.layout.cx = clampX(item.layout.cx, item.layout.halfW, bounds, zones.sidePad);
     const minCy = zones.dialogueTop + item.layout.halfH;
@@ -790,6 +817,99 @@ function refitBubblesAtFinalPositions(
       item.layout.tailY - item.layout.halfH - OVERLAP_MARGIN,
     );
     item.layout.cy = Math.min(maxCy, Math.max(minCy, item.layout.cy));
+  }
+}
+
+/**
+ * Keep SFX off character markers (bubbles already enforce this). Prefer dialogue-band
+ * baselines + horizontal parking when a push-down would land on a marker.
+ */
+function resolveSfxCharacterOverlaps(items: PanelTextLayoutItem[], bounds: LayoutBounds): void {
+  const characterIds = [
+    ...new Set(
+      items
+        .filter(
+          (item): item is { kind: 'bubble'; layout: SpeechBubbleLayout } => item.kind === 'bubble',
+        )
+        .map((item) => item.layout.characterId),
+    ),
+  ];
+  if (characterIds.length === 0) return;
+
+  const zones = panelTextZones(bounds);
+  const markerBoxes: BBox[] = characterIds.map((id) => {
+    const marker = characterMarkerLayoutBox(bounds, id);
+    return {
+      left: marker.left,
+      top: marker.top,
+      right: marker.right,
+      bottom: marker.bottom,
+    };
+  });
+  const bubbleBoxes = items
+    .filter(
+      (item): item is { kind: 'bubble'; layout: SpeechBubbleLayout } => item.kind === 'bubble',
+    )
+    .map((item) => itemBBox(item));
+
+  const maxBaseline = Math.min(
+    zones.characterBandTop - 2,
+    ...markerBoxes.map((box) => box.top - OVERLAP_MARGIN),
+  );
+
+  for (const item of items) {
+    if (item.kind !== 'sfx') continue;
+    const sfx = item.layout;
+    const overlapsMarkers = (): boolean =>
+      markerBoxes.some((box) => boxesOverlap(sfxLayoutBBox(sfx), box));
+    const overlapsBubbles = (): boolean =>
+      bubbleBoxes.some((box) => boxesOverlap(sfxLayoutBBox(sfx), box));
+
+    if (!overlapsMarkers()) {
+      // Still clamp baseline out of the character band when sync pushed it down.
+      if (sfx.y > maxBaseline) sfx.y = Math.max(zones.dialogueTop + sfx.fontSize, maxBaseline);
+      if (!overlapsMarkers()) continue;
+    }
+
+    sfx.y = Math.min(sfx.y, Math.max(zones.dialogueTop + sfx.fontSize, maxBaseline));
+
+    const probeHalfW = (sfxLayoutBBox(sfx).right - sfxLayoutBBox(sfx).left) / 2;
+    const minX = bounds.x + zones.sidePad + probeHalfW;
+    const maxX = bounds.x + bounds.w - zones.sidePad - probeHalfW;
+    const xCandidates = [
+      sfx.x,
+      preferredSfxX(bounds, characterIds),
+      bounds.x + bounds.w * 0.18,
+      bounds.x + bounds.w * 0.82,
+      bounds.x + bounds.w * cxRatio('a'),
+      bounds.x + bounds.w * cxRatio('b'),
+      minX,
+      maxX,
+    ].map((x) => Math.min(maxX, Math.max(minX, x)));
+    const yCandidates = [
+      sfx.y,
+      maxBaseline,
+      Math.max(zones.dialogueTop + sfx.fontSize, maxBaseline - sfx.fontSize * 0.35),
+      zones.dialogueTop + sfx.fontSize + 4,
+    ];
+
+    let best: { x: number; y: number; score: number } | null = null;
+    const originX = sfx.x;
+    const originY = sfx.y;
+    for (const y of yCandidates) {
+      for (const x of xCandidates) {
+        sfx.x = x;
+        sfx.y = y;
+        const score =
+          (overlapsMarkers() ? 1000 : 0) +
+          (overlapsBubbles() ? 10 : 0) +
+          Math.abs(x - originX) * 0.01 +
+          Math.abs(y - originY) * 0.01;
+        if (!best || score < best.score) best = { x, y, score };
+      }
+    }
+    sfx.x = best?.x ?? originX;
+    sfx.y = best?.y ?? originY;
   }
 }
 
@@ -872,14 +992,15 @@ function seedPanelTextItems(
       const innerWidth = bounds.w - zones.sidePad * 2;
       const zoneHeight = zones.dialogueBottom - bubbleDialogueTop(zones, allowEscape);
       const initialShape = pickBubbleShape(bounds.h, zoneHeight, zoneHeight / 2);
-      const { lines: wrapped, metrics } = fitDialogueLines(
+      const fitted = fitDialogueLines(
         block.content,
         maxHalfW,
         innerWidth,
         BUBBLE_FONT_SIZE,
-        6,
+        8,
         initialShape,
       );
+      const { metrics } = fitted;
       const anchor = characterTailAnchor(bounds, block.characterId);
       const preferredCx = preferredBubbleCx(
         bounds,
@@ -890,19 +1011,21 @@ function seedPanelTextItems(
       );
       const cy = bubbleCyAboveCharacter(anchor.y, metrics.halfH, zones, allowEscape);
 
+      const layout: SpeechBubbleLayout = {
+        cx: preferredCx,
+        cy,
+        halfW: metrics.halfW,
+        halfH: metrics.halfH,
+        tailX: anchor.x,
+        tailY: anchor.y,
+        lines: fitted.lines,
+        characterId: block.characterId,
+        metrics,
+      };
+      assignDialogueLines(layout, block.content, fitted);
       items.push({
         kind: 'bubble',
-        layout: {
-          cx: preferredCx,
-          cy,
-          halfW: metrics.halfW,
-          halfH: metrics.halfH,
-          tailX: anchor.x,
-          tailY: anchor.y,
-          lines: wrapped,
-          characterId: block.characterId,
-          metrics,
-        },
+        layout,
       });
       cursorY = Math.max(cursorY, cy + metrics.halfH + BLOCK_GAP);
       continue;
@@ -911,9 +1034,16 @@ function seedPanelTextItems(
     if (block.kind === 'sfx') {
       const loudness = normalizeSfxLoudness(block.loudness);
       const fontSize = sfxBaseFontSize(bounds.w, loudness);
+      const speakers = blocks
+        .filter(
+          (b): b is Extract<PanelTextBlock, { kind: 'dialogue' }> =>
+            b.kind === 'dialogue' && Boolean(b.content.trim()),
+        )
+        .map((b) => b.characterId);
       const layout: SfxLayout = {
-        x: bounds.x + bounds.w * 0.5,
-        y: cursorY + fontSize,
+        x: preferredSfxX(bounds, speakers),
+        // Keep seed baseline out of the character band; post-resolve nudges if sync pushes down.
+        y: Math.min(cursorY + fontSize, zones.characterBandTop - 2),
         fontSize,
         text: block.content.slice(0, 14),
         loudness,
@@ -926,16 +1056,24 @@ function seedPanelTextItems(
   return items;
 }
 
+/** Captions AND SFX are first-class placement obstacles (used during force placement, not only post-sync). */
 function obstaclesFromItems(items: PanelTextLayoutItem[]): ForceObstacle[] {
   const obstacles: ForceObstacle[] = [];
   for (const item of items) {
-    // Only top-of-panel captions. SFX/later chrome must not raise minCy past the character.
     if (item.kind === 'caption') {
       obstacles.push({
         cx: item.layout.x + item.layout.width / 2,
         cy: item.layout.y + item.layout.height / 2,
         halfW: item.layout.width / 2,
         halfH: item.layout.height / 2,
+      });
+    } else if (item.kind === 'sfx') {
+      const box = sfxLayoutBBox(item.layout);
+      obstacles.push({
+        cx: (box.left + box.right) / 2,
+        cy: (box.top + box.bottom) / 2,
+        halfW: (box.right - box.left) / 2,
+        halfH: (box.bottom - box.top) / 2,
       });
     }
   }
@@ -1017,20 +1155,23 @@ export function layoutPanelTextBlocks(
   bounds: LayoutBounds,
   options?: PanelTextLayoutOptions,
 ): PanelTextLayout {
+  return withMarkerPlacement(options?.markerPlacement, () => {
   const zones = panelTextZones(bounds);
   const allowEscape = options?.allowBubbleEscape ?? false;
   const placeMode = options?.placeMode ?? 'force';
-  const items = seedPanelTextItems(blocks, bounds, allowEscape);
+  // Drop unreadable chrome on ultra-narrow/flat panels before seeding balloons.
+  const budgeted = options?.skipBudget ? blocks : adaptBlocksToPanelBudget(blocks, bounds);
+  const items = seedPanelTextItems(budgeted, bounds, allowEscape);
 
   if (placeMode !== 'slots') {
     // Force/legacy use stack compression. Slots owns shrink-to-fit itself.
-    compressStackToDialogueBand(items, blocks, bounds, zones, allowEscape);
+    compressStackToDialogueBand(items, budgeted, bounds, zones, allowEscape);
   }
 
   if (placeMode === 'legacy') {
     placeItemsLegacy(items, zones, allowEscape);
   } else if (placeMode === 'slots') {
-    placeItemsWithSlots(items, blocks, bounds, allowEscape);
+    placeItemsWithSlots(items, budgeted, bounds, allowEscape);
   } else {
     placeItemsWithForce(items, bounds, allowEscape);
   }
@@ -1079,5 +1220,8 @@ export function layoutPanelTextBlocks(
     }
   }
 
+  resolveSfxCharacterOverlaps(items, bounds);
+
   return { items };
+  });
 }

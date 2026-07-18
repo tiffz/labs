@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   normalizeSfxLoudness,
   sfxBaseFontSize,
+  sfxLayoutBBox,
   sfxLoudnessFontScale,
   sfxRenderStyle,
 } from './sfxLoudness';
@@ -27,5 +28,11 @@ describe('sfxLoudness', () => {
     expect(loud.outline).toBe(true);
     expect(Math.abs(loud.rotateDeg)).toBeGreaterThan(0);
     expect(sfxRenderStyle('quiet').burstTicks).toBe(false);
+  });
+
+  it('widens layout bbox for longer SFX strings', () => {
+    const short = sfxLayoutBBox({ x: 100, y: 80, fontSize: 20, text: 'POW' });
+    const long = sfxLayoutBBox({ x: 100, y: 80, fontSize: 20, text: 'FWOOSH' });
+    expect(long.right - long.left).toBeGreaterThan(short.right - short.left);
   });
 });
