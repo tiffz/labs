@@ -1,4 +1,4 @@
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutlined';
 import CloudIcon from '@mui/icons-material/Cloud';
 import LaptopMacIcon from '@mui/icons-material/LaptopMac';
 import Box from '@mui/material/Box';
@@ -72,7 +72,14 @@ function ChoiceCard(props: {
         },
       }}
     >
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0, width: '100%' }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: "center",
+          minWidth: 0,
+          width: '100%'
+        }}>
         <Icon
           fontSize="small"
           sx={{ color: selected ? 'primary.main' : 'text.secondary' }}
@@ -92,9 +99,11 @@ function ChoiceCard(props: {
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            sx={{ lineHeight: 1.3, fontVariantNumeric: 'tabular-nums' }}
-          >
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.3,
+              fontVariantNumeric: 'tabular-nums'
+            }}>
             {formatClock(timestamp)}
           </Typography>
         </Stack>
@@ -169,7 +178,9 @@ export default function LabsPortfolioConflictReviewDialog(
       maxWidth="sm"
     >
       <DialogTitle id={dialogTitleId} sx={{ pb: 1.5 }}>
-        <Stack direction="row" alignItems="center" spacing={1}>
+        <Stack direction="row" spacing={1} sx={{
+          alignItems: "center"
+        }}>
           <span>Review sync changes</span>
           <Tooltip
             arrow
@@ -187,7 +198,13 @@ export default function LabsPortfolioConflictReviewDialog(
         </Stack>
       </DialogTitle>
       <DialogContent sx={{ overflow: 'visible', pt: 1 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55, mb: 2 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.55,
+            mb: 2
+          }}>
           Both this device and Drive changed since your last sync. Most edits merge automatically, but{' '}
           <strong>
             {needsReview.length === 1 ? '1 item' : `${needsReview.length} items`}
@@ -216,7 +233,14 @@ export default function LabsPortfolioConflictReviewDialog(
           )}
         </Typography>
         {mergeFootnote ? (
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5, lineHeight: 1.45 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              display: 'block',
+              mb: 1.5,
+              lineHeight: 1.45
+            }}>
             {mergeFootnote}
           </Typography>
         ) : null}
@@ -268,7 +292,14 @@ export default function LabsPortfolioConflictReviewDialog(
                   bgcolor: 'background.paper',
                 }}
               >
-                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1, minWidth: 0 }}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{
+                    alignItems: "center",
+                    mb: 1,
+                    minWidth: 0
+                  }}>
                   <Typography
                     variant="caption"
                     sx={{
@@ -288,9 +319,12 @@ export default function LabsPortfolioConflictReviewDialog(
                 {row.stakesSummary ? (
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    sx={{ display: 'block', mb: 1, lineHeight: 1.4 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      display: 'block',
+                      mb: 1,
+                      lineHeight: 1.4
+                    }}>
                     {row.stakesSummary}
                   </Typography>
                 ) : null}
@@ -325,7 +359,9 @@ export default function LabsPortfolioConflictReviewDialog(
           borderColor: 'divider',
         }}
       >
-        <Stack direction="row" spacing={1} justifyContent="flex-end" useFlexGap>
+        <Stack direction="row" spacing={1} useFlexGap sx={{
+          justifyContent: "flex-end"
+        }}>
           <Button
             onClick={onDismiss}
             color="inherit"

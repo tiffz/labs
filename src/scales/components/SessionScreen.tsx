@@ -1727,7 +1727,13 @@ export default function SessionScreen() {
           >
             <Icon name="chevron_left" size={18} />
           </IconButton>
-          <Typography variant="body2" color="text.secondary" sx={{ minWidth: 28, textAlign: 'center' }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              minWidth: 28,
+              textAlign: 'center'
+            }}>
             {exerciseNumber}/{totalExercises}
           </Typography>
           <IconButton
@@ -1793,8 +1799,6 @@ export default function SessionScreen() {
           <ScalesAccountMenu />
         </Box>
       </Paper>
-
-
       {/* Exercise result. shown only when the loop is paused or the
           stage advanced. During the auto-loop dwell we collapse this into
           the compact toast over the score so the between-rounds beat
@@ -1822,7 +1826,12 @@ export default function SessionScreen() {
           >
             {Math.round(lastExerciseResult.accuracy * 100)}%
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 1
+            }}>
             {lastExerciseResult.correct} of {lastExerciseResult.total} notes hit on time
             {usesPerfectRegimen && lastExerciseResult.accuracy < 1
               ? ' · need every note on the beat to advance'
@@ -1879,7 +1888,12 @@ export default function SessionScreen() {
                         ? `Level ${allStages[currentStageIdx].stageNumber} cleared`
                         : 'Level complete'}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.25 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    lineHeight: 1.25
+                  }}>
                   {drillState === 'completed'
                     ? `${DRILL_TARGET_PERFECT_RUNS}/${DRILL_TARGET_PERFECT_RUNS} perfect runs`
                     : activeExercise.purpose === 'review'
@@ -1900,8 +1914,8 @@ export default function SessionScreen() {
           {!boundary && shakyHint && (
             <Typography
               variant="caption"
-              color="text.secondary"
               sx={{
+                color: "text.secondary",
                 display: 'block',
                 maxWidth: 460,
                 mx: 'auto',
@@ -1909,9 +1923,8 @@ export default function SessionScreen() {
                 mb: 0.5,
                 lineHeight: 1.4,
                 fontStyle: 'italic',
-                textAlign: 'center',
-              }}
-            >
+                textAlign: 'center'
+              }}>
               <Box component="span" sx={{ fontWeight: 600, mr: 0.5, fontStyle: 'normal' }}>
                 Hint &middot;
               </Box>
@@ -1979,7 +1992,12 @@ export default function SessionScreen() {
                     ? `Perfect runs: ${perfectRunsProgressLabel}`
                     : `Attempts: ${overlearnState.attemptCount}`}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.25 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    lineHeight: 1.25
+                  }}>
                   {overlearnState.unlocked
                     ? (lastExerciseResult && lastExerciseResult.accuracy >= 1
                       ? `Need ${requiredPerfectRuns} perfect runs in a row to advance.`
@@ -1993,13 +2011,11 @@ export default function SessionScreen() {
           )}
         </Paper>
       )}
-
       {/* "New for you". modal when this stage introduces a new concept
           (also shown over the loading screen so tips are not skipped while
           the score generates). See guidance/computeGuidance.ts for triggers. */}
       {guidanceModal}
       {guidanceModalDebug}
-
       {/* Instruction panel. visible before starting.
           Stage description leads (it's level-specific and changes
           between stages). The exercise-level fingering guidance and
@@ -2021,14 +2037,13 @@ export default function SessionScreen() {
           {stageInfo?.stage.description && (
             <Typography
               variant="body2"
-              color="text.primary"
               sx={{
+                color: "text.primary",
                 maxWidth: 520,
                 mx: 'auto',
                 fontWeight: hasExerciseHistory ? 400 : 500,
-                lineHeight: 1.45,
-              }}
-            >
+                lineHeight: 1.45
+              }}>
               {stageInfo.stage.description}
             </Typography>
           )}
@@ -2040,9 +2055,11 @@ export default function SessionScreen() {
               </Typography>
               <Typography
                 variant="body2"
-                color="text.secondary"
-                sx={{ mt: 0.5, lineHeight: 1.45 }}
-              >
+                sx={{
+                  color: "text.secondary",
+                  mt: 0.5,
+                  lineHeight: 1.45
+                }}>
                 {scaleHowToText}
               </Typography>
               {stageInfo.exercise.helpUrl && (
@@ -2102,14 +2119,18 @@ export default function SessionScreen() {
               }}
             >
               <AlertTitle sx={{ mb: 0.25, fontWeight: 600 }}>Practice tip</AlertTitle>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  lineHeight: 1.45
+                }}>
                 {practiceTip.text}
               </Typography>
             </Alert>
           )}
         </Paper>
       )}
-
       {/* Score display */}
       <Box
         className="main-content"
@@ -2284,9 +2305,11 @@ export default function SessionScreen() {
                   </Typography>
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    sx={{ fontVariantNumeric: 'tabular-nums', lineHeight: 1.25 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      fontVariantNumeric: 'tabular-nums',
+                      lineHeight: 1.25
+                    }}>
                     {subline}
                   </Typography>
                 </Box>
@@ -2757,7 +2780,13 @@ export default function SessionScreen() {
                 >
                   Nice. Right notes, ready to go
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35, mt: 0.25 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    lineHeight: 1.35,
+                    mt: 0.25
+                  }}>
                   {activeExercise.bpm
                     ? 'Starting metronome run in a moment.'
                     : 'Starting scored run in a moment.'}
@@ -2767,7 +2796,6 @@ export default function SessionScreen() {
           </Box>
         )}
       </Box>
-
       {/* Grading engines (no visual output) */}
       {isFreeTempo
         && !isPlaying
@@ -2807,7 +2835,6 @@ export default function SessionScreen() {
       {!isFreeTempo && isPlaying && (
         <TimedGrader />
       )}
-
       {/* Bottom action bar */}
       <Paper
         elevation={3}
@@ -2885,7 +2912,14 @@ export default function SessionScreen() {
                       <Typography variant="subtitle2" component="p" sx={{ mt: 0, mb: 1, fontWeight: 700 }}>
                         How it works
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" component="p" sx={{ m: 0, lineHeight: 1.5 }}>
+                      <Typography
+                        variant="body2"
+                        component="p"
+                        sx={{
+                          color: "text.secondary",
+                          m: 0,
+                          lineHeight: 1.5
+                        }}>
                         Repeats this stage in a tight loop until you play{' '}
                         {DRILL_TARGET_PERFECT_RUNS} perfect runs in a row (literal 100% each time).
                         Useful when you want to lock in an exercise before moving on.
@@ -3021,7 +3055,6 @@ export default function SessionScreen() {
           </Button>
         )}
       </Paper>
-
       {labsDebug && helpPreview === 'practice_tip' && (
         <Box
           sx={{
@@ -3036,13 +3069,14 @@ export default function SessionScreen() {
         >
           <Alert severity="info" variant="outlined" onClose={() => setHelpPreview(null)}>
             <AlertTitle sx={{ fontWeight: 700 }}>Practice tip (debug)</AlertTitle>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               {practiceTip?.text ?? 'No tip for this stage (suppressed when the pre-start panel is dense, or pool empty).'}
             </Typography>
           </Alert>
         </Box>
       )}
-
       {labsDebug && helpPreview?.startsWith('shaky_') && currentStage && (() => {
         const mock =
           helpPreview === 'shaky_timing' ? DEBUG_SHAKY_MOCK_TIMING
@@ -3066,14 +3100,15 @@ export default function SessionScreen() {
                 Shaky-run hint (debug)
                 {hint ? ` · ${hint.id}` : ''}
               </AlertTitle>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 {hint?.text ?? 'This mock run plus stage did not produce a hint (e.g. tempo-off stage + timing branch).'}
               </Typography>
             </Alert>
           </Box>
         );
       })()}
-
       <Dialog
         open={labsDebug && helpPreview === 'drill_how_it_works'}
         onClose={() => setHelpPreview(null)}
@@ -3084,7 +3119,14 @@ export default function SessionScreen() {
           How it works (Practice until perfect)
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" component="p" sx={{ m: 0, lineHeight: 1.5 }}>
+          <Typography
+            variant="body2"
+            component="p"
+            sx={{
+              color: "text.secondary",
+              m: 0,
+              lineHeight: 1.5
+            }}>
             Repeats this stage in a tight loop until you play
             {' '}
             {DRILL_TARGET_PERFECT_RUNS}

@@ -99,7 +99,9 @@ function StanzaLibraryVideoPosterThumb({ songId, videoBlob }: StanzaLibraryVideo
           bgcolor: 'grey.400',
         }}
       >
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{
+          color: "text.secondary"
+        }}>
           Video
         </Typography>
       </Box>
@@ -157,7 +159,9 @@ export default function StanzaLibraryThumb({ song }: StanzaLibraryThumbProps) {
         bgcolor: 'grey.300',
       }}
     >
-      <Typography variant="caption" color="text.secondary">
+      <Typography variant="caption" sx={{
+        color: "text.secondary"
+      }}>
         Audio
       </Typography>
     </Box>

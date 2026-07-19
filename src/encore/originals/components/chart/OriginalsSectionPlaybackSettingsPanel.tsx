@@ -41,17 +41,16 @@ function fieldLabel(text: string): ReactElement {
     <Typography
       component="span"
       variant="caption"
-      color="text.secondary"
       sx={{
+        color: "text.secondary",
         display: 'block',
         mb: 0.5,
         fontWeight: 700,
         letterSpacing: '0.14em',
         textTransform: 'uppercase',
         fontSize: '0.625rem',
-        lineHeight: 1.2,
-      }}
-    >
+        lineHeight: 1.2
+      }}>
       {text}
     </Typography>
   );
@@ -86,12 +85,17 @@ export function OriginalsSectionPlaybackSettingsPanel({
         <Typography variant="subtitle2" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mb: 0.35 }}>
           Section playback
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.45 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            lineHeight: 1.45
+          }}>
           {sectionLabel}
           {viewOnly ? ' · view only' : ''}
         </Typography>
       </Box>
-
       {viewOnly ? null : (
         <Box sx={{ px: 3, pt: 1.75 }}>
           <FormControlLabel
@@ -113,7 +117,6 @@ export function OriginalsSectionPlaybackSettingsPanel({
           />
         </Box>
       )}
-
       {hasCustomPlayback ? (
         <>
           <Divider sx={{ my: 2, borderColor: 'rgba(124, 58, 237, 0.08)' }} />
@@ -191,18 +194,27 @@ export function OriginalsSectionPlaybackSettingsPanel({
         </>
       ) : viewOnly ? (
         <Box sx={{ px: 3, pt: 1.5, pb: 2.5 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.5
+            }}>
             Uses playback settings from the toolbar.
           </Typography>
         </Box>
       ) : (
         <Box sx={{ px: 3, pt: 1.25, pb: 2.5 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.5
+            }}>
             Uses playback settings from the toolbar.
           </Typography>
         </Box>
       )}
-
       {hasCustomPlayback ? <Box sx={{ pb: 2.5 }} /> : null}
     </Stack>
   );

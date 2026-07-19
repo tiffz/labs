@@ -1,4 +1,4 @@
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -58,9 +58,11 @@ export function PerformanceVideoCompactRow(props: PerformanceVideoCompactRowProp
       <Stack
         direction="row"
         spacing={0.75}
-        alignItems="center"
-        sx={{ width: 'fit-content', maxWidth: '100%' }}
-      >
+        sx={{
+          alignItems: "center",
+          width: 'fit-content',
+          maxWidth: '100%'
+        }}>
         <PerformanceVideoThumbFrame thumbWidth={thumbWidth} isPrimary={isPrimary}>
           <PerformanceVideoThumb performance={pseudo} width={thumbWidth} googleAccessToken={googleAccessToken} />
         </PerformanceVideoThumbFrame>
@@ -77,9 +79,9 @@ export function PerformanceVideoCompactRow(props: PerformanceVideoCompactRowProp
     <Stack
       direction="row"
       spacing={1}
-      alignItems="center"
-      sx={encorePerformanceListRowSx(theme, { bordered: false })}
-    >
+      sx={[{
+        alignItems: "center"
+      }, encorePerformanceListRowSx(theme, { bordered: false })]}>
       <PerformanceVideoThumbFrame thumbWidth={thumbWidth} isPrimary={isPrimary}>
         <PerformanceVideoThumb performance={pseudo} width={thumbWidth} googleAccessToken={googleAccessToken} />
       </PerformanceVideoThumbFrame>
@@ -89,12 +91,23 @@ export function PerformanceVideoCompactRow(props: PerformanceVideoCompactRowProp
             {label}
           </Typography>
         ) : (
-          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              fontWeight: 600
+            }}>
             Video
           </Typography>
         )}
       </Box>
-      <Stack direction="row" alignItems="center" spacing={0.25} sx={{ flexShrink: 0 }}>
+      <Stack
+        direction="row"
+        spacing={0.25}
+        sx={{
+          alignItems: "center",
+          flexShrink: 0
+        }}>
         {!isPrimary && onSetPrimary ? (
           <PerformanceVideoPrimaryStar isPrimary={false} onMakePrimary={onSetPrimary} iconSize={16} />
         ) : null}

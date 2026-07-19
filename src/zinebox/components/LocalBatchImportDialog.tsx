@@ -134,7 +134,12 @@ export default function LocalBatchImportDialog({
       <DialogTitle id="zinebox-local-import-title">Review import</DialogTitle>
       <DialogContent>
         {scanBusy ? (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 1.5
+            }}>
             Checking for duplicates…
           </Typography>
         ) : null}
@@ -153,12 +158,20 @@ export default function LocalBatchImportDialog({
             </Alert>
 
             {scan.newCount === 0 ? (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 Everything in this batch is already in your library.
               </Typography>
             ) : (
               <>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.45 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    mb: 2,
+                    lineHeight: 1.45
+                  }}>
                   Set source and tags for {scan.newCount} new PDF{scan.newCount === 1 ? '' : 's'} before they are
                   added.
                 </Typography>

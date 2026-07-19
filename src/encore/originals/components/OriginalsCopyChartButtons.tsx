@@ -35,7 +35,9 @@ export function OriginalsCopyChartButtons({
   };
 
   return (
-    <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+    <Stack direction="row" spacing={0.75} useFlexGap sx={{
+      flexWrap: "wrap"
+    }}>
       {lyrics ? (
         <Button
           size="small"

@@ -998,10 +998,11 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
                   </ListItemIcon>
                   <ListItemText
                     primary="Import guide (recommended order)"
-                    primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
-                    secondaryTypographyProps={{ sx: { mt: 0.85 } }}
                     secondary="Opens the Help tab: playlists first, bulk files, naming tips."
-                  />
+                    slotProps={{
+                      primary: { sx: { fontWeight: 600, lineHeight: 1.35 } },
+                      secondary: { sx: { mt: 0.85 } }
+                    }} />
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
@@ -1015,27 +1016,42 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
                   </ListItemIcon>
                   <ListItemText
                     primary="Import reference from playlists"
-                    primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
-                    secondaryTypographyProps={{ component: 'div', sx: { mt: 0.85 } }}
                     secondary={
                       <Stack
                         component="span"
                         direction="row"
-                        alignItems="center"
                         spacing={1.25}
                         aria-label="Spotify and YouTube playlists. Saves to reference recordings."
+                        sx={{
+                          alignItems: "center"
+                        }}
                       >
                         <SpotifyBrandIcon sx={{ fontSize: 18, display: 'block', flexShrink: 0 }} aria-hidden />
-                        <Typography component="span" variant="caption" color="text.secondary" sx={{ lineHeight: 0 }}>
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            lineHeight: 0
+                          }}>
                           ·
                         </Typography>
                         <YouTubeBrandIcon sx={{ fontSize: 18, display: 'block', flexShrink: 0 }} aria-hidden />
-                        <Typography component="span" variant="caption" color="text.secondary" sx={{ pl: 0.25 }}>
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            pl: 0.25
+                          }}>
                           → reference recordings
                         </Typography>
                       </Stack>
                     }
-                  />
+                    slotProps={{
+                      primary: { sx: { fontWeight: 600, lineHeight: 1.35 } },
+                      secondary: { component: 'div', sx: { mt: 0.85 } }
+                    }} />
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
@@ -1049,27 +1065,42 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
                   </ListItemIcon>
                   <ListItemText
                     primary="Import backing from playlists"
-                    primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
-                    secondaryTypographyProps={{ component: 'div', sx: { mt: 0.85 } }}
                     secondary={
                       <Stack
                         component="span"
                         direction="row"
-                        alignItems="center"
                         spacing={1.25}
                         aria-label="Spotify and YouTube playlists. Saves to backing tracks."
+                        sx={{
+                          alignItems: "center"
+                        }}
                       >
                         <SpotifyBrandIcon sx={{ fontSize: 18, display: 'block', flexShrink: 0 }} aria-hidden />
-                        <Typography component="span" variant="caption" color="text.secondary" sx={{ lineHeight: 0 }}>
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            lineHeight: 0
+                          }}>
                           ·
                         </Typography>
                         <YouTubeBrandIcon sx={{ fontSize: 18, display: 'block', flexShrink: 0 }} aria-hidden />
-                        <Typography component="span" variant="caption" color="text.secondary" sx={{ pl: 0.25 }}>
+                        <Typography
+                          component="span"
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            pl: 0.25
+                          }}>
                           → backing tracks
                         </Typography>
                       </Stack>
                     }
-                  />
+                    slotProps={{
+                      primary: { sx: { fontWeight: 600, lineHeight: 1.35 } },
+                      secondary: { component: 'div', sx: { mt: 0.85 } }
+                    }} />
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
@@ -1081,11 +1112,12 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
                     <CloudUploadIcon fontSize="small" />
                   </ListItemIcon>
                   <ListItemText
-                    primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
                     primary="Bulk import videos"
-                    secondaryTypographyProps={{ sx: { mt: 0.85 } }}
                     secondary="Drive folder or files"
-                  />
+                    slotProps={{
+                      primary: { sx: { fontWeight: 600, lineHeight: 1.35 } },
+                      secondary: { sx: { mt: 0.85 } }
+                    }} />
                 </MenuItem>
                 <MenuItem
                   onClick={() => {
@@ -1097,11 +1129,12 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
                     <DescriptionOutlinedIcon fontSize="small" />
                   </ListItemIcon>
                   <ListItemText
-                    primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
                     primary="Bulk import scores"
-                    secondaryTypographyProps={{ sx: { mt: 0.85 } }}
                     secondary="PDF, MusicXML, MIDI"
-                  />
+                    slotProps={{
+                      primary: { sx: { fontWeight: 600, lineHeight: 1.35 } },
+                      secondary: { sx: { mt: 0.85 } }
+                    }} />
                 </MenuItem>
               </Menu>
             </>
@@ -1221,7 +1254,11 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         <LabsListLoadingState label="Loading performances" />
       ) : performances.length === 0 && songs.length === 0 ? (
         <Stack spacing={1.5} sx={{ py: 4, maxWidth: 520 }}>
-          <Typography color="text.secondary" sx={{ lineHeight: 1.6 }}>
+          <Typography
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.6
+            }}>
             Nothing here yet. Add songs from Repertoire first, then log a performance from a song page or tap{' '}
             <strong>Add performance</strong> above.
           </Typography>
@@ -1245,7 +1282,13 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.02em', mb: 1.5 }}>
             Bring in performance videos
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.7, mb: 2 }}>
+          <Typography
+            variant="body1"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.7,
+              mb: 2
+            }}>
             You have songs but no performances yet. Bulk import from Drive can attach many videos at once. Encore
             matches each file from the name and folder path, then renames files in your Performances folder to this
             pattern:
@@ -1269,7 +1312,13 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           >
             {'YYYY-MM-DD - Song title - Artist.mp4'}
           </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.65, mb: 2 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.65,
+              mb: 2
+            }}>
             Put the performance date first, then the title, then the artist. Use Drive folder names like{' '}
             <Typography component="span" sx={{ fontFamily: 'ui-monospace, monospace' }}>
               Venue - Martuni&apos;s
@@ -1360,7 +1409,12 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
                   )}
                 </Box>
                 <Box sx={{ p: 2 }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums' }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      fontVariantNumeric: 'tabular-nums'
+                    }}>
                     {date}
                   </Typography>
                   <Typography
@@ -1385,15 +1439,33 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
                     {song?.title ?? 'Unknown song'}
                   </Typography>
                   {song?.artist ? (
-                    <Typography variant="caption" color="text.secondary" display="block">
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "text.secondary",
+                        display: "block"
+                      }}>
                       {song.artist}
                     </Typography>
                   ) : null}
-                  <Typography variant="body2" color="text.primary" sx={{ mt: 1, fontWeight: 500 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.primary",
+                      mt: 1,
+                      fontWeight: 500
+                    }}>
                     {venue}
                   </Typography>
                   {(perf.accompanimentTags ?? []).length > 0 ? (
-                    <Stack direction="row" gap={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+                    <Stack
+                      direction="row"
+                      useFlexGap
+                      sx={{
+                        gap: 0.5,
+                        flexWrap: "wrap",
+                        mt: 1
+                      }}>
                       {(perf.accompanimentTags ?? []).map((t) => (
                         <Box
                           key={t}
@@ -1412,7 +1484,13 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
                       ))}
                     </Stack>
                   ) : null}
-                  <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} justifyContent="flex-end">
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{
+                      justifyContent: "flex-end",
+                      mt: 1.5
+                    }}>
                     <IconButton size="small" aria-label="Edit performance" onClick={() => openEdit(perf)}>
                       <EditIcon fontSize="small" />
                     </IconButton>
@@ -1430,7 +1508,12 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
             Log a show to unlock insights
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.65 }}>
+          <Typography
+            variant="body1"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.65
+            }}>
             The Insights tab shows lifetime performance stats and lets you zoom into a single calendar year when you
             are ready.
           </Typography>
@@ -1450,7 +1533,6 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         </Stack>
       ) : null}
       </Box>
-
       {performancesSubTab === 'wrapped' && performanceDashboardStats && extendedPerformanceInsights ? (
         <PerformancesWrappedScreen
           embedded
@@ -1472,7 +1554,6 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           onAddPerformance={() => setPickSongOpen(true)}
         />
       ) : null}
-
       <LibrarySongPickerDialog
         open={pickSongOpen}
         onClose={() => {
@@ -1494,7 +1575,6 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         emptyLibraryHint="Your library is empty. Add a song from Repertoire first."
         emptySearchHint="No songs match that search."
       />
-
       <PlaylistImportDialog
         open={importOpen}
         onClose={() => setImportOpen(false)}
@@ -1521,7 +1601,6 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
         songs={songs}
         onSaveSong={saveSong}
       />
-
       {perfSongId && (
         <PerformanceEditorDialog
           open={perfOpen}
@@ -1546,7 +1625,6 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           }
         />
       )}
-
       <Dialog open={bulkVenueOpen} onClose={() => setBulkVenueOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle sx={encoreDialogTitleSx}>Set venue ({selectedPerfIds.size})</DialogTitle>
         <DialogContent sx={encoreDialogContentSx}>
@@ -1581,12 +1659,17 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           </Button>
         </DialogActions>
       </Dialog>
-
       <Dialog open={bulkAccOpen} onClose={() => setBulkAccOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle sx={encoreDialogTitleSx}>Set accompaniment ({selectedPerfIds.size})</DialogTitle>
         <DialogContent sx={encoreDialogContentSx}>
           <Stack spacing={2}>
-            <Stack direction="row" gap={0.75} flexWrap="wrap" useFlexGap>
+            <Stack
+              direction="row"
+              useFlexGap
+              sx={{
+                gap: 0.75,
+                flexWrap: "wrap"
+              }}>
               {/*
                 Render every accompaniment option as a toggle chip. Multi-select; the chosen set
                 will either replace or be added to each performance's existing list (see
@@ -1628,13 +1711,13 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
                   value="replace"
                   control={<Radio size="small" />}
                   label="Replace existing"
-                  componentsProps={{ typography: { variant: 'body2' } }}
+                  slotProps={{ typography: { variant: 'body2' } }}
                 />
                 <FormControlLabel
                   value="add"
                   control={<Radio size="small" />}
                   label="Add to existing"
-                  componentsProps={{ typography: { variant: 'body2' } }}
+                  slotProps={{ typography: { variant: 'body2' } }}
                 />
               </RadioGroup>
             </FormControl>
@@ -1653,11 +1736,12 @@ const PerformancesScreenBody = memo(function PerformancesScreenBody({
           </Button>
         </DialogActions>
       </Dialog>
-
       <Dialog open={bulkDeleteOpen} onClose={() => setBulkDeleteOpen(false)}>
         <DialogTitle sx={encoreDialogTitleSx}>Delete {selectedPerfIds.size} performances?</DialogTitle>
         <DialogContent sx={encoreDialogContentSx}>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             This removes the performance entries from your log. Linked videos in Drive are not deleted
             automatically.
           </Typography>

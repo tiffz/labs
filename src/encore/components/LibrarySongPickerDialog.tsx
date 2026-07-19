@@ -93,12 +93,16 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
           value={pickQuery}
           onChange={(e) => onPickQueryChange(e.target.value)}
           fullWidth
-          InputLabelProps={{ shrink: true }}
+          slotProps={{
+            inputLabel: { shrink: true }
+          }}
         />
         <List dense sx={{ maxHeight: 360, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
           {preferred.length === 0 && rest.length === 0 ? (
             <Box sx={{ px: 2, py: 3 }}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 {existingSongs.length === 0 ? emptyLibraryHint : emptySearchHint}
               </Typography>
             </Box>
@@ -115,9 +119,10 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
                     <ListItemText
                       primary={s.title}
                       secondary={sim != null ? `${s.artist} · ${sim}%` : s.artist}
-                      primaryTypographyProps={{ noWrap: true, title: s.title }}
-                      secondaryTypographyProps={{ noWrap: true }}
-                    />
+                      slotProps={{
+                        primary: { noWrap: true, title: s.title },
+                        secondary: { noWrap: true }
+                      }} />
                   </ListItemButton>
                 );
               })}
@@ -137,9 +142,10 @@ export function LibrarySongPickerDialog(props: LibrarySongPickerDialogProps): Re
                     <ListItemText
                       primary={s.title}
                       secondary={sim != null ? `${s.artist} · ${sim}%` : s.artist}
-                      primaryTypographyProps={{ noWrap: true, title: s.title }}
-                      secondaryTypographyProps={{ noWrap: true }}
-                    />
+                      slotProps={{
+                        primary: { noWrap: true, title: s.title },
+                        secondary: { noWrap: true }
+                      }} />
                   </ListItemButton>
                 );
               })}

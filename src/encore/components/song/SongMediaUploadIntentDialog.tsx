@@ -28,10 +28,22 @@ export function SongMediaUploadIntentDialog(props: {
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle sx={encoreDialogTitleSx}>Add file to this song</DialogTitle>
       <DialogContent sx={encoreDialogContentSx}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 1.5
+          }}>
           Drop was not on Listen, Play, Charts, or Takes. Choose where this should go.
         </Typography>
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2, wordBreak: 'break-word' }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: "block",
+            mb: 2,
+            wordBreak: 'break-word'
+          }}>
           {preview}
         </Typography>
         <Stack spacing={1}>

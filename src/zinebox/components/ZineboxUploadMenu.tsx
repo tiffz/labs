@@ -75,7 +75,6 @@ export default function ZineboxUploadMenu({
       >
         Upload zines
       </Button>
-
       <Dialog
         open={open}
         onClose={handleClose}
@@ -85,7 +84,13 @@ export default function ZineboxUploadMenu({
       >
         <DialogTitle id="zinebox-upload-dialog-title">Upload zines</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.45 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 2,
+              lineHeight: 1.45
+            }}>
             Add PDFs from your device or import a Google Drive folder. You can also drop PDFs anywhere on the
             library page.
           </Typography>
@@ -97,7 +102,6 @@ export default function ZineboxUploadMenu({
           />
         </DialogContent>
       </Dialog>
-
       <DriveFolderImportDialog
         open={driveReview != null}
         folderInput={driveReview?.folderInput ?? ''}

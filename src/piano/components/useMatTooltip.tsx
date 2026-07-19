@@ -29,7 +29,7 @@ export function useMatTooltip() {
           popper: {
             anchorEl: {
               getBoundingClientRect: () =>
-                ({
+                (({
                   width: 0,
                   height: 0,
                   top: tip.y,
@@ -38,8 +38,8 @@ export function useMatTooltip() {
                   left: tip.x,
                   x: tip.x,
                   y: tip.y,
-                  toJSON: () => ({}),
-                }) as DOMRect,
+                  toJSON: () => ({})
+                }) as DOMRect),
             },
             modifiers: [
               {

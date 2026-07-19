@@ -101,7 +101,14 @@ function CompactPerformanceRow(props: {
         playProps={playProps}
       />
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Stack direction="row" alignItems="center" gap={0.75} flexWrap="wrap" useFlexGap>
+        <Stack
+          direction="row"
+          useFlexGap
+          sx={{
+            alignItems: "center",
+            gap: 0.75,
+            flexWrap: "wrap"
+          }}>
           <Typography
             variant="caption"
             sx={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em' }}
@@ -119,7 +126,13 @@ function CompactPerformanceRow(props: {
           {p.venueTag?.trim() || 'Venue'}
         </Typography>
       </Box>
-      <Stack direction="row" alignItems="center" spacing={0.25} sx={{ flexShrink: 0 }}>
+      <Stack
+        direction="row"
+        spacing={0.25}
+        sx={{
+          alignItems: "center",
+          flexShrink: 0
+        }}>
         <PerformanceMediaActions performance={p} playProps={playProps} compact hidePlay />
         <Button
           size="small"
@@ -174,13 +187,19 @@ export function SongPerformancesCompactPanel(props: SongPerformancesCompactPanel
     <>
       <Stack
         direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        flexWrap="wrap"
-        gap={1}
-        sx={{ mb: 1.5 }}
-      >
-        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+        sx={{
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 1,
+          mb: 1.5
+        }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            fontWeight: 600
+          }}>
           {performances.length > 0 ? `${performances.length} logged` : 'None yet.'}
         </Typography>
         <Button
@@ -193,9 +212,16 @@ export function SongPerformancesCompactPanel(props: SongPerformancesCompactPanel
           Log performance
         </Button>
       </Stack>
-
       {venueBreakdown.length > 0 ? (
-        <Stack direction="row" flexWrap="wrap" gap={0.75} useFlexGap sx={{ mb: 1.5, alignItems: 'center' }}>
+        <Stack
+          direction="row"
+          useFlexGap
+          sx={{
+            flexWrap: "wrap",
+            gap: 0.75,
+            mb: 1.5,
+            alignItems: 'center'
+          }}>
           <Chip
             size="small"
             label="All venues"
@@ -216,10 +242,14 @@ export function SongPerformancesCompactPanel(props: SongPerformancesCompactPanel
           ))}
         </Stack>
       ) : null}
-
       {performances.length > 0 ? (
         filteredPerformances.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ py: 1.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              py: 1.5
+            }}>
             None yet at this venue.
           </Typography>
         ) : (

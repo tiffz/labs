@@ -60,11 +60,12 @@ export default function StanzaWorkspaceDialogs({
       >
         <MenuItem onClick={onRequestRemoveFromLibrary}>Remove from library…</MenuItem>
       </Menu>
-
       <Dialog open={removeConfirmSong != null} onClose={onCancelRemove} aria-labelledby="stanza-remove-title">
         <DialogTitle id="stanza-remove-title">Remove from library?</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             This removes “{removeConfirmSong?.title ?? ''}” from your library and deletes all practice data for it on
             this device: markers and sections, focus-time stats, and per-section metronome calibration.
           </Typography>
@@ -76,7 +77,6 @@ export default function StanzaWorkspaceDialogs({
           </Button>
         </DialogActions>
       </Dialog>
-
       <Dialog
         open={stemDropConfirm != null}
         onClose={onCancelStemDrop}
@@ -88,7 +88,13 @@ export default function StanzaWorkspaceDialogs({
           {stemDropConfirm?.hasYoutube ? 'How should this file be used?' : 'Add as mix layers?'}
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.55 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 1.5,
+              lineHeight: 1.55
+            }}>
             {stemDropConfirm?.hasYoutube
               ? `This file matches your track (${stemDropConfirm.refSec.toFixed(
                   1,
@@ -111,7 +117,9 @@ export default function StanzaWorkspaceDialogs({
                 sx={{ mb: 0.5, wordBreak: 'break-word' }}
               >
                 {r.name}{' '}
-                <Typography component="span" variant="caption" color="text.secondary">
+                <Typography component="span" variant="caption" sx={{
+                  color: "text.secondary"
+                }}>
                   ({r.durationSec.toFixed(1)} s)
                 </Typography>
               </Typography>

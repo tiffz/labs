@@ -864,7 +864,7 @@ export function EncoreMediaPlaybackProvider({ children }: { children: ReactNode 
       <div ref={spotifyHostRef} className="encore-spotify-embed-host" aria-hidden hidden />
       {target?.kind === 'drive-audio' ? (
         /* eslint-disable-next-line jsx-a11y/media-has-caption -- user-provided practice audio */
-        <audio ref={mediaRef as RefObject<HTMLAudioElement>} className="encore-media-playback-media-hidden" aria-hidden />
+        (<audio ref={mediaRef as RefObject<HTMLAudioElement>} className="encore-media-playback-media-hidden" aria-hidden />)
       ) : null}
       <EncoreMediaPlaybackControlsContext.Provider value={controlsValue}>
         <EncoreMediaTransportContext.Provider value={transportValue}>

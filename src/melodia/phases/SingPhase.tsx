@@ -194,14 +194,12 @@ export default function SingPhase({
         {layout && <MelodiaPlayhead layout={layout} progress={playheadProgress} />}
         {layout && <MelodiaInkTrace layout={layout} pitchTrail={pitchTrail} elapsedSec={elapsedSec} />}
       </MelodiaStaff>
-
       <Typography variant="subtitle1" component="h3" sx={{ fontWeight: 700, m: 0 }}>
         Sing — out loud
       </Typography>
       <Typography variant="body2" className="melodia-ink-pink" sx={{ lineHeight: 1.5 }}>
         Sing the staff. We sketch your pitch in pink as you go.
       </Typography>
-
       <MelodiaMicBar
         status={micUi}
         activeInputLabel={micLabel}
@@ -212,7 +210,6 @@ export default function SingPhase({
         onPitchTrackingChange={setPitchTrackingEnabled}
         onRetryCapture={() => setMicRetryNonce((n) => n + 1)}
       />
-
       {pitchTrackingEnabled && lastSample && lastSample.midi !== null && expectedNow !== null && (
         <Typography variant="body2" sx={{ lineHeight: 1.45 }}>
           Heard <strong>{midiToNoteName(lastSample.midi)}</strong> · written{' '}
@@ -224,8 +221,13 @@ export default function SingPhase({
               : `${Math.abs(delta ?? 0)} st low`}
         </Typography>
       )}
-
-      <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          flexWrap: "wrap",
+          alignItems: "center"
+        }}>
         {helpLevel >= 2 && (
           <Button
             variant={ghostOn ? 'contained' : 'outlined'}

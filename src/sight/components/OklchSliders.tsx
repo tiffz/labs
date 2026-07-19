@@ -24,7 +24,9 @@ export default function OklchSliders({
 
   return (
     <Stack spacing={1.5} className="sight-neutral-panel">
-      <Stack direction="row" spacing={1} alignItems="center">
+      <Stack direction="row" spacing={1} sx={{
+        alignItems: "center"
+      }}>
         <div
           className="sight-swatch"
           style={{ background: colorStateToHex(value), width: '3rem', height: '3rem' }}

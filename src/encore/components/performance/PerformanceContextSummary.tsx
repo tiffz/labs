@@ -73,7 +73,12 @@ function ContextSongArt(props: { song: PerformanceContextSummarySong; size?: num
 
 function ContextGroupLabel(props: { children: string }): ReactElement {
   return (
-    <Typography component="h4" variant="overline" color="text.secondary" sx={CONTEXT_GROUP_LABEL_SX}>
+    <Typography
+      component="h4"
+      variant="overline"
+      sx={[{
+        color: "text.secondary"
+      }, ...(Array.isArray(CONTEXT_GROUP_LABEL_SX) ? CONTEXT_GROUP_LABEL_SX : [CONTEXT_GROUP_LABEL_SX])]}>
       {props.children}
     </Typography>
   );
@@ -95,28 +100,43 @@ export function PerformanceContextSummary(props: PerformanceContextSummaryProps)
     <Box sx={{ ...encorePerformanceVideoPanelSx(theme, { isPrimary: false }), p: 2 }}>
       <Typography
         variant="caption"
-        color="text.secondary"
-        sx={{ fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block', mb: 1.25 }}
-      >
+        sx={{
+          color: "text.secondary",
+          fontWeight: 700,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          display: 'block',
+          mb: 1.25
+        }}>
         Adding to
       </Typography>
-
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         spacing={{ xs: 2, sm: 3 }}
-        alignItems="flex-start"
+        sx={{
+          alignItems: "flex-start"
+        }}
       >
         {hasSong && song ? (
           <Box sx={{ flex: { sm: '0 0 38%' }, maxWidth: { sm: 260 }, minWidth: 0 }}>
             <ContextGroupLabel>Song</ContextGroupLabel>
-            <Stack direction="row" spacing={1.25} alignItems="center">
+            <Stack direction="row" spacing={1.25} sx={{
+              alignItems: "center"
+            }}>
               <ContextSongArt song={song} />
               <Box sx={{ minWidth: 0 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 800, lineHeight: 1.3 }} noWrap title={song.title}>
                   {song.title}
                 </Typography>
                 {song.artist?.trim() ? (
-                  <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, lineHeight: 1.35 }} noWrap>
+                  <Typography
+                    variant="body2"
+                    noWrap
+                    sx={{
+                      color: "text.secondary",
+                      fontWeight: 500,
+                      lineHeight: 1.35
+                    }}>
                     {song.artist.trim()}
                   </Typography>
                 ) : null}
@@ -139,7 +159,14 @@ export function PerformanceContextSummary(props: PerformanceContextSummaryProps)
           </Typography>
 
           {accompaniment.length > 0 ? (
-            <Stack direction="row" flexWrap="wrap" gap={0.5} useFlexGap sx={{ mt: 0.875 }}>
+            <Stack
+              direction="row"
+              useFlexGap
+              sx={{
+                flexWrap: "wrap",
+                gap: 0.5,
+                mt: 0.875
+              }}>
               {accompaniment.map((tag) => (
                 <Chip
                   key={tag}
@@ -155,9 +182,12 @@ export function PerformanceContextSummary(props: PerformanceContextSummaryProps)
           {notes ? (
             <Typography
               variant="body2"
-              color="text.secondary"
-              sx={{ lineHeight: 1.5, mt: accompaniment.length > 0 ? 0.875 : 0.625, fontSize: '0.8125rem' }}
-            >
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.5,
+                mt: accompaniment.length > 0 ? 0.875 : 0.625,
+                fontSize: '0.8125rem'
+              }}>
               {notes}
             </Typography>
           ) : null}
@@ -166,12 +196,23 @@ export function PerformanceContextSummary(props: PerformanceContextSummaryProps)
             <Box sx={{ mt: notes || accompaniment.length > 0 ? 1 : 0.875 }}>
               <Typography
                 variant="caption"
-                color="text.secondary"
-                sx={{ fontWeight: 600, display: 'block', mb: 0.625, letterSpacing: '0.02em' }}
-              >
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: 600,
+                  display: 'block',
+                  mb: 0.625,
+                  letterSpacing: '0.02em'
+                }}>
                 {videos.length === 1 ? 'Existing video' : `${videos.length} existing videos`}
               </Typography>
-              <Stack direction="row" flexWrap="wrap" gap={1} useFlexGap alignItems="center">
+              <Stack
+                direction="row"
+                useFlexGap
+                sx={{
+                  flexWrap: "wrap",
+                  gap: 1,
+                  alignItems: "center"
+                }}>
                 {videos.map((video) => (
                   <PerformanceVideoCompactRow
                     key={video.id}

@@ -114,13 +114,20 @@ export default function OrganizeLibraryDialog({
       <DialogTitle>Organize library</DialogTitle>
       <DialogContent dividers>
         {scanSummary ? (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 2
+            }}>
             {scanSummary}
           </Typography>
         ) : null}
 
         {!hasSuggestions ? (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             No duplicates or series stacks found. We match same PDF checksum, filename, Drive file,
             or identical title within a source.
           </Typography>
@@ -139,7 +146,9 @@ export default function OrganizeLibraryDialog({
                       edge="start"
                       checked={selectedDuplicates.has(duplicate.id)}
                       onChange={() => toggleDuplicate(duplicate.id)}
-                      inputProps={{ 'aria-label': `Apply duplicate cleanup ${duplicate.id}` }}
+                      slotProps={{
+                        input: { 'aria-label': `Apply duplicate cleanup ${duplicate.id}` }
+                      }}
                     />
                   </ListItemIcon>
                   <ListItemText
@@ -170,7 +179,9 @@ export default function OrganizeLibraryDialog({
                       edge="start"
                       checked={selectedStacks.has(candidate.id)}
                       onChange={() => toggleStack(candidate.id)}
-                      inputProps={{ 'aria-label': `Stack ${candidate.label}` }}
+                      slotProps={{
+                        input: { 'aria-label': `Stack ${candidate.label}` }
+                      }}
                     />
                   </ListItemIcon>
                   <ListItemText

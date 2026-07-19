@@ -49,7 +49,12 @@ export default function LabsDriveRestoreDialog(props: LabsDriveRestoreDialogProp
     <Dialog open={restoreOpen} onClose={() => !busy && closeRestorePicker()} fullWidth maxWidth="xs">
       <DialogTitle>{copy.title}</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 1.5
+          }}>
           {copy.intro}
         </Typography>
 

@@ -75,13 +75,17 @@ export function ArtStage({
       sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}
     >
       {importStatus ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }} aria-live="polite">
+        <Typography
+          variant="body2"
+          aria-live="polite"
+          sx={{
+            color: "text.secondary",
+            mb: 1.25
+          }}>
           {importStatus}
         </Typography>
       ) : null}
-
       <LyreflyPrintSpecPanel project={project} onProjectChange={onProjectChange} />
-
       {pageNodes.length === 0 ? (
         <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <p className="lyrefly-art-empty__lede">
@@ -111,7 +115,14 @@ export function ArtStage({
           <Typography component="h3" className="lyrefly-section-eyebrow" sx={{ mt: 1.75, mb: 0.75 }}>
             Pages
             {strictVersionView ? (
-              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1, fontWeight: 500 }}>
+              <Typography
+                component="span"
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  ml: 1,
+                  fontWeight: 500
+                }}>
                 Viewing a saved version. Switch to Latest to edit live art.
               </Typography>
             ) : null}

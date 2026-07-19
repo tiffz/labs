@@ -93,7 +93,12 @@ export default function BulkAddTagsDialog({
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs" aria-labelledby="gesture-bulk-tags-title">
       <DialogTitle id="gesture-bulk-tags-title">Add tags to {packCount} collections</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 1.5
+          }}>
           Tags are added to each selected collection (existing tags stay).
         </Typography>
         <Autocomplete

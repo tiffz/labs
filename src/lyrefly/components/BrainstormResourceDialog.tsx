@@ -89,7 +89,13 @@ export function BrainstormResourceDialog({
                 Remove
               </Button>
             ) : null}
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.75 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                display: "block",
+                mt: 0.75
+              }}>
               PDFs, docs, text files, Drive links, or images
             </Typography>
           </Box>

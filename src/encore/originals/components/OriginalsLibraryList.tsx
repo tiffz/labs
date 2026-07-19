@@ -111,8 +111,20 @@ export function OriginalsLibraryList({
 
   const bulkActions =
     selectedIds.size > 0 ? (
-      <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
-        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        useFlexGap
+        sx={{
+          alignItems: "center",
+          flexWrap: "wrap"
+        }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            fontWeight: 600
+          }}>
           {selectedIds.size} selected
         </Typography>
         <Button
@@ -139,23 +151,35 @@ export function OriginalsLibraryList({
     <>
       <Stack
         direction="row"
-        flexWrap="wrap"
-        alignItems="center"
-        justifyContent="space-between"
-        gap={1}
         useFlexGap
-        sx={{ mb: 1.5 }}
-      >
-        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+        sx={{
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 1,
+          mb: 1.5
+        }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            fontWeight: 500
+          }}>
           {rows.length} {rows.length === 1 ? 'original' : 'originals'}
           {search.trim() ? ' · search applied' : ''}
         </Typography>
-        <Stack direction="row" alignItems="center" gap={2} useFlexGap sx={{ flexShrink: 0 }}>
+        <Stack
+          direction="row"
+          useFlexGap
+          sx={{
+            alignItems: "center",
+            gap: 2,
+            flexShrink: 0
+          }}>
           {bulkActions}
           {toolbarTrailing}
         </Stack>
       </Stack>
-
       {viewMode === 'table' ? (
         <Box
           sx={{

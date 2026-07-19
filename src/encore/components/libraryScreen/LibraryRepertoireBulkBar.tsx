@@ -40,18 +40,17 @@ export function LibraryRepertoireBulkBar(props: LibraryRepertoireBulkBarProps): 
     <Stack
       direction={{ xs: 'column', sm: 'row' }}
       spacing={1}
-      alignItems={{ sm: 'center' }}
-      flexWrap="wrap"
       useFlexGap
       sx={{
+        alignItems: { sm: 'center' },
+        flexWrap: "wrap",
         mb: 2,
         p: 1.5,
         borderRadius: 2,
         border: 1,
         borderColor: 'divider',
-        bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
-      }}
-    >
+        bgcolor: (t) => alpha(t.palette.primary.main, 0.06)
+      }}>
       {/*
         Structured bulk-action bar: safe edits sit on the main row, destructive actions live
         in the overflow menu so they aren't a one-click misfire on a toolbar with selected

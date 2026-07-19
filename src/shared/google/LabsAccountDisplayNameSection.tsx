@@ -83,36 +83,45 @@ export function LabsAccountDisplayNameSection(props: {
         placeholder={providerName ?? 'Your name'}
         disabled={saving}
         label="Display name"
-        InputProps={{
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton size="small" aria-label="Save display name" onClick={() => void commit()} disabled={saving}>
-                <CheckIcon fontSize="small" />
-              </IconButton>
-              <IconButton size="small" aria-label="Cancel" onClick={cancel} disabled={saving}>
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </InputAdornment>
-          ),
-        }}
         helperText={
           providerName && draft.trim() !== providerName
             ? `Leave blank to use “${providerName}” from Google.`
             : usageHint
         }
+        slotProps={{
+          input: {
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton size="small" aria-label="Save display name" onClick={() => void commit()} disabled={saving}>
+                  <CheckIcon fontSize="small" />
+                </IconButton>
+                <IconButton size="small" aria-label="Cancel" onClick={cancel} disabled={saving}>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }
+        }}
       />
     );
   }
 
   return (
-    <Stack direction="row" alignItems="center" spacing={1.5}>
+    <Stack direction="row" spacing={1.5} sx={{
+      alignItems: "center"
+    }}>
       <AccountCircleIcon sx={{ fontSize: 40, color: 'text.disabled' }} />
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography
           variant="caption"
-          color="text.secondary"
-          sx={{ display: 'block', lineHeight: 1.4, fontWeight: 600, letterSpacing: '0.06em', mb: 0.5 }}
-        >
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            lineHeight: 1.4,
+            fontWeight: 600,
+            letterSpacing: '0.06em',
+            mb: 0.5
+          }}>
           Display name
         </Typography>
         <Typography

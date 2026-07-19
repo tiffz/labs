@@ -91,7 +91,14 @@ function SectionTitle(props: { kicker?: string; title: string; subtitle?: string
   return (
     <Stack spacing={0.5} sx={{ mb: 2.5 }}>
       {props.kicker ? (
-        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase'
+          }}>
           {props.kicker}
         </Typography>
       ) : null}
@@ -99,7 +106,13 @@ function SectionTitle(props: { kicker?: string; title: string; subtitle?: string
         {props.title}
       </Typography>
       {props.subtitle ? (
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, maxWidth: 640 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.6,
+            maxWidth: 640
+          }}>
           {props.subtitle}
         </Typography>
       ) : null}
@@ -246,7 +259,12 @@ function YearComparator(props: {
               <Typography variant="h3" sx={{ fontWeight: 900, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
                 {c}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  mb: 2
+                }}>
                 performances logged
               </Typography>
               <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.5 }}>
@@ -264,7 +282,9 @@ function YearComparator(props: {
               <Typography variant="subtitle2" sx={{ fontWeight: 800, mt: 1.5, mb: 0.5 }}>
                 Top venue
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 {v ? `${v.name} · ${v.count}` : '–'}
               </Typography>
             </Card>
@@ -377,14 +397,22 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={2}
-            alignItems={{ xs: 'stretch', sm: 'flex-start' }}
-            justifyContent="space-between"
-          >
+            sx={{
+              alignItems: { xs: 'stretch', sm: 'flex-start' },
+              justifyContent: "space-between"
+            }}>
             <Box sx={{ minWidth: 0 }}>
               <Typography variant="h5" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
                 {possessive} performance insights
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, lineHeight: 1.55, maxWidth: 520 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  mt: 0.75,
+                  lineHeight: 1.55,
+                  maxWidth: 520
+                }}>
                 Lifetime totals by default. Pick a year to zoom in; charts and rankings follow that scope.
               </Typography>
             </Box>
@@ -414,14 +442,25 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
             }}
           >
             <Card variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: 'background.paper' }}>
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: 600
+                }}>
                 {isAllTime ? 'All-time performances' : `Performances in ${yearScope}`}
               </Typography>
               <Typography variant="h4" sx={{ fontWeight: 800, fontVariantNumeric: 'tabular-nums', mt: 0.5, lineHeight: 1.2 }}>
                 {activeStats.total}
               </Typography>
               {!isAllTime ? (
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    mt: 1,
+                    display: 'block'
+                  }}>
                   Lifetime total: <strong>{lifetimeStats.total}</strong>
                 </Typography>
               ) : null}
@@ -429,37 +468,70 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
             {isAllTime ? (
               <>
                 <Card variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: 'background.paper' }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      fontWeight: 600
+                    }}>
                     Calendar {cy} (Jan–Dec)
                   </Typography>
                   <Typography variant="h4" sx={{ fontWeight: 800, fontVariantNumeric: 'tabular-nums', mt: 0.5, lineHeight: 1.2 }}>
                     {lifetimeStats.perfThisYear}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      mt: 1,
+                      display: 'block'
+                    }}>
                     vs {cy - 1}: <strong>{lifetimeStats.perfLastYear}</strong>
                   </Typography>
                 </Card>
                 <Card variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: 'background.paper' }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      fontWeight: 600
+                    }}>
                     Repertoire reach
                   </Typography>
                   <Typography variant="h4" sx={{ fontWeight: 800, fontVariantNumeric: 'tabular-nums', mt: 0.5, lineHeight: 1.2 }}>
                     {lifetimeExtended.distinctSongs}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      mt: 1,
+                      display: 'block'
+                    }}>
                     Different songs with at least one logged show
                   </Typography>
                 </Card>
               </>
             ) : (
               <Card variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: 'background.paper' }}>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    fontWeight: 600
+                  }}>
                   Songs in {yearScope}
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 800, fontVariantNumeric: 'tabular-nums', mt: 0.5, lineHeight: 1.2 }}>
                   {activeExtended.distinctSongs}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    mt: 1,
+                    display: 'block'
+                  }}>
                   Distinct titles performed at least once this year
                 </Typography>
               </Card>
@@ -471,7 +543,6 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
           </Button>
         </Stack>
       </Box>
-
       {/* Story */}
       <Section>
         <SectionTitle
@@ -542,9 +613,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
           )}
         </Typography>
       </Section>
-
       <Divider />
-
       <Section>
         <SectionTitle
           kicker="Cadence"
@@ -557,14 +626,19 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
         />
         <WideSparkline values={activeExtended.monthCounts} labels={activeExtended.monthLabels} color={primary} />
       </Section>
-
       <Divider />
-
       <Section>
         <SectionTitle kicker="Momentum" title={isAllTime ? 'Pace and depth' : `${yearScope} vs your lifetime`} />
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
           <Card elevation={0} sx={{ p: 2.5, borderRadius: 2, border: 1, borderColor: 'divider', boxShadow: encoreShadowSurface }}>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5, color: 'primary.main' }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                alignItems: "center",
+                mb: 1.5,
+                color: 'primary.main'
+              }}>
               <TrendingUpIcon fontSize="small" />
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                 {isAllTime ? 'Calendar-year pace' : 'This scope'}
@@ -572,17 +646,33 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
             </Stack>
             {isAllTime ? (
               <>
-                <Typography variant="body2" sx={{ lineHeight: 1.65 }} color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    lineHeight: 1.65
+                  }}>
                   <strong>{lifetimeStats.perfThisYear}</strong> performances so far in {cy},{' '}
                   <strong>{lifetimeStats.perfLastYear}</strong> in {cy - 1}. Counts use full calendar years (Jan–Dec).
                 </Typography>
-                <Typography variant="body2" sx={{ lineHeight: 1.65, mt: 1.5 }} color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    lineHeight: 1.65,
+                    mt: 1.5
+                  }}>
                   Last 90 days: <strong>{lifetimeExtended.songsTouchedLast90d}</strong> songs with a new show, out of{' '}
                   <strong>{lifetimeExtended.distinctSongs}</strong> you have ever logged.
                 </Typography>
               </>
             ) : (
-              <Typography variant="body2" sx={{ lineHeight: 1.65 }} color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  lineHeight: 1.65
+                }}>
                 {yearScope} represents{' '}
                 <strong>{Math.round((activeStats.total / Math.max(1, lifetimeStats.total)) * 100)}%</strong> of your lifetime
                 performances ({activeStats.total} of {lifetimeStats.total}).
@@ -590,13 +680,25 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
             )}
           </Card>
           <Card elevation={0} sx={{ p: 2.5, borderRadius: 2, border: 1, borderColor: 'divider', boxShadow: encoreShadowSurface }}>
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5, color: 'primary.main' }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                alignItems: "center",
+                mb: 1.5,
+                color: 'primary.main'
+              }}>
               <StarIcon fontSize="small" />
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                 Repertoire detail
               </Typography>
             </Stack>
-            <Typography variant="body2" sx={{ lineHeight: 1.65 }} color="text.secondary">
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.65
+              }}>
               <strong>{activeExtended.onlyOnceSongCount}</strong> {isAllTime ? 'songs' : 'songs in this year'} with exactly one
               performance {isAllTime ? 'logged (your “tried it once” set).' : 'in this year.'}
             </Typography>
@@ -617,9 +719,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
           </Card>
         </Box>
       </Section>
-
       <Divider />
-
       <Section>
         <SectionTitle
           kicker="Spotlights"
@@ -689,7 +789,9 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                 {block.song?.title ?? '–'}
               </Button>
               {block.sub ? (
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                  color: "text.secondary"
+                }}>
                   {block.sub}
                 </Typography>
               ) : null}
@@ -697,9 +799,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
           ))}
         </Box>
       </Section>
-
       <Divider />
-
       <Section>
         <SectionTitle
           kicker={isAllTime ? 'All time' : yearScope}
@@ -712,7 +812,9 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
         />
         <Stack spacing={1.25}>
           {(isAllTime ? topSongsAllTime : activeExtended.topSongsThisYear).length === 0 ? (
-            <Typography color="text.secondary" variant="body2">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               {isAllTime ? 'No performances yet.' : 'No performances in this calendar slice yet.'}
             </Typography>
           ) : (
@@ -732,7 +834,13 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
                   gap: 1,
                 }}
               >
-                <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minWidth: 0 }}>
+                <Stack
+                  direction="row"
+                  spacing={1.5}
+                  sx={{
+                    alignItems: "center",
+                    minWidth: 0
+                  }}>
                   <Typography
                     variant="h6"
                     sx={{ fontWeight: 800, color: 'primary.main', fontVariantNumeric: 'tabular-nums', width: 32 }}
@@ -758,16 +866,21 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
           )}
         </Stack>
       </Section>
-
       <Divider />
-
       <Section>
         <SectionTitle
           kicker="Venues"
           title={isAllTime ? 'Where you perform most' : `Venues in ${yearScope}`}
           subtitle="Tap a chip to filter your Activity list."
         />
-        <Stack direction="row" flexWrap="wrap" gap={1} useFlexGap sx={{ mt: 0.5 }}>
+        <Stack
+          direction="row"
+          useFlexGap
+          sx={{
+            flexWrap: "wrap",
+            gap: 1,
+            mt: 0.5
+          }}>
           {activeStats.topVenues.map(([name, count]) => (
             <Chip
               key={name}
@@ -781,9 +894,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
           ))}
         </Stack>
       </Section>
-
       <Divider />
-
       <Section>
         <SectionTitle
           kicker="Years"
@@ -803,7 +914,15 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
             }}
           />
           {lifetimeStats.yearsDesc.slice(0, 16).map(([y, c]) => (
-            <Stack key={y} direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+            <Stack
+              key={y}
+              direction="row"
+              spacing={1}
+              useFlexGap
+              sx={{
+                alignItems: "center",
+                flexWrap: "wrap"
+              }}>
               <Box
                 sx={{
                   width: 12,
@@ -835,9 +954,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
           ))}
         </Stack>
       </Section>
-
       <Divider />
-
       <Section>
         <SectionTitle
           kicker="Accompaniment"
@@ -846,7 +963,9 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
         />
         <Stack spacing={1.5} sx={{ mt: 0.5 }}>
           {activeExtended.accompanimentCounts.length === 0 ? (
-            <Typography color="text.secondary" variant="body2">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               No tags in this scope. Add them on performance rows.
             </Typography>
           ) : (
@@ -855,11 +974,21 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
               const pct = Math.round((count / denom) * 100);
               return (
                 <Box key={tag}>
-                  <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                  <Stack
+                    direction="row"
+                    sx={{
+                      justifyContent: "space-between",
+                      mb: 0.5
+                    }}>
                     <Typography variant="body2" sx={{ fontWeight: 700 }}>
                       {tag}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "text.secondary",
+                        fontWeight: 600
+                      }}>
                       {count} · {pct}%
                     </Typography>
                   </Stack>
@@ -872,9 +1001,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
           )}
         </Stack>
       </Section>
-
       <Divider />
-
       <Section>
         <SectionTitle
           kicker="Weeks"
@@ -909,7 +1036,6 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
           })}
         </Box>
       </Section>
-
       {isAllTime ? (
         <>
           <Divider />
@@ -927,15 +1053,19 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
           </Section>
         </>
       ) : null}
-
       <Divider />
-
       <Section>
         <Card variant="outlined" sx={{ p: 2.5, borderRadius: 2, bgcolor: 'background.paper' }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
             Log the next one
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, maxWidth: 520 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 2,
+              maxWidth: 520
+            }}>
             Short on time? Log a row while it is fresh; your totals update as soon as you save.
           </Typography>
           <Button variant="contained" onClick={onAddPerformance} sx={{ fontWeight: 700 }}>

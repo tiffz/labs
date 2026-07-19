@@ -297,10 +297,12 @@ function PracticeSessionControlsPanel(): ReactElement {
                 size="small"
                 type="number"
                 aria-label="Custom duration in seconds"
-                inputProps={{ min: 5, max: 3600, step: 5 }}
                 value={customDurationSec}
                 onChange={(e) => setCustomDurationSec(e.target.value)}
                 className="gesture-custom-duration-field"
+                slotProps={{
+                  htmlInput: { min: 5, max: 3600, step: 5 }
+                }}
               />
               <span className="gesture-custom-duration-suffix">sec</span>
             </span>
@@ -319,7 +321,9 @@ function PracticeSessionControlsPanel(): ReactElement {
                 size="small"
                 checked={sessionLengthMode === 'endless'}
                 onChange={() => setSessionLengthMode('endless')}
-                inputProps={{ 'aria-label': 'Endless session' }}
+                slotProps={{
+                  input: { 'aria-label': 'Endless session' }
+                }}
               />
             }
             label="Endless"
@@ -331,7 +335,9 @@ function PracticeSessionControlsPanel(): ReactElement {
                 size="small"
                 checked={sessionLengthMode === 'limited'}
                 onChange={() => setSessionLengthMode('limited')}
-                inputProps={{ 'aria-label': 'Limited session length' }}
+                slotProps={{
+                  input: { 'aria-label': 'Limited session length' }
+                }}
               />
             }
             label={
@@ -341,12 +347,14 @@ function PracticeSessionControlsPanel(): ReactElement {
                   size="small"
                   type="number"
                   aria-label="Number of photos in session"
-                  inputProps={{ min: 1, max: 9999 }}
                   value={photoLimit}
                   onChange={(e) => setPhotoLimit(e.target.value)}
                   onFocus={() => setSessionLengthMode('limited')}
                   disabled={sessionLengthMode !== 'limited'}
                   className="gesture-session-photo-limit-field"
+                  slotProps={{
+                    htmlInput: { min: 1, max: 9999 }
+                  }}
                 />
                 <span className="gesture-session-length-suffix">photos</span>
               </span>

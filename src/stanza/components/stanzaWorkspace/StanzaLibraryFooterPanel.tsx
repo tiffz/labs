@@ -42,16 +42,28 @@ export default function StanzaLibraryFooterPanel({
     >
       <Typography id="stanza-library-heading" variant="subtitle2" className="stanza-whisper-title stanza-library-panel-heading">
         Your library
-        <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
+        <Typography
+          component="span"
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            ml: 1,
+            fontWeight: 400
+          }}>
           ({libraryCount})
         </Typography>
       </Typography>
       <Box className="stanza-library-panel-body">
         <Typography
           variant="body2"
-          color="text.secondary"
-          sx={{ display: 'block', mb: 1.5, fontSize: '0.8125rem', lineHeight: 1.5, maxWidth: '48rem' }}
-        >
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            mb: 1.5,
+            fontSize: '0.8125rem',
+            lineHeight: 1.5,
+            maxWidth: '48rem'
+          }}>
           Paste a YouTube link or upload a file. You can also open a video with{' '}
           <code>?v=</code> and the id in the URL bar.
         </Typography>
@@ -69,7 +81,14 @@ export default function StanzaLibraryFooterPanel({
               if (canAddYoutube) onAddYoutube();
             }}
           />
-          <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center" useFlexGap>
+          <Stack
+            direction="row"
+            spacing={1}
+            useFlexGap
+            sx={{
+              flexWrap: "wrap",
+              alignItems: "center"
+            }}>
             <Button
               variant="contained"
               size="small"

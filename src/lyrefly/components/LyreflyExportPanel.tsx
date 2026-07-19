@@ -88,24 +88,27 @@ export function LyreflyExportPanel({
       </Typography>
       <Typography
         variant="body2"
-        color="text.secondary"
         className="lyrefly-panel-helper"
-        sx={{ mb: 1.5, lineHeight: 1.55, maxWidth: '40rem' }}
-      >
+        sx={{
+          color: "text.secondary",
+          mb: 1.5,
+          lineHeight: 1.55,
+          maxWidth: '40rem'
+        }}>
         {artCount === 0
           ? 'Add page art in Draw before exporting or previewing.'
           : 'Preview as a book or vertical scroll (Tapas, WEBTOON, and similar), or download pages for print and web platforms.'}
       </Typography>
-
       <Stack
         direction="row"
         spacing={1}
-        flexWrap="wrap"
         useFlexGap
-        alignItems="center"
         className="lyrefly-export-panel__actions"
-        sx={{ mb: 1 }}
-      >
+        sx={{
+          flexWrap: "wrap",
+          alignItems: "center",
+          mb: 1
+        }}>
         {artVersions.length > 0 ? (
           <LyreflyArtVersionPicker
             project={project}
@@ -182,7 +185,6 @@ export function LyreflyExportPanel({
           {busy === 'webtoon' ? 'Zipping…' : 'WEBTOON ZIP'}
         </Button>
       </Stack>
-
       <LyreflyComicReaderDialog
         open={scrollOpen}
         onClose={() => setScrollOpen(false)}

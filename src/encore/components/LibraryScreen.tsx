@@ -200,7 +200,12 @@ function RepArtistTableCell({
   const t = String(row.original.song.artist ?? '');
   const filterVal = t.trim() ? t.trim() : ENCORE_FILTER_SENTINEL.blankArtist;
   return (
-    <Stack direction="row" alignItems="center" spacing={0.25} sx={ENCORE_ROW_HOVER_ACTIONS_SX}>
+    <Stack
+      direction="row"
+      spacing={0.25}
+      sx={[{
+        alignItems: "center"
+      }, ...(Array.isArray(ENCORE_ROW_HOVER_ACTIONS_SX) ? ENCORE_ROW_HOVER_ACTIONS_SX : [ENCORE_ROW_HOVER_ACTIONS_SX])]}>
       <Box sx={{ minWidth: 0, flex: 1, maxWidth: '100%' }}>
         <AppTooltip title={t}>
           <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
@@ -252,7 +257,12 @@ const RepertoireTableMediaEdit = memo(function RepertoireTableMediaEdit(props: {
   const { song, summary, tooltip, ariaLabel, section, onEdit, exclusiveFilter, onApplyExclusiveFilter } = props;
   const showFilter = Boolean(exclusiveFilter && onApplyExclusiveFilter);
   return (
-    <Stack direction="row" alignItems="center" spacing={0.25} sx={ENCORE_ROW_HOVER_ACTIONS_SX}>
+    <Stack
+      direction="row"
+      spacing={0.25}
+      sx={[{
+        alignItems: "center"
+      }, ...(Array.isArray(ENCORE_ROW_HOVER_ACTIONS_SX) ? ENCORE_ROW_HOVER_ACTIONS_SX : [ENCORE_ROW_HOVER_ACTIONS_SX])]}>
       <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>{summary}</Box>
       {showFilter ? (
         <Tooltip title="Filter to this value">
@@ -414,7 +424,13 @@ const RepertoireGridCard = memo(function RepertoireGridCard(props: RepertoireGri
             </Box>
           )}
           <Stack sx={{ flex: 1, minWidth: 0 }} spacing={0}>
-            <Stack direction="row" alignItems="flex-start" gap={0.75} sx={{ minWidth: 0 }}>
+            <Stack
+              direction="row"
+              sx={{
+                alignItems: "flex-start",
+                gap: 0.75,
+                minWidth: 0
+              }}>
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <AppTooltip title={s.title}>
                   <Box component="span" sx={{ display: 'block', minWidth: 0, maxWidth: '100%' }}>
@@ -458,17 +474,16 @@ const RepertoireGridCard = memo(function RepertoireGridCard(props: RepertoireGri
                   <Typography
                     variant="caption"
                     component="span"
-                    display="block"
                     noWrap
                     sx={{
+                      display: "block",
                       mt: 0.35,
                       fontWeight: 400,
                       fontVariantNumeric: 'tabular-nums',
                       color: 'text.secondary',
                       opacity: 0.85,
-                      letterSpacing: '0.01em',
-                    }}
-                  >
+                      letterSpacing: '0.01em'
+                    }}>
                     {keyDisplay}
                   </Typography>
                 ) : null}
@@ -524,11 +539,14 @@ const RepertoireGridCard = memo(function RepertoireGridCard(props: RepertoireGri
                 <Tooltip title={milestoneTooltip}>
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    display="block"
                     noWrap
-                    sx={{ mt: 1.25, fontWeight: 400, opacity: 0.9 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      display: "block",
+                      mt: 1.25,
+                      fontWeight: 400,
+                      opacity: 0.9
+                    }}>
                     Milestones {milestoneShort}
                   </Typography>
                 </Tooltip>
@@ -539,7 +557,14 @@ const RepertoireGridCard = memo(function RepertoireGridCard(props: RepertoireGri
                   const vid = performanceVideoOpenUrl(p);
                   const line = `${formatShortDate(p.date)} · ${normalizeVenueTag(p.venueTag)}`;
                   return (
-                    <Stack key={p.id} direction="row" alignItems="center" spacing={0.25} sx={{ minWidth: 0 }}>
+                    <Stack
+                      key={p.id}
+                      direction="row"
+                      spacing={0.25}
+                      sx={{
+                        alignItems: "center",
+                        minWidth: 0
+                      }}>
                       {vid ? (
                         <Link
                           href={vid}
@@ -564,10 +589,14 @@ const RepertoireGridCard = memo(function RepertoireGridCard(props: RepertoireGri
                       ) : (
                         <Typography
                           variant="caption"
-                          color="text.secondary"
                           noWrap
-                          sx={{ flex: 1, minWidth: 0, fontWeight: 400, opacity: 0.92 }}
-                        >
+                          sx={{
+                            color: "text.secondary",
+                            flex: 1,
+                            minWidth: 0,
+                            fontWeight: 400,
+                            opacity: 0.92
+                          }}>
                           {line}
                         </Typography>
                       )}
@@ -635,7 +664,14 @@ const RepertoireGridCard = memo(function RepertoireGridCard(props: RepertoireGri
                     Show less
                   </Button>
                 ) : null}
-                <Stack direction="row" alignItems="center" spacing={0.25} sx={{ minWidth: 0, pt: 0.15 }}>
+                <Stack
+                  direction="row"
+                  spacing={0.25}
+                  sx={{
+                    alignItems: "center",
+                    minWidth: 0,
+                    pt: 0.15
+                  }}>
                   <Button
                     type="button"
                     variant="text"
@@ -1223,7 +1259,12 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
           const kRaw = (song.performanceKey ?? '').trim();
           const filterVal = kRaw ? kRaw : ENCORE_FILTER_SENTINEL.blankKey;
           return (
-            <Stack direction="row" alignItems="center" spacing={0.25} sx={ENCORE_ROW_HOVER_ACTIONS_SX}>
+            <Stack
+              direction="row"
+              spacing={0.25}
+              sx={[{
+                alignItems: "center"
+              }, ...(Array.isArray(ENCORE_ROW_HOVER_ACTIONS_SX) ? ENCORE_ROW_HOVER_ACTIONS_SX : [ENCORE_ROW_HOVER_ACTIONS_SX])]}>
               <Box sx={{ flex: 1, minWidth: 0 }} onClick={(e) => e.stopPropagation()}>
                 <EncoreKeyChip
                   value={song.performanceKey}
@@ -1283,7 +1324,12 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
               </Typography>
             );
           return (
-            <Stack direction="row" alignItems="center" spacing={0.25} sx={ENCORE_ROW_HOVER_ACTIONS_SX}>
+            <Stack
+              direction="row"
+              spacing={0.25}
+              sx={[{
+                alignItems: "center"
+              }, ...(Array.isArray(ENCORE_ROW_HOVER_ACTIONS_SX) ? ENCORE_ROW_HOVER_ACTIONS_SX : [ENCORE_ROW_HOVER_ACTIONS_SX])]}>
               <Box sx={{ minWidth: 0, flex: 1 }}>{summary}</Box>
               <Tooltip title="Filter by performance status for this row">
                 <IconButton
@@ -1324,7 +1370,12 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
           const s = row.original.song;
           const filterVal = s.practicing ? 'practicing' : 'not_practicing';
           return (
-            <Stack direction="row" alignItems="center" spacing={0.25} sx={ENCORE_ROW_HOVER_ACTIONS_SX}>
+            <Stack
+              direction="row"
+              spacing={0.25}
+              sx={[{
+                alignItems: "center"
+              }, ...(Array.isArray(ENCORE_ROW_HOVER_ACTIONS_SX) ? ENCORE_ROW_HOVER_ACTIONS_SX : [ENCORE_ROW_HOVER_ACTIONS_SX])]}>
               <Checkbox
                 size="small"
                 checked={Boolean(s.practicing)}
@@ -1334,8 +1385,10 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
                   // Learning Playlist sync relies on (set on stop, cleared on re-add).
                   void saveSong(withPracticingToggle(s, e.target.checked));
                 }}
-                inputProps={{ 'aria-label': `Currently practicing: ${s.title}` }}
                 sx={{ p: 0.5, ml: -0.5 }}
+                slotProps={{
+                  input: { 'aria-label': `Currently practicing: ${s.title}` }
+                }}
               />
               <Tooltip title="Filter to this practicing status">
                 <IconButton
@@ -1612,12 +1665,14 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
           return (
             <Stack
               direction="row"
-              flexWrap="wrap"
-              gap={0.5}
               useFlexGap
-              sx={{ minWidth: 0, py: 0.25 }}
               onClick={(e) => e.stopPropagation()}
-            >
+              sx={{
+                flexWrap: "wrap",
+                gap: 0.5,
+                minWidth: 0,
+                py: 0.25
+              }}>
               {list.map((venue) => (
                 <Chip
                   key={venue}
@@ -1660,7 +1715,12 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
           const latest = row.original.latestPerf;
           const s = row.original.song;
           return (
-            <Stack direction="row" alignItems="center" spacing={0.25} sx={ENCORE_ROW_HOVER_ACTIONS_SX}>
+            <Stack
+              direction="row"
+              spacing={0.25}
+              sx={[{
+                alignItems: "center"
+              }, ...(Array.isArray(ENCORE_ROW_HOVER_ACTIONS_SX) ? ENCORE_ROW_HOVER_ACTIONS_SX : [ENCORE_ROW_HOVER_ACTIONS_SX])]}>
               <Typography
                 variant="body2"
                 sx={{
@@ -1955,10 +2015,11 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
                 </ListItemIcon>
                 <ListItemText
                   primary="Import guide (recommended order)"
-                  primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
-                  secondaryTypographyProps={{ sx: { mt: 0.85 } }}
                   secondary="Opens the Help tab: playlists first, bulk files, naming tips."
-                />
+                  slotProps={{
+                    primary: { sx: { fontWeight: 600, lineHeight: 1.35 } },
+                    secondary: { sx: { mt: 0.85 } }
+                  }} />
               </MenuItem>
               <MenuItem
                 onClick={() => {
@@ -1972,27 +2033,42 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
                 </ListItemIcon>
                 <ListItemText
                   primary="Import reference from playlists"
-                  primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
-                  secondaryTypographyProps={{ component: 'div', sx: { mt: 0.85 } }}
                   secondary={
                     <Stack
                       component="span"
                       direction="row"
-                      alignItems="center"
                       spacing={1.25}
                       aria-label="Spotify and YouTube playlists. Saves to reference recordings."
+                      sx={{
+                        alignItems: "center"
+                      }}
                     >
                       <SpotifyBrandIcon sx={{ fontSize: 18, display: 'block', flexShrink: 0 }} aria-hidden />
-                      <Typography component="span" variant="caption" color="text.secondary" sx={{ lineHeight: 0 }}>
+                      <Typography
+                        component="span"
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          lineHeight: 0
+                        }}>
                         ·
                       </Typography>
                       <YouTubeBrandIcon sx={{ fontSize: 18, display: 'block', flexShrink: 0 }} aria-hidden />
-                      <Typography component="span" variant="caption" color="text.secondary" sx={{ pl: 0.25 }}>
+                      <Typography
+                        component="span"
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          pl: 0.25
+                        }}>
                         → reference recordings
                       </Typography>
                     </Stack>
                   }
-                />
+                  slotProps={{
+                    primary: { sx: { fontWeight: 600, lineHeight: 1.35 } },
+                    secondary: { component: 'div', sx: { mt: 0.85 } }
+                  }} />
               </MenuItem>
               <MenuItem
                 onClick={() => {
@@ -2006,27 +2082,42 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
                 </ListItemIcon>
                 <ListItemText
                   primary="Import backing from playlists"
-                  primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
-                  secondaryTypographyProps={{ component: 'div', sx: { mt: 0.85 } }}
                   secondary={
                     <Stack
                       component="span"
                       direction="row"
-                      alignItems="center"
                       spacing={1.25}
                       aria-label="Spotify and YouTube playlists. Saves to backing tracks."
+                      sx={{
+                        alignItems: "center"
+                      }}
                     >
                       <SpotifyBrandIcon sx={{ fontSize: 18, display: 'block', flexShrink: 0 }} aria-hidden />
-                      <Typography component="span" variant="caption" color="text.secondary" sx={{ lineHeight: 0 }}>
+                      <Typography
+                        component="span"
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          lineHeight: 0
+                        }}>
                         ·
                       </Typography>
                       <YouTubeBrandIcon sx={{ fontSize: 18, display: 'block', flexShrink: 0 }} aria-hidden />
-                      <Typography component="span" variant="caption" color="text.secondary" sx={{ pl: 0.25 }}>
+                      <Typography
+                        component="span"
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          pl: 0.25
+                        }}>
                         → backing tracks
                       </Typography>
                     </Stack>
                   }
-                />
+                  slotProps={{
+                    primary: { sx: { fontWeight: 600, lineHeight: 1.35 } },
+                    secondary: { component: 'div', sx: { mt: 0.85 } }
+                  }} />
               </MenuItem>
               <MenuItem
                 onClick={() => {
@@ -2038,11 +2129,12 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
                   <CloudUploadIcon fontSize="small" />
                 </ListItemIcon>
                 <ListItemText
-                  primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
                   primary="Bulk import videos"
-                  secondaryTypographyProps={{ sx: { mt: 0.85 } }}
                   secondary="Drive folder or files"
-                />
+                  slotProps={{
+                    primary: { sx: { fontWeight: 600, lineHeight: 1.35 } },
+                    secondary: { sx: { mt: 0.85 } }
+                  }} />
               </MenuItem>
               <MenuItem
                 onClick={() => {
@@ -2054,17 +2146,17 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
                   <DescriptionOutlinedIcon fontSize="small" />
                 </ListItemIcon>
                 <ListItemText
-                  primaryTypographyProps={{ sx: { fontWeight: 600, lineHeight: 1.35 } }}
                   primary="Bulk import scores"
-                  secondaryTypographyProps={{ sx: { mt: 0.85 } }}
                   secondary="PDF, MusicXML, MIDI"
-                />
+                  slotProps={{
+                    primary: { sx: { fontWeight: 600, lineHeight: 1.35 } },
+                    secondary: { sx: { mt: 0.85 } }
+                  }} />
               </MenuItem>
             </Menu>
           </>
         }
       />
-
       {!songsHydrated ? (
         <LabsListLoadingState label="Loading library" variant="skeleton" />
       ) : (
@@ -2124,21 +2216,34 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
           <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.02em', mb: 1 }}>
             Nothing here yet
           </Typography>
-          <Typography color="text.secondary" sx={{ lineHeight: 1.6, mb: 0.75 }}>
+          <Typography
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.6,
+              mb: 0.75
+            }}>
             Add a song, or import from a playlist.{' '}
             <Link href={encoreAppHref({ kind: 'help' })} underline="hover" sx={{ fontWeight: 600 }}>
               Import guide
             </Link>
           </Typography>
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2.5, lineHeight: 1.5 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              display: "block",
+              mb: 2.5,
+              lineHeight: 1.5
+            }}>
             Saved on this device until you sign in with Google (Account menu).
           </Typography>
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={1}
-            justifyContent="center"
-            alignItems="center"
-          >
+            sx={{
+              justifyContent: "center",
+              alignItems: "center"
+            }}>
             <Button
               variant="contained"
               size="small"
@@ -2164,7 +2269,12 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
         </Box>
       )}
       {songs.length > 0 && repertoireSongs.length === 0 ? (
-        <Typography color="text.secondary" sx={{ mb: 2, lineHeight: 1.55 }}>
+        <Typography
+          sx={{
+            color: "text.secondary",
+            mb: 2,
+            lineHeight: 1.55
+          }}>
           No matches. Clear filters or try a shorter search.
         </Typography>
       ) : null}
@@ -2212,7 +2322,6 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
       ) : null}
         </>
       )}
-
       <Menu
         anchorEl={menuAnchor?.el ?? null}
         open={Boolean(menuAnchor)}
@@ -2272,13 +2381,17 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
           Delete
         </MenuItem>
       </Menu>
-
       <Dialog open={Boolean(perfBrowse)} onClose={() => setPerfBrowse(null)} fullWidth maxWidth="xs">
         <DialogTitle sx={encoreDialogTitleSx}>
           {perfBrowse ? `Edit performance: ${perfBrowse.song.title}` : 'Edit performance'}
         </DialogTitle>
         <DialogContent sx={encoreDialogContentSx}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 1.5
+            }}>
             This song has multiple performances. Pick one to edit.
           </Typography>
           <List disablePadding>
@@ -2296,7 +2409,9 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
                   }}
                   sx={{ borderRadius: 1 }}
                 >
-                  <ListItemText primary={line} primaryTypographyProps={{ variant: 'body2', sx: { fontWeight: 600 } }} />
+                  <ListItemText primary={line} slotProps={{
+                    primary: { variant: 'body2', sx: { fontWeight: 600 } }
+                  }} />
                 </ListItemButton>
               );
             })}
@@ -2306,7 +2421,6 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
           <Button onClick={() => setPerfBrowse(null)}>Cancel</Button>
         </DialogActions>
       </Dialog>
-
       <AddSongDialog open={addSongOpen} onClose={() => setAddSongOpen(false)} />
       <PlaylistImportDialog
         open={importOpen}
@@ -2358,7 +2472,6 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
           }
         />
       )}
-
       <SongResourcesEditDialog
         open={Boolean(songResourcesTarget)}
         song={songResourcesTarget}
@@ -2368,11 +2481,16 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
           setSongResourcesSection('all');
         }}
       />
-
       <Dialog open={bulkRefreshSpotifyOpen} onClose={() => setBulkRefreshSpotifyOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle sx={encoreDialogTitleSx}>Refresh song info from Spotify</DialogTitle>
         <DialogContent sx={encoreDialogContentSx}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.55 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 1.5,
+              lineHeight: 1.55
+            }}>
             Overwrites <strong>title</strong> and <strong>artist</strong> on each selected song using the linked Spotify
             track’s catalog metadata. Songs without a Spotify source on file are skipped.
           </Typography>
@@ -2426,7 +2544,6 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
           </Button>
         </DialogActions>
       </Dialog>
-
       <Dialog open={bulkTagOpen} onClose={() => setBulkTagOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle sx={encoreDialogTitleSx}>Add tag to {selectedSongIds.size} songs</DialogTitle>
         <DialogContent sx={encoreDialogContentSx}>
@@ -2462,11 +2579,12 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
           </Button>
         </DialogActions>
       </Dialog>
-
       <Dialog open={bulkDeleteOpen} onClose={() => setBulkDeleteOpen(false)}>
         <DialogTitle sx={encoreDialogTitleSx}>Remove {selectedSongIds.size} songs?</DialogTitle>
         <DialogContent sx={encoreDialogContentSx}>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             This deletes the songs from your library on this device (and from Drive after the next sync). Performances
             linked to these songs may become orphaned.
           </Typography>

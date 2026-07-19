@@ -305,7 +305,6 @@ export function PalettegenToolbar({ gallery, onCopied }: PalettegenToolbarProps)
           </div>
         </div>
       </header>
-
       <PalettegenImageLightbox image={viewingImage} onClose={() => setViewingImage(null)} />
     </>
   );

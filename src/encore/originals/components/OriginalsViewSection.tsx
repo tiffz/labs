@@ -35,16 +35,24 @@ export function OriginalsViewSection({
     <Paper elevation={0} sx={originalsViewSectionPaperSx(theme)}>
       <Stack
         direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        gap={1}
         useFlexGap
-        sx={originalsViewSectionHeaderSx(theme)}
-      >
+        sx={[{
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 1
+        }, originalsViewSectionHeaderSx(theme)]}>
         <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
           {title}
         </Typography>
-        <Stack direction="row" alignItems="center" spacing={0.75} useFlexGap flexWrap="wrap" sx={{ flexShrink: 0 }}>
+        <Stack
+          direction="row"
+          spacing={0.75}
+          useFlexGap
+          sx={{
+            alignItems: "center",
+            flexWrap: "wrap",
+            flexShrink: 0
+          }}>
           {trailing}
           {onEdit ? (
             <Button

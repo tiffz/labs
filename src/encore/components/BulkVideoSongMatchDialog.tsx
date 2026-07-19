@@ -99,7 +99,12 @@ export function BulkVideoSongMatchDialog(props: BulkVideoSongMatchDialogProps): 
           overflow: 'visible',
         }}
       >
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.5
+          }}>
           Search Spotify to add a new library song for this row, or type title and artist yourself.
         </Typography>
         {err ? (
@@ -110,7 +115,9 @@ export function BulkVideoSongMatchDialog(props: BulkVideoSongMatchDialogProps): 
         {clientId ? (
           spotifyLinked ? (
             <Stack spacing={1.5}>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'flex-start' }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{
+                alignItems: { sm: 'flex-start' }
+              }}>
                 <TextField
                   size="small"
                   label="Spotify search"
@@ -120,8 +127,10 @@ export function BulkVideoSongMatchDialog(props: BulkVideoSongMatchDialogProps): 
                     setErr(null);
                   }}
                   fullWidth
-                  InputLabelProps={{ shrink: true }}
                   sx={{ flex: 1, minWidth: 0 }}
+                  slotProps={{
+                    inputLabel: { shrink: true }
+                  }}
                 />
                 <Button variant="contained" onClick={() => void runSearch()} disabled={loading || !q.trim()}>
                   Search
@@ -131,7 +140,9 @@ export function BulkVideoSongMatchDialog(props: BulkVideoSongMatchDialogProps): 
               <List dense sx={{ maxHeight: 280, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
                 {results.length === 0 ? (
                   <Box sx={{ px: 2, py: 2.5 }}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                      color: "text.secondary"
+                    }}>
                       {loading ? 'Searching…' : 'No results yet. Run a search above.'}
                     </Typography>
                   </Box>
@@ -153,9 +164,10 @@ export function BulkVideoSongMatchDialog(props: BulkVideoSongMatchDialogProps): 
                         <ListItemText
                           primary={t.name}
                           secondary={t.artists.map((a) => a.name).join(', ')}
-                          primaryTypographyProps={{ noWrap: true, variant: 'subtitle2', fontWeight: 500 }}
-                          secondaryTypographyProps={{ noWrap: true, variant: 'body2' }}
-                        />
+                          slotProps={{
+                            primary: { noWrap: true, variant: 'subtitle2', sx: { fontWeight: 500 } },
+                            secondary: { noWrap: true, variant: 'body2' }
+                          }} />
                       </ListItemButton>
                     );
                   })
@@ -168,7 +180,9 @@ export function BulkVideoSongMatchDialog(props: BulkVideoSongMatchDialogProps): 
             </Button>
           )
         ) : (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Spotify search is disabled until VITE_SPOTIFY_CLIENT_ID is set.
           </Typography>
         )}
@@ -186,7 +200,9 @@ export function BulkVideoSongMatchDialog(props: BulkVideoSongMatchDialogProps): 
               value={manualTitle}
               onChange={(e) => setManualTitle(e.target.value)}
               fullWidth
-              InputLabelProps={{ shrink: true }}
+              slotProps={{
+                inputLabel: { shrink: true }
+              }}
             />
             <TextField
               size="small"
@@ -194,7 +210,9 @@ export function BulkVideoSongMatchDialog(props: BulkVideoSongMatchDialogProps): 
               value={manualArtist}
               onChange={(e) => setManualArtist(e.target.value)}
               fullWidth
-              InputLabelProps={{ shrink: true }}
+              slotProps={{
+                inputLabel: { shrink: true }
+              }}
             />
             <Button
               variant="outlined"

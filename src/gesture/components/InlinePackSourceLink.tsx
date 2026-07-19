@@ -63,7 +63,9 @@ export default function InlinePackSourceLink({
   if (editing) {
     return (
       <div className="gesture-inline-source">
-        <LinkIcon className="gesture-inline-source-icon" fontSize="inherit" aria-hidden />
+        <LinkIcon className="gesture-inline-source-icon" aria-hidden sx={{
+          fontSize: "inherit"
+        }} />
         <input
           ref={inputRef}
           className="gesture-inline-source-input"
@@ -97,7 +99,9 @@ export default function InlinePackSourceLink({
           target="_blank"
           rel="noopener noreferrer"
         >
-          <LinkIcon className="gesture-inline-source-icon" fontSize="inherit" aria-hidden />
+          <LinkIcon className="gesture-inline-source-icon" aria-hidden sx={{
+            fontSize: "inherit"
+          }} />
           <span>{displayPackSourceUrl(pack.sourceUrl)}</span>
           <OpenInNewIcon className="gesture-inline-source-open" fontSize="inherit" aria-hidden />
         </a>
@@ -120,8 +124,9 @@ export default function InlinePackSourceLink({
       onClick={() => !disabled && setEditing(true)}
       disabled={disabled || busy}
     >
-      <LinkIcon className="gesture-inline-source-icon" fontSize="inherit" aria-hidden />
-      Add source link
-    </button>
+      <LinkIcon className="gesture-inline-source-icon" aria-hidden sx={{
+        fontSize: "inherit"
+      }} />Add source link
+          </button>
   );
 }

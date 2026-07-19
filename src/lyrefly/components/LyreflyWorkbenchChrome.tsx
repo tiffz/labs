@@ -36,20 +36,22 @@ export function LyreflyWorkbenchChrome({
           <Stack
             className="lyrefly-workbench__title-block"
             direction="row"
-            alignItems="center"
             spacing={1}
             useFlexGap
-            flexWrap="wrap"
-            sx={{ minWidth: 0 }}
-          >
+            sx={{
+              alignItems: "center",
+              flexWrap: "wrap",
+              minWidth: 0
+            }}>
             <TextField
               variant="standard"
               value={project.title}
               onChange={(e) => onTitleChange(e.target.value)}
-              inputProps={{ 'aria-label': 'Comic title', className: 'lyrefly-workbench__title-input' }}
-              InputProps={{ disableUnderline: true }}
               sx={{ minWidth: 0, flex: '1 1 8rem', maxWidth: '100%' }}
-            />
+              slotProps={{
+                input: { disableUnderline: true },
+                htmlInput: { 'aria-label': 'Comic title', className: 'lyrefly-workbench__title-input' }
+              }} />
             <LyreflyProjectModeSwitch projectId={project.id} mode="editor" editorStage={stage} />
           </Stack>
           <div className="lyrefly-workbench__nav-stepper">

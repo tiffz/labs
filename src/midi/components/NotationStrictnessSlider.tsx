@@ -21,7 +21,9 @@ export function NotationStrictnessSlider() {
       <Typography variant="subtitle2" id="midi-strictness-label" className="midi-strictness-label">
         How tidy should it look?
       </Typography>
-      <Typography variant="caption" color="text.secondary">
+      <Typography variant="caption" sx={{
+        color: "text.secondary"
+      }}>
         {helper}
       </Typography>
       <AppLinearVolumeSlider
@@ -33,9 +35,15 @@ export function NotationStrictnessSlider() {
         disabled={disabled}
         onChange={(_e, v) => dispatch({ type: 'SET_NOTATION_STRICTNESS', value: v as number })}
       />
-      <Stack direction="row" justifyContent="space-between">
-        <Typography variant="caption" color="text.secondary">Loose</Typography>
-        <Typography variant="caption" color="text.secondary">Strict</Typography>
+      <Stack direction="row" sx={{
+        justifyContent: "space-between"
+      }}>
+        <Typography variant="caption" sx={{
+          color: "text.secondary"
+        }}>Loose</Typography>
+        <Typography variant="caption" sx={{
+          color: "text.secondary"
+        }}>Strict</Typography>
       </Stack>
     </Stack>
   );

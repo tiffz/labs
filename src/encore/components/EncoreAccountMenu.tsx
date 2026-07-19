@@ -1,7 +1,7 @@
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FolderIcon from '@mui/icons-material/Folder';
 import HistoryIcon from '@mui/icons-material/History';
@@ -402,9 +402,12 @@ export function EncoreAccountMenu(props: {
                     <Typography
                       component="span"
                       variant="caption"
-                      color="text.secondary"
-                      sx={{ ml: 0.75, fontFamily: 'ui-monospace, monospace', fontWeight: 500 }}
-                    >
+                      sx={{
+                        color: "text.secondary",
+                        ml: 0.75,
+                        fontFamily: 'ui-monospace, monospace',
+                        fontWeight: 500
+                      }}>
                       · {spotifyAccountSummary.id}
                     </Typography>
                   </>
@@ -435,7 +438,9 @@ export function EncoreAccountMenu(props: {
         alert={
           spotifyConnectError ? (
             <Alert severity="error" onClose={clearSpotifyConnectError} sx={{ '& .MuiAlert-message': { width: 1 } }}>
-              <Typography variant="body2" component="span" display="block">
+              <Typography variant="body2" component="span" sx={{
+                display: "block"
+              }}>
                 {spotifyConnectError}
               </Typography>
               {spotifyConnectLoopbackUrl ? (
@@ -464,7 +469,9 @@ export function EncoreAccountMenu(props: {
         alert={
           spotifyConnectError ? (
             <Alert severity="error" onClose={clearSpotifyConnectError} sx={{ '& .MuiAlert-message': { width: 1 } }}>
-              <Typography variant="body2" component="span" display="block">
+              <Typography variant="body2" component="span" sx={{
+                display: "block"
+              }}>
                 {spotifyConnectError}
               </Typography>
               {spotifyConnectLoopbackUrl ? (
@@ -520,16 +527,30 @@ export function EncoreAccountMenu(props: {
             }}
             endIcon={<ExpandMoreIcon sx={{ opacity: 0.75, fontSize: 20 }} />}
           >
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                alignItems: "center",
+                minWidth: 0
+              }}>
               <AccountCircleIcon sx={{ opacity: 0.85, flexShrink: 0, fontSize: 24 }} />
-              <Stack alignItems="flex-start" spacing={0.375} sx={{ minWidth: 0, textAlign: 'left' }}>
+              <Stack
+                spacing={0.375}
+                sx={{
+                  alignItems: "flex-start",
+                  minWidth: 0,
+                  textAlign: 'left'
+                }}>
                 {effectiveDisplayName ? (
                   <Typography variant="body2" noWrap sx={{ fontWeight: 600, lineHeight: 1.35, letterSpacing: '-0.01em' }}>
                     Hi, {effectiveDisplayName}
                   </Typography>
                 ) : null}
                 {googleSessionExpired && !googleAccessToken ? (
-                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <Stack direction="row" spacing={0.5} sx={{
+                    alignItems: "center"
+                  }}>
                     <ErrorOutlineIcon sx={{ fontSize: 14, color: 'warning.main' }} />
                     <Typography
                       variant="caption"
@@ -539,7 +560,13 @@ export function EncoreAccountMenu(props: {
                     </Typography>
                   </Stack>
                 ) : (
-                  <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35, fontWeight: 500 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      lineHeight: 1.35,
+                      fontWeight: 500
+                    }}>
                     Account
                   </Typography>
                 )}
@@ -576,9 +603,17 @@ export function EncoreAccountMenu(props: {
               bgcolor: (t) => alpha(t.palette.primary.main, 0.03),
             }}
           >
-            <Stack direction="row" alignItems="flex-start" spacing={1.25}>
+            <Stack direction="row" spacing={1.25} sx={{
+              alignItems: "flex-start"
+            }}>
               <ShieldOutlinedIcon sx={{ fontSize: 18, color: 'text.secondary', mt: 0.125 }} aria-hidden />
-              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.65, letterSpacing: '-0.008em' }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  lineHeight: 1.65,
+                  letterSpacing: '-0.008em'
+                }}>
                 Your library stays in this browser; Encore doesn’t host it.{' '}
                 <Link
                   href={PRIVACY_POLICY_URL}

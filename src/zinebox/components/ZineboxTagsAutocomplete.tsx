@@ -87,9 +87,9 @@ export default function ZineboxTagsAutocomplete({
           </li>
         );
       }}
-      renderTags={(items, getTagProps) =>
+      renderValue={(items, getItemProps) =>
         items.map((tag, index) => {
-          const { key, ...tagProps } = getTagProps({ index });
+          const { key, ...tagProps } = getItemProps({ index });
           return (
             <Chip
               {...tagProps}

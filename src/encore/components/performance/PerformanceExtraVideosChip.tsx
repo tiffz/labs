@@ -72,7 +72,14 @@ function PerformanceVideoBrowseRow(props: {
   const label = video.label?.trim() || 'Video';
 
   return (
-    <Stack direction="row" spacing={1} alignItems="center" sx={{ py: 0.75, minWidth: 0 }}>
+    <Stack
+      direction="row"
+      spacing={1}
+      sx={{
+        alignItems: "center",
+        py: 0.75,
+        minWidth: 0
+      }}>
       <PerformanceVideoPlayableThumb
         performance={pseudo}
         width={BROWSE_THUMB_WIDTH}
@@ -85,7 +92,13 @@ function PerformanceVideoBrowseRow(props: {
           {label}
         </Typography>
       </Box>
-      <Stack direction="row" alignItems="center" spacing={0.25} sx={{ flexShrink: 0 }}>
+      <Stack
+        direction="row"
+        spacing={0.25}
+        sx={{
+          alignItems: "center",
+          flexShrink: 0
+        }}>
         {openUrl ? (
           <Tooltip title={openLabel ?? 'Open video'}>
             <IconButton
@@ -179,7 +192,13 @@ export function PerformanceExtraVideosChip(props: PerformanceExtraVideosChipProp
           <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.25 }}>
             {totalVideos === 1 ? '1 video' : `${totalVideos} videos`}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              display: 'block',
+              mb: 0.75
+            }}>
             Play or open any clip from this performance.
           </Typography>
           <Stack

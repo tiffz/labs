@@ -9,7 +9,14 @@ export function CaptureBar() {
   const { captureBarCount, isListening, capturedLoop } = state;
 
   return (
-    <Stack direction="row" alignItems="center" spacing={2} flexWrap="wrap" className="midi-capture-bar">
+    <Stack
+      direction="row"
+      spacing={2}
+      className="midi-capture-bar"
+      sx={{
+        alignItems: "center",
+        flexWrap: "wrap"
+      }}>
       <MidiIntStepper
         label="Bars"
         value={captureBarCount}
@@ -17,7 +24,6 @@ export function CaptureBar() {
         max={16}
         onChange={(count) => dispatch({ type: 'SET_CAPTURE_BAR_COUNT', count })}
       />
-
       <Button
         variant="contained"
         className="midi-capture-cta"
@@ -26,15 +32,17 @@ export function CaptureBar() {
       >
         Capture last {captureBarCount} bars
       </Button>
-
       {!isListening && (
-        <Typography variant="body2" color="text.secondary" className="midi-capture-hint">
+        <Typography variant="body2" className="midi-capture-hint" sx={{
+          color: "text.secondary"
+        }}>
           Plug in a keyboard to capture.
         </Typography>
       )}
-
       {capturedLoop && (
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{
+          color: "text.secondary"
+        }}>
           Loop ready · {capturedLoop.events.length} events
         </Typography>
       )}

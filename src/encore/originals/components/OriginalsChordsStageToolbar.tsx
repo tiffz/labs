@@ -1,5 +1,5 @@
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
@@ -37,17 +37,16 @@ export function OriginalsChordsStageToolbar({
   return (
     <Stack
       direction="row"
-      alignItems="center"
-      flexWrap="wrap"
       className="encore-originals-chords-toolbar"
       sx={{
+        alignItems: "center",
+        flexWrap: "wrap",
         flexShrink: 0,
         px: encoreSurfacePadX,
         py: 0.55,
         gap: 0.75,
-        rowGap: 0.4,
-      }}
-    >
+        rowGap: 0.4
+      }}>
       <OriginalsChordsStageMeta song={song} layout={layout} onChange={onSongChange} />
       <OriginalsChordPlaybackBar
         layout={layout}
@@ -56,7 +55,9 @@ export function OriginalsChordsStageToolbar({
         onActiveStepChange={onActivePlaybackStepChange}
       />
       <Box sx={{ flex: 1, minWidth: 8 }} />
-      <Stack direction="row" spacing={0.15} alignItems="center" className="encore-originals-chords-actions">
+      <Stack direction="row" spacing={0.15} className="encore-originals-chords-actions" sx={{
+        alignItems: "center"
+      }}>
         <OriginalsChartExportMenu song={song} layout={layout} onPersist={onPersist} />
         <OriginalsOpenInWordsButton song={song} />
       </Stack>

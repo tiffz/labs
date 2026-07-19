@@ -43,7 +43,9 @@ export default function AlbersEqualizerView({
       <Typography variant="subtitle2" component="p">
         Match the right inner swatch to the left reference (perceived equality).
       </Typography>
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-start">
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{
+        alignItems: "flex-start"
+      }}>
         {fieldPanel(challenge.left, 'Reference (locked)')}
         {fieldPanel(challenge.right, 'Your field', input)}
       </Stack>

@@ -159,16 +159,15 @@ export default function GuidanceCallout({ payload, onDismiss }: GuidanceCalloutP
 
         <Typography
           variant="caption"
-          color="text.secondary"
           component="p"
           sx={{
+            color: "text.secondary",
             mt: 5,
             mb: 0,
             textAlign: 'center',
             lineHeight: 1.45,
-            letterSpacing: '0.025rem',
-          }}
-        >
+            letterSpacing: '0.025rem'
+          }}>
           {PIANO_ADVANCE_BUTTON_TOOLTIP}
         </Typography>
 

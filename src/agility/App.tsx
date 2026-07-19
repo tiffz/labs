@@ -362,7 +362,12 @@ export default function App(): ReactElement {
             <Typography variant="subtitle2" component="h2" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
               Step 1: Timing calibration
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.45
+              }}>
               Short ping through speakers; we listen on the mic for delay. Headphones block that path—use manual ms.
             </Typography>
             <FormControlLabel
@@ -371,8 +376,10 @@ export default function App(): ReactElement {
                 <Checkbox
                   checked={headphones}
                   onChange={(_, c) => saveHeadphones(c)}
-                  inputProps={{ 'aria-label': 'I use headphones' }}
                   size="small"
+                  slotProps={{
+                    input: { 'aria-label': 'I use headphones' }
+                  }}
                 />
               }
               label="I use headphones (skip automatic measure)"
@@ -390,13 +397,16 @@ export default function App(): ReactElement {
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
               spacing={0.5}
-              justifyContent="space-between"
-              alignItems={{ sm: 'baseline' }}
-            >
+              sx={{
+                justifyContent: "space-between",
+                alignItems: { sm: 'baseline' }
+              }}>
               <Typography variant="body2">
                 Base latency: <strong>{latencyMeasure} ms</strong>
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 Manual trim (± ms)
               </Typography>
             </Stack>
@@ -423,7 +433,12 @@ export default function App(): ReactElement {
             <Typography variant="subtitle2" component="h2" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
               Step 2: Comfortable range (MIDI)
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.45
+              }}>
               Transpose patterns into a safe pocket for your voice.
             </Typography>
             <Typography variant="body2">
@@ -486,15 +501,22 @@ export default function App(): ReactElement {
                     <Stack
                       direction={{ xs: 'column', sm: 'row' }}
                       spacing={1.5}
-                      alignItems={{ xs: 'stretch', sm: 'flex-start' }}
-                      justifyContent="space-between"
-                    >
+                      sx={{
+                        alignItems: { xs: 'stretch', sm: 'flex-start' },
+                        justifyContent: "space-between"
+                      }}>
                       <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                           {lv.title}
                           {locked ? ' · locked' : ''}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            display: 'block',
+                            mt: 0.5
+                          }}>
                           {lv.description}
                         </Typography>
                       </Box>
@@ -516,7 +538,9 @@ export default function App(): ReactElement {
 
             <Stack spacing={1.5} className="agility-panel">
               <Typography className="agility-section-label">Input</Typography>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{
+                alignItems: { sm: 'center' }
+              }}>
                 <Typography variant="body2" sx={{ minWidth: { sm: 88 } }}>
                   Microphone
                 </Typography>
@@ -545,8 +569,15 @@ export default function App(): ReactElement {
         )}
 
         {phase === 'run' && (
-          <Stack spacing={2.5} alignItems="stretch">
-            <Stack spacing={0.5} alignItems="center" textAlign="center">
+          <Stack spacing={2.5} sx={{
+            alignItems: "stretch"
+          }}>
+            <Stack
+              spacing={0.5}
+              sx={{
+                alignItems: "center",
+                textAlign: "center"
+              }}>
               {countdown !== null && (
                 <Typography variant="h3" sx={{ fontWeight: 800, letterSpacing: '-0.04em' }}>
                   {countdown}
@@ -581,7 +612,9 @@ export default function App(): ReactElement {
                   {precision.pitchScore})
                 </Typography>
               )}
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 Pass at score ≥ {PASS_THRESHOLD} unlocks the next level.
               </Typography>
             </Stack>
@@ -590,7 +623,9 @@ export default function App(): ReactElement {
                 <TimingHeatMap slots={summaryHits.slice(0, 96)} width={Math.min(640, svgW)} />
               </Box>
             ) : (
-              <Typography color="text.secondary">No note onsets captured.</Typography>
+              <Typography sx={{
+                color: "text.secondary"
+              }}>No note onsets captured.</Typography>
             )}
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
               <Button variant="contained" disabled={!recordBlob || playingDuet} onClick={() => void replayDuet()}>

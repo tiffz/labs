@@ -101,7 +101,13 @@ export default function GestureAccountMenu() {
               }
             />
             {organizeNote ? (
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  display: 'block',
+                  mt: 0.75
+                }}>
                 {organizeNote}
               </Typography>
             ) : null}

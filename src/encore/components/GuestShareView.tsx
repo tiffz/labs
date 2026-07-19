@@ -214,17 +214,32 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
           </Typography>
           {showDevSetup ? (
             <>
-              <Typography color="text.secondary" sx={{ lineHeight: 1.6 }}>
+              <Typography
+                sx={{
+                  color: "text.secondary",
+                  lineHeight: 1.6
+                }}>
                 {message ?? guestSnapshotErrorMessage('dev_missing_api_key')}
               </Typography>
               <GuestSnapshotDevSetupPanel />
             </>
           ) : (
-            <Typography color="text.secondary" sx={{ lineHeight: 1.6, mb: 1 }}>
+            <Typography
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.6,
+                mb: 1
+              }}>
               {message ?? 'The link may have expired or been removed.'}
             </Typography>
           )}
-          <Typography color="text.secondary" sx={{ lineHeight: 1.6, mb: 3, mt: showDevSetup ? 0 : undefined }}>
+          <Typography
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.6,
+              mb: 3,
+              mt: showDevSetup ? 0 : undefined
+            }}>
             If this keeps happening, ask the owner to publish the snapshot again from Encore. The link does not change.
           </Typography>
           <Button variant="outlined" startIcon={<RefreshIcon />} onClick={retry}>
@@ -249,7 +264,13 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
         <Typography variant="h4" component="h1" sx={{ ...encorePageTitleSx, mb: 0.75 }}>
           {possessiveTitle(snap.ownerDisplayName)}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 4, lineHeight: 1.55 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 4,
+            lineHeight: 1.55
+          }}>
           Updated {updated} · Read-only snapshot
         </Typography>
 
@@ -314,21 +335,32 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
                     <Typography variant="subtitle1" sx={{ fontWeight: 700, letterSpacing: '-0.01em' }} noWrap>
                       {s.title}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" noWrap>
+                    <Typography variant="body2" noWrap sx={{
+                      color: "text.secondary"
+                    }}>
                       {s.artist}
                     </Typography>
                     {meta ? (
                       <Typography
                         variant="caption"
-                        color="text.secondary"
-                        display="block"
-                        sx={{ mt: 0.5, fontVariantNumeric: 'tabular-nums' }}
-                      >
+                        sx={{
+                          color: "text.secondary",
+                          display: "block",
+                          mt: 0.5,
+                          fontVariantNumeric: 'tabular-nums'
+                        }}>
                         {meta}
                       </Typography>
                     ) : null}
                     {s.tags && s.tags.length > 0 ? (
-                      <Stack direction="row" gap={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.75 }}>
+                      <Stack
+                        direction="row"
+                        useFlexGap
+                        sx={{
+                          gap: 0.5,
+                          flexWrap: "wrap",
+                          mt: 0.75
+                        }}>
                         {s.tags.map((t) => (
                           <Chip
                             key={t}
@@ -341,7 +373,13 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
                       </Stack>
                     ) : null}
                     {(s.spotifyTrackId || ytWatchUrl || backingYtUrl) && (
-                      <Stack direction="row" gap={1.25} sx={{ mt: 0.75 }} alignItems="center">
+                      <Stack
+                        direction="row"
+                        sx={{
+                          gap: 1.25,
+                          alignItems: "center",
+                          mt: 0.75
+                        }}>
                         {s.spotifyTrackId ? (
                           <Tooltip title="Listen to the original track on Spotify">
                             <IconButton
@@ -395,16 +433,18 @@ export function GuestShareView({ fileId }: { fileId: string }): React.ReactEleme
                           <Stack
                             key={p.id}
                             direction="row"
-                            gap={1}
-                            alignItems="baseline"
-                            flexWrap="wrap"
-                            sx={{ lineHeight: 1.55 }}
-                          >
+                            sx={{
+                              gap: 1,
+                              alignItems: "baseline",
+                              flexWrap: "wrap",
+                              lineHeight: 1.55
+                            }}>
                             <Typography
                               variant="caption"
-                              color="text.secondary"
-                              sx={{ fontVariantNumeric: 'tabular-nums' }}
-                            >
+                              sx={{
+                                color: "text.secondary",
+                                fontVariantNumeric: 'tabular-nums'
+                              }}>
                               {p.date} · {p.venueTag}
                             </Typography>
                             {p.videoOpenUrl ? (

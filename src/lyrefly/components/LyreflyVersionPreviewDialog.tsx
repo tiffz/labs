@@ -165,11 +165,12 @@ export function LyreflyVersionPreviewDialog({
       onClose={onClose}
       fullWidth
       maxWidth={false}
-      TransitionProps={{ onEntered: handleEntered }}
       aria-labelledby="lyrefly-version-preview-title"
       data-testid="lyrefly-version-preview-dialog"
-      PaperProps={{ className: 'lyrefly-version-preview-dialog' }}
-    >
+      slotProps={{
+        transition: { onEntered: handleEntered },
+        paper: { className: 'lyrefly-version-preview-dialog' }
+      }}>
       <DialogTitle id="lyrefly-version-preview-title" component="div">
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box component="h2" sx={{ m: 0, flex: 1, minWidth: 0, font: 'inherit' }}>
@@ -255,8 +256,10 @@ export function LyreflyVersionPreviewDialog({
                   size="small"
                   checked={showBleedGuides}
                   onChange={(event) => setShowBleedGuides(event.target.checked)}
-                  inputProps={{ 'aria-label': 'Show bleed guides in book preview' }}
                   data-testid="lyrefly-preview-bleed-guides"
+                  slotProps={{
+                    input: { 'aria-label': 'Show bleed guides in book preview' }
+                  }}
                 />
               }
               label="Bleed guides"

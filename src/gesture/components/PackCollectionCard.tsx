@@ -3,7 +3,7 @@ import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import InlinePackName from './InlinePackName';
 import InlinePackSourceLink from './InlinePackSourceLink';

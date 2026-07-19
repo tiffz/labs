@@ -116,16 +116,22 @@ function PerformanceCard(props: {
         alt={url ? `Video thumbnail for performance on ${p.date}` : `Performance on ${p.date}`}
         googleAccessToken={googleAccessToken}
       />
-      <Stack direction="row" alignItems="center" gap={0.75} flexWrap="wrap" useFlexGap>
+      <Stack
+        direction="row"
+        useFlexGap
+        sx={{
+          alignItems: "center",
+          gap: 0.75,
+          flexWrap: "wrap"
+        }}>
         <Typography
           variant="caption"
-          color="text.secondary"
           sx={{
+            color: "text.secondary",
             fontWeight: 700,
             letterSpacing: '0.08em',
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
+            fontVariantNumeric: 'tabular-nums'
+          }}>
           {p.date}
         </Typography>
         <PerformanceExtraVideosChip
@@ -139,11 +145,24 @@ function PerformanceCard(props: {
         {p.venueTag?.trim() || 'Venue'}
       </Typography>
       {p.notes ? (
-        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.45
+          }}>
           {p.notes.length > 140 ? `${p.notes.slice(0, 140)}…` : p.notes}
         </Typography>
       ) : null}
-      <Stack direction="row" flexWrap="wrap" gap={0.75} alignItems="center" sx={{ mt: 'auto', pt: 0.5 }}>
+      <Stack
+        direction="row"
+        sx={{
+          flexWrap: "wrap",
+          gap: 0.75,
+          alignItems: "center",
+          mt: 'auto',
+          pt: 0.5
+        }}>
         <PerformanceMediaActions performance={p} playProps={playProps} />
         <Button
           size="small"
@@ -181,17 +200,27 @@ export function SongPerformancesPanel(props: SongPerformancesPanelProps): ReactE
     <>
       <Stack
         direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        flexWrap="wrap"
-        gap={1}
-        sx={{ mb: 2 }}
-      >
-        <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap" useFlexGap>
+        sx={{
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 1,
+          mb: 2
+        }}>
+        <Stack
+          direction="row"
+          useFlexGap
+          sx={{
+            alignItems: "center",
+            gap: 1,
+            flexWrap: "wrap"
+          }}>
           {performances.length > 0 ? (
             <Chip size="small" label={`${performances.length} logged`} variant="outlined" sx={{ fontWeight: 600 }} />
           ) : (
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               None yet.
             </Typography>
           )}
@@ -201,7 +230,15 @@ export function SongPerformancesPanel(props: SongPerformancesPanelProps): ReactE
         </Button>
       </Stack>
       {venueBreakdown.length > 0 ? (
-        <Stack direction="row" flexWrap="wrap" gap={0.75} useFlexGap sx={{ mb: 2, alignItems: 'center' }}>
+        <Stack
+          direction="row"
+          useFlexGap
+          sx={{
+            flexWrap: "wrap",
+            gap: 0.75,
+            mb: 2,
+            alignItems: 'center'
+          }}>
           <Chip
             size="small"
             label="All venues"
@@ -224,7 +261,12 @@ export function SongPerformancesPanel(props: SongPerformancesPanelProps): ReactE
       ) : null}
       {performances.length > 0 ? (
         filteredPerformances.length === 0 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              py: 2
+            }}>
             None yet at this venue.
           </Typography>
         ) : (

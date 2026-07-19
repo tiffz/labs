@@ -132,7 +132,9 @@ export default function StanzaDriveDeepLinkAlerts({
         <StanzaInlineAlert
           severity="info"
           action={
-            <Stack direction="row" spacing={0.5} alignItems="center">
+            <Stack direction="row" spacing={0.5} sx={{
+              alignItems: "center"
+            }}>
               <Button color="inherit" size="small" disabled={driveDeepLinkBusy} onClick={onDismissDriveDeepLinkRemovedPrompt}>
                 Not now
               </Button>
@@ -185,7 +187,12 @@ export default function StanzaDriveDeepLinkAlerts({
               {driveDeepLinkError}
             </Typography>
             {/popup|Allow popups|sign-in window|blocked/i.test(driveDeepLinkError) ? (
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  lineHeight: 1.5
+                }}>
                 Popups blocked here are common even when your email shows in the account menu. That menu only remembers
                 who you last signed in as in Encore.{' '}
                 <Link href="/encore/" target="_blank" rel="noopener noreferrer">

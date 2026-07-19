@@ -39,7 +39,9 @@ export function SessionExerciseResultBreakdown({
               flexShrink: 0,
             }}
           />
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             {count} {label.toLowerCase()}
           </Typography>
         </Box>

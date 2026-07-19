@@ -84,7 +84,14 @@ export function ImportGuideScreen(): ReactElement {
       }}
     >
       <Box sx={{ maxWidth: ARTICLE_MAX, mx: 'auto' }}>
-        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={2} sx={{ mb: 1 }}>
+        <Stack
+          direction="row"
+          sx={{
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 2,
+            mb: 1
+          }}>
           <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: '0.14em' }}>
             Help
           </Typography>
@@ -381,7 +388,12 @@ export function ImportGuideScreen(): ReactElement {
             and performances.
           </Typography>
 
-          <Stack direction="row" flexWrap="wrap" gap={1.5}>
+          <Stack
+            direction="row"
+            sx={{
+              flexWrap: "wrap",
+              gap: 1.5
+            }}>
             <Button variant="contained" component="a" href={encoreAppHref({ kind: 'library' })} sx={{ textTransform: 'none' }}>
               Go to repertoire
             </Button>
@@ -389,7 +401,14 @@ export function ImportGuideScreen(): ReactElement {
               Settings
             </Button>
           </Stack>
-          <Typography variant="body2" color="text.secondary" sx={{ display: 'block', mt: 2.5, lineHeight: 1.6 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              display: 'block',
+              mt: 2.5,
+              lineHeight: 1.6
+            }}>
             From the repertoire screen, open the toolbar{' '}
             <Typography component="span" sx={{ fontWeight: 600 }}>
               Add

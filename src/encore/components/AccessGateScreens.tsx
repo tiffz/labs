@@ -103,22 +103,27 @@ export function AccessRestrictedScreen(props: {
         >
           {title}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: message ? 1.25 : 2.5, lineHeight: 1.6 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: message ? 1.25 : 2.5,
+            lineHeight: 1.6
+          }}>
           {lead}
         </Typography>
         {message ? (
           <Typography
             variant="body2"
-            color="text.secondary"
             component="pre"
             sx={{
+              color: "text.secondary",
               mb: 2.5,
               lineHeight: 1.55,
               whiteSpace: 'pre-wrap',
               fontFamily: 'inherit',
-              wordBreak: 'break-word',
-            }}
-          >
+              wordBreak: 'break-word'
+            }}>
             {message}
           </Typography>
         ) : null}
@@ -173,7 +178,13 @@ export function SignInLanding(props: {
         >
           Repertoire tracker for singers
         </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.55 }}>
+        <Typography
+          variant="body1"
+          sx={{
+            color: "text.secondary",
+            mb: 3,
+            lineHeight: 1.55
+          }}>
           Songs, performances, and milestones in one place. Saves locally first; sign in to back up to Google Drive
           and import from YouTube.
         </Typography>

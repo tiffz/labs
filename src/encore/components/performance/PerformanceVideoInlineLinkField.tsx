@@ -1,4 +1,4 @@
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
@@ -45,7 +45,9 @@ export function PerformanceVideoInlineLinkField(props: PerformanceVideoInlineLin
 
   return (
     <Stack spacing={0.75}>
-      <Stack direction="row" alignItems="flex-start" spacing={0.75}>
+      <Stack direction="row" spacing={0.75} sx={{
+        alignItems: "flex-start"
+      }}>
         <TextField
           label="Video link"
           value={value}
@@ -70,17 +72,40 @@ export function PerformanceVideoInlineLinkField(props: PerformanceVideoInlineLin
         ) : null}
       </Stack>
       {driveLinkFeedback?.kind === 'loading' ? (
-        <Stack direction="row" alignItems="center" gap={1} sx={{ minHeight: 24 }}>
+        <Stack
+          direction="row"
+          sx={{
+            alignItems: "center",
+            gap: 1,
+            minHeight: 24
+          }}>
           <CircularProgress size={14} />
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             Checking Drive…
           </Typography>
         </Stack>
       ) : null}
       {driveLinkFeedback?.kind === 'ok' && browseDriveVideoFileId ? (
-        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ minHeight: 24 }}>
+        <Stack
+          direction="row"
+          spacing={0.75}
+          sx={{
+            alignItems: "center",
+            minHeight: 24
+          }}>
           <CheckCircleOutlineIcon color="success" sx={{ fontSize: 18, flexShrink: 0 }} aria-hidden />
-          <Typography variant="body2" fontWeight={600} sx={{ flex: 1, minWidth: 0, lineHeight: 1.25 }} noWrap title={driveLinkFeedback.name}>
+          <Typography
+            variant="body2"
+            noWrap
+            title={driveLinkFeedback.name}
+            sx={{
+              fontWeight: 600,
+              flex: 1,
+              minWidth: 0,
+              lineHeight: 1.25
+            }}>
             {driveLinkFeedback.name}
           </Typography>
           <Tooltip title="Open in Drive">

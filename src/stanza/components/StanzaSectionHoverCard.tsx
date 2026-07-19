@@ -93,7 +93,16 @@ export default function StanzaSectionHoverCard({
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
     >
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.35, fontWeight: 600, letterSpacing: '0.04em', fontSize: '0.65rem' }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: "text.secondary",
+          display: 'block',
+          mb: 0.35,
+          fontWeight: 600,
+          letterSpacing: '0.04em',
+          fontSize: '0.65rem'
+        }}>
         Section
       </Typography>
       <TextField
@@ -113,7 +122,14 @@ export default function StanzaSectionHoverCard({
         sx={{ mb: 0.75, '& .MuiInputBase-root': { fontSize: '0.8125rem' } }}
       />
       {typeof sectionBpm === 'number' && Number.isFinite(sectionBpm) ? (
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontSize: '0.7rem' }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            mb: 0.5,
+            fontSize: '0.7rem'
+          }}>
           Metronome:{' '}
           <strong>
             {Math.abs(sectionBpm - Math.round(sectionBpm)) < 1e-6
@@ -184,7 +200,14 @@ export default function StanzaSectionHoverCard({
           />
         </AppTooltip>
       ) : null}
-      <Typography variant="caption" color="text.secondary" component="div" sx={{ lineHeight: 1.4, fontSize: '0.65rem' }}>
+      <Typography
+        variant="caption"
+        component="div"
+        sx={{
+          color: "text.secondary",
+          lineHeight: 1.4,
+          fontSize: '0.65rem'
+        }}>
         {formatDuration(segment.start)} → {formatDuration(segment.end)}
         <br />
         Length: {formatDuration(dur)}

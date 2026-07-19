@@ -83,9 +83,11 @@ export function SongPageSongTopSection(props: {
       <Stack
         direction={{ xs: 'column', md: 'row' }}
         spacing={{ xs: 3, md: 4 }}
-        alignItems={{ xs: 'stretch', md: 'flex-start' }}
-        sx={{ width: 1, minWidth: 0 }}
-      >
+        sx={{
+          alignItems: { xs: 'stretch', md: 'flex-start' },
+          width: 1,
+          minWidth: 0
+        }}>
         <Stack
           spacing={2}
           sx={{

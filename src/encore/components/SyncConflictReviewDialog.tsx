@@ -1,4 +1,4 @@
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutlined';
 import CloudIcon from '@mui/icons-material/Cloud';
 import LaptopMacIcon from '@mui/icons-material/LaptopMac';
 import Box from '@mui/material/Box';
@@ -71,7 +71,14 @@ function ChoiceCard(props: {
         },
       }}
     >
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0, width: '100%' }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: "center",
+          minWidth: 0,
+          width: '100%'
+        }}>
         <Icon
           fontSize="small"
           sx={{ color: selected ? 'primary.main' : 'text.secondary' }}
@@ -91,9 +98,11 @@ function ChoiceCard(props: {
           </Typography>
           <Typography
             variant="caption"
-            color="text.secondary"
-            sx={{ lineHeight: 1.3, fontVariantNumeric: 'tabular-nums' }}
-          >
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.3,
+              fontVariantNumeric: 'tabular-nums'
+            }}>
             {formatTs(timestamp)}
           </Typography>
         </Stack>
@@ -165,7 +174,9 @@ export function SyncConflictReviewDialog(props: SyncConflictReviewDialogProps): 
       }}
     >
       <DialogTitle id="encore-conflict-review-title" sx={{ ...encoreDialogTitleSx, pb: 1.5 }}>
-        <Stack direction="row" alignItems="center" spacing={1}>
+        <Stack direction="row" spacing={1} sx={{
+          alignItems: "center"
+        }}>
           <span>Review sync changes</span>
           <Tooltip
             arrow
@@ -186,7 +197,13 @@ export function SyncConflictReviewDialog(props: SyncConflictReviewDialogProps): 
         </Stack>
       </DialogTitle>
       <DialogContent sx={{ ...encoreDialogContentSx, overflow: 'visible', pt: 1 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55, mb: 2 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.55,
+            mb: 2
+          }}>
           Both this device and Drive changed since your last sync. Encore can merge most edits
           automatically, but{' '}
           <strong>{bothEdited.length === 1 ? '1 row' : `${bothEdited.length} rows`}</strong> changed
@@ -247,7 +264,14 @@ export function SyncConflictReviewDialog(props: SyncConflictReviewDialogProps): 
                   bgcolor: 'background.paper',
                 }}
               >
-                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1, minWidth: 0 }}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{
+                    alignItems: "center",
+                    mb: 1,
+                    minWidth: 0
+                  }}>
                   <Typography
                     variant="caption"
                     sx={{
@@ -271,10 +295,11 @@ export function SyncConflictReviewDialog(props: SyncConflictReviewDialogProps): 
                     {row.sublabel && (
                       <Typography
                         variant="caption"
-                        color="text.secondary"
-                        sx={{ lineHeight: 1.3 }}
                         noWrap
-                      >
+                        sx={{
+                          color: "text.secondary",
+                          lineHeight: 1.3
+                        }}>
                         {row.sublabel}
                       </Typography>
                     )}
@@ -284,9 +309,12 @@ export function SyncConflictReviewDialog(props: SyncConflictReviewDialogProps): 
                 ((row.localAnswerCount ?? 0) > 0 || (row.remoteAnswerCount ?? 0) > 0) ? (
                   <Typography
                     variant="caption"
-                    color="text.secondary"
-                    sx={{ display: 'block', mb: 1, lineHeight: 1.4 }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      display: 'block',
+                      mb: 1,
+                      lineHeight: 1.4
+                    }}>
                     Exercise answers · device: {row.localAnswerCount ?? 0} · Drive: {row.remoteAnswerCount ?? 0}.
                     Answers from both copies are kept.
                   </Typography>
@@ -321,7 +349,9 @@ export function SyncConflictReviewDialog(props: SyncConflictReviewDialogProps): 
           borderColor: encoreHairline,
         }}
       >
-        <Stack direction="row" spacing={1} justifyContent="flex-end" useFlexGap>
+        <Stack direction="row" spacing={1} useFlexGap sx={{
+          justifyContent: "flex-end"
+        }}>
           <Button
             onClick={onDismiss}
             color="inherit"

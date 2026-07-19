@@ -1,6 +1,6 @@
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import Box from '@mui/material/Box';
@@ -115,9 +115,12 @@ export function PracticeExercisesSection({
         </Typography>
         <Typography
           variant="body2"
-          color="text.secondary"
-          sx={{ display: 'block', lineHeight: 1.5, maxWidth: 620 }}
-        >
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            lineHeight: 1.5,
+            maxWidth: 620
+          }}>
           Short prompts to connect lyrics and character to how you perform the song.
         </Typography>
       </Box>
@@ -198,7 +201,15 @@ function ExerciseListRow({
 
   const statusLine =
     showStatus && run ? (
-      <Stack direction="row" spacing={0.5} alignItems="center" sx={{ minWidth: 0, flexWrap: 'wrap', rowGap: 0.25 }}>
+      <Stack
+        direction="row"
+        spacing={0.5}
+        sx={{
+          alignItems: "center",
+          minWidth: 0,
+          flexWrap: 'wrap',
+          rowGap: 0.25
+        }}>
         {completed ? (
           <CheckCircleOutlineIcon sx={{ fontSize: 16, color: 'success.main', opacity: 0.88 }} aria-hidden />
         ) : null}
@@ -227,7 +238,14 @@ function ExerciseListRow({
             summaryTrimmed
           )}
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem', opacity: 0.88, ml: 0.25 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            fontSize: '0.75rem',
+            opacity: 0.88,
+            ml: 0.25
+          }}>
           {formatTimestamp(completed ? run.completedAt : run.updatedAt)}
         </Typography>
       </Stack>
@@ -263,7 +281,14 @@ function ExerciseListRow({
         },
       }}
     >
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: "center",
+          flex: 1,
+          minWidth: 0
+        }}>
         <Box
           sx={{
             display: 'flex',
@@ -293,31 +318,32 @@ function ExerciseListRow({
             <Typography
               variant="body2"
               component="p"
-              color="text.secondary"
               sx={{
+                color: "text.secondary",
                 m: 0,
                 mt: 0.35,
                 fontSize: '0.8125rem',
                 lineHeight: 1.45,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
+                whiteSpace: 'nowrap'
+              }}>
               {meta.description}
             </Typography>
           </Tooltip>
           <Box sx={{ display: { xs: 'block', sm: 'none' }, mt: 0.5 }}>{statusLine}</Box>
         </Box>
       </Stack>
-
       <Stack
         direction="row"
         spacing={1}
-        alignItems="center"
-        justifyContent={{ xs: 'space-between', sm: 'flex-end' }}
-        sx={{ flexShrink: 0, flexWrap: 'wrap', rowGap: 0.5 }}
-      >
+        sx={{
+          alignItems: "center",
+          justifyContent: { xs: 'space-between', sm: 'flex-end' },
+          flexShrink: 0,
+          flexWrap: 'wrap',
+          rowGap: 0.5
+        }}>
         {showStatus && run ? (
           <Box
             sx={{
@@ -334,7 +360,14 @@ function ExerciseListRow({
             {statusLine}
           </Box>
         ) : null}
-        <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="flex-end" sx={{ flexShrink: 0 }}>
+        <Stack
+          direction="row"
+          spacing={0.5}
+          sx={{
+            alignItems: "center",
+            justifyContent: "flex-end",
+            flexShrink: 0
+          }}>
           {run ? (
             <Tooltip title={completed ? 'Discard completed exercise' : 'Discard draft'}>
               <IconButton

@@ -488,7 +488,13 @@ export function useOriginalsSongFilesPanel({
 
   const demoTakesBody: ReactNode = (
     <>
-      <Stack direction="row" flexWrap="wrap" alignItems="center" useFlexGap sx={(t) => practiceResourceChipFieldSx(t)}>
+      <Stack
+        direction="row"
+        useFlexGap
+        sx={[{
+          flexWrap: "wrap",
+          alignItems: "center"
+        }, (t) => practiceResourceChipFieldSx(t)]}>
         {song.takes.map((t) => {
           const playable = takeIsPlayable(t, localAudioIds);
           const openUrl = t.driveFileId

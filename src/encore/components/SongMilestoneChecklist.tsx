@@ -2,7 +2,7 @@ import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
-import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -41,19 +41,20 @@ function MilestoneRow(props: {
     <Stack
       direction="row"
       spacing={1}
-      alignItems="center"
       sx={{
+        alignItems: "center",
         py: 0.25,
         opacity: isNa ? 0.55 : 1,
-        transition: 'opacity 160ms ease',
-      }}
-    >
+        transition: 'opacity 160ms ease'
+      }}>
       <Checkbox
         size="small"
         checked={isDone}
         disabled={isNa}
         onChange={(e) => onSetState(e.target.checked ? 'done' : 'todo')}
-        inputProps={{ 'aria-label': `Mark "${label}" as done` }}
+        slotProps={{
+          input: { 'aria-label': `Mark "${label}" as done` }
+        }}
       />
       {onLabelChange ? (
         <TextField
@@ -62,7 +63,6 @@ function MilestoneRow(props: {
           fullWidth
           value={label}
           onChange={(e) => onLabelChange(e.target.value)}
-          inputProps={{ 'aria-label': 'Milestone label' }}
           sx={{
             flex: 1,
             minWidth: 0,
@@ -74,6 +74,9 @@ function MilestoneRow(props: {
               textDecoration: isDone ? 'line-through' : 'none',
               color: isDone ? 'text.secondary' : 'text.primary',
             },
+          }}
+          slotProps={{
+            htmlInput: { 'aria-label': 'Milestone label' }
           }}
         />
       ) : (
@@ -206,7 +209,9 @@ export function SongMilestoneChecklist(props: {
   return (
     <Stack spacing={3}>
       {defs.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           No global milestones yet. Add them in Settings, or track nuance in your practice journal above.
         </Typography>
       ) : (
@@ -214,7 +219,14 @@ export function SongMilestoneChecklist(props: {
           {defs.map((m) => {
             const st = synced.milestoneProgress?.[m.id]?.state ?? 'todo';
             return (
-              <Stack key={m.id} direction="row" spacing={1} alignItems="center" sx={{ width: 1 }}>
+              <Stack
+                key={m.id}
+                direction="row"
+                spacing={1}
+                sx={{
+                  alignItems: "center",
+                  width: 1
+                }}>
                 <Tooltip title="Open this song’s Practice section (global template still edited in Settings)">
                   <IconButton
                     size="small"
@@ -246,9 +258,14 @@ export function SongMilestoneChecklist(props: {
           })}
         </Stack>
       )}
-
       <Box>
-        <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1.25 }}>
+        <Stack
+          direction="row"
+          spacing={0.75}
+          sx={{
+            alignItems: "center",
+            mb: 1.25
+          }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
             Song-only milestones
           </Typography>
@@ -261,7 +278,14 @@ export function SongMilestoneChecklist(props: {
         {(synced.songOnlyMilestones ?? []).length === 0 ? null : (
           <Stack spacing={0.5} sx={{ mb: 1.5 }}>
             {(synced.songOnlyMilestones ?? []).map((row) => (
-              <Stack key={row.id} direction="row" spacing={1} alignItems="center" sx={{ width: 1 }}>
+              <Stack
+                key={row.id}
+                direction="row"
+                spacing={1}
+                sx={{
+                  alignItems: "center",
+                  width: 1
+                }}>
                 <Chip size="small" label="Song" variant="outlined" sx={{ flexShrink: 0, fontWeight: 700 }} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <MilestoneRow

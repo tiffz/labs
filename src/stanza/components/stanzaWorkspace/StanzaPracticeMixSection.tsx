@@ -364,7 +364,6 @@ export default function StanzaPracticeMixSection({
                       void onFinishStemInlineEdit(stem.id, (e.target as HTMLInputElement).value, stem.label);
                     }
                   }}
-                  inputProps={{ 'aria-label': 'Layer name' }}
                   // eslint-disable-next-line jsx-a11y/no-autofocus -- inline rename: move focus from label into field
                   autoFocus
                   variant="outlined"
@@ -395,6 +394,9 @@ export default function StanzaPracticeMixSection({
                       maxWidth: '14rem',
                     },
                   })}
+                  slotProps={{
+                    htmlInput: { 'aria-label': 'Layer name' }
+                  }}
                 />
               ) : (
                 <Typography

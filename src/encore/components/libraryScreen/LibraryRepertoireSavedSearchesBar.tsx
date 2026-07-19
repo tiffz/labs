@@ -46,17 +46,24 @@ export function LibraryRepertoireSavedSearchesBar(props: LibraryRepertoireSavedS
           </Stack>
         </Box>
       ) : null}
-
       <Dialog
         open={saveDialogOpen}
         onClose={onSaveDialogClose}
         fullWidth
         maxWidth="xs"
-        TransitionProps={{ onExited: handleSaveDialogExited }}
+        slotProps={{
+          transition: { onExited: handleSaveDialogExited }
+        }}
       >
         <DialogTitle sx={encoreDialogTitleSx}>Save current search</DialogTitle>
         <DialogContent sx={encoreDialogContentSx}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 1.5,
+              lineHeight: 1.5
+            }}>
             Stores your search text, filters, and which filter rows are visible. Attach a Spotify playlist and keep it in sync
             from <strong>Saved searches → Manage saved searches</strong>.
           </Typography>

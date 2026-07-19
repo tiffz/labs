@@ -96,11 +96,18 @@ export function LyreflyVersionShareView({ fileId }: { fileId: string }): ReactEl
   if (state === 'error' || !snapshot) {
     return (
       <Container maxWidth="sm" sx={{ py: 8 }}>
-        <Stack spacing={2} alignItems="center" textAlign="center">
+        <Stack
+          spacing={2}
+          sx={{
+            alignItems: "center",
+            textAlign: "center"
+          }}>
           <Typography variant="h5" component="h1">
             Shared comic unavailable
           </Typography>
-          <Typography color="text.secondary">{message ?? 'This link may have expired or been disabled.'}</Typography>
+          <Typography sx={{
+            color: "text.secondary"
+          }}>{message ?? 'This link may have expired or been disabled.'}</Typography>
           <Button variant="outlined" startIcon={<RefreshIcon />} onClick={retry}>
             Try again
           </Button>
@@ -113,13 +120,17 @@ export function LyreflyVersionShareView({ fileId }: { fileId: string }): ReactEl
     <Box className="lyrefly-version-share" data-testid="lyrefly-version-share">
       <Container maxWidth="lg" sx={{ py: { xs: 2, md: 3 } }}>
         <Stack spacing={1.5}>
-          <Typography variant="overline" color="text.secondary">
+          <Typography variant="overline" sx={{
+            color: "text.secondary"
+          }}>
             Shared draft
           </Typography>
           <Typography variant="h4" component="h1">
             {snapshot.projectTitle}
           </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
+          <Typography variant="subtitle1" sx={{
+            color: "text.secondary"
+          }}>
             {snapshot.versionLabel}
           </Typography>
           <Tabs value={tab} onChange={(_event, next: PreviewTab) => setTab(next)} aria-label="Reader style">
@@ -162,7 +173,14 @@ export function LyreflyVersionShareView({ fileId }: { fileId: string }): ReactEl
                   </div>
                 ) : null}
               </Box>
-              <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" sx={{ mt: 1.5 }}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  mt: 1.5
+                }}>
                 <IconButton
                   aria-label="Previous spread"
                   disabled={spreadIndex <= 0}
@@ -170,7 +188,9 @@ export function LyreflyVersionShareView({ fileId }: { fileId: string }): ReactEl
                 >
                   ‹
                 </IconButton>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                  color: "text.secondary"
+                }}>
                   {spreadIndex + 1} / {Math.max(spreadViews.length, 1)}
                 </Typography>
                 <IconButton

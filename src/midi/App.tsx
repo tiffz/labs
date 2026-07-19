@@ -36,11 +36,15 @@ function MidiAppInner() {
           <Typography component="h1" className="midi-title">
             Midi Scratchpad
           </Typography>
-          <Typography variant="body2" color="text.secondary" className="midi-tagline">
+          <Typography variant="body2" className="midi-tagline" sx={{
+            color: "text.secondary"
+          }}>
             Play along, capture a loop, tweak how it looks.
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1} alignItems="center" className="midi-header-actions">
+        <Stack direction="row" spacing={1} className="midi-header-actions" sx={{
+          alignItems: "center"
+        }}>
           <MidiInputSources />
           <ModeSwitch />
           <Button
@@ -66,7 +70,6 @@ function MidiAppInner() {
           />
         </Stack>
       </header>
-
       <Box className="midi-workspace" component="section" aria-label="Main workspace">
         <Box className="midi-toolbar">
           <MetronomeRail />

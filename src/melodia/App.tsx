@@ -215,9 +215,10 @@ export default function App(): ReactElement {
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
               spacing={0.5}
-              justifyContent="space-between"
-              alignItems={{ sm: 'flex-start' }}
-            >
+              sx={{
+                justifyContent: "space-between",
+                alignItems: { sm: 'flex-start' }
+              }}>
               <Typography variant="subtitle1" component="h2" sx={{ fontWeight: 700, lineHeight: 1.2, m: 0 }}>
                 {state.exercise.score.title || 'Exercise'}
               </Typography>
@@ -232,7 +233,13 @@ export default function App(): ReactElement {
               </Stack>
             </Stack>
             {state.transposeWarning && (
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  display: "block",
+                  mt: 0.25
+                }}>
                 {state.transposeWarning}
               </Typography>
             )}
@@ -252,7 +259,9 @@ export default function App(): ReactElement {
         )}
 
         {state.phase === 'audiation' && !state.exercise && !state.debugMode && (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Loading your lesson…
           </Typography>
         )}
@@ -278,7 +287,6 @@ export default function App(): ReactElement {
           />
         )}
       </main>
-
       {debugMode && (
         <LabsDebugDock appId="melodia" accentColor="#e91e8c" title="Melodia" defaultCollapsed>
           <Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap', m: 0, p: 1 }}>
@@ -313,7 +321,9 @@ function DebugCatalog(): ReactElement {
   return (
     <Stack spacing={2}>
       <Typography variant="h2">Catalog (debug)</Typography>
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" sx={{
+        color: "text.secondary"
+      }}>
         Calibration is bypassed in debug mode. Pick any exercise to inspect the pipeline.
       </Typography>
       <Stack component="ul" sx={{ listStyle: 'none', p: 0, m: 0 }} spacing={1}>

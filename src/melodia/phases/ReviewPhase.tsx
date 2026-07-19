@@ -78,7 +78,6 @@ export default function ReviewPhase({
       <MelodiaStaff score={exercise.score} onLayout={setLayout}>
         {layout && <MelodiaHeatMap layout={layout} perNote={stats.perNote} />}
       </MelodiaStaff>
-
       <Typography variant="subtitle1" component="h3" sx={{ fontWeight: 700, m: 0 }}>
         Review. {tierLabel}
       </Typography>
@@ -87,8 +86,9 @@ export default function ReviewPhase({
           ? 'No steady pitch samples were detected. try closer to the mic or a quieter room.'
           : `${stats.closeCount} of ${stats.samplesUsed} samples (${pct}%) were within one semitone of a written pitch. Pink wash highlights notes you drifted on.`}
       </Typography>
-
-      <Stack direction="row" spacing={1} flexWrap="wrap">
+      <Stack direction="row" spacing={1} sx={{
+        flexWrap: "wrap"
+      }}>
         <Button
           variant="outlined"
           size="small"

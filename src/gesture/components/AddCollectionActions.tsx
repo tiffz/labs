@@ -98,7 +98,6 @@ export default function AddCollectionActions({
         {...({ webkitdirectory: '', directory: '' } as React.InputHTMLAttributes<HTMLInputElement>)}
         onChange={handleFolder}
       />
-
       <Button
         variant={variant === 'primary' ? 'contained' : 'outlined'}
         startIcon={<AddIcon />}
@@ -108,7 +107,6 @@ export default function AddCollectionActions({
       >
         Add
       </Button>
-
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
@@ -151,7 +149,6 @@ export default function AddCollectionActions({
           Link Drive folder
         </MenuItem>
       </Menu>
-
       <Dialog
         open={linkOpen}
         onClose={() => setLinkOpen(false)}
@@ -161,7 +158,12 @@ export default function AddCollectionActions({
       >
         <DialogTitle id="gesture-link-dialog-title">Link a Drive folder</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 1.5
+            }}>
             Photos must sit directly in the folder. Subfolders are not scanned.
           </Typography>
           <TextField
@@ -183,7 +185,6 @@ export default function AddCollectionActions({
           </Button>
         </DialogActions>
       </Dialog>
-
       <MultiFolderUploadDialog
         open={multiFolderOpen}
         disabled={disabled}

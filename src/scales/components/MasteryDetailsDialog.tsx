@@ -197,10 +197,13 @@ function BadgeRing({ size, stroke, progress, accent, track, children }: BadgeRin
       <Box
         component="svg"
         aria-hidden="true"
-        width={size}
-        height={size}
-        sx={{ position: 'absolute', inset: 0, display: 'block' }}
-      >
+        sx={{
+          width: size,
+          height: size,
+          position: 'absolute',
+          inset: 0,
+          display: 'block'
+        }}>
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -393,7 +396,9 @@ export default function MasteryDetailsDialog({
       onClose={onClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{ sx: { borderRadius: '28px', maxHeight: '90vh' } }}
+      slotProps={{
+        paper: { sx: { borderRadius: '28px', maxHeight: '90vh' } }
+      }}
     >
       <DialogTitle
         sx={{

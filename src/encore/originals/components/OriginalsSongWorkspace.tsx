@@ -1,5 +1,5 @@
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Snackbar from '@mui/material/Snackbar';
@@ -226,22 +226,27 @@ export function OriginalsSongWorkspace({
       {showStageTitleBand ? (
         <Stack
           direction="row"
-          alignItems="flex-start"
-          justifyContent="space-between"
           spacing={3}
           sx={{
+            alignItems: "flex-start",
+            justifyContent: "space-between",
             px: encoreSurfacePadX,
             py: encoreSurfaceBandPadY,
             borderBottom: 1,
-            borderColor: encoreHairline,
-          }}
-        >
+            borderColor: encoreHairline
+          }}>
           <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
             <Typography variant="h6" component="h2" sx={{ fontWeight: 700, lineHeight: 1.3, letterSpacing: '-0.01em' }}>
               {stageTitle}
             </Typography>
             {stageCaption ? (
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.65, maxWidth: '40rem' }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  lineHeight: 1.65,
+                  maxWidth: '40rem'
+                }}>
                 {stageCaption}
               </Typography>
             ) : null}
@@ -269,15 +274,14 @@ export function OriginalsSongWorkspace({
       ) : showMarkCompleteRow ? (
         <Stack
           direction="row"
-          justifyContent="flex-end"
           sx={{
+            justifyContent: "flex-end",
             px: encoreSurfacePadX,
             py: 0.75,
             borderBottom: 1,
             borderColor: encoreHairline,
-            flexShrink: 0,
-          }}
-        >
+            flexShrink: 0
+          }}>
           <Button
             size="small"
             variant="text"
@@ -296,7 +300,6 @@ export function OriginalsSongWorkspace({
           </Button>
         </Stack>
       ) : null}
-
       <Box
         className={[
           'encore-originals-workspace-content',

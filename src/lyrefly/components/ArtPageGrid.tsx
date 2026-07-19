@@ -130,7 +130,9 @@ function ArtPageGridTile({
           ) : (
             <Box className="lyrefly-art-grid__thumb-empty">
               <AddPhotoAlternateOutlinedIcon sx={{ fontSize: 28, opacity: 0.55 }} />
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{
+                color: "text.secondary"
+              }}>
                 {outsideVersion ? 'Not in version' : 'Upload'}
               </Typography>
             </Box>
@@ -160,7 +162,6 @@ function ArtPageGridTile({
           <CloseIcon fontSize="small" />
         </IconButton>
       </Box>
-
       <Box className="lyrefly-art-grid__meta">
         <Typography variant="caption" component="p" className="lyrefly-art-grid__label" title={node.displayName}>
           {node.displayName ?? 'Page'}
@@ -196,7 +197,9 @@ function ArtPageGridTile({
             </Menu>
           </>
         ) : (
-          <Typography variant="caption" color="text.secondary" className="lyrefly-art-grid__versions">
+          <Typography variant="caption" className="lyrefly-art-grid__versions" sx={{
+            color: "text.secondary"
+          }}>
             {nodeRevisions.length === 0 ? 'No art yet' : activeRevision?.label ?? 'v1'}
           </Typography>
         )}

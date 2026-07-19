@@ -97,7 +97,13 @@ export default function MelodiaMicBar({
 
   return (
     <Box className="melodia-mic-bar" sx={{ py: 0.25 }}>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: 'nowrap' }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: "center",
+          flexWrap: 'nowrap'
+        }}>
         <Box
           component="span"
           aria-hidden="true"
@@ -142,7 +148,6 @@ export default function MelodiaMicBar({
           </Typography>
         </Button>
       </Stack>
-
       <AnchoredPopover
         placement="bottom-start"
         open={panelOpen}
@@ -164,7 +169,12 @@ export default function MelodiaMicBar({
         }}
       >
         <Stack spacing={1.25}>
-          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.4 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.4
+            }}>
             {statusSentence}
           </Typography>
 
@@ -184,11 +194,15 @@ export default function MelodiaMicBar({
                     checked={pitchTrackingEnabled}
                     disabled={!isLive}
                     onChange={(_e, checked: boolean) => onPitchTrackingChange(checked)}
-                    inputProps={{ 'aria-label': 'Track sung pitch along the staff' }}
+                    slotProps={{
+                      input: { 'aria-label': 'Track sung pitch along the staff' }
+                    }}
                   />
                 }
                 label={(
-                  <Stack direction="row" spacing={0.5} alignItems="center" component="span">
+                  <Stack direction="row" spacing={0.5} component="span" sx={{
+                    alignItems: "center"
+                  }}>
                     <MenuIconGlyph glyph="graphic_eq" size={17} />
                     <Typography component="span" variant="body2">
                       Pitch trace on staff
@@ -198,7 +212,12 @@ export default function MelodiaMicBar({
               />
 
               {isLive && !pitchTrackingEnabled ? (
-                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    lineHeight: 1.35
+                  }}>
                   Pitch sketch is paused. audio is still being recorded for review.
                 </Typography>
               ) : null}

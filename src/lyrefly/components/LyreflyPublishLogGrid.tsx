@@ -155,14 +155,15 @@ export function LyreflyPublishLogGrid({
       {firstPublishedIso ? (
         <Typography
           variant="body2"
-          color="text.secondary"
           className="lyrefly-profile-first-published"
           data-testid="lyrefly-first-published"
+          sx={{
+            color: "text.secondary"
+          }}
         >
           First published {formatPublishDateDisplay(firstPublishedIso)}
         </Typography>
       ) : null}
-
       <ul className="lyrefly-publish-grid">
         {entries.map((entry) => (
           <li key={entry.id} className="lyrefly-publish-grid__item">
@@ -183,7 +184,6 @@ export function LyreflyPublishLogGrid({
           </button>
         </li>
       </ul>
-
       <Menu
         anchorEl={addAnchor}
         open={addOpen}
@@ -223,7 +223,13 @@ export function LyreflyPublishLogGrid({
               onCommit={(iso) => setPublishedDate(isoToDateInputValue(iso))}
             />
           </div>
-          <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ pt: 0.5 }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              justifyContent: "flex-end",
+              pt: 0.5
+            }}>
             <Button size="small" variant="text" onClick={closeAddMenu}>
               Cancel
             </Button>

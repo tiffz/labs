@@ -238,8 +238,17 @@ export const EncoreFilterChipBar = forwardRef<EncoreFilterChipBarHandle, EncoreF
     );
 
     return (
-      <Stack spacing={1.25} alignItems="flex-start">
-        <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center" useFlexGap>
+      <Stack spacing={1.25} sx={{
+        alignItems: "flex-start"
+      }}>
+        <Stack
+          direction="row"
+          useFlexGap
+          sx={{
+            flexWrap: "wrap",
+            gap: 1,
+            alignItems: "center"
+          }}>
           {visibleFieldIds.map((fid) => {
             const field = fieldById.get(fid);
             if (!field) return null;
@@ -368,7 +377,6 @@ export const EncoreFilterChipBar = forwardRef<EncoreFilterChipBarHandle, EncoreF
             </Button>
           ) : null}
         </Stack>
-
         <Menu
           anchorEl={menu?.anchor ?? null}
           open={Boolean(menu && activeField)}
@@ -391,139 +399,145 @@ export const EncoreFilterChipBar = forwardRef<EncoreFilterChipBarHandle, EncoreF
           {activeField ? (() => {
             const isExcludedMode = excludedSet.has(activeField.id);
             return (
-            <>
-              <Box sx={{ px: 1.5, pt: 1.25, pb: 0.75 }}>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  spacing={1}
-                  flexWrap="wrap"
-                  useFlexGap
-                >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.4 }}>
-                    {activeField.label}
-                  </Typography>
-                  {activeField.supportsExclude && onExcludedFieldIdsChange ? (
-                    <ToggleButtonGroup
-                      size="small"
-                      exclusive
-                      value={excludedSet.has(activeField.id) ? 'exclude' : 'include'}
-                      onChange={(_e, next: string | null) => {
-                        if (next === 'include') setFieldExcluded(activeField.id, false);
-                        else if (next === 'exclude') setFieldExcluded(activeField.id, true);
-                      }}
-                      aria-label={`${activeField.label} include or exclude`}
-                      sx={(theme) => {
-                        const tone = encoreExcludeTone(theme);
-                        return {
-                          '& .MuiToggleButton-root': {
-                            textTransform: 'none',
-                            fontWeight: 600,
-                            fontSize: '0.6875rem',
-                            letterSpacing: '0.02em',
-                            py: 0.125,
-                            px: 1,
-                            minHeight: 24,
-                            lineHeight: 1.3,
-                          },
-                          '& .MuiToggleButton-root.Mui-selected[value="exclude"]': {
-                            color: tone.fg,
-                            backgroundColor: tone.bg,
-                            '&:hover': { backgroundColor: tone.bgHover },
-                          },
-                        };
-                      }}
-                    >
-                      <ToggleButton value="include" aria-label="Include selected">
-                        <CheckIcon sx={{ fontSize: 14, mr: 0.375 }} aria-hidden />
-                        Include
-                      </ToggleButton>
-                      <ToggleButton value="exclude" aria-label="Exclude selected">
-                        <BlockIcon sx={{ fontSize: 14, mr: 0.375 }} aria-hidden />
-                        Exclude
-                      </ToggleButton>
-                    </ToggleButtonGroup>
-                  ) : null}
-                </Stack>
-              </Box>
-              <Divider />
-              <Box sx={{ overflowY: 'auto', py: 0.5, flex: 1, minHeight: 0 }}>
-                {activeField.options.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 1.5 }}>
-                    No options yet.
-                  </Typography>
-                ) : (
-                  activeField.options.map((opt) => {
-                    const sel = values[activeField.id] ?? [];
-                    const checked = activeField.exclusive
-                      ? sel[0] === opt.value
-                      : sel.includes(opt.value);
-                    /*
-                     * In exclude mode, swap the default checkmark for an X-in-filled-square so
-                     * the act of ticking an option immediately *looks* negative. We only swap
-                     * the *checked* state — empty squares stay neutral so the row is calm
-                     * before the user commits to a value. The icon alone carries the exclude
-                     * signal; we deliberately *don't* tint the row background, which would
-                     * push the menu from "deliberate negation" into "this is wrong" territory.
-                     */
-                    const useExcludeCheckbox =
-                      isExcludedMode && Boolean(activeField.supportsExclude) && !activeField.exclusive;
-                    return (
-                      <MenuItem
-                        key={opt.value}
-                        dense
-                        onClick={() => {
-                          toggleValue(activeField, opt.value);
+              <>
+                <Box sx={{ px: 1.5, pt: 1.25, pb: 0.75 }}>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    useFlexGap
+                    sx={{
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap"
+                    }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.4 }}>
+                      {activeField.label}
+                    </Typography>
+                    {activeField.supportsExclude && onExcludedFieldIdsChange ? (
+                      <ToggleButtonGroup
+                        size="small"
+                        exclusive
+                        value={excludedSet.has(activeField.id) ? 'exclude' : 'include'}
+                        onChange={(_e, next: string | null) => {
+                          if (next === 'include') setFieldExcluded(activeField.id, false);
+                          else if (next === 'exclude') setFieldExcluded(activeField.id, true);
                         }}
-                        sx={{ py: 0.25 }}
+                        aria-label={`${activeField.label} include or exclude`}
+                        sx={(theme) => {
+                          const tone = encoreExcludeTone(theme);
+                          return {
+                            '& .MuiToggleButton-root': {
+                              textTransform: 'none',
+                              fontWeight: 600,
+                              fontSize: '0.6875rem',
+                              letterSpacing: '0.02em',
+                              py: 0.125,
+                              px: 1,
+                              minHeight: 24,
+                              lineHeight: 1.3,
+                            },
+                            '& .MuiToggleButton-root.Mui-selected[value="exclude"]': {
+                              color: tone.fg,
+                              backgroundColor: tone.bg,
+                              '&:hover': { backgroundColor: tone.bgHover },
+                            },
+                          };
+                        }}
                       >
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              size="small"
-                              checked={checked}
-                              tabIndex={-1}
-                              checkedIcon={
-                                useExcludeCheckbox ? (
-                                  <DisabledByDefaultRoundedIcon fontSize="small" />
-                                ) : undefined
-                              }
-                              sx={
-                                useExcludeCheckbox
-                                  ? (theme) => ({
-                                      '&.Mui-checked': { color: encoreExcludeTone(theme).iconFill },
-                                    })
-                                  : undefined
-                              }
-                            />
-                          }
-                          label={opt.label}
-                          sx={{ m: 0, width: 1, pointerEvents: 'none' }}
-                        />
-                      </MenuItem>
-                    );
-                  })
-                )}
-              </Box>
-              <Divider />
-              <Box sx={{ px: 1, py: 0.75, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  size="small"
-                  onClick={() => {
-                    onChange(activeField.id, []);
-                    setFieldExcluded(activeField.id, false);
-                  }}
-                  sx={{ textTransform: 'none' }}
-                >
-                  Clear
-                </Button>
-              </Box>
-            </>
+                        <ToggleButton value="include" aria-label="Include selected">
+                          <CheckIcon sx={{ fontSize: 14, mr: 0.375 }} aria-hidden />
+                          Include
+                        </ToggleButton>
+                        <ToggleButton value="exclude" aria-label="Exclude selected">
+                          <BlockIcon sx={{ fontSize: 14, mr: 0.375 }} aria-hidden />
+                          Exclude
+                        </ToggleButton>
+                      </ToggleButtonGroup>
+                    ) : null}
+                  </Stack>
+                </Box>
+                <Divider />
+                <Box sx={{ overflowY: 'auto', py: 0.5, flex: 1, minHeight: 0 }}>
+                  {activeField.options.length === 0 ? (
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "text.secondary",
+                        px: 2,
+                        py: 1.5
+                      }}>
+                      No options yet.
+                    </Typography>
+                  ) : (
+                    activeField.options.map((opt) => {
+                      const sel = values[activeField.id] ?? [];
+                      const checked = activeField.exclusive
+                        ? sel[0] === opt.value
+                        : sel.includes(opt.value);
+                      /*
+                       * In exclude mode, swap the default checkmark for an X-in-filled-square so
+                       * the act of ticking an option immediately *looks* negative. We only swap
+                       * the *checked* state — empty squares stay neutral so the row is calm
+                       * before the user commits to a value. The icon alone carries the exclude
+                       * signal; we deliberately *don't* tint the row background, which would
+                       * push the menu from "deliberate negation" into "this is wrong" territory.
+                       */
+                      const useExcludeCheckbox =
+                        isExcludedMode && Boolean(activeField.supportsExclude) && !activeField.exclusive;
+                      return (
+                        <MenuItem
+                          key={opt.value}
+                          dense
+                          onClick={() => {
+                            toggleValue(activeField, opt.value);
+                          }}
+                          sx={{ py: 0.25 }}
+                        >
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                size="small"
+                                checked={checked}
+                                tabIndex={-1}
+                                checkedIcon={
+                                  useExcludeCheckbox ? (
+                                    <DisabledByDefaultRoundedIcon fontSize="small" />
+                                  ) : undefined
+                                }
+                                sx={
+                                  useExcludeCheckbox
+                                    ? (theme) => ({
+                                        '&.Mui-checked': { color: encoreExcludeTone(theme).iconFill },
+                                      })
+                                    : undefined
+                                }
+                              />
+                            }
+                            label={opt.label}
+                            sx={{ m: 0, width: 1, pointerEvents: 'none' }}
+                          />
+                        </MenuItem>
+                      );
+                    })
+                  )}
+                </Box>
+                <Divider />
+                <Box sx={{ px: 1, py: 0.75, display: 'flex', justifyContent: 'flex-end' }}>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      onChange(activeField.id, []);
+                      setFieldExcluded(activeField.id, false);
+                    }}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    Clear
+                  </Button>
+                </Box>
+              </>
             );
           })() : null}
         </Menu>
-
         {dateRangeMenu && onDateRangeChange ? (() => {
           const field = fieldById.get(dateRangeMenu.fieldId);
           if (!field || !isEncoreDateRangeFilterField(field)) return null;

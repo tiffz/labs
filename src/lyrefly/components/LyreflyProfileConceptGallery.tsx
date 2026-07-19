@@ -40,7 +40,13 @@ function ConceptArtLightbox({
           <img src={imageUrl} alt="" className="lyrefly-profile-concept-lightbox__image" />
         ) : null}
         {asset.markdown?.trim() ? (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2, whiteSpace: 'pre-wrap' }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mt: 2,
+              whiteSpace: 'pre-wrap'
+            }}>
             {asset.markdown}
           </Typography>
         ) : null}
@@ -76,7 +82,9 @@ export function LyreflyProfileConceptGallery({ assets }: LyreflyProfileConceptGa
   if (gallery.length === 0) {
     return (
       <Box className="lyrefly-profile-concept-gallery lyrefly-profile-concept-gallery--empty">
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           No concept art yet. Add sketches in Brainstorm.
         </Typography>
       </Box>

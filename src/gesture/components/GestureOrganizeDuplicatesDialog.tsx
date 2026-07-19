@@ -198,16 +198,22 @@ export default function GestureOrganizeDuplicatesDialog({
           </Typography>
         ) : null}
         {!scan ? (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Preparing results…
           </Typography>
         ) : !hasWork ? (
           <Stack spacing={2}>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               {summarizeUnlinkedFolders(unlinkedFolders)}{' '}
               {duplicateScan ? summarizeDuplicateScan(duplicateScan) : ''}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               Manually added folders must sit directly inside Reference Packs on Drive (not inside another
               collection). If one is missing, paste its folder link below.
             </Typography>
@@ -228,7 +234,9 @@ export default function GestureOrganizeDuplicatesDialog({
           <Stack spacing={2.5}>
             {hasUnlinked ? (
               <Stack spacing={1}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                  color: "text.secondary"
+                }}>
                   {summarizeUnlinkedFolders(unlinkedFolders)} Link them to show up in Collections.
                 </Typography>
                 <List dense disablePadding>
@@ -262,7 +270,9 @@ export default function GestureOrganizeDuplicatesDialog({
 
             {hasDuplicates ? (
               <Stack spacing={2}>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                  color: "text.secondary"
+                }}>
                   {summarizeDuplicateScan(duplicateScan!)} Review below, or open a collection in Drive first.
                   Duplicates move to Drive trash (~30 days) and references here point at the copy we keep.
                 </Typography>
@@ -273,7 +283,14 @@ export default function GestureOrganizeDuplicatesDialog({
                   const folderUrl = labsDriveFolderUrl(sample.driveFolderId);
                   return (
                     <Stack key={packId} spacing={0.75}>
-                      <Stack direction="row" alignItems="baseline" justifyContent="space-between" gap={1} flexWrap="wrap">
+                      <Stack
+                        direction="row"
+                        sx={{
+                          alignItems: "baseline",
+                          justifyContent: "space-between",
+                          gap: 1,
+                          flexWrap: "wrap"
+                        }}>
                         <Typography variant="subtitle2">{sample.packName}</Typography>
                         {folderUrl ? (
                           <Link
@@ -288,7 +305,9 @@ export default function GestureOrganizeDuplicatesDialog({
                           </Link>
                         ) : null}
                       </Stack>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                      }}>
                         {dupCount} duplicate{dupCount === 1 ? '' : 's'} in this collection
                       </Typography>
                       {packGroups.map((group) => (
@@ -310,7 +329,9 @@ export default function GestureOrganizeDuplicatesDialog({
                 })}
               </Stack>
             ) : duplicateScan ? (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 {summarizeDuplicateScan(duplicateScan)}
               </Typography>
             ) : null}

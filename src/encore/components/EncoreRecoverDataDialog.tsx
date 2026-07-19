@@ -134,18 +134,34 @@ export function EncoreRecoverDataDialog(props: EncoreRecoverDataDialogProps): Re
       <DialogTitle id="encore-recover-title">Recover lost data</DialogTitle>
       <DialogContent>
         {phase === 'scanning' ? (
-          <Stack direction="row" alignItems="center" spacing={1.5} sx={{ py: 2 }}>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{
+              alignItems: "center",
+              py: 2
+            }}>
             <CircularProgress size={20} thickness={5} />
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               Scanning Drive history and local snapshots for content your library is missing…
             </Typography>
           </Stack>
         ) : null}
 
         {phase === 'restoring' ? (
-          <Stack direction="row" alignItems="center" spacing={1.5} sx={{ py: 2 }}>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{
+              alignItems: "center",
+              py: 2
+            }}>
             <CircularProgress size={20} thickness={5} />
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               Restoring selected items and syncing to Drive…
             </Typography>
           </Stack>
@@ -172,18 +188,24 @@ export function EncoreRecoverDataDialog(props: EncoreRecoverDataDialogProps): Re
         {phase === 'results' ? (
           entries.length === 0 ? (
             <Stack spacing={1} sx={{ py: 1 }}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 No recoverable data found in history. Your current library already has everything we can see.
               </Typography>
               {scannedCaption ? (
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                  color: "text.secondary"
+                }}>
                   {scannedCaption}
                 </Typography>
               ) : null}
             </Stack>
           ) : (
             <Stack spacing={1.5}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 Found older versions with content your library is missing. Pick what to restore. Nothing you have now is
                 changed or removed.
               </Typography>
@@ -201,7 +223,9 @@ export function EncoreRecoverDataDialog(props: EncoreRecoverDataDialogProps): Re
                       component="li"
                       sx={{ px: 2, py: 1.25, borderTop: i === 0 ? 0 : 1, borderColor: 'divider' }}
                     >
-                      <Stack direction="row" alignItems="baseline" spacing={1}>
+                      <Stack direction="row" spacing={1} sx={{
+                        alignItems: "baseline"
+                      }}>
                         <Box sx={{ minWidth: 0, flex: 1 }}>
                           <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                             {entry.title}
@@ -216,13 +240,24 @@ export function EncoreRecoverDataDialog(props: EncoreRecoverDataDialogProps): Re
                             ) : null}
                           </Typography>
                           {entry.artist ? (
-                            <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                            <Typography
+                              variant="caption"
+                              noWrap
+                              sx={{
+                                color: "text.secondary",
+                                display: 'block'
+                              }}>
                               {entry.artist}
                             </Typography>
                           ) : null}
                         </Box>
                         {when ? (
-                          <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: "text.secondary",
+                              whiteSpace: 'nowrap'
+                            }}>
                             {when}
                           </Typography>
                         ) : null}
@@ -247,7 +282,12 @@ export function EncoreRecoverDataDialog(props: EncoreRecoverDataDialogProps): Re
                   );
                 })}
               </Stack>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Stack
+                direction="row"
+                sx={{
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}>
                 <Button size="small" onClick={() => setSelection(selectAll(entries))}>
                   Select all
                 </Button>
@@ -256,7 +296,9 @@ export function EncoreRecoverDataDialog(props: EncoreRecoverDataDialogProps): Re
                 </Button>
               </Stack>
               {scannedCaption ? (
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                  color: "text.secondary"
+                }}>
                   {scannedCaption}
                 </Typography>
               ) : null}

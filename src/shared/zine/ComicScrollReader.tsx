@@ -37,7 +37,9 @@ export function ComicScrollReader({
           .join(' ')}
         data-testid="comic-scroll-reader"
       >
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           No pages to preview yet.
         </Typography>
       </Box>

@@ -121,7 +121,6 @@ const MilestonePanel: React.FC<MilestonePanelProps> = ({
                   </div>
                 </div>
               </div>
-              
               <div className="milestone-items-row">
                 {group.milestones.map((milestone, index) => {
                   const isEarned = earnedMilestones.some(e => e.id === milestone.id);
@@ -154,7 +153,6 @@ const MilestonePanel: React.FC<MilestonePanelProps> = ({
                           className="milestone-icon-small"
                         />
                       </div>
-                      
                       {/* Connector line */}
                       {index < group.milestones.length - 1 && (
                         <div 
@@ -172,7 +170,6 @@ const MilestonePanel: React.FC<MilestonePanelProps> = ({
           );
         })}
       </div>
-
       {/* Milestone Tooltip */}
       {showTooltip && ReactDOM.createPortal(
         (() => {

@@ -8,7 +8,14 @@ export function LoopTransport() {
   const disabled = !state.capturedLoop;
 
   return (
-    <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" className="midi-loop-transport">
+    <Stack
+      direction="row"
+      spacing={2}
+      className="midi-loop-transport"
+      sx={{
+        alignItems: "center",
+        flexWrap: "wrap"
+      }}>
       <Button
         variant="outlined"
         size="small"
@@ -18,7 +25,6 @@ export function LoopTransport() {
       >
         {state.loopPlaying ? 'Stop loop' : 'Play loop'}
       </Button>
-
       <PlaybackSpeedControl
         value={state.transport.playbackRate}
         min={0.5}
@@ -28,7 +34,6 @@ export function LoopTransport() {
         onChange={(playbackRate) =>
           dispatch({ type: 'SET_TRANSPORT', patch: { playbackRate } })}
       />
-
       <Button
         variant="text"
         size="small"

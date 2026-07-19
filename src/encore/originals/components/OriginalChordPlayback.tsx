@@ -146,7 +146,9 @@ function OriginalChordPlaybackControls({
   if (compact) {
     return (
       <>
-        <Stack direction="row" alignItems="center" spacing={0.15}>
+        <Stack direction="row" spacing={0.15} sx={{
+          alignItems: "center"
+        }}>
           <Tooltip title={playLabel}>
             <IconButton
               size="small"
@@ -166,7 +168,9 @@ function OriginalChordPlaybackControls({
 
   return (
     <>
-      <Stack direction="row" alignItems="center" spacing={0.15}>
+      <Stack direction="row" spacing={0.15} sx={{
+        alignItems: "center"
+      }}>
         <Button
           size="small"
           variant="text"

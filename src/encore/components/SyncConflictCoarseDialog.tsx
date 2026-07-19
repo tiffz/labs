@@ -24,7 +24,13 @@ export function SyncConflictCoarseDialog(props: SyncConflictCoarseDialogProps) {
           Your repertoire changed on this device and on Google Drive since the last sync. Choose which copy to keep for
           song details, or sign in again and retry sync.
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, mt: 1 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.5,
+            mt: 1
+          }}>
           Either way, filled exercise answers from <strong>both</strong> copies are kept. This choice never deletes
           your written answers.
         </Typography>

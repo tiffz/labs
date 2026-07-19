@@ -59,7 +59,13 @@ export default function GamutFinderView({
         <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
           Fit the pink mask over the purple gamut
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            mb: 2
+          }}>
           Cover the white dots (landscape colors). Adjust hue, size, and chroma.
         </Typography>
         <div className="sight-wheel-wrap">

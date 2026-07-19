@@ -233,15 +233,14 @@ export function LabsBlockingJobProvider(props: LabsBlockingJobProviderProps): Re
               <Typography
                 variant="caption"
                 component="p"
-                color="text.secondary"
                 sx={{
+                  color: "text.secondary",
                   m: 0,
                   lineHeight: 1.45,
                   fontSize: '0.8125rem',
                   fontWeight: 500,
-                  letterSpacing: '0.005em',
-                }}
-              >
+                  letterSpacing: '0.005em'
+                }}>
                 {progressCaption}
               </Typography>
             ) : null}
@@ -249,15 +248,14 @@ export function LabsBlockingJobProvider(props: LabsBlockingJobProviderProps): Re
               <Typography
                 variant="caption"
                 component="p"
-                color="text.secondary"
                 sx={{
+                  color: "text.secondary",
                   m: 0,
                   pt: 0.25,
                   lineHeight: 1.5,
                   fontSize: '0.75rem',
-                  letterSpacing: '0.005em',
-                }}
-              >
+                  letterSpacing: '0.005em'
+                }}>
                 {unloadCaption}
               </Typography>
             )}

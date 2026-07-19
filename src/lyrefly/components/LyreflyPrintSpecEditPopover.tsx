@@ -196,8 +196,10 @@ export function LyreflyPrintSpecEditPopover({
                   commitBleedDraft();
                 }
               }}
-              inputProps={{ 'data-testid': 'lyrefly-print-bleed-input', step: 0.0625, min: 0 }}
               sx={{ maxWidth: '7.5rem' }}
+              slotProps={{
+                htmlInput: { 'data-testid': 'lyrefly-print-bleed-input', step: 0.0625, min: 0 }
+              }}
             />
           </div>
 
@@ -232,8 +234,10 @@ export function LyreflyPrintSpecEditPopover({
                   commitDpiDraft();
                 }
               }}
-              inputProps={{ 'data-testid': 'lyrefly-print-dpi-input', step: 1, min: 72, max: 1200 }}
               sx={{ maxWidth: '6.5rem' }}
+              slotProps={{
+                htmlInput: { 'data-testid': 'lyrefly-print-dpi-input', step: 1, min: 72, max: 1200 }
+              }}
             />
           </div>
 

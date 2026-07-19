@@ -1111,10 +1111,12 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
   const songCatalogLabelInline = (
     <Stack
       direction="row"
-      alignItems="center"
       spacing={0.25}
-      sx={{ flexShrink: 0, color: 'text.secondary' }}
-    >
+      sx={{
+        alignItems: "center",
+        flexShrink: 0,
+        color: 'text.secondary'
+      }}>
       <Typography
         component="span"
         variant="caption"
@@ -1145,14 +1147,19 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                 {isNew && !dataSpotifyId ? (
                   <Stack
                     direction="row"
-                    alignItems="center"
                     spacing={1}
-                    flexWrap="wrap"
                     useFlexGap
-                    sx={{ width: 1, minWidth: 0, py: 0.25 }}
-                  >
+                    sx={{
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      width: 1,
+                      minWidth: 0,
+                      py: 0.25
+                    }}>
                     {songCatalogLabelInline}
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                      color: "text.secondary"
+                    }}>
                       None set. Use the Title field above.
                     </Typography>
                   </Stack>
@@ -1160,14 +1167,19 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                 {isNew && dataSpotifyId ? (
                   <Stack
                     direction="row"
-                    alignItems="center"
                     spacing={1}
-                    flexWrap="wrap"
                     useFlexGap
-                    sx={{ width: 1, minWidth: 0, py: 0.25 }}
-                  >
+                    sx={{
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      width: 1,
+                      minWidth: 0,
+                      py: 0.25
+                    }}>
                     {songCatalogLabelInline}
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                      color: "text.secondary"
+                    }}>
                       Linked from Title search.
                     </Typography>
                     <Tooltip title="Open song info source in Spotify">
@@ -1190,22 +1202,26 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                   dataSpotifyId && !spotifyCatalogSwapOpen ? (
                     <Stack
                       direction="row"
-                      alignItems="center"
-                      flexWrap="wrap"
-                      columnGap={1}
-                      rowGap={0.75}
                       useFlexGap
-                      sx={{ width: 1, minWidth: 0, py: 0.25 }}
-                    >
+                      sx={{
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        columnGap: 1,
+                        rowGap: 0.75,
+                        width: 1,
+                        minWidth: 0,
+                        py: 0.25
+                      }}>
                       {songCatalogLabelInline}
                       <Box sx={(t) => songPageResourceRowShellSx(t, false)}>
                         <Stack
                           direction="row"
-                          alignItems="center"
-                          flexWrap="nowrap"
-                          columnGap={0.75}
-                          sx={{ minWidth: 0 }}
-                        >
+                          sx={{
+                            alignItems: "center",
+                            flexWrap: "nowrap",
+                            columnGap: 0.75,
+                            minWidth: 0
+                          }}>
                           <Box
                             sx={{
                               display: 'flex',
@@ -1294,7 +1310,12 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
                   ) : (
                     <Stack spacing={1} sx={{ width: 1 }}>
                       {dataSpotifyId && spotifyCatalogSwapOpen ? (
-                        <Stack direction="row" justifyContent="flex-end" alignItems="center">
+                        <Stack
+                          direction="row"
+                          sx={{
+                            justifyContent: "flex-end",
+                            alignItems: "center"
+                          }}>
                           <Button
                             size="small"
                             onClick={() => setSpotifyCatalogSwapOpen(false)}
@@ -1363,7 +1384,13 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
 
   const songMediaSlotReference = (
 <>
-              <Stack direction="row" flexWrap="wrap" alignItems="center" useFlexGap sx={(t) => practiceResourceChipFieldSx(t)}>
+              <Stack
+                direction="row"
+                useFlexGap
+                sx={[{
+                  flexWrap: "wrap",
+                  alignItems: "center"
+                }, (t) => practiceResourceChipFieldSx(t)]}>
                   {(draft.referenceLinks ?? []).map((link) => {
                     const isPrimary = link.id === primaryRefId;
                     const isCatalog =
@@ -1583,7 +1610,13 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
 
   const songMediaSlotBacking = (
 <>
-              <Stack direction="row" flexWrap="wrap" alignItems="center" useFlexGap sx={(t) => practiceResourceChipFieldSx(t)}>
+              <Stack
+                direction="row"
+                useFlexGap
+                sx={[{
+                  flexWrap: "wrap",
+                  alignItems: "center"
+                }, (t) => practiceResourceChipFieldSx(t)]}>
                   {(draft.backingLinks ?? []).map((link) => {
                     const isPrimary = link.id === primaryBackingId;
                     const linkCaption = formatMediaLinkCaption(link);
@@ -1779,7 +1812,13 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
 
   const songMediaSlotCharts = (
 <>
-              <Stack direction="row" flexWrap="wrap" alignItems="center" useFlexGap sx={(t) => practiceResourceChipFieldSx(t)}>
+              <Stack
+                direction="row"
+                useFlexGap
+                sx={[{
+                  flexWrap: "wrap",
+                  alignItems: "center"
+                }, (t) => practiceResourceChipFieldSx(t)]}>
                   {chartAttachments.map((a) => {
                     const isPrimary = Boolean(primaryChartDriveFileId && a.driveFileId === primaryChartDriveFileId);
                     const fullCaption = formatChartAttachmentCaption(a);
@@ -1933,10 +1972,11 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
               {driveAttachMsg ? (
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  sx={{ lineHeight: 1.55 }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    display: "block",
+                    lineHeight: 1.55
+                  }}>
                   {driveAttachMsg}
                 </Typography>
               ) : null}
@@ -1946,7 +1986,13 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
 
   const songMediaSlotTakes = (
 <>
-              <Stack direction="row" flexWrap="wrap" alignItems="center" useFlexGap sx={(t) => practiceResourceChipFieldSx(t)}>
+              <Stack
+                direction="row"
+                useFlexGap
+                sx={[{
+                  flexWrap: "wrap",
+                  alignItems: "center"
+                }, (t) => practiceResourceChipFieldSx(t)]}>
                   {recordingAttachments.map((a) => {
                     const takePlayback = propsForRecording(a, a.label ?? 'Take');
                     const takeChip = (
@@ -2055,13 +2101,15 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     draft.title.trim().length > 0 ? (
       <Stack
         direction="row"
-        flexWrap="wrap"
-        alignItems="baseline"
-        columnGap={1}
-        rowGap={0.25}
         useFlexGap
-        sx={{ width: 1, minWidth: 0 }}
-      >
+        sx={{
+          flexWrap: "wrap",
+          alignItems: "baseline",
+          columnGap: 1,
+          rowGap: 0.25,
+          width: 1,
+          minWidth: 0
+        }}>
         {/*
           Single-line layout: label, then text-only links separated by middots. YouTube renders as
           plain text (not a logo) so the row reads as a uniform list of search providers and packs
@@ -2070,9 +2118,12 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
         <Typography
           component="span"
           variant="caption"
-          color="text.secondary"
-          sx={{ fontWeight: 700, letterSpacing: '0.08em', mr: 0.5 }}
-        >
+          sx={{
+            color: "text.secondary",
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            mr: 0.5
+          }}>
           Search the web
         </Typography>
         <Link
@@ -2081,13 +2132,16 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
           rel="noreferrer"
           underline="hover"
           variant="caption"
-          color="text.secondary"
           aria-label="Search Ultimate Guitar for this song"
-          sx={{ fontWeight: 500 }}
-        >
+          sx={{
+            color: "text.secondary",
+            fontWeight: 500
+          }}>
           Ultimate Guitar
         </Link>
-        <Typography variant="caption" color="text.disabled" aria-hidden>
+        <Typography variant="caption" aria-hidden sx={{
+          color: "text.disabled"
+        }}>
           ·
         </Typography>
         <Link
@@ -2096,13 +2150,16 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
           rel="noreferrer"
           underline="hover"
           variant="caption"
-          color="text.secondary"
           aria-label="Search Genius for this song"
-          sx={{ fontWeight: 500 }}
-        >
+          sx={{
+            color: "text.secondary",
+            fontWeight: 500
+          }}>
           Genius
         </Link>
-        <Typography variant="caption" color="text.disabled" aria-hidden>
+        <Typography variant="caption" aria-hidden sx={{
+          color: "text.disabled"
+        }}>
           ·
         </Typography>
         <Link
@@ -2111,10 +2168,11 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
           rel="noreferrer"
           underline="hover"
           variant="caption"
-          color="text.secondary"
           aria-label="Search YouTube for this song"
-          sx={{ fontWeight: 500 }}
-        >
+          sx={{
+            color: "text.secondary",
+            fontWeight: 500
+          }}>
           YouTube
         </Link>
       </Stack>

@@ -62,12 +62,14 @@ export default function SkillsDetailDialog({
       maxWidth="sm"
       fullWidth
       aria-labelledby="sight-skills-dialog-title"
-      PaperProps={{
-        sx: {
-          borderRadius: '20px',
-          bgcolor: 'background.paper',
-          backgroundImage: 'none',
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: '20px',
+            bgcolor: 'background.paper',
+            backgroundImage: 'none',
+          },
+        }
       }}
     >
       <DialogTitle
@@ -98,7 +100,6 @@ export default function SkillsDetailDialog({
           </span>
         </IconButton>
       </DialogTitle>
-
       <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pt: 2, pb: 1 }}>
         <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
           {items.map(({ vector, stars, label }, index) => (
@@ -150,7 +151,6 @@ export default function SkillsDetailDialog({
           ))}
         </Box>
       </DialogContent>
-
       <DialogActions sx={{ px: 3, pb: 2.5, pt: 0 }}>
         <Button onClick={onClose} variant="text" sx={{ textTransform: 'none', fontWeight: 500 }}>
           Done

@@ -160,7 +160,9 @@ export function LyreflyComicBookPreview({
   if (spreadViews.length === 0) {
     return (
       <Box className="lyrefly-book-preview lyrefly-book-preview--empty" data-testid="lyrefly-book-preview">
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           Upload page art in Draw to preview your comic here.
         </Typography>
       </Box>
@@ -227,12 +229,13 @@ export function LyreflyComicBookPreview({
           <ChevronRightIcon />
         </IconButton>
       </div>
-
       <div className="lyrefly-book-preview__meta">
         <Typography variant="caption" component="p" className="lyrefly-book-preview__label">
           {pageCaption}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{
+          color: "text.secondary"
+        }}>
           {spreadIndex + 1} / {spreadViews.length}
         </Typography>
       </div>

@@ -66,13 +66,17 @@ function brandLogoStartAdornment(
   );
 }
 
-export type EncoreBrandTextFieldProps = Omit<TextFieldProps, 'InputProps'> & {
+type InputSlotProps = NonNullable<NonNullable<TextFieldProps['slotProps']>['input']>;
+
+export type EncoreBrandTextFieldProps = Omit<TextFieldProps, 'slotProps'> & {
   brand: EncoreBrandTextFieldBrand;
   /** Light vertical rule between the logo and typed text (default: true). */
   brandDivider?: boolean;
   /** Logo size in px (default: 20). */
   brandIconPx?: number;
-  InputProps?: TextFieldProps['InputProps'];
+  /** Legacy alias for slotProps.input (MUI 9 removed TextField InputProps). */
+  InputProps?: InputSlotProps;
+  slotProps?: TextFieldProps['slotProps'];
 };
 
 /**
@@ -80,21 +84,32 @@ export type EncoreBrandTextFieldProps = Omit<TextFieldProps, 'InputProps'> & {
  * Drive, and other paste/search rows so logos never float in the margin.
  */
 export function EncoreBrandTextField(props: EncoreBrandTextFieldProps): ReactElement {
-  const { brand, brandDivider = true, brandIconPx = DEFAULT_ICON_PX, InputProps, ...rest } = props;
+  const {
+    brand,
+    brandDivider = true,
+    brandIconPx = DEFAULT_ICON_PX,
+    InputProps,
+    slotProps,
+    ...rest
+  } = props;
 
   const logoStrip = brandLogoStartAdornment(brand, { divider: brandDivider, iconPx: brandIconPx });
+  const inputSlot = (slotProps?.input ?? InputProps ?? {}) as InputSlotProps;
 
   return (
     <TextField
       {...rest}
-      InputProps={{
-        ...InputProps,
-        startAdornment: (
-          <>
-            {logoStrip}
-            {InputProps?.startAdornment}
-          </>
-        ),
+      slotProps={{
+        ...slotProps,
+        input: {
+          ...inputSlot,
+          startAdornment: (
+            <>
+              {logoStrip}
+              {'startAdornment' in inputSlot ? inputSlot.startAdornment : null}
+            </>
+          ),
+        },
       }}
     />
   );

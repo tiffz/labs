@@ -110,7 +110,13 @@ export function ConceptArtDetailDialog({
           </Typography>
         ) : null}
         {showNavigationHint ? (
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              display: 'block',
+              mt: 1
+            }}>
             ← → browse pieces
           </Typography>
         ) : null}

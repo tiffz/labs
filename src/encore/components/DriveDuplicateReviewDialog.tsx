@@ -39,7 +39,9 @@ export function DriveDuplicateReviewDialog({
       </DialogTitle>
       <DialogContent dividers>
         {groups.length === 0 ? (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             No duplicate file groups were found.
           </Typography>
         ) : (

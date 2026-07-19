@@ -93,7 +93,13 @@ export function OriginalsLyricsHoverCard({
           }}
         >
           <Box sx={{ px: 2, pt: 1.75, pb: 0.75, flexShrink: 0 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, display: 'block' }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontWeight: 700,
+                display: 'block'
+              }}>
               {previewTitle}
             </Typography>
           </Box>
@@ -116,16 +122,15 @@ export function OriginalsLyricsHoverCard({
             direction="row"
             spacing={0.5}
             useFlexGap
-            flexWrap="wrap"
             sx={{
+              flexWrap: "wrap",
               flexShrink: 0,
               px: 1.5,
               py: 1,
               borderTop: 1,
               borderColor: 'divider',
-              bgcolor: 'background.paper',
-            }}
-          >
+              bgcolor: 'background.paper'
+            }}>
             {texts.lyrics ? (
               <Button
                 size="small"
