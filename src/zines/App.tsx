@@ -43,7 +43,7 @@ const LoadingFallback: React.FC<{ height?: string }> = ({ height = '200px' }) =>
     className="flex items-center justify-center bg-stone-50 rounded-lg animate-pulse"
     style={{ minHeight: height }}
   >
-    <p className="text-stone-400">Loading...</p>
+    <p className="text-stone-400">Loading…</p>
   </div>
 );
 import { parseAndSortFiles, validateImageDimensions, loadImage } from './utils';
@@ -857,7 +857,7 @@ const App: React.FC = () => {
       console.error('Spread operation failed:', error);
       setModalContent({
         title: 'Error',
-        message: 'Failed to process spread. Please try again.',
+        message: 'Failed to process spread. Try again.',
       });
     } finally {
       setIsProcessingSpread(false);
@@ -1082,7 +1082,7 @@ const App: React.FC = () => {
       document.body.removeChild(link);
     } catch (error) {
       console.error('Error generating PNG:', error);
-      setGenerationError('Error generating PNG. Please try again.');
+      setGenerationError('PNG generation failed. Try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -1108,7 +1108,7 @@ const App: React.FC = () => {
         downloadBlob(blob, fileName.includes('.') ? fileName : `${fileName}.pdf`);
       } catch (error) {
         console.error('Error generating PDF:', error);
-        setGenerationError('Error generating PDF. Please try again.');
+        setGenerationError('PDF generation failed. Try again.');
       } finally {
         setIsGenerating(false);
       }
@@ -1117,7 +1117,7 @@ const App: React.FC = () => {
     
     // Booklet mode
     if (!bookletValidation.isValid) {
-      setGenerationError('Please fix validation errors before generating PDF.');
+      setGenerationError('Fix the validation errors, then generate the PDF.');
       return;
     }
 
@@ -1154,7 +1154,7 @@ const App: React.FC = () => {
     ) => {
       if (zineMode !== 'booklet') return;
       if (!bookletValidation.isValid) {
-        setGenerationError('Please fix validation errors before downloading page images.');
+        setGenerationError('Fix the validation errors, then download page images.');
         return;
       }
 
@@ -1586,7 +1586,7 @@ const App: React.FC = () => {
                     <li key={i}>{w.fileName}: {w.message}</li>
                   ))}
                   {imageSizeWarnings.length > 3 && (
-                    <li>...and {imageSizeWarnings.length - 3} more</li>
+                    <li>…and {imageSizeWarnings.length - 3} more</li>
                   )}
                 </ul>
               </div>

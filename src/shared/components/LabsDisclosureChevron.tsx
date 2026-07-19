@@ -5,7 +5,7 @@ type LabsDisclosureChevronProps = {
 };
 
 /**
- * Filled disclosure chevron — same glyph as metronome split menus and Load Rhythm.
+ * Filled disclosure chevron — same glyph as metronome split menus and Load rhythm.
  * Pointing down when expanded; rotate the wrapper −90° when collapsed.
  */
 export default function LabsDisclosureChevron({

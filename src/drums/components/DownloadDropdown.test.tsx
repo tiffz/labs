@@ -364,7 +364,7 @@ describe('DownloadDropdown', () => {
     fireEvent.click(downloadButton);
 
     await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith('Failed to export audio: Export failed. Please try again.');
+      expect(alertSpy).toHaveBeenCalledWith('Failed to export audio: Export failed. Try again.');
     });
 
     alertSpy.mockRestore();

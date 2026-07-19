@@ -123,6 +123,15 @@
   color: inherit;
 }
 
+/* Touch ergonomics: 24px hit-area floor on coarse pointers. */
+@media (pointer: coarse) {
+  .palettegen-title {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+}
+
 .palettegen-title--compact {
   font-size: 0.9375rem;
   font-weight: 600;

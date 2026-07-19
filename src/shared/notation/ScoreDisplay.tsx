@@ -1508,7 +1508,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
     } catch (error) {
       console.error('Error rendering score:', error);
       if (containerRef.current) {
-        containerRef.current.innerHTML = `<p style="color: red; padding: 1rem;">Error rendering score. Please try again.</p>`;
+        containerRef.current.innerHTML = `<p style="color: red; padding: 1rem;">Score failed to render. Try again.</p>`;
       }
     }
   }, [score, currentMeasureIndex, currentNoteIndices, activeMidiNotes, practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes, zoomLevel, selectedMeasureRange, showVocalPart, showChords, highlightActiveMatches, highlightActiveMatchMode, highlightActiveMatchSemitoneSlack, crossingHighlightRegions, containerWidth]);

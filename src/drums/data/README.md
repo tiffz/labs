@@ -11,7 +11,7 @@ This directory contains all the data configurations for the Darbuka Rhythm Train
 **Used by**:
 
 - Rhythm recognition system (to identify patterns and provide educational information)
-- `RhythmPresets` component (directly uses `RHYTHM_DATABASE` to populate the "Load Rhythm" dropdown)
+- `RhythmPresets` component (directly uses `RHYTHM_DATABASE` to populate the "Load rhythm" dropdown)
 - `RhythmInfoCard` component (displays rhythm information and variations)
 
 **Contains**:
@@ -57,7 +57,7 @@ Each rhythm includes:
    - Time signature
    - Array of variations
 3. The rhythm will automatically appear in:
-   - The "Load Rhythm" dropdown (with time signature displayed)
+   - The "Load rhythm" dropdown (with time signature displayed)
    - The rhythm recognition system
    - The info card when users input matching patterns
 

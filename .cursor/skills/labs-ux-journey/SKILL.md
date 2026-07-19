@@ -42,6 +42,7 @@ Answer before coding:
 - **Aggregate** background status (one banner/bar), not N duplicate progress UIs
 - Related fields in one `<section>` (gestalt proximity)
 - Parallel rows → shared component shell (STYLE_GUIDE § Parallel surfaces)
+- **Mobile parity**: the journey's primary goal must be completable at 390px with a coarse pointer ([`docs/RESPONSIVE_DESIGN.md`](../../../docs/RESPONSIVE_DESIGN.md) § Mobile interaction parity); plan the stacked/degraded layout now, not after desktop ships
 
 ### 3. Visual weight check
 
@@ -59,6 +60,7 @@ Answer before coding:
 ### 5. Verify
 
 - [ ] **`npm run verify:layout`** when layout/CSS changed on primary surfaces (mandatory before done)
+- [ ] Responsive floor for the app: `npx playwright test e2e/smoke/responsive-all-apps.spec.ts --grep "/<app>/"`
 - [ ] Screenshot / browser snapshot for changed route when UI is user-visible
 - [ ] Add or extend e2e smoke if invariant is testable (see [`docs/E2E_SMOKE_CONVENTIONS.md`](../../../docs/E2E_SMOKE_CONVENTIONS.md))
 - [ ] If grid + controls on same screen → read [`docs/PERFORMANCE.md`](../../../docs/PERFORMANCE.md); consider CUJ row + interaction smoke

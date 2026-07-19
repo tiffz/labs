@@ -70,6 +70,14 @@ export function recordZineboxComicTombstone(comicId: string, removedAt = new Dat
   writePersisted(next);
 }
 
+/** Undo of a local delete — drop the tombstone so sync can restore the comic. */
+export function removeZineboxComicTombstone(comicId: string): void {
+  const id = comicId.trim();
+  if (!id) return;
+  const next = readPersisted().filter((t) => t.id !== id);
+  writePersisted(next);
+}
+
 export function recordZineboxComicTombstones(comicIds: readonly string[]): void {
   const removedAt = new Date().toISOString();
   const next = normalizePortfolioTombstoneList([

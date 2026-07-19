@@ -58,6 +58,45 @@ const TELLS = [
   { id: 'literal "..." in UI string (use \u2026)', needle: '...' },
 ];
 
+/** Words that legitimately capitalize inside labels (product/proper nouns, acronyms). */
+const TITLE_CASE_ALLOWED_WORDS = new Set([
+  'Google', 'Drive', 'YouTube', 'Genius', 'Wikimedia', 'GitHub', 'Labs',
+  'Stanza', 'Encore', 'Gesture', 'Lyrefly', 'Scrapboard', 'Zine', 'Box',
+  'Segno', 'Coda', 'Fine', 'Capo', 'Material', 'Web', 'MIDI', 'I', 'Spotify',
+]);
+
+/**
+ * Regex-based Material-writing tells (docs/USER_COPY_STYLE.md § Material writing rules).
+ * Line-level heuristics; existing violations are grandfathered via the baseline.
+ */
+const REGEX_TELLS = [
+  {
+    id: '"There is/are" opener in UI string (front-load the subject)',
+    test: (line) => /['"`>](?:\s|\u2026)*There (?:is|are)\b/.test(line),
+  },
+  {
+    id: 'first-person "My" in label (use "Your" per Material voice)',
+    test: (line) => /(?:aria-label|label|title|placeholder)=\{?\s*['"`]My /.test(line),
+  },
+  {
+    id: 'Title Case multi-word label (use sentence case)',
+    test: (line) => {
+      const m = line.match(/(?:aria-label|label)=\{?\s*['"`]((?:[A-Z][a-z]+ )+[A-Z][a-z]+)['"`]/);
+      if (!m) return false;
+      const words = m[1].split(' ');
+      // Only flag when a non-first word is capitalized and not a proper noun.
+      return words.slice(1).some((w) => !TITLE_CASE_ALLOWED_WORDS.has(w));
+    },
+  },
+  {
+    id: 'spelled-out number before plural noun (use numerals)',
+    test: (line) =>
+      /['"`>][^'"`<]*\b(?:two|three|four|five|six|seven|eight|nine|ten) [a-z]+(?:s|es)\b/.test(
+        line,
+      ),
+  },
+];
+
 const violations = [];
 
 for (const file of walk(srcRoot)) {
@@ -65,10 +104,17 @@ for (const file of walk(srcRoot)) {
   if (ALLOWLIST_PATH_SNIPPETS.some((s) => rel.includes(s))) continue;
 
   const lines = fs.readFileSync(file, 'utf8').split('\n');
-  lines.forEach((line, index) => {
-    if (isCommentLine(line)) return;
+  lines.forEach((rawLine, index) => {
+    if (isCommentLine(rawLine)) return;
+    // Strip JS spread syntax (`...ident`, `...[`) so it can't false-positive the "..." tell.
+    const line = rawLine.replace(/\.\.\.(?=[A-Za-z_$[(])/g, '');
     for (const tell of TELLS) {
       if (line.includes(tell.needle) && inUserVisibleString(line, tell.needle)) {
+        violations.push(`${rel}:${index + 1}: ${tell.id}`);
+      }
+    }
+    for (const tell of REGEX_TELLS) {
+      if (tell.test(line)) {
         violations.push(`${rel}:${index + 1}: ${tell.id}`);
       }
     }
@@ -98,7 +144,7 @@ const resolvedBaseline = baseline.filter((v) => !violations.includes(v));
 
 if (newViolations.length > 0 || resolvedBaseline.length > 0) {
   if (newViolations.length > 0) {
-    console.error('check:ui-copy failed — new em dashes in user-visible copy:\n');
+    console.error('check:ui-copy failed — new copy-style violations in user-visible strings:\n');
     newViolations.forEach((v) => console.error(`  ${v}`));
   }
   if (resolvedBaseline.length > 0) {

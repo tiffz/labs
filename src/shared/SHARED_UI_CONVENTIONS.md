@@ -75,6 +75,17 @@ All music apps and `/ui` should publish the same semantic contract, then map app
 
 Legacy app tokens (`--primary`, `--piano-primary`, `--accent-primary`, etc.) can remain, but should alias into the semantic contract during migration.
 
+### Theming bridge (CSS tokens ↔ MUI `getAppTheme()`)
+
+Labs runs two theming stacks: CSS `--theme-*` tokens (shared controls, app chrome) and MUI themes from [`getAppTheme()`](ui/theme/appTheme.ts) (dialogs, menus, MUI-based apps). MUI cannot consume CSS vars in palette augmentation, so `appTheme.ts` mirrors each app's palette as concrete hex values.
+
+Rules:
+
+- **Change both sides together.** A palette change edits the app's `--theme-*` CSS block **and** its `appTheme.ts` entry in the same PR.
+- **Partial overrides are banned.** An app overriding `--theme-primary` must override the full core set — enforced by `npm run check:shared-theme-contract`.
+- **Divergent stacks are registered.** Apps whose primary theming intentionally diverges (Gesture Linen, Encore/Scales MUI-first, Zinebox) are listed in `scripts/check-shared-theme-contract.mjs` with the rationale documented in the app's `DESIGN.md`/`AGENTS.md`.
+- **MUI portals read `--labs-popover-*`** (see Encore's `MuiMenu`/`MuiPopover` overrides) so portaled surfaces match CSS-styled chrome without duplicating values.
+
 ## Scale Buckets (Required)
 
 ### Spacing scale

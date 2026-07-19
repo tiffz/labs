@@ -955,8 +955,8 @@ body,
 
 .words-chord-sound-field
   .shared-playback-field-select__trigger.words-chord-sound-select:focus-visible {
-  border-color: color-mix(in srgb, #0a8a8f 58%, #67e8f9);
-  box-shadow: 0 0 0 2px rgba(10, 138, 143, 0.14);
+  border-color: color-mix(in srgb, var(--theme-primary, #0a8a8f) 58%, #67e8f9);
+  box-shadow: var(--theme-focus-ring, 0 0 0 2px rgba(10, 138, 143, 0.14));
 }
 
 .words-dropdown-sound .shared-playback-field-select__menu-list {

@@ -27,21 +27,6 @@ export type HorizontalScrollHeuristicPageOptions = {
   allowHorizontalScrollSelectors?: string[];
 };
 
-function isInsideAllowedHorizontalScrollHost(
-  el: Element,
-  allowedSelectors: string[],
-): boolean {
-  if (el.closest('[data-labs-allow-horizontal-scroll]')) return true;
-  for (const selector of allowedSelectors) {
-    try {
-      if (el.closest(selector)) return true;
-    } catch {
-      /* invalid selector — skip */
-    }
-  }
-  return false;
-}
-
 /** Self-contained for Playwright page.evaluate (no closure imports). */
 export function runHorizontalScrollHeuristicInBrowser(
   opts: HorizontalScrollHeuristicPageOptions,
@@ -52,6 +37,18 @@ export function runHorizontalScrollHeuristicInBrowser(
     '.labs-horizontal-scroll-host',
     ...(opts.allowHorizontalScrollSelectors ?? []),
   ];
+
+  // Must stay inline: page.evaluate serializes only this function body.
+  const isInsideAllowedHorizontalScrollHost = (el: Element): boolean => {
+    for (const selector of allowedSelectors) {
+      try {
+        if (el.closest(selector)) return true;
+      } catch {
+        /* invalid selector — skip */
+      }
+    }
+    return false;
+  };
 
   const root = document.querySelector(opts.rootSelector);
   if (!root) {
@@ -78,7 +75,7 @@ export function runHorizontalScrollHeuristicInBrowser(
       tag: el.tagName.toLowerCase(),
       className: el.className?.toString?.().slice(0, 120) ?? '',
       overflowPx: el.scrollWidth - el.clientWidth,
-      allowed: isInsideAllowedHorizontalScrollHost(el, allowedSelectors),
+      allowed: isInsideAllowedHorizontalScrollHost(el),
     };
     if (!widestChild || candidate.overflowPx > widestChild.overflowPx) {
       widestChild = candidate;

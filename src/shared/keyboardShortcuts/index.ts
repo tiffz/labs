@@ -17,6 +17,7 @@ export { useLabsKeyboardShortcutsHelp } from './useLabsKeyboardShortcutsHelp';
 export {
   drumsKeyboardShortcutSections,
   encoreKeyboardShortcutSections,
+  gestureKeyboardShortcutSections,
   keyboardShortcutsAuditStatus,
   KEYBOARD_SHORTCUTS_AUDIT_APPS,
   labsCommonEditingShortcutSection,
@@ -26,6 +27,7 @@ export {
   sightKeyboardShortcutSections,
   stanzaKeyboardShortcutSections,
   wordsKeyboardShortcutSections,
+  zineboxKeyboardShortcutSections,
 } from './commonShortcuts';
 export {
   formatShortcutKeyToken,

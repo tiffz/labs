@@ -548,7 +548,7 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
         },
       });
       if (containerRef.current) {
-        containerRef.current.innerHTML = `<p style="color: red; padding: 2rem;">Error rendering chord score: ${error instanceof Error ? error.message : String(error)}. Please try again.</p>`;
+        containerRef.current.innerHTML = `<p style="color: red; padding: 2rem;">Chord score failed to render: ${error instanceof Error ? error.message : String(error)}. Try again.</p>`;
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- activeNoteGroups handled separately to avoid full re-render

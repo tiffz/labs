@@ -3777,7 +3777,7 @@ body {
 }
 
 /* The inline chord style selector doesn't need the full-width popover surface;
-   constrain the hosting section so it matches the Load Exercise popover width. */
+   constrain the hosting section so it matches the Load exercise popover width. */
 .np-pop-section:has(.shared-chord-style-inline-content--piano),
 .np-pop-section-sm:has(.shared-chord-style-inline-content--piano) {
   min-width: min(480px, calc(100vw - 32px));
@@ -4673,5 +4673,9 @@ body {
 
   .vp-toggle-btn {
     min-height: 44px;
+  }
+
+  .zoom-level-btn {
+    min-height: 24px;
   }
 }

@@ -68,7 +68,7 @@ export default function StanzaPracticePitchSection({
     <Box className="stanza-rail-section stanza-rail-section--pitch" aria-label="Pitch">
       <StanzaRailGridRow variant="pitch">
         <StanzaRailField
-          label="Original Key"
+          label="Original key"
           labelVariant="inline"
           className="stanza-rail-pitch-field stanza-rail-pitch-field--original"
         >

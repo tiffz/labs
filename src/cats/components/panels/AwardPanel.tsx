@@ -173,7 +173,7 @@ const AwardPanel: React.FC<AwardPanelProps> = ({
                   {isEarned ? '✓ Unlocked' : 'In Progress'}
                 </div>
               </div>
-              <p className="award-tooltip-description">{isEarned ? award.description : 'A mysterious secret awaits discovery...'}</p>
+              <p className="award-tooltip-description">{isEarned ? award.description : 'A mysterious secret awaits discovery…'}</p>
               {isEarned && (award.reward?.love || award.reward?.treats) && (
                 <div className="award-tooltip-details">
                   <div className="award-tooltip-rewards">

@@ -761,7 +761,7 @@ const ExercisePicker: React.FC<ExercisePickerProps> = ({
               <div className="ep-songs-header">
                 <div className="ep-songs-search">
                   <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#94a3b8' }}>search</span>
-                  <input type="text" placeholder="Search songs..." value={search}
+                  <input type="text" placeholder="Search songs…" value={search}
                     onChange={e => setSearch(e.target.value)} className="ep-songs-search-input" />
                 </div>
                 {onImportClick ? (

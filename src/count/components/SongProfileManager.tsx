@@ -44,7 +44,7 @@ export function SongProfileManager({
         <input
           className="pulse-save-input"
           type="text"
-          placeholder="Profile name..."
+          placeholder="Profile name…"
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSave()}

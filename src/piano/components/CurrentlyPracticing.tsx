@@ -581,8 +581,8 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercis
           <button
             className="np-switch-btn np-switch-btn-icon"
             onClick={(event) => onLoadExercise(event)}
-            onMouseEnter={e => showTip(e, 'Load Exercise')} onMouseLeave={hideTip}
-            aria-label="Load Exercise"
+            onMouseEnter={e => showTip(e, 'Load exercise')} onMouseLeave={hideTip}
+            aria-label="Load exercise"
           >
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>fitness_center</span>
             Exercise
@@ -590,8 +590,8 @@ const CurrentlyPracticing: React.FC<CurrentlyPracticingProps> = ({ onLoadExercis
           <button
             className="np-switch-btn np-switch-btn-icon"
             onClick={(event) => onLoadSong(event)}
-            onMouseEnter={e => showTip(e, 'Load Song')} onMouseLeave={hideTip}
-            aria-label="Load Song"
+            onMouseEnter={e => showTip(e, 'Load song')} onMouseLeave={hideTip}
+            aria-label="Load song"
           >
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>library_music</span>
             Song

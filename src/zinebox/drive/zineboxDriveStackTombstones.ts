@@ -81,6 +81,14 @@ export function recordZineboxStackDeletion(stackId: string, removedAt = new Date
   writePersisted(DELETED_STACKS_KEY, next);
 }
 
+/** Undo of a stack dissolve/delete — drop the deletion tombstone so the restored stack survives merge. */
+export function clearZineboxStackDeletion(stackId: string): void {
+  const id = stackId.trim();
+  if (!id) return;
+  const next = readPersisted(DELETED_STACKS_KEY).filter((t) => t.id !== id);
+  writePersisted(DELETED_STACKS_KEY, next);
+}
+
 export function recordZineboxStackMembershipRemoval(
   stackId: string,
   comicId: string,

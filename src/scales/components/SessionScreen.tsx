@@ -1381,7 +1381,7 @@ export default function SessionScreen() {
         {guidanceModal}
         {guidanceModalDebug}
         <Box sx={{ p: 3, textAlign: 'center' }}>
-          <Typography>Loading exercise...</Typography>
+          <Typography>Loading exercise…</Typography>
         </Box>
       </>
     );

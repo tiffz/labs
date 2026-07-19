@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 
 import SkipToMain from '../shared/components/SkipToMain';
+import {
+  LabsKeyboardShortcutsHost,
+  zineboxKeyboardShortcutSections,
+} from '../shared/keyboardShortcuts';
+import { LabsUndoProvider } from '../shared/undo/LabsUndoContext';
 import { AppShellLayout } from '../shared/layout/AppShellLayout';
 import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
 import LibraryView from './components/LibraryView';
@@ -70,19 +75,23 @@ export default function App(): React.ReactElement {
     );
 
   return (
-    <ZineboxDriveBackupProvider>
-      <div ref={appRef} className="zinebox-app">
-        <SkipToMain />
-        <main id="main">
-          <AppShellLayout
-            header={showDesignPicker && route.kind === 'library' ? <ZineboxDesignThemePicker /> : null}
-            footer={null}
-          >
-            {content}
-          </AppShellLayout>
-        </main>
-        {debugMode ? <ZineboxDebugPanel /> : null}
-      </div>
-    </ZineboxDriveBackupProvider>
+    <LabsUndoProvider>
+      <LabsKeyboardShortcutsHost sections={zineboxKeyboardShortcutSections}>
+        <ZineboxDriveBackupProvider>
+          <div ref={appRef} className="zinebox-app">
+            <SkipToMain />
+            <main id="main">
+              <AppShellLayout
+                header={showDesignPicker && route.kind === 'library' ? <ZineboxDesignThemePicker /> : null}
+                footer={null}
+              >
+                {content}
+              </AppShellLayout>
+            </main>
+            {debugMode ? <ZineboxDebugPanel /> : null}
+          </div>
+        </ZineboxDriveBackupProvider>
+      </LabsKeyboardShortcutsHost>
+    </LabsUndoProvider>
   );
 }
