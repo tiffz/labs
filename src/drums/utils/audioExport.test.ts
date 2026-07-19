@@ -70,7 +70,9 @@ let mockOfflineContextInstance: {
   startRendering: ReturnType<typeof vi.fn>;
 } | null = null;
 
-global.OfflineAudioContext = vi.fn().mockImplementation((numberOfChannels: number, length: number, sampleRate: number) => {
+// Vitest 4: constructor mocks must use the `function` keyword (arrow fns throw
+// "not a constructor" when the code under test calls `new OfflineAudioContext()`).
+global.OfflineAudioContext = vi.fn().mockImplementation(function (numberOfChannels: number, length: number, sampleRate: number) {
   decodeAudioDataCalls = [];
 
   const mockBufferSource = {

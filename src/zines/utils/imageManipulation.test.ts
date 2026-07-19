@@ -39,7 +39,9 @@ beforeEach(() => {
     onerror: null as (() => void) | null,
   };
 
-  vi.spyOn(window, 'Image').mockImplementation(() => {
+  // Vitest 4: constructor mocks must use the `function` keyword (arrow fns are
+  // "not a constructor" when the code under test calls `new Image()`).
+  vi.spyOn(window, 'Image').mockImplementation(function () {
     setTimeout(() => {
       if (mockImage.onload) mockImage.onload();
     }, 0);
