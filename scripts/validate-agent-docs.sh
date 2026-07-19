@@ -149,6 +149,20 @@ else
   fail "missing ${backlog_doc} or ${cpi_doc}"
 fi
 
+echo "== check:agent-docs: mandatory feature-test matrix =="
+
+strategy_doc="docs/TEST_STRATEGY.md"
+if [ -f "$strategy_doc" ]; then
+  if ! grep -q '^## Mandatory feature-test matrix' "$strategy_doc"; then
+    fail "${strategy_doc} missing '## Mandatory feature-test matrix' section"
+  fi
+  if ! grep -q 'Mandatory feature-test matrix' AGENTS.md; then
+    fail "AGENTS.md editing checklist must link TEST_STRATEGY.md § Mandatory feature-test matrix"
+  fi
+else
+  fail "missing ${strategy_doc}"
+fi
+
 echo "== check:agent-docs: skills-ref validate =="
 
 if command -v npx >/dev/null 2>&1; then

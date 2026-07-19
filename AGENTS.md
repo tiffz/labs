@@ -156,6 +156,7 @@ When a task matches a skill, **read and follow it first** before improvising a w
 See [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre-commit-checks.mdc) for the full gate (presubmit, eslint on touched files, `presubmit:push` when shells/e2e change). Also:
 
 - [ ] New shared primitive → `SHARED_UI_CONVENTIONS.md` + `/ui/` demo
+- [ ] New grid-aligned audio, audio export, Drive sync/merge, or app-level undo feature → required tests per [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md) § Mandatory feature-test matrix
 - [ ] New app directory → `importBoundaries.test.ts` + `check-import-boundaries.mjs`
 - [ ] New journey smoke → `labs-e2e-smoke` skill + `APP_SMOKE_SPECS` when applicable
 - [ ] Interaction perf / CUJ → `src/<app>/CUJs.md` + smoke when fixing lag (`labs-performance`)
