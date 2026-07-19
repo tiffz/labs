@@ -1,4 +1,4 @@
-import { dictionary } from 'cmu-pronouncing-dictionary';
+import { prosodyDictionary as dictionary } from './prosodyDictionary';
 import { syllable as estimateSyllables } from 'syllable';
 import {
   getSixteenthsPerMeasure,

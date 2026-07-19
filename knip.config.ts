@@ -86,6 +86,8 @@ const config: KnipConfig = {
     'public/sw.js',
     // Test setup files and utilities
     'src/shared/test/setupTests.ts',
+    // Vitest setup: preloads the lazy CMU dictionary before words test modules evaluate
+    'src/words/test/setupProsodyDictionary.ts',
     // Shared test mocks (imported on demand by new tests; Phase 1 scaffold)
     'src/shared/test/mocks/**',
     // Shared module barrel exports (may have unused exports that are part of public API)
@@ -158,7 +160,7 @@ const config: KnipConfig = {
     config: 'vite.config.ts',
   },
   // Ignore vitest setup file resolution 
-  ignoreUnresolved: ['./shared/test/setupTests.ts'],
+  ignoreUnresolved: ['./shared/test/setupTests.ts', './words/test/setupProsodyDictionary.ts'],
 };
 
 export default config;
