@@ -12,15 +12,17 @@ How Labs keeps [GitHub Actions](https://github.com/tiffz/labs/actions) green and
 
 ## Merge gate (what must be green)
 
-On PRs and `main`, the **`test`** job in `CI/CD` must pass:
+On PRs and `main`, `CI/CD` runs **parallel jobs** (each with `timeout-minutes` so hangs fail fast); `deploy` needs all of them:
 
-- Import boundaries, agent-docs, doc-links, ui-copy, css-important
-- Lint, typecheck, knip
-- E2e smoke + playback UI regressions (**before** Vitest — fail-fast on smokes)
-- Full Vitest (`npm test`, with **one retry** in CI for rare worker teardown flakes)
-- Production build (artifact reused by `deploy` — no second compile on `main`)
+| Job          | Contents                                                                                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **`scope`**  | Diff detection (beat files, e2e mode, vitest mode) consumed by downstream jobs                                                                         |
+| **`checks`** | Guardrail contracts (import boundaries, agent-docs, doc-links, ui-copy, css-important, catalogs, workflows), lint, typecheck, knip                     |
+| **`vitest`** | Scoped (`run-changed-app-tests.mjs`) or full `npm test` per `scope`, with **one retry** in CI for rare worker teardown flakes; audio regression report |
+| **`e2e`**    | Smoke (scoped or full per `scope`) + playback UI regressions + visual (see below); Playwright browsers cached by version                               |
+| **`build`**  | Production build (artifact reused by `deploy` — no second compile on `main`) + advisory bundle report                                                  |
 
-**Advisory (non-blocking):** visual regression on cross-cutting `main`/`PR` diffs only (exits 0 with a warning when snapshots differ; artifacts uploaded). Full visual matrix, **coverage**, and **Lighthouse** run **nightly** (`Nightly Portfolio Audit`).
+**Visual regression:** **scoped diffs are blocking** — `run-scoped-visual.mts` runs the changed apps' visual routes and fails the job on mismatch (classify per `docs/VISUAL_JUDGE_RUBRIC.md`, skill `labs-visual-judge`). **Cross-cutting/full diffs stay advisory** (warning + artifacts, job green) until ~2 weeks of clean nightly visual runs, then flip to blocking. Full visual matrix, **coverage**, and **Lighthouse** run **nightly** (`Nightly Portfolio Audit`).
 
 ## Pages deployment (single path)
 
@@ -28,7 +30,7 @@ Only **`ci.yml` → `deploy`** automatically calls `actions/deploy-pages` on pus
 
 - **`rollback.yml`** also deploys Pages, but only via manual **`workflow_dispatch`** — it shares the same `pages-deploy-${{ github.ref }}` concurrency group so rollback and CI deploy cannot race.
 - **`concurrency`** group `pages-deploy-${{ github.ref }}` with `cancel-in-progress: true` — rapid pushes cancel stale deploys; only latest `main` publishes.
-- **`deploy` job** waits 90s / 120s and retries `actions/deploy-pages` up to **three** times when an attempt fails (typical errors: `in progress deployment`, GitHub `Deployment failed, try again later`).
+- **`deploy` job** depends on `checks`, `vitest`, `e2e`, and `build`; it waits 90s / 120s and retries `actions/deploy-pages` up to **three** times when an attempt fails (typical errors: `in progress deployment`, GitHub `Deployment failed, try again later`).
 - Presubmit guard **`npm run check:workflows`** fails if more than one **automatic** workflow invokes `deploy-pages` (rollback excluded).
 
 Do **not** add a second Pages deploy workflow. Doc/asset path changes are covered by `ci.yml` path filters (`**.md`, images, `CNAME`, `LICENSE`, `public/**`).
@@ -47,7 +49,7 @@ Before merging edits under `.github/workflows/`:
 4. After merge to `main`, confirm **`deploy`** on the latest run succeeded (not an older cancelled run).
 5. If deploy failed with Pages race, confirm the inline retry step ran or re-run the deploy job manually.
 
-Skill: **`labs-babysit-pr`**. When adding checks, prefer extending `ci.yml` `test` job over new workflows unless there is a strong isolation reason (see nightly flakiness).
+Skill: **`labs-babysit-pr`**. When adding checks, prefer extending the matching `ci.yml` job (`checks` / `vitest` / `e2e` / `build`) over new workflows unless there is a strong isolation reason (see nightly flakiness).
 
 ## Failure triage
 
@@ -61,7 +63,8 @@ Skill: **`labs-babysit-pr`**. When adding checks, prefer extending `ci.yml` `tes
 | Vitest timeout at 10s on lazy-import test                       | `findBy*` timeout > `testTimeout`                                                                              | Preload in `beforeAll`; raise `it` timeout — see `docs/FLAKY_TESTS.md`                                                                                                                                                                       |
 | Story `App.test.tsx` flake on CI                                | Same — cold dynamic imports vs 10s cap                                                                         | Fixed via preload + explicit test timeout                                                                                                                                                                                                    |
 | E2e smoke parse error                                           | Syntax error in imported TS                                                                                    | Fix source; run smoke locally                                                                                                                                                                                                                |
-| Visual step warning, job green                                  | Expected — visual is advisory on cross-cutting diffs                                                           | Inspect artifact; update baselines intentionally or fix nightly visual job                                                                                                                                                                   |
+| Visual step warning, job green                                  | Expected — visual is advisory on **cross-cutting** diffs (scoped diffs block)                                  | Inspect artifact; classify per `docs/VISUAL_JUDGE_RUBRIC.md`; update baselines intentionally or fix                                                                                                                                          |
+| Scoped visual step failed the `e2e` job                         | Changed app's routes drifted from Linux baselines                                                              | Skill `labs-visual-judge`: fix must-fix rows, or import intentional actuals via `scripts/import-visual-baselines-from-artifacts.mjs`                                                                                                         |
 | Workflow red after push but newer push exists                   | Cancelled superseded run (GitHub shows red)                                                                    | Check **latest** run on branch — not cancelled rows; older commit rows stay red even after a later green deploy                                                                                                                              |
 | `ci:watch` exits `could not resolve PR` on `main` push          | Watcher only accepted PR numbers; direct `main` pushes have no PR                                              | `npm run ci:watch -- main` or pass the workflow run id (`npm run ci:watch -- <run-id>`)                                                                                                                                                      |
 | Playwright flake masked by retry                                | Historical policy drift                                                                                        | `playwright.config.ts` uses `retries: 0` — fix root cause per FLAKY_TESTS                                                                                                                                                                    |

@@ -2,7 +2,7 @@
 
 Unified clocks, look-ahead scheduling, mix bus, drum players, and metronome UI for Labs music apps.
 
-**Agent entry:** [`docs/SHARED_AUDIO_PLATFORM.md`](../../../docs/SHARED_AUDIO_PLATFORM.md) · ADR [0021](../../../docs/adr/0021-shared-audio-platform.md)
+**Agent entry:** [`docs/SHARED_AUDIO_PLATFORM.md`](../../../../docs/SHARED_AUDIO_PLATFORM.md) · ADR [0021](../../../../docs/adr/0021-shared-audio-platform.md)
 
 ## Layout
 

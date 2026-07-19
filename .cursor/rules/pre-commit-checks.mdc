@@ -5,52 +5,9 @@ alwaysApply: true
 
 # Pre-commit verification
 
-Before telling the user a task is done — and **before suggesting `git commit`** — run the same checks as the Husky pre-commit hook:
+Run **`npm run presubmit`** before telling the user a task is done and before suggesting `git commit`. It mirrors CI's blocking gates (guardrail contracts, lint, knip, typecheck, build, scoped Vitest + scoped e2e). `.husky/pre-push` adds full smoke + playback regressions (`presubmit:push`). Subsets while iterating are fine; always finish with presubmit.
 
-```bash
-npm run presubmit
-```
-
-That runs, in order: import boundaries, ui-copy, doc-links, agent-docs, css-important, workflows, lint, knip, typecheck, **`npm run build`**, **`test:changed-apps`**, **`test:e2e:scoped`**. The Husky pre-commit hook uses **`test:staged`** (scoped to **staged** files) for faster commits.
-
-If you only changed a few files, you may run subsets while iterating (`npx vitest run src/<app>`, `npm run test:staged`, `npm run verify:layout`), but **always finish with `npm run presubmit`** so Knip, build, and scoped e2e are not missed.
-
-Before **`git push`**, **`npm run presubmit:push`** runs automatically via `.husky/pre-push` (skip with `LABS_SKIP_PRESUBMIT_PUSH=1`). For a final Vitest confidence pass before merge, run **`npm run test:fast`** or **`npm test`** when you touched `src/shared/**`. See [`docs/CI_PATH_SCOPING.md`](../../docs/CI_PATH_SCOPING.md) and [`docs/FLAKY_TESTS.md`](../../docs/FLAKY_TESTS.md).
-
-Minimum per-file checks when touching TypeScript:
-
-1. **ESLint** — `npx eslint <changed-files>`
-2. **TypeScript** — `npm run typecheck`
-3. **Knip** — `npm run knip` (delete any files/exports you made unused)
-
-If any check fails on code you touched, fix it before finishing.
-
-## ESLint warnings are not optional
-
-`npm run lint` exits 0 with warnings, but **CI annotates every warning** and they accumulate into noise that hides real failures. Agents must:
-
-1. **Fix warnings in files you edit** — including `react-hooks/exhaustive-deps`, `react-refresh/only-export-components`, and `no-console` (use `console.warn` / `console.error`, or remove debug logs).
-2. **Do not split components + hooks/utilities in one `.tsx` file** — Fast Refresh warns when a file exports both components and non-components. Put hooks in `use*.ts`, helpers in `*Utils.ts`, keep `.tsx` for components only.
-3. **When fixing a file, clear its existing warnings** if the fix is local (a few lines). Do not leave "pre-existing" warnings in files you touched.
-4. **Verify clean lint on touched paths** before done:
-   ```bash
-   npx eslint <changed-files>
-   ```
-   Aim for **zero warnings** in changed files. Repo-wide warning cleanup is welcome when small; do not scope-creep large unrelated refactors.
-
-Do not defer lint hygiene with "pre-existing errors in unrelated files can be ignored" for files in your diff.
-
-## Flaky tests
-
-If a test fails once and passes on retry, **fix it** — do not re-run presubmit until the root cause is addressed. See [`.cursor/rules/flaky-tests.mdc`](flaky-tests.mdc) and [`docs/FLAKY_TESTS.md`](../../docs/FLAKY_TESTS.md).
-
-## Shell / provider / route wiring
-
-Presubmit **always runs `npm run build`** and scoped e2e. When you touch app shells, React context providers, hash routing, or Vite entry HTML:
-
-1. Run **`npm run presubmit`** locally before done (catches CI build/e2e failures early).
-2. For Encore performance list/editor UI, run **`npm run test:e2e:smoke`** (includes `e2e/smoke/encore-performance-routes.spec.ts`) or hard-refresh `#/library` and `#/practice` in dev — HMR can hide provider wiring bugs.
-3. For Gesture preview strips / media cache, run **`npm run test:e2e:smoke`** (`e2e/smoke/gesture-preview-strip.spec.ts`) or hard-refresh `#/gesture/` — HMR can hide cache-layer bugs. See [`docs/GESTURE_MEDIA_STABILITY.md`](../../docs/GESTURE_MEDIA_STABILITY.md).
-4. For new/major UI, run skill **`labs-ux-journey`** — **post journey sketch in chat before coding** (rule `ux-journey-mandatory.mdc`).
-5. Layout/CSS changes → **`npm run verify:layout`** before done.
-6. Locally after app-scoped edits: **`npm run test:changed-apps`** and **`node scripts/run-scoped-e2e.mjs`** (see `docs/CI_PATH_SCOPING.md`).
+- **Zero ESLint warnings in files you touched** — verify with `npx eslint <changed-files>`; fix `react-hooks/exhaustive-deps`, Fast Refresh (`only-export-components` — keep hooks in `use*.ts`, helpers in `*Utils.ts`), and `no-console` instead of deferring them.
+- **Flaky test (fails once, passes on retry)** → fix the root cause before re-running; rule [`flaky-tests.mdc`](flaky-tests.mdc).
+- **Layout/CSS changes** → `npm run verify:layout`. **Shell/provider/route/entry-HTML wiring** → run `npm run presubmit` (build + scoped e2e) and hard-refresh affected routes; HMR hides wiring and cache bugs.
+- Scoping details: [`docs/CI_PATH_SCOPING.md`](../../docs/CI_PATH_SCOPING.md).

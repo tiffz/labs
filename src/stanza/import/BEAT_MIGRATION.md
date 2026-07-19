@@ -1,6 +1,6 @@
 # Find the Beat → Stanza migration
 
-One-time import from the legacy `beat-finder-library` IndexedDB into Stanza Dexie. Implementation: [`beatLibraryImport.ts`](./beatLibraryImport.ts). Product context: [ADR 0013](../../docs/adr/0013-stanza-subsumes-find-the-beat.md).
+One-time import from the legacy `beat-finder-library` IndexedDB into Stanza Dexie. Implementation: [`beatLibraryImport.ts`](./beatLibraryImport.ts). Product context: [ADR 0013](../../../docs/adr/0013-stanza-subsumes-find-the-beat.md).
 
 ## Why migrated songs can feel different
 
@@ -78,4 +78,4 @@ State key: `stanza:beat-library-migration-v3` in `localStorage`.
 
 - [`BOOTSTRAP.md`](../BOOTSTRAP.md) — when import runs
 - [`beatLibraryImport.test.ts`](./beatLibraryImport.test.ts) — mapping tests
-- [ADR 0013](../../docs/adr/0013-stanza-subsumes-find-the-beat.md) — field mapping table
+- [ADR 0013](../../../docs/adr/0013-stanza-subsumes-find-the-beat.md) — field mapping table

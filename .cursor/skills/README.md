@@ -8,6 +8,7 @@ Portable [Agent Skills](https://agentskills.io/home) for Labs workflows. Discove
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | [`labs-playback-bugfix`](labs-playback-bugfix/SKILL.md)                 | Playback, notation, VexFlow, portal picker, async stop regressions        |
 | [`labs-visual-regression`](labs-visual-regression/SKILL.md)             | Visual or audio baseline verify/update                                    |
+| [`labs-visual-judge`](labs-visual-judge/SKILL.md)                       | Judge screenshot diffs against the rubric (must-fix / accept / escalate)  |
 | [`labs-session-retrospective`](labs-session-retrospective/SKILL.md)     | Substantial session complete; **deliver** retrospective; codify learnings |
 | [`labs-ux-journey`](labs-ux-journey/SKILL.md)                           | New/major UI; journey hierarchy; gestalt, redundancy, visual weight       |
 | [`labs-babysit-pr`](labs-babysit-pr/SKILL.md)                           | Keep a PR merge-ready (comments, CI, conflicts); merge when user asks     |

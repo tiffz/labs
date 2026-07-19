@@ -16,7 +16,7 @@ export const MUSCLE_MAX_REGION_TRIANGLES = 80_000;
 export const MUSCLE_MAX_ATLAS_REGION_TRIANGLES = 120_000;
 export const MUSCLE_MAX_ATLAS_COMPLETE_TRIANGLES = 400_000;
 
-const ATLAS_REGION_IDS = new Set(['atlas_supplement', 'atlas_head_face', 'atlas_skin']);
+const ATLAS_REGION_IDS = new Set(['atlas_supplement', 'atlas_head_face']);
 const ATLAS_COMPLETE_ID = 'atlas_complete';
 
 export type MuscleManifestMesh = {

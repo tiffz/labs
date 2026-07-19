@@ -26,6 +26,8 @@ When guidance conflicts, resolve in this order:
 
 When **AI agents** receive conflicting instructions, use [`AGENTS.md`](../AGENTS.md) § Agent precedence (user chat → user rules/skills → nearest AGENTS.md + scoped rules → app README → DEVELOPMENT.md). Human doc precedence above still applies when the user has not given explicit chat overrides.
 
+**The two orderings are intentional, not a conflict:** the human list ranks _documents_ by authority for what the codebase policy is; the agent list ranks _instruction sources_ for what to do this session. Both agree that enforced config beats prose, and session-scoped user instructions never rewrite repo policy.
+
 ## Scope by Document Type
 
 - [`docs/DOCUMENTATION_STRATEGY.md`](DOCUMENTATION_STRATEGY.md)

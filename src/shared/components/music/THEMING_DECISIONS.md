@@ -45,9 +45,9 @@ App themes should map to a common semantic bridge before component-family tokens
 
 Shared component tokens (`--bpm-*`, `--key-*`, `--cp-*`, `--cs-*`) should derive from those semantic variables where possible.
 
-**Focus rings:** map `--theme-focus-ring` on the app shell; portaled dropdowns duplicate on dropdown class. Shared tokens: `--labs-control-focus-ring`, `--labs-control-focus-ring-inset`, `--labs-focus-ring-bleed`. See [`docs/FOCUS_THEMING.md`](../../../docs/FOCUS_THEMING.md).
+**Focus rings:** map `--theme-focus-ring` on the app shell; portaled dropdowns duplicate on dropdown class. Shared tokens: `--labs-control-focus-ring`, `--labs-control-focus-ring-inset`, `--labs-focus-ring-bleed`. See [`docs/FOCUS_THEMING.md`](../../../../docs/FOCUS_THEMING.md).
 
-**Selection tiers** (primary transport vs secondary popover/chip selection): [`docs/SELECTION_VISUAL_HIERARCHY.md`](../../../docs/SELECTION_VISUAL_HIERARCHY.md). Map active chip tokens (`--*-chip-active-*`) and metronome settings toggles (`--metro-toggle-selected-*`) to `--labs-selection-secondary-*` on the app shell.
+**Selection tiers** (primary transport vs secondary popover/chip selection): [`docs/SELECTION_VISUAL_HIERARCHY.md`](../../../../docs/SELECTION_VISUAL_HIERARCHY.md). Map active chip tokens (`--*-chip-active-*`) and metronome settings toggles (`--metro-toggle-selected-*`) to `--labs-selection-secondary-*` on the app shell.
 
 ## Density and size buckets
 

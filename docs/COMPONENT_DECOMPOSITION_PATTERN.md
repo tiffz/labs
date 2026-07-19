@@ -55,16 +55,21 @@ These are the files flagged in the engineering audit as over-size and ripe for t
 
 ### In progress — Stanza workspace (ADR 0013 follow-up)
 
-- **`src/stanza/components/StanzaWorkspace.tsx`** (~3607 lines; was ~4400)
+- **`src/stanza/components/StanzaWorkspace.tsx`** (~3050 lines; was ~4400)
   - Extracted to `components/stanzaWorkspace/`:
     - `stanzaWorkspaceHelpers.ts` — stem reorder, mix label sx, YouTube error copy, practice detection
     - `stanzaPracticeRailConstants.ts` — drums notation footprint + palette
     - `StanzaLibraryGrid`, `StanzaDriveDeepLinkAlerts`, `StanzaPracticePitchSection`, `StanzaPracticeMixSection`
-  - Next splits (dedicated PRs): playback transport card, landing hero / import row, viewer header, timeline wiring hooks.
+    - `StanzaLandingHero` (hero + landing library), `StanzaViewerHeaderBar`, `StanzaLibraryFooterPanel`,
+      `StanzaFileDropOverlay`, `StanzaLocalMainMedia` (sticky-duration media wiring),
+      `StanzaHiddenStemAudios`, `StanzaWorkspaceDialogs` (menu + remove + stem-drop)
+  - Extracted to `hooks/`: `useStanzaDriveDeepLink` (deep-link import + tombstone prompt + bootstrap wiring)
+  - Next splits (dedicated PRs): transpose decode pipeline hook, stem alignment hook;
+    then the practice-rail groove footer if the rail grows again.
 
 ### In progress — Scales session screen
 
-- **`src/scales/components/SessionScreen.tsx`** (~2900 lines; was ~3034)
+- **`src/scales/components/SessionScreen.tsx`** (~3098 lines)
   - Extracted: `sessionScreenConstants.ts`, `sessionScreenHelpers.ts`, `sessionScreen/{SessionScreenIcon,SessionAdvanceActionTooltip,SessionExerciseResultBreakdown}.tsx`
   - Next splits: session header bar, stuck dialog, dwell toast overlay, result panel.
 

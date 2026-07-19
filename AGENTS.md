@@ -76,6 +76,7 @@ Presubmit before done: [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre
 | Mid-refactor handoff                                   | [`DEVELOPMENT.md`](DEVELOPMENT.md) § Iteration handoff                                                                                                                                                                                              | `labs-iteration-handoff`       |
 | Material architecture (routing, OAuth, boundaries)     | `docs/adr/README.md`, `.cursor/rules/architecture-decisions.mdc`                                                                                                                                                                                    | `labs-write-adr`               |
 | Regression / visual baselines                          | [`docs/VISUAL_REGRESSION_AGENT.md`](docs/VISUAL_REGRESSION_AGENT.md), `docs/REGRESSION_WORKFLOW.md`                                                                                                                                                 | `labs-visual-regression`       |
+| Screenshot diff triage (CI visual failure)             | [`docs/VISUAL_JUDGE_RUBRIC.md`](docs/VISUAL_JUDGE_RUBRIC.md) **(B)**                                                                                                                                                                                | `labs-visual-judge`            |
 | Interaction perf / CUJ benchmarks                      | [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md), [`docs/CRITICAL_USER_JOURNEYS.md`](docs/CRITICAL_USER_JOURNEYS.md), app `CUJs.md`                                                                                                                     | `labs-performance`             |
 | Lighthouse / load audits (advisory)                    | [`docs/LIGHTHOUSE_AUDIT.md`](docs/LIGHTHOUSE_AUDIT.md) **(B)**                                                                                                                                                                                      | —                              |
 | In-app UI design theme iterations / preview picker     | app `README.md` + [`labs-ui-design-variations`](.cursor/skills/labs-ui-design-variations/SKILL.md)                                                                                                                                                  | `labs-ui-design-variations`    |
@@ -104,10 +105,9 @@ Commands quick reference: root [`README.md`](README.md) and `package.json` scrip
 
 - Respect **import boundaries** (`src/shared/**` only for cross-app reuse).
 - Use **shared UI primitives** before app-local copies.
-- **Non-trivial UX tasks:** read skill **`labs-ux-journey`**, **post the journey sketch in chat**, then code — see [`.cursor/rules/ux-journey-mandatory.mdc`](.cursor/rules/ux-journey-mandatory.mdc). Do not skip the sketch unless the user waived it or the change is trivial (copy-only, no layout).
 - **Question-only / review-only tasks:** minimal diff—do not refactor or “improve” unrelated code.
 - Read the **nearest app README** before editing an unfamiliar app.
-- **Big new asks:** give an honest **feasibility / manual-labor assessment up front** and flag (and recommend against) approaches likely to need significant human hand-work to reach quality — the user decides, but flag early. See [`.cursor/rules/feasibility-first.mdc`](.cursor/rules/feasibility-first.mdc).
+- Always-on gates (full text in their rules): UX journey sketch ([`ux-journey-mandatory.mdc`](.cursor/rules/ux-journey-mandatory.mdc)), feasibility assessment ([`feasibility-first.mdc`](.cursor/rules/feasibility-first.mdc)), presubmit ([`pre-commit-checks.mdc`](.cursor/rules/pre-commit-checks.mdc)).
 
 ### Ask first
 

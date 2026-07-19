@@ -1,6 +1,6 @@
 # Encore Originals — development notes
 
-App overview and Drive/sync: [`README.md`](../README.md), [ADR 0012](../../docs/adr/0012-encore-originals-local-first-domain.md).
+App overview and Drive/sync: [`README.md`](../README.md), [ADR 0012](../../../docs/adr/0012-encore-originals-local-first-domain.md).
 
 Chord chart **data model and import**: [`src/shared/music/chordPro/chordChartLayout.ts`](../../shared/music/chordPro/chordChartLayout.ts), fixtures in [`chordPro/fixtures.ts`](../../shared/music/chordPro/fixtures.ts), paste tests in [`pastedChartImport.test.ts`](../../shared/music/chordPro/pastedChartImport.test.ts).
 
@@ -39,7 +39,7 @@ Paste on **Write lyrics** or **Brainstorm** (formatted `[Verse]` / chord-over-ly
 - View mode + non-chords write: shell `#main.in-scroll-region` scroll only (no nested page scroller).
 - Section stack: `encorePageSectionGap` in `OriginalsSongViewMode`.
 - Surfaces: `encoreSurfaceContentPad` / tokens in [`encoreM3Layout.ts`](../theme/encoreM3Layout.ts).
-- Agent rule: [`.cursor/rules/encore-originals-layout.mdc`](../../.cursor/rules/encore-originals-layout.mdc).
+- Agent rule: [`.cursor/rules/encore-originals-layout.mdc`](../../../.cursor/rules/encore-originals-layout.mdc).
 
 State hook: [`hooks/useOriginalsChartLayout.ts`](hooks/useOriginalsChartLayout.ts). Interaction types: [`chartInteractionTypes.ts`](chartInteractionTypes.ts).
 

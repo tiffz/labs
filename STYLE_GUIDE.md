@@ -100,7 +100,7 @@ Filters that let users pick categorical values should support both **include (OR
 
 - Fullscreen app shells: `height: 100vh; height: 100dvh;` (or `min-height` variants). Never `100vh` alone.
 - Avoid hard-coded `100vw` desktop widths without a mobile plan.
-- **Multi-panel apps** (header + scroll + footer): use [`AppShellLayout`](../src/shared/layout/AppShellLayout.tsx) and an app `*-layout.css` for tokens. See [`src/shared/layout/README.md`](../src/shared/layout/README.md) and Stanza [`LAYOUT.md`](../src/stanza/LAYOUT.md). Do not put horizontal width or grid template in component `sx`.
+- **Multi-panel apps** (header + scroll + footer): use [`AppShellLayout`](src/shared/layout/AppShellLayout.tsx) and an app `*-layout.css` for tokens. See [`src/shared/layout/README.md`](src/shared/layout/README.md) and Stanza [`LAYOUT.md`](src/stanza/LAYOUT.md). Do not put horizontal width or grid template in component `sx`.
 
 ### Structural panels vs MUI
 

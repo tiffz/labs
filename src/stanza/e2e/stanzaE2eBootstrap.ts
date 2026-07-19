@@ -147,12 +147,36 @@ async function buildE2eSongWithPlaythrough(): Promise<StanzaSong> {
   };
 }
 
+export const STANZA_E2E_DUAL_SOURCE_SONG_ID = '__stanza_e2e_dual_source__';
+export const STANZA_E2E_DUAL_SOURCE_SONG_TITLE = 'E2E Dual Source Song';
+
+/**
+ * YouTube song with an uploaded practice file — exercises the practice-source
+ * switch. The yt id is syntactically valid but never loaded (source starts local).
+ */
+async function buildE2eSongWithDualSources(): Promise<StanzaSong> {
+  const durationSec = 3;
+  const primary = createMinimalWavBlobForStanzaE2e(durationSec);
+  return {
+    id: STANZA_E2E_DUAL_SOURCE_SONG_ID,
+    ytId: 'e2eDualSrc0',
+    title: STANZA_E2E_DUAL_SOURCE_SONG_TITLE,
+    markers: [],
+    stats: {},
+    updatedAt: Date.now(),
+    localAudioBlob: primary,
+    practiceSource: 'local',
+    localMediaFingerprint: `${primary.size}:${durationSec.toFixed(2)}`,
+  };
+}
+
 export type StanzaE2eWindowHooks = {
   seedSongWithStems: () => Promise<string>;
   seedSongWithDrumsPlayback: () => Promise<string>;
   seedSongWithLoopPlayback: () => Promise<string>;
   seedSongWithPlaythrough: () => Promise<string>;
   seedSongWithPracticeRail: () => Promise<string>;
+  seedSongWithDualSources: () => Promise<string>;
 };
 
 declare global {
@@ -193,6 +217,12 @@ export function installStanzaE2eHooks(): void {
     },
     async seedSongWithPracticeRail() {
       const row = await buildE2eSongWithPracticeRail();
+      await stanzaDb.songs.put(row);
+      writeStanzaLastSelectedSongId(row.id);
+      return row.id;
+    },
+    async seedSongWithDualSources() {
+      const row = await buildE2eSongWithDualSources();
       await stanzaDb.songs.put(row);
       writeStanzaLastSelectedSongId(row.id);
       return row.id;

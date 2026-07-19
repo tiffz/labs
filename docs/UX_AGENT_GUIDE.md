@@ -91,7 +91,7 @@ Check before declaring UI done:
 - [ ] **Copy:** no repeated phrases on the same screen; follow USER_COPY_STYLE.
 - [ ] **Responsive:** ~390px and ~768px (or layout-heuristics mobile smoke) — no page horizontal scroll; stack toolbars; see [`RESPONSIVE_DESIGN.md`](RESPONSIVE_DESIGN.md).
 
-When feasible, capture **Playwright screenshot** or MCP browser snapshot for changed routes before done.
+**Required for non-trivial UI** (same trigger list as the journey sketch, rule `ux-journey-mandatory.mdc`): capture a **Playwright or browser screenshot** of each changed route and **attach it in chat before declaring done**, evaluated against this checklist and [`VISUAL_JUDGE_RUBRIC.md`](VISUAL_JUDGE_RUBRIC.md) Tier 1 rows. Copy-only tweaks and bug fixes restoring documented behavior are exempt.
 
 ## Action hierarchy template
 
@@ -108,14 +108,7 @@ Use in PR description or journey sketch:
 
 ## Root cause classes (UX)
 
-Use in retrospectives and PR **Process improvements**:
-
-- `ux-gestalt` — related items separated or inconsistent parallel surfaces
-- `ux-redundancy` — duplicate copy, bars, or controls in one viewport
-- `ux-visual-weight` — excessive borders/shadows/nesting
-- `ux-spec-violation` — padding/contrast/alignment grid breaks
-- `ux-journey-overload` — too many competing actions; unclear primary path
-- `ux-revision-churn` — many human polish cycles; needs checklist/rule (alias: `ux revision churn`)
+Use `ux-gestalt`, `ux-redundancy`, `ux-visual-weight`, `ux-spec-violation`, `ux-journey-overload`, `ux revision churn` in retrospectives and PR **Process improvements** — definitions live in [`CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCESS_IMPROVEMENT.md) § Root cause classes (canonical).
 
 ## References (external practices)
 

@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 /**
- * Lightweight doc hygiene: verify key agent-doc links resolve to files on disk.
- * Run in CI/presubmit; extend LINK_CHECKS when adding canonical agent paths.
+ * Doc hygiene, two passes over the guidance corpus (docs/, root *.md, src markdown,
+ * .cursor/rules, .cursor/skills):
+ *   1. Every relative markdown link resolves to a file/directory on disk.
+ *   2. Every `npm run <script>` citation exists in package.json scripts.
+ * Plus: shared-catalog demo symbols resolve (legacy check).
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,37 +13,108 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/** [markdown file relative to repo, link path as written in markdown] */
-const LINK_CHECKS = [
-  ['AGENTS.md', 'src/shared/SHARED_UI_CONVENTIONS.md'],
-  ['AGENTS.md', 'src/shared/hooks/PLAYBACK_HOOK_PATTERN.md'],
-  ['AGENTS.md', 'docs/USER_COPY_STYLE.md'],
-  ['AGENTS.md', 'src/encore/AGENTS.md'],
-  ['AGENTS.md', 'src/stanza/AGENTS.md'],
-  ['AGENTS.md', 'src/shared/AGENTS.md'],
-  ['AGENTS.md', 'src/words/AGENTS.md'],
-  ['AGENTS.md', 'src/piano/AGENTS.md'],
-  ['AGENTS.md', 'src/chords/AGENTS.md'],
-  ['AGENTS.md', 'src/drums/AGENTS.md'],
-  ['AGENTS.md', 'src/cats/AGENTS.md'],
-  ['AGENTS.md', 'src/scales/AGENTS.md'],
-  ['AGENTS.md', '.cursor/skills/README.md'],
-  ['AGENTS.md', 'docs/DOCUMENTATION_STRATEGY.md'],
-  ['AGENTS.md', 'docs/DEVELOPMENT_AGENT_INDEX.md'],
-  ['AGENTS.md', 'docs/URL_STATE_PATTERN.md'],
-  ['docs/DEVELOPMENT_AGENT_INDEX.md', '../DEVELOPMENT.md'],
-  ['docs/URL_STATE_PATTERN.md', '../src/shared/utils/urlHistory.ts'],
-  ['src/stanza/ANALYZE.md', '../shared/beat/TEST_MATRIX.md'],
-  ['.cursor/skills/README.md', '../../AGENTS.md'],
-  ['.cursor/skills/labs-playback-bugfix/SKILL.md', '../../rules/playback-ui-regressions.mdc'],
-  ['docs/DOCUMENTATION_STRATEGY.md', '../.cursor/skills/README.md'],
-  ['.cursor/rules/README.md', '../../AGENTS.md'],
-  ['.cursor/rules/README.md', 'shared-ui-first.mdc'],
-  ['.cursor/rules/README.md', 'user-copy.mdc'],
-  ['src/shared/SHARED_UI_CONVENTIONS.md', '../encore/UI_PRIMITIVES.md'],
-  ['docs/DOCUMENTATION_STRATEGY.md', 'USER_COPY_STYLE.md'],
-  ['docs/SOURCE_OF_TRUTH.md', '../AGENTS.md'],
-];
+const SKIP_DIRS = new Set(['node_modules', 'dist', 'coverage', 'test-results', 'playwright-report', '.git']);
+
+function collectMarkdownFiles() {
+  /** Corpus roots: guidance the agent/human workflow actually reads. */
+  const out = [];
+  const pushIfMd = (full) => {
+    if (/\.(md|mdc)$/.test(full)) out.push(full);
+  };
+  for (const entry of fs.readdirSync(repoRoot, { withFileTypes: true })) {
+    if (entry.isFile()) pushIfMd(path.join(repoRoot, entry.name));
+  }
+  const walk = (dir) => {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (SKIP_DIRS.has(entry.name)) continue;
+        walk(full);
+        continue;
+      }
+      pushIfMd(full);
+    }
+  };
+  for (const root of ['docs', 'src', '.cursor/rules', '.cursor/skills', 'e2e', 'tools', 'workers', '.github']) {
+    walk(path.join(repoRoot, root));
+  }
+  return out;
+}
+
+/** Extract relative link targets from markdown, skipping fenced code blocks. */
+function extractRelativeLinks(text) {
+  const links = [];
+  let inFence = false;
+  for (const line of text.split('\n')) {
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    for (const match of line.matchAll(/!?\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g)) {
+      const raw = match[1];
+      if (/^(https?:|mailto:|#|data:|vscode:)/i.test(raw)) continue;
+      // Site-absolute links (e.g. /ui/, /drums/) target the deployed app, not files.
+      if (raw.startsWith('/')) continue;
+      const target = raw.split('#')[0].split('?')[0];
+      if (!target) continue;
+      links.push(decodeURIComponent(target));
+    }
+  }
+  return links;
+}
+
+/** Extract `npm run <script>` citations (code blocks included — that's where they live). */
+function extractNpmScriptCitations(text) {
+  const names = new Set();
+  for (const match of text.matchAll(/npm run ([a-z0-9:_.-]+)/g)) {
+    names.add(match[1]);
+  }
+  return [...names];
+}
+
+const failures = [];
+const markdownFiles = collectMarkdownFiles();
+const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
+const knownScripts = new Set(Object.keys(pkg.scripts ?? {}));
+
+// Sub-package docs cite their own package.json scripts — resolve against the nearest one.
+function scriptsForDoc(docPath) {
+  let dir = path.dirname(docPath);
+  while (dir.startsWith(repoRoot)) {
+    const pkgPath = path.join(dir, 'package.json');
+    if (dir !== repoRoot && fs.existsSync(pkgPath)) {
+      try {
+        const sub = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+        return new Set([...knownScripts, ...Object.keys(sub.scripts ?? {})]);
+      } catch {
+        return knownScripts;
+      }
+    }
+    dir = path.dirname(dir);
+  }
+  return knownScripts;
+}
+
+for (const file of markdownFiles) {
+  const rel = path.relative(repoRoot, file);
+  const text = fs.readFileSync(file, 'utf8');
+
+  for (const link of extractRelativeLinks(text)) {
+    const resolved = path.resolve(path.dirname(file), link);
+    if (!fs.existsSync(resolved)) {
+      failures.push(`${rel} → ${link} (not found)`);
+    }
+  }
+
+  const scripts = scriptsForDoc(file);
+  for (const name of extractNpmScriptCitations(text)) {
+    if (!scripts.has(name)) {
+      failures.push(`${rel} cites "npm run ${name}" — not in package.json scripts`);
+    }
+  }
+}
 
 /** demoBySymbol keys must exist as exported components in shared (best-effort). */
 function checkSharedCatalogDemos() {
@@ -87,29 +161,12 @@ function findExportFile(exportName) {
   return null;
 }
 
-const failures = [];
-
-for (const [docRel, linkTarget] of LINK_CHECKS) {
-  const docPath = path.join(repoRoot, docRel);
-  if (!fs.existsSync(docPath)) {
-    failures.push(`Missing doc file: ${docRel}`);
-    continue;
-  }
-  const docDir = path.dirname(docPath);
-  const resolved = linkTarget.startsWith('docs/') || linkTarget.startsWith('src/')
-    ? path.join(repoRoot, linkTarget)
-    : path.resolve(docDir, linkTarget);
-  if (!fs.existsSync(resolved)) {
-    failures.push(`${docRel} → ${linkTarget} (not found)`);
-  }
-}
-
 failures.push(...checkSharedCatalogDemos());
 
 if (failures.length > 0) {
-  console.error('check:doc-links failed:\n');
+  console.error(`check:doc-links failed (${failures.length}):\n`);
   failures.forEach((f) => console.error(`  ${f}`));
   process.exit(1);
 }
 
-console.log('check:doc-links: ok');
+console.log(`check:doc-links: ok (${markdownFiles.length} markdown files crawled)`);

@@ -6,6 +6,15 @@ Quarterly snapshot of development-system quality. Update after each audit.
 
 Weekly gate: [`.github/workflows/weekly-engineering-health.yml`](../.github/workflows/weekly-engineering-health.yml) (Mondays 09:00 UTC). **Advisory only** — emits a GitHub warning when below target; does not fail the scheduled workflow. Triage with `npm run report:ci-health`.
 
+## Response protocol: CI success rate below 90%
+
+When the weekly report warns (or `npm run report:ci-health` shows < 90%), **flake triage becomes the first task of the next working session** — before feature work:
+
+1. `npm run report:ci-health` → list failed run ids for the window.
+2. `npm run report:ci-failure -- <run-id>` per failure; bucket each (e2e / vitest / build / infra).
+3. Fix the top recurring bucket at root cause per [`FLAKY_TESTS.md`](FLAKY_TESTS.md) (no retries, no quarantine-and-forget).
+4. Log the failure class + fix in the triage table below; file anything deferred in [`PROCESS_BACKLOG.md`](PROCESS_BACKLOG.md).
+
 ## Targets (3-month)
 
 | Metric                            | Target    | Last measured (2026-06-22)                           |

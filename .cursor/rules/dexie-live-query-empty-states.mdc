@@ -14,7 +14,7 @@ globs:
 
 ## Do
 
-1. Resolve with [`resolveDexieLiveQuery`](../../shared/dexie/resolveDexieLiveQuery.ts) (or an app `*Hydrated` flag like Encore `songsHydrated`).
+1. Resolve with [`resolveDexieLiveQuery`](../../src/shared/dexie/resolveDexieLiveQuery.ts) (or an app `*Hydrated` flag like Encore `songsHydrated`).
 2. UI states — in order:
    - **`!hydrated`** → spinner (`aria-busy`, `aria-label="Loading …"`)
    - **`hydrated && data.length === 0`** → empty-state copy

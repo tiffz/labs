@@ -2,7 +2,7 @@
 
 How we prevent **tab crashes**, **blank thumbnails**, and **`blob: ERR_FILE_NOT_FOUND`** floods in The Gesture Room.
 
-Canonical tier policy: [`src/gesture/media/gestureMediaPolicy.ts`](../../src/gesture/media/gestureMediaPolicy.ts). Agent context: [`src/gesture/AGENTS.md`](../../src/gesture/AGENTS.md) § Media tiers.
+Canonical tier policy: [`src/gesture/media/gestureMediaPolicy.ts`](../src/gesture/media/gestureMediaPolicy.ts). Agent context: [`src/gesture/AGENTS.md`](../src/gesture/AGENTS.md) § Media tiers.
 
 ## Symptom → root cause
 

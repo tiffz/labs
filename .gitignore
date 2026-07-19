@@ -34,6 +34,9 @@ public/scripts/labs-cookie-consent.js
 # TypeScript
 tsconfig.tsbuildinfo
 
+# Coverage output (vitest --coverage)
+coverage/
+
 # Playwright artifacts
 test-results/
 playwright-report/

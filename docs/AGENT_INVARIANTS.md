@@ -78,8 +78,6 @@ Precedence: [`docs/SOURCE_OF_TRUTH.md`](SOURCE_OF_TRUTH.md). App-specific deltas
 | CI babysit only when asked                      | [`docs/PR_WORKFLOW.md`](PR_WORKFLOW.md) § CI without blocking                                                          |
 | Codify on second occurrence of root cause class | [`CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCESS_IMPROVEMENT.md) — **implement** artifact, do not only propose |
 
-## Root cause classes (grep labels)
+## Root cause classes
 
-`stale state` · `portal styling` · `render order` · `async race` · `empty-state logic` · `fake stopAll` · `missing invariant` · `test gap` · `ux revision churn` · `hmr false confidence` · `hmr-context-identity` · `wrong-io-tier` · `revoked-blob-display` · `static-hosting-cors` · `ux-gestalt` · `ux-redundancy` · `ux-visual-weight` · `ux-journey-overload` · `ux-spec-violation` · `render-cascade` · `main-thread-jank` · `warmup-storm` · `optimistic-ui-gap` · `drive-resumable-308` · `network-io-suspended` · `e2e-port-collision` · `html5-duration-shrink` · `product-naming-drift` · `filter-selection-orphan`
-
-Add a new class only when several future issues would share it.
+Canonical list with definitions: [`CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCESS_IMPROVEMENT.md) § Root cause classes — no copy is kept here.

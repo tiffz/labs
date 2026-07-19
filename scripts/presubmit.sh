@@ -40,6 +40,12 @@ npm run check:css-import-order
 echo "== presubmit: workflow guardrails =="
 npm run check:workflows
 
+echo "== presubmit: shared catalog current =="
+npm run check:shared-catalog
+
+echo "== presubmit: labs homepage catalog current =="
+npm run check:labs-catalog
+
 echo "== presubmit: lint =="
 npm run lint
 

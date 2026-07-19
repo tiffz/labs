@@ -144,9 +144,10 @@ function buildLlmRegressionPrompt(failure: VisualFailure, summary: RegressionSum
     `- Diff: ${typeof window !== 'undefined' ? window.location.origin : ''}${failure.diffUrl}`,
     '',
     '### What to do',
-    '1. Decide if the visual change is intentional (design update, font pipeline, test wait).',
-    '2. If intentional: update the baseline PNG in the repo (or use Accept in the Regression UI).',
-    '3. If not: fix the app or test so the screenshot matches the baseline.',
+    'Classify with docs/VISUAL_JUDGE_RUBRIC.md (skill labs-visual-judge). View all three images first:',
+    '1. Tier 1 must-fix (overflow, overlap, blank/error content, tofu glyphs, contrast, theming or selection-tier violations, duplicate status UI): fix the app; never baseline over it.',
+    '2. Tier 2 acceptable (the intentional change, reflow from it, sub-pixel drift): update the baseline PNG (or Accept in the Regression UI) with a one-line justification.',
+    '3. Tier 3 escalate (out-of-scope routes, unexplained multi-app drift, aesthetic judgment calls): stop and ask, attaching baseline + latest + diff.',
     '',
     `Summary generated at: ${summary.generatedAt}`,
   ];

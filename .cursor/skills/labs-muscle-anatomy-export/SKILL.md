@@ -9,10 +9,10 @@ End-to-end workflow for Z-Anatomy → Muscle Memory GLBs. **Do not improvise** �
 
 ## Canonical docs
 
-- [`tools/muscle-anatomy/README.md`](../../tools/muscle-anatomy/README.md) — prerequisites, CSV mapping, single-region Blender command
-- [`src/muscle/AGENTS.md`](../../src/muscle/AGENTS.md) — runtime pitfalls, tests
-- [`docs/MUSCLE_QA.md`](../../docs/MUSCLE_QA.md) — automated + visual QA (full-body atlas section)
-- Budgets: [`src/muscle/muscleAssetPerfBudget.ts`](../../src/muscle/muscleAssetPerfBudget.ts)
+- [`tools/muscle-anatomy/README.md`](../../../tools/muscle-anatomy/README.md) — prerequisites, CSV mapping, single-region Blender command
+- [`src/muscle/AGENTS.md`](../../../src/muscle/AGENTS.md) — runtime pitfalls, tests
+- [`docs/MUSCLE_QA.md`](../../../docs/MUSCLE_QA.md) — automated + visual QA (full-body atlas section)
+- Budgets: [`src/muscle/muscleAssetPerfBudget.ts`](../../../src/muscle/muscleAssetPerfBudget.ts)
 
 ## When to use
 
@@ -60,7 +60,7 @@ Single region (faster iteration):
 npm run muscle:export-pipeline -- --region atlas_complete
 ```
 
-Regions and decimation caps are defined in [`scripts/export-muscle-z-anatomy-glbs.mjs`](../../scripts/export-muscle-z-anatomy-glbs.mjs).  
+Regions and decimation caps are defined in [`scripts/export-muscle-z-anatomy-glbs.mjs`](../../../scripts/export-muscle-z-anatomy-glbs.mjs).  
 Atlas regions: `atlas_complete`, `atlas_head_face`, `atlas_supplement`.
 
 **Commit `public/muscle/models/`** (manifest + GLBs) with source changes — CI imports manifest at typecheck.
@@ -101,7 +101,7 @@ Hard refresh `/muscle/#/` (Cmd+Shift+R) — HMR hides stale GLB cache.
 | Layer peel               | Depth 0 muscles readable; deeper peel reveals skeleton underneath                                    |
 | Orbit perf               | ~10 s drag without sustained judder; `npm run test:e2e:smoke -- e2e/smoke/muscle-orbit-perf.spec.ts` |
 
-Full protocol: [`docs/MUSCLE_QA.md`](../../docs/MUSCLE_QA.md) § Full-body atlas.
+Full protocol: [`docs/MUSCLE_QA.md`](../../../docs/MUSCLE_QA.md) § Full-body atlas.
 
 ## Anti-patterns (learned)
 

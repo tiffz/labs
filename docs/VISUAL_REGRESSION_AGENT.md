@@ -16,7 +16,7 @@ Shared UI (`src/shared/components/`, `/ui/` catalog, fonts, tokens) can change *
 | **macOS local**                 | Verify + triage; expect pixel drift vs Linux baselines — do not `--update-snapshots` on Mac unless you accept CI churn |
 | **Nightly**                     | Full visual matrix on cold runner (`nightly-portfolio-audit.yml`)                                                      |
 
-Baselines were last refreshed April 2026; catalog and Encore landing changes will legitimately drift until updated from CI.
+Check baseline freshness with `git log -1 --format=%cs -- e2e/visual/apps.visual.spec.ts-snapshots/` rather than trusting a dated note here; routes changed since that date will legitimately drift until updated from CI.
 
 ## When to run
 
@@ -45,7 +45,7 @@ Or locally after `npm run test:e2e:visual`:
 
 ### 2. Review each failure (human or vision)
 
-For every diff triplet, classify:
+Classify every diff triplet against [`VISUAL_JUDGE_RUBRIC.md`](VISUAL_JUDGE_RUBRIC.md) (skill [`labs-visual-judge`](../.cursor/skills/labs-visual-judge/SKILL.md)) — Tier 1 must-fix rows are never baselined over. Summary verdicts:
 
 | Verdict            | Signals                                                                                                | Action                                                  |
 | ------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
@@ -76,6 +76,14 @@ For every diff triplet, classify:
 node scripts/import-visual-baselines-from-artifacts.mjs /tmp/labs-visual-artifacts/test-results
 ```
 
+**First-time routes (no committed baseline yet)** — after a push, download the advisory run's `visual-regression-artifacts` and add `--include-new` so brand-new snapshots are imported too:
+
+```bash
+node scripts/import-visual-baselines-from-artifacts.mjs /tmp/labs-visual-artifacts/test-results --include-new
+```
+
+Review every imported PNG against the rubric before committing — new baselines are approvals, not defaults.
+
 **Single route (must run on Linux or accept CI re-run):**
 
 ```bash
@@ -103,9 +111,9 @@ PR / commit body must list:
 
 ## CI integration (current)
 
-- **PR / main cross-cutting diffs:** advisory visual run; mismatches → `::warning::`, artifacts uploaded, job stays green
-- **Scoped single-app PRs:** visual skipped
-- **Nightly:** visual regression is **blocking**
+- **Scoped diffs (≤3 apps):** `run-scoped-visual.mts` runs the changed apps' visual routes — **blocking**; a mismatch fails the `e2e` job
+- **PR / main cross-cutting diffs:** full advisory visual run; mismatches → `::warning::`, artifacts uploaded, job stays green (flip to blocking after ~2 weeks of clean nightlies)
+- **Nightly:** full visual regression is **blocking**
 
 Agents should treat CI warnings as a **todo**, not noise.
 
@@ -122,10 +130,12 @@ Agents should treat CI warnings as a **todo**, not noise.
 
 ## Quick reference
 
-| Command                                                   | Purpose                |
-| --------------------------------------------------------- | ---------------------- |
-| `npm run test:e2e:visual`                                 | Verify baselines       |
-| `npm run test:e2e:visual:update`                          | Regenerate all (Linux) |
-| `node scripts/import-visual-baselines-from-artifacts.mjs` | Promote CI actuals     |
-| `gh run download … -n visual-regression-artifacts`        | Fetch CI diffs         |
-| `http://127.0.0.1:5173/ui/#regression/screenshots`        | Local gallery          |
+| Command                                                   | Purpose                                                    |
+| --------------------------------------------------------- | ---------------------------------------------------------- |
+| `npm run test:e2e:visual`                                 | Verify baselines                                           |
+| `npm run test:e2e:visual:scoped`                          | Verify only changed apps' routes                           |
+| `npm run test:e2e:visual:docker`                          | Linux-identical local run (needs Docker)                   |
+| `npm run test:e2e:visual:update`                          | Regenerate all (Linux)                                     |
+| `node scripts/import-visual-baselines-from-artifacts.mjs` | Promote CI actuals (`--include-new` for first-time routes) |
+| `gh run download … -n visual-regression-artifacts`        | Fetch CI diffs                                             |
+| `http://127.0.0.1:5173/ui/#regression/screenshots`        | Local gallery                                              |

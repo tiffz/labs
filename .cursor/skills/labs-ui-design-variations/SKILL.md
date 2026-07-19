@@ -65,16 +65,16 @@ Use this workflow when the user wants to **compare visual directions in the runn
 
 ## Gesture Room reference (Linen — locked in)
 
-- Design doc: [`src/gesture/DESIGN.md`](../../src/gesture/DESIGN.md)
-- Tokens: [`src/gesture/design/linenTheme.ts`](../../src/gesture/design/linenTheme.ts)
-- CSS: [`src/gesture/gesture.css`](../../src/gesture/gesture.css)
-- Cursor rule: [`.cursor/rules/gesture-linen-design.mdc`](../../.cursor/rules/gesture-linen-design.mdc)
+- Design doc: [`src/gesture/DESIGN.md`](../../../src/gesture/DESIGN.md)
+- Tokens: [`src/gesture/design/linenTheme.ts`](../../../src/gesture/design/linenTheme.ts)
+- CSS: [`src/gesture/gesture.css`](../../../src/gesture/gesture.css)
+- Cursor rule: [`.cursor/rules/gesture-linen-design.mdc`](../../rules/gesture-linen-design.mdc)
 
 ## Folder drag-and-drop (collections upload)
 
 Browser folder drops require **`dataTransfer.items` + `webkitGetAsEntry()`** — `dataTransfer.files` alone is empty for folders.
 
-- Shared helper: [`src/shared/utils/readDataTransferEntryFiles.ts`](../../src/shared/utils/readDataTransferEntryFiles.ts)
+- Shared helper: [`src/shared/utils/readDataTransferEntryFiles.ts`](../../../src/shared/utils/readDataTransferEntryFiles.ts)
 - Use `suggestedFolderName` when a single directory is dropped; pass to upload as collection name
 - Surface: dedicated drop zone on Collections tab, not only file input
 
@@ -91,4 +91,4 @@ Browser folder drops require **`dataTransfer.items` + `webkitGetAsEntry()`** —
 
 - [`STYLE_GUIDE.md`](../../../STYLE_GUIDE.md) — UI/a11y
 - [`docs/USER_COPY_STYLE.md`](../../../docs/USER_COPY_STYLE.md) — copy stays stable across themes
-- [`src/shared/SHARED_UI_CONVENTIONS.md`](../../shared/SHARED_UI_CONVENTIONS.md) — shared controls
+- [`src/shared/SHARED_UI_CONVENTIONS.md`](../../../src/shared/SHARED_UI_CONVENTIONS.md) — shared controls

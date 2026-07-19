@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { runContrastAuditInBrowser } from '../helpers/contrastAudit';
+import { runHorizontalScrollHeuristicInBrowser } from '../helpers/horizontalScrollHeuristic';
 
 /**
  * Catches unreadable text on dark practice surfaces (axis readouts, verdict copy).
@@ -23,5 +24,18 @@ test.describe('Sight contrast audit', () => {
       rootSelector: '.sight-practice-body',
     });
     expect(feedbackAudit.ok, feedbackAudit.ok ? '' : JSON.stringify(feedbackAudit)).toBe(true);
+  });
+
+  test('narrow phone shell has no horizontal overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/sight/');
+    await expect(page.getByRole('button', { name: /^practice$/i })).toBeVisible({
+      timeout: 15_000,
+    });
+
+    const result = await page.evaluate(runHorizontalScrollHeuristicInBrowser, {
+      rootSelector: 'main#main, #root',
+    });
+    expect(result.ok, result.ok ? '' : JSON.stringify(result)).toBe(true);
   });
 });

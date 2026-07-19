@@ -27,7 +27,7 @@ Default prefs + default mix → scheduling must match pre-refactor golden tests 
 ## Consequences
 
 - Replace `MetronomeToggleButton` with `MetronomeSplitControl` in Midi, Drums, Words, Piano, Chords, Stanza strip.
-- [`SHARED_UI_CONVENTIONS.md`](../src/shared/SHARED_UI_CONVENTIONS.md) documents split control and accent panel.
+- [`SHARED_UI_CONVENTIONS.md`](../../src/shared/SHARED_UI_CONVENTIONS.md) documents split control and accent panel.
 
 ## References
 

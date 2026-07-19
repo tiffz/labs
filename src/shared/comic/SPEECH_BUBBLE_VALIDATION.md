@@ -123,6 +123,6 @@ arrangement-aware marker placement. Included in `npm run test:bubble-quality`.
 Screenshot baselines for Scrapboard mockups are not committed yet. When added:
 
 - Capture 10-up grid + mad-libs randomize in `e2e/visual/scrapboard.visual.spec.ts`
-- Linux CI is canonical per [`docs/VISUAL_REGRESSION_AGENT.md`](../../docs/VISUAL_REGRESSION_AGENT.md)
+- Linux CI is canonical per [`docs/VISUAL_REGRESSION_AGENT.md`](../../../docs/VISUAL_REGRESSION_AGENT.md)
 
 Until then, path geometry + matrix harness catch structural defects; human review still needed for aesthetics.

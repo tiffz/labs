@@ -7,7 +7,7 @@ description: Edits Labs rhythm presets in RHYTHM_DATABASE with presetIntegrity r
 
 ## Before editing
 
-Read [`src/shared/rhythm/presetIntegrity.ts`](../../src/shared/rhythm/presetIntegrity.ts) and existing preset tests.
+Read [`src/shared/rhythm/presetIntegrity.ts`](../../../src/shared/rhythm/presetIntegrity.ts) and existing preset tests.
 
 ## Workflow
 

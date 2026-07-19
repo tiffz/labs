@@ -37,7 +37,6 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | [`beat-analysis-scope.mdc`](beat-analysis-scope.mdc)                         | beat analysis paths                      | `stanza/ANALYZE.md`, `beat/TEST_MATRIX.md`     | —                            |
 | [`drum-notation-mini-host.mdc`](drum-notation-mini-host.mdc)                 | DrumNotationMini hosts                   | `DrumNotationMini.tsx`                         | —                            |
 | [`session-retrospective-mandatory.mdc`](session-retrospective-mandatory.mdc) | **Always**                               | `CONTINUOUS_PROCESS_IMPROVEMENT.md`            | `labs-session-retrospective` |
-| [`session-retrospective.mdc`](session-retrospective.mdc)                     | Reference (skill pointer)                | `CONTINUOUS_PROCESS_IMPROVEMENT.md`            | `labs-session-retrospective` |
 | [`react-interaction-perf.mdc`](react-interaction-perf.mdc)                   | Control + grid tabs, practice configure  | `docs/PERFORMANCE.md`                          | `labs-performance`           |
 | [`stale-preview-callback-deps.mdc`](stale-preview-callback-deps.mdc)         | preview/strip hooks with async deps      | `docs/PROCESS_BACKLOG.md`                      | —                            |
 | [`ux-agent-guide.mdc`](ux-agent-guide.mdc)                                   | `src/**/components/**`, app shells, CSS  | `docs/UX_AGENT_GUIDE.md`                       | `labs-ux-journey`            |

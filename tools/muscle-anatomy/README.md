@@ -115,4 +115,4 @@ npm run muscle:export-z-anatomy   # --ratio 0.2 --max-tris 25000 per mesh
 
 ## License
 
-Z-Anatomy data is **CC BY-SA 4.0**. See [`src/muscle/ATTRIBUTION.md`](../src/muscle/ATTRIBUTION.md).
+Z-Anatomy data is **CC BY-SA 4.0**. See [`src/muscle/ATTRIBUTION.md`](../../src/muscle/ATTRIBUTION.md).

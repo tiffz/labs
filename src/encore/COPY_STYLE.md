@@ -38,7 +38,7 @@ Use these exact strings unless you have a strong reason not to. Consistency here
 
 While Dexie or Drive data is still resolving, **never** show empty-state copy (`Nothing here yet`, `None yet`, `No saved venues yet`, etc.). Gate on `*Hydrated` flags from library contexts (`songsHydrated`, `originalsHydrated`, `extrasHydrated`, …) or `{ status: 'loading' }` for single-row reads.
 
-- Use shared [`LabsListLoadingState`](../../shared/components/LabsListLoadingState.tsx): skeleton rows for list/table screens, spinner + `Loading …` caption for simpler panels.
+- Use shared [`LabsListLoadingState`](../shared/components/LabsListLoadingState.tsx): skeleton rows for list/table screens, spinner + `Loading …` caption for simpler panels.
 - Visible copy pattern: `Loading library…`, `Loading originals…`, `Loading performances…` — name **what** is loading, not that the library is empty.
 - Heavy Repertoire / Performances first visits also use shell [`EncoreHeavyListTabPlaceholder`](components/EncoreHeavyListTabPlaceholder.tsx) until the tab body paints.
 

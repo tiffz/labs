@@ -100,4 +100,4 @@ For drum mini notation sync (no VexFlow), derive `{ measureIndex, noteIndex }` s
 Async chart playback, portaled picker skins, and loading UX are documented in:
 
 - [`src/shared/hooks/PLAYBACK_HOOK_PATTERN.md`](../hooks/PLAYBACK_HOOK_PATTERN.md) — generation token, real `stopAll`, stable notation props.
-- [`.cursor/rules/playback-ui-regressions.mdc`](../../.cursor/rules/playback-ui-regressions.mdc) — agent checklist for hot-path edits.
+- [`.cursor/rules/playback-ui-regressions.mdc`](../../../.cursor/rules/playback-ui-regressions.mdc) — agent checklist for hot-path edits.

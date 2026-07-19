@@ -17,8 +17,40 @@ test.describe('Encore Originals', () => {
     const lyricsChart = page.getByLabel('Lyrics chart');
     await expect(lyricsChart).toBeVisible({ timeout: 10_000 });
     await lyricsChart.fill('[Verse 1]\nTest line\n\n[Chorus]\n');
-    // Write mode reconciles to chordPro on debounce before persisting parent state.
-    await page.waitForTimeout(900);
+    // Write mode reconciles to chordPro on a debounce before persisting. Instead of
+    // sleeping past the debounce (flaky on slow CI), poll IndexedDB until the draft
+    // is actually persisted, then reload.
+    await expect
+      .poll(
+        () =>
+          page.evaluate(async () => {
+            const rows = await new Promise<{ lyricsAndChords?: string }[]>((resolve, reject) => {
+              const open = indexedDB.open('encore-repertoire');
+              open.onerror = () => reject(open.error);
+              open.onsuccess = () => {
+                const db = open.result;
+                try {
+                  const tx = db.transaction('originals', 'readonly');
+                  const req = tx.objectStore('originals').getAll();
+                  req.onsuccess = () => {
+                    db.close();
+                    resolve(req.result as { lyricsAndChords?: string }[]);
+                  };
+                  req.onerror = () => {
+                    db.close();
+                    reject(req.error);
+                  };
+                } catch (err) {
+                  db.close();
+                  reject(err);
+                }
+              };
+            });
+            return rows.some((row) => (row.lyricsAndChords ?? '').includes('Test line'));
+          }),
+        { timeout: 10_000, message: 'original draft persisted to IndexedDB' },
+      )
+      .toBe(true);
     await page.reload();
     await page.getByRole('button', { name: 'Write lyrics' }).click();
     await expect(lyricsChart).toHaveValue(/\[Verse 1\][\s\S]*Test line/, { timeout: 10_000 });

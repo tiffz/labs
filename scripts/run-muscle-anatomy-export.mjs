@@ -22,11 +22,10 @@ const ALL_REGIONS = [
   'foot',
   'atlas_supplement',
   'atlas_head_face',
-  'atlas_skin',
   'atlas_complete',
 ];
 
-const ATLAS_REGIONS = new Set(['atlas_supplement', 'atlas_head_face', 'atlas_skin', 'atlas_complete']);
+const ATLAS_REGIONS = new Set(['atlas_supplement', 'atlas_head_face', 'atlas_complete']);
 
 const blenderCandidates = [
   process.env.BLENDER,
@@ -66,9 +65,6 @@ function resolveBlender() {
 function exportArgsForRegion(region) {
   if (region === 'atlas_complete') {
     return ['--ratio', '0.15', '--max-tris', '10000', '--max-region-tris', '400000'];
-  }
-  if (region === 'atlas_skin') {
-    return ['--ratio', '0.85', '--max-tris', '44000', '--max-region-tris', '90000'];
   }
   if (region === 'atlas_supplement') {
     return ['--ratio', '0.55', '--max-tris', '25000', '--max-region-tris', '120000'];

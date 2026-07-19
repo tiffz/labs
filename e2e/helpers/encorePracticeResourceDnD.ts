@@ -4,6 +4,30 @@ import { expect, type Locator, type Page } from '@playwright/test';
 const DND_ACTIVATION_PX = 10;
 
 /**
+ * Let the page paint N frames so dnd-kit's pointer sensor processes the latest
+ * mouse events. Replaces fixed 50-200ms sleeps: waits exactly as long as the
+ * renderer needs (fast machines) without under-waiting on loaded CI runners.
+ */
+async function settleFrames(page: Page, frames = 2): Promise<void> {
+  await page.evaluate(
+    (n) =>
+      new Promise<void>((resolve) => {
+        let remaining = n;
+        const tick = () => {
+          remaining -= 1;
+          if (remaining <= 0) {
+            resolve();
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }),
+    frames,
+  );
+}
+
+/**
  * Pointer drag between two locators (dnd-kit chips / section drop zones).
  * Uses manual mouse steps — Playwright `dragTo` uses HTML5 DnD, which dnd-kit ignores.
  */
@@ -28,11 +52,11 @@ export async function pointerDragBetween(
 
   await page.mouse.move(startX, startY);
   await page.mouse.down();
-  await page.waitForTimeout(50);
+  await settleFrames(page);
   await page.mouse.move(startX + DND_ACTIVATION_PX, startY + DND_ACTIVATION_PX, { steps: 3 });
-  await page.waitForTimeout(50);
+  await settleFrames(page);
   await page.mouse.move(endX, endY, { steps: 30 });
-  await page.waitForTimeout(50);
+  await settleFrames(page);
   await page.mouse.up();
 }
 
@@ -61,5 +85,7 @@ export async function dragPracticeResourceChipToPlay(
 ): Promise<void> {
   const dropZone = page.locator(ENCORE_PRACTICE_RESOURCE_SECTION.playDropZone);
   await pointerDragBetween(page, chip, dropZone);
-  await page.waitForTimeout(200);
+  // Drop handling is async (state update + persistence); two frames let dnd-kit
+  // dispatch onDragEnd. Callers assert the moved chip with their own timeouts.
+  await settleFrames(page);
 }
