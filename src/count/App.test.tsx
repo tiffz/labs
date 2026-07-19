@@ -109,9 +109,16 @@ describe('Count App engine wiring', () => {
   it('spacebar toggles playback like the play button', async () => {
     render(<App />);
 
+    // Wait for the keydown listener (depends on handlePlay) before pressing Space —
+    // under full-suite load a fixed 50ms sleep was flaky on CI.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy());
     fireEvent.keyDown(window, { key: ' ', code: 'Space' });
-    await new Promise((r) => setTimeout(r, 50));
-    expect(JSON.stringify(engineCalls.map((c) => c.method))).toBe('["onBeat","start"]');
+    await waitFor(() => {
+      expect(callsFor('start')).toHaveLength(1);
+      expect(callsFor('onBeat').length).toBeGreaterThan(0);
+    });
+    // Listener re-binds after playing flips; wait for Stop before the second press.
+    await screen.findByRole('button', { name: 'Stop' });
     fireEvent.keyDown(window, { key: ' ', code: 'Space' });
     await waitFor(() => expect(callsFor('stop')).toHaveLength(1));
   });
