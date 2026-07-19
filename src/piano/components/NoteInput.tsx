@@ -1,9 +1,10 @@
-import React, { useEffect, useCallback, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useCallback, useState, useRef, useMemo, lazy, Suspense } from 'react';
 import { usePiano } from '../store';
 import { scoreToAbc, abcToScore } from '../utils/abcNotation';
 import type { PianoScore } from '../types';
-import SharedExportPopover from '../../shared/components/music/SharedExportPopover';
-import { createPianoExportAdapter } from '../utils/exportAdapter';
+import type { ExportSourceAdapter } from '../../shared/music/exportTypes';
+
+const SharedExportPopover = lazy(() => import('../../shared/components/music/SharedExportPopover'));
 
 interface NoteInputProps {
   onImportClick?: () => void;
@@ -152,9 +153,23 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
   const sectionScopedById = /(?:-section-\d+)+$/.test(state.score?.id ?? '');
   const sectionScopedByTitle = Boolean(getBaseTitleFromSectionTitle(state.score?.title));
   const canReturnToFullScore = Boolean(activeSection || state.fullScore || sectionScopedById || sectionScopedByTitle);
-  const exportAdapter = useMemo(() => (
-    state.score ? createPianoExportAdapter(state.score) : null
-  ), [state.score]);
+  const [exportAdapter, setExportAdapter] = useState<ExportSourceAdapter | null>(null);
+
+  useEffect(() => {
+    if (!exportOpen || !state.score) {
+      setExportAdapter(null);
+      return;
+    }
+    let cancelled = false;
+    const score = state.score;
+    void import('../utils/exportAdapter').then(({ createPianoExportAdapter }) => {
+      if (cancelled) return;
+      setExportAdapter(createPianoExportAdapter(score));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [exportOpen, state.score]);
 
   const saveSelectionAsSection = useCallback(() => {
     if (!state.selectedMeasureRange) return;
@@ -303,14 +318,16 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
         >
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>download</span>
         </button>
-        {exportAdapter ? (
-          <SharedExportPopover
-            open={exportOpen}
-            anchorEl={exportButtonRef.current}
-            onClose={() => setExportOpen(false)}
-            adapter={exportAdapter}
-            persistKey="piano"
-          />
+        {exportOpen && exportAdapter ? (
+          <Suspense fallback={null}>
+            <SharedExportPopover
+              open={exportOpen}
+              anchorEl={exportButtonRef.current}
+              onClose={() => setExportOpen(false)}
+              adapter={exportAdapter}
+              persistKey="piano"
+            />
+          </Suspense>
         ) : null}
 
         <div className="np-sections-menu-wrap" ref={sectionsMenuRef}>

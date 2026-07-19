@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
 import AnchoredPopover from '../shared/components/AnchoredPopover';
 import Drawer from '@mui/material/Drawer';
@@ -10,7 +10,6 @@ import { progressionToChordsInSongKey } from '../shared/music/chordTheory';
 import { generateVoicing } from '../shared/music/chordVoicing';
 import { generateStyledChordNotes, type StyledChordNotes } from './utils/chordStyling';
 import { getPlaybackEngine, disposePlaybackEngine, type ActiveNotes } from './utils/playback';
-import ChordScoreRenderer from './components/ChordScoreRenderer';
 import ManualControls from './components/ManualControls';
 import {
   IDLE_SAMPLED_PIANO_LOAD_STATE,
@@ -26,12 +25,13 @@ import { ensureAudioContextRunning } from '../shared/playback/audioContextLifecy
 import Stack from '@mui/material/Stack';
 import AppTooltip from '../shared/components/AppTooltip';
 import { PlaybackVolumeRow } from '../shared/components/music/PlaybackVolumeRow';
-import SharedExportPopover from '../shared/components/music/SharedExportPopover';
 import type { ExportSourceAdapter } from '../shared/music/exportTypes';
+import type { MidiNoteEvent } from '../shared/music/midiBuilder';
 import { buildLabsDownloadFileName } from '../shared/utils/labsDownloadFileName';
-import { buildSingleTrackMidi, type MidiNoteEvent } from '../shared/music/midiBuilder';
-import { renderMidiEventsToAudioBuffer } from '../shared/music/midiAudioRender';
 import { createAppAnalytics } from '../shared/utils/analytics';
+
+const ChordScoreRenderer = lazy(() => import('./components/ChordScoreRenderer'));
+const SharedExportPopover = lazy(() => import('../shared/components/music/SharedExportPopover'));
 
 const analytics = createAppAnalytics('chords');
 
@@ -222,9 +222,11 @@ const App: React.FC = () => {
           }
         });
       }
+      const { buildSingleTrackMidi } = await import('../shared/music/midiBuilder');
       return buildSingleTrackMidi(events, state.tempo);
     },
     renderAudio: async ({ loopCount, selectedStemIds }) => {
+      const { renderMidiEventsToAudioBuffer } = await import('../shared/music/midiAudioRender');
       const includeTreble = selectedStemIds.length === 0 || selectedStemIds.includes('treble');
       const includeBass = selectedStemIds.length === 0 || selectedStemIds.includes('bass');
       const styled = generateExpandedStyledChords(state);
@@ -755,13 +757,17 @@ const App: React.FC = () => {
                 <span className="material-symbols-outlined">download</span>
               </button>
             </AppTooltip>
-            <SharedExportPopover
-              open={exportOpen}
-              onClose={() => setExportOpen(false)}
-              anchorEl={exportButtonRef.current}
-              adapter={exportAdapter}
-              persistKey="chords"
-            />
+            {exportOpen && (
+              <Suspense fallback={null}>
+                <SharedExportPopover
+                  open={exportOpen}
+                  onClose={() => setExportOpen(false)}
+                  anchorEl={exportButtonRef.current}
+                  adapter={exportAdapter}
+                  persistKey="chords"
+                />
+              </Suspense>
+            )}
             <AppTooltip title="Playback settings">
               <button
                 ref={settingsButtonRef}
@@ -813,12 +819,14 @@ const App: React.FC = () => {
             </AnchoredPopover>
           </div>
           <div className="chords-score">
-            <ChordScoreRenderer
-              state={state}
-              currentChordIndex={currentChordIndex}
-              activeNoteGroups={activeNoteGroups}
-              isPlaying={isPlaying}
-            />
+            <Suspense fallback={<div className="chords-score-loading" aria-busy="true">Loading score…</div>}>
+              <ChordScoreRenderer
+                state={state}
+                currentChordIndex={currentChordIndex}
+                activeNoteGroups={activeNoteGroups}
+                isPlaying={isPlaying}
+              />
+            </Suspense>
           </div>
           
           <footer className="chords-footer">

@@ -14588,9 +14588,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "chords",
-      "drums",
-      "piano",
       "ui",
       "words"
     ],
@@ -24089,7 +24086,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music"
     ],
     "appsUsing": [
-      "chords",
       "piano",
       "words"
     ],

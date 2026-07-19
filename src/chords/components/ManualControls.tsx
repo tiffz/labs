@@ -3,7 +3,7 @@
  * Chip-based inline editing interface
  */
 
-import React, { useMemo, useEffect, useState, useCallback } from 'react';
+import React, { useMemo, useEffect, useState, useCallback, lazy, Suspense } from 'react';
 import type {
   ChordProgressionState,
   TimeSignature,
@@ -20,7 +20,6 @@ import {
 } from '../utils/randomization';
 import { getCompatibleStylingStrategies } from '../utils/stylingCompatibility';
 import OptionChip from './OptionChip';
-import ChordStylePreview from './ChordStylePreview';
 import { songKeyToTonic } from '../../shared/music/chordTheory';
 import { parseProgressionText } from '../../shared/music/chordProgressionText';
 import AppTooltip from '../../shared/components/AppTooltip';
@@ -28,6 +27,8 @@ import DiceIcon from '../../shared/components/DiceIcon';
 import BpmInput from '../../shared/components/music/BpmInput';
 import ChordProgressionInput from '../../shared/components/music/ChordProgressionInput';
 import KeyInput from '../../shared/components/music/KeyInput';
+
+const ChordStylePreview = lazy(() => import('./ChordStylePreview'));
 
 interface ManualControlsProps {
   state: ChordProgressionState;
@@ -597,12 +598,14 @@ const ManualControls: React.FC<ManualControlsProps> = ({
                   }}
                 >
                   <div className="style-preview-visual">
-                    <ChordStylePreview
-                      strategy={strategy}
-                      timeSignature={state.timeSignature}
-                      width={140}
-                      height={80}
-                    />
+                    <Suspense fallback={<div style={{ width: 140, height: 80 }} aria-hidden />}>
+                      <ChordStylePreview
+                        strategy={strategy}
+                        timeSignature={state.timeSignature}
+                        width={140}
+                        height={80}
+                      />
+                    </Suspense>
                   </div>
                   <div className="style-preview-label">{config.name}</div>
                 </div>

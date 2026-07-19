@@ -21,14 +21,15 @@ describe('Midi App', () => {
     });
   });
 
-  it('renders scratchpad shell', () => {
+  it('renders scratchpad shell', async () => {
     render(
       <ThemeProvider theme={getAppTheme('midi')}>
         <App />
       </ThemeProvider>,
     );
     expect(screen.getByRole('heading', { name: /Midi Scratchpad/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Capture last/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Scratchpad/i })).toBeInTheDocument();
+    // ScratchpadView is lazy-loaded off the first-paint graph.
+    expect(await screen.findByRole('button', { name: /Capture last/i })).toBeInTheDocument();
   });
 });

@@ -43,6 +43,23 @@ Reuse in retrospectives ([`CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCES
 - `revoked-blob-display` — media cache lifecycle (see `GESTURE_MEDIA_STABILITY.md`)
 - `gpu-fill` — dense GLB + PBR → decimate in Blender export; Lambert in runtime
 
+## First-paint load (bundle)
+
+Eager JS is measured by [`scripts/bundle-size-report.mjs`](../scripts/bundle-size-report.mjs) (entry + `modulepreload`s, gzip). Gate: [`PERFORMANCE_BUDGETS.md`](PERFORMANCE_BUDGETS.md).
+
+**Do not put `three` / `@react-three` in a global `manualChunks` bucket.** A shared `three` chunk previously co-located React core, so every micro-app modulepreloaded ~1 MB of Three.js. Keep React core in `vendor`; let muscle/forms pull three via their own (preferably lazy) imports. See `DEVELOPMENT.md` § Bundle Splitting.
+
+**Defer off the critical path** (pattern: drums VexFlow + Words CMU dict):
+
+| Surface                                                          | When to load                  |
+| ---------------------------------------------------------------- | ----------------------------- |
+| `SharedExportPopover` / `audioCodecs` / MIDI builders            | Open Export                   |
+| `ScoreDisplay` / `ChordScoreRenderer` / `DrumNotationMini` hosts | Score mounts or drums enabled |
+| Session-only screens (e.g. Scales `SessionScreen`)               | Navigate to session           |
+| Non-default midi modes                                           | Mode switch                   |
+
+After a load win, re-baseline with `npm run report:bundle-size -- --update-baseline` in the same PR.
+
 ## Tooling matrix
 
 | Tool                         | When                                       | Command / entry                                             |

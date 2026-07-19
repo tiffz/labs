@@ -283,21 +283,26 @@ export default defineConfig({
             // during module init, because one side tried to call a binding from
             // the other before it was finalized. MUI + Emotion internally reach
             // back into React APIs, so they must share the same chunk as React.
-            if (
-              id.includes('react-dom') ||
-              id.includes('react/') ||
-              id.endsWith('/react') ||
-              id.includes('@mui/') ||
-              id.includes('@emotion/')
-            ) {
+            //
+            // Match React *core* packages only — never `@react-three/*` (that
+            // substring contains "react" but must not join the vendor chunk).
+            // Also pin scheduler / use-sync-external-store here so a former
+            // shared `three` chunk cannot steal React and force every app to
+            // modulepreload ~1 MB of Three.js for jsx-runtime.
+            const isReactCore =
+              /node_modules[/\\](?:react|react-dom|scheduler|use-sync-external-store)(?:[/\\]|$)/.test(
+                id,
+              );
+            if (isReactCore || id.includes('@mui/') || id.includes('@emotion/')) {
               return 'vendor';
             }
             if (id.includes('vexflow')) {
               return 'vexflow';
             }
-            if (id.includes('three') || id.includes('@react-three')) {
-              return 'three';
-            }
+            // Do NOT emit a global `three` chunk. A shared three/@react-three
+            // chunk previously co-located React core, so corp/drums/words/etc.
+            // eagerly modulepreloaded Three.js despite never importing it.
+            // Muscle/forms pull three via their own (preferably lazy) imports.
             // Keep pdf-lib + file-saver out of the zines main chunk so that
             // the initial load does not ship ~200 KB gzip of PDF code. These
             // are only pulled in when the user exports a zine.

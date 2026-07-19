@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense, type MouseEvent as ReactMouseEvent } from 'react';
 import AnchoredPopover from '../shared/components/AnchoredPopover';
 import { PianoProvider, usePiano } from './store';
-import ScoreDisplay from './components/ScoreDisplay';
 import PlaybackControls from './components/PlaybackControls';
 import NoteInput from './components/NoteInput';
 import PracticeMode from './components/PracticeMode';
@@ -12,6 +11,7 @@ import ExercisePicker from './components/ExercisePicker';
 import InputSources from './components/InputSources';
 import { saveScoreToLibrary } from './utils/libraryStorage';
 import { enableDebug } from './utils/practiceDebugLog';
+const ScoreDisplay = lazy(() => import('./components/ScoreDisplay'));
 const ImportModal = lazy(() => import('./components/ImportModal'));
 const Analytics = lazy(() => import('./components/Analytics'));
 const VideoPlayer = lazy(() => import('./components/VideoPlayer'));
@@ -336,25 +336,27 @@ function PianoApp() {
 
           <div className="score-container">
             {state.score ? (
-              <ScoreDisplay
-                score={state.score}
-                currentMeasureIndex={state.currentMeasureIndex}
-                currentNoteIndices={state.currentNoteIndices}
-                activeMidiNotes={isEditing ? undefined : state.activeMidiNotes}
-                practiceResultsByNoteId={viewingResults}
-                greyedOutHands={greyedOutHands}
-                hiddenHands={hiddenHands}
-                ghostNotes={isEditing && state.durationMode === 'auto' ? state.ghostNotes : undefined}
-                zoomLevel={state.zoomLevel}
-                selectedMeasureRange={state.selectedMeasureRange}
-                onMeasureClick={handleMeasureClick}
-                showVocalPart={state.showVocalPart}
-                showChords={state.showChords}
-                // Live exploration tint is only safe outside of practice
-                // mode — during scored practice it would conflict with the
-                // per-note timing colours produced by PracticeMode.
-                highlightActiveMatches={!isEditing && !isPracticing}
-              />
+              <Suspense fallback={<div className="empty-score">Loading score…</div>}>
+                <ScoreDisplay
+                  score={state.score}
+                  currentMeasureIndex={state.currentMeasureIndex}
+                  currentNoteIndices={state.currentNoteIndices}
+                  activeMidiNotes={isEditing ? undefined : state.activeMidiNotes}
+                  practiceResultsByNoteId={viewingResults}
+                  greyedOutHands={greyedOutHands}
+                  hiddenHands={hiddenHands}
+                  ghostNotes={isEditing && state.durationMode === 'auto' ? state.ghostNotes : undefined}
+                  zoomLevel={state.zoomLevel}
+                  selectedMeasureRange={state.selectedMeasureRange}
+                  onMeasureClick={handleMeasureClick}
+                  showVocalPart={state.showVocalPart}
+                  showChords={state.showChords}
+                  // Live exploration tint is only safe outside of practice
+                  // mode — during scored practice it would conflict with the
+                  // per-note timing colours produced by PracticeMode.
+                  highlightActiveMatches={!isEditing && !isPracticing}
+                />
+              </Suspense>
             ) : (
               <div className="empty-score">
                 <span className="material-symbols-outlined" style={{ fontSize: 48, opacity: 0.3 }}>music_note</span>
