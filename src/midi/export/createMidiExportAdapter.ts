@@ -54,5 +54,5 @@ export function buildExportBlob(getState: () => MidiState): { blob: Blob; filena
   const bpm = state.transport.bpm * state.transport.playbackRate;
   const bytes = buildSingleTrackMidi(events, bpm);
   const filename = `midi-scratchpad-${state.capturedLoop.id.slice(0, 8)}.mid`;
-  return { blob: new Blob([bytes], { type: 'audio/midi' }), filename };
+  return { blob: new Blob([new Uint8Array(bytes)], { type: 'audio/midi' }), filename };
 }

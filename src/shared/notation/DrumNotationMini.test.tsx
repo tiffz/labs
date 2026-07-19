@@ -159,7 +159,8 @@ describe('DrumNotationMini', () => {
       for (const el of staveLines) {
         const cls = el.getAttribute('class') ?? '';
         if (cls.includes('barline')) continue;
-        expect((el as SVGElement).style.getPropertyValue('stroke')).toBe(staff);
+        // jsdom 28 serializes style colors as rgb() (was hex under jsdom 26).
+        expect((el as SVGElement).style.getPropertyValue('stroke')).toBe('rgb(209, 213, 219)');
       }
 
       const noteStem = svg!.querySelector("path[class*='stem'], line[class*='stem']") as SVGElement | null;

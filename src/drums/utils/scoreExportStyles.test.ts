@@ -59,7 +59,8 @@ describe('applyDrumsExportSvgStyles', () => {
     expect(staffLine.classList.contains('drums-export-staff-line')).toBe(true);
     expect(stemLine.getAttribute('stroke')).toBe('#000');
     expect(nestedStemLine.getAttribute('stroke')).toBe('#000');
-    expect(nestedStemLine.style.getPropertyValue('stroke')).toBe('#000');
+    // jsdom 28 serializes style colors as rgb(); attributes stay as authored hex.
+    expect(nestedStemLine.style.getPropertyValue('stroke')).toBe('rgb(0, 0, 0)');
     expect(barline.getAttribute('stroke')).toBe('#333');
   });
 

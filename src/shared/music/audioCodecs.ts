@@ -161,7 +161,7 @@ async function transcodeWavBlob(
       : typeof data === 'string'
         ? new TextEncoder().encode(data)
         : new Uint8Array(data as ArrayBuffer);
-  return new Blob([bytes], { type: target === 'ogg' ? 'audio/ogg' : 'audio/flac' });
+  return new Blob([new Uint8Array(bytes)], { type: target === 'ogg' ? 'audio/ogg' : 'audio/flac' });
 }
 
 export async function encodeAudioBuffer(

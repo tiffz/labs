@@ -13,7 +13,7 @@ export function prepareAnatomyGeometry(geometry: BufferGeometry): BufferGeometry
   ensureBvhRaycast();
   if (!geometry.boundsTree) {
     try {
-      geometry.boundsTree = new MeshBVH(geometry) as BufferGeometry['boundsTree'];
+      geometry.boundsTree = new MeshBVH(geometry) as unknown as BufferGeometry['boundsTree'];
     } catch {
       // Some Draco exports fail BVH build; keep geometry renderable without accelerated picking.
     }

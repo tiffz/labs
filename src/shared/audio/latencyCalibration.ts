@@ -41,7 +41,11 @@ export function scheduleCalibrationPip(
 /**
  * Estimate ambient RMS from the mic before the pip.
  */
-async function measureNoiseFloor(analyser: AnalyserNode, buf: Float32Array, durationMs: number): Promise<number> {
+async function measureNoiseFloor(
+  analyser: AnalyserNode,
+  buf: Float32Array<ArrayBuffer>,
+  durationMs: number,
+): Promise<number> {
   const start = performance.now();
   const samples: number[] = [];
   while (performance.now() - start < durationMs) {
@@ -69,7 +73,7 @@ export async function measureRoundTripLatencyMs(
   analyser.fftSize = 2048;
   src.connect(analyser);
 
-  const buf = new Float32Array(analyser.fftSize);
+  const buf = new Float32Array(new ArrayBuffer(analyser.fftSize * 4));
   const noise = await measureNoiseFloor(analyser, buf, 140);
 
   const schedule = scheduleCalibrationPip(ctx, 0.12);
