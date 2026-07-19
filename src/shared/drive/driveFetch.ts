@@ -5,6 +5,7 @@ import {
   isTransientDriveHttpStatus,
 } from './driveFetchErrors';
 import { uploadDriveFileResumableChunked } from './driveResumableUpload';
+import { tryRefreshGoogleAccessTokenViaBff } from '../session/labsGoogleSessionPort';
 
 export {
   DriveHttpError,
@@ -17,6 +18,29 @@ const UPLOAD_BASE = 'https://www.googleapis.com/upload/drive/v3';
 
 const TRANSIENT_RETRY_DELAYS_MS = [0, 500, 1500] as const;
 
+/**
+ * Authorized Drive fetch with one 401 → BFF cookie refresh → retry. Access tokens
+ * expire mid-session (1h TTL); when the BFF holds a live session this converts what
+ * used to surface as "sign in again" into a silent recovery. Never opens GIS
+ * (ADR 0010/0011) — a second 401 falls through to the caller's error path.
+ */
+async function driveFetch(
+  accessToken: string,
+  url: string,
+  init?: Omit<RequestInit, 'headers'> & { headers?: Record<string, string> },
+): Promise<Response> {
+  const doFetch = (token: string) =>
+    fetch(url, {
+      ...init,
+      headers: { ...(init?.headers ?? {}), Authorization: `Bearer ${token}` },
+    });
+  const res = await doFetch(accessToken);
+  if (res.status !== 401) return res;
+  const refreshed = await tryRefreshGoogleAccessTokenViaBff();
+  if (!refreshed || refreshed === accessToken) return res;
+  return doFetch(refreshed);
+}
+
 /** Drive v3 rejects `etag` in `fields` masks; use the HTTP `ETag` response header for concurrency (`If-Match`). */
 export function etagFromDriveResponse(res: Response): string | undefined {
   return res.headers.get('ETag')?.trim() || undefined;
@@ -28,9 +52,7 @@ export async function driveGetJson<T>(
   query?: Record<string, string>
 ): Promise<T> {
   const qs = query ? `?${new URLSearchParams(query).toString()}` : '';
-  const res = await fetch(`${DRIVE_BASE}${path}${qs}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  const res = await driveFetch(accessToken, `${DRIVE_BASE}${path}${qs}`);
   const text = await res.text();
   if (!res.ok) {
     throw new DriveHttpError(formatDriveRequestFailure('GET', path, res.status, text), res.status, text);
@@ -39,9 +61,7 @@ export async function driveGetJson<T>(
 }
 
 export async function driveGetMedia(accessToken: string, fileId: string): Promise<string> {
-  const res = await fetch(`${DRIVE_BASE}/files/${encodeURIComponent(fileId)}?alt=media`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  const res = await driveFetch(accessToken, `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}?alt=media`);
   const text = await res.text();
   if (!res.ok) {
     throw new DriveHttpError(formatDriveRequestFailure('GET', `files/…/alt=media`, res.status, text), res.status, text);
@@ -93,9 +113,9 @@ export async function driveGetRevisionMedia(
   fileId: string,
   revisionId: string,
 ): Promise<string> {
-  const res = await fetch(
+  const res = await driveFetch(
+    accessToken,
     `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}/revisions/${encodeURIComponent(revisionId)}?alt=media`,
-    { headers: { Authorization: `Bearer ${accessToken}` } },
   );
   const text = await res.text();
   if (!res.ok) {
@@ -110,11 +130,9 @@ export async function driveGetRevisionMedia(
 
 /** Binary `alt=media` read (audio/video/pdf bytes). Prefer over {@link driveGetMedia} for non-text bodies. */
 export async function driveGetMediaArrayBuffer(accessToken: string, fileId: string): Promise<ArrayBuffer> {
-  const res = await fetch(
+  const res = await driveFetch(
+    accessToken,
     `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`,
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
   );
   if (!res.ok) {
     const text = await res.text();
@@ -247,10 +265,9 @@ export async function driveCreateJsonFile(
   ].join('\r\n');
 
   // Same as `files.list`: `etag` is not a valid `fields` selection for multipart create (400 Invalid field selection).
-  const res = await fetch(`${UPLOAD_BASE}/files?uploadType=multipart&fields=id,mimeType,modifiedTime`, {
+  const res = await driveFetch(accessToken, `${UPLOAD_BASE}/files?uploadType=multipart&fields=id,mimeType,modifiedTime`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${accessToken}`,
       'Content-Type': `multipart/related; boundary=${boundary}`,
     },
     body: multipartBody,
@@ -270,12 +287,12 @@ export async function drivePatchJsonMedia(
   ifMatch: string | undefined
 ): Promise<{ id: string; etag?: string; modifiedTime?: string }> {
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
     'Content-Type': 'application/json',
   };
   if (ifMatch) headers['If-Match'] = ifMatch;
 
-  const res = await fetch(
+  const res = await driveFetch(
+    accessToken,
     `${UPLOAD_BASE}/files/${encodeURIComponent(fileId)}?uploadType=media&fields=id,modifiedTime&supportsAllDrives=true`,
     { method: 'PATCH', headers, body }
   );
@@ -292,12 +309,9 @@ export async function driveCreateFolder(
   name: string,
   parentId: string
 ): Promise<{ id: string }> {
-  const res = await fetch(`${DRIVE_BASE}/files?fields=id`, {
+  const res = await driveFetch(accessToken, `${DRIVE_BASE}/files?fields=id`, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name,
       mimeType: 'application/vnd.google-apps.folder',
@@ -317,12 +331,9 @@ export async function driveCreateShortcut(
   parentId: string,
   targetFileId: string
 ): Promise<{ id: string }> {
-  const res = await fetch(`${DRIVE_BASE}/files?fields=id`, {
+  const res = await driveFetch(accessToken, `${DRIVE_BASE}/files?fields=id`, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name,
       mimeType: 'application/vnd.google-apps.shortcut',
@@ -342,12 +353,9 @@ export async function driveCreateAnyoneReaderPermission(
   fileId: string
 ): Promise<void> {
   const url = `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}/permissions`;
-  const init: RequestInit = {
+  const init = {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       role: 'reader',
       type: 'anyone',
@@ -359,7 +367,7 @@ export async function driveCreateAnyoneReaderPermission(
     if (TRANSIENT_RETRY_DELAYS_MS[attempt] > 0) {
       await new Promise((r) => setTimeout(r, TRANSIENT_RETRY_DELAYS_MS[attempt]));
     }
-    const res = await fetch(url, init);
+    const res = await driveFetch(accessToken, url, init);
     if (res.ok) return;
     lastStatus = res.status;
     lastText = await res.text();
@@ -414,9 +422,7 @@ export async function driveGetFileMetadata(
     if (TRANSIENT_RETRY_DELAYS_MS[attempt] > 0) {
       await new Promise((r) => setTimeout(r, TRANSIENT_RETRY_DELAYS_MS[attempt]));
     }
-    res = await fetch(`${DRIVE_BASE}${path}${qs}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    res = await driveFetch(accessToken, `${DRIVE_BASE}${path}${qs}`);
     if (res.ok) break;
     lastStatus = res.status;
     lastText = await res.text();
@@ -518,9 +524,7 @@ export async function driveResolveThumbnailLink(accessToken: string, fileId: str
     if (TRANSIENT_RETRY_DELAYS_MS[attempt] > 0) {
       await new Promise((r) => setTimeout(r, TRANSIENT_RETRY_DELAYS_MS[attempt]));
     }
-    res = await fetch(`${DRIVE_BASE}${path}${qs}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    res = await driveFetch(accessToken, `${DRIVE_BASE}${path}${qs}`);
     if (res.ok) break;
     lastStatus = res.status;
     await res.text();
@@ -550,15 +554,13 @@ export async function driveResolveThumbnailLink(accessToken: string, fileId: str
  * per-row deletes so a stray double-click in the UI does not vaporize the user's only copy.
  */
 export async function driveTrashFile(accessToken: string, fileId: string): Promise<void> {
-  const res = await fetch(
+  const res = await driveFetch(
+    accessToken,
     `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}?fields=id&supportsAllDrives=true`,
     {
       method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ trashed: true }),
+      headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trashed: true }),
     },
   );
   if (res.ok) return;
@@ -574,15 +576,13 @@ export async function driveRenameFile(
   fileId: string,
   newName: string,
 ): Promise<void> {
-  const res = await fetch(
+  const res = await driveFetch(
+    accessToken,
     `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}?fields=id&supportsAllDrives=true`,
     {
       method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name: newName }),
+      headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName }),
     },
   );
   if (!res.ok) {
@@ -597,15 +597,13 @@ export async function drivePatchFileDescription(
   fileId: string,
   description: string,
 ): Promise<void> {
-  const res = await fetch(
+  const res = await driveFetch(
+    accessToken,
     `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}?fields=id&supportsAllDrives=true`,
     {
       method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ description: description.trim() || '' }),
+      headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ description: description.trim() || '' }),
     },
   );
   if (!res.ok) {
@@ -643,14 +641,10 @@ export async function driveMoveFile(
   if (toRemove.length > 0) {
     params.set('removeParents', toRemove.join(','));
   }
-  const res = await fetch(
+  const res = await driveFetch(
+    accessToken,
     `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}?${params.toString()}`,
-    {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
+    { method: 'PATCH' },
   );
   if (!res.ok) {
     const text = await res.text();
@@ -693,9 +687,7 @@ export async function driveFileHasAnyoneReader(
       });
       if (pageToken) params.set('pageToken', pageToken);
       const path = `/files/${encodeURIComponent(id)}/permissions`;
-      const res = await fetch(`${DRIVE_BASE}${path}?${params}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      const res = await driveFetch(accessToken, `${DRIVE_BASE}${path}?${params}`);
       const text = await res.text();
       if (res.ok) {
         const data = JSON.parse(text) as {

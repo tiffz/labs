@@ -2,6 +2,26 @@ name = "labs-session-bff"
 main = "src/index.ts"
 compatibility_date = "2024-09-23"
 
+# First-party host for the session cookie (biggest re-sign-in fix): on
+# *.workers.dev the labs_session cookie is cross-site to labs.tiffzhang.com and
+# silently blocked by third-party-cookie policies. Serving the worker from a
+# tiffzhang.com subdomain makes cookie + app same-site (eTLD+1 match).
+#
+# BLOCKED ON MANUAL STEP: tiffzhang.com DNS is hosted at Namecheap
+# (dns1/dns2.registrar-servers.com), and Workers custom domains require the
+# zone to be on Cloudflare DNS. To enable:
+#   1. Add tiffzhang.com as a zone in the Cloudflare dashboard and switch the
+#      domain's nameservers at Namecheap to the assigned Cloudflare pair
+#      (keep the existing GitHub Pages records: labs.tiffzhang.com CNAME).
+#   2. Uncomment the routes block below and `npm run deploy`.
+#   3. Add https://session.tiffzhang.com/v1/oauth/google/callback to the OAuth
+#      client's authorized redirect URIs in Google Cloud Console.
+#   4. Point VITE_LABS_SESSION_BFF_URL at https://session.tiffzhang.com.
+#
+# routes = [
+#   { pattern = "session.tiffzhang.com", custom_domain = true }
+# ]
+
 [[kv_namespaces]]
 binding = "SESSION_KV"
 id = "408f76cc26f74ee89f8895833cb57fbd"

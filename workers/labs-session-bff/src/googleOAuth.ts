@@ -6,8 +6,16 @@ import {
   type OAuthStateRecord,
 } from './constants';
 import { pkceChallengeFromVerifier, pkceVerifier, randomToken } from './crypto';
-import { buildSessionCookie, clearSessionCookie, deleteSession, loadSession, parseSessionCookie, storeSession } from './session';
-import { checkRefreshRateLimit } from './rateLimit';
+import {
+  buildSessionCookie,
+  clearSessionCookie,
+  deleteSession,
+  loadRefreshTokenForUser,
+  loadSession,
+  parseSessionCookie,
+  storeSession,
+} from './session';
+import { checkRefreshRateLimit, recordRefreshSuccess } from './rateLimit';
 import { clientIp, corsHeaders, jsonResponse, parseAllowedOrigins, withCors } from './http';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -238,7 +246,12 @@ export async function handleGoogleOAuthStart(request: Request, env: Env): Promis
   authUrl.searchParams.set('code_challenge', codeChallenge);
   authUrl.searchParams.set('code_challenge_method', 'S256');
   authUrl.searchParams.set('access_type', 'offline');
-  authUrl.searchParams.set('prompt', 'consent');
+  // `select_account` instead of `consent`: returning users skip the scary
+  // permissions screen. Google then omits the refresh token for accounts that
+  // already granted access — the callback reuses the stored one (see
+  // handleGoogleOAuthCallback). First-time users still get the consent screen
+  // automatically because no grant exists yet.
+  authUrl.searchParams.set('prompt', 'select_account');
   authUrl.searchParams.set('include_granted_scopes', 'true');
 
   return jsonResponse({ authUrl: authUrl.toString() }, 200, cors);
@@ -300,7 +313,14 @@ export async function handleGoogleOAuthCallback(request: Request, env: Env): Pro
     });
   }
 
-  if (!token.refresh_token) {
+  // With `prompt=select_account`, Google only returns a refresh token on the
+  // first consent. On re-auth, reuse the refresh token from the user's prior
+  // session — it stays valid until revoked.
+  let refreshToken = token.refresh_token ?? null;
+  if (!refreshToken) {
+    refreshToken = await loadRefreshTokenForUser(env.SESSION_KV, profile.sub, env.REFRESH_ENCRYPTION_KEY);
+  }
+  if (!refreshToken) {
     return popupDoneResponse({
       request,
       returnOrigin: stateRecord.returnOrigin,
@@ -315,7 +335,7 @@ export async function handleGoogleOAuthCallback(request: Request, env: Env): Pro
     googleSub: profile.sub,
     email: profile.email,
     displayName,
-    refreshToken: token.refresh_token,
+    refreshToken,
     scope: token.scope ?? LABS_GOOGLE_OAUTH_SCOPES,
     encryptionKeyHex: env.REFRESH_ENCRYPTION_KEY,
   });
@@ -435,6 +455,8 @@ export async function handleGoogleAccessToken(request: Request, env: Env): Promi
       cors,
     );
   }
+
+  await recordRefreshSuccess(env.SESSION_KV, cookiePayload.sid, clientIp(request));
 
   const expiresIn = token.expires_in ?? 3600;
   const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;

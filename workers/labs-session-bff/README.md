@@ -96,6 +96,12 @@ VITE_LABS_SESSION_BFF_URL=http://127.0.0.1:8787 npm run dev
 
 OAuth routes call **only** `https://oauth2.googleapis.com/token`. Guest snapshot routes call **Google Drive API** with the **`GOOGLE_API_KEY`** secret (never returned to browsers).
 
+## First-party host (pending manual DNS step)
+
+The session cookie is set by the worker origin. On `labs-session-bff.tiffz.workers.dev` it is **cross-site** to `labs.tiffzhang.com`, so browsers with third-party-cookie blocking (Safari, more Chrome profiles every year) drop it — sign-in appears to succeed, then every refresh returns "Not signed in". Moving the worker to `session.tiffzhang.com` makes the cookie **same-site** with the app and fixes this class of failure outright.
+
+Everything is prepared in `wrangler.toml` (commented `routes` block with step-by-step instructions). The one thing an agent cannot do: `tiffzhang.com` DNS currently lives at Namecheap, and Cloudflare Workers custom domains require the zone on Cloudflare DNS. Once the zone is added and nameservers switched, uncomment the route, deploy, add the new callback URI in Google Cloud Console, and update `VITE_LABS_SESSION_BFF_URL`.
+
 ## Rollback
 
 Unset `VITE_LABS_SESSION_BFF_URL` and redeploy Pages. No data migration required.

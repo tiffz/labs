@@ -13,6 +13,7 @@ import {
   isLabsGoogleSessionBffEnabled,
   isRecoverableBffSignInFailure,
   persistLabsGoogleBffSession,
+  readLastLabsBffRefreshErrorCode,
   signInWithGoogleViaBff,
   tryRefreshGoogleAccessTokenViaBff,
 } from '../session/labsGoogleSessionPort';
@@ -174,18 +175,31 @@ async function ensureLabsGoogleAccessTokenForDriveScopes(
 }
 
 /**
- * Clears the cached access token and opens Google sign-in from a user gesture.
- * Keeps the remembered email as a login hint. Use from Account → Sign in again.
+ * Clears the cached access token and re-establishes the session from a user gesture.
+ * Tries a **silent BFF cookie refresh first** (no popup, no gesture consumed) — most
+ * "reconnect" clicks are just an expired access token with a live BFF session, so
+ * forcing a Google popup for those was needless friction. Only when the silent
+ * refresh fails (or scopes must be upgraded) does the GIS popup open on the same
+ * click. Keeps the remembered email as a login hint. Use from Account → Sign in again.
  */
 export async function reconnectLabsGoogleDriveSession(options?: {
   /** Request {@link LABS_GOOGLE_DRIVE_IMPORT_SCOPES} (Zine Box Drive folder import). */
   importScopes?: boolean;
 }): Promise<string> {
   clearPersistedGoogleSession();
+  const upgradeScopes = Boolean(options?.importScopes);
+  if (!upgradeScopes && isLabsGoogleSessionBffEnabled()) {
+    const refreshed = await tryRefreshGoogleAccessTokenViaBff();
+    if (refreshed) return refreshed;
+    // Rate limited means the session works — a popup would only confuse. Surface it.
+    if (readLastLabsBffRefreshErrorCode() === 'rate_limited') {
+      throw new Error('Google session was refreshed moments ago. Wait a few seconds and try again.');
+    }
+  }
   const scopes = options?.importScopes ? LABS_GOOGLE_DRIVE_IMPORT_SCOPES : LABS_GOOGLE_DRIVE_SESSION_SCOPES;
   return ensureLabsGoogleAccessTokenForDriveScopes(scopes, {
     interactive: true,
-    upgradeScopes: Boolean(options?.importScopes),
+    upgradeScopes,
     skipBff: true,
   });
 }

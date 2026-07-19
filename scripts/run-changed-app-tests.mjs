@@ -48,6 +48,14 @@ if (files.length > 0 && files.every((f) => e2eOnly(f) || docOnly(f))) {
   process.exit(0);
 }
 
+// Worker tests live outside the root Vitest project (root: 'src'), so run their
+// own suite + typecheck whenever the session BFF changes.
+if (files.some((f) => f.startsWith('workers/labs-session-bff/'))) {
+  console.log('test:changed-apps: session BFF changed — worker vitest + typecheck');
+  execSync('npm run test:session-bff', { stdio: 'inherit' });
+  execSync('npm run typecheck:session-bff', { stdio: 'inherit' });
+}
+
 const apps = new Set();
 let shared = false;
 let beatOnly = true;
