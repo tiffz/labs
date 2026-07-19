@@ -387,9 +387,8 @@ jobs:
         VITE_APP_ENV: production
       run: npm run build
 
-    - name: Bundle size report (advisory)
-      run: node scripts/bundle-size-report.mjs --skip-build
-      continue-on-error: true
+    - name: Bundle size gate (two-tier vs docs/bundle-size-baseline.json)
+      run: node scripts/bundle-size-report.mjs --skip-build --check
 
     - name: Upload production build artifact
       uses: actions/upload-artifact@v7

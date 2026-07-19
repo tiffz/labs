@@ -95,11 +95,11 @@ GLB-only changes: still run `muscle:validate-assets` + `presubmit` (manifest gua
 
 Hard refresh `/muscle/#/` (Cmd+Shift+R) — HMR hides stale GLB cache.
 
-| Checkpoint               | Pass criteria                                                                                        |
-| ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| Full body sagittal split | Study (+X) muscles visible; reference (−X) skeleton; no thin slice                                   |
-| Layer peel               | Depth 0 muscles readable; deeper peel reveals skeleton underneath                                    |
-| Orbit perf               | ~10 s drag without sustained judder; `npm run test:e2e:smoke -- e2e/smoke/muscle-orbit-perf.spec.ts` |
+| Checkpoint               | Pass criteria                                                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Full body sagittal split | Study (+X) muscles visible; reference (−X) skeleton; no thin slice                                                                     |
+| Layer peel               | Depth 0 muscles readable; deeper peel reveals skeleton underneath                                                                      |
+| Orbit perf               | ~10 s manual drag without sustained judder (CUJ-001); deterministic budgets: `npx vitest run src/muscle/muscleAssetPerfBudget.test.ts` |
 
 Full protocol: [`docs/MUSCLE_QA.md`](../../../docs/MUSCLE_QA.md) § Full-body atlas.
 

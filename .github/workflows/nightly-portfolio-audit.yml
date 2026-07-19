@@ -100,7 +100,7 @@ jobs:
             test-results/**
 
   lighthouse-portfolio:
-    name: Lighthouse (production, advisory)
+    name: Lighthouse (production, per-app floors)
     runs-on: ubuntu-latest
     env:
       CI: true
@@ -122,15 +122,14 @@ jobs:
       - name: Install Chromium for Lighthouse
         run: npx playwright install --with-deps chromium
 
-      - name: Production Lighthouse portfolio audit
+      - name: Production Lighthouse portfolio audit (per-app floors)
         id: lighthouse
-        continue-on-error: true
-        run: npm run audit:lighthouse -- --smoke-all --production
+        run: npm run audit:lighthouse -- --smoke-all --production --fail
 
-      - name: Warn on Lighthouse budget misses
-        if: steps.lighthouse.outcome == 'failure'
+      - name: Explain Lighthouse floor failures
+        if: failure() && steps.lighthouse.outcome == 'failure'
         run: |
-          echo "::warning title=Lighthouse advisory::One or more routes missed production budgets — see job log and docs/LIGHTHOUSE_AUDIT.md"
+          echo "::error title=Lighthouse floors::One or more routes fell below their per-app floor (baseline − 5) — see docs/PERFORMANCE_BUDGETS.md and docs/LIGHTHOUSE_AUDIT.md"
 
       - name: Upload Lighthouse JSON reports
         if: always()

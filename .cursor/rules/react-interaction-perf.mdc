@@ -10,7 +10,7 @@ alwaysApply: false
 
 # React interaction performance
 
-Canonical: [`docs/PERFORMANCE.md`](../../docs/PERFORMANCE.md). Skill: [`labs-performance`](../skills/labs-performance/SKILL.md). CUJs: [`docs/CRITICAL_USER_JOURNEYS.md`](../../docs/CRITICAL_USER_JOURNEYS.md).
+Canonical: [`docs/PERFORMANCE.md`](../../docs/PERFORMANCE.md). Budgets: [`docs/PERFORMANCE_BUDGETS.md`](../../docs/PERFORMANCE_BUDGETS.md). Skill: [`labs-performance`](../skills/labs-performance/SKILL.md). CUJs: [`docs/CRITICAL_USER_JOURNEYS.md`](../../docs/CRITICAL_USER_JOURNEYS.md).
 
 ## Before editing control + grid screens
 

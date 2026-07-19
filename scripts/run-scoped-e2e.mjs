@@ -32,6 +32,7 @@ const APP_SMOKE_SPECS = {
     'e2e/smoke/gesture-upload-skip-empty.spec.ts',
     'e2e/smoke/gesture-practice-interaction.spec.ts',
     'e2e/smoke/gesture-collections-scroll.spec.ts',
+    'e2e/smoke/gesture-session-heap-soak.spec.ts',
     'e2e/smoke/drive-sync-merge-guards.spec.ts',
     'e2e/smoke/layout-heuristics-gesture.spec.ts',
     'e2e/smoke/scroll-sanity-gesture.spec.ts',

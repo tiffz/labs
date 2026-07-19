@@ -31794,6 +31794,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-test-interactionlatencycore-ts-hard-fail-multiplier",
+    "name": "HARD_FAIL_MULTIPLIER",
+    "path": "src/shared/test/interactionLatencyCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Hard-fail ceiling multiplier: budgets are advisory at 1x (CI noise), but a measurement beyond `budget * HARD_FAIL_MULTIPLIER` is a genuine regression and fails the test. See docs/PERFORMANCE_BUDGETS.md.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-test-interactionlatencycore-ts-iswithininteractionbudget",
     "name": "isWithinInteractionBudget",
     "path": "src/shared/test/interactionLatencyCore.ts",

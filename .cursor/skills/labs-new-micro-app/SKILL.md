@@ -24,8 +24,9 @@ description: Adds a new Labs micro-app with Vite entry, SPA shell guardrails, an
 15. **Keyboard shortcuts help** — mount `LabsKeyboardShortcutsHost` with a `*KeyboardShortcutSections()` helper (`Ctrl/Cmd + ?`); the starter template includes the help-only host
 16. **URL state** — shareable view state syncs via shared urlHistory utilities ([`docs/URL_STATE_PATTERN.md`](../../../docs/URL_STATE_PATTERN.md), skill `labs-url-state`)
 17. **Visual routes** — mark the route `visual: true` in `routeRegistry.ts` once the shell is stable; baselines import from Linux CI artifacts only (skill `labs-visual-regression`)
-18. Run **`npm run check:app-quality`** — registry ↔ filesystem, CUJs, hardened `main.tsx`, vite entry
-19. Run **`npm run presubmit`** — `spaGuardrails.test.ts` must pass
+18. **Bundle baseline row** — run `npm run report:bundle-size -- --update-baseline` so the new app gets a row in `docs/bundle-size-baseline.json` (the two-tier gate fails on apps missing a baseline once they exceed the absolute cap; see [`docs/PERFORMANCE_BUDGETS.md`](../../../docs/PERFORMANCE_BUDGETS.md))
+19. Run **`npm run check:app-quality`** — registry ↔ filesystem, CUJs, hardened `main.tsx`, vite entry
+20. Run **`npm run presubmit`** — `spaGuardrails.test.ts` must pass
 
 ## Keep practices current
 

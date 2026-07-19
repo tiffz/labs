@@ -19,8 +19,18 @@ import { smokeRoutes } from './lib/parseRouteRegistry.mjs';
 
 const BASELINE_PATH = path.join(process.cwd(), 'docs/lighthouse-baseline.json');
 
-/** Production budgets — relaxed for Dexie/MUI/3D micro-apps. Dev perf is ignored. */
-const BUDGETS = {
+/**
+ * Per-app floors are derived from the committed baseline: floor = baseline − TOLERANCE.
+ * Scores ratchet up — `--update-baseline` only raises values, never lowers them
+ * (use `--reset-baseline` for a deliberate re-baseline with justification in the PR).
+ * Aspirational targets below are advisory only. See docs/PERFORMANCE_BUDGETS.md.
+ */
+const FLOOR_TOLERANCE = 5;
+/** Lighthouse perf scores swing ±10 run-to-run on shared runners — wider floor. */
+const PERFORMANCE_FLOOR_TOLERANCE = 10;
+
+/** Aspirational targets (advisory warnings, never failures). */
+const TARGETS = {
   performance: 0.65,
   accessibility: 0.9,
   'best-practices': 0.92,
@@ -33,6 +43,7 @@ const smokeAll = args.includes('--smoke-all');
 const production = args.includes('--production');
 const failOnMiss = args.includes('--fail');
 const updateBaseline = args.includes('--update-baseline');
+const resetBaseline = args.includes('--reset-baseline');
 const baseUrlArg = args.includes('--base-url') ? args[args.indexOf('--base-url') + 1] : null;
 
 if (!routeArg && !smokeAll) {
@@ -123,40 +134,50 @@ for (const route of routes) {
     .join(', ');
   console.log(parts);
 
-  for (const [category, minScore] of Object.entries(BUDGETS)) {
-    const score = scores[category];
-    if (score == null) continue;
-    if (!production && category === 'performance') continue;
-    const normalized = score / 100;
-    if (normalized < minScore) {
-      const msg = `${route} ${category} ${score} < ${Math.round(minScore * 100)} budget`;
-      if (failOnMiss) {
-        console.error(`::error::${msg}`);
-        failures++;
-      } else {
-        console.warn(`::warning title=Lighthouse::${msg}`);
-        warnings++;
-      }
-    }
-  }
-
+  // Per-app floor: committed baseline − tolerance. This is the blocking gate under --fail.
   const prev = baseline[route];
   if (prev) {
     for (const [cat, score] of Object.entries(scores)) {
       if (score == null || prev[cat] == null) continue;
-      if (score < prev[cat] - 5) {
-        console.warn(
-          `::warning title=Lighthouse regression::${route} ${cat} dropped ${prev[cat]} → ${score}`,
-        );
-        warnings++;
+      if (!production && cat === 'performance') continue;
+      const tolerance = cat === 'performance' ? PERFORMANCE_FLOOR_TOLERANCE : FLOOR_TOLERANCE;
+      if (score < prev[cat] - tolerance) {
+        const msg = `${route} ${cat} ${score} < per-app floor ${prev[cat] - tolerance} (baseline ${prev[cat]} − ${tolerance})`;
+        if (failOnMiss) {
+          console.error(`::error title=Lighthouse floor::${msg}`);
+          failures++;
+        } else {
+          console.warn(`::warning title=Lighthouse floor::${msg}`);
+          warnings++;
+        }
       }
+    }
+  }
+
+  // Aspirational targets stay advisory — they document where we want to get, not a gate.
+  for (const [category, minScore] of Object.entries(TARGETS)) {
+    const score = scores[category];
+    if (score == null) continue;
+    if (!production && category === 'performance') continue;
+    if (score / 100 < minScore) {
+      console.warn(`::warning title=Lighthouse target::${route} ${category} ${score} < ${Math.round(minScore * 100)} aspirational target`);
+      warnings++;
     }
   }
 }
 
-if (updateBaseline || (!fs.existsSync(BASELINE_PATH) && smokeAll)) {
+if (updateBaseline || resetBaseline || (!fs.existsSync(BASELINE_PATH) && smokeAll)) {
   fs.mkdirSync(path.dirname(BASELINE_PATH), { recursive: true });
-  fs.writeFileSync(BASELINE_PATH, JSON.stringify(results, null, 2));
+  const next = resetBaseline ? {} : { ...baseline };
+  for (const [route, scores] of Object.entries(results)) {
+    next[route] = { ...next[route] };
+    for (const [cat, score] of Object.entries(scores)) {
+      if (score == null) continue;
+      // Ratchet: --update-baseline only raises floors; --reset-baseline rewrites.
+      next[route][cat] = resetBaseline ? score : Math.max(next[route][cat] ?? 0, score);
+    }
+  }
+  fs.writeFileSync(BASELINE_PATH, `${JSON.stringify(next, null, 2)}\n`);
   console.log(`\nWrote baseline ${BASELINE_PATH}`);
 }
 
