@@ -1,10 +1,11 @@
 import { driveListFiles, type DriveFileListRow } from '../../shared/drive/driveFetch';
 import { isGestureReferenceImageFile } from './gestureImageFilter';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 
 function escapeDriveQueryString(id: string): string {
-  return id.replace(/'/g, "\\'");
+  return escapeDriveQueryLiteral(id);
 }
 
 export type GesturePackDriveImage = DriveFileListRow & {

@@ -1,3 +1,4 @@
+import { escapeDriveQueryLiteral } from './escapeDriveQueryLiteral';
 import {
   driveGetFileMetadata,
   driveGetJson,
@@ -40,7 +41,7 @@ export function drivePdfDedupeKey(f: {
 }
 
 function escapeDriveQueryString(id: string): string {
-  return id.replace(/'/g, "\\'");
+  return escapeDriveQueryLiteral(id);
 }
 
 async function driveFileNameOnly(accessToken: string, fileId: string): Promise<string> {

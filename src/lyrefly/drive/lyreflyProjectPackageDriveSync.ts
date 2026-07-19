@@ -43,11 +43,12 @@ import {
 import type { LyreflySyncPayload } from './lyreflyDriveEnvelope';
 import { applyLyreflyProjectPackageToDb, buildLyreflyProjectPackageFromDb } from './lyreflyProjectPackageDb';
 import { projectPackageFromFiles, projectPackageToFiles, type LyreflyProjectPackageFiles } from './projectPackage';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 
 type FolderCache = Map<string, Promise<string>>;
 
 function escapeDriveQueryValue(value: string): string {
-  return value.replace(/'/g, "\\'");
+  return escapeDriveQueryLiteral(value);
 }
 
 async function findChildFolderId(

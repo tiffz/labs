@@ -2,7 +2,7 @@ import React from 'react';
 import { catCoordinateSystem } from '../../services/CatCoordinateSystem';
 import { useCoordinateSystem } from '../../hooks/useCoordinateSystem';
 import { layerForZ } from './zLayer';
-import { isOverlayEnabled } from '../debug/overlay';
+import { isOverlayEnabled } from '../debug/overlayFlags';
 import { BaselineOverlay, MassBoxOverlay } from '../debug/overlay.tsx';
 import { FurnitureShadow } from '../game/furniture/FurnitureShadow';
 

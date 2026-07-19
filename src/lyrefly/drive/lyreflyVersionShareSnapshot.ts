@@ -15,6 +15,7 @@ import { isPublicDriveGuestFetchConfigured } from '../../shared/drive/buildPubli
 import { loadLyreflyExportPages } from '../exports/lyreflyComicExport';
 import type { ComicArtVersion, ComicProject, PageNode, PageRevision } from '../types';
 import { ensureLyreflyGoogleDriveAccess } from './lyreflyGoogleDriveAccess';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 
 export const LYREFLY_VERSION_SHARE_FOLDER = 'version-shares';
 export const LYREFLY_VERSION_SHARE_SCHEMA_VERSION = 1 as const;
@@ -46,11 +47,11 @@ function shareFileName(versionId: string): string {
 }
 
 function qJsonInParent(name: string, parentId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/json' and '${parentId}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/json' and '${parentId}' in parents and trashed=false`;
 }
 
 function qFolderInParent(name: string, parentId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
 }
 
 async function ensureVersionSharesFolder(accessToken: string, appFolderId: string): Promise<string> {

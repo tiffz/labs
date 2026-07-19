@@ -20,22 +20,44 @@ export function plainOrHtmlToEditorHtml(stored: string | undefined): string {
     .join('');
 }
 
+/** Iteratively strip tags until none remain (avoids incomplete single-pass sanitization). */
+function stripHtmlTagsIteratively(value: string): string {
+  let s = value;
+  let prev = '';
+  while (s !== prev) {
+    prev = s;
+    s = s.replace(/<[^>]*>/g, '');
+  }
+  return s;
+}
+
+function decodeBasicEntitiesOnce(value: string): string {
+  return value
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\u00a0/g, ' ');
+}
+
 /** Plain text for previews / counts. Not a security sanitizer. */
 export function richTextPlainText(htmlOrPlain: string | undefined): string {
   if (!htmlOrPlain) return '';
   const t = htmlOrPlain.trim();
   if (!t) return '';
   if (!t.includes('<')) return t;
-  return t
+
+  if (typeof DOMParser !== 'undefined') {
+    const doc = new DOMParser().parseFromString(t, 'text/html');
+    const text = doc.body?.textContent ?? '';
+    return text.replace(/\s+/g, ' ').trim();
+  }
+
+  const withBreaks = t
     .replace(/<\/p>/gi, '\n')
     .replace(/<\/li>/gi, '\n')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/\u00a0/g, ' ')
+    .replace(/<br\s*\/?>/gi, '\n');
+  return decodeBasicEntitiesOnce(stripHtmlTagsIteratively(withBreaks))
     .replace(/\s+/g, ' ')
     .trim();
 }

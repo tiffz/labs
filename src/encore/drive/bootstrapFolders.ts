@@ -14,13 +14,14 @@ import {
   PUBLIC_SNAPSHOT_FILE_NAME,
 } from './constants';
 import { getSyncMeta, patchSyncMeta } from '../db/encoreDb';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 
 function qFolderInParent(name: string, parentId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
 }
 
 function qJsonInParent(name: string, parentId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/json' and '${parentId}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/json' and '${parentId}' in parents and trashed=false`;
 }
 
 export interface EncoreDriveBootstrap {

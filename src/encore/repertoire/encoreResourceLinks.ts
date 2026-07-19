@@ -1,5 +1,6 @@
 import { parseDriveFileIdFromUrlOrId } from '../drive/parseDriveFileUrl';
 import { inferMediaMimeType } from '../../shared/drive/inferMediaMimeType';
+import { hostnameMatches, tryParseUrl } from '../../shared/url/safeUrlHost';
 import { richTextLinkPreview } from '../../shared/utils/richTextContent';
 import type { EncoreMiscResource, EncoreMiscResourceKind, EncoreSong } from '../types';
 
@@ -12,7 +13,10 @@ export function resourceLinkOpenUrl(resource: EncoreMiscResource): string | unde
 }
 
 export function inferResourceKindFromUrl(url: string): EncoreMiscResourceKind {
-  if (/docs\.google\.com\/document/i.test(url)) return 'google-doc';
+  if (hostnameMatches(url, 'docs.google.com')) {
+    const parsed = tryParseUrl(url);
+    if (parsed && /\/document\//i.test(parsed.pathname)) return 'google-doc';
+  }
   if (/\.pdf($|\?)/i.test(url) || url.toLowerCase().includes('pdf')) return 'pdf';
   return 'link';
 }

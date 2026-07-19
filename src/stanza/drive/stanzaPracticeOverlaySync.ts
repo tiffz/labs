@@ -14,6 +14,7 @@ import {
   driveListFiles,
   drivePatchJsonMedia,
 } from '../../shared/drive/driveFetch';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 import {
   emptyStanzaPracticeOverlayV1,
   isStanzaPracticeOverlayV1,
@@ -24,14 +25,14 @@ import {
 } from './stanzaPracticeOverlay';
 
 function qJsonInEncoreRoot(name: string, encoreRootId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/json' and '${encoreRootId}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/json' and '${encoreRootId}' in parents and trashed=false`;
 }
 
 /** Must match Encore `ENCORE_ROOT_FOLDER` — duplicated to respect import boundaries. */
 const ENCORE_APP_FOLDER_NAME = 'Encore_App';
 
 function qEncoreRootFolder(): string {
-  return `name='${ENCORE_APP_FOLDER_NAME.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(ENCORE_APP_FOLDER_NAME)}' and mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false`;
 }
 
 export async function resolveEncoreAppFolderId(accessToken: string): Promise<string | null> {

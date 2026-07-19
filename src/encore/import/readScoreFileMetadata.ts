@@ -83,10 +83,20 @@ function readXmlText(buffer: ArrayBuffer): string {
   }
 }
 
+function stripInnerXmlTags(value: string): string {
+  let s = value;
+  let prev = '';
+  while (s !== prev) {
+    prev = s;
+    s = s.replace(/<[^>]*>/g, '');
+  }
+  return s;
+}
+
 function captureXmlField(xml: string, tag: string): string | undefined {
   const re = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i');
   const m = re.exec(xml);
-  return nonEmpty(m?.[1]?.replace(/<[^>]+>/g, '').replace(/\s+/g, ' '));
+  return nonEmpty(stripInnerXmlTags(m?.[1] ?? '').replace(/\s+/g, ' '));
 }
 
 function captureMusicXmlKey(xml: string): string | undefined {

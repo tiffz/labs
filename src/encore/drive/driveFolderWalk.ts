@@ -1,4 +1,5 @@
 import { driveGetJson, driveListFiles, type DriveFileListRow } from './driveFetch';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 
@@ -30,7 +31,7 @@ export function isEncoreBulkImportScoreFile(f: { name?: string; mimeType?: strin
 }
 
 function escapeDriveQueryString(id: string): string {
-  return id.replace(/'/g, "\\'");
+  return escapeDriveQueryLiteral(id);
 }
 
 async function driveFileNameOnly(accessToken: string, fileId: string): Promise<string> {

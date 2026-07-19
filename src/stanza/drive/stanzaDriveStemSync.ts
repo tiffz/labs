@@ -8,6 +8,7 @@ import {
 } from '../../shared/drive/driveFetch';
 import { inferMediaMimeType } from '../../shared/drive/inferMediaMimeType';
 import { stanzaDb, type StanzaSong, type StanzaStemTrack } from '../db/stanzaDb';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 
 /** Child folder under `Tiff Zhang Labs/Stanza` for mix-layer audio bytes. */
 export const STANZA_DRIVE_STEM_AUDIO_FOLDER = 'stem_audio';
@@ -44,7 +45,7 @@ function blobToUploadFile(blob: Blob, name: string): File {
 }
 
 async function ensureStanzaStemAudioFolder(accessToken: string, appFolderId: string): Promise<string> {
-  const q = `name='${STANZA_DRIVE_STEM_AUDIO_FOLDER.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and '${appFolderId}' in parents and trashed=false`;
+  const q = `name='${escapeDriveQueryLiteral(STANZA_DRIVE_STEM_AUDIO_FOLDER)}' and mimeType='application/vnd.google-apps.folder' and '${appFolderId}' in parents and trashed=false`;
   const list = await driveListFiles(accessToken, q);
   const existing = (list.files?.[0] as { id?: string } | undefined)?.id;
   if (existing) return existing;

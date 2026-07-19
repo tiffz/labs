@@ -39,7 +39,13 @@ interface WikimediaApiResponse {
 }
 
 function stripHtml(value: string): string {
-  return value.replace(/<[^>]+>/g, '').trim();
+  let s = value;
+  let prev = '';
+  while (s !== prev) {
+    prev = s;
+    s = s.replace(/<[^>]*>/g, '');
+  }
+  return s.trim();
 }
 
 function pagesToResults(pages: Record<string, WikimediaApiPage>): LabsWikimediaImageResult[] {

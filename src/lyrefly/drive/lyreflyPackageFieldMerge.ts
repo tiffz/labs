@@ -13,11 +13,19 @@ import type {
   VisualDevAsset,
 } from '../types';
 
-const HTML_TAG = /<[^>]*>/g;
+function stripHtmlTagsIteratively(value: string): string {
+  let s = value;
+  let prev = '';
+  while (s !== prev) {
+    prev = s;
+    s = s.replace(/<[^>]*>/g, '');
+  }
+  return s;
+}
 
 export function isBlankLyreflyText(value: string | undefined | null): boolean {
   if (!value) return true;
-  return value.replace(HTML_TAG, '').replace(/&nbsp;/gi, ' ').trim().length === 0;
+  return stripHtmlTagsIteratively(value).replace(/&nbsp;/gi, ' ').trim().length === 0;
 }
 
 function pickFilledString(

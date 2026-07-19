@@ -1,3 +1,4 @@
+import { hostnameMatches } from '../../shared/url/safeUrlHost';
 import { driveFileWebUrl } from '../drive/driveWebUrls';
 import type { EncorePerformance, EncorePerformanceVideo } from '../types';
 import { parseYoutubeVideoId } from '../youtube/parseYoutubeVideoUrl';
@@ -19,7 +20,7 @@ function performanceVideoOpenLabelFromVideo(video: EncorePerformanceVideo): stri
   }
   if (ext) return 'Open link';
   const url = performanceVideoOpenUrlFromVideo(video);
-  if (url?.includes('drive.google.com')) return 'Open in Drive';
+  if (url && hostnameMatches(url, 'drive.google.com')) return 'Open in Drive';
   if (url && parseYoutubeVideoId(url)) return 'Open in YouTube';
   return url ? 'Open link' : null;
 }
@@ -52,7 +53,7 @@ export function performanceVideoOpenLabel(p: EncorePerformance): string | null {
   }
   if (ext) return 'Open link';
   const url = performanceVideoOpenUrlFromVideo(primary);
-  if (url?.includes('drive.google.com')) return 'Open in Drive';
+  if (url && hostnameMatches(url, 'drive.google.com')) return 'Open in Drive';
   if (url && parseYoutubeVideoId(url)) return 'Open in YouTube';
   return url ? 'Open link' : null;
 }
