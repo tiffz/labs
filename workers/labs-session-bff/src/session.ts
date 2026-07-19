@@ -114,6 +114,22 @@ export async function loadSession(
   return { ...record, refreshToken };
 }
 
+/**
+ * Refresh token from the user's most recent stored session. Used when Google
+ * omits `refresh_token` on re-auth (`prompt=select_account` with an existing
+ * grant) — the prior token remains valid, so sign-in continues seamlessly.
+ */
+export async function loadRefreshTokenForUser(
+  kv: KVNamespace,
+  googleSub: string,
+  encryptionKeyHex: string,
+): Promise<string | null> {
+  const sessionId = await kv.get(userKvKey(googleSub));
+  if (!sessionId) return null;
+  const session = await loadSession(kv, sessionId, encryptionKeyHex).catch(() => null);
+  return session?.refreshToken ?? null;
+}
+
 export async function deleteSession(kv: KVNamespace, sessionId: string, googleSub: string): Promise<void> {
   await kv.delete(sessionKvKey(sessionId));
   const mapped = await kv.get(userKvKey(googleSub));

@@ -18112,7 +18112,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Clears the cached access token and opens Google sign-in from a user gesture. Keeps the remembered email as a login hint. Use from Account → Sign in again.",
+    "description": "Clears the cached access token and re-establishes the session from a user gesture. Tries a **silent BFF cookie refresh first** (no popup, no gesture consumed) — most \"reconnect\" clicks are just an expired access token with a live BFF session, so forcing a Google popup for those was needless friction. Only when the silent refresh fails (or scopes must be upgraded) does the GIS popup open on the same click. Keeps the remembered email as a login hint. Use from Account → Sign in again.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -31186,6 +31186,36 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-session-labsgooglesessionport-ts-labsbffrefresherror",
+    "name": "LabsBffRefreshError",
+    "path": "src/shared/session/labsGoogleSessionPort.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Google session port — BFF (ADR 0014) or legacy GIS fallback (ADR 0010/0011). When `VITE_LABS_SESSION_BFF_URL` is set, refresh and interactive sign-in go through the Cloudflare Worker. GIS `prompt: 'none'` is never used.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-session-labsgooglesessionport-ts-labsbffrefresherrorcode",
+    "name": "LabsBffRefreshErrorCode",
+    "path": "src/shared/session/labsGoogleSessionPort.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Why the last BFF refresh failed — lets menus show \"cookies blocked\" vs \"slow down\" vs \"sign in again\" instead of one generic failure (all used to collapse to `null`).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-session-labsgooglesessionport-ts-labsgooglebfftokenresponse",
     "name": "LabsGoogleBffTokenResponse",
     "path": "src/shared/session/labsGoogleSessionPort.ts",
@@ -31236,6 +31266,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "BFF base URL without trailing slash, or null when disabled.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-session-labsgooglesessionport-ts-readlastlabsbffrefresherrorcode",
+    "name": "readLastLabsBffRefreshErrorCode",
+    "path": "src/shared/session/labsGoogleSessionPort.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Classification of the most recent failed BFF refresh (null after a success). `not_signed_in` on a browser that never completed sign-in usually means the cross-site session cookie was blocked (third-party cookie policy).",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -31300,7 +31343,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "When the session BFF is enabled, schedule a single proactive refresh shortly before the persisted access token expires. Uses HTTPS fetch only — never GIS.",
+    "description": "When the session BFF is enabled, schedule proactive refreshes shortly before the persisted access token expires. Uses HTTPS fetch only — never GIS. - **Re-arms itself**: after every attempt (success or failure) the next timer is scheduled from the freshly persisted session, so a long-lived tab keeps its session alive across many token lifetimes (previously the timer fired once and only re-armed on cross-tab storage events). - **Cross-tab single-flight**: `navigator.locks` ensures only one tab refreshes; the others see the new token via the `storage` event and just re-schedule.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

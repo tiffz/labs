@@ -3,6 +3,7 @@ import {
   isLabsGoogleSessionBffEnabled,
   isRecoverableBffSignInFailure,
   readLabsSessionBffUrl,
+  readLastLabsBffRefreshErrorCode,
   signInWithGoogleViaBff,
   tryRefreshGoogleAccessTokenViaBff,
 } from './labsGoogleSessionPort';
@@ -56,6 +57,31 @@ describe('labsGoogleSessionPort', () => {
     const token = await tryRefreshGoogleAccessTokenViaBff();
     expect(token).toBeNull();
     expect(readPersistedGoogleSession()).toBeNull();
+  });
+
+  it('classifies refresh failures by code', async () => {
+    vi.stubEnv('VITE_LABS_SESSION_BFF_URL', 'http://127.0.0.1:8787');
+
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Not signed in.' }), { status: 401 }));
+    expect(await tryRefreshGoogleAccessTokenViaBff()).toBeNull();
+    expect(readLastLabsBffRefreshErrorCode()).toBe('not_signed_in');
+
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Token has been expired or revoked (invalid_grant).' }), { status: 401 }),
+    );
+    expect(await tryRefreshGoogleAccessTokenViaBff()).toBeNull();
+    expect(readLastLabsBffRefreshErrorCode()).toBe('invalid_grant');
+
+    vi.mocked(fetch).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    expect(await tryRefreshGoogleAccessTokenViaBff()).toBeNull();
+    expect(readLastLabsBffRefreshErrorCode()).toBe('network');
+
+    // A success clears the code.
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ access_token: 'tok', expires_in: 3600 }), { status: 200 }),
+    );
+    expect(await tryRefreshGoogleAccessTokenViaBff()).toBe('tok');
+    expect(readLastLabsBffRefreshErrorCode()).toBeNull();
   });
 
   it('returns null when BFF is disabled', async () => {
