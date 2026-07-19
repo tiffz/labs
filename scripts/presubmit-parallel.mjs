@@ -100,6 +100,10 @@ if (changeClass !== 'e2e-only') {
 }
 await runStage('build + scoped Vitest (parallel)', buildAndTests);
 
+await runStage('bundle size gate', [
+  () => runTask('bundle size gate', 'node', ['scripts/bundle-size-report.mjs', '--skip-build', '--check']),
+]);
+
 await runStage('scoped e2e smoke', [npmRun('scoped e2e smoke', 'test:e2e:scoped')]);
 
 finish(0);

@@ -5,7 +5,7 @@ import type { Connect, Plugin, PreviewServer, ViteDevServer } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import react from '@vitejs/plugin-react';
 import { resolve, basename } from 'path';
-import { copyFileSync } from 'node:fs';
+import { copyFileSync, rmSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { compression } from 'vite-plugin-compression2';
@@ -1133,6 +1133,9 @@ export default defineConfig({
           const from = resolve(__dirname, file);
           copyFileSync(from, resolve(outDir, basename(file)));
         }
+        // public/.hidden holds ~300 MB of gitignored local beat-analysis
+        // fixtures; Vite's publicDir copy includes it. Never ship it.
+        rmSync(resolve(outDir, '.hidden'), { recursive: true, force: true });
       },
     } satisfies Plugin] : []),
     ...(!SKIP_DEPLOY_PLUGINS ? [compression({

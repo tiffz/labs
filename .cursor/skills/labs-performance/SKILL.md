@@ -6,6 +6,7 @@ description: Profiles and fixes Labs interaction and sustained performance using
 # Labs performance
 
 **Read first:** [`docs/PERFORMANCE.md`](../../../docs/PERFORMANCE.md).  
+**Budgets (canonical thresholds + enforcement points):** [`docs/PERFORMANCE_BUDGETS.md`](../../../docs/PERFORMANCE_BUDGETS.md).  
 **Journeys:** [`docs/CRITICAL_USER_JOURNEYS.md`](../../../docs/CRITICAL_USER_JOURNEYS.md) → app `src/<app>/CUJs.md`.
 
 Optional deep trace audit: user-global skill **`web-perf`** (Chrome DevTools MCP) when configured.

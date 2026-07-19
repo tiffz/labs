@@ -3,6 +3,7 @@
 How we keep micro-apps **snappy under real interaction**, not just fast on first paint.
 
 **Agent workflow:** skill [`labs-performance`](../.cursor/skills/labs-performance/SKILL.md).  
+**Enforced budgets (canonical table):** [`docs/PERFORMANCE_BUDGETS.md`](PERFORMANCE_BUDGETS.md).  
 **Journey context:** [`docs/CRITICAL_USER_JOURNEYS.md`](CRITICAL_USER_JOURNEYS.md) + per-app `CUJs.md`.  
 **UX overlap:** [`docs/UX_AGENT_GUIDE.md`](UX_AGENT_GUIDE.md) — journey hierarchy affects what must stay instant vs what can defer.
 

@@ -4,6 +4,7 @@ import {
   COLLECTIONS_SCROLL_MAX_LONG_TASKS,
   type GestureScrollPerfSample,
 } from '../../src/shared/test/gestureScrollPerfCore';
+import { HARD_FAIL_MULTIPLIER } from '../../src/shared/test/interactionLatencyCore';
 
 const SCROLL_STEPS = 24;
 const SCROLL_DELTA_PX = 180;
@@ -70,15 +71,22 @@ export async function measureGestureCollectionsScrollPerf(
 }
 
 /**
- * Advisory scroll-perf report: warns when over budget but never fails the test.
+ * Two-tier scroll-perf gate.
  *
  * Frame timing during programmatic scroll on headless software-WebGL/CPU is dominated by the CI
- * runner, not the app, so the budget is advisory. The blocking guard is the deterministic
- * `toHaveCount` (grid renders all cards) + blob-error assertions in the spec. A real jank
- * regression still surfaces as a `[scroll-perf]` warning in CI logs.
- * See docs/TEST_STRATEGY.md § Low-ROI test removal (principle 5).
+ * runner, not the app, so the 1x budget is advisory; the blocking guard at that tier is the
+ * deterministic `toHaveCount` (grid renders all cards) + blob-error assertions in the spec.
+ * Beyond `budget * HARD_FAIL_MULTIPLIER` (p95 frame only — max frame and long-task counts are
+ * too runner-dependent) the jank is a genuine regression and the test fails.
+ * See docs/PERFORMANCE_BUDGETS.md and docs/TEST_STRATEGY.md § Low-ROI test removal (principle 5).
  */
 export function reportGestureCollectionsScrollBudget(sample: GestureScrollPerfSample): void {
+  const hardCeilingMs = COLLECTIONS_SCROLL_MAX_FRAME_MS * HARD_FAIL_MULTIPLIER;
+  if (sample.p95FrameMs > hardCeilingMs) {
+    throw new Error(
+      `[scroll-perf] gesture collections: p95 frame ${sample.p95FrameMs.toFixed(1)}ms exceeds hard ceiling ${hardCeilingMs}ms (${HARD_FAIL_MULTIPLIER}x of ${COLLECTIONS_SCROLL_MAX_FRAME_MS}ms budget)`,
+    );
+  }
   const violations: string[] = [];
   if (sample.maxFrameMs > COLLECTIONS_SCROLL_MAX_FRAME_MS) {
     violations.push(`max frame ${sample.maxFrameMs.toFixed(1)}ms > ${COLLECTIONS_SCROLL_MAX_FRAME_MS}ms`);
