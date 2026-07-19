@@ -1,9 +1,8 @@
 @layer shared-base;
 
 /* Tailwind CSS directives */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@config "../../../tailwind.config.cjs";
 
 /* ============================================
    Design System Variables
@@ -176,13 +175,6 @@
     opacity: 0.5;
     cursor: not-allowed;
     box-shadow: none;
-  }
-
-  .custom-button {
-    @apply btn btn-primary;
-  }
-  .custom-button-secondary {
-    @apply btn btn-secondary;
   }
 
   /* ============================================

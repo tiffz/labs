@@ -1424,7 +1424,7 @@ const App: React.FC = () => {
       onClick={onClick}
       className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
         active 
-          ? 'bg-teal-500 text-white shadow-sm' 
+          ? 'bg-teal-500 text-white shadow-xs' 
           : 'bg-white text-stone-600 hover:bg-teal-50 border border-stone-200 hover:border-teal-300 hover:text-teal-600'
       }`}
     >
@@ -1457,7 +1457,7 @@ const App: React.FC = () => {
           <div className="modal-content">
             <h2 className="modal-title">{modalContent.title}</h2>
             <p className="modal-body">{modalContent.message}</p>
-            <button className="custom-button" onClick={() => setModalContent(null)}>
+            <button className="btn btn-primary" onClick={() => setModalContent(null)}>
               Got it
             </button>
           </div>

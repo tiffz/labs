@@ -187,7 +187,7 @@ const PrintSheetCanvas: React.FC<PrintSheetCanvasProps> = memo(({
       <canvas 
         ref={canvasRef} 
         id="printSheetCanvas"
-        className="rounded-lg shadow-sm border border-stone-200"
+        className="rounded-lg shadow-xs border border-stone-200"
         style={{
           width: `${displayWidth}px`,
           height: `${displayHeight}px`,
