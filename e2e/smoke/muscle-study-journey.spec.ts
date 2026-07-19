@@ -66,7 +66,10 @@ test.describe('Muscle Memory study journey', () => {
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Full muscle', { timeout: 15_000 });
   });
 
-  test('full body atlas shows structure card from browser', async ({ page }) => {
+  // @soak: ~47s atlas GLB load, flaky under parallel CI load (see
+  // FLAKY_TEST_REGISTRY). Excluded from PR-CI full smoke; runs nightly
+  // (test:e2e:soak) and in muscle-scoped e2e runs.
+  test('full body atlas shows structure card from browser @soak', async ({ page }) => {
     await page.goto('/muscle/');
     await expectMuscleCanvasReady(page);
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Full muscle', {
