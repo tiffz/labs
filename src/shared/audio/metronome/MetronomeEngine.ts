@@ -160,6 +160,27 @@ export class MetronomeEngine {
     }, 30);
   }
 
+  /**
+   * Full teardown: stop scheduling and close the owned AudioContext so the
+   * engine does not leak a live audio thread after unmount. The engine can be
+   * restarted afterwards — start() recreates a closed context.
+   */
+  dispose(): void {
+    this.stop();
+    this.scheduler.stop();
+    const ctx = this.ctx;
+    this.ctx = null;
+    this.subdivGainNodes.clear();
+    this.voiceMasterGain = null;
+    this.clickMasterGain = null;
+    this.drumMasterGain = null;
+    if (ctx && ctx.state !== 'closed') {
+      void ctx.close().catch(() => {
+        /* already closed */
+      });
+    }
+  }
+
   setTempo(bpm: number): void {
     if (!this.playing || !this.ctx) {
       this.bpm = bpm;

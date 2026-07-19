@@ -17,6 +17,7 @@ import {
 import { resolveSectionPlaybackSettings, type SectionPlaybackOverride } from '../music/resolveSectionPlaybackSettings';
 import { CHART_PLAYBACK_BEATS_PER_MEASURE } from '../music/chordPro/chartPlaybackSequence';
 import { ChordInstrumentSession } from '../music/chordInstrumentSession';
+import { LookAheadAudioScheduler } from '../audio/platform/scheduling/LookAheadAudioScheduler';
 import { ensureAudioContextRunning } from '../playback/audioContextLifecycle';
 import {
   measureStartAudioTimeFromEpoch,
@@ -73,7 +74,7 @@ export function useChartChordPlayback({
     ready: false,
   });
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const transportRef = useRef<LookAheadAudioScheduler | null>(null);
   const stepIndexRef = useRef(0);
   const measureStartPerfRef = useRef(0);
   const animFrameRef = useRef<number | null>(null);
@@ -104,8 +105,7 @@ export function useChartChordPlayback({
 
   const resetTransport = useCallback(() => {
     playbackGenerationRef.current += 1;
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
+    transportRef.current?.stop();
     stepIndexRef.current = 0;
     instrumentSessionRef.current?.stopAll();
     drumPlayerRef.current?.stopAll();
@@ -226,38 +226,63 @@ export function useChartChordPlayback({
       const shouldContinueLoop = () =>
         loopPlaybackRef.current || playingSectionIdRef.current !== null;
 
+      const measureMs = chartPlaybackMeasureDurationMs(tempo);
+      if (!transportRef.current) transportRef.current = new LookAheadAudioScheduler();
+      const transport = transportRef.current;
+      const generation = playbackGenerationRef.current;
+
       const runStep = (idx: number) => {
         const step = activeStepsRef.current[idx];
         if (!step) return;
-        const generation = playbackGenerationRef.current;
-        measureStartPerfRef.current =
-          playbackEpochPerfRef.current + idx * chartPlaybackMeasureDurationMs(tempo);
-        setPlaybackBeatTime(0);
-        onActiveStepChange?.(step);
+        const stepStartPerfMs = playbackEpochPerfRef.current + idx * measureMs;
+        // Audio is scheduled ahead on the audio clock; UI highlight fires at the
+        // actual measure boundary.
+        transport.scheduleCallback(Math.max(0, stepStartPerfMs - performance.now()), () => {
+          if (generation !== playbackGenerationRef.current) return;
+          measureStartPerfRef.current = stepStartPerfMs;
+          setPlaybackBeatTime(0);
+          onActiveStepChange?.(step);
+        });
         void playMeasure(step, idx, generation);
       };
 
-      runStep(0);
-      stepIndexRef.current = 1;
-      timerRef.current = setInterval(() => {
-        const idx = stepIndexRef.current;
-        const currentSteps = activeStepsRef.current;
-        if (idx >= currentSteps.length) {
-          if (shouldContinueLoop()) {
-            instrumentSessionRef.current?.stopAll();
-            drumPlayerRef.current?.stopAll();
-            playbackEpochPerfRef.current = performance.now() + PLAYBACK_SCHEDULE_LEAD_MS;
-            stepIndexRef.current = 0;
-            runStep(0);
-            stepIndexRef.current = 1;
+      // Look-ahead transport: schedule every measure whose start falls inside
+      // the horizon instead of firing per-measure on a drift-prone interval.
+      let boundaryPending = false;
+      transport.start((horizonSec) => {
+        if (generation !== playbackGenerationRef.current) return;
+        const horizonMs = horizonSec * 1000;
+        while (!boundaryPending) {
+          const idx = stepIndexRef.current;
+          const currentSteps = activeStepsRef.current;
+          const boundaryPerfMs = playbackEpochPerfRef.current + idx * measureMs;
+          if (boundaryPerfMs > horizonMs) return;
+          if (idx >= currentSteps.length) {
+            boundaryPending = true;
+            const delayMs = Math.max(0, boundaryPerfMs - performance.now());
+            if (shouldContinueLoop()) {
+              // Cut ring-out and re-anchor the epoch at the wrap moment, then
+              // let subsequent ticks schedule the next pass.
+              transport.scheduleCallback(delayMs, () => {
+                if (generation !== playbackGenerationRef.current) return;
+                instrumentSessionRef.current?.stopAll();
+                drumPlayerRef.current?.stopAll();
+                playbackEpochPerfRef.current = performance.now() + PLAYBACK_SCHEDULE_LEAD_MS;
+                stepIndexRef.current = 0;
+                boundaryPending = false;
+              });
+            } else {
+              transport.scheduleCallback(delayMs, () => {
+                if (generation !== playbackGenerationRef.current) return;
+                stop();
+              });
+            }
             return;
           }
-          stop();
-          return;
+          runStep(idx);
+          stepIndexRef.current = idx + 1;
         }
-        runStep(idx);
-        stepIndexRef.current += 1;
-      }, chartPlaybackMeasureDurationMs(tempo));
+      });
     },
     [instrumentSessionRef, onActiveStepChange, playMeasure, resetTransport, stop, tempo],
   );
@@ -304,8 +329,7 @@ export function useChartChordPlayback({
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = null;
+      transportRef.current?.stop();
       instrumentSessionRef.current?.stopAll();
       drumPlayerRef.current?.stopAll();
       instrumentSessionRef.current?.dispose();

@@ -135,13 +135,14 @@ The script writes all WAV files and a `manifest.json` to `public/count/voice/`. 
 - 3 Takadimi syllables (`di.wav`, `mi.wav`, `ka.wav`) — for the Takadimi sixteenth-note system
 
 **Tuning parameters** (constants at the top of the script):
-| Parameter | Default | Purpose |
-|---|---|---|
-| `SPEECH_RATE` | 250 WPM | TTS speaking speed — higher = shorter, snappier syllables |
-| `HIGH_PASS_FREQ` | 200 Hz | Removes low-frequency rumble from TTS output |
-| `LOUDNORM_I` | -14 LUFS | Target integrated loudness |
-| `SUBDIV_MAX_DURATION_SEC` | 0.15 s | Max duration for subdivision samples (trimmed if longer) |
-| `SILENCE_THRESHOLD_DB` | -40 dB | Threshold for silence trimming |
+
+| Parameter                 | Default  | Purpose                                                   |
+| ------------------------- | -------- | --------------------------------------------------------- |
+| `SPEECH_RATE`             | 250 WPM  | TTS speaking speed — higher = shorter, snappier syllables |
+| `HIGH_PASS_FREQ`          | 200 Hz   | Removes low-frequency rumble from TTS output              |
+| `LOUDNORM_I`              | -14 LUFS | Target integrated loudness                                |
+| `SUBDIV_MAX_DURATION_SEC` | 0.15 s   | Max duration for subdivision samples (trimmed if longer)  |
+| `SILENCE_THRESHOLD_DB`    | -40 dB   | Threshold for silence trimming                            |
 
 After regeneration, refresh the app — voice samples are loaded on demand and not bundled into the JS build.
 
@@ -206,7 +207,6 @@ The rAF look-ahead loop uses a `scheduledUpToSec` watermark to prevent duplicate
 | `MetronomeEngine`     | rAF + AudioContext look-ahead via PreciseScheduler | Count        |
 | `RhythmPlayer`        | rAF + AudioContext look-ahead via PreciseScheduler | Drums, Words |
 | `ScorePlaybackEngine` | rAF + AudioContext look-ahead (own implementation) | Piano        |
-| `MetronomePlayer`     | setTimeout (unused by product apps)                | —            |
 
 ### URL State Format
 

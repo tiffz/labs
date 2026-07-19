@@ -263,5 +263,85 @@ describe('MetronomeEngine', () => {
         expect(diff).toBeCloseTo(expectedInterval, 1);
       }
     });
+
+    it('keeps the onset grid after a mid-playback tempo change', async () => {
+      const config = defaultConfig({
+        bpm: 120,
+        subdivisionLevel: 2,
+        clickGain: 1,
+        voiceGain: 0,
+        drumGain: 0,
+      });
+
+      const startPromise = engine.start(config);
+      await vi.runAllTimersAsync();
+      await startPromise;
+
+      mockCtx._time = 0.06;
+      pumpRAF(2);
+      const sourcesBefore = mockCtx._sources.length;
+
+      // Halve the tempo mid-playback: subdivisions widen from 0.25s to 0.5s.
+      engine.setTempo(60);
+      for (const t of [0.6, 1.1, 1.6]) {
+        mockCtx._time = t;
+        pumpRAF(1);
+      }
+
+      const startsAfterChange = mockCtx._sources
+        .slice(sourcesBefore)
+        .map((s) => (s.start as ReturnType<typeof vi.fn>).mock.calls)
+        .flat()
+        .map((args) => args[0] as number)
+        .filter((t) => t !== undefined)
+        .sort((a, b) => a - b);
+
+      expect(startsAfterChange.length).toBeGreaterThan(1);
+      for (let i = 1; i < startsAfterChange.length; i++) {
+        expect(startsAfterChange[i] - startsAfterChange[i - 1]).toBeCloseTo(0.5, 1);
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Dispose lifecycle
+  // ---------------------------------------------------------------------------
+  describe('dispose', () => {
+    it('closes the owned AudioContext and stops scheduling', async () => {
+      const startPromise = engine.start(defaultConfig());
+      await vi.runAllTimersAsync();
+      await startPromise;
+
+      mockCtx._time = 0.05;
+      pumpRAF(1);
+
+      engine.dispose();
+      expect(mockCtx.close).toHaveBeenCalled();
+
+      const sourcesAfterDispose = mockCtx._sources.length;
+      mockCtx._time = 0.5;
+      pumpRAF(5);
+      expect(mockCtx._sources.length).toBe(sourcesAfterDispose);
+    });
+
+    it('can restart after dispose with a fresh context', async () => {
+      const startPromise = engine.start(defaultConfig());
+      await vi.runAllTimersAsync();
+      await startPromise;
+      engine.dispose();
+
+      mockCtx.state = 'closed';
+      const secondCtx = createMockAudioContext();
+      secondCtx.state = 'running';
+      mockCtx = secondCtx;
+
+      const restart = engine.start(defaultConfig());
+      await vi.runAllTimersAsync();
+      await restart;
+
+      secondCtx._time = 0.05;
+      pumpRAF(2);
+      expect(secondCtx.createBufferSource).toHaveBeenCalled();
+    });
   });
 });

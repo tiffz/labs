@@ -572,38 +572,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-audio-index-ts-metronomecallback",
-    "name": "MetronomeCallback",
-    "path": "src/shared/audio/index.ts",
-    "kind": "model",
-    "stability": "stable",
-    "owner": "playback-core",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "audio",
-      "api"
-    ],
-    "appsUsing": [],
-    "exportType": "type",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-audio-index-ts-metronomeplayer",
-    "name": "MetronomePlayer",
-    "path": "src/shared/audio/index.ts",
-    "kind": "utility",
-    "stability": "stable",
-    "owner": "playback-core",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "audio",
-      "api"
-    ],
-    "appsUsing": [],
-    "exportType": "named",
-    "demoId": null
-  },
-  {
     "id": "src-shared-audio-index-ts-reverbnodes",
     "name": "ReverbNodes",
     "path": "src/shared/audio/index.ts",
@@ -1761,54 +1729,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-audio-metronomeplayer-ts-metronomecallback",
-    "name": "MetronomeCallback",
-    "path": "src/shared/audio/metronomePlayer.ts",
-    "kind": "model",
-    "stability": "stable",
-    "owner": "playback-core",
-    "description": "Callback for when a metronome beat occurs Parameters: measureIndex, positionInSixteenths, isDownbeat (true for first beat of measure)",
-    "tags": [
-      "audio",
-      "api"
-    ],
-    "appsUsing": [],
-    "exportType": "type",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-audio-metronomeplayer-ts-metronomeplayer",
-    "name": "MetronomePlayer",
-    "path": "src/shared/audio/metronomePlayer.ts",
-    "kind": "utility",
-    "stability": "stable",
-    "owner": "playback-core",
-    "description": "Standalone metronome player for playing click tracks Can be synced to an external time source (like audio playback)",
-    "tags": [
-      "audio",
-      "api"
-    ],
-    "appsUsing": [],
-    "exportType": "class",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-audio-metronomeplayer-ts-metronomeresolution",
-    "name": "MetronomeResolution",
-    "path": "src/shared/audio/metronomePlayer.ts",
-    "kind": "model",
-    "stability": "stable",
-    "owner": "playback-core",
-    "description": "Callback for when a metronome beat occurs Parameters: measureIndex, positionInSixteenths, isDownbeat (true for first beat of measure)",
-    "tags": [
-      "audio",
-      "api"
-    ],
-    "appsUsing": [],
-    "exportType": "type",
-    "demoId": null
-  },
-  {
     "id": "src-shared-audio-platform-audiopatternregistry-ts-appaudiopattern",
     "name": "AppAudioPattern",
     "path": "src/shared/audio/platform/audioPatternRegistry.ts",
@@ -1886,6 +1806,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-audiopatternregistry-ts-wall-clock-forbidden-files",
+    "name": "WALL_CLOCK_FORBIDDEN_FILES",
+    "path": "src/shared/audio/platform/audioPatternRegistry.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Files migrated off wall-clock note scheduling. New grid-aligned audio must use the look-ahead scheduler — never setTimeout/setInterval note clocks. Guardrail: audioPatternRegistry.test.ts scans these files for regressions.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
     "demoId": null
   },
   {

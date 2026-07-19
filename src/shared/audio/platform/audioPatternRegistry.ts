@@ -74,7 +74,7 @@ export const AUDIO_PATTERN_REGISTRY: Record<string, AppAudioPattern> = {
     mixBus: 'labs-audio-mix-bus',
   },
   encore: {
-    clock: 'wall-clock-exception',
+    clock: 'transport-interval',
     metronomeScheduler: 'none',
     drumScheduler: 'measure-look-ahead',
     mixBus: 'labs-audio-mix-bus',
@@ -90,4 +90,14 @@ export const AUDIO_PATTERN_REGISTRY: Record<string, AppAudioPattern> = {
 /** Patterns that must not appear in new grid-aligned audio code. */
 export const FORBIDDEN_REACTIVE_PATTERNS = [
   'playClickSampleAt(ctx, sample, ctx.currentTime',
+] as const;
+
+/**
+ * Files migrated off wall-clock note scheduling. New grid-aligned audio must
+ * use the look-ahead scheduler — never setTimeout/setInterval note clocks.
+ * Guardrail: audioPatternRegistry.test.ts scans these files for regressions.
+ */
+export const WALL_CLOCK_FORBIDDEN_FILES = [
+  { file: 'shared/hooks/useChartChordPlayback.ts', patterns: ['setInterval(', 'setTimeout('] },
+  { file: 'midi/store.tsx', patterns: ['setInterval(', 'setTimeout('] },
 ] as const;

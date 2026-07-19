@@ -2,7 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { AUDIO_PATTERN_REGISTRY, FORBIDDEN_REACTIVE_PATTERNS } from './audioPatternRegistry';
+import {
+  AUDIO_PATTERN_REGISTRY,
+  FORBIDDEN_REACTIVE_PATTERNS,
+  WALL_CLOCK_FORBIDDEN_FILES,
+} from './audioPatternRegistry';
 
 describe('audioPatternRegistry', () => {
   it('registers all music apps with playback', () => {
@@ -43,6 +47,21 @@ describe('audioPatternRegistry', () => {
     }
 
     scan(stanzaDir);
+    expect(violations).toEqual([]);
+  });
+
+  it('keeps migrated transports off wall-clock note scheduling (setTimeout/setInterval)', () => {
+    const srcRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+    const violations: string[] = [];
+    for (const { file, patterns } of WALL_CLOCK_FORBIDDEN_FILES) {
+      const full = path.join(srcRoot, file);
+      const text = fs.readFileSync(full, 'utf8');
+      for (const pattern of patterns) {
+        if (text.includes(pattern)) {
+          violations.push(`${file}: ${pattern} — use LookAheadAudioScheduler, not a wall-clock note timer`);
+        }
+      }
+    }
     expect(violations).toEqual([]);
   });
 });

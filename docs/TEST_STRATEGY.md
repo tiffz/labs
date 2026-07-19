@@ -62,9 +62,22 @@ Measure: `npm run presubmit` logs duration; `npm run report:test-duration`.
 3. Review [`FLAKY_TEST_REGISTRY.md`](FLAKY_TEST_REGISTRY.md) — zero open quarantines.
 4. Prune or split tests with low bug-catch rate (document in [`ENGINEERING_HEALTH.md`](ENGINEERING_HEALTH.md)).
 
+## Mandatory feature-test matrix
+
+Certain feature classes have known regression modes; new work in these areas **must** land with the
+named tests (reviewers and agents treat a missing row as a blocking gap):
+
+| Feature class                                                     | Required tests                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Grid-aligned audio** (clicks, patterns, note loops, transports) | Schedule on the platform look-ahead scheduler (`LookAheadAudioScheduler` / `MetronomeEngine`) — **never `setTimeout`/`setInterval` note clocks** (guardrail: `audioPatternRegistry.test.ts`). Add a deterministic onset test asserting exact scheduled times/sample positions (pattern: `audioExport.onsets.test.ts`, `MetronomeEngine.test.ts` timing suite). |
+| **Audio export / render**                                         | Byte-stable render-hash test on a fixed synthetic input (pattern: `audioCodecs.test.ts`).                                                                                                                                                                                                                                                                      |
+| **Drive sync / merge**                                            | Characterization tests: needsReview detection, conflict-choice resolution, tombstone honoring (pattern: `*DriveConflict.test.ts`, `*DriveMerge.test.ts`); guardrail `labsPortfolioDriveHookGuardrails.test.ts` for pull-path anti-patterns.                                                                                                                    |
+| **App-level undo**                                                | Round-trip test: action → snapshot → undo restores prior payload (pattern: existing `*Undo*.test.ts` suites).                                                                                                                                                                                                                                                  |
+
 ## Adding coverage checklist
 
 - [ ] Smallest tier that catches the bug (unit vs smoke)
+- [ ] Feature-test matrix row satisfied (audio / sync / undo — see above)
 - [ ] Scoped e2e map updated if new smoke (`scripts/run-scoped-e2e.mjs`)
 - [ ] CUJ row in app `CUJs.md` if interaction perf matters
 - [ ] No retry-only fix for flakes

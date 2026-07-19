@@ -28,6 +28,21 @@ export class MidiMonitor {
     });
   }
 
+  /**
+   * Schedule a note at an absolute performance.now() timestamp on the audio
+   * clock (look-ahead pattern). Falls back to "now" if the target is past.
+   */
+  scheduleMidiNoteAt(midi: number, velocity: number, targetPerfMs: number, durationSec: number): void {
+    const ctx = this.ensureContext();
+    const audioTime = ctx.currentTime + (targetPerfMs - performance.now()) / 1000;
+    this.synth?.playNote({
+      frequency: midiToFrequency(midi),
+      startTime: Math.max(audioTime, ctx.currentTime),
+      duration: Math.max(0.05, durationSec),
+      velocity: Math.max(0.05, Math.min(1, velocity)),
+    });
+  }
+
   stopMidiNote(): void {
     /* Piano synth uses timed release; no per-note stop needed for monitor. */
   }
