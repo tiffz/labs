@@ -43,7 +43,7 @@ For each approved slice: branch from right base → stage/commit planned files o
 
 PR titles and URLs; anything left on starting branch/working tree. Do not delete backup ref unless user asks.
 
-**Merge order:** merge PRs in dependency order (foundation first); see [`docs/PR_WORKFLOW.md`](../../docs/PR_WORKFLOW.md).
+**Merge order:** merge PRs in dependency order (foundation first); see [`docs/PR_WORKFLOW.md`](../../../docs/PR_WORKFLOW.md).
 
 ## Labs verify
 

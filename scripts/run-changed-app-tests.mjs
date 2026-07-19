@@ -76,7 +76,10 @@ if (shared || apps.size === 0 || apps.size > 3) {
 
 for (const app of apps) {
   console.log(`test:changed-apps: vitest src/${app}`);
-  execSync(`npx vitest run "src/${app}" ${vitestExtraArgs}`.trim(), { stdio: 'inherit' });
+  // --passWithNoTests: non-app src dirs (e.g. src/types) have no Vitest files.
+  execSync(`npx vitest run "src/${app}" --passWithNoTests ${vitestExtraArgs}`.trim(), {
+    stdio: 'inherit',
+  });
 }
 
 console.log('test:changed-apps: ok');

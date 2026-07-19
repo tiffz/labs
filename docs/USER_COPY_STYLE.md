@@ -44,11 +44,40 @@ These are consistent with widely used guidance (clarity, concision, usefulness; 
   - **Before:** `Optional Genius. Edit originals inline or use Full lyrics for big pastes. Sections split on [Verse] / [Chorus] lines or on a blank line between paragraphs. rename any auto-labeled section by clicking its title. Save draft stores rewrites and syncs lyrics to the song.`
   - **After:** `Rewrite each line in your own words. Lyrics optional from Genius.`
 
+## Length caps by surface (acceptance criteria)
+
+Hard caps for review and agent self-checks. Copy exceeding a cap fails review — cut or move
+the extra to a secondary surface (tooltip → doc link, empty state → README).
+
+| Surface                   | Cap                            | Notes                                                                                               |
+| ------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Button / menu item        | **≤3 words**                   | Verb-first (`Save draft`, `Sign in with Google` is the allowed 4-word exception for provider names) |
+| Tooltip / aria-label      | **≤1 sentence**                | No second sentence; if a control needs two, the label is wrong                                      |
+| Chip / tab / toggle label | **≤2 words**                   | Nouns; state lives in the visual, not the words                                                     |
+| Empty state               | **≤1 headline + ≤2 sentences** | Then one primary CTA                                                                                |
+| Error message             | **≤2 sentences**               | Sentence 1: what happened. Sentence 2: what to do                                                   |
+| Dialog title              | **≤6 words**                   | Question or verb phrase                                                                             |
+| Dialog body               | **≤3 sentences**               | Anything longer becomes a doc link                                                                  |
+| Snackbar / toast          | **≤1 sentence**                | Optional single action verb                                                                         |
+| Onboarding / helper block | **≤1 headline + ≤2 sentences** | Per step                                                                                            |
+
 ## Patterns by surface
 
 - **Landings and empty states**: prefer **one headline + one short supporting block + primary CTA** before “read more” or a doc link.
+  - **Before:** `Your library is empty right now. To get started, you can import songs from your Google Drive or add them manually using the button below. Once added, they'll appear here.`
+  - **After:** `No songs yet. Import from Drive or add one to get started.`
 - **Errors**: state what went wrong in plain language, what the user can do next, without blame.
+  - **Before:** `Oops! Something went wrong while attempting to sync your data. Please check your connection and try again later.`
+  - **After:** `Sync failed. Check your connection and retry.`
+- **Buttons**: name the outcome, not the mechanism.
+  - **Before:** `Click here to begin the import process`
+  - **After:** `Import songs`
+- **Tooltips**: one clause of new information; never restate the label.
+  - **Before:** `This button lets you split the current section into two sections at the playhead position.`
+  - **After:** `Split at playhead`
 - **Permissions**: short honest line on the screen; full scope list and caveats in app `README.md`.
+  - **Before:** `We take your privacy seriously. This app requires access to your Google Drive in order to store and retrieve backups of your library data.`
+  - **After:** `Backups are saved to your own Drive. Nothing is shared.`
 
 ## Cross-app product names
 
@@ -61,7 +90,7 @@ These are consistent with widely used guidance (clarity, concision, usefulness; 
 
 ## When you edit copy
 
-1. Read it aloud. If you run out of breath, cut it.
-2. Check for em dashes and long clause chains; rewrite.
+1. Check the **length cap** for the surface (table above) — over cap = rewrite, no exceptions.
+2. Check for em dashes, `Please ` prefixes, and long clause chains; rewrite (`npm run check:ui-copy` enforces the lintable subset).
 3. Ask: “Would I say this out loud to this user in context?” If not, rewrite.
 4. Cross-check the surrounding UI: if a sentence explains a button, link, field, or gesture that is already on screen and labeled, delete the sentence (see **Affordance narration** under Avoid).

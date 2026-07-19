@@ -30,7 +30,7 @@ The batch and review tooling for bringing **OMR-exported MusicXML** into curricu
 
 **Problem.** Full-width mic card + dense controls competed with the staff; device selection belonged behind a deliberate affordance rather than inline.
 
-**Decision.** [`components/MelodiaMicBar.tsx`](./components/MelodiaMicBar.tsx) uses a compact **pill trigger** (“Mic · …” + cue) plus [`AnchoredPopover`](../../shared/components/AnchoredPopover.tsx): device picker, pitch-trace toggle, and retry-after-block live in the popover panel (same UX family as Piano/Scales `InputSourcesMenu`, Melodia-themed).
+**Decision.** [`components/MelodiaMicBar.tsx`](./components/MelodiaMicBar.tsx) uses a compact **pill trigger** (“Mic · …” + cue) plus [`AnchoredPopover`](../shared/components/AnchoredPopover.tsx): device picker, pitch-trace toggle, and retry-after-block live in the popover panel (same UX family as Piano/Scales `InputSourcesMenu`, Melodia-themed).
 
 ---
 

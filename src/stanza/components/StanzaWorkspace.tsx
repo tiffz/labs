@@ -17,13 +17,15 @@
  *
  * Anything visually independent that can move out cleanly already has (e.g.
  * `StanzaLibraryGrid`, `StanzaTimeline`, `StanzaSectionMetronomeRail`,
- * `StanzaMetronomeStrip`, `StanzaPracticeMixSection`, shared `PlaybackSpeedControl`).
- * Further splits follow `docs/COMPONENT_DECOMPOSITION_PATTERN.md` — helpers and
- * practice-rail leaves live under `components/stanzaWorkspace/`.
+ * `StanzaMetronomeStrip`, `StanzaPracticeMixSection`, `StanzaLandingHero`,
+ * `StanzaViewerHeaderBar`, `StanzaLibraryFooterPanel`, `StanzaLocalMainMedia`,
+ * `StanzaWorkspaceDialogs`). Further splits follow
+ * `docs/COMPONENT_DECOMPOSITION_PATTERN.md` — helpers and leaves live under
+ * `components/stanzaWorkspace/`. Remaining bulk is transport/mix/deep-link logic;
+ * next tranche extracts self-contained hooks (drive deep-link, transpose pipeline).
  */
 
 import {
-  Fragment,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -33,18 +35,10 @@ import {
 } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -64,7 +58,7 @@ import {
   isStanzaBlobLikeVideo,
   stanzaSongTitleFromFileName,
 } from '../db/stanzaLocalAudioImport';
-import { computeStanzaLocalMediaFingerprint, stanzaFingerprintDurationSec } from '../utils/stanzaLocalMediaFingerprint';
+import { stanzaFingerprintDurationSec } from '../utils/stanzaLocalMediaFingerprint';
 import { getStanzaLocalMainMediaElement } from '../utils/stanzaLocalMainMediaElement';
 import { runStanzaLibraryDedupeMigrationOnce } from '../db/stanzaConsolidateLocalLibrary';
 import { useStanzaFileDrop } from '../hooks/useStanzaFileDrop';
@@ -123,11 +117,6 @@ import {
 } from '../utils/probeFileAudioDuration';
 import { backfillStanzaVideoThumbnailIfNeeded } from '../utils/stanzaVideoThumbnail';
 import { fetchYoutubeOEmbedTitle } from '../utils/stanzaYoutubeMeta';
-import { loadDriveFileAsStanzaLocalBlob } from '../drive/loadDriveSourceForStanza';
-import {
-  hydrateStanzaDriveSongMedia,
-  stanzaDriveSongNeedsMediaDownload,
-} from '../drive/stanzaDriveMediaHydration';
 import {
   addStanzaDriveTombstone,
   clearStanzaDriveTombstone,
@@ -139,22 +128,17 @@ import {
 } from '../import/beatLibraryImport';
 import {
   pushStanzaPlaybackUrlSearchParams,
-  readStanzaDriveBootstrapFromLocation,
   replaceStanzaPlaybackUrlSearchParams,
   STANZA_DRIVE_FILE_QUERY,
 } from '../utils/stanzaDriveUrlParams';
 import { stripStanzaYoutubeSearchParamPreservingDrive } from '../utils/stanzaUrlYoutube';
 import StanzaYouTubePlayer, { type StanzaYouTubeController } from './StanzaYouTubePlayer';
 import { StanzaViewerErrorBoundary } from './StanzaViewerErrorBoundary';
-import StanzaAccountMenu from './StanzaAccountMenu';
-import StanzaAudioDownloadButton from './StanzaAudioDownloadButton';
 import StanzaTimeline from './StanzaTimeline';
 import StanzaMetronomeStrip from './StanzaMetronomeStrip';
 import StanzaSectionMetronomeRail from './StanzaSectionMetronomeRail';
 import StanzaScopeInheritanceControl from './stanzaWorkspace/StanzaScopeInheritanceControl';
 import StanzaRailInheritanceHint from './stanzaWorkspace/StanzaRailInheritanceHint';
-import StanzaRepeatMark from './StanzaRepeatMark';
-import StanzaSongTitleEditor from './StanzaSongTitleEditor';
 import { StanzaViewerLayout } from './StanzaViewerLayout';
 import { primeStanzaMetronomeAudio, useStanzaMetronomeSync } from '../hooks/useStanzaMetronomeSync';
 import { useMetronomePreferences } from '../../shared/audio/platform/metronome';
@@ -184,7 +168,7 @@ import { mergeStanzaPlaybackSnapshot } from '../utils/stanzaPlaybackStateMerge';
 import { labsPlaybackSafeCall } from '../../shared/utils/labsPlaybackSafeCall';
 import { applyStanzaYoutubeControllerMix } from '../utils/stanzaYoutubeMixVolume';
 import { useBeatLibraryMigration } from '../hooks/useBeatLibraryMigration';
-import { useStanzaPlaybackBootstrap } from '../hooks/useStanzaPlaybackBootstrap';
+import { useStanzaDriveDeepLink } from '../hooks/useStanzaDriveDeepLink';
 import StanzaSuggestSectionsDialog from './StanzaSuggestSectionsDialog';
 import {
   resolveStanzaPracticeSource,
@@ -192,12 +176,19 @@ import {
   type StanzaPracticeSource,
 } from '../utils/stanzaPracticeSource';
 import { stanzaSongAfterRemovingUploadedPracticeAudio } from '../utils/stanzaRemoveUploadedPracticeAudio';
-import { StanzaPracticeSourceSwitch } from './StanzaPracticeSourceSwitch';
 import StanzaYoutubeLocalFeaturesNotice from './StanzaYoutubeLocalFeaturesNotice';
 import StanzaDriveDeepLinkAlerts from './stanzaWorkspace/StanzaDriveDeepLinkAlerts';
-import StanzaLibraryGrid from './stanzaWorkspace/StanzaLibraryGrid';
+import StanzaFileDropOverlay from './stanzaWorkspace/StanzaFileDropOverlay';
+import StanzaHiddenStemAudios from './stanzaWorkspace/StanzaHiddenStemAudios';
+import StanzaLandingHero from './stanzaWorkspace/StanzaLandingHero';
+import StanzaLibraryFooterPanel from './stanzaWorkspace/StanzaLibraryFooterPanel';
+import StanzaLocalMainMedia from './stanzaWorkspace/StanzaLocalMainMedia';
 import StanzaPracticeMixSection from './stanzaWorkspace/StanzaPracticeMixSection';
 import StanzaPracticePitchSection from './stanzaWorkspace/StanzaPracticePitchSection';
+import StanzaViewerHeaderBar from './stanzaWorkspace/StanzaViewerHeaderBar';
+import StanzaWorkspaceDialogs, {
+  type StanzaStemDropConfirm,
+} from './stanzaWorkspace/StanzaWorkspaceDialogs';
 import {
   STANZA_DRUMS_DEFAULT_BPM,
   STANZA_DRUMS_DEFAULT_PATTERN,
@@ -248,7 +239,6 @@ export default function StanzaWorkspace() {
   const [mainMediaRemountKey, setMainMediaRemountKey] = useState(0);
   const stemAudioRefs = useRef(new Map<string, HTMLAudioElement>());
   const stemFileInputRef = useRef<HTMLInputElement | null>(null);
-  const libraryUploadInputRef = useRef<HTMLInputElement | null>(null);
   const timeRef = useRef(0);
   const durationRef = useRef(0);
   const playingRef = useRef(false);
@@ -281,14 +271,7 @@ export default function StanzaWorkspace() {
   const transposeDraftRef = useRef(0);
   transposeDraftRef.current = transposeDraftSemitones;
   const [removeConfirmSong, setRemoveConfirmSong] = useState<StanzaSong | null>(null);
-  /** Pending OS drop: length matched current track. user must confirm stem import. */
-  const [stemDropConfirm, setStemDropConfirm] = useState<{
-    songId: string;
-    files: File[];
-    rows: { name: string; durationSec: number }[];
-    refSec: number;
-    hasYoutube: boolean;
-  } | null>(null);
+  const [stemDropConfirm, setStemDropConfirm] = useState<StanzaStemDropConfirm | null>(null);
   /** Inline mix-rail label edit (stem id + draft value). */
   const [stemInlineEdit, setStemInlineEdit] = useState<{ stemId: string; value: string } | null>(null);
   const viewerMainColumnRef = useRef<HTMLDivElement>(null);
@@ -305,24 +288,7 @@ export default function StanzaWorkspace() {
   const [libraryMenu, setLibraryMenu] = useState<{ anchor: HTMLElement; songId: string } | null>(null);
   const [suggestSectionsOpen, setSuggestSectionsOpen] = useState(false);
   const oembedAttemptedRef = useRef(new Set<string>());
-  const [driveDeepLinkError, setDriveDeepLinkError] = useState<string | null>(null);
   const [localUploadError, setLocalUploadError] = useState<string | null>(null);
-  const [fingerprintDeepLinkError, setFingerprintDeepLinkError] = useState<string | null>(null);
-  const [driveDeepLinkNeedsGesture, setDriveDeepLinkNeedsGesture] = useState<{
-    fileId: string;
-    title: string | null;
-  } | null>(null);
-  /**
-   * Set when the URL's `?df=<file id>` is one the user previously removed from this device's
-   * library (a Drive deletion tombstone — see ADR 0006). Renders a "Re-add to library?" prompt
-   * instead of silently re-importing the row; dismissing strips the URL params; re-adding
-   * clears the tombstone and runs the normal import.
-   */
-  const [driveDeepLinkRemovedPrompt, setDriveDeepLinkRemovedPrompt] = useState<{
-    fileId: string;
-    title: string | null;
-  } | null>(null);
-  const [driveDeepLinkBusy, setDriveDeepLinkBusy] = useState(false);
   const [youtubePlayerErrorCode, setYoutubePlayerErrorCode] = useState<number | null>(null);
   const lastPlaybackUrlSyncKey = useRef<string | undefined>(undefined);
 
@@ -497,151 +463,27 @@ export default function StanzaWorkspace() {
     return rowId;
   }, [isReplayingRef, pushUndo]);
 
-  const commitDriveDeepLinkImport = useCallback(
-    async (opts: { fileId: string; suggestedTitle: string | null; interactiveOAuth: boolean }) => {
-      const existingByLink = await stanzaDb.songs.where('driveSourceFileId').equals(opts.fileId).first();
-      if (existingByLink) {
-        clearStanzaDriveTombstone(opts.fileId);
-        const row = stanzaDriveSongNeedsMediaDownload(existingByLink)
-          ? await hydrateStanzaDriveSongMedia({
-              row: existingByLink,
-              suggestedTitle: opts.suggestedTitle,
-              interactiveOAuth: opts.interactiveOAuth,
-            })
-          : existingByLink;
-        setSelectedId(row.id);
-        setDriveDeepLinkError(null);
-        setDriveDeepLinkNeedsGesture(null);
-        void backfillStanzaVideoThumbnailIfNeeded(row.id);
-        return;
-      }
-      const { blob, title, driveSourceFileId } = await loadDriveFileAsStanzaLocalBlob(opts);
-      const existing = await stanzaDb.songs.where('driveSourceFileId').equals(driveSourceFileId).first();
-      if (existing) {
-        clearStanzaDriveTombstone(driveSourceFileId);
-        const row = stanzaDriveSongNeedsMediaDownload(existing)
-          ? await hydrateStanzaDriveSongMedia({
-              row: existing,
-              suggestedTitle: opts.suggestedTitle,
-              interactiveOAuth: opts.interactiveOAuth,
-            })
-          : existing;
-        setSelectedId(row.id);
-        setDriveDeepLinkError(null);
-        setDriveDeepLinkNeedsGesture(null);
-        void backfillStanzaVideoThumbnailIfNeeded(row.id);
-        return;
-      }
-      const rowId = crypto.randomUUID();
-      const row: StanzaSong = {
-        id: rowId,
-        ytId: null,
-        title,
-        markers: [],
-        stats: {},
-        updatedAt: Date.now(),
-        localAudioBlob: blob,
-        driveSourceFileId,
-        localMediaFingerprint: computeStanzaLocalMediaFingerprint({
-          sizeBytes: blob.size,
-          fileName: title,
-        }),
-      };
-      await stanzaDb.songs.put(row);
-      setSelectedId(rowId);
-      setDriveDeepLinkError(null);
-      setDriveDeepLinkNeedsGesture(null);
-      // Successful import overrides any prior tombstone for this Drive file id.
-      clearStanzaDriveTombstone(driveSourceFileId);
-      void backfillStanzaVideoThumbnailIfNeeded(rowId);
-    },
-    [],
-  );
-
-  const completeGestureDriveImport = useCallback(async () => {
-    const pending = driveDeepLinkNeedsGesture;
-    const fromUrl = readStanzaDriveBootstrapFromLocation();
-    const selectedRow = selectedRef.current;
-    const fileId =
-      pending?.fileId ??
-      fromUrl.driveFileId ??
-      (selectedRow && stanzaDriveSongNeedsMediaDownload(selectedRow)
-        ? selectedRow.driveSourceFileId?.trim() ?? null
-        : null);
-    const suggestedTitle =
-      pending?.title ?? fromUrl.driveTitle ?? (selectedRow?.driveSourceFileId ? selectedRow.title : null);
-    if (!fileId) return;
-    setDriveDeepLinkBusy(true);
-    setDriveDeepLinkError(null);
-    try {
-      await commitDriveDeepLinkImport({
-        fileId,
-        suggestedTitle,
-        interactiveOAuth: true,
-      });
-    } catch (e) {
-      setDriveDeepLinkError(e instanceof Error ? e.message : String(e));
-      setDriveDeepLinkNeedsGesture(null);
-    } finally {
-      setDriveDeepLinkBusy(false);
-    }
-  }, [driveDeepLinkNeedsGesture, commitDriveDeepLinkImport]);
-
-  useStanzaPlaybackBootstrap({
+  const {
+    driveDeepLinkError,
+    setDriveDeepLinkError,
+    fingerprintDeepLinkError,
+    setFingerprintDeepLinkError,
+    driveDeepLinkNeedsGesture,
+    driveDeepLinkRemovedPrompt,
+    driveDeepLinkBusy,
+    completeGestureDriveImport,
+    completeDriveDeepLinkReAdd,
+    dismissDriveDeepLinkRemovedPrompt,
+  } = useStanzaDriveDeepLink({
     songs,
     selected,
     selectedId,
     selectedIdRef,
+    selectedRef,
     setSelectedId,
     setViewerShellPending,
     ensureYoutubeSongByVideoId,
-    commitDriveDeepLinkImport,
-    setDriveDeepLinkBusy,
-    setDriveDeepLinkError,
-    setFingerprintDeepLinkError,
-    setDriveDeepLinkNeedsGesture,
-    setDriveDeepLinkRemovedPrompt,
-    fingerprintDeepLinkError,
-    driveDeepLinkError,
   });
-
-  const completeDriveDeepLinkReAdd = useCallback(async () => {
-    const pending = driveDeepLinkRemovedPrompt;
-    if (!pending) return;
-    clearStanzaDriveTombstone(pending.fileId);
-    setDriveDeepLinkRemovedPrompt(null);
-    setDriveDeepLinkBusy(true);
-    try {
-      await commitDriveDeepLinkImport({
-        fileId: pending.fileId,
-        suggestedTitle: pending.title,
-        interactiveOAuth: true,
-      });
-    } catch (e) {
-      setDriveDeepLinkError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setDriveDeepLinkBusy(false);
-    }
-  }, [driveDeepLinkRemovedPrompt, commitDriveDeepLinkImport]);
-
-  /**
-   * Bootstrap-prompt dismiss: the user decided not to re-add. Strip the `?df=` deep-link params
-   * so a subsequent refresh doesn't prompt again, and clear the prompt state.
-   */
-  const dismissDriveDeepLinkRemovedPrompt = useCallback(() => {
-    setDriveDeepLinkRemovedPrompt(null);
-    if (typeof window !== 'undefined') {
-      const sp = new URLSearchParams(window.location.search);
-      if (sp.get(STANZA_DRIVE_FILE_QUERY)) {
-        replaceStanzaPlaybackUrlSearchParams({
-          youtubeId: null,
-          driveFileId: null,
-          driveTitle: null,
-          mediaFingerprint: null,
-        });
-      }
-    }
-  }, []);
 
   /**
    * One-shot library dedupe migration. Before auto-sync was added, pasting the same YouTube
@@ -2604,49 +2446,7 @@ export default function StanzaWorkspace() {
         bgcolor: 'transparent',
       }}
     >
-      {/* Window-level drop overlay. Shown only while the user is dragging files into the page;
-          `pointer-events: none` lets the drop event continue through to the window listener in
-          `useStanzaFileDrop`. Decorative (`aria-hidden`). drag-and-drop is mouse-only UX and
-          the keyboard upload buttons remain available below. */}
-      {isFileDragging ? (
-        <Box
-          aria-hidden
-          sx={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 2000,
-            pointerEvents: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            bgcolor: 'rgba(168, 85, 247, 0.12)',
-            backdropFilter: 'blur(4px)',
-            transition: 'opacity 80ms ease-out',
-          }}
-        >
-          <Box
-            sx={{
-              border: '2px dashed rgba(168, 85, 247, 0.6)',
-              borderRadius: 3,
-              px: 4,
-              py: 3,
-              bgcolor: 'rgba(255, 255, 255, 0.92)',
-              boxShadow: '0 18px 48px rgba(76, 29, 149, 0.18)',
-              maxWidth: 420,
-              textAlign: 'center',
-            }}
-          >
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#4c1d95', mb: 0.5 }}>
-              {selected ? 'Drop to add audio or video' : 'Drop to load audio or video'}
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#5b21b6', lineHeight: 1.5 }}>
-              {selected
-                ? "Files that match this track's length attach as mix layers. Otherwise Stanza adds a new library song from the first file."
-                : 'Stanza saves to your local library and opens the piece. With a song open, matching-length files become mix layers.'}
-            </Typography>
-          </Box>
-        </Box>
-      ) : null}
+      {isFileDragging ? <StanzaFileDropOverlay viewerOpen={Boolean(selected)} /> : null}
       {viewerShellPending && !selected ? (
         <Box
           sx={{
@@ -2662,114 +2462,19 @@ export default function StanzaWorkspace() {
         </Box>
       ) : null}
       {showLandingHero && (
-        <>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', px: { xs: 1.5, sm: 2 }, pt: { xs: 1, sm: 1.25 } }}>
-            <StanzaAccountMenu />
-          </Box>
-          <Box sx={{ px: { xs: 1.5, sm: 2 } }}>{driveDeepLinkAlerts}</Box>
-          <Box className="stanza-hero">
-            <Box className="stanza-hero-inner">
-              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                <StanzaRepeatMark size={80} />
-              </Box>
-              <Typography
-                variant="h3"
-                component="h1"
-                className="stanza-hero-title"
-                sx={{ mb: 1, fontSize: { xs: '2.35rem', sm: '2.75rem' } }}
-              >
-                Stanza
-              </Typography>
-              <Typography
-                variant="h6"
-                component="p"
-                className="stanza-hero-lede"
-                sx={{ mb: 3, maxWidth: '36ch', mx: 'auto' }}
-              >
-                Practice songs in sections. Loop, mark beats, and mix layers on uploaded audio or video.
-              </Typography>
-              <TextField
-                className="stanza-hero-url"
-                fullWidth
-                label="Paste a YouTube link or video ID"
-                value={ytPaste}
-                onChange={(e) => setYtPaste(e.target.value)}
-                placeholder="https://www.youtube.com/watch?v=…"
-                autoComplete="url"
-                inputProps={{ enterKeyHint: 'go' }}
-                onKeyDown={(e) => {
-                  if (e.key !== 'Enter') return;
-                  e.preventDefault();
-                  if (canResolveYoutubePaste(ytPaste)) void addYoutubeSong();
-                }}
-              />
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={1.5}
-                sx={{ mt: 2.5, justifyContent: 'center', alignItems: 'stretch' }}
-              >
-                <Button
-                  variant="contained"
-                  size="large"
-                  className="stanza-btn-pill"
-                  onClick={() => void addYoutubeSong()}
-                  disabled={!canResolveYoutubePaste(ytPaste)}
-                  sx={{ minHeight: 52, px: 3 }}
-                >
-                  Load video
-                </Button>
-                <Button
-                  component="label"
-                  variant="outlined"
-                  size="large"
-                  className="stanza-btn-soft-outline"
-                  sx={{ minHeight: 52, px: 3 }}
-                >
-                  Upload file
-                  <input
-                    hidden
-                    type="file"
-                    accept="audio/*,video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) void addLocalSong(f);
-                      e.target.value = '';
-                    }}
-                  />
-                </Button>
-              </Stack>
-              {/* Discovery hint for the window-level drop zone. Kept understated. power users
-                  will notice once they try; it's not blocking the keyboard / button paths. */}
-              <Typography
-                variant="caption"
-                sx={{
-                  display: 'block',
-                  textAlign: 'center',
-                  mt: 1.5,
-                  color: 'rgba(76, 29, 149, 0.55)',
-                  fontWeight: 500,
-                  letterSpacing: '0.01em',
-                }}
-              >
-                or drop an audio or video file anywhere on the page
-              </Typography>
-            </Box>
-          </Box>
-          {(songs?.length ?? 0) > 0 && (
-            <Paper className="stanza-panel" elevation={0} sx={{ maxWidth: '56rem', mx: 'auto', mt: 1, mb: 3, px: 2, py: 2 }}>
-              <Typography variant="subtitle2" className="stanza-whisper-title" sx={{ mb: 1.5 }}>
-                Your library
-              </Typography>
-              <StanzaLibraryGrid
-                variant="landing"
-                songs={sortedLibrarySongs}
-                selectedId={selectedId}
-                onNavigateToSong={navigateToSong}
-                onOpenLibraryMenu={(anchor, songId) => setLibraryMenu({ anchor, songId })}
-              />
-            </Paper>
-          )}
-        </>
+        <StanzaLandingHero
+          alerts={driveDeepLinkAlerts}
+          ytPaste={ytPaste}
+          onYtPasteChange={setYtPaste}
+          canLoadYoutube={canResolveYoutubePaste(ytPaste)}
+          onLoadYoutube={() => void addYoutubeSong()}
+          onUploadFile={(f) => void addLocalSong(f)}
+          librarySongs={sortedLibrarySongs}
+          libraryCount={songs?.length ?? 0}
+          selectedId={selectedId}
+          onNavigateToSong={navigateToSong}
+          onOpenLibraryMenu={(anchor, songId) => setLibraryMenu({ anchor, songId })}
+        />
       )}
 
       {selected && (
@@ -2777,142 +2482,34 @@ export default function StanzaWorkspace() {
         <StanzaViewerLayout
           alerts={driveDeepLinkAlerts}
           header={
-          <Box
-            className="stanza-viewer-header"
-            sx={{
-              pt: { xs: 1.25, sm: 1.5 },
-              pb: 1,
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 2,
-              flexWrap: 'wrap',
-              flexShrink: 0,
-            }}
-          >
-            <StanzaRepeatMark size={40} />
-            <Box sx={{ flex: '1 1 200px', minWidth: 0 }}>
-              <StanzaSongTitleEditor title={selected.title} onCommit={(t) => void commitSongTitle(t)} />
-              <button type="button" className="stanza-link-quiet stanza-viewer-back-link" onClick={goHome} aria-label="Back to library">
-                ← Back to library
-              </button>
-              {hasDualPracticeSources && practiceSource ? (
-                <StanzaPracticeSourceSwitch
-                  active={practiceSource}
-                  localLabel="Uploaded file"
-                  onChange={(source) => void setPracticeSource(source)}
-                  onRemoveUpload={() => void removeUploadedPracticeAudio()}
-                />
-              ) : null}
-            </Box>
-            <Box
-              sx={{
-                flexShrink: 0,
-                ml: 'auto',
-                alignSelf: 'flex-start',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.5,
-              }}
-            >
-              {selected.localAudioBlob && practiceSource === 'local' ? (
-                <StanzaAudioDownloadButton
-                  song={selected}
-                  playbackRate={playback.playbackRate}
-                  transposeSemitones={transposeDraftSemitones}
-                  durationSec={playback.duration > 0 ? playback.duration : undefined}
-                  primaryGain={playbackPrimaryGain}
-                  stems={playbackStems}
-                />
-              ) : null}
-              <StanzaAccountMenu />
-            </Box>
-          </Box>
+          <StanzaViewerHeaderBar
+            song={selected}
+            practiceSource={practiceSource}
+            hasDualPracticeSources={hasDualPracticeSources}
+            playbackRate={playback.playbackRate}
+            transposeSemitones={transposeDraftSemitones}
+            durationSec={playback.duration > 0 ? playback.duration : undefined}
+            primaryGain={playbackPrimaryGain}
+            stems={playbackStems}
+            onCommitTitle={(t) => void commitSongTitle(t)}
+            onBack={goHome}
+            onChangePracticeSource={(source) => void setPracticeSource(source)}
+            onRemoveUpload={() => void removeUploadedPracticeAudio()}
+          />
           }
           footer={
-          <Box
-            component="section"
-            className="stanza-library-panel"
-            aria-labelledby="stanza-library-heading"
-          >
-            <Typography id="stanza-library-heading" variant="subtitle2" className="stanza-whisper-title stanza-library-panel-heading">
-              Your library
-              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
-                ({songs?.length ?? 0})
-              </Typography>
-            </Typography>
-            <Box className="stanza-library-panel-body">
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ display: 'block', mb: 1.5, fontSize: '0.8125rem', lineHeight: 1.5, maxWidth: '48rem' }}
-              >
-                Paste a YouTube link or upload a file. You can also open a video with{' '}
-                <code>?v=</code> and the id in the URL bar.
-              </Typography>
-              <Stack spacing={1.25} sx={{ mb: 1.5 }}>
-                <TextField
-                  size="small"
-                  fullWidth
-                  label="YouTube URL or id"
-                  value={ytPaste}
-                  onChange={(e) => setYtPaste(e.target.value)}
-                  placeholder="https://youtube.com/watch?v=…"
-                  onKeyDown={(e) => {
-                    if (e.key !== 'Enter') return;
-                    e.preventDefault();
-                    if (canResolveYoutubePaste(ytPaste)) void addYoutubeSong();
-                  }}
-                />
-                <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center" useFlexGap>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    className="stanza-btn-pill"
-                    onClick={() => void addYoutubeSong()}
-                    disabled={!canResolveYoutubePaste(ytPaste)}
-                    sx={{ flexShrink: 0, minHeight: 36 }}
-                  >
-                    Add
-                  </Button>
-                  <input
-                    ref={libraryUploadInputRef}
-                    hidden
-                    type="file"
-                    accept="audio/*,video/mp4,video/webm,video/quicktime,.mp4,.mov,.webm"
-                    tabIndex={-1}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) void addLocalSong(f);
-                      e.target.value = '';
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outlined"
-                    size="small"
-                    className="stanza-btn-soft-outline"
-                    aria-label="Upload audio or video file to your library"
-                    onClick={() => libraryUploadInputRef.current?.click()}
-                    sx={{
-                      flexShrink: 0,
-                      whiteSpace: 'nowrap',
-                      minHeight: 36,
-                      px: 2,
-                    }}
-                  >
-                    Upload file
-                  </Button>
-                </Stack>
-              </Stack>
-              <StanzaLibraryGrid
-                variant="footer"
-                songs={sortedLibrarySongs}
-                selectedId={selectedId}
-                onNavigateToSong={navigateToSong}
-                onOpenLibraryMenu={(anchor, songId) => setLibraryMenu({ anchor, songId })}
-              />
-            </Box>
-          </Box>
+          <StanzaLibraryFooterPanel
+            ytPaste={ytPaste}
+            onYtPasteChange={setYtPaste}
+            canAddYoutube={canResolveYoutubePaste(ytPaste)}
+            onAddYoutube={() => void addYoutubeSong()}
+            onUploadFile={(f) => void addLocalSong(f)}
+            librarySongs={sortedLibrarySongs}
+            libraryCount={songs?.length ?? 0}
+            selectedId={selectedId}
+            onNavigateToSong={navigateToSong}
+            onOpenLibraryMenu={(anchor, songId) => setLibraryMenu({ anchor, songId })}
+          />
           }
         >
               <Box ref={viewerMainColumnRef} className="stanza-viewer-main-column">
@@ -2974,180 +2571,39 @@ export default function StanzaWorkspace() {
                       />
                     )}
                     {showLocalPlayer && localUrl && (
-                      <>
-                        {isLocalVideo ? (
-                          /* eslint-disable-next-line jsx-a11y/media-has-caption -- user recording; no captions */
-                          <video
-                            key={`${selected.id}:${mainMediaRemountKey}`}
-                            ref={localVideoRef}
-                            className="stanza-local-video"
-                            src={localUrl}
-                            playsInline
-                            aria-label="Local video track. Click to play or pause."
-                            onClick={() => {
-                              const v = localVideoRef.current;
-                              if (!v) return;
-                              if (v.paused) playUnified();
-                              else pauseUnified();
-                            }}
-                            onTimeUpdate={() => {
-                              const el = localVideoRef.current;
-                              if (!el) return;
-                              const fd = readBestKnownMediaDurationSec(el);
-                              setPlayback((p) =>
-                                mergeStanzaPlaybackSnapshot(p, {
-                                  currentTime: el.currentTime,
-                                  duration: resolveStickyTransportDurationSec({
-                                    previousDurationSec: p.duration,
-                                    elementDurationSec: fd,
-                                    knownHorizonSec: knownHorizonSecRef.current,
-                                  }),
-                                  isPlaying: !el.paused,
-                                  playbackRate: el.playbackRate,
-                                }),
-                              );
-                            }}
-                            onLoadedMetadata={() => {
-                              const el = localVideoRef.current;
-                              if (!el) return;
-                              const fd = readBestKnownMediaDurationSec(el);
-                              setPlayback((p) => ({
-                                ...p,
-                                duration: resolveStickyTransportDurationSec({
-                                  previousDurationSec: p.duration,
-                                  elementDurationSec: fd,
-                                  knownHorizonSec: knownHorizonSecRef.current,
-                                }),
-                                playbackRate: el.playbackRate,
-                              }));
-                            }}
-                            onDurationChange={() => {
-                              const el = localVideoRef.current;
-                              if (!el) return;
-                              const fd = readBestKnownMediaDurationSec(el);
-                              if (fd == null) return;
-                              setPlayback((p) => {
-                                const next = resolveStickyTransportDurationSec({
-                                  previousDurationSec: p.duration,
-                                  elementDurationSec: fd,
-                                  knownHorizonSec: knownHorizonSecRef.current,
-                                });
-                                return p.duration === next ? p : { ...p, duration: next };
-                              });
-                            }}
-                            onPlay={() => {
-                              snapStemsToMainAndPlay();
-                              scheduleAlignStemAudiosToMain();
-                              syncTransposeMirrorFromMain();
-                              setPlayback((p) => ({ ...p, isPlaying: true }));
-                            }}
-                            onPause={() => {
-                              transposeMirrorRef.current?.stop();
-                              transposeStemBusRef.current?.stop();
-                              pauseStemAudios();
-                              setPlayback((p) => ({ ...p, isPlaying: false }));
-                            }}
-                            onEnded={() => {
-                              transposeMirrorRef.current?.stop();
-                              transposeStemBusRef.current?.stop();
-                              handleLocalMediaEnded();
-                            }}
-                          />
-                        ) : (
-                          /* eslint-disable-next-line jsx-a11y/media-has-caption -- user-supplied audio; no captions */
-                          <audio
-                            key={`${selected.id}:${mainMediaRemountKey}`}
-                            ref={localAudioRef}
-                            className="stanza-local-audio"
-                            src={localUrl}
-                            style={{ width: '100%', marginTop: 8, borderRadius: 8 }}
-                            aria-label="Local audio track"
-                            onTimeUpdate={() => {
-                              const el = localAudioRef.current;
-                              if (!el) return;
-                              const fd = readBestKnownMediaDurationSec(el);
-                              setPlayback((p) =>
-                                mergeStanzaPlaybackSnapshot(p, {
-                                  currentTime: el.currentTime,
-                                  duration: resolveStickyTransportDurationSec({
-                                    previousDurationSec: p.duration,
-                                    elementDurationSec: fd,
-                                    knownHorizonSec: knownHorizonSecRef.current,
-                                  }),
-                                  isPlaying: !el.paused,
-                                  playbackRate: el.playbackRate,
-                                }),
-                              );
-                            }}
-                            onLoadedMetadata={() => {
-                              const el = localAudioRef.current;
-                              if (!el) return;
-                              const fd = readBestKnownMediaDurationSec(el);
-                              setPlayback((p) => ({
-                                ...p,
-                                duration: resolveStickyTransportDurationSec({
-                                  previousDurationSec: p.duration,
-                                  elementDurationSec: fd,
-                                  knownHorizonSec: knownHorizonSecRef.current,
-                                }),
-                                playbackRate: el.playbackRate,
-                              }));
-                            }}
-                            onDurationChange={() => {
-                              const el = localAudioRef.current;
-                              if (!el) return;
-                              const fd = readBestKnownMediaDurationSec(el);
-                              if (fd == null) return;
-                              setPlayback((p) => {
-                                const next = resolveStickyTransportDurationSec({
-                                  previousDurationSec: p.duration,
-                                  elementDurationSec: fd,
-                                  knownHorizonSec: knownHorizonSecRef.current,
-                                });
-                                return p.duration === next ? p : { ...p, duration: next };
-                              });
-                            }}
-                            onPlay={() => {
-                              snapStemsToMainAndPlay();
-                              scheduleAlignStemAudiosToMain();
-                              syncTransposeMirrorFromMain();
-                              setPlayback((p) => ({ ...p, isPlaying: true }));
-                            }}
-                            onPause={() => {
-                              transposeMirrorRef.current?.stop();
-                              transposeStemBusRef.current?.stop();
-                              pauseStemAudios();
-                              setPlayback((p) => ({ ...p, isPlaying: false }));
-                            }}
-                            onEnded={() => {
-                              transposeMirrorRef.current?.stop();
-                              transposeStemBusRef.current?.stop();
-                              handleLocalMediaEnded();
-                            }}
-                          />
-                        )}
-                      </>
+                      <StanzaLocalMainMedia
+                        songId={selected.id}
+                        remountKey={mainMediaRemountKey}
+                        localUrl={localUrl}
+                        isLocalVideo={isLocalVideo}
+                        videoRef={localVideoRef}
+                        audioRef={localAudioRef}
+                        knownHorizonSecRef={knownHorizonSecRef}
+                        setPlayback={setPlayback}
+                        onRequestPlay={playUnified}
+                        onRequestPause={pauseUnified}
+                        onMainPlay={() => {
+                          snapStemsToMainAndPlay();
+                          scheduleAlignStemAudiosToMain();
+                          syncTransposeMirrorFromMain();
+                        }}
+                        onMainPause={() => {
+                          transposeMirrorRef.current?.stop();
+                          transposeStemBusRef.current?.stop();
+                          pauseStemAudios();
+                        }}
+                        onMainEnded={() => {
+                          transposeMirrorRef.current?.stop();
+                          transposeStemBusRef.current?.stop();
+                          handleLocalMediaEnded();
+                        }}
+                      />
                     )}
-                    {(selected.stems ?? []).map((stem) => {
-                      const src = stemUrlById[stem.id];
-                      if (!src) return null;
-                      return (
-                        <Fragment key={stem.id}>
-                          {/* eslint-disable-next-line jsx-a11y/media-has-caption -- user-provided stem; no captions */}
-                          <audio
-                            ref={(el) => {
-                              const m = stemAudioRefs.current;
-                              if (el) m.set(stem.id, el);
-                              else m.delete(stem.id);
-                            }}
-                            src={src}
-                            preload="auto"
-                            aria-hidden
-                            style={{ display: 'none' }}
-                          />
-                        </Fragment>
-                      );
-                    })}
+                    <StanzaHiddenStemAudios
+                      stems={selected.stems ?? STANZA_EMPTY_STEMS}
+                      stemUrlById={stemUrlById}
+                      stemAudioRefs={stemAudioRefs}
+                    />
                   </Box>
                 </Box>
 
@@ -3551,148 +3007,44 @@ export default function StanzaWorkspace() {
         </StanzaViewerErrorBoundary>
       )}
 
-      <Menu
-        anchorEl={libraryMenu?.anchor ?? null}
-        open={Boolean(libraryMenu)}
-        onClose={() => setLibraryMenu(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <MenuItem
-          onClick={() => {
-            const s = libraryMenuSong;
-            setLibraryMenu(null);
-            if (s) setRemoveConfirmSong(s);
-          }}
-        >
-          Remove from library…
-        </MenuItem>
-      </Menu>
-
-      <Dialog open={removeConfirmSong != null} onClose={() => setRemoveConfirmSong(null)} aria-labelledby="stanza-remove-title">
-        <DialogTitle id="stanza-remove-title">Remove from library?</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            This removes “{removeConfirmSong?.title ?? ''}” from your library and deletes all practice data for it on
-            this device: markers and sections, focus-time stats, and per-section metronome calibration.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRemoveConfirmSong(null)}>Cancel</Button>
-          <Button
-            color="error"
-            variant="text"
-            onClick={() => {
-              const id = removeConfirmSong?.id;
-              setRemoveConfirmSong(null);
-              if (id) void removeSongById(id);
-            }}
-          >
-            Remove from library
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={stemDropConfirm != null}
-        onClose={() => setStemDropConfirm(null)}
-        aria-labelledby="stanza-stem-drop-title"
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle id="stanza-stem-drop-title">
-          {stemDropConfirm?.hasYoutube ? 'How should this file be used?' : 'Add as mix layers?'}
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.55 }}>
-            {stemDropConfirm?.hasYoutube
-              ? `This file matches your track (${stemDropConfirm.refSec.toFixed(
-                  1,
-                )} s). Add it as a mix layer, switch practice to the upload, or replace the YouTube video. Your sections stay on this song.`
-              : stemDropConfirm
-                ? `Each file is about the same length as the loaded track (${stemDropConfirm.refSec.toFixed(
-                    1,
-                  )} s, within ±${STANZA_STEM_DURATION_MATCH_EPS_SEC.toFixed(2)} s). That usually means an alternate mix (for example, an instrumental).`
-                : null}
-          </Typography>
-          <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 600 }}>
-            Matched files
-          </Typography>
-          <Stack component="ul" sx={{ m: 0, pl: 2.25, py: 0 }} role="list">
-            {stemDropConfirm?.rows.map((r, i) => (
-              <Typography
-                key={`${i}:${r.name}`}
-                component="li"
-                variant="body2"
-                sx={{ mb: 0.5, wordBreak: 'break-word' }}
-              >
-                {r.name}{' '}
-                <Typography component="span" variant="caption" color="text.secondary">
-                  ({r.durationSec.toFixed(1)} s)
-                </Typography>
-              </Typography>
-            ))}
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ flexWrap: 'wrap', gap: 1, px: 2, py: 1.5 }}>
-          <Button onClick={() => setStemDropConfirm(null)}>Cancel</Button>
-          <Button
-            color="inherit"
-            onClick={() => {
-              const p = stemDropConfirm;
-              setStemDropConfirm(null);
-              if (p?.files[0]) void addLocalSong(p.files[0]);
-            }}
-          >
-            New song instead
-          </Button>
-          {stemDropConfirm?.hasYoutube ? (
-            <>
-              <Button
-                color="inherit"
-                onClick={() => {
-                  const p = stemDropConfirm;
-                  setStemDropConfirm(null);
-                  if (p) void appendStemsFromFiles(p.songId, p.files);
-                }}
-              >
-                Add as mix layer
-              </Button>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  const p = stemDropConfirm;
-                  setStemDropConfirm(null);
-                  if (p?.files[0]) void attachLocalPracticeAudio(p.songId, p.files[0]);
-                }}
-              >
-                Switch to uploaded file
-              </Button>
-              <Button
-                color="inherit"
-                onClick={() => {
-                  const p = stemDropConfirm;
-                  setStemDropConfirm(null);
-                  if (p?.files[0]) void attachLocalPracticeAudio(p.songId, p.files[0], { replaceYoutube: true });
-                }}
-              >
-                Replace YouTube with file
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="contained"
-              onClick={() => {
-                const p = stemDropConfirm;
-                setStemDropConfirm(null);
-                if (p) void appendStemsFromFiles(p.songId, p.files);
-              }}
-            >
-              Add as layers
-            </Button>
-          )}
-        </DialogActions>
-      </Dialog>
+      <StanzaWorkspaceDialogs
+        libraryMenuAnchor={libraryMenu?.anchor ?? null}
+        onCloseLibraryMenu={() => setLibraryMenu(null)}
+        onRequestRemoveFromLibrary={() => {
+          const s = libraryMenuSong;
+          setLibraryMenu(null);
+          if (s) setRemoveConfirmSong(s);
+        }}
+        removeConfirmSong={removeConfirmSong}
+        onCancelRemove={() => setRemoveConfirmSong(null)}
+        onConfirmRemove={() => {
+          const id = removeConfirmSong?.id;
+          setRemoveConfirmSong(null);
+          if (id) void removeSongById(id);
+        }}
+        stemDropConfirm={stemDropConfirm}
+        onCancelStemDrop={() => setStemDropConfirm(null)}
+        onStemDropNewSong={() => {
+          const p = stemDropConfirm;
+          setStemDropConfirm(null);
+          if (p?.files[0]) void addLocalSong(p.files[0]);
+        }}
+        onStemDropAddLayers={() => {
+          const p = stemDropConfirm;
+          setStemDropConfirm(null);
+          if (p) void appendStemsFromFiles(p.songId, p.files);
+        }}
+        onStemDropSwitchToUpload={() => {
+          const p = stemDropConfirm;
+          setStemDropConfirm(null);
+          if (p?.files[0]) void attachLocalPracticeAudio(p.songId, p.files[0]);
+        }}
+        onStemDropReplaceYoutube={() => {
+          const p = stemDropConfirm;
+          setStemDropConfirm(null);
+          if (p?.files[0]) void attachLocalPracticeAudio(p.songId, p.files[0], { replaceYoutube: true });
+        }}
+      />
     </Box>
   );
 }

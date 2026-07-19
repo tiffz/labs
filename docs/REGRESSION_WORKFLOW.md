@@ -33,15 +33,14 @@ Add a smoke here when a cross-app playback/portal/empty-state bug recurs — pre
 ### Visual Baselines
 
 - Test file: `e2e/visual/apps.visual.spec.ts`
-- Coverage:
-  - Routes in [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts) where `visual: true` (see registry for smoke-only apps: melodia, sight, agility, stanza)
-  - Includes **`/encore/`**, **`/count/`**, **`/scales/`**, and other app routes
-  - Two major canonical states per route:
-    - Desktop viewport baseline
-    - Mobile viewport baseline
-- Baselines live in: `e2e/visual/apps.visual.spec.ts-snapshots/`
+- Coverage (declared in [`e2e/routeRegistry.ts`](../e2e/routeRegistry.ts)):
+  - Routes where `visual: true`, including seeded **`visualStates`** (per-app CUJ states, e.g. `?e2eSeed=1` fixtures) beyond the empty shell
+  - Viewports per route: **desktop** 1440x900 + **mobile** 390x844 everywhere; **tablet** 768x1024 for layout-sensitive routes (stanza, encore, gesture, zinebox)
+  - Per-route `mask` selectors hide genuinely dynamic regions; Muscle is excluded (continuous WebGL rendering — see registry comment)
+- Determinism: frozen `Date`, `TZ=UTC`, `reducedMotion: 'reduce'`, local fonts, animation kill (see `e2e/visual/visualTestUtils.ts`)
+- Baselines live in: `e2e/visual/apps.visual.spec.ts-snapshots/` (**Linux CI is canonical**)
 
-**Labs homepage catalog:** Adding, removing, or reordering apps in `src/labsHome/labsCatalog.manifest.json` changes the `/` route height and tile grid. After `npm run generate:labs-catalog`, refresh `home-desktop.png` and `home-mobile.png` (import Linux CI actuals when possible). Nightly `Run visual regression baselines` fails on drift; main CI visual is advisory.
+**Labs homepage catalog:** Adding, removing, or reordering apps in `src/labsHome/labsCatalog.manifest.json` changes the `/` route height and tile grid. After `npm run generate:labs-catalog`, refresh `home-desktop.png` and `home-mobile.png` (import Linux CI actuals when possible). Nightly `Run visual regression baselines` fails on drift; in `ci.yml`, **scoped diffs run scoped visual blocking** and cross-cutting diffs run full visual advisory.
 
 ### Audio Baselines
 
@@ -60,6 +59,10 @@ Add a smoke here when a cross-app playback/portal/empty-state bug recurs — pre
 
 - Verify visual baselines:
   - `npm run test:e2e:visual`
+- Verify only the routes for apps changed vs a base ref (what scoped CI runs):
+  - `npm run test:e2e:visual:scoped` (wraps `scripts/run-scoped-visual.mts`)
+- Run visual tests in a Linux container locally (pixel-identical to CI; requires Docker):
+  - `npm run test:e2e:visual:docker` (append `--update-snapshots` to regenerate canonical baselines locally)
 - Update visual baselines (intentional changes only):
   - `npm run test:e2e:visual:update`
 - **Full refresh (delete every baseline PNG, then regenerate all):**
@@ -140,7 +143,7 @@ Baseline updates are never "auto-approved". Every changed baseline must be revie
 
 ### Agent default behavior
 
-Agents must follow [`docs/VISUAL_REGRESSION_AGENT.md`](VISUAL_REGRESSION_AGENT.md) and skill `labs-visual-regression`. Summary:
+Agents must follow [`docs/VISUAL_REGRESSION_AGENT.md`](VISUAL_REGRESSION_AGENT.md) and skill `labs-visual-regression`; classify every diff against [`VISUAL_JUDGE_RUBRIC.md`](VISUAL_JUDGE_RUBRIC.md) (skill `labs-visual-judge`). Summary:
 
 1. Run or download regression artifacts when CI warns or shared UI changed.
 2. Review screenshot/audio diffs directly (actual, expected, diff — not blind updates).

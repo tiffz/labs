@@ -2,7 +2,7 @@
 
 Labs treats **how we work** as a product surface alongside the apps. After meaningful sessions, agents and humans should look for durable improvements—not one-off fixes buried in chat history.
 
-**Agent workflow:** skill `labs-session-retrospective` (`.cursor/skills/labs-session-retrospective/SKILL.md`); pointer rule `.cursor/rules/session-retrospective.mdc`.  
+**Agent workflow:** skill `labs-session-retrospective` (`.cursor/skills/labs-session-retrospective/SKILL.md`); always-on rule `.cursor/rules/session-retrospective-mandatory.mdc`.  
 **Where to put new artifacts:** [`DOCUMENTATION_STRATEGY.md`](DOCUMENTATION_STRATEGY.md).
 
 ## When to run a session retrospective
@@ -30,7 +30,7 @@ Structure findings as **symptom → root cause class → durable fix** (same fie
 ## Root cause classes (reuse these labels)
 
 - `stale state` — `useEffect` lag, unstable inline props, derived display one frame behind
-- `portal styling` — trigger skin ≠ portaled menu skin; click-outside not allowlisted
+- `portal styling` — trigger skin ≠ portaled menu skin; click-outside not allowlisted. Audited 2026-07: Piano/Chords/Stanza document-dismiss handlers each scope to their own small ref-contained UI and none embed the portaled drum Edit; re-check when a dismiss handler wraps a surface that portals pickers.
 - `render order` — VexFlow beams/highlights at wrong lifecycle step
 - `async race` — schedule after stop; missing generation token
 - `empty-state logic` — `!data` treated as missing instead of loading
@@ -59,8 +59,16 @@ Structure findings as **symptom → root cause class → durable fix** (same fie
 - `html5-duration-shrink` — media `timeupdate` / `durationchange` / `ended` writers overwrite transport duration with short HTML5 metadata below a longer decoded/fingerprint horizon, cutting off song tails. Fix: sticky max via `resolveStickyTransportDurationSec`; see [`STANZA_PLAYBACK.md`](STANZA_PLAYBACK.md) § Duration trust.
 - `product-naming-drift` — user-facing copy uses a legacy or adjacent name for a Labs app (e.g. calling Stanza “Segno”). Fix: [`USER_COPY_STYLE.md`](USER_COPY_STYLE.md) § Cross-app product names + app `AGENTS.md` pitfall + naming regression test.
 - `filter-selection-orphan` — a filter/chip narrows the visible set but leaves off-grid items selected, so counts/session queues disagree with what the user sees. Fix: prune selection to visible/eligible ids on filter change (see `gesturePracticeSelection.ts`).
+- `hmr-context-identity` — React context object recreated across Provider + hook modules after Fast Refresh (“outside Provider” while Provider is mounted). Fix: pin the context on `globalThis` (see `encoreSyncContextStore.ts`). Audited 2026-07: all other context stores keep `createContext` in a dedicated module separate from the provider (the primary defense); apply the `globalThis` pin only where a flake recurs.
+- `drive-resumable-308` — Drive resumable chunk PUTs via `fetch` break because the browser treats HTTP 308 as a redirect. Fix: XHR for chunk PUTs (`driveResumableUpload.ts` + test).
+- `network-io-suspended` — background uploads/sync assumed always-on network; offline or suspended tabs lose progress. Fix: resumable session state + explicit resume path (see `gesture-upload-offline-resume.spec.ts`).
+- `e2e-port-collision` — parallel Playwright runs or a stale dev server fight over the fixed port; specs fail on connect. Fix: `--strictPort` + `reuseExistingServer` config, one webServer owner per run.
+- `local-first-breach` — a flow that should work offline/local-first requires network or a Google account (e.g. Drive-first pack creation). Fix: local-blob foundation with upload-later; see [`LOCAL_FIRST_SYNC.md`](LOCAL_FIRST_SYNC.md).
+- `reactive-audio` — audio scheduled reactively on UI/state events instead of a look-ahead scheduler; drifts or stutters under load. Fix: platform scheduler per [`SHARED_AUDIO_PLATFORM.md`](SHARED_AUDIO_PLATFORM.md).
+- `guidance-drift` — agent guidance contradicts code or other guidance (stale links, dead script names, duplicated gates that diverged). Fix: canonical homes + automated checks (`check:doc-links`, `check:agent-docs`).
+- `tech-debt` — structural debt without a user-visible bug (oversized files, duplicated stacks, stale scaffolding). Not a bug class; track in [`TECH_DEBT_ROADMAP.md`](TECH_DEBT_ROADMAP.md) with entry criteria and link the row.
 
-Add a new class only when several future bugs would share it.
+This list is **canonical** — [`docs/AGENT_INVARIANTS.md`](AGENT_INVARIANTS.md) and [`docs/UX_AGENT_GUIDE.md`](UX_AGENT_GUIDE.md) link here instead of keeping copies. Add a new class only when several future bugs would share it.
 
 ## Where to codify improvements
 

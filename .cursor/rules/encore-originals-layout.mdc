@@ -6,7 +6,7 @@ globs:
 
 # Encore Originals layout
 
-Read [`src/encore/theme/encoreM3Layout.ts`](../../theme/encoreM3Layout.ts) and [`originals/DEVELOPMENT.md`](originals/DEVELOPMENT.md) before changing song page or library list layout.
+Read [`src/encore/theme/encoreM3Layout.ts`](../../src/encore/theme/encoreM3Layout.ts) and [`originals/DEVELOPMENT.md`](../../src/encore/originals/DEVELOPMENT.md) before changing song page or library list layout.
 
 ## Song view (read + write)
 

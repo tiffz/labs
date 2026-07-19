@@ -16,7 +16,7 @@ const blend = path.join(root, 'tools/muscle-anatomy/data/Z-Anatomy.blend');
 const exportScript = path.join(root, 'tools/muscle-anatomy/export_region_glb.py');
 const reportPath = path.join(root, 'tools/muscle-anatomy/data/export-audit-report.json');
 
-const ATLAS_REGIONS = ['atlas_complete', 'atlas_head_face', 'atlas_supplement', 'atlas_skin'];
+const ATLAS_REGIONS = ['atlas_complete', 'atlas_head_face', 'atlas_supplement'];
 const SKIN_IDS = new Set([
   'skin_envelope',
   'eye_globes',
@@ -137,13 +137,11 @@ function auditManifestVsCurriculum(manifest) {
       missingCsvNodeCount: missingCsvByNode.length,
       atlasCompleteMeshes: atlasComplete?.meshes?.length ?? 0,
       gluteMeshCount: gluteMeshes.length,
-      skinMeshCount: (manifest.regions?.atlas_skin?.meshes ?? []).length,
     },
     missingCurriculum,
     missingCsvByNode,
     missingCsvByZName,
     gluteMeshes: gluteMeshes.map((m) => ({ nodeId: m.nodeId, displayName: m.displayName, tris: m.triangleCount })),
-    skinMeshes: (manifest.regions?.atlas_skin?.meshes ?? []).map((m) => m.nodeId),
     missingByBodyArea: byArea,
     sampleDisplayNames: displayNames.slice(0, 5),
   };

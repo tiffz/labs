@@ -9,7 +9,7 @@ Read [references/url-state-pattern.md](references/url-state-pattern.md) first.
 
 ## Workflow
 
-1. Use shared [`urlHistory.ts`](../../src/shared/utils/urlHistory.ts) / [`urlRouting.ts`](../../src/shared/utils/urlRouting.ts) — do not fork throttling
+1. Use shared [`urlHistory.ts`](../../../src/shared/utils/urlHistory.ts) / [`urlRouting.ts`](../../../src/shared/utils/urlRouting.ts) — do not fork throttling
 2. Parse once on boot; sync on state change; handle `popstate`
 3. Omit default values from URL when possible
 4. Add/update app README param table; link to [`docs/URL_STATE_PATTERN.md`](../../../docs/URL_STATE_PATTERN.md)

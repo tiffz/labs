@@ -78,7 +78,7 @@ Use a single URL contract for “extra diagnostics on”: either `?debug` or `?d
 - Optional structured logs from app code: [`src/shared/debug/labsDebugLog.ts`](src/shared/debug/labsDebugLog.ts) (`labsDebug.info` / `labsDebug.debug` respect the same URL gate; `labsDebug.warn` always forwards in dev).
 - Shared debug chrome: [`src/shared/components/LabsDebugDock.tsx`](src/shared/components/LabsDebugDock.tsx) (collapse, **Copy bundle** → [`copyLabsDebugBundleToClipboard`](src/shared/debug/copyLabsDebugBundle.ts) for LLM/bug-report paste).
 - Vite middleware normalizes batched `{ logs: [...] }` and single-object bodies: [`src/shared/debug/debugLogPostBody.ts`](src/shared/debug/debugLogPostBody.ts).
-- Cats dev snapshots: `POST /__debug_snapshot` writes under [`.debug-snapshots/`](.debug-snapshots/) (gitignored). Optional Cursor hook: watch that folder to attach artifacts to a chat.
+- Cats dev snapshots: `POST /__debug_snapshot` writes under `.debug-snapshots/` (gitignored). Optional Cursor hook: watch that folder to attach artifacts to a chat.
 
 ### Agentic debugging (recommended)
 
@@ -172,7 +172,7 @@ All music apps must ship mobile-first layouts and shared controls that remain us
 
 ### Pre-commit Checks
 
-Canonical agent/human gate: [`.cursor/rules/pre-commit-checks.mdc`](../.cursor/rules/pre-commit-checks.mdc) (`npm run presubmit`). Husky runs the same steps on commit.
+Canonical agent/human gate: [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre-commit-checks.mdc) (`npm run presubmit`). Husky runs the same steps on commit.
 
 Import boundaries are always validated via `npm run check:import-boundaries` so presubmit and CI enforce the same boundary guard.
 
@@ -245,7 +245,7 @@ npm run test:story:audit     # story generation + placeholder leak audits
 
 ### Pre-commit Hook Behavior
 
-See [`.cursor/rules/pre-commit-checks.mdc`](../.cursor/rules/pre-commit-checks.mdc) for the full presubmit sequence. Husky may select fast vs full Vitest based on staged paths (beat benchmarks, cat regression).
+See [`.cursor/rules/pre-commit-checks.mdc`](.cursor/rules/pre-commit-checks.mdc) for the full presubmit sequence. Husky may select fast vs full Vitest based on staged paths (beat benchmarks, cat regression).
 
 For canonical docs precedence when guidance conflicts, see `docs/SOURCE_OF_TRUTH.md`.
 For rollback procedures, see `docs/ROLLBACK.md`.
@@ -471,6 +471,6 @@ Cross-app playback hooks, notation render order, portaled picker skins, and load
 
 ## Continuous process improvement
 
-After meaningful work, review the session for durable process fixes—not only product fixes. Agents should **offer** a brief retrospective at session end; humans should do the same when closing a branch or PR.
+After meaningful work, review the session for durable process fixes—not only product fixes. Agents must **deliver** the retrospective block for substantial sessions (rule `session-retrospective-mandatory.mdc`); humans should do the same when closing a branch or PR.
 
 Full workflow: [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](docs/CONTINUOUS_PROCESS_IMPROVEMENT.md). Agent skill: **`labs-session-retrospective`**. Index: [`docs/DEVELOPMENT_AGENT_INDEX.md`](docs/DEVELOPMENT_AGENT_INDEX.md).

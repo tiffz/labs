@@ -436,7 +436,7 @@ export default defineConfig({
           };
 
           const parseSnapshotMeta = (snapshotName: string) => {
-            const match = snapshotName.match(/^(.*?)-(desktop|mobile)(?:-([a-z0-9_-]+))?\.png$/i);
+            const match = snapshotName.match(/^(.*?)-(desktop|mobile|tablet)(?:-([a-z0-9_-]+))?\.png$/i);
             return {
               appId: match?.[1] || 'unknown',
               formFactor: match?.[2] || 'unknown',
@@ -608,7 +608,7 @@ export default defineConfig({
                     const fullPath = path.join(baselineDir, name);
                     const stat = fs.statSync(fullPath);
                     const v = stat.mtimeMs;
-                    const match = name.match(/^(.*?)-(desktop|mobile)(?:-([a-z0-9_-]+))?\.png$/i);
+                    const match = name.match(/^(.*?)-(desktop|mobile|tablet)(?:-([a-z0-9_-]+))?\.png$/i);
                     const appId = match?.[1] || 'unknown';
                     const formFactor = match?.[2] || 'unknown';
                     const platform = match?.[3] || 'default';
@@ -1194,18 +1194,26 @@ export default defineConfig({
     },
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json-summary', 'html', 'lcov'],
-      include: ['src/**/*.{ts,tsx}'],
+      reporter: ['text-summary', 'json-summary', 'html', 'lcov'],
+      // Vitest root is `src`, so globs and the reports dir are src-relative.
+      reportsDirectory: '../coverage',
+      include: ['**/*.{ts,tsx}'],
       exclude: [
-        'src/**/e2e/**',
-        'src/**/*.test.{ts,tsx}',
-        'src/**/test/**',
-        'src/ui/generatedSharedCatalog.ts',
-        'e2e/**',
+        '**/e2e/**',
+        '**/*.test.{ts,tsx}',
+        '**/*.spec.{ts,tsx}',
+        '**/test/**',
+        'ui/generatedSharedCatalog.ts',
       ],
-      // Thresholds intentionally unset for now: CI runs `test:coverage` as a
-      // non-blocking signal-only step. Set a real floor once we have a
-      // measured baseline from the first coverage artifact.
+      // Soft floors ~5pts below the measured 2026-07 baseline (lines/stmts 35.7%,
+      // functions 61.2%, branches 72.7%). Signal-only guard against silent collapse;
+      // ratchet upward intentionally, never downward without a decision.
+      thresholds: {
+        lines: 30,
+        functions: 55,
+        statements: 30,
+        branches: 67,
+      },
     },
   },
 });

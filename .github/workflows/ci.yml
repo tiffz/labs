@@ -63,31 +63,23 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CI: true
+
 jobs:
-  test:
+  # Detect diff scope once; downstream jobs consume outputs.
+  scope:
     runs-on: ubuntu-latest
-    
-    env:
-      CI: true
-      NODE_ENV: test
-      HUSKY: 0
-    
+    timeout-minutes: 5
+    outputs:
+      beat_changed: ${{ steps.beat-changes.outputs.beat_changed }}
+      e2e_mode: ${{ steps.e2e-scope.outputs.mode }}
+      vitest_mode: ${{ steps.vitest-scope.outputs.mode }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v5
       with:
         fetch-depth: 0  # Need history to detect file changes
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v5
-      with:
-        node-version: '20'
-        cache: 'npm'
-        
-    - name: Verify environment
-      run: |
-        node --version
-        npm --version
 
     - name: Check for shared tempo analysis file changes
       id: beat-changes
@@ -98,7 +90,7 @@ jobs:
         else
           BASE_REF="${{ github.event.before }}"
         fi
-        
+
         if git diff --name-only "$BASE_REF" HEAD 2>/dev/null | grep -q '^src/shared/beat/'; then
           echo "beat_changed=true" >> $GITHUB_OUTPUT
           echo "Shared tempo analysis files changed - will run full benchmarks"
@@ -116,7 +108,8 @@ jobs:
           BASE_REF="${{ github.event.before }}"
         fi
         CHANGED="$(git diff --name-only "$BASE_REF" HEAD 2>/dev/null || true)"
-        if echo "$CHANGED" | grep -qE '^(src/shared/|e2e/|vite\.config|playwright\.config|package|\.github/workflows/)'; then
+        # src/types/ holds shared type defs — treat as cross-cutting, not an app.
+        if echo "$CHANGED" | grep -qE '^(src/shared/|src/types/|e2e/|vite\.config|playwright\.config|package|\.github/workflows/)'; then
           echo "mode=full" >> $GITHUB_OUTPUT
           echo "Cross-cutting changes — full e2e smoke"
         elif [ -z "$CHANGED" ]; then
@@ -133,102 +126,6 @@ jobs:
           fi
         fi
 
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Enforce shared-layer import boundaries
-      run: npm run check:import-boundaries
-
-    - name: Validate agent docs and skills
-      run: npm run check:agent-docs
-
-    - name: Doc link hygiene
-      run: npm run check:doc-links
-
-    - name: UI copy baseline (em dash)
-      run: npm run check:ui-copy
-
-    - name: CSS important baseline
-      run: npm run check:css-important
-
-    - name: Workflow guardrails (single Pages deploy)
-      run: npm run check:workflows
-
-    - name: Generate shared catalog
-      run: npm run generate:shared-catalog
-
-    - name: Check labs homepage catalog
-      run: npm run check:labs-catalog
-
-    - name: Run linter
-      run: npm run lint
-
-    - name: Run app typecheck
-      run: npm run typecheck
-
-    - name: Check for dead code
-      run: npm run knip
-
-    # E2e before Vitest so smoke failures surface in ~4–5 min (fail-fast).
-    - name: Install Playwright browsers
-      run: npx playwright install --with-deps chromium
-
-    - name: Run e2e smoke tests (full)
-      if: steps.e2e-scope.outputs.mode == 'full'
-      run: npm run test:e2e:smoke
-
-    - name: Run e2e smoke tests (scoped)
-      if: steps.e2e-scope.outputs.mode == 'scoped'
-      run: |
-        if [ "${{ github.event_name }}" = "pull_request" ]; then
-          node scripts/run-scoped-e2e.mjs "origin/${{ github.base_ref }}"
-        else
-          node scripts/run-scoped-e2e.mjs "${{ github.event.before }}"
-        fi
-
-    - name: Run playback UI regression smokes
-      if: steps.e2e-scope.outputs.mode == 'full'
-      run: npx playwright test e2e/playback-ui-regressions.spec.ts
-
-    # Audio regression hashes are already covered by `npm test` above
-    # (src/shared/beat/regression/syntheticAudioGenerator.audio-regression.test.ts); no
-    # separate re-run needed here.
-
-    - name: Run visual regression screenshots
-      # Advisory, not merge-blocking. Linux Playwright rendering drifts on its own
-      # (fonts, anti-aliasing, catalog layout). Only run on cross-cutting diffs —
-      # scoped single-app PRs skip this (~3m) and avoid noisy snapshot failures
-      # unrelated to the change. Failures emit a warning (not ##[error]) so the
-      # job summary stays green while artifacts remain for intentional baseline review.
-      if: steps.e2e-scope.outputs.mode == 'full'
-      run: |
-        set +e
-        npm run test:e2e:visual
-        code=$?
-        if [ "$code" -ne 0 ]; then
-          echo "::warning title=Visual regression (advisory)::Snapshot mismatches (exit $code). See visual-regression-artifacts. Update baselines intentionally per docs/REGRESSION_WORKFLOW.md"
-        fi
-        exit 0
-
-    - name: Upload visual regression artifacts
-      if: always() && steps.e2e-scope.outputs.mode == 'full'
-      uses: actions/upload-artifact@v6
-      with:
-        name: visual-regression-artifacts
-        if-no-files-found: ignore
-        path: |
-          playwright-report/**
-          test-results/**
-
-    - name: Upload audio regression report
-      if: always()
-      uses: actions/upload-artifact@v6
-      with:
-        name: audio-regression-report
-        if-no-files-found: ignore
-        path: |
-          src/shared/beat/regression/reports/**
-
     - name: Detect vitest scope
       id: vitest-scope
       run: |
@@ -238,7 +135,7 @@ jobs:
           BASE_REF="${{ github.event.before }}"
         fi
         CHANGED="$(git diff --name-only "$BASE_REF" HEAD 2>/dev/null || true)"
-        if echo "$CHANGED" | grep -qE '^(src/shared/|vite\.config|vitest\.config|package|\.github/workflows/)'; then
+        if echo "$CHANGED" | grep -qE '^(src/shared/|src/types/|vite\.config|vitest\.config|package|\.github/workflows/)'; then
           echo "mode=full" >> $GITHUB_OUTPUT
           echo "Cross-cutting changes — full Vitest"
         elif [ -z "$CHANGED" ]; then
@@ -255,17 +152,113 @@ jobs:
           fi
         fi
 
+  # Static gates: guardrail contracts, lint, typecheck, knip.
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      HUSKY: 0
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v5
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Enforce shared-layer import boundaries
+      run: npm run check:import-boundaries
+
+    - name: Validate agent docs and skills
+      run: npm run check:agent-docs
+
+    - name: Doc link hygiene
+      run: npm run check:doc-links
+
+    - name: UI copy baseline
+      run: npm run check:ui-copy
+
+    - name: CSS important baseline
+      run: npm run check:css-important
+
+    - name: CSS import order
+      run: npm run check:css-import-order
+
+    - name: Workflow guardrails (single Pages deploy)
+      run: npm run check:workflows
+
+    - name: Knip ignore config comments
+      run: npm run check:knip-config
+
+    - name: Generate shared catalog
+      run: npm run generate:shared-catalog
+
+    - name: Check labs homepage catalog
+      run: npm run check:labs-catalog
+
+    - name: Chrome UI contract
+      run: npm run check:chrome-ui
+
+    - name: Menu a11y contract
+      run: npm run check:menu-a11y
+
+    - name: Volume slider contract
+      run: npm run check:volume-slider
+
+    - name: App quality contract
+      run: npm run check:app-quality
+
+    - name: Muscle public assets
+      run: npm run muscle:validate-assets
+
+    - name: Run linter
+      run: npm run lint
+
+    - name: Run app typecheck
+      run: npm run typecheck
+
+    - name: Check for dead code
+      run: npm run knip
+
+  vitest:
+    needs: scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NODE_ENV: test
+      HUSKY: 0
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0  # Scoped Vitest diffs against merge base
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v5
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
     - name: Run tests (full)
-      if: steps.vitest-scope.outputs.mode == 'full'
+      if: needs.scope.outputs.vitest_mode == 'full'
       env:
-        INCLUDE_BEAT_BENCHMARK: ${{ steps.beat-changes.outputs.beat_changed }}
+        INCLUDE_BEAT_BENCHMARK: ${{ needs.scope.outputs.beat_changed }}
       # One retry in CI absorbs rare Vitest worker teardown flakes (BroadcastChannel).
       run: npm test -- --retry=1
 
     - name: Run tests (scoped)
-      if: steps.vitest-scope.outputs.mode == 'scoped'
+      if: needs.scope.outputs.vitest_mode == 'scoped'
       env:
-        INCLUDE_BEAT_BENCHMARK: ${{ steps.beat-changes.outputs.beat_changed }}
+        INCLUDE_BEAT_BENCHMARK: ${{ needs.scope.outputs.beat_changed }}
       run: |
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           node scripts/run-changed-app-tests.mjs "origin/${{ github.base_ref }}" -- --retry=1
@@ -273,7 +266,128 @@ jobs:
           node scripts/run-changed-app-tests.mjs "${{ github.event.before }}" -- --retry=1
         fi
 
+    - name: Upload audio regression report
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: audio-regression-report
+        if-no-files-found: ignore
+        path: |
+          src/shared/beat/regression/reports/**
+
   # Coverage runs nightly (nightly-portfolio-audit.yml) — not on every PR/main push.
+
+  e2e:
+    needs: scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      NODE_ENV: test
+      HUSKY: 0
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0  # Scoped e2e diffs against merge base
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v5
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Resolve Playwright version
+      id: playwright-version
+      run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+    - name: Cache Playwright browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps chromium
+
+    - name: Run e2e smoke tests (full)
+      if: needs.scope.outputs.e2e_mode == 'full'
+      run: npm run test:e2e:smoke
+
+    - name: Run e2e smoke tests (scoped)
+      if: needs.scope.outputs.e2e_mode == 'scoped'
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          node scripts/run-scoped-e2e.mjs "origin/${{ github.base_ref }}"
+        else
+          node scripts/run-scoped-e2e.mjs "${{ github.event.before }}"
+        fi
+
+    - name: Run playback UI regression smokes
+      if: needs.scope.outputs.e2e_mode == 'full'
+      run: npx playwright test e2e/playback-ui-regressions.spec.ts
+
+    # Audio regression hashes are already covered by Vitest
+    # (src/shared/beat/regression/syntheticAudioGenerator.audio-regression.test.ts); no
+    # separate re-run needed here.
+
+    - name: Run visual regression screenshots (scoped, blocking)
+      # Scoped diffs get BLOCKING visual regression for the changed apps' routes.
+      # Unexpected diffs must be judged per docs/VISUAL_JUDGE_RUBRIC.md (skill
+      # labs-visual-judge) — fix must-fix regressions, or import intentional
+      # baselines from this run's artifacts before merge.
+      if: needs.scope.outputs.e2e_mode == 'scoped'
+      run: |
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          npx tsx scripts/run-scoped-visual.mts "origin/${{ github.base_ref }}"
+        else
+          npx tsx scripts/run-scoped-visual.mts "${{ github.event.before }}"
+        fi
+
+    - name: Run visual regression screenshots (full, advisory)
+      # Advisory on cross-cutting diffs for now: multi-app rendering drift makes a
+      # hard gate noisy. Flip trigger (documented in docs/VISUAL_REGRESSION_AGENT.md):
+      # make this blocking after ~2 weeks of clean nightly visual runs.
+      if: needs.scope.outputs.e2e_mode == 'full'
+      run: |
+        set +e
+        npm run test:e2e:visual
+        code=$?
+        if [ "$code" -ne 0 ]; then
+          echo "::warning title=Visual regression (advisory)::Snapshot mismatches (exit $code). See visual-regression-artifacts. Update baselines intentionally per docs/REGRESSION_WORKFLOW.md"
+        fi
+        exit 0
+
+    - name: Upload visual regression artifacts
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: visual-regression-artifacts
+        if-no-files-found: ignore
+        path: |
+          playwright-report/**
+          test-results/**
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      HUSKY: 0
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v5
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
 
     - name: Build project
       env:
@@ -294,22 +408,22 @@ jobs:
         retention-days: 1
 
   deploy:
-    needs: test
+    needs: [checks, vitest, e2e, build]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     concurrency:
       group: pages-deploy-${{ github.ref }}
       cancel-in-progress: true
-    
+
     environment:
       name: github-pages
       url: ${{ steps.deployment_retry2.outputs.page_url || steps.deployment_retry.outputs.page_url || steps.deployment.outputs.page_url }}
-    
+
     permissions:
       contents: read
       pages: write
       id-token: write
-    
+
     steps:
     - name: Download production build artifact
       uses: actions/download-artifact@v6

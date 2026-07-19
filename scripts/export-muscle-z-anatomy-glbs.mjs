@@ -19,7 +19,7 @@ const blenderCandidates = [
 
 const blender = blenderCandidates.find((candidate) => candidate !== 'blender' && fs.existsSync(candidate)) ?? 'blender';
 
-const regions = ['fundamentals', 'torso', 'shoulder_neck', 'arm', 'hand', 'leg', 'foot', 'atlas_supplement', 'atlas_head_face', 'atlas_skin', 'atlas_complete'];
+const regions = ['fundamentals', 'torso', 'shoulder_neck', 'arm', 'hand', 'leg', 'foot', 'atlas_supplement', 'atlas_head_face', 'atlas_complete'];
 
 if (!fs.existsSync(blend)) {
   console.error('Missing Z-Anatomy blend file:', blend);

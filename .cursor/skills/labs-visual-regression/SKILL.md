@@ -5,7 +5,7 @@ description: Verifies or updates Labs visual and audio regression baselines with
 
 # Labs visual regression
 
-**Read first:** [`docs/VISUAL_REGRESSION_AGENT.md`](../../docs/VISUAL_REGRESSION_AGENT.md) (agent playbook). Canonical human doc: [`docs/REGRESSION_WORKFLOW.md`](../../docs/REGRESSION_WORKFLOW.md).
+**Read first:** [`docs/VISUAL_REGRESSION_AGENT.md`](../../../docs/VISUAL_REGRESSION_AGENT.md) (agent playbook). Canonical human doc: [`docs/REGRESSION_WORKFLOW.md`](../../../docs/REGRESSION_WORKFLOW.md).
 
 ## Approval policy
 

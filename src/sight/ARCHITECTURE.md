@@ -17,7 +17,7 @@ Level thresholds and generator profiles live in [`levels.ts`](levels.ts) (30 lev
 
 ## Layout + debug mode (`?debug`)
 
-[`components/SightDebugPanel.tsx`](components/SightDebugPanel.tsx) uses shared [`LabsDebugDock`](../../shared/components/LabsDebugDock.tsx).
+[`components/SightDebugPanel.tsx`](components/SightDebugPanel.tsx) uses shared [`LabsDebugDock`](../shared/components/LabsDebugDock.tsx).
 
 **Layout (practice shell)**
 

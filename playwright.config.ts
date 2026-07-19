@@ -38,10 +38,15 @@ export default defineConfig({
     {
       name: 'visual',
       testMatch: ['**/*.visual.spec.ts'],
+      // Font/glyph stabilization waits can take 15-22s each on cold CI; the
+      // default 30s budget was routinely tight. Flakes still get fixed, not retried.
+      timeout: 60_000,
       use: {
         browserName: 'chromium',
         viewport: { width: 1440, height: 900 },
         deviceScaleFactor: 1,
+        timezoneId: 'UTC',
+        reducedMotion: 'reduce',
       },
     },
     ...(process.env.VISUAL_MULTI_BROWSER === 'true'
@@ -49,19 +54,25 @@ export default defineConfig({
         {
           name: 'visual-firefox',
           testMatch: ['**/*.visual.spec.ts'],
+          timeout: 60_000,
           use: {
             browserName: 'firefox' as const,
             viewport: { width: 1440, height: 900 },
             deviceScaleFactor: 1,
+            timezoneId: 'UTC',
+            reducedMotion: 'reduce' as const,
           },
         },
         {
           name: 'visual-webkit',
           testMatch: ['**/*.visual.spec.ts'],
+          timeout: 60_000,
           use: {
             browserName: 'webkit' as const,
             viewport: { width: 1440, height: 900 },
             deviceScaleFactor: 1,
+            timezoneId: 'UTC',
+            reducedMotion: 'reduce' as const,
           },
         },
       ]

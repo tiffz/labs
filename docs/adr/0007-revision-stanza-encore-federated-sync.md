@@ -6,13 +6,13 @@
 
 ## Product decisions (signed off)
 
-| #   | Question                 | Decision                                                                                                                                                                                                                                                |
-| --- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Data model               | **Option B — federated sidecar** under `Encore_App/stanza_practice_overlay.json`                                                                                                                                                                        |
-| 2   | Auto-pull conflicts      | **Silent merge only when it cannot drop local edits**; otherwise show [`LabsDriveConflictDialog`](../src/shared/google/LabsDriveConflictDialog.tsx) (implemented via [`shouldPromptBeforePortfolioMerge`](../src/shared/drive/labsDriveBackupTypes.ts)) |
-| 3   | Tester gate              | **Remove sooner** — Drive backup open to all signed-in Google users unless `VITE_LABS_DRIVE_TESTER_HASHES` restricts deploy                                                                                                                             |
-| 4   | Stanza vs Encore uploads | **Stanza direct uploads stay common**; no Encore reuse workflow yet beyond shared Drive files. **Encore must not duplicate** bytes already on Drive from Stanza (stem folder indexed in duplicate scan)                                                 |
-| 5   | Token refresh BFF        | **Implemented** — [ADR 0014](./0014-google-oauth-session-bff.md); opt-in via `VITE_LABS_SESSION_BFF_URL`                                                                                                                                                |
+| #   | Question                 | Decision                                                                                                                                                                                                                                                      |
+| --- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Data model               | **Option B — federated sidecar** under `Encore_App/stanza_practice_overlay.json`                                                                                                                                                                              |
+| 2   | Auto-pull conflicts      | **Silent merge only when it cannot drop local edits**; otherwise show [`LabsDriveConflictDialog`](../../src/shared/google/LabsDriveConflictDialog.tsx) (implemented via [`shouldPromptBeforePortfolioMerge`](../../src/shared/drive/labsDriveBackupTypes.ts)) |
+| 3   | Tester gate              | **Remove sooner** — Drive backup open to all signed-in Google users unless `VITE_LABS_DRIVE_TESTER_HASHES` restricts deploy                                                                                                                                   |
+| 4   | Stanza vs Encore uploads | **Stanza direct uploads stay common**; no Encore reuse workflow yet beyond shared Drive files. **Encore must not duplicate** bytes already on Drive from Stanza (stem folder indexed in duplicate scan)                                                       |
+| 5   | Token refresh BFF        | **Implemented** — [ADR 0014](./0014-google-oauth-session-bff.md); opt-in via `VITE_LABS_SESSION_BFF_URL`                                                                                                                                                      |
 
 ## Target architecture (Option B)
 
@@ -46,10 +46,10 @@ flowchart TB
 
 | Piece                                      | Status                                                                                                                    |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| Overlay schema scaffolding                 | Done — [`stanzaPracticeOverlay.ts`](../src/stanza/drive/stanzaPracticeOverlay.ts)                                         |
+| Overlay schema scaffolding                 | Done — [`stanzaPracticeOverlay.ts`](../../src/stanza/drive/stanzaPracticeOverlay.ts)                                      |
 | Portfolio auto-pull conflict gate          | Done — shared + Stanza/Scales hooks                                                                                       |
-| Tester gate removal (GA default)           | Done — [`labsDriveTesterGate.ts`](../src/shared/google/labsDriveTesterGate.ts)                                            |
-| Encore dedup includes Stanza `stem_audio/` | Done — [`labsDrivePortfolioDedupFolders.ts`](../src/shared/drive/labsDrivePortfolioDedupFolders.ts)                       |
+| Tester gate removal (GA default)           | Done — [`labsDriveTesterGate.ts`](../../src/shared/google/labsDriveTesterGate.ts)                                         |
+| Encore dedup includes Stanza `stem_audio/` | Done — [`labsDrivePortfolioDedupFolders.ts`](../../src/shared/drive/labsDrivePortfolioDedupFolders.ts)                    |
 | Dual-read / dual-write migration           | **Next PR stack** — see [`stanza-encore-overlay-migration.md`](../design-explorations/stanza-encore-overlay-migration.md) |
 | OAuth BFF / token refresh                  | **Done** — ADR 0014; feature-flagged                                                                                      |
 

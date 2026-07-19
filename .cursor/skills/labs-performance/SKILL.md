@@ -5,8 +5,8 @@ description: Profiles and fixes Labs interaction and sustained performance using
 
 # Labs performance
 
-**Read first:** [`docs/PERFORMANCE.md`](../../docs/PERFORMANCE.md).  
-**Journeys:** [`docs/CRITICAL_USER_JOURNEYS.md`](../../docs/CRITICAL_USER_JOURNEYS.md) → app `src/<app>/CUJs.md`.
+**Read first:** [`docs/PERFORMANCE.md`](../../../docs/PERFORMANCE.md).  
+**Journeys:** [`docs/CRITICAL_USER_JOURNEYS.md`](../../../docs/CRITICAL_USER_JOURNEYS.md) → app `src/<app>/CUJs.md`.
 
 Optional deep trace audit: user-global skill **`web-perf`** (Chrome DevTools MCP) when configured.
 
@@ -48,7 +48,7 @@ Ignore browser extension noise (`background-redux`, LastPass, etc.) unless repro
 | Thumbs blank / tab crash                       | `revoked-blob-display` | Gesture media tier doc                       |
 | Only slow in dev after edits                   | `hmr false confidence` | Hard refresh                                 |
 
-Labels: [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](../../docs/CONTINUOUS_PROCESS_IMPROVEMENT.md).
+Labels: [`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](../../../docs/CONTINUOUS_PROCESS_IMPROVEMENT.md).
 
 ### 4. Fix (minimal patterns)
 
@@ -64,11 +64,11 @@ Do not “fix” by disabling features or removing optimistic UI without user as
 
 ### 5. Instrument (regression guard)
 
-| Fix type                    | Add                                                                                                                                  |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Interaction latency         | `e2e/smoke/<app>-<surface>-interaction.spec.ts` using [`e2e/helpers/interactionLatency.ts`](../../e2e/helpers/interactionLatency.ts) |
-| Pure logic cost / invariant | Vitest in `*Invariants.test.ts` or audit test                                                                                        |
-| Media lifecycle             | Follow [`docs/GESTURE_MEDIA_STABILITY.md`](../../docs/GESTURE_MEDIA_STABILITY.md) map                                                |
+| Fix type                    | Add                                                                                                                                     |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Interaction latency         | `e2e/smoke/<app>-<surface>-interaction.spec.ts` using [`e2e/helpers/interactionLatency.ts`](../../../e2e/helpers/interactionLatency.ts) |
+| Pure logic cost / invariant | Vitest in `*Invariants.test.ts` or audit test                                                                                           |
+| Media lifecycle             | Follow [`docs/GESTURE_MEDIA_STABILITY.md`](../../../docs/GESTURE_MEDIA_STABILITY.md) map                                                |
 
 Update CUJ **Performance budgets** table with step + budget + verification path.
 

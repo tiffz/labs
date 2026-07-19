@@ -27,6 +27,27 @@ jobs:
         run: |
           echo "::warning title=CI success rate below 90%::Weekly advisory gate — triage with npm run report:ci-health and docs/ENGINEERING_HEALTH.md"
 
+  dependency-audit:
+    name: npm audit (advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Audit production dependencies
+        id: audit
+        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Warn on high/critical advisories
+        if: steps.audit.outcome == 'failure'
+        run: |
+          echo "::warning title=npm audit found high/critical advisories::Review with 'npm audit --omit=dev'. Upgrade via docs/DEPENDENCY_UPGRADE_PLAN.md."
+
   nightly-smoke:
     name: Nightly smoke (cold browser)
     runs-on: ubuntu-latest

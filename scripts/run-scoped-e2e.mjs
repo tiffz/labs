@@ -43,12 +43,17 @@ const APP_SMOKE_SPECS = {
   ],
   drums: [
     'e2e/smoke/drums-load-interaction.spec.ts',
+    'e2e/smoke/drums-score-export.spec.ts',
     'e2e/smoke/metronome-advanced-settings.spec.ts',
+    'e2e/smoke/layout-heuristics-drums.spec.ts',
+    'src/drums/e2e/drums-init.spec.ts',
+    'src/drums/e2e/drums-interaction.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/drums/' },
   ],
   stanza: [
     'e2e/smoke/stanza-practice-rail.spec.ts',
     'e2e/smoke/stanza-library.spec.ts',
+    'e2e/smoke/stanza-dual-source-switch.spec.ts',
     'e2e/smoke/stanza-loop-whole-song.spec.ts',
     'e2e/smoke/stanza-playthrough-tail.spec.ts',
     'e2e/smoke/stanza-playback-soak.spec.ts',
@@ -60,6 +65,7 @@ const APP_SMOKE_SPECS = {
   words: [
     'e2e/smoke/words-practice-interaction.spec.ts',
     'e2e/smoke/layout-heuristics-words.spec.ts',
+    'src/words/e2e/words-init.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/words/' },
   ],
   piano: [
@@ -68,10 +74,13 @@ const APP_SMOKE_SPECS = {
   ],
   chords: [
     'e2e/smoke/chords-play-interaction.spec.ts',
+    'src/chords/e2e/chords-init.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/chords/' },
   ],
   story: [
     'e2e/smoke/story-load-interaction.spec.ts',
+    'src/story/e2e/story-init.spec.ts',
+    'src/story/e2e/story-generation.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/story/' },
   ],
   zinebox: [
@@ -94,6 +103,7 @@ const APP_SMOKE_SPECS = {
   ],
   scrapboard: [
     'e2e/smoke/scrapboard.spec.ts',
+    'e2e/smoke/scrapboard-bubbles.spec.ts',
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/scrapboard/' },
   ],
   muscle: [
@@ -103,6 +113,42 @@ const APP_SMOKE_SPECS = {
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/muscle/' },
   ],
   midi: [{ file: 'e2e/smoke/app-shells.spec.ts', grep: '/midi/' }],
+  agility: [{ file: 'e2e/smoke/app-shells.spec.ts', grep: '/agility/' }],
+  cats: [
+    'src/cats/e2e/cats-init.spec.ts',
+    'src/cats/e2e/cats-interactions.spec.ts',
+    'src/cats/e2e/cats-furniture.spec.ts',
+    'src/cats/e2e/cats-cheek-pounce.spec.ts',
+    { file: 'e2e/smoke/app-shells.spec.ts', grep: '/cats/' },
+  ],
+  corp: [
+    'src/corp/e2e/corp-init.spec.ts',
+    'src/corp/e2e/corp-movement.spec.ts',
+    { file: 'e2e/smoke/app-shells.spec.ts', grep: '/corp/' },
+  ],
+  count: [{ file: 'e2e/smoke/app-shells.spec.ts', grep: '/count/' }],
+  forms: [
+    'src/forms/e2e/forms-init.spec.ts',
+    { file: 'e2e/smoke/app-shells.spec.ts', grep: '/forms/' },
+  ],
+  melodia: [{ file: 'e2e/smoke/app-shells.spec.ts', grep: '/melodia/' }],
+  pitch: [
+    'src/pitch/e2e/pitch-init.spec.ts',
+    { file: 'e2e/smoke/app-shells.spec.ts', grep: '/pitch/' },
+  ],
+  scales: [{ file: 'e2e/smoke/app-shells.spec.ts', grep: '/scales/' }],
+  ui: [
+    'src/ui/e2e/ui-init.spec.ts',
+    { file: 'e2e/smoke/app-shells.spec.ts', grep: '/ui/' },
+  ],
+  zines: [
+    'src/zines/e2e/zines-init.spec.ts',
+    { file: 'e2e/smoke/app-shells.spec.ts', grep: '/zines/' },
+  ],
+  labsHome: [
+    'e2e/home-init.spec.ts',
+    { file: 'e2e/smoke/app-shells.spec.ts', grep: 'boots /$' },
+  ],
 };
 
 function gitRef(base) {
@@ -208,7 +254,16 @@ for (const app of apps) {
   }
 }
 
-if (files.some((f) => f.includes('playback') || f.includes('Playback'))) {
+const playbackAdjacent = (f) =>
+  f.includes('playback') ||
+  f.includes('Playback') ||
+  f.toLowerCase().includes('vexflow') ||
+  f.includes('metronome') ||
+  f.includes('Metronome') ||
+  f.startsWith('src/shared/components/music/') ||
+  f.startsWith('src/shared/notation/') ||
+  f.startsWith('src/shared/audio/');
+if (files.some(playbackAdjacent)) {
   execSync('npx playwright test e2e/playback-ui-regressions.spec.ts', { stdio: 'inherit' });
 }
 

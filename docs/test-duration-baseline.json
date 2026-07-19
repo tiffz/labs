@@ -1,0 +1,146 @@
+{
+  "generatedAt": "2026-07-18T22:58:00.925Z",
+  "totalFiles": 774,
+  "totalDurationMs": 40588.7275390625,
+  "byApp": {
+    "shared": 13795.403564453125,
+    "drums": 5157.876220703125,
+    "cats": 4529.06982421875,
+    "encore": 3959.223388671875,
+    "gesture": 3329.68310546875,
+    "stanza": 1230.86767578125,
+    "zines": 1115.4375,
+    "lyrefly": 1018.864990234375,
+    "chords": 918.22607421875,
+    "story": 697.794189453125,
+    "count": 613.914306640625,
+    "scales": 573.723876953125,
+    "midi": 484.096435546875,
+    "melodia": 482.934814453125,
+    "muscle": 461.217529296875,
+    "zinebox": 446.2822265625,
+    "ui": 413.806884765625,
+    "words": 318.247314453125,
+    "pitch": 297.659912109375,
+    "piano": 271.25634765625,
+    "agility": 193.627685546875,
+    "sight": 135.34716796875,
+    "forms": 70.990966796875,
+    "scrapboard": 30,
+    "palette": 24.81298828125,
+    "corp": 18.362548828125
+  },
+  "medianAppDurationMs": 482.934814453125,
+  "flaggedApps": {
+    "shared": 13795.403564453125,
+    "drums": 5157.876220703125,
+    "cats": 4529.06982421875,
+    "encore": 3959.223388671875,
+    "gesture": 3329.68310546875,
+    "stanza": 1230.86767578125,
+    "zines": 1115.4375,
+    "lyrefly": 1018.864990234375
+  },
+  "slowestFiles": [
+    {
+      "file": "src/cats/App.test.tsx",
+      "app": "cats",
+      "durationMs": 1708.90478515625
+    },
+    {
+      "file": "src/drums/App.test.tsx",
+      "app": "drums",
+      "durationMs": 1576.71875
+    },
+    {
+      "file": "src/gesture/drive/gestureUploadNetwork.test.ts",
+      "app": "gesture",
+      "durationMs": 1409.42041015625
+    },
+    {
+      "file": "src/encore/context/EncoreBlockingJobContext.test.tsx",
+      "app": "encore",
+      "durationMs": 1223.90185546875
+    },
+    {
+      "file": "src/shared/comic/speechBubbleValidationHarness.test.ts",
+      "app": "shared",
+      "durationMs": 1117.1748046875
+    },
+    {
+      "file": "src/zines/App.test.tsx",
+      "app": "zines",
+      "durationMs": 1041.343017578125
+    },
+    {
+      "file": "src/shared/jobs/LabsBlockingJobContext.test.tsx",
+      "app": "shared",
+      "durationMs": 1036.799560546875
+    },
+    {
+      "file": "src/shared/components/music/BpmInput.test.tsx",
+      "app": "shared",
+      "durationMs": 884.20361328125
+    },
+    {
+      "file": "src/drums/components/NotePalette.test.tsx",
+      "app": "drums",
+      "durationMs": 874.56884765625
+    },
+    {
+      "file": "src/drums/components/PlaybackControls.test.tsx",
+      "app": "drums",
+      "durationMs": 830.029296875
+    },
+    {
+      "file": "src/shared/components/music/inlineDrumUxContract.test.tsx",
+      "app": "shared",
+      "durationMs": 784.57080078125
+    },
+    {
+      "file": "src/shared/sharedUiReuse.test.ts",
+      "app": "shared",
+      "durationMs": 743.765869140625
+    },
+    {
+      "file": "src/story/App.test.tsx",
+      "app": "story",
+      "durationMs": 636.36328125
+    },
+    {
+      "file": "src/count/components/BeatDisplay.test.tsx",
+      "app": "count",
+      "durationMs": 613.914306640625
+    },
+    {
+      "file": "src/encore/practice/encorePracticeExerciseExport.pdf.test.ts",
+      "app": "encore",
+      "durationMs": 558.6669921875
+    },
+    {
+      "file": "src/shared/palette/LabsPaletteBuilder.test.tsx",
+      "app": "shared",
+      "durationMs": 536.377197265625
+    },
+    {
+      "file": "src/shared/components/music/DrumAccompaniment.test.tsx",
+      "app": "shared",
+      "durationMs": 534.1748046875
+    },
+    {
+      "file": "src/gesture/media/gestureMediaCache.test.ts",
+      "app": "gesture",
+      "durationMs": 532.0703125
+    },
+    {
+      "file": "src/shared/drive/computeFileMd5Hex.test.ts",
+      "app": "shared",
+      "durationMs": 523
+    },
+    {
+      "file": "src/chords/components/ChordScoreRenderer.test.tsx",
+      "app": "chords",
+      "durationMs": 517.8037109375
+    }
+  ]
+}

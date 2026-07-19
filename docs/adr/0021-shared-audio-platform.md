@@ -36,4 +36,4 @@ Introduce **`src/shared/audio/platform/`** as the canonical layer:
 
 - [`docs/SHARED_AUDIO_PLATFORM.md`](../SHARED_AUDIO_PLATFORM.md)
 - ADR [0008](0008-stanza-section-marker-model-and-metronome-calibration.md) — Stanza calibration data unchanged
-- [`src/shared/audio/platform/README.md`](../src/shared/audio/platform/README.md)
+- [`src/shared/audio/platform/README.md`](../../src/shared/audio/platform/README.md)

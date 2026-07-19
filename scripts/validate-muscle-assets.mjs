@@ -35,7 +35,6 @@ const OVERLAY_NODE_IDS = new Set([
 const ATLAS_EXPORT_REGIONS = new Set([
   'atlas_supplement',
   'atlas_head_face',
-  'atlas_skin',
   'atlas_complete',
 ]);
 

@@ -12,4 +12,15 @@ test.describe('Words layout heuristics', () => {
     });
     expect(result.ok, result.ok ? '' : JSON.stringify(result)).toBe(true);
   });
+
+  test('narrow phone main has no horizontal overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/words/');
+    await expect(page.locator('main#main')).toBeVisible({ timeout: 15_000 });
+
+    const result = await page.evaluate(runHorizontalScrollHeuristicInBrowser, {
+      rootSelector: 'main#main',
+    });
+    expect(result.ok, result.ok ? '' : JSON.stringify(result)).toBe(true);
+  });
 });

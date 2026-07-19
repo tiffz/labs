@@ -12,9 +12,9 @@ This document defines default conventions for shared UI so apps stay naturally a
 
 Cross-app **popover surfaces**, **pill buttons**, and **hover rhythm** use the shared chrome contract — not per-app `box-shadow` / `:hover` copies.
 
-**Selection visual hierarchy** (primary vs secondary selected states for toggles, chips, transport): [`docs/SELECTION_VISUAL_HIERARCHY.md`](../docs/SELECTION_VISUAL_HIERARCHY.md). Tokens: `--labs-selection-primary-*`, `--labs-selection-secondary-*` in `appSharedThemes.css`.
+**Selection visual hierarchy** (primary vs secondary selected states for toggles, chips, transport): [`docs/SELECTION_VISUAL_HIERARCHY.md`](../../docs/SELECTION_VISUAL_HIERARCHY.md). Tokens: `--labs-selection-primary-*`, `--labs-selection-secondary-*` in `appSharedThemes.css`.
 
-**Focus rings** (tokens, inset vs outset, sticky bar bleed, portal-safe accent): [`docs/FOCUS_THEMING.md`](../docs/FOCUS_THEMING.md). Utilities: `.labs-focus-ring-host`, `.labs-focus-inset`, `.labs-focus-outset`, `--labs-focus-ring-bleed` in `labsChrome.css`. Menu open/close + split controls: [`docs/A11Y_MENU_PATTERNS.md`](../docs/A11Y_MENU_PATTERNS.md).
+**Focus rings** (tokens, inset vs outset, sticky bar bleed, portal-safe accent): [`docs/FOCUS_THEMING.md`](../../docs/FOCUS_THEMING.md). Utilities: `.labs-focus-ring-host`, `.labs-focus-inset`, `.labs-focus-outset`, `--labs-focus-ring-bleed` in `labsChrome.css`. Menu open/close + split controls: [`docs/A11Y_MENU_PATTERNS.md`](../../docs/A11Y_MENU_PATTERNS.md).
 
 - **Contract:** [`docs/CHROME_UI_CONTRACT.md`](../../docs/CHROME_UI_CONTRACT.md)
 - **Primitives:** [`styles/labsChrome.css`](./styles/labsChrome.css) — `.labs-popover-surface`, `.labs-btn` (+ `--primary`, `--ghost`, `--icon`)
@@ -298,7 +298,7 @@ Dense hosts use [`LabsWikimediaImageField`](media/LabsWikimediaImageField.tsx): 
 
 ## Interaction patterns (pickers vs editors)
 
-See [`docs/CHROME_UI_CONTRACT.md`](../docs/CHROME_UI_CONTRACT.md) for chrome profiles and the full matrix.
+See [`docs/CHROME_UI_CONTRACT.md`](../../docs/CHROME_UI_CONTRACT.md) for chrome profiles and the full matrix.
 
 | UI need                                | Use                                                        |
 | -------------------------------------- | ---------------------------------------------------------- |
@@ -361,7 +361,7 @@ Wire Stanza via `useStanzaDriveBackup`; Scales via `ScalesDriveBackupProvider` (
 After a blocking job finishes, **brief success copy** (e.g. `Synced from Drive (merged 218 comics).`) belongs in a **bottom-center dismissible toast**, not a banner over the app header or a filled MUI alert in the account menu.
 
 - **Component:** [`LabsFeedbackToast`](./components/LabsFeedbackToast.tsx) — paper panel, severity icon circle, matches [`LabsBlockingJobContext`](./jobs/LabsBlockingJobContext.tsx) elevation and placement.
-- **Drive hook:** [`useLabsDriveSyncToastMessage`](./google/useLabsDriveSyncToastMessage.ts) — filters transient sync copy via [`labsDriveSyncMessageIsTransientSuccess`](../drive/labsDriveSyncMessages.ts).
+- **Drive hook:** [`useLabsDriveSyncToastMessage`](./google/useLabsDriveSyncToastMessage.ts) — filters transient sync copy via [`labsDriveSyncMessageIsTransientSuccess`](drive/labsDriveSyncMessages.ts).
 - **Default wiring:** `LabsDriveAccountMenu` renders [`LabsDriveSyncToast`](./google/LabsDriveSyncToast.tsx) (thin wrapper). Apps with sticky headers (Zine Box) set `hideSyncToast` and mount one toast at the **app shell** (see `ZineboxDriveBackupProvider`).
 - **Errors / sign-in prompts** stay in the account menu alert slot — do not toast those.
 - **Long-running work** still uses the blocking-job snackbar only; do not duplicate progress UI.

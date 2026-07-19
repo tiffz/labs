@@ -2,14 +2,9 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { VisualRouteFromRegistry } from '../routeRegistry';
 
-export type VisualRouteSpec = {
-  id: string;
-  route: string;
-  title: RegExp;
-  readySelector: string;
-  visibleTimeoutMs?: number;
-};
+export type VisualRouteSpec = VisualRouteFromRegistry;
 
 const BLOCKED_EXTERNAL_REGEX = /google-analytics|googletagmanager|fonts\.googleapis|fonts\.gstatic/;
 const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -126,6 +121,30 @@ export async function configureDeterministicBrowserState(page: Page): Promise<vo
     win.__E2E__ = true;
     win.labsAnalyticsInitialized = true;
     win.gtag = () => {};
+
+    // Deterministic wall clock: every capture reports the same base date
+    // (2026-01-15T12:00:00Z) while staying monotonic so elapsed-time logic
+    // (throttles, debounces) keeps working. Timers stay real.
+    const NativeDate = Date;
+    const FIXED_BASE_MS = 1768478400000; // 2026-01-15T12:00:00Z
+    const realStart = NativeDate.now();
+    const deterministicNow = () => FIXED_BASE_MS + (NativeDate.now() - realStart);
+    class LabsVisualDate extends NativeDate {
+      constructor(...args: ConstructorParameters<typeof Date>) {
+        if (args.length === 0) {
+          super(deterministicNow());
+        } else {
+          super(...args);
+        }
+      }
+      static now(): number {
+        return deterministicNow();
+      }
+    }
+    LabsVisualDate.parse = NativeDate.parse;
+    LabsVisualDate.UTC = NativeDate.UTC;
+    (window as unknown as { Date: unknown }).Date = LabsVisualDate;
+
     // Force deterministic RNG for apps that randomize initial state on boot.
     let seed = 123456789;
     Math.random = () => {

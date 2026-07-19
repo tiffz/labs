@@ -9,7 +9,7 @@ description: Mandatory before non-trivial Labs UI — journey sketch in chat, th
 
 **Do not create or edit UI files until you post the journey sketch in chat.**
 
-Read [`docs/UX_AGENT_GUIDE.md`](../../docs/UX_AGENT_GUIDE.md). Always-on rule: [`.cursor/rules/ux-journey-mandatory.mdc`](../rules/ux-journey-mandatory.mdc).
+Read [`docs/UX_AGENT_GUIDE.md`](../../../docs/UX_AGENT_GUIDE.md). Always-on rule: [`.cursor/rules/ux-journey-mandatory.mdc`](../../rules/ux-journey-mandatory.mdc).
 
 If the user waived the sketch explicitly, note that in chat and proceed.
 
@@ -53,15 +53,15 @@ Answer before coding:
 ### 4. Copy check
 
 - [ ] No repeated phrases on same screen
-- [ ] [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md) + app `COPY_STYLE.md`
+- [ ] [`docs/USER_COPY_STYLE.md`](../../../docs/USER_COPY_STYLE.md) + app `COPY_STYLE.md`
 - [ ] Long help in tooltips, not stacked paragraphs
 
 ### 5. Verify
 
 - [ ] **`npm run verify:layout`** when layout/CSS changed on primary surfaces (mandatory before done)
 - [ ] Screenshot / browser snapshot for changed route when UI is user-visible
-- [ ] Add or extend e2e smoke if invariant is testable (see [`docs/E2E_SMOKE_CONVENTIONS.md`](../../docs/E2E_SMOKE_CONVENTIONS.md))
-- [ ] If grid + controls on same screen → read [`docs/PERFORMANCE.md`](../../docs/PERFORMANCE.md); consider CUJ row + interaction smoke
+- [ ] Add or extend e2e smoke if invariant is testable (see [`docs/E2E_SMOKE_CONVENTIONS.md`](../../../docs/E2E_SMOKE_CONVENTIONS.md))
+- [ ] If grid + controls on same screen → read [`docs/PERFORMANCE.md`](../../../docs/PERFORMANCE.md); consider CUJ row + interaction smoke
 - [ ] `npx eslint` zero warnings on touched files
 
 ## Red flags (stop and redesign)

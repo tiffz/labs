@@ -71,4 +71,19 @@ test.describe('Encore layout heuristics', () => {
     });
     expect(result.ok, result.ok ? '' : JSON.stringify(result)).toBe(true);
   });
+
+  test('narrow phone library has no horizontal overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await enterEncoreApp(page);
+    await page.goto('/encore/#/library');
+
+    await expect(page.getByRole('heading', { name: 'Your repertoire' })).toBeVisible({
+      timeout: 15_000,
+    });
+
+    const result = await page.evaluate(runHorizontalScrollHeuristicInBrowser, {
+      rootSelector: 'main#main',
+    });
+    expect(result.ok, result.ok ? '' : JSON.stringify(result)).toBe(true);
+  });
 });

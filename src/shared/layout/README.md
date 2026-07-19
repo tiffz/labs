@@ -37,7 +37,7 @@ Column → workbench → scroll → content + footer pattern for micro-apps with
 
 ## Responsive defaults
 
-Shared breakpoint scale and checklist: [`docs/RESPONSIVE_DESIGN.md`](../../docs/RESPONSIVE_DESIGN.md) · tokens/comments in [`labs-breakpoints.css`](labs-breakpoints.css).
+Shared breakpoint scale and checklist: [`docs/RESPONSIVE_DESIGN.md`](../../../docs/RESPONSIVE_DESIGN.md) · tokens/comments in [`labs-breakpoints.css`](labs-breakpoints.css).
 
 Shell padding tokens (`--labs-shell-pad-*`) step at 640px / 900px. Apps should collapse toolbars and lower grid `minmax` under those widths rather than inventing one-off breakpoints.
 

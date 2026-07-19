@@ -109,6 +109,46 @@ for agents_md in src/*/AGENTS.md; do
   fi
 done
 
+echo "== check:agent-docs: guidance evals artifact names =="
+
+evals_doc="docs/GUIDANCE_EVALS.md"
+if [ -f "$evals_doc" ]; then
+  # Every labs-* skill named in a golden scenario must exist on disk.
+  for skill in $(grep -o 'labs-[a-z0-9-]*' "$evals_doc" | sort -u); do
+    if [ ! -d ".cursor/skills/${skill}" ]; then
+      fail "${evals_doc} references missing skill ${skill}"
+    fi
+  done
+  # Every .mdc rule named in a golden scenario must exist on disk.
+  for rule in $(grep -o '[a-z0-9-]*\.mdc' "$evals_doc" | sort -u); do
+    if [ ! -f ".cursor/rules/${rule}" ]; then
+      fail "${evals_doc} references missing rule ${rule}"
+    fi
+  done
+else
+  fail "missing ${evals_doc}"
+fi
+
+echo "== check:agent-docs: process backlog root-cause labels =="
+
+backlog_doc="docs/PROCESS_BACKLOG.md"
+cpi_doc="docs/CONTINUOUS_PROCESS_IMPROVEMENT.md"
+if [ -f "$backlog_doc" ] && [ -f "$cpi_doc" ]; then
+  # Backlog rows: | P1 | `label` | proposal | status | — labels must exist in the
+  # canonical root-cause class list (lines beginning "- `label`").
+  labels_tmp=$(mktemp)
+  grep -E '^\| P[0-9]' "$backlog_doc" | awk -F'|' '{print $3}' | sed -n 's/.*`\([^`]*\)`.*/\1/p' | sort -u > "$labels_tmp"
+  while IFS= read -r label; do
+    [ -n "$label" ] || continue
+    if ! grep -qF -- "- \`${label}\`" "$cpi_doc"; then
+      fail "${backlog_doc} uses root-cause label '${label}' missing from ${cpi_doc} canonical list"
+    fi
+  done < "$labels_tmp"
+  rm -f "$labels_tmp"
+else
+  fail "missing ${backlog_doc} or ${cpi_doc}"
+fi
+
 echo "== check:agent-docs: skills-ref validate =="
 
 if command -v npx >/dev/null 2>&1; then

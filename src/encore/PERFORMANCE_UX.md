@@ -1,6 +1,6 @@
 # Encore performance UX
 
-Interaction design for logging, editing, and viewing **performances** (gig history + video). Copy voice still follows [`COPY_STYLE.md`](COPY_STYLE.md) and [`docs/USER_COPY_STYLE.md`](../docs/USER_COPY_STYLE.md).
+Interaction design for logging, editing, and viewing **performances** (gig history + video). Copy voice still follows [`COPY_STYLE.md`](COPY_STYLE.md) and [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md).
 
 ## Mental model
 
@@ -34,7 +34,7 @@ Never orphan source controls (link, upload, resolved filename) below a video lis
 
 When adding features, ask: **does this belong on the detail page instead of the modal?** Prefer the page for multi-video management, compare, and long notes; keep the modal for “log this show” and “fix the link.”
 
-See [`docs/design-explorations/performance-detail-page.md`](../docs/design-explorations/performance-detail-page.md) for the page shell sketch.
+See [`docs/design-explorations/performance-detail-page.md`](../../docs/design-explorations/performance-detail-page.md) for the page shell sketch.
 
 ## Video source card (reference)
 
@@ -58,7 +58,7 @@ Rules:
 - Secondary videos in a stack: same card in edit mode.
 - Use shared tokens from [`encoreUiTokens.ts`](theme/encoreUiTokens.ts): `encorePerformanceListRowSx`, `encorePerformanceVideoPanelSx`, `encorePerformanceStagedVideoSx`, `encorePerformanceSectionDropSx`, `encorePerformanceDropHintSx`. Prefer hairline borders and `encoreShadowSurface` over `border: 2` or MUI `boxShadow: 1`.
 - **Border discipline** — Section headers and the read-only **Adding to** summary delineate groups. Do not wrap staged previews, source fields, or dialog video rows in extra card borders. Reserve row borders for Practice/song list rows that are drop targets (`encorePerformanceListRowSx` with `bordered: true`).
-- Device upload drop targets reuse [`DragDropFileUpload`](../../shared/components/DragDropFileUpload.tsx) with `tone="soft"` in the performance editor (fuchsia-forward inline strip) or `tone="brand"` for bulk import — do not invent a third drop style.
+- Device upload drop targets reuse [`DragDropFileUpload`](../shared/components/DragDropFileUpload.tsx) with `tone="soft"` in the performance editor (fuchsia-forward inline strip) or `tone="brand"` for bulk import — do not invent a third drop style.
 - The performance editor **Videos** section (log, edit, add-video) is wrapped in [`PerformanceEditorVideosDropZone`](components/performance/PerformanceEditorVideosDropZone.tsx): dropping anywhere on that region stages or queues clips, not only on the compact upload row.
 
 ## Components (code map)
@@ -115,7 +115,7 @@ Regression guard for `EncoreMediaTrackAddMenu` and chart add menu on the song pa
 
 When implementing performance UX in a session:
 
-1. Read this file + [`AGENTS.md`](../AGENTS.md) task row for performance UX.
+1. Read this file + [`AGENTS.md`](../../AGENTS.md) task row for performance UX.
 2. Prefer extending the component map above — do not add parallel upload/link/play patterns.
 3. Run **`npm run presubmit`** before declaring done (catches type/lint/knip/test gaps).
 4. After route-level or provider-adjacent edits, **hard-refresh** and open `#/library` or the affected song/practice view — Vite HMR can leave React context broken even when tests pass.

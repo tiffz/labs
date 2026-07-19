@@ -8,6 +8,8 @@
  *     node scripts/import-visual-baselines-from-artifacts.mjs /tmp/visual/test-results
  *
  * Only imports snapshots that have a matching *-diff.png (failed comparison).
+ * Pass --include-new to also import actuals for routes with NO committed baseline
+ * yet (first capture of a new visual route) — review each PNG before committing.
  * Baselines are authoritative on Linux CI — prefer artifacts from a CI run.
  */
 
@@ -17,10 +19,14 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const snapshotDir = path.join(repoRoot, 'e2e/visual/apps.visual.spec.ts-snapshots');
-const resultsRoot = process.argv[2];
+const args = process.argv.slice(2);
+const includeNew = args.includes('--include-new');
+const resultsRoot = args.find((a) => !a.startsWith('--'));
 
 if (!resultsRoot) {
-  console.error('Usage: node scripts/import-visual-baselines-from-artifacts.mjs <test-results-dir>');
+  console.error(
+    'Usage: node scripts/import-visual-baselines-from-artifacts.mjs [--include-new] <test-results-dir>'
+  );
   process.exit(1);
 }
 
@@ -44,7 +50,9 @@ function walk(dir) {
     if (!m) continue;
     const base = m[1];
     const diffPath = path.join(dir, `${base}-diff.png`);
-    if (!fs.existsSync(diffPath)) continue;
+    const committedBaseline = path.join(snapshotDir, `${base}.png`);
+    const isNewBaseline = includeNew && !fs.existsSync(committedBaseline);
+    if (!fs.existsSync(diffPath) && !isNewBaseline) continue;
     const prev = actualByName.get(base);
     if (!prev || full.includes('-retry1')) {
       actualByName.set(base, full);

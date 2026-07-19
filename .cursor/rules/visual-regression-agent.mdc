@@ -1,32 +1,22 @@
----
-description: Agent workflow for screenshot visual regression review and baseline updates
-globs:
-  - e2e/visual/**
-  - e2e/routeRegistry.ts
-  - scripts/import-visual-baselines-from-artifacts.mjs
-  - scripts/refresh-visual-baselines.mjs
-  - docs/REGRESSION_WORKFLOW.md
-  - docs/VISUAL_REGRESSION_AGENT.md
----
-
 # Visual regression (agents)
 
-Read [`docs/VISUAL_REGRESSION_AGENT.md`](../../docs/VISUAL_REGRESSION_AGENT.md) and skill [`labs-visual-regression`](../skills/labs-visual-regression/SKILL.md) before updating `e2e/visual/apps.visual.spec.ts-snapshots/`.
+Read skill [`labs-visual-judge`](../skills/labs-visual-judge/SKILL.md) (diff triage + rubric) and [`labs-visual-regression`](../skills/labs-visual-regression/SKILL.md) (baseline mechanics) before updating `e2e/visual/apps.visual.spec.ts-snapshots/`.
 
 ## Must do
 
 1. **Review** actual + expected + diff (CI artifact or local `test-results/`) — never blind `--update-snapshots`.
-2. **Classify** each failure: expected · platform drift · bug · uncertain.
-3. **Update from Linux CI** when approved: `node scripts/import-visual-baselines-from-artifacts.mjs <test-results-dir>`.
-4. **Commit audit trail** — list each PNG and why it changed.
-5. **Escalate** error banners, blank content, overlap, or unexplained multi-app diffs.
+2. **Classify** each failure with a [`docs/VISUAL_JUDGE_RUBRIC.md`](../../docs/VISUAL_JUDGE_RUBRIC.md) tier + row (`T1.3`, `T2.1`, …).
+3. **Update from Linux CI** when Tier 2: `node scripts/import-visual-baselines-from-artifacts.mjs <test-results-dir>` (`--include-new` for first captures).
+4. **Commit audit trail** — list each PNG, its tier row, and why it changed.
+5. **Escalate** every Tier 3 (and Tier 1 you cannot fix in scope) with images attached.
 
 ## Must not
 
-- Update baselines to hide a layout bug.
-- Run full `--update-snapshots` on macOS for repo-wide refresh (Linux CI is canonical).
+- Update baselines to absorb any Tier 1 (must-fix) signal.
+- Run full `--update-snapshots` on macOS for repo-wide refresh (Linux CI is canonical; use `npm run test:e2e:visual:docker` locally).
 - Skip review when `src/shared/**` or `/ui/**` changed.
 
-## CI warning = agent todo
+## CI signals = agent todo
 
-When CI emits `Visual regression (advisory)`, download `visual-regression-artifacts` and run the playbook.
+- Scoped PR visual step is **blocking** — a failure means judge now (skill `labs-visual-judge`).
+- `Visual regression (advisory)` warning on cross-cutting diffs — download `visual-regression-artifacts` and judge before merge.

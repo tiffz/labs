@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # Group minor + patch bumps into one PR to keep review load low
+    # (docs/DEPENDENCY_UPGRADE_PLAN.md governs majors — Dependabot majors are
+    # ignored below and land through the phased plan instead).
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3

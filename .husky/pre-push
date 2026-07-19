@@ -14,5 +14,11 @@ if [ "$LABS_SKIP_PRESUBMIT_PUSH" = "1" ]; then
   exit 0
 fi
 
+# Playwright reuses a healthy server on 5173, but a half-dead or wrong-checkout
+# Vite makes every spec fail with net::ERR_ABORTED (class: e2e-port-collision).
+if command -v lsof >/dev/null 2>&1 && lsof -ti :5173 >/dev/null 2>&1; then
+  echo "pre-push: port 5173 is in use; e2e will reuse it. If specs fail with ERR_ABORTED: kill \$(lsof -ti :5173)" >&2
+fi
+
 echo "pre-push: running presubmit:push…"
 npm run presubmit:push

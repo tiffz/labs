@@ -8,19 +8,12 @@ const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const SRC_ROOT = path.join(REPO_ROOT, 'src');
 
-/** Apps allowed to use raw MUI Slider for volume (document in DESIGN.md if adding). */
-const SLIDER_ALLOWLIST = new Set<string>([
-  'shared/components/AppLinearVolumeSlider.tsx',
-  'shared/components/AppCompactSlider.tsx',
-  'shared/components/PlaybackVolumeRow.tsx',
-  'ui/',
-]);
+// Raw MUI Slider imports are guarded by src/shared/sharedUiReuse.test.ts
+// (single allowlist source) — do not duplicate a Slider check here.
 
 /** App files allowed Snackbar for blocking jobs (none — use LabsFeedbackToast). */
 const SNACKBAR_BLOCKING_JOB_ALLOWLIST = new Set<string>();
 
-const VOLUME_SLIDER_IMPORT =
-  /import\s+Slider\s+from\s+['"]@mui\/material\/Slider['"]/;
 const SNACKBAR_IMPORT = /import\s+Snackbar\s+from\s+['"]@mui\/material\/Snackbar['"]/;
 
 function listComponentTsxFiles(): string[] {
@@ -40,31 +33,8 @@ function listComponentTsxFiles(): string[] {
   return out;
 }
 
-function isAllowlisted(rel: string): boolean {
-  const normalized = rel.replaceAll('\\', '/');
-  for (const allowed of SLIDER_ALLOWLIST) {
-    if (normalized.includes(allowed) || normalized.endsWith(allowed)) return true;
-  }
-  return false;
-}
-
 describe('Shared UX pattern guardrails', () => {
   const files = listComponentTsxFiles();
-
-  it('does not use raw MUI Slider for volume outside allowlist', () => {
-    const offenders = files.filter((file) => {
-      const rel = path.relative(SRC_ROOT, file);
-      if (rel.startsWith(`shared${path.sep}jobs${path.sep}`)) return false;
-      if (isAllowlisted(rel)) return false;
-      const source = fs.readFileSync(file, 'utf8');
-      if (!VOLUME_SLIDER_IMPORT.test(source)) return false;
-      return /\b(volume|gain|master)\b/i.test(source);
-    });
-    expect(
-      offenders.map((f) => path.relative(REPO_ROOT, f)),
-      'Use AppLinearVolumeSlider — see SHARED_UI_CONVENTIONS.md',
-    ).toEqual([]);
-  });
 
   it('does not add app-local Snackbar for blocking jobs (use LabsBlockingJobContext)', () => {
     const offenders = files.filter((file) => {

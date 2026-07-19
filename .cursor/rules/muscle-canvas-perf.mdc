@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Muscle canvas performance
 
-Read [`src/muscle/CUJs.md`](../../CUJs.md) CUJ-001 before changing orbit, picking, or materials.
+Read [`src/muscle/CUJs.md`](../../src/muscle/CUJs.md) CUJ-001 before changing orbit, picking, or materials.
 
 ## Non-negotiables
 
@@ -25,5 +25,5 @@ Read [`src/muscle/CUJs.md`](../../CUJs.md) CUJ-001 before changing orbit, pickin
 
 ## Related
 
-- [`docs/PERFORMANCE.md`](../../../docs/PERFORMANCE.md) — sustained render layer
+- [`docs/PERFORMANCE.md`](../../docs/PERFORMANCE.md) — sustained render layer
 - Skill `labs-performance`

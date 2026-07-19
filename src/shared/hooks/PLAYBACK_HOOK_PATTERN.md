@@ -59,7 +59,7 @@ Copy the cases in [`useChartChordPlayback.test.ts`](./useChartChordPlayback.test
 - Generation bump invalidates stale `playMeasure` continuations.
 - Settings / layout changes while idle do not leak timers.
 
-Instrument-level: [`instrument.test.ts`](../audio/instrument.test.ts) — `stopAll` abandons scheduled output.
+Instrument-level: [`instrument.test.ts`](../playback/instruments/instrument.test.ts) — `stopAll` abandons scheduled output.
 
 ## Related docs
 

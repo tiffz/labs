@@ -2,6 +2,17 @@
  * Single source of truth for app routes used by smoke e2e, visual regression, and docs.
  * Update REGRESSION_WORKFLOW.md when changing coverage notes — run check:agent-docs.
  */
+export type VisualViewportName = 'desktop' | 'mobile' | 'tablet';
+
+/** Canonical viewports for visual baselines (matches docs/RESPONSIVE_DESIGN.md checkpoints). */
+export const VISUAL_VIEWPORTS: Record<VisualViewportName, { width: number; height: number }> = {
+  desktop: { width: 1440, height: 900 },
+  mobile: { width: 390, height: 844 },
+  tablet: { width: 768, height: 1024 },
+};
+
+export const DEFAULT_VISUAL_VIEWPORTS: VisualViewportName[] = ['desktop', 'mobile'];
+
 export type RouteSpec = {
   route: string;
   title: RegExp;
@@ -20,6 +31,10 @@ export type RouteSpec = {
   smokeVisibleTimeoutMs?: number;
   /** Optional visibility timeout for visual regression (default Playwright 5s). */
   visualVisibleTimeoutMs?: number;
+  /** Viewports to capture (default desktop + mobile; add tablet for layout-sensitive shells). */
+  visualViewports?: VisualViewportName[];
+  /** CSS selectors masked in screenshots (genuinely dynamic regions, e.g. WebGL canvases). */
+  visualMaskSelectors?: string[];
   notes?: string;
 };
 
@@ -96,16 +111,16 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     title: /Melodia Online/i,
     visibleSelector: '#root',
     smoke: true,
-    visual: false,
-    notes: 'smoke only',
+    visual: true,
+    visualId: 'melodia',
   },
   {
     route: '/midi/',
     title: /Midi Scratchpad/i,
     visibleSelector: '#main',
     smoke: true,
-    visual: false,
-    notes: 'smoke only',
+    visual: true,
+    visualId: 'midi',
   },
   {
     route: '/piano/',
@@ -136,8 +151,10 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     title: /Stanza · Tiff Zhang Labs/i,
     visibleSelector: '#root',
     smoke: true,
-    visual: false,
-    notes: 'layout e2e separate',
+    visual: true,
+    visualId: 'stanza',
+    visualViewports: ['desktop', 'tablet', 'mobile'],
+    notes: 'empty library shell; layout e2e separate',
   },
   {
     route: '/story/',
@@ -152,32 +169,36 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     title: /Color Sight Trainer/i,
     visibleSelector: '#root',
     smoke: true,
-    visual: false,
-    notes: 'smoke only',
+    visual: true,
+    visualId: 'sight',
   },
   {
     route: '/agility/',
     title: /Vocal Agility Trainer/i,
     visibleSelector: '#root',
     smoke: true,
-    visual: false,
-    notes: 'smoke only',
+    visual: true,
+    visualId: 'agility',
   },
   {
     route: '/gesture/',
     title: /The Gesture Room/i,
     visibleSelector: '#root',
     smoke: true,
-    visual: false,
-    notes: 'smoke only',
+    visual: true,
+    visualId: 'gesture',
+    visualViewports: ['desktop', 'tablet', 'mobile'],
+    notes: 'empty home (upload-first state)',
   },
   {
     route: '/zinebox/',
     title: /Zine Box/i,
     visibleSelector: 'button:has-text("Upload zines")',
     smoke: true,
-    visual: false,
-    notes: 'smoke only',
+    visual: true,
+    visualId: 'zinebox',
+    visualViewports: ['desktop', 'tablet', 'mobile'],
+    notes: 'empty library state',
   },
   {
     route: '/lyrefly/',
@@ -192,7 +213,8 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     title: /Palette Generator/i,
     visibleSelector: '[data-testid="palettegen-app"]',
     smoke: true,
-    visual: false,
+    visual: true,
+    visualId: 'palette',
     notes: 'palette from images and links',
   },
   {
@@ -200,7 +222,8 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     title: /Scrapboard/i,
     visibleSelector: '[data-testid="scrapboard-app"]',
     smoke: true,
-    visual: false,
+    visual: true,
+    visualId: 'scrapboard',
     notes: 'comic panel mockups',
   },
   {
@@ -241,7 +264,52 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     smokeVisibleTimeoutMs: 20_000,
     smoke: true,
     visual: false,
-    notes: 'WIP — shell + study journey + orbit perf smokes',
+    notes: 'WIP — shell + study journey smokes; visual via seeded muscle row below',
+  },
+  // Muscle stays visual: false — even with the WebGL canvas masked, streaming
+  // model loads keep the page from reaching a stable screenshot. Revisit once
+  // the shell exposes a deterministic "models loaded" idle state.
+  {
+    route: '/gesture/?e2eSeed=1',
+    title: /The Gesture Room/i,
+    visibleSelector: '#root',
+    smoke: false,
+    visual: true,
+    visualId: 'gesture-seeded',
+    visualVisibleTimeoutMs: 15_000,
+    visualViewports: ['desktop', 'tablet', 'mobile'],
+    notes: 'Seeded home with collections and preview strips',
+  },
+  {
+    route: '/zinebox/?e2eSeed=1',
+    title: /Zine Box/i,
+    visibleSelector: '[data-testid="zinebox-library"]',
+    smoke: false,
+    visual: true,
+    visualId: 'zinebox-library',
+    visualVisibleTimeoutMs: 15_000,
+    visualViewports: ['desktop', 'tablet', 'mobile'],
+    notes: 'Seeded library with covers',
+  },
+  {
+    route: '/palette/?colors=ff0000,00ff00,0000ff',
+    title: /Palette Generator/i,
+    visibleSelector: '[data-testid="palettegen-app"]',
+    smoke: false,
+    visual: true,
+    visualId: 'palette-colors',
+    notes: 'Palette hydrated from URL colors',
+  },
+  {
+    route: '/encore/#/library',
+    title: /Encore/i,
+    visibleSelector: '#root',
+    smoke: false,
+    visual: true,
+    visualId: 'encore-library',
+    visualVisibleTimeoutMs: 15_000,
+    visualViewports: ['desktop', 'tablet', 'mobile'],
+    notes: 'Library screen after access gate (prepare hook dismisses gate)',
   },
   {
     route: '/ui/',
@@ -286,6 +354,8 @@ export type VisualRouteFromRegistry = {
   title: RegExp;
   readySelector: string;
   visibleTimeoutMs?: number;
+  viewports: VisualViewportName[];
+  maskSelectors?: string[];
 };
 
 export const VISUAL_ROUTE_SPECS: VisualRouteFromRegistry[] = APP_ROUTE_REGISTRY.filter(
@@ -296,4 +366,12 @@ export const VISUAL_ROUTE_SPECS: VisualRouteFromRegistry[] = APP_ROUTE_REGISTRY.
   title: r.visualTitle ?? r.title,
   readySelector: r.visualReadySelector ?? r.visibleSelector,
   visibleTimeoutMs: r.visualVisibleTimeoutMs,
+  viewports: r.visualViewports ?? DEFAULT_VISUAL_VIEWPORTS,
+  maskSelectors: r.visualMaskSelectors,
 }));
+
+/** App directory owning a route (first path segment; homepage → labsHome). */
+export function appForRoute(route: string): string {
+  const seg = route.replace(/^\//, '').split(/[/?#]/)[0] ?? '';
+  return seg === '' ? 'labsHome' : seg;
+}

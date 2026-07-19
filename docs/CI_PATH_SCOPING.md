@@ -45,13 +45,15 @@ See [`docs/TEST_STRATEGY.md`](TEST_STRATEGY.md) and [`docs/ENGINEERING_HEALTH.md
 
 The workflow detects changed paths (PR base or push parent):
 
-| Changed paths                                                                   | Vitest                                                     | E2e                                           |
-| ------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------- |
-| `src/shared/**`, `vite.config.*`, `vitest.config.*`, `package*.json`, workflows | Full `npm test`                                            | Full smoke + playback regressions             |
-| 1–3 apps `src/<app>/**` only (no shared)                                        | Scoped via `run-changed-app-tests.mjs` (`--retry=1` in CI) | Scoped e2e via `run-scoped-e2e.mjs` (≤3 apps) |
-| Docs / `.cursor` only                                                           | Skipped locally (`docs-only` presubmit); CI unchanged      | Full smoke (still fast)                       |
+| Changed paths                                                                                   | Vitest                                                     | E2e                                           | Visual                                           |
+| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------ |
+| `src/shared/**`, `src/types/**`, `vite.config.*`, `vitest.config.*`, `package*.json`, workflows | Full `npm test`                                            | Full smoke + playback regressions             | Full run, **advisory**                           |
+| 1–3 apps `src/<app>/**` only (no shared)                                                        | Scoped via `run-changed-app-tests.mjs` (`--retry=1` in CI) | Scoped e2e via `run-scoped-e2e.mjs` (≤3 apps) | Scoped via `run-scoped-visual.mts`, **blocking** |
+| Docs / `.cursor` only                                                                           | Skipped locally (`docs-only` presubmit); CI unchanged      | Full smoke (still fast)                       | Full run, advisory                               |
 
 Vitest scoping mirrors local `npm run test:changed-apps` in CI when the diff touches ≤3 apps and not `src/shared/**`. E2e changes still trigger full smoke via cross-cutting detection in the workflow.
+
+**Intentional asymmetry (documented, not drift):** on cross-cutting diffs CI runs **full Vitest** while local presubmit stays **scoped** (`test:changed-apps`). Local optimizes wall time before push; CI is the merge gate and pays the full cost once. Every other check runs identically in both places (`check:*` contract scripts, lint, typecheck, knip, build, playback regressions).
 
 **Push parity:** On `push` to `main`, scoped e2e **must** receive `${{ github.event.before }}` as the merge base (same as scoped Vitest). Calling `node scripts/run-scoped-e2e.mjs` with no argument defaults to `origin/main` (= `HEAD` on push) and silently runs **full smoke** — see `ciScopeGuardrails.test.ts`.
 
@@ -65,7 +67,6 @@ Edit [`scripts/run-scoped-e2e.mjs`](../scripts/run-scoped-e2e.mjs) `APP_SMOKE_SP
 muscle: [
   'e2e/smoke/muscle-shell.spec.ts',
   'e2e/smoke/muscle-study-journey.spec.ts',
-  'e2e/smoke/muscle-orbit-perf.spec.ts',
   { grep: '/muscle/', file: 'e2e/smoke/app-shells.spec.ts' },
 ],
 ```

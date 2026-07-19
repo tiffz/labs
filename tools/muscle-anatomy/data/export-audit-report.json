@@ -7,8 +7,7 @@
     "missingCurriculumCount": 7,
     "missingCsvNodeCount": 45,
     "atlasCompleteMeshes": 475,
-    "gluteMeshCount": 6,
-    "skinMeshCount": 0
+    "gluteMeshCount": 6
   },
   "missingCurriculum": [
     "joint_elbow",
@@ -502,7 +501,6 @@
       "tris": 19
     }
   ],
-  "skinMeshes": [],
   "missingByBodyArea": {
     "other": [
       {
