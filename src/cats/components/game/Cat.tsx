@@ -140,45 +140,9 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
       };
     }, [isDrowsy]);
 
-    // Happy jump effect integrated with 3D positioning
-    // Happy jump animation disabled - needs integration with new coordinate system
-    // TODO: Re-implement happy jumps using new positioning system
-
-    // DISABLED: Confidence-based pounce preparation - causing animation loops
-    // useEffect(() => {
-    //   if (!wandMode || isPouncing || isJumping || isAnimating) return;
-    //   
-    //   // Confidence thresholds for different preparation stages  
-    //   const CONFIDENCE_THRESHOLDS = {
-    //     READY_STANCE: 30,     // Cat gets into ready position
-    //     CROUCH_PREP: 50,      // Cat crouches lower, moves forward slightly
-    //     STRIKE_READY: 60      // Final positioning before strike
-    //   };
-    //   
-    //   if (pounceConfidence >= CONFIDENCE_THRESHOLDS.READY_STANCE) {
-    //     let targetZ = 0.5; // Default rest position
-    //     let targetY = 0;   // Ground level
-    //     
-    //     if (pounceConfidence >= CONFIDENCE_THRESHOLDS.STRIKE_READY) {
-    //       // Final strike preparation: move closer, crouch low
-    //       targetZ = 0.7 + pounceConfidence * 0.003; // Move forward based on confidence
-    //       targetY = -0.1; // Slight crouch below ground level
-    //       
-    //     } else if (pounceConfidence >= CONFIDENCE_THRESHOLDS.CROUCH_PREP) {
-    //       // Mid preparation: move slightly forward, slight crouch
-    //       targetZ = 0.6 + (pounceConfidence - CONFIDENCE_THRESHOLDS.CROUCH_PREP) * 0.002;
-    //       targetY = -0.05; // Light crouch
-    //       
-    //     } else {
-    //       // Early preparation: alert stance, move forward a bit
-    //       targetZ = 0.55 + (pounceConfidence - CONFIDENCE_THRESHOLDS.READY_STANCE) * 0.001;
-    //       targetY = 0; // Normal ground level
-    //     }
-    //     
-    //     // Smooth transition to preparation position
-    //     moveCatTo({ y: targetY, z: targetZ }, 400);
-    //   }
-    // }, [pounceConfidence, wandMode, isPouncing, isJumping, isAnimating, moveCatTo]);
+    // Happy jumps and confidence-based pounce preparation were removed when the
+    // new coordinate system landed (old versions caused animation loops); see
+    // git history if reintroducing either behavior.
 
     // World-aware pouncing system that follows wand toy
     useEffect(() => {
@@ -236,32 +200,6 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
     // unnecessary restarts of disabled logic.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    // DISABLED: Gradual return to rest when idle - causing animation loops
-    // useEffect(() => {
-    //   if (!isPouncing && !isJumping && !isAnimating) {
-    //     const idleTimer = setTimeout(() => {
-    //       // Check if cat is far from rest position
-    //       const restPos = 560; // Default rest position
-    //       const currentPos = worldPosition.x;
-    //       const distance = Math.abs(currentPos - restPos);
-    //       
-    //       // If cat is more than 200px from rest, gradually return
-    //       if (distance > 200) {
-    //         returnToRest(2000 + Math.random() * 1000);
-    //       }
-    //       
-    //       // Return Z position to neutral when idle (only if significantly off)
-    //       if (Math.abs(position.z) > 0.3) {
-    //         moveCatTo({ z: 0.5 }, 1200); // Move to stable rest Z position
-    //       }
-    //     }, 3000); // Wait 3 seconds of inactivity
-    //     
-    //     return () => clearTimeout(idleTimer);
-    //   }
-    // }, [isPouncing, isJumping, isAnimating, worldPosition.x, returnToRest, moveCatTo]);
-
-
 
     // Happy face logic is now handled by AnimationController
 

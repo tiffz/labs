@@ -10,6 +10,23 @@ export function formatOklchCss(state: ColorState): string {
   return `oklch(${formatOklchLightnessPercent(state.l)} ${state.c.toFixed(3)} ${state.h.toFixed(1)})`;
 }
 
+export interface OklchFormattedChannels {
+  l: string;
+  c: string;
+  h: string;
+  css: string;
+}
+
+/** Per-channel display strings (percent lightness, 3-decimal chroma, degree hue). */
+export function formatOklchChannels(state: ColorState): OklchFormattedChannels {
+  return {
+    l: formatOklchLightnessPercent(state.l),
+    c: state.c.toFixed(3),
+    h: `${state.h.toFixed(1)}°`,
+    css: formatOklchCss(state),
+  };
+}
+
 export function clampColorState(state: ColorState): ColorState {
   return {
     h: ((state.h % 360) + 360) % 360,

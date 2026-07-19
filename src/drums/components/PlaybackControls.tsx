@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { TimeSignature } from '../types';
 import type { PlaybackSettings } from '../types/settings';
-import HelpTooltip from './HelpTooltip';
+import AppTooltip from '../../shared/components/AppTooltip';
 import SettingsMenu from './SettingsMenu';
 import { MetronomeSplitControl, useMetronomePreferences, type MetronomePreferences } from '../../shared/audio/platform/metronome';
 import BpmInput from '../../shared/components/music/BpmInput';
@@ -172,9 +172,11 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                 title={beatGroupingError || 'Enter beat grouping (e.g., 3+3+2)'}
               />
               <span className="beat-grouping-help">
-                <HelpTooltip
-                  ariaLabel="Help for beat grouping"
-                  content={
+                <AppTooltip
+                  interactive
+                  placement="bottom"
+                  popperClassName="drums-help-tooltip"
+                  title={
                     <>
                       <div className="tooltip-title">Beat Grouping</div>
                       <div className="tooltip-content">
@@ -198,7 +200,11 @@ const PlaybackControls: React.FC<PlaybackControlsProps> = ({
                       </a>
                     </>
                   }
-                />
+                >
+                  <button className="help-button" type="button" aria-label="Help for beat grouping">
+                    ?
+                  </button>
+                </AppTooltip>
               </span>
               {beatGroupingError ? (
                 <div id="beat-grouping-error" className="beat-grouping-error-message" role="alert">

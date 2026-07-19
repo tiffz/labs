@@ -139,3 +139,26 @@ jobs:
           if-no-files-found: ignore
           path: |
             .cache/lighthouse-*.json
+
+  duplication-ratchet:
+    name: jscpd clone-count ratchet (advisory)
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js (no npm cache)
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compare jscpd clone count against baseline (never fails)
+        run: npm run check:jscpd-ratchet

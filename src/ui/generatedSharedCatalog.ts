@@ -6872,6 +6872,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-color-formatoklch-ts-formatoklchchannels",
+    "name": "formatOklchChannels",
+    "path": "src/shared/color/formatOklch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Per-channel display strings (percent lightness, 3-decimal chroma, degree hue).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-color-formatoklch-ts-formatoklchcss",
     "name": "formatOklchCss",
     "path": "src/shared/color/formatOklch.ts",
@@ -6895,6 +6908,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-color-formatoklch-ts-oklchformattedchannels",
+    "name": "OklchFormattedChannels",
+    "path": "src/shared/color/formatOklch.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Lightness as 0–100% for CSS `oklch()` syntax.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
     "demoId": null
   },
   {
@@ -15013,6 +15041,42 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-debug-practicedebuglogpanel-tsx-practicedebugloglist",
+    "name": "PracticeDebugLogList",
+    "path": "src/shared/debug/PracticeDebugLogPanel.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared scrolling event-log viewer for the piano/scales practice debug docks. Apps keep their own event types and `formatEvent`; the chrome (auto-scroll, timestamps, per-type colors, empty state) lives here.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-practicedebuglogpanel-tsx-practicedebugtoolbaractions",
+    "name": "PracticeDebugToolbarActions",
+    "path": "src/shared/debug/PracticeDebugLogPanel.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Raw-pitch toggle + download + clear trio shared by the practice debug docks.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-debug-practicedebugpanelshared-ts-practice-debug-clear-button-style",
     "name": "PRACTICE_DEBUG_CLEAR_BUTTON_STYLE",
     "path": "src/shared/debug/practiceDebugPanelShared.ts",
@@ -16256,6 +16320,49 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdebouncedchangebus-ts-createlabsdebouncedchangebus",
+    "name": "createLabsDebouncedChangeBus",
+    "path": "src/shared/drive/labsDebouncedChangeBus.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shared debounced local-change bus behind each app's `notify<App>LocalChange` / `subscribe<App>LocalChanges` pair (Gesture, Zinebox, Lyrefly). `immediate` flushes now with `{ immediate: true }` so Drive auto-push skips its debounce; otherwise one trailing flush fires after the debounce window.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdebouncedchangebus-ts-labsdebouncedchangebus",
+    "name": "LabsDebouncedChangeBus",
+    "path": "src/shared/drive/labsDebouncedChangeBus.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdebouncedchangebus-ts-labslocalchangelistener",
+    "name": "LabsLocalChangeListener",
+    "path": "src/shared/drive/labsDebouncedChangeBus.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {

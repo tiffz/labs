@@ -1,0 +1,6 @@
+{
+  "$comment": "Advisory jscpd clone-count ratchet baseline. Refresh with: node scripts/check-jscpd-ratchet.mjs --update (commit alongside the dedup or the feature that justifies growth).",
+  "clones": 841,
+  "duplicatedLines": 10716,
+  "percentage": 2.51
+}

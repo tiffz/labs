@@ -10,6 +10,11 @@ This repo follows the [Google TypeScript Style Guide](https://google.github.io/s
 - Keep files simple: imports first, then implementation.
 - Add JSDoc only when it clarifies behavior, trade-offs, or constraints.
 
+## Dates and times
+
+- Store dates as ISO strings (`YYYY-MM-DD` for calendar dates, ISO 8601 for timestamps); format for display at the UI boundary.
+- **`dayjs` is the sanctioned date library, but only at MUI `x-date-pickers` boundaries** (its adapter requires `Dayjs` values — see Encore's `InlineEditChip` / `EncoreDateRangeFilterMenu`). Everywhere else use `Date` + `Intl.DateTimeFormat`; do not spread `dayjs` into data models, sync payloads, or non-picker formatting.
+
 ## Migration Policy
 
 - Do not mass-convert untouched files.

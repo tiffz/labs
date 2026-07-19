@@ -1910,6 +1910,25 @@
     color: var(--primary-purple-dark);
   }
 
+  /* Rich help tooltip surface (shared AppTooltip via popperClassName) —
+     keeps the white card + purple border look the portal tooltip had. */
+  .drums-help-tooltip .MuiTooltip-tooltip {
+    background-color: white;
+    color: var(--text-color);
+    border: 2px solid var(--primary-purple);
+    border-radius: 0.5rem;
+    padding: 1rem 1.125rem;
+    box-shadow: var(--shadow-purple);
+    max-width: min(360px, calc(100vw - 24px));
+    font-size: 0.875rem;
+    line-height: 1.55;
+    white-space: normal;
+  }
+
+  .drums-help-tooltip .MuiTooltip-arrow {
+    color: var(--primary-purple);
+  }
+
   /* Tooltip content and link styling */
   .tooltip-content {
     margin-bottom: 0;

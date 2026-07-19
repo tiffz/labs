@@ -1,6 +1,10 @@
 /**
- * Shared golden strings for YouTube title parsing tests and get-artist-title spike.
- * @see parseYoutubeTitleGetArtistTitleSpike.test.ts for third-party library comparison notes.
+ * Shared golden strings for YouTube title parsing tests.
+ *
+ * A spike compared these against the `get-artist-title` npm library (removed):
+ * it agreed only on simple `Artist - Title` uploads and failed on double-pipe
+ * musical-theatre splits, quoted `from …` titles, and smart-quote patterns —
+ * Encore's `parseYoutubeTitleForSong` heuristics stay the source of truth.
  */
 export interface YoutubeTitleGoldenFixture {
   id: string;
