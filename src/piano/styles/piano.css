@@ -538,9 +538,11 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0;
+  padding: 4px 0;
   margin-bottom: var(--sp-2);
   width: 100%;
+  /* Coarse-pointer floor (responsive-all-apps / WCAG 2.5.8). */
+  min-height: 24px;
 }
 .sb-section-toggle:hover .sb-section-title {
   color: var(--piano-text);
@@ -1055,6 +1057,8 @@ body {
   cursor: pointer;
   white-space: nowrap;
   min-width: 46px;
+  /* Label is the measured tap target for nested checkboxes. */
+  min-height: 24px;
 }
 .sb-toggle-label input {
   margin: 0;
@@ -2489,7 +2493,8 @@ body {
   font-size: var(--text-md);
   font-weight: var(--weight-medium);
   cursor: pointer;
-  padding: 2px 0;
+  padding: 4px 0;
+  min-height: 24px;
 }
 .sb-drum-toggle input[type='checkbox'] {
   accent-color: var(--piano-primary);
@@ -2562,6 +2567,8 @@ body {
   border-radius: var(--radius-sm);
   font-family: 'Roboto Mono', monospace;
   margin-bottom: var(--sp-2);
+  min-height: 24px;
+  box-sizing: border-box;
 }
 .sb-drum-section .drum-edit-link {
   font-size: var(--text-sm);
