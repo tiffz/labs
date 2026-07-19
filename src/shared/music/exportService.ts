@@ -2,6 +2,7 @@ import { buildLabsDownloadFileName, labsDownloadFileNameWithExtension, sanitizeL
 import { encodeAudioBuffer } from './audioCodecs';
 import { EXPORT_FORMATS, isScoreExportFormat, type ExportExecutionRequest, type ExportExecutionResult, type ExportFormat } from './exportTypes';
 import { triggerBlobDownload } from '../utils/triggerBlobDownload';
+import { labsBlobBytes } from '../utils/blobBytes';
 
 function extensionForFormat(format: ExportFormat): string {
   return EXPORT_FORMATS.find((item) => item.id === format)?.extension ?? format;
@@ -60,7 +61,7 @@ export async function executeExport(
       throw new Error('This source does not support MIDI export.');
     }
     const bytes = await adapter.renderMidi({ loopCount, selectedStemIds: stemIds });
-    const blob = new Blob([bytes], { type: 'audio/midi' });
+    const blob = new Blob([labsBlobBytes(bytes)], { type: 'audio/midi' });
     const fileName = labsDownloadFileNameWithExtension(base, ext);
     triggerBlobDownload(blob, fileName);
     downloadedFiles.push(fileName);

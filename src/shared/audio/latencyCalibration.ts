@@ -41,7 +41,7 @@ export function scheduleCalibrationPip(
 /**
  * Estimate ambient RMS from the mic before the pip.
  */
-async function measureNoiseFloor(analyser: AnalyserNode, buf: Float32Array, durationMs: number): Promise<number> {
+async function measureNoiseFloor(analyser: AnalyserNode, buf: Float32Array<ArrayBuffer>, durationMs: number): Promise<number> {
   const start = performance.now();
   const samples: number[] = [];
   while (performance.now() - start < durationMs) {

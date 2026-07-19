@@ -1,3 +1,5 @@
+import { labsBlobBytes } from '../utils/blobBytes';
+
 export type DistributionPdfPage = {
   label: string;
   /** PNG or JPEG data URL. */
@@ -57,7 +59,7 @@ export async function createDistributionPdf(
     });
   });
   const bytes = await pdfDoc.save();
-  return new Blob([bytes], { type: 'application/pdf' });
+  return new Blob([labsBlobBytes(bytes)], { type: 'application/pdf' });
 }
 
 /** Convert a Blob to a data URL (for PDF embedding). */

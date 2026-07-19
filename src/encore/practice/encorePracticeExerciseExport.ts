@@ -1,4 +1,5 @@
 import { PDFDocument, rgb, type PDFFont } from 'pdf-lib';
+import { labsBlobBytes } from '../../shared/utils/blobBytes';
 import { embedPracticePdfBodyFont, embedPracticePdfLyricsFonts } from './encorePracticePdfFonts';
 import type {
   EncoreLyricsExerciseSection,
@@ -454,7 +455,7 @@ export async function buildPracticeExercisePdfBytes(
 }
 
 function downloadUint8ArrayAsFile(data: Uint8Array, filename: string): void {
-  const blob = new Blob([data], { type: 'application/pdf' });
+  const blob = new Blob([labsBlobBytes(data)], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

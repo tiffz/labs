@@ -32605,6 +32605,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-blobbytes-ts-labsblobbytes",
+    "name": "labsBlobBytes",
+    "path": "src/shared/utils/blobBytes.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "TS 5.9+ DOM lib types `BlobPart` as requiring `ArrayBuffer`-backed views (`Uint8Array<ArrayBuffer>`), while many encoders return `Uint8Array<ArrayBufferLike>`. Runtime-narrow (copying only in the SharedArrayBuffer case, which never happens for our encoders) so `new Blob([...])` stays type-safe without per-site casts.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-devlog-ts-devlog",
     "name": "devLog",
     "path": "src/shared/utils/devLog.ts",

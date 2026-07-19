@@ -2,6 +2,7 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import { saveAs } from 'file-saver';
 import type { BookletPageInfo, SpreadInfo, PDFGenerationOptions, PDFResult } from '../types';
 import { convertToCMYK } from './imageProcessor';
+import { labsBlobBytes } from '../../shared/utils/blobBytes';
 import { organizeIntoSpreads } from './spreadOrganizer';
 import { calculateRequiredContentPages } from './spreadPairing';
 import {
@@ -286,7 +287,7 @@ async function generateMixamPDF(
   }
   
   const pdfBytes = await pdfDoc.save();
-  return new Blob([pdfBytes], { type: 'application/pdf' });
+  return new Blob([labsBlobBytes(pdfBytes)], { type: 'application/pdf' });
 }
 
 /**
@@ -329,7 +330,7 @@ async function generateDistributionPDF(
   }
   
   const pdfBytes = await pdfDoc.save();
-  return new Blob([pdfBytes], { type: 'application/pdf' });
+  return new Blob([labsBlobBytes(pdfBytes)], { type: 'application/pdf' });
 }
 
 /**
@@ -630,7 +631,7 @@ async function generateHomeDuplexPDF(
   }
   
   const pdfBytes = await pdfDoc.save();
-  return new Blob([pdfBytes], { type: 'application/pdf' });
+  return new Blob([labsBlobBytes(pdfBytes)], { type: 'application/pdf' });
 }
 
 /**

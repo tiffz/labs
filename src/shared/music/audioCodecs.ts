@@ -2,6 +2,7 @@
 import * as lamejs from 'lamejsfixbug121';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import { labsBlobBytes } from '../utils/blobBytes';
 import type { ExportFormat } from './exportTypes';
 
 interface LameJsEncoder {
@@ -161,7 +162,7 @@ async function transcodeWavBlob(
       : typeof data === 'string'
         ? new TextEncoder().encode(data)
         : new Uint8Array(data as ArrayBuffer);
-  return new Blob([bytes], { type: target === 'ogg' ? 'audio/ogg' : 'audio/flac' });
+  return new Blob([labsBlobBytes(bytes)], { type: target === 'ogg' ? 'audio/ogg' : 'audio/flac' });
 }
 
 export async function encodeAudioBuffer(
