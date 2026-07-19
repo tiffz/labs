@@ -286,7 +286,7 @@ async function generateMixamPDF(
   }
   
   const pdfBytes = await pdfDoc.save();
-  return new Blob([pdfBytes], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
 }
 
 /**
@@ -329,7 +329,7 @@ async function generateDistributionPDF(
   }
   
   const pdfBytes = await pdfDoc.save();
-  return new Blob([pdfBytes], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
 }
 
 /**
@@ -630,7 +630,7 @@ async function generateHomeDuplexPDF(
   }
   
   const pdfBytes = await pdfDoc.save();
-  return new Blob([pdfBytes], { type: 'application/pdf' });
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
 }
 
 /**

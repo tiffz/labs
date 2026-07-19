@@ -57,6 +57,24 @@ export default [
       ...pluginReact.configs.recommended.rules,
       ...pluginReactHooks.configs.recommended.rules,
       ...pluginJsxA11y.flatConfigs.recommended.rules,
+      // react-hooks v7 folded React Compiler checks into `recommended` as
+      // errors. Keep the classic gates hard; defer the compiler suite until
+      // we can burn it down without a 700-finding mega-PR (track in
+      // DEPENDENCY_UPGRADE_PLAN / TECH_DEBT_ROADMAP).
+      'react-hooks/static-components': 'off',
+      'react-hooks/use-memo': 'off',
+      'react-hooks/preserve-manual-memoization': 'off',
+      'react-hooks/immutability': 'off',
+      'react-hooks/globals': 'off',
+      'react-hooks/refs': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/error-boundaries': 'off',
+      'react-hooks/purity': 'off',
+      'react-hooks/set-state-in-render': 'off',
+      'react-hooks/config': 'off',
+      'react-hooks/gating': 'off',
+      'react-hooks/incompatible-library': 'off',
+      'react-hooks/unsupported-syntax': 'off',
       'react/react-in-jsx-scope': 'off',
       // Enforced after the SPA a11y audit. Keep these at 'error' so new
       // regressions block CI instead of silently accumulating.

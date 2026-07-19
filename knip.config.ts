@@ -152,6 +152,8 @@ const config: KnipConfig = {
   ],
   // Ignore exported types that are part of the public API or used in data structures
   ignoreExportsUsedInFile: true,
+  // Optional CLI used by synthetic audio regression (may be absent locally).
+  ignoreBinaries: ['ffmpeg'],
   rules: {
     types: 'off', // Disable unused type checking as they're often part of public APIs
     exports: 'warn', // Allow some unused exports (e.g., tuning constants) without failing CI
