@@ -35,7 +35,9 @@ test.describe('Stanza playback soak', () => {
     });
   });
 
-  test(`${SOAK_LOOP_COUNT} loop wraps without runaway heap growth`, async ({ page }) => {
+  // @soak: excluded from PR-CI full smoke (test:e2e:smoke greps it out);
+  // runs nightly (test:e2e:soak) and in stanza-scoped e2e runs.
+  test(`${SOAK_LOOP_COUNT} loop wraps without runaway heap growth @soak`, async ({ page }) => {
     await waitForLocalAudioLoopWraps(page, WARMUP_WRAP_COUNT, 30_000);
 
     const baselineHeap = await sampleJsHeap(page);

@@ -346,19 +346,10 @@ jobs:
           npx tsx scripts/run-scoped-visual.mts "${{ github.event.before }}"
         fi
 
-    - name: Run visual regression screenshots (full, advisory)
-      # Advisory on cross-cutting diffs for now: multi-app rendering drift makes a
-      # hard gate noisy. Flip trigger (documented in docs/VISUAL_REGRESSION_AGENT.md):
-      # make this blocking after ~2 weeks of clean nightly visual runs.
-      if: needs.scope.outputs.e2e_mode == 'full'
-      run: |
-        set +e
-        npm run test:e2e:visual
-        code=$?
-        if [ "$code" -ne 0 ]; then
-          echo "::warning title=Visual regression (advisory)::Snapshot mismatches (exit $code). See visual-regression-artifacts. Update baselines intentionally per docs/REGRESSION_WORKFLOW.md"
-        fi
-        exit 0
+    # Full-matrix advisory visual regression moved to nightly-portfolio-audit.yml
+    # (it added ~4 min to every cross-cutting PR and was advisory-only here).
+    # Scoped diffs keep the BLOCKING per-app visual step above; nightly stays
+    # the canonical full-matrix visual signal.
 
     - name: Upload visual regression artifacts
       if: always()

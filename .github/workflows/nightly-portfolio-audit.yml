@@ -83,6 +83,9 @@ jobs:
       - name: Run e2e smoke
         run: npm run test:e2e:smoke
 
+      - name: Run soak specs (excluded from PR CI)
+        run: npm run test:e2e:soak
+
       - name: Run visual regression baselines
         run: npm run test:e2e:visual
 
