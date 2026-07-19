@@ -2,6 +2,13 @@
 
 This plan turns dependency hygiene into a repeatable process with controlled risk.
 
+## Standing automation
+
+- **Dependabot** (weekly, Monday): grouped minor/patch PRs for the root package, `workers/labs-session-bff`, and GitHub Actions. Majors are ignored — they land through the phases below.
+- **Auto-merge**: `.github/workflows/dependabot-auto-merge.yml` arms squash auto-merge on Dependabot minor/patch PRs; branch protection on `main` (required `checks`/`build`/`vitest`/`e2e`) means they only land green.
+- **Security fast lane** (weekly): `npm audit --omit=dev --audit-level=high` in `weekly-engineering-health.yml` fails the job and files a `security-audit` issue on high/critical advisories. `npm run audit:advisory` also runs (non-blocking) at the end of `presubmit:push`.
+- **Node pin**: `.nvmrc` (Node 22) + `engines` in `package.json`; workflows read `node-version-file: '.nvmrc'` so local/CI stay aligned.
+
 ## Baseline Commands
 
 - `npm run deps:outdated` — inspect drift.

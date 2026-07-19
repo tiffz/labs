@@ -31,7 +31,7 @@ jobs:
       - name: Setup Node.js (no npm cache)
         uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version-file: '.nvmrc'
 
       - name: Install dependencies
         run: npm ci
@@ -72,7 +72,7 @@ jobs:
       - name: Setup Node.js (no npm cache)
         uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version-file: '.nvmrc'
 
       - name: Install dependencies
         run: npm ci
@@ -111,7 +111,7 @@ jobs:
       - name: Setup Node.js (no npm cache)
         uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version-file: '.nvmrc'
 
       - name: Install dependencies
         run: npm ci
