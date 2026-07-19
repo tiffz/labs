@@ -306,6 +306,15 @@ body {
   box-shadow: 2px 3px 0 rgba(255, 20, 147, 0.2);
 }
 
+.app-icon.muscle {
+  background-color: #101014;
+  background-image: url('/icons/favicon-muscle.svg');
+  background-size: 90% 90%;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: 2px solid rgba(244, 114, 114, 0.45);
+}
+
 .app-icon.lyrefly {
   background-color: #fafafa;
   background-image: url('/icons/lyrefly-feather.png');
