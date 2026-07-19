@@ -164,7 +164,7 @@ export async function renderPdfPageToCanvas(
   canvas.style.width = `${displayWidth}px`;
   canvas.style.height = `${displayHeight}px`;
 
-  await page.render({ canvasContext: context, viewport }).promise;
+  await page.render({ canvas, canvasContext: context, viewport }).promise;
   return { displayWidth, displayHeight };
 }
 

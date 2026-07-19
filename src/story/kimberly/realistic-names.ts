@@ -1,25 +1,27 @@
 /**
  * The Kimberly System - Realistic Name Generation
- * 
- * Uses @likemybread/name-generator for realistic full names
- * 
- * The library's generate function takes parameters: (fantasy, first, gender)
- * - fantasy: false for realistic names
- * - first: true for first name, false for last name
- * - gender: 'male', 'female', 'androgynous', or 'any'
+ *
+ * Uses @likemybread/name-generator for realistic full names.
+ * v2 API: generate({ fantasy, first, gender }).
  */
 
 // @ts-expect-error - no types available for this package
 import generate from '@likemybread/name-generator';
+
+type NameGender = 'male' | 'female' | 'androgynous' | 'any';
+
+function generateName(first: boolean, gender: NameGender = 'any'): string {
+  return generate({ fantasy: false, first, gender });
+}
 
 /**
  * Generates a realistic full name (first + last)
  * Example: "Kimberly Brown", "Michael Chen", "Sarah O'Connor"
  */
 export function fullName(): string {
-  let firstName = generate(false, true, 'any');  // realistic, first name, any gender
-  let lastName = generate(false, false, 'any');  // realistic, last name, any gender
-  
+  let firstName = generateName(true, 'any');
+  let lastName = generateName(false, 'any');
+
   // Handle cases where generate returns undefined (fallback to defaults)
   if (!firstName || typeof firstName !== 'string') {
     firstName = 'Alex';
@@ -27,7 +29,7 @@ export function fullName(): string {
   if (!lastName || typeof lastName !== 'string') {
     lastName = 'Smith';
   }
-  
+
   return `${firstName} ${lastName}`;
 }
 
@@ -35,9 +37,9 @@ export function fullName(): string {
  * Generates a realistic female full name
  */
 export function femaleFullName(): string {
-  let firstName = generate(false, true, 'female');
-  let lastName = generate(false, false, 'any');
-  
+  let firstName = generateName(true, 'female');
+  let lastName = generateName(false, 'any');
+
   // Handle cases where generate returns undefined (fallback to defaults)
   if (!firstName || typeof firstName !== 'string') {
     firstName = 'Sarah';
@@ -45,7 +47,7 @@ export function femaleFullName(): string {
   if (!lastName || typeof lastName !== 'string') {
     lastName = 'Smith';
   }
-  
+
   return `${firstName} ${lastName}`;
 }
 
@@ -53,9 +55,9 @@ export function femaleFullName(): string {
  * Generates a realistic male full name
  */
 export function maleFullName(): string {
-  let firstName = generate(false, true, 'male');
-  let lastName = generate(false, false, 'any');
-  
+  let firstName = generateName(true, 'male');
+  let lastName = generateName(false, 'any');
+
   // Handle cases where generate returns undefined (fallback to defaults)
   if (!firstName || typeof firstName !== 'string') {
     firstName = 'Michael';
@@ -63,7 +65,7 @@ export function maleFullName(): string {
   if (!lastName || typeof lastName !== 'string') {
     lastName = 'Smith';
   }
-  
+
   return `${firstName} ${lastName}`;
 }
 
@@ -78,8 +80,8 @@ export function anyFullName(): string {
  * Pronoun sets for characters
  */
 export interface Pronouns {
-  subject: string;   // he/she/they
-  object: string;    // him/her/them
+  subject: string; // he/she/they
+  object: string; // him/her/them
   possessive: string; // his/her/their
   possessiveAdjective: string; // his/her/their (before noun)
   reflexive: string; // himself/herself/themselves
@@ -90,7 +92,7 @@ const PRONOUNS_HE: Pronouns = {
   object: 'him',
   possessive: 'his',
   possessiveAdjective: 'his',
-  reflexive: 'himself'
+  reflexive: 'himself',
 };
 
 const PRONOUNS_SHE: Pronouns = {
@@ -98,7 +100,7 @@ const PRONOUNS_SHE: Pronouns = {
   object: 'her',
   possessive: 'hers',
   possessiveAdjective: 'her',
-  reflexive: 'herself'
+  reflexive: 'herself',
 };
 
 const PRONOUNS_THEY: Pronouns = {
@@ -106,7 +108,7 @@ const PRONOUNS_THEY: Pronouns = {
   object: 'them',
   possessive: 'theirs',
   possessiveAdjective: 'their',
-  reflexive: 'themselves'
+  reflexive: 'themselves',
 };
 
 /**
@@ -118,7 +120,7 @@ function generatePronounsAndGender(): { pronouns: Pronouns; gender: 'male' | 'fe
   const rand = Math.random();
   if (rand < 0.45) {
     return { pronouns: PRONOUNS_HE, gender: 'male' };
-  } else if (rand < 0.90) {
+  } else if (rand < 0.9) {
     return { pronouns: PRONOUNS_SHE, gender: 'female' };
   } else {
     return { pronouns: PRONOUNS_THEY, gender: 'any' };
@@ -129,44 +131,47 @@ function generatePronounsAndGender(): { pronouns: Pronouns; gender: 'male' | 'fe
  * Character name storage for consistent first/last name usage
  * The Kimberly System convention: use full name on first mention, first name after
  */
-const characterNames = new Map<string, { 
-  first: string; 
-  last: string; 
-  full: string;
-  pronouns: Pronouns;
-}>();
+const characterNames = new Map<
+  string,
+  {
+    first: string;
+    last: string;
+    full: string;
+    pronouns: Pronouns;
+  }
+>();
 
 /**
  * Generates or retrieves a character's full name (First Last)
  * Use this for the first mention of a character
  * Example: "Kimberly Brown"
- * 
+ *
  * Names are generated to match the character's pronouns:
  * - he/him -> male names
- * - she/her -> female names  
+ * - she/her -> female names
  * - they/them -> any gender names
  */
 export function KimberlySmith(characterId: string = 'default'): string {
   if (!characterNames.has(characterId)) {
     const { pronouns, gender } = generatePronounsAndGender();
-    
+
     // The @likemybread/name-generator library can throw errors or return undefined
     // in edge cases, so we wrap in try-catch with fallbacks
     let firstName: string;
     let lastName: string;
-    
+
     try {
-      firstName = generate(false, true, gender);
+      firstName = generateName(true, gender);
     } catch {
       firstName = '';
     }
-    
+
     try {
-      lastName = generate(false, false, 'any');
+      lastName = generateName(false, 'any');
     } catch {
       lastName = '';
     }
-    
+
     // Handle cases where generate returns undefined/empty (fallback to defaults)
     if (!firstName || typeof firstName !== 'string') {
       firstName = gender === 'male' ? 'Michael' : gender === 'female' ? 'Sarah' : 'Alex';
@@ -174,12 +179,12 @@ export function KimberlySmith(characterId: string = 'default'): string {
     if (!lastName || typeof lastName !== 'string') {
       lastName = 'Smith';
     }
-    
+
     characterNames.set(characterId, {
       first: firstName,
       last: lastName,
       full: `${firstName} ${lastName}`,
-      pronouns
+      pronouns,
     });
   }
   return characterNames.get(characterId)!.full;
@@ -233,4 +238,3 @@ export function himself(characterId: string = 'default'): string {
 export function clearCharacterNames(): void {
   characterNames.clear();
 }
-

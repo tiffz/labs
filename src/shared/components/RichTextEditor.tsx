@@ -85,7 +85,8 @@ function RichTextEditorInner({
 
   const extensions = useMemo(
     () => [
-      StarterKit.configure({ heading: false }),
+      // TipTap 3 StarterKit ships Link; disable it so our configured Link wins.
+      StarterKit.configure({ heading: false, link: false }),
       Placeholder.configure({
         placeholder: placeholder ?? 'Write as much as helps…',
       }),
@@ -105,6 +106,8 @@ function RichTextEditorInner({
   const editor = useEditor(
     {
       immediatelyRender: false,
+      // Keep toolbar active-state highlights in sync (off by default in TipTap 3).
+      shouldRerenderOnTransaction: true,
       extensions,
       content: plainOrHtmlToEditorHtml(value),
       editable: !readOnly,
@@ -183,7 +186,7 @@ function RichTextEditorInner({
     }
     const next = plainOrHtmlToEditorHtml(value);
     if (editor.getHTML() === next) return;
-    editor.commands.setContent(next, false);
+    editor.commands.setContent(next, { emitUpdate: false });
   }, [value, editor, preserveEditorHistory]);
 
   useEffect(() => {
