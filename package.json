@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "generate:shared-catalog": "node scripts/generate-shared-catalog.mjs",
     "check:shared-catalog": "node scripts/generate-shared-catalog.mjs --check",
@@ -81,7 +84,8 @@
     "knip": "knip",
     "knip:fix": "knip --fix",
     "presubmit": "node scripts/presubmit-with-timing.mjs",
-    "presubmit:push": "npm run presubmit && npm run test:e2e:smoke && npm run test:e2e:playback",
+    "presubmit:push": "npm run presubmit && npm run test:e2e:smoke && npm run test:e2e:playback && npm run audit:advisory",
+    "audit:advisory": "npm audit --omit=dev --audit-level=high || echo 'ADVISORY: high/critical npm advisories found. Patch in-range with npm audit fix; majors via docs/DEPENDENCY_UPGRADE_PLAN.md.'",
     "ci:watch": "node scripts/ci-watch.mjs",
     "report:ci-health": "node scripts/ci-health-report.mjs",
     "report:ci-failure": "node scripts/ci-failure-summary.mjs",

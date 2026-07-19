@@ -28,25 +28,45 @@ jobs:
           echo "::warning title=CI success rate below 90%::Weekly advisory gate — triage with npm run report:ci-health and docs/ENGINEERING_HEALTH.md"
 
   dependency-audit:
-    name: npm audit (advisory)
+    name: npm audit (security fast lane)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@v5
 
       - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version-file: '.nvmrc'
           cache: 'npm'
 
       - name: Audit production dependencies
         id: audit
         continue-on-error: true
-        run: npm audit --omit=dev --audit-level=high
+        run: |
+          npm audit --omit=dev --audit-level=high 2>&1 | tee audit-output.txt
 
-      - name: Warn on high/critical advisories
+      - name: File security issue on high/critical advisories
+        if: steps.audit.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing=$(gh issue list --label security-audit --state open --json number --jq 'length')
+          if [ "$existing" = "0" ]; then
+            gh issue create \
+              --title "npm audit: high/critical advisories in production deps" \
+              --label security-audit \
+              --body "$(printf 'Weekly security fast lane found high/critical advisories.\n\nTriage: `npm audit --omit=dev` locally, patch in-range with `npm audit fix`, majors via docs/DEPENDENCY_UPGRADE_PLAN.md.\n\n```\n%s\n```' "$(tail -c 4000 audit-output.txt)")"
+          else
+            echo "Open security-audit issue already exists; skipping duplicate."
+          fi
+
+      - name: Fail the job so the advisory is visible
         if: steps.audit.outcome == 'failure'
         run: |
-          echo "::warning title=npm audit found high/critical advisories::Review with 'npm audit --omit=dev'. Upgrade via docs/DEPENDENCY_UPGRADE_PLAN.md."
+          echo "::error title=npm audit found high/critical advisories::See the filed security-audit issue. Patch via npm audit fix or docs/DEPENDENCY_UPGRADE_PLAN.md."
+          exit 1
 
   nightly-smoke:
     name: Nightly smoke (cold browser)
@@ -60,7 +80,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version-file: '.nvmrc'
 
       - run: npm ci
       - run: npx playwright install --with-deps chromium
