@@ -152,6 +152,7 @@ body {
 
 .ui-tab-row {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 4px;
   border: 1px solid color-mix(in srgb, var(--ui-primary) 24%, #dcd7ee);
@@ -1859,6 +1860,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .ui-stanza-demo-kicker {
@@ -1873,6 +1875,11 @@ body {
   position: static;
   margin-top: 0;
   box-shadow: var(--key-dropdown-shadow, var(--theme-shadow-lg));
+  /* Static catalog preview: never wider than the demo column (portal sizing
+     assumes viewport-anchored placement, which does not apply here). */
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 720px) {

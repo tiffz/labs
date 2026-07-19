@@ -8,6 +8,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import { bulkSetSourceUrlOnPacks } from '../drive/bulkUpdatePackMetadata';
 
 type BulkSetSourceDialogProps = {
@@ -32,6 +33,7 @@ export default function BulkSetSourceDialog({
   const [sourceUrl, setSourceUrl] = useState('');
   const [clearSource, setClearSource] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { withBatch } = useLabsUndo();
 
   useEffect(() => {
     if (!open) return;
@@ -54,7 +56,11 @@ export default function BulkSetSourceDialog({
     setSaving(true);
     onError('');
     try {
-      await bulkSetSourceUrlOnPacks(packIds, clearSource ? null : sourceUrl.trim());
+      await withBatch((queue) =>
+        bulkSetSourceUrlOnPacks(packIds, clearSource ? null : sourceUrl.trim(), (commit) =>
+          queue.push(commit),
+        ),
+      );
       onComplete(
         clearSource
           ? `Removed source link from ${packCount} collection${packCount === 1 ? '' : 's'}.`
@@ -66,7 +72,7 @@ export default function BulkSetSourceDialog({
     } finally {
       setSaving(false);
     }
-  }, [clearSource, onClose, onComplete, onError, packCount, packIds, sourceUrl]);
+  }, [clearSource, onClose, onComplete, onError, packCount, packIds, sourceUrl, withBatch]);
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs" aria-labelledby="gesture-bulk-source-title">

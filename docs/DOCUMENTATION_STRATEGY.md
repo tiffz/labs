@@ -125,7 +125,7 @@ When **two or more apps** document the **same** non-obvious constraint or patter
 - Import boundaries, SPA shell, skip link, font bootstrap — `DEVELOPMENT.md` + guardrail tests.
 - Labs debug mode — `DEVELOPMENT.md` + `AGENTS.md` pointer.
 - JSDOM / `navigator.mediaDevices` — `STYLE_GUIDE.md` § Unit tests.
-- Optional per-app visual contracts — e.g. Pitch [`src/pitch/DESIGN.md`](../src/pitch/DESIGN.md); pattern is “single `DESIGN.md` when the app has a fixed art direction,” not a global requirement.
+- Per-app visual contracts — **no `DESIGN.md` means the app follows shared Material defaults** (`getAppTheme()` + `appSharedThemes.css` + `docs/UX_AGENT_GUIDE.md`). A `DESIGN.md` is **required only when the app diverges** (custom art direction, non-Material chrome, bespoke tokens) and must state what diverges and why; e.g. Gesture Linen ([`src/gesture/DESIGN.md`](../src/gesture/DESIGN.md)), Pitch ([`src/pitch/DESIGN.md`](../src/pitch/DESIGN.md)). Agents: before restyling an app without a `DESIGN.md`, treat shared defaults as the contract.
 
 **Candidates to watch** (promote when a second app needs the same text):
 

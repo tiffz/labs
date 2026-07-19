@@ -8,7 +8,11 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 
-import { appendComicToStack, createStackFromComics } from '../collections/stackMutations';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
+import {
+  appendComicToStackUndoable,
+  createStackFromComicsUndoable,
+} from '../undo/zineboxUndoableMutations';
 import type { ZineboxCollection, ZineboxComic } from '../types';
 
 export function useStackDnD(
@@ -27,6 +31,7 @@ export function useStackDnD(
   dragOverlay: React.ReactNode;
 } {
   const [activeComic, setActiveComic] = useState<ZineboxComic | null>(null);
+  const { push } = useLabsUndo();
 
   const comicsById = useMemo(() => new Map(comics.map((c) => [c.id, c])), [comics]);
   const collectionsById = useMemo(
@@ -60,15 +65,20 @@ export function useStackDnD(
 
       const overStack = collectionsById.get(overId);
       if (overStack) {
-        await appendComicToStack(overStack, activeId, comicsById);
+        const commit = await appendComicToStackUndoable(overStack, activeId, comicsById);
+        if (commit) push(commit);
         return;
       }
 
       const overComic = comicsById.get(overId);
       if (!overComic) return;
-      await createStackFromComics([activeComicItem, overComic], comicsById);
+      const { commit } = await createStackFromComicsUndoable(
+        [activeComicItem, overComic],
+        comicsById,
+      );
+      push(commit);
     },
-    [collectionsById, comicsById],
+    [collectionsById, comicsById, push],
   );
 
   const dndContextProps = useMemo(

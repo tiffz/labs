@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted — conflict-prompt policy partially superseded by [ADR 0020](./0020-silent-union-sync-row-conflicts-only.md): the `prompt_when_both_edited` policy referenced in decision 4 gave way to silent union merge with prompts only for true row-level conflicts. The merge/undo/auto-sync parity decisions stand.
 
 ## Context
 

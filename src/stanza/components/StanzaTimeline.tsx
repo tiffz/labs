@@ -1060,7 +1060,7 @@ export default function StanzaTimeline({
                         title={
                           joinSectionsEnabled
                             ? 'Merge the selected adjacent sections.'
-                            : 'Shift+click two sections to select a range, then join.'
+                            : 'Shift+click 2 sections to select a range, then join.'
                         }
                       >
                         <span>

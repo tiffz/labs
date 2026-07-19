@@ -10,7 +10,8 @@ import {
   normalizeGestureTags,
 } from '../drive/gesturePackTags';
 import { registerGestureLocalTags } from '../drive/gestureTagRegistry';
-import { updatePackMetadata } from '../drive/updatePackMetadata';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
+import { updatePackMetadataUndoable } from '../undo/gestureUndoableMutations';
 import type { GesturePack } from '../types';
 import { highlightGestureTagMatch } from './highlightGestureTagMatch';
 
@@ -39,6 +40,7 @@ export default function InlinePackTags({
   disabled,
 }: InlinePackTagsProps): React.ReactElement {
   const [adding, setAdding] = useState(false);
+  const { push } = useLabsUndo();
   const serverTags = useMemo(() => normalizeGestureTags(pack.tags ?? []), [pack.tags]);
   const [localTags, setLocalTags] = useState(serverTags);
   const [inputValue, setInputValue] = useState('');
@@ -75,14 +77,17 @@ export default function InlinePackTags({
   const persistTags = useCallback(
     async (nextTags: string[]) => {
       try {
-        const updated = await updatePackMetadata(null, pack.id, { tags: nextTags });
+        const { updated, commit } = await updatePackMetadataUndoable(null, pack.id, {
+          tags: nextTags,
+        });
+        if (commit) push(commit);
         onUpdated?.(updated);
       } catch (e) {
         setLocalTags(serverTags);
         onError?.(e instanceof Error ? e.message : 'Could not update tags.');
       }
     },
-    [onError, onUpdated, pack.id, serverTags],
+    [onError, onUpdated, pack.id, push, serverTags],
   );
 
   const flushPersist = useCallback(() => {

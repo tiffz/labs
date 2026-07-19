@@ -595,6 +595,36 @@
   }
 }
 
+/* Touch ergonomics: grow stepper hit areas to the 24px floor on coarse pointers
+   (STYLE_GUIDE § icon-only controls; desktop density unchanged). */
+@media (pointer: coarse) {
+  .shared-bpm-shell {
+    min-height: 44px;
+  }
+
+  .shared-bpm-value {
+    min-height: 24px;
+  }
+
+  .shared-bpm-arrows {
+    width: 28px;
+  }
+
+  .shared-bpm-arrow {
+    width: 28px;
+    min-height: 24px;
+  }
+
+  .shared-bpm-rate-btn.inline {
+    min-width: 28px;
+    min-height: 24px;
+  }
+
+  .shared-bpm-inline-action {
+    min-height: 24px;
+  }
+}
+
 .shared-bpm-preset-chip:hover {
   border-color: color-mix(
     in srgb,

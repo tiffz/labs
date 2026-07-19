@@ -303,7 +303,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
         </div>
 
         {/* CMYK Option */}
-        <label className="flex items-center space-x-2 cursor-pointer">
+        <label className="flex items-center space-x-2 cursor-pointer py-1">
           <input
             type="checkbox"
             checked={options.convertToCMYK}
@@ -392,7 +392,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
                 className="btn btn-primary w-full"
               >
                 <span>{PDF_FORMAT_INFO[options.exportFormat].icon}</span>
-                {isGenerating ? 'Generating...' : `Download ${PDF_FORMAT_INFO[options.exportFormat].label}`}
+                {isGenerating ? 'Generating…' : `Download ${PDF_FORMAT_INFO[options.exportFormat].label}`}
               </button>
               {pageImageChoices.length > 0 && (
                 <>

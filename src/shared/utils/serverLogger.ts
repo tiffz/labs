@@ -2,7 +2,7 @@
  * Server Logger - Sends console logs to Vite dev server terminal
  * Shared utility for all micro-apps in the labs project
  */
-import { isLabsDebugEnabled } from '../debug/readLabsDebugParams';
+import { isLabsDebugEnabled } from './readLabsDebugParams';
 
 /** Debounce before first batched POST; coalesces bursty logs without resetting on every line. */
 const SERVER_LOG_FLUSH_DEBOUNCE_MS = 900;

@@ -144,7 +144,7 @@ function buildLlmRegressionPrompt(failure: VisualFailure, summary: RegressionSum
     `- Diff: ${typeof window !== 'undefined' ? window.location.origin : ''}${failure.diffUrl}`,
     '',
     '### What to do',
-    'Classify with docs/VISUAL_JUDGE_RUBRIC.md (skill labs-visual-judge). View all three images first:',
+    'Classify with docs/VISUAL_JUDGE_RUBRIC.md (skill labs-visual-judge). View all 3 images first:',
     '1. Tier 1 must-fix (overflow, overlap, blank/error content, tofu glyphs, contrast, theming or selection-tier violations, duplicate status UI): fix the app; never baseline over it.',
     '2. Tier 2 acceptable (the intentional change, reflow from it, sub-pixel drift): update the baseline PNG (or Accept in the Regression UI) with a one-line justification.',
     '3. Tier 3 escalate (out-of-scope routes, unexplained multi-app drift, aesthetic judgment calls): stop and ask, attaching baseline + latest + diff.',
@@ -485,7 +485,7 @@ export default function RegressionPanel({
             onClick={() => void triggerRefresh('visual')}
           >
             {icon('photo_library')}
-            <span>{pendingAction === 'visual' ? 'Starting...' : 'Run screenshot tests'}</span>
+            <span>{pendingAction === 'visual' ? 'Starting…' : 'Run screenshot tests'}</span>
           </button>
           <button
             type="button"
@@ -494,7 +494,7 @@ export default function RegressionPanel({
             onClick={() => void triggerRefresh('audio')}
           >
             {icon('graphic_eq')}
-            <span>{pendingAction === 'audio' ? 'Starting...' : 'Run audio tests'}</span>
+            <span>{pendingAction === 'audio' ? 'Starting…' : 'Run audio tests'}</span>
           </button>
         </div>
       </section>
@@ -587,7 +587,7 @@ export default function RegressionPanel({
         </section>
       ) : null}
 
-      {loading ? <p className="ui-regression-note">Loading regression data...</p> : null}
+      {loading ? <p className="ui-regression-note">Loading regression data…</p> : null}
       {error ? <p className="ui-regression-error">{error}</p> : null}
       {runError ? <p className="ui-regression-error">{runError}</p> : null}
       {summary &&
@@ -904,7 +904,7 @@ export default function RegressionPanel({
                         >
                           {icon('done')}
                           <span>
-                            {pendingAction === `accept:${failure.id}` ? 'Working...' : 'Accept current as baseline'}
+                            {pendingAction === `accept:${failure.id}` ? 'Working…' : 'Accept current as baseline'}
                           </span>
                         </button>
                         <button
@@ -928,7 +928,7 @@ export default function RegressionPanel({
                         >
                           {icon('save')}
                           <span>
-                            {pendingAction === `reject:${failure.id}` ? 'Working...' : 'Save rejection report to disk'}
+                            {pendingAction === `reject:${failure.id}` ? 'Working…' : 'Save rejection report to disk'}
                           </span>
                         </button>
                       </div>
@@ -947,7 +947,7 @@ export default function RegressionPanel({
                   >
                     {icon('description')}
                     <span>
-                      {pendingAction === 'failure-report' ? 'Generating...' : 'Export batch summary for agents'}
+                      {pendingAction === 'failure-report' ? 'Generating…' : 'Export batch summary for agents'}
                     </span>
                   </button>
                 </p>

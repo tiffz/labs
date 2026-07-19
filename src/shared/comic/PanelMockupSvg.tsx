@@ -192,6 +192,9 @@ export function PanelMockupSvg({
         data-panel-shape={panel.shape ?? 'rect'}
         className={onPanelSelect ? 'comic-mockup-svg__panel--interactive' : undefined}
         onClick={onPanelSelect ? () => onPanelSelect(index) : undefined}
+        // Canvas content, not chrome: panels can render tiny in thumbnail strips
+        // and the panel inspector duplicates the selection affordance.
+        data-labs-allow-small-touch-target={onPanelSelect ? '' : undefined}
         role={onPanelSelect ? 'button' : undefined}
         tabIndex={onPanelSelect ? 0 : undefined}
         onKeyDown={

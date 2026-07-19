@@ -1367,6 +1367,17 @@ body {
 }
 
 /* ---- Responsive ---- */
+/* The 3-column transport needs ~900px of min-content; stack it before it overflows. */
+@media (max-width: 940px) {
+  .pulse-top-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .pulse-transport-center {
+    order: -1;
+  }
+}
+
 @media (max-width: 700px) {
   .pulse-app {
     padding: 8px 14px;
@@ -1462,5 +1473,24 @@ body {
   .pulse-channel-slider::-moz-range-thumb {
     width: 28px;
     height: 14px;
+  }
+}
+
+/* Touch ergonomics: 24px hit-area floor on coarse pointers (desktop density unchanged). */
+@media (pointer: coarse) {
+  .pulse-title-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+  }
+
+  .pulse-info-trigger {
+    width: 24px;
+    height: 24px;
+  }
+
+  .pulse-voice-mode-btn {
+    min-height: 24px;
+    padding: 3px 10px;
   }
 }

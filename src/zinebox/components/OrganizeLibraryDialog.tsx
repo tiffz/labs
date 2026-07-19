@@ -12,6 +12,7 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 
 import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import { applyZineboxOrganizeSuggestions } from '../organize/applyZineboxOrganize';
 import type { ZineboxOrganizeScanResult } from '../organize/zineboxOrganizeSuggestions';
 import type { ZineboxComic } from '../types';
@@ -38,6 +39,7 @@ export default function OrganizeLibraryDialog({
   onError,
 }: OrganizeLibraryDialogProps): React.ReactElement {
   const { withBlockingJob } = useLabsBlockingJobs();
+  const { withBatch } = useLabsUndo();
   const suggestions = scan?.suggestions;
   const [selectedDuplicates, setSelectedDuplicates] = useState<Set<string>>(new Set());
   const [selectedStacks, setSelectedStacks] = useState<Set<string>>(new Set());
@@ -75,13 +77,16 @@ export default function OrganizeLibraryDialog({
     setApplying(true);
     try {
       await withBlockingJob('Applying organize changes…', async () => {
-        const report = await applyZineboxOrganizeSuggestions({
-          duplicateIdsToApply: selectedDuplicates,
-          stackIdsToApply: selectedStacks,
-          duplicates: suggestions.duplicates,
-          stackCandidates: suggestions.stackCandidates,
-          comicsById,
-        });
+        const report = await withBatch((queue) =>
+          applyZineboxOrganizeSuggestions({
+            duplicateIdsToApply: selectedDuplicates,
+            stackIdsToApply: selectedStacks,
+            duplicates: suggestions.duplicates,
+            stackCandidates: suggestions.stackCandidates,
+            comicsById,
+            pushUndoCommit: (commit) => queue.push(commit),
+          }),
+        );
         const parts: string[] = [];
         if (report.removedDuplicates > 0) {
           parts.push(

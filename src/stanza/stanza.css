@@ -68,8 +68,10 @@
   --theme-text-muted: var(--stanza-ink-soft);
   --theme-border: var(--stanza-paper-line);
   --theme-border-strong: var(--stanza-rose-line);
-  --theme-focus-ring: var(--stanza-focus-ring-rose);
-  --labs-control-focus-ring: var(--stanza-focus-ring-rose);
+  /* Shared controls consume these in box-shadow contexts — use the shadow form,
+     not the outline-syntax rose token (invalid as a box-shadow value). */
+  --theme-focus-ring: var(--stanza-focus-ring-rose-shadow);
+  --labs-control-focus-ring: var(--stanza-focus-ring-rose-shadow);
   --labs-popover-border: 1px solid var(--stanza-paper-line);
   --labs-popover-bg: var(--stanza-paper-elevated-strong);
   --labs-popover-shadow: var(--stanza-shadow-card);
@@ -98,6 +100,10 @@
   /* Focus rings (single source of truth so app feels coherent under keyboard nav) */
   --stanza-focus-ring: 1px solid rgba(49, 43, 38, 0.32);
   --stanza-focus-ring-rose: 2px solid rgba(232, 72, 160, 0.4);
+  /* box-shadow forms — outline tokens are invalid as box-shadow values */
+  --stanza-focus-ring-rose-shadow: 0 0 0 2px rgba(232, 72, 160, 0.22);
+  --stanza-focus-ring-rose-shadow-inset: inset 0 0 0 2px
+    rgba(232, 72, 160, 0.22);
   --stanza-focus-ring-offset: 1px;
 
   /* Shape + elevation. Main work-surface cards (rail, playback strip, video frame,

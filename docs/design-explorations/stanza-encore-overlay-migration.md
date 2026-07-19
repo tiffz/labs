@@ -1,13 +1,13 @@
 # Stanza ↔ Encore overlay migration (deferred)
 
-**Status:** Option B accepted — portfolio conflict gate + tester GA + Encore stem dedup landed; dual-read/write migration is the **next PR stack**.
+**Status:** Option B accepted — portfolio conflict gate + tester GA + Encore stem dedup landed. Steps 1–2 (dual-read pull, dual-write push) are **implemented** in [`useStanzaDriveBackup.ts`](../../src/stanza/hooks/useStanzaDriveBackup.ts) via `stanzaPracticeOverlaySync.ts`; steps 3–5 (Encore repertoire read, migration utility, legacy deprecation) remain.
 
 ## Scaffolding in repo
 
-| Artifact                                                                               | Purpose                                    |
-| -------------------------------------------------------------------------------------- | ------------------------------------------ |
-| [`STANZA_PRACTICE_OVERLAY_FILE_NAME`](../../src/stanza/drive/stanzaPracticeOverlay.ts) | Sidecar filename under `Encore_App/`       |
-| [`stanzaPracticeOverlay.ts`](../../src/stanza/drive/stanzaPracticeOverlay.ts)          | V1 schema + type guard (not wired to sync) |
+| Artifact                                                                               | Purpose                                                           |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [`STANZA_PRACTICE_OVERLAY_FILE_NAME`](../../src/stanza/drive/stanzaPracticeOverlay.ts) | Sidecar filename under `Encore_App/`                              |
+| [`stanzaPracticeOverlay.ts`](../../src/stanza/drive/stanzaPracticeOverlay.ts)          | V1 schema + type guard (wired via `stanzaPracticeOverlaySync.ts`) |
 
 ## Implementation checklist (after sign-off)
 

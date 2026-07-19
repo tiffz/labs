@@ -153,7 +153,7 @@ const CurrencyTooltip: React.FC<CurrencyTooltipProps> = ({
               ? isHungry 
                 ? "Your cat is grateful but still hungry!"
                 : "Your cat is purring with contentment!"
-              : "Aww, there's no treats... yet?"
+              : "Aww, there's no treats… yet?"
             }
           </div>
         </div>

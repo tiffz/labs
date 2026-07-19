@@ -91,7 +91,7 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
     } catch (error) {
       console.error('Error exporting audio:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to export audio: ${errorMessage}. Please try again.`);
+      alert(`Failed to export audio: ${errorMessage}. Try again.`);
     } finally {
       setIsExporting(false);
     }

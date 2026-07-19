@@ -1,5 +1,3 @@
-import { buildVexFlowSvgFontStyles, injectSvgStyle } from '../notation/vexFlowFontExport';
-
 export interface SvgToCanvasOptions {
   /** Device pixel ratio multiplier for sharper PNG/PDF output. */
   scale?: number;
@@ -9,8 +7,12 @@ export interface SvgToCanvasOptions {
   contentPadding?: number;
   /** Called after the canvas background is filled and before the SVG is drawn. */
   drawHeader?: (ctx: CanvasRenderingContext2D, width: number, headerHeight: number) => void;
-  /** Inline VexFlow SMuFL fonts so standalone SVG blob rasterization keeps glyphs. */
-  vexFlowFonts?: readonly string[];
+  /**
+   * Mutate the detached SVG clone before serialization (e.g. inline notation
+   * fonts via `notation/vexFlowFontExport` so blob rasterization keeps glyphs).
+   * Kept as a callback so this utils module stays free of notation imports.
+   */
+  prepareClone?: (clone: SVGSVGElement) => Promise<void> | void;
 }
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -52,10 +54,7 @@ export async function svgElementToCanvas(
     clone.setAttribute('height', String(svgHeight));
   }
 
-  if (options.vexFlowFonts && options.vexFlowFonts.length > 0) {
-    const css = await buildVexFlowSvgFontStyles(options.vexFlowFonts);
-    injectSvgStyle(clone, css);
-  }
+  await options.prepareClone?.(clone);
 
   const serialized = new XMLSerializer().serializeToString(clone);
   const blob = new Blob([serialized], { type: 'image/svg+xml;charset=utf-8' });

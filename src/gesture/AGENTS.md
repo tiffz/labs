@@ -20,6 +20,7 @@ Nested **`AGENTS.md`** for Gesture. Root policy: [`../../AGENTS.md`](../../AGENT
 - **Pack stats:** `GesturePackStatsProvider` / `useGesturePackStats` — counts, cover ids (max 4), drawn sets; cursor aggregate + debounce; cards prefer synced `pack.coverFileIds`.
 - **Live queries:** `useGesturePacks()` exposes `packsHydrated`; never show empty collections while Dexie is still loading (`resolveDexieLiveQuery`, rule `dexie-live-query-empty-states.mdc`).
 - **Folder drop:** entire Collections tab accepts drops (`useGestureCollectionDrop`); traverse folders via `readDataTransferEntryFiles` (not `dataTransfer.files` alone).
+- **Undo:** `LabsUndoProvider` in `App.tsx` (Tier A). App-only delete and local metadata edits go through `undo/gestureUndoableMutations.ts`; Drive side-effects (photo trash, folder rename) are never undoable.
 
 ## Media tiers
 

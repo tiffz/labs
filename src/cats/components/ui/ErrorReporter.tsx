@@ -112,7 +112,7 @@ export const ErrorReporter: React.FC<ErrorReporterProps> = ({ isVisible = true }
             borderRadius: '3px',
             wordBreak: 'break-word'
           }}>
-            Latest: {latestError.substring(0, 100)}{latestError.length > 100 ? '...' : ''}
+            Latest: {latestError.substring(0, 100)}{latestError.length > 100 ? '…' : ''}
           </div>
           
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>

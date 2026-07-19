@@ -92,7 +92,7 @@ const RhythmPresets: React.FC<RhythmPresetsProps> = ({
         type="button"
         {...getTriggerA11yProps(isOpen)}
       >
-        <span className="load-rhythm-button__label">Load Rhythm</span>
+        <span className="load-rhythm-button__label">Load rhythm</span>
         <LabsDisclosureChevron className="load-rhythm-button__chevron" />
       </button>
 
@@ -101,7 +101,7 @@ const RhythmPresets: React.FC<RhythmPresetsProps> = ({
           ref={menuRef}
           className="labs-popover-surface drums-floating-menu rhythm-presets-menu dropdown-menu"
           role="menu"
-          aria-label="Load Rhythm"
+          aria-label="Load rhythm"
           onKeyDown={handleMenuKeyDown}
           tabIndex={-1}
           {...menuProps}
