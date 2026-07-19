@@ -268,7 +268,7 @@ jobs:
 
     - name: Upload audio regression report
       if: always()
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: audio-regression-report
         if-no-files-found: ignore
@@ -362,7 +362,7 @@ jobs:
 
     - name: Upload visual regression artifacts
       if: always()
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: visual-regression-artifacts
         if-no-files-found: ignore
@@ -401,7 +401,7 @@ jobs:
       continue-on-error: true
 
     - name: Upload production build artifact
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: production-dist
         path: dist/
