@@ -1209,14 +1209,17 @@ export default defineConfig({
         '**/test/**',
         'ui/generatedSharedCatalog.ts',
       ],
-      // Soft floors ~5pts below the measured 2026-07 baseline (lines/stmts 35.7%,
-      // functions 61.2%, branches 72.7%). Signal-only guard against silent collapse;
-      // ratchet upward intentionally, never downward without a decision.
+      // Soft floors ~5pts below the measured 2026-07 baseline under Vitest 4's
+      // AST-aware v8 remapping (lines 41.3%, stmts 39.9%, functions 35.1%,
+      // branches 33.5%). Vitest 4 changed function/branch counting semantics, so
+      // these are not comparable to the Vitest 3 numbers. Signal-only guard
+      // against silent collapse; ratchet upward intentionally, never downward
+      // without a decision.
       thresholds: {
-        lines: 30,
-        functions: 55,
-        statements: 30,
-        branches: 67,
+        lines: 36,
+        functions: 30,
+        statements: 35,
+        branches: 28,
       },
     },
   },
