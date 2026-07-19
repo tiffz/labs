@@ -1,8 +1,11 @@
-import { createLabsDebouncedChangeBus } from '../../shared/drive/labsDebouncedChangeBus';
+import {
+  createLabsDebouncedChangeBus,
+  type LabsLocalChangeListener,
+} from '../../shared/drive/labsDebouncedChangeBus';
 
 const bus = createLabsDebouncedChangeBus();
 
-export function subscribeGestureLocalChanges(onChange: () => void): () => void {
+export function subscribeGestureLocalChanges(onChange: LabsLocalChangeListener): () => void {
   return bus.subscribe(onChange);
 }
 
