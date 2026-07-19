@@ -367,6 +367,19 @@ Each app implements a hook/context that returns:
 
 Wire Stanza via `useStanzaDriveBackup`; Scales via `ScalesDriveBackupProvider` (`driveUi`). Do not duplicate restore dialogs or Drive link rows in app menus.
 
+### Account menu hierarchy + extension slots
+
+One hierarchy for every app's account menu: **identity → sync status/actions → integrations → footer**. When an app needs more than the default menu, extend `LabsAccountMenu` through its slots instead of forking (Encore is the reference consumer — `EncoreAccountMenu`):
+
+- **`renderTrigger`** — custom trigger element (e.g. Encore's labeled "Hi, name" button). Spread the provided `triggerProps` onto the clickable element.
+- **`identitySlot`** — replaces the default email line. For guest-facing identity use [`LabsAccountDisplayNameSection`](./google/LabsAccountDisplayNameSection.tsx) (view/edit display name, provider-name fallback).
+- **`integrationsSlot`** — app-specific connection cards rendered full-bleed between identity and footer. Build each card with [`LabsAccountIntegrationCard`](./google/LabsAccountIntegrationCard.tsx) (brand icon + title + [`LabsStatusPill`](./components/LabsStatusPill.tsx) status, identity, description, utility icon row, primary/secondary/disconnect actions, alert, footnote) — **required** for new integrations so all cards share one layout. The function form receives `{ close }` for actions that should dismiss the menu.
+- **`footer`** — replaces the default "Labs site / Privacy policy" footer region (Encore keeps its own privacy one-liner).
+- **`backup`** is now optional — omit it for apps that render sync state inside an integration card instead of the portfolio backup block.
+- **`alwaysShowMenu`** — render the full menu even without a persisted Google identity (for menus that carry signed-out content); **`onOpenChange`** — lazy-load integration data (e.g. Spotify profile summary) only while open.
+
+Guardrail: `e2e/smoke/encore-account-menu.spec.ts` asserts Encore's menu keeps Spotify connect + display-name editing on top of the shared menu.
+
 ### Transient success toasts (`LabsFeedbackToast`)
 
 After a blocking job finishes, **brief success copy** (e.g. `Synced from Drive (merged 218 comics).`) belongs in a **bottom-center dismissible toast**, not a banner over the app header or a filled MUI alert in the account menu.

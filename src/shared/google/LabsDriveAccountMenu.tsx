@@ -1,7 +1,11 @@
 import { useMemo } from 'react';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { labsDriveSyncMessageIsTransientSuccess } from '../drive/labsDriveSyncMessages';
-import { LabsAccountMenu, type LabsAccountMenuProps } from './LabsAccountMenu';
+import {
+  LabsAccountMenu,
+  type LabsAccountBackupSlotProps,
+  type LabsAccountMenuProps,
+} from './LabsAccountMenu';
 import LabsDriveBackupActionRow from './LabsDriveBackupActionRow';
 import LabsDriveConflictDialog from './LabsDriveConflictDialog';
 import LabsDriveRestoreDialog from './LabsDriveRestoreDialog';
@@ -11,6 +15,8 @@ import { useLabsDriveSyncToastMessage } from './useLabsDriveSyncToastMessage';
 import type { LabsDriveBackupUiProps, LabsDriveConflictUiProps } from './labsDriveBackupUiTypes';
 
 export type LabsDriveAccountMenuProps = Omit<LabsAccountMenuProps, 'renderBackupButton'> & {
+  /** Required here: the Drive menu exists to render the backup block. */
+  backup: LabsAccountBackupSlotProps;
   drive: LabsDriveBackupUiProps;
   /** When set, renders the shared merge/replace conflict dialog. */
   conflict?: (LabsDriveConflictUiProps & { dialogTitleId: string }) | null;
