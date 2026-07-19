@@ -13,7 +13,7 @@ jobs:
     permissions:
       actions: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Report CI health (advisory gate)
         id: ci_health
@@ -34,9 +34,9 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -76,9 +76,9 @@ jobs:
     env:
       CI: true
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: '.nvmrc'
 

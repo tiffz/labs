@@ -24,12 +24,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
       - name: Setup Node.js (no npm cache)
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version-file: '.nvmrc'
 
@@ -65,12 +65,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
       - name: Setup Node.js (no npm cache)
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version-file: '.nvmrc'
 
@@ -104,12 +104,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
       - name: Setup Node.js (no npm cache)
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version-file: '.nvmrc'
 
