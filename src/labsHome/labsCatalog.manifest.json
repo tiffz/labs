@@ -154,6 +154,14 @@
       "iconClass": "scrapboard"
     },
     {
+      "path": "/muscle/",
+      "title": "Muscle Memory",
+      "shortDescription": "Learn artistic anatomy in 3D with spaced-repetition quizzes",
+      "stage": "unlisted",
+      "category": "art",
+      "iconClass": "muscle"
+    },
+    {
       "path": "/forms/",
       "title": "Form Intersections",
       "shortDescription": "3D visualization for Drawabox form intersections",

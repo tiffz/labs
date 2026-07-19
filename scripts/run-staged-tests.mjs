@@ -76,7 +76,8 @@ if (crossCutting || sharedTouched || apps.size === 0 || apps.size > 3) {
 
 for (const app of apps) {
   console.log(`test:staged: vitest src/${app}`);
-  run(`npx vitest run "src/${app}"`);
+  // --passWithNoTests: some app dirs are data/manifest-only (e.g. labsHome)
+  run(`npx vitest run --passWithNoTests "src/${app}"`);
 }
 
 console.log('test:staged: ok');

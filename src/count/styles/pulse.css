@@ -171,53 +171,39 @@ body {
   gap: 8px;
 }
 
-.pulse-bpm-top {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
+/* Shared BpmInput themed to the pulse terminal aesthetic via its CSS tokens. */
+.count-bpm-input .shared-bpm-shell {
+  --bpm-bg: var(--pulse-surface);
+  --bpm-border: var(--pulse-border);
+  --bpm-text: var(--pulse-accent);
+  --bpm-muted: var(--pulse-text-dim);
+  --bpm-focus: var(--pulse-accent);
+  /* The shared inset ring token resolves against the light theme at :root, so
+     re-compose it here with the pulse accent. */
+  --bpm-focus-ring: inset 0 0 0 2px
+    color-mix(in srgb, var(--pulse-accent) 55%, transparent);
+  --bpm-hover: var(--pulse-accent-dim);
+  --bpm-shell-radius: 0;
+  --music-timing-value-font-size: 1.5rem;
+  font-family: var(--pulse-mono);
 }
 
-.pulse-bpm-display {
+.count-bpm-dropdown {
+  --labs-popover-bg: var(--pulse-surface);
+  --labs-popover-border: 1px solid var(--pulse-border);
+  --labs-popover-radius: 0;
+  --labs-popover-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --bpm-dropdown-bg: var(--pulse-surface);
+  --bpm-dropdown-border: var(--pulse-border);
+  --bpm-text: var(--pulse-text);
+  --bpm-muted: var(--pulse-text-dim);
+  --bpm-focus: var(--pulse-accent);
+  --bpm-chip-radius: 0;
   font-family: var(--pulse-mono);
-  font-size: 2.6rem;
-  font-weight: 700;
-  color: var(--pulse-accent);
-  line-height: 1;
-  background: none;
-  border: none;
-  cursor: text;
-  padding: 0;
 }
 
-.pulse-bpm-input {
-  font-family: var(--pulse-mono);
-  font-size: 2.6rem;
-  font-weight: 700;
-  color: var(--pulse-accent);
-  background: var(--pulse-bg);
-  border: 1px solid var(--pulse-accent);
-  width: 100px;
-  padding: 0 6px;
-  line-height: 1;
-}
-.pulse-bpm-input:focus-visible {
-  outline: 2px solid var(--pulse-accent);
-  outline-offset: 2px;
-}
-.pulse-bpm-input::-webkit-inner-spin-button,
-.pulse-bpm-input::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-.pulse-bpm-input {
-  -moz-appearance: textfield;
-}
-
-.pulse-bpm-label {
-  font-family: var(--pulse-mono);
-  font-size: 0.85rem;
-  letter-spacing: 0.2em;
-  color: var(--pulse-text-dim);
+.count-bpm-dropdown .shared-bpm-slider-wrap {
+  border-radius: 0;
 }
 
 .pulse-tempo-marking {
@@ -257,53 +243,6 @@ body {
   background: var(--pulse-accent);
   border: none;
   cursor: pointer;
-}
-
-.pulse-bpm-actions {
-  display: flex;
-  gap: 5px;
-}
-
-.pulse-bpm-btn {
-  font-family: var(--pulse-mono);
-  font-size: 0.85rem;
-  font-weight: 500;
-  padding: 5px 12px;
-  border: 1px solid var(--pulse-border);
-  background: transparent;
-  color: var(--pulse-text-dim);
-  cursor: pointer;
-  flex: 1;
-  text-align: center;
-}
-.pulse-bpm-btn:hover {
-  border-color: var(--pulse-accent);
-  color: var(--pulse-accent);
-}
-
-.pulse-bpm-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.pulse-bpm-preset {
-  font-family: var(--pulse-mono);
-  font-size: 0.75rem;
-  padding: 4px 7px;
-  border: 1px solid var(--pulse-border);
-  background: transparent;
-  color: var(--pulse-text-dim);
-  cursor: pointer;
-}
-.pulse-bpm-preset:hover {
-  border-color: var(--pulse-accent);
-  color: var(--pulse-accent);
-}
-.pulse-bpm-preset.is-active {
-  border-color: var(--pulse-accent);
-  background: var(--pulse-accent-dim);
-  color: var(--pulse-accent);
 }
 
 /* ---- Time Signature ---- */
@@ -1429,9 +1368,6 @@ body {
   .pulse-bpm {
     gap: 6px;
   }
-  .pulse-bpm-presets {
-    gap: 3px;
-  }
   .pulse-time-sig {
     flex-direction: row;
     flex-wrap: wrap;
@@ -1492,5 +1428,10 @@ body {
   .pulse-voice-mode-btn {
     min-height: 24px;
     padding: 3px 10px;
+  }
+
+  .pulse-channel-mute {
+    min-width: 24px;
+    min-height: 24px;
   }
 }
