@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import DownloadDropdown from './DownloadDropdown';
 import type { ParsedRhythm } from '../types';
@@ -46,8 +46,10 @@ describe('DownloadDropdown', () => {
     global.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
     global.URL.revokeObjectURL = vi.fn();
 
-    // Mock document.createElement and click - restore original implementation
-    const originalCreateElement = document.createElement.bind(document);
+    // Bind the *real* prototype methods, not document's own (possibly still
+    // spied) properties — under Vitest 4, re-binding a live spy as the
+    // "original" recurses infinitely on the first passthrough call.
+    const originalCreateElement = Document.prototype.createElement.bind(document);
     vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
       if (tagName === 'a') {
         return {
@@ -59,19 +61,12 @@ describe('DownloadDropdown', () => {
       return originalCreateElement(tagName);
     });
 
-    const originalAppendChild = document.body.appendChild.bind(document.body);
-    vi.spyOn(document.body, 'appendChild').mockImplementation((node) => {
-      return originalAppendChild(node);
-    });
-
-    const originalRemoveChild = document.body.removeChild.bind(document.body);
-    vi.spyOn(document.body, 'removeChild').mockImplementation((node) => {
-      return originalRemoveChild(node);
-    });
+    vi.spyOn(window, 'alert').mockImplementation(() => { });
   });
 
-  // Mock window.alert
-  vi.spyOn(window, 'alert').mockImplementation(() => { });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('should not render when closed', () => {
     render(

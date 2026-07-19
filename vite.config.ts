@@ -1,11 +1,11 @@
-/// <reference types="vitest" />
 import { build as esbuildBuild } from 'esbuild';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vitest/config';
+import { loadEnv } from 'vite';
 import type { Connect, Plugin, PreviewServer, ViteDevServer } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import react from '@vitejs/plugin-react';
-import { viteStaticCopy } from 'vite-plugin-static-copy';
-import { resolve } from 'path';
+import { resolve, basename } from 'path';
+import { copyFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { compression } from 'vite-plugin-compression2';
@@ -1120,14 +1120,21 @@ export default defineConfig({
         return out;
       },
     },
-    ...(!SKIP_DEPLOY_PLUGINS ? [viteStaticCopy({
-      targets: [
-        { src: '../src/404.html', dest: '.' },
-        { src: '../CNAME', dest: '.' },
-        { src: '../public/robots.txt', dest: '.' },
-        { src: '../public/_headers', dest: '.' },
-      ]
-    })] : []),
+    // Deterministic deploy-file copy (replaced vite-plugin-static-copy: its v4
+    // glob engine preserves `../` path segments and chokes on glob metacharacters
+    // in checkout paths like `[second checkout]`, silently skipping dist/CNAME —
+    // which would break the custom domain on deploy).
+    ...(!SKIP_DEPLOY_PLUGINS ? [{
+      name: 'labs-copy-deploy-files',
+      apply: 'build',
+      closeBundle() {
+        const outDir = resolve(__dirname, 'dist');
+        for (const file of ['src/404.html', 'CNAME', 'public/robots.txt', 'public/_headers']) {
+          const from = resolve(__dirname, file);
+          copyFileSync(from, resolve(outDir, basename(file)));
+        }
+      },
+    } satisfies Plugin] : []),
     ...(!SKIP_DEPLOY_PLUGINS ? [compression({
       algorithms: ['gzip'],
     })] : []),
@@ -1169,15 +1176,9 @@ export default defineConfig({
     testTimeout: 10000, // 10 seconds max per test (reduced from 30s)
     hookTimeout: 5000, // 5 seconds max for setup/teardown (reduced from 30s)
     pool: 'threads', // Use threads for better isolation
-    poolOptions: {
-      threads: {
-        singleThread: false, // Allow parallel execution
-        isolate: true, // Isolate each test file
-        minThreads: 2, // Start with 2 threads for faster execution
-        maxThreads: 6, // Increased from 4 for better parallelism (memory is stable)
-      },
-    },
-    // Limit memory usage per worker
+    // Vitest 4 pool rework: poolOptions.threads.maxThreads → top-level maxWorkers
+    // (minThreads was removed upstream; only maxWorkers has an effect).
+    maxWorkers: 6,
     isolate: true, // Isolate each test file to prevent memory leaks
     // Reduce memory footprint
     maxConcurrency: 6, // Increased from 4 for better parallelism

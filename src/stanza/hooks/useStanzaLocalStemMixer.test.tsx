@@ -23,7 +23,11 @@ const hoisted = vi.hoisted(() => {
 });
 
 vi.mock('../audio/stanzaLocalStemMixer', () => ({
-  StanzaLocalStemMixer: vi.fn(() => hoisted.createInstance()),
+  // Vitest 4: constructor mocks must use the `function` keyword — the hook
+  // calls `new StanzaLocalStemMixer()`, and arrow fns are "not a constructor".
+  StanzaLocalStemMixer: vi.fn(function () {
+    return hoisted.createInstance();
+  }),
 }));
 
 import { StanzaLocalStemMixer } from '../audio/stanzaLocalStemMixer';
