@@ -1,6 +1,12 @@
+import { hostnameMatches, tryParseUrl } from '../url/safeUrlHost';
+
 /** True when the URL is a Drive **folder** browser link (not a file). */
 export function isDriveFolderBrowserUrl(raw: string): boolean {
-  return /drive\.google\.com\/drive\/(?:u\/\d+\/)?folders\//i.test(raw.trim());
+  const s = raw.trim();
+  if (!s || !hostnameMatches(s, 'drive.google.com')) return false;
+  const url = tryParseUrl(s);
+  if (!url) return false;
+  return /\/drive\/(?:u\/\d+\/)?folders\//i.test(url.pathname);
 }
 
 /** Extract Google Drive file id from common URL shapes or raw id. */
@@ -8,10 +14,14 @@ export function parseDriveFileIdFromUrlOrId(raw: string): string | null {
   const s = raw.trim();
   if (!s) return null;
   if (/^[A-Za-z0-9_-]{25,}$/.test(s) && !s.includes('/')) return s;
-  const open = s.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([A-Za-z0-9_-]+)/);
-  if (open?.[1]) return open[1];
-  const uc = s.match(/\/uc\?[^#]*id=([A-Za-z0-9_-]+)/);
-  if (uc?.[1]) return uc[1];
+
+  const url = tryParseUrl(s);
+  if (url && hostnameMatches(s, 'drive.google.com')) {
+    const fileMatch = url.pathname.match(/\/file\/d\/([A-Za-z0-9_-]+)/i);
+    if (fileMatch?.[1]) return fileMatch[1];
+    const openId = url.searchParams.get('id');
+    if (openId && /^[A-Za-z0-9_-]+$/.test(openId)) return openId;
+  }
   return null;
 }
 
@@ -19,8 +29,13 @@ export function parseDriveFileIdFromUrlOrId(raw: string): string | null {
 export function parseDriveFolderIdFromUrlOrId(raw: string): string | null {
   const s = raw.trim();
   if (!s) return null;
-  const folder = s.match(/drive\.google\.com\/drive\/(?:u\/\d+\/)?folders\/([A-Za-z0-9_-]+)/);
-  if (folder?.[1]) return folder[1];
+
+  const url = tryParseUrl(s);
+  if (url && hostnameMatches(s, 'drive.google.com')) {
+    const folder = url.pathname.match(/\/drive\/(?:u\/\d+\/)?folders\/([A-Za-z0-9_-]+)/i);
+    if (folder?.[1]) return folder[1];
+  }
+
   if (/^[A-Za-z0-9_-]{25,}$/.test(s) && !s.includes('/')) return s;
   return null;
 }

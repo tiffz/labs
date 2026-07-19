@@ -16198,6 +16198,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-escapedrivequeryliteral-ts-escapedrivequeryliteral",
+    "name": "escapeDriveQueryLiteral",
+    "path": "src/shared/drive/escapeDriveQueryLiteral.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Escape a string for embedding in a Google Drive `q` filter literal (`name='…'`, `'id' in parents`, etc.). Drive query syntax treats `\\` as an escape, so backslashes must be escaped before single quotes — otherwise `foo\\'bar` can break out of the literal.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-fetchpublicdrivemediabytes-ts-fetchpublicdrivefilemetadata",
     "name": "fetchPublicDriveFileMetadata",
     "path": "src/shared/drive/fetchPublicDriveMediaBytes.ts",
@@ -32799,6 +32812,45 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-url-safeurlhost-ts-hostnamematches",
+    "name": "hostnameMatches",
+    "path": "src/shared/url/safeUrlHost.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when hostname is exactly `host` or a subdomain of `host`.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-url-safeurlhost-ts-hostnamematchesany",
+    "name": "hostnameMatchesAny",
+    "path": "src/shared/url/safeUrlHost.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when hostname equals any of the hosts or is a subdomain of one.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-url-safeurlhost-ts-tryparseurl",
+    "name": "tryParseUrl",
+    "path": "src/shared/url/safeUrlHost.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Hostname checks that avoid substring false-positives (`https://evil.com/?q=youtube.com`).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {

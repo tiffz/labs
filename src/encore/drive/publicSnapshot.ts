@@ -23,6 +23,7 @@ import { getPrimaryPerformanceVideo } from '../utils/performanceVideoModel';
 import { orderSnapshotSongsByLatestPerformanceDesc } from './publicSnapshotSort';
 import { isPublicDriveFileMetadataReadable } from '../../shared/drive/fetchPublicDriveMediaBytes';
 import { isPublicDriveGuestFetchConfigured } from '../../shared/drive/buildPublicDriveAltMediaUrl';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 
 export { orderSnapshotSongsByLatestPerformanceDesc } from './publicSnapshotSort';
 
@@ -35,7 +36,7 @@ function stripMediaLinkNotesForGuest(links: EncoreMediaLink[]): EncoreMediaLink[
 }
 
 function qJsonInParent(name: string, parentId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/json' and '${parentId}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/json' and '${parentId}' in parents and trashed=false`;
 }
 
 export type BuildPublicSnapshotOptions = {

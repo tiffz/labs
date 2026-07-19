@@ -42,6 +42,7 @@ import {
   driveTrashFile,
 } from './driveFetch';
 import { ensureEncoreDriveLayout } from './bootstrapFolders';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 import {
   ENCORE_SHARDED_EXTRAS_FILE,
   ENCORE_SHARDED_EXTRAS_FOLDER,
@@ -142,11 +143,11 @@ function shardFileName(kind: ShardKind, rowId: string): string {
 }
 
 function qFolderInParent(name: string, parentId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
 }
 
 function qJsonInParent(name: string, parentId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/json' and '${parentId}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/json' and '${parentId}' in parents and trashed=false`;
 }
 
 async function ensureSubfolder(accessToken: string, name: string, parentId: string): Promise<string> {

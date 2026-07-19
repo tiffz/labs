@@ -9,6 +9,7 @@ import {
   indexGesturePackFromDrive,
 } from './gesturePackIndex';
 import { clearGestureDriveFolderTombstone } from './gestureDriveTombstones';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 
@@ -51,7 +52,7 @@ async function listReferencePackChildFolders(
   do {
     const list = await driveListFiles(
       accessToken,
-      `'${referencePacksFolderId.replace(/'/g, "\\'")}' in parents and mimeType='${FOLDER_MIME}' and trashed=false`,
+      `'${escapeDriveQueryLiteral(referencePacksFolderId)}' in parents and mimeType='${FOLDER_MIME}' and trashed=false`,
       'nextPageToken,files(id,name,trashed)',
       200,
       pageToken,

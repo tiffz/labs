@@ -1,9 +1,10 @@
 import { driveCreateFolder, driveListFiles } from '../drive/driveFetch';
 import { ENCORE_PRACTICE_EXPORTS_FOLDER } from '../drive/constants';
 import { ensureEncoreDriveLayout } from '../drive/bootstrapFolders';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 
 function qFolderInParent(name: string, parentId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
 }
 
 /** `Encore_App/Practice exports/` — creates the folder on first use. */

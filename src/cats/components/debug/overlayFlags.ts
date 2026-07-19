@@ -20,4 +20,3 @@ export function isOverlayEnabled(): boolean {
     return false;
   }
 }
-

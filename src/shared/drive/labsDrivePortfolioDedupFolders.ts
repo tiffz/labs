@@ -1,4 +1,5 @@
 import { driveListFiles } from './driveFetch';
+import { escapeDriveQueryLiteral } from './escapeDriveQueryLiteral';
 import {
   LABS_DRIVE_APP_FOLDER_STANZA,
   LABS_DRIVE_ROOT_FOLDER,
@@ -10,7 +11,7 @@ const FOLDER_MIME = 'application/vnd.google-apps.folder';
 export const LABS_DRIVE_STANZA_STEM_AUDIO_FOLDER = 'stem_audio';
 
 function qFolderInParent(name: string, parentId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='${FOLDER_MIME}' and '${parentId.replace(/'/g, "\\'")}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='${FOLDER_MIME}' and '${escapeDriveQueryLiteral(parentId)}' in parents and trashed=false`;
 }
 
 async function findFolderChildId(

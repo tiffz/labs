@@ -3,9 +3,32 @@ import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
 import { memo, useDeferredValue } from 'react';
 
+/** Allow http(s), mailto, and relative URLs; block javascript/data/vbscript and other schemes. */
 function safeUrl(url: string): string {
-  const u = url.trim().toLowerCase();
-  if (u.startsWith('javascript:') || u.startsWith('data:')) return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (
+    trimmed.startsWith('/') ||
+    trimmed.startsWith('#') ||
+    trimmed.startsWith('?') ||
+    trimmed.startsWith('./') ||
+    trimmed.startsWith('../')
+  ) {
+    return url;
+  }
+  // Scheme-relative URLs are ambiguous; reject.
+  if (trimmed.startsWith('//')) return '';
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      const protocol = parsed.protocol.toLowerCase();
+      if (protocol === 'http:' || protocol === 'https:' || protocol === 'mailto:') return url;
+      return '';
+    } catch {
+      return '';
+    }
+  }
+  // No scheme — treat as relative path / fragment-ish reference.
   return url;
 }
 

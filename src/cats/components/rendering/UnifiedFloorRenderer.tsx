@@ -1,7 +1,7 @@
 import React from 'react';
 import { floorSpaceManager, type FloorSpaceConfig } from '../../services/FloorSpaceManager';
 import { useCoordinateSystem } from '../../hooks/useCoordinateSystem';
-import { isOverlayEnabled } from '../debug/overlay';
+import { isOverlayEnabled } from '../debug/overlayFlags';
 import { BaselineOverlay, MassBoxOverlay } from '../debug/overlay.tsx';
 
 /**

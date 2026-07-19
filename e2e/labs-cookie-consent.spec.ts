@@ -2,11 +2,21 @@ import { test, expect, type Page } from '@playwright/test';
 
 const PREVIEW = '?labs_preview_cookie_banner=1';
 
+function hostnameEndsWith(url: string, host: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    const target = host.toLowerCase();
+    return hostname === target || hostname.endsWith(`.${target}`);
+  } catch {
+    return false;
+  }
+}
+
 function trackingUrls(url: string): boolean {
   return (
     url.includes('/scripts/analytics.js') ||
-    url.includes('googletagmanager.com') ||
-    url.includes('google-analytics.com')
+    hostnameEndsWith(url, 'googletagmanager.com') ||
+    hostnameEndsWith(url, 'google-analytics.com')
   );
 }
 
@@ -28,7 +38,7 @@ test.describe('Cookie consent (localhost preview)', () => {
 
     // Banner visible — still no Labs analytics bundle or GTM.
     expect(hits.filter((u) => u.includes('/scripts/analytics.js'))).toHaveLength(0);
-    expect(hits.filter((u) => u.includes('googletagmanager.com'))).toHaveLength(0);
+    expect(hits.filter((u) => hostnameEndsWith(u, 'googletagmanager.com'))).toHaveLength(0);
 
     await page.getByRole('button', { name: 'Reject' }).click();
     await expect(page.locator('#labs-cookie-consent-root')).toHaveCount(0);
@@ -36,7 +46,7 @@ test.describe('Cookie consent (localhost preview)', () => {
     await page.reload();
     await expect(page.locator('#labs-cookie-consent-root')).toHaveCount(0);
     expect(hits.filter((u) => u.includes('/scripts/analytics.js'))).toHaveLength(0);
-    expect(hits.filter((u) => u.includes('googletagmanager.com'))).toHaveLength(0);
+    expect(hits.filter((u) => hostnameEndsWith(u, 'googletagmanager.com'))).toHaveLength(0);
 
     await clearAnalyticsConsent(page);
     await page.goto(`/${PREVIEW}`);
@@ -46,8 +56,11 @@ test.describe('Cookie consent (localhost preview)', () => {
       page.waitForRequest((req) => req.url().includes('/scripts/analytics.js'), { timeout: 15_000 }),
       page.getByRole('button', { name: 'Accept' }).click(),
     ]);
-    await page.waitForRequest((req) => req.url().includes('googletagmanager.com'), { timeout: 20_000 });
-    expect(hits.some((u) => u.includes('googletagmanager.com'))).toBe(true);
+    await page.waitForRequest(
+      (req) => hostnameEndsWith(req.url(), 'googletagmanager.com'),
+      { timeout: 20_000 },
+    );
+    expect(hits.some((u) => hostnameEndsWith(u, 'googletagmanager.com'))).toBe(true);
   });
 
   test('stored Accept loads analytics on repeat visit (still with preview flag)', async ({

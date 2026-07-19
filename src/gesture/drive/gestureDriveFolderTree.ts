@@ -1,8 +1,9 @@
 import { driveCreateFolder, driveListFiles } from '../../shared/drive/driveFetch';
 import { sanitizeDriveFolderSegment } from './gestureCollectionPaths';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 
 function escapeDriveQueryString(id: string): string {
-  return id.replace(/'/g, "\\'");
+  return escapeDriveQueryLiteral(id);
 }
 
 function qFolderInParent(name: string, parentId: string): string {

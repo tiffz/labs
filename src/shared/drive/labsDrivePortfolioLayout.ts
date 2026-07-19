@@ -14,6 +14,7 @@ import {
   drivePatchJsonMedia,
 } from './driveFetch';
 import { maybePinDailyDriveFileRevision } from './driveRevisionPinning';
+import { escapeDriveQueryLiteral } from './escapeDriveQueryLiteral';
 
 export const LABS_DRIVE_ROOT_FOLDER = 'Tiff Zhang Labs';
 export const LABS_DRIVE_APP_FOLDER_SCALES = 'LearnYourScales';
@@ -24,11 +25,11 @@ export const LABS_DRIVE_APP_FOLDER_LYREFLY = 'Lyrefly';
 export const LABS_DRIVE_PROGRESS_FILE = 'progress.json';
 
 function qFolderInParent(name: string, parentId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
 }
 
 function qJsonInParent(name: string, parentId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/json' and '${parentId}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/json' and '${parentId}' in parents and trashed=false`;
 }
 
 export interface LabsDrivePortfolioProgressRefs {

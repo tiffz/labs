@@ -1,3 +1,4 @@
+import { hostnameMatches, hostnameMatchesAny } from '../../shared/url/safeUrlHost';
 import { parseDriveFileIdFromUrlOrId } from '../drive/parseDriveFileUrl';
 import { parseSpotifyTrackId } from '../spotify/parseSpotifyTrackUrl';
 import { parseYoutubeVideoId } from '../youtube/parseYoutubeVideoUrl';
@@ -50,9 +51,10 @@ export function looksLikeEncoreMediaUrlInput(raw: string): boolean {
   if (!t) return false;
   if (/^https?:\/\//i.test(t)) return true;
   if (/\/stanza\/?(\?|$)/i.test(t)) return true;
-  if (/spotify\.com\/track\//i.test(t) || /^spotify:track:/i.test(t)) return true;
-  if (/youtu\.be\//i.test(t) || /youtube\.com\//i.test(t)) return true;
-  if (/drive\.google\.com\//i.test(t)) return true;
+  if (/^spotify:track:/i.test(t)) return true;
+  if (hostnameMatches(t, 'spotify.com')) return true;
+  if (hostnameMatchesAny(t, ['youtu.be', 'youtube.com'])) return true;
+  if (hostnameMatches(t, 'drive.google.com')) return true;
   if (/^[A-Za-z0-9_-]{22}$/.test(t)) return true;
   if (/^[a-zA-Z0-9_-]{11}$/.test(t)) return true;
   return false;

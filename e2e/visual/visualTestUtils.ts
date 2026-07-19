@@ -6,9 +6,24 @@ import type { VisualRouteFromRegistry } from '../routeRegistry';
 
 export type VisualRouteSpec = VisualRouteFromRegistry;
 
-const BLOCKED_EXTERNAL_REGEX = /google-analytics|googletagmanager|fonts\.googleapis|fonts\.gstatic/;
+const BLOCKED_EXTERNAL_HOSTS = [
+  'google-analytics.com',
+  'googletagmanager.com',
+  'fonts.googleapis.com',
+  'fonts.gstatic.com',
+] as const;
 const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_ROOT = path.resolve(CURRENT_DIR, '../..');
+
+function hostnameEndsWith(url: string, host: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    const target = host.toLowerCase();
+    return hostname === target || hostname.endsWith(`.${target}`);
+  } catch {
+    return false;
+  }
+}
 
 const FONT_FILE_BYTES: Record<string, Buffer> = {
   'material-symbols-outlined.woff2': readFileSync(
@@ -530,5 +545,5 @@ export async function waitForVisualReady(page: Page, spec: VisualRouteSpec): Pro
 }
 
 export function shouldIgnoreRequestFailure(url: string): boolean {
-  return BLOCKED_EXTERNAL_REGEX.test(url);
+  return BLOCKED_EXTERNAL_HOSTS.some((host) => hostnameEndsWith(url, host));
 }

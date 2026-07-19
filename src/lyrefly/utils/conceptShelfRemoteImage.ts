@@ -9,14 +9,11 @@ function fileNameFromUrl(url: string): string | null {
   }
 }
 
+/** Extract `img[src]` via regex only — avoid DOMParser (HTML injection sink). */
 export function extractImageUrlFromHtml(html: string): string | null {
-  try {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const img = doc.querySelector('img[src]');
-    return img?.getAttribute('src')?.trim() || null;
-  } catch {
-    return null;
-  }
+  const match = /<img\b[^>]*\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(html);
+  const src = (match?.[1] ?? match?.[2] ?? match?.[3])?.trim();
+  return src || null;
 }
 
 export function isLikelyImageUrl(url: string): boolean {

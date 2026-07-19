@@ -2,6 +2,19 @@ import type { Page } from '@playwright/test';
 
 const E2E_GOOGLE_TOKEN = 'e2e-gesture-upload-token';
 
+function e2eRequestHostname(raw: string): string | null {
+  try {
+    return new URL(raw).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function isGoogleApisHost(raw: string): boolean {
+  const host = e2eRequestHostname(raw);
+  return host === 'googleapis.com' || !!host?.endsWith('.googleapis.com');
+}
+
 const E2E_DRIVE_CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Upload-Content-Type, X-Upload-Content-Length, Content-Range',
@@ -67,7 +80,7 @@ export async function stubGestureDriveUploadApi(page: Page): Promise<GestureDriv
       return;
     }
 
-    if (url.includes('googleapis.com') && url.includes('/drive/v3/files') && method === 'GET') {
+    if (isGoogleApisHost(url) && url.includes('/drive/v3/files') && method === 'GET') {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -103,7 +116,7 @@ export async function stubGestureDriveUploadApi(page: Page): Promise<GestureDriv
     }
 
     if (
-      url.includes('googleapis.com') &&
+      isGoogleApisHost(url) &&
       url.includes('/drive/v3/files') &&
       !url.includes('upload/drive') &&
       method === 'POST'
@@ -121,7 +134,7 @@ export async function stubGestureDriveUploadApi(page: Page): Promise<GestureDriv
       return;
     }
 
-    if (url.includes('googleapis.com') && url.includes('/drive/') && !url.includes('upload/drive')) {
+    if (isGoogleApisHost(url) && url.includes('/drive/') && !url.includes('upload/drive')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

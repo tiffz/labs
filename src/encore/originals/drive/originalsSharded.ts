@@ -30,6 +30,7 @@ import {
 import { normalizeEncoreOriginalSong, type EncoreOriginalSong } from '../types';
 import { mergeOriginalSongPreservingContent } from './encoreOriginalsMerge';
 import { maxOriginalsClock } from './originalsWire';
+import { escapeDriveQueryLiteral } from '../../../shared/drive/escapeDriveQueryLiteral';
 
 export interface OriginalsShardEntry {
   fileId: string;
@@ -67,11 +68,11 @@ function parseManifest(json: string): OriginalsManifest {
 }
 
 function qFolderInParent(name: string, parentId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
 }
 
 function qJsonInParent(name: string, parentId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/json' and '${parentId}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/json' and '${parentId}' in parents and trashed=false`;
 }
 
 async function ensureSubfolder(accessToken: string, name: string, parentId: string): Promise<string> {

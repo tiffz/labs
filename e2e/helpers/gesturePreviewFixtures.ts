@@ -15,10 +15,24 @@ export async function prepareGestureE2ePage(page: Page): Promise<void> {
     window.localStorage.removeItem('gesture-practice-session-config');
   });
 }
+function e2eRequestHostname(raw: string): string | null {
+  try {
+    return new URL(raw).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 export async function stubGestureDriveThumbnailImages(page: Page): Promise<void> {
   await page.route('**/*', async (route) => {
     const url = route.request().url();
-    if (url.includes('drive.google.com/thumbnail') || url.includes('googleusercontent.com')) {
+    const host = e2eRequestHostname(url);
+    const isDriveThumb =
+      (host === 'drive.google.com' || host?.endsWith('.drive.google.com')) &&
+      url.includes('/thumbnail');
+    const isGoogleUserContent =
+      host === 'googleusercontent.com' || !!host?.endsWith('.googleusercontent.com');
+    if (isDriveThumb || isGoogleUserContent) {
       await route.fulfill({ status: 200, contentType: 'image/png', body: GESTURE_E2E_TINY_PNG });
       return;
     }
