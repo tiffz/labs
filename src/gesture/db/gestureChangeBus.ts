@@ -1,42 +1,16 @@
-type Listener = () => void;
+import { createLabsDebouncedChangeBus } from '../../shared/drive/labsDebouncedChangeBus';
 
-const listeners = new Set<Listener>();
+const bus = createLabsDebouncedChangeBus();
 
-let notifyTimer: number | null = null;
-let notifyPending = false;
-
-const DEFAULT_DEBOUNCE_MS = 750;
-
-export function subscribeGestureLocalChanges(onChange: Listener): () => void {
-  listeners.add(onChange);
-  return () => listeners.delete(onChange);
-}
-
-function flushGestureLocalChange(): void {
-  notifyPending = false;
-  notifyTimer = null;
-  for (const fn of listeners) fn();
+export function subscribeGestureLocalChanges(onChange: () => void): () => void {
+  return bus.subscribe(onChange);
 }
 
 /** Coalesce rapid Dexie writes (e.g. per-file uploads) into one UI refresh. */
 export function notifyGestureLocalChange(options?: { debounceMs?: number; immediate?: boolean }): void {
-  if (options?.immediate) {
-    if (notifyTimer != null) {
-      window.clearTimeout(notifyTimer);
-      notifyTimer = null;
-    }
-    notifyPending = false;
-    flushGestureLocalChange();
-    return;
-  }
-
-  notifyPending = true;
-  if (notifyTimer != null) return;
-
-  const debounceMs = options?.debounceMs ?? DEFAULT_DEBOUNCE_MS;
-  notifyTimer = window.setTimeout(flushGestureLocalChange, debounceMs);
+  bus.notify(options);
 }
 
 export function isGestureLocalChangePending(): boolean {
-  return notifyPending;
+  return bus.isPending();
 }

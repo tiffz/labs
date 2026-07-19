@@ -29,6 +29,10 @@ interface AppTooltipProps {
   placement?: TooltipProps['placement'];
   describeChild?: boolean;
   disabled?: boolean;
+  /** Keep the tooltip open while hovering it (rich help content with links). */
+  interactive?: boolean;
+  /** Extra class on the popper so apps can restyle the tooltip surface. */
+  popperClassName?: string;
 }
 
 /**
@@ -40,6 +44,8 @@ export default function AppTooltip({
   placement = 'top',
   describeChild = true,
   disabled = false,
+  interactive = false,
+  popperClassName,
 }: AppTooltipProps): React.ReactElement {
   const hasContent =
     !disabled &&
@@ -76,10 +82,11 @@ export default function AppTooltip({
       enterNextDelay={120}
       leaveDelay={80}
       enterTouchDelay={0}
-      leaveTouchDelay={4000}
-      disableInteractive
+      leaveTouchDelay={interactive ? 8000 : 4000}
+      disableInteractive={!interactive}
       slotProps={{
         popper: {
+          className: popperClassName,
           modifiers: [
             {
               name: 'offset',

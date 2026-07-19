@@ -1,4 +1,4 @@
-import { formatOklchChannels } from './formatOklch';
+import { formatOklchChannels } from '../shared/color/formatOklch';
 import type { ColorState, CompareAxis, ContextualLocks, IsolatedAxis } from './types';
 
 export type OklchFocusAxis = 'l' | 'c' | 'h';

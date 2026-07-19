@@ -54,16 +54,17 @@ If Drive fails in a normal Chrome profile but works in Incognito, treat as exten
 
 ## Shared modules
 
-| Module                                                                                     | Role                                                      |
-| ------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
-| [`driveFetch.ts`](../src/shared/drive/driveFetch.ts)                                       | Drive v3 client                                           |
-| [`labsDrivePortfolioLayout.ts`](../src/shared/drive/labsDrivePortfolioLayout.ts)           | `Tiff Zhang Labs/{App}/progress.json`                     |
-| [`labsDriveBackupTypes.ts`](../src/shared/drive/labsDriveBackupTypes.ts)                   | Conflict assessment                                       |
-| [`labsDriveSyncGuard.ts`](../src/shared/drive/labsDriveSyncGuard.ts)                       | Block auto-push until pull/manual backup                  |
-| [`labsDriveSyncLock.ts`](../src/shared/drive/labsDriveSyncLock.ts)                         | Web Lock — one tab syncs at a time per app                |
-| [`useLabsDrivePortfolioAutoSync.ts`](../src/shared/drive/useLabsDrivePortfolioAutoSync.ts) | Auto-pull + debounced push, backoff, persisted needs-push |
-| [`LabsBlockingJobContext.tsx`](../src/shared/jobs/LabsBlockingJobContext.tsx)              | Sticky snackbar + `beforeunload` for long jobs            |
-| [`LabsDriveAccountMenu.tsx`](../src/shared/google/LabsDriveAccountMenu.tsx)                | Account menu + restore + conflict shell                   |
+| Module                                                                                     | Role                                                               |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| [`driveFetch.ts`](../src/shared/drive/driveFetch.ts)                                       | Drive v3 client                                                    |
+| [`labsDrivePortfolioLayout.ts`](../src/shared/drive/labsDrivePortfolioLayout.ts)           | `Tiff Zhang Labs/{App}/progress.json`                              |
+| [`labsDriveBackupTypes.ts`](../src/shared/drive/labsDriveBackupTypes.ts)                   | Conflict assessment                                                |
+| [`labsDriveSyncGuard.ts`](../src/shared/drive/labsDriveSyncGuard.ts)                       | Block auto-push until pull/manual backup                           |
+| [`labsDriveSyncLock.ts`](../src/shared/drive/labsDriveSyncLock.ts)                         | Web Lock — one tab syncs at a time per app                         |
+| [`labsDebouncedChangeBus.ts`](../src/shared/drive/labsDebouncedChangeBus.ts)               | Debounced local-change bus behind each app's notify/subscribe pair |
+| [`useLabsDrivePortfolioAutoSync.ts`](../src/shared/drive/useLabsDrivePortfolioAutoSync.ts) | Auto-pull + debounced push, backoff, persisted needs-push          |
+| [`LabsBlockingJobContext.tsx`](../src/shared/jobs/LabsBlockingJobContext.tsx)              | Sticky snackbar + `beforeunload` for long jobs                     |
+| [`LabsDriveAccountMenu.tsx`](../src/shared/google/LabsDriveAccountMenu.tsx)                | Account menu + restore + conflict shell                            |
 
 App-local code owns envelope schema, merge, tombstones, and progress subscriptions.
 

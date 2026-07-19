@@ -1,12 +1,14 @@
-import { useState, useRef, useCallback, type CSSProperties } from 'react';
+import { useState, useCallback, type CSSProperties } from 'react';
 import LabsDebugDock from '../../shared/components/LabsDebugDock';
 import {
-  PRACTICE_DEBUG_CLEAR_BUTTON_STYLE,
-  PRACTICE_DEBUG_EMPTY_MESSAGE,
   PRACTICE_DEBUG_EVENT_COLORS,
   practiceDebugMidiToName,
 } from '../../shared/debug/practiceDebugPanelShared';
-import { usePracticeDebugLogPoll, usePracticeDebugLogScrollToEnd } from '../../shared/debug/usePracticeDebugLogEffects';
+import { usePracticeDebugLogPoll } from '../../shared/debug/usePracticeDebugLogEffects';
+import {
+  PracticeDebugLogList,
+  PracticeDebugToolbarActions,
+} from '../../shared/debug/PracticeDebugLogPanel';
 import {
   getRecentEvents,
   getEventCounts,
@@ -47,7 +49,6 @@ function formatEvent(e: DebugEvent): string {
 }
 
 const ACCENT = '#059669';
-const LOG_HEIGHT = 180;
 
 const DEBUG_BTN: CSSProperties = {
   background: 'transparent',
@@ -67,9 +68,9 @@ const DEBUG_BTN_PRIMARY: CSSProperties = {
   fontWeight: 700,
 };
 
-function noteOnColor(e: DebugEvent): string {
-  if (e.type !== 'note_on') return PRACTICE_DEBUG_EVENT_COLORS[e.type] || '#ccc';
-  return e.source === 'midi' ? '#22c55e' : '#38bdf8';
+function eventColor(e: DebugEvent): string {
+  if (e.type === 'note_on') return e.source === 'midi' ? '#22c55e' : '#38bdf8';
+  return PRACTICE_DEBUG_EVENT_COLORS[e.type] || '#ccc';
 }
 
 function SessionGodModeStrip({ sessionApi }: { sessionApi: ScalesSessionDebugApi }) {
@@ -126,7 +127,6 @@ export default function DebugPanel() {
   const [events, setEvents] = useState<DebugEvent[]>([]);
   const [counts, setCounts] = useState({ pitch: 0, midiOn: 0, micOn: 0, noteOff: 0, eval: 0, miss: 0 });
   const [showPitch, setShowPitch] = useState(false);
-  const logRef = useRef<HTMLDivElement>(null);
 
   const pollTick = useCallback(() => {
     setEvents(getRecentEvents(showPitch ? 60 : 30));
@@ -134,7 +134,6 @@ export default function DebugPanel() {
   }, [showPitch]);
 
   usePracticeDebugLogPoll(pollTick);
-  usePracticeDebugLogScrollToEnd(logRef, events);
 
   const filtered = showPitch ? events : events.filter(e => e.type !== 'pitch_raw');
 
@@ -172,80 +171,22 @@ export default function DebugPanel() {
             {' '}
             eval:{counts.eval} miss:{counts.miss}
           </span>
-          <label style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <input
-              type="checkbox"
-              checked={showPitch}
-              onChange={(e) => setShowPitch(e.target.checked)}
-              onClick={(e) => e.stopPropagation()}
-            />
-            raw pitch
-          </label>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              downloadSnapshot();
-            }}
-            style={{
-              background: ACCENT,
-              color: '#fff',
-              border: 'none',
-              borderRadius: 3,
-              padding: '2px 8px',
-              cursor: 'pointer',
-              fontSize: 10,
-              fontWeight: 'bold',
-            }}
-          >
-            Download snapshot
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
+          <PracticeDebugToolbarActions
+            accentColor={ACCENT}
+            showPitch={showPitch}
+            onShowPitchChange={setShowPitch}
+            onDownload={downloadSnapshot}
+            onClear={() => {
               clearDebugLog();
               setEvents([]);
               setCounts({ pitch: 0, midiOn: 0, micOn: 0, noteOff: 0, eval: 0, miss: 0 });
             }}
-            style={{ ...PRACTICE_DEBUG_CLEAR_BUTTON_STYLE }}
-          >
-            Clear
-          </button>
+          />
         </>
       }
     >
       {sessionApi ? <SessionGodModeStrip sessionApi={sessionApi} /> : null}
-      <div
-        ref={logRef}
-        style={{
-          height: LOG_HEIGHT,
-          overflowY: 'auto',
-          padding: '4px 12px',
-          boxSizing: 'border-box',
-          fontSize: 11,
-          color: '#e0e0e0',
-          background: '#1a1a2e',
-        }}
-      >
-        {filtered.map((e, i) => (
-          <div
-            key={i}
-            style={{
-              color:
-                e.type === 'note_on' || e.type === 'note_off' ? noteOnColor(e) : PRACTICE_DEBUG_EVENT_COLORS[e.type] || '#ccc',
-              whiteSpace: 'nowrap',
-              lineHeight: 1.4,
-            }}
-          >
-            <span style={{ color: '#475569', marginRight: 6 }}>{e.t.toFixed(0)}</span>
-            {formatEvent(e)}
-          </div>
-        ))}
-        {filtered.length === 0 && (
-          <div style={{ color: '#475569' }}>{PRACTICE_DEBUG_EMPTY_MESSAGE}</div>
-        )}
-      </div>
+      <PracticeDebugLogList events={filtered} formatEvent={formatEvent} colorFor={eventColor} />
     </LabsDebugDock>
   );
 }
