@@ -14,7 +14,7 @@
     "check:doc-links": "node scripts/check-doc-links.mjs",
     "check:agent-docs": "sh scripts/validate-agent-docs.sh",
     "check:knip-config": "node scripts/validate-knip-ignore.mjs",
-    "check:css-important": "sh scripts/check-css-important.sh",
+    "check:css-important": "node scripts/check-css-important.mjs",
     "check:css-import-order": "node scripts/check-css-import-order.mjs",
     "check:workflows": "sh scripts/check-workflows.sh",
     "muscle:validate-assets": "node scripts/validate-muscle-assets.mjs",

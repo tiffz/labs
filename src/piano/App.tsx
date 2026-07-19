@@ -301,7 +301,7 @@ function PianoApp() {
           onClose={() => setExerciseAnchorEl(null)}
           allowedSections={['scales', 'progressions']}
           initialSection={defaultExerciseSection}
-          title="Load Exercise"
+          title="Load exercise"
         />
       </AnchoredPopover>
       <AnchoredPopover
@@ -320,7 +320,7 @@ function PianoApp() {
           }}
           allowedSections={['songs']}
           initialSection="songs"
-          title="Load Song"
+          title="Load song"
         />
       </AnchoredPopover>
       <main id="main" className="piano-layout">

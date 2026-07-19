@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
+import {
+  LabsKeyboardShortcutsHost,
+  gestureKeyboardShortcutSections,
+} from '../shared/keyboardShortcuts';
+import { LabsUndoProvider } from '../shared/undo/LabsUndoContext';
 import { touchLabsGoogleSessionConsumer } from '../shared/google/labsGoogleSessionConsumers';
 import GestureAppShell from './components/GestureAppShell';
 import { GestureDriveBackupProvider } from './context/GestureDriveBackupContext';
@@ -102,12 +107,16 @@ function GestureAppContent(): React.ReactElement {
 
 export default function App(): React.ReactElement {
   return (
-    <LabsBlockingJobProvider unloadCaption="Keep this tab open. Closing it or leaving The Gesture Room can cancel in-progress work.">
-      <GestureDriveBackupProvider>
-        <GesturePackStatsProvider>
-          <GestureAppContent />
-        </GesturePackStatsProvider>
-      </GestureDriveBackupProvider>
-    </LabsBlockingJobProvider>
+    <LabsUndoProvider>
+      <LabsKeyboardShortcutsHost sections={gestureKeyboardShortcutSections}>
+        <LabsBlockingJobProvider unloadCaption="Keep this tab open. Closing it or leaving The Gesture Room can cancel in-progress work.">
+          <GestureDriveBackupProvider>
+            <GesturePackStatsProvider>
+              <GestureAppContent />
+            </GesturePackStatsProvider>
+          </GestureDriveBackupProvider>
+        </LabsBlockingJobProvider>
+      </LabsKeyboardShortcutsHost>
+    </LabsUndoProvider>
   );
 }

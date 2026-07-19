@@ -126,6 +126,39 @@ export function stanzaKeyboardShortcutSections(): LabsKeyboardShortcutSection[] 
   ];
 }
 
+/** Zine Box — library CRUD undo via LabsUndoProvider. */
+export function zineboxKeyboardShortcutSections(): LabsKeyboardShortcutSection[] {
+  return [
+    labsCommonEditingShortcutSection(),
+    {
+      title: 'Reader',
+      shortcuts: [
+        { id: 'page-prev', label: 'Previous page', keys: ['ArrowLeft'] },
+        { id: 'page-next', label: 'Next page', keys: ['ArrowRight'] },
+      ],
+    },
+    labsCommonHelpShortcutSection(),
+  ];
+}
+
+/** The Gesture Room — collections CRUD undo via LabsUndoProvider. */
+export function gestureKeyboardShortcutSections(): LabsKeyboardShortcutSection[] {
+  return [
+    labsCommonEditingShortcutSection(),
+    {
+      title: 'Session',
+      shortcuts: [
+        { id: 'pause-resume', label: 'Pause or resume timer', keys: ['Space'] },
+        { id: 'mark-done', label: 'Mark drawing done', keys: ['Enter'] },
+        { id: 'skip', label: 'Skip to next photo', keys: ['ArrowRight'] },
+        { id: 'back', label: 'Back to previous photo', keys: ['ArrowLeft'] },
+        { id: 'exit', label: 'End session', keys: ['Esc'] },
+      ],
+    },
+    labsCommonHelpShortcutSection(),
+  ];
+}
+
 /** Audit note: add app-specific sections here as shortcuts are documented. */
 export const KEYBOARD_SHORTCUTS_AUDIT_APPS = [
   'words',
@@ -139,6 +172,7 @@ export const KEYBOARD_SHORTCUTS_AUDIT_APPS = [
   'gesture',
   'piano',
   'chords',
+  'zinebox',
 ] as const;
 
 export function keyboardShortcutsAuditStatus(): Record<
@@ -154,8 +188,9 @@ export function keyboardShortcutsAuditStatus(): Record<
     scales: 'partial',
     cats: 'pending',
     corp: 'pending',
-    gesture: 'pending',
+    gesture: 'documented',
     piano: 'pending',
     chords: 'pending',
+    zinebox: 'documented',
   };
 }

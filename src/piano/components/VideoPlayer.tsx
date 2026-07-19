@@ -52,7 +52,7 @@ const VideoPlayer: React.FC = () => {
     const isVideo = file.type.startsWith('video/');
     dispatch({ type: 'SET_MEDIA_FILE', file: { name: file.name, url, type: isVideo ? 'video' : 'audio' } });
     setAnalysisStatus('analyzing');
-    setAnalysisProgress('Preparing...');
+    setAnalysisProgress('Preparing…');
     setAnalysisError(null);
     setCorrelation(null);
     mediaReadyRef.current = false;

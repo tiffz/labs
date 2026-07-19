@@ -40,6 +40,21 @@ No single layer is sufficient. **Agents must not remove or bypass a layer** with
 
 ---
 
+## Sync stack divergence (who uses what)
+
+New sync work must use `createLabsPortfolioDriveBackup`; custom hooks require an allowlist entry with rationale in [`labsPortfolioDriveHookGuardrails.test.ts`](../src/shared/drive/labsPortfolioDriveHookGuardrails.test.ts). Byte uploads are uniform: every app goes through the shared `driveFetch` upload path, which delegates to chunked resumable upload with 308-range recovery (`driveResumableUpload.ts`).
+
+| App          | Stack                                                          | Conflict policy                                      | Tombstones                                           | Sidecar bytes                                |
+| ------------ | -------------------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------- |
+| **Encore**   | Bespoke (`EncoreSyncContext` + `repertoireSync`)               | Silent auto-merge; row review dialog (ADR 0019/0020) | Exercise-run tombstones; deletes via `dirtySync`     | Upload bytes in `Encore_App/`                |
+| **Stanza**   | Custom hook (allowlisted) — media hydrate + overlay dual-write | Row review (ADR 0020)                                | `stanzaDriveTombstones` + YouTube tombstones         | `main_audio/`, `stem_audio/` before envelope |
+| **Scales**   | Factory                                                        | Silent union (ADR 0020)                              | n/a — no delete UX yet (add before shipping deletes) | None (JSON only)                             |
+| **Gesture**  | Custom hook (allowlisted) — pack upload + merge                | Silent union + row review                            | `gestureDriveTombstones`                             | Photo bytes in Drive pack folders            |
+| **Zine Box** | Factory                                                        | Silent union (ADR 0020)                              | Zine tombstones + stack membership removals          | Comic PDFs in `comics/`                      |
+| **Lyrefly**  | Factory                                                        | Silent union (ADR 0020)                              | `lyreflyDriveTombstones` (projects)                  | Project packages under `projects/{id}/`      |
+
+---
+
 ## Guard parity matrix
 
 | Guard                                | Encore      | Stanza                 | Scales             | Gesture          | Zine Box       | Lyrefly    |

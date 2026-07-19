@@ -1,14 +1,15 @@
 /**
  * Stanza practice overlay sidecar schema (ADR 0007 revision Option B).
- * Not wired to Drive sync yet — scaffolding for federated Encore + Stanza model.
- * See docs/adr/0007-revision-stanza-encore-federated-sync.md
+ * Dual-read/dual-write is wired in `useStanzaDriveBackup.ts` (pull merges the
+ * overlay into rows; push rebuilds and writes it). Encore-side consumption is
+ * the remaining migration step. See docs/adr/0007-revision-stanza-encore-federated-sync.md
  */
 
 import type { StanzaSongDriveRow } from './stanzaDriveEnvelope';
 
 export const STANZA_PRACTICE_OVERLAY_SCHEMA_VERSION = 1 as const;
 
-/** Sidecar under `Encore_App/` (ADR 0007 revision Option B). Not wired to sync until migration. */
+/** Sidecar under `Encore_App/` (ADR 0007 revision Option B). Read + written by `useStanzaDriveBackup`. */
 export const STANZA_PRACTICE_OVERLAY_FILE_NAME = 'stanza_practice_overlay.json';
 
 /** Key: EncoreSong.id when linked, else `drive:${driveSourceFileId}` or `yt:${ytId}`. */
@@ -59,7 +60,7 @@ export function emptyStanzaPracticeOverlayV1(exportedAt = new Date().toISOString
   };
 }
 
-/** Type guard for parse paths once overlay sync is implemented. */
+/** Type guard for overlay parse paths (`readStanzaPracticeOverlayFromDrive`). */
 export function isStanzaPracticeOverlayV1(value: unknown): value is StanzaPracticeOverlayV1 {
   if (!value || typeof value !== 'object') return false;
   const v = value as StanzaPracticeOverlayV1;

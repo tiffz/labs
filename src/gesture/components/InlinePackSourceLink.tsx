@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import LinkIcon from '@mui/icons-material/Link';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { displayPackSourceUrl, normalizePackSourceUrl } from '../drive/gesturePackSourceUrl';
-import { updatePackMetadata } from '../drive/updatePackMetadata';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
+import { updatePackMetadataUndoable } from '../undo/gestureUndoableMutations';
 import type { GesturePack } from '../types';
 
 type InlinePackSourceLinkProps = {
@@ -22,6 +23,7 @@ export default function InlinePackSourceLink({
   const [draft, setDraft] = useState(pack.sourceUrl ?? '');
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { push } = useLabsUndo();
 
   useEffect(() => {
     if (!editing) setDraft(pack.sourceUrl ?? '');
@@ -43,7 +45,10 @@ export default function InlinePackSourceLink({
     }
     setBusy(true);
     try {
-      const updated = await updatePackMetadata(null, pack.id, { sourceUrl: normalized });
+      const { updated, commit: undoCommit } = await updatePackMetadataUndoable(null, pack.id, {
+        sourceUrl: normalized,
+      });
+      if (undoCommit) push(undoCommit);
       onUpdated?.(updated);
       setEditing(false);
     } catch (e) {
@@ -53,7 +58,7 @@ export default function InlinePackSourceLink({
     } finally {
       setBusy(false);
     }
-  }, [draft, onError, onUpdated, pack.id, pack.sourceUrl]);
+  }, [draft, onError, onUpdated, pack.id, pack.sourceUrl, push]);
 
   if (editing) {
     return (

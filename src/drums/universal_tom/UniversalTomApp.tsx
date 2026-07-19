@@ -45,7 +45,7 @@ const UniversalTomApp: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto justify-end">
-                    <a href="/drums/" className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors">
+                    <a href="/drums/" className="inline-flex items-center min-h-6 text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors">
                         Cancel
                     </a>
                     <button
@@ -77,7 +77,7 @@ const UniversalTomApp: React.FC = () => {
                             className="w-full flex-grow bg-gray-900 border border-purple-500/20 rounded-lg p-6 text-purple-100 font-mono text-sm leading-relaxed focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 resize-none shadow-inner transition-colors scrollbar-thin scrollbar-thumb-purple-900/50"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Paste Universal Tom font text here... (e.g. 4J alda...)"
+                            placeholder="Paste Universal Tom font text here… (e.g. 4J alda…)"
                             spellCheck={false}
                         />
                     </div>
@@ -91,7 +91,7 @@ const UniversalTomApp: React.FC = () => {
                             {parsedNotation ? (
                                 <p className="break-words leading-relaxed">{parsedNotation}</p>
                             ) : (
-                                <span className="opacity-30 italic">Converted Darbuka notation will appear here...</span>
+                                <span className="opacity-30 italic">Converted Darbuka notation will appear here…</span>
                             )}
                         </div>
                     </div>

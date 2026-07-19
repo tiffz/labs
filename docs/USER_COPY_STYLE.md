@@ -27,6 +27,20 @@ These are consistent with widely used guidance (clarity, concision, usefulness; 
 - **Second person** where it fits (“you”, “your”). Prefer “Save your work” over “The user should save.”
 - **Confident brevity**: say what matters for the next step, then stop.
 
+## Material writing rules (adopted from Material Design)
+
+Distilled from the [Material Design writing guidelines](https://m2.material.io/design/communication/writing.html); these apply across all Labs apps and `npm run check:ui-copy` lints the mechanical subset.
+
+- **Address the user as “you”; never “me/my” for user possessions.** Labels are `Your library`, not `My library`. The app may say “we” only for actions the app itself performs (`We couldn't reach Drive`).
+- **Present tense, active voice.** `Saves to Drive`, not `Will be saved to Drive`; `Photo saved`, not `The photo has been saved by the app`.
+- **Numerals, not spelled-out numbers.** `3 songs`, not `three songs` — numerals are scannable.
+- **Sentence case everywhere** — buttons, titles, tabs, menu items (`Save draft`, not `Save Draft`). Product names keep their capitalization.
+- **No terminal punctuation on labels and titles.** Buttons, chips, dialog titles, column headers, and tooltips that are fragments skip the period. Full sentences in body copy keep it.
+- **Begin with the objective.** `To remove a song, swipe left`, not `Swipe left if you want to remove a song`.
+- **Reveal detail progressively.** First screen: what it is and the next step. Scope lists, caveats, and setup live in secondary UI or README.
+- **No “there is / there are” openers.** `3 songs need review`, not `There are 3 songs that need review`.
+- **Scannable at a glance.** Front-load the changed or actionable word; users read the first two words of a line.
+
 ## Do
 
 - Use **short sentences** and **concrete** language (what to tap, what will happen, what file or account is involved).
@@ -91,6 +105,6 @@ the extra to a secondary surface (tooltip → doc link, empty state → README).
 ## When you edit copy
 
 1. Check the **length cap** for the surface (table above) — over cap = rewrite, no exceptions.
-2. Check for em dashes, `Please ` prefixes, and long clause chains; rewrite (`npm run check:ui-copy` enforces the lintable subset).
+2. Check for em dashes, `Please ` prefixes, “there is/are” openers, Title Case labels, first-person “my/me”, and long clause chains; rewrite (`npm run check:ui-copy` enforces the lintable subset).
 3. Ask: “Would I say this out loud to this user in context?” If not, rewrite.
 4. Cross-check the surrounding UI: if a sentence explains a button, link, field, or gesture that is already on screen and labeled, delete the sentence (see **Affordance narration** under Avoid).

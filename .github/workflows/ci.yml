@@ -268,7 +268,7 @@ jobs:
 
     - name: Upload audio regression report
       if: always()
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: audio-regression-report
         if-no-files-found: ignore
@@ -304,7 +304,7 @@ jobs:
       run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
 
     - name: Cache Playwright browsers
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/.cache/ms-playwright
         key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
@@ -362,7 +362,7 @@ jobs:
 
     - name: Upload visual regression artifacts
       if: always()
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: visual-regression-artifacts
         if-no-files-found: ignore
@@ -401,7 +401,7 @@ jobs:
       continue-on-error: true
 
     - name: Upload production build artifact
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: production-dist
         path: dist/
@@ -426,7 +426,7 @@ jobs:
 
     steps:
     - name: Download production build artifact
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v8
       with:
         name: production-dist
         path: dist

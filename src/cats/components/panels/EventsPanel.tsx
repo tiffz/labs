@@ -34,7 +34,7 @@ const EventsPanel: React.FC<EventsPanelProps> = ({ events }) => {
         {events.length === 0 ? (
           <div className="events-empty">
             <BottomControlSvgIcon name="pets" className="events-empty-svg-icon" />
-            <p>your cat awaits...</p>
+            <p>your cat awaits…</p>
           </div>
         ) : (
           <div className="events-list">

@@ -349,7 +349,7 @@ export default function WordsSectionCard({
         value={effectiveLyrics}
         onPaste={onLyricsPaste}
         onChange={(event) => onLyricsChange(event.target.value)}
-        placeholder="Type words or lyrics..."
+        placeholder="Type words or lyrics…"
       />
     </div>
   );

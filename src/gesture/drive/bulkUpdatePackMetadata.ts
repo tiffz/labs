@@ -1,9 +1,14 @@
+import type { LabsUndoCommit } from '../../shared/undo/labsUndoStack';
 import { gestureDb } from '../db/gestureDb';
 import { normalizeGestureTags } from './gesturePackTags';
-import { updatePackMetadata } from './updatePackMetadata';
+import { updatePackMetadataUndoable } from '../undo/gestureUndoableMutations';
 
 /** Dexie-only — tags sync via portfolio backup when signed in. */
-export async function bulkAddTagsToPacks(packIds: string[], tagsToAdd: string[]): Promise<number> {
+export async function bulkAddTagsToPacks(
+  packIds: string[],
+  tagsToAdd: string[],
+  pushUndoCommit?: (commit: LabsUndoCommit) => void,
+): Promise<number> {
   const normalizedAdd = normalizeGestureTags(tagsToAdd);
   if (normalizedAdd.length === 0) return 0;
 
@@ -16,7 +21,8 @@ export async function bulkAddTagsToPacks(packIds: string[], tagsToAdd: string[])
     const unchanged =
       merged.length === existing.length && merged.every((tag, index) => tag === existing[index]);
     if (unchanged) continue;
-    await updatePackMetadata(null, packId, { tags: merged });
+    const { commit } = await updatePackMetadataUndoable(null, packId, { tags: merged });
+    if (commit) pushUndoCommit?.(commit);
     updated += 1;
   }
   return updated;
@@ -26,8 +32,10 @@ export async function bulkAddTagsToPacks(packIds: string[], tagsToAdd: string[])
 export async function bulkSetSourceUrlOnPacks(
   packIds: string[],
   sourceUrl: string | null,
+  pushUndoCommit?: (commit: LabsUndoCommit) => void,
 ): Promise<void> {
   for (const packId of packIds) {
-    await updatePackMetadata(null, packId, { sourceUrl });
+    const { commit } = await updatePackMetadataUndoable(null, packId, { sourceUrl });
+    if (commit) pushUndoCommit?.(commit);
   }
 }

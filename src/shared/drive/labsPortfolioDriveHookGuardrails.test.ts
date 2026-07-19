@@ -18,6 +18,7 @@ const PORTFOLIO_DRIVE_HOOKS = [
   'src/stanza/hooks/useStanzaDriveBackup.ts',
   'src/scales/hooks/useScalesDriveBackup.ts',
   'src/zinebox/hooks/useZineboxDriveBackup.ts',
+  'src/lyrefly/hooks/useLyreflyDriveBackup.ts',
 ];
 
 const FACTORY_IMPORT_RE = /createLabsPortfolioDriveBackup/;

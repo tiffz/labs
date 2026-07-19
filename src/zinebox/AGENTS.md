@@ -14,6 +14,7 @@ Nested **`AGENTS.md`**. Root: [`../../AGENTS.md`](../../AGENTS.md).
 - **Drive OAuth:** `drive/zineboxGoogleDriveAccess.ts` — one GIS prompt for backup + folder import (do not use `ensureLabsGoogleAccessTokenForDrive` here)
 - **MVP PDF:** shared stub at `/zinebox/fixtures/sample-comic.pdf`
 - **Mock import:** `db/mockDriveImport.ts` — 20 seeded comics, idempotent
+- **Undo:** `LabsUndoProvider` in `App.tsx` (Tier A). Route library CRUD through `undo/zineboxUndoableMutations.ts` — the wrappers also reverse Drive tombstones on undo. New destructive flows must return a commit and `push` it.
 - **Stacks:** manual drag-to-group only (no import autostack). Drive merge unions stack membership by stack id but honors `removedStackMemberships` / `deletedStackIds` tombstones so unlinks stick across sync. `removeComicFromStack` in `collections/stackMutations.ts`.
 - **Reader:** `pdfjs-dist` canvas render (not react-pdf); single/spread use **contain** fit; toolbar uses `@mui/icons-material`. Spread mode detects PDF pages wider than typical singles (~2× width) and shows them **solo full-width** instead of pairing with a neighbor.
 

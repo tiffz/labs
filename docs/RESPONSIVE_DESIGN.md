@@ -2,7 +2,7 @@
 
 Canonical responsive practices for Labs micro-apps. Agents and humans use this when adding or changing layout/CSS.
 
-**Enforcement:** layout smokes (`npm run verify:layout`), [`.cursor/rules/layout-no-horizontal-scroll.mdc`](../.cursor/rules/layout-no-horizontal-scroll.mdc), [`.cursor/rules/responsive-design.mdc`](../.cursor/rules/responsive-design.mdc).
+**Enforcement:** the registry-driven floor `e2e/smoke/responsive-all-apps.spec.ts` (every smoke route at 390px: no horizontal scroll + no sub-24px touch targets), layout smokes (`npm run verify:layout`), [`.cursor/rules/layout-no-horizontal-scroll.mdc`](../.cursor/rules/layout-no-horizontal-scroll.mdc), [`.cursor/rules/responsive-design.mdc`](../.cursor/rules/responsive-design.mdc).
 
 ## Breakpoints (shared scale)
 
@@ -28,6 +28,28 @@ Prefer **mobile-first** `min-width` enhancement when starting a new surface. Exi
 5. **Touch targets** — ≥44px on coarse pointers for icon controls (`pointer: coarse`).
 6. **Safe areas** — sticky footers / zen docks use `env(safe-area-inset-bottom)`.
 7. **One primary CTA per viewport** — do not “solve” small screens by adding more chrome ([`UX_AGENT_GUIDE.md`](UX_AGENT_GUIDE.md)).
+
+## Mobile interaction parity
+
+Every **primary CUJ** (the app's `CUJs.md`, or the obvious core loop when none exists) must be
+completable at **390px** with a coarse pointer. Graceful degradation is encouraged — collapse dual
+panes to tabs/accordion, move dense desktop chrome behind a menu, stack toolbars — but "desktop
+only" for a primary journey needs an explicit note in the app's `LAYOUT.md` / `DESIGN.md` naming
+the degraded path (e.g. notation editors may degrade to view + basic controls).
+
+The enforced floor (`e2e/smoke/responsive-all-apps.spec.ts`, runs per app in scoped e2e):
+
+- **No page-level horizontal scroll** at 390x844. Legit wide regions (tables, notation, film
+  strips) opt in with `data-labs-allow-horizontal-scroll` or `.labs-horizontal-scroll-host`.
+- **No interactive element below 24x24px** (WCAG 2.5.8 floor; 44px stays the comfort target for
+  icon controls per the coarse-pointer rule). Grow hit areas with `@media (pointer: coarse)`
+  blocks so desktop density is unchanged — see `bpmInput.css`, `drums.css`, `pulse.css` for the
+  pattern. Canvas content that legitimately renders tiny (thumbnail mockups, stage figures) opts
+  out with `data-labs-allow-small-touch-target` plus a source comment.
+
+Route floors come from `e2e/routeRegistry.ts` — a new app registered for smoke inherits these
+checks with zero extra spec code. Per-app `layout-heuristics-*.spec.ts` files stay for
+app-specific assertions (padding, contrast, deeper routes).
 
 ## Default checklist (before done)
 

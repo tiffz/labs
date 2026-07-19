@@ -1,6 +1,6 @@
 # Encore copy style
 
-**First:** follow [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md) for Labs default voice (short, user-focused, warm, plain language, no em dashes in UI).
+**First:** follow [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md) for Labs default voice and the Material writing rules (sentence case, present tense, numerals, "you" not "my").
 
 Encore-specific notes:
 

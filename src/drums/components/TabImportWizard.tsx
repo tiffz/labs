@@ -193,7 +193,7 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                                 value={state.rawText}
                                 onChange={(e) => setRawText(e.target.value)}
                                 className="flex-1 w-full p-4 font-mono text-xs bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none resize-none transition-shadow"
-                                placeholder={state.selectedType === 'drum' ? "Paste drum tab...\\nHH|x-x-x-x-|" : "Paste guitar tab...\\n[tab]...[/tab]\\nor\\ne|---0---|"}
+                                placeholder={state.selectedType === 'drum' ? "Paste drum tab…\\nHH|x-x-x-x-|" : "Paste guitar tab…\\n[tab]…[/tab]\\nor\\ne|---0---|"}
                                 spellCheck={false}
                             />
                             <p className="text-xs text-gray-400 mt-2 text-right">

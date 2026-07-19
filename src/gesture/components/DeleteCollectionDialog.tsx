@@ -14,12 +14,13 @@ import {
   LabsGoogleInteractiveAuthRequiredError,
 } from '../../shared/google/labsGoogleDriveAccess';
 import { useLabsBlockingJobs } from '../../shared/jobs/LabsBlockingJobContext';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import {
   deleteCollectionAndDrivePhotos,
-  deleteCollectionFromApp,
   type DeleteCollectionProgress,
   type DeleteCollectionScope,
 } from '../drive/gestureDeleteCollection';
+import { deleteCollectionFromAppUndoable } from '../undo/gestureUndoableMutations';
 import type { GesturePack } from '../types';
 
 type DeleteCollectionDialogProps = {
@@ -73,6 +74,7 @@ export default function DeleteCollectionDialog({
   onError,
 }: DeleteCollectionDialogProps): React.ReactElement {
   const { startBlockingJob } = useLabsBlockingJobs();
+  const { withBatch } = useLabsUndo();
   const deleteJobRef = useRef<ReturnType<typeof startBlockingJob> | null>(null);
   const [scope, setScope] = useState<DeleteCollectionScope>('app-only');
   const [deleting, setDeleting] = useState(false);
@@ -139,19 +141,23 @@ export default function DeleteCollectionDialog({
     setDeleteProgress(null);
     try {
       let drivePhotosTrashed = 0;
-      for (let index = 0; index < packs.length; index += 1) {
-        const pack = packs[index];
-        setBulkIndex(index);
-        setDeleteProgress(null);
-        onCancelUpload?.(pack.id);
-        if (scope === 'app-only') {
-          await deleteCollectionFromApp(pack.id);
-        } else {
-          const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
-          const result = await deleteCollectionAndDrivePhotos(token, pack.id, setDeleteProgress);
-          drivePhotosTrashed += result.drivePhotosTrashed;
+      await withBatch(async (queue) => {
+        for (let index = 0; index < packs.length; index += 1) {
+          const pack = packs[index];
+          setBulkIndex(index);
+          setDeleteProgress(null);
+          onCancelUpload?.(pack.id);
+          if (scope === 'app-only') {
+            const commit = await deleteCollectionFromAppUndoable(pack.id);
+            if (commit) queue.push(commit);
+          } else {
+            // Drive trash is a remote side-effect — not undoable, so no commit.
+            const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: true });
+            const result = await deleteCollectionAndDrivePhotos(token, pack.id, setDeleteProgress);
+            drivePhotosTrashed += result.drivePhotosTrashed;
+          }
         }
-      }
+      });
       if (packCount === 1 && primaryPack) {
         if (scope === 'app-only') {
           onComplete(
@@ -179,7 +185,7 @@ export default function DeleteCollectionDialog({
       setDeleteProgress(null);
       setBulkIndex(0);
     }
-  }, [deleting, onCancelUpload, onClose, onComplete, onError, packCount, packs, primaryPack, scope]);
+  }, [deleting, onCancelUpload, onClose, onComplete, onError, packCount, packs, primaryPack, scope, withBatch]);
 
   const statusLabel = deleting ? deleteStatusLabel(scope, deleteProgress, bulkIndex, packCount) : null;
 

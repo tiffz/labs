@@ -549,7 +549,7 @@ const BookReader: React.FC<BookReaderProps> = memo(({
             className="flex items-center justify-center bg-stone-50 rounded-lg"
             style={{ minHeight: `${pageHeight}px` }}
           >
-            <p className="text-stone-400">Loading preview...</p>
+            <p className="text-stone-400">Loading preview…</p>
           </div>
         )}
       </div>

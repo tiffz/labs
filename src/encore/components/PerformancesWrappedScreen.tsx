@@ -914,7 +914,7 @@ export function PerformancesWrappedScreen(props: PerformancesWrappedScreenProps)
         <>
           <Divider />
           <Section>
-            <SectionTitle kicker="Compare" title="Any two years" subtitle="Side-by-side counts, top song, and venue." />
+            <SectionTitle kicker="Compare" title="Any 2 years" subtitle="Side-by-side counts, top song, and venue." />
             <Box sx={{ mt: 1 }}>
               <YearComparator
                 yearsDesc={lifetimeStats.yearsDesc}

@@ -7,6 +7,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import { bulkAddTagsToPacks } from '../drive/bulkUpdatePackMetadata';
 import { normalizeGestureTags } from '../drive/gesturePackTags';
 import { registerGestureLocalTags } from '../drive/gestureTagRegistry';
@@ -42,6 +43,7 @@ export default function BulkAddTagsDialog({
   const [tags, setTags] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [saving, setSaving] = useState(false);
+  const { withBatch } = useLabsUndo();
 
   useEffect(() => {
     if (!open) return;
@@ -71,7 +73,9 @@ export default function BulkAddTagsDialog({
     onError('');
     try {
       registerGestureLocalTags(normalized);
-      const updated = await bulkAddTagsToPacks(packIds, normalized);
+      const updated = await withBatch((queue) =>
+        bulkAddTagsToPacks(packIds, normalized, (commit) => queue.push(commit)),
+      );
       onComplete(
         updated > 0
           ? `Added tags to ${updated} collection${updated === 1 ? '' : 's'}.`
@@ -83,7 +87,7 @@ export default function BulkAddTagsDialog({
     } finally {
       setSaving(false);
     }
-  }, [inputValue, onClose, onComplete, onError, packCount, packIds, tags]);
+  }, [inputValue, onClose, onComplete, onError, packCount, packIds, tags, withBatch]);
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs" aria-labelledby="gesture-bulk-tags-title">

@@ -12923,7 +12923,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "Filled disclosure chevron — same glyph as metronome split menus and Load Rhythm. Pointing down when expanded; rotate the wrapper −90° when collapsed.",
+    "description": "Filled disclosure chevron — same glyph as metronome split menus and Load rhythm. Pointing down when expanded; rotate the wrapper −90° when collapsed.",
     "tags": [
       "components",
       "api",
@@ -15085,14 +15085,14 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "True when `debug` and/or `dev` is set in a way that enables labs debug tooling. - `?debug`, `?debug=`, `?debug=1`, `?debug=true`, … → on - `?dev=1` (cats legacy) → on - `?debug=false`, `?debug=0`, … → off",
+    "description": "Moved to `../utils/readLabsDebugParams` so `utils` (serverLogger) does not depend on `debug` while `debug` (labsDebugLog) depends on `utils` — that directory-level cycle is guarded by `sharedModuleCycles.test.ts`. This re-export keeps existing import paths working.",
     "tags": [],
     "appsUsing": [
       "cats",
       "drums",
       "piano"
     ],
-    "exportType": "function",
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -15102,14 +15102,14 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Cats-style overlay flag (`?overlay=1` / `?overlay=true`).",
+    "description": "Moved to `../utils/readLabsDebugParams` so `utils` (serverLogger) does not depend on `debug` while `debug` (labsDebugLog) depends on `utils` — that directory-level cycle is guarded by `sharedModuleCycles.test.ts`. This re-export keeps existing import paths working.",
     "tags": [],
     "appsUsing": [
       "cats",
       "drums",
       "piano"
     ],
-    "exportType": "function",
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -15119,14 +15119,14 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Read from the browser location; safe to call when `window` is undefined (SSR/tests).",
+    "description": "Moved to `../utils/readLabsDebugParams` so `utils` (serverLogger) does not depend on `debug` while `debug` (labsDebugLog) depends on `utils` — that directory-level cycle is guarded by `sharedModuleCycles.test.ts`. This re-export keeps existing import paths working.",
     "tags": [],
     "appsUsing": [
       "cats",
       "drums",
       "piano"
     ],
-    "exportType": "function",
+    "exportType": "named",
     "demoId": null
   },
   {
@@ -18814,6 +18814,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-gesturekeyboardshortcutsections",
+    "name": "gestureKeyboardShortcutSections",
+    "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "The Gesture Room — collections CRUD undo via LabsUndoProvider.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-keyboard-shortcuts-audit-apps",
     "name": "KEYBOARD_SHORTCUTS_AUDIT_APPS",
     "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
@@ -18933,6 +18946,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-keyboardshortcuts-commonshortcuts-ts-zineboxkeyboardshortcutsections",
+    "name": "zineboxKeyboardShortcutSections",
+    "path": "src/shared/keyboardShortcuts/commonShortcuts.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Zine Box — library CRUD undo via LabsUndoProvider.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-keyboardshortcuts-index-ts-drumskeyboardshortcutsections",
     "name": "drumsKeyboardShortcutSections",
     "path": "src/shared/keyboardShortcuts/index.ts",
@@ -18967,6 +18993,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-keyboardshortcuts-index-ts-formatshortcutkeytoken",
     "name": "formatShortcutKeyToken",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-gesturekeyboardshortcutsections",
+    "name": "gestureKeyboardShortcutSections",
     "path": "src/shared/keyboardShortcuts/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -19283,6 +19325,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-keyboardshortcuts-index-ts-wordskeyboardshortcutsections",
     "name": "wordsKeyboardShortcutSections",
+    "path": "src/shared/keyboardShortcuts/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Material Design–style keyboard shortcuts help (`Ctrl/Cmd + ?`). ## Agent checklist - When adding a **user-facing keyboard shortcut** to any Labs app, register it in that app's `*KeyboardShortcutSections()` helper (or add a new helper here) and wire + . - Reuse when the app mounts . - Theme the dialog with `theme=\"words\" | \"drums\" | \"encore\" | …` so kbd chips match the app. - Update when an app moves from partial → documented.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-keyboardshortcuts-index-ts-zineboxkeyboardshortcutsections",
+    "name": "zineboxKeyboardShortcutSections",
     "path": "src/shared/keyboardShortcuts/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -33140,6 +33198,51 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "True when snapshot files span multiple top-level folder roots (multi-folder drag).",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-readlabsdebugparams-ts-islabsdebugenabled",
+    "name": "isLabsDebugEnabled",
+    "path": "src/shared/utils/readLabsDebugParams.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when `debug` and/or `dev` is set in a way that enables labs debug tooling. - `?debug`, `?debug=`, `?debug=1`, `?debug=true`, … → on - `?dev=1` (cats legacy) → on - `?debug=false`, `?debug=0`, … → off",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-readlabsdebugparams-ts-islabsoverlayenabled",
+    "name": "isLabsOverlayEnabled",
+    "path": "src/shared/utils/readLabsDebugParams.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Cats-style overlay flag (`?overlay=1` / `?overlay=true`).",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-readlabsdebugparams-ts-readlabsdebugfromlocation",
+    "name": "readLabsDebugFromLocation",
+    "path": "src/shared/utils/readLabsDebugParams.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Read from the browser location; safe to call when `window` is undefined (SSR/tests).",
     "tags": [
       "utils"
     ],

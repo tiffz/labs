@@ -302,9 +302,17 @@ const MUSIC_DARK_DEFAULT: Omit<AppThemeConfig, 'mode'> = {
   spacingBase: 4,
 };
 
+/**
+ * DUAL-STACK BRIDGE — keep in sync with the app's CSS `--theme-*` tokens.
+ *
+ * MUI does not accept CSS vars in palette augmentation, so this bridge mirrors
+ * the shared semantic token contract (appSharedThemes.css + per-app overrides)
+ * with concrete hex baselines. When you change an app palette, update BOTH:
+ * the app CSS `--theme-*` block and its entry here — otherwise MUI surfaces
+ * (dialogs, menus) drift from CSS-styled shared controls on the same page.
+ * Policy: src/shared/SHARED_UI_CONVENTIONS.md § Theming bridge.
+ */
 const THEMES: Record<AppThemeId, Theme> = {
-  // MUI does not accept CSS vars in palette augmentation, so this bridge
-  // mirrors the shared semantic token contract with concrete app baselines.
   beat: buildTheme({
     mode: 'dark',
     ...MUSIC_DARK_DEFAULT,

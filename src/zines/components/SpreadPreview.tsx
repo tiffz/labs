@@ -382,7 +382,7 @@ const SpreadPreview: React.FC<SpreadPreviewProps> = memo(({
                 <IconButton
                   onClick={() => onToggleSpreadMode(spread.id, false)}
                   icon="unlink"
-                  title={isProcessingSpread ? "Processing..." : "Split into separate pages"}
+                  title={isProcessingSpread ? "Processing…" : "Split into separate pages"}
                   size="sm"
                   disabled={isProcessingSpread}
                 />
@@ -417,7 +417,7 @@ const SpreadPreview: React.FC<SpreadPreviewProps> = memo(({
               <IconButton
                 onClick={() => onToggleSpreadMode(spread.id, true)}
                 icon="link"
-                title={isProcessingSpread ? "Processing..." : "Link as single spread image"}
+                title={isProcessingSpread ? "Processing…" : "Link as single spread image"}
                 size="sm"
                 disabled={isProcessingSpread}
               />
@@ -520,7 +520,7 @@ const SpreadPreview: React.FC<SpreadPreviewProps> = memo(({
               ← Previous
             </button>
             <span className="text-sm text-stone-500 min-w-[120px] text-center">
-              {isProcessingSpread ? 'Processing...' : `Spread ${currentSpreadIndex + 1} of ${printSpreads.length}`}
+              {isProcessingSpread ? 'Processing…' : `Spread ${currentSpreadIndex + 1} of ${printSpreads.length}`}
             </span>
             <button
               onClick={() => setCurrentSpreadIndex(i => Math.min(printSpreads.length - 1, i + 1))}

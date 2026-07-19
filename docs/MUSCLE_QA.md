@@ -7,7 +7,7 @@ Agent and human verification map for `/muscle/`. Automated coverage is in [`src/
 ```bash
 npm run muscle:validate-assets
 npm run test:fast -- src/muscle
-npx playwright test e2e/smoke/muscle-shell.spec.ts e2e/smoke/muscle-orbit-perf.spec.ts e2e/smoke/muscle-study-journey.spec.ts --project=e2e
+npx playwright test e2e/smoke/muscle-shell.spec.ts e2e/smoke/muscle-study-journey.spec.ts --project=e2e
 npm run presubmit
 ```
 
@@ -27,7 +27,7 @@ Pipeline: skill **`labs-muscle-anatomy-export`** or `npm run muscle:export-pipel
 
 Debug inventory: `/muscle/?debug=1` — bottom dock lists loaded anatomy node ids vs required sets; **Copy bundle** for LLM paste.
 
-E2e smoke: `e2e/smoke/muscle-full-body-skeleton.spec.ts` (debug inventory + peel).
+E2e smoke: `e2e/smoke/muscle-study-journey.spec.ts` (module gates + study flow).
 
 ## LLM / browser QA protocol
 
@@ -38,7 +38,7 @@ E2e smoke: `e2e/smoke/muscle-full-body-skeleton.spec.ts` (debug inventory + peel
 5. **Module switch** — Torso loads rib cage + muscle forms; orbit stays smooth (~10 s drag).
 6. **Active reps** — `?e2eSeed=1` unlocks tab; quiz choices render; answer advances deck.
 7. **Module switch in Active Reps** — deck rebuilds (no empty quiz while tab stays active).
-8. **Perf overlay** — `?perf=1` shows FPS; fundamentals orbit p95 ≤ 20 ms (e2e).
+8. **Perf overlay** — `?perf=1` shows FPS; watch for sustained judder during a ~10 s orbit (manual — the orbit-perf e2e was retired with the canvas perf budget rework).
 
 ## Known limitations (not regressions)
 
@@ -48,8 +48,8 @@ E2e smoke: `e2e/smoke/muscle-full-body-skeleton.spec.ts` (debug inventory + peel
 
 ## When to extend tests
 
-| User-visible change     | Add                                            |
-| ----------------------- | ---------------------------------------------- |
-| New module or gate rule | `gatekeeper.test.ts` + study journey assertion |
-| Canvas perf regression  | `muscle-orbit-perf.spec.ts` region case        |
-| New workout mode        | e2e smoke + CUJ row                            |
+| User-visible change     | Add                                              |
+| ----------------------- | ------------------------------------------------ |
+| New module or gate rule | `gatekeeper.test.ts` + study journey assertion   |
+| Canvas perf regression  | perf budget case in `src/muscle/CUJs.md` + smoke |
+| New workout mode        | e2e smoke + CUJ row                              |

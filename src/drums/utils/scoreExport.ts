@@ -2,7 +2,12 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import type { ParsedRhythm, TimeSignature } from '../types';
-import { ensureVexFlowFontsLoaded, VEXFLOW_NOTATION_FONTS } from '../../shared/notation/vexFlowFontExport';
+import {
+  buildVexFlowSvgFontStyles,
+  ensureVexFlowFontsLoaded,
+  injectSvgStyle,
+  VEXFLOW_NOTATION_FONTS,
+} from '../../shared/notation/vexFlowFontExport';
 import { drawDrumsSymbolLegendOnCanvas } from '../../shared/notation/drumSymbols';
 import { createPdfBlobFromCanvas } from '../../shared/utils/labsPdfFromCanvas';
 import { svgElementToCanvas, svgElementToPngBlob } from '../../shared/utils/svgToCanvas';
@@ -142,7 +147,10 @@ export async function exportDrumsScoreSheet(options: DrumsScoreExportOptions): P
     headerHeight: DRUMS_SCORE_EXPORT_HEADER_HEIGHT,
     contentPadding: DRUMS_SCORE_EXPORT_CONTENT_PADDING,
     drawHeader,
-    vexFlowFonts: VEXFLOW_NOTATION_FONTS,
+    prepareClone: async (clone: SVGSVGElement) => {
+      const css = await buildVexFlowSvgFontStyles(VEXFLOW_NOTATION_FONTS);
+      injectSvgStyle(clone, css);
+    },
   };
 
   if (options.format === 'png') {

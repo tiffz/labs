@@ -181,7 +181,7 @@ const PrintSheetCanvas: React.FC<PrintSheetCanvasProps> = memo(({
     >
       {isRendering && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
-          <p className="text-stone-500">Rendering preview...</p>
+          <p className="text-stone-500">Rendering preview…</p>
         </div>
       )}
       <canvas 

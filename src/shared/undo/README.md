@@ -16,10 +16,12 @@ Do **not** add persistent undo/redo header buttons in CRUD apps. Encore, Stanza,
 
 ### Two implementation tiers
 
-| Tier                     | When                                                     | Stack                                              | UI                                        | Apps                  |
-| ------------------------ | -------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------- | --------------------- |
-| **A — persisted CRUD**   | Users edit durable local state (Dexie / IndexedDB)       | `{@link LabsUndoProvider}` + `{@link useLabsUndo}` | Hotkeys + shortcuts help                  | Encore, Stanza, Words |
-| **B — session notation** | In-memory score/rhythm string during one editing session | App-local stack (hook or reducer)                  | Hotkeys + optional compact inline buttons | Drums, Piano          |
+| Tier                     | When                                                     | Stack                                              | UI                                        | Apps                                             |
+| ------------------------ | -------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------- | ------------------------------------------------ |
+| **A — persisted CRUD**   | Users edit durable local state (Dexie / IndexedDB)       | `{@link LabsUndoProvider}` + `{@link useLabsUndo}` | Hotkeys + shortcuts help                  | Encore, Stanza, Words, Lyrefly, Zinebox, Gesture |
+| **B — session notation** | In-memory score/rhythm string during one editing session | App-local stack (hook or reducer)                  | Hotkeys + optional compact inline buttons | Drums, Piano                                     |
+
+Coverage is enforced by `labsUndoTierACoverage.test.ts`: any app with a Dexie database plus destructive delete flows must mount the provider or carry a documented exemption.
 
 Tier A is the shared contract. Tier B may keep inline undo/redo buttons when they sit next to the notation field; still wire keyboard shortcuts and document them.
 
@@ -66,6 +68,8 @@ Reference implementations:
 - **Encore** — `EncoreContext` + `EncoreActionsContext` (`pushUndo` on save/delete/bulk); draft editors via `useEncoreSongDraftUndo` / `useEncoreOriginalDraftUndo`; commit-time undo on SongPage / OriginalSongPage navigate-away.
 - **Stanza** — `LabsUndoProvider` in `App.tsx`; `persistSong` pushes boundary/mix/marker edits; stack clears on song switch.
 - **Words** — `useWordsSectionsState` snapshots sections + song key; chord progression commits on blur; randomize-everything batches via `withBatch`.
+- **Zinebox** — `undo/zineboxUndoableMutations.ts` wraps library CRUD (comic delete, stack create/append/remove); undo also reverses the Drive tombstones so sync does not re-delete restored rows; organize apply batches via `withBatch`.
+- **Gesture** — `undo/gestureUndoableMutations.ts` wraps app-only collection delete and local pack metadata edits (tags, source URL). Drive side-effects (photo trash, folder rename) never return commits.
 
 ## Tier B (session notation)
 

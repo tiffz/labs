@@ -10,8 +10,9 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import { useMemo } from 'react';
 
-import { removeComicFromStack } from '../collections/stackMutations';
+import { removeComicFromStackUndoable } from '../undo/zineboxUndoableMutations';
 import { sortComicIdsNatural } from '../collections/naturalSortComics';
+import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
 import AppTooltip from '../../shared/components/AppTooltip';
 import { handleSpaLinkClick, zineboxReadHref, type ZineboxReaderParams } from '../routes/zineboxHash';
 import type { ZineboxCollection, ZineboxComic } from '../types';
@@ -45,6 +46,7 @@ export default function StackDetailDialog({
   onOpenComic,
   onCollectionChange,
 }: StackDetailDialogProps): React.ReactElement {
+  const { push } = useLabsUndo();
   const sortedIds = useMemo(() => {
     if (!collection) return [];
     return sortComicIdsNatural(comicsById, collection.itemIds, collection.customSortOrder);
@@ -52,7 +54,8 @@ export default function StackDetailDialog({
 
   const handleRemoveFromStack = async (comicId: string) => {
     if (!collection) return;
-    await removeComicFromStack(collection.id, comicId, comicsById);
+    const commit = await removeComicFromStackUndoable(collection.id, comicId, comicsById);
+    if (commit) push(commit);
     const updated = collection.itemIds.filter((id) => id !== comicId);
     if (updated.length <= 1) {
       onCollectionChange(null);

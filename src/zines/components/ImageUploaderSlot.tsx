@@ -90,8 +90,8 @@ const ImageUploaderSlot: React.FC<ImageUploadProps> = ({
         };
         img.onerror = () => {
           setModalContent({
-            title: 'Image Load Error',
-            message: "Couldn't load image from that source due to security restrictions (CORS policy). Please try saving the image to your computer, then drag the file from your desktop."
+            title: 'Image blocked by source site',
+            message: "That site blocks direct image loads (CORS). Save the image to your computer, then drag the file in."
           });
         };
         img.src = imgSrc;
