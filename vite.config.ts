@@ -1155,7 +1155,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './shared/test/setupTests.ts',
+    setupFiles: ['./shared/test/setupTests.ts', './words/test/setupProsodyDictionary.ts'],
     include: ['**/*.test.{js,ts,jsx,tsx}'],
     exclude: [
       'src/**/e2e/**',

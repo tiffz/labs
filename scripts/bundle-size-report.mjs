@@ -31,9 +31,6 @@ const ABSOLUTE_GZIP_CAP = 2 * 1024 * 1024;
  * work item; remove the entry when the app is brought under the cap.
  */
 const CAP_EXEMPTIONS = new Set([
-  // ~4 MB raw dictionary/content data in the entry — split tracked in the
-  // "Words bundle" phase of the performance plan (lazy data imports).
-  'words',
   // ~2.3 MiB gzip eager JS — mega-file decomposition tracked in
   // docs/TECH_DEBT_ROADMAP.md (useSongPageMediaHub, PlaylistImportDialog).
   'encore',
