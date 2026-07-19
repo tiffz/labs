@@ -76,7 +76,13 @@ npm run ci:watch -- <n>   # background; notify on FAIL only
 
 Presubmit is the real gate; CI is the safety net. On failure: `npm run report:ci-failure -- <run-id>`, fix in PR scope, push, restart watch. Foreground babysit only when user asked to merge now, hotfix for broken `main`, or last action of the session — skill **`labs-babysit-pr`**.
 
-**One-time repo setting** (admin): `gh api repos/tiffz/labs -X PATCH -f allow_auto_merge=true`.
+**Branch protection makes auto-merge real:** `main` requires the `checks`, `build`, `vitest`, and `e2e` status checks (classic protection, `enforce_admins: false`), so `--auto` genuinely waits for green instead of merging instantly. Admin direct pushes to `main` bypass the checks — those stay covered by `ci:watch` only. If CI job names change in `ci.yml`, update the required contexts:
+
+```bash
+gh api repos/tiffz/labs/branches/main/protection --jq .required_status_checks.contexts
+```
+
+**One-time repo settings** (admin): `gh api repos/tiffz/labs -X PATCH -f allow_auto_merge=true`; required checks via `PUT repos/tiffz/labs/branches/main/protection`.
 
 | Do locally before push                               | Defer to CI                   |
 | ---------------------------------------------------- | ----------------------------- |
