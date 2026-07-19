@@ -34,10 +34,17 @@ See [`scripts/presubmit.sh`](../scripts/presubmit.sh) and [`scripts/diff-change-
 | Gate                       | Target   |
 | -------------------------- | -------- |
 | Pre-commit (`test:staged`) | ≤ 90s    |
-| Presubmit                  | ≤ 8 min  |
-| CI (scoped PR)             | ≤ 12 min |
-| CI (cross-cutting)         | ≤ 20 min |
+| Presubmit                  | ≤ 5 min  |
+| CI (scoped PR)             | ≤ 8 min  |
+| CI (cross-cutting)         | ≤ 10 min |
 | Nightly                    | ≤ 45 min |
+
+Presubmit runs checks in dependency stages with intra-stage parallelism
+(`scripts/presubmit-parallel.mjs`); scoped e2e runs alone so interaction-latency
+budgets aren't skewed by concurrent CPU load. Soak-class specs (`@soak` in the
+title: heap soaks, giant-asset loads) are excluded from PR-CI full smoke and run
+nightly (`npm run test:e2e:soak`) plus in their own app's scoped e2e. The
+full-matrix advisory visual run also lives in nightly, not PR CI.
 
 See [`docs/TEST_STRATEGY.md`](TEST_STRATEGY.md) and [`docs/ENGINEERING_HEALTH.md`](ENGINEERING_HEALTH.md).
 
@@ -45,11 +52,11 @@ See [`docs/TEST_STRATEGY.md`](TEST_STRATEGY.md) and [`docs/ENGINEERING_HEALTH.md
 
 The workflow detects changed paths (PR base or push parent):
 
-| Changed paths                                                                                   | Vitest                                                     | E2e                                           | Visual                                           |
-| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------ |
-| `src/shared/**`, `src/types/**`, `vite.config.*`, `vitest.config.*`, `package*.json`, workflows | Full `npm test`                                            | Full smoke + playback regressions             | Full run, **advisory**                           |
-| 1–3 apps `src/<app>/**` only (no shared)                                                        | Scoped via `run-changed-app-tests.mjs` (`--retry=1` in CI) | Scoped e2e via `run-scoped-e2e.mjs` (≤3 apps) | Scoped via `run-scoped-visual.mts`, **blocking** |
-| Docs / `.cursor` only                                                                           | Skipped locally (`docs-only` presubmit); CI unchanged      | Full smoke (still fast)                       | Full run, advisory                               |
+| Changed paths                                                                                   | Vitest                                                     | E2e                                               | Visual                                           |
+| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------ |
+| `src/shared/**`, `src/types/**`, `vite.config.*`, `vitest.config.*`, `package*.json`, workflows | Full `npm test`                                            | Full smoke (minus `@soak`) + playback regressions | Nightly full matrix (advisory)                   |
+| 1–3 apps `src/<app>/**` only (no shared)                                                        | Scoped via `run-changed-app-tests.mjs` (`--retry=1` in CI) | Scoped e2e via `run-scoped-e2e.mjs` (≤3 apps)     | Scoped via `run-scoped-visual.mts`, **blocking** |
+| Docs / `.cursor` only                                                                           | Skipped locally (`docs-only` presubmit); CI unchanged      | Full smoke (still fast)                           | Nightly full matrix (advisory)                   |
 
 Vitest scoping mirrors local `npm run test:changed-apps` in CI when the diff touches ≤3 apps and not `src/shared/**`. E2e changes still trigger full smoke via cross-cutting detection in the workflow.
 
