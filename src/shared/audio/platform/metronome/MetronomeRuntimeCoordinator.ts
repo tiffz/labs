@@ -63,6 +63,21 @@ export class MetronomeRuntimeCoordinator {
     this.scheduledUpToBeat = -1;
   }
 
+  /** Full teardown for unmount: releases the engine's AudioContext and the legacy click context. */
+  dispose(): void {
+    this.stop();
+    this.engine?.dispose();
+    this.engine = null;
+    const ctx = this.clickCtx;
+    this.clickCtx = null;
+    this.clickSample = null;
+    if (ctx && ctx.state !== 'closed') {
+      void ctx.close().catch(() => {
+        /* already closed */
+      });
+    }
+  }
+
   private async syncEngineConfig(): Promise<void> {
     if (!this.engine || !this.prefs) return;
     const cfg = toMetronomeEngineConfig(this.prefs, this.bpm, this.timeSignature);

@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import { getMidiInput } from '../shared/midi/midiInput';
 import { MetronomeEngine } from '../shared/audio/metronome/MetronomeEngine';
+import { LookAheadAudioScheduler } from '../shared/audio/platform/scheduling/LookAheadAudioScheduler';
 import { toMetronomeEngineConfig } from '../shared/audio/platform/metronome/toMetronomeEngineConfig';
 import { getMidiMetronomePreferences } from './metronomePreferencesBridge';
 import { MidiMonitor } from './monitor/midiMonitor';
@@ -24,6 +25,7 @@ import {
 import { buildInitialState, midiReducer, subdivisionToLevel } from './storeTypes';
 import type { CapturedLoop, TransportConfig } from './types';
 import { msPerBar, selectPerformanceNotes } from './selectors';
+import { collectDueLoopNotes, type LoopScheduleCursor } from './loopScheduler';
 import { midiMatchesRiffStep } from './guide/riffGuideEngine';
 import { MidiContext, type MidiContextValue } from './midiContext';
 
@@ -52,7 +54,7 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
   const bufferRef = useRef(new RollingMidiBuffer());
   const metronomeRef = useRef<MetronomeEngine | null>(null);
   const synthRef = useRef<MidiMonitor | null>(null);
-  const loopTimersRef = useRef<number[]>([]);
+  const loopSchedulerRef = useRef<LookAheadAudioScheduler | null>(null);
   const guideBeatCounterRef = useRef(0);
   const guideExpectedMsRef = useRef<number | null>(null);
 
@@ -73,8 +75,7 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
   }, [state.mode]);
 
   const stopLoopPlayback = useCallback(() => {
-    loopTimersRef.current.forEach((id) => window.clearTimeout(id));
-    loopTimersRef.current = [];
+    loopSchedulerRef.current?.stop();
     synthRef.current?.stopAll();
     dispatch({ type: 'SET_LOOP_PLAYING', playing: false });
   }, []);
@@ -84,7 +85,7 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
     const s = stateRef.current;
     const loop = s.capturedLoop;
     if (!loop) return;
-    const notes = selectPerformanceNotes(s);
+    const notes = [...selectPerformanceNotes(s)].sort((a, b) => a.startMs - b.startMs);
     if (notes.length === 0) return;
 
     if (!synthRef.current) {
@@ -92,30 +93,29 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
     }
     const synth = synthRef.current;
     const rate = s.transport.playbackRate;
-    const loopDurationMs =
-      msPerBar(s) * loop.barCount / rate;
+    const loopDurationMs = msPerBar(s) * loop.barCount / rate;
+    if (!(loopDurationMs > 0)) return;
 
     dispatch({ type: 'SET_LOOP_PLAYING', playing: true });
 
-    const playOnce = () => {
-      const now = performance.now();
-      for (const note of notes) {
-        const startMs = note.startMs / rate;
-        const durMs = note.durationMs / rate;
-        const delay = startMs;
-        const timerId = window.setTimeout(() => {
-          synth.playMidiNote(note.midi, note.velocity);
-          window.setTimeout(() => synth.stopMidiNote(), durMs);
-        }, delay);
-        loopTimersRef.current.push(timerId);
+    if (!loopSchedulerRef.current) {
+      loopSchedulerRef.current = new LookAheadAudioScheduler();
+    }
+    const epochPerfMs = performance.now() + 50;
+    const cursor: LoopScheduleCursor = { iteration: 0, noteIndex: 0 };
+    loopSchedulerRef.current.start((horizonSec) => {
+      const due = collectDueLoopNotes(
+        cursor,
+        notes,
+        epochPerfMs,
+        loopDurationMs,
+        rate,
+        horizonSec * 1000,
+      );
+      for (const note of due) {
+        synth.scheduleMidiNoteAt(note.midi, note.velocity, note.targetPerfMs, note.durationMs / 1000);
       }
-      const loopTimer = window.setTimeout(() => {
-        if (stateRef.current.loopPlaying) playOnce();
-      }, loopDurationMs);
-      loopTimersRef.current.push(loopTimer);
-      void now;
-    };
-    playOnce();
+    });
   }, [stopLoopPlayback]);
 
   const toggleLoopPlayback = useCallback(() => {
@@ -148,7 +148,6 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
           if (step && synthRef.current) {
             for (const midi of step.pitches) {
               synthRef.current.playMidiNote(midi, 0.35);
-              window.setTimeout(() => synthRef.current?.stopMidiNote(), 120);
             }
           }
         }
@@ -284,6 +283,8 @@ export function MidiProvider({ children }: { children: React.ReactNode }) {
     return () => {
       stopLoopPlayback();
       stopMetronome();
+      metronomeRef.current?.dispose();
+      metronomeRef.current = null;
     };
   }, [stopLoopPlayback, stopMetronome]);
 

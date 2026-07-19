@@ -22,8 +22,8 @@ Who owns time for this feature?
 │  └─ ScoreTransportClock + BeatMap
 ├─ HTML media element (Stanza practice)
 │  └─ MediaTimelineClock — slave to getMediaTime() + anchor
-└─ Chart measure boundaries only (Encore) — documented exception
-   └─ measure look-ahead; see PROCESS_BACKLOG for setInterval migration
+└─ Chart measure boundaries (Chords, Encore)
+   └─ LookAheadAudioScheduler measure transport in useChartChordPlayback
 ```
 
 ## Decision tree — scheduling
@@ -60,24 +60,30 @@ Count Me In keeps its full-screen SubdivisionMixer; other apps use the split con
 
 See [`audioPatternRegistry.ts`](../src/shared/audio/platform/audioPatternRegistry.ts) — enforced by `audioPatternRegistry.test.ts`.
 
-| App    | Clock        | Metronome  | Drums                | Mix         |
-| ------ | ------------ | ---------- | -------------------- | ----------- |
-| Count  | master       | engine     | engine subdiv        | local mixer |
-| Midi   | master       | engine     | —                    | —           |
-| Drums  | loop         | look-ahead | look-ahead           | mix bus     |
-| Words  | loop         | look-ahead | look-ahead + backing | mix bus     |
-| Piano  | score        | look-ahead | look-ahead           | mix bus     |
-| Chords | transport    | look-ahead | —                    | mix bus     |
-| Stanza | media        | look-ahead | look-ahead           | mix bus     |
-| Encore | wall-clock\* | —          | measure              | mix bus     |
+| App    | Clock     | Metronome  | Drums                | Mix         |
+| ------ | --------- | ---------- | -------------------- | ----------- |
+| Count  | master    | engine     | engine subdiv        | local mixer |
+| Midi   | master    | engine     | —                    | —           |
+| Drums  | loop      | look-ahead | look-ahead           | mix bus     |
+| Words  | loop      | look-ahead | look-ahead + backing | mix bus     |
+| Piano  | score     | look-ahead | look-ahead           | mix bus     |
+| Chords | transport | look-ahead | —                    | mix bus     |
+| Stanza | media     | look-ahead | look-ahead           | mix bus     |
+| Encore | transport | —          | measure              | mix bus     |
 
-\*Encore chart `setInterval` — backlog item; do not copy.
+Midi loop capture playback and the Chords/Encore chart transport both run on
+`LookAheadAudioScheduler`; the `audioPatternRegistry.test.ts` guardrail fails if
+`setTimeout`/`setInterval` note clocks reappear in those files.
 
 ## Exceptions (documented, not templates)
 
 - **Agility** — `singInTimeClock` oscillators; out of scope
-- **Midi loop notes** — reactive; backlog
-- **Encore chart transport** — measure interval; migrate when touching charts
+
+## Lifecycle
+
+`MetronomeEngine.dispose()` (and `MetronomeRuntimeCoordinator.dispose()`) close the
+owned AudioContext. Call from unmount cleanup — `stop()` alone leaves a live audio
+thread.
 
 ## Tests to run when touching platform code
 
