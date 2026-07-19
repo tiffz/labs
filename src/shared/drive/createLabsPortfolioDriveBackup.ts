@@ -430,7 +430,10 @@ export function createLabsPortfolioDriveBackup<
             await snapshotBeforeMerge('pre-restore');
             const env = config.undo!.parseSnapshotEnvelope(snap);
             const local = await config.readLocalPayload();
-            const { payload: merged, report } = config.mergePayload(local, config.envelopeToPayload(env));
+            // Pass the envelope so tombstone-aware merges apply on snapshot restores too.
+            const { payload: merged, report } = config.mergePayload(local, config.envelopeToPayload(env), {
+              remoteEnvelope: env,
+            });
             const token = await config.ensureAccess({ interactive: true });
             const snapLabel =
               typeof snap === 'object' && snap != null && 'label' in snap && typeof snap.label === 'string'

@@ -27,9 +27,3 @@ export function writeGestureDriveSyncMeta(meta: GestureDriveSyncMeta): void {
     /* ignore */
   }
 }
-
-export function gestureDriveFolderUrl(folderId: string | undefined): string | null {
-  const id = folderId?.trim();
-  if (!id) return null;
-  return `https://drive.google.com/drive/folders/${encodeURIComponent(id)}`;
-}

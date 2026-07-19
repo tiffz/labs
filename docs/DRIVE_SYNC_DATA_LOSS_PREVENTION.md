@@ -20,7 +20,7 @@
 | **6. Drive revision history** | Recover after cloud overwrite                 | Encore: `encoreRecoveryRunner.ts`; portfolio: `labsPortfolioDriveHistoryRecovery` MVP + Drive versions                                                   |
 | **7. Tab-close flush**        | Local-only window before push                 | Encore + portfolio `useLabsDrivePortfolioAutoSync` (`visibilitychange→hidden`, `pagehide`) + persisted needs-push flag (localStorage, survives tab kill) |
 | **8. Forgiving UX**           | User cannot pick blindly                      | Content-aware conflict copy; Undo last sync; blocking jobs during bulk work                                                                              |
-| **9. Parse-fail loud**        | Corrupt cloud file cannot look like "empty"   | `LabsDriveProgressUnreadableError` — pull throws, auto-push stays gated (factory + Stanza + Gesture)                                                     |
+| **9. Parse-fail loud**        | Corrupt cloud file cannot look like "empty"   | `LabsDriveProgressUnreadableError` — pull throws, auto-push stays gated (factory + Stanza)                                                               |
 | **10. Multi-tab Web Lock**    | Two tabs cannot interleave pull/merge/push    | `withLabsDriveSyncLock` (`labsDriveSyncLock.ts`) around every pull + flush critical section                                                              |
 
 No single layer is sufficient. **Agents must not remove or bypass a layer** without an ADR and replacement.
@@ -51,7 +51,7 @@ New sync work must use `createLabsPortfolioDriveBackup`; custom hooks require an
 | **Encore**   | Bespoke (`EncoreSyncContext` + `repertoireSync`)               | Silent auto-merge; row review dialog (ADR 0019/0020) | Exercise-run tombstones; deletes via `dirtySync`     | Upload bytes in `Encore_App/`                |
 | **Stanza**   | Custom hook (allowlisted) — media hydrate + overlay dual-write | Row review (ADR 0020)                                | `stanzaDriveTombstones` + YouTube tombstones         | `main_audio/`, `stem_audio/` before envelope |
 | **Scales**   | Factory                                                        | Silent union (ADR 0020)                              | n/a — no delete UX yet (add before shipping deletes) | None (JSON only)                             |
-| **Gesture**  | Custom hook (allowlisted) — pack upload + merge                | Silent union + row review                            | `gestureDriveTombstones`                             | Photo bytes in Drive pack folders            |
+| **Gesture**  | Factory (folder reconcile + photo reindex via sidecar hooks)   | Silent union + row review (ADR 0020)                 | `gestureDriveTombstones`                             | Photo bytes in Drive pack folders            |
 | **Zine Box** | Factory                                                        | Silent union (ADR 0020)                              | Zine tombstones + stack membership removals          | Comic PDFs in `comics/`                      |
 | **Lyrefly**  | Factory                                                        | Silent union (ADR 0020)                              | `lyreflyDriveTombstones` (projects)                  | Project packages under `projects/{id}/`      |
 
