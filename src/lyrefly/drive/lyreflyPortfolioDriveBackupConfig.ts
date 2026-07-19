@@ -17,6 +17,7 @@ import {
   type LyreflySyncPayload,
 } from './lyreflyDriveEnvelope';
 import {
+  applyLyreflyConflictChoices,
   formatLyreflyDriveMergeReport,
   lyreflyMergeReportHasUserVisibleRemoteChanges,
   mergeLyreflySyncPayload,
@@ -80,6 +81,10 @@ export const lyreflyPortfolioDriveBackupConfig: LabsPortfolioDriveBackupConfig<
   },
   formatMergeReport: formatLyreflyDriveMergeReport,
   mergeReportHasRemoteChanges: lyreflyMergeReportHasUserVisibleRemoteChanges,
+  resolveConflictChoices: ({ local, remoteEnvelope, choices }) =>
+    applyLyreflyConflictChoices(local, envelopeToPayload(remoteEnvelope), choices, {
+      tombstoneProjectIds: lyreflyTombstoneProjectIdsFromRemote(remoteEnvelope.deletedProjectIds),
+    }),
   shouldPromptMerge: shouldPromptLyreflyDriveMerge,
   assessConflict: assessLyreflyDriveBackupConflict,
   analyzeConflict: ({ syncMeta, local, remoteEnvelope }) =>

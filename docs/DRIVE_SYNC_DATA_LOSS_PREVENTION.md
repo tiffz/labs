@@ -10,16 +10,18 @@
 
 ## Defense in depth (layers)
 
-| Layer                         | What it protects                              | Where                                                                                                  |
-| ----------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| **1. Local working copy**     | Offline edits survive refresh                 | Dexie / reducer — always write locally first                                                           |
-| **2. Auto-push gate**         | Empty/sparse device cannot clobber rich cloud | `labsDriveSyncGuard.ts` — no push until pull or manual backup                                          |
-| **3. Merge safety**           | Filled beats empty; union by stable id        | `encoreRepertoireMerge.ts` (ADR 0019); portfolio `*DriveMerge.ts`                                      |
-| **4. Tombstones**             | Deletes/removals do not resurrect on pull     | Envelope + merge filter — see § Deletion                                                               |
-| **5. Pre-merge undo**         | Roll back a bad pull/merge on this device     | `*UndoSnapshots.ts` + Restore dialog                                                                   |
-| **6. Drive revision history** | Recover after cloud overwrite                 | Encore: `encoreRecoveryRunner.ts`; portfolio: `labsPortfolioDriveHistoryRecovery` MVP + Drive versions |
-| **7. Tab-close flush**        | Local-only window before push                 | Encore + portfolio `useLabsDrivePortfolioAutoSync` (`visibilitychange→hidden`, `pagehide`)             |
-| **8. Forgiving UX**           | User cannot pick blindly                      | Content-aware conflict copy; Undo last sync; blocking jobs during bulk work                            |
+| Layer                         | What it protects                              | Where                                                                                                                                                    |
+| ----------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. Local working copy**     | Offline edits survive refresh                 | Dexie / reducer — always write locally first                                                                                                             |
+| **2. Auto-push gate**         | Empty/sparse device cannot clobber rich cloud | `labsDriveSyncGuard.ts` — no push until pull or manual backup                                                                                            |
+| **3. Merge safety**           | Filled beats empty; union by stable id        | `encoreRepertoireMerge.ts` (ADR 0019); portfolio `*DriveMerge.ts`                                                                                        |
+| **4. Tombstones**             | Deletes/removals do not resurrect on pull     | Envelope + merge filter — see § Deletion                                                                                                                 |
+| **5. Pre-merge undo**         | Roll back a bad pull/merge on this device     | `*UndoSnapshots.ts` + Restore dialog                                                                                                                     |
+| **6. Drive revision history** | Recover after cloud overwrite                 | Encore: `encoreRecoveryRunner.ts`; portfolio: `labsPortfolioDriveHistoryRecovery` MVP + Drive versions                                                   |
+| **7. Tab-close flush**        | Local-only window before push                 | Encore + portfolio `useLabsDrivePortfolioAutoSync` (`visibilitychange→hidden`, `pagehide`) + persisted needs-push flag (localStorage, survives tab kill) |
+| **8. Forgiving UX**           | User cannot pick blindly                      | Content-aware conflict copy; Undo last sync; blocking jobs during bulk work                                                                              |
+| **9. Parse-fail loud**        | Corrupt cloud file cannot look like "empty"   | `LabsDriveProgressUnreadableError` — pull throws, auto-push stays gated (factory + Stanza + Gesture)                                                     |
+| **10. Multi-tab Web Lock**    | Two tabs cannot interleave pull/merge/push    | `withLabsDriveSyncLock` (`labsDriveSyncLock.ts`) around every pull + flush critical section                                                              |
 
 No single layer is sufficient. **Agents must not remove or bypass a layer** without an ADR and replacement.
 
@@ -153,7 +155,7 @@ Avoid: destructive actions without confirm; coarse LWW on compound rows; silent 
 | P1       | Stanza ↔ Encore dual stores                        | Federated overlay ADR accepted; not wired ([`design-explorations/stanza-encore-overlay-migration.md`](design-explorations/stanza-encore-overlay-migration.md)) |
 | P1       | Gesture local-blob packs                           | Drive-first empty copy + Dexie-first tags/source                                                                                                               |
 | P2       | Scales delete UX                                   | No delete shipped                                                                                                                                              |
-| P2       | Multi-tab same app                                 | Document one tab per app                                                                                                                                       |
+| P2       | Multi-tab same app                                 | Closed — `withLabsDriveSyncLock` Web Lock serializes pull/merge/push across tabs                                                                               |
 | P2       | Clear site data wipes undo rings                   | Expected — rings are IndexedDB; recovery = Drive revisions / pins / Recover UI                                                                                 |
 | P2       | Lyrefly project delete has no UI yet               | `deleteLyreflyProject()` exists; no gallery delete action yet                                                                                                  |
 | P2       | Lyrefly package bytes outside envelope revision UI | Drive file versions on `projects/{id}/`; envelope recovery covers gallery only                                                                                 |

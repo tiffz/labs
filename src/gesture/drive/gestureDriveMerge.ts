@@ -164,6 +164,60 @@ function mergePackFiles(
   return { rows: [...byFileId.values()], merged, fromRemoteOnly, skippedTombstone, updatedFromRemote };
 }
 
+function packTextFieldLost(
+  local: string | undefined,
+  remote: string | undefined,
+  merged: string | undefined,
+): boolean {
+  const lv = (local ?? '').trim();
+  const rv = (remote ?? '').trim();
+  if (!lv || !rv || lv === rv) return false;
+  const mv = (merged ?? '').trim();
+  return mv !== lv || mv !== rv;
+}
+
+/**
+ * ADR 0020 dry-run content-loss gate: true when auto-merging this pack would
+ * drop non-empty user text one side wrote. `mergePack` is newer-wins for name,
+ * sourceUrl, subject, and notes — differing non-empty values on both sides
+ * mean the loser's text is silently dropped. (`source` is provenance, not
+ * user content, so it never forces review.)
+ */
+export function gesturePackMergeWouldLoseContent(local: GesturePack, remote: GesturePack): boolean {
+  const merged = mergePack(local, remote);
+  return (
+    packTextFieldLost(local.name, remote.name, merged.name) ||
+    packTextFieldLost(local.sourceUrl, remote.sourceUrl, merged.sourceUrl) ||
+    packTextFieldLost(local.subject, remote.subject, merged.subject) ||
+    packTextFieldLost(local.notes, remote.notes, merged.notes)
+  );
+}
+
+/**
+ * Apply per-pack conflict choices (ADR 0020) then run the normal union merge.
+ * - `local`: drop the remote pack (and its index rows) so this device's copy is kept.
+ * - `remote`: take Drive's pack metadata wholesale.
+ */
+export function applyGestureConflictChoices(
+  local: GestureSyncPayload,
+  remote: GestureSyncPayload,
+  choices: ReadonlyMap<string, 'local' | 'remote'>,
+  options?: GestureDriveMergeOptions,
+): { payload: GestureSyncPayload; report: GestureDriveMergeReport } {
+  const remoteFiltered: GestureSyncPayload = {
+    ...remote,
+    packs: remote.packs.filter((p) => choices.get(p.id) !== 'local'),
+  };
+  const { payload, report } = mergeGestureSyncPayload(local, remoteFiltered, options);
+  const remoteById = new Map(remote.packs.map((p) => [p.id, p] as const));
+  const packs = payload.packs.map((pack) => {
+    if (choices.get(pack.id) !== 'remote') return pack;
+    const remotePack = remoteById.get(pack.id);
+    return remotePack ? stripEphemeralUploadFields(remotePack) : pack;
+  });
+  return { payload: { ...payload, packs }, report };
+}
+
 export function mergeGestureSyncPayload(
   local: GestureSyncPayload,
   remote: GestureSyncPayload | null,

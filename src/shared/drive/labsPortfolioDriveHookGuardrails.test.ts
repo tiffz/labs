@@ -42,4 +42,31 @@ describe('portfolio Drive hook guardrails', () => {
 
     expect(violations, violations.join('\n')).toEqual([]);
   });
+
+  it('pull paths fail loudly on unreadable progress.json — never degrade to empty cloud (ADR 0020)', () => {
+    // A parse/read failure treated as `remoteEnvelope = null` unlocks auto-push
+    // and overwrites the Drive copy with local-only state.
+    const pullFiles = [
+      'src/shared/drive/createLabsPortfolioDriveBackup.ts',
+      'src/gesture/hooks/useGestureDriveBackup.ts',
+      'src/stanza/hooks/useStanzaDriveBackup.ts',
+    ];
+    const violations: string[] = [];
+    for (const rel of pullFiles) {
+      const source = fs.readFileSync(path.join(REPO_ROOT, rel), 'utf8');
+      if (/catch[^{]*\{\s*remoteEnvelope = null/m.test(source)) {
+        violations.push(`${rel}: swallows read/parse errors into remoteEnvelope = null`);
+      }
+      if (!/LabsDriveProgressUnreadableError/.test(source)) {
+        violations.push(`${rel}: missing LabsDriveProgressUnreadableError on parse failure`);
+      }
+      if (!/isLabsDrivePortfolioProgressPlaceholder/.test(source)) {
+        violations.push(`${rel}: missing placeholder check before parseEnvelope`);
+      }
+      if (!/withLabsDriveSyncLock/.test(source)) {
+        violations.push(`${rel}: pull/flush not guarded by withLabsDriveSyncLock (multi-tab race)`);
+      }
+    }
+    expect(violations, violations.join('\n')).toEqual([]);
+  });
 });

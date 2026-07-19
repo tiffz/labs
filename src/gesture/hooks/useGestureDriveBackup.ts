@@ -14,10 +14,13 @@ import { labsBlockingJobsActive, useLabsBlockingJobs, useLabsBlockingJobsVisible
 import {
   ensureLabsDrivePortfolioProgressLayout,
   getLabsDriveProgressFileMeta,
+  isLabsDrivePortfolioProgressPlaceholder,
   LABS_DRIVE_APP_FOLDER_GESTURE,
   readLabsDriveProgressJson,
   writeLabsDriveProgressJson,
 } from '../../shared/drive/labsDrivePortfolioLayout';
+import { LabsDriveProgressUnreadableError } from '../../shared/drive/createLabsPortfolioDriveBackup';
+import { withLabsDriveSyncLock } from '../../shared/drive/labsDriveSyncLock';
 import { ensureLabsGoogleAccessTokenForDrive } from '../../shared/google/labsGoogleDriveAccess';
 import { isEmailAllowedLabsDriveBackup } from '../../shared/google/labsDriveTesterGate';
 import { useLabsEncoreGoogleIdentity } from '../../shared/google/useLabsEncoreGoogleSession';
@@ -43,6 +46,7 @@ import {
 } from '../drive/gestureDriveEnvelope';
 import {
   formatGestureDriveMergeReport,
+  applyGestureConflictChoices,
   gestureMergeReportHasUserVisibleRemoteChanges,
   mergeGestureSyncPayload,
 } from '../drive/gestureDriveMerge';
@@ -160,8 +164,8 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
         const envelope = buildGestureDriveEnvelope(local);
         await pushGestureDriveUndoSnapshot(envelope, trigger);
         setSyncMetaTick((n) => n + 1);
-      } catch {
-        /* quota */
+      } catch (e) {
+        console.warn('[drive-backup] gesture: pre-sync undo snapshot failed', e);
       }
     },
     [],
@@ -171,7 +175,8 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
     (opts?: { silent?: boolean }) => Promise<void>
   >(async () => {});
 
-  const flushDriveWrite = useCallback(async (opts?: { silent?: boolean }) => {
+  const flushDriveWrite = useCallback(async (opts?: { silent?: boolean }) =>
+    withLabsDriveSyncLock(LABS_DRIVE_APP_FOLDER_GESTURE, async () => {
     const writeOnce = async () => {
       const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: !opts?.silent });
       const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_GESTURE);
@@ -200,7 +205,7 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
       }
       throw e;
     }
-  }, []);
+    }), []);
 
   const applyMerged = useCallback(
     async (merged: GestureSyncPayload, userMessage: string | null, accessToken?: string) => {
@@ -230,16 +235,21 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
   );
 
   const pullFromDriveAndMerge = useCallback(
-    async (opts?: { silent?: boolean }) => {
+    async (opts?: { silent?: boolean }) =>
+      withLabsDriveSyncLock(LABS_DRIVE_APP_FOLDER_GESTURE, async () => {
       const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: !opts?.silent });
       const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_GESTURE);
       const meta = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
       let remoteEnvelope: GestureDriveEnvelopeV1 | null = null;
-      try {
-        const json = await readLabsDriveProgressJson(token, refs.progressFileId);
-        remoteEnvelope = parseGestureDriveEnvelope(json);
-      } catch {
-        remoteEnvelope = null;
+      // Read/parse failures must NOT degrade to "empty cloud" — that unlocks
+      // auto-push and overwrites the Drive copy (ADR 0020).
+      const json = await readLabsDriveProgressJson(token, refs.progressFileId);
+      if (!isLabsDrivePortfolioProgressPlaceholder(json)) {
+        try {
+          remoteEnvelope = parseGestureDriveEnvelope(json);
+        } catch (cause) {
+          throw new LabsDriveProgressUnreadableError(LABS_DRIVE_APP_FOLDER_GESTURE, cause);
+        }
       }
       const local = await readGestureLocalPayload();
       const syncMetaBefore = readGestureDriveSyncMeta();
@@ -301,7 +311,7 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
         token,
       );
       markPullSucceeded();
-    },
+      }),
     [applyMerged, markPullSucceeded, snapshotBeforeMerge],
   );
   pullFromDriveAndMergeRef.current = pullFromDriveAndMerge;
@@ -352,16 +362,15 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
   const resolveConflictWithChoices = useCallback(
     async (choices: Map<string, LabsPortfolioConflictChoice>) => {
       if (!conflict) return;
-      void choices;
       try {
         await withBlockingJob('Applying sync choices…', async () => {
           await snapshotBeforeMerge('pre-merge');
           const local = await readGestureLocalPayload();
           const mergeOptions = prepareGestureDriveMerge(conflict.remoteEnvelope);
-          // Union merge is always auto-resolvable; choices are accepted but merge is non-destructive.
-          const { payload: merged, report } = mergeGestureSyncPayload(
+          const { payload: merged, report } = applyGestureConflictChoices(
             local,
             envelopeToPayload(conflict.remoteEnvelope),
+            choices,
             mergeOptions,
           );
           const token = await ensureLabsGoogleAccessTokenForDrive();
@@ -453,6 +462,7 @@ export function useGestureDriveBackup({ onMergePayload }: UseGestureDriveBackupO
 
   useLabsDrivePortfolioAutoSync({
     enabled: testerResolved && testerOk,
+    persistKey: LABS_DRIVE_APP_FOLDER_GESTURE,
     allowAutoPush,
     pullFromDriveAndMerge,
     flushDriveWrite,

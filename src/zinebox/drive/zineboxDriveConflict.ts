@@ -14,6 +14,7 @@ import {
 import type { ZineboxDriveEnvelopeV1 } from './zineboxDriveEnvelope';
 import type { ZineboxDriveSyncMeta } from './zineboxDriveSyncMeta';
 import type { ZineboxSyncPayload } from './zineboxDriveEnvelope';
+import { zineboxComicMergeWouldLoseContent } from './zineboxDriveMerge';
 
 export type ZineboxDriveConflictReason = LabsDriveConflictReason;
 export type ZineboxDriveConflictAssessment = LabsDriveConflictAssessment;
@@ -58,7 +59,12 @@ export function shouldPromptZineboxDriveMerge(params: {
   });
 }
 
-/** Comic union merge is always auto-resolvable (ADR 0020). */
+/**
+ * Row-level conflict analysis for Zine Box (ADR 0020).
+ * Union merge is usually safe; `needsReview` only when the dry run
+ * ({@link zineboxComicMergeWouldLoseContent}) would drop content — e.g. both
+ * sides renamed the same comic.
+ */
 export function analyzeZineboxConflict(params: {
   syncMeta: ZineboxDriveSyncMeta;
   local: ZineboxSyncPayload;
@@ -70,6 +76,8 @@ export function analyzeZineboxConflict(params: {
   /** Comics lack per-row clocks; use progress as a weak signal plus envelope baselines. */
   const localClock = (progress: number) => lastSyncedLocalMax + Math.round(progress * 1000);
   const remoteClock = (progress: number) => remoteUpdatedAt + Math.round(progress * 1000);
+  const localById = new Map(params.local.comics.map((c) => [c.id, c] as const));
+  const remoteById = new Map(params.remoteEnvelope.comics.map((c) => [c.id, c] as const));
   return analyzePortfolioRows({
     lastSyncedLocalMax,
     lastRemoteSeen,
@@ -86,6 +94,19 @@ export function analyzeZineboxConflict(params: {
       kind: 'comic',
     })),
     defaultKind: 'comic',
-    isAutoResolvable: () => true,
+    isAutoResolvable: (localClockRow, remoteClockRow) => {
+      const local = localById.get(localClockRow.id);
+      const remote = remoteById.get(remoteClockRow.id);
+      if (!local || !remote) return true;
+      return !zineboxComicMergeWouldLoseContent(local, remote);
+    },
+    summarizeStakes: (localClockRow, remoteClockRow) => {
+      const local = localById.get(localClockRow.id);
+      const remote = remoteById.get(remoteClockRow.id);
+      if (!local || !remote) return undefined;
+      const lTitle = local.title.trim() || '(untitled)';
+      const rTitle = remote.title.trim() || '(untitled)';
+      return lTitle === rTitle ? undefined : `“${lTitle}” here · “${rTitle}” on Drive`;
+    },
   });
 }

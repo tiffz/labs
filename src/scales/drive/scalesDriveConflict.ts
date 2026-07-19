@@ -14,6 +14,7 @@ import {
 import type { ScalesProgressData } from '../progress/types';
 import type { ScalesDriveSyncMeta } from './scalesDriveSyncMeta';
 import type { ScalesDriveEnvelopeV1 } from './scalesDriveEnvelope';
+import { scalesExerciseMergeWouldLoseContent } from './scalesDriveMerge';
 
 export type ScalesDriveConflictReason = LabsDriveConflictReason;
 export type ScalesDriveConflictAssessment = LabsDriveConflictAssessment;
@@ -58,8 +59,9 @@ export function shouldPromptScalesDriveMerge(params: {
 }
 
 /**
- * Per-exercise union merge is always auto-resolvable (ADR 0020).
- * `needsReview` stays empty; analysis still classifies localOnly / remoteOnly for diagnostics.
+ * Row-level conflict analysis for Learn Your Scales (ADR 0020).
+ * Per-exercise union merge is usually safe; `needsReview` only when the dry run
+ * ({@link scalesExerciseMergeWouldLoseContent}) would drop earned stage progress.
  */
 export function analyzeScalesConflict(params: {
   syncMeta: ScalesDriveSyncMeta;
@@ -70,8 +72,10 @@ export function analyzeScalesConflict(params: {
   const lastRemoteSeen = labsPortfolioClockFromIso(params.syncMeta.lastCloudModifiedTime);
   const localUpdatedAt = labsPortfolioClockFromIso(params.local.progressUpdatedAt);
   const remoteUpdatedAt = labsPortfolioClockFromIso(params.remoteEnvelope.exportedAt);
-  const localIds = Object.keys(params.local.exercises ?? {});
-  const remoteIds = Object.keys(params.remoteEnvelope.payload.exercises ?? {});
+  const localExercises = params.local.exercises ?? {};
+  const remoteExercises = params.remoteEnvelope.payload.exercises ?? {};
+  const localIds = Object.keys(localExercises);
+  const remoteIds = Object.keys(remoteExercises);
   return analyzePortfolioRows({
     lastSyncedLocalMax,
     lastRemoteSeen,
@@ -88,6 +92,11 @@ export function analyzeScalesConflict(params: {
       kind: 'exercise',
     })),
     defaultKind: 'exercise',
-    isAutoResolvable: () => true,
+    isAutoResolvable: (localRow, remoteRow) => {
+      const local = localExercises[localRow.id];
+      const remote = remoteExercises[remoteRow.id];
+      if (!local || !remote) return true;
+      return !scalesExerciseMergeWouldLoseContent(local, remote);
+    },
   });
 }

@@ -12,6 +12,7 @@
 import {
   driveCreateFolder,
   driveCreateJsonFile,
+  driveGetFileMetadata,
   driveGetMedia,
   driveGetMediaArrayBuffer,
   driveListFiles,
@@ -124,6 +125,22 @@ async function uploadPackageTextFiles(
   }
 }
 
+/** Verify the uploaded Drive file has the byte size we sent (cheap checksum). */
+async function verifyUploadedSidecarSize(
+  accessToken: string,
+  fileId: string,
+  expectedBytes: number,
+  label: string,
+): Promise<void> {
+  const meta = await driveGetFileMetadata(accessToken, fileId, 'id,size');
+  const actual = Number(meta.size ?? -1);
+  if (actual !== expectedBytes) {
+    throw new Error(
+      `Upload verification failed for ${label}: Drive has ${actual} bytes, expected ${expectedBytes}. The project was not marked synced — it will retry.`,
+    );
+  }
+}
+
 async function uploadOneLyreflyProjectPackage(
   accessToken: string,
   cache: FolderCache,
@@ -133,6 +150,12 @@ async function uploadOneLyreflyProjectPackage(
 ): Promise<boolean> {
   let pkg = await buildLyreflyProjectPackageFromDb(projectId);
   if (!pkg) return false;
+
+  // Fail-closed: package JSON is only written after every sidecar this package
+  // references has landed on Drive. A missing/empty local blob means we cannot
+  // produce a complete package — skip the JSON write and keep the dirty ledger
+  // so nothing on Drive claims content we did not upload.
+  const missingSidecars: string[] = [];
 
   // Sidecars before envelope: upload blobs first so JSON serialized below carries their driveFileId.
   for (const entry of pkg.pageNodes.values()) {
@@ -147,10 +170,14 @@ async function uploadOneLyreflyProjectPackage(
     ]);
     for (const revision of revisionsNeedingUpload) {
       const blobRow = await lyreflyDb.revisionBlobs.get(revision.id);
-      if (!blobRow?.blob || blobRow.blob.size <= 0) continue;
+      if (!blobRow?.blob || blobRow.blob.size <= 0) {
+        missingSidecars.push(`page art “${revision.label}”`);
+        continue;
+      }
       onLabel(`Uploading page art: ${revision.label}`);
       const file = new File([blobRow.blob], revision.fileName, { type: revision.mimeType });
       const { id } = await driveUploadFileResumable(accessToken, file, [revisionsFolderId], revision.fileName);
+      await verifyUploadedSidecarSize(accessToken, id, file.size, `page art “${revision.label}”`);
       await lyreflyDb.pageRevisions.update(revision.id, { driveFileId: id });
     }
   }
@@ -163,13 +190,24 @@ async function uploadOneLyreflyProjectPackage(
     ]);
     for (const asset of assetsNeedingUpload) {
       const blobRow = await lyreflyDb.visualDevBlobs.get(asset.id);
-      if (!blobRow?.blob || blobRow.blob.size <= 0) continue;
+      if (!blobRow?.blob || blobRow.blob.size <= 0) {
+        missingSidecars.push(`visual dev “${asset.title}”`);
+        continue;
+      }
       onLabel(`Uploading visual dev: ${asset.title}`);
       const fileName = asset.fileName as string;
       const file = new File([blobRow.blob], fileName, { type: asset.mimeType ?? 'application/octet-stream' });
       const { id } = await driveUploadFileResumable(accessToken, file, [assetsFolderId], fileName);
+      await verifyUploadedSidecarSize(accessToken, id, file.size, `visual dev “${asset.title}”`);
       await lyreflyDb.visualDevAssets.update(asset.id, { driveFileId: id });
     }
+  }
+
+  if (missingSidecars.length > 0) {
+    console.warn(
+      `[lyrefly-drive] project ${projectId}: skipped package JSON write — local blobs missing for ${missingSidecars.join(', ')}`,
+    );
+    return false;
   }
 
   // Re-read so JSON reflects driveFileIds set above.

@@ -13,6 +13,7 @@ import {
 } from '../../shared/drive/labsPortfolioConflictAnalysis';
 import type { LyreflyDriveEnvelopeV1, LyreflySyncPayload } from './lyreflyDriveEnvelope';
 import type { LyreflyDriveSyncMeta } from './lyreflyDriveSyncMeta';
+import { lyreflyProjectMergeWouldLoseContent } from './lyreflyDriveMerge';
 
 export type LyreflyDriveConflictReason = LabsDriveConflictReason;
 export type LyreflyDriveConflictAssessment = LabsDriveConflictAssessment;
@@ -55,6 +56,11 @@ export function shouldPromptLyreflyDriveMerge(params: {
   });
 }
 
+/**
+ * Row-level conflict analysis for Lyrefly (ADR 0020).
+ * Union merge is usually safe; `needsReview` only when the dry run
+ * ({@link lyreflyProjectMergeWouldLoseContent}) would drop a title/subtitle.
+ */
 export function analyzeLyreflyConflict(params: {
   syncMeta: LyreflyDriveSyncMeta;
   local: LyreflySyncPayload;
@@ -67,6 +73,8 @@ export function analyzeLyreflyConflict(params: {
     Math.max(lastSyncedLocalMax, labsPortfolioClockFromIso(updatedAt));
   const remoteClock = (updatedAt: string) =>
     Math.max(remoteUpdatedAt, labsPortfolioClockFromIso(updatedAt));
+  const localById = new Map(params.local.projects.map((p) => [p.id, p] as const));
+  const remoteById = new Map(params.remoteEnvelope.projects.map((p) => [p.id, p] as const));
   return analyzePortfolioRows({
     lastSyncedLocalMax,
     lastRemoteSeen,
@@ -82,5 +90,20 @@ export function analyzeLyreflyConflict(params: {
       label: p.title ?? p.id,
       kind: 'project',
     })),
+    defaultKind: 'project',
+    isAutoResolvable: (localClockRow, remoteClockRow) => {
+      const local = localById.get(localClockRow.id);
+      const remote = remoteById.get(remoteClockRow.id);
+      if (!local || !remote) return true;
+      return !lyreflyProjectMergeWouldLoseContent(local, remote);
+    },
+    summarizeStakes: (localClockRow, remoteClockRow) => {
+      const local = localById.get(localClockRow.id);
+      const remote = remoteById.get(remoteClockRow.id);
+      if (!local || !remote) return undefined;
+      const lTitle = local.title.trim() || '(untitled)';
+      const rTitle = remote.title.trim() || '(untitled)';
+      return lTitle === rTitle ? undefined : `“${lTitle}” here · “${rTitle}” on Drive`;
+    },
   });
 }

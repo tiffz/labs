@@ -52,6 +52,52 @@ function mergeProject(local: ComicProjectSummary, remote: ComicProjectSummary): 
   };
 }
 
+function textFieldLost(local: string | undefined, remote: string | undefined, merged: string | undefined): boolean {
+  const lv = (local ?? '').trim();
+  const rv = (remote ?? '').trim();
+  if (!lv || !rv || lv === rv) return false;
+  const mv = (merged ?? '').trim();
+  return mv !== lv || mv !== rv;
+}
+
+/**
+ * ADR 0020 dry-run content-loss gate: true when auto-merging this project would
+ * drop a non-empty title or subtitle one side wrote (merge keeps local text).
+ */
+export function lyreflyProjectMergeWouldLoseContent(
+  local: ComicProjectSummary,
+  remote: ComicProjectSummary,
+): boolean {
+  const merged = mergeProject(local, remote);
+  return (
+    textFieldLost(local.title, remote.title, merged.title) ||
+    textFieldLost(local.subtitle, remote.subtitle, merged.subtitle)
+  );
+}
+
+/**
+ * Apply per-project conflict choices (ADR 0020) then run the normal union merge.
+ * - `local`: drop the remote row so this device's copy is kept.
+ * - `remote`: take Drive's row wholesale.
+ */
+export function applyLyreflyConflictChoices(
+  local: LyreflySyncPayload,
+  remote: LyreflySyncPayload,
+  choices: ReadonlyMap<string, 'local' | 'remote'>,
+  options?: { tombstoneProjectIds?: ReadonlySet<string> },
+): { payload: LyreflySyncPayload; report: LyreflyDriveMergeReport } {
+  const remoteFiltered: LyreflySyncPayload = {
+    projects: remote.projects.filter((p) => choices.get(p.id) !== 'local'),
+  };
+  const { payload, report } = mergeLyreflySyncPayload(local, remoteFiltered, options);
+  const remoteById = new Map(remote.projects.map((p) => [p.id, p] as const));
+  const projects = payload.projects.map((project) => {
+    if (choices.get(project.id) !== 'remote') return project;
+    return remoteById.get(project.id) ?? project;
+  });
+  return { payload: { projects }, report };
+}
+
 export function mergeLyreflySyncPayload(
   local: LyreflySyncPayload,
   remote: LyreflySyncPayload,
