@@ -14,7 +14,7 @@ Prefer these primitives over hand-rolling rows, cards, or sync panels. If you ne
 
 - **`src/encore/ui/EncoreSpotifyTrackListRow.tsx`** — album art + title + artist for Spotify search results. Use in any new Spotify picker/search list.
 
-- **`IntegrationCard`** (inside `src/encore/components/EncoreAccountMenu.tsx`) — parallel layout for third-party connections (Google, Spotify, …): status pill, identity, description, utility icons, `Sign in again`, optional retry, `Disconnect`, optional `Alert`. **Required** for new account-menu integrations. Strings: [`COPY_STYLE.md`](COPY_STYLE.md) § _Account integrations_.
+- **`LabsAccountIntegrationCard`** ([`src/shared/google/LabsAccountIntegrationCard.tsx`](../shared/google/LabsAccountIntegrationCard.tsx), composed in `EncoreAccountMenu.tsx`) — parallel layout for third-party connections (Google, Spotify, …): status pill, identity, description, utility icons, `Sign in again`, optional retry, `Disconnect`, optional `Alert`. **Required** for new account-menu integrations; render through `LabsAccountMenu`'s `integrationsSlot`. Strings: [`COPY_STYLE.md`](COPY_STYLE.md) § _Account integrations_.
 
 - **`src/encore/ui/EncoreFilterChipBar.tsx`** — chip bar for library/saved-search filters. Opt in to exclude (`supportsExclude: true`) for NOT IN semantics. See [`STYLE_GUIDE.md`](../../STYLE_GUIDE.md) § _Filter / search operators_.
 

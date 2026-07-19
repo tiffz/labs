@@ -60,7 +60,7 @@ When the row is already the primary, the star button is replaced by a filled sta
 
 ### Account integrations (Google, Spotify, …)
 
-Every third-party connection in the Encore account menu (and any future site-wide settings page) is rendered through the `IntegrationCard` helper in [`components/EncoreAccountMenu.tsx`](components/EncoreAccountMenu.tsx). New connections (e.g. YouTube, Apple Music) **must** plug into the same shell — see [STYLE_GUIDE.md](../../STYLE_GUIDE.md) § _Parallel surfaces for parallel concepts_ for the rationale.
+Every third-party connection in the Encore account menu (and any future site-wide settings page) is rendered through the shared [`LabsAccountIntegrationCard`](../shared/google/LabsAccountIntegrationCard.tsx) (composed in [`components/EncoreAccountMenu.tsx`](components/EncoreAccountMenu.tsx)). New connections (e.g. YouTube, Apple Music) **must** plug into the same shell — see [STYLE_GUIDE.md](../../STYLE_GUIDE.md) § _Parallel surfaces for parallel concepts_ for the rationale.
 
 Card slots, in order:
 

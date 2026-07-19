@@ -12,6 +12,7 @@ import { existsSync } from 'node:fs';
 
 const APP_SMOKE_SPECS = {
   encore: [
+    'e2e/smoke/encore-account-menu.spec.ts',
     'e2e/smoke/encore-guest-share.spec.ts',
     'e2e/smoke/encore-performance-routes.spec.ts',
     'e2e/smoke/encore-originals-bulk-play.spec.ts',

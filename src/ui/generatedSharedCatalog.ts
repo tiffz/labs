@@ -13058,6 +13058,40 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-labsstatuspill-tsx-labsstatuspill",
+    "name": "LabsStatusPill",
+    "path": "src/shared/components/LabsStatusPill.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Compact status pill for connection/sync states (account menus, connection chips).",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labsstatuspill-tsx-labsstatuspilltone",
+    "name": "LabsStatusPillTone",
+    "path": "src/shared/components/LabsStatusPill.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-metronometogglebutton-tsx-metronometogglebutton",
     "name": "MetronomeToggleButton",
     "path": "src/shared/components/MetronomeToggleButton.tsx",
@@ -17799,6 +17833,70 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-google-labsaccountdisplaynamesection-tsx-labsaccountdisplaynamesection",
+    "name": "LabsAccountDisplayNameSection",
+    "path": "src/shared/google/LabsAccountDisplayNameSection.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Opt-in display-name view/edit block for account menus with guest-facing identity (Encore is the first consumer — the name shows on shared snapshots). Render through 's `identitySlot`. Editing state resets when the menu closes because the menu unmounts its content (`keepMounted={false}`).",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsaccountintegrationcard-tsx-labsaccountintegrationaction",
+    "name": "LabsAccountIntegrationAction",
+    "path": "src/shared/google/LabsAccountIntegrationCard.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parallel card layout for account-menu integrations (Google, Spotify, …). Every connection shares the same conceptual primitives (status, identity, description, sub-actions, primary \"sign in again\", secondary \"disconnect\"). Rendering them through one component keeps the visual rhythm consistent so users can scan from one integration to the next without remapping. Render cards through 's `integrationsSlot`. Copy contract: `src/encore/COPY_STYLE.md` § Account integrations (first consumer).",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsaccountintegrationcard-tsx-labsaccountintegrationcard",
+    "name": "LabsAccountIntegrationCard",
+    "path": "src/shared/google/LabsAccountIntegrationCard.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parallel card layout for account-menu integrations (Google, Spotify, …). Every connection shares the same conceptual primitives (status, identity, description, sub-actions, primary \"sign in again\", secondary \"disconnect\"). Rendering them through one component keeps the visual rhythm consistent so users can scan from one integration to the next without remapping. Render cards through 's `integrationsSlot`. Copy contract: `src/encore/COPY_STYLE.md` § Account integrations (first consumer).",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsaccountintegrationcard-tsx-labsaccountintegrationutilityaction",
+    "name": "LabsAccountIntegrationUtilityAction",
+    "path": "src/shared/google/LabsAccountIntegrationCard.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parallel card layout for account-menu integrations (Google, Spotify, …). Every connection shares the same conceptual primitives (status, identity, description, sub-actions, primary \"sign in again\", secondary \"disconnect\"). Rendering them through one component keeps the visual rhythm consistent so users can scan from one integration to the next without remapping. Render cards through 's `integrationsSlot`. Copy contract: `src/encore/COPY_STYLE.md` § Account integrations (first consumer).",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-google-labsaccountmenu-tsx-labsaccountbackupslotprops",
     "name": "LabsAccountBackupSlotProps",
     "path": "src/shared/google/LabsAccountMenu.tsx",
@@ -17854,6 +17952,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "No JSDoc summary provided.",
+    "tags": [
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-labsaccountmenu-tsx-labsaccountmenutriggerprops",
+    "name": "LabsAccountMenuTriggerProps",
+    "path": "src/shared/google/LabsAccountMenu.tsx",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Props MUI Menu needs on the trigger element for a11y + anchoring.",
     "tags": [
       "api",
       "react"

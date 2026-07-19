@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import AddToDriveIcon from '@mui/icons-material/AddToDrive';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -63,23 +71,58 @@ export type LabsAccountMenuAppearance = {
   tooltipTitle?: string;
 };
 
+/** Props MUI Menu needs on the trigger element for a11y + anchoring. */
+export type LabsAccountMenuTriggerProps = {
+  id: string;
+  'aria-controls': string | undefined;
+  'aria-haspopup': 'true';
+  'aria-expanded': 'true' | undefined;
+  onClick: (event: ReactMouseEvent<HTMLElement>) => void;
+};
+
 export type LabsAccountMenuProps = {
   appId: LabsGoogleSessionConsumerId;
   googleClientConfigured: boolean;
-  backup: LabsAccountBackupSlotProps;
+  /** Portfolio Drive backup block. Omit for apps that render sync through `integrationsSlot`. */
+  backup?: LabsAccountBackupSlotProps;
   /** When set, replaces default GIS sign-in (e.g. Zine Box Drive import scopes). */
   signInWithGoogle?: () => Promise<void>;
   /** Shown under the email line (e.g. explain remembered identity vs live Drive permission). */
   identityCaption?: string;
   appearance?: LabsAccountMenuAppearance;
   ids: { menu: string; button: string };
-  renderBackupButton: (ctx: {
+  renderBackupButton?: (ctx: {
     disabled: boolean;
     busy: boolean;
     onBackup: () => void;
     needsSignIn: boolean;
     onSignIn: () => void;
   }) => ReactNode;
+  /**
+   * Custom trigger (e.g. Encore's labeled "Hi, name" button). Spread `triggerProps` onto the
+   * clickable element so the menu anchors and a11y wiring stay correct.
+   */
+  renderTrigger?: (ctx: { open: boolean; triggerProps: LabsAccountMenuTriggerProps }) => ReactElement;
+  /**
+   * Replaces the default email line in the identity section (e.g. Encore's display-name
+   * editor via {@link LabsAccountDisplayNameSection}). The Labs apps row still renders below.
+   */
+  identitySlot?: ReactNode;
+  /**
+   * App-specific integration cards (Google sync state, Spotify, …) rendered full-bleed between
+   * the identity section and the footer. Compose with {@link LabsAccountIntegrationCard}.
+   * The function form receives `close` so card actions can dismiss the menu.
+   */
+  integrationsSlot?: ReactNode | ((ctx: { close: () => void }) => ReactNode);
+  /** Replaces the default "Labs site / Privacy policy" footer region entirely. */
+  footer?: ReactNode;
+  /**
+   * Render the full menu even when there is no persisted Google identity (or no Google client at
+   * all) — for apps whose menu carries signed-out content (Encore's integration cards).
+   */
+  alwaysShowMenu?: boolean;
+  /** Observe menu open/close (e.g. lazy-load integration profile summaries while open). */
+  onOpenChange?: (open: boolean) => void;
 };
 
 function formatSessionTouchDay(ts: number): string {
@@ -272,7 +315,7 @@ function LabsAccountSignInMenu(props: {
 function LabsAccountBackupBlock(props: {
   backup: LabsAccountBackupSlotProps;
   alertSurfaceSx: SxProps<Theme>;
-  renderBackupButton: LabsAccountMenuProps['renderBackupButton'];
+  renderBackupButton: NonNullable<LabsAccountMenuProps['renderBackupButton']>;
 }) {
   const { backup, alertSurfaceSx, renderBackupButton } = props;
   const [reconnectBusy, setReconnectBusy] = useState(false);
@@ -431,6 +474,12 @@ export function LabsAccountMenu(props: LabsAccountMenuProps) {
     appearance = {},
     ids,
     renderBackupButton,
+    renderTrigger,
+    identitySlot,
+    integrationsSlot,
+    footer,
+    alwaysShowMenu = false,
+    onOpenChange,
   } = props;
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -445,9 +494,13 @@ export function LabsAccountMenu(props: LabsAccountMenuProps) {
     touchLabsGoogleSessionConsumer(appId);
   }, [appId]);
 
-  if (!googleClientConfigured) return null;
-  const accountEmail = backup.identity?.email?.trim();
-  if (!accountEmail) {
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
+
+  if (!googleClientConfigured && !alwaysShowMenu) return null;
+  const accountEmail = backup?.identity?.email?.trim();
+  if (!accountEmail && !alwaysShowMenu) {
     return (
       <LabsAccountSignInMenu
         ids={ids}
@@ -460,6 +513,14 @@ export function LabsAccountMenu(props: LabsAccountMenuProps) {
 
   const close = () => setAnchorEl(null);
 
+  const triggerProps: LabsAccountMenuTriggerProps = {
+    id: ids.button,
+    'aria-controls': open ? ids.menu : undefined,
+    'aria-haspopup': 'true',
+    'aria-expanded': open ? 'true' : undefined,
+    onClick: (e: ReactMouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget),
+  };
+
   const alertSurfaceSx: SxProps<Theme> = {
     bgcolor: 'action.hover',
     border: '1px solid',
@@ -471,31 +532,31 @@ export function LabsAccountMenu(props: LabsAccountMenuProps) {
 
   return (
     <>
-      <AppTooltip title={appearance.tooltipTitle ?? 'Account'}>
-        <IconButton
-          id={ids.button}
-          aria-controls={open ? ids.menu : undefined}
-          aria-haspopup="true"
-          aria-expanded={open ? 'true' : undefined}
-          onClick={(e) => setAnchorEl(e.currentTarget)}
-          size="medium"
-          aria-label="Open account menu"
-          sx={{
-            color: 'text.secondary',
-            border: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-            '&:hover': {
-              bgcolor: 'action.hover',
-              borderColor: 'primary.main',
-              color: 'text.primary',
-            },
-            ...appearance.iconButtonSx,
-          }}
-        >
-          <AccountCircleOutlinedIcon sx={{ fontSize: 26 }} />
-        </IconButton>
-      </AppTooltip>
+      {renderTrigger ? (
+        renderTrigger({ open, triggerProps })
+      ) : (
+        <AppTooltip title={appearance.tooltipTitle ?? 'Account'}>
+          <IconButton
+            {...triggerProps}
+            size="medium"
+            aria-label="Open account menu"
+            sx={{
+              color: 'text.secondary',
+              border: '1px solid',
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
+              '&:hover': {
+                bgcolor: 'action.hover',
+                borderColor: 'primary.main',
+                color: 'text.primary',
+              },
+              ...appearance.iconButtonSx,
+            }}
+          >
+            <AccountCircleOutlinedIcon sx={{ fontSize: 26 }} />
+          </IconButton>
+        </AppTooltip>
+      )}
       <Menu
         id={ids.menu}
         anchorEl={anchorEl}
@@ -523,60 +584,76 @@ export function LabsAccountMenu(props: LabsAccountMenuProps) {
               Account
             </Typography>
 
-            {identityCaption ? (
-              <AppTooltip title={identityCaption}>
+            {identitySlot ??
+              (identityCaption ? (
+                <AppTooltip title={identityCaption}>
+                  <Typography
+                    variant="body2"
+                    component="span"
+                    sx={{
+                      display: 'block',
+                      fontWeight: 600,
+                      color: 'text.primary',
+                      mb: 1.25,
+                      cursor: 'default',
+                    }}
+                  >
+                    {accountEmail}
+                  </Typography>
+                </AppTooltip>
+              ) : accountEmail ? (
                 <Typography
                   variant="body2"
-                  component="span"
                   sx={{
-                    display: 'block',
                     fontWeight: 600,
                     color: 'text.primary',
                     mb: 1.25,
-                    cursor: 'default',
                   }}
                 >
                   {accountEmail}
                 </Typography>
-              </AppTooltip>
-            ) : (
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 600,
-                  color: 'text.primary',
-                  mb: 1.25,
-                }}
-              >
-                {accountEmail}
-              </Typography>
-            )}
+              ) : null)}
 
             <LabsAppsCompactRow touches={sessionTouches} currentId={currentConsumerId} onNavigateApp={close} />
 
-            <Divider sx={{ my: 2 }} />
+            {backup && renderBackupButton ? (
+              <>
+                <Divider sx={{ my: 2 }} />
 
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.25 }}>
-              <AddToDriveIcon sx={{ fontSize: 22, color: 'primary.main', flexShrink: 0 }} aria-hidden />
-              <Typography component="h3" variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.3, color: 'text.primary' }}>
-                Google Drive backup
-                <Typography
-                  component="span"
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ ml: 0.75, fontWeight: 600, letterSpacing: '0.02em' }}
-                >
-                  (test)
-                </Typography>
-              </Typography>
-            </Stack>
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.25 }}>
+                  <AddToDriveIcon sx={{ fontSize: 22, color: 'primary.main', flexShrink: 0 }} aria-hidden />
+                  <Typography component="h3" variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.3, color: 'text.primary' }}>
+                    Google Drive backup
+                    <Typography
+                      component="span"
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ ml: 0.75, fontWeight: 600, letterSpacing: '0.02em' }}
+                    >
+                      (test)
+                    </Typography>
+                  </Typography>
+                </Stack>
 
-            <LabsAccountBackupBlock
-              backup={backup}
-              alertSurfaceSx={alertSurfaceSx}
-              renderBackupButton={renderBackupButton}
-            />
+                <LabsAccountBackupBlock
+                  backup={backup}
+                  alertSurfaceSx={alertSurfaceSx}
+                  renderBackupButton={renderBackupButton}
+                />
+              </>
+            ) : null}
           </Box>
+          {integrationsSlot ? (
+            <Box
+              sx={(theme) => ({
+                borderTop: '1px solid',
+                borderColor: alpha(theme.palette.divider, theme.palette.mode === 'dark' ? 0.22 : 0.35),
+              })}
+            >
+              {typeof integrationsSlot === 'function' ? integrationsSlot({ close }) : integrationsSlot}
+            </Box>
+          ) : null}
+          {footer ?? (
           <Box
             component="footer"
             sx={(theme) => ({
@@ -636,6 +713,7 @@ export function LabsAccountMenu(props: LabsAccountMenuProps) {
               <OpenInNewIcon sx={{ fontSize: 16, opacity: 0.72 }} aria-hidden />
             </Link>
           </Box>
+          )}
         </Box>
       </Menu>
     </>
