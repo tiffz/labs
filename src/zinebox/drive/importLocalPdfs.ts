@@ -38,7 +38,7 @@ export async function extractPdfCoverThumbnail(file: File): Promise<string> {
     if (!context) return FALLBACK_COVER;
     context.fillStyle = '#f5f3ef';
     context.fillRect(0, 0, canvas.width, canvas.height);
-    await page.render({ canvasContext: context, viewport }).promise;
+    await page.render({ canvas, canvasContext: context, viewport }).promise;
     return canvas.toDataURL('image/jpeg', 0.82);
   } catch {
     return FALLBACK_COVER;
