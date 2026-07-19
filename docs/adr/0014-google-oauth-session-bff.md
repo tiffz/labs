@@ -56,6 +56,18 @@ Add **`workers/labs-session-bff`**, a minimal Cloudflare Worker with Workers KV:
 - **Negative:** New deploy surface (Wrangler + Cloudflare account); Google Cloud Console redirect URIs for the Worker callback; optional dependency on Worker uptime (interactive sign-in falls back to GIS when the Worker is down; unset `VITE_LABS_SESSION_BFF_URL` disables BFF entirely).
 - **Ops:** One-time Console setup documented in [`workers/labs-session-bff/README.md`](../../workers/labs-session-bff/README.md). Rollback = unset `VITE_LABS_SESSION_BFF_URL`.
 
+## Revision — 2026-07 reliability pass
+
+Root causes of "Labs keeps making me sign in" were fixed without changing the decision:
+
+- **Reconnect is BFF-first.** "Sign in again" now attempts a silent cookie refresh before opening the GIS popup; most reconnects complete with no popup at all (`reconnectLabsGoogleDriveSession`).
+- **Refresh timer re-arms.** `useLabsGoogleSessionRefresh` reschedules itself after every attempt (previously fired once per tab), and coordinates cross-tab via `navigator.locks` so only one tab refreshes.
+- **`prompt=select_account`** (was `consent`). Google omits the refresh token on re-auth; the callback reuses the stored refresh token for the user (`loadRefreshTokenForUser`).
+- **Rate limiter charges after success.** Failed refreshes no longer consume quota (`checkRefreshRateLimit` is read-only; `recordRefreshSuccess` charges); min interval lowered 30s → 10s.
+- **Drive 401 → BFF refresh → retry.** All `driveFetch` helpers retry once with a freshly refreshed token before surfacing an error. Still never GIS (ADR 0010/0011 hold).
+- **Distinct failure codes.** `LabsBffRefreshError` classifies `not_signed_in` / `rate_limited` / `invalid_grant` / `network` instead of a uniform `null` (`readLastLabsBffRefreshErrorCode`).
+- **First-party host prepared.** The remaining top failure — the cross-site cookie on `*.workers.dev` being dropped by third-party-cookie blocking — needs `session.tiffzhang.com`, which requires moving `tiffzhang.com` DNS to Cloudflare (manual step; see `workers/labs-session-bff/README.md` § First-party host and the commented route in `wrangler.toml`).
+
 ## Alternatives considered
 
 - **Restore GIS silent refresh with stricter iframe lifecycle** — rejected in ADR 0010/0011; ghost popup risk remains on browsers we don't control.

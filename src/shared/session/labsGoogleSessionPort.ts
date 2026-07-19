@@ -105,31 +105,77 @@ let refreshInFlight: Promise<LabsGoogleBffTokenResponse> | null = null;
 let refreshBlockedUntilMs = 0;
 
 /**
+ * Why the last BFF refresh failed — lets menus show "cookies blocked" vs "slow down"
+ * vs "sign in again" instead of one generic failure (all used to collapse to `null`).
+ */
+export type LabsBffRefreshErrorCode =
+  | 'not_signed_in'
+  | 'rate_limited'
+  | 'invalid_grant'
+  | 'network'
+  | 'unknown';
+
+export class LabsBffRefreshError extends Error {
+  constructor(
+    message: string,
+    readonly code: LabsBffRefreshErrorCode,
+  ) {
+    super(message);
+    this.name = 'LabsBffRefreshError';
+  }
+}
+
+let lastRefreshErrorCode: LabsBffRefreshErrorCode | null = null;
+
+/**
+ * Classification of the most recent failed BFF refresh (null after a success).
+ * `not_signed_in` on a browser that never completed sign-in usually means the
+ * cross-site session cookie was blocked (third-party cookie policy).
+ */
+export function readLastLabsBffRefreshErrorCode(): LabsBffRefreshErrorCode | null {
+  return lastRefreshErrorCode;
+}
+
+/**
  * Refresh the Google access token via the session BFF (HttpOnly cookie auth).
  * Single-flight: concurrent callers share one request. After 429, blocks retries briefly.
  */
 export async function refreshGoogleAccessTokenViaBff(): Promise<LabsGoogleBffTokenResponse> {
   if (Date.now() < refreshBlockedUntilMs) {
-    throw new Error('Session refresh temporarily rate limited.');
+    throw new LabsBffRefreshError('Session refresh temporarily rate limited.', 'rate_limited');
   }
   if (refreshInFlight) return refreshInFlight;
   const bffUrl = readLabsSessionBffUrl();
   if (!bffUrl) throw new Error('Session BFF is not configured.');
 
   refreshInFlight = (async () => {
-    const res = await fetch(`${bffUrl}/v1/session/google/access-token`, {
-      method: 'GET',
-      credentials: 'include',
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${bffUrl}/v1/session/google/access-token`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+    } catch {
+      throw new LabsBffRefreshError('Session service unreachable.', 'network');
+    }
     const body = (await res.json().catch(() => ({}))) as { error?: string } & Partial<LabsGoogleBffTokenResponse>;
     if (res.status === 429) {
       refreshBlockedUntilMs = Date.now() + 30_000;
-      throw new Error(body.error ?? 'Session refresh rate limited.');
+      throw new LabsBffRefreshError(body.error ?? 'Session refresh rate limited.', 'rate_limited');
+    }
+    if (res.status === 401) {
+      const invalidGrant = /invalid_grant|revoked|expired/i.test(body.error ?? '');
+      throw new LabsBffRefreshError(
+        body.error ?? 'Not signed in.',
+        invalidGrant ? 'invalid_grant' : 'not_signed_in',
+      );
     }
     if (!res.ok) {
-      throw new Error(body.error ?? `Session refresh failed (${res.status}).`);
+      throw new LabsBffRefreshError(body.error ?? `Session refresh failed (${res.status}).`, 'unknown');
     }
-    if (!body.access_token) throw new Error('Session refresh returned no access token.');
+    if (!body.access_token) {
+      throw new LabsBffRefreshError('Session refresh returned no access token.', 'unknown');
+    }
     return {
       access_token: body.access_token,
       expires_in: body.expires_in ?? 3600,
@@ -140,7 +186,12 @@ export async function refreshGoogleAccessTokenViaBff(): Promise<LabsGoogleBffTok
   })();
 
   try {
-    return await refreshInFlight;
+    const result = await refreshInFlight;
+    lastRefreshErrorCode = null;
+    return result;
+  } catch (e) {
+    lastRefreshErrorCode = e instanceof LabsBffRefreshError ? e.code : 'unknown';
+    throw e;
   } finally {
     refreshInFlight = null;
   }
