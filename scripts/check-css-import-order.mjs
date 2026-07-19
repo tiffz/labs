@@ -71,6 +71,10 @@ export function findCssImportOrderViolations(content) {
 
     if (trimmed.startsWith('@charset')) continue;
 
+    // Bare `@layer a, b;` statements (no block) are explicitly allowed before
+    // @import by the cascade-layers spec — Tailwind 4 entry files rely on this.
+    if (/^@layer\s[^{]*;$/.test(trimmed)) continue;
+
     seenNonImportRule = true;
   }
 
@@ -99,8 +103,9 @@ export function findCssSyntaxErrors(content) {
 
 function runSelfTest() {
   const ok = findCssImportOrderViolations('@import "a.css";\n.foo {}');
+  const okLayer = findCssImportOrderViolations('@layer shared-base;\n@import "a.css";\n.foo {}');
   const bad = findCssImportOrderViolations('.foo {}\n@import "b.css";');
-  if (ok.length !== 0 || bad.length !== 1) {
+  if (ok.length !== 0 || okLayer.length !== 0 || bad.length !== 1) {
     console.error('check:css-import-order self-test failed');
     process.exit(1);
   }

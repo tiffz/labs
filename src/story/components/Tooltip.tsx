@@ -20,7 +20,7 @@ export const Tooltip: React.FC<TooltipProps> = ({ content }) => {
       </span>
       {isVisible && (
         <div 
-          className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 px-3 py-2 bg-slate-800 text-white text-xs rounded-md z-[100] shadow-lg pointer-events-none whitespace-normal"
+          className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 px-3 py-2 bg-slate-800 text-white text-xs rounded-md z-100 shadow-lg pointer-events-none whitespace-normal"
         >
           {content}
         </div>

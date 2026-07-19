@@ -14,7 +14,7 @@ export const FixedStoryHeader: React.FC<FixedStoryHeaderProps> = ({ dna, onRerol
   const currentGenreElements = genreElements[dna.genre] || [];
 
   return (
-    <div className="sticky top-[52px] z-10 border-b border-orange-200/80 bg-gradient-to-r from-white via-orange-50/20 to-pink-50/20 shadow-sm backdrop-blur-sm md:top-0">
+    <div className="sticky top-[52px] z-10 border-b border-orange-200/80 bg-linear-to-r from-white via-orange-50/20 to-pink-50/20 shadow-xs backdrop-blur-xs md:top-0">
       <div className="px-3 py-3 sm:px-6">
         {/* Genre and Theme Row */}
         <div className="flex items-center gap-4 mb-2 pb-2 border-b border-orange-100">
@@ -54,7 +54,7 @@ export const FixedStoryHeader: React.FC<FixedStoryHeaderProps> = ({ dna, onRerol
             <div className="text-xs font-bold text-slate-800 mb-2">Core Story Elements</div>
             <div className="space-y-2">
               <div className="flex gap-2">
-                <span className="text-xs font-medium text-slate-600 whitespace-nowrap flex items-center gap-1 w-16 flex-shrink-0 pt-1">
+                <span className="text-xs font-medium text-slate-600 whitespace-nowrap flex items-center gap-1 w-16 shrink-0 pt-1">
                   Hero
                   <Tooltip content="The main character of your story." />
                 </span>
@@ -63,7 +63,7 @@ export const FixedStoryHeader: React.FC<FixedStoryHeaderProps> = ({ dna, onRerol
                 </div>
               </div>
               <div className="flex gap-2">
-                <span className="text-xs font-medium text-slate-600 whitespace-nowrap flex items-center gap-1 w-16 flex-shrink-0 pt-1">
+                <span className="text-xs font-medium text-slate-600 whitespace-nowrap flex items-center gap-1 w-16 shrink-0 pt-1">
                   Flaw
                   <Tooltip content="The hero's main weakness or blind spot, tied to the theme." />
                 </span>
@@ -72,7 +72,7 @@ export const FixedStoryHeader: React.FC<FixedStoryHeaderProps> = ({ dna, onRerol
                 </div>
               </div>
               <div className="flex gap-2">
-                <span className="text-xs font-medium text-slate-600 whitespace-nowrap flex items-center gap-1 w-16 flex-shrink-0 pt-1">
+                <span className="text-xs font-medium text-slate-600 whitespace-nowrap flex items-center gap-1 w-16 shrink-0 pt-1">
                   Nemesis
                   <Tooltip content="The villain or antagonistic force." />
                 </span>
@@ -96,7 +96,7 @@ export const FixedStoryHeader: React.FC<FixedStoryHeaderProps> = ({ dna, onRerol
                   return (
                     <div key={elementName} className="flex gap-2">
                       <span 
-                        className="text-xs font-medium text-slate-600 whitespace-nowrap flex items-center gap-1 flex-shrink-0 pt-1"
+                        className="text-xs font-medium text-slate-600 whitespace-nowrap flex items-center gap-1 shrink-0 pt-1"
                         style={{ minWidth: `${maxLabelWidth}px` }}
                       >
                         {elementName}

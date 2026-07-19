@@ -299,7 +299,7 @@ const SpreadPreview: React.FC<SpreadPreviewProps> = memo(({
             {/* Upload button - minimal, contrasting design */}
             <button
               onClick={() => handleUploadClick(pageInfo.pageNum)}
-              className="bg-white/90 hover:bg-white shadow-sm rounded-lg px-3 py-2 transition-colors"
+              className="bg-white/90 hover:bg-white shadow-xs rounded-lg px-3 py-2 transition-colors"
               title={`Upload image for ${pageInfo.label}`}
             >
               <span className="text-xl text-stone-600">+</span>
@@ -307,12 +307,12 @@ const SpreadPreview: React.FC<SpreadPreviewProps> = memo(({
             
             {/* Color picker - bottom right, minimal */}
             {onBlankPageColorChange && (
-              <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-white/90 rounded shadow-sm px-1.5 py-1">
+              <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-white/90 rounded-sm shadow-xs px-1.5 py-1">
                 <input
                   type="color"
                   value={blankPageColors.get(pageInfo.pageNum) || blankPageColor}
                   onChange={(e) => onBlankPageColorChange(e.target.value, pageInfo.pageNum)}
-                  className="w-4 h-4 cursor-pointer rounded border border-stone-300"
+                  className="w-4 h-4 cursor-pointer rounded-sm border border-stone-300"
                   title="Set fill color"
                 />
                 {onApplyColorToAll && (
@@ -339,7 +339,7 @@ const SpreadPreview: React.FC<SpreadPreviewProps> = memo(({
     if (isExplicit && spread.explicitSpread) {
       // Single image spread
       return (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden border-2 border-teal-400">
+        <div className="bg-white rounded-xl shadow-xs overflow-hidden border-2 border-teal-400">
           <div 
             className="bg-stone-50 flex items-center justify-center overflow-hidden relative"
             style={{ aspectRatio: `${spreadAspectRatio}` }}
@@ -403,7 +403,7 @@ const SpreadPreview: React.FC<SpreadPreviewProps> = memo(({
     const bothPagesPresent = spread.leftPage?.page && spread.rightPage?.page;
     
     return (
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border-2 border-amber-300">
+      <div className="bg-white rounded-xl shadow-xs overflow-hidden border-2 border-amber-300">
         <div 
           className="flex relative"
           style={{ aspectRatio: `${spreadAspectRatio}` }}
@@ -463,11 +463,11 @@ const SpreadPreview: React.FC<SpreadPreviewProps> = memo(({
         {(bleedWidthPercent > 0 || bleedHeightPercent > 0) && (
           <div className="flex items-center gap-4 text-xs">
             <div className="flex items-center gap-1 text-pink-600">
-              <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: 'rgba(236, 72, 153, 0.25)' }} />
+              <span className="w-3 h-3 rounded-xs" style={{ backgroundColor: 'rgba(236, 72, 153, 0.25)' }} />
               Bleed ({bleedConfig.top}{bleedConfig.unit})
             </div>
             <div className="flex items-center gap-1 text-blue-600">
-              <span className="w-3 h-3 rounded-sm border-2 border-dashed" style={{ borderColor: 'rgba(59, 130, 246, 0.5)' }} />
+              <span className="w-3 h-3 rounded-xs border-2 border-dashed" style={{ borderColor: 'rgba(59, 130, 246, 0.5)' }} />
               Safe zone ({bleedConfig.quietArea || 0.25}{bleedConfig.unit})
             </div>
           </div>

@@ -41,7 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
   return (
     <aside
-      className={`story-sidebar-drawer w-[min(100vw,20rem)] max-w-[min(100vw,20rem)] rounded-r-2xl bg-gradient-to-b from-orange-50/90 via-pink-50/50 to-orange-50/85 border-r border-orange-200/90 h-[100dvh] min-h-0 overflow-y-auto overscroll-contain fixed left-0 top-0 z-[50] shadow-[4px_0_24px_-4px_rgba(124,45,18,0.12)] backdrop-blur-md transition-transform duration-300 ease-out md:translate-x-0 md:rounded-none md:shadow-sm ${
+      className={`story-sidebar-drawer w-[min(100vw,20rem)] max-w-[min(100vw,20rem)] rounded-r-2xl bg-linear-to-b from-orange-50/90 via-pink-50/50 to-orange-50/85 border-r border-orange-200/90 h-dvh min-h-0 overflow-y-auto overscroll-contain fixed left-0 top-0 z-50 shadow-[4px_0_24px_-4px_rgba(124,45,18,0.12)] backdrop-blur-md transition-transform duration-300 ease-out md:translate-x-0 md:rounded-none md:shadow-xs ${
         mobileOpen ? 'translate-x-0' : '-translate-x-full'
       }`}
     >
@@ -60,7 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* About Section */}
-        <div className="bg-white/70 backdrop-blur rounded-lg p-3 border border-orange-200">
+        <div className="bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-orange-200">
           <p className="text-xs text-slate-700 leading-relaxed">
             Generates random story plots using the 15-beat Save the Cat! structure.{' '}
             <a
@@ -107,17 +107,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }}
           onPointerEnter={onGenerateIntent}
           onFocus={onGenerateIntent}
-          className="w-full bg-gradient-to-br from-orange-500 via-orange-500 to-pink-500/80 hover:from-orange-600 hover:via-orange-600 hover:to-pink-600/80 text-white font-bold py-2.5 px-6 rounded-lg text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 shadow-sm hover:shadow-md"
+          className="w-full bg-linear-to-br from-orange-500 via-orange-500 to-pink-500/80 hover:from-orange-600 hover:via-orange-600 hover:to-pink-600/80 text-white font-bold py-2.5 px-6 rounded-lg text-base transition-all duration-200 focus:outline-hidden focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 shadow-xs hover:shadow-md"
         >
           Generate Story
         </button>
 
         {/* Interactive Tip Demo */}
-        <div className="bg-white/70 backdrop-blur rounded-lg p-3 border border-orange-200">
+        <div className="bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-orange-200">
           <div className="flex items-center gap-2">
             <button
               onClick={handleRerollTip}
-              className="flex items-center justify-center w-6 h-6 rounded bg-orange-50 text-orange-500 hover:text-orange-600 hover:bg-orange-100 transition-colors duration-150 focus:outline-none focus:ring-1 focus:ring-orange-400 flex-shrink-0"
+              className="flex items-center justify-center w-6 h-6 rounded-sm bg-orange-50 text-orange-500 hover:text-orange-600 hover:bg-orange-100 transition-colors duration-150 focus:outline-hidden focus:ring-1 focus:ring-orange-400 shrink-0"
               aria-label="Get another tip"
             >
               <DiceIcon variant="single" size={14} opacity={0.8} />

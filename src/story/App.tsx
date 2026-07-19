@@ -294,15 +294,15 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50/60 via-pink-50/30 to-purple-50/40">
+    <div className="min-h-screen bg-linear-to-br from-orange-50/60 via-pink-50/30 to-purple-50/40">
       <SkipToMain />
       <header
-        className="sticky top-0 z-40 flex h-[52px] shrink-0 items-center gap-3 border-b border-orange-200/90 bg-gradient-to-r from-white via-orange-50/40 to-white px-3 shadow-[0_1px_0_rgba(251,146,60,0.12)] backdrop-blur-md md:hidden"
+        className="sticky top-0 z-40 flex h-[52px] shrink-0 items-center gap-3 border-b border-orange-200/90 bg-linear-to-r from-white via-orange-50/40 to-white px-3 shadow-[0_1px_0_rgba(251,146,60,0.12)] backdrop-blur-md md:hidden"
         role="banner"
       >
         <button
           type="button"
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-orange-200/80 bg-white/90 text-orange-800 shadow-sm ring-1 ring-orange-100/80 transition hover:border-orange-300 hover:bg-orange-50/90 hover:text-orange-900 active:scale-[0.98]"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-orange-200/80 bg-white/90 text-orange-800 shadow-xs ring-1 ring-orange-100/80 transition hover:border-orange-300 hover:bg-orange-50/90 hover:text-orange-900 active:scale-[0.98]"
           aria-label="Open menu"
           aria-expanded={mobileNavOpen}
           onClick={() => setMobileNavOpen(true)}
@@ -317,7 +317,7 @@ const App: React.FC = () => {
       {mobileNavOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-[45] bg-slate-900/45 backdrop-blur-[2px] transition-opacity md:hidden"
+          className="fixed inset-0 z-45 bg-slate-900/45 backdrop-blur-[2px] transition-opacity md:hidden"
           aria-label="Close menu"
           onClick={closeMobileNav}
         />

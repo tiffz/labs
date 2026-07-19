@@ -1,9 +1,8 @@
 @layer shared-base;
 
 /* Tailwind CSS directives */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@config "../../../tailwind.config.cjs";
 
 /* CSS Custom Properties - Subtle, sophisticated color scheme for chords app */
 @layer base {

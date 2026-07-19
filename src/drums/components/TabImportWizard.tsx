@@ -143,10 +143,10 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
     const patternsCount = patterns?.length || 0;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/50 backdrop-blur-xs">
             <div className="bg-white rounded-xl shadow-2xl w-[1100px] h-[80vh] flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="px-6 py-4 border-b flex items-center justify-between bg-gray-50 flex-shrink-0">
+                <div className="px-6 py-4 border-b flex items-center justify-between bg-gray-50 shrink-0">
                     <div className="flex items-center gap-4">
                         <h2 className="text-xl font-bold flex items-center gap-2">
                             <span className="material-symbols-outlined text-purple-600">library_music</span>
@@ -155,13 +155,13 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                         <div className="flex bg-gray-200 rounded-lg p-1">
                             <button
                                 onClick={() => setType('drum')}
-                                className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${state.selectedType === 'drum' ? 'bg-white shadow text-purple-700' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${state.selectedType === 'drum' ? 'bg-white shadow-sm text-purple-700' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 Drum {state.detectedType === 'drum' && '✨'}
                             </button>
                             <button
                                 onClick={() => setType('guitar')}
-                                className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${state.selectedType === 'guitar' ? 'bg-white shadow text-purple-700' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${state.selectedType === 'guitar' ? 'bg-white shadow-sm text-purple-700' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 Guitar {state.detectedType === 'guitar' && '✨'}
                             </button>
@@ -192,7 +192,7 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                             <textarea
                                 value={state.rawText}
                                 onChange={(e) => setRawText(e.target.value)}
-                                className="flex-1 w-full p-4 font-mono text-xs bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none resize-none transition-shadow"
+                                className="flex-1 w-full p-4 font-mono text-xs bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-hidden resize-none transition-shadow"
                                 placeholder={state.selectedType === 'drum' ? "Paste drum tab…\\nHH|x-x-x-x-|" : "Paste guitar tab…\\n[tab]…[/tab]\\nor\\ne|---0---|"}
                                 spellCheck={false}
                             />
@@ -205,7 +205,7 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                     {/* Right: Results */}
                     <div className="w-1/2 flex flex-col bg-white min-h-0">
                         {/* Tabs */}
-                        <div className="flex border-b px-4 gap-6 flex-shrink-0">
+                        <div className="flex border-b px-4 gap-6 shrink-0">
                             <button
                                 onClick={() => setActiveTab('sections')}
                                 className={`py-4 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'sections' ? 'border-purple-600 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
@@ -255,12 +255,12 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                                                     key={idx}
                                                     className={`group p-3 border rounded-lg cursor-pointer transition-all flex items-start gap-3 hover:shadow-md ${state.selectedSections.has(idx) ? 'border-purple-500 bg-purple-50 ring-1 ring-purple-500' : 'border-gray-200 hover:border-purple-300'}`}
                                                 >
-                                                    <div className="mt-1 flex-shrink-0">
+                                                    <div className="mt-1 shrink-0">
                                                         <input
                                                             type="checkbox"
                                                             checked={state.selectedSections.has(idx)}
                                                             onChange={() => toggleSection(idx)}
-                                                            className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 accent-purple-600 transition-all cursor-pointer"
+                                                            className="h-4 w-4 rounded-sm border-gray-300 text-purple-600 focus:ring-purple-500 accent-purple-600 transition-all cursor-pointer"
                                                         />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
@@ -268,7 +268,7 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                                                             <h4 className="font-bold text-gray-800 text-sm truncate">{section.name || `Section ${idx + 1}`}</h4>
                                                             <span className="text-xs text-gray-400 font-mono">#{idx + 1}</span>
                                                         </div>
-                                                        <div className="font-mono text-[10px] text-gray-500 bg-white/50 p-1 rounded border border-gray-100 truncate">
+                                                        <div className="font-mono text-[10px] text-gray-500 bg-white/50 p-1 rounded-sm border border-gray-100 truncate">
                                                             {condenseMeasureRepeats(section.notation)}
                                                         </div>
                                                     </div>
@@ -288,9 +288,9 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                                                 >
                                                     <div className="flex justify-between items-center mb-2">
                                                         <span className="text-[10px] font-bold text-gray-500 uppercase">{(p.frequency * 100).toFixed(0)}% of song</span>
-                                                        <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 font-bold">{p.count}x</span>
+                                                        <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded-sm text-gray-600 font-bold">{p.count}x</span>
                                                     </div>
-                                                    <div className="font-mono text-xs text-center bg-white p-1 rounded border overflow-hidden whitespace-nowrap">
+                                                    <div className="font-mono text-xs text-center bg-white p-1 rounded-sm border overflow-hidden whitespace-nowrap">
                                                         {p.notation}
                                                     </div>
                                                 </button>
@@ -322,13 +322,13 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
 
                         {/* Options Footer (Guitar/Drum specific) */}
                         {state.selectedType === 'drum' && (
-                            <div className="border-t p-3 bg-gray-50 text-xs flex gap-4 text-gray-600 flex-shrink-0">
+                            <div className="border-t p-3 bg-gray-50 text-xs flex gap-4 text-gray-600 shrink-0">
                                 <label className="flex items-center gap-2 cursor-pointer select-none hover:text-purple-700" title="Import Bass Drum hits">
                                     <input
                                         type="checkbox"
                                         checked={state.drumOptions.includeBass}
                                         onChange={e => updateDrumOptions({ includeBass: e.target.checked })}
-                                        className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 accent-purple-600 transition-all"
+                                        className="h-4 w-4 rounded-sm border-gray-300 text-purple-600 focus:ring-purple-500 accent-purple-600 transition-all"
                                     />
                                     Bass &rarr; Dum
                                 </label>
@@ -337,7 +337,7 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                                         type="checkbox"
                                         checked={state.drumOptions.includeSnare}
                                         onChange={e => updateDrumOptions({ includeSnare: e.target.checked })}
-                                        className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 accent-purple-600 transition-all"
+                                        className="h-4 w-4 rounded-sm border-gray-300 text-purple-600 focus:ring-purple-500 accent-purple-600 transition-all"
                                     />
                                     Snare &rarr; Tek
                                 </label>
@@ -346,7 +346,7 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                                         type="checkbox"
                                         checked={state.drumOptions.includeHiHat}
                                         onChange={e => updateDrumOptions({ includeHiHat: e.target.checked })}
-                                        className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 accent-purple-600 transition-all"
+                                        className="h-4 w-4 rounded-sm border-gray-300 text-purple-600 focus:ring-purple-500 accent-purple-600 transition-all"
                                     />
                                     Hi-Hat &rarr; Ka
                                 </label>
@@ -356,7 +356,7 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                 </div>
 
                 {/* Footer Action */}
-                <div className="p-4 border-t bg-white flex justify-end gap-3 flex-shrink-0">
+                <div className="p-4 border-t bg-white flex justify-end gap-3 shrink-0">
                     <button
                         onClick={onClose}
                         className="px-4 py-2 text-gray-600 font-medium hover:text-gray-900"
@@ -366,7 +366,7 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                     <button
                         onClick={handleImport}
                         disabled={(activeTab === 'sections' && state.selectedSections.size === 0) || (activeTab === 'patterns' && state.selectedPatterns.size === 0)}
-                        className="px-6 py-2 bg-purple-600 text-white rounded-lg font-bold shadow-sm hover:bg-purple-700 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+                        className="px-6 py-2 bg-purple-600 text-white rounded-lg font-bold shadow-xs hover:bg-purple-700 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
                     >
                         Import Selected ({activeTab === 'sections' ? state.selectedSections.size : state.selectedPatterns.size})
                     </button>

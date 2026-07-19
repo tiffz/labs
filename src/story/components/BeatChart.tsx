@@ -34,10 +34,10 @@ export const BeatChart: React.FC<BeatChartProps> = ({ dna, onReroll }) => {
               key={`act-${beat.act}`}
               className="flex items-center gap-3 mt-4 first:mt-0 mb-2"
             >
-              <div className={`inline-flex items-center gap-2 bg-gradient-to-br ${actColor.bg} text-white px-3 py-1 rounded font-semibold text-xs shadow-sm`}>
+              <div className={`inline-flex items-center gap-2 bg-linear-to-br ${actColor.bg} text-white px-3 py-1 rounded-sm font-semibold text-xs shadow-xs`}>
                 Act {beat.act}
               </div>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-300/60 to-transparent"></div>
+              <div className="flex-1 h-px bg-linear-to-r from-transparent via-slate-300/60 to-transparent"></div>
             </div>
           ) : null;
 
@@ -46,7 +46,7 @@ export const BeatChart: React.FC<BeatChartProps> = ({ dna, onReroll }) => {
         return (
           <React.Fragment key={beat.name}>
             {actHeader}
-            <div className={`bg-white rounded-lg shadow-sm border ${actColor.border} p-3 md:p-4 ${actColor.hover} transition-all hover:shadow-md`}>
+            <div className={`bg-white rounded-lg shadow-xs border ${actColor.border} p-3 md:p-4 ${actColor.hover} transition-all hover:shadow-md`}>
               <h4 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1">
                 {beat.name}
                 <Tooltip content={beat.prompt} />

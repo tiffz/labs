@@ -15,14 +15,14 @@ test.describe('Darbuka Rhythm Trainer - Initialization', () => {
     await expect(input).toHaveValue('D-T-__T-D---T---');
   });
 
-  test('should display time signature selectors', async ({ page }) => {
+  test('should display the time signature control at 4/4', async ({ page }) => {
     await page.goto('/drums/');
-    const numeratorSelect = page.locator('select').first();
-    const denominatorSelect = page.locator('select').last();
-    await expect(numeratorSelect).toBeVisible();
-    await expect(denominatorSelect).toBeVisible();
-    await expect(numeratorSelect).toHaveValue('4');
-    await expect(denominatorSelect).toHaveValue('4');
+    const trigger = page.getByRole('button', { name: 'Change time signature' });
+    await expect(trigger).toBeVisible();
+    await expect(trigger).toContainText('4');
+
+    await trigger.click();
+    await expect(page.getByRole('button', { name: '3/4' })).toBeVisible();
   });
 });
 

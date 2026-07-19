@@ -202,7 +202,7 @@ const PaperConfiguration: React.FC<ExtendedPaperConfigurationProps> = memo(({
             {mode === 'booklet' ? (
               <span className="flex items-center gap-2">
                 Mixam Presets
-                <span className="text-[10px] font-normal text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">
+                <span className="text-[10px] font-normal text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded-sm">
                   0.125&quot; bleed
                 </span>
               </span>
@@ -316,7 +316,7 @@ const PaperConfiguration: React.FC<ExtendedPaperConfigurationProps> = memo(({
             {/* Bleed */}
             <div>
               <label className="block text-xs font-medium text-amber-700 mb-2">
-                <span className="inline-block w-3 h-3 rounded-sm mr-1" style={{ backgroundColor: 'rgba(236, 72, 153, 0.3)' }} />
+                <span className="inline-block w-3 h-3 rounded-xs mr-1" style={{ backgroundColor: 'rgba(236, 72, 153, 0.3)' }} />
                 Bleed (artwork extends beyond trim)
               </label>
               
@@ -361,7 +361,7 @@ const PaperConfiguration: React.FC<ExtendedPaperConfigurationProps> = memo(({
             {/* Quiet Area (Safe Zone) */}
             <div>
               <label className="block text-xs font-medium text-amber-700 mb-2">
-                <span className="inline-block w-3 h-3 rounded-sm mr-1 border-2 border-dashed" style={{ borderColor: 'rgba(59, 130, 246, 0.6)' }} />
+                <span className="inline-block w-3 h-3 rounded-xs mr-1 border-2 border-dashed" style={{ borderColor: 'rgba(59, 130, 246, 0.6)' }} />
                 Safe Zone (keep text/important content inside)
               </label>
               

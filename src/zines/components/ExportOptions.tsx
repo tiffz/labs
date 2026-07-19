@@ -218,7 +218,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
           <h4 className="font-medium text-amber-800 text-xs">Quality & Size</h4>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs text-amber-700 w-16 flex-shrink-0">Quality</span>
+            <span className="text-xs text-amber-700 w-16 shrink-0">Quality</span>
             <AppSlider
               min={0.5}
               max={1}
@@ -233,7 +233,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs text-amber-700 w-16 flex-shrink-0">Resolution</span>
+            <span className="text-xs text-amber-700 w-16 shrink-0">Resolution</span>
             <AppSlider
               min={0.25}
               max={1}
@@ -308,7 +308,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
             type="checkbox"
             checked={options.convertToCMYK}
             onChange={(e) => onOptionsChange({ ...options, convertToCMYK: e.target.checked })}
-            className="w-4 h-4 text-teal-600 rounded border-amber-300"
+            className="w-4 h-4 text-teal-600 rounded-sm border-amber-300"
           />
           <span className="text-xs text-amber-700">Convert to CMYK</span>
         </label>

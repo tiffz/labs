@@ -38,7 +38,7 @@ const UniversalTomApp: React.FC = () => {
             {/* Header */}
             <header className="flex-none min-h-16 px-4 sm:px-6 py-2 border-b border-purple-900/30 flex flex-wrap items-center justify-between gap-3 bg-zinc-900/50">
                 <div className="flex items-center gap-3 overflow-visible min-w-0">
-                    <span className="material-symbols-outlined text-purple-400 text-3xl flex-shrink-0 overflow-visible">auto_fix_high</span>
+                    <span className="material-symbols-outlined text-purple-400 text-3xl shrink-0 overflow-visible">auto_fix_high</span>
                     <h1 className="text-base sm:text-xl font-bold text-purple-100 uppercase tracking-widest">
                         Universal Tom Importer
                     </h1>
@@ -51,7 +51,7 @@ const UniversalTomApp: React.FC = () => {
                     <button
                         onClick={handleOpenInTrainer}
                         disabled={!parsedNotation}
-                        className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded font-bold shadow-lg shadow-purple-900/20 flex items-center gap-2 transition-all active:scale-95"
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-sm font-bold shadow-lg shadow-purple-900/20 flex items-center gap-2 transition-all active:scale-95"
                     >
                         <span>Open in Trainer</span>
                         <span className="material-symbols-outlined text-lg">arrow_forward</span>
@@ -60,7 +60,7 @@ const UniversalTomApp: React.FC = () => {
             </header>
 
             {/* Main Content - 2 Column Layout */}
-            <main className="flex-grow p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 overflow-auto">
+            <main className="grow p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 overflow-auto">
 
                 {/* Left Column: Input + Raw Source */}
                 <div className="flex flex-col h-full space-y-3 sm:space-y-4">
@@ -74,7 +74,7 @@ const UniversalTomApp: React.FC = () => {
                         </div>
 
                         <textarea
-                            className="w-full flex-grow bg-gray-900 border border-purple-500/20 rounded-lg p-6 text-purple-100 font-mono text-sm leading-relaxed focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 resize-none shadow-inner transition-colors scrollbar-thin scrollbar-thumb-purple-900/50"
+                            className="w-full grow bg-gray-900 border border-purple-500/20 rounded-lg p-6 text-purple-100 font-mono text-sm leading-relaxed focus:outline-hidden focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 resize-none shadow-inner transition-colors scrollbar-thin scrollbar-thumb-purple-900/50"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Paste Universal Tom font text here… (e.g. 4J alda…)"
@@ -87,9 +87,9 @@ const UniversalTomApp: React.FC = () => {
                         <label className="text-purple-300 text-xs font-bold uppercase tracking-wider">
                             Converted Notation
                         </label>
-                        <div className="flex-grow bg-gray-900 border border-purple-500/20 rounded-lg p-6 font-mono text-xs text-gray-400 overflow-auto scrollbar-thin scrollbar-thumb-purple-900/50">
+                        <div className="grow bg-gray-900 border border-purple-500/20 rounded-lg p-6 font-mono text-xs text-gray-400 overflow-auto scrollbar-thin scrollbar-thumb-purple-900/50">
                             {parsedNotation ? (
-                                <p className="break-words leading-relaxed">{parsedNotation}</p>
+                                <p className="wrap-break-word leading-relaxed">{parsedNotation}</p>
                             ) : (
                                 <span className="opacity-30 italic">Converted Darbuka notation will appear here…</span>
                             )}
@@ -110,8 +110,8 @@ const UniversalTomApp: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="flex-grow bg-white rounded-lg border border-zinc-800 shadow-sm overflow-hidden flex flex-col min-h-[260px]">
-                        <div className="flex-grow overflow-auto p-4 sm:p-8">
+                    <div className="grow bg-white rounded-lg border border-zinc-800 shadow-xs overflow-hidden flex flex-col min-h-[260px]">
+                        <div className="grow overflow-auto p-4 sm:p-8">
                             {parsedRhythm ? (
                                 <div className="text-black">
                                     <VexFlowRenderer
