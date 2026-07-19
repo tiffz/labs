@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { ScalesProgressData } from '../progress/types';
-import { mergeScalesProgress } from './scalesDriveMerge';
+import type { ExerciseProgress, ScalesProgressData } from '../progress/types';
+import {
+  applyScalesConflictChoices,
+  mergeScalesProgress,
+  scalesExerciseMergeWouldLoseContent,
+} from './scalesDriveMerge';
 
 function baseProgress(overrides: Partial<ScalesProgressData> = {}): ScalesProgressData {
   return {
@@ -95,5 +99,67 @@ describe('mergeScalesProgress', () => {
     const { progress } = mergeScalesProgress(local, remote);
     expect(progress.seenOnboarding).toBe(true);
     expect(progress.progressUpdatedAt).toBeTruthy();
+  });
+});
+
+function exercise(
+  exerciseId: string,
+  overrides: Partial<ExerciseProgress> = {},
+): ExerciseProgress {
+  return {
+    exerciseId,
+    completedStageId: null,
+    currentStageId: null,
+    history: [],
+    needsReview: false,
+    reviewStageId: null,
+    lastPracticedAt: null,
+    ...overrides,
+  };
+}
+
+describe('scalesExerciseMergeWouldLoseContent (ADR 0020 dry run)', () => {
+  const exerciseId = 'C-pentascale-major';
+  const stageEarly = `${exerciseId}-p1`;
+  const stageLate = `${exerciseId}-p5`;
+
+  it('is safe for normal furthest-stage union', () => {
+    expect(
+      scalesExerciseMergeWouldLoseContent(
+        exercise(exerciseId, { currentStageId: stageEarly }),
+        exercise(exerciseId, { currentStageId: stageLate }),
+      ),
+    ).toBe(false);
+  });
+
+  it('flags a stage id that no longer resolves in the curriculum (would be dropped)', () => {
+    expect(
+      scalesExerciseMergeWouldLoseContent(
+        exercise(exerciseId, { completedStageId: `${exerciseId}-removed-stage` }),
+        exercise(exerciseId, { completedStageId: stageLate }),
+      ),
+    ).toBe(true);
+  });
+});
+
+describe('applyScalesConflictChoices', () => {
+  const exerciseId = 'C-pentascale-major';
+  const stageEarly = `${exerciseId}-p1`;
+  const stageLate = `${exerciseId}-p5`;
+  const local = baseProgress({
+    exercises: { [exerciseId]: exercise(exerciseId, { currentStageId: stageEarly }) },
+  });
+  const remote = baseProgress({
+    exercises: { [exerciseId]: exercise(exerciseId, { currentStageId: stageLate }) },
+  });
+
+  it('keeps this device’s progress for choice=local', () => {
+    const { progress } = applyScalesConflictChoices(local, remote, new Map([[exerciseId, 'local']]));
+    expect(progress.exercises[exerciseId]?.currentStageId).toBe(stageEarly);
+  });
+
+  it('takes Drive’s progress for choice=remote', () => {
+    const { progress } = applyScalesConflictChoices(local, remote, new Map([[exerciseId, 'remote']]));
+    expect(progress.exercises[exerciseId]?.currentStageId).toBe(stageLate);
   });
 });

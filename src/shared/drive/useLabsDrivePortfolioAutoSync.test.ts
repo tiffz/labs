@@ -4,6 +4,7 @@ import {
   LABS_DRIVE_AUTO_PULL_INTERVAL_MS,
   LABS_DRIVE_AUTO_PUSH_DEBOUNCE_MS,
   LABS_DRIVE_AUTO_PUSH_MIN_INTERVAL_MS,
+  LABS_DRIVE_AUTO_SYNC_BACKOFF_BASE_MS,
 } from './labsDrivePortfolioBackupConstants';
 import { useLabsDrivePortfolioAutoSync } from './useLabsDrivePortfolioAutoSync';
 
@@ -302,5 +303,73 @@ describe('useLabsDrivePortfolioAutoSync', () => {
     });
     await flushPromises();
     expect(flush).toHaveBeenCalledWith({ silent: true });
+  });
+
+  it('force-pushes after first pull when a persisted needs-push flag survives a tab kill', async () => {
+    const persistKey = 'TestApp';
+    localStorage.setItem(`labs_drive_needs_push_${persistKey}`, '1');
+    try {
+      const flush = vi.fn().mockResolvedValue(undefined);
+      renderHook(() =>
+        useLabsDrivePortfolioAutoSync(baseOptions({ persistKey, flushDriveWrite: flush })),
+      );
+
+      await flushPromises();
+      expect(flush).toHaveBeenCalledWith({ silent: true });
+      // Successful push clears the persisted flag.
+      expect(localStorage.getItem(`labs_drive_needs_push_${persistKey}`)).toBeNull();
+    } finally {
+      localStorage.removeItem(`labs_drive_needs_push_${persistKey}`);
+    }
+  });
+
+  it('backs off auto-push after a failure and retries once the window passes', async () => {
+    let onChange: ((event?: { immediate?: boolean }) => void) | undefined;
+    const flush = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(undefined);
+    const onAutoPushError = vi.fn();
+    renderHook(() =>
+      useLabsDrivePortfolioAutoSync(
+        baseOptions({
+          flushDriveWrite: flush,
+          onAutoPushError,
+          subscribeLocalChanges: (cb) => {
+            onChange = cb;
+            return () => {};
+          },
+        }),
+      ),
+    );
+    await flushPromises();
+
+    act(() => onChange?.({ immediate: true }));
+    await act(async () => {
+      vi.advanceTimersByTime(LABS_DRIVE_AUTO_PUSH_DEBOUNCE_MS);
+      await Promise.resolve();
+    });
+    await flushPromises();
+    expect(flush).toHaveBeenCalledOnce();
+    expect(onAutoPushError).toHaveBeenCalledOnce();
+
+    // Within the backoff window the retry is skipped.
+    act(() => onChange?.({ immediate: true }));
+    await act(async () => {
+      vi.advanceTimersByTime(LABS_DRIVE_AUTO_PUSH_DEBOUNCE_MS);
+      await Promise.resolve();
+    });
+    await flushPromises();
+    expect(flush).toHaveBeenCalledOnce();
+
+    // Past the 30s base backoff the next change flushes again.
+    await act(async () => {
+      vi.advanceTimersByTime(LABS_DRIVE_AUTO_SYNC_BACKOFF_BASE_MS);
+      await Promise.resolve();
+    });
+    act(() => onChange?.({ immediate: true }));
+    await act(async () => {
+      vi.advanceTimersByTime(LABS_DRIVE_AUTO_PUSH_DEBOUNCE_MS);
+      await Promise.resolve();
+    });
+    await flushPromises();
+    expect(flush).toHaveBeenCalledTimes(2);
   });
 });

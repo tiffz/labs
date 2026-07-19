@@ -91,6 +91,57 @@ function mergeCollection(
   };
 }
 
+/**
+ * ADR 0020 dry-run content-loss gate: true when auto-merging this comic would drop
+ * non-empty content one side wrote. `mergeComic` keeps the local title, so a
+ * differing non-empty remote title is silently lost — that needs review.
+ */
+export function zineboxComicMergeWouldLoseContent(local: ZineboxComic, remote: ZineboxComic): boolean {
+  const merged = mergeComic(local, remote);
+  const localTitle = local.title.trim();
+  const remoteTitle = remote.title.trim();
+  if (localTitle && remoteTitle && localTitle !== remoteTitle) {
+    const mergedTitle = merged.title.trim();
+    if (mergedTitle !== localTitle || mergedTitle !== remoteTitle) return true;
+  }
+  return false;
+}
+
+/**
+ * Apply per-comic conflict choices (ADR 0020) then run the normal union merge.
+ * - `local`: drop the remote row so this device's copy is kept.
+ * - `remote`: take Drive's row wholesale (keeping a local cover thumbnail when Drive has none).
+ */
+export function applyZineboxConflictChoices(
+  local: ZineboxSyncPayload,
+  remote: ZineboxSyncPayload,
+  choices: ReadonlyMap<string, 'local' | 'remote'>,
+  options?: {
+    tombstoneComicIds?: ReadonlySet<string>;
+    deletedStackIds?: ReadonlySet<string>;
+    removedStackMemberships?: ReadonlySet<string>;
+  },
+): { payload: ZineboxSyncPayload; report: ZineboxDriveMergeReport } {
+  const remoteFiltered: ZineboxSyncPayload = {
+    ...remote,
+    comics: remote.comics.filter((c) => choices.get(c.id) !== 'local'),
+  };
+  const { payload, report } = mergeZineboxSyncPayload(local, remoteFiltered, options);
+  const remoteById = new Map(remote.comics.map((c) => [c.id, c]));
+  const localById = new Map(local.comics.map((c) => [c.id, c]));
+  const comics = payload.comics.map((comic) => {
+    if (choices.get(comic.id) !== 'remote') return comic;
+    const remoteComic = remoteById.get(comic.id);
+    if (!remoteComic) return comic;
+    return {
+      ...remoteComic,
+      coverThumbnailBase64:
+        remoteComic.coverThumbnailBase64 || localById.get(comic.id)?.coverThumbnailBase64 || '',
+    };
+  });
+  return { payload: { ...payload, comics }, report };
+}
+
 export function mergeZineboxSyncPayload(
   local: ZineboxSyncPayload,
   remote: ZineboxSyncPayload,

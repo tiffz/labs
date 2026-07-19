@@ -182,8 +182,10 @@ export async function pushOriginalsDirtyShards(accessToken: string): Promise<num
       if (existing?.fileId) {
         try {
           await driveTrashFile(accessToken, existing.fileId);
-        } catch {
-          /* best-effort */
+        } catch (e) {
+          // Manifest entry is removed either way; an orphaned shard file on
+          // Drive is harmless but worth a trace for support.
+          console.warn('[encore-originals] failed to trash deleted original shard', e);
         }
       }
       delete manifest.originals[entry.rowId];

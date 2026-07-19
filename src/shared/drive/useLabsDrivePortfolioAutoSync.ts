@@ -4,8 +4,35 @@ import {
   LABS_DRIVE_AUTO_PULL_MIN_INTERVAL_MS,
   LABS_DRIVE_AUTO_PUSH_DEBOUNCE_MS,
   LABS_DRIVE_AUTO_PUSH_MIN_INTERVAL_MS,
+  labsDriveAutoSyncBackoffMs,
 } from './labsDrivePortfolioBackupConstants';
 import { formatLabsDriveSyncError } from './labsDriveSyncMessages';
+
+function needsPushStorageKey(persistKey: string): string {
+  return `labs_drive_needs_push_${persistKey}`;
+}
+
+function readPersistedNeedsPush(persistKey: string | undefined): boolean {
+  if (!persistKey) return false;
+  try {
+    return localStorage.getItem(needsPushStorageKey(persistKey)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writePersistedNeedsPush(persistKey: string | undefined, needsPush: boolean): void {
+  if (!persistKey) return;
+  try {
+    if (needsPush) {
+      localStorage.setItem(needsPushStorageKey(persistKey), '1');
+    } else {
+      localStorage.removeItem(needsPushStorageKey(persistKey));
+    }
+  } catch {
+    /* storage unavailable — flag stays session-only */
+  }
+}
 
 export type LabsDrivePortfolioLocalChangeEvent = {
   /** Bypass the one-time priming skip (first import / bulk edit should push). */
@@ -27,6 +54,12 @@ export type UseLabsDrivePortfolioAutoSyncOptions = {
   shouldDeferAutoPull?: () => boolean;
   /** Subscribe to local data changes; call `onChange` when user edits should trigger debounced push. */
   subscribeLocalChanges: (onChange: (event?: LabsDrivePortfolioLocalChangeEvent) => void) => () => void;
+  /**
+   * Per-app key (e.g. Drive app folder name) for persisting the "needs push" flag
+   * in localStorage. Without it the flag is in-memory only and dies on tab kill,
+   * so edits made right before closing the tab never reach Drive.
+   */
+  persistKey?: string;
 };
 
 /**
@@ -48,15 +81,22 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
     afterSilentAutoPull,
     shouldDeferAutoPull,
     subscribeLocalChanges,
+    persistKey,
   } = options;
 
   const autoPullStartedRef = useRef(false);
   const autoPushTimerRef = useRef<number | null>(null);
   const autoPushInFlightRef = useRef(false);
-  /** Edits that scheduled a push while allowAutoPush was false (before first pull). */
-  const pendingPushWhileGatedRef = useRef(false);
+  /** Edits that scheduled a push while allowAutoPush was false (before first pull).
+   * Seeded from localStorage so a killed tab's unsent edits still push next session. */
+  const pendingPushWhileGatedRef = useRef(readPersistedNeedsPush(persistKey));
   const lastAutoPushAtRef = useRef(0);
   const lastAutoPullAtRef = useRef(0);
+  /** Consecutive auto-push / auto-pull failures for exponential backoff. */
+  const pushFailureCountRef = useRef(0);
+  const pullFailureCountRef = useRef(0);
+  const pushBackoffUntilRef = useRef(0);
+  const pullBackoffUntilRef = useRef(0);
   const periodicPullTimerRef = useRef<number | null>(null);
   const visibilityPullTimerRef = useRef<number | null>(null);
   const pullInFlightRef = useRef(false);
@@ -78,30 +118,49 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
   const onAutoPushErrorRef = useRef(onAutoPushError);
   onAutoPushErrorRef.current = onAutoPushError;
 
-  const startAutoPush = useCallback((opts?: { force?: boolean }) => {
-    if (autoPushInFlightRef.current || mergeBusyRef.current()) return;
-    if (!allowPushRef.current()) {
-      // Remember that local edits need a flush once the first pull/backup unlocks auto-push.
-      pendingPushWhileGatedRef.current = true;
-      return;
-    }
-    if (!opts?.force) {
-      const sinceLast = Date.now() - lastAutoPushAtRef.current;
-      if (sinceLast < LABS_DRIVE_AUTO_PUSH_MIN_INTERVAL_MS) return;
-    }
-    pendingPushWhileGatedRef.current = false;
-    autoPushInFlightRef.current = true;
-    void (async () => {
-      try {
-        await flushRef.current({ silent: true });
-        lastAutoPushAtRef.current = Date.now();
-      } catch (e) {
-        onAutoPushErrorRef.current(formatLabsDriveSyncError(e, 'auto-push'));
-      } finally {
-        autoPushInFlightRef.current = false;
+  const startAutoPush = useCallback(
+    (opts?: { force?: boolean }) => {
+      if (autoPushInFlightRef.current || mergeBusyRef.current()) return;
+      if (!allowPushRef.current()) {
+        // Remember that local edits need a flush once the first pull/backup unlocks auto-push.
+        pendingPushWhileGatedRef.current = true;
+        writePersistedNeedsPush(persistKey, true);
+        return;
       }
-    })();
-  }, []);
+      if (Date.now() < pushBackoffUntilRef.current) {
+        // Backing off after failures — keep the pending flag so the next
+        // successful pull (or later edit) retries the flush.
+        pendingPushWhileGatedRef.current = true;
+        writePersistedNeedsPush(persistKey, true);
+        return;
+      }
+      if (!opts?.force) {
+        const sinceLast = Date.now() - lastAutoPushAtRef.current;
+        if (sinceLast < LABS_DRIVE_AUTO_PUSH_MIN_INTERVAL_MS) return;
+      }
+      pendingPushWhileGatedRef.current = false;
+      writePersistedNeedsPush(persistKey, true);
+      autoPushInFlightRef.current = true;
+      void (async () => {
+        try {
+          await flushRef.current({ silent: true });
+          lastAutoPushAtRef.current = Date.now();
+          pushFailureCountRef.current = 0;
+          pushBackoffUntilRef.current = 0;
+          writePersistedNeedsPush(persistKey, false);
+        } catch (e) {
+          pushFailureCountRef.current += 1;
+          pushBackoffUntilRef.current =
+            Date.now() + labsDriveAutoSyncBackoffMs(pushFailureCountRef.current);
+          pendingPushWhileGatedRef.current = true;
+          onAutoPushErrorRef.current(formatLabsDriveSyncError(e, 'auto-push'));
+        } finally {
+          autoPushInFlightRef.current = false;
+        }
+      })();
+    },
+    [persistKey],
+  );
 
   /** Flush debounced push immediately (tab hide). Only runs when a push was scheduled. */
   const runPendingAutoPushNow = useCallback(() => {
@@ -114,16 +173,21 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
   const runSilentPull = useCallback(async () => {
     if (deferPullRef.current?.()) return;
     if (pullInFlightRef.current || mergeBusyRef.current()) return;
+    if (Date.now() < pullBackoffUntilRef.current) return;
     pullInFlightRef.current = true;
     try {
       const result = await pullRef.current({ silent: true });
       lastAutoPullAtRef.current = Date.now();
+      pullFailureCountRef.current = 0;
+      pullBackoffUntilRef.current = 0;
       await afterPullRef.current?.(result);
       // First successful pull unlocks allowAutoPush — flush any edits that piled up while gated.
       if (pendingPushWhileGatedRef.current) {
         startAutoPush({ force: true });
       }
     } catch (e) {
+      pullFailureCountRef.current += 1;
+      pullBackoffUntilRef.current = Date.now() + labsDriveAutoSyncBackoffMs(pullFailureCountRef.current);
       onAutoPullErrorRef.current(formatLabsDriveSyncError(e, 'auto-pull'));
     } finally {
       pullInFlightRef.current = false;
@@ -204,6 +268,9 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
 
     const schedule = () => {
       if (cancelled || mergeBusyRef.current()) return;
+      // Persist immediately: if the tab is killed during the debounce window,
+      // the next session force-pushes after its first successful pull.
+      writePersistedNeedsPush(persistKey, true);
       if (autoPushTimerRef.current != null) {
         window.clearTimeout(autoPushTimerRef.current);
       }
@@ -240,7 +307,7 @@ export function useLabsDrivePortfolioAutoSync(options: UseLabsDrivePortfolioAuto
         autoPushTimerRef.current = null;
       }
     };
-  }, [enabled, onAutoPushError, subscribeLocalChanges, startAutoPush]);
+  }, [enabled, onAutoPushError, subscribeLocalChanges, startAutoPush, persistKey]);
 
   return {
     notifyAutoPushCompleted: () => {

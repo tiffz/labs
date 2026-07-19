@@ -15337,6 +15337,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-createlabsportfoliodrivebackup-ts-labsdriveprogressunreadableerror",
+    "name": "LabsDriveProgressUnreadableError",
+    "path": "src/shared/drive/createLabsPortfolioDriveBackup.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "The Drive progress file exists but cannot be parsed (corrupt JSON, unsupported schema, wrong app). Treating this as \"empty cloud\" would let the next auto-push overwrite the only good copy on Drive — so pull fails loudly instead and auto-push stays gated (ADR 0020).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-createlabsportfoliodrivebackup-ts-uselabsportfoliodrivebackupoptions",
     "name": "UseLabsPortfolioDriveBackupOptions",
     "path": "src/shared/drive/createLabsPortfolioDriveBackup.ts",
@@ -16476,6 +16491,49 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsdriveportfoliobackupconstants-ts-labs-drive-auto-sync-backoff-base-ms",
+    "name": "LABS_DRIVE_AUTO_SYNC_BACKOFF_BASE_MS",
+    "path": "src/shared/drive/labsDrivePortfolioBackupConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "First retry delay after an auto-sync (pull or push) failure.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveportfoliobackupconstants-ts-labs-drive-auto-sync-backoff-max-ms",
+    "name": "LABS_DRIVE_AUTO_SYNC_BACKOFF_MAX_MS",
+    "path": "src/shared/drive/labsDrivePortfolioBackupConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Backoff ceiling — retries never wait longer than this.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdriveportfoliobackupconstants-ts-labsdriveautosyncbackoffms",
+    "name": "labsDriveAutoSyncBackoffMs",
+    "path": "src/shared/drive/labsDrivePortfolioBackupConstants.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Exponential backoff delay for the given consecutive-failure count (1-based).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-labsdriveportfoliodedupfolders-ts-findlabsdrivestanzastemaudiofolderid",
     "name": "findLabsDriveStanzaStemAudioFolderId",
     "path": "src/shared/drive/labsDrivePortfolioDedupFolders.ts",
@@ -16696,6 +16754,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Whether debounced auto-push to Drive is allowed this session. Auto-push must not run until a successful pull (or explicit manual backup) so a fresh/sparse device cannot overwrite richer cloud data.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivesynclock-ts-withlabsdrivesynclock",
+    "name": "withLabsDriveSyncLock",
+    "path": "src/shared/drive/labsDriveSyncLock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Keys currently held by this tab — Web Locks are not reentrant, and the 412 retry path (flush → pull → flush) nests sync sections.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

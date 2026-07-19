@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { createLabsPortfolioDriveBackup } from './createLabsPortfolioDriveBackup';
+import {
+  createLabsPortfolioDriveBackup,
+  LabsDriveProgressUnreadableError,
+} from './createLabsPortfolioDriveBackup';
+import {
+  LABS_DRIVE_AUTO_SYNC_BACKOFF_BASE_MS,
+  LABS_DRIVE_AUTO_SYNC_BACKOFF_MAX_MS,
+  labsDriveAutoSyncBackoffMs,
+} from './labsDrivePortfolioBackupConstants';
 import type { LabsPortfolioDriveBackupConfig } from './labsPortfolioDriveBackupTypes';
 
 type TestEnvelope = { exportedAt: string; items: string[] };
@@ -59,5 +67,27 @@ describe('createLabsPortfolioDriveBackup', () => {
 
     const useBackup = createLabsPortfolioDriveBackup(config);
     expect(typeof useBackup).toBe('function');
+  });
+});
+
+describe('LabsDriveProgressUnreadableError', () => {
+  it('carries the parse cause and never reads like an empty cloud', () => {
+    const err = new LabsDriveProgressUnreadableError(
+      'Stanza',
+      new Error('Unsupported Stanza backup version.'),
+    );
+    expect(err.message).toContain('Stanza');
+    expect(err.message).toContain('Unsupported Stanza backup version.');
+    expect(err.message).toContain('not overwritten');
+  });
+});
+
+describe('labsDriveAutoSyncBackoffMs', () => {
+  it('doubles per consecutive failure and caps at the ceiling', () => {
+    expect(labsDriveAutoSyncBackoffMs(0)).toBe(0);
+    expect(labsDriveAutoSyncBackoffMs(1)).toBe(LABS_DRIVE_AUTO_SYNC_BACKOFF_BASE_MS);
+    expect(labsDriveAutoSyncBackoffMs(2)).toBe(LABS_DRIVE_AUTO_SYNC_BACKOFF_BASE_MS * 2);
+    expect(labsDriveAutoSyncBackoffMs(3)).toBe(LABS_DRIVE_AUTO_SYNC_BACKOFF_BASE_MS * 4);
+    expect(labsDriveAutoSyncBackoffMs(50)).toBe(LABS_DRIVE_AUTO_SYNC_BACKOFF_MAX_MS);
   });
 });

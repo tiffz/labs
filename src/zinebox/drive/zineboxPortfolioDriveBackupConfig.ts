@@ -26,6 +26,7 @@ import {
   type ZineboxSyncPayload,
 } from './zineboxDriveEnvelope';
 import {
+  applyZineboxConflictChoices,
   formatZineboxDriveMergeReport,
   mergeZineboxSyncPayload,
   zineboxMergeReportHasUserVisibleRemoteChanges,
@@ -97,6 +98,14 @@ export const zineboxPortfolioDriveBackupConfig: LabsPortfolioDriveBackupConfig<
   },
   formatMergeReport: formatZineboxDriveMergeReport,
   mergeReportHasRemoteChanges: zineboxMergeReportHasUserVisibleRemoteChanges,
+  resolveConflictChoices: ({ local, remoteEnvelope, choices }) =>
+    applyZineboxConflictChoices(local, envelopeToPayload(remoteEnvelope), choices, {
+      tombstoneComicIds: zineboxTombstoneComicIdsFromRemote(remoteEnvelope.deletedComicIds),
+      deletedStackIds: zineboxDeletedStackIdsFromRemote(remoteEnvelope.deletedStackIds),
+      removedStackMemberships: zineboxRemovedStackMembershipIdsFromRemote(
+        remoteEnvelope.removedStackMemberships,
+      ),
+    }),
   shouldPromptMerge: shouldPromptZineboxDriveMerge,
   assessConflict: assessZineboxDriveBackupConflict,
   analyzeConflict: ({ syncMeta, local, remoteEnvelope }) =>

@@ -120,6 +120,61 @@ function maxIso(a: string | undefined, b: string | undefined): string | undefine
 }
 
 /**
+ * ADR 0020 dry-run content-loss gate: true when auto-merging this exercise
+ * would drop stage progress one side earned. The union merge keeps the
+ * furthest stage, so this only fires when a stage id is no longer resolvable
+ * in the current curriculum (renamed/removed stage) and would be dropped.
+ */
+export function scalesExerciseMergeWouldLoseContent(
+  local: ExerciseProgress,
+  remote: ExerciseProgress,
+): boolean {
+  const merged = mergeExerciseProgress(local, remote);
+  const exerciseId = merged.exerciseId;
+  const stageLost = (side: string | null, mergedStage: string | null): boolean => {
+    if (!side || side === mergedStage) return false;
+    const sideIdx = stageIndex(exerciseId, side);
+    const mergedIdx = stageIndex(exerciseId, mergedStage);
+    // Unknown stage id dropped, or merged landed behind a stage a side had reached.
+    return sideIdx < 0 || mergedIdx < sideIdx;
+  };
+  return (
+    stageLost(local.completedStageId, merged.completedStageId) ||
+    stageLost(remote.completedStageId, merged.completedStageId) ||
+    stageLost(local.currentStageId, merged.currentStageId) ||
+    stageLost(remote.currentStageId, merged.currentStageId)
+  );
+}
+
+/**
+ * Apply per-exercise conflict choices (ADR 0020) then run the normal union merge.
+ * - `local`: drop the remote exercise so this device's progress is kept.
+ * - `remote`: take Drive's exercise row wholesale.
+ */
+export function applyScalesConflictChoices(
+  localRaw: ScalesProgressData,
+  remoteRaw: unknown,
+  choices: ReadonlyMap<string, 'local' | 'remote'>,
+): { progress: ScalesProgressData; report: ScalesDriveMergeReport } {
+  const remote = normalizeScalesProgressPayload(remoteRaw);
+  if (!remote) return mergeScalesProgress(localRaw, remoteRaw);
+  const remoteFiltered = {
+    ...remote,
+    exercises: Object.fromEntries(
+      Object.entries(remote.exercises).filter(([id]) => choices.get(id) !== 'local'),
+    ),
+  };
+  const { progress, report } = mergeScalesProgress(localRaw, remoteFiltered);
+  const exercises = { ...progress.exercises };
+  for (const [id, choice] of choices) {
+    if (choice !== 'remote') continue;
+    const remoteExercise = remote.exercises[id];
+    if (remoteExercise) exercises[id] = remoteExercise;
+  }
+  return { progress: normalizeScalesProgressPayload({ ...progress, exercises })!, report };
+}
+
+/**
  * Non-destructive merge of local and remote progress. Output is normalized
  * (migrate + reconcile) before return.
  */

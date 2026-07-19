@@ -26,7 +26,7 @@ Encore also uses Drive for uploads, picker, public snapshot, and guest reads —
 ## Principles (short)
 
 1. **Local-first** — Dexie / reducer is the working copy; offline without Google.
-2. **Background by default** — session auto-pull, periodic re-pull (5 min visible), debounced auto-push (~3 s); no toast spam.
+2. **Background by default** — session auto-pull, periodic re-pull (5 min visible), debounced auto-push (~3 s); no toast spam. Failures back off exponentially (30 s → 15 min); the "needs push" flag persists in localStorage so edits made just before a tab dies still push next session.
 3. **Data-loss guards** — empty/sparse device must not clobber rich cloud; undo before destructive merges; tombstones for deletes. Details: [`DRIVE_SYNC_DATA_LOSS_PREVENTION.md`](DRIVE_SYNC_DATA_LOSS_PREVENTION.md) + ADR [0019](adr/0019-encore-non-destructive-sync-merge.md) / [0020](adr/0020-silent-union-sync-row-conflicts-only.md).
 4. **Silent merge by default** — portfolio apps: `silent_union`; prompt only for true `needsReview` rows.
 5. **No silent OAuth refresh** — ADR 0010/0011; optional BFF refresh ADR 0014.
@@ -54,15 +54,16 @@ If Drive fails in a normal Chrome profile but works in Incognito, treat as exten
 
 ## Shared modules
 
-| Module                                                                                     | Role                                           |
-| ------------------------------------------------------------------------------------------ | ---------------------------------------------- |
-| [`driveFetch.ts`](../src/shared/drive/driveFetch.ts)                                       | Drive v3 client                                |
-| [`labsDrivePortfolioLayout.ts`](../src/shared/drive/labsDrivePortfolioLayout.ts)           | `Tiff Zhang Labs/{App}/progress.json`          |
-| [`labsDriveBackupTypes.ts`](../src/shared/drive/labsDriveBackupTypes.ts)                   | Conflict assessment                            |
-| [`labsDriveSyncGuard.ts`](../src/shared/drive/labsDriveSyncGuard.ts)                       | Block auto-push until pull/manual backup       |
-| [`useLabsDrivePortfolioAutoSync.ts`](../src/shared/drive/useLabsDrivePortfolioAutoSync.ts) | Auto-pull + debounced push                     |
-| [`LabsBlockingJobContext.tsx`](../src/shared/jobs/LabsBlockingJobContext.tsx)              | Sticky snackbar + `beforeunload` for long jobs |
-| [`LabsDriveAccountMenu.tsx`](../src/shared/google/LabsDriveAccountMenu.tsx)                | Account menu + restore + conflict shell        |
+| Module                                                                                     | Role                                                      |
+| ------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| [`driveFetch.ts`](../src/shared/drive/driveFetch.ts)                                       | Drive v3 client                                           |
+| [`labsDrivePortfolioLayout.ts`](../src/shared/drive/labsDrivePortfolioLayout.ts)           | `Tiff Zhang Labs/{App}/progress.json`                     |
+| [`labsDriveBackupTypes.ts`](../src/shared/drive/labsDriveBackupTypes.ts)                   | Conflict assessment                                       |
+| [`labsDriveSyncGuard.ts`](../src/shared/drive/labsDriveSyncGuard.ts)                       | Block auto-push until pull/manual backup                  |
+| [`labsDriveSyncLock.ts`](../src/shared/drive/labsDriveSyncLock.ts)                         | Web Lock — one tab syncs at a time per app                |
+| [`useLabsDrivePortfolioAutoSync.ts`](../src/shared/drive/useLabsDrivePortfolioAutoSync.ts) | Auto-pull + debounced push, backoff, persisted needs-push |
+| [`LabsBlockingJobContext.tsx`](../src/shared/jobs/LabsBlockingJobContext.tsx)              | Sticky snackbar + `beforeunload` for long jobs            |
+| [`LabsDriveAccountMenu.tsx`](../src/shared/google/LabsDriveAccountMenu.tsx)                | Account menu + restore + conflict shell                   |
 
 App-local code owns envelope schema, merge, tombstones, and progress subscriptions.
 

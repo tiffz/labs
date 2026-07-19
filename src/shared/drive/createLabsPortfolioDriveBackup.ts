@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DriveHttpError } from './driveFetch';
 import { labsDriveFolderUrl } from './labsDriveFolderUrl';
 import { labsDriveAutoPushAllowed } from './labsDriveSyncGuard';
+import { withLabsDriveSyncLock } from './labsDriveSyncLock';
 import {
   formatLabsDriveSyncError,
   LABS_DRIVE_SYNC_PAUSED_IDLE_MESSAGE,
@@ -38,6 +39,22 @@ import {
   useLabsBlockingJobs,
   useLabsBlockingJobsVisible,
 } from '../jobs/LabsBlockingJobContext';
+
+/**
+ * The Drive progress file exists but cannot be parsed (corrupt JSON, unsupported
+ * schema, wrong app). Treating this as "empty cloud" would let the next auto-push
+ * overwrite the only good copy on Drive — so pull fails loudly instead and
+ * auto-push stays gated (ADR 0020).
+ */
+export class LabsDriveProgressUnreadableError extends Error {
+  constructor(appFolderName: string, cause: unknown) {
+    const detail = cause instanceof Error && cause.message.trim() ? ` (${cause.message.trim()})` : '';
+    super(
+      `Drive backup for ${appFolderName} could not be read${detail}. Sync is paused so the copy on Drive is not overwritten — check the file in Drive or contact support.`,
+    );
+    this.name = 'LabsDriveProgressUnreadableError';
+  }
+}
 
 export type UseLabsPortfolioDriveBackupOptions<TPayload> = {
   onMergePayload: (payload: TPayload) => Promise<void>;
@@ -144,8 +161,10 @@ export function createLabsPortfolioDriveBackup<
           const envelope = config.buildEnvelope(local);
           await config.undo.pushSnapshot(envelope, trigger);
           setSyncMetaTick((n) => n + 1);
-        } catch {
-          /* quota */
+        } catch (e) {
+          // Snapshot failure (usually storage quota) must not block sync, but
+          // silently losing the undo safety net is worth a visible warning.
+          console.warn(`[drive-backup] ${config.appFolderName}: pre-sync undo snapshot failed`, e);
         }
       },
       [],
@@ -173,7 +192,8 @@ export function createLabsPortfolioDriveBackup<
     );
 
     const flushDriveWrite = useCallback(
-      async (opts?: { silent?: boolean; onUploadLabel?: (label: string) => void }) => {
+      async (opts?: { silent?: boolean; onUploadLabel?: (label: string) => void }) =>
+        withLabsDriveSyncLock(config.appFolderName, async () => {
         driveSyncInProgressRef.current = true;
         try {
           const token = await config.ensureAccess({ interactive: !opts?.silent });
@@ -215,23 +235,27 @@ export function createLabsPortfolioDriveBackup<
         } finally {
           driveSyncInProgressRef.current = false;
         }
-      },
+        }),
       [],
     );
 
     const pullFromDriveAndMerge = useCallback(
-      async (opts?: { silent?: boolean }) => {
+      async (opts?: { silent?: boolean }) =>
+        withLabsDriveSyncLock(config.appFolderName, async () => {
         const token = await config.ensureAccess({ interactive: !opts?.silent });
         const refs = await ensureLabsDrivePortfolioProgressLayout(token, config.appFolderName);
         const meta = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
         let remoteEnvelope: TEnvelope | null = null;
-        try {
-          const json = await readLabsDriveProgressJson(token, refs.progressFileId);
-          if (!isLabsDrivePortfolioProgressPlaceholder(json)) {
+        // Read/parse failures must NOT degrade to "empty cloud": a null envelope
+        // unlocks auto-push, which would overwrite the Drive copy with local-only
+        // state. Network errors propagate as-is; parse errors get a loud message.
+        const json = await readLabsDriveProgressJson(token, refs.progressFileId);
+        if (!isLabsDrivePortfolioProgressPlaceholder(json)) {
+          try {
             remoteEnvelope = config.parseEnvelope(json);
+          } catch (cause) {
+            throw new LabsDriveProgressUnreadableError(config.appFolderName, cause);
           }
-        } catch {
-          remoteEnvelope = null;
         }
         const local = await config.readLocalPayload();
         const syncMetaBefore = config.readSyncMeta();
@@ -306,7 +330,7 @@ export function createLabsPortfolioDriveBackup<
           job?.end();
         }
         markPullSucceeded();
-      },
+        }),
       [applyMerged, markPullSucceeded, snapshotBeforeMerge, startBlockingJob],
     );
     pullFromDriveAndMergeRef.current = pullFromDriveAndMerge;
@@ -469,6 +493,7 @@ export function createLabsPortfolioDriveBackup<
 
     useLabsDrivePortfolioAutoSync({
       enabled: testerResolved && testerOk,
+      persistKey: config.appFolderName,
       allowAutoPush,
       pullFromDriveAndMerge,
       flushDriveWrite,

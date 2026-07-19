@@ -21,10 +21,13 @@ import { DriveHttpError } from '../../shared/drive/driveFetch';
 import {
   ensureLabsDrivePortfolioProgressLayout,
   getLabsDriveProgressFileMeta,
+  isLabsDrivePortfolioProgressPlaceholder,
   LABS_DRIVE_APP_FOLDER_STANZA,
   readLabsDriveProgressJson,
   writeLabsDriveProgressJson,
 } from '../../shared/drive/labsDrivePortfolioLayout';
+import { LabsDriveProgressUnreadableError } from '../../shared/drive/createLabsPortfolioDriveBackup';
+import { withLabsDriveSyncLock } from '../../shared/drive/labsDriveSyncLock';
 import {
   ensureLabsGoogleAccessTokenForDrive,
 } from '../../shared/google/labsGoogleDriveAccess';
@@ -171,8 +174,10 @@ async function snapshotLocalLibraryBeforeMerge(
   try {
     const envelope = await buildStanzaDriveEnvelope();
     await pushStanzaDriveUndoSnapshot(envelope, trigger);
-  } catch {
-    /* quota / private mode — merge still proceeds */
+  } catch (e) {
+    // Quota / private mode — merge still proceeds, but silently losing the
+    // undo safety net is worth a visible warning.
+    console.warn('[drive-backup] stanza: pre-sync undo snapshot failed', e);
   }
 }
 
@@ -190,7 +195,9 @@ async function tryHydrateLibraryFromDrive(opts?: {
     const mainMediaSongs = await hydrateStanzaLibraryMainMediaFromDrive(token);
     const stemSongs = await hydrateStanzaLibraryStemsFromDrive(token);
     return { mainMediaSongs, stemSongs };
-  } catch {
+  } catch (e) {
+    // Per-song lazy hydrate covers the gap on open; still worth a trace.
+    console.warn('[drive-backup] stanza: bulk media hydrate failed', e);
     return { mainMediaSongs: 0, stemSongs: 0 };
   }
 }
@@ -332,7 +339,8 @@ export function useStanzaDriveBackup() {
     };
   }, [identity?.email]);
 
-  const flushDriveWrite = useCallback(async (opts?: { silent?: boolean }) => {
+  const flushDriveWrite = useCallback(async (opts?: { silent?: boolean }) =>
+    withLabsDriveSyncLock(LABS_DRIVE_APP_FOLDER_STANZA, async () => {
     const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: !opts?.silent });
     const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_STANZA);
     const writeOnce = async () => {
@@ -372,7 +380,7 @@ export function useStanzaDriveBackup() {
       }
       throw e;
     }
-  }, []);
+    }), []);
 
   /**
    * Pull the remote envelope and merge it into the local library, non-destructively. Used by:
@@ -383,17 +391,22 @@ export function useStanzaDriveBackup() {
    * a typical session start doesn't spawn a "merged 0 songs" toast every time.
    */
   const pullFromDriveAndMerge = useCallback(
-    async (opts?: { silent?: boolean }) => {
+    async (opts?: { silent?: boolean }) =>
+      withLabsDriveSyncLock(LABS_DRIVE_APP_FOLDER_STANZA, async () => {
       // See `flushDriveWrite` for the `silent` ↔ `interactive` mapping (ADR 0011).
       const token = await ensureLabsGoogleAccessTokenForDrive({ interactive: !opts?.silent });
       const refs = await ensureLabsDrivePortfolioProgressLayout(token, LABS_DRIVE_APP_FOLDER_STANZA);
       const meta = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
       let remoteEnvelope: StanzaDriveEnvelopeV1 | null = null;
-      try {
-        const json = await readLabsDriveProgressJson(token, refs.progressFileId);
-        remoteEnvelope = parseStanzaDriveEnvelope(json);
-      } catch {
-        remoteEnvelope = null;
+      // Read/parse failures must NOT degrade to "empty cloud" — that unlocks
+      // auto-push and overwrites the Drive copy (ADR 0020).
+      const json = await readLabsDriveProgressJson(token, refs.progressFileId);
+      if (!isLabsDrivePortfolioProgressPlaceholder(json)) {
+        try {
+          remoteEnvelope = parseStanzaDriveEnvelope(json);
+        } catch (cause) {
+          throw new LabsDriveProgressUnreadableError(LABS_DRIVE_APP_FOLDER_STANZA, cause);
+        }
       }
       const syncMetaBefore = readStanzaDriveSyncMeta();
       const localRows = await stanzaDb.songs.toArray();
@@ -460,7 +473,7 @@ export function useStanzaDriveBackup() {
         setMessage(msg);
       }
       return result;
-    },
+      }),
     [markPullSucceeded],
   );
   pullFromDriveAndMergeRef.current = pullFromDriveAndMerge;
@@ -678,6 +691,7 @@ export function useStanzaDriveBackup() {
 
   const { notifyAutoPushCompleted } = useLabsDrivePortfolioAutoSync({
     enabled: testerResolved && testerOk,
+    persistKey: LABS_DRIVE_APP_FOLDER_STANZA,
     allowAutoPush,
     pullFromDriveAndMerge,
     flushDriveWrite,

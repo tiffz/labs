@@ -16,6 +16,7 @@ vi.mock('../../shared/drive/driveFetch', () => ({
   driveCreateJsonFile: vi.fn(),
   drivePatchJsonMedia: vi.fn(),
   driveUploadFileResumable: vi.fn(),
+  driveGetFileMetadata: vi.fn(),
   driveGetMedia: vi.fn(),
   driveGetMediaArrayBuffer: vi.fn(),
 }));
@@ -23,6 +24,7 @@ vi.mock('../../shared/drive/driveFetch', () => ({
 import {
   driveCreateFolder,
   driveCreateJsonFile,
+  driveGetFileMetadata,
   driveGetMedia,
   driveGetMediaArrayBuffer,
   driveListFiles,
@@ -40,6 +42,7 @@ const driveCreateFolderMock = driveCreateFolder as unknown as ReturnType<typeof 
 const driveCreateJsonFileMock = driveCreateJsonFile as unknown as ReturnType<typeof vi.fn>;
 const drivePatchJsonMediaMock = drivePatchJsonMedia as unknown as ReturnType<typeof vi.fn>;
 const driveUploadFileResumableMock = driveUploadFileResumable as unknown as ReturnType<typeof vi.fn>;
+const driveGetFileMetadataMock = driveGetFileMetadata as unknown as ReturnType<typeof vi.fn>;
 const driveGetMediaMock = driveGetMedia as unknown as ReturnType<typeof vi.fn>;
 const driveGetMediaArrayBufferMock = driveGetMediaArrayBuffer as unknown as ReturnType<typeof vi.fn>;
 
@@ -69,7 +72,16 @@ describe('uploadLyreflyProjectSidecars', () => {
     driveCreateFolderMock.mockImplementation(async () => ({ id: `folder-${(folderCounter += 1)}` }));
     driveCreateJsonFileMock.mockImplementation(async () => ({ id: `file-${(fileCounter += 1)}` }));
     drivePatchJsonMediaMock.mockImplementation(async (_token: string, fileId: string) => ({ id: fileId }));
-    driveUploadFileResumableMock.mockImplementation(async () => ({ id: `blob-${(fileCounter += 1)}` }));
+    const uploadedSizes = new Map<string, number>();
+    driveUploadFileResumableMock.mockImplementation(async (_token: string, file: File) => {
+      const id = `blob-${(fileCounter += 1)}`;
+      uploadedSizes.set(id, file.size);
+      return { id };
+    });
+    driveGetFileMetadataMock.mockImplementation(async (_token: string, fileId: string) => ({
+      id: fileId,
+      size: String(uploadedSizes.get(fileId) ?? 0),
+    }));
   });
 
   it('does nothing when there are no dirty rows', async () => {
@@ -125,6 +137,42 @@ describe('uploadLyreflyProjectSidecars', () => {
 
     const [asset] = await lyreflyDb.visualDevAssets.where('projectId').equals(project.id).toArray();
     expect(asset?.driveFileId).toMatch(/^blob-/);
+  });
+
+  it('fail-closed: skips package JSON write and keeps the dirty ledger when a sidecar blob is missing', async () => {
+    const project = createBlankComicProject();
+    await saveLyreflyProject(project);
+    const node = await createPageNode(project, 'Page 1');
+    const file = new File(['pixels'], 'page1.png', { type: 'image/png' });
+    const revision = await addPageRevisionFromFile(node, file, 'v1');
+    // Simulate an interrupted upload state: revision row exists but its blob is gone.
+    await lyreflyDb.revisionBlobs.delete(revision.id);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await uploadLyreflyProjectSidecars('token', 'app-folder', { projects: [] }, vi.fn());
+
+    // No package JSON claiming content we did not upload.
+    expect(driveCreateJsonFileMock.mock.calls.map((call) => call[2])).not.toContain('project.json');
+    // Dirty ledger retained so the project retries next flush.
+    expect(await listLyreflyDirtyRows()).not.toHaveLength(0);
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('fail-closed: throws before package JSON write when upload size verification fails', async () => {
+    const project = createBlankComicProject();
+    await saveLyreflyProject(project);
+    const node = await createPageNode(project, 'Page 1');
+    const file = new File(['pixels'], 'page1.png', { type: 'image/png' });
+    await addPageRevisionFromFile(node, file, 'v1');
+    driveGetFileMetadataMock.mockResolvedValue({ id: 'blob-x', size: '0' });
+
+    await expect(
+      uploadLyreflyProjectSidecars('token', 'app-folder', { projects: [] }, vi.fn()),
+    ).rejects.toThrow(/Upload verification failed/);
+
+    expect(driveCreateJsonFileMock.mock.calls.map((call) => call[2])).not.toContain('project.json');
+    expect(await listLyreflyDirtyRows()).not.toHaveLength(0);
   });
 
   it('skips re-uploading a page revision blob that already has a driveFileId', async () => {

@@ -15,6 +15,7 @@ import type { GestureSyncPayload } from '../types';
 import type { GestureDriveEnvelopeV1 } from './gestureDriveEnvelope';
 import type { GestureDriveSyncMeta } from './gestureDriveSyncMeta';
 import { gestureLocalProgressUpdatedAt } from '../db/gestureLocalData';
+import { gesturePackMergeWouldLoseContent } from './gestureDriveMerge';
 
 export type GestureDriveConflictReason = LabsDriveConflictReason;
 export type GestureDriveConflictAssessment = LabsDriveConflictAssessment;
@@ -58,7 +59,12 @@ export function shouldPromptGestureDriveMerge(params: {
   });
 }
 
-/** Pack union merge is always auto-resolvable (ADR 0020). */
+/**
+ * Row-level conflict analysis for Gesture (ADR 0020).
+ * Pack union merge is usually safe; `needsReview` only when the dry run
+ * ({@link gesturePackMergeWouldLoseContent}) would drop pack metadata
+ * (name/notes/subject/source) both sides edited.
+ */
 export function analyzeGestureConflict(params: {
   syncMeta: GestureDriveSyncMeta;
   local: GestureSyncPayload;
@@ -68,6 +74,8 @@ export function analyzeGestureConflict(params: {
   const lastRemoteSeen = labsPortfolioClockFromIso(params.syncMeta.lastCloudModifiedTime);
   const localUpdatedAt = labsPortfolioClockFromIso(gestureLocalProgressUpdatedAt(params.local));
   const remoteUpdatedAt = labsPortfolioClockFromIso(params.remoteEnvelope.exportedAt);
+  const localById = new Map(params.local.packs.map((p) => [p.id, p] as const));
+  const remoteById = new Map(params.remoteEnvelope.packs.map((p) => [p.id, p] as const));
   return analyzePortfolioRows({
     lastSyncedLocalMax,
     lastRemoteSeen,
@@ -84,7 +92,12 @@ export function analyzeGestureConflict(params: {
       kind: 'pack',
     })),
     defaultKind: 'pack',
-    isAutoResolvable: () => true,
+    isAutoResolvable: (localRow, remoteRow) => {
+      const local = localById.get(localRow.id);
+      const remote = remoteById.get(remoteRow.id);
+      if (!local || !remote) return true;
+      return !gesturePackMergeWouldLoseContent(local, remote);
+    },
     summarizeStakes: (local, remote) => {
       const localFiles = params.local.packFiles ?? [];
       const remoteFiles = params.remoteEnvelope.packFiles ?? [];

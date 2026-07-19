@@ -15,6 +15,7 @@ import {
   type ScalesDriveEnvelopeV1,
 } from './scalesDriveEnvelope';
 import {
+  applyScalesConflictChoices,
   formatScalesDriveMergeReport,
   mergeScalesProgress,
   type ScalesDriveMergeReport,
@@ -66,6 +67,10 @@ export const scalesPortfolioDriveBackupConfig: LabsPortfolioDriveBackupConfig<
   formatMergeReport: formatScalesDriveMergeReport,
   mergeReportHasRemoteChanges: (report) =>
     report.exercisesFromRemoteOnly + report.exercisesMerged > 0,
+  resolveConflictChoices: ({ local, remoteEnvelope, choices }) => {
+    const { progress, report } = applyScalesConflictChoices(local, remoteEnvelope.payload, choices);
+    return { payload: progress, report };
+  },
   shouldPromptMerge: (args) =>
     shouldPromptScalesDriveMerge({
       syncMeta: args.syncMeta,
