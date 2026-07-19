@@ -7,7 +7,7 @@ alwaysApply: true
 
 After a push/PR, do not sit idle watching CI (~8–15 min). Default flow:
 
-1. **Arm auto-merge:** `gh pr merge <n> --auto --squash --delete-branch`.
+1. **Arm auto-merge:** `gh pr merge <n> --auto --squash --delete-branch`. Branch protection on `main` requires `checks`/`build`/`vitest`/`e2e`, so auto-merge waits for green (admin direct pushes bypass — those rely on `ci:watch`).
 2. **Background-watch failures only:** backgrounded `npm run ci:watch -- <n>` (`block_until_ms: 0`, `notify_on_output` pattern `^CI_WATCH: (FAIL|TIMEOUT|ERROR)`). Direct `main` push: `npm run ci:watch -- main`.
 3. **Continue the next unit of work** — never `AwaitShell` the watcher or re-poll CI in chat.
 
