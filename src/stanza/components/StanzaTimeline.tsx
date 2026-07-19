@@ -486,7 +486,9 @@ export default function StanzaTimeline({
     return (
       <Box className="stanza-playback-stack">
         <Box sx={{ py: 1.5 }}>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Load media to see the timeline. Use Split at playhead or press M to add splits.
           </Typography>
         </Box>

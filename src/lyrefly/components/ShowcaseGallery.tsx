@@ -178,9 +178,7 @@ export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGaller
             : `${projects.length} comic${projects.length === 1 ? '' : 's'} on your shelf.`}
         </p>
       </header>
-
       <GalleryPipelineQueue />
-
       {empty ? (
         <div className="lyrefly-studio__empty">
           <p>Your shelf is waiting for its first comic. Start blank and move at your own pace.</p>
@@ -227,7 +225,9 @@ export function ShowcaseGallery({ onOpenProject, onOpenProfile }: ShowcaseGaller
                   onChange={(event) =>
                     setFilters((prev) => ({ ...prev, showArchived: event.target.checked }))
                   }
-                  inputProps={{ 'aria-label': 'Show archived comics' }}
+                  slotProps={{
+                    input: { 'aria-label': 'Show archived comics' }
+                  }}
                 />
               }
               label="Show archived"

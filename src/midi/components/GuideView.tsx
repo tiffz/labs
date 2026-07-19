@@ -11,7 +11,9 @@ export function GuideView() {
   if (!riff || riff.steps.length === 0) {
     return (
       <Stack spacing={2} className="midi-guide-view">
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           Compose a pattern first, then return here to practice it in time.
         </Typography>
       </Stack>
@@ -20,11 +22,14 @@ export function GuideView() {
 
   return (
     <Stack spacing={2} className="midi-guide-view">
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" sx={{
+        color: "text.secondary"
+      }}>
         Follow the highlighted step. Play the notes when the metronome cues you.
       </Typography>
-
-      <Stack direction="row" spacing={1} flexWrap="wrap" className="midi-riff-steps">
+      <Stack direction="row" spacing={1} className="midi-riff-steps" sx={{
+        flexWrap: "wrap"
+      }}>
         {riff.steps.map((step, i) => (
           <span
             key={step.id}
@@ -34,7 +39,6 @@ export function GuideView() {
           </span>
         ))}
       </Stack>
-
       <Stack direction="row" spacing={2}>
         {!state.guideRunning ? (
           <Button variant="contained" className="midi-capture-cta" onClick={() => void startGuide()}>
@@ -45,7 +49,9 @@ export function GuideView() {
             Stop guide
           </Button>
         )}
-        <Typography variant="caption" color="text.secondary" aria-live="polite">
+        <Typography variant="caption" aria-live="polite" sx={{
+          color: "text.secondary"
+        }}>
           {state.guideRunning && stepIndex !== null
             ? `Step ${stepIndex + 1} of ${riff.steps.length}`
             : 'Ready'}

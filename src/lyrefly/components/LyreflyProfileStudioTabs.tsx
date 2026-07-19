@@ -98,8 +98,9 @@ export function LyreflyProfileStudioTabs({
       <Typography component="h3" className="lyrefly-section-eyebrow">
         Studio
       </Typography>
-
-      <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap className="lyrefly-profile-studio__stages">
+      <Stack direction="row" spacing={0.75} useFlexGap className="lyrefly-profile-studio__stages" sx={{
+        flexWrap: "wrap"
+      }}>
         {LYREFLY_WORKFLOW_STAGES.map((step) => (
           <button
             key={step.id}
@@ -116,7 +117,6 @@ export function LyreflyProfileStudioTabs({
           </button>
         ))}
       </Stack>
-
       <Tabs
         value={tab}
         onChange={onTabChange}
@@ -130,7 +130,6 @@ export function LyreflyProfileStudioTabs({
         <Tab label={`Concept art (${gallery.length})`} value="concept" />
         <Tab label="Brainstorming notes / references" value="brainstorm" />
       </Tabs>
-
       {artVersions.length > 0 && tab === 'preview' ? (
         <LyreflyArtVersionPicker
           project={project}
@@ -141,7 +140,6 @@ export function LyreflyProfileStudioTabs({
           className="lyrefly-profile-studio__version-picker"
         />
       ) : null}
-
       {tab === 'preview' && hasPageArt ? (
         <FormControlLabel
           className="lyrefly-profile-studio__bleed-toggle"
@@ -150,13 +148,14 @@ export function LyreflyProfileStudioTabs({
               size="small"
               checked={showBleedGuides}
               onChange={(event) => setShowBleedGuides(event.target.checked)}
-              inputProps={{ 'aria-label': 'Show bleed guides in book preview' }}
+              slotProps={{
+                input: { 'aria-label': 'Show bleed guides in book preview' }
+              }}
             />
           }
           label="Bleed guides"
         />
       ) : null}
-
       <Box
         role="tabpanel"
         id="lyrefly-profile-studio-preview"
@@ -175,13 +174,14 @@ export function LyreflyProfileStudioTabs({
               showBleedGuides={showBleedGuides}
             />
           ) : (
-            <Typography variant="body2" color="text.secondary" className="lyrefly-profile-studio__empty">
+            <Typography variant="body2" className="lyrefly-profile-studio__empty" sx={{
+              color: "text.secondary"
+            }}>
               Add page art in Draw to preview spreads here.
             </Typography>
           )
         ) : null}
       </Box>
-
       <Box
         role="tabpanel"
         id="lyrefly-profile-studio-script"
@@ -196,7 +196,9 @@ export function LyreflyProfileStudioTabs({
             </Box>
           ) : (
             <Stack spacing={1.25} className="lyrefly-profile-studio__empty">
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 No script yet. Write dialogue and panel notes in Script.
               </Typography>
               <Button
@@ -210,7 +212,6 @@ export function LyreflyProfileStudioTabs({
           )
         ) : null}
       </Box>
-
       <Box
         role="tabpanel"
         id="lyrefly-profile-studio-concept"
@@ -220,7 +221,6 @@ export function LyreflyProfileStudioTabs({
       >
         {tab === 'concept' ? <LyreflyProfileConceptGallery assets={assets} /> : null}
       </Box>
-
       <Box
         role="tabpanel"
         id="lyrefly-profile-studio-brainstorm"
@@ -247,7 +247,9 @@ export function LyreflyProfileStudioTabs({
               ) : null}
             </div>
           ) : (
-            <Typography variant="body2" color="text.secondary" className="lyrefly-profile-studio__empty">
+            <Typography variant="body2" className="lyrefly-profile-studio__empty" sx={{
+              color: "text.secondary"
+            }}>
               Brainstorm notes and reference links live in Brainstorm.
             </Typography>
           )

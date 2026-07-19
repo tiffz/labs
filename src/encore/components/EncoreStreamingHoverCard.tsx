@@ -444,12 +444,26 @@ export function EncoreStreamingHoverCard(props: EncoreStreamingHoverCardProps): 
             {title}
           </Typography>
           {subtitle ? (
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.35, lineHeight: 1.4 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                display: 'block',
+                mt: 0.35,
+                lineHeight: 1.4
+              }}>
               {subtitle}
             </Typography>
           ) : null}
           {!subtitle && !loading && kind === 'spotify' && !spotifyLinked ? (
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.35, lineHeight: 1.4 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                display: 'block',
+                mt: 0.35,
+                lineHeight: 1.4
+              }}>
               Connect Spotify to load track details.
             </Typography>
           ) : null}
@@ -598,7 +612,14 @@ export function EncoreStaticResourceHoverCard(props: EncoreStaticResourceHoverCa
           {heading}
         </Typography>
         {subtitle?.trim() ? (
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.35, lineHeight: 1.4 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              display: 'block',
+              mt: 0.35,
+              lineHeight: 1.4
+            }}>
             {subtitle.trim()}
           </Typography>
         ) : null}

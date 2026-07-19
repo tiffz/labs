@@ -54,12 +54,9 @@ export function labsDriveSyncMessageIsTransientSuccess(message: string): boolean
   if (/no .* backup on drive yet/i.test(message)) return false;
   if (/no undo-last-sync/i.test(message)) return false;
 
-  return (
-    /^Synced from Drive/i.test(message) ||
-    /^Already in sync/i.test(message) ||
-    /saved to Google Drive/i.test(message) ||
-    /^Saved to Drive\./i.test(message) ||
-    /^Progress saved/i.test(message) ||
-    /^Organize:/i.test(message)
-  );
+  return (/^Synced from Drive/i.test(message) ||
+  /^Already in sync/i.test(message) ||
+  /saved to Google Drive/i.test(message) ||
+  /^Saved to Drive\./i.test(message) ||
+  /^Progress saved/i.test(message) || /^Organize:/i.test(message));
 }

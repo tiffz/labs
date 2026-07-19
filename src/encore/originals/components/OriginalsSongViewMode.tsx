@@ -141,9 +141,17 @@ export function OriginalsSongViewMode({
     <Box>
       <Stack spacing={encorePageSectionGap} sx={{ maxWidth: encoreMaxWidthPage, mx: 'auto', width: 1 }}>
         <Paper elevation={0} sx={originalsSongHeroPaperSx(theme)}>
-          <Stack direction="row" spacing={2} alignItems="flex-start" useFlexGap>
+          <Stack direction="row" spacing={2} useFlexGap sx={{
+            alignItems: "flex-start"
+          }}>
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1.2, display: 'block' }}>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: "text.secondary",
+                  lineHeight: 1.2,
+                  display: 'block'
+                }}>
                 Original
               </Typography>
               <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.15, mt: 0.5, mb: 1 }}>
@@ -153,10 +161,10 @@ export function OriginalsSongViewMode({
                 direction="row"
                 spacing={0.75}
                 useFlexGap
-                flexWrap="wrap"
-                alignItems="center"
-                sx={originalsSongMetaChipRowSx()}
-              >
+                sx={[{
+                  flexWrap: "wrap",
+                  alignItems: "center"
+                }, originalsSongMetaChipRowSx()]}>
                 <EncoreKeyChip
                   value={song.key}
                   placeholder="Set key"
@@ -212,7 +220,12 @@ export function OriginalsSongViewMode({
                     sx={originalsLibraryStageChipSx(true, theme)}
                   />
                 ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                      lineHeight: 1.5
+                    }}>
                     {formatOriginalStageSummary(song)} · Continue{' '}
                     <Button
                       variant="text"
@@ -269,7 +282,12 @@ export function OriginalsSongViewMode({
               onShowChordsChange={setChartShowsChords}
             />
           ) : (
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.6
+              }}>
               No lyrics or chart yet. Edit to start writing.
             </Typography>
           )}

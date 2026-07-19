@@ -45,7 +45,13 @@ export default function LabsDriveConflictDialog(props: LabsDriveConflictDialogPr
           {intro}
         </Typography>
         {detail ? (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1, lineHeight: 1.45 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mt: 1,
+              lineHeight: 1.45
+            }}>
             {detail}
           </Typography>
         ) : null}

@@ -63,11 +63,12 @@ function OriginalsChartReadMeta({ songKey, tempo, layout }: OriginalsChartReadMe
     <Stack
       direction="row"
       spacing={0.5}
-      alignItems="center"
-      flexWrap="nowrap"
       useFlexGap
       className="encore-originals-chords-meta"
-    >
+      sx={{
+        alignItems: "center",
+        flexWrap: "nowrap"
+      }}>
       <EncoreKeyChip
         value={songKey}
         placeholder="Key"
@@ -95,10 +96,14 @@ function OriginalsChartReadMeta({ songKey, tempo, layout }: OriginalsChartReadMe
           <Typography
             component="span"
             variant="body2"
-            color="text.secondary"
             className="encore-originals-playback-duration"
-            sx={{ fontSize: '0.8125rem', fontWeight: 600, lineHeight: '30px', flexShrink: 0 }}
-          >
+            sx={{
+              color: "text.secondary",
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              lineHeight: '30px',
+              flexShrink: 0
+            }}>
             ~{playbackDurationLabel}
           </Typography>
         </Tooltip>
@@ -120,7 +125,9 @@ function ShowChordsToggle({
         <Checkbox size="small" checked={checked} onChange={(_, next) => onChange(next)} />
       }
       label={
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           Show chords
         </Typography>
       }
@@ -203,17 +210,16 @@ export function OriginalsChartReadView({
         >
           <Stack
             direction="row"
-            alignItems="center"
-            flexWrap="wrap"
             className="encore-originals-chords-toolbar"
             sx={{
+              alignItems: "center",
+              flexWrap: "wrap",
               flexShrink: 0,
               px: encoreSurfacePadX,
               py: 0.55,
               gap: 0.75,
-              rowGap: 0.4,
-            }}
-          >
+              rowGap: 0.4
+            }}>
             <OriginalsChartReadMeta songKey={songKey} tempo={tempo} layout={layout} />
             <OriginalsChordPlaybackBar
               layout={layout}
@@ -242,7 +248,6 @@ export function OriginalsChartReadView({
           <ShowChordsToggle checked={showChords} onChange={setShowChords} />
         </Box>
       )}
-
       {showStyledChart ? (
         <Box
           className={[

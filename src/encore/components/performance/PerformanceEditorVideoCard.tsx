@@ -1,4 +1,4 @@
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -56,20 +56,39 @@ export function PerformanceEditorVideoCard(props: PerformanceEditorVideoCardProp
 
   return (
     <Box sx={encorePerformanceVideoPanelSx(theme, { isPrimary })}>
-      <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ p: 1.25 }}>
+      <Stack
+        direction="row"
+        spacing={1.5}
+        sx={{
+          alignItems: "flex-start",
+          p: 1.25
+        }}>
         <PerformanceSavedVideoPreview
           performance={pseudo}
           googleAccessToken={googleAccessToken}
           playbackActive={playbackActive}
         />
         <Box sx={{ flex: 1, minWidth: 0, pt: 0.25 }}>
-          <Stack direction="row" alignItems="center" spacing={0.75} sx={{ mb: 1 }}>
+          <Stack
+            direction="row"
+            spacing={0.75}
+            sx={{
+              alignItems: "center",
+              mb: 1
+            }}>
             <Typography variant="body2" sx={{ fontWeight: 600, flex: 1, minWidth: 0 }} noWrap title={title}>
               {title}
             </Typography>
           </Stack>
           <PerformanceVideoInlineLinkField {...inlineLink} />
-          <Stack direction="row" flexWrap="wrap" gap={0.5} useFlexGap sx={{ mt: 1.25 }}>
+          <Stack
+            direction="row"
+            useFlexGap
+            sx={{
+              flexWrap: "wrap",
+              gap: 0.5,
+              mt: 1.25
+            }}>
             <PerformanceVideoPrimaryRowAction
               isPrimary={isPrimary}
               onSetPrimary={onSetPrimary}

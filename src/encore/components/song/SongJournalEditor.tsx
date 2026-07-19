@@ -28,18 +28,28 @@ export function SongJournalEditor(props: SongJournalEditorProps): ReactElement {
       <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
         Practice journal
       </Typography>
-      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: "text.secondary",
+          display: "block",
+          mb: 1.5
+        }}>
         Markdown. Saves only when you click <strong>Save notes</strong>.
       </Typography>
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="flex-start">
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{
+        alignItems: "flex-start"
+      }}>
         <TextField
           value={journalLocal}
           onChange={(e) => onChangeLocal(e.target.value)}
           fullWidth
           multiline
           minRows={8}
-          inputProps={{ 'aria-label': 'Practice journal markdown' }}
           sx={{ flex: 1 }}
+          slotProps={{
+            htmlInput: { 'aria-label': 'Practice journal markdown' }
+          }}
         />
         <Box
           sx={{
@@ -55,20 +65,30 @@ export function SongJournalEditor(props: SongJournalEditorProps): ReactElement {
         >
           <Typography
             variant="caption"
-            color="text.secondary"
-            sx={{ fontWeight: 700, letterSpacing: '0.06em' }}
-          >
+            sx={{
+              color: "text.secondary",
+              fontWeight: 700,
+              letterSpacing: '0.06em'
+            }}>
             Preview
           </Typography>
           <MarkdownPreview markdown={journalLocal} />
         </Box>
       </Stack>
-      <Stack direction="row" alignItems="center" gap={2} sx={{ mt: 2 }}>
+      <Stack
+        direction="row"
+        sx={{
+          alignItems: "center",
+          gap: 2,
+          mt: 2
+        }}>
         <Button variant="contained" size="small" onClick={onSave} disabled={saving}>
           {saving ? 'Saving…' : 'Save notes'}
         </Button>
         {dirty ? (
-          <Typography variant="caption" color="warning.main">
+          <Typography variant="caption" sx={{
+            color: "warning.main"
+          }}>
             Unsaved journal changes
           </Typography>
         ) : null}

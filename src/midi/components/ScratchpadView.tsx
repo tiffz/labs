@@ -32,19 +32,27 @@ export function ScratchpadView() {
             <Typography component="p" variant="body1" className="midi-empty-staff-title">
               Your scratchpad is empty
             </Typography>
-            <Typography component="p" variant="body2" color="text.secondary">
+            <Typography component="p" variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               Start the metronome, play a few bars, then capture.
             </Typography>
           </Box>
         )}
       </Box>
-
       <Box className="midi-playground-actions">
         <CaptureBar />
 
         <Box className="midi-playground-secondary">
           <NotationStrictnessSlider />
-          <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            useFlexGap
+            sx={{
+              alignItems: "center",
+              flexWrap: "wrap"
+            }}>
             <LoopTransport />
             <DragExportChip />
           </Stack>

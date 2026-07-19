@@ -60,68 +60,77 @@ export default function ZineboxLibraryAddPanel({
 
   return (
     <div className="zinebox-upload-zone zinebox-library-add-panel" data-testid="zinebox-upload-zone">
-        <DragDropFileUpload
-          accept={PDF_ACCEPT}
-          multiple
-          disabled={interactionDisabled}
-          tone="neutral"
-          label="Add PDF zines"
-          helperText="Drop PDFs here or click to browse. Files stay on this device after import."
-          ariaLabel="Add PDF zines from your device"
-          onFiles={onLocalFiles}
+      <DragDropFileUpload
+        accept={PDF_ACCEPT}
+        multiple
+        disabled={interactionDisabled}
+        tone="neutral"
+        label="Add PDF zines"
+        helperText="Drop PDFs here or click to browse. Files stay on this device after import."
+        ariaLabel="Add PDF zines from your device"
+        onFiles={onLocalFiles}
+        sx={{
+          minHeight: 160,
+          borderRadius: '8px',
+          borderStyle: 'dashed',
+          borderWidth: '1px',
+          borderColor: 'var(--zinebox-border)',
+          bgcolor: 'var(--zinebox-surface)',
+        }}
+      />
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, my: 2 }}>
+        <Box sx={{ flex: 1, height: 1, bgcolor: 'divider' }} />
+        <Typography
+          variant="caption"
           sx={{
-            minHeight: 160,
-            borderRadius: '8px',
-            borderStyle: 'dashed',
-            borderWidth: '1px',
-            borderColor: 'var(--zinebox-border)',
-            bgcolor: 'var(--zinebox-surface)',
-          }}
-        />
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, my: 2 }}>
-          <Box sx={{ flex: 1, height: 1, bgcolor: 'divider' }} />
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-            OR
-          </Typography>
-          <Box sx={{ flex: 1, height: 1, bgcolor: 'divider' }} />
-        </Box>
-
-        <LabsDriveFolderPasteOrBrowseBlock
-          value={folderInput}
-          onChange={(v) => {
-            setFolderInput(v);
-            onError(null);
-          }}
-          googleAccessToken={googleAccessToken}
-          disabled={interactionDisabled}
-          description={
-            <Box component="span" sx={{ display: 'inline-flex', alignItems: 'flex-start', gap: 0.5 }}>
-              <Typography variant="body2" color="text.secondary" component="span" sx={{ lineHeight: 1.45 }}>
-                Already have zines in Drive? Paste a folder link.
-              </Typography>
-              <AppTooltip title="Large folders (like a full Shortbox drop) open a review step so you can tag everything at once.">
-                <IconButton
-                  size="small"
-                  aria-label="About Drive folder import"
-                  sx={{ mt: -0.5, color: 'text.secondary', p: 0.25 }}
-                >
-                  <InfoOutlinedIcon sx={{ fontSize: 16 }} />
-                </IconButton>
-              </AppTooltip>
-            </Box>
-          }
-          primaryAction={
-            <Button
-              size="small"
-              variant="contained"
-              onClick={() => void openDriveReview()}
-              disabled={interactionDisabled || !folderInput.trim()}
-            >
-              {reviewBusy ? 'Signing in…' : 'Review import'}
-            </Button>
-          }
-        />
-      </div>
+            color: "text.secondary",
+            fontWeight: 600
+          }}>
+          OR
+        </Typography>
+        <Box sx={{ flex: 1, height: 1, bgcolor: 'divider' }} />
+      </Box>
+      <LabsDriveFolderPasteOrBrowseBlock
+        value={folderInput}
+        onChange={(v) => {
+          setFolderInput(v);
+          onError(null);
+        }}
+        googleAccessToken={googleAccessToken}
+        disabled={interactionDisabled}
+        description={
+          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'flex-start', gap: 0.5 }}>
+            <Typography
+              variant="body2"
+              component="span"
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.45
+              }}>
+              Already have zines in Drive? Paste a folder link.
+            </Typography>
+            <AppTooltip title="Large folders (like a full Shortbox drop) open a review step so you can tag everything at once.">
+              <IconButton
+                size="small"
+                aria-label="About Drive folder import"
+                sx={{ mt: -0.5, color: 'text.secondary', p: 0.25 }}
+              >
+                <InfoOutlinedIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </AppTooltip>
+          </Box>
+        }
+        primaryAction={
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() => void openDriveReview()}
+            disabled={interactionDisabled || !folderInput.trim()}
+          >
+            {reviewBusy ? 'Signing in…' : 'Review import'}
+          </Button>
+        }
+      />
+    </div>
   );
 }

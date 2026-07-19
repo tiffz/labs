@@ -160,32 +160,40 @@ export function NewSongDraftForm({
                   inputRef={(el: HTMLInputElement | null) => {
                     searchInputRef.current = el;
                   }}
-                  InputProps={{
-                    ...params.InputProps,
-                    startAdornment: (
-                      <Box sx={{ display: 'inline-flex', alignItems: 'center', mr: 0.5 }}>
-                        <SpotifyBrandIcon sx={{ fontSize: 18 }} />
-                      </Box>
-                    ),
-                    endAdornment: (
-                      <>
-                        {loading ? <CircularProgress size={16} /> : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  }}
                   helperText="Pick a track to fill title, artist, and album art."
+                  slotProps={{
+                    ...params.slotProps,
+
+                    input: {
+                      ...params.slotProps.input,
+                      startAdornment: (
+                        <Box sx={{ display: 'inline-flex', alignItems: 'center', mr: 0.5 }}>
+                          <SpotifyBrandIcon sx={{ fontSize: 18 }} />
+                        </Box>
+                      ),
+                      endAdornment: (
+                        <>
+                          {loading ? <CircularProgress size={16} /> : null}
+                          {params.slotProps.input.endAdornment}
+                        </>
+                      ),
+                    }
+                  }}
                 />
               )}
             />
           ) : null}
         </>
       ) : !hideSpotifyControls ? (
-        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.55
+          }}>
           Spotify isn’t configured here. Fill in title and artist below.
         </Typography>
       ) : null}
-
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
         {previewSrc ? (
           <Box
@@ -226,7 +234,6 @@ export function NewSongDraftForm({
           />
         </Stack>
       </Stack>
-
       {draft.spotifyTrackId ? (
         <Link
           href={`https://open.spotify.com/track/${draft.spotifyTrackId}`}

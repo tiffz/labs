@@ -289,19 +289,18 @@ function RichTextEditorInner({
       {!readOnly && editor ? (
         <Stack
           direction="row"
-          alignItems="center"
           spacing={0.25}
           className="shared-rich-text-toolbar"
           sx={{
+            alignItems: "center",
             flexWrap: 'wrap',
             px: 0.5,
             pt: 0.35,
             pb: 0.15,
             gap: 0,
             bgcolor: 'transparent',
-            flexShrink: 0,
-          }}
-        >
+            flexShrink: 0
+          }}>
           <Tooltip title="Bold">
             <IconButton
               size="small"
@@ -333,7 +332,9 @@ function RichTextEditorInner({
               onClick={(e) => openLinkPopover(e.currentTarget)}
               sx={toolbarIconSx(linkActive)}
             >
-              <LinkIcon fontSize="small" />
+              <LinkIcon sx={{
+                fontSize: "small"
+              }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="Bullet list">
@@ -407,7 +408,9 @@ function RichTextEditorInner({
                   }
                 }}
               />
-              <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Stack direction="row" spacing={1} sx={{
+                justifyContent: "flex-end"
+              }}>
                 {linkActive ? (
                   <Button size="small" color="inherit" startIcon={<LinkOffIcon fontSize="small" />} onClick={removeLink}>
                     Remove

@@ -33,8 +33,10 @@ export function PerformanceMetadataSection(props: PerformanceMetadataSectionProp
         value={draft.date}
         size="small"
         onChange={(e) => onChange({ ...draft, date: e.target.value })}
-        InputLabelProps={{ shrink: true }}
         fullWidth
+        slotProps={{
+          inputLabel: { shrink: true }
+        }}
       />
       <Autocomplete
         freeSolo
@@ -48,7 +50,13 @@ export function PerformanceMetadataSection(props: PerformanceMetadataSectionProp
         <Typography component="label" sx={FIELD_GROUP_LABEL_SX}>
           Accompaniment
         </Typography>
-        <Stack direction="row" gap={0.75} flexWrap="wrap" useFlexGap>
+        <Stack
+          direction="row"
+          useFlexGap
+          sx={{
+            gap: 0.75,
+            flexWrap: "wrap"
+          }}>
           {ENCORE_ACCOMPANIMENT_TAGS.map((tag) => {
             const active = (draft.accompanimentTags ?? []).includes(tag);
             return (

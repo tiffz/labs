@@ -63,13 +63,13 @@ export function EncoreShareMenu(props: {
               overflow: 'hidden',
             },
           },
+
+          list: {
+            'aria-labelledby': 'encore-share-menu-button',
+            sx: { p: 0 },
+          }
         }}
-        MenuListProps={{
-          'aria-labelledby': 'encore-share-menu-button',
-          sx: { p: 0 },
-        }}
-        disableScrollLock
-      >
+        disableScrollLock>
         <Box sx={{ px: 3, pt: 2.5, pb: 2.5 }} onClick={(e) => e.stopPropagation()}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, letterSpacing: '-0.02em', mb: 2 }}>
             Share

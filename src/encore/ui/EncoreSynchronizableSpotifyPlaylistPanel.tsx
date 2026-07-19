@@ -158,13 +158,21 @@ export function EncoreSynchronizableSpotifyPlaylistPanel(props: EncoreSynchroniz
   return (
     <Stack
       direction="row"
-      flexWrap="wrap"
-      alignItems="center"
-      gap={1}
       useFlexGap
-      sx={{ rowGap: 1.25, columnGap: 1 }}
-    >
-      <Stack direction="row" alignItems="center" spacing={0.25} sx={{ flexShrink: 0 }}>
+      sx={{
+        flexWrap: "wrap",
+        alignItems: "center",
+        gap: 1,
+        rowGap: 1.25,
+        columnGap: 1
+      }}>
+      <Stack
+        direction="row"
+        spacing={0.25}
+        sx={{
+          alignItems: "center",
+          flexShrink: 0
+        }}>
         <Typography
           variant={inlineSectionTitle ? 'caption' : 'subtitle2'}
           sx={
@@ -200,7 +208,6 @@ export function EncoreSynchronizableSpotifyPlaylistPanel(props: EncoreSynchroniz
           </IconButton>
         </Tooltip>
       </Stack>
-
       {showSummary ? (
         <Box
           sx={{
@@ -274,10 +281,12 @@ export function EncoreSynchronizableSpotifyPlaylistPanel(props: EncoreSynchroniz
                 </Typography>
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ display: 'block', lineHeight: 1.35 }}
                   noWrap
-                >
+                  sx={{
+                    color: "text.secondary",
+                    display: 'block',
+                    lineHeight: 1.35
+                  }}>
                   Spotify playlist
                 </Typography>
               </Box>
@@ -332,15 +341,14 @@ export function EncoreSynchronizableSpotifyPlaylistPanel(props: EncoreSynchroniz
       ) : (
         <Stack
           direction="row"
-          alignItems="center"
           spacing={0.5}
           useFlexGap
           sx={{
+            alignItems: "center",
             flex: '1 1 200px',
             minWidth: { xs: '100%', sm: 220 },
-            maxWidth: { sm: 480 },
-          }}
-        >
+            maxWidth: { sm: 480 }
+          }}>
           <EncoreBrandTextField
             brand="spotify"
             size="small"
@@ -380,11 +388,8 @@ export function EncoreSynchronizableSpotifyPlaylistPanel(props: EncoreSynchroniz
           </Tooltip>
         </Stack>
       )}
-
       {extraActions}
-
       {announcement}
-
       {error ? (
         <Alert severity="error" sx={{ width: '100%', mt: announcement ? 0.5 : 0 }}>
           {error}

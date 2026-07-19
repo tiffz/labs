@@ -239,11 +239,12 @@ export function ThumbsStage({ project, onProjectChange }: ThumbsStageProps): Rea
         <Typography component="h2" className="lyrefly-section-eyebrow">
           Thumbs
         </Typography>
-        <Typography variant="body2" color="text.secondary" className="lyrefly-thumbs__lede">
+        <Typography variant="body2" className="lyrefly-thumbs__lede" sx={{
+          color: "text.secondary"
+        }}>
           Rough panel mockups pulled from your script. Not final art.
         </Typography>
       </header>
-
       <div className="lyrefly-thumbs__toolbar">
         <FormControl size="small" sx={{ minWidth: '8rem' }}>
           <InputLabel id="lyrefly-thumbs-page-label">Page</InputLabel>
@@ -263,7 +264,9 @@ export function ThumbsStage({ project, onProjectChange }: ThumbsStageProps): Rea
         </FormControl>
 
         {pageRefCount > 0 ? (
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             {pageRefCount} page reference{pageRefCount === 1 ? '' : 's'}
           </Typography>
         ) : null}
@@ -309,7 +312,6 @@ export function ThumbsStage({ project, onProjectChange }: ThumbsStageProps): Rea
           </IconButton>
         </Tooltip>
       </div>
-
       <AnchoredPopover
         open={Boolean(castAnchor)}
         anchorEl={castAnchor}
@@ -340,13 +342,14 @@ export function ThumbsStage({ project, onProjectChange }: ThumbsStageProps): Rea
               ))}
             </ul>
           ) : (
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+              color: "text.secondary"
+            }}>
               No characters yet.
             </Typography>
           )}
         </div>
       </AnchoredPopover>
-
       <AnchoredPopover
         open={Boolean(paletteAnchor)}
         anchorEl={paletteAnchor}
@@ -362,7 +365,6 @@ export function ThumbsStage({ project, onProjectChange }: ThumbsStageProps): Rea
           />
         </div>
       </AnchoredPopover>
-
       <AnchoredPopover
         open={Boolean(photoAnchor)}
         anchorEl={photoAnchor}
@@ -386,7 +388,6 @@ export function ThumbsStage({ project, onProjectChange }: ThumbsStageProps): Rea
           />
         </div>
       </AnchoredPopover>
-
       <div className="lyrefly-thumbs__grid">
         <section className="lyrefly-thumbs__script-pane" aria-label={`Script for page ${scriptPageKey}`}>
           <div className="lyrefly-thumbs__script-pane-header">
@@ -410,7 +411,9 @@ export function ThumbsStage({ project, onProjectChange }: ThumbsStageProps): Rea
           {editingScript && script ? (
             <div className="lyrefly-thumbs__script-editor">
               <ScriptRichTextEditor value={localHtml} onChange={handleChange} />
-              <Typography variant="caption" color="text.secondary" aria-live="polite">
+              <Typography variant="caption" aria-live="polite" sx={{
+                color: "text.secondary"
+              }}>
                 {saving ? 'Saving…' : 'Edits apply to the whole script. Use Sync from script to refresh this mockup.'}
               </Typography>
             </div>

@@ -73,15 +73,17 @@ export function EncoreSpotifyMenuSearchField(props: EncoreSpotifyMenuSearchField
         sx={encoreMediaTrackMenuPasteFieldSx}
         onChange={(e) => onInputChange(e.target.value)}
         onFocus={seedOnFocus}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start" sx={encoreMediaTrackMenuInputAdornmentSx}>
-              <SpotifyBrandIcon sx={{ fontSize: 18, display: 'block' }} aria-hidden />
-            </InputAdornment>
-          ),
-          endAdornment: loading ? (
-            <CircularProgress color="inherit" size={16} sx={{ mr: 0.75 }} />
-          ) : null,
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start" sx={encoreMediaTrackMenuInputAdornmentSx}>
+                <SpotifyBrandIcon sx={{ fontSize: 18, display: 'block' }} aria-hidden />
+              </InputAdornment>
+            ),
+            endAdornment: loading ? (
+              <CircularProgress color="inherit" size={16} sx={{ mr: 0.75 }} />
+            ) : null,
+          }
         }}
       />
       <Popper

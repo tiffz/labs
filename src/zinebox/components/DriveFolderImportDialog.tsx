@@ -191,7 +191,12 @@ export default function DriveFolderImportDialog({
       <DialogTitle id="zinebox-drive-import-title">Review Drive import</DialogTitle>
       <DialogContent>
         {scanBusy ? (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 1.5
+            }}>
             Scanning folder for PDFs…
           </Typography>
         ) : null}
@@ -218,12 +223,20 @@ export default function DriveFolderImportDialog({
             ) : null}
 
             {scan.newCount === 0 ? (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{
+                color: "text.secondary"
+              }}>
                 Everything in this folder is already in your library.
               </Typography>
             ) : (
               <>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.45 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    mb: 2,
+                    lineHeight: 1.45
+                  }}>
                   Set source and tags now. They apply to all {scan.newCount} new PDF
                   {scan.newCount === 1 ? '' : 's'} before download starts.
                 </Typography>
@@ -273,7 +286,13 @@ export default function DriveFolderImportDialog({
                 />
 
                 {sampleNames.length > 0 ? (
-                  <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 2 }}>
+                  <Typography
+                    variant="caption"
+                    component="p"
+                    sx={{
+                      color: "text.secondary",
+                      mt: 2
+                    }}>
                     Sample files: {sampleNames.join(', ')}
                     {scan.files.length > sampleNames.length ? '…' : ''}
                   </Typography>

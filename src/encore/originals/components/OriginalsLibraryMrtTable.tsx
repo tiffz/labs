@@ -96,7 +96,14 @@ export function OriginalsLibraryMrtTable({
           const song = row.original;
           const playback = takePlaybackBySongId.get(song.id) ?? 'idle';
           return (
-            <Stack direction="row" alignItems="center" spacing={0.75} sx={{ minWidth: 0, width: 1 }}>
+            <Stack
+              direction="row"
+              spacing={0.75}
+              sx={{
+                alignItems: "center",
+                minWidth: 0,
+                width: 1
+              }}>
               <Typography
                 variant="body2"
                 component="a"
@@ -214,7 +221,14 @@ export function OriginalsLibraryMrtTable({
           const snippet = chordProLyricSnippet(row.original.lyricsAndChords, 120) || '–';
           return (
             <OriginalsLyricsHoverCard songId={row.original.id} lyricsAndChords={row.original.lyricsAndChords}>
-              <Typography variant="body2" color="text.secondary" noWrap sx={{ minWidth: 0, width: 1 }}>
+              <Typography
+                variant="body2"
+                noWrap
+                sx={{
+                  color: "text.secondary",
+                  minWidth: 0,
+                  width: 1
+                }}>
                 <HighlightedText text={snippet} highlight={search} component="span" variant="inherit" />
               </Typography>
             </OriginalsLyricsHoverCard>
@@ -254,15 +268,15 @@ export function OriginalsLibraryMrtTable({
 
   const displayColumnDefOptions = useMemo(
     () =>
-      ({
+      (({
         [MRT_ROW_SELECT_COL]: {
           size: 44,
           minSize: 40,
           maxSize: 48,
           muiTableHeadCellProps: { sx: { px: 0.75, py: 1.25, verticalAlign: 'middle' } },
           muiTableBodyCellProps: { sx: { px: 0.75, py: 1.25, verticalAlign: 'middle' } },
-        },
-      }) as const,
+        }
+      }) as const),
     [],
   );
 

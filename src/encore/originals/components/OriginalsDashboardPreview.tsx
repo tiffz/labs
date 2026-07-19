@@ -63,20 +63,31 @@ export function OriginalsDashboardPreview({
   return (
     <Stack
       direction={{ xs: 'column', md: 'row' }}
-      alignItems={{ xs: 'stretch', md: 'center' }}
       spacing={{ xs: 1.25, md: 2 }}
       useFlexGap
       className="encore-originals-dashboard-preview"
+      sx={{
+        alignItems: { xs: 'stretch', md: 'center' }
+      }}
     >
       {hasPlayback && playbackTake ? (
         <Stack
           direction="row"
-          alignItems="center"
           spacing={1.25}
           useFlexGap
-          sx={{ flex: { md: '1 1 auto' }, minWidth: 0 }}
-        >
-          <Stack direction="row" alignItems="center" spacing={0.75} useFlexGap sx={{ flexShrink: 0 }}>
+          sx={{
+            alignItems: "center",
+            flex: { md: '1 1 auto' },
+            minWidth: 0
+          }}>
+          <Stack
+            direction="row"
+            spacing={0.75}
+            useFlexGap
+            sx={{
+              alignItems: "center",
+              flexShrink: 0
+            }}>
             {canPlay ? (
               <Button
                 variant="outlined"
@@ -136,7 +147,6 @@ export function OriginalsDashboardPreview({
           </Box>
         </Stack>
       ) : null}
-
       {hasPlayback && hasCopy ? (
         <Divider
           flexItem
@@ -149,23 +159,20 @@ export function OriginalsDashboardPreview({
           }}
         />
       ) : null}
-
       {hasPlayback && hasCopy ? (
         <Divider sx={{ display: { xs: 'block', md: 'none' }, borderColor: 'divider' }} />
       ) : null}
-
       {hasCopy ? (
         <Stack
           direction="row"
-          alignItems="center"
           spacing={0.75}
           useFlexGap
-          flexWrap="wrap"
           sx={{
+            alignItems: "center",
+            flexWrap: "wrap",
             flexShrink: 0,
-            ml: { md: hasPlayback ? 'auto' : 0 },
-          }}
-        >
+            ml: { md: hasPlayback ? 'auto' : 0 }
+          }}>
           {lyrics ? (
             <Button
               size="small"

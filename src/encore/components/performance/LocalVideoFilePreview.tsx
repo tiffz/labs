@@ -73,7 +73,7 @@ export function LocalVideoFilePreview(props: LocalVideoFilePreviewProps): ReactE
     >
       {previewUrl ? (
         /* eslint-disable-next-line jsx-a11y/media-has-caption -- user-provided performance clip */
-        <video
+        (<video
           ref={videoRef}
           key={previewUrl}
           src={previewUrl}
@@ -88,7 +88,7 @@ export function LocalVideoFilePreview(props: LocalVideoFilePreviewProps): ReactE
             height: '100%',
             objectFit: 'contain',
           }}
-        />
+        />)
       ) : null}
       {playbackError ? (
         <Box

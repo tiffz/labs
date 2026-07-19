@@ -171,7 +171,11 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
         <Typography component="h1" sx={{ mb: 2 }}>
           No photos available
         </Typography>
-        <Typography color="text.secondary" sx={{ mb: 2 }}>
+        <Typography
+          sx={{
+            color: "text.secondary",
+            mb: 2
+          }}>
           Selected collections have no photos yet. Refresh a collection or choose another.
         </Typography>
         <Button variant="contained" onClick={() => finishSession()}>

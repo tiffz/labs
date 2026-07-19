@@ -34,7 +34,14 @@ export default function StanzaLibraryGrid({
     >
       {songs.length === 0 ? (
         <Box sx={{ gridColumn: '1 / -1', py: 3, px: 1, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: '28rem', mx: 'auto', lineHeight: 1.55 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              maxWidth: '28rem',
+              mx: 'auto',
+              lineHeight: 1.55
+            }}>
             No items yet. Paste a YouTube link or upload an audio or video file above to add your first piece.
           </Typography>
         </Box>
@@ -72,10 +79,11 @@ export default function StanzaLibraryGrid({
                 {!songHasPractice(s) ? (
                   <Typography
                     variant="caption"
-                    color="text.secondary"
                     className="stanza-library-card-caption-slot"
-                    sx={{ display: 'block' }}
-                  >
+                    sx={{
+                      color: "text.secondary",
+                      display: 'block'
+                    }}>
                     Not started
                   </Typography>
                 ) : null}

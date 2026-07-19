@@ -195,7 +195,9 @@ export default function MergeCollectionsDialog({
             size="small"
             disabled={disabled}
             placeholder="Folder name"
-            inputProps={{ 'aria-label': 'New collection folder name' }}
+            slotProps={{
+              htmlInput: { 'aria-label': 'New collection folder name' }
+            }}
           />
         </section>
 

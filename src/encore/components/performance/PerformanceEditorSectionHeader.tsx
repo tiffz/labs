@@ -19,13 +19,24 @@ export function PerformanceEditorSectionHeader(props: PerformanceEditorSectionHe
         <Typography
           component="h3"
           variant="overline"
-          color="text.secondary"
-          sx={{ fontWeight: 800, letterSpacing: '0.1em', lineHeight: 1.3, display: 'block' }}
-        >
+          sx={{
+            color: "text.secondary",
+            fontWeight: 800,
+            letterSpacing: '0.1em',
+            lineHeight: 1.3,
+            display: 'block'
+          }}>
           {title}
         </Typography>
         {caption ? (
-          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45, display: 'block', mt: 0.25 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.45,
+              display: 'block',
+              mt: 0.25
+            }}>
             {caption}
           </Typography>
         ) : null}

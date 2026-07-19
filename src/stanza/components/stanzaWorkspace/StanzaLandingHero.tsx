@@ -73,11 +73,13 @@ export default function StanzaLandingHero({
             onChange={(e) => onYtPasteChange(e.target.value)}
             placeholder="https://www.youtube.com/watch?v=…"
             autoComplete="url"
-            inputProps={{ enterKeyHint: 'go' }}
             onKeyDown={(e) => {
               if (e.key !== 'Enter') return;
               e.preventDefault();
               if (canLoadYoutube) onLoadYoutube();
+            }}
+            slotProps={{
+              htmlInput: { enterKeyHint: 'go' }
             }}
           />
           <Stack

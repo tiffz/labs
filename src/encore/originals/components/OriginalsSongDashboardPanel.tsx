@@ -129,16 +129,23 @@ export const OriginalsSongDashboardPanel = memo(function OriginalsSongDashboardP
     >
       <Stack spacing={2.25} divider={<Divider sx={originalsDashboardSectionDividerSx(theme)} />}>
         <Box>
-          <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1.2, display: 'block' }}>
+          <Typography
+            variant="overline"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.2,
+              display: 'block'
+            }}>
             Original
           </Typography>
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
-            alignItems={{ xs: 'stretch', sm: 'flex-start' }}
-            justifyContent="space-between"
-            gap={1.5}
-            sx={{ mt: 0.5 }}
-          >
+            sx={{
+              alignItems: { xs: 'stretch', sm: 'flex-start' },
+              justifyContent: "space-between",
+              gap: 1.5,
+              mt: 0.5
+            }}>
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <TextField
                 value={song.title}
@@ -146,27 +153,31 @@ export const OriginalsSongDashboardPanel = memo(function OriginalsSongDashboardP
                 placeholder="Untitled original"
                 variant="standard"
                 fullWidth
-                InputProps={{ disableUnderline: true }}
-                inputProps={{
-                  'aria-label': 'Song title',
-                  style: {
-                    fontSize: '1.375rem',
-                    fontWeight: 800,
-                    letterSpacing: '-0.02em',
-                    padding: 0,
-                    lineHeight: 1.2,
-                  },
-                }}
                 sx={{ '& .MuiInput-root': { fontSize: 'inherit' } }}
-              />
+                slotProps={{
+                  input: { disableUnderline: true },
+
+                  htmlInput: {
+                    'aria-label': 'Song title',
+                    style: {
+                      fontSize: '1.375rem',
+                      fontWeight: 800,
+                      letterSpacing: '-0.02em',
+                      padding: 0,
+                      lineHeight: 1.2,
+                    },
+                  }
+                }} />
               <Stack
                 direction="row"
-                flexWrap="wrap"
-                alignItems="center"
-                gap={0.75}
                 useFlexGap
-                sx={{ ...originalsSongMetaChipRowSx(), mt: 1 }}
-              >
+                sx={{
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  gap: 0.75,
+                  ...originalsSongMetaChipRowSx(),
+                  mt: 1
+                }}>
                 {demoReady ? (
                   <Chip
                     size="small"
@@ -253,7 +264,14 @@ export const OriginalsSongDashboardPanel = memo(function OriginalsSongDashboardP
         </OriginalsDashboardSection>
 
         <OriginalsDashboardSection title="Dates">
-          <Stack direction="row" flexWrap="wrap" spacing={0.75} useFlexGap alignItems="center">
+          <Stack
+            direction="row"
+            spacing={0.75}
+            useFlexGap
+            sx={{
+              flexWrap: "wrap",
+              alignItems: "center"
+            }}>
             <InlineChipDate
               value={song.startedAt ?? originalSongStartedDate(song)}
               placeholder="Started writing"
@@ -267,7 +285,14 @@ export const OriginalsSongDashboardPanel = memo(function OriginalsSongDashboardP
             />
           </Stack>
           {status.updatedBeforeStarted ? (
-            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ color: 'warning.main', mt: 0.75 }}>
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{
+                alignItems: "center",
+                color: 'warning.main',
+                mt: 0.75
+              }}>
               <WarningAmberOutlinedIcon sx={{ fontSize: 16 }} aria-hidden />
               <Typography variant="caption" sx={{ fontWeight: 600, lineHeight: 1.45 }}>
                 Updated before started date — worth a quick check.

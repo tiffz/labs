@@ -715,7 +715,6 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
       }}
     >
       <EncorePageHeader title={encorePossessivePageTitle(effectiveDisplayName, 'practice')} />
-
       <Paper
         elevation={0}
         sx={{
@@ -754,12 +753,15 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
           />
         </Stack>
       </Paper>
-
       {!songsHydrated ? (
         <LabsListLoadingState label="Loading practice list" variant="skeleton" />
       ) : practicingSongs.length === 0 ? (
         <Stack spacing={1.5} sx={{ py: 1, mb: 2, alignItems: 'flex-start' }}>
-          <Typography color="text.secondary" sx={{ lineHeight: 1.6 }}>
+          <Typography
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.6
+            }}>
             Nothing here yet. Add a song you’re working on to keep it at hand for practice
             sessions — or sync from a <strong>Learning playlist</strong> above.
           </Typography>
@@ -806,7 +808,13 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
               // is search/filter, not a bounded scroll region.
             }}
           >
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: '0.08em' }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontWeight: 700,
+                letterSpacing: '0.08em'
+              }}>
               Practicing ({practicingSongs.length})
             </Typography>
             <Stack component="nav" aria-label="Practicing songs" spacing={0.5} sx={{ mt: 1 }}>
@@ -882,9 +890,10 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
                       <ListItemText
                         primary={s.title}
                         secondary={s.artist}
-                        primaryTypographyProps={{ variant: 'body2', fontWeight: 700, noWrap: true }}
-                        secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
-                      />
+                        slotProps={{
+                          primary: { variant: 'body2', noWrap: true, sx: { fontWeight: 700 } },
+                          secondary: { variant: 'caption', noWrap: true }
+                        }} />
                     </ListItemButton>
                   </ListItem>
                 );
@@ -972,28 +981,42 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
                 <Stack spacing={2.25}>
                   <Stack
                     direction={{ xs: 'column', sm: 'row' }}
-                    alignItems={{ xs: 'flex-start', sm: 'flex-start' }}
-                    justifyContent="space-between"
-                    gap={1.25}
-                  >
+                    sx={{
+                      alignItems: { xs: 'flex-start', sm: 'flex-start' },
+                      justifyContent: "space-between",
+                      gap: 1.25
+                    }}>
                     <Box sx={{ minWidth: 0 }}>
                       <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.25 }}>
                         {s.title}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: "text.secondary",
+                          mt: 0.25
+                        }}>
                         {s.artist}
                       </Typography>
                       {ms.total > 0 ? (
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.75, display: 'block' }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            mt: 0.75,
+                            display: 'block'
+                          }}>
                           {ms.labelShort}
                         </Typography>
                       ) : null}
                     </Box>
                     <Stack
                       direction={{ xs: 'column', sm: 'row' }}
-                      gap={1}
-                      sx={{ flexShrink: 0, width: { xs: 1, sm: 'auto' } }}
-                    >
+                      sx={{
+                        gap: 1,
+                        flexShrink: 0,
+                        width: { xs: 1, sm: 'auto' }
+                      }}>
                       <Button
                         variant="text"
                         size="medium"
@@ -1020,7 +1043,6 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
                       </Button>
                     </Stack>
                   </Stack>
-
                   <Box>
                     <Typography
                       component="h2"
@@ -1052,7 +1074,6 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
                       <PracticeResourcesPanel groups={[]} fileDrop={practiceMediaHubFileDrop} />
                     )}
                   </Box>
-
                   <Box
                     component="section"
                     aria-labelledby="encore-practice-performances-heading"
@@ -1114,7 +1135,6 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
                       </Box>
                     ) : null}
                   </Box>
-
                   <PracticeExercisesSection
                     song={exerciseBase}
                     onPersistSong={persistPracticeSongBundle}
@@ -1122,7 +1142,6 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
                     signInWithGoogle={signInWithGoogle}
                     withBlockingJob={withBlockingJob}
                   />
-
                   {/*
                    * "Milestones" gets its own subtitle so guided exercises above do not read as one
                    * continuous list with the checklist — without this header the two sections blur.
@@ -1137,7 +1156,6 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
                       onChange={(next) => void persistPracticeSongBundle(next)}
                     />
                   </Box>
-
                   <Box>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.75 }}>
                       Journal
@@ -1151,8 +1169,10 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
                       multiline
                       minRows={4}
                       size="small"
-                      inputProps={{ 'aria-label': `Practice journal for ${s.title}` }}
                       placeholder="Notes…"
+                      slotProps={{
+                        htmlInput: { 'aria-label': `Practice journal for ${s.title}` }
+                      }}
                     />
                     <Button
                       size="small"
@@ -1178,7 +1198,6 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
           </Paper>
         </Box>
       ) : null}
-
       <EncoreSpotifyPlaylistImportReviewDialog
         open={practiceImportReviewOpen}
         onClose={closePracticeImportReview}
@@ -1190,13 +1209,11 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
         onConfirmImportNew={() => void confirmImport()}
         pullBusy={pullBusy}
       />
-
       <AddToPracticeDialog
         open={addToPracticeOpen}
         onClose={() => setAddToPracticeOpen(false)}
         onAdded={handleSongAddedToPractice}
       />
-
       {panelSong ? (
         <PerformanceEditorDialog
           open={perfOpen}

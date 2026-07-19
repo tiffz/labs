@@ -75,7 +75,13 @@ export function EncoreSpotifyPlaylistImportReviewDialog(props: EncoreSpotifyPlay
         Review playlist import
       </DialogTitle>
       <DialogContent sx={encoreDialogContentSx}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.55 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 2,
+            lineHeight: 1.55
+          }}>
           {intro}
         </Typography>
 
@@ -84,7 +90,13 @@ export function EncoreSpotifyPlaylistImportReviewDialog(props: EncoreSpotifyPlay
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
               Possible library matches
             </Typography>
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: -1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                display: "block",
+                mt: -1
+              }}>
               Merge adds this Spotify track id to the library song. Add as new keeps a separate song row.
             </Typography>
             {importSuggestions?.map((item) => (
@@ -92,10 +104,18 @@ export function EncoreSpotifyPlaylistImportReviewDialog(props: EncoreSpotifyPlay
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {item.row.title} · {item.row.artist}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                  color: "text.secondary"
+                }}>
                   Likely match: {item.match.title} · {item.match.artist} (score {(item.score * 100).toFixed(0)}%)
                 </Typography>
-                <Stack direction="row" gap={1} flexWrap="wrap" useFlexGap>
+                <Stack
+                  direction="row"
+                  useFlexGap
+                  sx={{
+                    gap: 1,
+                    flexWrap: "wrap"
+                  }}>
                   <Button size="small" variant="contained" onClick={() => onMergeSuggestion(item)}>
                     Merge into library song
                   </Button>
@@ -115,7 +135,13 @@ export function EncoreSpotifyPlaylistImportReviewDialog(props: EncoreSpotifyPlay
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
               New tracks (not in your library)
             </Typography>
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: -0.75 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                display: "block",
+                mt: -0.75
+              }}>
               {newTracksCaption}
             </Typography>
             <Stack spacing={0.75}>

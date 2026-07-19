@@ -47,7 +47,13 @@ export function EncoreSpotifyTrackListRow(props: EncoreSpotifyTrackListRowProps)
         <Typography variant="body2" noWrap sx={{ fontWeight: 600, color: 'text.primary' }}>
           {track.name}
         </Typography>
-        <Typography variant="caption" color="text.secondary" noWrap display="block">
+        <Typography
+          variant="caption"
+          noWrap
+          sx={{
+            color: "text.secondary",
+            display: "block"
+          }}>
           {artistLine}
         </Typography>
       </Box>

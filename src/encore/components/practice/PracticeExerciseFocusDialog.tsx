@@ -508,9 +508,13 @@ export function PracticeExerciseFocusDialog({
       open={open}
       onClose={handleRequestClose as (event: object, reason: 'backdropClick' | 'escapeKeyDown') => void}
       fullScreen
-      TransitionComponent={SlideUpTransition}
-      TransitionProps={{ onEntered: () => setBodyReady(true) }}
       aria-labelledby="practice-exercise-focus-title"
+      slots={{
+        transition: SlideUpTransition
+      }}
+      slotProps={{
+        transition: { onEntered: () => setBodyReady(true) }
+      }}
     >
       <AppBar
         position="sticky"
@@ -537,15 +541,23 @@ export function PracticeExerciseFocusDialog({
               id="practice-exercise-focus-title"
               component="span"
               variant="overline"
-              color="text.secondary"
-              sx={{ fontWeight: 700, lineHeight: 1, display: 'block' }}
-            >
+              sx={{
+                color: "text.secondary",
+                fontWeight: 700,
+                lineHeight: 1,
+                display: 'block'
+              }}>
               Guided exercise
             </Typography>
             <Typography component="span" variant="h6" sx={{ fontWeight: 800, display: 'block', lineHeight: 1.25 }}>
               {catalog.title}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                display: 'block'
+              }}>
               {songTitle} · {songArtist}
             </Typography>
           </Box>
@@ -556,16 +568,15 @@ export function PracticeExerciseFocusDialog({
           <Stack
             direction="row"
             spacing={0.75}
-            alignItems="center"
-            flexWrap={{ xs: 'wrap', sm: 'nowrap' }}
             sx={{
+              alignItems: "center",
+              flexWrap: { xs: 'wrap', sm: 'nowrap' },
               flexShrink: 0,
               ml: { xs: 0, sm: 'auto' },
               maxWidth: '100%',
               rowGap: 0.5,
-              justifyContent: { xs: 'flex-end', sm: 'flex-start' },
-            }}
-          >
+              justifyContent: { xs: 'flex-end', sm: 'flex-start' }
+            }}>
             {readOnly ? (
               <>
                 <Tooltip title="Reopen this exercise so you can keep editing it">
@@ -941,7 +952,13 @@ const BulkLyricsEditDialog = memo(function BulkLyricsEditDialog({
     >
       <DialogTitle id="lyrics-bulk-dialog-title">Edit full lyrics</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.55 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 1.5,
+            lineHeight: 1.55
+          }}>
           {description}
         </Typography>
         <InputBase
@@ -1218,7 +1235,13 @@ const LyricsExerciseEditor = forwardRef<
         ]}
       >
         <Stack spacing={1.25}>
-          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45, maxWidth: 960 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.45,
+              maxWidth: 960
+            }}>
             Rewrite each line in your own words. Lyrics optional from{' '}
             <Link href={geniusUrl} target="_blank" rel="noopener noreferrer">
               Genius
@@ -1227,8 +1250,20 @@ const LyricsExerciseEditor = forwardRef<
             .
           </Typography>
 
-          <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 1
+            }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                fontWeight: 500
+              }}>
               {total > 0 ? `${done} of ${total} lines` : 'No lines yet.'}
             </Typography>
             {!readOnly && sections.length > 0 ? (
@@ -1246,7 +1281,12 @@ const LyricsExerciseEditor = forwardRef<
 
           {sections.length === 0 ? (
             <Stack spacing={1.25}>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  lineHeight: 1.55
+                }}>
                 Paste lyrics to begin. add a <code>[Section]</code> marker per heading, or just leave a blank
                 line between paragraphs and we&rsquo;ll split them into sections you can rename.
               </Typography>
@@ -1277,16 +1317,26 @@ const LyricsExerciseEditor = forwardRef<
               >
                 <Typography
                   variant="overline"
-                  color="text.secondary"
-                  sx={{ flex: 1, letterSpacing: '0.16em', fontWeight: 600, fontSize: '0.62rem', opacity: 0.75 }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    flex: 1,
+                    letterSpacing: '0.16em',
+                    fontWeight: 600,
+                    fontSize: '0.62rem',
+                    opacity: 0.75
+                  }}>
                   Source
                 </Typography>
                 <Typography
                   variant="overline"
-                  color="text.secondary"
-                  sx={{ flex: 1, letterSpacing: '0.16em', fontWeight: 600, fontSize: '0.62rem', opacity: 0.75 }}
-                >
+                  sx={{
+                    color: "text.secondary",
+                    flex: 1,
+                    letterSpacing: '0.16em',
+                    fontWeight: 600,
+                    fontSize: '0.62rem',
+                    opacity: 0.75
+                  }}>
                   Your words
                 </Typography>
               </Stack>
@@ -1326,7 +1376,6 @@ const LyricsExerciseEditor = forwardRef<
           )}
         </Stack>
       </Box>
-
       <BulkLyricsEditDialog
         open={bulkDialogOpen}
         onClose={() => setBulkDialogOpen(false)}
@@ -1404,9 +1453,10 @@ const SectionNarrativeAnswerRow = memo(function SectionNarrativeAnswerRow({
       <Stack
         direction={{ xs: 'column', md: 'row' }}
         spacing={{ xs: 1.5, md: 3 }}
-        alignItems={{ xs: 'stretch', md: 'flex-start' }}
-        sx={{ mt: 1.125 }}
-      >
+        sx={{
+          alignItems: { xs: 'stretch', md: 'flex-start' },
+          mt: 1.125
+        }}>
         <Box component="section" aria-label={sourceAria} sx={{ flex: 1, minWidth: 0, pr: { md: 0.5 } }}>
           {sourceEditable ? (
             <InputBase
@@ -1435,7 +1485,13 @@ const SectionNarrativeAnswerRow = memo(function SectionNarrativeAnswerRow({
               {sourceBody}
             </Typography>
           ) : (
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, fontStyle: 'italic' }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.6,
+                fontStyle: 'italic'
+              }}>
               {sourceEmptyKind === 'mismatch'
                 ? 'This section no longer matches the saved lyrics. Use Full lyrics… to re-sync.'
                 : 'No lines in this section.'}
@@ -1647,7 +1703,12 @@ const SectionNarrativeEditor = forwardRef<
   if (!hasLyrics) {
     return (
       <Stack spacing={2} sx={{ maxWidth: 720, mx: 'auto' }}>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.55
+          }}>
           This exercise uses the same Genius-style lyrics as <strong>Lyrics in your own words</strong>. Paste them here
           first (or finish that exercise) so each <code>[Verse]</code> / <code>[Chorus]</code> block becomes its own
           prompt. Optional{' '}
@@ -1675,20 +1736,28 @@ const SectionNarrativeEditor = forwardRef<
   return (
     <Stack spacing={2.5} sx={{ maxWidth: { xs: 1, md: 1100 }, mx: 'auto', width: 1 }}>
       <Box>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.55
+          }}>
           {ENCORE_PRACTICE_EXERCISE_CATALOG.lyricsSectionNarrative.description} If the same chorus returns later, treat
           it as a new beat: how has the story shifted since the last time we heard it? Edit a section&rsquo;s source
           lines inline to fix typos, or use <strong>Full lyrics&hellip;</strong> for a bigger rewrite.
         </Typography>
         <Stack
           direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          flexWrap="wrap"
-          gap={1}
-          sx={{ mt: 0.5 }}
-        >
-          <Typography variant="caption" color="text.secondary">
+          sx={{
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 1,
+            mt: 0.5
+          }}>
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             {total > 0 ? `${done} of ${total} sections` : 'No sections in saved lyrics.'}
           </Typography>
           {!readOnly ? (
@@ -1704,7 +1773,6 @@ const SectionNarrativeEditor = forwardRef<
           ) : null}
         </Stack>
       </Box>
-
       <Stack
         direction="row"
         spacing={0}
@@ -1717,20 +1785,29 @@ const SectionNarrativeEditor = forwardRef<
       >
         <Typography
           variant="overline"
-          color="text.secondary"
-          sx={{ flex: 1, letterSpacing: '0.16em', fontWeight: 600, fontSize: '0.62rem', opacity: 0.75 }}
-        >
+          sx={{
+            color: "text.secondary",
+            flex: 1,
+            letterSpacing: '0.16em',
+            fontWeight: 600,
+            fontSize: '0.62rem',
+            opacity: 0.75
+          }}>
           Source
         </Typography>
         <Typography
           variant="overline"
-          color="text.secondary"
-          sx={{ flex: 1, letterSpacing: '0.16em', fontWeight: 600, fontSize: '0.62rem', opacity: 0.75 }}
-        >
+          sx={{
+            color: "text.secondary",
+            flex: 1,
+            letterSpacing: '0.16em',
+            fontWeight: 600,
+            fontSize: '0.62rem',
+            opacity: 0.75
+          }}>
           Your notes
         </Typography>
       </Stack>
-
       <Stack spacing={3}>
         {local.sections.map((sec, i) => {
           const lyricSec = parsedLyricsSections[i];
@@ -1769,7 +1846,6 @@ const SectionNarrativeEditor = forwardRef<
           );
         })}
       </Stack>
-
       <BulkLyricsEditDialog
         open={bulkDialogOpen}
         onClose={() => setBulkDialogOpen(false)}
@@ -1897,10 +1973,21 @@ const NineQuestionsEditor = forwardRef<
   return (
     <Stack spacing={3} sx={{ maxWidth: 720, mx: 'auto' }}>
       <Box>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.55
+          }}>
           {ENCORE_PRACTICE_EXERCISE_CATALOG.characterNineQuestions.description}
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            mt: 0.5
+          }}>
           {done} of {total} answered
         </Typography>
       </Box>

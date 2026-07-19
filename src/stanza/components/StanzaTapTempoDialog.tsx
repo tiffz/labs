@@ -92,7 +92,9 @@ function TapTempoHintRow({
   children: ReactNode;
 }) {
   return (
-    <Stack direction="row" spacing={1.75} alignItems="flex-start">
+    <Stack direction="row" spacing={1.75} sx={{
+      alignItems: "flex-start"
+    }}>
       <Box
         aria-hidden
         sx={(theme: Theme) => ({
@@ -109,7 +111,13 @@ function TapTempoHintRow({
       >
         <Icon sx={{ fontSize: 17 }} />
       </Box>
-      <Typography variant="body2" color="text.secondary" sx={{ pt: 0.45, lineHeight: 1.55 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: "text.secondary",
+          pt: 0.45,
+          lineHeight: 1.55
+        }}>
         {children}
       </Typography>
     </Stack>
@@ -157,7 +165,9 @@ function TapTempoReadyPanel({
         }}
       >
         {steps.map(({ icon: Icon, title, body }) => (
-          <Stack key={title} component="li" direction="row" spacing={2.25} alignItems="flex-start">
+          <Stack key={title} component="li" direction="row" spacing={2.25} sx={{
+            alignItems: "flex-start"
+          }}>
             <Box
               aria-hidden
               sx={(theme: Theme) => ({
@@ -183,16 +193,17 @@ function TapTempoReadyPanel({
               </Typography>
               <Typography
                 variant="body2"
-                color="text.secondary"
-                sx={{ lineHeight: 1.55, letterSpacing: '0.015625rem' }}
-              >
+                sx={{
+                  color: "text.secondary",
+                  lineHeight: 1.55,
+                  letterSpacing: '0.015625rem'
+                }}>
                 {body}
               </Typography>
             </Box>
           </Stack>
         ))}
       </Stack>
-
       <Box
         className="stanza-tap-tempo-hints-card"
         sx={(theme: Theme) => ({
@@ -270,21 +281,30 @@ function TapTempoPreviewPanel({
 
   return (
     <Stack spacing={3.5} className="stanza-tap-tempo-preview-panel">
-      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55, letterSpacing: '0.015625rem' }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: "text.secondary",
+          lineHeight: 1.55,
+          letterSpacing: '0.015625rem'
+        }}>
         Beat 1 and BPM were extrapolated from your taps
         {tapSessionStartSec != null && tapStartedFromPlayhead
           ? ` at ${formatTapClock(tapSessionStartSec)}`
           : ''}
         . Check from the {scopeLabel} so the click lands on the downbeat before you save.
       </Typography>
-
       <Stack spacing={2.25}>
         <Box sx={{ width: '100%' }}>
           <Typography
             variant="caption"
-            color="text.secondary"
-            sx={{ display: 'block', mb: 0.75, fontWeight: 600, letterSpacing: '0.02em' }}
-          >
+            sx={{
+              color: "text.secondary",
+              display: 'block',
+              mb: 0.75,
+              fontWeight: 600,
+              letterSpacing: '0.02em'
+            }}>
             BPM
           </Typography>
           <BpmInput
@@ -302,9 +322,13 @@ function TapTempoPreviewPanel({
         <Box sx={{ width: '100%' }}>
           <Typography
             variant="caption"
-            color="text.secondary"
-            sx={{ display: 'block', mb: 0.75, fontWeight: 600, letterSpacing: '0.02em' }}
-          >
+            sx={{
+              color: "text.secondary",
+              display: 'block',
+              mb: 0.75,
+              fontWeight: 600,
+              letterSpacing: '0.02em'
+            }}>
             Beat 1 (ms) from {scopeLabel}
           </Typography>
           <TextField
@@ -313,12 +337,13 @@ function TapTempoPreviewPanel({
             value={previewOffsetInput}
             onChange={(e) => onPreviewOffsetInputChange(e.target.value)}
             onBlur={onPreviewOffsetBlur}
-            inputProps={{ inputMode: 'numeric' }}
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1 } }}
+            slotProps={{
+              htmlInput: { inputMode: 'numeric' }
+            }}
           />
         </Box>
       </Stack>
-
       <Stack spacing={1.25}>
         <Button
           type="button"
@@ -345,8 +370,13 @@ function TapTempoPreviewPanel({
           </Button>
         ) : null}
       </Stack>
-
-      <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.55, display: 'block' }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: "text.secondary",
+          lineHeight: 1.55,
+          display: 'block'
+        }}>
         {tapsCount} taps recorded. Nudge Beat 1 if the grid feels early or late.
       </Typography>
     </Stack>
@@ -661,15 +691,14 @@ export default function StanzaTapTempoDialog({
         </Typography>
         <Typography
           variant="body2"
-          color="text.secondary"
           sx={{
+            color: "text.secondary",
             mt: 1,
             mx: 'auto',
             maxWidth: 300,
             lineHeight: 1.55,
-            letterSpacing: '0.015625rem',
-          }}
-        >
+            letterSpacing: '0.015625rem'
+          }}>
           Calibrate BPM and Beat 1 by tapping along with the {timingScope === 'song' ? 'track' : 'section'}.
         </Typography>
       </DialogTitle>
@@ -685,8 +714,18 @@ export default function StanzaTapTempoDialog({
         ) : null}
 
         {phase === 'countdown' ? (
-          <Stack spacing={2} alignItems="center" sx={{ py: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+          <Stack
+            spacing={2}
+            sx={{
+              alignItems: "center",
+              py: 2
+            }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                textAlign: 'center'
+              }}>
               Get ready. Tap on each downbeat once playback begins
               {tapSessionStartSec != null ? ` from ${formatTapClock(tapSessionStartSec)}` : ''}.
             </Typography>
@@ -703,7 +742,12 @@ export default function StanzaTapTempoDialog({
 
         {phase === 'tapping' ? (
           <Stack spacing={2}>
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.45
+              }}>
               Tap on every downbeat
               {tapSessionStartSec != null ? ` from ${formatTapClock(tapSessionStartSec)}` : ''}.
               {' '}
@@ -715,7 +759,9 @@ export default function StanzaTapTempoDialog({
               aria-label="Tap progress"
               sx={{ borderRadius: 1, height: 6 }}
             />
-            <Typography variant="caption" color="text.secondary" aria-live="polite">
+            <Typography variant="caption" aria-live="polite" sx={{
+              color: "text.secondary"
+            }}>
               {taps.length} of {STANZA_METRONOME_TAP_COUNT} taps
               {liveEstimate != null ? ` · about ${Math.round(liveEstimate)} BPM` : ''}
             </Typography>

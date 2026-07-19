@@ -145,10 +145,12 @@ function LabsAppsCompactRow(props: {
         direction="row"
         component="nav"
         aria-label="Labs apps on this Google account"
-        flexWrap="wrap"
-        alignItems="center"
-        sx={{ columnGap: 0.75, rowGap: 0.25 }}
-      >
+        sx={{
+          flexWrap: "wrap",
+          alignItems: "center",
+          columnGap: 0.75,
+          rowGap: 0.25
+        }}>
         {LABS_GOOGLE_SESSION_CONSUMERS.map((app, i) => {
           const here = currentId === app.id;
           const openedAt = touches[app.id];
@@ -159,7 +161,13 @@ function LabsAppsCompactRow(props: {
           return (
             <Box key={app.id} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
               {i > 0 ? (
-                <Typography component="span" variant="caption" color="text.disabled" sx={{ userSelect: 'none' }}>
+                <Typography
+                  component="span"
+                  variant="caption"
+                  sx={{
+                    color: "text.disabled",
+                    userSelect: 'none'
+                  }}>
                   ·
                 </Typography>
               ) : null}
@@ -297,7 +305,13 @@ function LabsAccountSignInMenu(props: {
           <Typography variant="subtitle1" component="h2" sx={{ fontWeight: 600, letterSpacing: '-0.02em', mb: 1 }}>
             Google account
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 1.5,
+              lineHeight: 1.5
+            }}>
             Sign in to back up to Drive. Uses the same session as Encore on this browser.
           </Typography>
           {error ? (
@@ -359,7 +373,12 @@ function LabsAccountBackupBlock(props: {
   if (!backup.testerOk) {
     return (
       <Alert severity="info" sx={{ ...alertSurfaceSx, py: 0.5, '& .MuiAlert-message': { py: 0.5 } }}>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.45
+          }}>
           This account is not on the Google Drive backup allowlist for this deployment.
         </Typography>
       </Alert>
@@ -372,8 +391,17 @@ function LabsAccountBackupBlock(props: {
 
   return (
     <Stack spacing={1.5}>
-      <Stack direction="row" alignItems="flex-start" spacing={0.5} useFlexGap>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, flex: 1, minWidth: 0 }}>
+      <Stack direction="row" spacing={0.5} useFlexGap sx={{
+        alignItems: "flex-start"
+      }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.5,
+            flex: 1,
+            minWidth: 0
+          }}>
           {backup.scopeSummary}
         </Typography>
         <AppTooltip title={scopeTooltip}>
@@ -387,7 +415,13 @@ function LabsAccountBackupBlock(props: {
         </AppTooltip>
       </Stack>
       {backup.lastBackupExportedAt ? (
-        <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: -0.5 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.disabled",
+            display: 'block',
+            mt: -0.5
+          }}>
           Last backup {formatLabsDriveInstant(backup.lastBackupExportedAt)}
         </Typography>
       ) : null}
@@ -620,16 +654,25 @@ export function LabsAccountMenu(props: LabsAccountMenuProps) {
               <>
                 <Divider sx={{ my: 2 }} />
 
-                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.25 }}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{
+                    alignItems: "center",
+                    mb: 1.25
+                  }}>
                   <AddToDriveIcon sx={{ fontSize: 22, color: 'primary.main', flexShrink: 0 }} aria-hidden />
                   <Typography component="h3" variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.3, color: 'text.primary' }}>
                     Google Drive backup
                     <Typography
                       component="span"
                       variant="caption"
-                      color="text.secondary"
-                      sx={{ ml: 0.75, fontWeight: 600, letterSpacing: '0.02em' }}
-                    >
+                      sx={{
+                        color: "text.secondary",
+                        ml: 0.75,
+                        fontWeight: 600,
+                        letterSpacing: '0.02em'
+                      }}>
                       (test)
                     </Typography>
                   </Typography>

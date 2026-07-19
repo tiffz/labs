@@ -72,13 +72,19 @@ export default function RichTextLinkHoverPopover({
             </Typography>
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', wordBreak: 'break-all', lineHeight: 1.45, mt: 0.25 }}
-            >
+              sx={{
+                color: "text.secondary",
+                display: 'block',
+                wordBreak: 'break-all',
+                lineHeight: 1.45,
+                mt: 0.25
+              }}>
               {preview.subtitle}
             </Typography>
           </Box>
-          <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+          <Stack direction="row" spacing={0.75} useFlexGap sx={{
+            flexWrap: "wrap"
+          }}>
             <Button
               size="small"
               variant="contained"
@@ -95,7 +101,12 @@ export default function RichTextLinkHoverPopover({
             ) : null}
           </Stack>
           {!readOnly ? (
-            <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.35 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.35
+              }}>
               Tip: ⌘-click or Ctrl-click the link text to open without using this card.
             </Typography>
           ) : null}

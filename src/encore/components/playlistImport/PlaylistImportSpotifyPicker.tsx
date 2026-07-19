@@ -87,7 +87,12 @@ export function PlaylistImportSpotifyPicker(
           overflow: 'visible',
         }}
       >
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.5
+          }}>
           {importTracks.length > 0
             ? 'Pick a track already in this import (Spotify-only rows), or search Spotify and choose a result.'
             : 'Search Spotify and pick a track to attach to this row. That helps match library songs and fills in catalog metadata on import.'}
@@ -101,7 +106,9 @@ export function PlaylistImportSpotifyPicker(
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={1.5}
-            alignItems={{ sm: 'flex-start' }}
+            sx={{
+              alignItems: { sm: 'flex-start' }
+            }}
           >
             <TextField
               size="small"
@@ -109,8 +116,10 @@ export function PlaylistImportSpotifyPicker(
               value={query}
               onChange={(e) => onChangeQuery(e.target.value)}
               fullWidth
-              InputLabelProps={{ shrink: true }}
               sx={{ flex: 1, minWidth: 0 }}
+              slotProps={{
+                inputLabel: { shrink: true }
+              }}
             />
             <Button
               variant="contained"
@@ -125,9 +134,12 @@ export function PlaylistImportSpotifyPicker(
           </Stack>
           <Typography
             variant="caption"
-            color="text.secondary"
-            sx={{ display: 'block', mt: 1, lineHeight: 1.45 }}
-          >
+            sx={{
+              color: "text.secondary",
+              display: 'block',
+              mt: 1,
+              lineHeight: 1.45
+            }}>
             {importTracks.length > 0
               ? 'Prefilled using track and artist hints from the YouTube title. Import-only rows below always show; rows matching your search text are sorted to the top.'
               : 'Prefilled where possible from the YouTube title. Rows matching your search are sorted to the top.'}
@@ -149,9 +161,12 @@ export function PlaylistImportSpotifyPicker(
             </Typography>
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', mb: 1, lineHeight: 1.45 }}
-            >
+              sx={{
+                color: "text.secondary",
+                display: 'block',
+                mb: 1,
+                lineHeight: 1.45
+              }}>
               Spotify-only rows with no video yet in this import.
             </Typography>
             <List
@@ -181,14 +196,13 @@ export function PlaylistImportSpotifyPicker(
                   <ListItemText
                     primary={sp.title}
                     secondary={sp.artist}
-                    primaryTypographyProps={{
-                      noWrap: true,
-                      title: sp.title,
-                      variant: 'subtitle2',
-                      fontWeight: 500,
-                    }}
-                    secondaryTypographyProps={{ noWrap: true, variant: 'body2' }}
-                  />
+                    slotProps={{
+                      primary: { noWrap: true,
+                        title: sp.title,
+                        variant: 'subtitle2', sx: { fontWeight: 500 } },
+
+                      secondary: { noWrap: true, variant: 'body2' }
+                    }} />
                 </ListItemButton>
               ))}
             </List>

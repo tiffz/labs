@@ -40,19 +40,18 @@ export function PerformancesBulkSelectionBar(props: PerformancesBulkSelectionBar
     <Stack
       direction={{ xs: 'column', sm: 'row' }}
       spacing={1}
-      alignItems={{ sm: 'center' }}
-      flexWrap="wrap"
       useFlexGap
       sx={{
+        alignItems: { sm: 'center' },
+        flexWrap: "wrap",
         mt: 2,
         mb: 1,
         p: 1.5,
         borderRadius: 2,
         border: 1,
         borderColor: 'divider',
-        bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
-      }}
-    >
+        bgcolor: (t) => alpha(t.palette.primary.main, 0.06)
+      }}>
       {/*
         Structured bulk-action bar mirroring LibraryScreen: edit affordances grouped on the
         left (Set venue, Set accompaniment), destructive Delete tucked into an overflow menu

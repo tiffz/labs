@@ -46,7 +46,9 @@ export function OriginalsSongHeader({
 
   return (
     <Stack spacing={0} className="encore-originals-no-print">
-      <Stack direction="row" alignItems="flex-start" spacing={2} useFlexGap>
+      <Stack direction="row" spacing={2} useFlexGap sx={{
+        alignItems: "flex-start"
+      }}>
         <Tooltip title="Back to originals">
           <IconButton
             component="a"
@@ -74,24 +76,33 @@ export function OriginalsSongHeader({
             placeholder="Untitled original"
             variant="standard"
             fullWidth
-            InputProps={{ disableUnderline: true }}
-            inputProps={{
-              'aria-label': 'Song title',
-              style: {
-                fontSize: '1.375rem',
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                padding: 0,
-              },
-            }}
             sx={{
               mt: 0.5,
               '& .MuiInput-root': { fontSize: 'inherit' },
             }}
-          />
+            slotProps={{
+              input: { disableUnderline: true },
+
+              htmlInput: {
+                'aria-label': 'Song title',
+                style: {
+                  fontSize: '1.375rem',
+                  fontWeight: 700,
+                  letterSpacing: '-0.02em',
+                  padding: 0,
+                },
+              }
+            }} />
         </Box>
 
-        <Stack direction="row" alignItems="center" spacing={0.5} sx={{ flexShrink: 0, pt: 0.5 }}>
+        <Stack
+          direction="row"
+          spacing={0.5}
+          sx={{
+            alignItems: "center",
+            flexShrink: 0,
+            pt: 0.5
+          }}>
           <ToggleButtonGroup
             size="small"
             exclusive
@@ -142,7 +153,6 @@ export function OriginalsSongHeader({
           </Tooltip>
         </Stack>
       </Stack>
-
       <Menu anchorEl={historyAnchor} open={Boolean(historyAnchor)} onClose={() => setHistoryAnchor(null)}>
         {historyNewestFirst.length === 0 ? (
           <MenuItem disabled>No snapshots yet</MenuItem>
@@ -160,7 +170,6 @@ export function OriginalsSongHeader({
           ))
         )}
       </Menu>
-
       <Menu anchorEl={moreAnchor} open={Boolean(moreAnchor)} onClose={() => setMoreAnchor(null)}>
         <MenuItem
           onClick={() => {

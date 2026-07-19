@@ -105,10 +105,17 @@ export function LyreflyComicReaderDialog({
       maxWidth={false}
       aria-labelledby="lyrefly-comic-reader-title"
       data-testid="lyrefly-comic-reader-dialog"
-      PaperProps={{ className: 'lyrefly-scroll-reader-dialog' }}
+      slotProps={{
+        paper: { className: 'lyrefly-scroll-reader-dialog' }
+      }}
     >
       <DialogTitle id="lyrefly-comic-reader-title" component="div">
-        <Stack direction="row" alignItems="center" gap={1}>
+        <Stack
+          direction="row"
+          sx={{
+            alignItems: "center",
+            gap: 1
+          }}>
           <Box component="h2" sx={{ m: 0, flex: 1, minWidth: 0, font: 'inherit' }}>
             Scroll preview{titleSuffix ? ` (${titleSuffix})` : ''}: {project.title}
           </Box>

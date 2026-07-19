@@ -58,10 +58,18 @@ export function PerformanceAddVideoSourceStrip(props: PerformanceAddVideoSourceS
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         spacing={{ xs: 1.25, sm: 2 }}
-        alignItems={{ sm: 'center' }}
+        sx={{
+          alignItems: { sm: 'center' }
+        }}
       >
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Stack direction="row" alignItems="center" spacing={0.625} sx={{ mb: 0.75 }}>
+          <Stack
+            direction="row"
+            spacing={0.625}
+            sx={{
+              alignItems: "center",
+              mb: 0.75
+            }}>
             <AttachFileOutlinedIcon sx={sourceIconSx} aria-hidden />
             <Typography component="span" sx={sourceLabelSx}>
               From your device
@@ -111,7 +119,13 @@ export function PerformanceAddVideoSourceStrip(props: PerformanceAddVideoSourceS
         </Divider>
 
         <Box sx={{ flex: 1.05, minWidth: 0 }}>
-          <Stack direction="row" alignItems="center" spacing={0.625} sx={{ mb: 0.75 }}>
+          <Stack
+            direction="row"
+            spacing={0.625}
+            sx={{
+              alignItems: "center",
+              mb: 0.75
+            }}>
             <InsertLinkOutlinedIcon sx={sourceIconSx} aria-hidden />
             <Typography component="span" sx={sourceLabelSx}>
               From a link
@@ -125,8 +139,10 @@ export function PerformanceAddVideoSourceStrip(props: PerformanceAddVideoSourceS
             size="small"
             disabled={uploading}
             placeholder="YouTube, Google Drive, or URL"
-            inputProps={{ 'aria-label': 'Video link' }}
             sx={linkFieldSx}
+            slotProps={{
+              htmlInput: { 'aria-label': 'Video link' }
+            }}
           />
         </Box>
       </Stack>

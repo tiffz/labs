@@ -219,8 +219,10 @@ function SourceRow({
           <Switch
             checked={Boolean(checked)}
             onChange={(_, next) => onToggle(next)}
-            inputProps={{ 'aria-label': toggleAriaLabel ?? `Toggle ${name}` }}
             size="small"
+            slotProps={{
+              input: { 'aria-label': toggleAriaLabel ?? `Toggle ${name}` }
+            }}
           />
         )}
       </Box>
@@ -479,12 +481,14 @@ export default function InputSourcesMenu({
                           },
                         }}
                         MenuProps={{
-                          PaperProps: {
-                            sx: {
-                              borderRadius: '12px',
-                              mt: 1,
-                              boxShadow:
-                                '0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(0,0,0,0.08)',
+                          slotProps: {
+                            paper: {
+                              sx: {
+                                borderRadius: '12px',
+                                mt: 1,
+                                boxShadow:
+                                  '0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(0,0,0,0.08)',
+                              },
                             },
                           },
                         }}

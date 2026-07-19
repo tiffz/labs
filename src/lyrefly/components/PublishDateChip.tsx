@@ -74,8 +74,6 @@ export function PublishDateChip({
             label="Published"
             value={draft}
             placeholder="YYYY-MM-DD"
-            inputProps={{ inputMode: 'numeric', 'aria-label': 'Published date' }}
-            InputLabelProps={{ shrink: true }}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
@@ -83,8 +81,13 @@ export function PublishDateChip({
                 save();
               }
             }}
-          />
-          <Stack direction="row" spacing={1} justifyContent="flex-end">
+            slotProps={{
+              htmlInput: { inputMode: 'numeric', 'aria-label': 'Published date' },
+              inputLabel: { shrink: true }
+            }} />
+          <Stack direction="row" spacing={1} sx={{
+            justifyContent: "flex-end"
+          }}>
             <Button size="small" variant="text" onClick={close}>
               Cancel
             </Button>

@@ -130,7 +130,12 @@ export function ProjectWorkbench({ projectId, initialStage, onBack }: ProjectWor
     stageContent = project.modules.script ? (
       <ScriptStage project={project} />
     ) : (
-      <Typography variant="body2" color="text.secondary" sx={{ p: 3 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: "text.secondary",
+          p: 3
+        }}>
         Script module is disabled for this project.
       </Typography>
     );

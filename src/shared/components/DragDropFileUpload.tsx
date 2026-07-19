@@ -215,11 +215,13 @@ export function DragDropFileUpload(props: DragDropFileUploadProps): React.ReactE
       ]}
     >
       <Stack
-        alignItems={inline ? 'center' : 'center'}
         direction={inline ? 'row' : 'column'}
-        gap={inline ? 1 : compact ? 0.5 : 1.25}
-        sx={{ maxWidth: inline ? 'none' : compact ? 420 : 360, width: inline ? '100%' : undefined }}
-      >
+        sx={{
+          alignItems: inline ? 'center' : 'center',
+          gap: inline ? 1 : compact ? 0.5 : 1.25,
+          maxWidth: inline ? 'none' : compact ? 420 : 360,
+          width: inline ? '100%' : undefined
+        }}>
         <CloudUploadOutlinedIcon
           sx={{
             fontSize: inline ? 20 : compact ? 22 : 34,
@@ -260,9 +262,13 @@ export function DragDropFileUpload(props: DragDropFileUploadProps): React.ReactE
           {helperText ? (
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ lineHeight: 1.45, letterSpacing: '-0.008em', display: 'block', mt: inline ? 0.125 : 0 }}
-            >
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.45,
+                letterSpacing: '-0.008em',
+                display: 'block',
+                mt: inline ? 0.125 : 0
+              }}>
               {helperText}
             </Typography>
           ) : null}

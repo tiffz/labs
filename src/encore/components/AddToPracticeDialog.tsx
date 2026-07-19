@@ -255,7 +255,9 @@ export function AddToPracticeDialog(props: AddToPracticeDialogProps): React.Reac
       slotProps={{ paper: { sx: { overflow: 'visible' } } }}
     >
       <DialogTitle id="add-to-practice-title" sx={encoreDialogTitleSx}>
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{
+          alignItems: "center"
+        }}>
           {mode === 'create' ? (
             <Tooltip title="Back to library search">
               <IconButton
@@ -291,15 +293,17 @@ export function AddToPracticeDialog(props: AddToPracticeDialogProps): React.Reac
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Title, artist, venue, key, tag…"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
-              inputProps={{ 'aria-label': 'Search your library' }}
-            />
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                },
+
+                htmlInput: { 'aria-label': 'Search your library' }
+              }} />
 
             <Box sx={panelSx}>
               <List
@@ -314,21 +318,27 @@ export function AddToPracticeDialog(props: AddToPracticeDialogProps): React.Reac
               >
                 {songs.length === 0 && !hasAnyResults && !showSpotifySection ? (
                   <Box sx={{ px: 2, py: 3 }}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                      color: "text.secondary"
+                    }}>
                       Your library is empty. Add a song with the button below.
                     </Typography>
                   </Box>
                 ) : null}
                 {showLibraryEmptyHint ? (
                   <Box sx={{ px: 2, py: 3 }}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                      color: "text.secondary"
+                    }}>
                       Search your library by title, artist, venue, key, or tag.
                     </Typography>
                   </Box>
                 ) : null}
                 {showLibraryNoMatchHint && !showSpotifySection ? (
                   <Box sx={{ px: 2, pt: 2, pb: hasAnyResults ? 1 : 2 }}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                      color: "text.secondary"
+                    }}>
                       No matches in your library.
                     </Typography>
                   </Box>
@@ -371,7 +381,9 @@ export function AddToPracticeDialog(props: AddToPracticeDialogProps): React.Reac
                   <>
                     {showLibraryNoMatchHint ? (
                       <Box sx={{ px: 2, pt: 2, pb: 1 }}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                          color: "text.secondary"
+                        }}>
                           No matches in your library.
                         </Typography>
                       </Box>
@@ -390,13 +402,23 @@ export function AddToPracticeDialog(props: AddToPracticeDialogProps): React.Reac
                     </ListSubheader>
                     {hasAnyResults ? (
                       <Box sx={{ px: 2, pb: 1 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            lineHeight: 1.45
+                          }}>
                           Not what you meant? Pick a track to save to your library and add to practice.
                         </Typography>
                       </Box>
                     ) : (
                       <Box sx={{ px: 2, pb: 1 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            lineHeight: 1.45
+                          }}>
                           Pick a track to save to your library and add to practice.
                         </Typography>
                       </Box>
@@ -407,7 +429,9 @@ export function AddToPracticeDialog(props: AddToPracticeDialogProps): React.Reac
                       </Box>
                     ) : spotifyResults.length === 0 ? (
                       <Box sx={{ px: 2, pb: 2 }}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                          color: "text.secondary"
+                        }}>
                           No Spotify matches for “{trimmedQuery}”.
                         </Typography>
                       </Box>
@@ -429,7 +453,12 @@ export function AddToPracticeDialog(props: AddToPracticeDialogProps): React.Reac
           </Stack>
         ) : (
           <Stack spacing={2}>
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.5
+              }}>
               Enter title and artist without a Spotify link. Use Back to search your library or pick a
               track from Spotify.
             </Typography>
@@ -538,19 +567,19 @@ function SongResultRow({ song, mode, busy, onClick, theme }: SongResultRowProps)
       <ListItemText
         primary={song.title}
         secondary={song.artist}
-        primaryTypographyProps={{
-          variant: 'body2',
-          fontWeight: 600,
-          noWrap: true,
-          title: song.title,
-          sx: { color: 'text.primary' },
-        }}
-        secondaryTypographyProps={{
-          variant: 'caption',
-          noWrap: true,
-          sx: { color: 'text.secondary' },
-        }}
-      />
+        slotProps={{
+          primary: { variant: 'body2',
+            noWrap: true,
+            title: song.title,
+            sx: { fontWeight: 600,  color: 'text.primary' },
+          },
+
+          secondary: {
+            variant: 'caption',
+            noWrap: true,
+            sx: { color: 'text.secondary' },
+          }
+        }} />
       {mode === 'already' ? (
         <Chip
           icon={<CheckIcon sx={{ fontSize: 14 }} />}
@@ -664,12 +693,14 @@ function ManualAddFooter({ query, onClick }: ManualAddFooterProps): React.ReactE
             ? `Title starts as “${trimmed}”. No Spotify link.`
             : 'Enter title and artist without Spotify.'
         }
-        primaryTypographyProps={{ variant: 'body2', fontWeight: 600, color: 'text.primary' }}
-        secondaryTypographyProps={{
-          variant: 'caption',
-          sx: { lineHeight: 1.4, color: 'text.secondary' },
-        }}
-      />
+        slotProps={{
+          primary: { variant: 'body2', color: 'text.primary', sx: { fontWeight: 600 } },
+
+          secondary: {
+            variant: 'caption',
+            sx: { lineHeight: 1.4, color: 'text.secondary' },
+          }
+        }} />
       <Box component="span" sx={addToPracticeAddActionSx()}>
         Enter
       </Box>

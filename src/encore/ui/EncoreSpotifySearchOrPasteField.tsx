@@ -85,21 +85,25 @@ export function EncoreSpotifySearchOrPasteField(props: EncoreSpotifySearchOrPast
               resolvePaste(inputValue);
             }
           }}
-          InputProps={{
-            ...params.InputProps,
-            startAdornment: (
-              <>
-                {encoreBrandInputStartAdornment('spotify', { iconPx: 18 })}
-                {params.InputProps.startAdornment}
-              </>
-            ),
-            endAdornment: (
-              <>
-                {inputEndAdornment}
-                {loading ? <CircularProgress color="inherit" size={16} sx={{ mr: 0.5 }} /> : null}
-                {params.InputProps.endAdornment}
-              </>
-            ),
+          slotProps={{
+            ...params.slotProps,
+
+            input: {
+              ...params.slotProps.input,
+              startAdornment: (
+                <>
+                  {encoreBrandInputStartAdornment('spotify', { iconPx: 18 })}
+                  {params.slotProps.input.startAdornment}
+                </>
+              ),
+              endAdornment: (
+                <>
+                  {inputEndAdornment}
+                  {loading ? <CircularProgress color="inherit" size={16} sx={{ mr: 0.5 }} /> : null}
+                  {params.slotProps.input.endAdornment}
+                </>
+              ),
+            }
           }}
         />
       )}

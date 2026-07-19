@@ -1,4 +1,4 @@
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -29,7 +29,9 @@ export function PerformanceStagedVideoRow(props: PerformanceStagedVideoRowProps)
   const title = file?.name ?? linkLabel ?? 'Linked video';
 
   return (
-    <Stack direction="row" spacing={1.25} alignItems="flex-start">
+    <Stack direction="row" spacing={1.25} sx={{
+      alignItems: "flex-start"
+    }}>
       {file ? (
         <LocalVideoFilePreview file={file} layout="editor" playbackActive={playbackActive} />
       ) : (
@@ -54,11 +56,25 @@ export function PerformanceStagedVideoRow(props: PerformanceStagedVideoRowProps)
         <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.35, color: 'text.secondary' }} noWrap title={title}>
           {title}
         </Typography>
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.25, lineHeight: 1.4 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: "block",
+            mt: 0.25,
+            lineHeight: 1.4
+          }}>
           {uploading ? 'Uploading…' : 'Uploads when you save'}
         </Typography>
         {extraActions ? (
-          <Stack direction="row" flexWrap="wrap" gap={0.5} useFlexGap sx={{ mt: 0.75 }}>
+          <Stack
+            direction="row"
+            useFlexGap
+            sx={{
+              flexWrap: "wrap",
+              gap: 0.5,
+              mt: 0.75
+            }}>
             {extraActions}
           </Stack>
         ) : null}

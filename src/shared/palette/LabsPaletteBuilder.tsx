@@ -143,7 +143,6 @@ export function LabsPaletteBuilder({
           Palette builder
         </Typography>
       ) : null}
-
       <div className="labs-palette-builder__mood-row">
         <FormControl size="small" fullWidth>
           <InputLabel id="labs-palette-builder-mood-label">Mood</InputLabel>
@@ -156,8 +155,10 @@ export function LabsPaletteBuilder({
             MenuProps={
               variant === 'sketchy'
                 ? {
-                    PaperProps: {
-                      className: 'scrapboard-popover labs-palette-builder__mood-menu',
+                    slotProps: {
+                      paper: {
+                        className: 'scrapboard-popover labs-palette-builder__mood-menu',
+                      },
                     },
                   }
                 : undefined
@@ -174,7 +175,6 @@ export function LabsPaletteBuilder({
           Regenerate
         </Button>
       </div>
-
       <Button
         size="small"
         variant="outlined"
@@ -185,7 +185,6 @@ export function LabsPaletteBuilder({
       >
         Surprise me
       </Button>
-
       <div className="labs-palette-builder__seed-row">
         <label className="labs-palette-builder__seed-label" htmlFor="labs-palette-builder-seed">
           Seed color
@@ -208,7 +207,6 @@ export function LabsPaletteBuilder({
           Use seed
         </Button>
       </div>
-
       <label className="labs-palette-builder__upload">
         <input
           type="file"
@@ -220,13 +218,17 @@ export function LabsPaletteBuilder({
         />
         <span>{busy ? 'Reading image…' : 'Upload image'}</span>
       </label>
-
       {error ? (
-        <Typography variant="caption" color="text.secondary" display="block" className="labs-palette-builder__error">
+        <Typography
+          variant="caption"
+          className="labs-palette-builder__error"
+          sx={{
+            color: "text.secondary",
+            display: "block"
+          }}>
           {error}
         </Typography>
       ) : null}
-
       {proposals.length > 0 ? (
         <div className="labs-palette-builder__proposals" role="list" aria-label="Palette suggestions">
           {proposals.map((proposal) => (
@@ -251,7 +253,6 @@ export function LabsPaletteBuilder({
           ))}
         </div>
       ) : null}
-
       {showActiveStrip && value ? (
         <div className="labs-palette-builder__active" aria-label="Active palette">
           <span className="labs-palette-builder__active-label">Active</span>

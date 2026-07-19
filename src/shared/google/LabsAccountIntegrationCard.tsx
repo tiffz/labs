@@ -87,7 +87,9 @@ export function LabsAccountIntegrationCard(props: {
     <Box sx={{ px: 3, py: 2.5 }}>
       <Stack spacing={1.5}>
         {/* Section header: brand mark + title + status */}
-        <Stack direction="row" alignItems="center" spacing={1.25}>
+        <Stack direction="row" spacing={1.25} sx={{
+          alignItems: "center"
+        }}>
           <Box sx={{ color: 'text.secondary', display: 'inline-flex' }}>{brandIcon}</Box>
           <Typography
             variant="caption"
@@ -113,12 +115,24 @@ export function LabsAccountIntegrationCard(props: {
           <Box>
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', lineHeight: 1.35, fontWeight: 700, letterSpacing: '0.06em', mb: 0.35 }}
-            >
+              sx={{
+                color: "text.secondary",
+                display: 'block',
+                lineHeight: 1.35,
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                mb: 0.35
+              }}>
               {identity.label}
             </Typography>
-            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ flexWrap: 'wrap', rowGap: 0.25 }}>
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{
+                alignItems: "center",
+                flexWrap: 'wrap',
+                rowGap: 0.25
+              }}>
               <Typography
                 variant="body2"
                 sx={{ fontWeight: 600, lineHeight: 1.45, wordBreak: 'break-word', minWidth: 0 }}
@@ -146,15 +160,24 @@ export function LabsAccountIntegrationCard(props: {
 
         {/* Description + optional meta caption */}
         <Box>
-          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.65, letterSpacing: '-0.01em' }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.65,
+              letterSpacing: '-0.01em'
+            }}>
             {description}
           </Typography>
           {meta ? (
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', mt: 0.5, lineHeight: 1.5 }}
-            >
+              sx={{
+                color: "text.secondary",
+                display: 'block',
+                mt: 0.5,
+                lineHeight: 1.5
+              }}>
               {meta}
             </Typography>
           ) : null}
@@ -162,7 +185,9 @@ export function LabsAccountIntegrationCard(props: {
 
         {/* Utility icon row (open external, reorganize, etc.) */}
         {utilityActions && utilityActions.length > 0 ? (
-          <Stack direction="row" spacing={0.25} alignItems="center">
+          <Stack direction="row" spacing={0.25} sx={{
+            alignItems: "center"
+          }}>
             {utilityActions.map((u) => (
               <Tooltip key={u.label} title={u.label}>
                 <span>
@@ -202,7 +227,14 @@ export function LabsAccountIntegrationCard(props: {
           (() => {
             const primaryNeedsCta = status.tone !== 'ok';
             return (
-              <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center" sx={{ pt: 0.25 }}>
+              <Stack
+                direction="row"
+                sx={{
+                  gap: 1,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  pt: 0.25
+                }}>
                 {primary ? (
                   <Button
                     size="small"
@@ -271,7 +303,13 @@ export function LabsAccountIntegrationCard(props: {
         ) : null}
 
         {footnote ? (
-          <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.55, display: 'block' }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.55,
+              display: 'block'
+            }}>
             {footnote}
           </Typography>
         ) : null}

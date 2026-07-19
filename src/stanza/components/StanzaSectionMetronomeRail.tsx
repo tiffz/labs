@@ -790,13 +790,11 @@ export default function StanzaSectionMetronomeRail({
 
         </Box>
       </Box>
-
       {analysisError && (
         <Alert severity="error" onClose={() => setAnalysisError(null)}>
           Couldn&apos;t detect tempo. Try again, or set BPM manually.
         </Alert>
       )}
-
       <Dialog
         open={analysisModalOpen}
         onClose={dismissAnalysisModal}
@@ -807,7 +805,13 @@ export default function StanzaSectionMetronomeRail({
       >
         <DialogTitle sx={{ pb: 1 }}>Automatic tempo (preview)</DialogTitle>
         <DialogContent className="stanza-tempo-preview-dialog-content">
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 2,
+              lineHeight: 1.5
+            }}>
             Detection gets you close. Tweak BPM and Beat 1 (ms), then play from the{' '}
             {timingScope === 'song' ? 'track start' : 'section start'} so the click lands on the downbeat before you
             save.
@@ -817,11 +821,20 @@ export default function StanzaSectionMetronomeRail({
               <Stack
                 direction={{ xs: 'column', sm: 'row' }}
                 spacing={1.5}
-                alignItems={{ xs: 'stretch', sm: 'flex-end' }}
                 useFlexGap
+                sx={{
+                  alignItems: { xs: 'stretch', sm: 'flex-end' }
+                }}
               >
                 <Box sx={{ flex: '1 1 0', minWidth: 0 }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.35, fontWeight: 600 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      display: 'block',
+                      mb: 0.35,
+                      fontWeight: 600
+                    }}>
                     BPM (preview)
                   </Typography>
                   <BpmInput
@@ -837,7 +850,14 @@ export default function StanzaSectionMetronomeRail({
                   />
                 </Box>
                 <Box sx={{ flex: '1 1 0', minWidth: 0, maxWidth: { sm: 220 } }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.35, fontWeight: 600 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      display: 'block',
+                      mb: 0.35,
+                      fontWeight: 600
+                    }}>
                     Beat 1 (ms) from {timingScope === 'song' ? 'track start' : 'section start'}
                   </Typography>
                   <TextField
@@ -846,17 +866,23 @@ export default function StanzaSectionMetronomeRail({
                     value={modalOffsetInput}
                     onChange={(e) => handleModalOffsetInputChange(e.target.value)}
                     onBlur={handleModalOffsetBlur}
-                    inputProps={{ inputMode: 'numeric' }}
                     sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1 } }}
+                    slotProps={{
+                      htmlInput: { inputMode: 'numeric' }
+                    }}
                   />
                 </Box>
               </Stack>
               {modalAnalysisConfidence != null ? (
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                  color: "text.secondary"
+                }}>
                   Detector confidence ~{Math.round(modalAnalysisConfidence * 100)}%
                 </Typography>
               ) : null}
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ xs: 'stretch', sm: 'center' }} useFlexGap>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} useFlexGap sx={{
+                alignItems: { xs: 'stretch', sm: 'center' }
+              }}>
                 <Button
                   type="button"
                   variant="contained"
@@ -878,7 +904,14 @@ export default function StanzaSectionMetronomeRail({
                 >
                   {playbackIsPlaying ? 'Pause' : 'Play from section start'}
                 </Button>
-                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45, flex: 1, minWidth: 0 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    lineHeight: 1.45,
+                    flex: 1,
+                    minWidth: 0
+                  }}>
                   Playback jumps to this section&apos;s start so the downbeat you hear matches the metronome strip.
                 </Typography>
               </Stack>
@@ -894,7 +927,6 @@ export default function StanzaSectionMetronomeRail({
           </Button>
         </DialogActions>
       </Dialog>
-
       <StanzaTapTempoDialog
         open={tapModalOpen}
         onClose={() => {

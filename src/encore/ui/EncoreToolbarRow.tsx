@@ -13,13 +13,15 @@ export function EncoreToolbarRow(props: EncoreToolbarRowProps): React.ReactEleme
   return (
     <Stack
       direction={{ xs: 'column', sm: 'row' }}
-      flexWrap="wrap"
-      alignItems={{ xs: 'stretch', sm: 'center' }}
-      gap={{ xs: 1.25, sm: 1.5 }}
-      rowGap={1}
-      columnGap={1.5}
-      sx={{ mb: 2, ...sx }}
-    >
+      sx={{
+        flexWrap: "wrap",
+        alignItems: { xs: 'stretch', sm: 'center' },
+        gap: { xs: 1.25, sm: 1.5 },
+        rowGap: 1,
+        columnGap: 1.5,
+        mb: 2,
+        ...sx
+      }}>
       {children}
     </Stack>
   );

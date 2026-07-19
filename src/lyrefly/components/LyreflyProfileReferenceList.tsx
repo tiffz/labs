@@ -23,7 +23,9 @@ function ProfileReferenceItem({ asset }: { asset: VisualDevAsset }): ReactElemen
     ) : asset.fileName ? (
       <DescriptionOutlinedIcon fontSize="small" />
     ) : (
-      <LinkIcon fontSize="small" />
+      <LinkIcon sx={{
+        fontSize: "small"
+      }} />
     );
 
   const titleBody = openUrl ? (
@@ -56,7 +58,9 @@ function ProfileReferenceItem({ asset }: { asset: VisualDevAsset }): ReactElemen
         <Typography component="h4" className="lyrefly-profile-ref__title">
           {titleBody}
         </Typography>
-        <Typography variant="caption" color="text.secondary" className="lyrefly-profile-ref__kind">
+        <Typography variant="caption" className="lyrefly-profile-ref__kind" sx={{
+          color: "text.secondary"
+        }}>
           {conceptShelfKindCaption(asset.kind)}
         </Typography>
         {asset.markdown?.trim() ? (
@@ -72,9 +76,10 @@ function ProfileReferenceItem({ asset }: { asset: VisualDevAsset }): ReactElemen
 export function LyreflyProfileReferenceList({ assets }: LyreflyProfileReferenceListProps): ReactElement {
   if (assets.length === 0) {
     return (
-      <Typography variant="body2" color="text.secondary" className="lyrefly-profile-ref__empty">
-        No reference links or idea cards yet.
-      </Typography>
+      <Typography variant="body2" className="lyrefly-profile-ref__empty" sx={{
+        color: "text.secondary"
+      }}>No reference links or idea cards yet.
+              </Typography>
     );
   }
 

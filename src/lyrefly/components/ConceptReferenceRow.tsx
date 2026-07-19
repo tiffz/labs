@@ -1,5 +1,5 @@
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import LinkIcon from '@mui/icons-material/Link';
 import NotesOutlinedIcon from '@mui/icons-material/NotesOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -48,7 +48,9 @@ export function ConceptReferenceRow({
     ) : asset.fileName ? (
       <DescriptionOutlinedIcon fontSize="small" />
     ) : (
-      <LinkIcon fontSize="small" />
+      <LinkIcon sx={{
+        fontSize: "small"
+      }} />
     );
 
   return (
@@ -68,7 +70,6 @@ export function ConceptReferenceRow({
           value={titleDraft}
           onChange={(e) => setTitleDraft(e.target.value)}
           onBlur={commit}
-          inputProps={{ 'aria-label': 'Reference label' }}
           placeholder="Label"
           fullWidth
           sx={{
@@ -77,8 +78,13 @@ export function ConceptReferenceRow({
               fontSize: '0.8125rem',
             },
           }}
+          slotProps={{
+            htmlInput: { 'aria-label': 'Reference label' }
+          }}
         />
-        <Typography variant="caption" color="text.secondary" className="lyrefly-concept-ref-row__kind">
+        <Typography variant="caption" className="lyrefly-concept-ref-row__kind" sx={{
+          color: "text.secondary"
+        }}>
           {conceptShelfKindCaption(asset.kind)}
         </Typography>
         <TextField

@@ -38,19 +38,28 @@ export function EncoreDriveDuplicateReuseDialog({
         </Typography>
         {refs.length > 0 ? (
           <>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                mb: 0.5
+              }}>
               Used in:
             </Typography>
             <List dense disablePadding sx={{ mb: 1 }}>
               {refs.map((label) => (
                 <ListItem key={label} disablePadding sx={{ py: 0.25 }}>
-                  <ListItemText primary={label} primaryTypographyProps={{ variant: 'body2' }} />
+                  <ListItemText primary={label} slotProps={{
+                    primary: { variant: 'body2' }
+                  }} />
                 </ListItem>
               ))}
             </List>
           </>
         ) : null}
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{
+          color: "text.secondary"
+        }}>
           Reuse the existing file to avoid another copy in Drive, or upload anyway if you need a separate file.
         </Typography>
       </DialogContent>

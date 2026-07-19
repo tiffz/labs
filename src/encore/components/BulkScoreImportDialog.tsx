@@ -439,7 +439,9 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
                   updateRow(r.id, { skipRow: true });
                 }
               }}
-              inputProps={{ 'aria-label': `Include ${r.name} when importing` }}
+              slotProps={{
+                input: { 'aria-label': `Include ${r.name} when importing` }
+              }}
             />
           );
         },
@@ -455,11 +457,22 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
           return (
             <Stack
               spacing={0.75}
-              alignItems="flex-start"
-              justifyContent="center"
-              sx={{ minWidth: 0, width: '100%', py: 0.5, minHeight: 56 }}
-            >
-              <Stack direction="row" gap={0.75} alignItems="flex-start" sx={{ minWidth: 0, width: '100%' }}>
+              sx={{
+                alignItems: "flex-start",
+                justifyContent: "center",
+                minWidth: 0,
+                width: '100%',
+                py: 0.5,
+                minHeight: 56
+              }}>
+              <Stack
+                direction="row"
+                sx={{
+                  gap: 0.75,
+                  alignItems: "flex-start",
+                  minWidth: 0,
+                  width: '100%'
+                }}>
                 {r.source === 'upload' ? (
                   <UploadFileOutlinedIcon fontSize="small" sx={{ color: 'primary.main', flexShrink: 0, mt: 0.2 }} aria-hidden />
                 ) : (
@@ -488,12 +501,27 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
                 </Box>
               </Stack>
               {r.parentPathHint ? (
-                <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.4, wordBreak: 'break-word', pl: 3 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    lineHeight: 1.4,
+                    wordBreak: 'break-word',
+                    pl: 3
+                  }}>
                   {r.parentPathHint}
                 </Typography>
               ) : null}
               {kind ? (
-                <Stack direction="row" alignItems="center" gap={0.5} flexWrap="wrap" useFlexGap sx={{ pl: 0.25 }}>
+                <Stack
+                  direction="row"
+                  useFlexGap
+                  sx={{
+                    alignItems: "center",
+                    gap: 0.5,
+                    flexWrap: "wrap",
+                    pl: 0.25
+                  }}>
                   <Tooltip title="Excluded from import by default. Check the row to include anyway.">
                     <Chip
                       size="small"
@@ -537,18 +565,42 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
           const wouldOverwrite =
             songHasKey && song?.performanceKey?.trim().toLowerCase() !== r.parsed.key.toLowerCase();
           return (
-            <Stack gap={1.25} justifyContent="center" sx={{ minWidth: 0, maxWidth: '100%', py: 0.5, minHeight: 56 }}>
+            <Stack
+              sx={{
+                gap: 1.25,
+                justifyContent: "center",
+                minWidth: 0,
+                maxWidth: '100%',
+                py: 0.5,
+                minHeight: 56
+              }}>
               <Chip size="small" label={r.parsed.key} variant="outlined" sx={{ height: 22, fontWeight: 600, alignSelf: 'flex-start' }} />
               {song ? (
-                <Stack direction="row" alignItems="flex-start" gap={0.75} sx={{ minWidth: 0, mt: 0.25 }}>
+                <Stack
+                  direction="row"
+                  sx={{
+                    alignItems: "flex-start",
+                    gap: 0.75,
+                    minWidth: 0,
+                    mt: 0.25
+                  }}>
                   <Checkbox
                     size="small"
                     sx={{ p: 0.25, alignSelf: 'flex-start' }}
                     checked={r.applyKey}
                     onChange={(e) => updateRow(r.id, { applyKey: e.target.checked })}
-                    inputProps={{ 'aria-label': 'Apply parsed key to song' }}
+                    slotProps={{
+                      input: { 'aria-label': 'Apply parsed key to song' }
+                    }}
                   />
-                  <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45, minWidth: 0, pt: 0.5 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      lineHeight: 1.45,
+                      minWidth: 0,
+                      pt: 0.5
+                    }}>
                     {wouldOverwrite ? 'Overwrite song key' : songHasKey ? 'Already set' : 'Apply to song'}
                   </Typography>
                 </Stack>
@@ -569,36 +621,68 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
           return (
             <Stack
               spacing={1.25}
-              alignItems="stretch"
-              justifyContent="center"
-              sx={{ minWidth: 0, width: '100%', py: 0.5, minHeight: 56 }}
-            >
+              sx={{
+                alignItems: "stretch",
+                justifyContent: "center",
+                minWidth: 0,
+                width: '100%',
+                py: 0.5,
+                minHeight: 56
+              }}>
               {song ? (
-                <Stack direction="row" spacing={1.25} alignItems="center" sx={{ width: '100%', minWidth: 0 }}>
+                <Stack
+                  direction="row"
+                  spacing={1.25}
+                  sx={{
+                    alignItems: "center",
+                    width: '100%',
+                    minWidth: 0
+                  }}>
                   <Avatar src={song.albumArtUrl} variant="rounded" alt="" sx={{ width: 40, height: 40, flexShrink: 0 }} />
                   <Box sx={{ minWidth: 0, flex: 1 }}>
                     <Typography
                       variant="body2"
-                      fontWeight={600}
-                      sx={{ wordBreak: 'break-word', overflowWrap: 'anywhere', whiteSpace: 'normal', lineHeight: 1.4 }}
-                    >
+                      sx={{
+                        fontWeight: 600,
+                        wordBreak: 'break-word',
+                        overflowWrap: 'anywhere',
+                        whiteSpace: 'normal',
+                        lineHeight: 1.4
+                      }}>
                       {song.title}
                     </Typography>
                     <Typography
                       variant="caption"
-                      color="text.secondary"
-                      sx={{ display: 'block', mt: 0.25, wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.45 }}
-                    >
+                      sx={{
+                        color: "text.secondary",
+                        display: 'block',
+                        mt: 0.25,
+                        wordBreak: 'break-word',
+                        overflowWrap: 'anywhere',
+                        lineHeight: 1.45
+                      }}>
                       {song.artist}
                     </Typography>
                   </Box>
                 </Stack>
               ) : (
-                <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'flex-start' }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    alignSelf: 'flex-start'
+                  }}>
                   Attach a song
                 </Typography>
               )}
-              <Stack direction="row" flexWrap="wrap" gap={0.75} alignItems="center" sx={{ pt: 0.25 }}>
+              <Stack
+                direction="row"
+                sx={{
+                  flexWrap: "wrap",
+                  gap: 0.75,
+                  alignItems: "center",
+                  pt: 0.25
+                }}>
                 <Tooltip title="Pick from library">
                   <IconButton
                     size="small"
@@ -878,12 +962,23 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
           id="bulk-score-import-title"
           sx={reviewFullscreen ? bulkScoreReviewTitleSx : { ...encoreDialogTitleSx, flexShrink: 0 }}
         >
-          <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 1
+            }}>
             <Box sx={{ minWidth: 0 }}>
               <Typography component="span" variant={reviewFullscreen ? 'subtitle1' : 'h6'} sx={{ fontWeight: 700, display: 'block' }}>
                 {reviewFullscreen ? 'Review score imports' : 'Bulk import scores'}
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.4 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  lineHeight: 1.4
+                }}>
                 {step === 'source'
                   ? 'Drag and drop PDFs / MusicXML / MIDI, or scan a Drive folder.'
                   : `${rows.length} files · ${matchedCount} paired · ${unmatchedCount} unmatched${
@@ -954,7 +1049,12 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <Box sx={{ flex: 1, height: 1, bgcolor: 'divider' }} />
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    fontWeight: 600
+                  }}>
                   OR
                 </Typography>
                 <Box sx={{ flex: 1, height: 1, bgcolor: 'divider' }} />
@@ -984,7 +1084,15 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
               {busy ? <LinearProgress /> : null}
             </>
           ) : (
-            <Stack gap={1.5} sx={{ flex: '1 1 auto', minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <Stack
+              sx={{
+                gap: 1.5,
+                flex: '1 1 auto',
+                minHeight: 0,
+                minWidth: 0,
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
               <Box
                 sx={{
                   flexShrink: 0,
@@ -1002,7 +1110,9 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
                   value={tableQuery}
                   onChange={(e) => setTableQuery(e.target.value)}
                   sx={{ flex: '1 1 160px', minWidth: 0, maxWidth: { xs: '100%', sm: 360 } }}
-                  inputProps={{ 'aria-label': 'Filter score import rows' }}
+                  slotProps={{
+                    htmlInput: { 'aria-label': 'Filter score import rows' }
+                  }}
                 />
                 <Tooltip
                   title={`Paired: a library song is selected for the file. Unpaired: still need a match. Counts: all ${rows.length}, paired ${pairedTotalCount}, unpaired ${unpairedTotalCount}.`}
@@ -1028,8 +1138,12 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
                 </Button>
               </Box>
               {progress ? (
-                <Stack gap={0.5}>
-                  <Typography variant="caption" color="text.secondary">
+                <Stack sx={{
+                  gap: 0.5
+                }}>
+                  <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                  }}>
                     Importing {progress.done} / {progress.total}…
                   </Typography>
                   <LinearProgress
@@ -1061,7 +1175,6 @@ export function BulkScoreImportDialog(props: BulkScoreImportDialogProps): ReactE
           ) : null}
         </DialogActions>
       </Dialog>
-
       <LibrarySongPickerDialog
         open={Boolean(pickerOpenForRowId)}
         onClose={() => setPickerOpenForRowId(null)}

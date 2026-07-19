@@ -64,8 +64,8 @@ export function EncoreAudioResourceNotesWrapper(props: EncoreAudioResourceNotesW
         <Tooltip title={notes.trim()}>
           <Typography
             variant="caption"
-            color="text.secondary"
             sx={{
+              color: "text.secondary",
               alignSelf: 'center',
               maxWidth: 72,
               flexShrink: 0,
@@ -74,9 +74,8 @@ export function EncoreAudioResourceNotesWrapper(props: EncoreAudioResourceNotesW
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
               fontWeight: 500,
-              lineHeight: 1.35,
-            }}
-          >
+              lineHeight: 1.35
+            }}>
             {notes.trim()}
           </Typography>
         </Tooltip>
@@ -122,7 +121,9 @@ export function EncoreAudioResourceNotesWrapper(props: EncoreAudioResourceNotesW
           minRows={2}
           maxRows={6}
           fullWidth
-          inputProps={{ 'aria-label': resourceLabel }}
+          slotProps={{
+            htmlInput: { 'aria-label': resourceLabel }
+          }}
         />
       </AnchoredPopover>
     </Box>

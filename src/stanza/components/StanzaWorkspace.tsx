@@ -2476,7 +2476,6 @@ export default function StanzaWorkspace() {
           onOpenLibraryMenu={(anchor, songId) => setLibraryMenu({ anchor, songId })}
         />
       )}
-
       {selected && (
         <StanzaViewerErrorBoundary>
         <StanzaViewerLayout
@@ -3006,7 +3005,6 @@ export default function StanzaWorkspace() {
         </StanzaViewerLayout>
         </StanzaViewerErrorBoundary>
       )}
-
       <StanzaWorkspaceDialogs
         libraryMenuAnchor={libraryMenu?.anchor ?? null}
         onCloseLibraryMenu={() => setLibraryMenu(null)}

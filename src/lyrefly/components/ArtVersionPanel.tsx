@@ -367,7 +367,6 @@ export function ArtVersionPanel({
           />
         </div>
       </div>
-
       <div className="lyrefly-version-strip" role="tablist" aria-label="Comic versions">
         <button
           type="button"
@@ -416,7 +415,6 @@ export function ArtVersionPanel({
           );
         })}
       </div>
-
       {viewingLatest ? (
         <p className="lyrefly-version-panel__latest-hint">
           Latest picks — edits on the page grid below apply here. Snapshot or upload set to save a named version.
@@ -438,9 +436,11 @@ export function ArtVersionPanel({
               }}
               disabled={busy}
               className="lyrefly-version-detail__label"
-              inputProps={{
-                'aria-label': `Version label for ${selectedVersion.label}`,
-                'data-testid': 'lyrefly-art-version-inline-label',
+              slotProps={{
+                htmlInput: {
+                  'aria-label': `Version label for ${selectedVersion.label}`,
+                  'data-testid': 'lyrefly-art-version-inline-label',
+                }
               }}
             />
             <div className="lyrefly-version-detail__actions">
@@ -548,13 +548,13 @@ export function ArtVersionPanel({
           </label>
         </section>
       ) : null}
-
       {status ? (
-        <Typography variant="body2" color="text.secondary" className="lyrefly-version-panel__status" aria-live="polite">
+        <Typography variant="body2" className="lyrefly-version-panel__status" aria-live="polite" sx={{
+          color: "text.secondary"
+        }}>
           {status}
         </Typography>
       ) : null}
-
       <Menu anchorEl={stripMenuAnchor} open={Boolean(stripMenuAnchor)} onClose={() => setStripMenuAnchor(null)}>
         <MenuItem
           onClick={() => {
@@ -567,7 +567,6 @@ export function ArtVersionPanel({
           Remove all pages and start over…
         </MenuItem>
       </Menu>
-
       <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
         <MenuItem onClick={() => void onApplyToPicks()}>Use as latest page picks</MenuItem>
         <MenuItem disabled={selectedIndex <= 0} onClick={() => void onReorder('earlier')}>
@@ -601,7 +600,6 @@ export function ArtVersionPanel({
           Remove version…
         </MenuItem>
       </Menu>
-
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle>Remove version?</DialogTitle>
         <DialogContent>
@@ -626,7 +624,6 @@ export function ArtVersionPanel({
           </Button>
         </DialogActions>
       </Dialog>
-
       <Dialog
         open={resetOpen}
         onClose={() => {
@@ -685,7 +682,6 @@ export function ArtVersionPanel({
           )}
         </DialogActions>
       </Dialog>
-
       <LyreflyVersionPreviewDialog
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}

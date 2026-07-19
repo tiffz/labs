@@ -96,7 +96,7 @@ export function originalsDashboardRailGroupLabelSx() {
 }
 
 export const originalsDashboardRailItemSx = (selected: boolean) =>
-  ({
+  (({
     borderRadius: 1,
     py: 1,
     px: 1,
@@ -104,5 +104,5 @@ export const originalsDashboardRailItemSx = (selected: boolean) =>
     border: 1,
     borderColor: selected ? 'primary.main' : 'transparent',
     bgcolor: selected ? (th: Theme) => alpha(th.palette.primary.main, 0.06) : 'transparent',
-    transition: 'border-color 120ms ease, background-color 120ms ease',
-  }) as const;
+    transition: 'border-color 120ms ease, background-color 120ms ease'
+  }) as const);

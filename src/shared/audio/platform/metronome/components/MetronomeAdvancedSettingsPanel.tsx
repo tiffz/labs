@@ -169,14 +169,15 @@ export default function MetronomeAdvancedSettingsPanel({
                 onChange={(_event, checked) => {
                   if (checked !== enabled) onEnabledChange(checked);
                 }}
-                inputProps={{ 'aria-label': 'Metronome on' }}
+                slotProps={{
+                  input: { 'aria-label': 'Metronome on' }
+                }}
               />
             }
             label="On"
           />
         ) : null}
       </Box>
-
       {showPowerControl && !metronomeActive ? (
         <Box
           className="labs-metronome-settings-panel__status"
@@ -186,7 +187,6 @@ export default function MetronomeAdvancedSettingsPanel({
           Metronome is off. Turn it on to apply settings.
         </Box>
       ) : null}
-
       <Box
         className={`labs-metronome-settings-panel__body${
           showPowerControl && !metronomeActive ? ' labs-metronome-settings-panel__body--inactive' : ''

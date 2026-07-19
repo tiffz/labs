@@ -211,7 +211,6 @@ export default function AudiationPhase({
           {layout && <MelodiaPlayhead layout={layout} progress={listeningStarted ? progress : 0} />}
         </MelodiaStaff>
       </Box>
-
       <Stack spacing={2} sx={{ width: '100%' }}>
         <Typography variant="subtitle1" component="h3" sx={{ fontWeight: 700, m: 0 }}>
           Audiation. sing this silently
@@ -253,7 +252,12 @@ export default function AudiationPhase({
 
         {listeningStarted && soundBlocked && (
           <Stack spacing={1}>
-            <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.45 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.45
+              }}>
               Browser blocked audio. tap once to unlock sound (plays the tonal framing chords and drone).
             </Typography>
             <Button type="button" variant="outlined" size="small" onClick={unlockAfterBlock}>
@@ -262,13 +266,11 @@ export default function AudiationPhase({
           </Stack>
         )}
       </Stack>
-
       <Box sx={{ pt: 0.5, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
         <Button type="button" variant="outlined" size="small" onClick={playTonic}>
           Hear tonic
         </Button>
       </Box>
-
       <Box
         sx={{
           height: 10,
@@ -287,7 +289,6 @@ export default function AudiationPhase({
           }}
         />
       </Box>
-
       <Box sx={{ pt: 1 }}>
         <Button
           variant="contained"

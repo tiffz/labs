@@ -264,7 +264,13 @@ export function EncoreResourceLinksPanel({
 
   const emptyLine =
     resources.length === 0 ? (
-      <Typography variant="caption" color="text.secondary" sx={isHubCard ? undefined : { lineHeight: 1.5, px: 0.25 }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'text.secondary',
+          ...(isHubCard ? {} : { lineHeight: 1.5, px: 0.25 }),
+        }}
+      >
         {emptyHint}
       </Typography>
     ) : null;
@@ -301,7 +307,9 @@ export function EncoreResourceLinksPanel({
           }}
         >
           <ListItemIcon sx={{ minWidth: 36 }}>
-            <LinkIcon fontSize="small" />
+            <LinkIcon sx={{
+              fontSize: "small"
+            }} />
           </ListItemIcon>
           <ListItemText primary="Add link" secondary="Paste a URL" />
         </MenuItem>
@@ -367,14 +375,14 @@ export function EncoreResourceLinksPanel({
       <>
         <Stack
           direction="row"
-          flexWrap="wrap"
-          alignItems="center"
           useFlexGap
-          sx={(t) => practiceResourceChipFieldSx(t)}
           className={['encore-resource-links-panel', isPracticeList ? 'encore-resource-links-panel--practice-chips' : 'encore-resource-links-panel--hub', className]
             .filter(Boolean)
             .join(' ')}
-        >
+          sx={[{
+            flexWrap: "wrap",
+            alignItems: "center"
+          }, (t) => practiceResourceChipFieldSx(t)]}>
           {prepend}
           {resources.map(renderResourceRow)}
           {addButton}
@@ -400,19 +408,17 @@ export function EncoreResourceLinksPanel({
       {title ? (
         <Typography
           variant={isSidebar ? 'caption' : 'subtitle2'}
-          color="text.secondary"
           sx={{
+            color: "text.secondary",
             flexShrink: 0,
             fontWeight: 700,
             letterSpacing: isSidebar ? '0.06em' : '0.02em',
             textTransform: isSidebar ? 'uppercase' : 'none',
-            pr: 0.25,
-          }}
-        >
+            pr: 0.25
+          }}>
           {title}
         </Typography>
       ) : null}
-
       <Box
         sx={{
           flex: fillHeight ? 1 : undefined,
@@ -427,7 +433,6 @@ export function EncoreResourceLinksPanel({
           {addButton}
         </Stack>
       </Box>
-
       {addMenuAndDialog}
     </Stack>
   );

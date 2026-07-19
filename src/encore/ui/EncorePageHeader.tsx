@@ -48,10 +48,12 @@ export function EncorePageHeader(props: EncorePageHeaderProps): React.ReactEleme
     <Stack
       direction={{ xs: 'column', sm: 'row' }}
       spacing={compact ? 1.25 : listSurface ? 1.25 : 2}
-      justifyContent="space-between"
-      alignItems={{ xs: 'stretch', sm: 'flex-start' }}
-      sx={{ mb: listSurface ? 0 : { xs: 3, sm: 4 }, ...sx }}
-    >
+      sx={{
+        justifyContent: "space-between",
+        alignItems: { xs: 'stretch', sm: 'flex-start' },
+        mb: listSurface ? 0 : { xs: 3, sm: 4 },
+        ...sx
+      }}>
       <Box sx={{ minWidth: 0, pr: { sm: 2 } }}>
         {kicker ? (
           <Typography variant="overline" color="primary" sx={encorePageKickerSx}>
@@ -73,9 +75,10 @@ export function EncorePageHeader(props: EncorePageHeaderProps): React.ReactEleme
         {description && !hideDescription ? (
           <Typography
             variant="body2"
-            color="text.secondary"
             sx={{
+              color: "text.secondary",
               ...encorePageHeaderSubtitleSx,
+
               ...(listSurface
                 ? {
                     display: '-webkit-box',
@@ -83,9 +86,8 @@ export function EncorePageHeader(props: EncorePageHeaderProps): React.ReactEleme
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
                   }
-                : {}),
-            }}
-          >
+                : {})
+            }}>
             {description}
           </Typography>
         ) : null}

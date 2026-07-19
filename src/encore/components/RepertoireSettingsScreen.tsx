@@ -1,5 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -211,7 +211,6 @@ export function RepertoireSettingsScreen(): ReactElement {
         title={encorePossessivePageTitle(effectiveDisplayName, 'settings')}
         description="Venues feed autocomplete and bulk import matching. Milestones are a shared checklist on every song: add keys, staging notes, or other steps you care about."
       />
-
       <Paper
         elevation={0}
         sx={{
@@ -244,13 +243,22 @@ export function RepertoireSettingsScreen(): ReactElement {
           </Button>
         </Stack>
         {sortedVenues.length === 0 ? (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             No saved venues yet. Add names you use often, or they will accumulate from performances over time.
           </Typography>
         ) : (
           <Stack divider={<Divider flexItem />} spacing={0.5}>
             {sortedVenues.map((v) => (
-              <Stack key={v} direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+              <Stack
+                key={v}
+                direction="row"
+                spacing={1}
+                sx={{
+                  alignItems: "center",
+                  justifyContent: "space-between"
+                }}>
                 <Typography variant="body2">{v}</Typography>
                 <IconButton size="small" aria-label={`Remove ${v}`} onClick={() => void removeVenue(v)}>
                   <DeleteOutlineIcon fontSize="small" />
@@ -260,7 +268,6 @@ export function RepertoireSettingsScreen(): ReactElement {
           </Stack>
         )}
       </Paper>
-
       <Paper
         elevation={0}
         sx={{
@@ -274,7 +281,13 @@ export function RepertoireSettingsScreen(): ReactElement {
         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
           Drive upload folders
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25, lineHeight: 1.55 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 1.25,
+            lineHeight: 1.55
+          }}>
           Encore still keeps its <Box component="span" sx={{ fontWeight: 600 }}>Encore_App</Box> tree in Google Drive.
           Optional overrides send new uploads to folders you choose; Encore adds shortcuts with canonical names inside its
           own folders where needed.
@@ -283,13 +296,21 @@ export function RepertoireSettingsScreen(): ReactElement {
           Folder paths here are a <strong>draft</strong> until you save them. New uploads and <strong>Organize Drive</strong>{' '}
           use the <strong>saved</strong> folder on each row, not the clipboard or picker selection by itself.
         </Alert>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.55 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 2,
+            lineHeight: 1.55
+          }}>
           Paste a folder link or id, pick a folder, then tap <strong>Save folder</strong> for that row. Saving checks the
           folder with Google and writes it to your Encore library settings. <strong>Pick folder in Drive</strong> needs the
           Google Picker API and a browser API key configured (see Encore README).
         </Typography>
         {!googleAccessToken ? (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Sign in with Google (Account menu) to choose upload folders.
           </Typography>
         ) : (
@@ -312,11 +333,19 @@ export function RepertoireSettingsScreen(): ReactElement {
                   <Stack
                     direction={{ xs: 'column', sm: 'row' }}
                     spacing={1}
-                    alignItems={{ sm: 'flex-start' }}
-                    justifyContent="space-between"
-                  >
+                    sx={{
+                      alignItems: { sm: 'flex-start' },
+                      justifyContent: "space-between"
+                    }}>
                     <Box sx={{ minWidth: 0, flex: '1 1 auto' }}>
-                      <Stack direction="row" alignItems="center" spacing={0.75} flexWrap="wrap" useFlexGap>
+                      <Stack
+                        direction="row"
+                        spacing={0.75}
+                        useFlexGap
+                        sx={{
+                          alignItems: "center",
+                          flexWrap: "wrap"
+                        }}>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
                           {label}
                         </Typography>
@@ -324,7 +353,13 @@ export function RepertoireSettingsScreen(): ReactElement {
                           <Chip size="small" label="Unsaved" color="warning" variant="outlined" sx={{ height: 22 }} />
                         ) : null}
                       </Stack>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          display: 'block',
+                          mt: 0.25
+                        }}>
                         {status}
                       </Typography>
                     </Box>
@@ -381,7 +416,6 @@ export function RepertoireSettingsScreen(): ReactElement {
           </Stack>
         )}
       </Paper>
-
       <Paper
         elevation={0}
         sx={{
@@ -394,7 +428,12 @@ export function RepertoireSettingsScreen(): ReactElement {
         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
           Global milestones
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 2
+          }}>
           Each song gets these rows as a checklist. You can mark a row N/A on a song, or add song-only rows from the
           song page. Archived rows appear at the bottom here; uncheck Archived on a row to show it on songs again.
         </Typography>
@@ -417,7 +456,9 @@ export function RepertoireSettingsScreen(): ReactElement {
           </Button>
         </Stack>
         {repertoireExtras.milestoneTemplate.length === 0 ? (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             No milestones yet. Add steps like “Sing with karaoke track in time” or “Comp keys while singing.”
           </Typography>
         ) : (
@@ -427,11 +468,10 @@ export function RepertoireSettingsScreen(): ReactElement {
                 key={m.id}
                 direction={{ xs: 'column', sm: 'row' }}
                 spacing={1}
-                alignItems={{ sm: 'center' }}
                 sx={{
-                  opacity: m.archived ? 0.72 : 1,
-                }}
-              >
+                  alignItems: { sm: 'center' },
+                  opacity: m.archived ? 0.72 : 1
+                }}>
                 <TextField
                   size="small"
                   fullWidth

@@ -115,7 +115,13 @@ export function OriginalsTableTakesCell({ song, listActive }: OriginalsTableTake
     : { disabled: true, reason: 'No demo take' };
 
   return (
-    <Stack direction="row" alignItems="center" spacing={0.25} sx={{ minWidth: 0 }}>
+    <Stack
+      direction="row"
+      spacing={0.25}
+      sx={{
+        alignItems: "center",
+        minWidth: 0
+      }}>
       <Typography variant="body2" sx={{ fontVariantNumeric: 'tabular-nums', minWidth: 16 }}>
         {count}
       </Typography>

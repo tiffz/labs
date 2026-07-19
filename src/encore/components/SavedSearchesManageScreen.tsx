@@ -1,7 +1,7 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import { LabsListLoadingState } from '../../shared/components/LabsListLoadingState';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -64,17 +64,16 @@ function SectionLabel({ children }: { children: string }): ReactElement {
   return (
     <Typography
       variant="caption"
-      color="text.secondary"
       sx={{
+        color: "text.secondary",
         display: 'block',
         fontWeight: 700,
         letterSpacing: '0.08em',
         textTransform: 'uppercase',
         fontSize: '0.6875rem',
         lineHeight: 1.4,
-        mb: 1,
-      }}
-    >
+        mb: 1
+      }}>
       {children}
     </Typography>
   );
@@ -172,7 +171,9 @@ function SavedSearchEditorCard(props: SavedSearchEditorCardProps): ReactElement 
     >
       <Stack spacing={2.75}>
         {/* Card chrome: name (primary identity) + delete (destructive, right-aligned) */}
-        <Stack direction="row" alignItems="flex-start" spacing={1.5}>
+        <Stack direction="row" spacing={1.5} sx={{
+          alignItems: "flex-start"
+        }}>
           <TextField
             label="Name"
             size="small"
@@ -204,7 +205,9 @@ function SavedSearchEditorCard(props: SavedSearchEditorCardProps): ReactElement 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Matches title, artist, venue, key…"
-              inputProps={{ 'aria-label': 'Search text' }}
+              slotProps={{
+                htmlInput: { 'aria-label': 'Search text' }
+              }}
             />
             <EncoreFilterChipBar
               fields={filterFieldDefs}
@@ -263,11 +266,17 @@ function SavedSearchEditorCard(props: SavedSearchEditorCardProps): ReactElement 
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           spacing={1}
-          justifyContent="space-between"
-          alignItems={{ xs: 'flex-start', sm: 'center' }}
-          sx={{ pt: 0.25 }}
-        >
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+          sx={{
+            justifyContent: "space-between",
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            pt: 0.25
+          }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              fontWeight: 500
+            }}>
             Updated {formatShortDate(saved.updatedAt)}
           </Typography>
           <Button
@@ -396,12 +405,20 @@ export function SavedSearchesManageScreen(props?: {
                 boxShadow: 'none',
               }}
             >
-              <Stack spacing={1.25} alignItems="center">
+              <Stack spacing={1.25} sx={{
+                alignItems: "center"
+              }}>
                 <BookmarkBorderIcon sx={{ fontSize: 32, color: 'text.disabled' }} aria-hidden />
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                   Nothing here yet.
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360, lineHeight: 1.55 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    maxWidth: 360,
+                    lineHeight: 1.55
+                  }}>
                   Save a search from the repertoire toolbar to keep its filters and search text together here.
                 </Typography>
               </Stack>

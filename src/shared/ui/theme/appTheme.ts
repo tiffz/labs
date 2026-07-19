@@ -200,7 +200,7 @@ function buildTheme(config: AppThemeConfig): Theme {
           }),
           ...(polish
             ? {
-                containedPrimary: ({ theme }) => ({
+                containedPrimary: ({ theme }: { theme: Theme }) => ({
                   boxShadow: `0 1px 3px ${alpha(theme.palette.primary.main, 0.32)}`,
                   '&:hover': {
                     boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.36)}`,

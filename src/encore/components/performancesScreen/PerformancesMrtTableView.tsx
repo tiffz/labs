@@ -61,7 +61,7 @@ export function PerformancesMrtTableView({
   const perfMrtBaseOptions = encoreMrtRepertoireTableOptions<PerfMrtRow>();
   const displayColumnDefOptions = useMemo(
     () =>
-      ({
+      (({
         [MRT_ROW_SELECT_COL]: {
           enableColumnOrdering: false,
           size: 44,
@@ -70,7 +70,9 @@ export function PerformancesMrtTableView({
           muiTableHeadCellProps: { sx: { px: 1, py: 1.25, verticalAlign: 'middle' } },
           muiTableBodyCellProps: { sx: { px: 1, py: 1.25, verticalAlign: 'middle' } },
         },
+
         [MRT_ROW_SPACER_COL]: { enableColumnOrdering: false },
+
         'mrt-row-actions': {
           header: '',
           size: 48,
@@ -80,8 +82,8 @@ export function PerformancesMrtTableView({
           enableColumnActions: false,
           muiTableHeadCellProps: { sx: { textAlign: 'right' } },
           muiTableBodyCellProps: { sx: { textAlign: 'right' } },
-        },
-      }) as const,
+        }
+      }) as const),
     [],
   );
 

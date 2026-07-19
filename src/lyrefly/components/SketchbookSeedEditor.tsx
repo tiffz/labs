@@ -1,5 +1,5 @@
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
 import Button from '@mui/material/Button';

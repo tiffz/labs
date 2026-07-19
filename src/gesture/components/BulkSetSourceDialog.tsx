@@ -78,7 +78,12 @@ export default function BulkSetSourceDialog({
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs" aria-labelledby="gesture-bulk-source-title">
       <DialogTitle id="gesture-bulk-source-title">Set source on {packCount} collections</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 1.5
+          }}>
           Applies the same source link to every selected collection.
         </Typography>
         <TextField

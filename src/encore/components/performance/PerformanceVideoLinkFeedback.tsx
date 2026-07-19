@@ -1,4 +1,4 @@
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -26,9 +26,17 @@ export function PerformanceVideoLinkFeedback(props: {
 
   if (feedback.kind === 'loading') {
     return (
-      <Stack direction="row" alignItems="center" gap={1} sx={{ minHeight: 24 }}>
+      <Stack
+        direction="row"
+        sx={{
+          alignItems: "center",
+          gap: 1,
+          minHeight: 24
+        }}>
         <CircularProgress size={14} />
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{
+          color: "text.secondary"
+        }}>
           Checking Drive…
         </Typography>
       </Stack>
@@ -37,9 +45,24 @@ export function PerformanceVideoLinkFeedback(props: {
 
   if (feedback.kind === 'ok' && browseDriveVideoFileId) {
     return (
-      <Stack direction="row" alignItems="center" spacing={0.75} sx={{ minHeight: 24 }}>
+      <Stack
+        direction="row"
+        spacing={0.75}
+        sx={{
+          alignItems: "center",
+          minHeight: 24
+        }}>
         <CheckCircleOutlineIcon color="success" sx={{ fontSize: 18, flexShrink: 0 }} aria-hidden />
-        <Typography variant="body2" fontWeight={600} sx={{ flex: 1, minWidth: 0, lineHeight: 1.25 }} noWrap title={feedback.name}>
+        <Typography
+          variant="body2"
+          noWrap
+          title={feedback.name}
+          sx={{
+            fontWeight: 600,
+            flex: 1,
+            minWidth: 0,
+            lineHeight: 1.25
+          }}>
           {feedback.name}
         </Typography>
         <Tooltip title="Open in Drive">

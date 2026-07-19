@@ -63,7 +63,13 @@ function SetupSection(props: { title: string; children: ReactNode }): ReactEleme
 
 function Step(props: { n: number; children: ReactNode }): ReactElement {
   return (
-    <Stack direction="row" spacing={1.25} alignItems="flex-start" sx={{ mt: 1 }}>
+    <Stack
+      direction="row"
+      spacing={1.25}
+      sx={{
+        alignItems: "flex-start",
+        mt: 1
+      }}>
       <Typography
         component="span"
         variant="caption"
@@ -98,11 +104,15 @@ export function GuestSnapshotDevSetupPanel(): ReactElement {
         bgcolor: 'background.paper',
       }}
     >
-      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: "text.secondary",
+          lineHeight: 1.6
+        }}>
         Local dev needs <InlineCode>VITE_GOOGLE_API_KEY</InlineCode> so Encore can read{' '}
         <InlineCode>public_snapshot.json</InlineCode> through the Vite Drive proxy.
       </Typography>
-
       <SetupSection title="Option A: env file (recommended)">
         <Step n={1}>
           Add the key to <InlineCode>src/.env.local</InlineCode> (gitignored):
@@ -113,7 +123,6 @@ export function GuestSnapshotDevSetupPanel(): ReactElement {
           <TerminalBlock>npm run dev</TerminalBlock>
         </Step>
       </SetupSection>
-
       <SetupSection title="Option B: GitHub variable + gh CLI">
         <Step n={1}>
           Sign in:
@@ -128,8 +137,14 @@ export function GuestSnapshotDevSetupPanel(): ReactElement {
           omits the key.
         </Step>
       </SetupSection>
-
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2, lineHeight: 1.55 }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: "text.secondary",
+          display: 'block',
+          mt: 2,
+          lineHeight: 1.55
+        }}>
         Google Cloud: enable Drive API and allow your dev origin on the key referrer list. Details in{' '}
         <InlineCode>src/encore/README.md</InlineCode> (Browser API key).
       </Typography>

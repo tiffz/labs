@@ -108,11 +108,13 @@ export default function PracticeOnboarding({
       maxWidth="xs"
       fullWidth
       aria-labelledby="practice-onboarding-title"
-      PaperProps={{
-        sx: {
-          borderRadius: '20px',
-          overflow: 'hidden',
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: '20px',
+            overflow: 'hidden',
+          },
+        }
       }}
     >
       <Box

@@ -27,7 +27,9 @@ export function PerformanceMediaActions(props: PerformanceMediaActionsProps): Re
 
   if (compact) {
     return (
-      <Stack direction="row" spacing={0.5} alignItems="center">
+      <Stack direction="row" spacing={0.5} sx={{
+        alignItems: "center"
+      }}>
         {canPlay ? (
           <Tooltip title={playProps.playDisabledReason ?? (playProps.isPlaying ? 'Pause' : 'Play')}>
             <span>
@@ -62,7 +64,12 @@ export function PerformanceMediaActions(props: PerformanceMediaActionsProps): Re
   }
 
   return (
-    <Stack direction="row" flexWrap="wrap" gap={0.75}>
+    <Stack
+      direction="row"
+      sx={{
+        flexWrap: "wrap",
+        gap: 0.75
+      }}>
       {canPlay ? (
         <Tooltip title={playProps.playDisabledReason ?? ''}>
           <span>

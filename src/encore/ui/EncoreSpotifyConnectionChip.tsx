@@ -146,7 +146,14 @@ export function EncoreSpotifyConnectionChip(props: EncoreSpotifyConnectionChipPr
         },
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ width: 'auto', minWidth: 0 }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: "center",
+          width: 'auto',
+          minWidth: 0
+        }}>
         <SpotifyBrandIcon
           sx={{
             fontSize: 18,
@@ -178,17 +185,15 @@ export function EncoreSpotifyConnectionChip(props: EncoreSpotifyConnectionChipPr
       {description ? (
         <Typography
           variant="body2"
-          color="text.secondary"
           sx={{
+            color: "text.secondary",
             lineHeight: 1.55,
             letterSpacing: size === 'compact' ? '-0.01em' : undefined,
-            width: description ? '100%' : undefined,
-          }}
-        >
+            width: description ? '100%' : undefined
+          }}>
           {description}
         </Typography>
       ) : null}
-
       <Menu
         id={menuId}
         anchorEl={anchorEl}
@@ -223,9 +228,10 @@ export function EncoreSpotifyConnectionChip(props: EncoreSpotifyConnectionChipPr
             <ListItemText
               primary="Reconnect Spotify"
               secondary={size === 'comfortable' ? 'Sign in again if playlists or search fail.' : undefined}
-              primaryTypographyProps={{ variant: 'body2', sx: { fontWeight: 600 } }}
-              secondaryTypographyProps={{ variant: 'caption' }}
-            />
+              slotProps={{
+                primary: { variant: 'body2', sx: { fontWeight: 600 } },
+                secondary: { variant: 'caption' }
+              }} />
           </MenuItem>
         ) : (
           <MenuItem
@@ -244,9 +250,10 @@ export function EncoreSpotifyConnectionChip(props: EncoreSpotifyConnectionChipPr
             <ListItemText
               primary="Connect Spotify"
               secondary={size === 'comfortable' ? 'Needed for playlist import and track search.' : undefined}
-              primaryTypographyProps={{ variant: 'body2', sx: { fontWeight: 600 } }}
-              secondaryTypographyProps={{ variant: 'caption' }}
-            />
+              slotProps={{
+                primary: { variant: 'body2', sx: { fontWeight: 600 } },
+                secondary: { variant: 'caption' }
+              }} />
           </MenuItem>
         )}
         {spotifyLinked ? (
@@ -264,9 +271,10 @@ export function EncoreSpotifyConnectionChip(props: EncoreSpotifyConnectionChipPr
             <ListItemText
               primary="Disconnect Spotify"
               secondary={size === 'comfortable' ? 'Clears this browser’s Spotify session.' : undefined}
-              primaryTypographyProps={{ variant: 'body2', sx: { fontWeight: 600 } }}
-              secondaryTypographyProps={{ variant: 'caption' }}
-            />
+              slotProps={{
+                primary: { variant: 'body2', sx: { fontWeight: 600 } },
+                secondary: { variant: 'caption' }
+              }} />
           </MenuItem>
         ) : null}
       </Menu>

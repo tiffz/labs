@@ -189,7 +189,6 @@ export default function InlinePackTags({
           chip
         );
       })}
-
       {adding ? (
         <Autocomplete
           freeSolo
@@ -248,7 +247,7 @@ export default function InlinePackTags({
             );
           }}
           renderInput={(params) => {
-            const { onKeyDown: autocompleteKeyDown, ...inputProps } = params.inputProps;
+            const { onKeyDown: autocompleteKeyDown, ...inputProps } = params.slotProps.htmlInput;
             return (
               <TextField
                 {...params}
@@ -256,20 +255,24 @@ export default function InlinePackTags({
                 hiddenLabel
                 placeholder="Add tag"
                 className="gesture-pack-tags-inline-input"
-                inputProps={{
-                  ...inputProps,
-                  'aria-label': 'Add collection tag',
-                  onKeyDown: (event) => {
-                    autocompleteKeyDown?.(event as React.KeyboardEvent<HTMLInputElement>);
-                    if (event.key === 'Enter' && inputValue.trim()) {
-                      event.preventDefault();
-                      commitLockRef.current = true;
-                      addTag(inputValue);
-                      stopAdding();
-                    } else if (event.key === 'Escape') {
-                      stopAdding();
-                    }
-                  },
+                slotProps={{
+                  ...params.slotProps,
+
+                  htmlInput: {
+                    ...inputProps,
+                    'aria-label': 'Add collection tag',
+                    onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
+                      autocompleteKeyDown?.(event);
+                      if (event.key === 'Enter' && inputValue.trim()) {
+                        event.preventDefault();
+                        commitLockRef.current = true;
+                        addTag(inputValue);
+                        stopAdding();
+                      } else if (event.key === 'Escape') {
+                        stopAdding();
+                      }
+                    },
+                  }
                 }}
               />
             );

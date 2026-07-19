@@ -129,10 +129,18 @@ export function EncoreMediaTrackAddMenu(props: EncoreMediaTrackAddMenuProps): Re
           onMouseDown={stopMenuClose}
           onClick={stopMenuClose}
         >
-          <Typography variant="caption" color="text.secondary" sx={menuSectionCaptionSx}>
+          <Typography
+            variant="caption"
+            sx={[{
+              color: "text.secondary"
+            }, ...(Array.isArray(menuSectionCaptionSx) ? menuSectionCaptionSx : [menuSectionCaptionSx])]}>
             Paste a link
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={menuSectionHintSx}>
+          <Typography
+            variant="caption"
+            sx={[{
+              color: "text.secondary"
+            }, ...(Array.isArray(menuSectionHintSx) ? menuSectionHintSx : [menuSectionHintSx])]}>
             Spotify, YouTube, Stanza, or Drive
           </Typography>
           <EncoreMediaUrlPasteField
@@ -156,7 +164,11 @@ export function EncoreMediaTrackAddMenu(props: EncoreMediaTrackAddMenuProps): Re
             onMouseDown={stopMenuClose}
             onClick={stopMenuClose}
           >
-            <Typography variant="caption" color="text.secondary" sx={menuSectionCaptionSx}>
+            <Typography
+              variant="caption"
+              sx={[{
+                color: "text.secondary"
+              }, ...(Array.isArray(menuSectionCaptionSx) ? menuSectionCaptionSx : [menuSectionCaptionSx])]}>
               Search Spotify
             </Typography>
             <EncoreSpotifyMenuSearchField
@@ -185,7 +197,9 @@ export function EncoreMediaTrackAddMenu(props: EncoreMediaTrackAddMenuProps): Re
           <ListItemText
             primary="Upload file"
             secondary={uploadDisabledReason ?? 'Audio or video'}
-            primaryTypographyProps={{ fontWeight: 600 }}
+            slotProps={{
+              primary: { sx: { fontWeight: 600 } }
+            }}
           />
         </MenuItem>
       </Menu>

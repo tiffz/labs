@@ -36,7 +36,6 @@ export function OriginalsWriteMode({
       multiline
       minRows={minRows}
       placeholder={'[Verse 1]\nWrite lyrics here…'}
-      inputProps={{ 'aria-label': 'Lyrics chart' }}
       sx={{
         ...(fillViewportHeight ? { flex: 1, minHeight: 0 } : {}),
         '& .MuiInputBase-root': {
@@ -45,6 +44,9 @@ export function OriginalsWriteMode({
           lineHeight: 1.65,
           ...(fillViewportHeight ? { height: 1 } : {}),
         },
+      }}
+      slotProps={{
+        htmlInput: { 'aria-label': 'Lyrics chart' }
       }}
     />
   );

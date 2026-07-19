@@ -21,12 +21,13 @@ export function LyreflyProfileChrome({ project, editorStage }: LyreflyProfileChr
           <Stack
             className="lyrefly-workbench__title-block"
             direction="row"
-            alignItems="center"
             spacing={1}
             useFlexGap
-            flexWrap="wrap"
-            sx={{ minWidth: 0 }}
-          >
+            sx={{
+              alignItems: "center",
+              flexWrap: "wrap",
+              minWidth: 0
+            }}>
             <Typography component="h1" className="lyrefly-workbench__title-display" title={project.title}>
               {project.title}
             </Typography>

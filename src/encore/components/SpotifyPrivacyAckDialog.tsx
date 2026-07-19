@@ -26,13 +26,21 @@ export function SpotifyPrivacyAckDialog(props: {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" aria-labelledby="spotify-privacy-title">
       <DialogTitle id="spotify-privacy-title" sx={encoreDialogTitleSx}>
-        <Stack direction="row" alignItems="center" spacing={1}>
+        <Stack direction="row" spacing={1} sx={{
+          alignItems: "center"
+        }}>
           <SpotifyBrandIcon sx={{ fontSize: 24 }} aria-hidden />
           <span>Connect Spotify</span>
         </Stack>
       </DialogTitle>
       <DialogContent sx={encoreDialogContentSx}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 2,
+            lineHeight: 1.6
+          }}>
           Spotify is optional. Encore only uses it for features you start (playlist import, track search). Spotify
           processes data under its own terms.
         </Typography>

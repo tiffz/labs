@@ -100,7 +100,12 @@ export function LabsDriveFolderPasteOrBrowseBlock(
     <Stack spacing={1.5}>
       {description ? (
         typeof description === 'string' ? (
-          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.45
+            }}>
             {description}
           </Typography>
         ) : (
@@ -115,7 +120,13 @@ export function LabsDriveFolderPasteOrBrowseBlock(
         size="small"
         disabled={disabled}
       />
-      <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center">
+      <Stack
+        direction="row"
+        sx={{
+          gap: 1,
+          flexWrap: "wrap",
+          alignItems: "center"
+        }}>
         <Button
           size="small"
           variant="outlined"
@@ -129,24 +140,41 @@ export function LabsDriveFolderPasteOrBrowseBlock(
         {primaryAction}
       </Stack>
       {parsedId && !googleAccessToken ? (
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.45 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: 'block',
+            lineHeight: 1.45
+          }}>
           Sign in with Google to verify this folder.
         </Typography>
       ) : null}
       {folderResolve?.status === 'loading' ? (
-        <Stack direction="row" alignItems="center" gap={1}>
+        <Stack
+          direction="row"
+          sx={{
+            alignItems: "center",
+            gap: 1
+          }}>
           <CircularProgress size={14} />
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Checking Drive…
           </Typography>
         </Stack>
       ) : null}
       {folderResolve?.status === 'ok' ? (
         <Alert severity="success" variant="outlined" sx={{ py: 0.5 }}>
-          <Typography variant="body2" fontWeight={700} component="div">
+          <Typography variant="body2" component="div" sx={{
+            fontWeight: 700
+          }}>
             {folderResolve.name}
           </Typography>
-          <Typography variant="caption" color="text.secondary" component="div">
+          <Typography variant="caption" component="div" sx={{
+            color: "text.secondary"
+          }}>
             Google Drive folder
           </Typography>
         </Alert>

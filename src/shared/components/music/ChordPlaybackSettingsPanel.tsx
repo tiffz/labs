@@ -43,23 +43,29 @@ function fieldLabel(text: string, encore = false): ReactElement {
       <Typography
         component="span"
         variant="caption"
-        color="text.secondary"
         sx={{
+          color: "text.secondary",
           display: 'block',
           mb: 0.5,
           fontWeight: 700,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
           fontSize: '0.625rem',
-          lineHeight: 1.2,
-        }}
-      >
+          lineHeight: 1.2
+        }}>
         {text}
       </Typography>
     );
   }
   return (
-    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.35, fontWeight: 600 }}>
+    <Typography
+      variant="caption"
+      sx={{
+        color: "text.secondary",
+        display: 'block',
+        mb: 0.35,
+        fontWeight: 600
+      }}>
       {text}
     </Typography>
   );

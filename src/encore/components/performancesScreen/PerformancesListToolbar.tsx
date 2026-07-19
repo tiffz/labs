@@ -71,7 +71,13 @@ export function PerformancesListToolbar(props: PerformancesListToolbarProps): Re
   } = props;
 
   const trailingControls = (
-    <Stack direction="row" alignItems="center" gap={compact ? 1.25 : 2.5} sx={{ flexShrink: 0 }}>
+    <Stack
+      direction="row"
+      sx={{
+        alignItems: "center",
+        gap: compact ? 1.25 : 2.5,
+        flexShrink: 0
+      }}>
       {table ? (
         <EncoreMrtColumnsSettingsButton
           show={viewMode === 'table'}
@@ -120,16 +126,18 @@ export function PerformancesListToolbar(props: PerformancesListToolbarProps): Re
           placeholder="Search song, artist, venue, date…"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          inputProps={{ 'aria-label': 'Search performances' }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" color="action" aria-hidden />
-              </InputAdornment>
-            ),
-          }}
           sx={{ flex: '1 1 12rem', minWidth: 0, maxWidth: { md: 320 } }}
-        />
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" aria-hidden />
+                </InputAdornment>
+              ),
+            },
+
+            htmlInput: { 'aria-label': 'Search performances' }
+          }} />
         <Box sx={{ flex: '1 1 auto', minWidth: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.75 }}>
           <EncoreFilterChipBar
             ref={perfFilterBarRef}
@@ -159,18 +167,19 @@ export function PerformancesListToolbar(props: PerformancesListToolbarProps): Re
           placeholder="Search song, artist, venue, date…"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          inputProps={{ 'aria-label': 'Search performances' }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" color="action" aria-hidden />
-              </InputAdornment>
-            ),
-          }}
           sx={{ maxWidth: { sm: 560 } }}
-        />
-      </EncoreToolbarRow>
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" aria-hidden />
+                </InputAdornment>
+              ),
+            },
 
+            htmlInput: { 'aria-label': 'Search performances' }
+          }} />
+      </EncoreToolbarRow>
       {performancesCount > 0 ? (
         <Box sx={{ mt: 2, mb: 1 }}>
           <Stack spacing={0.75}>
@@ -187,8 +196,22 @@ export function PerformancesListToolbar(props: PerformancesListToolbarProps): Re
               hasActiveFilters={hasActivePerfFilters}
               onClearAll={onClearAllFilters}
             />
-            <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="space-between" gap={1} useFlexGap>
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, minWidth: 0 }}>
+            <Stack
+              direction="row"
+              useFlexGap
+              sx={{
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1
+              }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: 500,
+                  minWidth: 0
+                }}>
                 Showing {filteredCount} of {performancesCount}{' '}
                 {performancesCount === 1 ? 'performance' : 'performances'}
                 {hasActivePerfFilters || query.trim() ? ' · search or filters applied' : ''}

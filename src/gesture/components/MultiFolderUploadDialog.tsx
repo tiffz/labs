@@ -69,7 +69,12 @@ export default function MultiFolderUploadDialog({
     <Dialog open={open} onClose={resetAndClose} fullWidth maxWidth="xs" aria-labelledby="gesture-multi-folder-title">
       <DialogTitle id="gesture-multi-folder-title">Upload folders</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 1.5
+          }}>
           Add one or more folders. Each becomes its own collection. Nested subfolders stay organized on Drive.
         </Typography>
         {queued.length > 0 ? (
@@ -84,7 +89,9 @@ export default function MultiFolderUploadDialog({
             ))}
           </List>
         ) : (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             No folders added yet.
           </Typography>
         )}

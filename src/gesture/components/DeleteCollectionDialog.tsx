@@ -199,7 +199,12 @@ export default function DeleteCollectionDialog({
     >
       <DialogTitle id="gesture-delete-collection-title">{title}</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 1.5
+          }}>
           Choose whether to keep photos on Google Drive or delete them with{' '}
           {packCount === 1 ? 'this collection' : 'these collections'}.
           {packs.some((pack) => pack.uploadStatus === 'uploading') ? (
@@ -210,7 +215,12 @@ export default function DeleteCollectionDialog({
           ) : null}
         </Typography>
         {packCount > 1 ? (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 1.5
+            }}>
             {packs.map((pack) => pack.name).join(' · ')}
           </Typography>
         ) : null}
@@ -226,7 +236,13 @@ export default function DeleteCollectionDialog({
             label={
               <span>
                 <strong>App only</strong>
-                <Typography component="span" variant="body2" color="text.secondary" display="block">
+                <Typography
+                  component="span"
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    display: "block"
+                  }}>
                   Removes {packCount === 1 ? 'the collection' : 'the collections'} here. Drive folders and photos stay.
                 </Typography>
               </span>
@@ -239,7 +255,13 @@ export default function DeleteCollectionDialog({
             label={
               <span>
                 <strong>App and Drive photos</strong>
-                <Typography component="span" variant="body2" color="text.secondary" display="block">
+                <Typography
+                  component="span"
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    display: "block"
+                  }}>
                   Trashes photos and folders under Gesture Reference Packs only (Drive trash ~30 days).
                   Folders linked from elsewhere stay on Drive — use App only.
                 </Typography>
@@ -248,7 +270,12 @@ export default function DeleteCollectionDialog({
           />
         </RadioGroup>
         {deleting ? (
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mt: 1.5
+            }}>
             {statusLabel}
           </Typography>
         ) : null}

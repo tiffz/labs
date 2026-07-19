@@ -157,7 +157,9 @@ export function InlineChipSelect<T extends string>(props: InlineChipSelectProps<
         ) : null}
         {filtered.length === 0 ? (
           <Box sx={{ px: 2, py: 1.5 }}>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+              color: "text.secondary"
+            }}>
               {freeSolo && filter ? 'Press Enter to use this value.' : 'No matches.'}
             </Typography>
           </Box>
@@ -239,7 +241,14 @@ export function InlineChipMultiSelect<T extends string>(props: InlineChipMultiSe
         onClose={() => setOpen(false)}
         slotProps={{ paper: { sx: { mt: 0.5, p: 1.25, minWidth: 240, maxWidth: 320 } } }}
       >
-        <Stack direction="row" gap={0.75} flexWrap="wrap" useFlexGap sx={{ px: 0.5 }}>
+        <Stack
+          direction="row"
+          useFlexGap
+          sx={{
+            gap: 0.75,
+            flexWrap: "wrap",
+            px: 0.5
+          }}>
           {options.map((o) => {
             const active = values.includes(o);
             return (

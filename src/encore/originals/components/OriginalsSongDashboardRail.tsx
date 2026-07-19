@@ -60,18 +60,20 @@ function RailSongRow({
             />
           }
           secondary={secondary}
-          primaryTypographyProps={{ component: 'div', noWrap: true }}
-          secondaryTypographyProps={{
-            variant: 'caption',
-            noWrap: true,
-            sx: {
-              fontSize: '0.75rem',
-              lineHeight: 1.35,
-              color: status.demoReady ? 'success.main' : 'text.secondary',
-            },
-          }}
           sx={{ my: 0 }}
-        />
+          slotProps={{
+            primary: { component: 'div', noWrap: true },
+
+            secondary: {
+              variant: 'caption',
+              noWrap: true,
+              sx: {
+                fontSize: '0.75rem',
+                lineHeight: 1.35,
+                color: status.demoReady ? 'success.main' : 'text.secondary',
+              },
+            }
+          }} />
       </ListItemButton>
     </ListItem>
   );
@@ -96,11 +98,23 @@ export const OriginalsSongDashboardRail = memo(function OriginalsSongDashboardRa
 
   return (
     <Paper component="aside" elevation={0} sx={originalsDashboardRailPaperSx(theme)}>
-      <Stack direction="row" alignItems="baseline" justifyContent="space-between" gap={1}>
+      <Stack
+        direction="row"
+        sx={{
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 1
+        }}>
         <Typography variant="caption" sx={originalsDashboardRailGroupLabelSx()}>
           Drafts ({pendingRows.length})
         </Typography>
-        <Typography variant="caption" color="text.disabled" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.disabled",
+            fontWeight: 600,
+            fontSize: '0.75rem'
+          }}>
           {rows.length} total
         </Typography>
       </Stack>

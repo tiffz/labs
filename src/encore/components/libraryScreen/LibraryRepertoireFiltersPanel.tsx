@@ -191,7 +191,13 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
   );
 
   const trailingControls = (
-    <Stack direction="row" alignItems="center" gap={compact ? 1.25 : 2.5} sx={{ flexShrink: 0 }}>
+    <Stack
+      direction="row"
+      sx={{
+        alignItems: "center",
+        gap: compact ? 1.25 : 2.5,
+        flexShrink: 0
+      }}>
       <EncoreMrtColumnsSettingsButton
         show={viewMode === 'table'}
         table={table}
@@ -246,16 +252,18 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
             placeholder="Search title, artist, venue, key…"
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
-            inputProps={{ 'aria-label': 'Search repertoire' }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon fontSize="small" color="action" aria-hidden />
-                </InputAdornment>
-              ),
-            }}
             sx={{ flex: '1 1 12rem', minWidth: 0, maxWidth: { md: 320 } }}
-          />
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" color="action" aria-hidden />
+                  </InputAdornment>
+                ),
+              },
+
+              htmlInput: { 'aria-label': 'Search repertoire' }
+            }} />
           {savedSearchButtons}
           <Box
             sx={{
@@ -286,14 +294,21 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
         </Box>
         <Stack
           direction="row"
-          flexWrap="wrap"
-          alignItems="center"
-          justifyContent="space-between"
-          gap={1}
           useFlexGap
-          sx={{ mt: encoreListToolbarSubRowGap }}
-        >
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, minWidth: 0 }}>
+          sx={{
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1,
+            mt: encoreListToolbarSubRowGap
+          }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              fontWeight: 500,
+              minWidth: 0
+            }}>
             {statsLine}
           </Typography>
           {trailingControls}
@@ -311,30 +326,41 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={1}
-            alignItems={{ sm: 'stretch' }}
-            sx={{ width: 1, maxWidth: { sm: 860 } }}
-          >
+            sx={{
+              alignItems: { sm: 'stretch' },
+              width: 1,
+              maxWidth: { sm: 860 }
+            }}>
             <TextField
               size="small"
               fullWidth
               placeholder="Search title, artist, venue, key…"
               value={searchQuery}
               onChange={(e) => onSearchQueryChange(e.target.value)}
-              inputProps={{ 'aria-label': 'Search repertoire' }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" color="action" aria-hidden />
-                  </InputAdornment>
-                ),
-              }}
               sx={{ flex: 1, minWidth: 0 }}
-            />
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" color="action" aria-hidden />
+                    </InputAdornment>
+                  ),
+                },
+
+                htmlInput: { 'aria-label': 'Search repertoire' }
+              }} />
             {savedSearchButtons}
           </Stack>
         </EncoreToolbarRow>
 
-        <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1} useFlexGap>
+        <Stack
+          direction="row"
+          useFlexGap
+          sx={{
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 1
+          }}>
           <EncoreFilterChipBar
             ref={repertoireFilterBarRef}
             fields={repertoireFilterFieldDefs}
@@ -351,8 +377,22 @@ export function LibraryRepertoireFiltersPanel(props: LibraryRepertoireFiltersPan
             onClearAll={onClearAllFilters}
           />
         </Stack>
-        <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="space-between" gap={1} useFlexGap>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, minWidth: 0 }}>
+        <Stack
+          direction="row"
+          useFlexGap
+          sx={{
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1
+          }}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.secondary",
+              fontWeight: 500,
+              minWidth: 0
+            }}>
             Showing {repertoireSongsCount} of {songsCount} {songsCount === 1 ? 'song' : 'songs'}
             {hasActiveFilters || searchQuery.trim() ? ' · search or filters applied' : ''}
           </Typography>

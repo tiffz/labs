@@ -75,10 +75,14 @@ export function OriginalsChordPaletteCustomSegment({
               {...params}
               placeholder="Type chord"
               size="small"
-              inputProps={{
-                ...params.inputProps,
-                'aria-label': 'Custom chord',
-                'aria-labelledby': 'palette-custom',
+              slotProps={{
+                ...params.slotProps,
+
+                htmlInput: {
+                  ...params.slotProps.htmlInput,
+                  'aria-label': 'Custom chord',
+                  'aria-labelledby': 'palette-custom',
+                }
               }}
             />
           )}

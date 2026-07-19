@@ -44,7 +44,9 @@ export function ScrapboardExportSheet({
       fullWidth
       maxWidth="xs"
       data-testid="scrapboard-export-sheet"
-      PaperProps={{ className: 'scrapboard-export-sheet' }}
+      slotProps={{
+        paper: { className: 'scrapboard-export-sheet' }
+      }}
     >
       <DialogTitle className="scrapboard-export-sheet__title">Export PNG</DialogTitle>
       <DialogContent className="scrapboard-export-sheet__content">

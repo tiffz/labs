@@ -109,16 +109,25 @@ export function LabsPortfolioDriveHistoryRecoverDialog(
   return (
     <Dialog open={open} onClose={() => !busy && phase !== 'restoring' && onClose()} fullWidth maxWidth="sm">
       <DialogTitle id="portfolio-recover-title">
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{
+          alignItems: "center"
+        }}>
           <HistoryIcon fontSize="small" aria-hidden />
           <span>Recover from Drive history</span>
         </Stack>
       </DialogTitle>
       <DialogContent>
         {phase === 'scanning' ? (
-          <Stack spacing={2} alignItems="center" sx={{ py: 3 }}>
+          <Stack
+            spacing={2}
+            sx={{
+              alignItems: "center",
+              py: 3
+            }}>
             <CircularProgress size={28} aria-label="Scanning Drive history" />
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               Scanning older versions of your backup…
             </Typography>
           </Stack>
@@ -132,7 +141,12 @@ export function LabsPortfolioDriveHistoryRecoverDialog(
 
         {phase === 'results' ? (
           <>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                mb: 1.5
+              }}>
               {scanSummary}. Select {entityNoun}s that disappeared after a bad sync to merge them back — nothing
               you still have locally will be overwritten.
             </Typography>
@@ -159,7 +173,9 @@ export function LabsPortfolioDriveHistoryRecoverDialog(
                           <Box>
                             <Typography variant="body2">{entry.label}</Typography>
                             {entry.lastSeenModifiedTime ? (
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                              }}>
                                 Last in backup {formatRevisionDate(entry.lastSeenModifiedTime)}
                               </Typography>
                             ) : null}
@@ -175,9 +191,16 @@ export function LabsPortfolioDriveHistoryRecoverDialog(
         ) : null}
 
         {phase === 'restoring' ? (
-          <Stack spacing={2} alignItems="center" sx={{ py: 3 }}>
+          <Stack
+            spacing={2}
+            sx={{
+              alignItems: "center",
+              py: 3
+            }}>
             <CircularProgress size={28} aria-label="Restoring selected items" />
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               Merging selected {entityNoun}s…
             </Typography>
           </Stack>

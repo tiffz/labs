@@ -197,16 +197,18 @@ const OriginalsLibraryScreenBody = memo(function OriginalsLibraryScreenBody({
           placeholder="Search titles and lyrics…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          inputProps={{ 'aria-label': 'Search originals' }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" color="action" aria-hidden />
-              </InputAdornment>
-            ),
-          }}
           sx={{ maxWidth: { sm: 560 } }}
-        />
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" aria-hidden />
+                </InputAdornment>
+              ),
+            },
+
+            htmlInput: { 'aria-label': 'Search originals' }
+          }} />
       </EncoreToolbarRow>
       <Box sx={{ mt: 1.5, mb: 0.5, flexShrink: 0 }}>
         <EncoreFilterChipBar
@@ -228,7 +230,11 @@ const OriginalsLibraryScreenBody = memo(function OriginalsLibraryScreenBody({
       {!originalsHydrated || awaitingE2eSeed ? (
         <LabsListLoadingState label="Loading originals" variant="skeleton" sx={{ mt: 2 }} />
       ) : filtered.length === 0 ? (
-        <Typography color="text.secondary" sx={{ mt: 2 }}>
+        <Typography
+          sx={{
+            color: "text.secondary",
+            mt: 2
+          }}>
           {originals.length === 0
             ? 'Nothing here yet. Add an original from the toolbar.'
             : 'No matches. Clear filters or try a shorter search.'}

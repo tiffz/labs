@@ -89,7 +89,9 @@ export default function BrokenBridgeView({
             locked={{ hue: false, chroma: false, lightness: false }}
           />
         ) : (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Select an empty slot to adjust its color.
           </Typography>
         )}
@@ -98,7 +100,9 @@ export default function BrokenBridgeView({
             Variance <strong>{variancePct.toFixed(1)}%</strong> · Target ≤ <strong>{maxPct}%</strong>
           </p>
         ) : (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{
+            color: "text.secondary"
+          }}>
             Submit when your bridge feels smooth. Score appears after submit.
           </Typography>
         )}

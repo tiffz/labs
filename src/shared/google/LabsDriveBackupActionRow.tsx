@@ -69,13 +69,21 @@ export default function LabsDriveBackupActionRow(props: LabsDriveBackupActionRow
       <Stack
         direction="row"
         spacing={0.5}
-        alignItems="center"
-        justifyContent="space-between"
-        flexWrap="wrap"
         useFlexGap
-        sx={{ width: '100%' }}
-      >
-        <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap" useFlexGap>
+        sx={{
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          width: '100%'
+        }}>
+        <Stack
+          direction="row"
+          spacing={0.5}
+          useFlexGap
+          sx={{
+            alignItems: "center",
+            flexWrap: "wrap"
+          }}>
           {variant === 'google-outlined' ? (
             <LabsGoogleSignInButton
               className={googleButtonClassName}
@@ -126,7 +134,9 @@ export default function LabsDriveBackupActionRow(props: LabsDriveBackupActionRow
             </span>
           </AppTooltip>
         </Stack>
-        {trailing ? <Stack direction="row" alignItems="center">{trailing}</Stack> : null}
+        {trailing ? <Stack direction="row" sx={{
+          alignItems: "center"
+        }}>{trailing}</Stack> : null}
       </Stack>
       {driveFolderUrl ? (
         <Link

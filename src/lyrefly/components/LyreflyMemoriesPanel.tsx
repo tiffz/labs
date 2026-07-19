@@ -1,5 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -168,13 +168,15 @@ export function LyreflyMemoriesPanel({
       </Typography>
       <Typography
         variant="body2"
-        color="text.secondary"
         className="lyrefly-panel-helper"
-        sx={{ mb: 1.25, lineHeight: 1.55, maxWidth: '40rem' }}
-      >
+        sx={{
+          color: "text.secondary",
+          mb: 1.25,
+          lineHeight: 1.55,
+          maxWidth: '40rem'
+        }}>
         Press mentions, fan mail, classroom captions, and other moments worth keeping with this comic.
       </Typography>
-
       <ul className="lyrefly-publish-grid lyrefly-memories__grid">
         {entries.map((entry) => (
           <li key={entry.id} className="lyrefly-publish-grid__item">
@@ -195,13 +197,13 @@ export function LyreflyMemoriesPanel({
           </button>
         </li>
       </ul>
-
       {entries.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" className="lyrefly-memories__empty-hint">
+        <Typography variant="body2" className="lyrefly-memories__empty-hint" sx={{
+          color: "text.secondary"
+        }}>
           No memories saved yet. Use Add to capture press, fan mail, or classroom moments.
         </Typography>
       ) : null}
-
       <Menu
         anchorEl={addAnchor}
         open={addOpen}
@@ -255,7 +257,13 @@ export function LyreflyMemoriesPanel({
             minRows={3}
             placeholder="Quotes, who sent it, what happened…"
           />
-          <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ pt: 0.5 }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              justifyContent: "flex-end",
+              pt: 0.5
+            }}>
             <Button size="small" variant="text" onClick={closeAddMenu}>
               Cancel
             </Button>

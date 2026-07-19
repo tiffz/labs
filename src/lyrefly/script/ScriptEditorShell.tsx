@@ -59,11 +59,12 @@ export function ScriptEditorShell({
           Script: {project.title}
         </Typography>
       ) : null}
-
       <Stack spacing={0.75} className="lyrefly-script-editor-shell__intro">
         {scriptIsEmpty ? (
           <Box className="lyrefly-script-empty-banner" data-testid="lyrefly-script-empty-banner">
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{
+              color: "text.secondary"
+            }}>
               Start from a sample script to see the page → panel → line format.
             </Typography>
             <Button
@@ -78,21 +79,24 @@ export function ScriptEditorShell({
         ) : null}
         <Typography
           variant="caption"
-          color="text.secondary"
           className="lyrefly-script-editor-shell__status"
           aria-live="polite"
+          sx={{
+            color: "text.secondary"
+          }}
         >
           {saving ? 'Saving…' : '\u00a0'}
         </Typography>
       </Stack>
-
       <Box className="lyrefly-script-split">
         <Box className="lyrefly-script-split__column lyrefly-script-split__source">
           <Stack
             direction="row"
-            alignItems="center"
             spacing={0.25}
             className="lyrefly-script-split__label-row"
+            sx={{
+              alignItems: "center"
+            }}
           >
             <Typography component="h3" className="lyrefly-script-split__label">
               Source

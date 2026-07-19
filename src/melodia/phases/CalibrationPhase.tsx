@@ -162,12 +162,16 @@ export default function CalibrationPhase({
         >
           Melodia Online
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            lineHeight: 1.55
+          }}>
           Sing one comfortable note. We&apos;ll treat that as your <strong>Do</strong> for the
           first lesson. movable do, no perfect pitch required.
         </Typography>
       </Box>
-
       <Stack
         component="section"
         aria-labelledby="melodia-calibration-sing-title"
@@ -195,9 +199,11 @@ export default function CalibrationPhase({
             <LinearProgress variant="determinate" value={progress * 100} />
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ display: 'block', mt: 0.5 }}
-            >
+              sx={{
+                color: "text.secondary",
+                display: 'block',
+                mt: 0.5
+              }}>
               {liveMidi !== null
                 ? `Hearing ${midiToNoteName(liveMidi)}`
                 : 'Listening…'}
@@ -224,7 +230,6 @@ export default function CalibrationPhase({
           {captureState === 'listening' ? 'Listening…' : 'Sing your Do'}
         </Button>
       </Stack>
-
       <Stack
         component="section"
         aria-labelledby="melodia-calibration-skip-title"
@@ -246,7 +251,9 @@ export default function CalibrationPhase({
           Don&apos;t want to sing yet? Tap a comfortable range and we&apos;ll center the lesson
           there. We&apos;ll ask for the mic when you start the sing phase.
         </Typography>
-        <Stack direction="row" spacing={1} flexWrap="wrap">
+        <Stack direction="row" spacing={1} sx={{
+          flexWrap: "wrap"
+        }}>
           <Button variant="outlined" size="small" onClick={() => finishWithSkip('low')}>
             Low voice (G3–G4)
           </Button>

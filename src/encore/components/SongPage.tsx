@@ -645,7 +645,9 @@ export function SongPage(props: {
         <Typography variant="h6" gutterBottom>
           Song not found
         </Typography>
-        <Typography color="text.secondary">
+        <Typography sx={{
+          color: "text.secondary"
+        }}>
           This id is not in your library. It may have been removed, or the link
           is wrong.
         </Typography>
@@ -721,27 +723,31 @@ export function SongPage(props: {
               size="small"
               helperText="Search Spotify, pick a match, or type a title. Paste a track link to import."
               onBlur={() => void mediaHub.resolveSpotifyDataSourcePaste(draft.title)}
-              InputProps={{
-                ...params.InputProps,
-                startAdornment: (
-                  <>
-                    <SpotifyBrandIcon
-                      sx={{
-                        mr: 0.75,
-                        opacity: 0.85,
-                        fontSize: 18,
-                        alignSelf: 'center',
-                      }}
-                    />
-                    {params.InputProps.startAdornment}
-                  </>
-                ),
-                endAdornment: (
-                  <>
-                    {mediaHub.spotifyLoading ? <CircularProgress color="inherit" size={16} /> : null}
-                    {params.InputProps.endAdornment}
-                  </>
-                ),
+              slotProps={{
+                ...params.slotProps,
+
+                input: {
+                  ...params.slotProps.input,
+                  startAdornment: (
+                    <>
+                      <SpotifyBrandIcon
+                        sx={{
+                          mr: 0.75,
+                          opacity: 0.85,
+                          fontSize: 18,
+                          alignSelf: 'center',
+                        }}
+                      />
+                      {params.slotProps.input.startAdornment}
+                    </>
+                  ),
+                  endAdornment: (
+                    <>
+                      {mediaHub.spotifyLoading ? <CircularProgress color="inherit" size={16} /> : null}
+                      {params.slotProps.input.endAdornment}
+                    </>
+                  ),
+                }
               }}
             />
           )}
@@ -780,17 +786,16 @@ export function SongPage(props: {
         </Box>
         <Stack
           direction="row"
-          flexWrap="wrap"
-          alignItems="center"
-          gap={1}
           useFlexGap
           sx={{
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 1,
             width: 1,
             pt: 1.5,
             borderTop: 1,
-            borderColor: 'divider',
-          }}
-        >
+            borderColor: 'divider'
+          }}>
           {/*
             Single-border presentation: the chip itself carries the visible border. The previous
             wrapper Box added a second tinted-bg border around the chip which read as a heavy
@@ -826,7 +831,9 @@ export function SongPage(props: {
                   // that signal to avoid auto-re-adding the song on the next round-trip.
                   setDraft((d) => (d ? withPracticingToggle(d, e.target.checked) : d));
                 }}
-                inputProps={{ 'aria-label': 'Currently practicing this song' }}
+                slotProps={{
+                  input: { 'aria-label': 'Currently practicing this song' }
+                }}
               />
             }
             label={
@@ -1000,7 +1007,9 @@ export function SongPage(props: {
               />
 
               {isNew ? (
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                  color: "text.secondary"
+                }}>
                   Save this song (add a title; it saves automatically) to log
                   performances.
                 </Typography>
@@ -1009,7 +1018,6 @@ export function SongPage(props: {
           </Box>
         </Paper>
       </Box>
-
       {!isNew && (
         <PerformanceEditorDialog
           open={perfOpen}
@@ -1032,7 +1040,6 @@ export function SongPage(props: {
           }
         />
       )}
-
       <SongMediaUploadIntentDialog
         open={intentUploadFiles !== null}
         files={intentUploadFiles ?? []}

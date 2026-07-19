@@ -58,20 +58,26 @@ export function OriginalsSongListenCard({
   return (
     <Stack
       direction="row"
-      alignItems="center"
       spacing={1.5}
       useFlexGap
       sx={{
+        alignItems: "center",
         mt: disableTopMargin ? 0 : 2,
         p: embedded ? 0 : 1.5,
         borderRadius: embedded ? 0 : 1.5,
         border: embedded ? 0 : 1,
         borderColor: embedded ? 'transparent' : alpha(theme.palette.primary.main, 0.14),
         bgcolor: embedded ? 'transparent' : alpha(theme.palette.primary.main, 0.04),
-        maxWidth: disableTopMargin || embedded ? 'none' : 440,
-      }}
-    >
-      <Stack direction="row" alignItems="center" spacing={1} useFlexGap sx={{ flexShrink: 0 }}>
+        maxWidth: disableTopMargin || embedded ? 'none' : 440
+      }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        useFlexGap
+        sx={{
+          alignItems: "center",
+          flexShrink: 0
+        }}>
         {canPlay ? (
           <Button
             variant="outlined"

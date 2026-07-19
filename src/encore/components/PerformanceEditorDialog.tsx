@@ -1,4 +1,4 @@
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -859,9 +859,12 @@ export function PerformanceEditorDialog(props: {
             <Typography
               component="div"
               variant="body2"
-              color="text.secondary"
-              sx={{ mt: 0.5, fontWeight: 600, lineHeight: 1.4 }}
-            >
+              sx={{
+                color: "text.secondary",
+                mt: 0.5,
+                fontWeight: 600,
+                lineHeight: 1.4
+              }}>
               {songForPerformance.title}
               {songForPerformance.artist ? (
                 <>
@@ -983,7 +986,6 @@ export function PerformanceEditorDialog(props: {
         </Stack>
       </DialogActions>
       </Dialog>
-
       <Dialog
         open={removeConfirmOpen}
         onClose={(_e, reason) => {
@@ -998,7 +1000,12 @@ export function PerformanceEditorDialog(props: {
           Remove this performance?
         </DialogTitle>
         <DialogContent sx={encoreDialogContentSx}>
-          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              lineHeight: 1.55
+            }}>
             {
               "This removes it from your log and clears Encore's links to the video or URL. Files in Google Drive are not deleted."
             }

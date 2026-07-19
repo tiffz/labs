@@ -1,6 +1,6 @@
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import type { ReactElement } from 'react';
@@ -41,13 +41,15 @@ export function LyreflyStageActions({
     <Stack
       direction="row"
       spacing={1}
-      alignItems="center"
-      justifyContent="flex-end"
-      flexWrap="nowrap"
       className={className || undefined}
       data-testid="lyrefly-stage-actions"
-      sx={{ flexShrink: 0, minWidth: 0 }}
-    >
+      sx={{
+        alignItems: "center",
+        justifyContent: "flex-end",
+        flexWrap: "nowrap",
+        flexShrink: 0,
+        minWidth: 0
+      }}>
       <Button
         size="small"
         variant="text"

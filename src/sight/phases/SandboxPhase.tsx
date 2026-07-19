@@ -203,7 +203,9 @@ export default function SandboxPhase({ initialLevel }: SandboxPhaseProps): React
             </MenuItem>
           ))}
         </Select>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{
+          color: "text.secondary"
+        }}>
           {levelLabel} · Space = new seed
         </Typography>
       </div>

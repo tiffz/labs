@@ -41,30 +41,39 @@ export function ComposeView() {
 
   return (
     <Stack spacing={2} className="midi-compose-view">
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" sx={{
+        color: "text.secondary"
+      }}>
         Click notes to build a pattern. Rhythm comes later in Guide mode.
       </Typography>
-
       <OnscreenPianoKeyboard
         activeNotes={new Set(state.activeMidis)}
         onNoteOn={handleNoteOn}
         onNoteOff={handleNoteOff}
       />
-
-      <Stack direction="row" spacing={1} flexWrap="wrap" className="midi-riff-steps">
+      <Stack direction="row" spacing={1} className="midi-riff-steps" sx={{
+        flexWrap: "wrap"
+      }}>
         {riff.steps.map((step, i) => (
           <span key={step.id} className="midi-riff-step">
             {i + 1}: {step.pitches.join('+')}
           </span>
         ))}
         {riff.steps.length === 0 && (
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" sx={{
+            color: "text.secondary"
+          }}>
             No steps yet.
           </Typography>
         )}
       </Stack>
-
-      <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{
+          alignItems: "center",
+          flexWrap: "wrap"
+        }}>
         <Button
           size="small"
           variant="outlined"

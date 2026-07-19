@@ -762,7 +762,9 @@ export function BulkPerformanceImportDialog(props: {
                   }),
                 );
               }}
-              inputProps={{ 'aria-label': `Include ${r.name} when saving` }}
+              slotProps={{
+                input: { 'aria-label': `Include ${r.name} when saving` }
+              }}
             />
           );
         },
@@ -795,11 +797,24 @@ export function BulkPerformanceImportDialog(props: {
         Cell: ({ row }) => {
           const r = row.original;
           return (
-            <Stack spacing={0.5} alignItems="flex-start" sx={{ minWidth: 0, py: 0.25 }}>
+            <Stack
+              spacing={0.5}
+              sx={{
+                alignItems: "flex-start",
+                minWidth: 0,
+                py: 0.25
+              }}>
               <Typography variant="subtitle2" component="div" sx={{ fontWeight: 600, lineHeight: 1.35, wordBreak: 'break-word' }}>
                 {r.name}
               </Typography>
-              <Stack direction="row" spacing={0.5} alignItems="center" flexWrap="wrap" useFlexGap>
+              <Stack
+                direction="row"
+                spacing={0.5}
+                useFlexGap
+                sx={{
+                  alignItems: "center",
+                  flexWrap: "wrap"
+                }}>
                 {r.linkedPerformanceId ? (
                   <Chip size="small" color="info" variant="outlined" label="Already in Encore" sx={{ height: 22 }} />
                 ) : null}
@@ -846,25 +861,59 @@ export function BulkPerformanceImportDialog(props: {
           const r = row.original;
           const es = effectiveSong(r, songs);
           return (
-            <Stack spacing={0.75} alignItems="flex-start" sx={{ minWidth: 0, width: '100%', py: 0.25 }}>
+            <Stack
+              spacing={0.75}
+              sx={{
+                alignItems: "flex-start",
+                minWidth: 0,
+                width: '100%',
+                py: 0.25
+              }}>
               {es ? (
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ width: '100%', minWidth: 0 }}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{
+                    alignItems: "center",
+                    width: '100%',
+                    minWidth: 0
+                  }}>
                   <Avatar src={es.albumArtUrl} variant="rounded" alt="" sx={{ width: 36, height: 36, flexShrink: 0 }} />
                   <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography variant="body2" fontWeight={600} sx={{ wordBreak: 'break-word', lineHeight: 1.35 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 600,
+                        wordBreak: 'break-word',
+                        lineHeight: 1.35
+                      }}>
                       {es.title}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ wordBreak: 'break-word' }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "text.secondary",
+                        wordBreak: 'break-word'
+                      }}>
                       {es.artist}
                     </Typography>
                   </Box>
                 </Stack>
               ) : (
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                  color: "text.secondary"
+                }}>
                   Attach a song
                 </Typography>
               )}
-              <Stack direction="row" flexWrap="wrap" gap={0.25} alignItems="center" sx={{ width: '100%' }}>
+              <Stack
+                direction="row"
+                sx={{
+                  flexWrap: "wrap",
+                  gap: 0.25,
+                  alignItems: "center",
+                  width: '100%'
+                }}>
                 <Tooltip title="Pick from library">
                   <IconButton size="small" aria-label="Pick song from library" onClick={() => setLibraryPickerRowId(r.id)}>
                     <LibraryMusicOutlinedIcon sx={{ fontSize: 20 }} />
@@ -940,7 +989,10 @@ export function BulkPerformanceImportDialog(props: {
                   placeholder="Venue"
                   onFocus={beginEditStabilize}
                   onBlur={scheduleEndEditStabilize}
-                  inputProps={{ ...params.inputProps, 'aria-label': 'Venue' }}
+                  slotProps={{
+                    ...params.slotProps,
+                    htmlInput: { ...params.slotProps.htmlInput, 'aria-label': 'Venue' }
+                  }}
                 />
               )}
               sx={{
@@ -971,11 +1023,13 @@ export function BulkPerformanceImportDialog(props: {
               }}
               onFocus={beginEditStabilize}
               onBlur={scheduleEndEditStabilize}
-              inputProps={{ 'aria-label': 'Performance date' }}
               sx={{
                 minWidth: 0,
                 '& .MuiInputBase-root': { minWidth: 0 },
                 '& input[type="date"]': { minWidth: '10.5rem', width: '100%' },
+              }}
+              slotProps={{
+                htmlInput: { 'aria-label': 'Performance date' }
               }}
             />
           );
@@ -1181,7 +1235,12 @@ export function BulkPerformanceImportDialog(props: {
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, my: 0.5 }}>
                 <Box sx={{ flex: 1, height: 1, bgcolor: 'divider' }} />
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    fontWeight: 600
+                  }}>
                   OR
                 </Typography>
                 <Box sx={{ flex: 1, height: 1, bgcolor: 'divider' }} />
@@ -1196,8 +1255,19 @@ export function BulkPerformanceImportDialog(props: {
                 googleAccessToken={googleAccessToken}
                 disabled={busy}
                 description={
-                  <Stack direction="row" alignItems="flex-start" gap={0.5}>
-                    <Typography variant="body2" color="text.secondary" sx={{ flex: 1, lineHeight: 1.45 }}>
+                  <Stack
+                    direction="row"
+                    sx={{
+                      alignItems: "flex-start",
+                      gap: 0.5
+                    }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "text.secondary",
+                        flex: 1,
+                        lineHeight: 1.45
+                      }}>
                       Paste a Drive folder link or id. We scan subfolders for videos and guess song, venue, and date from
                       the file name, path, and description.
                     </Typography>
@@ -1258,15 +1328,17 @@ export function BulkPerformanceImportDialog(props: {
                   value={tableQuery}
                   onChange={(e) => setTableQuery(e.target.value)}
                   sx={{ flex: '1 1 160px', minWidth: 0, maxWidth: { xs: '100%', sm: 360 } }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon fontSize="small" color="action" aria-hidden />
-                      </InputAdornment>
-                    ),
-                  }}
-                  inputProps={{ 'aria-label': 'Search imported videos' }}
-                />
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon fontSize="small" color="action" aria-hidden />
+                        </InputAdornment>
+                      ),
+                    },
+
+                    htmlInput: { 'aria-label': 'Search imported videos' }
+                  }} />
                 <Tooltip
                   title={`Paired: song resolved (library, Spotify/manual, or existing performance for this file). Unpaired: still need a match. Counts: all ${rows.length}, paired ${pairedCount}, unpaired ${unpairedCount}.`}
                   placement="top"
@@ -1288,21 +1360,40 @@ export function BulkPerformanceImportDialog(props: {
                 </Tooltip>
               </Box>
               {orderLockActive ? (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25, flexShrink: 0 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "text.secondary",
+                    display: 'block',
+                    mb: 0.25,
+                    flexShrink: 0
+                  }}>
                   Row order stays fixed while you edit date or venue.
                 </Typography>
               ) : null}
               {linkedIncludedCount > 0 ? (
-                <Typography variant="caption" color="info.main" sx={{ display: 'block', mb: 0.25, flexShrink: 0, lineHeight: 1.35 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "info.main",
+                    display: 'block',
+                    mb: 0.25,
+                    flexShrink: 0,
+                    lineHeight: 1.35
+                  }}>
                   {linkedIncludedCount} row{linkedIncludedCount === 1 ? '' : 's'} already in Encore (save updates them).
                 </Typography>
               ) : null}
               {perfDuplicateSkippedCount > 0 ? (
                 <Typography
                   variant="caption"
-                  color="warning.main"
-                  sx={{ display: 'block', mb: 0.25, flexShrink: 0, lineHeight: 1.35 }}
-                >
+                  sx={{
+                    color: "warning.main",
+                    display: 'block',
+                    mb: 0.25,
+                    flexShrink: 0,
+                    lineHeight: 1.35
+                  }}>
                   {perfDuplicateSkippedCount} duplicate row{perfDuplicateSkippedCount === 1 ? '' : 's'} skipped. Enable the
                   checkbox on a row to import it anyway.
                 </Typography>
@@ -1395,7 +1486,6 @@ export function BulkPerformanceImportDialog(props: {
           )}
         </DialogActions>
       </Dialog>
-
       <LibrarySongPickerDialog
         open={libraryPickerRowId != null}
         onClose={closeLibraryPicker}
@@ -1422,7 +1512,6 @@ export function BulkPerformanceImportDialog(props: {
           closeLibraryPicker();
         }}
       />
-
       <BulkVideoSongMatchDialog
         open={songMatchRowId != null}
         onClose={() => setSongMatchRowId(null)}

@@ -98,8 +98,10 @@ export function EncoreMediaUrlPasteField(props: EncoreMediaUrlPasteFieldProps): 
           tryApply(value);
         }
       }}
-      InputProps={{
-        startAdornment: encoreMediaLinkInputStartAdornment(embedInMenu),
+      slotProps={{
+        input: {
+          startAdornment: encoreMediaLinkInputStartAdornment(embedInMenu),
+        }
       }}
     />
   );

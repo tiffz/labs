@@ -175,20 +175,38 @@ export function SharePanel(): ReactElement {
 
   return (
     <Stack spacing={2.25} sx={{ width: 1 }}>
-      <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: "text.secondary",
+          lineHeight: 1.5
+        }}>
         Read-only guest view of your repertoire <strong>as of your last publish</strong>.
       </Typography>
-
       {!googleAccessToken ? (
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.45 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            display: "block",
+            lineHeight: 1.45
+          }}>
           Sign in to Google to publish or update.
         </Typography>
       ) : null}
-
       {hasExistingLink && link ? (
         <Stack spacing={1}>
-          <TextField label="Link" value={link} fullWidth size="small" InputProps={{ readOnly: true }} />
-          <Stack direction="row" alignItems="center" spacing={0.5} flexWrap="wrap" useFlexGap>
+          <TextField label="Link" value={link} fullWidth size="small" slotProps={{
+            input: { readOnly: true }
+          }} />
+          <Stack
+            direction="row"
+            spacing={0.5}
+            useFlexGap
+            sx={{
+              alignItems: "center",
+              flexWrap: "wrap"
+            }}>
             <Tooltip title="Copy link">
               <IconButton
                 size="small"
@@ -225,14 +243,18 @@ export function SharePanel(): ReactElement {
               </Tooltip>
             ) : null}
             {updatedCaption ? (
-              <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  ml: 0.5
+                }}>
                 {updatedCaption}
               </Typography>
             ) : null}
           </Stack>
         </Stack>
       ) : null}
-
       {googleAccessToken ? (
         <FormControlLabel
           control={
@@ -244,13 +266,17 @@ export function SharePanel(): ReactElement {
           }
           sx={{ alignItems: 'flex-start', ml: 0, mr: 0 }}
           label={
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                lineHeight: 1.45
+              }}>
               Only include songs I’ve performed at least once
             </Typography>
           }
         />
       ) : null}
-
       <Button
         variant="contained"
         disabled={!googleAccessToken || busy}
@@ -261,7 +287,6 @@ export function SharePanel(): ReactElement {
       >
         {busy ? 'Working…' : hasExistingLink ? 'Update snapshot' : 'Publish snapshot'}
       </Button>
-
       {statusLine ? (
         <Typography variant="caption" sx={{ color: statusColor, lineHeight: 1.5, display: 'block' }}>
           {statusLine}

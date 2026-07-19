@@ -498,7 +498,6 @@ export default function RegressionPanel({
           </button>
         </div>
       </section>
-
       {showRegenerateConfirm ? (
         <div className="ui-regression-modal-backdrop" role="presentation">
           <div
@@ -529,7 +528,6 @@ export default function RegressionPanel({
           </div>
         </div>
       ) : null}
-
       {summary ? (
         <section className="ui-regression-runner-panel">
           <button
@@ -586,7 +584,6 @@ export default function RegressionPanel({
           ) : null}
         </section>
       ) : null}
-
       {loading ? <p className="ui-regression-note">Loading regression data…</p> : null}
       {error ? <p className="ui-regression-error">{error}</p> : null}
       {runError ? <p className="ui-regression-error">{runError}</p> : null}
@@ -599,7 +596,6 @@ export default function RegressionPanel({
           details — baselines are only updated when Playwright finishes successfully.
         </p>
       ) : null}
-
       {summary ? (
         <>
           <section className="ui-regression-compact-status">
@@ -974,10 +970,9 @@ export default function RegressionPanel({
           ) : null}
         </>
       ) : null}
-
       {lightboxItems ? (
         // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- backdrop dismiss
-        <div
+        (<div
           className="ui-lightbox-backdrop"
           onClick={() => setLightboxItems(null)}
           onKeyDown={(e) => { if (e.key === 'Escape') setLightboxItems(null); }}
@@ -1015,7 +1010,7 @@ export default function RegressionPanel({
               {lightboxItems[lightboxIndex].label} ({lightboxIndex + 1}/{lightboxItems.length})
             </p>
           </div>
-        </div>
+        </div>)
       ) : null}
     </div>
   );

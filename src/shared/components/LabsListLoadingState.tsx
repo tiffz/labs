@@ -66,7 +66,9 @@ export function LabsListLoadingState({
       }}
     >
       <CircularProgress size={32} aria-hidden />
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" sx={{
+        color: "text.secondary"
+      }}>
         {label}…
       </Typography>
     </Box>

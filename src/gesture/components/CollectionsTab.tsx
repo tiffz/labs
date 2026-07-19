@@ -289,7 +289,6 @@ export default function CollectionsTab({
           onError={onError}
         />
       ) : null}
-
       {recoveryPacks.map((pack) => (
         <InterruptedUploadBanner
           key={pack.id}
@@ -302,7 +301,6 @@ export default function CollectionsTab({
           onRemove={(target) => openDeleteDialog([target])}
         />
       ))}
-
       {mergeRecoveryPacks.map((pack) => (
         <InterruptedMergeBanner
           key={`merge-${pack.id}`}
@@ -312,7 +310,6 @@ export default function CollectionsTab({
           onRemove={(target) => openDeleteDialog([target])}
         />
       ))}
-
       <div className="gesture-tab-toolbar">
         <Typography className="gesture-tab-lede">
           Sign in with Google to upload or link a collection. Photos live in your Drive; tags and
@@ -327,9 +324,7 @@ export default function CollectionsTab({
           />
         </div>
       </div>
-
       <CollectionDropZone compact={packsHydrated && packs.length > 0} dragActive={dragActive} uploadActive={uploadSessionActive} />
-
       <div className="gesture-collections-sticky-head">
         <TextField
           className="gesture-collections-search"
@@ -339,7 +334,9 @@ export default function CollectionsTab({
           value={nameQuery}
           onChange={(e) => setNameQuery(e.target.value)}
           disabled={!packsHydrated || packs.length === 0}
-          inputProps={{ 'aria-label': 'Search collections by name' }}
+          slotProps={{
+            htmlInput: { 'aria-label': 'Search collections by name' }
+          }}
         />
 
         <GestureTagFilterBar
@@ -353,7 +350,6 @@ export default function CollectionsTab({
           onShowNsfwCollectionsChange={setShowNsfwCollections}
         />
       </div>
-
       {!packsHydrated ? (
         <GestureTabLoading />
       ) : packs.length === 0 ? (
@@ -391,7 +387,6 @@ export default function CollectionsTab({
           onError={onError}
         />
       )}
-
       <DeleteCollectionDialog
         packs={deleteTargets}
         open={deleteDialogOpen}
@@ -403,7 +398,6 @@ export default function CollectionsTab({
         onComplete={handleDeleteComplete}
         onError={onError}
       />
-
       <MergeCollectionsDialog
         open={mergeDialogOpen && mergeTargets.length >= 2}
         packs={mergeTargets}
@@ -412,7 +406,6 @@ export default function CollectionsTab({
         onComplete={handleMergeComplete}
         onError={onError}
       />
-
       <BulkAddTagsDialog
         open={bulkTagsOpen}
         packCount={selectedPacks.length}
@@ -426,7 +419,6 @@ export default function CollectionsTab({
         }}
         onError={onError}
       />
-
       <BulkSetSourceDialog
         open={bulkSourceOpen}
         packCount={selectedPacks.length}
@@ -439,7 +431,6 @@ export default function CollectionsTab({
         }}
         onError={onError}
       />
-
       {selectionActive ? (
         <div className="gesture-collections-bulk-dock">
           <CollectionsBulkBar

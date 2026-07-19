@@ -83,7 +83,9 @@ export function EncoreMrtColumnsSettingsButton<TData extends MRT_RowData>(
                   onChange={(_, checked) => {
                     col.toggleVisibility(checked);
                   }}
-                  inputProps={{ 'aria-label': `Show ${columnHeaderText(col)} column` }}
+                  slotProps={{
+                    input: { 'aria-label': `Show ${columnHeaderText(col)} column` }
+                  }}
                 />
               }
               label={

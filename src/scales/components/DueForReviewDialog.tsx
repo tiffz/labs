@@ -77,11 +77,13 @@ export default function DueForReviewDialog({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: '20px',
-          maxHeight: '80vh',
-        },
+      slotProps={{
+        paper: {
+          sx: {
+            borderRadius: '20px',
+            maxHeight: '80vh',
+          },
+        }
       }}
     >
       <DialogTitle

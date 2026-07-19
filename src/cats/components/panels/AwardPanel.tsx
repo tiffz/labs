@@ -82,7 +82,6 @@ const AwardPanel: React.FC<AwardPanelProps> = ({
   return (
     <div className="award-panel">
       <p className="award-flavor-text">Uncover the secrets of cat.</p>
-      
       <div className="awards-badges-container">
         {gameAwards.map(award => {
           const isEarned = earnedAwards.some(e => e.id === award.id);
@@ -147,7 +146,6 @@ const AwardPanel: React.FC<AwardPanelProps> = ({
           );
         })}
       </div>
-
       {/* Award Tooltip */}
       {showTooltip && ReactDOM.createPortal(
         (() => {

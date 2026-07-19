@@ -2,7 +2,7 @@ import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import type { SxProps, Theme } from '@mui/material/styles';
-import type { ReactElement } from 'react';
+import type { MouseEvent, ReactElement } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import { normalizeSongTags } from '../repertoire/songTags';
@@ -45,7 +45,14 @@ export function InlineSongTagsCell(props: InlineSongTagsCellProps): ReactElement
         ...(sx != null ? (Array.isArray(sx) ? sx : [sx]) : []),
       ]}
     >
-      <Stack direction="row" gap={0.5} flexWrap="wrap" useFlexGap sx={{ alignItems: 'center' }}>
+      <Stack
+        direction="row"
+        useFlexGap
+        sx={{
+          gap: 0.5,
+          flexWrap: "wrap",
+          alignItems: 'center'
+        }}>
         {tags.map((t, idx) => (
           <Chip
             key={`${t}:${idx}`}
@@ -92,8 +99,8 @@ export function InlineSongTagsCell(props: InlineSongTagsCellProps): ReactElement
         slotProps={{
           paper: {
             sx: { p: 2, width: 320, maxWidth: '90vw' },
-            onClick: (e) => e.stopPropagation(),
-            onMouseDown: (e) => e.stopPropagation(),
+            onClick: (e: MouseEvent) => e.stopPropagation(),
+            onMouseDown: (e: MouseEvent) => e.stopPropagation(),
           },
         }}
       >

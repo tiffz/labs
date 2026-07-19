@@ -74,15 +74,17 @@ function QueueRow({
       <ListItemText
         primary={title}
         secondary={takeHint ?? undefined}
-        primaryTypographyProps={{
-          noWrap: true,
-          className: 'encore-media-playback-queue__row-title',
-        }}
-        secondaryTypographyProps={{
-          noWrap: true,
-          className: 'encore-media-playback-queue__row-meta',
-        }}
-      />
+        slotProps={{
+          primary: {
+            noWrap: true,
+            className: 'encore-media-playback-queue__row-title',
+          },
+
+          secondary: {
+            noWrap: true,
+            className: 'encore-media-playback-queue__row-meta',
+          }
+        }} />
       <QueueRowDuration playbackId={item.playbackId} knownDurationSec={knownDurationSec} />
     </ListItemButton>
   );

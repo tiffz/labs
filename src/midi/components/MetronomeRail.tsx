@@ -44,13 +44,14 @@ export function MetronomeRail() {
     <Stack
       direction="row"
       spacing={1.5}
-      alignItems="center"
-      flexWrap="wrap"
       useFlexGap
       className="midi-metronome-rail"
       role="group"
       aria-label="Tempo and meter"
-    >
+      sx={{
+        alignItems: "center",
+        flexWrap: "wrap"
+      }}>
       <BpmInput
         value={transport.bpm}
         onChange={(bpm) => dispatch({ type: 'SET_TRANSPORT', patch: { bpm } })}
@@ -69,9 +70,7 @@ export function MetronomeRail() {
           />
         }
       />
-
       <span className="midi-toolbar-divider" aria-hidden />
-
       <MidiOptionSelect
         aria-label="Time signature"
         value={meterValue}
@@ -84,7 +83,6 @@ export function MetronomeRail() {
           }
         }}
       />
-
       <MidiOptionSelect
         aria-label="Grid subdivision"
         value={transport.subdivision}
@@ -94,7 +92,6 @@ export function MetronomeRail() {
           dispatch({ type: 'SET_TRANSPORT', patch: { subdivision } });
         }}
       />
-
       {metronomePlaying && (
         <Typography variant="body2" aria-live="polite" className="midi-beat-indicator">
           Beat {currentBeat || 1}

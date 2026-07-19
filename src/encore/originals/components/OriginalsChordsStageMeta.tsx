@@ -36,11 +36,12 @@ export function OriginalsChordsStageMeta({
     <Stack
       direction="row"
       spacing={0.5}
-      alignItems="center"
-      flexWrap="nowrap"
       useFlexGap
       className="encore-originals-chords-meta"
-    >
+      sx={{
+        alignItems: "center",
+        flexWrap: "nowrap"
+      }}>
       <EncoreKeyChip
         value={song.key}
         placeholder="Key"
@@ -65,10 +66,14 @@ export function OriginalsChordsStageMeta({
           <Typography
             component="span"
             variant="body2"
-            color="text.secondary"
             className="encore-originals-playback-duration"
-            sx={{ fontSize: '0.8125rem', fontWeight: 600, lineHeight: '30px', flexShrink: 0 }}
-          >
+            sx={{
+              color: "text.secondary",
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              lineHeight: '30px',
+              flexShrink: 0
+            }}>
             ~{playbackDurationLabel}
           </Typography>
         </Tooltip>

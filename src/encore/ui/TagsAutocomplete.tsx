@@ -120,7 +120,7 @@ export function TagsAutocomplete(props: TagsAutocompleteProps): React.ReactEleme
           </li>
         );
       }}
-      renderTags={
+      renderValue={
         omitInputChips
           ? () => null
           : (items, getTagProps) =>
@@ -151,9 +151,13 @@ export function TagsAutocomplete(props: TagsAutocompleteProps): React.ReactEleme
           label={dense ? undefined : label}
           placeholder={value.length === 0 ? placeholder : ''}
           helperText={helperText}
-          inputProps={{
-            ...params.inputProps,
-            'aria-label': dense ? label : undefined,
+          slotProps={{
+            ...params.slotProps,
+
+            htmlInput: {
+              ...params.slotProps.htmlInput,
+              'aria-label': dense ? label : undefined,
+            }
           }}
         />
       )}
