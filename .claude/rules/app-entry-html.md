@@ -1,0 +1,47 @@
+---
+paths:
+  - 'src/*/index.html'
+  - 'src/**/index.html'
+---
+
+<!-- AUTO-GENERATED from .cursor/rules/app-entry-html.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+
+> SPA shell requirements for every app's index.html entry point
+
+# App entry HTML (`src/*/index.html`)
+
+Every app's `index.html` is the outermost shell the user sees before any JS
+runs. Copy from `src/shared/templates/app-index.starter.html` and keep the
+following invariants in mind when editing.
+
+## Required head contents
+
+1. `<!doctype html>` (lowercase), `<html lang="en">`.
+2. `<meta charset="UTF-8" />` and `<meta name="viewport" content="width=device-width, initial-scale=1.0" />`.
+3. `<meta name="color-scheme" content="light | dark" />` — MUST match the app's resting body background.
+4. A **critical-CSS** inline `<style>html{color-scheme:…;background:#…;color:#…}</style>` block that paints the resting background during HTML parse. Keep it tiny (two declarations only).
+5. `<meta http-equiv="Cache-Control" content="no-cache" />` — the single cache directive. Do **not** add `no-store`, `must-revalidate`, `Pragma`, or `Expires` meta tags.
+6. `<meta name="theme-color" content="#…" />` for mobile browser chrome.
+7. Per-app favicon + apple-touch-icon pointing at `/icons/favicon-<app>.svg` (or app-specific SVG).
+8. `<link rel="stylesheet" href="/styles/shared.css" />` for the a11y baseline.
+9. Canonical URL, OG / Twitter meta, JSON-LD when appropriate.
+10. **Cookie / analytics consent** (GA4 loads only after acceptance on production; localhost skips banner and analytics). Copy the trio from `src/shared/templates/app-index.starter.html`:
+    - `<link rel="stylesheet" href="/styles/labs-cookie-consent.css" />`
+    - `<style>:root { --labs-cc-accent: …; --labs-cc-on-accent: …; }</style>` — match `meta theme-color` (use dark `--labs-cc-on-accent` if the accent is very light).
+    - `<script defer src="/scripts/labs-cookie-consent.js"></script>`
+      Do not load `/scripts/analytics.js` directly from HTML; the consent script injects it after acceptance.
+
+## Never
+
+- Never add `<link rel="manifest" …>`.
+- Never register a service worker or link any `sw.js`. The install-block
+  script is injected by `vite.config.ts` during build.
+- Never add `<link href="https://fonts.googleapis.com/…" rel="stylesheet">`.
+  Pull webfonts via `@fontsource/*` (`src/shared/ui/fonts/appFonts.ts`).
+- Never inline more than ~400 bytes of critical CSS. It defeats the point.
+
+## When adding a new app
+
+Copy `src/shared/templates/app-index.starter.html`. Replace `TODO_APP` with
+the app slug and fill the metadata. The Vite multi-page config already picks
+up `src/<slug>/index.html` automatically.

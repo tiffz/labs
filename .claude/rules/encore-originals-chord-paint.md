@@ -1,0 +1,23 @@
+---
+paths:
+  - 'src/encore/originals/**/*'
+  - 'src/shared/music/chordPro/**/*'
+---
+
+<!-- AUTO-GENERATED from .cursor/rules/encore-originals-chord-paint.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+
+> Encore Originals chord paint editor — selection, move, dismiss handlers
+
+# Encore Originals chord paint
+
+Read [`src/encore/originals/DEVELOPMENT.md`](../../src/encore/originals/DEVELOPMENT.md) before changing paint mode, palette, or chart layout hooks.
+
+## Rules
+
+- **Select / move / delete by `ChordMarker.id`**, not `charIndex`. Multiple chords per word are valid.
+- **Move** is same line only; snap word indices with `snapChordColumnToCharIndex` before comparing or writing `charIndex`.
+- **`upsertChordAtIndex`** replaces every chord at that index — do not use it when adding a second chord on the same word without clearing siblings.
+- **Document-level `pointerdown` dismiss**: use `resolveEventTargetElement` from `src/shared/dom/resolveEventTargetElement.ts` before `.closest()`. `pointerdown` runs before `click`; clearing selection on pointerdown breaks move-to-word.
+- Shared chart logic lives in `src/shared/music/chordPro/`; regression fixtures in `chordPro/fixtures.ts` (`MEET_ME_MOON_PASTE`).
+
+When changing behavior, add or update tests listed in `DEVELOPMENT.md` § Tests map.

@@ -45,3 +45,5 @@ Scoped rules load when matching files are open or edited. **Always-apply** rules
 | [`focus-theming.mdc`](focus-theming.mdc)                                     | `**/*.css`, shared components, main.tsx  | `docs/FOCUS_THEMING.md`                                  | —                            |
 
 **Maintenance:** When adding a rule or skill, update this table and [`.cursor/skills/README.md`](../skills/README.md) in the same PR. Keep each rule **~50 lines**; link to canonical docs for prose. Prefer **enforcement** (tests, ESLint) over duplicated policy.
+
+**Claude Code:** these `.mdc` files are the source of truth. `.claude/rules/*.md` is generated from them (`globs:` → `paths:`, `.mdc` → `.md`) by `npm run generate:claude-guidance` — do not hand-edit `.claude/rules/`; edit here and regenerate. Pre-commit and CI keep the two in sync automatically.

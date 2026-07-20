@@ -11,6 +11,8 @@
     "check:shared-catalog": "node scripts/generate-shared-catalog.mjs --check",
     "generate:labs-catalog": "node scripts/render-labs-catalog.mjs",
     "check:labs-catalog": "node scripts/render-labs-catalog.mjs --check",
+    "generate:claude-guidance": "node scripts/generate-claude-guidance.mjs",
+    "check:claude-guidance": "node scripts/generate-claude-guidance.mjs --check",
     "rollback:candidates": "node scripts/list-rollback-candidates.mjs --count 20",
     "check:import-boundaries": "node scripts/check-import-boundaries.mjs",
     "check:ui-copy": "node scripts/check-ui-copy.mjs",

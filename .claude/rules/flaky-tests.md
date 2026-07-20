@@ -1,0 +1,35 @@
+---
+paths:
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/setupTests.ts'
+  - 'vite.config.ts'
+---
+
+<!-- AUTO-GENERATED from .cursor/rules/flaky-tests.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+
+> Fix flaky tests at the root cause — never only retry or widen timeouts
+
+# Flaky tests
+
+Read [`docs/FLAKY_TESTS.md`](../../docs/FLAKY_TESTS.md) when a test fails intermittently, when adding async/timer/lazy-import tests, or when the user mentions flaky pre-commit/CI.
+
+## Required behavior
+
+1. **Fix the root cause** — preload dynamic imports, mock timers, clean up rAF/BroadcastChannel, use deterministic fixtures.
+2. **Never** set `findBy*` / `waitFor` timeout **above** Vitest `testTimeout` without also raising the **test** timeout.
+3. **Never** "fix" flakes by adding Playwright retries — `playwright.config.ts` uses `retries: 0`.
+   3b. Vitest `--retry=1` in CI is allowed only for documented worker-teardown flakes until eliminated.
+4. **Verify** with three consecutive runs: `for i in 1 2 3; do npx vitest run <file> || break; done`
+5. **Quarantine** only with a row in [`docs/FLAKY_TEST_REGISTRY.md`](../../docs/FLAKY_TEST_REGISTRY.md) and `*.flaky.test.ts` naming.
+
+## Slow tests
+
+- Essentia/WASM, multi-second integration → `*.integration.test.ts` (skipped in `test:fast`)
+- Exhaustive matrices → `*regression*`, `*benchmark*`, `*audit*`, `*stress*` in filename
+
+## Pre-commit speed
+
+Pre-commit uses **`npm run test:staged`** (scoped to staged apps). Full `test:fast` runs when shared/tooling is touched. Do not add heavy tests to the default fast path.
+
+Presubmit uses **`npm run test:changed-apps`** (vs `main`). CI still runs full Vitest on cross-cutting diffs.

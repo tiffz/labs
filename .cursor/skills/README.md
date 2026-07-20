@@ -27,3 +27,5 @@ Portable [Agent Skills](https://agentskills.io/home) for Labs workflows. Discove
 | [`labs-muscle-anatomy-export`](labs-muscle-anatomy-export/SKILL.md)     | Z-Anatomy Blender export → validate → sync bridge → visual checklist      |
 
 **Maintenance:** Add a row here when creating a skill. Run `npm run check:agent-docs` in presubmit/CI.
+
+**Claude Code:** these `SKILL.md` files are the source of truth. `.claude/skills/*` is generated verbatim from them by `npm run generate:claude-guidance` — do not hand-edit `.claude/skills/`; edit here and regenerate. Pre-commit and CI keep the two in sync automatically.

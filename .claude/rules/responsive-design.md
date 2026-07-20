@@ -1,0 +1,51 @@
+---
+paths:
+  - 'src/**/*.css'
+  - 'src/**/*.tsx'
+  - 'src/shared/templates/**'
+  - 'e2e/smoke/layout-heuristics*.spec.ts'
+---
+
+<!-- AUTO-GENERATED from .cursor/rules/responsive-design.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+
+> Labs shared breakpoint scale and responsive layout defaults — use when editing CSS/layout or adding app shells.
+
+# Responsive design (Labs)
+
+Canonical: [`docs/RESPONSIVE_DESIGN.md`](../../docs/RESPONSIVE_DESIGN.md).
+
+## Breakpoints (do not invent new ones without DESIGN.md)
+
+| Name | Width  | Use                            |
+| ---- | ------ | ------------------------------ |
+| xs   | 480px  | Single-column grids            |
+| sm   | 640px  | Stack toolbars / denser chrome |
+| md   | 900px  | Collapse dual panes            |
+| lg   | 1200px | Optional wide desktop          |
+
+## Hard gate (new or changed surfaces)
+
+New surface = **mobile-first**. Before done, run the enforced floor for the app:
+
+```bash
+npx playwright test e2e/smoke/responsive-all-apps.spec.ts --grep "/<app>/"
+```
+
+It asserts no horizontal scroll + no sub-24px touch targets at 390px with a coarse pointer.
+Every primary CUJ must be completable at 390px (degraded paths documented in app `LAYOUT.md`) —
+see `docs/RESPONSIVE_DESIGN.md` § Mobile interaction parity.
+
+## Agent defaults
+
+1. **Mobile-check** primary surfaces after layout/CSS changes (~390px and ~768px, or layout-heuristics smoke).
+2. Prefer **stack** (column flex) over shrinking controls below readable size.
+3. Grids: lower `minmax` under 640px; consider `1fr` under 480px when two columns fight.
+4. Flex/grid children that shrink → `min-width: 0`; media → `max-width: 100%`.
+5. Sticky footers: negative horizontal margin must match shell pad tokens.
+6. No page-level `overflow-x: auto` as a “fix” — see `layout-no-horizontal-scroll.md`.
+7. Coarse pointer: icon hit targets ≥44px comfort, 24px hard floor (`@media (pointer: coarse)` bumps, not desktop-density changes).
+8. Escape hatches (tag at source with a comment): `data-labs-allow-horizontal-scroll` for legit wide regions; `data-labs-allow-small-touch-target` for canvas content that renders tiny.
+
+## New apps
+
+Copy breakpoint comments from `src/shared/layout/labs-breakpoints.css`. Registering the route in `e2e/routeRegistry.ts` (smoke: true) auto-enrolls the app in the responsive floor; add a `layout-heuristics-<app>.spec.ts` only for app-specific assertions.

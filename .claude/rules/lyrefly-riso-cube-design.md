@@ -1,0 +1,25 @@
+---
+paths:
+  - 'src/lyrefly/**/*'
+---
+
+<!-- AUTO-GENERATED from .cursor/rules/lyrefly-riso-cube-design.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+
+> Lyrefly Riso Cube design — White Cube gallery + Riso Alley fluoro
+
+# Lyrefly — Riso Cube design
+
+Read [`src/lyrefly/DESIGN.md`](../../src/lyrefly/DESIGN.md) before changing UI in Lyrefly.
+
+## Non-negotiables
+
+- **Riso Cube only** — light gallery canvas `#fafafa`, riso pink `#ff2d95` primary, no multi-theme picker.
+- **White Cube bones** — 2px radius, Helvetica Neue light display type, hairline borders, editorial spacing.
+- **Riso personality** — fluoro cover washes, misregistered offset shadows on shelf covers only; slight cover tilt.
+- **Tokens** — use `--lyrefly-*` from [`design/risoCubeTheme.ts`](../../src/lyrefly/design/risoCubeTheme.ts); sync MUI via `getAppTheme('lyrefly')`.
+
+## New surfaces
+
+- Showcase shelf: cover carries visual weight; status pills; one add-card slot in grid.
+- Workbench: flat chrome, no nested bordered card container.
+- Extend [`styles/lyrefly.css`](../../src/lyrefly/styles/lyrefly.css) under `.lyrefly-app` rather than ad-hoc hex in components.

@@ -1,0 +1,47 @@
+---
+paths:
+  - 'src/shared/components/music/DrumAccompaniment.tsx'
+  - 'src/shared/components/music/drumPatternEditMenu.ts'
+  - 'src/shared/components/music/inlineDrumUxDefaults.ts'
+  - 'src/shared/components/music/ChordPlaybackSettingsPanel.tsx'
+  - 'src/stanza/components/stanzaWorkspace/**'
+  - 'src/words/components/WordsSectionSettingsMenu.tsx'
+  - 'src/words/components/WordsSoundSettingsPanel.tsx'
+  - 'src/words/hooks/useWordsMenuDismiss.ts'
+  - 'src/piano/components/PlaybackControls.tsx'
+---
+
+<!-- AUTO-GENERATED from .cursor/rules/inline-drum-ux.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+
+> Inline drum UX — profiles, nested Edit menu dismiss, stable popover position
+
+# Inline drum UX
+
+Read [`inlineDrumUxDefaults.ts`](../../src/shared/components/music/inlineDrumUxDefaults.ts) and [`SHARED_UI_CONVENTIONS.md`](../../src/shared/SHARED_UI_CONVENTIONS.md) § Inline drum panels.
+
+## Must
+
+- **Use profiles** — spread `getInlineDrumUxProps('settings-panel' | 'practice-rail' | 'sidebar-compact')`; do not hand-roll `hidePatternInput` / `presetLayout` unless the host owns the pattern field (Words).
+- **Dense menu default** — all profiles use `patternEditing: 'menu'` (notation first; Edit opens `AnchoredPopover`). Do not reintroduce always-expanded `inline` for new hosts. Use `readOnly` for view-only section playback.
+- **Host-owned pattern input** — when the app renders its own rhythm/template `<input>`, pass `{ hidePatternInput: true, hideDarbukaLink: true }` (see `WORDS_HOST_INPUT_DRUM_UX`). That hides the **outer** field only — the Edit menu still includes the pattern string. Put the Darbuka icon on the host field, not inside `DrumAccompaniment`.
+- **Never use `below-notation`** — deprecated; maps to icon placement via `resolveDarbukaLinkPlacement`.
+- **Persist user pattern fields** — song-level `drumPattern` (Stanza), session/chord settings (Encore), section `templateNotation` (Words). Add merge/persistence tests when changing sync.
+- **Nested Edit menu + host dismiss** — document `mousedown` handlers must allowlist `isDrumPatternEditMenuTarget` (paper **and** modal root). Use `resolveEventTargetElement` before `.closest()` (chip labels are often Text nodes).
+- **Stable Edit popover** — freeze with `anchorPosition`; reserve the menu variations row. Stage may show variation prev/next (not a bare preset-name header). Dice hover tips use `DRUM_PATTERN_EDIT_TIP_Z_INDEX` above the menu.
+
+## Profiles
+
+| Profile                           | Hosts                    | Pattern input                             | Audio |
+| --------------------------------- | ------------------------ | ----------------------------------------- | ----- |
+| `settings-panel`                  | Encore Originals, Chords | in Edit menu                              | off   |
+| `practice-rail`                   | Stanza mix rail          | in Edit menu                              | on    |
+| `sidebar-compact`                 | Piano                    | in Edit menu                              | on    |
+| `settings-panel` + host overrides | Words                    | hidden (host field); presets in Edit menu | off   |
+
+## Tests
+
+- Contract: `inlineDrumUxContract.test.tsx` (includes frozen position / stage toolbar stability)
+- Helpers: `drumPatternEditMenu.test.ts`
+- Host dismiss: `src/words/hooks/useWordsMenuDismiss.test.ts`
+- Profile defaults: `inlineDrumUxDefaults.test.ts`
+- E2E smokes: `e2e/playback-ui-regressions.spec.ts`

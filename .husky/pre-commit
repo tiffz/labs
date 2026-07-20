@@ -21,6 +21,15 @@ if ! git diff --quiet -- src/index.html; then
   echo "Staged updated Labs homepage catalog (src/index.html)."
 fi
 
+# Claude Code's .claude/rules and .claude/skills are generated from
+# .cursor/rules and .cursor/skills (the source of truth) — keep them in
+# sync so the two tools never drift apart.
+npm run generate:claude-guidance
+if ! git diff --quiet -- .claude/rules .claude/skills; then
+  git add .claude/rules .claude/skills
+  echo "Staged updated Claude Code guidance (.claude/rules, .claude/skills)."
+fi
+
 STAGED_FILES="$(git diff --cached --name-only)"
 if [ -z "$STAGED_FILES" ]; then
   echo "No staged files after catalog sync; skipping pre-commit checks."
