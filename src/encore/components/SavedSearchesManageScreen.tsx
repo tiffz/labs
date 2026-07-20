@@ -50,7 +50,7 @@ const SAVED_SEARCH_SYNC_HELP_CONTENT = (
       with the songs that match its filters.
     </Typography>
     <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
-      Sync rewrites the playlist from your matching repertoire — it’s one-way, so any edits you’ve
+      Sync rewrites the playlist from your matching repertoire. It’s one-way: edits you’ve
       made on Spotify will be replaced.
     </Typography>
   </Box>

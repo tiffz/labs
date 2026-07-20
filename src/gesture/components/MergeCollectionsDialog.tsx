@@ -262,7 +262,7 @@ export default function MergeCollectionsDialog({
             </div>
             {sourceUrlsDiffer ? (
               <Typography className="gesture-merge-dialog-hint" variant="body2">
-                Collections had different links — the first is kept.
+                Collections had different links. The first is kept.
               </Typography>
             ) : null}
           </section>

@@ -107,8 +107,8 @@ export default function StanzaSuggestSectionsDialog({
       <DialogTitle id="stanza-suggest-sections-title">Suggest sections</DialogTitle>
       <DialogContent>
         <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-          Stanza analyzes your upload and proposes section boundaries. Review before inserting — existing markers
-          {existingMarkerCount > 0 ? ` (${existingMarkerCount})` : ''} are kept; new splits are added at detected
+          Stanza analyzes your upload and proposes section boundaries. Review before inserting. Existing markers
+          {existingMarkerCount > 0 ? ` (${existingMarkerCount})` : ''} are kept. New splits land at detected
           boundaries.
         </Typography>
         {busy ? (

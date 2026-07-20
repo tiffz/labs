@@ -68,8 +68,7 @@ export default function TermLessonPanel(): React.ReactElement {
       <section className="muscle-context-card muscle-term-lesson" aria-live="polite">
         <h2 className="muscle-term-lesson__title">Language of Anatomy</h2>
         <p className="muscle-term-lesson__lede">
-          Directional terms, planes, movement, and naming patterns — each step highlights structures on
-          the model.
+          Each step highlights a structure on the model.
         </p>
         <button type="button" className="muscle-module-guide__cta" onClick={() => advanceModuleGuide()}>
           Start lesson

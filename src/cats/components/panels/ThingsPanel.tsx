@@ -19,7 +19,7 @@ const ThingsPanel: React.FC<ThingsPanelProps> = ({
   return (
     <div className="panel">
       <p className="panel-intro">
-        Money can&apos;t buy happiness... or can it?
+        Money can&apos;t buy happiness… or can it?
       </p>
 
       <div className="things-section">

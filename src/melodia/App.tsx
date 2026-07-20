@@ -335,7 +335,7 @@ function DebugCatalog(): ReactElement {
               sx={{ justifyContent: 'flex-start', textAlign: 'left' }}
               href={catalogExerciseHref(entry.id)}
             >
-              Book {entry.book} · No. {entry.number} — {entry.title ?? entry.id}
+              Book {entry.book} · No. {entry.number}: {entry.title ?? entry.id}
             </Button>
           </Box>
         ))}

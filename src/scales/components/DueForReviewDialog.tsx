@@ -137,7 +137,7 @@ export default function DueForReviewDialog({
               mb: 2,
             }}
           >
-            A short revisit after a few days helps things stick. These items either had a shaky last run or have been quiet for five days.
+            A short revisit after a few days helps things stick. These items either had a shaky last run or have been quiet for 5 days.
           </Typography>
         )}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, py: 1 }}>

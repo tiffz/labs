@@ -261,7 +261,7 @@ export default function DeleteCollectionDialog({
                     display: "block"
                   }}>
                   Trashes photos and folders under Gesture Reference Packs only (Drive trash ~30 days).
-                  Folders linked from elsewhere stay on Drive — use App only.
+                  Folders linked from elsewhere stay on Drive. Use App only.
                 </Typography>
               </span>
             }

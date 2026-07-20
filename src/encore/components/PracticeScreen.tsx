@@ -90,7 +90,7 @@ const LEARNING_PLAYLIST_HELP_CONTENT = (
     </Typography>
     <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
       Sync imports tracks from that playlist into your library and, when everything matches cleanly, can rewrite the
-      playlist from your practicing songs. It’s optional—only if you want Spotify and Encore lists to stay aligned.
+      playlist from your practicing songs. It’s optional. Use it only if you want Spotify and Encore lists to stay aligned.
     </Typography>
   </Box>
 );
@@ -763,7 +763,7 @@ const PracticeScreenBody = memo(function PracticeScreenBody({
               lineHeight: 1.6
             }}>
             Nothing here yet. Add a song you’re working on to keep it at hand for practice
-            sessions — or sync from a <strong>Learning playlist</strong> above.
+            sessions, or sync from a <strong>Learning playlist</strong> above.
           </Typography>
           <Button
             variant="contained"

@@ -593,7 +593,7 @@ export default function RegressionPanel({
       summary.runner.exitCode !== 0 ? (
         <p className="ui-regression-error" role="alert">
           Last regression run exited with code {summary.runner.exitCode}. Expand <strong>Runner log</strong> above for
-          details — baselines are only updated when Playwright finishes successfully.
+          details. Baselines are only updated when Playwright finishes successfully.
         </p>
       ) : null}
       {summary ? (
