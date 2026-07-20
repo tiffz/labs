@@ -138,7 +138,7 @@ describe('App', () => {
       // Click to disable
       fireEvent.click(metronomeButton);
 
-      metronomeButton = screen.getByLabelText('Metronome off');
+      expect(screen.getByLabelText('Metronome off')).toBeInTheDocument();
       expect(rhythmPlayer.setMetronomeEnabled).toHaveBeenCalledWith(false);
     });
 

@@ -214,12 +214,10 @@ const App: React.FC = () => {
 
     // Phase 27: Expand Simile (Drag Drop Support)
     let expandedNotation = notation;
-    let expandedParsed = parsedRhythm;
 
-    const expanded = expandSimileMeasure(expandedNotation, targetMeasureIdx, expandedParsed);
+    const expanded = expandSimileMeasure(expandedNotation, targetMeasureIdx, parsedRhythm);
     if (expanded !== expandedNotation) {
       expandedNotation = expanded;
-      expandedParsed = parseRhythm(expandedNotation, timeSignature);
     }
 
     const activeCleanNotation = expandedNotation.replace(/[\s\n]/g, '');

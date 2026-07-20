@@ -303,7 +303,7 @@ export function EncoreMediaLinkRow(props: EncoreMediaLinkRowProps): ReactElement
     Boolean(trailing) ||
     isPrimary ||
     stanzaHref != null ||
-    (!isPrimary && onMakePrimary) ||
+    Boolean(onMakePrimary) ||
     Boolean(onRemove);
 
   const playTooltip = playDisabled

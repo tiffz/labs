@@ -71,7 +71,7 @@ for (const entry of appEntries) {
     failures.push(`${rel} (${route}) must have smoke: true in routeRegistry.ts`);
   }
 
-  if (!viteConfig.includes(rel.replace(/^src\//, 'src/'))) {
+  if (!viteConfig.includes(rel)) {
     failures.push(`vite.config.ts must register ${rel}`);
   }
 

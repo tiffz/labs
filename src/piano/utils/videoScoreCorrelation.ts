@@ -65,7 +65,7 @@ export async function extractAudioChroma(
 
   const frames: Float32Array[] = [];
 
-  const denominator = frameSize > 1 ? frameSize - 1 : 1;
+  const denominator = frameSize - 1;
   const hannWindow = new Float32Array(frameSize);
   for (let j = 0; j < frameSize; j++) {
     hannWindow[j] = 0.5 * (1 - Math.cos((2 * Math.PI * j) / denominator));

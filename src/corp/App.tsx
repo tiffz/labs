@@ -113,8 +113,6 @@ function useGame() {
           state.player.productivity = clamp(state.player.productivity + (coworker.effects.productivity / teamworkBonus), 0, state.player.maxProductivity);
           state.player.happiness = clamp(state.player.happiness + (coworker.effects.happiness * teamworkBonus), 0, 100);
           state.player.reputation = clamp(state.player.reputation + (coworker.effects.reputation * teamworkBonus), 0, 100);
-          // If satisfied, stop chasing
-          if (coworker.happiness >= coworker.ai.happinessSatisfiedThreshold) intent = 'idle';
         } else if (state.map[nextPos.y]?.[nextPos.x]?.walkable && !isOccupied && !isPlayerPos) {
           coworker.pos = nextPos;
         }

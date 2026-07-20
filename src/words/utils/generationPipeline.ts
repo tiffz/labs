@@ -513,7 +513,7 @@ export function applyFreestyle(
         const strokeRoll = seededUnit(seed, i, strengthSalt, 99);
         const newStroke: Stroke = strokeRoll < 0.4 ? 'D' : strokeRoll < 0.7 ? 'T' : 'K';
         const durationRoll = seededUnit(seed, i, offset, strengthSalt, 77);
-        let newDuration = seg.sixteenths;
+        let newDuration: number;
         if (durationRoll < weights.w16) newDuration = 1;
         else if (durationRoll < weights.w16 + weights.w8) newDuration = 2;
         else if (durationRoll < weights.w16 + weights.w8 + weights.wDot) newDuration = 3;

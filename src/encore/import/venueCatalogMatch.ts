@@ -98,7 +98,7 @@ export function suggestPerformanceVenueFromFile(catalog: readonly string[], file
 function normalizeVenueToken(s: string): string {
   return s
     .toLowerCase()
-    .replace(/[''`]/g, '')
+    .replace(/['`\u2019]/g, '')
     .replace(/[^a-z0-9\s]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();

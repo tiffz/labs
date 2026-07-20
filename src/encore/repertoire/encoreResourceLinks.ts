@@ -44,9 +44,22 @@ export function inferDefaultResourceLabelFromUrl(rawUrl: string): string {
       return 'Google Docs';
     }
     if (host === 'drive.google.com') return 'Google Drive file';
-    if (host === 'youtu.be' || host.endsWith('youtube.com')) return 'YouTube video';
-    if (host.endsWith('spotify.com')) return 'Spotify link';
-    if (host.endsWith('notion.so') || host.endsWith('notion.site')) return 'Notion page';
+    if (
+      host === 'youtu.be' ||
+      host === 'youtube.com' ||
+      host.endsWith('.youtube.com')
+    ) {
+      return 'YouTube video';
+    }
+    if (host === 'spotify.com' || host.endsWith('.spotify.com')) return 'Spotify link';
+    if (
+      host === 'notion.so' ||
+      host.endsWith('.notion.so') ||
+      host === 'notion.site' ||
+      host.endsWith('.notion.site')
+    ) {
+      return 'Notion page';
+    }
   } catch {
     /* fall through */
   }

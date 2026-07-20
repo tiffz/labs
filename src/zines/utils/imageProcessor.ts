@@ -96,9 +96,7 @@ export function validateImageDimensions(
   } else if (spreads.length > 0 && standardWidth === null) {
     // If we only have spreads, use first spread to determine standard
     const firstSpread = spreads[0];
-    standardWidth = firstSpread.width / 2;
-    standardHeight = firstSpread.height;
-    
+
     // Warn about inconsistent spread dimensions
     for (const spread of spreads) {
       if (spread.width !== firstSpread.width || spread.height !== firstSpread.height) {

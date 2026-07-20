@@ -123,7 +123,7 @@ export async function syncSongAttachmentInDrive(
   if (!id) return { renamed: false, moved: false };
 
   let meta = await driveGetFileMetadata(accessToken, id);
-  let parents = meta.parents ?? [];
+  const parents = meta.parents ?? [];
   if (parents.length === 0) return { renamed: false, moved: false };
 
   let moved = false;
@@ -136,7 +136,6 @@ export async function syncSongAttachmentInDrive(
     await driveMoveFile(accessToken, id, effectiveFolderId, parents);
     moved = true;
     meta = await driveGetFileMetadata(accessToken, id);
-    parents = meta.parents ?? [];
   }
 
   const inEffective = (meta.parents ?? []).includes(effectiveFolderId);
@@ -228,7 +227,7 @@ export async function syncDriveMediaLinkInDrive(
   if (!targetId) return { renamed: false, moved: false };
 
   let meta = await driveGetFileMetadata(accessToken, targetId);
-  let parents = meta.parents ?? [];
+  const parents = meta.parents ?? [];
   if (parents.length === 0) return { renamed: false, moved: false };
 
   let moved = false;
@@ -240,7 +239,6 @@ export async function syncDriveMediaLinkInDrive(
     await driveMoveFile(accessToken, targetId, effectiveFolderId, parents);
     moved = true;
     meta = await driveGetFileMetadata(accessToken, targetId);
-    parents = meta.parents ?? [];
   }
 
   const inEffective = (meta.parents ?? []).includes(effectiveFolderId);

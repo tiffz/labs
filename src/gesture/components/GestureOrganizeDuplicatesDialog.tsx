@@ -193,7 +193,7 @@ export default function GestureOrganizeDuplicatesDialog({
       <DialogTitle id="gesture-organize-duplicates-title">Organize collections</DialogTitle>
       <DialogContent>
         {dialogError ? (
-          <Typography variant="body2" color="error" sx={{ mb: dialogError && scan ? 1.5 : 0 }}>
+          <Typography variant="body2" color="error" sx={{ mb: scan ? 1.5 : 0 }}>
             {dialogError}
           </Typography>
         ) : null}

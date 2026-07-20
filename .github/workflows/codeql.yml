@@ -9,6 +9,14 @@ on:
       - '**.js'
       - '**.jsx'
       - '.github/workflows/codeql.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.ts'
+      - '**.tsx'
+      - '**.js'
+      - '**.jsx'
+      - '.github/workflows/codeql.yml'
   schedule:
     # Weekly full scan (Tuesday 08:00 UTC) catches new query-pack findings.
     - cron: '0 8 * * 2'

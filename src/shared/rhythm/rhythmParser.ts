@@ -607,19 +607,17 @@ export function parseRhythm(notation: string, timeSignature: TimeSignature): Par
     // repeats = detectIdenticalMeasures(measures, repeats);
 
     const measureSourceMapping: Record<number, number> = {};
-    if (repeats) {
-      repeats.forEach(rep => {
-        if (rep.type === 'measure') { rep.repeatMeasures.forEach(mIdx => { measureSourceMapping[mIdx] = rep.sourceMeasure; }); }
-        else if (rep.type === 'section') {
-          const length = rep.endMeasure - rep.startMeasure + 1;
-          let currentRepeatStart = rep.endMeasure + 1;
-          for (let i = 1; i <= rep.repeatCount; i++) {
-            for (let m = 0; m < length; m++) { measureSourceMapping[currentRepeatStart + m] = rep.startMeasure + m; }
-            currentRepeatStart += length;
-          }
+    repeats.forEach(rep => {
+      if (rep.type === 'measure') { rep.repeatMeasures.forEach(mIdx => { measureSourceMapping[mIdx] = rep.sourceMeasure; }); }
+      else if (rep.type === 'section') {
+        const length = rep.endMeasure - rep.startMeasure + 1;
+        let currentRepeatStart = rep.endMeasure + 1;
+        for (let i = 1; i <= rep.repeatCount; i++) {
+          for (let m = 0; m < length; m++) { measureSourceMapping[currentRepeatStart + m] = rep.startMeasure + m; }
+          currentRepeatStart += length;
         }
-      });
-    }
+      }
+    });
 
     return { measures, timeSignature, isValid: validation.isValid, error: validation.error, repeats: repeats.length > 0 ? repeats : undefined, measureSourceMapping, measureMapping, };
   } catch (error) {
