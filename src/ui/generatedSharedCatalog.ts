@@ -12595,6 +12595,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
+      "drums",
+      "piano",
       "ui"
     ],
     "exportType": "default",
@@ -12614,6 +12616,8 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
+      "drums",
+      "piano",
       "ui"
     ],
     "exportType": "type",
@@ -12633,7 +12637,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "react"
     ],
     "appsUsing": [
-      "drums",
       "forms",
       "piano",
       "ui",
@@ -13196,6 +13199,72 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "exportType": "default",
     "demoId": "chord-progression-input"
+  },
+  {
+    "id": "src-shared-components-music-chordprogressionpopover-ts-chord-progression-dropdown-class",
+    "name": "CHORD_PROGRESSION_DROPDOWN_CLASS",
+    "path": "src/shared/components/music/chordProgressionPopover.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Portaled chord-progression preset paper (`AnchoredPopover` + paper class).",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-chordprogressionpopover-ts-chord-progression-dropdown-root-class",
+    "name": "CHORD_PROGRESSION_DROPDOWN_ROOT_CLASS",
+    "path": "src/shared/components/music/chordProgressionPopover.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Full-screen Popover/Modal root — include in outside-click exemptions.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-chordprogressionpopover-ts-chordprogressionpopoverrootclassname",
+    "name": "chordProgressionPopoverRootClassName",
+    "path": "src/shared/components/music/chordProgressionPopover.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Root class for AnchoredPopover `slotProps.root` (always includes shared root + optional host root).",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-chordprogressionpopover-ts-ischordprogressionpopovertarget",
+    "name": "isChordProgressionPopoverTarget",
+    "path": "src/shared/components/music/chordProgressionPopover.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "True when the event target is inside a portaled chord-progression picker (paper or root).",
+    "tags": [
+      "components",
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
   },
   {
     "id": "src-shared-components-music-chordstyleinput-tsx-chordstyleinput",
@@ -16189,6 +16258,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "shared-core",
     "description": "Once per UTC day after a successful progress/repertoire write, pin the newest revision (`keepForever`) and unpin pins older than days. Best-effort: failures never fail the sync write.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-escapedrivequeryliteral-ts-escapedrivequeryliteral",
+    "name": "escapeDriveQueryLiteral",
+    "path": "src/shared/drive/escapeDriveQueryLiteral.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Escape a string for embedding in a Google Drive `q` filter literal (`name='…'`, `'id' in parents`, etc.). Drive query syntax treats `\\` as an escape, so backslashes must be escaped before single quotes — otherwise `foo\\'bar` can break out of the literal.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -32475,6 +32557,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-ui-icons-materialiconglyphreadiness-ts-materialiconcsswouldclipink",
+    "name": "materialIconCssWouldClipInk",
+    "path": "src/shared/ui/icons/materialIconGlyphReadiness.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "FOUC boxes often set `width`/`height` equal to `font-size` and then `overflow: hidden`. Material Symbol ink routinely exceeds that em-box (undo/redo/backspace/delete / settings gear), so the glyph looks \"cropped\" even when the ligature has shaped correctly (width heuristic still passes). Also flags: - `font-size` larger than the reserved box (unlayered Google 24px vs layered FOUC) - button/chrome parents shorter than ~1.35× font-size (ink overflows into the border) - ancestor `overflow: hidden` boxes sized to the icon (split-button halves)",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-ui-icons-materialiconglyphreadiness-ts-maxwidthformaterialglyph",
     "name": "maxWidthForMaterialGlyph",
     "path": "src/shared/ui/icons/materialIconGlyphReadiness.ts",
@@ -32795,6 +32890,45 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-url-safeurlhost-ts-hostnamematches",
+    "name": "hostnameMatches",
+    "path": "src/shared/url/safeUrlHost.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when hostname is exactly `host` or a subdomain of `host`.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-url-safeurlhost-ts-hostnamematchesany",
+    "name": "hostnameMatchesAny",
+    "path": "src/shared/url/safeUrlHost.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when hostname equals any of the hosts or is a subdomain of one.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-url-safeurlhost-ts-tryparseurl",
+    "name": "tryParseUrl",
+    "path": "src/shared/url/safeUrlHost.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Hostname checks that avoid substring false-positives (`https://evil.com/?q=youtube.com`).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {

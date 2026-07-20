@@ -121,16 +121,13 @@ export default function PreStartFreeTempoProbe({
       residualPitchClassesRef.current = new Set();
     };
 
-    let matchOk = false;
-
     if (!allowOctaveFlex && score.parts.length >= 2) {
       if (foreignWrong.length > 0) {
         resetProbe();
         return;
       }
       const bh = matchBothHandsSlot(score, mi, ni, playedForChord);
-      matchOk = bh.ok;
-      if (!matchOk) {
+      if (!bh.ok) {
         if (bh.wrongNotes.length > 0) resetProbe();
         return;
       }
@@ -158,7 +155,6 @@ export default function PreStartFreeTempoProbe({
 
       const anchored = expectedPitches.map(p => p + octaveOffsetRef.current!);
       if (!anchored.every(p => played.includes(p))) return;
-      matchOk = true;
     } else {
       if (foreignWrong.length > 0) {
         resetProbe();
@@ -168,10 +164,7 @@ export default function PreStartFreeTempoProbe({
         if (wrongNotes.length > 0) resetProbe();
         return;
       }
-      matchOk = true;
     }
-
-    if (!matchOk) return;
 
     waitingForReleaseRef.current = true;
     const latestAttack = getLatestAttackTime(played, getAllMidiNoteOnTimes());

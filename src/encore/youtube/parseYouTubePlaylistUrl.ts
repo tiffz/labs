@@ -1,3 +1,5 @@
+import { hostnameMatches } from '../../shared/url/safeUrlHost';
+
 /** Extract YouTube playlist id from paste (watch URL with list=, playlist URL, or raw id). */
 export function parseYouTubePlaylistId(raw: string): string | null {
   const s = raw.trim();
@@ -6,7 +8,7 @@ export function parseYouTubePlaylistId(raw: string): string | null {
     const u = new URL(s);
     const list = u.searchParams.get('list');
     if (list && /^[a-zA-Z0-9_-]+$/.test(list)) return list;
-    if (u.hostname.includes('youtube.com') && u.pathname.startsWith('/playlist')) {
+    if (hostnameMatches(s, 'youtube.com') && u.pathname.startsWith('/playlist')) {
       const l = u.searchParams.get('list');
       if (l) return l;
     }

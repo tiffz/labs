@@ -209,7 +209,7 @@ export class CatGameStateManager {
       position.x - this.lastWandPosition.x,
       position.y - this.lastWandPosition.y
     );
-    const velocity = timeDelta > 0 ? distance / timeDelta : 0;
+    const velocity = distance / timeDelta;
 
     // Update velocity history for novelty calculation
     this.velocityHistory.push(velocity);

@@ -41,8 +41,13 @@
   --metro-split-divider-inset: 28%;
   --metro-primary-padding: 0 0.5rem;
   --metro-menu-padding: 0;
-  --metro-icon-size: 1.25rem;
-  --metro-menu-icon-size: 0.625rem;
+  /* Split halves use overflow:hidden for radius; content box is shorter than
+     the outer control height. Token is further ×0.9 in metronome-control.css —
+     keep final glyph under ~controlHeight/1.75 so timer ink clears the half. */
+  --metro-icon-size: calc(
+    var(--drums-playback-control-height, 2.5rem) / 1.75 / 0.9
+  );
+  --metro-menu-icon-size: 0.75rem;
   --metro-menu-chevron-opacity: 0.9;
   --metro-state-off-color: var(--text-color, #1f2937);
   --metro-state-on-color: #fff;

@@ -76,3 +76,69 @@ export function visibleMaterialIconsLookReady(root: Document | HTMLElement = doc
 
   return true;
 }
+
+/**
+ * FOUC boxes often set `width`/`height` equal to `font-size` and then
+ * `overflow: hidden`. Material Symbol ink routinely exceeds that em-box
+ * (undo/redo/backspace/delete / settings gear), so the glyph looks "cropped"
+ * even when the ligature has shaped correctly (width heuristic still passes).
+ *
+ * Also flags:
+ * - `font-size` larger than the reserved box (unlayered Google 24px vs layered FOUC)
+ * - button/chrome parents shorter than ~1.35× font-size (ink overflows into the border)
+ * - ancestor `overflow: hidden` boxes sized to the icon (split-button halves)
+ */
+export function materialIconCssWouldClipInk(el: HTMLElement): boolean {
+  const cs = getComputedStyle(el);
+  const fs = Number.parseFloat(cs.fontSize || '0') || 0;
+  const boxH = el.getBoundingClientRect().height;
+  if (fs <= 0 || boxH <= 0) return false;
+
+  // Glyph metrics larger than the reserved FOUC box (cascade-layer miss).
+  if (fs > boxH + 1) return true;
+
+  const overflowY = cs.overflowY || cs.overflow;
+  if (
+    (overflowY === 'hidden' || overflowY === 'clip') &&
+    Math.abs(boxH - fs) <= 2
+  ) {
+    return true;
+  }
+
+  // Material Symbol ink is typically ~1.2× the em-box. A chrome button needs
+  // ~1.5× font-size so ink clears a 2px border with a few px of optical padding.
+  const CHROME_MIN_HEIGHT_RATIO = 1.5;
+  let parent: HTMLElement | null = el.parentElement;
+  while (parent && parent !== document.body) {
+    const tag = parent.tagName;
+    const role = parent.getAttribute('role');
+    const isChrome =
+      tag === 'BUTTON' ||
+      role === 'button' ||
+      parent.classList.contains('settings-button') ||
+      parent.classList.contains('icon-button') ||
+      parent.classList.contains('play-button') ||
+      parent.classList.contains('stop-button') ||
+      parent.classList.contains('labs-split-action-button__primary') ||
+      parent.classList.contains('labs-split-action-button__menu');
+    const pcs = getComputedStyle(parent);
+    const pOverflow = pcs.overflowY || pcs.overflow;
+    const pr = parent.getBoundingClientRect();
+    if (pr.height > 0) {
+      if (
+        (pOverflow === 'hidden' || pOverflow === 'clip') &&
+        (boxH > pr.height - 2 || pr.height < fs * 1.15)
+      ) {
+        return true;
+      }
+      if (isChrome && pr.height < fs * CHROME_MIN_HEIGHT_RATIO) {
+        return true;
+      }
+    }
+    if (isChrome) break;
+    parent = parent.parentElement;
+  }
+
+  return false;
+}
+

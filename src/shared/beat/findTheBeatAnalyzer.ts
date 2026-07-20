@@ -384,7 +384,6 @@ export async function analyzeBeat(
     if (essentiaResult) {
       finalBpm = Math.round(essentiaResult.bpm);
       beats = essentiaResult.beats;
-      offset = beats.length > 0 ? beats[0] : 0;
 
       const confidenceResult = calculateConfidenceLevel(
         essentiaResult.confidence,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { OverlayColors, isOverlayEnabled } from './overlay';
+import { OverlayColors, isOverlayEnabled } from './overlayFlags';
 
 type MassBoxProps = { left: number; bottom: number; width: number; height: number };
 export const MassBoxOverlay: React.FC<MassBoxProps> = ({ left, bottom, width, height }) => {

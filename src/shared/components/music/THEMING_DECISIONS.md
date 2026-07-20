@@ -122,6 +122,8 @@ This has caused real regressions:
 2. **Never assume layered theme variables override unlayered component defaults.** If a component CSS file sets a property directly (not via a variable), the layered theme cannot override it.
 3. **Test in Vite dev mode specifically.** Vite injects CSS via `<style>` tags in dev, which can produce a different cascade order than the production build. Both must be checked after theme changes.
 4. **Prefer CSS variable indirection.** Component CSS that uses `var(--token, fallback)` can be themed from any layer. Component CSS that uses literal values cannot.
+5. **Shared primitives must not assign theme tokens unlayered.** Example: `appSlider.css` must not set `--app-slider-track` on `.app-slider` (that beats zines/words `@layer` host overrides). Resolve color via `var(--app-slider-track, var(--accent-primary, #7c3aed))` instead, and put host overrides unlayered when they also style MUI sub-selectors.
+6. **Material / Tailwind upgrades:** re-spot-check every app that themes `AppSlider`, Material Symbols FOUC boxes, and layered `appSharedThemes` — root cause class `cascade-layer-token-override`.
 
 ## Recent contract updates
 

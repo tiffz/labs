@@ -315,7 +315,7 @@ export function useStanzaPlaybackBootstrap(params: UseStanzaPlaybackBootstrapPar
     }
 
     if (readYoutubeVFromLocation() && !selectedId) return;
-    if (hasStanzaDriveDeepLinkQuery() && !selectedId && !driveDeepLinkError) return;
+    if (hasStanzaDriveDeepLinkQuery() && !selectedId) return;
     if (hasStanzaMediaFingerprintDeepLinkQuery() && !fingerprintBootstrapAttemptedRef.current) return;
 
     if (selectedId && !songs.some((s) => s.id === selectedId)) {

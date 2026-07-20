@@ -10,6 +10,13 @@ import {
 // the hook refreshes 300s before that → first timer fires at +3000s.
 const FIRST_REFRESH_DELAY_MS = 3_000_000;
 
+/** CodeQL models StorageEvent as 1-arg; build a storage event without init-dict args. */
+function makeStorageEvent(key: string): Event {
+  const event = new Event('storage');
+  Object.defineProperty(event, 'key', { value: key });
+  return event;
+}
+
 function okTokenResponse(token: string): Response {
   return new Response(
     JSON.stringify({ access_token: token, expires_in: 3600, email: 'me@example.com' }),
@@ -70,9 +77,7 @@ describe('useLabsGoogleSessionRefresh', () => {
     renderHook(() => useLabsGoogleSessionRefresh());
     // Sibling tab refreshes (storage event re-schedules from the fresh expiry).
     writePersistedGoogleSession('tok-1', 3600);
-    window.dispatchEvent(
-      new StorageEvent('storage', { key: 'encore_google_oauth_v1' }),
-    );
+    window.dispatchEvent(makeStorageEvent('encore_google_oauth_v1'));
     await vi.advanceTimersByTimeAsync(60_000);
     expect(fetch).not.toHaveBeenCalled();
   });

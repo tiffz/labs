@@ -3,6 +3,8 @@ import type { ComicArchiveBinder, ComicProject, ScriptDocument } from '../types'
 import type { LyreflyWorkflowStage } from './lyreflyWorkflowStages';
 import { LYREFLY_WORKFLOW_STAGES, workflowStageIndex } from './lyreflyWorkflowStages';
 
+const WORKFLOW_STAGE_IDS = new Set(LYREFLY_WORKFLOW_STAGES.map((step) => step.id));
+
 export type LyreflyStageCompletionContext = {
   script?: ScriptDocument | null;
   visualDevCount?: number;
@@ -81,16 +83,20 @@ export function toggleWorkflowStageCompletion(
   stage: LyreflyWorkflowStage,
   ctx: LyreflyStageCompletionContext = {},
 ): ComicProject {
+  if (!WORKFLOW_STAGE_IDS.has(stage)) return project;
   const currentlyComplete = isWorkflowStageComplete(project, stage, ctx);
   const nextComplete = !currentlyComplete;
   const stageCompletion: NonNullable<ComicProject['stageCompletion']> = {
     ...project.stageCompletion,
-    [stage]: nextComplete,
   };
+  stageCompletion[stage] = nextComplete;
   if (nextComplete) {
     const index = workflowStageIndex(stage);
     for (let i = 0; i < index; i += 1) {
-      stageCompletion[LYREFLY_WORKFLOW_STAGES[i]!.id] = true;
+      const earlier = LYREFLY_WORKFLOW_STAGES[i]!.id;
+      if (WORKFLOW_STAGE_IDS.has(earlier)) {
+        stageCompletion[earlier] = true;
+      }
     }
   }
   return {

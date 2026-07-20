@@ -6,6 +6,7 @@ import {
 import { driveListFiles } from './driveFetch';
 import type { EncoreDriveBootstrap } from './bootstrapFolders';
 import type { EncoreDriveUploadFolderOverrides } from '../types';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 
@@ -13,7 +14,7 @@ const INVENTORY_LIST_FIELDS =
   'nextPageToken,files(id,name,mimeType,createdTime,modifiedTime,size,md5Checksum)';
 
 function escapeDriveQueryString(id: string): string {
-  return id.replace(/'/g, "\\'");
+  return escapeDriveQueryLiteral(id);
 }
 
 async function driveListAllChildrenInFolder(

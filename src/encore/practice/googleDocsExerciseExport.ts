@@ -255,7 +255,6 @@ async function docsClearStructuralRegion(
 
     const spans = bodyStructuralSpans(elements);
     if (spans.length === 0) {
-      if (maxEnd <= 2) return;
       throw new Error(
         `Google Doc could not clear ${regionLabel} (structural spans missing). Remove the Doc in Drive and export again, or report this.`,
       );

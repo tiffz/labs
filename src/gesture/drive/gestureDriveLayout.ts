@@ -9,9 +9,10 @@ import {
 } from '../../shared/drive/labsDrivePortfolioLayout';
 import { GESTURE_REFERENCE_PACKS_FOLDER } from './gestureDriveConstants';
 import { readGestureDriveSyncMeta, writeGestureDriveSyncMeta } from './gestureDriveSyncMeta';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 
 function qFolderInParent(name: string, parentId: string): string {
-  return `name='${name.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and '${parentId.replace(/'/g, "\\'")}' in parents and trashed=false`;
+  return `name='${escapeDriveQueryLiteral(name)}' and mimeType='application/vnd.google-apps.folder' and '${escapeDriveQueryLiteral(parentId)}' in parents and trashed=false`;
 }
 
 export type GestureReferencePacksLayout = {

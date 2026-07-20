@@ -457,7 +457,7 @@ export function useGestureCollectionUpload({ onComplete, onError }: UseGestureCo
         continue;
       }
 
-      let resolvedJob = job;
+      let resolvedJob;
       try {
         const files = await resolveUploadJobFiles(job);
         if (files.length === 0) {

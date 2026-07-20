@@ -135,7 +135,7 @@ const SIXTEENTHS_PER_MEASURE = 16;
 function extractInputWords(text: string): string[] {
   return text
     .split(/[\s\n]+/)
-    .map((w) => w.replace(/[^\w''\u2019]/g, '').toLowerCase())
+    .map((w) => w.replace(/[^\w'\u2019]/g, '').toLowerCase())
     .filter((w) => w.length > 0);
 }
 

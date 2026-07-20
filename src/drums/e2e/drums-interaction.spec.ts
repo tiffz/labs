@@ -1,6 +1,80 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Darbuka Rhythm Trainer - User Interactions', () => {
+  test('playback and toolbar material icons are not FOUC-clipped', async ({ page }) => {
+    await page.goto('/drums/');
+    const icons = page.locator(
+      [
+        '.icon-button-group .material-symbols-outlined',
+        '.settings-button .material-symbols-outlined',
+        '.play-button .material-symbols-outlined',
+        '.labs-metronome-toggle-icon',
+      ].join(', '),
+    );
+    await expect(icons.first()).toBeVisible();
+    // Mirrors materialIconCssWouldClipInk (page.evaluate cannot import app modules).
+    const clipped = await page.evaluate(() => {
+      const selectors = [
+        '.icon-button-group .material-symbols-outlined',
+        '.settings-button .material-symbols-outlined',
+        '.play-button .material-symbols-outlined',
+        '.labs-metronome-toggle-icon',
+      ];
+      const bad: string[] = [];
+      const isChrome = (p: HTMLElement) =>
+        p.tagName === 'BUTTON' ||
+        p.getAttribute('role') === 'button' ||
+        p.classList.contains('settings-button') ||
+        p.classList.contains('icon-button') ||
+        p.classList.contains('play-button') ||
+        p.classList.contains('labs-split-action-button__primary');
+      for (const sel of selectors) {
+        for (const el of document.querySelectorAll<HTMLElement>(sel)) {
+          const cs = getComputedStyle(el);
+          const fs = Number.parseFloat(cs.fontSize || '0') || 0;
+          const boxH = el.getBoundingClientRect().height;
+          if (fs <= 0 || boxH <= 0) continue;
+          const label = `${sel}: ${el.textContent?.trim() || '(empty)'}`;
+          if (fs > boxH + 1) {
+            bad.push(`${label} (font>${boxH})`);
+            continue;
+          }
+          const overflowY = cs.overflowY || cs.overflow;
+          if (
+            (overflowY === 'hidden' || overflowY === 'clip') &&
+            Math.abs(boxH - fs) <= 2
+          ) {
+            bad.push(`${label} (overflow)`);
+            continue;
+          }
+          let parent: HTMLElement | null = el.parentElement;
+          while (parent && parent !== document.body) {
+            const pcs = getComputedStyle(parent);
+            const pOverflow = pcs.overflowY || pcs.overflow;
+            const pr = parent.getBoundingClientRect();
+            if (pr.height > 0) {
+              if (
+                (pOverflow === 'hidden' || pOverflow === 'clip') &&
+                (boxH > pr.height - 2 || pr.height < fs * 1.15)
+              ) {
+                bad.push(`${label} (parent-overflow)`);
+                break;
+              }
+              if (isChrome(parent) && pr.height < fs * 1.5) {
+                bad.push(`${label} (tight-chrome ${pr.height.toFixed(0)}/${fs})`);
+                break;
+              }
+            }
+            if (isChrome(parent)) break;
+            parent = parent.parentElement;
+          }
+        }
+      }
+      return bad;
+    });
+    expect(clipped, `Clipped icons: ${clipped.join(', ')}`).toEqual([]);
+  });
+
   test('should update rhythm display when input changes', async ({ page }) => {
     await page.goto('/drums/');
     

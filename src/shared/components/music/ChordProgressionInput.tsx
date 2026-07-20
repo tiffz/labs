@@ -5,6 +5,10 @@ import { progressionToChordsInSongKey, songKeyToTonic } from '../../music/chordT
 import { COMMON_CHORD_PROGRESSIONS, type CommonChordProgression } from '../../music/commonChordProgressions';
 import { normalizeProgressionSeparators } from '../../music/chordProgressionSeparators';
 import { parseProgressionText } from '../../music/chordProgressionText';
+import {
+  CHORD_PROGRESSION_DROPDOWN_CLASS,
+  chordProgressionPopoverRootClassName,
+} from './chordProgressionPopover';
 import './chordProgressionInput.css';
 
 interface ChordProgressionInputProps {
@@ -88,6 +92,8 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
   const anchorRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const dropdownInputRef = useRef<HTMLInputElement | null>(null);
+  /** Suppress focus→open after close (MUI restoreFocus / blur→refocus loops). */
+  const suppressOpenOnFocusRef = useRef(false);
   const latestValueRef = useRef(value);
   latestValueRef.current = value;
   const parsed = useMemo(
@@ -137,12 +143,26 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
   const useInputInDropdown = inputInDropdown && menuMode === 'popover';
   const showPopoverInput = menuMode === 'popover' && (useInputInDropdown || showInputInPopover);
 
-  const openMenu = () => {
+  const openMenu = (opts?: { force?: boolean }) => {
     if (disabled) return;
+    if (suppressOpenOnFocusRef.current && !opts?.force) return;
+    suppressOpenOnFocusRef.current = false;
     setOpen(true);
     window.setTimeout(() => {
       if (showPopoverInput) dropdownInputRef.current?.focus();
     }, 0);
+  };
+
+  const closeMenu = () => {
+    // Keep suppress long enough to absorb MUI restoreFocus / host remount focus races.
+    suppressOpenOnFocusRef.current = true;
+    setOpen(false);
+    if (showPopoverInput && !useInputInDropdown) {
+      inputRef.current?.focus({ preventScroll: true });
+    }
+    window.setTimeout(() => {
+      suppressOpenOnFocusRef.current = false;
+    }, 400);
   };
 
   return (
@@ -160,7 +180,7 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
           <button
             type="button"
             className="shared-chord-progression-trigger"
-            onClick={openMenu}
+            onClick={() => openMenu()}
             disabled={disabled}
           >
             <span className="shared-chord-progression-trigger-text">{value || placeholder}</span>
@@ -175,14 +195,23 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
             onFocus={() => {
               if (menuMode === 'popover') openMenu();
             }}
+            onClick={() => {
+              // closeMenu leaves focus on this field — a later click does not
+              // re-fire focus, so open must also be available from click.
+              if (menuMode === 'popover') openMenu({ force: true });
+            }}
             onChange={(event) => preview(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
                 event.preventDefault();
                 commit();
-                if (menuMode === 'popover') setOpen(false);
+                if (menuMode === 'popover') closeMenu();
               }
-              if (event.key === 'Escape' && menuMode === 'popover') setOpen(false);
+              if (event.key === 'Escape' && menuMode === 'popover') {
+                event.preventDefault();
+                event.stopPropagation();
+                closeMenu();
+              }
             }}
             onBlur={() => commit()}
             placeholder={placeholder}
@@ -194,18 +223,19 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
         <AnchoredPopover
           open={Boolean(open && anchorRef.current)}
           anchorEl={anchorRef.current}
-          onClose={() => setOpen(false)}
+          onClose={closeMenu}
           placement="bottom-start"
+          disableScrollLock
           paperClassName={[
-            'shared-chord-progression-dropdown',
-            `shared-chord-progression-dropdown--${appearance}`,
+            CHORD_PROGRESSION_DROPDOWN_CLASS,
+            `${CHORD_PROGRESSION_DROPDOWN_CLASS}--${appearance}`,
             dropdownClassName,
           ]
             .filter(Boolean)
             .join(' ')}
           slotProps={{
             root: {
-              className: dropdownClassName ? `${dropdownClassName}-root` : undefined,
+              className: chordProgressionPopoverRootClassName(dropdownClassName),
             },
           }}
         >
@@ -221,7 +251,12 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
                   if (event.key === 'Enter') {
                     event.preventDefault();
                     commit();
-                    setOpen(false);
+                    closeMenu();
+                  }
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeMenu();
                   }
                 }}
                 placeholder={placeholder}
@@ -263,7 +298,7 @@ const ChordProgressionInput: React.FC<ChordProgressionInputProps> = ({
                           onCommit?.(next);
                         }
                       }
-                      setOpen(false);
+                      closeMenu();
                     }}
                   >
                     <span className="shared-chord-progression-name">{preset.name}</span>

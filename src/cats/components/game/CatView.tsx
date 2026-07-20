@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useEffect } from 'react';
 import { catCoordinateSystem } from '../../services/CatCoordinateSystem';
 import { computeShadowLayout, SHADOW_OFFSET_X } from '../../services/ShadowLayout';
 import { layerForZ } from '../rendering/zLayer';
-import { isOverlayEnabled } from '../debug/overlay';
+import { isOverlayEnabled } from '../debug/overlayFlags';
 import { MassBoxOverlay } from '../debug/overlay.tsx';
 import { useWorld } from '../../context/useWorld';
 import type { EntityId } from '../../engine';

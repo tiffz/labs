@@ -9,7 +9,7 @@ export function durationToken(n: ScoreNote): string {
 
 function pitchGroup(note: ScoreNote): string {
   if (note.rest || note.pitches.length === 0) return 'R';
-  return note.pitches.map((p) => midiToNoteName(p).replace(/#/g, '#')).join('+');
+  return note.pitches.map((p) => midiToNoteName(p)).join('+');
 }
 
 /**

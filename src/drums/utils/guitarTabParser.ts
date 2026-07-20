@@ -20,8 +20,11 @@ const TAB_CONTINUATION_PATTERN = /^[-0-9|]+.*[-0-9|]+$/;
 /** Pattern to detect strumming metadata block at top of tab */
 const STRUMMING_METADATA_PATTERN = /strumming[:\s|]*([DdUu.\s|]+)/i;
 
-/** Pattern to detect strumming footer line below tab grid - matches lines with d, u, PM, spaces, dots, and bar separators */
-const STRUMMING_FOOTER_PATTERN = /^[du\s.|]*(?:PM[du\s.|]*|[du][du\s.|]*)+$/i;
+/** Linear-safe: only PM / d / u / whitespace / dots / bars, and must include a strum token. */
+function isStrummingFooterLine(line: string): boolean {
+  if (!/^(?:PM|[du.\s|])+$/i.test(line)) return false;
+  return /PM|[du]/i.test(line);
+}
 
 /** Pattern to detect section headers like [intro], [verse A], "Intro:", "Verse 1:", etc. */
 const SECTION_HEADER_PATTERN = /^(?:\[([^\]]+)\]|([A-Za-z][\w\s]*\d*):)\s*$/i;
@@ -161,7 +164,7 @@ function extractStrummingBySections(text: string): {
     // If we just exited a tab block and this line looks like strumming
     if (inTabBlock && i > tabBlockEndIndex) {
       // Check if this line contains strumming notation
-      const strummingMatch = trimmed && STRUMMING_FOOTER_PATTERN.test(trimmed);
+      const strummingMatch = trimmed && isStrummingFooterLine(trimmed);
       if (strummingMatch) {
         currentPatterns.push(trimmed);
         inTabBlock = false;

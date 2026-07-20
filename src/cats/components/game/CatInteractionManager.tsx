@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { isOverlayEnabled } from '../debug/overlay';
+import { isOverlayEnabled } from '../debug/overlayFlags';
 import { catCoordinateSystem } from '../../services/CatCoordinateSystem';
 import { computeShadowLayout } from '../../services/ShadowLayout';
 import Cat from './Cat';

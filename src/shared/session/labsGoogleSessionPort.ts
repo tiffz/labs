@@ -298,6 +298,9 @@ export async function signInWithGoogleViaBff(options?: {
     try {
       broadcastChannel = new BroadcastChannel(LABS_GOOGLE_OAUTH_BROADCAST_CHANNEL);
       broadcastChannel.onmessage = (event: MessageEvent<LabsGoogleOAuthDoneMessage>) => {
+        // BroadcastChannel is same-origin; treat a missing origin as this window's origin.
+        const origin = event.origin || window.location.origin;
+        if (!allowedOrigins.has(origin)) return;
         handleOAuthDonePayload(event.data);
       };
     } catch {

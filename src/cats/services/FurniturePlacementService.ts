@@ -1194,23 +1194,11 @@ export class FurniturePlacementService {
     // Use EFFECTIVE width accounting for perspective scaling (wall furniture at z=0)
     const furnitureWidth = this.getEffectiveWidth(bounds.width, WORLD_BOUNDS.wallZ);
     
-    let centerX;
-    if (furnitureWidth > partitionWidth) {
-      // Furniture wider than partition - using Y-axis separation
-      // Place at partition center, but we'll use Y-axis separation to prevent visual overlap
-      centerX = (partition.minX + partition.maxX) / 2;
-    } else {
-      // Normal centering within partition
-      centerX = (partition.minX + partition.maxX) / 2;
-    }
-    
-    // Debug: PARTITION: Placed ${kind} at x=${centerX.toFixed(0)} within partition ${partition.minX.toFixed(0)}-${partition.maxX.toFixed(0)}`);
-    
     // Add randomization within partition bounds
     const partitionCenter = (partition.minX + partition.maxX) / 2;
     const maxRandomOffset = Math.min(50, (partitionWidth - furnitureWidth) / 2); // Up to 50px random offset
     const randomOffset = (Math.random() - 0.5) * 2 * maxRandomOffset;
-    centerX = partitionCenter + randomOffset;
+    let centerX = partitionCenter + randomOffset;
     
     // Ensure furniture stays within world bounds (using effective width)
     centerX = Math.max(centerX, WORLD_BOUNDS.visibleMinX + furnitureWidth / 2);
@@ -1303,7 +1291,6 @@ export class FurniturePlacementService {
           // Debug: 🎨 ✅ PAINTING ${renderable.kind} overlays ${randomPartition.furnitureKind} at x=${position.x}, y=${position.y}`);
           results.set(entityId, { success: true, position, kind: renderable.kind });
           usedPaintingPositions.push({ x: position.x, y: position.y, entityId, kind: renderable.kind });
-          placed = true;
           continue;
         }
       }
@@ -1312,7 +1299,7 @@ export class FurniturePlacementService {
       const freePartitions = availablePartitions.filter(p => !p.occupied && 
         !usedPaintingPositions.some(used => Math.abs(used.x - (p.minX + p.maxX) / 2) < 100));
       
-      if (!placed && freePartitions.length > 0) {
+      if (freePartitions.length > 0) {
         const randomPartition = freePartitions[Math.floor(Math.random() * freePartitions.length)];
         const position = this.placeFurnitureInPartition(renderable.kind, randomPartition);
         if (position) {
@@ -1322,14 +1309,12 @@ export class FurniturePlacementService {
           // Mark this partition as occupied by a painting
           randomPartition.occupied = true;
           randomPartition.furnitureKind = renderable.kind;
-          placed = true;
           continue;
         }
       }
-      
 
       // Priority 3: Last resort - share with another painting (with strict separation)
-      if (!placed) {
+      {
         const paintingPartitions = availablePartitions.filter(p => p.occupied && 
           (p.furnitureKind === 'painting-cat-large' || p.furnitureKind === 'painting-abstract-small'));
         

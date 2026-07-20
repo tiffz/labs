@@ -65,6 +65,11 @@ Structure findings as **symptom → root cause class → durable fix** (same fie
 - `e2e-port-collision` — parallel Playwright runs or a stale dev server fight over the fixed port; specs fail on connect. Fix: `--strictPort` + `reuseExistingServer` config, one webServer owner per run.
 - `local-first-breach` — a flow that should work offline/local-first requires network or a Google account (e.g. Drive-first pack creation). Fix: local-blob foundation with upload-later; see [`LOCAL_FIRST_SYNC.md`](LOCAL_FIRST_SYNC.md).
 - `reactive-audio` — audio scheduled reactively on UI/state events instead of a look-ahead scheduler; drifts or stutters under load. Fix: platform scheduler per [`SHARED_AUDIO_PLATFORM.md`](SHARED_AUDIO_PLATFORM.md).
+- `icon-fouc-clip` — Material Symbol / note-symbol FOUC boxes crop glyph ink after font/metrics or cascade-layer changes. Two failure modes: (1) `overflow: hidden` with height ≈ font-size; (2) unlayered Google Material Symbols CSS (`font-size: 24px`) beats `@layer components` app rules that reserved a smaller box. Ligature width checks still pass. Fix: unlayered icon size rules + `overflow: visible` (or slightly undersized font inside radius-clipping parents); guard via `assertVisibleMaterialIconsNotCssClipped` / `materialIconCssWouldClipInk` ([`VISUAL_JUDGE_RUBRIC.md`](VISUAL_JUDGE_RUBRIC.md) T1.1).
+- `cascade-layer-token-override` — app/host theme tokens in `@layer` lose to unlayered shared CSS (AppSlider purple track, Material Symbols `font-size: 24px`, BPM geometry). Fix: shared primitives resolve via `var(--token, fallback)` **without assigning** the token unlayered; host overrides that must win stay unlayered. See [`THEMING_DECISIONS.md`](../src/shared/components/music/THEMING_DECISIONS.md) § CSS `@layer` Cascade Pitfall.
+- `focus-open-popover-loop` — text field opens a popover on `focus`, close returns focus to the field → menu reopens; or close leaves focus on the field so click cannot reopen. Fix: suppress open-on-focus after close + **click `force` open** + Escape `stopPropagation` ([`A11Y_MENU_PATTERNS.md`](A11Y_MENU_PATTERNS.md) § Focus-opens).
+- `parallel-control-geometry` — two control types in one panel (e.g. `AppSlider` + `AppLinearVolumeSlider`, or 28px vs 36px fields) look broken even when each is “correct” alone. Fix: one primitive per panel job; one height token for parallel rows ([`SHARED_UI_CONVENTIONS.md`](../src/shared/SHARED_UI_CONVENTIONS.md); visual rubric T1.7 / T1.11).
+- `upgrade-spotcheck-gap` — toolchain upgrades land with green CI but miss app-skin regressions (icon FOUC, purple sliders, menu focus loops) because full-page visuals bury small chrome and glyph gates only check width. Fix: post-upgrade 5-app smoke + component contracts (`check:volume-slider`, material icon clip assert, chord reopen Vitest); prefer cropped visual baselines for dense menus when a class recurs.
 - `guidance-drift` — agent guidance contradicts code or other guidance (stale links, dead script names, duplicated gates that diverged). Fix: canonical homes + automated checks (`check:doc-links`, `check:agent-docs`).
 - `tech-debt` — structural debt without a user-visible bug (oversized files, duplicated stacks, stale scaffolding). Not a bug class; track in [`TECH_DEBT_ROADMAP.md`](TECH_DEBT_ROADMAP.md) with entry criteria and link the row.
 
@@ -104,6 +109,19 @@ Before closing a substantial session:
 Always-on rule: [`.cursor/rules/session-retrospective-mandatory.mdc`](../.cursor/rules/session-retrospective-mandatory.mdc).
 
 Do not turn every typo fix into a process initiative. Scale effort to session complexity.
+
+## Session throughput (cut wall-clock and tokens)
+
+Long multi-bug sessions burn cost when agents thrash without a falsifying spike. Defaults:
+
+1. **One spike first** — for visual/CSS bugs: one Playwright/CDP repro (computed style or pixel pad) before editing more than one file. Prefer numbers over screenshot captions (vision captions over-report clipping when primed).
+2. **Name the cascade class early** — after Tailwind/`@layer`/MUI work, check `cascade-layer-token-override` before inventing new FOUC geometry.
+3. **Batch spot-check apps, then stop** — after a toolchain upgrade, timebox a 5-app smoke (drums / words / zines / chords / encore). File remaining issues; do not keep expanding the same chat indefinitely.
+4. **Scoped verify → then presubmit** — unit/e2e for the touched surface first; full `presubmit` once. Ignore unrelated dirty-tree failures unless they block the PR.
+5. **Split when >2 root-cause classes** — ship or hand off a PR per class (`labs-split-to-prs`) instead of one mega-session.
+6. **Codify on second hit in-session** — do not re-discover `@layer` vs unlayered three times; land the guard/doc in the same turn.
+
+Always-on reminder: [`.cursor/rules/session-throughput.mdc`](../.cursor/rules/session-throughput.mdc).
 
 ## Examples already in the repo
 

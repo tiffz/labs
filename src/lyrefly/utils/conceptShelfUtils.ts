@@ -1,5 +1,6 @@
 import { parseDriveFileIdFromUrlOrId } from '../../shared/drive/parseDriveFolderUrl';
 import { inferMediaMimeType } from '../../shared/drive/inferMediaMimeType';
+import { hostnameMatches, tryParseUrl } from '../../shared/url/safeUrlHost';
 import { richTextLinkPreview } from '../../shared/utils/richTextContent';
 import type { VisualDevAsset, VisualDevAssetKind } from '../types';
 
@@ -25,8 +26,21 @@ export function inferConceptLabelFromUrl(rawUrl: string): string {
       return 'Google Docs';
     }
     if (host === 'drive.google.com') return 'Google Drive file';
-    if (host === 'youtu.be' || host.endsWith('youtube.com')) return 'YouTube video';
-    if (host.endsWith('notion.so') || host.endsWith('notion.site')) return 'Notion page';
+    if (
+      host === 'youtu.be' ||
+      host === 'youtube.com' ||
+      host.endsWith('.youtube.com')
+    ) {
+      return 'YouTube video';
+    }
+    if (
+      host === 'notion.so' ||
+      host.endsWith('.notion.so') ||
+      host === 'notion.site' ||
+      host.endsWith('.notion.site')
+    ) {
+      return 'Notion page';
+    }
   } catch {
     /* fall through */
   }
@@ -35,8 +49,11 @@ export function inferConceptLabelFromUrl(rawUrl: string): string {
 }
 
 export function inferConceptKindFromUrl(url: string): VisualDevAssetKind {
-  if (/docs\.google\.com\/document/i.test(url)) return 'reference';
-  if (/drive\.google\.com/i.test(url)) return 'reference';
+  if (hostnameMatches(url, 'docs.google.com')) {
+    const parsed = tryParseUrl(url);
+    if (parsed && /\/document\//i.test(parsed.pathname)) return 'reference';
+  }
+  if (hostnameMatches(url, 'drive.google.com')) return 'reference';
   if (/\.pdf($|\?)/i.test(url) || url.toLowerCase().includes('pdf')) return 'reference';
   return assetKindForLink(url);
 }

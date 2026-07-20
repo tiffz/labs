@@ -214,9 +214,7 @@ const Cat = React.forwardRef<SVGSVGElement, CatProps>(
 
         const catElement = catRef && 'current' in catRef ? catRef.current : null;
         if (!catElement) {
-          if (isActive) {
-            animationFrameId = requestAnimationFrame(animate);
-          }
+          animationFrameId = requestAnimationFrame(animate);
           return;
         }
 

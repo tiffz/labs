@@ -37,7 +37,7 @@ function StepCircle({ stepNumber, active, completed }: StepCircleProps): ReactEl
   let borderColor: string;
   let bgcolor: string;
   let color: string;
-  let boxShadow = 'none';
+  let boxShadow: string;
 
   if (active) {
     borderColor = primary;

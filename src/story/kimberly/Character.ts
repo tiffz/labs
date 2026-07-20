@@ -5,10 +5,19 @@
  * This allows templates like: `${char.Kimberly()} looked at ${char.her()} reflection`
  */
 
-import { pick } from './core';
 import * as names from './names';
 
 export type Gender = 'female' | 'male' | 'neutral';
+
+/** Cosmetic story gender weights — not a security boundary. */
+function pickGenderCosmetically(): Gender {
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  const n = buf[0]! % 100;
+  if (n < 45) return 'female';
+  if (n < 90) return 'male';
+  return 'neutral';
+}
 
 export type CharacterRole = 
   | 'hero' 
@@ -70,9 +79,9 @@ export class Character {
   constructor(role: CharacterRole = 'supporting', gender?: Gender) {
     this.role = role;
     
-    // If no gender specified, randomly choose one
+    // If no gender specified, randomly choose one (cosmetic story generation only)
     if (!gender) {
-      this.gender = pick<Gender>(['female', 'male', 'neutral'], [45, 45, 10]);
+      this.gender = pickGenderCosmetically();
     } else {
       this.gender = gender;
     }

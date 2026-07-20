@@ -35,7 +35,7 @@ function StepCircle({ stepNumber, active, completed, iconSize }: StepCircleProps
   let borderColor: string;
   let bgcolor: string;
   let color: string;
-  let boxShadow = 'none';
+  let boxShadow: string;
 
   if (active) {
     borderColor = primary;

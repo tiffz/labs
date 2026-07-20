@@ -11,6 +11,7 @@ import { stanzaDb, type StanzaSong } from '../db/stanzaDb';
 import { computeStanzaLocalMediaFingerprint } from '../utils/stanzaLocalMediaFingerprint';
 import { probeFileAudioDurationSeconds } from '../utils/probeFileAudioDuration';
 import { stanzaDriveSongNeedsMediaDownload } from './stanzaDriveMediaHydration';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 
 /** Child folder under `Tiff Zhang Labs/Stanza` for main recording bytes (local uploads). */
 export const STANZA_DRIVE_MAIN_AUDIO_FOLDER = 'main_audio';
@@ -61,7 +62,7 @@ function blobToUploadFile(blob: Blob, name: string): File {
 }
 
 async function ensureStanzaMainAudioFolder(accessToken: string, appFolderId: string): Promise<string> {
-  const q = `name='${STANZA_DRIVE_MAIN_AUDIO_FOLDER.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and '${appFolderId}' in parents and trashed=false`;
+  const q = `name='${escapeDriveQueryLiteral(STANZA_DRIVE_MAIN_AUDIO_FOLDER)}' and mimeType='application/vnd.google-apps.folder' and '${appFolderId}' in parents and trashed=false`;
   const list = await driveListFiles(accessToken, q);
   const existing = (list.files?.[0] as { id?: string } | undefined)?.id;
   if (existing) return existing;

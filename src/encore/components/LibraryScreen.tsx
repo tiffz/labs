@@ -2198,7 +2198,7 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
         />
       ) : null}
 
-      {songsHydrated && songs.length === 0 && (
+      {songs.length === 0 && (
         <Box
           sx={{
             py: { xs: 3, sm: 3.5 },

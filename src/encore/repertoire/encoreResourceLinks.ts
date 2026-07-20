@@ -1,5 +1,6 @@
 import { parseDriveFileIdFromUrlOrId } from '../drive/parseDriveFileUrl';
 import { inferMediaMimeType } from '../../shared/drive/inferMediaMimeType';
+import { hostnameMatches, tryParseUrl } from '../../shared/url/safeUrlHost';
 import { richTextLinkPreview } from '../../shared/utils/richTextContent';
 import type { EncoreMiscResource, EncoreMiscResourceKind, EncoreSong } from '../types';
 
@@ -12,7 +13,10 @@ export function resourceLinkOpenUrl(resource: EncoreMiscResource): string | unde
 }
 
 export function inferResourceKindFromUrl(url: string): EncoreMiscResourceKind {
-  if (/docs\.google\.com\/document/i.test(url)) return 'google-doc';
+  if (hostnameMatches(url, 'docs.google.com')) {
+    const parsed = tryParseUrl(url);
+    if (parsed && /\/document\//i.test(parsed.pathname)) return 'google-doc';
+  }
   if (/\.pdf($|\?)/i.test(url) || url.toLowerCase().includes('pdf')) return 'pdf';
   return 'link';
 }
@@ -40,9 +44,22 @@ export function inferDefaultResourceLabelFromUrl(rawUrl: string): string {
       return 'Google Docs';
     }
     if (host === 'drive.google.com') return 'Google Drive file';
-    if (host === 'youtu.be' || host.endsWith('youtube.com')) return 'YouTube video';
-    if (host.endsWith('spotify.com')) return 'Spotify link';
-    if (host.endsWith('notion.so') || host.endsWith('notion.site')) return 'Notion page';
+    if (
+      host === 'youtu.be' ||
+      host === 'youtube.com' ||
+      host.endsWith('.youtube.com')
+    ) {
+      return 'YouTube video';
+    }
+    if (host === 'spotify.com' || host.endsWith('.spotify.com')) return 'Spotify link';
+    if (
+      host === 'notion.so' ||
+      host.endsWith('.notion.so') ||
+      host === 'notion.site' ||
+      host.endsWith('.notion.site')
+    ) {
+      return 'Notion page';
+    }
   } catch {
     /* fall through */
   }

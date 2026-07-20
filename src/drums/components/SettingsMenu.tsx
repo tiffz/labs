@@ -3,7 +3,7 @@ import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import type { PlaybackSettings } from '../types/settings';
 import { DEFAULT_SETTINGS } from '../types/settings';
 import AppTooltip from '../../shared/components/AppTooltip';
-import AppSlider from '../../shared/components/AppSlider';
+import AppLinearVolumeSlider from '../../shared/components/AppLinearVolumeSlider';
 
 interface SettingsMenuProps {
   isOpen: boolean;
@@ -98,17 +98,19 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
               </AppTooltip>
               <span className="drums-floating-menu__field-value">{settings.measureAccentVolume}%</span>
             </label>
-            <div className="settings-slider-wrapper">
-              <AppSlider
+            <div
+              className="settings-slider-wrapper"
+              style={{ '--disabled-start': '100%' } as React.CSSProperties}
+            >
+              <AppLinearVolumeSlider
                 id="measure-accent-volume"
                 min={0}
                 max={100}
+                step={1}
                 value={settings.measureAccentVolume}
-                onChange={(e) => handleMeasureAccentChange(parseInt(e.target.value, 10))}
+                onChange={(_, next) => handleMeasureAccentChange(next as number)}
                 className="settings-slider drums-floating-menu__slider labs-volume-slider"
-                style={{
-                  '--disabled-start': '100%',
-                } as React.CSSProperties}
+                aria-label="Measure accent volume"
               />
             </div>
           </div>
@@ -120,14 +122,19 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
               </AppTooltip>
               <span className="drums-floating-menu__field-value">{settings.beatGroupAccentVolume}%</span>
             </label>
-            <div className="settings-slider-wrapper">
-              <AppSlider
+            <div
+              className="settings-slider-wrapper settings-slider-wrapper--capped"
+              style={{ '--disabled-start': `${settings.measureAccentVolume}%` } as React.CSSProperties}
+              title={`Cannot exceed measure accent (${settings.measureAccentVolume}%)`}
+            >
+              <AppLinearVolumeSlider
                 id="beat-group-accent-volume"
                 min={0}
                 max={100}
+                step={1}
                 value={settings.beatGroupAccentVolume}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value, 10);
+                onChange={(_, next) => {
+                  const value = next as number;
                   const maxAllowed = settings.measureAccentVolume;
                   if (value > maxAllowed) {
                     handleBeatGroupAccentChange(maxAllowed);
@@ -136,9 +143,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
                   }
                 }}
                 className="settings-slider drums-floating-menu__slider labs-volume-slider"
-                style={{
-                  '--disabled-start': `${settings.measureAccentVolume}%`,
-                } as React.CSSProperties}
+                aria-label="Beat group accent volume"
               />
             </div>
           </div>
@@ -150,14 +155,23 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
               </AppTooltip>
               <span className="drums-floating-menu__field-value">{settings.nonAccentVolume}%</span>
             </label>
-            <div className="settings-slider-wrapper">
-              <AppSlider
+            <div
+              className="settings-slider-wrapper settings-slider-wrapper--capped"
+              style={
+                {
+                  '--disabled-start': `${Math.min(settings.measureAccentVolume, settings.beatGroupAccentVolume)}%`,
+                } as React.CSSProperties
+              }
+              title={`Cannot exceed accent volumes (${Math.min(settings.measureAccentVolume, settings.beatGroupAccentVolume)}%)`}
+            >
+              <AppLinearVolumeSlider
                 id="non-accent-volume"
                 min={0}
                 max={100}
+                step={1}
                 value={settings.nonAccentVolume}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value, 10);
+                onChange={(_, next) => {
+                  const value = next as number;
                   const maxAllowed = Math.min(settings.measureAccentVolume, settings.beatGroupAccentVolume);
                   if (value > maxAllowed) {
                     handleNonAccentVolumeChange(maxAllowed);
@@ -166,9 +180,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
                   }
                 }}
                 className="settings-slider drums-floating-menu__slider labs-volume-slider"
-                style={{
-                  '--disabled-start': `${Math.min(settings.measureAccentVolume, settings.beatGroupAccentVolume)}%`,
-                } as React.CSSProperties}
+                aria-label="Non-accent volume"
               />
             </div>
           </div>
@@ -178,23 +190,25 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
               <span>Metronome Volume</span>
               <span className="drums-floating-menu__field-value">{settings.metronomeVolume}%</span>
             </label>
-            <div className="settings-slider-wrapper">
-              <AppSlider
+            <div
+              className="settings-slider-wrapper"
+              style={{ '--disabled-start': '100%' } as React.CSSProperties}
+            >
+              <AppLinearVolumeSlider
                 id="metronome-volume"
                 min={0}
                 max={100}
+                step={1}
                 value={settings.metronomeVolume}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value, 10);
+                onChange={(_, next) => {
+                  const value = next as number;
                   onSettingsChange({
                     ...settings,
                     metronomeVolume: Math.max(0, Math.min(100, value)),
                   });
                 }}
                 className="settings-slider drums-floating-menu__slider labs-volume-slider"
-                style={{
-                  '--disabled-start': '100%',
-                } as React.CSSProperties}
+                aria-label="Metronome volume"
               />
             </div>
           </div>
@@ -205,16 +219,15 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({
               <span className="drums-floating-menu__field-value">{settings.reverbStrength}%</span>
             </label>
             <div className="settings-slider-wrapper">
-              <AppSlider
+              <AppLinearVolumeSlider
                 id="reverb-strength"
                 min={0}
                 max={100}
+                step={1}
                 value={settings.reverbStrength}
-                onChange={(e) => handleReverbStrengthChange(parseInt(e.target.value, 10))}
+                onChange={(_, next) => handleReverbStrengthChange(next as number)}
                 className="settings-slider drums-floating-menu__slider labs-volume-slider"
-                style={{
-                  '--disabled-start': '100%',
-                } as React.CSSProperties}
+                aria-label="Reverb strength"
               />
             </div>
           </div>

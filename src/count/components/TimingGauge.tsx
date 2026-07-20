@@ -12,8 +12,7 @@ function deltaToPercent(delta: number): number {
   return 50 + (clamped / RANGE_MS) * 50;
 }
 
-function deltaColor(delta: number | null): string {
-  if (delta === null) return '';
+function deltaColor(delta: number): string {
   const abs = Math.abs(delta);
   if (abs <= 15) return '';
   if (abs <= 30) return 'is-warn';

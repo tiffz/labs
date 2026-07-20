@@ -23,16 +23,18 @@ const EXERCISE_FILE_SLUG: Record<EncorePracticeExerciseRun['kind'], string> = {
 export function stripHtmlToPlainText(html: string): string {
   const t = html.trim();
   if (!t) return '';
-  if (typeof DOMParser === 'undefined') {
-    return t
-      .replace(/<\/(p|div|br)[^>]*>/gi, '\n')
-      .replace(/<[^>]+>/g, '')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
+  if (typeof DOMParser !== 'undefined') {
+    const doc = new DOMParser().parseFromString(t, 'text/html');
+    const text = doc.body?.textContent ?? '';
+    return text.replace(/\n{3,}/g, '\n\n').trim();
   }
-  const doc = new DOMParser().parseFromString(`<div>${t}</div>`, 'text/html');
-  const text = doc.body.textContent ?? '';
-  return text.replace(/\n{3,}/g, '\n\n').trim();
+  let s = t.replace(/<\/(p|div|br)[^>]*>/gi, '\n');
+  let prev = '';
+  while (s !== prev) {
+    prev = s;
+    s = s.replace(/<[^>]*>/g, '');
+  }
+  return s.replace(/\n{3,}/g, '\n\n').trim();
 }
 
 function sectionSourceBodyText(sec: EncoreLyricsExerciseSection | undefined): string {

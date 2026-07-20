@@ -333,9 +333,8 @@ const NotePalette = forwardRef<NotePaletteHandle, NotePaletteProps>(({
   const handlePatternsKeyDown = useCallback((e: React.KeyboardEvent) => {
     const { key } = e;
     const numPatterns = COMMON_PATTERNS.length;
-    
-    let newIndex = patternFocus;
-    
+
+    let newIndex: number;
     switch (key) {
       case 'ArrowLeft':
       case 'ArrowUp':

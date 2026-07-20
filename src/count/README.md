@@ -9,9 +9,18 @@ Route: `/count/`.
 ## Features
 
 - **Subdivision selection** — pick a grid (quarters, eighths, triplets, sixteenths, etc.) and hear it mapped to a click track.
-- **Tempo slider** — audio-scheduled clicks stay tight via the shared playback scheduler.
+- **Tempo slider** — always-visible Count `BpmControl` (not compact shared `BpmInput`); audio-scheduled clicks stay tight via the shared playback scheduler.
 - **Pulse visualizer** — a styled beat ring under `styles/pulse.css` indicates the current subdivision; designed for peripheral-vision practice while playing an instrument.
 - **Shared transport** — reuses `src/shared/playback/` so tempo, play/pause, and suspension behavior match Beat and Piano.
+
+## Intentional diversions
+
+| Surface             | Shared alternative                            | Why Count keeps its own                                                                                                                                                                    |
+| ------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tempo               | `BpmInput` (portable toolbar field + menu)    | Metronome practice needs **immediate** BPM editing — slider, ±1 hold-repeat, ÷2/×2, common presets, and tempo marking — with **no menu** hiding the input. Portability is not a goal here. |
+| Channel mixer gains | `AppLinearVolumeSlider` / `PlaybackVolumeRow` | Subdivision mixer is a dense first-class mix grid (per-channel V/C/D mutes + hierarchy labels). Keep native pulse styling unless product asks to restyle.                                  |
+
+Do **not** “adopt shared BpmInput for consistency” without an explicit product decision. See [`SHARED_UI_CONVENTIONS.md`](../shared/SHARED_UI_CONVENTIONS.md) § First-class vs portable.
 
 ## Architecture
 

@@ -179,9 +179,9 @@ describe('EncoreAuthContext — ADR 0010 (no background Google refresh)', () => 
       writePersistedGoogleIdentity({ email: 'me@example.com', displayName: 'Me' });
       // jsdom's native `storage` event would only fire in OTHER tabs; dispatch one manually
       // to simulate that exact scenario.
-      window.dispatchEvent(
-        new StorageEvent('storage', { key: ENCORE_GOOGLE_SESSION_STORAGE_KEY }),
-      );
+      const storageEvent = new Event('storage');
+      Object.defineProperty(storageEvent, 'key', { value: ENCORE_GOOGLE_SESSION_STORAGE_KEY });
+      window.dispatchEvent(storageEvent);
       // Let React flush the state update inside the listener.
       await Promise.resolve();
     });

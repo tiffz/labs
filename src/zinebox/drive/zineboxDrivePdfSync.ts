@@ -7,9 +7,10 @@ import {
 import { zineboxDb } from '../db/zineboxDb';
 import type { ZineboxComic } from '../types';
 import { ZINEBOX_DRIVE_COMICS_FOLDER } from './zineboxDriveEnvelope';
+import { escapeDriveQueryLiteral } from '../../shared/drive/escapeDriveQueryLiteral';
 
 async function ensureComicsFolder(accessToken: string, appFolderId: string): Promise<string> {
-  const q = `name='${ZINEBOX_DRIVE_COMICS_FOLDER.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and '${appFolderId}' in parents and trashed=false`;
+  const q = `name='${escapeDriveQueryLiteral(ZINEBOX_DRIVE_COMICS_FOLDER)}' and mimeType='application/vnd.google-apps.folder' and '${appFolderId}' in parents and trashed=false`;
   const list = await driveListFiles(accessToken, q);
   const existingId = (list.files?.[0] as { id?: string } | undefined)?.id;
   if (existingId) return existingId;
