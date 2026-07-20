@@ -5,6 +5,7 @@ import { RHYTHM_DATABASE } from '../data/rhythmDatabase';
 import { drumsRhythmHref } from '../routes/drumsAppUrl';
 import { handleSpaLinkClick } from '../../shared/navigation/spaLinkClick';
 import LabsDisclosureChevron from '../../shared/components/LabsDisclosureChevron';
+import { useIsNarrowViewport } from '../../shared/layout/useViewportMatch';
 
 const SimpleVexFlowNote = lazy(() => import('./SimpleVexFlowNote'));
 
@@ -12,25 +13,6 @@ interface RhythmInfoCardProps {
   rhythm: RhythmDefinition;
   currentNotation: string;
   onSelectVariation: (notation: string, timeSignature: TimeSignature) => void;
-}
-
-/**
- * Hook to detect if we're on mobile
- */
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 640);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-  
-  return isMobile;
 }
 
 /**
@@ -52,7 +34,7 @@ const RhythmInfoCard: React.FC<RhythmInfoCardProps> = ({
   currentNotation,
   onSelectVariation,
 }) => {
-  const isMobile = useIsMobile();
+  const isMobile = useIsNarrowViewport(640);
   const [isExpanded, setIsExpanded] = useState(!isMobile);
   const [vexMiniReady, setVexMiniReady] = useState(false);
 

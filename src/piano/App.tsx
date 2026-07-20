@@ -20,6 +20,7 @@ import { getImportFileKind } from './utils/importFileType';
 import { createAppAnalytics } from '../shared/utils/analytics';
 import SkipToMain from '../shared/components/SkipToMain';
 import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
+import { useIsNarrowViewport } from '../shared/layout/useViewportMatch';
 
 const analytics = createAppAnalytics('piano');
 
@@ -34,25 +35,13 @@ function PianoApp() {
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [exercisePickerInitialSection, setExercisePickerInitialSection] = useState<'scales' | 'progressions' | 'songs'>('scales');
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  // Correct on the first render. Defaulting to false painted the desktop
+  // sidebar on phones and collapsed it once the effect ran — 0.43 CLS, most
+  // of this route's total on its own.
+  const isMobileViewport = useIsNarrowViewport(768);
   const [exerciseAnchorEl, setExerciseAnchorEl] = useState<HTMLElement | null>(null);
   const [songAnchorEl, setSongAnchorEl] = useState<HTMLElement | null>(null);
   const dragCounterRef = useRef(0);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 768px)');
-    const apply = () => {
-      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
-      setIsMobileViewport(mediaQuery.matches || viewportWidth <= 768);
-    };
-    apply();
-    mediaQuery.addEventListener('change', apply);
-    window.visualViewport?.addEventListener('resize', apply);
-    return () => {
-      mediaQuery.removeEventListener('change', apply);
-      window.visualViewport?.removeEventListener('resize', apply);
-    };
-  }, []);
 
   // Global drag-and-drop
   useEffect(() => {

@@ -20151,6 +20151,38 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-layout-useviewportmatch-ts-useisnarrowviewport",
+    "name": "useIsNarrowViewport",
+    "path": "src/shared/layout/useViewportMatch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True while the viewport is at or below `maxWidthPx`. Defaults to the `md` breakpoint in `labs-breakpoints.css`. Pass the value matching the CSS this drives — a hook and a media query disagreeing about the breakpoint is its own class of bug.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-layout-useviewportmatch-ts-useviewportmatch",
+    "name": "useViewportMatch",
+    "path": "src/shared/layout/useViewportMatch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Live `matchMedia` result, correct from the first render onward.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-legal-labscookieconsentpolicy-ts-islabslocalhost",
     "name": "isLabsLocalHost",
     "path": "src/shared/legal/labsCookieConsentPolicy.ts",
