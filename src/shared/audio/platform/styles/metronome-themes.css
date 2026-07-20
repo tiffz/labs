@@ -41,8 +41,8 @@
   --metro-split-divider-inset: 28%;
   --metro-primary-padding: 0 0.5rem;
   --metro-menu-padding: 0;
-  --metro-icon-size: 1.25rem;
-  --metro-menu-icon-size: 0.625rem;
+  --metro-icon-size: 1.375rem;
+  --metro-menu-icon-size: 0.75rem;
   --metro-menu-chevron-opacity: 0.9;
   --metro-state-off-color: var(--text-color, #1f2937);
   --metro-state-on-color: #fff;

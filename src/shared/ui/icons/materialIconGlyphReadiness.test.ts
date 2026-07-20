@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { maxWidthForMaterialGlyph, visibleMaterialIconsLookReady } from './materialIconGlyphReadiness';
+import {
+  materialIconCssWouldClipInk,
+  maxWidthForMaterialGlyph,
+  visibleMaterialIconsLookReady,
+} from './materialIconGlyphReadiness';
 
 function rect(w: number, h: number): DOMRect {
   return {
@@ -132,6 +136,50 @@ describe('visibleMaterialIconsLookReady', () => {
       return proto.call(this);
     });
     expect(visibleMaterialIconsLookReady(document)).toBe(true);
+    vi.restoreAllMocks();
+  });
+});
+
+describe('materialIconCssWouldClipInk', () => {
+  it('flags overflow:hidden FOUC squares sized to the font-size', () => {
+    document.body.innerHTML =
+      '<span class="material-symbols-outlined">undo</span>';
+    const el = document.querySelector('span') as HTMLElement;
+    vi.spyOn(window, 'getComputedStyle').mockReturnValue({
+      overflowY: 'hidden',
+      overflow: 'hidden',
+      fontSize: '20px',
+    } as unknown as CSSStyleDeclaration);
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect(20, 20));
+    expect(materialIconCssWouldClipInk(el)).toBe(true);
+    vi.restoreAllMocks();
+  });
+
+  it('allows overflow:visible reserved boxes', () => {
+    document.body.innerHTML =
+      '<span class="material-symbols-outlined">undo</span>';
+    const el = document.querySelector('span') as HTMLElement;
+    vi.spyOn(window, 'getComputedStyle').mockReturnValue({
+      overflowY: 'visible',
+      overflow: 'visible',
+      fontSize: '20px',
+    } as unknown as CSSStyleDeclaration);
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect(20, 20));
+    expect(materialIconCssWouldClipInk(el)).toBe(false);
+    vi.restoreAllMocks();
+  });
+
+  it('flags font-size larger than the reserved FOUC box', () => {
+    document.body.innerHTML =
+      '<span class="material-symbols-outlined">settings</span>';
+    const el = document.querySelector('span') as HTMLElement;
+    vi.spyOn(window, 'getComputedStyle').mockReturnValue({
+      overflowY: 'visible',
+      overflow: 'visible',
+      fontSize: '24px',
+    } as unknown as CSSStyleDeclaration);
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect(20, 20));
+    expect(materialIconCssWouldClipInk(el)).toBe(true);
     vi.restoreAllMocks();
   });
 });

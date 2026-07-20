@@ -64,6 +64,16 @@ Use [`useLabsDisclosureMenu`](../src/shared/a11y/useLabsDisclosureMenu.ts) for i
 2. **Close (Escape or dismiss):** return focus to the trigger (`returnFocusToTrigger` or MUI restore focus).
 3. **Tab:** while open, tab order stays inside the menu (MUI enforce focus) or follows natural DOM order for in-page panels.
 
+### Focus-opens + nested popovers
+
+If a **text field opens a popover on focus** and the popover immediately moves focus inside (`showInputInPopover` on `ChordProgressionInput`), MUI `restoreFocus` can re-fire the trigger `onFocus` and the menu appears stuck open. Mitigations used in shared pickers (keep default MUI focus management — do not set `disableRestoreFocus` / `disableAutoFocus`; `scripts/check-menu-a11y-contract.mjs` enforces this):
+
+- Suppress open-on-focus for a short window after close (and refocus the outer field while suppressed)
+- **Also open on click** with `force` — after close, focus stays on the outer field, so a later click does not re-fire `focus` and the menu would otherwise stay stuck closed
+- Handle **Escape** on the in-popover input with `preventDefault` + `stopPropagation` (so MUI does not double-handle)
+- Host click-outside handlers must allowlist the portaled root (`isChordProgressionPopoverTarget`, same pattern as `isDrumPatternEditMenuTarget`)
+- Regression: `ChordProgressionInput.test.tsx` — Escape close + click-to-reopen
+
 ## Reference implementation
 
 **Words in Rhythm** — sticky randomize split button, generation/sound panels, `WordsRandomizeMenuPopover`.

@@ -204,13 +204,31 @@ Bucket-specific values should be expressed via variables, not one-off per-compon
 - [ ] Snapshot or integration coverage added.
 - [ ] README/dev docs updated with usage notes.
 
+## First-class vs portable shared controls
+
+Shared playback/UI pieces are often **portable excerpts** of a flow that is **first-class** in another app. Prefer reuse by default, but do **not** force a portable control into an owning app when that would hide or dilute a load-bearing journey.
+
+| Pattern           | Shared / portable                         | First-class owning surface                                                              | Rule                                                                                                 |
+| ----------------- | ----------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Tempo editing     | `BpmInput` (compact toolbar field + menu) | **Count Me In** `BpmControl` (always-visible slider, ±1, ÷2/×2, presets, tempo marking) | Count keeps its custom control — metronome practice needs zero-menu BPM edits                        |
+| Drum pattern edit | `DrumAccompaniment` dense Edit menu       | **Darbuka** / full drums editor                                                         | Hosts embed the portable menu; do not replace Darbuka’s first-class editor with the dense menu alone |
+| Metronome chrome  | `MetronomeSplitControl`                   | Count / dedicated metronome surfaces                                                    | Split control is for playback bars; Count’s pulse UI may diverge                                     |
+
+**When an app intentionally diverges:** document it in that app’s `README.md` (and `ARCHITECTURE.md` when present) under a short **Intentional diversions** heading — name the shared alternative, the journey reason, and “do not unify without product review.” Also keep a one-line pointer in this file’s table above when the diversion is cross-cutting.
+
+**Agent anti-pattern:** “Found a shared component → replace the app-local one.” That is correct for _new_ toolbar fields; it is wrong when the app-local control is the product’s primary interaction.
+
 ## Linear volume slider (0–1)
 
-For **mix rails and other linear 0–1 gain** controls, use `AppLinearVolumeSlider` (`src/shared/components/AppLinearVolumeSlider.tsx`) instead of raw MUI `Slider` copies. It wraps MUI with defaults (`min={0}`, `max={1}`, `step={0.02}`, `size="small"`) and **keeps vertical padding** on the Slider root so **clicks on the middle of the visible rail** still hit MUI’s input (zeroing `py` in dense layouts commonly breaks rail jumps).
+For **mix rails and other linear 0–1 gain** controls, use `AppLinearVolumeSlider` (`src/shared/components/AppLinearVolumeSlider.tsx`) instead of raw MUI `Slider` copies (or `AppSlider` for volume). It wraps MUI with defaults (`min={0}`, `max={1}`, `step={0.02}`, `size="small"`) and **keeps vertical padding** on the Slider root so **clicks on the middle of the visible rail** still hit MUI’s input (zeroing `py` in dense layouts commonly breaks rail jumps). Add class `labs-volume-slider` so `labsVolumeSlider.css` applies shared thumb/rail geometry; theme with `--labs-volume-track` on the host shell.
 
-`AppSlider` remains the older **legacy event-shape** helper for BPM, bias, and non-volume ranges; **do not** use it for labeled volume/mute rows.
+`AppSlider` remains the older **legacy event-shape** helper for BPM, bias, and other **non-volume** ranges; **do not** use it beside `AppLinearVolumeSlider` in the same panel (mixed thumb sizes look broken — Darbuka Playback Settings uses `AppLinearVolumeSlider` for every row including reverb).
 
-Enforcement: `npm run check:volume-slider` (Words reference panel + shared primitives).
+**Constrained ranges** (e.g. accent hierarchy caps): do not paint a solid gray “dead” bar over the rail — use a soft tick/stripe cue + tooltip, or set MUI `max`. Solid overlays read as a broken slider.
+
+**Parallel closed controls** in one menu (Words section chords / style / rhythm): share one height token on the menu root (e.g. `--words-section-field-height`) and bind `--cp-control-height` / `--cs-control-height` / `--pfs-height` to it.
+
+Enforcement: `npm run check:volume-slider` (Words / Piano / Drums volume surfaces + shared primitives).
 
 ### Playback volume rows (`PlaybackVolumeRow`)
 
@@ -232,7 +250,7 @@ Hosts embed [`DrumAccompaniment`](components/music/DrumAccompaniment.tsx) with a
 
 When `DrumAccompaniment` Edit opens from inside a host floating panel (Words section/sound settings, Encore section playback):
 
-1. **Click-outside allowlist** — host document `mousedown` handlers must treat the portaled editor as in-panel via [`isDrumPatternEditMenuTarget`](components/music/drumPatternEditMenu.ts) (paper class **and** modal root). Mirror the existing `isPlaybackFieldSelectPopoverTarget` pattern.
+1. **Click-outside allowlist** — host document `mousedown` handlers must treat the portaled editor as in-panel via [`isDrumPatternEditMenuTarget`](components/music/drumPatternEditMenu.ts) (paper class **and** modal root). Same pattern for chord progression pickers: [`isChordProgressionPopoverTarget`](components/music/chordProgressionPopover.ts). Mirror the existing `isPlaybackFieldSelectPopoverTarget` pattern.
 2. **Text-node targets** — resolve with [`resolveEventTargetElement`](dom/resolveEventTargetElement.ts) before `.closest()`; chip label clicks often set `event.target` to a Text node.
 3. **Stable position** — freeze with `anchorReference="anchorPosition"` at open; reserve a fixed variations row in the menu so single↔multi-variation preset switches do not resize the paper. MUI Popover repositions on every render when `anchorEl` moves. Stage may show variation prev/next; do **not** add a bare preset-name header in dense mode.
 4. **Hover tips** — dice tooltips must use `DRUM_PATTERN_EDIT_TIP_Z_INDEX` (above the menu) and prefer placement above the control while the menu is open.

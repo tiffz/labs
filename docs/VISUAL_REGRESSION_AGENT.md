@@ -59,6 +59,7 @@ Classify every diff triplet against [`VISUAL_JUDGE_RUBRIC.md`](VISUAL_JUDGE_RUBR
 - Error text (`Set VITE_…`, stack traces, “Could not load”)
 - Broken images / blank main content
 - Controls overlapping or off-screen
+- **Clipped Material icons / note symbols** (toolbar icons missing tops/bottoms) — Tier 1.1; never baseline over. Ligature _width_ readiness does not catch this; `stabilizeFontsAndMaterialGlyphs` asserts FOUC clip risk (`overflow: hidden` tight boxes **or** `font-size` larger than the reserved box — common when unlayered Google Material Symbols CSS beats `@layer` app rules).
 - Diff touches routes outside the PR scope with no shared-layer explanation
 
 **Green lights (safe to update):**

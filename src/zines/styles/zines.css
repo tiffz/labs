@@ -538,24 +538,7 @@
     }
   }
 
-  /* ============================================
-     SLIDER
-     ============================================ */
-  .compression-slider {
-    --app-slider-track: var(--color-primary);
-    --app-slider-rail: var(--color-border);
-  }
-
-  .compression-slider .MuiSlider-thumb {
-    border: 2px solid white;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-  }
-
-  .compression-slider .MuiSlider-thumb:hover,
-  .compression-slider .MuiSlider-thumb.Mui-focusVisible {
-    box-shadow: 0 0 0 4px
-      color-mix(in srgb, var(--color-primary) 24%, transparent);
-  }
+  /* Slider tokens: unlayered block at file end (must beat appSlider.css). */
 
   /* ============================================
      PLAYFUL HEADER
@@ -636,4 +619,27 @@
       margin: 0;
     }
   }
+}
+
+/*
+ * Export quality sliders — unlayered token overrides.
+ * appSlider.css is unlayered; keep host tokens out of @layer components so teal
+ * wins over the shared purple fallback (same cascade class as icon FOUC / BPM themes).
+ */
+.app-slider.compression-slider,
+.compression-slider {
+  --app-slider-track: var(--color-primary);
+  --app-slider-rail: var(--color-border);
+  --app-slider-thumb: var(--color-primary);
+}
+
+.compression-slider .MuiSlider-thumb {
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.compression-slider .MuiSlider-thumb:hover,
+.compression-slider .MuiSlider-thumb.Mui-focusVisible {
+  box-shadow: 0 0 0 4px
+    color-mix(in srgb, var(--color-primary) 24%, transparent);
 }

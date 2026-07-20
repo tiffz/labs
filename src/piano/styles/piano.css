@@ -854,6 +854,7 @@ body {
   flex: 1;
   --app-slider-track: var(--piano-primary);
   --app-slider-rail: var(--piano-border);
+  --labs-volume-track: var(--piano-primary);
 }
 .volume-slider.disabled-slider {
   opacity: 0.3;

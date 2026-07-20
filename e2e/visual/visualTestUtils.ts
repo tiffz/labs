@@ -6,24 +6,9 @@ import type { VisualRouteFromRegistry } from '../routeRegistry';
 
 export type VisualRouteSpec = VisualRouteFromRegistry;
 
-const BLOCKED_EXTERNAL_HOSTS = [
-  'google-analytics.com',
-  'googletagmanager.com',
-  'fonts.googleapis.com',
-  'fonts.gstatic.com',
-] as const;
+const BLOCKED_EXTERNAL_REGEX = /google-analytics|googletagmanager|fonts\.googleapis|fonts\.gstatic/;
 const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const WORKSPACE_ROOT = path.resolve(CURRENT_DIR, '../..');
-
-function hostnameEndsWith(url: string, host: string): boolean {
-  try {
-    const hostname = new URL(url).hostname.toLowerCase();
-    const target = host.toLowerCase();
-    return hostname === target || hostname.endsWith(`.${target}`);
-  } catch {
-    return false;
-  }
-}
 
 const FONT_FILE_BYTES: Record<string, Buffer> = {
   'material-symbols-outlined.woff2': readFileSync(
@@ -457,6 +442,44 @@ async function waitForVisibleMaterialGlyphsShaped(page: Page, timeoutMs: number)
   }, undefined, { timeout: timeoutMs });
 }
 
+/**
+ * Width-based ligature shaping does not catch vertical FOUC clipping:
+ * - `overflow: hidden` on a font-size-sized box
+ * - unlayered Google Material Symbols `font-size: 24px` into a smaller reserved box
+ * Fail the visual stabilize path so clipped toolbar icons cannot be baselined over.
+ */
+export async function assertVisibleMaterialIconsNotCssClipped(page: Page): Promise<void> {
+  const clipped = await page.evaluate(() => {
+    const bad: string[] = [];
+    for (const el of document.querySelectorAll<HTMLElement>(
+      '.material-symbols-outlined, .material-icons',
+    )) {
+      const rect = el.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) continue;
+      const cs = getComputedStyle(el);
+      const fs = Number.parseFloat(cs.fontSize || '0') || 0;
+      if (fs <= 0) continue;
+      const text = el.textContent?.trim() ?? '';
+      if (!text) continue;
+      if (fs > rect.height + 1) {
+        bad.push(text);
+        continue;
+      }
+      const overflowY = cs.overflowY || cs.overflow;
+      if (overflowY !== 'hidden' && overflowY !== 'clip') continue;
+      if (Math.abs(rect.height - fs) <= 2) {
+        bad.push(text);
+      }
+    }
+    return bad;
+  });
+  if (clipped.length > 0) {
+    throw new Error(
+      `Material icons use FOUC boxes that clip glyph ink: ${clipped.slice(0, 12).join(', ')}`,
+    );
+  }
+}
+
 export async function stabilizeFontsAndMaterialGlyphs(
   page: Page,
   options: { glyphTimeoutMs: number }
@@ -467,6 +490,7 @@ export async function stabilizeFontsAndMaterialGlyphs(
   await loadComputedFontsForVisibleMaterialIcons(page);
   await loadComputedFontsForVisibleNoteSymbols(page);
   await waitForVisibleMaterialGlyphsShaped(page, options.glyphTimeoutMs);
+  await assertVisibleMaterialIconsNotCssClipped(page);
 }
 
 async function finalizeVisualStabilizationAfterScroll(page: Page): Promise<void> {
@@ -545,5 +569,5 @@ export async function waitForVisualReady(page: Page, spec: VisualRouteSpec): Pro
 }
 
 export function shouldIgnoreRequestFailure(url: string): boolean {
-  return BLOCKED_EXTERNAL_HOSTS.some((host) => hostnameEndsWith(url, host));
+  return BLOCKED_EXTERNAL_REGEX.test(url);
 }

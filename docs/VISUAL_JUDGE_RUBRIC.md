@@ -17,18 +17,19 @@ Every diff gets exactly one tier. When two tiers seem to apply, the higher
 
 Fix the code. Updating the baseline to absorb any of these is a policy violation.
 
-| #    | Signal                                    | How to check in the PNG                                                                                                                                 |
-| ---- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1.1  | **Text overflow / clipping**              | Truncated glyphs, labels cut mid-letter, text escaping its container                                                                                    |
-| 1.2  | **Horizontal page scroll**                | Content wider than viewport on a primary surface (rule `layout-no-horizontal-scroll.mdc`)                                                               |
-| 1.3  | **Overlapping or misaligned containers**  | Controls covering each other, panels breaking the layout grid, baselines misaligned across columns                                                      |
-| 1.4  | **Blank or error content**                | Empty main region where content existed, error banners (`Set VITE_…`, "Could not load", stack traces), broken-image icons                               |
-| 1.5  | **Tofu / unshaped glyphs**                | Squares, raw ligature text (`play_arrow` as words), missing music glyphs                                                                                |
-| 1.6  | **Obvious contrast failure**              | Body or meta text unreadable against its background                                                                                                     |
-| 1.7  | **Theming violation**                     | Colors/radii/shadows contradicting the app `DESIGN.md` or shared tokens (one-off hex where a token family exists)                                       |
-| 1.8  | **Selection-tier violation**              | Multiple solid primary CTAs above the fold; settings/preset chips rendered as primary solid instead of secondary tint (`SELECTION_VISUAL_HIERARCHY.md`) |
-| 1.9  | **Duplicate status/progress UI**          | Same progress bar or status sentence repeated per card in one viewport (`UX_AGENT_GUIDE.md` § Redundancy)                                               |
-| 1.10 | **Touch-target collapse (mobile/tablet)** | Icon buttons visibly smaller than ~44px or controls colliding at 390/768px                                                                              |
+| #    | Signal                                    | How to check in the PNG                                                                                                                                                                                                         |
+| ---- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.1  | **Text / icon overflow / clipping**       | Truncated glyphs, labels cut mid-letter, text escaping its container, **Material Symbol / note-symbol icons cropped by `overflow: hidden` FOUC boxes**                                                                          |
+| 1.2  | **Horizontal page scroll**                | Content wider than viewport on a primary surface (rule `layout-no-horizontal-scroll.mdc`)                                                                                                                                       |
+| 1.3  | **Overlapping or misaligned containers**  | Controls covering each other, panels breaking the layout grid, baselines misaligned across columns                                                                                                                              |
+| 1.4  | **Blank or error content**                | Empty main region where content existed, error banners (`Set VITE_…`, "Could not load", stack traces), broken-image icons                                                                                                       |
+| 1.5  | **Tofu / unshaped glyphs**                | Squares, raw ligature text (`play_arrow` as words), missing music glyphs                                                                                                                                                        |
+| 1.6  | **Obvious contrast failure**              | Body or meta text unreadable against its background                                                                                                                                                                             |
+| 1.7  | **Theming violation**                     | Colors/radii/shadows contradicting the app `DESIGN.md` or shared tokens (one-off hex where a token family exists); **mixed control geometry in one panel** (different slider thumbs, mismatched field heights on parallel rows) |
+| 1.11 | **Confusing slider chrome**               | Solid gray “dead” rail segments or orphan marks that look broken rather than a labeled constraint (`SHARED_UI_CONVENTIONS.md` § Linear volume slider)                                                                           |
+| 1.8  | **Selection-tier violation**              | Multiple solid primary CTAs above the fold; settings/preset chips rendered as primary solid instead of secondary tint (`SELECTION_VISUAL_HIERARCHY.md`)                                                                         |
+| 1.9  | **Duplicate status/progress UI**          | Same progress bar or status sentence repeated per card in one viewport (`UX_AGENT_GUIDE.md` § Redundancy)                                                                                                                       |
+| 1.10 | **Touch-target collapse (mobile/tablet)** | Icon buttons visibly smaller than ~44px or controls colliding at 390/768px                                                                                                                                                      |
 
 ## Tier 2 — Acceptable (update baseline, one-line justification per PNG)
 

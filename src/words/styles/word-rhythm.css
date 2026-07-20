@@ -34,6 +34,8 @@
   --control-height-comfortable: 38px;
   --control-height-touch: 44px;
   --control-height: var(--control-height-comfortable);
+  /* Sticky playback / regenerate bar — one height for primary buttons + BPM/key/meter pills */
+  --words-toolbar-control-height: 34px;
   --control-radius: var(--theme-radius-sm);
   --words-dropdown-surface-border: var(--labs-popover-border);
   --words-dropdown-surface-radius: var(--labs-popover-radius);
@@ -532,9 +534,10 @@ body,
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  min-height: 34px;
+  height: var(--words-toolbar-control-height);
+  min-height: var(--words-toolbar-control-height);
   box-sizing: border-box;
-  padding: 6px 14px;
+  padding: 0 14px;
   cursor: pointer;
   transition: var(--labs-control-transition);
 }
@@ -572,7 +575,8 @@ body,
 .words-split-button .words-button {
   border: 0;
   border-radius: 0;
-  min-height: 34px;
+  height: var(--words-toolbar-control-height);
+  min-height: var(--words-toolbar-control-height);
   background: transparent;
   box-shadow: none;
   color: #ffffff;
@@ -1539,6 +1543,11 @@ body,
 }
 
 .words-section-settings-menu {
+  /* One closed-control height for chords / style / rhythm template rows. */
+  --words-section-field-height: 2rem;
+  --cp-control-height: var(--words-section-field-height);
+  --cs-control-height: var(--words-section-field-height);
+  --pfs-height: var(--words-section-field-height);
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
@@ -1546,6 +1555,20 @@ body,
   width: min(460px, calc(100vw - 64px));
   display: grid;
   gap: 10px;
+}
+
+.words-section-settings-menu .words-chord-row input[type='text'],
+.words-section-settings-menu .words-select-inline,
+.words-section-settings-menu .shared-chord-progression-text,
+.words-section-settings-menu .shared-chord-progression-trigger,
+.words-section-settings-menu .shared-playback-field-select__trigger {
+  min-height: var(--words-section-field-height);
+  height: var(--words-section-field-height);
+  box-sizing: border-box;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .words-dropdown-section {
@@ -1578,10 +1601,10 @@ body,
 }
 
 .words-chord-input-with-action .words-button-icon {
-  width: 30px;
-  height: 30px;
-  min-width: 30px;
-  min-height: 30px;
+  width: var(--words-section-field-height, 2rem);
+  height: var(--words-section-field-height, 2rem);
+  min-width: var(--words-section-field-height, 2rem);
+  min-height: var(--words-section-field-height, 2rem);
   align-self: center;
   display: inline-flex;
   align-items: center;
@@ -1597,8 +1620,8 @@ body,
 }
 
 .words-chord-input-with-action .darbuka-trainer-icon-link {
-  width: 30px;
-  height: 30px;
+  width: var(--words-section-field-height, 2rem);
+  height: var(--words-section-field-height, 2rem);
   align-self: center;
 }
 
@@ -2018,8 +2041,8 @@ body,
 
 /* Layout only — split shell owns chrome via --metro-* (metronome-themes.css). */
 .words-metronome-toggle.words-button {
-  min-height: 34px;
-  height: 34px;
+  min-height: var(--words-toolbar-control-height);
+  height: var(--words-toolbar-control-height);
   min-width: 42px;
   padding: 0 10px;
   border-radius: 999px;
@@ -2253,7 +2276,9 @@ body,
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 34px;
+  height: var(--words-toolbar-control-height);
+  min-height: var(--words-toolbar-control-height);
+  max-height: var(--words-toolbar-control-height);
   box-sizing: border-box;
   font-size: 0.76rem;
   font-weight: 700;
@@ -2263,17 +2288,13 @@ body,
   background: color-mix(in srgb, var(--pastel-9) 92%, var(--pastel-4));
   border: 1px solid color-mix(in srgb, var(--pastel-6) 28%, #cbd5e1);
   border-radius: 999px;
-  padding: 6px 12px;
+  padding: 0 12px;
   line-height: 1;
+  overflow: visible;
 }
 
 .words-inline-control-bpm {
   gap: 6px;
-}
-
-.words-inline-control {
-  max-height: 36px;
-  overflow: visible;
 }
 
 .words-inline-control .words-bpm-input,
@@ -2281,17 +2302,22 @@ body,
 .words-inline-control .shared-bpm-main-row,
 .words-inline-control .words-key-input,
 .words-inline-control .shared-key-dropdown-anchor {
-  max-height: 24px;
+  height: 100%;
+  max-height: none;
+  display: inline-flex;
+  align-items: center;
 }
 
 .words-bpm-input .shared-bpm-shell {
   border: 0;
   border-radius: 0;
   background: transparent;
-  min-height: 22px;
-  max-height: 26px;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
   padding: 0 0.08rem;
   gap: 0.06rem;
+  align-items: center;
 }
 
 .words-bpm-input .shared-bpm-shell:focus-within {
@@ -2327,10 +2353,12 @@ body,
   border: 0;
   border-radius: 0;
   background: transparent;
-  min-height: 22px;
-  max-height: 26px;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
   padding: 0 0.08rem;
   gap: 0.06rem;
+  align-items: center;
 }
 
 .words-key-input .shared-key-shell:focus-within {
@@ -3006,8 +3034,11 @@ body,
 
   .words-button,
   .words-inline-control {
-    min-height: 32px;
-    padding: 5px 10px;
+    --words-toolbar-control-height: 32px;
+    height: var(--words-toolbar-control-height);
+    min-height: var(--words-toolbar-control-height);
+    max-height: var(--words-toolbar-control-height);
+    padding: 0 10px;
   }
 
   .words-slider-row {

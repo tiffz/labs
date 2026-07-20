@@ -121,10 +121,22 @@
 
 .labs-split-action-button__primary
   .material-symbols-outlined.labs-metronome-toggle-icon {
-  font-size: var(--metro-icon-size, 1.25rem);
+  /* Parent __half uses overflow:hidden for radius — keep glyph under that box. */
+  font-size: calc(var(--metro-icon-size, 1.25rem) * 0.9);
   line-height: 1;
-  width: var(--metro-icon-size, 1.25rem);
-  height: var(--metro-icon-size, 1.25rem);
+  width: auto;
+  height: auto;
+  min-width: calc(var(--metro-icon-size, 1.25rem) * 0.9);
+  min-height: calc(var(--metro-icon-size, 1.25rem) * 0.9);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 20;
 }
 
 /* Filled triangle — matches Words Randomize | Phrasing split menu */
@@ -132,7 +144,9 @@
   flex-shrink: 0;
   width: var(--metro-menu-icon-size, 0.625rem);
   height: var(--metro-menu-icon-size, 0.625rem);
-  font-size: var(--metro-menu-icon-size, 0.625rem);
+  /* Slightly under the box so ink fits inside overflow:hidden menu half */
+  font-size: calc(var(--metro-menu-icon-size, 0.625rem) * 0.9);
+  line-height: 1;
   color: var(--metro-menu-chevron-color, var(--metro-menu-color, currentColor));
   opacity: var(--metro-menu-chevron-opacity, 0.88);
 }
