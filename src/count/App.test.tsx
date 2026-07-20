@@ -140,6 +140,19 @@ describe('Count App engine wiring', () => {
     });
   });
 
+  it('exposes always-visible common BPM presets (not a BpmInput dropdown)', async () => {
+    render(<App />);
+    await startPlayback();
+    // COMMON_BPMS chips must be in the document without opening a menu.
+    fireEvent.click(screen.getByRole('button', { name: '80' }));
+    await waitFor(() => {
+      const tempoCalls = callsFor('setTempo');
+      expect(tempoCalls.at(-1)?.args).toEqual([80]);
+    });
+    expect(screen.getByRole('button', { name: '÷2' })).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'BPM slider' })).toBeInTheDocument();
+  });
+
   it('time-signature preset forwards to engine.setTimeSignature', async () => {
     render(<App />);
     await startPlayback();

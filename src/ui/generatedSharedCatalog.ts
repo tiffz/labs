@@ -32748,7 +32748,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "FOUC boxes often set `width`/`height` equal to `font-size` and then `overflow: hidden`. Material Symbol ink routinely exceeds that em-box (undo/redo/backspace/delete), so the glyph looks \"cropped\" even when the ligature has shaped correctly (width heuristic still passes). Also flags `font-size` larger than the reserved box — common when an unlayered Google Material Symbols rule (`font-size: 24px`) beats layered app CSS that reserved a 20px square.",
+    "description": "FOUC boxes often set `width`/`height` equal to `font-size` and then `overflow: hidden`. Material Symbol ink routinely exceeds that em-box (undo/redo/backspace/delete / settings gear), so the glyph looks \"cropped\" even when the ligature has shaped correctly (width heuristic still passes). Also flags: - `font-size` larger than the reserved box (unlayered Google 24px vs layered FOUC) - button/chrome parents shorter than ~1.35× font-size (ink overflows into the border) - ancestor `overflow: hidden` boxes sized to the icon (split-button halves)",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",

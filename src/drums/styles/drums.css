@@ -5049,9 +5049,10 @@
  * sizes inside the layer left a 24px glyph in a 20px reserved box (clipped icons after
  * the Material / Tailwind layering upgrade).
  *
- * Do not set width/height equal to font-size: Material Symbol ink exceeds the em-box,
- * and a tight square (even with overflow:visible) still reads as cropped inside buttons
- * that paint a background behind the span. Reserve with min-* only.
+ * Do not set width/height equal to font-size: Material Symbol ink exceeds the em-box
+ * (~20% taller than font-size for gears/timers). A 24px glyph in a 2.125rem (34px)
+ * settings button leaves only ~2px after ink overflow and reads as cropped against
+ * the border even when overflow:visible. Size chrome icons relative to the control.
  */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
@@ -5059,7 +5060,7 @@
     'FILL' 0,
     'wght' 400,
     'GRAD' 0,
-    'opsz' 24;
+    'opsz' 20;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -5067,31 +5068,48 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* Match Google's default optical size; playback controls are ≥2.5rem tall. */
-  font-size: 1.5rem;
+  /* Default optical size for 2.5rem toolbar squares (ink still clears the border). */
+  font-size: 1.25rem;
   line-height: 1;
   width: auto;
   height: auto;
-  min-width: 1.5rem;
-  min-height: 1.5rem;
+  min-width: 1.25rem;
+  min-height: 1.25rem;
   overflow: visible;
   vertical-align: middle;
 }
 
-.play-button .material-symbols-outlined,
-.stop-button .material-symbols-outlined,
-.settings-button .material-symbols-outlined,
 .icon-button .material-symbols-outlined {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   line-height: 1;
   width: auto;
   height: auto;
-  min-width: 1.5rem;
-  min-height: 1.5rem;
+  min-width: 1.25rem;
+  min-height: 1.25rem;
   overflow: visible;
   font-variation-settings:
     'FILL' 0,
     'wght' 400,
     'GRAD' 0,
-    'opsz' 24;
+    'opsz' 20;
+}
+
+/* Playback bar height shrinks on narrow viewports (2.125rem). Keep glyphs under
+   controlHeight/1.6 so Material ink (~1.2× font-size) clears the 2px border with
+   a few px of optical padding (34px/1.45 still looked tight for gears). */
+.play-button .material-symbols-outlined,
+.stop-button .material-symbols-outlined,
+.settings-button .material-symbols-outlined {
+  font-size: calc(var(--drums-playback-control-height, 2.5rem) / 1.6);
+  line-height: 1;
+  width: auto;
+  height: auto;
+  min-width: calc(var(--drums-playback-control-height, 2.5rem) / 1.6);
+  min-height: calc(var(--drums-playback-control-height, 2.5rem) / 1.6);
+  overflow: visible;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 20;
 }

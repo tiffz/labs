@@ -451,6 +451,13 @@ async function waitForVisibleMaterialGlyphsShaped(page: Page, timeoutMs: number)
 export async function assertVisibleMaterialIconsNotCssClipped(page: Page): Promise<void> {
   const clipped = await page.evaluate(() => {
     const bad: string[] = [];
+    const isChrome = (p: HTMLElement) =>
+      p.tagName === 'BUTTON' ||
+      p.getAttribute('role') === 'button' ||
+      p.classList.contains('settings-button') ||
+      p.classList.contains('icon-button') ||
+      p.classList.contains('play-button') ||
+      p.classList.contains('labs-split-action-button__primary');
     for (const el of document.querySelectorAll<HTMLElement>(
       '.material-symbols-outlined, .material-icons',
     )) {
@@ -466,9 +473,33 @@ export async function assertVisibleMaterialIconsNotCssClipped(page: Page): Promi
         continue;
       }
       const overflowY = cs.overflowY || cs.overflow;
-      if (overflowY !== 'hidden' && overflowY !== 'clip') continue;
-      if (Math.abs(rect.height - fs) <= 2) {
+      if (
+        (overflowY === 'hidden' || overflowY === 'clip') &&
+        Math.abs(rect.height - fs) <= 2
+      ) {
         bad.push(text);
+        continue;
+      }
+      let parent: HTMLElement | null = el.parentElement;
+      while (parent && parent !== document.body) {
+        const pcs = getComputedStyle(parent);
+        const pOverflow = pcs.overflowY || pcs.overflow;
+        const pr = parent.getBoundingClientRect();
+        if (pr.height > 0) {
+          if (
+            (pOverflow === 'hidden' || pOverflow === 'clip') &&
+            (rect.height > pr.height - 2 || pr.height < fs * 1.15)
+          ) {
+            bad.push(text);
+            break;
+          }
+          if (isChrome(parent) && pr.height < fs * 1.5) {
+            bad.push(text);
+            break;
+          }
+        }
+        if (isChrome(parent)) break;
+        parent = parent.parentElement;
       }
     }
     return bad;
