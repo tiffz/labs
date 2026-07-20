@@ -1,12 +1,14 @@
 ---
 description: Labs shared breakpoint scale and responsive layout defaults — use when editing CSS/layout or adding app shells.
+alwaysApply: false
 globs:
   - src/**/*.css
   - src/**/*.tsx
   - src/shared/templates/**
   - e2e/smoke/layout-heuristics*.spec.ts
-alwaysApply: false
 ---
+
+<!-- AUTO-GENERATED from .agents/rules/responsive-design.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Responsive design (Labs)
 

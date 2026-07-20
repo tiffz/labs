@@ -5,7 +5,7 @@ paths:
   - 'src/stanza/components/StanzaSuggestSectionsDialog.tsx'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/beat-analysis-scope.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/beat-analysis-scope.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Shared tempo analysis — Stanza Analyze path and regression harness
 

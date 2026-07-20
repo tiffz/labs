@@ -21,13 +21,13 @@ if ! git diff --quiet -- src/index.html; then
   echo "Staged updated Labs homepage catalog (src/index.html)."
 fi
 
-# Claude Code's .claude/rules and .claude/skills are generated from
-# .cursor/rules and .cursor/skills (the source of truth) — keep them in
-# sync so the two tools never drift apart.
-npm run generate:claude-guidance
-if ! git diff --quiet -- .claude/rules .claude/skills; then
-  git add .claude/rules .claude/skills
-  echo "Staged updated Claude Code guidance (.claude/rules, .claude/skills)."
+# .cursor/rules, .cursor/skills, .claude/rules, and .claude/skills are all
+# generated from .agents/rules and .agents/skills (the tool-agnostic source
+# of truth) — keep them in sync so no tool silently drifts from another.
+npm run generate:agent-guidance
+if ! git diff --quiet -- .cursor/rules .cursor/skills .claude/rules .claude/skills; then
+  git add .cursor/rules .cursor/skills .claude/rules .claude/skills
+  echo "Staged updated agent guidance (.cursor/, .claude/ regenerated from .agents/)."
 fi
 
 STAGED_FILES="$(git diff --cached --name-only)"

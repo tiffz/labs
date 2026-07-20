@@ -5,7 +5,7 @@ paths:
   - 'src/stanza/drive/stanzaDriveEnvelope.ts'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/stanza-drive-sync.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/stanza-drive-sync.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Stanza Google Drive backup — blob tiers, merge/hydrate paths, push ordering
 

@@ -3,7 +3,7 @@ name: labs-drive-backup
 description: Implements Labs Google Drive backup, conflict prompts, and LabsDriveAccountMenu integration. Use when editing useStanzaDriveBackup, useScalesDriveBackup, useGestureDriveBackup, useZineboxDriveBackup, drive conflict assessment, or Drive sync UX.
 ---
 
-<!-- AUTO-GENERATED from .cursor/skills/labs-drive-backup/SKILL.md — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/skills/labs-drive-backup/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Labs Drive backup
 

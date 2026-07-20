@@ -4,7 +4,7 @@ paths:
   - 'src/shared/music/chordPro/**/*'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/encore-originals-chord-paint.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/encore-originals-chord-paint.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Encore Originals chord paint editor — selection, move, dismiss handlers
 

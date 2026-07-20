@@ -3,7 +3,7 @@ paths:
   - 'src/lyrefly/**/*'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/lyrefly-riso-cube-design.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/lyrefly-riso-cube-design.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Lyrefly Riso Cube design — White Cube gallery + Riso Alley fluoro
 

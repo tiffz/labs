@@ -4,7 +4,7 @@ paths:
   - 'src/**/index.html'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/app-entry-html.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/app-entry-html.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > SPA shell requirements for every app's index.html entry point
 

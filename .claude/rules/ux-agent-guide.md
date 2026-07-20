@@ -6,13 +6,13 @@ paths:
   - 'src/**/phases/**'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/ux-agent-guide.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/ux-agent-guide.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > UX gestalt, journey hierarchy, redundancy, and spec hygiene for Labs UI
 
 # UX agent guide (scoped)
 
-**Hard gate (always-on):** [`.cursor/rules/ux-journey-mandatory.md`](ux-journey-mandatory.md) — journey sketch in chat before UI code.
+**Hard gate (always-on):** [`.agents/rules/ux-journey-mandatory.md`](ux-journey-mandatory.md) — journey sketch in chat before UI code.
 
 Canonical: [`docs/UX_AGENT_GUIDE.md`](../../docs/UX_AGENT_GUIDE.md). Skill: **`labs-ux-journey`**.
 

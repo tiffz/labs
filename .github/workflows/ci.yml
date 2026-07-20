@@ -202,8 +202,8 @@ jobs:
     - name: Check labs homepage catalog
       run: npm run check:labs-catalog
 
-    - name: Check Claude Code guidance is in sync with .cursor/
-      run: npm run check:claude-guidance
+    - name: Check .cursor/ and .claude/ guidance is in sync with .agents/
+      run: npm run check:agent-guidance
 
     - name: Chrome UI contract
       run: npm run check:chrome-ui

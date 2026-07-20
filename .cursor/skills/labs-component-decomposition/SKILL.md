@@ -3,6 +3,8 @@ name: labs-component-decomposition
 description: Decomposes oversized Labs React containers using the validated decomposition pattern without changing observable behavior. Use when refactoring App.tsx or components over ~600 lines, extracting stanzaWorkspace-style leaf components, or when the user mentions component decomposition or shrinking a god component.
 ---
 
+<!-- AUTO-GENERATED from .agents/skills/labs-component-decomposition/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Labs component decomposition
 
 ## When to use

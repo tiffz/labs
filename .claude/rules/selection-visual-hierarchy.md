@@ -11,7 +11,7 @@ paths:
   - '**/appSharedThemes.css'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/selection-visual-hierarchy.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/selection-visual-hierarchy.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Primary vs secondary selection styling for toggles, chips, and popover interiors
 

@@ -4,7 +4,7 @@ paths:
   - 'public/styles/**/*.css'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/spa-css-conventions.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/spa-css-conventions.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Cross-app SPA CSS — viewport, focus, motion, touch
 

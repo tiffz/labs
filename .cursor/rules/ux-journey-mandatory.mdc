@@ -3,6 +3,8 @@ description: Non-trivial UX tasks require labs-ux-journey journey sketch in chat
 alwaysApply: true
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/ux-journey-mandatory.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # UX journey sketch (hard gate)
 
 **Before creating or editing UI files** for a **non-trivial UX task**, you MUST:
@@ -28,4 +30,4 @@ Do **not** write component/CSS/layout code until the sketch is in chat (or the u
 
 ## After sketch
 
-Follow skill steps 2–5 (layout plan, visual weight, copy, verify). See [`.cursor/rules/ux-agent-guide.mdc`](ux-agent-guide.mdc) when editing components.
+Follow skill steps 2–5 (layout plan, visual weight, copy, verify). See [`.agents/rules/ux-agent-guide.mdc`](ux-agent-guide.mdc) when editing components.

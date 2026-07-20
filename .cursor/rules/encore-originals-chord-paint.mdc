@@ -5,6 +5,8 @@ globs:
   - src/shared/music/chordPro/**/*
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/encore-originals-chord-paint.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Encore Originals chord paint
 
 Read [`src/encore/originals/DEVELOPMENT.md`](../../src/encore/originals/DEVELOPMENT.md) before changing paint mode, palette, or chart layout hooks.

@@ -3,7 +3,7 @@ name: labs-iteration-handoff
 description: Records mid-refactor state for the next agent or human session. Use when stopping mid-decomposition, multi-PR refactor, or when the user asks for an iteration handoff.
 ---
 
-<!-- AUTO-GENERATED from .cursor/skills/labs-iteration-handoff/SKILL.md — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/skills/labs-iteration-handoff/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Labs iteration handoff
 

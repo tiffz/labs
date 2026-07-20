@@ -3,7 +3,7 @@ name: labs-new-micro-app
 description: Adds a new Labs micro-app with Vite entry, SPA shell guardrails, and import boundary registration. Use when creating src/<app>/index.html, a new micro-app directory, or registering an app in vite.config.
 ---
 
-<!-- AUTO-GENERATED from .cursor/skills/labs-new-micro-app/SKILL.md — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/skills/labs-new-micro-app/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Labs new micro-app
 
@@ -38,7 +38,7 @@ Reference implementations: **Lyrefly** (unlisted catalog, `DESIGN.md`, workflow 
 
 ## Rules
 
-- [`.cursor/rules/app-entry-html.md`](../../rules/app-entry-html.md) — shell invariants
+- [`.agents/rules/app-entry-html.md`](../../rules/app-entry-html.md) — shell invariants
 - No cross-app imports; shared code only via `src/shared/**`
 - User copy: [`docs/USER_COPY_STYLE.md`](../../../docs/USER_COPY_STYLE.md)
 - Non-trivial UX: [`labs-ux-journey`](../../skills/labs-ux-journey/SKILL.md) — journey sketch before UI code

@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED from .cursor/rules/ci-background-watch.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/ci-background-watch.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Default to non-blocking, background CI/CD after push — keep working, fix on failure
 

@@ -3,6 +3,8 @@ description: Keep multi-bug agent sessions short — spike first, batch spot-che
 alwaysApply: true
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/session-throughput.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Session throughput
 
 For **multi-bug / upgrade / spot-check** sessions, optimize for wall-clock and tokens:

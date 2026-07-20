@@ -3,7 +3,7 @@ name: labs-muscle-anatomy-export
 description: Z-Anatomy Blender export pipeline for Muscle Memory — audit coverage, export GLBs, validate budgets, sync bridge/registry, visual checklist. Use when exporting or fixing muscle 3D assets, atlas GLBs, or zAnatomyBridge.
 ---
 
-<!-- AUTO-GENERATED from .cursor/skills/labs-muscle-anatomy-export/SKILL.md — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/skills/labs-muscle-anatomy-export/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Labs muscle anatomy export
 

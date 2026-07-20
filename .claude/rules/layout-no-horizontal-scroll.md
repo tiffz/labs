@@ -5,7 +5,7 @@ paths:
   - 'e2e/smoke/**/*.spec.ts'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/layout-no-horizontal-scroll.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/layout-no-horizontal-scroll.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Avoid unintended horizontal scroll on primary page surfaces; fix on sight and add smoke coverage when touching layout.
 

@@ -10,7 +10,7 @@ paths:
   - 'src/zines/utils/pdfGenerator.ts'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/zines-image-display-tiers.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/zines-image-display-tiers.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Zine Studio preview vs export image tiers — thumbnails for UI, full-res for print
 

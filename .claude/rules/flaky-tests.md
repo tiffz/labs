@@ -6,7 +6,7 @@ paths:
   - 'vite.config.ts'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/flaky-tests.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/flaky-tests.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Fix flaky tests at the root cause — never only retry or widen timeouts
 

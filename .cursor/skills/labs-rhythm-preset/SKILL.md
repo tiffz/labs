@@ -3,6 +3,8 @@ name: labs-rhythm-preset
 description: Edits Labs rhythm presets in RHYTHM_DATABASE with presetIntegrity regression coverage. Use when changing rhythm presets, darbuka notation strings, preset copy, or src/shared/rhythm/RHYTHM_DATABASE.
 ---
 
+<!-- AUTO-GENERATED from .agents/skills/labs-rhythm-preset/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Labs rhythm preset edits
 
 ## Before editing

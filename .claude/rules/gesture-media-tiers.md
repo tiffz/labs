@@ -7,7 +7,7 @@ paths:
   - 'src/gesture/components/PackPreview*.tsx'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/gesture-media-tiers.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/gesture-media-tiers.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Gesture preview vs session media — resolution order and blob ownership
 

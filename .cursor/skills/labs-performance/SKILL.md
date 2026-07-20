@@ -3,6 +3,8 @@ name: labs-performance
 description: Profiles and fixes Labs interaction and sustained performance using CUJ budgets, Playwright interaction smokes, React render isolation, and Chrome trace when needed. Use when users report laggy UI, radio/checkbox delay, grid jank, or when adding performance benchmarks for critical user journeys.
 ---
 
+<!-- AUTO-GENERATED from .agents/skills/labs-performance/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Labs performance
 
 **Read first:** [`docs/PERFORMANCE.md`](../../../docs/PERFORMANCE.md).  

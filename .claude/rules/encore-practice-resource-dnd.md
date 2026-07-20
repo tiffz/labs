@@ -10,7 +10,7 @@ paths:
   - 'e2e/smoke/encore-practice-resource-dnd.spec.ts'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/encore-practice-resource-dnd.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/encore-practice-resource-dnd.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Encore practice resource chip DnD — stable DOM during drag, post-drop click suppress
 

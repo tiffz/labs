@@ -7,7 +7,7 @@ paths:
   - 'src/shared/dexie/**'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/dexie-live-query-empty-states.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/dexie-live-query-empty-states.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Dexie useLiveQuery loading vs empty — never flash false empty states
 

@@ -3,7 +3,7 @@ name: labs-babysit-pr
 description: Keeps a Labs pull request merge-ready by triaging review comments, resolving merge conflicts, and fixing CI in a loop. Use when babysitting a PR, addressing Bugbot/CodeRabbit, fixing merge-blocking CI, or when the user asks to get a PR ready to merge or merge it.
 ---
 
-<!-- AUTO-GENERATED from .cursor/skills/labs-babysit-pr/SKILL.md — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/skills/labs-babysit-pr/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Labs babysit PR
 

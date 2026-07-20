@@ -6,7 +6,7 @@ paths:
   - 'src/**/*Tab.tsx'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/react-interaction-perf.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/react-interaction-perf.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > React interaction performance — isolate control state from heavy grids; avoid O(n) work on click paths.
 

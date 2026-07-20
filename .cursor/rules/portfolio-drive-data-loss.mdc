@@ -8,6 +8,8 @@ globs:
   - src/encore/context/EncoreSyncContext.tsx
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/portfolio-drive-data-loss.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Drive sync — data-loss guards (P0)
 
 **Read first:** [`docs/DRIVE_SYNC_DATA_LOSS_PREVENTION.md`](../../docs/DRIVE_SYNC_DATA_LOSS_PREVENTION.md) · skill **`labs-drive-backup`**

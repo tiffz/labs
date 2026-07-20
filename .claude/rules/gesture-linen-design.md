@@ -3,7 +3,7 @@ paths:
   - 'src/gesture/**/*'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/gesture-linen-design.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/gesture-linen-design.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > The Gesture Room Linen design system — tokens, flat sage aesthetic, account menu
 

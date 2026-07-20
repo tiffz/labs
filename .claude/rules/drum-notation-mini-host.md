@@ -6,7 +6,7 @@ paths:
   - 'src/stanza/components/StanzaWorkspace.tsx'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/drum-notation-mini-host.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/drum-notation-mini-host.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > DrumNotationMini host layout — avoid clipping and nested scrollbars in narrow rails
 

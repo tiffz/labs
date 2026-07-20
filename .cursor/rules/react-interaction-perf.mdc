@@ -1,12 +1,14 @@
 ---
 description: React interaction performance — isolate control state from heavy grids; avoid O(n) work on click paths.
+alwaysApply: false
 globs:
   - src/**/PracticeTab.tsx
   - src/**/PracticeSessionControls.tsx
   - src/**/*CollectionGrid*.tsx
   - src/**/*Tab.tsx
-alwaysApply: false
 ---
+
+<!-- AUTO-GENERATED from .agents/rules/react-interaction-perf.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # React interaction performance
 

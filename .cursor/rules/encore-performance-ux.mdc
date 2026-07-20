@@ -8,6 +8,8 @@ globs:
   - src/shared/components/DragDropFileUpload.tsx
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/encore-performance-ux.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Encore performance UX
 
 Read [`src/encore/PERFORMANCE_UX.md`](../../src/encore/PERFORMANCE_UX.md) before changing performance logging, video stacks, or list playback.

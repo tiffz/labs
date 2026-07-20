@@ -3,7 +3,7 @@ paths:
   - 'src/encore/originals/**'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/encore-originals-layout.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/encore-originals-layout.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Encore Originals song view scroll and M3 spacing tokens
 

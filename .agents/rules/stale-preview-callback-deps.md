@@ -1,0 +1,36 @@
+---
+description: Avoid stale preview/image state from unstable parent callbacks in useEffect deps
+globs:
+  - src/**/components/**Preview*.tsx
+  - src/**/components/**/*Preview*.tsx
+  - src/gesture/**
+---
+
+# Stale preview state — callback deps
+
+Root cause class: **`stale state`**.
+
+## Rule
+
+When a preview/image cell runs `useEffect` / `useLayoutEffect` that loads or resets media from props, **do not** list unstable parent callbacks (e.g. `onImageError`, `onLoad`) in the dependency array.
+
+## Pattern (canonical)
+
+Ref-wrap the callback; depend on stable props only (`url`, `loading`, `eager`):
+
+```tsx
+const onImageErrorRef = useRef(onImageError);
+onImageErrorRef.current = onImageError;
+
+useLayoutEffect(() => {
+  // ...
+  img.onerror = () => onImageErrorRef.current?.();
+}, [url, loading, eager]); // not onImageError
+```
+
+Reference: [`src/gesture/components/PackPreviewCell.tsx`](../../src/gesture/components/PackPreviewCell.tsx).
+
+## When adding new preview strips
+
+- Memoize handlers at the grid level (`useCallback` + stable ids) **or** ref-wrap inside the cell.
+- After canvas/GLB or preview pipeline changes, hard-refresh affected routes — HMR can mask stale effect bugs.

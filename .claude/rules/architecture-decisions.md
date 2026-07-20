@@ -8,7 +8,7 @@ paths:
   - 'src/shared/importBoundaries.test.ts'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/architecture-decisions.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/architecture-decisions.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Record material cross-cutting architecture decisions under docs/adr when changing routing, hosting, or contracts
 

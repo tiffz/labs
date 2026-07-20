@@ -3,6 +3,8 @@ name: labs-split-to-prs
 description: Splits current Labs work into small reviewable pull requests with recoverable git snapshots. Use when the user asks to split a chat, branch, changeset, or PR into multiple PRs.
 ---
 
+<!-- AUTO-GENERATED from .agents/skills/labs-split-to-prs/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Labs split to PRs
 
 Turn one pile of work into a few small PRs.

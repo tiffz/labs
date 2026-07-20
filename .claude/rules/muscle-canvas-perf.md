@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED from .cursor/rules/muscle-canvas-perf.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/muscle-canvas-perf.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Muscle Memory 3D canvas performance guardrails
 

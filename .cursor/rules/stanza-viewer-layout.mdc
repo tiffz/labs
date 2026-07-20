@@ -7,6 +7,8 @@ globs:
   - src/stanza/components/StanzaWorkspace.tsx
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/stanza-viewer-layout.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Stanza viewer layout
 
 1. **Layout lives in CSS** — [`src/stanza/stanza-viewer-layout.css`](../../src/stanza/stanza-viewer-layout.css) + tokens on `.stanza-app`. Do not set viewer width, grid template, or horizontal padding in `StanzaWorkspace` `sx`.

@@ -3,6 +3,8 @@ name: labs-visual-regression
 description: Verifies or updates Labs visual and audio regression baselines with explicit review. Use when running test:e2e:visual, updating snapshot PNGs, refreshing visual baselines, audio hash baselines, CI visual warnings, or when the user mentions screenshot regression or e2e/visual snapshots.
 ---
 
+<!-- AUTO-GENERATED from .agents/skills/labs-visual-regression/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Labs visual regression
 
 **Read first:** [`docs/VISUAL_REGRESSION_AGENT.md`](../../../docs/VISUAL_REGRESSION_AGENT.md) (agent playbook). Canonical human doc: [`docs/REGRESSION_WORKFLOW.md`](../../../docs/REGRESSION_WORKFLOW.md).

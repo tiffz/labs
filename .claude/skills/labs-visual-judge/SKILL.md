@@ -3,7 +3,7 @@ name: labs-visual-judge
 description: Judges Labs screenshot diffs against the visual rubric — obtain diffs, view PNGs, classify must-fix vs acceptable vs escalate, then fix or import baselines. Use when a visual regression check fails in CI or locally, when triaging visual-regression-artifacts, or when deciding whether a screenshot change is an acceptable baseline update.
 ---
 
-<!-- AUTO-GENERATED from .cursor/skills/labs-visual-judge/SKILL.md — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/skills/labs-visual-judge/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Labs visual judge
 

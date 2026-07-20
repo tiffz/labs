@@ -5,6 +5,8 @@ globs:
   - src/**/index.html
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/app-entry-html.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # App entry HTML (`src/*/index.html`)
 
 Every app's `index.html` is the outermost shell the user sees before any JS

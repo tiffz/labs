@@ -5,6 +5,8 @@ globs:
   - src/**/App.tsx
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/shared-ui-first.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Shared UI first
 
 Before adding a **new** control, menu, slider, popover, or playback field:

@@ -7,7 +7,7 @@ paths:
   - 'src/encore/context/EncoreSyncContext.tsx'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/portfolio-drive-data-loss.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/portfolio-drive-data-loss.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > P0 data-loss guards when editing Drive sync, merge, delete, or backup hooks
 

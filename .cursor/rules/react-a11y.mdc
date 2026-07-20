@@ -4,6 +4,8 @@ globs:
   - src/**/*.tsx
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/react-a11y.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # React accessibility
 
 Enforced by **`eslint-plugin-jsx-a11y`**, **`src/shared/spaGuardrails.test.ts`**, and **`npm run check:menu-a11y`**. Full prose: [`STYLE_GUIDE.md`](../../STYLE_GUIDE.md) § UI and Accessibility · [`docs/A11Y_MENU_PATTERNS.md`](../../docs/A11Y_MENU_PATTERNS.md).

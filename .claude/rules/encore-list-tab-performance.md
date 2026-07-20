@@ -8,7 +8,7 @@ paths:
   - 'src/encore/context/**'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/encore-list-tab-performance.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/encore-list-tab-performance.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Encore keep-alive list tabs — gate heavy memos, MRT columns, and document listeners when inactive.
 

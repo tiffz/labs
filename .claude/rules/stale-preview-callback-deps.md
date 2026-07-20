@@ -5,7 +5,7 @@ paths:
   - 'src/gesture/**'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/stale-preview-callback-deps.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/stale-preview-callback-deps.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Avoid stale preview/image state from unstable parent callbacks in useEffect deps
 

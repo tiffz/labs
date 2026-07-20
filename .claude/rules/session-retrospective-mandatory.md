@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED from .cursor/rules/session-retrospective-mandatory.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/session-retrospective-mandatory.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > End-of-session retrospective — required deliverable for substantial sessions
 

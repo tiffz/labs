@@ -9,7 +9,7 @@ paths:
   - 'src/encore/originals/**/*'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/playback-ui-regressions.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/playback-ui-regressions.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Playback UI — empty states, stable props, async stop, portal skins
 
@@ -27,4 +27,4 @@ Read [`PLAYBACK_HOOK_PATTERN.md`](../../src/shared/hooks/PLAYBACK_HOOK_PATTERN.m
 
 Smokes: `e2e/playback-ui-regressions.spec.ts` (Encore drums settings, Stanza practice-rail highlight, Words host-input + presets).
 
-Inline drum profiles: `.cursor/rules/inline-drum-ux.md`, `inlineDrumUxContract.test.tsx`.
+Inline drum profiles: `.agents/rules/inline-drum-ux.md`, `inlineDrumUxContract.test.tsx`.

@@ -3,13 +3,13 @@ name: labs-playback-bugfix
 description: Diagnoses and fixes Labs playback, notation, VexFlow, and portaled picker regressions using root cause classes and regression tests. Use when fixing drum highlights, stuck notes, VexFlow beams, async load empty states, stop during instrument load, portal menu styling, or playback-ui-regressions failures.
 ---
 
-<!-- AUTO-GENERATED from .cursor/skills/labs-playback-bugfix/SKILL.md — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/skills/labs-playback-bugfix/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Labs playback bugfix
 
 ## Before editing
 
-1. Matching paths auto-load [`.cursor/rules/playback-ui-regressions.md`](../../rules/playback-ui-regressions.md).
+1. Matching paths auto-load [`.agents/rules/playback-ui-regressions.md`](../../rules/playback-ui-regressions.md).
 2. Deep context (load on demand):
    - [references/playback-hook-pattern.md](references/playback-hook-pattern.md)
    - [references/playback-rendering-audit.md](references/playback-rendering-audit.md)

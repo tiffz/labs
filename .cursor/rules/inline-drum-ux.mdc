@@ -12,6 +12,8 @@ globs:
   - src/piano/components/PlaybackControls.tsx
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/inline-drum-ux.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Inline drum UX
 
 Read [`inlineDrumUxDefaults.ts`](../../src/shared/components/music/inlineDrumUxDefaults.ts) and [`SHARED_UI_CONVENTIONS.md`](../../src/shared/SHARED_UI_CONVENTIONS.md) § Inline drum panels.

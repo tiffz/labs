@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED from .cursor/rules/ux-journey-mandatory.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/ux-journey-mandatory.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Non-trivial UX tasks require labs-ux-journey journey sketch in chat before any UI code
 
@@ -27,4 +27,4 @@ Do **not** write component/CSS/layout code until the sketch is in chat (or the u
 
 ## After sketch
 
-Follow skill steps 2–5 (layout plan, visual weight, copy, verify). See [`.cursor/rules/ux-agent-guide.md`](ux-agent-guide.md) when editing components.
+Follow skill steps 2–5 (layout plan, visual weight, copy, verify). See [`.agents/rules/ux-agent-guide.md`](ux-agent-guide.md) when editing components.

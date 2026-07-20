@@ -1,11 +1,13 @@
 ---
 description: Avoid unintended horizontal scroll on primary page surfaces; fix on sight and add smoke coverage when touching layout.
+alwaysApply: false
 globs:
   - src/**/*.tsx
   - src/**/*.css
   - e2e/smoke/**/*.spec.ts
-alwaysApply: false
 ---
+
+<!-- AUTO-GENERATED from .agents/rules/layout-no-horizontal-scroll.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # No unintended horizontal scroll
 

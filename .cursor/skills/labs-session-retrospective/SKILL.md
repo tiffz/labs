@@ -3,6 +3,8 @@ name: labs-session-retrospective
 description: Runs a mandatory end-of-session retrospective and proposes durable process improvements. Use when a substantial session completes, the user asks for process feedback, or when codifying learnings into rules, tests, or docs.
 ---
 
+<!-- AUTO-GENERATED from .agents/skills/labs-session-retrospective/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Labs session retrospective
 
 ## When to run (mandatory deliverable)
@@ -17,7 +19,7 @@ Run and **deliver** (not merely offer) when **any** apply:
 
 Skip only for a **single obvious fix** with no friction (one sentence: "No retrospective — single-file fix.")
 
-Always-on reminder: [`.cursor/rules/session-retrospective-mandatory.mdc`](../../rules/session-retrospective-mandatory.mdc).
+Always-on reminder: [`.agents/rules/session-retrospective-mandatory.mdc`](../../rules/session-retrospective-mandatory.mdc).
 
 ## Workflow
 

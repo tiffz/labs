@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED from .cursor/rules/pre-commit-checks.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/pre-commit-checks.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Require running pre-commit checks before considering a task complete
 

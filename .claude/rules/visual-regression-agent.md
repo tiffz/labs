@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED from .cursor/rules/visual-regression-agent.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/visual-regression-agent.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Visual regression (agents)
 

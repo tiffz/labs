@@ -8,6 +8,8 @@ globs:
   - src/gesture/components/PackPreview*.tsx
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/gesture-media-tiers.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Gesture media tiers
 
 Canonical policy: [`gestureMediaPolicy.ts`](../../src/gesture/media/gestureMediaPolicy.ts) + [`src/gesture/AGENTS.md`](../../src/gesture/AGENTS.md) § Media tiers.

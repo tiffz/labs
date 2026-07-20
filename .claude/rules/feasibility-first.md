@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED from .cursor/rules/feasibility-first.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/feasibility-first.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Feasibility & manual-labor gate before committing to big new asks
 

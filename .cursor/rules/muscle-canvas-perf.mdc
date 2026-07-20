@@ -1,8 +1,9 @@
 ---
 description: Muscle Memory 3D canvas performance guardrails
-globs: src/muscle/components/canvas/**/*
 alwaysApply: false
 ---
+
+<!-- AUTO-GENERATED from .agents/rules/muscle-canvas-perf.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Muscle canvas performance
 

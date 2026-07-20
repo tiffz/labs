@@ -6,6 +6,8 @@ globs:
   - src/stanza/components/StanzaSuggestSectionsDialog.tsx
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/beat-analysis-scope.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Shared tempo analysis scope
 
 1. **Stanza is the product surface** — optional Analyze tempo, Suggest sections, and key detection run on uploaded audio only. Do not reintroduce a separate Find the Beat app.

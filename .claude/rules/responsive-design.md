@@ -6,7 +6,7 @@ paths:
   - 'e2e/smoke/layout-heuristics*.spec.ts'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/responsive-design.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/responsive-design.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Labs shared breakpoint scale and responsive layout defaults — use when editing CSS/layout or adding app shells.
 

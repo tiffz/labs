@@ -4,7 +4,7 @@ paths:
   - 'src/**/App.tsx'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/shared-ui-first.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/shared-ui-first.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Search shared UI before building new controls
 

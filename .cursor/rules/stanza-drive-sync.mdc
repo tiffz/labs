@@ -6,6 +6,8 @@ globs:
   - src/stanza/drive/stanzaDriveEnvelope.ts
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/stanza-drive-sync.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Stanza Drive sync
 
 ## Blob tiers (all need upload + hydrate)

@@ -9,7 +9,7 @@ paths:
   - 'src/**/main.tsx'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/focus-theming.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/focus-theming.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Focus ring theming — tokens, inset vs outset, sticky bar bleed, portal-safe accent
 

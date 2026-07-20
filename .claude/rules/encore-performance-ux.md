@@ -7,7 +7,7 @@ paths:
   - 'src/shared/components/DragDropFileUpload.tsx'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/encore-performance-ux.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/encore-performance-ux.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > Encore performance log/edit/video UX — gestalt, tokens, shared components
 

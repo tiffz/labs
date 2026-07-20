@@ -3,7 +3,7 @@ name: labs-url-state
 description: Implements or fixes Labs URL parameter sync for shareable app state using shared urlHistory utilities. Use when editing useUrlState hooks, URL sharing, query params, hash routing state, or throttled history.replaceState.
 ---
 
-<!-- AUTO-GENERATED from .cursor/skills/labs-url-state/SKILL.md — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/skills/labs-url-state/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Labs URL state
 

@@ -3,7 +3,7 @@ paths:
   - 'src/**/*.tsx'
 ---
 
-<!-- AUTO-GENERATED from .cursor/rules/react-a11y.mdc — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/rules/react-a11y.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 > React a11y baseline — landmarks, labels, MUI imports, menus
 

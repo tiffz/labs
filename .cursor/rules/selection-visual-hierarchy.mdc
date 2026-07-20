@@ -1,16 +1,18 @@
 ---
 description: Primary vs secondary selection styling for toggles, chips, and popover interiors
 globs:
-  - "**/*metronome*"
-  - "**/*chip*"
-  - "**/bpmInput.css"
-  - "**/keyInput.css"
-  - "**/chordProgressionInput.css"
-  - "**/chordStyleInput.css"
-  - "**/metronome-*.css"
-  - "**/labsChrome.css"
-  - "**/appSharedThemes.css"
+  - **/*metronome*
+  - **/*chip*
+  - **/bpmInput.css
+  - **/keyInput.css
+  - **/chordProgressionInput.css
+  - **/chordStyleInput.css
+  - **/metronome-*.css
+  - **/labsChrome.css
+  - **/appSharedThemes.css
 ---
+
+<!-- AUTO-GENERATED from .agents/rules/selection-visual-hierarchy.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Selection visual hierarchy
 

@@ -3,7 +3,7 @@ name: labs-dependency-upgrade
 description: Executes phased dependency upgrades for Labs per DEPENDENCY_UPGRADE_PLAN with required test matrix. Use when upgrading Vite, Vitest, TypeScript, Tailwind, Knip, or other toolchain majors.
 ---
 
-<!-- AUTO-GENERATED from .cursor/skills/labs-dependency-upgrade/SKILL.md — do not edit directly. Edit the source and run `npm run generate:claude-guidance`. -->
+<!-- AUTO-GENERATED from .agents/skills/labs-dependency-upgrade/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Labs dependency upgrade
 
