@@ -13,6 +13,7 @@ import {
   formatInterruptedMergeHeadline,
   formatInterruptedMergeSummary,
 } from '../drive/gestureMergeActivity';
+import { useLabsConfirm } from '../../shared/components/useLabsConfirm';
 import { abandonIncompleteMerge, resumeIncompleteMerge } from '../drive/gestureMergeCollections';
 import { reconcileDriveFolderMerges } from '../drive/gestureReconcileDriveFolderMerges';
 import type { GesturePack } from '../types';
@@ -80,11 +81,14 @@ export default function InterruptedMergeBanner({
     }
   }, [onError, onMessage, withBlockingJob]);
 
+  const { confirm: confirmAbandon, dialog: confirmAbandonDialog } = useLabsConfirm();
   const handleAbandon = useCallback(async () => {
     if (
-      !window.confirm(
-        `Remove “${pack.name}” from the app? Source collections stay on Drive; any folders already moved remain nested.`,
-      )
+      !(await confirmAbandon({
+        title: `Remove “${pack.name}” from the app?`,
+        message: 'Source collections stay on Drive; any folders already moved remain nested.',
+        confirmLabel: 'Remove',
+      }))
     ) {
       return;
     }
@@ -95,7 +99,7 @@ export default function InterruptedMergeBanner({
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Could not remove merge.');
     }
-  }, [onError, onMessage, pack.id, pack.name]);
+  }, [confirmAbandon, onError, onMessage, pack.id, pack.name]);
 
   const interactionDisabled = Boolean(disabled || blockingVisible);
 
@@ -135,6 +139,7 @@ export default function InterruptedMergeBanner({
           Drop partial merge
         </Button>
       </div>
+      {confirmAbandonDialog}
     </div>
   );
 }

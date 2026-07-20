@@ -12941,6 +12941,40 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-labsconfirmdialog-tsx-labsconfirmdialog",
+    "name": "LabsConfirmDialog",
+    "path": "src/shared/components/LabsConfirmDialog.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Themed replacement for `window.confirm()` on destructive actions. Rendered imperatively via ./useLabsConfirm ; most call sites should use that hook rather than this component directly.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labsconfirmdialog-tsx-labsconfirmdialogprops",
+    "name": "LabsConfirmDialogProps",
+    "path": "src/shared/components/LabsConfirmDialog.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-labsdebugdock-tsx-labs-debug-dock-height-var",
     "name": "LABS_DEBUG_DOCK_HEIGHT_VAR",
     "path": "src/shared/components/LabsDebugDock.tsx",
@@ -15082,6 +15116,47 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "zines"
     ],
     "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-uselabsconfirm-tsx-labsconfirmoptions",
+    "name": "LabsConfirmOptions",
+    "path": "src/shared/components/useLabsConfirm.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "piano",
+      "words",
+      "zines"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-uselabsconfirm-tsx-uselabsconfirm",
+    "name": "useLabsConfirm",
+    "path": "src/shared/components/useLabsConfirm.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Drop-in async replacement for `window.confirm()` that renders a themed dialog instead of the browser's native one. Preserves the same calling shape (`await confirm(...)` resolves to a boolean) so existing `if (!window.confirm(msg)) return;` guards migrate with a small diff: ```tsx const { confirm, dialog } = useLabsConfirm(); // ... if (!(await confirm({ title: 'Delete this?', message: 'This cannot be undone.' }))) return; // ... return <>{dialog}{...rest of the component}</>; ```",
+    "tags": [
+      "components",
+      "react"
+    ],
+    "appsUsing": [
+      "piano",
+      "words",
+      "zines"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {

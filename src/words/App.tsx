@@ -595,6 +595,7 @@ const App: React.FC = () => {
 
           <WordsNotationPanel {...notationPanelProps} />
         </section>
+        {sectionsState.removeSectionDialog}
       </main>
 
       <LyricImportModal

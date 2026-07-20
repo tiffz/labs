@@ -82,6 +82,7 @@ import { getEncoreDropSurface, shouldEncoreMediaHubHighlightDrag } from './song/
 import { usePerformanceSectionDrop } from './song/usePerformanceSectionDrop';
 import { applyMediaUrlToSongSlot, extractFirstUrlFromDataTransfer } from './song/songMediaUrlDrop';
 import { setPrimaryPerformanceVideo } from '../utils/performanceVideoModel';
+import { useLabsConfirm } from '../../shared/components/useLabsConfirm';
 
 export function SongPage(props: {
   route: Extract<EncoreAppRoute, { kind: 'song' } | { kind: 'songNew' }>;
@@ -610,9 +611,10 @@ export function SongPage(props: {
     [persistSongNow]
   );
 
+  const { confirm: confirmDeleteSong, dialog: confirmDeleteSongDialog } = useLabsConfirm();
   const handleDelete = async () => {
     if (!draft || isNew) return;
-    if (!window.confirm(`Delete “${draft.title}” from your library?`)) return;
+    if (!(await confirmDeleteSong({ title: `Delete “${draft.title}” from your library?`, message: 'This cannot be undone.' }))) return;
     await deleteSong(draft.id);
     navigateEncore({ kind: 'library' });
   };
@@ -1050,6 +1052,7 @@ export function SongPage(props: {
           if (files && files.length > 0) void uploadFilesToMediaSlot(slot, files);
         }}
       />
+      {confirmDeleteSongDialog}
     </Box>
   );
 }

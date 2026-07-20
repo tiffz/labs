@@ -3,6 +3,7 @@ import { usePiano } from '../store';
 import { scoreToAbc, abcToScore } from '../utils/abcNotation';
 import type { PianoScore } from '../types';
 import type { ExportSourceAdapter } from '../../shared/music/exportTypes';
+import { useLabsConfirm } from '../../shared/components/useLabsConfirm';
 
 const SharedExportPopover = lazy(() => import('../../shared/components/music/SharedExportPopover'));
 
@@ -140,8 +141,9 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
   const handleSave = () => {
     dispatch({ type: 'SET_INPUT_MODE', mode: 'select' });
   };
-  const handleCancel = () => {
-    if (hasChanges && !window.confirm('Discard unsaved changes?')) return;
+  const { confirm: confirmDiscard, dialog: discardDialog } = useLabsConfirm();
+  const handleCancel = async (): Promise<void> => {
+    if (hasChanges && !(await confirmDiscard({ title: 'Discard unsaved changes?', message: 'This cannot be undone.' }))) return;
     dispatch({ type: 'CANCEL_EDIT' });
   };
 
@@ -291,7 +293,7 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
             <button className="btn btn-small btn-primary ni-icon-btn" onClick={handleSave} title="Save changes" aria-label="Save changes">
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check</span>
             </button>
-            <button className="btn btn-small ni-icon-btn" onClick={handleCancel} title="Discard changes" aria-label="Discard changes">
+            <button className="btn btn-small ni-icon-btn" onClick={() => void handleCancel()} title="Discard changes" aria-label="Discard changes">
               <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
             </button>
           </>
@@ -503,6 +505,7 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
           </span>
         </div>
       )}
+      {discardDialog}
     </div>
   );
 };

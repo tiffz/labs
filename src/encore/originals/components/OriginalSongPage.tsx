@@ -7,6 +7,7 @@ import { useEncoreOriginal } from '../../context/EncoreOriginalsLibraryContext';
 import { useEncoreOriginalDraftUndo } from '../../hooks/useEncoreOriginalDraftUndo';
 import { navigateEncore } from '../../routes/encoreAppHash';
 import { useLabsUndo } from '../../../shared/undo/LabsUndoContext';
+import { useLabsConfirm } from '../../../shared/components/useLabsConfirm';
 import { encoreHairline, encoreMaxWidthPage, encoreRadius, encoreShadowSurface } from '../../theme/encoreUiTokens';
 import { encorePagePaddingTop, encorePageSectionGap, encoreScreenPaddingX, encoreSurfacePadX } from '../../theme/encoreM3Layout';
 import { takePendingOriginalDraft } from '../pendingOriginalDraft';
@@ -52,6 +53,7 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
   const live = useEncoreOriginal(isNew ? null : id);
   const { saveOriginal, deleteOriginal } = useEncoreOriginalsActions();
   const { push: pushUndo, clear: clearUndoStack } = useLabsUndo();
+  const { confirm: confirmDelete, dialog: confirmDeleteDialog } = useLabsConfirm();
   const [draft, setDraft] = useState<EncoreOriginalSong | null>(() => initialDraftForRoute(id, isNew));
   const [mode, setMode] = useState<OriginalsPageMode>(() => readPageMode(id));
   const [workflowStage, setWorkflowStage] = useState<OriginalsWorkflowStage>(
@@ -339,7 +341,7 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
       onChange={update}
       onRestoreSnapshot={(snap) => persistStructural(restoreOriginalFromSnapshot(activeSong, snap))}
       onDelete={async () => {
-        if (!window.confirm('Delete this original?')) return;
+        if (!(await confirmDelete({ title: 'Delete this original?', message: 'This cannot be undone.' }))) return;
         await deleteOriginal(activeSong.id);
         navigateEncore({ kind: 'originals' });
       }}
@@ -485,6 +487,7 @@ export function OriginalSongPage({ id, isNew }: OriginalSongPageProps): ReactEle
           onSongChange={update}
         />
       ) : null}
+      {confirmDeleteDialog}
     </Box>
   );
 }

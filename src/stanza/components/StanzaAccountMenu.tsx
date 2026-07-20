@@ -145,6 +145,7 @@ export default function StanzaAccountMenu() {
           onDismiss={backup.cancelConflict}
         />
       ) : null}
+      {backup.confirmRestoreSnapshotDialog}
     </>
   );
 }

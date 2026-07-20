@@ -1,6 +1,6 @@
 /**
  * Stanza practice overlay sidecar schema (ADR 0007 revision Option B).
- * Dual-read/dual-write is wired in `useStanzaDriveBackup.ts` (pull merges the
+ * Dual-read/dual-write is wired in `useStanzaDriveBackup.tsx` (pull merges the
  * overlay into rows; push rebuilds and writes it). Encore-side consumption is
  * the remaining migration step. See docs/adr/0007-revision-stanza-encore-federated-sync.md
  */

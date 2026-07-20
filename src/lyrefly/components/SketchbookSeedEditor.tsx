@@ -3,13 +3,9 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
 import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
+import { useLabsConfirm } from '../../shared/components/useLabsConfirm';
 import {
   useEffect,
   useRef,
@@ -197,10 +193,10 @@ export function SketchbookSeedEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onCollapse]);
 
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const { confirm: confirmDelete, dialog: deleteDialog } = useLabsConfirm();
 
   const onDelete = async (): Promise<void> => {
-    setDeleteOpen(false);
+    if (!(await confirmDelete({ title: 'Delete this entry?', message: 'This cannot be undone.' }))) return;
     setBusy(true);
     try {
       if (saveTimerRef.current != null) {
@@ -413,7 +409,7 @@ export function SketchbookSeedEditor({
           size="small"
           color="inherit"
           disabled={busy}
-          onClick={() => setDeleteOpen(true)}
+          onClick={() => void onDelete()}
           startIcon={<DeleteOutlineIcon />}
         >
           Delete
@@ -439,18 +435,7 @@ export function SketchbookSeedEditor({
           Promote to comic
         </Button>
       </div>
-      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} fullWidth maxWidth="xs">
-        <DialogTitle>Delete this entry?</DialogTitle>
-        <DialogContent>
-          <DialogContentText>This cannot be undone.</DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteOpen(false)}>Cancel</Button>
-          <Button color="error" variant="contained" disabled={busy} onClick={() => void onDelete()}>
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {deleteDialog}
     </div>
   );
 }

@@ -149,7 +149,7 @@ export function useWordsSectionsColumnProps(
       onMoveSection: moveSection,
       onRemoveSection: (sectionId) => {
         const index = sections.findIndex((section) => section.id === sectionId);
-        removeSection(
+        void removeSection(
           sectionId,
           context.sectionDisplayNames[index] ?? 'this section',
           () => {

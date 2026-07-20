@@ -8,6 +8,7 @@ import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
 import CloseIcon from '@mui/icons-material/Close';
 import { useLiveQuery } from 'dexie-react-hooks';
 import AppTooltip from '../../shared/components/AppTooltip';
+import { useLabsConfirm } from '../../shared/components/useLabsConfirm';
 import ZenTimerRing from '../components/ZenTimerRing';
 import { recordGestureDraw } from '../db/gestureLocalData';
 import { gestureDb } from '../db/gestureDb';
@@ -133,11 +134,18 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
 
   const markDone = useCallback(() => void advance('complete'), [advance]);
   const goNext = useCallback(() => void advance('skip'), [advance]);
-  const confirmEndSession = useCallback(() => {
-    if (window.confirm('End this session? Progress for completed photos is saved.')) {
+  const { confirm: confirmEndSessionDialog, dialog: endSessionDialog } = useLabsConfirm();
+  const confirmEndSession = useCallback(async () => {
+    if (
+      await confirmEndSessionDialog({
+        title: 'End this session?',
+        message: 'Progress for completed photos is saved.',
+        confirmLabel: 'End session',
+      })
+    ) {
       finishSession();
     }
-  }, [finishSession]);
+  }, [confirmEndSessionDialog, finishSession]);
   const goBack = useCallback(() => {
     if (index <= 0 || advancingRef.current) return;
     advancingRef.current = true;
@@ -278,7 +286,7 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
         <AppTooltip title="End session (Esc)">
           <IconButton
             aria-label="End session"
-            onClick={confirmEndSession}
+            onClick={() => void confirmEndSession()}
             className="gesture-zen-control-btn"
             size="small"
           >
@@ -286,6 +294,7 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
           </IconButton>
         </AppTooltip>
       </div>
+      {endSessionDialog}
     </div>
   );
 }
