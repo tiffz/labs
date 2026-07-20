@@ -1,0 +1,48 @@
+---
+description: Material icon sizing — glyph must clear its chrome, and reserve its box before the font loads
+globs:
+  - src/**/*.css
+  - src/shared/ui/icons/**
+---
+
+# Material icon sizing
+
+Two invariants govern every `.material-symbols-outlined` / `.material-icons`
+node. Both are enforced; both have bitten this repo more than once.
+
+## 1. The glyph must clear its chrome
+
+`assertVisibleMaterialIconsNotCssClipped` (`e2e/visual/visualTestUtils.ts`)
+fails the visual run when an icon's nearest button-like ancestor is shorter
+than **1.5x** the glyph's `font-size`. It reads as a screenshot failure, so it
+is easy to misdiagnose as a baseline problem.
+
+- **Measure, do not reason.** Cascade-layer analysis will mislead you here.
+  Read the computed `font-size` and the ancestor's real height in a browser.
+- **Shrink the glyph, do not grow the button** — growing it shifts layout.
+- **Set `font-size` whenever you set `width`/`height`.** A sized box with no
+  `font-size` inherits the vendored 24px default and overflows (cats
+  `.cost-star`).
+- **Watch for chrome with no resolvable height.** `height: 100%` or
+  `align-self: stretch` with nothing to stretch against collapses to content
+  size, so shrinking the icon shrinks the button too and the ratio never
+  improves. Pin a `min-height` instead.
+
+## 2. The box must be reserved before the font loads
+
+Until the icon font arrives, the element still holds its ligature name as
+literal text (`arrow_drop_down`), which a fallback family renders far wider
+than the glyph. Anything sized by that content is born too wide and snaps
+narrower on load.
+
+`src/shared/ui/icons/materialIcons.css` reserves a `1em` box during
+`icons-pending`. **Do not defeat it** with `width: auto` at higher specificity
+— that is exactly how Darbuka's Play button came to shift 89px and Piano's
+126px. If a rule genuinely needs `width: auto`, add a matching
+`html.icons-pending` override next to it that pins the settled width.
+
+Enforced by `e2e/smoke/icon-font-layout-shift.spec.ts`, which holds the icon
+font back and asserts chrome geometry survives the swap.
+
+Root cause classes: **`icon-fouc-clip`**, **`icon-font-layout-shift`** — see
+[`docs/CONTINUOUS_PROCESS_IMPROVEMENT.md`](../../docs/CONTINUOUS_PROCESS_IMPROVEMENT.md).

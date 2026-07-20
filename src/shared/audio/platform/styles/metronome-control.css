@@ -139,6 +139,21 @@
     'opsz' 20;
 }
 
+/*
+ * `width: auto` above lets the fallback-font ligature text ("timer") size this
+ * box before the icon font loads, so the toggle is born ~22px too wide and
+ * snaps narrower on load. Pin the box to the width it will settle at during
+ * the pending window only. Needs to match the selector above to win on
+ * specificity; the shared reservation in shared/ui/icons/materialIcons.css
+ * is a two-class rule and would otherwise lose to it.
+ */
+html.icons-pending
+  .labs-split-action-button__primary
+  .material-symbols-outlined.labs-metronome-toggle-icon {
+  width: calc(var(--metro-icon-size, 1.25rem) * 0.9);
+  overflow: hidden;
+}
+
 /* Filled triangle — matches Words Randomize | Phrasing split menu */
 .labs-split-action-button__chevron {
   flex-shrink: 0;

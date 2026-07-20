@@ -1,6 +1,6 @@
 # Stanza ↔ Encore overlay migration (deferred)
 
-**Status:** Option B accepted — portfolio conflict gate + tester GA + Encore stem dedup landed. Steps 1–2 (dual-read pull, dual-write push) are **implemented** in [`useStanzaDriveBackup.ts`](../../src/stanza/hooks/useStanzaDriveBackup.ts) via `stanzaPracticeOverlaySync.ts`; steps 3–5 (Encore repertoire read, migration utility, legacy deprecation) remain.
+**Status:** Option B accepted — portfolio conflict gate + tester GA + Encore stem dedup landed. Steps 1–2 (dual-read pull, dual-write push) are **implemented** in [`useStanzaDriveBackup.tsx`](../../src/stanza/hooks/useStanzaDriveBackup.tsx) via `stanzaPracticeOverlaySync.ts`; steps 3–5 (Encore repertoire read, migration utility, legacy deprecation) remain.
 
 ## Scaffolding in repo
 

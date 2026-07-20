@@ -16,6 +16,7 @@ This is the source of truth (tool-agnostic). `.cursor/rules/*.mdc` and `.claude/
 | [`user-copy.md`](user-copy.md)                                             | `src/**/*.tsx`                           | `docs/USER_COPY_STYLE.md`                                | —                            |
 | [`app-entry-html.md`](app-entry-html.md)                                   | `src/**/index.html`                      | `app-index.starter.html`                                 | —                            |
 | [`spa-css-conventions.md`](spa-css-conventions.md)                         | `**/*.css`                               | `STYLE_GUIDE.md`                                         | —                            |
+| [`material-icon-sizing.md`](material-icon-sizing.md)                       | `**/*.css`, `src/shared/ui/icons/**`     | `e2e/visual/visualTestUtils.ts`                          | —                            |
 | [`layout-no-horizontal-scroll.md`](layout-no-horizontal-scroll.md)         | `src/**/*.tsx`, `src/**/*.css`, e2e      | `docs/E2E_SMOKE_CONVENTIONS.md`                          | —                            |
 | [`responsive-design.md`](responsive-design.md)                             | CSS / layout / layout-heuristics e2e     | `docs/RESPONSIVE_DESIGN.md`                              | —                            |
 | [`react-a11y.md`](react-a11y.md)                                           | `**/*.tsx`                               | `STYLE_GUIDE.md`, `spaGuardrails.test.ts`                | —                            |
