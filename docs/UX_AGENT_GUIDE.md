@@ -110,11 +110,25 @@ Use in PR description or journey sketch:
 
 Use `ux-gestalt`, `ux-redundancy`, `ux-visual-weight`, `ux-spec-violation`, `ux-journey-overload`, `ux revision churn` in retrospectives and PR **Process improvements** — definitions live in [`CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCESS_IMPROVEMENT.md) § Root cause classes (canonical).
 
+## Nielsen's 10 usability heuristics
+
+The concise, canonical UX checklist (Jakob Nielsen, 1994) — hold any screen up against these:
+
+1. **Visibility of system status** — the user always knows what's happening.
+2. **Match between system and the real world** — familiar words, order, convention over jargon.
+3. **User control and freedom** — clear exit/undo for mistaken paths.
+4. **Consistency and standards** — same word/action/situation means the same thing everywhere.
+5. **Error prevention** — remove error-prone conditions, or confirm before a destructive action.
+6. **Recognition rather than recall** — show options; don't make the user remember them.
+7. **Flexibility and efficiency of use** — accelerators for experts that novices never have to see.
+8. **Aesthetic and minimalist design** — no information that competes with what's relevant.
+9. **Help users recognize, diagnose, and recover from errors** — plain language, precise problem, constructive fix.
+10. **Help and documentation** — easy to search, focused on the user's task, not exhaustive.
+
 ## References (external practices)
 
 These inform our process; Labs enforcement is the docs/rules above.
 
-- **Nielsen heuristics** — visibility of status, match to real world, user control, consistency, error prevention, recognition over recall, flexibility, minimalism.
 - **Gestalt** — proximity, similarity, continuity, closure, common region.
 - **Progressive disclosure** — show primary path first; advanced options in menus/dialogs.
 - **Jobs-to-be-done** — one screen should answer one job; secondary jobs get another surface or step.
