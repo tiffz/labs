@@ -1999,10 +1999,10 @@ export default function SessionScreen() {
                     lineHeight: 1.25
                   }}>
                   {overlearnState.unlocked
-                    ? (lastExerciseResult && lastExerciseResult.accuracy >= 1
+                    ? (lastExerciseResult.accuracy >= 1
                       ? `Need ${requiredPerfectRuns} perfect runs in a row to advance.`
                       : 'Streak reset. Every note must be pitch- and timing-perfect.')
-                    : (lastExerciseResult && lastExerciseResult.accuracy >= 1
+                    : (lastExerciseResult.accuracy >= 1
                       ? `Your target is ${requiredPerfectRuns} perfect runs in a row.`
                       : 'Land one perfect run to unlock your practice target.')}
                 </Typography>

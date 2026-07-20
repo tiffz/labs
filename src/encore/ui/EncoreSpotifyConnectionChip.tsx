@@ -189,7 +189,7 @@ export function EncoreSpotifyConnectionChip(props: EncoreSpotifyConnectionChipPr
             color: "text.secondary",
             lineHeight: 1.55,
             letterSpacing: size === 'compact' ? '-0.01em' : undefined,
-            width: description ? '100%' : undefined
+            width: '100%'
           }}>
           {description}
         </Typography>

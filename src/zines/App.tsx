@@ -562,19 +562,17 @@ const App: React.FC = () => {
     for (const image of remainingImages) {
       const fileName = image.name;
       let matched = false;
-      
+
       // Check for page numbers
-      if (!matched) {
-        const pageNum = extractPageNumber(fileName);
-        if (pageNum !== null && pageNum >= 1 && pageNum <= 6) {
-          const slotId = `page${pageNum}`;
-          if (!smartPlaced[slotId]) {
-            smartPlaced[slotId] = image.id;
-            matched = true;
-          }
+      const pageNum = extractPageNumber(fileName);
+      if (pageNum !== null && pageNum >= 1 && pageNum <= 6) {
+        const slotId = `page${pageNum}`;
+        if (!smartPlaced[slotId]) {
+          smartPlaced[slotId] = image.id;
+          matched = true;
         }
       }
-      
+
       if (!matched) unplacedImages.push(image);
     }
     

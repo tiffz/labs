@@ -92,10 +92,7 @@ export function useMouseTracking(options: UseMouseTrackingOptions = {}): MouseSt
         lastSmoothUpdateRef.current = currentTime;
       }
       
-      // Only schedule next frame if still active
-      if (isActive) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      }
+      animationFrameRef.current = requestAnimationFrame(animate);
     };
 
     animationFrameRef.current = requestAnimationFrame(animate);

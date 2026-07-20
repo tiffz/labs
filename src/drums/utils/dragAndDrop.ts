@@ -260,14 +260,11 @@ export function replacePatternAtPosition(
   const replacedContent = notation.slice(startStringIndex, endStringIndex);
 
   // FIXED: Detect original head correctly even if we are replacing the middle of a tied note (which is just dashes)
-  let originalHead = 'D'; // Default fallback
   const headMatch = replacedContent.match(/[DTKSdtks]/);
-  if (headMatch) {
-    originalHead = headMatch[0];
-  } else {
+  const originalHead = headMatch
+    ? headMatch[0]
     // No head in the replaced content (e.g. replacing '---'), look backward in prefix
-    originalHead = findNoteHead(prefix, prefix.length);
-  }
+    : findNoteHead(prefix, prefix.length);
 
   // If suffix starts with a dash, prepend original head to repair the note
   if (suffix.startsWith('-')) {

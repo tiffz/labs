@@ -286,7 +286,7 @@ export function calculateInsertionLinePosition(
     // dropPosition is within this note - interpolate X position
     const positionInNote = dropPosition - noteStart;
     const noteDuration = noteEnd - noteStart;
-    const proportion = noteDuration > 0 ? positionInNote / noteDuration : 0;
+    const proportion = positionInNote / noteDuration;
     lineX = insertNote.x + (insertNote.width * proportion);
     lineY = insertNote.y;
   } else if (dropPosition === noteEnd) {

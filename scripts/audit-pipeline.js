@@ -57,11 +57,11 @@ function parseShortstat(line) {
   let deletions = 0;
   let files = 0;
   const fi = line.match(/(\d+)\s+file(?:s)?\s+changed/);
-  if (fi) files = Number(fi[1], 10);
+  if (fi) files = Number(fi[1]);
   const ins = line.match(/(\d+)\s+insertion/);
-  if (ins) insertions = Number(ins[1], 10);
+  if (ins) insertions = Number(ins[1]);
   const del = line.match(/(\d+)\s+deletion/);
-  if (del) deletions = Number(del[1], 10);
+  if (del) deletions = Number(del[1]);
   return { insertions, deletions, files };
 }
 
