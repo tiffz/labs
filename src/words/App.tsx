@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { usePlayback } from '../shared/rhythm/usePlayback';
+import { usePlaybackWakeLock } from '../shared/audio/usePlaybackWakeLock';
 import { useMetronomePreferences } from '../shared/audio/platform/metronome';
 import { DEFAULT_PLAYBACK_SETTINGS } from '../shared/rhythm/types';
 import type { PlaybackSettings, TimeSignature } from '../shared/rhythm/types';
@@ -194,6 +195,8 @@ const App: React.FC = () => {
     selectionRange: playbackRange.playbackSelectionRange,
     metronomePreferences,
   });
+
+  usePlaybackWakeLock(isPlaying);
 
   handleStopRef.current = handleStop;
 

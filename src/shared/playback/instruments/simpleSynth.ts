@@ -74,11 +74,19 @@ export class SimpleSynthesizer extends BaseInstrument {
     osc.connect(noteGain);
     noteGain.connect(this.output);
     
+    const release = this.trackVoice(() => {
+      try {
+        osc.stop(0);
+      } catch {
+        /* already stopped */
+      }
+    });
+
     osc.start(clampedStartTime);
     osc.stop(clampedStartTime + duration + 0.01);
-    
-    // Auto-cleanup
+
     osc.onended = () => {
+      release();
       noteGain.disconnect();
     };
   }

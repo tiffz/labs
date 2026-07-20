@@ -4,11 +4,12 @@ import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { useState, type ReactElement } from 'react';
+import { lazy, Suspense, useState, type ReactElement } from 'react';
 import ChordStyleInput from '../../../../shared/components/music/ChordStyleInput';
-import DrumAccompaniment from '../../../../shared/components/music/DrumAccompaniment';
 import { getInlineDrumUxProps } from '../../../../shared/components/music/inlineDrumUxDefaults';
 import type { NotationStyle } from '../../../../shared/notation/DrumNotationMini';
+
+const DrumAccompaniment = lazy(() => import('../../../../shared/components/music/DrumAccompaniment'));
 import {
   CHART_CHORD_PLAYBACK_TIME_SIGNATURE,
   type ChordPlaybackSettings,
@@ -170,24 +171,26 @@ export function OriginalsSectionPlaybackSettingsPanel({
 
             {effectiveDrumsEnabled ? (
               <Box className="shared-chord-playback-settings__drums-panel" sx={{ mt: viewOnly ? 0 : 1.25 }}>
-                <DrumAccompaniment
-                  {...getInlineDrumUxProps('settings-panel')}
-                  readOnly={viewOnly}
-                  bpm={tempo}
-                  timeSignature={CHART_CHORD_PLAYBACK_TIME_SIGNATURE}
-                  isPlaying={false}
-                  currentBeatTime={0}
-                  currentBeat={0}
-                  metronomeEnabled={false}
-                  volume={effectiveDrumVolume}
-                  notationValue={effectiveDrumPattern}
-                  onNotationValueChange={
-                    viewOnly ? () => undefined : (drumPattern) => onOverrideChange({ drumPattern })
-                  }
-                  notationWidth={340}
-                  notationFrameClassName="shared-chord-playback-settings__drums-notation"
-                  notationStyle={ENCORE_INLINE_DRUM_NOTATION_STYLE}
-                />
+                <Suspense fallback={null}>
+                  <DrumAccompaniment
+                    {...getInlineDrumUxProps('settings-panel')}
+                    readOnly={viewOnly}
+                    bpm={tempo}
+                    timeSignature={CHART_CHORD_PLAYBACK_TIME_SIGNATURE}
+                    isPlaying={false}
+                    currentBeatTime={0}
+                    currentBeat={0}
+                    metronomeEnabled={false}
+                    volume={effectiveDrumVolume}
+                    notationValue={effectiveDrumPattern}
+                    onNotationValueChange={
+                      viewOnly ? () => undefined : (drumPattern) => onOverrideChange({ drumPattern })
+                    }
+                    notationWidth={340}
+                    notationFrameClassName="shared-chord-playback-settings__drums-notation"
+                    notationStyle={ENCORE_INLINE_DRUM_NOTATION_STYLE}
+                  />
+                </Suspense>
               </Box>
             ) : null}
           </Box>

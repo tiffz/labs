@@ -127,8 +127,9 @@ describe('Count App engine wiring', () => {
     render(<App />);
     await startPlayback();
 
-    const bpmInput = screen.getByRole('textbox', { name: 'Tempo in BPM' });
-    fireEvent.focus(bpmInput);
+    // Count uses a first-class BPM control (display → edit), not shared BpmInput.
+    fireEvent.click(screen.getByTitle('Click to type a BPM'));
+    const bpmInput = screen.getByRole('spinbutton', { name: 'BPM value' });
     fireEvent.change(bpmInput, { target: { value: '95' } });
     fireEvent.keyDown(bpmInput, { key: 'Enter' });
 

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, lazy, Suspense } from 'react';
 import AnchoredPopover from '../../shared/components/AnchoredPopover';
 import { usePiano, type ActiveMode } from '../store';
 import { type SoundType } from '../../shared/music/soundOptions';
@@ -8,7 +8,7 @@ import {
 } from '../../shared/music/sampledPianoLoadState';
 import { PlaybackSoundSelect } from '../../shared/components/music/PlaybackSoundSelect';
 import { useSampledPianoPreload } from '../../shared/hooks/useSampledPianoPreload';
-import DrumAccompaniment, { type DrumScheduler } from '../../shared/components/music/DrumAccompaniment';
+import type { DrumScheduler } from '../../shared/components/music/DrumAccompaniment';
 import { getInlineDrumUxProps } from '../../shared/components/music/inlineDrumUxDefaults';
 import type { NotationStyle } from '../../shared/notation/DrumNotationMini';
 import { getScorePlaybackEngine } from '../utils/scorePlayback';
@@ -16,6 +16,9 @@ import { MetronomeSplitControl, useMetronomePreferences } from '../../shared/aud
 import AppTooltip from '../../shared/components/AppTooltip';
 import BpmInput from '../../shared/components/music/BpmInput';
 import AppLinearVolumeSlider from '../../shared/components/AppLinearVolumeSlider';
+import { usePlaybackWakeLock } from '../../shared/audio/usePlaybackWakeLock';
+
+const DrumAccompaniment = lazy(() => import('../../shared/components/music/DrumAccompaniment'));
 
 const PIANO_DRUM_STYLE: NotationStyle = {
   inkColor: '#64748b',
@@ -322,6 +325,7 @@ const PlaybackControls: React.FC = () => {
 
   const isActive = state.activeMode !== 'none';
   const isPracticing = state.activeMode === 'practice' || state.activeMode === 'free-practice';
+  usePlaybackWakeLock(isActive);
 
   return (
     <div className="sidebar-playback">
@@ -568,21 +572,23 @@ const PlaybackControls: React.FC = () => {
           <span>Add drums</span>
         </label>
         {state.drumEnabled && (
-          <DrumAccompaniment
-            {...getInlineDrumUxProps('sidebar-compact')}
-            bpm={state.tempo}
-            timeSignature={state.score?.timeSignature ?? { numerator: 4, denominator: 4 }}
-            isPlaying={state.isPlaying && state.activeMode !== 'free-practice' && !state.countingIn}
-            currentBeatTime={state.currentBeat * (60 / state.tempo)}
-            currentBeat={state.score?.timeSignature
-              ? Math.floor(state.currentBeat / (4 / (state.score.timeSignature.denominator))) % state.score.timeSignature.numerator
-              : Math.floor(state.currentBeat) % 4
-            }
-            volume={state.drumVolume * (state.masterMuted ? 0 : state.masterVolume) * 100}
-            notationStyle={PIANO_DRUM_STYLE}
-            notationWidth={250}
-            scheduler={drumScheduler}
-          />
+          <Suspense fallback={null}>
+            <DrumAccompaniment
+              {...getInlineDrumUxProps('sidebar-compact')}
+              bpm={state.tempo}
+              timeSignature={state.score?.timeSignature ?? { numerator: 4, denominator: 4 }}
+              isPlaying={state.isPlaying && state.activeMode !== 'free-practice' && !state.countingIn}
+              currentBeatTime={state.currentBeat * (60 / state.tempo)}
+              currentBeat={state.score?.timeSignature
+                ? Math.floor(state.currentBeat / (4 / (state.score.timeSignature.denominator))) % state.score.timeSignature.numerator
+                : Math.floor(state.currentBeat) % 4
+              }
+              volume={state.drumVolume * (state.masterMuted ? 0 : state.masterVolume) * 100}
+              notationStyle={PIANO_DRUM_STYLE}
+              notationWidth={250}
+              scheduler={drumScheduler}
+            />
+          </Suspense>
         )}
       </div>
 

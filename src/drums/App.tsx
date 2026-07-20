@@ -19,6 +19,7 @@ import { recognizeRhythm } from './utils/rhythmRecognition';
 import { useUrlState } from './hooks/useUrlState';
 import { useNotationHistory } from './hooks/useNotationHistory';
 import { usePlayback } from '../shared/rhythm/usePlayback';
+import { usePlaybackWakeLock } from '../shared/audio/usePlaybackWakeLock';
 import { useRhythmSelection } from './hooks/useRhythmSelection';
 import { getDefaultBeatGrouping, getSixteenthsPerMeasure, getBeatGroupingInSixteenths } from './utils/timeSignatureUtils';
 import { calculateRemainingBeats, expandSimileMeasure } from './utils/notationUtils';
@@ -167,6 +168,8 @@ const App: React.FC = () => {
     metronomePreferences,
   });
 
+  usePlaybackWakeLock(isPlaying);
+
   const handleInsertPattern = useCallback((pattern: string) => {
     // Append the pattern to the end of the current notation
     addToHistory(notation);
@@ -214,10 +217,12 @@ const App: React.FC = () => {
 
     // Phase 27: Expand Simile (Drag Drop Support)
     let expandedNotation = notation;
+    let expandedParsed = parsedRhythm;
 
-    const expanded = expandSimileMeasure(expandedNotation, targetMeasureIdx, parsedRhythm);
+    const expanded = expandSimileMeasure(expandedNotation, targetMeasureIdx, expandedParsed);
     if (expanded !== expandedNotation) {
       expandedNotation = expanded;
+      expandedParsed = parseRhythm(expandedNotation, timeSignature);
     }
 
     const activeCleanNotation = expandedNotation.replace(/[\s\n]/g, '');

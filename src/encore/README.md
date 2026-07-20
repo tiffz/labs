@@ -4,14 +4,15 @@ Personal musical repertoire companion: **local-first** (Dexie) with optional **G
 
 **Agents:** [`AGENTS.md`](AGENTS.md) → then the doc that matches the task.
 
-| Topic                      | Doc                                                                                                                                                                       |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sync / Drive contracts     | [`ARCHITECTURE.md`](ARCHITECTURE.md) · repo [`docs/LOCAL_FIRST_SYNC.md`](../../docs/LOCAL_FIRST_SYNC.md) · [`docs/SYNC_AND_AUTH_MAP.md`](../../docs/SYNC_AND_AUTH_MAP.md) |
-| Journeys + budgets         | [`CUJs.md`](CUJs.md)                                                                                                                                                      |
-| Performance log / video UX | [`PERFORMANCE_UX.md`](PERFORMANCE_UX.md)                                                                                                                                  |
-| Originals chord paint      | [`originals/DEVELOPMENT.md`](originals/DEVELOPMENT.md)                                                                                                                    |
-| Copy                       | [`COPY_STYLE.md`](COPY_STYLE.md)                                                                                                                                          |
-| UI primitives              | [`UI_PRIMITIVES.md`](UI_PRIMITIVES.md)                                                                                                                                    |
+| Topic                      | Doc                                                                                                                                                                                                        |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sync / Drive contracts     | [`ARCHITECTURE.md`](ARCHITECTURE.md) · repo [`docs/LOCAL_FIRST_SYNC.md`](../../docs/LOCAL_FIRST_SYNC.md) · [`docs/SYNC_AND_AUTH_MAP.md`](../../docs/SYNC_AND_AUTH_MAP.md)                                  |
+| Journeys + budgets         | [`CUJs.md`](CUJs.md)                                                                                                                                                                                       |
+| First-paint / bundle       | Route-split: `#/library` eager; Originals / Practice / Performances / song pages / TipTap / pdf-lib / VexFlow drums load on first visit ([`docs/PERFORMANCE.md`](../../docs/PERFORMANCE.md) § First-paint) |
+| Performance log / video UX | [`PERFORMANCE_UX.md`](PERFORMANCE_UX.md)                                                                                                                                                                   |
+| Originals chord paint      | [`originals/DEVELOPMENT.md`](originals/DEVELOPMENT.md)                                                                                                                                                     |
+| Copy                       | [`COPY_STYLE.md`](COPY_STYLE.md)                                                                                                                                                                           |
+| UI primitives              | [`UI_PRIMITIVES.md`](UI_PRIMITIVES.md)                                                                                                                                                                     |
 
 **Audience:** Singer-first. Piano / self-accompaniment are secondary detail (performance history/filters), not a separate learning app.
 

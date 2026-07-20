@@ -73,6 +73,10 @@ The mixer relabels channels using metric hierarchy names (DOWNBEAT, BEAT, OFF-BE
 
 Root component managing all state. Passes gain values and mute sets down to both the engine (for audio) and the mixer/beat display (for visual state).
 
+### BpmControl (intentional diversion)
+
+Count owns a **first-class** tempo UI in `components/BpmControl.tsx` + `.pulse-bpm*` in `styles/pulse.css`. It must stay always-visible (large display, range slider, ±1 / ÷2 / ×2, common BPM chips, Italian tempo marking). Do **not** replace with shared `BpmInput` — that control is the portable toolbar excerpt for other apps. Documented also in `README.md` § Intentional diversions.
+
 ### BeatDisplay
 
 Shows one box per grid slot, grouped by beat grouping. Supports click-to-mute per box. For swing8, all three triplet positions are shown (1, +, a) with the middle "+" rendered as a non-interactive muted cell to visually convey the silent beat.

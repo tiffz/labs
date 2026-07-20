@@ -11,8 +11,10 @@ import { alpha, useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import useScrollTrigger from '@mui/material/useScrollTrigger';
 import {
+  lazy,
   memo,
   startTransition,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -21,6 +23,7 @@ import {
   useState,
   useSyncExternalStore,
   type MouseEvent as ReactMouseEvent,
+  type ReactNode,
 } from 'react';
 import type { EncoreAppRoute } from '../routes/encoreAppHash';
 import { encoreAppHref, handleSpaLinkClick, navigateEncore, parseEncoreAppHash } from '../routes/encoreAppHash';
@@ -33,15 +36,7 @@ import { EncoreHeavyListTabPlaceholder } from './EncoreHeavyListTabPlaceholder';
 import { EncoreShareMenu } from './EncoreShareMenu';
 import { SyncConflictReviewDialog } from './SyncConflictReviewDialog';
 import { SyncConflictCoarseDialog } from './SyncConflictCoarseDialog';
-import { ImportGuideScreen as ImportGuideScreenBase } from './ImportGuideScreen';
 import { LibraryScreen as LibraryScreenBase } from './LibraryScreen';
-import { PerformancesScreen as PerformancesScreenBase } from './PerformancesScreen';
-import { PracticeScreen as PracticeScreenBase } from './PracticeScreen';
-import { RepertoireSettingsScreen as RepertoireSettingsScreenBase } from './RepertoireSettingsScreen';
-import { SavedSearchesManageScreen as SavedSearchesManageScreenBase } from './SavedSearchesManageScreen';
-import { SongPage as SongPageBase } from './SongPage';
-import { OriginalsLibraryScreen as OriginalsLibraryScreenBase } from '../originals/components/OriginalsLibraryScreen';
-import { OriginalSongPage as OriginalSongPageBase } from '../originals/components/OriginalSongPage';
 import { EncoreMediaPlaybackBar } from '../components/EncoreMediaPlaybackBar';
 import { EncoreMediaPlaybackYoutubeFloat } from '../components/EncoreMediaPlaybackYoutubeFloat';
 import { EncoreMediaPlaybackDriveVideoFloat } from '../components/EncoreMediaPlaybackDriveVideoFloat';
@@ -50,16 +45,46 @@ import {
   encoreKeyboardShortcutSections,
 } from '../../shared/keyboardShortcuts';
 
-/** Eager imports: Encore’s main surfaces are one cohesive shell; avoiding `React.lazy` removes Suspense + chunk latency on tab and song navigation for a modest bundle cost. */
+/**
+ * Default `#/library` stays eager. Other surfaces are code-split so cold load does not
+ * modulepreload VexFlow / TipTap / Originals chart (~1 MiB gzip). Keep-alive still mounts
+ * each tab after first visit (`display: none`); idle time only warms chunks via `import()`.
+ */
 const LibraryScreen = memo(LibraryScreenBase);
-const PerformancesScreen = memo(PerformancesScreenBase);
-const PracticeScreen = memo(PracticeScreenBase);
-const RepertoireSettingsScreen = memo(RepertoireSettingsScreenBase);
-const ImportGuideScreen = memo(ImportGuideScreenBase);
-const SongPage = memo(SongPageBase);
-const SavedSearchesManageScreen = memo(SavedSearchesManageScreenBase);
-const OriginalsLibraryScreen = memo(OriginalsLibraryScreenBase);
-const OriginalSongPage = memo(OriginalSongPageBase);
+const PerformancesScreen = lazy(() =>
+  import('./PerformancesScreen').then((m) => ({ default: m.PerformancesScreen })),
+);
+const PracticeScreen = lazy(() =>
+  import('./PracticeScreen').then((m) => ({ default: m.PracticeScreen })),
+);
+const RepertoireSettingsScreen = lazy(() =>
+  import('./RepertoireSettingsScreen').then((m) => ({ default: m.RepertoireSettingsScreen })),
+);
+const ImportGuideScreen = lazy(() =>
+  import('./ImportGuideScreen').then((m) => ({ default: m.ImportGuideScreen })),
+);
+const SongPage = lazy(() => import('./SongPage').then((m) => ({ default: m.SongPage })));
+const SavedSearchesManageScreen = lazy(() =>
+  import('./SavedSearchesManageScreen').then((m) => ({ default: m.SavedSearchesManageScreen })),
+);
+const OriginalsLibraryScreen = lazy(() =>
+  import('../originals/components/OriginalsLibraryScreen').then((m) => ({
+    default: m.OriginalsLibraryScreen,
+  })),
+);
+const OriginalSongPage = lazy(() =>
+  import('../originals/components/OriginalSongPage').then((m) => ({ default: m.OriginalSongPage })),
+);
+
+function EncoreRouteSuspense({
+  fallback = <EncoreHeavyListTabPlaceholder />,
+  children,
+}: {
+  fallback?: ReactNode;
+  children: ReactNode;
+}): React.ReactElement {
+  return <Suspense fallback={fallback}>{children}</Suspense>;
+}
 
 function bareSignedInShareHash(): boolean {
   const raw = window.location.hash.replace(/^#/, '').trim();
@@ -314,37 +339,35 @@ export function EncoreMainShell(): React.ReactElement {
   const performancesPanelHiddenByOverlay =
     showHeavyListTabPlaceholder && heavyListTabOverlay.tab === 'performances';
 
-  /** Warm adjacent list tabs during idle time so tab switches feel instant. */
+  /** Prefetch adjacent route chunks during idle — do not mount them (avoids VexFlow/TipTap on cold library). */
   useEffect(() => {
     if (onEditorRoute || !listSection) return;
-    const prefetch: EncoreMainListSection[] =
+    const warmers: Array<() => Promise<unknown>> =
       listSection === 'library'
-        ? ['originals', 'performances', 'practice']
+        ? [
+            () => import('./PerformancesScreen'),
+            () => import('./PracticeScreen'),
+            () => import('../originals/components/OriginalsLibraryScreen'),
+          ]
         : listSection === 'originals' || listSection === 'practice'
-          ? ['performances']
+          ? [() => import('./PerformancesScreen')]
           : [];
-    if (prefetch.length === 0) return;
+    if (warmers.length === 0) return;
 
     let cancelled = false;
     const run = () => {
       if (cancelled) return;
-      setListSectionVisited((prev) => {
-        let next = prev;
-        for (const key of prefetch) {
-          if (!next[key]) next = { ...next, [key]: true };
-        }
-        return next === prev ? prev : next;
-      });
+      for (const warm of warmers) void warm();
     };
 
     if (typeof requestIdleCallback !== 'undefined') {
-      const id = requestIdleCallback(run, { timeout: 2000 });
+      const id = requestIdleCallback(run, { timeout: 4000 });
       return () => {
         cancelled = true;
         cancelIdleCallback(id);
       };
     }
-    const id = window.setTimeout(run, 150);
+    const id = window.setTimeout(run, 1200);
     return () => {
       cancelled = true;
       window.clearTimeout(id);
@@ -597,7 +620,9 @@ export function EncoreMainShell(): React.ReactElement {
               aria-hidden={onEditorRoute || listSection !== 'library'}
             >
               {route.kind === 'savedSearches' ? (
-                <SavedSearchesManageScreen onHeavyTabLaidOut={onLibraryHeavyTabLaidOut} />
+                <EncoreRouteSuspense>
+                  <SavedSearchesManageScreen onHeavyTabLaidOut={onLibraryHeavyTabLaidOut} />
+                </EncoreRouteSuspense>
               ) : (
                 <LibraryScreen
                   heavyListTabActive={!onEditorRoute && listSection === 'library'}
@@ -626,9 +651,11 @@ export function EncoreMainShell(): React.ReactElement {
               }}
               aria-hidden={onEditorRoute || listSection !== 'originals'}
             >
-              <OriginalsLibraryScreen
-                listActive={!onEditorRoute && listSection === 'originals'}
-              />
+              <EncoreRouteSuspense>
+                <OriginalsLibraryScreen
+                  listActive={!onEditorRoute && listSection === 'originals'}
+                />
+              </EncoreRouteSuspense>
             </Box>
           ) : null}
           {listSectionVisited.performances ? (
@@ -652,10 +679,12 @@ export function EncoreMainShell(): React.ReactElement {
               }}
               aria-hidden={onEditorRoute || listSection !== 'performances'}
             >
-              <PerformancesScreen
-                heavyListTabActive={!onEditorRoute && listSection === 'performances'}
-                onHeavyTabLaidOut={onPerformancesHeavyTabLaidOut}
-              />
+              <EncoreRouteSuspense>
+                <PerformancesScreen
+                  heavyListTabActive={!onEditorRoute && listSection === 'performances'}
+                  onHeavyTabLaidOut={onPerformancesHeavyTabLaidOut}
+                />
+              </EncoreRouteSuspense>
             </Box>
           ) : null}
           {listSectionVisited.practice ? (
@@ -676,11 +705,13 @@ export function EncoreMainShell(): React.ReactElement {
               }}
               aria-hidden={onEditorRoute || listSection !== 'practice'}
             >
-              <PracticeScreen
-                practiceTabActive={!onEditorRoute && listSection === 'practice'}
-                practiceHashActive={route.kind === 'practice'}
-                songIdFromPracticeHash={route.kind === 'practice' ? route.songId : undefined}
-              />
+              <EncoreRouteSuspense>
+                <PracticeScreen
+                  practiceTabActive={!onEditorRoute && listSection === 'practice'}
+                  practiceHashActive={route.kind === 'practice'}
+                  songIdFromPracticeHash={route.kind === 'practice' ? route.songId : undefined}
+                />
+              </EncoreRouteSuspense>
             </Box>
           ) : null}
           {listSectionVisited.repertoireSettings ? (
@@ -704,7 +735,9 @@ export function EncoreMainShell(): React.ReactElement {
               }}
               aria-hidden={onEditorRoute || listSection !== 'repertoireSettings'}
             >
-              <RepertoireSettingsScreen />
+              <EncoreRouteSuspense>
+                <RepertoireSettingsScreen />
+              </EncoreRouteSuspense>
             </Box>
           ) : null}
           {listSectionVisited.help ? (
@@ -722,7 +755,9 @@ export function EncoreMainShell(): React.ReactElement {
               }}
               aria-hidden={onEditorRoute || listSection !== 'help'}
             >
-              <ImportGuideScreen />
+              <EncoreRouteSuspense>
+                <ImportGuideScreen />
+              </EncoreRouteSuspense>
             </Box>
           ) : null}
         </Box>
@@ -750,7 +785,9 @@ export function EncoreMainShell(): React.ReactElement {
             aria-labelledby="encore-tab-repertoire"
             sx={{ flex: 1, minHeight: 0, minWidth: 0, width: 1, display: 'flex', flexDirection: 'column' }}
           >
-            <SongPage key={songPageKey} route={route} />
+            <EncoreRouteSuspense>
+              <SongPage key={songPageKey} route={route} />
+            </EncoreRouteSuspense>
           </Box>
         ) : null}
         {onOriginalRoute ? (
@@ -760,11 +797,13 @@ export function EncoreMainShell(): React.ReactElement {
             aria-labelledby="encore-tab-originals"
             sx={{ flex: 1, minHeight: 0, minWidth: 0, width: 1, display: 'flex', flexDirection: 'column' }}
           >
-            <OriginalSongPage
-              key={originalPageKey}
-              id={route.kind === 'original' ? route.id : ''}
-              isNew={route.kind === 'originalNew'}
-            />
+            <EncoreRouteSuspense>
+              <OriginalSongPage
+                key={originalPageKey}
+                id={route.kind === 'original' ? route.id : ''}
+                isNew={route.kind === 'originalNew'}
+              />
+            </EncoreRouteSuspense>
           </Box>
         ) : null}
       </Box>

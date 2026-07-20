@@ -572,6 +572,36 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-index-ts-releasewakelock",
+    "name": "releaseWakeLock",
+    "path": "src/shared/audio/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-index-ts-requestwakelock",
+    "name": "requestWakeLock",
+    "path": "src/shared/audio/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-index-ts-reverbnodes",
     "name": "ReverbNodes",
     "path": "src/shared/audio/index.ts",
@@ -590,6 +620,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-audio-index-ts-updatereverblevel",
     "name": "updateReverbLevel",
+    "path": "src/shared/audio/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-index-ts-useplaybackwakelock",
+    "name": "usePlaybackWakeLock",
     "path": "src/shared/audio/index.ts",
     "kind": "utility",
     "stability": "stable",
@@ -3967,6 +4012,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-platform-scheduling-index-ts-attachtransportvisibilityguard",
+    "name": "attachTransportVisibilityGuard",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-platform-scheduling-index-ts-createdrumpatternschedulercallback",
     "name": "createDrumPatternSchedulerCallback",
     "path": "src/shared/audio/platform/scheduling/index.ts",
@@ -4123,6 +4183,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-platform-scheduling-index-ts-transportvisibilityhandlers",
+    "name": "TransportVisibilityHandlers",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-platform-scheduling-index-ts-wiredrumaccompanimenttoengine",
     "name": "wireDrumAccompanimentToEngine",
     "path": "src/shared/audio/platform/scheduling/index.ts",
@@ -4135,6 +4211,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-lookaheadaudioscheduler-ts-chart-look-ahead-sec",
+    "name": "CHART_LOOK_AHEAD_SEC",
+    "path": "src/shared/audio/platform/scheduling/LookAheadAudioScheduler.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Chart / section-loop transports schedule whole measures and may await asset readiness once — keep a deeper horizon so a single slow frame cannot starve the next measure boundary.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
     "demoId": null
   },
   {
@@ -4183,6 +4275,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "class",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-lookaheadaudioscheduler-ts-lookaheadschedulerstartoptions",
+    "name": "LookAheadSchedulerStartOptions",
+    "path": "src/shared/audio/platform/scheduling/LookAheadAudioScheduler.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {
@@ -4276,6 +4384,37 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-transportvisibility-ts-attachtransportvisibilityguard",
+    "name": "attachTransportVisibilityGuard",
+    "path": "src/shared/audio/platform/scheduling/transportVisibility.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Pause look-ahead transports when the tab is hidden and re-anchor on return. When Chrome suspends AudioContext, `currentTime` freezes while `performance.now()` keeps advancing. Hosts that map perf→audio time then clamp every overdue note to \"now\"; on resume they fire as one loud blast. Pausing scheduling + flushing voices on hide, then re-anchoring on show, prevents that.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-transportvisibility-ts-transportvisibilityhandlers",
+    "name": "TransportVisibilityHandlers",
+    "path": "src/shared/audio/platform/scheduling/transportVisibility.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Pause look-ahead transports when the tab is hidden and re-anchor on return. When Chrome suspends AudioContext, `currentTime` freezes while `performance.now()` keeps advancing. Hosts that map perf→audio time then clamp every overdue note to \"now\"; on resume they fire as one loud blast. Pausing scheduling + flushing voices on hide, then re-anchoring on show, prevents that.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
     "demoId": null
   },
   {
@@ -4642,6 +4781,25 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-useplaybackwakelock-ts-useplaybackwakelock",
+    "name": "usePlaybackWakeLock",
+    "path": "src/shared/audio/usePlaybackWakeLock.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Keep the device screen awake while audio practice playback is active. Uses the Screen Wake Lock API; no-ops where unsupported. Note: this prevents *automatic* sleep/dimming during practice. If the user locks the phone, browsers may still suspend Web Audio — prefer leaving the screen on with this lock for metronome / chart loops.",
+    "tags": [
+      "audio"
+    ],
+    "appsUsing": [
+      "drums",
+      "piano",
+      "words"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -12638,7 +12796,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [
       "forms",
-      "piano",
       "ui",
       "words",
       "zines"
@@ -13213,7 +13370,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -13230,7 +13389,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "music",
       "api"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "const",
     "demoId": null
   },
@@ -13246,7 +13407,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "components",
       "music"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -13262,7 +13425,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "components",
       "music"
     ],
-    "appsUsing": [],
+    "appsUsing": [
+      "words"
+    ],
     "exportType": "function",
     "demoId": null
   },
@@ -18780,7 +18945,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "hook",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Extra lead after assets are warm so the first measure is never scheduled late.",
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
@@ -18793,7 +18958,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "hook",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Extra lead after assets are warm so the first measure is never scheduled late.",
     "tags": [
       "api"
     ],
@@ -18808,7 +18973,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "hook",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Extra lead after assets are warm so the first measure is never scheduled late.",
     "tags": [
       "api"
     ],
@@ -25388,12 +25553,28 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "music-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Hits more than this late are skipped (clamping them to \"now\" sounds like a stutter burst).",
     "tags": [
       "music"
     ],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-scheduledrummeasure-ts-drum-hit-late-skip-sec",
+    "name": "DRUM_HIT_LATE_SKIP_SEC",
+    "path": "src/shared/music/scheduleDrumMeasure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Hits more than this late are skipped (clamping them to \"now\" sounds like a stutter burst).",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
     "demoId": null
   },
   {
@@ -25418,7 +25599,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "music-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Hits more than this late are skipped (clamping them to \"now\" sounds like a stutter burst).",
     "tags": [
       "music",
       "api"
@@ -29393,7 +29574,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "Base class providing common functionality for instruments",
+    "description": "Base class providing common functionality for instruments. Voices must be registered via so can hard-stop them. Muting the bus alone leaks AudioNodes across long section loops and can crash the tab (Aw Snap) after enough wraps.",
     "tags": [
       "playback",
       "api"
@@ -29409,7 +29590,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "Instrument Interface Abstract interface for all sound generators. This allows the scheduler to be completely decoupled from how sounds are actually produced. Future implementations could include: - PianoSynthesizer (oscillator-based piano) - SampledPiano (real piano samples) - DrumMachine (drum samples) - FMSynthesizer (FM synthesis)",
+    "description": "Instrument Interface Abstract interface for all sound generators. This allows the scheduler to be completely decoupled from how sounds are actually produced.",
     "tags": [
       "playback",
       "api"
@@ -29425,7 +29606,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "Instrument Interface Abstract interface for all sound generators. This allows the scheduler to be completely decoupled from how sounds are actually produced. Future implementations could include: - PianoSynthesizer (oscillator-based piano) - SampledPiano (real piano samples) - DrumMachine (drum samples) - FMSynthesizer (FM synthesis)",
+    "description": "Instrument Interface Abstract interface for all sound generators. This allows the scheduler to be completely decoupled from how sounds are actually produced.",
     "tags": [
       "playback",
       "api"

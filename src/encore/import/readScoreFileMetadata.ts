@@ -17,8 +17,6 @@
  *    MusicXML: full file as text). Files larger than 25MB are skipped.
  */
 
-import { PDFDocument } from 'pdf-lib';
-
 const MAX_BYTES = 25 * 1024 * 1024;
 
 export interface ScoreFileMetadata {
@@ -46,6 +44,7 @@ function nonEmpty(s: string | null | undefined): string | undefined {
 
 async function readPdfMetadata(buffer: ArrayBuffer): Promise<ScoreFileMetadata> {
   try {
+    const { PDFDocument } = await import('pdf-lib');
     const pdf = await PDFDocument.load(buffer, { updateMetadata: false });
     return {
       title: nonEmpty(pdf.getTitle()),
@@ -83,20 +82,10 @@ function readXmlText(buffer: ArrayBuffer): string {
   }
 }
 
-function stripInnerXmlTags(value: string): string {
-  let s = value;
-  let prev = '';
-  while (s !== prev) {
-    prev = s;
-    s = s.replace(/<[^>]*>/g, '');
-  }
-  return s;
-}
-
 function captureXmlField(xml: string, tag: string): string | undefined {
   const re = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i');
   const m = re.exec(xml);
-  return nonEmpty(stripInnerXmlTags(m?.[1] ?? '').replace(/\s+/g, ' '));
+  return nonEmpty(m?.[1]?.replace(/<[^>]+>/g, '').replace(/\s+/g, ' '));
 }
 
 function captureMusicXmlKey(xml: string): string | undefined {

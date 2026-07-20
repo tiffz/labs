@@ -1,4 +1,6 @@
 export { LookAheadAudioScheduler, DEFAULT_LOOK_AHEAD_SEC, HIDDEN_TAB_LOOK_AHEAD_SEC } from './LookAheadAudioScheduler';
+export { attachTransportVisibilityGuard } from './transportVisibility';
+export type { TransportVisibilityHandlers } from './transportVisibility';
 export {
   scheduleDrumPatternWindow,
   createDrumPatternSchedulerCallback,
