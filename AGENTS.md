@@ -107,7 +107,7 @@ Commands quick reference: root [`README.md`](README.md) and `package.json` scrip
 - Use **shared UI primitives** before app-local copies.
 - **Question-only / review-only tasks:** minimal diff—do not refactor or “improve” unrelated code.
 - Read the **nearest app README** before editing an unfamiliar app.
-- Always-on gates (full text in their rules): UX journey sketch ([`ux-journey-mandatory.md`](.agents/rules/ux-journey-mandatory.md)), feasibility assessment ([`feasibility-first.md`](.agents/rules/feasibility-first.md)), presubmit ([`pre-commit-checks.md`](.agents/rules/pre-commit-checks.md)).
+- Always-on gates (full text in their rules): UX journey sketch ([`ux-journey-mandatory.md`](.agents/rules/ux-journey-mandatory.md)), feasibility assessment ([`feasibility-first.md`](.agents/rules/feasibility-first.md)), presubmit ([`pre-commit-checks.md`](.agents/rules/pre-commit-checks.md)), writing style ([`writing-style.md`](.agents/rules/writing-style.md)).
 
 ### Ask first
 

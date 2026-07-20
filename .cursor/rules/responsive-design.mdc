@@ -16,12 +16,12 @@ Canonical: [`docs/RESPONSIVE_DESIGN.md`](../../docs/RESPONSIVE_DESIGN.md).
 
 ## Breakpoints (do not invent new ones without DESIGN.md)
 
-| Name | Width  | Use |
-| ---- | ------ | --- |
-| xs   | 480px  | Single-column grids |
+| Name | Width  | Use                            |
+| ---- | ------ | ------------------------------ |
+| xs   | 480px  | Single-column grids            |
 | sm   | 640px  | Stack toolbars / denser chrome |
-| md   | 900px  | Collapse dual panes |
-| lg   | 1200px | Optional wide desktop |
+| md   | 900px  | Collapse dual panes            |
+| lg   | 1200px | Optional wide desktop          |
 
 ## Hard gate (new or changed surfaces)
 

@@ -17,14 +17,14 @@ Before adding a **new** control, menu, slider, popover, or playback field:
 
 ## Must reuse (do not copy)
 
-| Need | Use |
-| ---- | --- |
-| 0–1 mix / gain rail | `AppLinearVolumeSlider` (+ `labs-volume-slider` / `PlaybackVolumeRow` for mute rows) |
-| BPM / playback speed (portable toolbar) | `BpmInput`, `PlaybackSpeedControl` |
-| Sound / style pickers | `PlaybackSoundSelect`, `ChordStyleInput` + `appearance` |
-| Floating panel + nested menu | `AnchoredPopover`, `playbackFloatingPanelSlotProps` |
-| Tooltips on icon buttons | `AppTooltip` + **`aria-label`** on the control |
-| Multi-panel app shell | `AppShellLayout` + app `*-layout.css` |
+| Need                                    | Use                                                                                  |
+| --------------------------------------- | ------------------------------------------------------------------------------------ |
+| 0–1 mix / gain rail                     | `AppLinearVolumeSlider` (+ `labs-volume-slider` / `PlaybackVolumeRow` for mute rows) |
+| BPM / playback speed (portable toolbar) | `BpmInput`, `PlaybackSpeedControl`                                                   |
+| Sound / style pickers                   | `PlaybackSoundSelect`, `ChordStyleInput` + `appearance`                              |
+| Floating panel + nested menu            | `AnchoredPopover`, `playbackFloatingPanelSlotProps`                                  |
+| Tooltips on icon buttons                | `AppTooltip` + **`aria-label`** on the control                                       |
+| Multi-panel app shell                   | `AppShellLayout` + app `*-layout.css`                                                |
 
 ## Intentional diversions (do not “unify” away)
 

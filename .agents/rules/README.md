@@ -45,6 +45,7 @@ This is the source of truth (tool-agnostic). `.cursor/rules/*.mdc` and `.claude/
 | [`ux-agent-guide.md`](ux-agent-guide.md)                                   | `src/**/components/**`, app shells, CSS  | `docs/UX_AGENT_GUIDE.md`                                 | `labs-ux-journey`            |
 | [`selection-visual-hierarchy.md`](selection-visual-hierarchy.md)           | metronome, chips, shared theme CSS       | `docs/SELECTION_VISUAL_HIERARCHY.md`                     | —                            |
 | [`focus-theming.md`](focus-theming.md)                                     | `**/*.css`, shared components, main.tsx  | `docs/FOCUS_THEMING.md`                                  | —                            |
+| [`writing-style.md`](writing-style.md)                                     | **Always**                               | —                                                        | —                            |
 
 **Maintenance:** When adding a rule or skill, update this table and [`.agents/skills/README.md`](../skills/README.md) in the same PR. Keep each rule **~50 lines**; link to canonical docs for prose. Prefer **enforcement** (tests, ESLint) over duplicated policy.
 

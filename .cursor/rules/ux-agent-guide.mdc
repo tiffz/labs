@@ -23,14 +23,14 @@ Canonical: [`docs/UX_AGENT_GUIDE.md`](../../docs/UX_AGENT_GUIDE.md). Skill: **`l
 
 ## Hard rules
 
-| Don't | Do |
-| ----- | -- |
-| N identical progress bars in one viewport | One shell/tab aggregate status |
-| Same copy on every card | Card-specific title; shared status once |
-| Card nested in card for same grouping | One region + spacing |
-| Ad-hoc hex / shadow stacks | Theme tokens + design doc |
-| Flush text to container edges | App spacing scale / panel padding |
-| 3+ loud contained buttons above fold | One primary; rest text/icon/outline |
+| Don't                                     | Do                                      |
+| ----------------------------------------- | --------------------------------------- |
+| N identical progress bars in one viewport | One shell/tab aggregate status          |
+| Same copy on every card                   | Card-specific title; shared status once |
+| Card nested in card for same grouping     | One region + spacing                    |
+| Ad-hoc hex / shadow stacks                | Theme tokens + design doc               |
+| Flush text to container edges             | App spacing scale / panel padding       |
+| 3+ loud contained buttons above fold      | One primary; rest text/icon/outline     |
 
 ## Gestalt
 

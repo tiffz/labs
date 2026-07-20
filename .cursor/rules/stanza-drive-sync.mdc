@@ -12,11 +12,11 @@ globs:
 
 ## Blob tiers (all need upload + hydrate)
 
-| Tier | Drive folder | Link field | Module |
-| ---- | ------------ | ---------- | ------ |
-| Mix layers | `stem_audio/` | `stems[].driveFileId` | `stanzaDriveStemSync.ts` |
-| Main recording | `main_audio/` | `driveSourceFileId` | `stanzaDriveMainMediaSync.ts` |
-| Metadata | `progress.json` | song rows (no blobs) | `stanzaDriveEnvelope.ts` |
+| Tier           | Drive folder    | Link field            | Module                        |
+| -------------- | --------------- | --------------------- | ----------------------------- |
+| Mix layers     | `stem_audio/`   | `stems[].driveFileId` | `stanzaDriveStemSync.ts`      |
+| Main recording | `main_audio/`   | `driveSourceFileId`   | `stanzaDriveMainMediaSync.ts` |
+| Metadata       | `progress.json` | song rows (no blobs)  | `stanzaDriveEnvelope.ts`      |
 
 **Never** ship metadata-only local uploads without a bytes tier. Rows with markers but no `localAudioBlob` and no `driveSourceFileId` are broken on other devices.
 

@@ -30,12 +30,12 @@ Read [`inlineDrumUxDefaults.ts`](../../src/shared/components/music/inlineDrumUxD
 
 ## Profiles
 
-| Profile | Hosts | Pattern input | Audio |
-| ------- | ----- | ------------- | ----- |
-| `settings-panel` | Encore Originals, Chords | in Edit menu | off |
-| `practice-rail` | Stanza mix rail | in Edit menu | on |
-| `sidebar-compact` | Piano | in Edit menu | on |
-| `settings-panel` + host overrides | Words | hidden (host field); presets in Edit menu | off |
+| Profile                           | Hosts                    | Pattern input                             | Audio |
+| --------------------------------- | ------------------------ | ----------------------------------------- | ----- |
+| `settings-panel`                  | Encore Originals, Chords | in Edit menu                              | off   |
+| `practice-rail`                   | Stanza mix rail          | in Edit menu                              | on    |
+| `sidebar-compact`                 | Piano                    | in Edit menu                              | on    |
+| `settings-panel` + host overrides | Words                    | hidden (host field); presets in Edit menu | off   |
 
 ## Tests
 

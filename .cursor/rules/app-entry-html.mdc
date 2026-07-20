@@ -28,7 +28,7 @@ following invariants in mind when editing.
     - `<link rel="stylesheet" href="/styles/labs-cookie-consent.css" />`
     - `<style>:root { --labs-cc-accent: …; --labs-cc-on-accent: …; }</style>` — match `meta theme-color` (use dark `--labs-cc-on-accent` if the accent is very light).
     - `<script defer src="/scripts/labs-cookie-consent.js"></script>`
-    Do not load `/scripts/analytics.js` directly from HTML; the consent script injects it after acceptance.
+      Do not load `/scripts/analytics.js` directly from HTML; the consent script injects it after acceptance.
 
 ## Never
 
