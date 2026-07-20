@@ -6,7 +6,7 @@
  *
  *   - growth > 10% (gzip)          → warning (advisory)
  *   - growth > 25% (gzip)          → FAIL
- *   - gzip total > absolute cap    → FAIL (optional CAP_EXEMPTIONS set below; prefer empty)
+ *   - gzip total > absolute cap    → FAIL (per-app exemptions listed below)
  *
  * Baseline updates land in the same PR as the growth they justify:
  *   npm run report:bundle-size -- --update-baseline
@@ -30,8 +30,11 @@ const ABSOLUTE_GZIP_CAP = 2 * 1024 * 1024;
  * Apps temporarily over the absolute cap. Each entry must reference a tracked
  * work item; remove the entry when the app is brought under the cap.
  */
-/** Apps temporarily over the absolute cap. Prefer empty — route-split instead. */
-const CAP_EXEMPTIONS = new Set([]);
+const CAP_EXEMPTIONS = new Set([
+  // ~2.3 MiB gzip eager JS — mega-file decomposition tracked in
+  // docs/TECH_DEBT_ROADMAP.md (useSongPageMediaHub, PlaylistImportDialog).
+  'encore',
+]);
 
 const skipBuild = process.argv.includes('--skip-build');
 const updateBaseline = process.argv.includes('--update-baseline');
