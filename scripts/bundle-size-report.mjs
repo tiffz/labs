@@ -11,6 +11,10 @@
  * Baseline updates land in the same PR as the growth they justify:
  *   npm run report:bundle-size -- --update-baseline
  *
+ * Prefer calibrating `--update-baseline` from **CI Linux** gzip sizes (build job
+ * log or a Linux runner). macOS local gzip is often ~15–25% smaller and will
+ * trip the 25% growth fail tier on Ubuntu CI even when absolute sizes are fine.
+ *
  * Usage: npm run report:bundle-size [-- --skip-build --update-baseline --check]
  * `--check` exits non-zero on FAIL tier (used by CI build job).
  *
