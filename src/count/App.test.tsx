@@ -127,8 +127,9 @@ describe('Count App engine wiring', () => {
     render(<App />);
     await startPlayback();
 
-    const bpmInput = screen.getByRole('textbox', { name: 'Tempo in BPM' });
-    fireEvent.focus(bpmInput);
+    // Count uses a first-class BPM control (display → edit), not shared BpmInput.
+    fireEvent.click(screen.getByTitle('Click to type a BPM'));
+    const bpmInput = screen.getByRole('spinbutton', { name: 'BPM value' });
     fireEvent.change(bpmInput, { target: { value: '95' } });
     fireEvent.keyDown(bpmInput, { key: 'Enter' });
 
@@ -137,6 +138,19 @@ describe('Count App engine wiring', () => {
       expect(tempoCalls.length).toBeGreaterThan(0);
       expect(tempoCalls[tempoCalls.length - 1].args).toEqual([95]);
     });
+  });
+
+  it('exposes always-visible common BPM presets (not a BpmInput dropdown)', async () => {
+    render(<App />);
+    await startPlayback();
+    // COMMON_BPMS chips must be in the document without opening a menu.
+    fireEvent.click(screen.getByRole('button', { name: '80' }));
+    await waitFor(() => {
+      const tempoCalls = callsFor('setTempo');
+      expect(tempoCalls.at(-1)?.args).toEqual([80]);
+    });
+    expect(screen.getByRole('button', { name: '÷2' })).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: 'BPM slider' })).toBeInTheDocument();
   });
 
   it('time-signature preset forwards to engine.setTimeSignature', async () => {
