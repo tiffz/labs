@@ -232,19 +232,13 @@ const App: React.FC = () => {
 
     if (operationType === 'replace') {
       // Replace mode: overwrite notes at the drop position
-      // FIX Phase 37 Correction 2: Re-parse if expansion occurred.
-      let activeParsedRhythm = parsedRhythm;
-      if (expandedNotation !== notation) {
-        activeParsedRhythm = parseRhythm(expandedNotation, timeSignature);
-      }
-
       const result = replacePatternAtPosition(
         expandedNotation,
         targetCharPosition,
         pattern,
         patternDuration,
         timeSignature,
-        activeParsedRhythm
+        expandedParsed
       );
 
       // Phase 12: Block crossing repeat boundaries
@@ -261,11 +255,13 @@ const App: React.FC = () => {
       // If replacement failed, do nothing (the preview already validated this)
     } else {
       // Insert mode: insert pattern between notes at the drop position
-      let activeParsedRhythm = parsedRhythm;
-      if (expandedNotation !== notation) {
-        activeParsedRhythm = parseRhythm(expandedNotation, timeSignature);
-      }
-      const newNotation = insertPatternAtPosition(activeCleanNotation, targetCharPosition, pattern, activeParsedRhythm, timeSignature);
+      const newNotation = insertPatternAtPosition(
+        activeCleanNotation,
+        targetCharPosition,
+        pattern,
+        expandedParsed,
+        timeSignature
+      );
       setNotationWithoutHistory(newNotation);
     }
   }, [notation, addToHistory, timeSignature, setNotationWithoutHistory, parsedRhythm]);

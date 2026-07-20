@@ -82,10 +82,21 @@ function readXmlText(buffer: ArrayBuffer): string {
   }
 }
 
+/** Strip nested/crafted tags until stable (CodeQL js/incomplete-multi-character-sanitization). */
+function stripXmlInnerTags(value: string): string {
+  let s = value;
+  let prev = '';
+  while (s !== prev) {
+    prev = s;
+    s = s.replace(/<[^>]*>/g, '');
+  }
+  return s;
+}
+
 function captureXmlField(xml: string, tag: string): string | undefined {
   const re = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i');
   const m = re.exec(xml);
-  return nonEmpty(m?.[1]?.replace(/<[^>]+>/g, '').replace(/\s+/g, ' '));
+  return nonEmpty(stripXmlInnerTags(m?.[1] ?? '').replace(/\s+/g, ' '));
 }
 
 function captureMusicXmlKey(xml: string): string | undefined {

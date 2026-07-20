@@ -22,13 +22,22 @@ const EXERCISE_FILE_SLUG: Record<EncorePracticeExerciseRun['kind'], string> = {
   characterNineQuestions: 'nine-character-questions',
 };
 
+function stripHtmlTagsIteratively(value: string): string {
+  let s = value;
+  let prev = '';
+  while (s !== prev) {
+    prev = s;
+    s = s.replace(/<[^>]*>/g, '');
+  }
+  return s;
+}
+
 export function stripHtmlToPlainText(html: string): string {
   const t = html.trim();
   if (!t) return '';
   if (typeof DOMParser === 'undefined') {
-    return t
-      .replace(/<\/(p|div|br)[^>]*>/gi, '\n')
-      .replace(/<[^>]+>/g, '')
+    const withBreaks = t.replace(/<\/(p|div|br)[^>]*>/gi, '\n');
+    return stripHtmlTagsIteratively(withBreaks)
       .replace(/\n{3,}/g, '\n\n')
       .trim();
   }
