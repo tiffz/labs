@@ -17,8 +17,6 @@
  *    MusicXML: full file as text). Files larger than 25MB are skipped.
  */
 
-import { PDFDocument } from 'pdf-lib';
-
 const MAX_BYTES = 25 * 1024 * 1024;
 
 export interface ScoreFileMetadata {
@@ -46,6 +44,8 @@ function nonEmpty(s: string | null | undefined): string | undefined {
 
 async function readPdfMetadata(buffer: ArrayBuffer): Promise<ScoreFileMetadata> {
   try {
+    // Keep pdf-lib out of Encore’s eager modulepreload graph (first-paint cap).
+    const { PDFDocument } = await import('pdf-lib');
     const pdf = await PDFDocument.load(buffer, { updateMetadata: false });
     return {
       title: nonEmpty(pdf.getTitle()),

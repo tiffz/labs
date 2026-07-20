@@ -1,4 +1,12 @@
-import { useEffect, useLayoutEffect, useMemo, useSyncExternalStore, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useSyncExternalStore,
+  useState,
+} from 'react';
 import CircularProgress from '@mui/material/CircularProgress';
 import SkipToMain from '../shared/components/SkipToMain';
 import {
@@ -7,7 +15,6 @@ import {
 } from './devLocalhostToLoopbackRedirect';
 import { useEncoreAuth } from './context/EncoreAuthContext';
 import { AccessRestrictedScreen, SignInLanding } from './components/AccessGateScreens';
-import { EncoreMainShell } from './components/EncoreMainShell';
 import { GuestShareView } from './components/GuestShareView';
 import { tryCompleteSpotifyOAuthFromUrl } from './spotify/completeOAuthFromUrl';
 import { EncoreAppShell } from './ui/EncoreAppShell';
@@ -19,6 +26,12 @@ import {
   parseGuestShareSnapshotFileIdFromHash,
   subscribeEncoreLocationHash,
 } from './seo/guestShareRobots';
+
+/** Guest share must not pull the signed-in shell (VexFlow / TipTap / pdf-lib). */
+const EncoreMainShell = lazy(async () => {
+  const m = await import('./components/EncoreMainShell');
+  return { default: m.EncoreMainShell };
+});
 
 function EncoreSignedInRouter(): React.ReactElement {
   const {
@@ -74,7 +87,17 @@ function EncoreSignedInRouter(): React.ReactElement {
           />
         </main>
       ) : (
-        <EncoreMainShell />
+        <Suspense
+          fallback={
+            <main id="main">
+              <EncoreAppShell centered aria-busy="true" aria-label="Loading Encore">
+                <CircularProgress color="primary" />
+              </EncoreAppShell>
+            </main>
+          }
+        >
+          <EncoreMainShell />
+        </Suspense>
       )}
     </>
   );

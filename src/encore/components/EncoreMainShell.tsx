@@ -11,8 +11,10 @@ import { alpha, useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import useScrollTrigger from '@mui/material/useScrollTrigger';
 import {
+  lazy,
   memo,
   startTransition,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -22,6 +24,7 @@ import {
   useSyncExternalStore,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
+import CircularProgress from '@mui/material/CircularProgress';
 import type { EncoreAppRoute } from '../routes/encoreAppHash';
 import { encoreAppHref, handleSpaLinkClick, navigateEncore, parseEncoreAppHash } from '../routes/encoreAppHash';
 import { useEncoreSync } from '../context/EncoreContext';
@@ -36,12 +39,9 @@ import { SyncConflictCoarseDialog } from './SyncConflictCoarseDialog';
 import { ImportGuideScreen as ImportGuideScreenBase } from './ImportGuideScreen';
 import { LibraryScreen as LibraryScreenBase } from './LibraryScreen';
 import { PerformancesScreen as PerformancesScreenBase } from './PerformancesScreen';
-import { PracticeScreen as PracticeScreenBase } from './PracticeScreen';
 import { RepertoireSettingsScreen as RepertoireSettingsScreenBase } from './RepertoireSettingsScreen';
 import { SavedSearchesManageScreen as SavedSearchesManageScreenBase } from './SavedSearchesManageScreen';
-import { SongPage as SongPageBase } from './SongPage';
 import { OriginalsLibraryScreen as OriginalsLibraryScreenBase } from '../originals/components/OriginalsLibraryScreen';
-import { OriginalSongPage as OriginalSongPageBase } from '../originals/components/OriginalSongPage';
 import { EncoreMediaPlaybackBar } from '../components/EncoreMediaPlaybackBar';
 import { EncoreMediaPlaybackYoutubeFloat } from '../components/EncoreMediaPlaybackYoutubeFloat';
 import { EncoreMediaPlaybackDriveVideoFloat } from '../components/EncoreMediaPlaybackDriveVideoFloat';
@@ -50,16 +50,50 @@ import {
   encoreKeyboardShortcutSections,
 } from '../../shared/keyboardShortcuts';
 
-/** Eager imports: Encore’s main surfaces are one cohesive shell; avoiding `React.lazy` removes Suspense + chunk latency on tab and song navigation for a modest bundle cost. */
+/** List tabs stay eager for instant tab switches. Song/practice editors are lazy so
+ * VexFlow + TipTap + pdf-lib stay out of library first-paint (bundle absolute cap). */
 const LibraryScreen = memo(LibraryScreenBase);
 const PerformancesScreen = memo(PerformancesScreenBase);
-const PracticeScreen = memo(PracticeScreenBase);
 const RepertoireSettingsScreen = memo(RepertoireSettingsScreenBase);
 const ImportGuideScreen = memo(ImportGuideScreenBase);
-const SongPage = memo(SongPageBase);
 const SavedSearchesManageScreen = memo(SavedSearchesManageScreenBase);
 const OriginalsLibraryScreen = memo(OriginalsLibraryScreenBase);
-const OriginalSongPage = memo(OriginalSongPageBase);
+const PracticeScreen = lazy(async () => {
+  const m = await import('./PracticeScreen');
+  return { default: m.PracticeScreen };
+});
+const SongPage = lazy(async () => {
+  const m = await import('./SongPage');
+  return { default: m.SongPage };
+});
+const OriginalSongPage = lazy(async () => {
+  const m = await import('../originals/components/OriginalSongPage');
+  return { default: m.OriginalSongPage };
+});
+
+function EncoreRouteSuspense({ children }: { children: React.ReactNode }): React.ReactElement {
+  return (
+    <Suspense
+      fallback={
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '40vh',
+            py: 4,
+          }}
+          aria-busy="true"
+          aria-label="Loading Encore screen"
+        >
+          <CircularProgress color="primary" />
+        </Box>
+      }
+    >
+      {children}
+    </Suspense>
+  );
+}
 
 function bareSignedInShareHash(): boolean {
   const raw = window.location.hash.replace(/^#/, '').trim();
@@ -676,11 +710,13 @@ export function EncoreMainShell(): React.ReactElement {
               }}
               aria-hidden={onEditorRoute || listSection !== 'practice'}
             >
-              <PracticeScreen
-                practiceTabActive={!onEditorRoute && listSection === 'practice'}
-                practiceHashActive={route.kind === 'practice'}
-                songIdFromPracticeHash={route.kind === 'practice' ? route.songId : undefined}
-              />
+              <EncoreRouteSuspense>
+                <PracticeScreen
+                  practiceTabActive={!onEditorRoute && listSection === 'practice'}
+                  practiceHashActive={route.kind === 'practice'}
+                  songIdFromPracticeHash={route.kind === 'practice' ? route.songId : undefined}
+                />
+              </EncoreRouteSuspense>
             </Box>
           ) : null}
           {listSectionVisited.repertoireSettings ? (
@@ -750,7 +786,9 @@ export function EncoreMainShell(): React.ReactElement {
             aria-labelledby="encore-tab-repertoire"
             sx={{ flex: 1, minHeight: 0, minWidth: 0, width: 1, display: 'flex', flexDirection: 'column' }}
           >
-            <SongPage key={songPageKey} route={route} />
+            <EncoreRouteSuspense>
+              <SongPage key={songPageKey} route={route} />
+            </EncoreRouteSuspense>
           </Box>
         ) : null}
         {onOriginalRoute ? (
@@ -760,11 +798,13 @@ export function EncoreMainShell(): React.ReactElement {
             aria-labelledby="encore-tab-originals"
             sx={{ flex: 1, minHeight: 0, minWidth: 0, width: 1, display: 'flex', flexDirection: 'column' }}
           >
-            <OriginalSongPage
-              key={originalPageKey}
-              id={route.kind === 'original' ? route.id : ''}
-              isNew={route.kind === 'originalNew'}
-            />
+            <EncoreRouteSuspense>
+              <OriginalSongPage
+                key={originalPageKey}
+                id={route.kind === 'original' ? route.id : ''}
+                isNew={route.kind === 'originalNew'}
+              />
+            </EncoreRouteSuspense>
           </Box>
         ) : null}
       </Box>
