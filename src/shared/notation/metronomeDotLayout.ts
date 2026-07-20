@@ -333,8 +333,7 @@ function finalizeMetronomeDotPlacements(
   const targetLastX = maxCenterX - placementRadius(lastSub);
   const mapLastX =
     sixteenthXMap != null &&
-    measureStartX != null &&
-    sixteenthsPerMeasure != null
+    measureStartX != null
       ? xAtSixteenthPosition(
           lastSub.positionInSixteenths,
           sixteenthXMap,
@@ -358,8 +357,7 @@ function finalizeMetronomeDotPlacements(
       const spreadX = spanStart + t * targetSpan;
       const mapX =
         sixteenthXMap != null &&
-        measureStartX != null &&
-        sixteenthsPerMeasure != null
+        measureStartX != null
           ? xAtSixteenthPosition(
               dot.positionInSixteenths,
               sixteenthXMap,

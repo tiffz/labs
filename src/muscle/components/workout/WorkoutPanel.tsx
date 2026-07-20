@@ -176,13 +176,12 @@ function ContextCard() {
     );
   }
 
-  const studyGroup =
-    focusedGroupNodeIds && previewNode
-      ? findStudyGroupByNodeIds(activeModuleId, focusedGroupNodeIds) ??
-        (focusedGroupNodeIds[0]
-          ? findMultiMemberStudyGroupForNode(focusedGroupNodeIds[0])
-          : undefined)
-      : undefined;
+  const studyGroup = focusedGroupNodeIds
+    ? findStudyGroupByNodeIds(activeModuleId, focusedGroupNodeIds) ??
+      (focusedGroupNodeIds[0]
+        ? findMultiMemberStudyGroupForNode(focusedGroupNodeIds[0])
+        : undefined)
+    : undefined;
 
   return (
     <WarmupStructureCard

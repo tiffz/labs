@@ -80,7 +80,7 @@ export function PerformanceSavedVideoPreview(props: {
         driveFileId: driveId,
         mimeTypeHint: 'video/mp4',
       });
-      if (gen !== driveLoadGen.current || !playbackActive) return;
+      if (gen !== driveLoadGen.current) return;
       if (loaded.kind !== 'drive-video') {
         setMode('error');
         setErrorMessage('That file is not a video.');
@@ -89,7 +89,7 @@ export function PerformanceSavedVideoPreview(props: {
       setObjectUrl(loaded.objectUrl);
       setMode('playing');
     } catch (err) {
-      if (gen !== driveLoadGen.current || !playbackActive) return;
+      if (gen !== driveLoadGen.current) return;
       setMode('error');
       setErrorMessage(encoreDriveMediaPlaybackErrorMessage(err));
     }

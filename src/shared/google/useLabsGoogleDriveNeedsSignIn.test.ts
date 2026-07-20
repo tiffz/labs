@@ -7,6 +7,14 @@ import {
 } from './encoreGoogleTokenStorage';
 import { useLabsGoogleDriveNeedsSignIn } from './useLabsGoogleDriveNeedsSignIn';
 
+/** CodeQL models StorageEvent as 1-arg; build a storage event without init-dict args. */
+function makeStorageEvent(key: string, newValue: string | null): Event {
+  const event = new Event('storage');
+  Object.defineProperty(event, 'key', { value: key });
+  Object.defineProperty(event, 'newValue', { value: newValue });
+  return event;
+}
+
 describe('useLabsGoogleDriveNeedsSignIn', () => {
   afterEach(() => {
     localStorage.clear();
@@ -40,10 +48,10 @@ describe('useLabsGoogleDriveNeedsSignIn', () => {
     writePersistedGoogleSession('fresh-token', 3600);
     act(() => {
       window.dispatchEvent(
-        new StorageEvent('storage', {
-          key: ENCORE_GOOGLE_SESSION_STORAGE_KEY,
-          newValue: localStorage.getItem(ENCORE_GOOGLE_SESSION_STORAGE_KEY),
-        }),
+        makeStorageEvent(
+          ENCORE_GOOGLE_SESSION_STORAGE_KEY,
+          localStorage.getItem(ENCORE_GOOGLE_SESSION_STORAGE_KEY),
+        ),
       );
     });
     expect(result.current).toBe(false);

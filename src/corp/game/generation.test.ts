@@ -47,7 +47,7 @@ describe('generation', () => {
       const seen = new Set<string>([`${start.x},${start.y}`]);
       const dirs = [[1,0],[-1,0],[0,1],[0,-1]] as const;
       let found = false;
-      while (q.length && !found) {
+      while (q.length) {
         const cur = q.shift()!;
         if (cur.x === goal.x && cur.y === goal.y) { found = true; break; }
         for (const [dx,dy] of dirs) {

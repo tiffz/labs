@@ -58,10 +58,9 @@ export async function importScannedDriveFolderPdfs(
   const dedupIndex = await loadZineboxImportDedupIndex();
   const tags = normalizeZineboxTags(metadata.tags);
   let imported = 0;
-  let skipped = scan.files.length;
 
   const pendingFiles = scan.files.filter((file) => !isDrivePdfAlreadyImported(file, dedupIndex));
-  skipped = scan.files.length - pendingFiles.length;
+  let skipped = scan.files.length - pendingFiles.length;
 
   for (const [fileIndex, file] of pendingFiles.entries()) {
     const driveFileId = file.id?.trim();

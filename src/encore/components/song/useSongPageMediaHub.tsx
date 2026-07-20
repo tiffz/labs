@@ -1064,12 +1064,10 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
       applySpotifyDataSourceFromTrack,
       resolveSpotifyDataSourcePaste,
       uploadFilesToMediaSlot,
-      practiceResourceDnD: draft
-        ? {
-            song: draft,
-            onSongChange: onPracticeResourceChange,
-          }
-        : null,
+      practiceResourceDnD: {
+        song: draft,
+        onSongChange: onPracticeResourceChange,
+      },
     };
   }
 
@@ -2252,11 +2250,9 @@ export function useSongPageMediaHub(props: UseSongPageMediaHubArgs): SongPageMed
     applySpotifyDataSourceFromTrack,
     resolveSpotifyDataSourcePaste,
     uploadFilesToMediaSlot,
-    practiceResourceDnD: draft
-      ? {
-          song: draft,
-          onSongChange: onPracticeResourceChange,
-        }
-      : null,
+    practiceResourceDnD: {
+      song: draft,
+      onSongChange: onPracticeResourceChange,
+    },
   };
 }
