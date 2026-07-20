@@ -95,7 +95,9 @@ export default function SkillsDetailDialog({
           size="small"
           sx={{ mt: -0.5, color: 'text.secondary' }}
         >
-          <span className="material-symbols-outlined" style={{ fontSize: 22 }} aria-hidden>
+          {/* Button chrome here is 32px; the FOUC-clip guard
+              (e2e/visual/visualTestUtils.ts) requires button height >= 1.5x font-size. */}
+          <span className="material-symbols-outlined" style={{ fontSize: 20 }} aria-hidden>
             close
           </span>
         </IconButton>

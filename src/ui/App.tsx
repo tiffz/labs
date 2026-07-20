@@ -827,6 +827,7 @@ function NumericStepperFieldDemo() {
       }}
       inputAriaLabel="Demo numeric value"
       stepperAriaLabel="Adjust value"
+      stepperClassName="ui-numeric-stepper-field-demo"
       min={40}
       max={200}
       onBump={(delta) => {

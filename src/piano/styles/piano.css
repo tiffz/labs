@@ -548,7 +548,9 @@ body {
   color: var(--piano-text);
 }
 .sb-toggle-arrow {
-  font-size: 18px;
+  /* Toggle chrome here is ~26px tall; the FOUC-clip guard
+     (e2e/visual/visualTestUtils.ts) requires button height >= 1.5x font-size. */
+  font-size: 16px;
   color: var(--piano-text-secondary);
   transition: transform var(--transition-normal);
 }
@@ -716,6 +718,11 @@ body {
   width: 28px;
   min-width: 28px;
   flex: 0 0 28px;
+  /* align-self: stretch (inherited) has no fixed row height to stretch to
+     when this is the row's only tall sibling — pin a floor so the icon
+     below can't shrink the box in lockstep and keep failing the
+     FOUC-clip ratio check (e2e/visual/visualTestUtils.ts). */
+  min-height: 17px;
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -732,7 +739,9 @@ body {
     opacity var(--transition-fast);
 }
 .sb-shared-bpm-input .sb-tempo-reset-btn .material-symbols-outlined {
-  font-size: 18px;
+  /* Button chrome here is ~18px tall; the FOUC-clip guard
+     (e2e/visual/visualTestUtils.ts) requires button height >= 1.5x font-size. */
+  font-size: 11px;
   line-height: 1;
 }
 .sb-shared-bpm-input .sb-tempo-reset-btn:hover:not(:disabled) {
@@ -3954,6 +3963,11 @@ body {
   color: var(--piano-text-secondary);
   cursor: pointer;
   transition: background var(--transition-fast);
+}
+.ep-close .material-symbols-outlined {
+  /* Button chrome here is 32px tall; the FOUC-clip guard
+     (e2e/visual/visualTestUtils.ts) requires button height >= 1.5x font-size. */
+  font-size: 20px;
 }
 .ep-close:hover {
   background: var(--piano-surface);

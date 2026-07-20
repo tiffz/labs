@@ -2335,6 +2335,15 @@ body,
   min-height: 0;
 }
 
+.words-bpm-input .shared-bpm-arrow .material-symbols-outlined {
+  /* Button chrome here is ~10.5-11.5px tall (words' BPM row is intentionally
+     compact); the FOUC-clip guard (e2e/visual/visualTestUtils.ts) requires
+     button height >= 1.5x font-size. */
+  width: 7px;
+  height: 7px;
+  font-size: 7px;
+}
+
 .words-bpm-input .shared-bpm-rate-btn.inline {
   height: auto;
   padding: 0 0.16rem;
@@ -2377,7 +2386,9 @@ body,
   justify-content: center;
   width: 1rem;
   height: 1rem;
-  font-size: 0.92rem;
+  /* Button chrome here is 1rem tall; the FOUC-clip guard
+     (e2e/visual/visualTestUtils.ts) requires button height >= 1.5x font-size. */
+  font-size: 0.6rem;
   line-height: 1;
 }
 
