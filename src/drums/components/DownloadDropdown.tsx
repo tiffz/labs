@@ -63,6 +63,7 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
   };
 
   const [isExporting, setIsExporting] = React.useState(false);
+  const [exportError, setExportError] = React.useState<string | null>(null);
 
   const singleLoopDuration = rhythm.isValid && rhythm.measures.length > 0
     ? calculateRhythmDuration(rhythm, bpm)
@@ -75,6 +76,7 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
     }
 
     setIsExporting(true);
+    setExportError(null);
     try {
       const audioBuffer = await renderRhythmAudio(rhythm, bpm, loops, playbackSettings, metronomeEnabled ?? false);
       const blob = await exportAudioBuffer(audioBuffer, format);
@@ -91,7 +93,7 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
     } catch (error) {
       console.error('Error exporting audio:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Failed to export audio: ${errorMessage}. Try again.`);
+      setExportError(`Failed to export audio: ${errorMessage}. Try again.`);
     } finally {
       setIsExporting(false);
     }
@@ -164,6 +166,12 @@ const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
             <div className="download-dropdown__preview-label">Preview duration</div>
             <div className="download-dropdown__preview-value">{formatDuration(totalDuration)}</div>
           </div>
+
+          {exportError ? (
+            <div className="download-dropdown__error-message" role="alert">
+              {exportError}
+            </div>
+          ) : null}
 
           <button
             type="button"

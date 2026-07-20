@@ -27,7 +27,7 @@ Agent UX workflow: [`docs/UX_AGENT_GUIDE.md`](docs/UX_AGENT_GUIDE.md) + skill `l
 
 - Use MUI primitives for complex interaction surfaces (`Dialog`, `Menu`, `Popover`, `Autocomplete`, `Select`).
 - Preserve app-specific identity through theme tokens, not custom focus/interaction mechanics.
-- Keyboard access, visible focus states, and semantic labeling are required in touched UI code.
+- Touched UI code must have keyboard access, visible focus states, and semantic labeling.
 - **Contrast guardrails:** token pair tests + optional Playwright DOM audit — see [`docs/A11Y_CONTRAST_GUARD.md`](docs/A11Y_CONTRAST_GUARD.md).
 
 ### HTML entry points
@@ -41,7 +41,7 @@ Agent UX workflow: [`docs/UX_AGENT_GUIDE.md`](docs/UX_AGENT_GUIDE.md) + skill `l
   - A per-app SVG favicon in `/icons/` plus `apple-touch-icon`.
   - The localhost-guarded analytics injection (never a bare `<script src="/scripts/analytics.js">`).
 - Do not add `<link rel="manifest">`, do not register a service worker, and do not link Google Fonts directly — use `@fontsource/*` self-hosted fonts (`src/shared/ui/fonts/appFonts.ts`).
-- Keep `Cache-Control` to a single `no-cache` meta. Cache-busting is handled by `build-version.txt` polling.
+- Keep `Cache-Control` to a single `no-cache` meta. `build-version.txt` polling handles cache-busting.
 
 ### Landmarks and skip links
 
@@ -69,7 +69,7 @@ Agent UX workflow: [`docs/UX_AGENT_GUIDE.md`](docs/UX_AGENT_GUIDE.md) + skill `l
 
 ### Parallel surfaces for parallel concepts (Material/Gestalt)
 
-Whenever two or more screens, cards, or rows describe **the same kind of thing** (two third-party connections, two saved searches, two media-link rows), render them through **the same component shell** with the same affordance order. Visual parallelism leverages the gestalt principle of similarity so users can scan once and apply the same mental model to every row.
+Whenever two or more screens, cards, or rows describe **the same kind of thing** (two third-party connections, two saved searches, two media-link rows), render them through **the same component shell** with the same affordance order. Visual parallelism uses the gestalt principle of similarity so users can scan once and apply the same mental model to every row.
 
 Concrete rules:
 

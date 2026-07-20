@@ -91,7 +91,7 @@ Check before declaring UI done:
 - [ ] **Copy:** no repeated phrases on the same screen; follow USER_COPY_STYLE.
 - [ ] **Responsive:** ~390px and ~768px (or layout-heuristics mobile smoke) — no page horizontal scroll; stack toolbars; see [`RESPONSIVE_DESIGN.md`](RESPONSIVE_DESIGN.md).
 
-**Required for non-trivial UI** (same trigger list as the journey sketch, rule `ux-journey-mandatory.mdc`): capture a **Playwright or browser screenshot** of each changed route and **attach it in chat before declaring done**, evaluated against this checklist and [`VISUAL_JUDGE_RUBRIC.md`](VISUAL_JUDGE_RUBRIC.md) Tier 1 rows. Copy-only tweaks and bug fixes restoring documented behavior are exempt.
+**Required for non-trivial UI** (same trigger list as the journey sketch, rule `ux-journey-mandatory.md`): capture a **Playwright or browser screenshot** of each changed route, judge it against this checklist and [`VISUAL_JUDGE_RUBRIC.md`](VISUAL_JUDGE_RUBRIC.md) Tier 1 rows, and **attach it in chat before declaring done**. Copy-only tweaks and bug fixes restoring documented behavior are exempt.
 
 ## Action hierarchy template
 

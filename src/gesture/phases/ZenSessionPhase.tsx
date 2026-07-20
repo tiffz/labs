@@ -133,6 +133,11 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
 
   const markDone = useCallback(() => void advance('complete'), [advance]);
   const goNext = useCallback(() => void advance('skip'), [advance]);
+  const confirmEndSession = useCallback(() => {
+    if (window.confirm('End this session? Progress for completed photos is saved.')) {
+      finishSession();
+    }
+  }, [finishSession]);
   const goBack = useCallback(() => {
     if (index <= 0 || advancingRef.current) return;
     advancingRef.current = true;
@@ -153,11 +158,7 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
       onMarkDone: markDone,
       onSkip: goNext,
       onBack: goBack,
-      onExit: () => {
-        if (window.confirm('End this session? Progress for completed photos is saved.')) {
-          finishSession();
-        }
-      },
+      onExit: confirmEndSession,
     },
     Boolean(current) && ready,
   );
@@ -277,11 +278,7 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
         <AppTooltip title="End session (Esc)">
           <IconButton
             aria-label="End session"
-            onClick={() => {
-              if (window.confirm('End this session? Progress for completed photos is saved.')) {
-                finishSession();
-              }
-            }}
+            onClick={confirmEndSession}
             className="gesture-zen-control-btn"
             size="small"
           >
