@@ -776,16 +776,20 @@
   }
 
   .help-button {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
     border-radius: 50%;
     background-color: var(--primary-purple);
     color: white;
     border: none;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 700;
+    line-height: 1;
+    padding: 0;
+    overflow: visible;
+    flex-shrink: 0;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     transition: var(--transition-base);
@@ -1809,9 +1813,12 @@
   }
 
   .help-icon-button .material-symbols-outlined {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
+    font-size: 16px;
+    width: auto;
+    height: auto;
+    min-width: 16px;
+    min-height: 16px;
+    overflow: visible;
   }
 
   .help-tooltip {
@@ -2212,10 +2219,6 @@
     color: var(--primary-purple);
   }
 
-  .settings-button .material-symbols-outlined {
-    font-size: 1.25rem;
-  }
-
   /* Settings Button Container */
   .settings-button-container {
     position: relative;
@@ -2228,38 +2231,8 @@
     animation: fadeIn 0.15s ease;
   }
 
-  .play-button .material-symbols-outlined,
-  .stop-button .material-symbols-outlined {
-    font-size: 1.25rem;
-  }
-
-  /* Prevent FOUC for Material Icons */
-  .material-symbols-outlined {
-    font-family: 'Material Symbols Outlined';
-    font-variation-settings:
-      'FILL' 0,
-      'wght' 400,
-      'GRAD' 0,
-      'opsz' 24;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-
-    /* Prevent layout shift and FOUC */
-    display: inline-block;
-    width: 1.25rem;
-    height: 1.25rem;
-    overflow: hidden;
-    vertical-align: middle;
-  }
-
-  /* Restore font size for icons in buttons */
-  .play-button .material-symbols-outlined,
-  .stop-button .material-symbols-outlined,
-  .icon-button .material-symbols-outlined {
-    font-size: 1.25rem;
-    line-height: 1;
-  }
+  /* Material Symbol FOUC sizing lives unlayered (see file end) — Google's
+   * Material Symbols stylesheet is unlayered and beats @layer components. */
 
   /* Share feedback toast animation */
   @keyframes fadeInOut {
@@ -2903,22 +2876,52 @@
     --app-slider-track: var(--primary-purple);
     --app-slider-rail: #e5e7eb;
     --app-slider-shadow: rgba(124, 58, 237, 0.22);
+    --labs-volume-track: var(--primary-purple);
     position: relative;
     z-index: 1;
   }
 
-  /* Disabled portion of slider track (using CSS custom property) */
-  .settings-slider-wrapper::after {
+  /*
+   * Cap cue for accent hierarchy (beat-group / non-accent cannot exceed a parent).
+   * Soft ticks — not a solid gray bar (reads as a broken slider).
+   */
+  .settings-slider-wrapper--capped::after {
     content: '';
     position: absolute;
-    top: 0;
+    top: 50%;
+    transform: translateY(-50%);
     left: var(--disabled-start, 100%);
     right: 0;
-    height: 0.5rem;
-    background: #d1d5db;
+    height: 2px;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 3px,
+      color-mix(in srgb, var(--menu-border, #d1d5db) 70%, transparent) 3px,
+      color-mix(in srgb, var(--menu-border, #d1d5db) 70%, transparent) 5px
+    );
     border-radius: 0 0.25rem 0.25rem 0;
     pointer-events: none;
     z-index: 0;
+    opacity: 0.85;
+  }
+
+  .settings-slider-wrapper--capped::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: var(--disabled-start, 100%);
+    width: 2px;
+    height: 10px;
+    transform: translate(-50%, -50%);
+    background: color-mix(
+      in srgb,
+      var(--primary-purple) 45%,
+      var(--menu-border, #d1d5db)
+    );
+    border-radius: 1px;
+    pointer-events: none;
+    z-index: 2;
   }
 
   .settings-slider:focus {
@@ -3185,19 +3188,20 @@
 
   .note-symbol {
     font-family: 'Noto Music', serif;
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     line-height: 1;
     user-select: none;
 
-    /* Prevent FOUC and layout shift */
-    display: inline-block;
+    /* Reserve space for FOUC; allow ink to paint (Noto Music glyphs exceed the em-box). */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 1.5rem;
     height: 1.5rem;
     color: transparent;
     transition: color 0s;
     text-align: center;
-    /* Prevent symbol from affecting button width */
-    overflow: hidden;
+    overflow: visible;
   }
 
   /* Show music symbols once font is loaded */
@@ -5036,4 +5040,58 @@
     min-width: 28px;
     min-height: 24px;
   }
+}
+
+/*
+ * Material Symbols FOUC — must stay unlayered.
+ * Google's stylesheet sets `.material-symbols-outlined { font-size: 24px; display: … }`
+ * without a cascade layer. Unlayered rules beat `@layer components`, so keeping these
+ * sizes inside the layer left a 24px glyph in a 20px reserved box (clipped icons after
+ * the Material / Tailwind layering upgrade).
+ *
+ * Do not set width/height equal to font-size: Material Symbol ink exceeds the em-box,
+ * and a tight square (even with overflow:visible) still reads as cropped inside buttons
+ * that paint a background behind the span. Reserve with min-* only.
+ */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* Match Google's default optical size; playback controls are ≥2.5rem tall. */
+  font-size: 1.5rem;
+  line-height: 1;
+  width: auto;
+  height: auto;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  overflow: visible;
+  vertical-align: middle;
+}
+
+.play-button .material-symbols-outlined,
+.stop-button .material-symbols-outlined,
+.settings-button .material-symbols-outlined,
+.icon-button .material-symbols-outlined {
+  font-size: 1.5rem;
+  line-height: 1;
+  width: auto;
+  height: auto;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  overflow: visible;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
 }

@@ -15,7 +15,7 @@ import { getScorePlaybackEngine } from '../utils/scorePlayback';
 import { MetronomeSplitControl, useMetronomePreferences } from '../../shared/audio/platform/metronome';
 import AppTooltip from '../../shared/components/AppTooltip';
 import BpmInput from '../../shared/components/music/BpmInput';
-import AppSlider from '../../shared/components/AppSlider';
+import AppLinearVolumeSlider from '../../shared/components/AppLinearVolumeSlider';
 
 const PIANO_DRUM_STYLE: NotationStyle = {
   inkColor: '#64748b',
@@ -53,10 +53,14 @@ const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>
               </span>
             </button>
             <span className="sb-settings-label">Master</span>
-            <AppSlider min={0} max={1} step={0.01} value={state.masterVolume}
-              onChange={e => onMasterVolume(parseFloat(e.target.value))}
-              className={`volume-slider ${state.masterMuted ? 'disabled-slider' : ''}`}
-              disabled={state.masterMuted} />
+            <AppLinearVolumeSlider
+              value={state.masterVolume}
+              onChange={(_, next) => onMasterVolume(next as number)}
+              step={0.01}
+              className={`labs-volume-slider volume-slider ${state.masterMuted ? 'disabled-slider' : ''}`}
+              disabled={state.masterMuted}
+              aria-label="Master volume"
+            />
           </div>
           <div className="sb-settings-row">
             <button className="btn btn-small" onClick={onMetronomeToggle}
@@ -66,10 +70,14 @@ const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>
               </span>
             </button>
             <span className="sb-settings-label">Metronome</span>
-            <AppSlider min={0} max={1} step={0.01} value={state.metronomeVolume}
-              onChange={e => onMetronomeVolume(parseFloat(e.target.value))}
-              className={`volume-slider ${!state.metronomeEnabled ? 'disabled-slider' : ''}`}
-              disabled={!state.metronomeEnabled} />
+            <AppLinearVolumeSlider
+              value={state.metronomeVolume}
+              onChange={(_, next) => onMetronomeVolume(next as number)}
+              step={0.01}
+              className={`labs-volume-slider volume-slider ${!state.metronomeEnabled ? 'disabled-slider' : ''}`}
+              disabled={!state.metronomeEnabled}
+              aria-label="Metronome volume"
+            />
           </div>
           {state.drumEnabled && (
             <div className="sb-settings-row">
@@ -81,10 +89,14 @@ const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>
                 </span>
               </button>
               <span className="sb-settings-label">Drums</span>
-              <AppSlider min={0} max={1} step={0.01} value={state.drumVolume}
-                onChange={e => onDrumVolume(parseFloat(e.target.value))}
-                className={`volume-slider ${state.drumVolume === 0 ? 'disabled-slider' : ''}`}
-                disabled={state.drumVolume === 0} />
+              <AppLinearVolumeSlider
+                value={state.drumVolume}
+                onChange={(_, next) => onDrumVolume(next as number)}
+                step={0.01}
+                className={`labs-volume-slider volume-slider ${state.drumVolume === 0 ? 'disabled-slider' : ''}`}
+                disabled={state.drumVolume === 0}
+                aria-label="Drums volume"
+              />
             </div>
           )}
           <div className="sb-settings-row" style={{ marginTop: 4 }}>
@@ -105,10 +117,14 @@ const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>
           </div>
           <div className="sb-settings-row">
             <span className="sb-settings-label">Key press vol</span>
-            <AppSlider min={0} max={1} step={0.01} value={state.midiSoundVolume}
-              onChange={e => onMidiSoundVolume(parseFloat(e.target.value))}
-              className={`volume-slider ${!state.midiSoundEnabled ? 'disabled-slider' : ''}`}
-              disabled={!state.midiSoundEnabled} />
+            <AppLinearVolumeSlider
+              value={state.midiSoundVolume}
+              onChange={(_, next) => onMidiSoundVolume(next as number)}
+              step={0.01}
+              className={`labs-volume-slider volume-slider ${!state.midiSoundEnabled ? 'disabled-slider' : ''}`}
+              disabled={!state.midiSoundEnabled}
+              aria-label="Key press volume"
+            />
           </div>
         </div>
         <div className="sb-settings-divider" />
@@ -124,11 +140,14 @@ const SettingsDropdown = React.forwardRef<HTMLDivElement, SettingsDropdownProps>
                   </span>
                 </button>
                 <span className="sb-settings-label">{PART_LABELS[part.id] ?? part.name}</span>
-                <AppSlider min={0} max={1} step={0.01}
+                <AppLinearVolumeSlider
                   value={state.trackVolume.get(part.id) ?? 1}
-                  onChange={e => onTrackVolume(part.id, parseFloat(e.target.value))}
-                  className={`volume-slider ${muted ? 'disabled-slider' : ''}`}
-                  disabled={muted} />
+                  onChange={(_, next) => onTrackVolume(part.id, next as number)}
+                  step={0.01}
+                  className={`labs-volume-slider volume-slider ${muted ? 'disabled-slider' : ''}`}
+                  disabled={muted}
+                  aria-label={`${PART_LABELS[part.id] ?? part.name} volume`}
+                />
               </div>
             );
           })}

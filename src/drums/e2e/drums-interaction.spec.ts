@@ -1,6 +1,50 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Darbuka Rhythm Trainer - User Interactions', () => {
+  test('playback and toolbar material icons are not FOUC-clipped', async ({ page }) => {
+    await page.goto('/drums/');
+    const icons = page.locator(
+      [
+        '.icon-button-group .material-symbols-outlined',
+        '.settings-button .material-symbols-outlined',
+        '.play-button .material-symbols-outlined',
+        '.labs-metronome-toggle-icon',
+      ].join(', '),
+    );
+    await expect(icons.first()).toBeVisible();
+    // Mirrors materialIconCssWouldClipInk (page.evaluate cannot import app modules).
+    const clipped = await page.evaluate(() => {
+      const selectors = [
+        '.icon-button-group .material-symbols-outlined',
+        '.settings-button .material-symbols-outlined',
+        '.play-button .material-symbols-outlined',
+        '.labs-metronome-toggle-icon',
+      ];
+      const bad: string[] = [];
+      for (const sel of selectors) {
+        for (const el of document.querySelectorAll<HTMLElement>(sel)) {
+          const cs = getComputedStyle(el);
+          const fs = Number.parseFloat(cs.fontSize || '0') || 0;
+          const boxH = el.getBoundingClientRect().height;
+          if (fs <= 0 || boxH <= 0) continue;
+          if (fs > boxH + 1) {
+            bad.push(`${sel}: ${el.textContent?.trim() || '(empty)'} (font>${boxH})`);
+            continue;
+          }
+          const overflowY = cs.overflowY || cs.overflow;
+          if (
+            (overflowY === 'hidden' || overflowY === 'clip') &&
+            Math.abs(boxH - fs) <= 2
+          ) {
+            bad.push(`${sel}: ${el.textContent?.trim() || '(empty)'} (overflow)`);
+          }
+        }
+      }
+      return bad;
+    });
+    expect(clipped, `Clipped icons: ${clipped.join(', ')}`).toEqual([]);
+  });
+
   test('should update rhythm display when input changes', async ({ page }) => {
     await page.goto('/drums/');
     

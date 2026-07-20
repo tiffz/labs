@@ -1,14 +1,19 @@
+/*
+ * Track/thumb colors resolve through --app-slider-track with a purple fallback.
+ * Do NOT assign --app-slider-track here — that would be unlayered and beat app
+ * token overrides that live in @layer components (e.g. zines .compression-slider
+ * teal). Apps set --app-slider-track on .app-slider / a host class instead.
+ */
 .app-slider {
   --app-slider-rail: color-mix(
     in srgb,
     var(--border-subtle, #d5d9e2) 75%,
     transparent
   );
-  --app-slider-track: var(--accent-primary, #7c3aed);
-  --app-slider-thumb: var(--app-slider-track);
+  --app-slider-thumb: var(--app-slider-track, var(--accent-primary, #7c3aed));
   --app-slider-shadow: color-mix(
     in srgb,
-    var(--app-slider-track) 28%,
+    var(--app-slider-track, var(--accent-primary, #7c3aed)) 28%,
     transparent
   );
   --app-slider-mark: color-mix(
@@ -16,9 +21,12 @@
     var(--border-subtle, #d5d9e2) 70%,
     transparent
   );
-  --app-slider-mark-active: var(--app-slider-track);
+  --app-slider-mark-active: var(
+    --app-slider-track,
+    var(--accent-primary, #7c3aed)
+  );
 
-  color: var(--app-slider-track) !important;
+  color: var(--app-slider-track, var(--accent-primary, #7c3aed)) !important;
   padding: 6px 0 !important;
 }
 
@@ -40,7 +48,10 @@
 
 .app-slider .MuiSlider-track {
   border: 0 !important;
-  background-color: var(--app-slider-track) !important;
+  background-color: var(
+    --app-slider-track,
+    var(--accent-primary, #7c3aed)
+  ) !important;
 }
 
 .app-slider .MuiSlider-thumb {

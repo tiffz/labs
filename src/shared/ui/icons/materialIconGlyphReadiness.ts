@@ -76,3 +76,29 @@ export function visibleMaterialIconsLookReady(root: Document | HTMLElement = doc
 
   return true;
 }
+
+/**
+ * FOUC boxes often set `width`/`height` equal to `font-size` and then
+ * `overflow: hidden`. Material Symbol ink routinely exceeds that em-box
+ * (undo/redo/backspace/delete), so the glyph looks "cropped" even when the
+ * ligature has shaped correctly (width heuristic still passes).
+ *
+ * Also flags `font-size` larger than the reserved box — common when an
+ * unlayered Google Material Symbols rule (`font-size: 24px`) beats layered
+ * app CSS that reserved a 20px square.
+ */
+export function materialIconCssWouldClipInk(el: HTMLElement): boolean {
+  const cs = getComputedStyle(el);
+  const fs = Number.parseFloat(cs.fontSize || '0') || 0;
+  const boxH = el.getBoundingClientRect().height;
+  if (fs <= 0 || boxH <= 0) return false;
+
+  // Glyph metrics larger than the reserved FOUC box (cascade-layer miss).
+  if (fs > boxH + 1) return true;
+
+  const overflowY = cs.overflowY || cs.overflow;
+  if (overflowY !== 'hidden' && overflowY !== 'clip') return false;
+  // Tight FOUC square: box height within ~2px of font-size → overflow clips ink.
+  return Math.abs(boxH - fs) <= 2;
+}
+
