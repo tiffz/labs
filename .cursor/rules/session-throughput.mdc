@@ -10,6 +10,9 @@ alwaysApply: true
 For **multi-bug / upgrade / spot-check** sessions, optimize for wall-clock and tokens:
 
 1. **Spike before thrash** — one Playwright/CDP or unit repro that falsifies the hypothesis before editing a second subsystem. Prefer computed style / pixel pads over vision captions for clip/theme bugs.
+   - **Layout and CSS hypotheses are cheap to test and expensive to guess.** Reading the cascade and predicting a fix has a poor hit rate: specificity maths said a `min-height` would fix an icon clip (it was a no-op — the guard wanted a font-size ratio), and an unreserved `#root` height looked like Zine Box's CLS (it measured identical, and the real cause was a loading state with `margin: 56px` and no height). Both cost a build-and-measure cycle to disprove. **Script the measurement first.**
+   - **CLS recipe:** `PerformanceObserver` on `layout-shift` with `buffered: true`, then read `entry.sources[].node` plus `previousRect`/`currentRect` for the element and delta. Polling after load misses it — the shift usually lands in the first few frames.
+   - Measure on `vite preview`, not the dev server: unbundled module loading distorts timing. CLS values themselves are geometry ratios and hold across both.
 2. **Check `cascade-layer-token-override` early** after Tailwind `@layer` or MUI shared-CSS work (unlayered shared CSS beats layered app tokens).
 3. **Timebox upgrade spot-checks** — smoke a small app set, then stop and split remaining bugs into follow-ups (`labs-split-to-prs`).
 4. **Scoped tests first** — touched-file Vitest/e2e, then one `presubmit`. Do not babysit unrelated dirty-tree failures.
