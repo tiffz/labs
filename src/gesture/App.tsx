@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
 import {
   LabsKeyboardShortcutsHost,
@@ -14,8 +14,10 @@ import { seedGestureE2ePreviewFixtures } from './e2e/gestureE2eSeed';
 import { applyGestureLinenCssVars } from './design/linenTheme';
 import { gestureGoogleClientConfigured } from './hooks/useGestureDriveBackup';
 import { useGestureAutoReindex } from './hooks/useGestureAutoReindex';
-import DebriefPhase from './phases/DebriefPhase';
-import ZenSessionPhase from './phases/ZenSessionPhase';
+// Neither phase exists on the home screen everyone lands on, and the session
+// phase drags in the whole drawing surface. Load them when a session starts.
+const DebriefPhase = lazy(() => import('./phases/DebriefPhase'));
+const ZenSessionPhase = lazy(() => import('./phases/ZenSessionPhase'));
 import type { AppPhase, SessionConfig, SessionDebrief } from './types';
 
 function GestureMaintenanceEffects(): null {
@@ -94,12 +96,17 @@ function GestureAppContent(): React.ReactElement {
       <SkipToMain />
       <main id="main" className="gesture-main">
         {e2eSeedReady && phase === 'home' ? <GestureAppShell onStartSession={startSession} /> : null}
-        {e2eSeedReady && phase === 'session' && sessionConfig ? (
-          <ZenSessionPhase config={sessionConfig} onExit={finishSession} />
-        ) : null}
-        {e2eSeedReady && phase === 'debrief' && debrief ? (
-          <DebriefPhase debrief={debrief} onHome={backHome} onRestart={restartSession} />
-        ) : null}
+        {/* No fallback: both phases follow a deliberate click, and a flash of
+            placeholder reads worse here than the brief hold on the home
+            screen the chunk fetch actually costs. */}
+        <Suspense fallback={null}>
+          {e2eSeedReady && phase === 'session' && sessionConfig ? (
+            <ZenSessionPhase config={sessionConfig} onExit={finishSession} />
+          ) : null}
+          {e2eSeedReady && phase === 'debrief' && debrief ? (
+            <DebriefPhase debrief={debrief} onHome={backHome} onRestart={restartSession} />
+          ) : null}
+        </Suspense>
       </main>
     </div>
   );
