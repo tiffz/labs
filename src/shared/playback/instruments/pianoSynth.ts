@@ -188,14 +188,23 @@ export class PianoSynthesizer extends BaseInstrument {
         noteGain.connect(this.output);
       }
       
+      const release = this.trackVoice(() => {
+        try {
+          osc.stop(0);
+        } catch {
+          /* already stopped */
+        }
+      });
+
       osc.start(clampedStartTime);
       osc.stop(clampedStartTime + duration + 0.02);
-      
+
       osc.onended = () => {
+        release();
         noteGain.disconnect();
       };
     });
-    
+
     if (modulationGain) {
       modulationGain.connect(this.output);
     }

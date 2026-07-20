@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  DEFAULT_LOOK_AHEAD_SEC,
-  HIDDEN_TAB_LOOK_AHEAD_SEC,
-  LookAheadAudioScheduler,
-} from './LookAheadAudioScheduler';
+import { DEFAULT_LOOK_AHEAD_SEC, LookAheadAudioScheduler } from './LookAheadAudioScheduler';
 
 describe('LookAheadAudioScheduler', () => {
   let rafCallbacks: FrameRequestCallback[];
@@ -40,15 +36,28 @@ describe('LookAheadAudioScheduler', () => {
     scheduler.stop();
   });
 
-  it('extends the horizon when the tab is hidden', () => {
+  it('accepts a custom look-ahead horizon for chart transports', () => {
+    const scheduler = new LookAheadAudioScheduler();
+    const ticks: Array<{ horizonSec: number; nowSec: number }> = [];
+    scheduler.start((horizonSec, nowSec) => ticks.push({ horizonSec, nowSec }), {
+      lookAheadSec: 1,
+    });
+
+    pumpFrame();
+    expect(ticks).toHaveLength(1);
+    expect(ticks[0].horizonSec - ticks[0].nowSec).toBeCloseTo(1, 5);
+    scheduler.stop();
+  });
+
+  it('skips ticks when the tab is hidden to avoid resume note pile-up', () => {
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
     try {
       const scheduler = new LookAheadAudioScheduler();
-      const ticks: Array<{ horizonSec: number; nowSec: number }> = [];
-      scheduler.start((horizonSec, nowSec) => ticks.push({ horizonSec, nowSec }));
+      const tick = vi.fn();
+      scheduler.start(tick);
 
       pumpFrame();
-      expect(ticks[0].horizonSec - ticks[0].nowSec).toBeCloseTo(HIDDEN_TAB_LOOK_AHEAD_SEC, 5);
+      expect(tick).not.toHaveBeenCalled();
       scheduler.stop();
     } finally {
       delete (document as unknown as Record<string, unknown>).hidden;

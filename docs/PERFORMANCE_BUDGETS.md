@@ -25,11 +25,11 @@ Measured as the entry chunk + modulepreloads referenced from each app's built `i
 (gzip bytes), by [`scripts/bundle-size-report.mjs`](../scripts/bundle-size-report.mjs) against
 [`docs/bundle-size-baseline.json`](bundle-size-baseline.json).
 
-| Tier         | Threshold                     | Consequence                                                                             |
-| ------------ | ----------------------------- | --------------------------------------------------------------------------------------- |
-| Growth warn  | > 10% gzip growth vs baseline | CI warning annotation                                                                   |
-| Growth fail  | > 25% gzip growth vs baseline | CI + presubmit fail                                                                     |
-| Absolute cap | > 2 MiB gzip                  | CI + presubmit fail (exemptions listed in the script with tracked work items: `encore`) |
+| Tier         | Threshold                     | Consequence                                                              |
+| ------------ | ----------------------------- | ------------------------------------------------------------------------ |
+| Growth warn  | > 10% gzip growth vs baseline | CI warning annotation                                                    |
+| Growth fail  | > 25% gzip growth vs baseline | CI + presubmit fail                                                      |
+| Absolute cap | > 2 MiB gzip                  | CI + presubmit fail (no app exemptions; Encore cold path is route-split) |
 
 Enforced in the CI `build` job and presubmit (`--check`). Justified growth: run
 `npm run report:bundle-size -- --skip-build --update-baseline` and land the baseline change in

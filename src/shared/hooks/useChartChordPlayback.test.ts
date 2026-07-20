@@ -17,7 +17,9 @@ vi.mock('../music/scheduleDrumMeasure', () => ({
   createChartDrumAudioPlayer: vi.fn(() => ({
     initialize: vi.fn().mockResolvedValue(undefined),
     ensureResumed: vi.fn().mockResolvedValue(true),
+    getAudioContext: () => ({ currentTime: 0, state: 'running' }),
     stopAll: vi.fn(),
+    destroy: vi.fn(),
   })),
   scheduleDrumMeasure: (...args: unknown[]) => scheduleDrumMeasure(...args),
 }));
@@ -35,6 +37,10 @@ vi.mock('../music/chordInstrumentSession', () => ({
 
 vi.mock('../playback/audioContextLifecycle', () => ({
   ensureAudioContextRunning: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock('../audio/usePlaybackWakeLock', () => ({
+  usePlaybackWakeLock: vi.fn(),
 }));
 
 vi.mock('./useSampledPianoPreload', () => ({
@@ -73,9 +79,10 @@ describe('useChartChordPlayback stop', () => {
     scheduleDrumMeasure.mockClear();
     stopAll.mockClear();
     ensureInstrument.mockResolvedValue({
-      ctx: { currentTime: 0 },
+      ctx: { currentTime: 0, state: 'running' },
       instrument: { stopAll: vi.fn() },
     });
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
   });
 
   it('does not schedule audio after stop invalidates an in-flight measure', async () => {
@@ -102,7 +109,7 @@ describe('useChartChordPlayback stop', () => {
     await act(async () => {
       result.current.stop();
       resolveInstrument?.({
-        ctx: { currentTime: 0 },
+        ctx: { currentTime: 0, state: 'running' },
         instrument: { stopAll: vi.fn() },
       });
       await Promise.resolve();
@@ -179,5 +186,34 @@ describe('useChartChordPlayback stop', () => {
     expect(result.current.playing).toBe(false);
     expect(result.current.playingSectionId).toBeNull();
     vi.useRealTimers();
+  });
+
+  it('flushes voices when the tab is hidden while playing', async () => {
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+    const { result } = renderHook(() =>
+      useChartChordPlayback({
+        layout,
+        tempo: 120,
+        storageKey: 'test-chart-playback-visibility',
+      }),
+    );
+
+    await act(async () => {
+      result.current.startSectionLoop('verse-1');
+      await Promise.resolve();
+    });
+    expect(result.current.playing).toBe(true);
+    stopAll.mockClear();
+
+    await act(async () => {
+      Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+      await Promise.resolve();
+    });
+
+    expect(stopAll).toHaveBeenCalled();
+    expect(result.current.playing).toBe(true);
+
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
   });
 });

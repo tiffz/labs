@@ -19,6 +19,7 @@ import { recognizeRhythm } from './utils/rhythmRecognition';
 import { useUrlState } from './hooks/useUrlState';
 import { useNotationHistory } from './hooks/useNotationHistory';
 import { usePlayback } from '../shared/rhythm/usePlayback';
+import { usePlaybackWakeLock } from '../shared/audio/usePlaybackWakeLock';
 import { useRhythmSelection } from './hooks/useRhythmSelection';
 import { getDefaultBeatGrouping, getSixteenthsPerMeasure, getBeatGroupingInSixteenths } from './utils/timeSignatureUtils';
 import { calculateRemainingBeats, expandSimileMeasure } from './utils/notationUtils';
@@ -167,6 +168,8 @@ const App: React.FC = () => {
     metronomePreferences,
   });
 
+  usePlaybackWakeLock(isPlaying);
+
   const handleInsertPattern = useCallback((pattern: string) => {
     // Append the pattern to the end of the current notation
     addToHistory(notation);
@@ -214,10 +217,12 @@ const App: React.FC = () => {
 
     // Phase 27: Expand Simile (Drag Drop Support)
     let expandedNotation = notation;
+    let expandedParsed = parsedRhythm;
 
-    const expanded = expandSimileMeasure(expandedNotation, targetMeasureIdx, parsedRhythm);
+    const expanded = expandSimileMeasure(expandedNotation, targetMeasureIdx, expandedParsed);
     if (expanded !== expandedNotation) {
       expandedNotation = expanded;
+      expandedParsed = parseRhythm(expandedNotation, timeSignature);
     }
 
     const activeCleanNotation = expandedNotation.replace(/[\s\n]/g, '');
@@ -227,19 +232,13 @@ const App: React.FC = () => {
 
     if (operationType === 'replace') {
       // Replace mode: overwrite notes at the drop position
-      // FIX Phase 37 Correction 2: Re-parse if expansion occurred.
-      let activeParsedRhythm = parsedRhythm;
-      if (expandedNotation !== notation) {
-        activeParsedRhythm = parseRhythm(expandedNotation, timeSignature);
-      }
-
       const result = replacePatternAtPosition(
         expandedNotation,
         targetCharPosition,
         pattern,
         patternDuration,
         timeSignature,
-        activeParsedRhythm
+        expandedParsed
       );
 
       // Phase 12: Block crossing repeat boundaries
@@ -256,11 +255,13 @@ const App: React.FC = () => {
       // If replacement failed, do nothing (the preview already validated this)
     } else {
       // Insert mode: insert pattern between notes at the drop position
-      let activeParsedRhythm = parsedRhythm;
-      if (expandedNotation !== notation) {
-        activeParsedRhythm = parseRhythm(expandedNotation, timeSignature);
-      }
-      const newNotation = insertPatternAtPosition(activeCleanNotation, targetCharPosition, pattern, activeParsedRhythm, timeSignature);
+      const newNotation = insertPatternAtPosition(
+        activeCleanNotation,
+        targetCharPosition,
+        pattern,
+        expandedParsed,
+        timeSignature
+      );
       setNotationWithoutHistory(newNotation);
     }
   }, [notation, addToHistory, timeSignature, setNotationWithoutHistory, parsedRhythm]);

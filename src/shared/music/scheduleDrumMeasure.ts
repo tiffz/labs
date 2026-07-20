@@ -5,6 +5,9 @@ import { parseRhythm } from '../rhythm/rhythmParser';
 import { getSixteenthsPerMeasure } from '../rhythm/timeSignatureUtils';
 import type { TimeSignature } from './chordTypes';
 
+/** Hits more than this late are skipped (clamping them to "now" sounds like a stutter burst). */
+export const DRUM_HIT_LATE_SKIP_SEC = 0.005;
+
 export type ScheduleDrumMeasureParams = {
   drumPlayer: AudioPlayer;
   pattern: string;
@@ -39,12 +42,17 @@ export function scheduleDrumMeasure({
   const secPerSixteenth = secPerSixteenthAtBpm(tempo);
   const baseTime = measureStartTime ?? ctx.currentTime + 0.02;
   const sixteenthsPerMeasure = getSixteenthsPerMeasure(timeSignature);
+  const now = ctx.currentTime;
   let cursor = 0;
 
   for (const note of measure.notes) {
     if (note.sound !== 'rest' && note.sound !== 'simile') {
       const hitTime = baseTime + cursor * secPerSixteenth;
-      drumPlayer.playNowIfReady(note.sound, volume, undefined, hitTime);
+      // Skip overdue hits — AudioPlayer clamps late starts to "now", which piles
+      // a measure of drums into one audible stutter when scheduling fell behind.
+      if (hitTime >= now - DRUM_HIT_LATE_SKIP_SEC) {
+        drumPlayer.playNowIfReady(note.sound, volume, undefined, hitTime);
+      }
     }
     cursor += note.durationInSixteenths;
     if (cursor >= sixteenthsPerMeasure) break;

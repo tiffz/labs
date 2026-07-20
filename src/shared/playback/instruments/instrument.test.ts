@@ -5,6 +5,10 @@ class TestInstrument extends BaseInstrument {
   playNote(): void {
     // no-op
   }
+
+  registerVoice(stop: () => void): () => void {
+    return this.trackVoice(stop);
+  }
 }
 
 function createMockAudioContext(): AudioContext {
@@ -44,5 +48,21 @@ describe('BaseInstrument.stopAll', () => {
 
     expect(instrument.getOutput()).not.toBe(outputBeforeStop);
     expect(outputBeforeStop.gain.value).toBe(0);
+  });
+
+  it('hard-stops tracked voices so long loops cannot accumulate AudioNodes', () => {
+    const ctx = createMockAudioContext();
+    const instrument = new TestInstrument(ctx);
+    const stopA = vi.fn();
+    const stopB = vi.fn();
+    instrument.registerVoice(stopA);
+    instrument.registerVoice(stopB);
+    expect(instrument.activeVoiceCount).toBe(2);
+
+    instrument.stopAll(0);
+
+    expect(stopA).toHaveBeenCalledOnce();
+    expect(stopB).toHaveBeenCalledOnce();
+    expect(instrument.activeVoiceCount).toBe(0);
   });
 });

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
 import { resolveEventTargetElement } from '../../shared/dom/resolveEventTargetElement';
+import { isChordProgressionPopoverTarget } from '../../shared/components/music/chordProgressionPopover';
 import { isDrumPatternEditMenuTarget } from '../../shared/components/music/drumPatternEditMenu';
 import { isPlaybackFieldSelectPopoverTarget } from '../../shared/components/music/playbackFieldSelect';
 
@@ -63,11 +64,13 @@ export function useWordsMenuDismiss(
       const targetEl = resolveEventTargetElement(target);
       const inSectionSettingsAnchor = Boolean(targetEl?.closest('.words-section-settings-anchor'));
       const inSectionSettingsMenu = refs.sectionSettingsMenuRef.current?.contains(target);
-      const inSectionChordPopover = Boolean(
-        targetEl?.closest('.words-section-chord-dropdown-root') ||
-          targetEl?.closest('.words-section-style-dropdown-root'),
-      );
-      // Drum edit menu portals to body — treat it as still "inside" section settings.
+      const inSectionChordPopover =
+        isChordProgressionPopoverTarget(target) ||
+        Boolean(
+          targetEl?.closest('.words-section-chord-dropdown-root') ||
+            targetEl?.closest('.words-section-style-dropdown-root'),
+        );
+      // Portaled nested pickers (chord progression, drum edit) stay "inside" section settings.
       if (
         !inSectionSettingsAnchor &&
         !inSectionSettingsMenu &&

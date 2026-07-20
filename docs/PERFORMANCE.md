@@ -51,12 +51,13 @@ Eager JS is measured by [`scripts/bundle-size-report.mjs`](../scripts/bundle-siz
 
 **Defer off the critical path** (pattern: drums VexFlow + Words CMU dict):
 
-| Surface                                                          | When to load                  |
-| ---------------------------------------------------------------- | ----------------------------- |
-| `SharedExportPopover` / `audioCodecs` / MIDI builders            | Open Export                   |
-| `ScoreDisplay` / `ChordScoreRenderer` / `DrumNotationMini` hosts | Score mounts or drums enabled |
-| Session-only screens (e.g. Scales `SessionScreen`)               | Navigate to session           |
-| Non-default midi modes                                           | Mode switch                   |
+| Surface                                                                                           | When to load                                                                                                         |
+| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `SharedExportPopover` / `audioCodecs` / MIDI builders                                             | Open Export                                                                                                          |
+| `ScoreDisplay` / `ChordScoreRenderer` / `DrumNotationMini` hosts                                  | Score mounts or drums enabled                                                                                        |
+| Session-only screens (e.g. Scales `SessionScreen`)                                                | Navigate to session                                                                                                  |
+| Non-default midi modes                                                                            | Mode switch                                                                                                          |
+| **Encore** non-library tabs / song / originals / TipTap / pdf-lib / VexFlow (`DrumAccompaniment`) | First visit to that route or enable drums — keep `#/library` eager; idle only `import()`-warms chunks (do not mount) |
 
 After a load win, re-baseline with `npm run report:bundle-size -- --update-baseline` in the same PR.
 

@@ -44,7 +44,6 @@ function nonEmpty(s: string | null | undefined): string | undefined {
 
 async function readPdfMetadata(buffer: ArrayBuffer): Promise<ScoreFileMetadata> {
   try {
-    // Keep pdf-lib out of Encore’s eager modulepreload graph (first-paint cap).
     const { PDFDocument } = await import('pdf-lib');
     const pdf = await PDFDocument.load(buffer, { updateMetadata: false });
     return {
@@ -83,7 +82,8 @@ function readXmlText(buffer: ArrayBuffer): string {
   }
 }
 
-function stripInnerXmlTags(value: string): string {
+/** Strip nested/crafted tags until stable (CodeQL js/incomplete-multi-character-sanitization). */
+function stripXmlInnerTags(value: string): string {
   let s = value;
   let prev = '';
   while (s !== prev) {
@@ -96,7 +96,7 @@ function stripInnerXmlTags(value: string): string {
 function captureXmlField(xml: string, tag: string): string | undefined {
   const re = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i');
   const m = re.exec(xml);
-  return nonEmpty(stripInnerXmlTags(m?.[1] ?? '').replace(/\s+/g, ' '));
+  return nonEmpty(stripXmlInnerTags(m?.[1] ?? '').replace(/\s+/g, ' '));
 }
 
 function captureMusicXmlKey(xml: string): string | undefined {

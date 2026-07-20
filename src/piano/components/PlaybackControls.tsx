@@ -16,6 +16,8 @@ import { MetronomeSplitControl, useMetronomePreferences } from '../../shared/aud
 import AppTooltip from '../../shared/components/AppTooltip';
 import BpmInput from '../../shared/components/music/BpmInput';
 import AppLinearVolumeSlider from '../../shared/components/AppLinearVolumeSlider';
+import { usePlaybackWakeLock } from '../../shared/audio/usePlaybackWakeLock';
+
 
 const DrumAccompaniment = lazy(() => import('../../shared/components/music/DrumAccompaniment'));
 
@@ -324,6 +326,7 @@ const PlaybackControls: React.FC = () => {
 
   const isActive = state.activeMode !== 'none';
   const isPracticing = state.activeMode === 'practice' || state.activeMode === 'free-practice';
+  usePlaybackWakeLock(isActive);
 
   return (
     <div className="sidebar-playback">
