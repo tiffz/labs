@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import BottomControlSvgIcon from '../../icons/BottomControlSvgIcon';
-import { catCoordinateSystem } from '../../services/CatCoordinateSystem';
+import { catCoordinateSystem, initialSidePanelHeight } from '../../services/CatCoordinateSystem';
 import { ViewportProvider } from '../../context/ViewportContext';
 import { useWorld } from '../../context/useWorld';
 
@@ -39,14 +39,7 @@ const World2D: React.FC<World2DProps> = ({
     return 450;
   };
 
-  const getSidePanelHeight = () => {
-    if (typeof window === 'undefined') return 0;
-    const width = window.innerWidth;
-    if (width <= 768) {
-      return Math.round(window.innerHeight * 0.6);
-    }
-    return 0;
-  };
+  const getSidePanelHeight = initialSidePanelHeight;
   
   const [sidePanelWidth, setSidePanelWidth] = useState(getSidePanelWidth);
   const [sidePanelHeight, setSidePanelHeight] = useState(getSidePanelHeight);
