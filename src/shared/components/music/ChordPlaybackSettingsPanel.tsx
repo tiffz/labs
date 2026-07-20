@@ -4,13 +4,14 @@ import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { useState, type ReactElement } from 'react';
+import { lazy, Suspense, useState, type ReactElement } from 'react';
 import ChordStyleInput from './ChordStyleInput';
-import DrumAccompaniment from './DrumAccompaniment';
 import { getInlineDrumUxProps } from './inlineDrumUxDefaults';
 import { PlaybackSoundSelect } from './PlaybackSoundSelect';
 import { PlaybackVolumeRow } from './PlaybackVolumeRow';
 import type { NotationStyle } from '../../notation/DrumNotationMini';
+
+const DrumAccompaniment = lazy(() => import('./DrumAccompaniment'));
 import {
   CHART_CHORD_PLAYBACK_TIME_SIGNATURE,
   type ChordPlaybackSettings,
@@ -212,21 +213,23 @@ export function ChordPlaybackSettingsPanel({
 
         {settings.drumsEnabled ? (
           <Box className="shared-chord-playback-settings__drums-panel">
-            <DrumAccompaniment
-              {...getInlineDrumUxProps('settings-panel')}
-              bpm={tempo}
-              timeSignature={CHART_CHORD_PLAYBACK_TIME_SIGNATURE}
-              isPlaying={playing}
-              currentBeatTime={playbackBeatTime}
-              currentBeat={playbackBeat}
-              metronomeEnabled={false}
-              volume={settings.drumsMuted ? 0 : settings.drumsVolume}
-              notationValue={settings.drumPattern}
-              onNotationValueChange={(drumPattern) => onChange({ drumPattern })}
-              notationWidth={isEncore ? 340 : 320}
-              notationFrameClassName="shared-chord-playback-settings__drums-notation"
-              notationStyle={isEncore ? ENCORE_INLINE_DRUM_NOTATION_STYLE : undefined}
-            />
+            <Suspense fallback={null}>
+              <DrumAccompaniment
+                {...getInlineDrumUxProps('settings-panel')}
+                bpm={tempo}
+                timeSignature={CHART_CHORD_PLAYBACK_TIME_SIGNATURE}
+                isPlaying={playing}
+                currentBeatTime={playbackBeatTime}
+                currentBeat={playbackBeat}
+                metronomeEnabled={false}
+                volume={settings.drumsMuted ? 0 : settings.drumsVolume}
+                notationValue={settings.drumPattern}
+                onNotationValueChange={(drumPattern) => onChange({ drumPattern })}
+                notationWidth={isEncore ? 340 : 320}
+                notationFrameClassName="shared-chord-playback-settings__drums-notation"
+                notationStyle={isEncore ? ENCORE_INLINE_DRUM_NOTATION_STYLE : undefined}
+              />
+            </Suspense>
           </Box>
         ) : null}
       </Box>

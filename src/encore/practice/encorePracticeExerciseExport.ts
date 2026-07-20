@@ -1,5 +1,4 @@
-import { PDFDocument, rgb, type PDFFont } from 'pdf-lib';
-import { embedPracticePdfBodyFont, embedPracticePdfLyricsFonts } from './encorePracticePdfFonts';
+import type { PDFFont } from 'pdf-lib';
 import type {
   EncoreLyricsExerciseSection,
   EncoreLyricsInOwnWordsExerciseRun,
@@ -14,27 +13,37 @@ import {
   lyricsExerciseSectionExportHeading,
   parseGeniusLyricsIntoSections,
 } from './encorePracticeExerciseModel';
+import { sanitizeTextForGoogleDocsInsert } from './googleDocsTextSanitize';
+
+export { sanitizeTextForGoogleDocsInsert } from './googleDocsTextSanitize';
 const EXERCISE_FILE_SLUG: Record<EncorePracticeExerciseRun['kind'], string> = {
   lyricsInOwnWords: 'lyrics-in-your-own-words',
   lyricsSectionNarrative: 'section-by-section',
   characterNineQuestions: 'nine-character-questions',
 };
 
-export function stripHtmlToPlainText(html: string): string {
-  const t = html.trim();
-  if (!t) return '';
-  if (typeof DOMParser !== 'undefined') {
-    const doc = new DOMParser().parseFromString(t, 'text/html');
-    const text = doc.body?.textContent ?? '';
-    return text.replace(/\n{3,}/g, '\n\n').trim();
-  }
-  let s = t.replace(/<\/(p|div|br)[^>]*>/gi, '\n');
+function stripHtmlTagsIteratively(value: string): string {
+  let s = value;
   let prev = '';
   while (s !== prev) {
     prev = s;
     s = s.replace(/<[^>]*>/g, '');
   }
-  return s.replace(/\n{3,}/g, '\n\n').trim();
+  return s;
+}
+
+export function stripHtmlToPlainText(html: string): string {
+  const t = html.trim();
+  if (!t) return '';
+  if (typeof DOMParser === 'undefined') {
+    const withBreaks = t.replace(/<\/(p|div|br)[^>]*>/gi, '\n');
+    return stripHtmlTagsIteratively(withBreaks)
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+  const doc = new DOMParser().parseFromString(`<div>${t}</div>`, 'text/html');
+  const text = doc.body.textContent ?? '';
+  return text.replace(/\n{3,}/g, '\n\n').trim();
 }
 
 function sectionSourceBodyText(sec: EncoreLyricsExerciseSection | undefined): string {
@@ -187,21 +196,6 @@ export function buildLyricsInOwnWordsGoogleDocLayout(
   };
 }
 
-/** Strip characters Google Docs insertText rejects (BMP PUA / C0 controls). */
-export function sanitizeTextForGoogleDocsInsert(text: string): string {
-  const stripControls = (s: string) => {
-    let out = '';
-    for (let i = 0; i < s.length; i += 1) {
-      const code = s.charCodeAt(i);
-      if (code <= 8 || code === 11 || code === 12 || (code >= 14 && code <= 31)) continue;
-      if (code >= 0xe000 && code <= 0xf8ff) continue;
-      out += s[i]!;
-    }
-    return out;
-  };
-  return stripControls(text.replace(/\r\n/g, '\n').replace(/\r/g, '\n'));
-}
-
 export function buildPracticeExerciseExportPlainText(song: EncoreSong, run: EncorePracticeExerciseRun): string {
   const lines: string[] = [];
   const title = `${song.title} — ${song.artist}`.trim();
@@ -319,6 +313,8 @@ async function buildLyricsInOwnWordsPdfBytes(
   song: EncoreSong,
   run: EncoreLyricsInOwnWordsExerciseRun,
 ): Promise<Uint8Array> {
+  const { PDFDocument, rgb } = await import('pdf-lib');
+  const { embedPracticePdfLyricsFonts } = await import('./encorePracticePdfFonts');
   const { preamble, tableRows } = buildLyricsInOwnWordsExportTable(song, run);
   const pdf = await PDFDocument.create();
   const { font, fontBold } = await embedPracticePdfLyricsFonts(pdf);
@@ -423,6 +419,8 @@ export async function buildPracticeExercisePdfBytes(
     return buildLyricsInOwnWordsPdfBytes(song, run);
   }
 
+  const { PDFDocument, rgb } = await import('pdf-lib');
+  const { embedPracticePdfBodyFont } = await import('./encorePracticePdfFonts');
   const body = buildPracticeExerciseExportPlainText(song, run);
   const pdf = await PDFDocument.create();
   const font = await embedPracticePdfBodyFont(pdf);

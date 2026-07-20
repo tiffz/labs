@@ -1,4 +1,13 @@
-import { useEffect, useLayoutEffect, useMemo, useSyncExternalStore, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useSyncExternalStore,
+  useState,
+  type ReactElement,
+} from 'react';
 import CircularProgress from '@mui/material/CircularProgress';
 import SkipToMain from '../shared/components/SkipToMain';
 import {
@@ -7,8 +16,6 @@ import {
 } from './devLocalhostToLoopbackRedirect';
 import { useEncoreAuth } from './context/EncoreAuthContext';
 import { AccessRestrictedScreen, SignInLanding } from './components/AccessGateScreens';
-import { EncoreMainShell } from './components/EncoreMainShell';
-import { GuestShareView } from './components/GuestShareView';
 import { tryCompleteSpotifyOAuthFromUrl } from './spotify/completeOAuthFromUrl';
 import { EncoreAppShell } from './ui/EncoreAppShell';
 import { touchLabsGoogleSessionConsumer } from '../shared/google/labsGoogleSessionConsumers';
@@ -20,7 +27,22 @@ import {
   subscribeEncoreLocationHash,
 } from './seo/guestShareRobots';
 
-function EncoreSignedInRouter(): React.ReactElement {
+const EncoreMainShell = lazy(() =>
+  import('./components/EncoreMainShell').then((m) => ({ default: m.EncoreMainShell })),
+);
+const GuestShareView = lazy(() =>
+  import('./components/GuestShareView').then((m) => ({ default: m.GuestShareView })),
+);
+
+function EncoreBootFallback({ label }: { label: string }): ReactElement {
+  return (
+    <EncoreAppShell centered aria-busy="true" aria-label={label}>
+      <CircularProgress color="primary" />
+    </EncoreAppShell>
+  );
+}
+
+function EncoreSignedInRouter(): ReactElement {
   const {
     googleAuthReady,
     googleAccessToken,
@@ -74,13 +96,15 @@ function EncoreSignedInRouter(): React.ReactElement {
           />
         </main>
       ) : (
-        <EncoreMainShell />
+        <Suspense fallback={<EncoreBootFallback label="Loading Encore" />}>
+          <EncoreMainShell />
+        </Suspense>
       )}
     </>
   );
 }
 
-export default function App(): React.ReactElement {
+export default function App(): ReactElement {
   const locationHash = useSyncExternalStore(
     subscribeEncoreLocationHash,
     getEncoreLocationHash,
@@ -116,7 +140,9 @@ export default function App(): React.ReactElement {
       <>
         <SkipToMain />
         <main id="main">
-          <GuestShareView fileId={shareFileId} />
+          <Suspense fallback={<EncoreBootFallback label="Loading shared snapshot" />}>
+            <GuestShareView fileId={shareFileId} />
+          </Suspense>
         </main>
       </>
     );

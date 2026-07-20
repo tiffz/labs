@@ -7,7 +7,7 @@ import {
 } from '../utils/videoScoreCorrelation';
 import { SmartBeatMap } from '../utils/smartBeatMap';
 import { useMatTooltip } from './useMatTooltip';
-import AppSlider from '../../shared/components/AppSlider';
+import AppLinearVolumeSlider from '../../shared/components/AppLinearVolumeSlider';
 
 const VideoPlayer: React.FC = () => {
   const { state, dispatch } = usePiano();
@@ -470,12 +470,15 @@ const VideoPlayer: React.FC = () => {
 
           <div className="vp-controls-row">
             <span className="sb-label">Volume</span>
-            <AppSlider min={0} max={1} step={0.01}
+            <AppLinearVolumeSlider
               value={state.mediaVolume}
-              onChange={e => dispatch({ type: 'SET_MEDIA_VOLUME', volume: parseFloat(e.target.value) })}
-              className={`volume-slider${state.mediaMuted ? ' disabled-slider' : ''}`}
-              style={{ flex: 1 }}
-              disabled={state.mediaMuted} />
+              onChange={(_, next) => dispatch({ type: 'SET_MEDIA_VOLUME', volume: next as number })}
+              step={0.01}
+              className={`labs-volume-slider volume-slider${state.mediaMuted ? ' disabled-slider' : ''}`}
+              sx={{ flex: 1 }}
+              disabled={state.mediaMuted}
+              aria-label="Media volume"
+            />
           </div>
         </div>
       )}

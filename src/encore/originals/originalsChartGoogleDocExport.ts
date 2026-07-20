@@ -3,7 +3,7 @@ import {
   docsCreateBlankDocument,
   docsReplaceBodyTwoColumnPlainTextTable,
 } from '../practice/googleDocsExerciseExport';
-import { sanitizeTextForGoogleDocsInsert } from '../practice/encorePracticeExerciseExport';
+import { sanitizeTextForGoogleDocsInsert } from '../practice/googleDocsTextSanitize';
 import { boldAsciiChartExportSpans, chartLayoutToTwoColumnExport } from '../../shared/music/chordChartTwoColumnExport';
 import { parseChordProToChartLayout } from '../../shared/music/chordPro/chordChartLayout';
 import { driveGetFileMetadata, driveMoveFile } from '../drive/driveFetch';

@@ -258,10 +258,19 @@ export class SampledPiano extends BaseInstrument {
       gainNode.connect(this.output);
     }
     
+    const release = this.trackVoice(() => {
+      try {
+        source.stop(0);
+      } catch {
+        /* already stopped */
+      }
+    });
+
     source.start(clampedStartTime);
     source.stop(clampedStartTime + effectiveDuration + 0.15);
-    
+
     source.onended = () => {
+      release();
       gainNode.disconnect();
       if (modulation) {
         modulation.modulationGain.disconnect();

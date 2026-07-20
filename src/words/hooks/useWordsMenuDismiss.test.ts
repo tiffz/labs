@@ -3,8 +3,65 @@ import { renderHook } from '@testing-library/react';
 import { createRef } from 'react';
 
 import { useWordsMenuDismiss } from './useWordsMenuDismiss';
+import { CHORD_PROGRESSION_DROPDOWN_ROOT_CLASS } from '../../shared/components/music/chordProgressionPopover';
 
 describe('useWordsMenuDismiss', () => {
+  it('does not close section settings when clicking the portaled chord progression menu', () => {
+    const sectionSettingsMenu = document.createElement('div');
+    document.body.appendChild(sectionSettingsMenu);
+    const chordRoot = document.createElement('div');
+    chordRoot.className = `MuiPopover-root ${CHORD_PROGRESSION_DROPDOWN_ROOT_CLASS}`;
+    document.body.appendChild(chordRoot);
+    const preset = document.createElement('button');
+    chordRoot.appendChild(preset);
+
+    const sectionSettingsMenuRef = createRef<HTMLDivElement | null>();
+    sectionSettingsMenuRef.current = sectionSettingsMenu;
+
+    const setOpenSectionSettingsId = vi.fn();
+    const noop = vi.fn();
+
+    renderHook(() =>
+      useWordsMenuDismiss(
+        {
+          generationMenuRef: createRef(),
+          generationButtonRef: createRef(),
+          soundMenuRef: createRef(),
+          soundButtonRef: createRef(),
+          sectionSettingsMenuRef,
+          sectionRandomizeMenuRef: createRef(),
+          sectionChorusLinkMenuRef: createRef(),
+          exportButtonRef: createRef(),
+          randomizeButtonRef: createRef(),
+        },
+        {
+          setGenerationMenuOpen: noop,
+          setSoundMenuOpen: noop,
+          setOpenSectionSettingsId,
+          setSectionRandomizeMenuId: noop,
+          setSectionChorusLinkMenuId: noop,
+          setExportMenuOpen: noop,
+          setRandomizeMenuOpen: noop,
+        },
+        {
+          generationMenuOpen: false,
+          soundMenuOpen: false,
+          openSectionSettingsId: 'section-1',
+          sectionRandomizeMenuId: null,
+          sectionChorusLinkMenuId: null,
+          exportMenuOpen: false,
+          randomizeMenuOpen: false,
+        },
+      ),
+    );
+
+    preset.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    expect(setOpenSectionSettingsId).not.toHaveBeenCalled();
+
+    sectionSettingsMenu.remove();
+    chordRoot.remove();
+  });
+
   it('does not close section settings when clicking the portaled drum pattern edit menu', () => {
     const sectionSettingsMenu = document.createElement('div');
     document.body.appendChild(sectionSettingsMenu);

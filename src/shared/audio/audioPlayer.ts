@@ -63,9 +63,14 @@ export class AudioPlayer {
       };
       document.addEventListener('visibilitychange', this.visibilityChangeHandler);
 
-      // Set up state change handler to detect when AudioContext becomes suspended
+      // Only auto-resume when the tab is visible. Blind resume after background
+      // suspend dumps any notes clamped to a frozen clock as a loud blast.
       this.stateChangeHandler = () => {
-        if (this.audioContext?.state === 'suspended') {
+        if (
+          this.audioContext?.state === 'suspended' &&
+          typeof document !== 'undefined' &&
+          document.visibilityState === 'visible'
+        ) {
           this.audioContext.resume().catch(err => {
             console.warn('Failed to resume suspended AudioContext:', err);
           });
