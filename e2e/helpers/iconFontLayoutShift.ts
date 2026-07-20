@@ -32,17 +32,22 @@ interface Geometry {
   buttonWidth: number | null;
 }
 
-const FONT_DELAY_MS = 2000;
-
 /**
- * Only the icon families. Delaying every font would let text reflow (Roboto et
- * al.) land in the same measurement window and be misread as icon shift — a
- * separate problem with a separate fix.
+ * Only the icon families. Holding every font back would let text reflow
+ * (Roboto et al.) land in the same measurement window and be misread as icon
+ * shift — a separate problem with a separate fix.
  */
 const ICON_FONT_URL_PATTERN = /material-symbols|material-icons/i;
 
-/** Comfortably inside the icon delay above, so the first snapshot is pending. */
-const TEXT_FONT_SETTLE_MS = 900;
+/** How long to wait for the app to mount its first icon. */
+const ICON_MOUNT_TIMEOUT_MS = 5_000;
+
+/**
+ * Breathing room after the first icon appears, so sibling chrome has mounted
+ * and the unthrottled text fonts have settled. Their reflow must not land
+ * between the two snapshots and read as icon shift.
+ */
+const POST_MOUNT_SETTLE_MS = 400;
 
 async function captureGeometry(page: Page): Promise<Geometry[]> {
   return page.evaluate(() => {
@@ -68,28 +73,42 @@ export async function measureIconFontLayoutShift(
   page: Page,
   route: string
 ): Promise<IconShiftReport> {
+  // Hold the icon font on a gate we open by hand once the pending snapshot is
+  // taken, rather than racing a fixed delay. The measurement then cannot miss
+  // its window no matter how slow a contended worker is.
+  let openIconFontGate = (): void => {};
+  const iconFontGate = new Promise<void>((resolve) => {
+    openIconFontGate = resolve;
+  });
+
   await page.route('**/*.woff2', async (routeHandle) => {
     if (ICON_FONT_URL_PATTERN.test(routeHandle.request().url())) {
-      await new Promise((resolve) => setTimeout(resolve, FONT_DELAY_MS));
+      await iconFontGate;
     }
     await routeHandle.continue();
   });
 
   await page.goto(route, { waitUntil: 'domcontentloaded' });
 
-  // Settle before the first snapshot so the app has mounted its icons. Only the
-  // icon families are throttled, so the text fonts have already landed by now
-  // and their reflow cannot be misattributed to the icon swap.
-  //
-  // Deliberately a plain wait: `waitForFunction(() => document.fonts.check(…))`
-  // hangs on Chords regardless of polling mode, overrunning its own timeout by
-  // ~30x. Nothing here needs to be that clever.
-  await page.waitForTimeout(TEXT_FONT_SETTLE_MS);
+  // Wait for the app to actually mount an icon rather than assuming a duration.
+  // Poll on a timer: rAF polling wedges on Chords, running far past its own
+  // timeout.
+  await page
+    .waitForFunction(
+      () => document.querySelector('.material-symbols-outlined, .material-icons') !== null,
+      { timeout: ICON_MOUNT_TIMEOUT_MS, polling: 100 }
+    )
+    .catch(() => {
+      // Leave it to the caller's assertion, which reports zero samples clearly.
+    });
+  await page.waitForTimeout(POST_MOUNT_SETTLE_MS);
 
   const observedPending = await page.evaluate(() =>
     document.documentElement.classList.contains('icons-pending')
   );
   const pending = await captureGeometry(page);
+
+  openIconFontGate();
 
   await page
     .waitForFunction(() => document.documentElement.classList.contains('icons-ready'), {

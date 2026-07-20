@@ -719,10 +719,11 @@ body {
   min-width: 28px;
   flex: 0 0 28px;
   /* align-self: stretch (inherited) has no fixed row height to stretch to
-     when this is the row's only tall sibling — pin a floor so the icon
-     below can't shrink the box in lockstep and keep failing the
-     FOUC-clip ratio check (e2e/visual/visualTestUtils.ts). */
-  min-height: 17px;
+     when this is the row's only tall sibling, so it collapses to content.
+     24px is the coarse-pointer touch floor (responsive-all-apps.spec.ts) and
+     also clears the FOUC-clip ratio for the 11px glyph below, which wants
+     at least 1.5x (e2e/visual/visualTestUtils.ts). */
+  min-height: 24px;
   box-sizing: border-box;
   margin: 0;
   padding: 0;
