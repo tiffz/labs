@@ -414,6 +414,45 @@ html:has(.gesture-app) {
   gap: 0.65rem;
 }
 
+/* Aggregate recovery summary — stands in for two or more interrupted items. */
+.gesture-recovery-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.gesture-recovery-summary-text {
+  min-width: 0;
+}
+
+.gesture-recovery-summary-title {
+  margin: 0;
+  font-weight: 500;
+}
+
+.gesture-recovery-summary-copy {
+  margin: 0.15rem 0 0;
+  color: var(--gesture-text-muted, inherit);
+}
+
+.gesture-recovery-summary-toggle {
+  flex-shrink: 0;
+}
+
+/* The individual banners already carry their own bottom margin. */
+.gesture-recovery-group-items {
+  margin-bottom: 0;
+}
+
+.gesture-recovery-summary-toggle .labs-disclosure-chevron {
+  transition: transform var(--gesture-transition, 150ms ease);
+}
+
+.gesture-recovery-summary-toggle .labs-disclosure-chevron.is-collapsed {
+  transform: rotate(-90deg);
+}
+
 .gesture-banner-text {
   margin: 0;
   flex: 1;

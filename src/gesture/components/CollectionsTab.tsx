@@ -15,6 +15,7 @@ import GestureTagFilterBar from '../components/GestureTagFilterBar';
 import InterruptedMergeBanner from '../components/InterruptedMergeBanner';
 import InterruptedBatchUploadBanner from '../components/InterruptedBatchUploadBanner';
 import InterruptedUploadBanner from '../components/InterruptedUploadBanner';
+import RecoveryBannerGroup from '../components/RecoveryBannerGroup';
 import MergeCollectionsDialog from '../components/MergeCollectionsDialog';
 import { useGestureDriveBackupContext } from '../context/GestureDriveBackupContext';
 import { canMergeGesturePacks, isPackInvolvedInIncompleteMerge } from '../drive/gestureMergeCollections';
@@ -289,27 +290,33 @@ export default function CollectionsTab({
           onError={onError}
         />
       ) : null}
-      {recoveryPacks.map((pack) => (
-        <InterruptedUploadBanner
-          key={pack.id}
-          pack={pack}
-          photoCount={filesByPack.counts.get(pack.id) ?? 0}
-          disabled={recoveryActionsDisabled}
-          upload={upload}
-          onMessage={onMessage}
-          onError={onError}
-          onRemove={(target) => openDeleteDialog([target])}
-        />
-      ))}
-      {mergeRecoveryPacks.map((pack) => (
-        <InterruptedMergeBanner
-          key={`merge-${pack.id}`}
-          pack={pack}
-          onMessage={onMessage}
-          onError={onError}
-          onRemove={(target) => openDeleteDialog([target])}
-        />
-      ))}
+      {/* One banner each buried the toolbar when several uploads were
+          interrupted; the group summarises past a single item. */}
+      <RecoveryBannerGroup
+        banners={[
+          ...recoveryPacks.map((pack) => (
+            <InterruptedUploadBanner
+              key={pack.id}
+              pack={pack}
+              photoCount={filesByPack.counts.get(pack.id) ?? 0}
+              disabled={recoveryActionsDisabled}
+              upload={upload}
+              onMessage={onMessage}
+              onError={onError}
+              onRemove={(target) => openDeleteDialog([target])}
+            />
+          )),
+          ...mergeRecoveryPacks.map((pack) => (
+            <InterruptedMergeBanner
+              key={`merge-${pack.id}`}
+              pack={pack}
+              onMessage={onMessage}
+              onError={onError}
+              onRemove={(target) => openDeleteDialog([target])}
+            />
+          )),
+        ]}
+      />
       <div className="gesture-tab-toolbar">
         <Typography className="gesture-tab-lede">
           Sign in with Google to upload or link a collection. Photos live in your Drive; tags and
