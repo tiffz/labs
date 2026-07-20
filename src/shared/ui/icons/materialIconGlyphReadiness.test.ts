@@ -182,4 +182,30 @@ describe('materialIconCssWouldClipInk', () => {
     expect(materialIconCssWouldClipInk(el)).toBe(true);
     vi.restoreAllMocks();
   });
+
+  it('flags chrome buttons shorter than Material ink headroom', () => {
+    document.body.innerHTML =
+      '<button class="settings-button"><span class="material-symbols-outlined">settings</span></button>';
+    const el = document.querySelector('span') as HTMLElement;
+    const btn = document.querySelector('button') as HTMLElement;
+    vi.spyOn(window, 'getComputedStyle').mockImplementation((target) => {
+      if (target === el) {
+        return {
+          overflowY: 'visible',
+          overflow: 'visible',
+          fontSize: '24px',
+        } as unknown as CSSStyleDeclaration;
+      }
+      return {
+        overflowY: 'visible',
+        overflow: 'visible',
+        fontSize: '16px',
+      } as unknown as CSSStyleDeclaration;
+    });
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue(rect(24, 24));
+    // 34px button with 24px glyph → ink (~29px) crushes into the border.
+    vi.spyOn(btn, 'getBoundingClientRect').mockReturnValue(rect(34, 34));
+    expect(materialIconCssWouldClipInk(el)).toBe(true);
+    vi.restoreAllMocks();
+  });
 });
