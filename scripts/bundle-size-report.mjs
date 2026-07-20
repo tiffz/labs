@@ -6,10 +6,14 @@
  *
  *   - growth > 10% (gzip)          → warning (advisory)
  *   - growth > 25% (gzip)          → FAIL
- *   - gzip total > absolute cap    → FAIL (per-app exemptions listed below)
+ *   - gzip total > absolute cap    → FAIL (optional CAP_EXEMPTIONS set below; prefer empty)
  *
  * Baseline updates land in the same PR as the growth they justify:
  *   npm run report:bundle-size -- --update-baseline
+ *
+ * Prefer calibrating `--update-baseline` from **CI Linux** gzip sizes (build job
+ * log or a Linux runner). macOS local gzip is often ~15–25% smaller and will
+ * trip the 25% growth fail tier on Ubuntu CI even when absolute sizes are fine.
  *
  * Usage: npm run report:bundle-size [-- --skip-build --update-baseline --check]
  * `--check` exits non-zero on FAIL tier (used by CI build job).
@@ -30,11 +34,8 @@ const ABSOLUTE_GZIP_CAP = 2 * 1024 * 1024;
  * Apps temporarily over the absolute cap. Each entry must reference a tracked
  * work item; remove the entry when the app is brought under the cap.
  */
-const CAP_EXEMPTIONS = new Set([
-  // ~2.3 MiB gzip eager JS — mega-file decomposition tracked in
-  // docs/TECH_DEBT_ROADMAP.md (useSongPageMediaHub, PlaylistImportDialog).
-  'encore',
-]);
+/** Apps temporarily over the absolute cap. Prefer empty — route-split instead. */
+const CAP_EXEMPTIONS = new Set([]);
 
 const skipBuild = process.argv.includes('--skip-build');
 const updateBaseline = process.argv.includes('--update-baseline');

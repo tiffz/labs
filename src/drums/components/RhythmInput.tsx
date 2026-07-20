@@ -4,15 +4,17 @@ import type { PlaybackSettings } from '../types/settings';
 import { } from '../utils/timeSignatureUtils';
 import RhythmPresets from './RhythmPresets';
 import DrumSymbolIcon from './DrumSymbolIcon';
-import SharedExportPopover from '../../shared/components/music/SharedExportPopover';
 import { detectTabType, isTab, type TabType } from '../utils/tabDetector';
+import type { ExportSourceAdapter } from '../../shared/music/exportTypes';
 import { formatRhythm } from '../utils/formatting';
 import AppTooltip from '../../shared/components/AppTooltip';
-import { createDrumsExportAdapter } from '../utils/exportAdapter';
 
 const TabImportWizard = lazy(() =>
   import('./TabImportWizard').then((m) => ({ default: m.TabImportWizard })),
 );
+
+/** Export pulls lamejs/ffmpeg/MIDI builders — keep off the first-paint graph. */
+const SharedExportPopover = lazy(() => import('../../shared/components/music/SharedExportPopover'));
 
 interface RhythmInputProps {
   notation: string;
@@ -56,16 +58,33 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
   const [showTabImportModal, setShowTabImportModal] = useState(false);
   const [pastedTabText, setPastedTabText] = useState('');
   const [pastedTabType, setPastedTabType] = useState<TabType>('unknown');
+  const [exportAdapter, setExportAdapter] = useState<ExportSourceAdapter | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const downloadButtonRef = useRef<HTMLButtonElement>(null);
-  const exportAdapter = useMemo(() => createDrumsExportAdapter({
-    rhythm: parsedRhythm,
-    bpm,
-    playbackSettings,
-    metronomeEnabled,
-    notation,
-    timeSignature,
-  }), [parsedRhythm, bpm, playbackSettings, metronomeEnabled, notation, timeSignature]);
+
+  const exportAdapterOptions = useMemo(
+    () => ({
+      rhythm: parsedRhythm,
+      bpm,
+      playbackSettings,
+      metronomeEnabled,
+      notation,
+      timeSignature,
+    }),
+    [parsedRhythm, bpm, playbackSettings, metronomeEnabled, notation, timeSignature],
+  );
+
+  useEffect(() => {
+    if (!showDownloadDropdown) return;
+    let cancelled = false;
+    void import('../utils/exportAdapter').then(({ createDrumsExportAdapter }) => {
+      if (cancelled) return;
+      setExportAdapter(createDrumsExportAdapter(exportAdapterOptions));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [showDownloadDropdown, exportAdapterOptions]);
 
   // NOTE: Selection syncing between display and textarea has been disabled
   // because it doesn't work correctly with repeat syntax (|x3, %, etc.)
@@ -264,14 +283,16 @@ const RhythmInput: React.FC<RhythmInputProps> = ({
                     <span className="material-symbols-outlined">download</span>
                   </button>
                 </AppTooltip>
-                {showDownloadDropdown && (
-                  <SharedExportPopover
-                    open={showDownloadDropdown}
-                    anchorEl={downloadButtonRef.current}
-                    onClose={() => setShowDownloadDropdown(false)}
-                    adapter={exportAdapter}
-                    persistKey="drums"
-                  />
+                {showDownloadDropdown && exportAdapter && (
+                  <Suspense fallback={null}>
+                    <SharedExportPopover
+                      open={showDownloadDropdown}
+                      anchorEl={downloadButtonRef.current}
+                      onClose={() => setShowDownloadDropdown(false)}
+                      adapter={exportAdapter}
+                      persistKey="drums"
+                    />
+                  </Suspense>
                 )}
               </div>
               <AppTooltip title="Randomize">

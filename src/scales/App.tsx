@@ -1,6 +1,6 @@
+import { lazy, Suspense } from 'react';
 import { ScalesProvider, useScales, hasEnabledMidiDevice } from './store';
 import HomeScreen from './components/HomeScreen';
-import SessionScreen from './components/SessionScreen';
 import ProgressScreen from './components/ProgressScreen';
 import InputGateway from './components/InputGateway';
 import { enableDebug } from './utils/practiceDebugLog';
@@ -9,6 +9,9 @@ import { ScalesSessionDebugBridgeProvider } from './context/scalesSessionDebugBr
 import SkipToMain from '../shared/components/SkipToMain';
 import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
 import { ScalesDriveBackupProvider } from './context/ScalesDriveBackupContext';
+
+/** SessionScreen pulls ScoreDisplay/VexFlow — keep off the home-screen first paint. */
+const SessionScreen = lazy(() => import('./components/SessionScreen'));
 
 const debugMode = readLabsDebugFromLocation().debug;
 if (debugMode) enableDebug();
@@ -20,7 +23,11 @@ function ScreenRouter() {
     case 'home':
       return <HomeScreen />;
     case 'session':
-      return <SessionScreen />;
+      return (
+        <Suspense fallback={null}>
+          <SessionScreen />
+        </Suspense>
+      );
     case 'progress':
       return <ProgressScreen />;
     default:

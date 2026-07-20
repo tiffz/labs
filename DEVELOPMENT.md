@@ -430,7 +430,7 @@ Related: **process retrospective** → skill `labs-session-retrospective`. **Bug
 
 ### Decision
 
-Emit a deterministic vendor chunk map for `react`, `@mui`, `vexflow`, and `three` so that apps which don't use those deps don't pay for them.
+Emit a deterministic vendor chunk for React + MUI + Emotion, plus a shared `vexflow` chunk for notation apps. **Do not** put `three` / `@react-three` in a global shared chunk — that previously co-located React core into `three-*.js`, so every micro-app modulepreloaded ~1 MB of Three.js on first paint.
 
 ### Implementation
 
@@ -439,20 +439,22 @@ Emit a deterministic vendor chunk map for `react`, `@mui`, `vexflow`, and `three
 ```ts
 manualChunks: (id) => {
   if (!id.includes('node_modules')) return undefined;
+  // React *core* only — never `@react-three/*`
   if (
-    id.includes('react-dom') ||
-    id.includes('/react/') ||
-    id.endsWith('/react')
+    /node_modules[/\\](?:react|react-dom|scheduler|use-sync-external-store)(?:[/\\]|$)/.test(
+      id
+    ) ||
+    id.includes('@mui/') ||
+    id.includes('@emotion/')
   )
     return 'vendor';
-  if (id.includes('@mui/') || id.includes('@emotion/')) return 'mui';
   if (id.includes('vexflow')) return 'vexflow';
-  if (id.includes('three') || id.includes('@react-three')) return 'three';
+  // three stays app-local (muscle/forms lazy or entry graph)
   return undefined;
 };
 ```
 
-Combined with path imports from `@mui/material/<Component>` (not barrel imports from `@mui/material`), each app only ships the MUI/vexflow/three code it actually references.
+Combined with path imports from `@mui/material/<Component>` (not barrel imports from `@mui/material`), each app only ships the MUI/vexflow code it actually references. Three.js loads only for apps that import it.
 
 ### Related rules
 

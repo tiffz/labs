@@ -18,6 +18,7 @@ import BpmInput from '../../shared/components/music/BpmInput';
 import AppLinearVolumeSlider from '../../shared/components/AppLinearVolumeSlider';
 import { usePlaybackWakeLock } from '../../shared/audio/usePlaybackWakeLock';
 
+
 const DrumAccompaniment = lazy(() => import('../../shared/components/music/DrumAccompaniment'));
 
 const PIANO_DRUM_STYLE: NotationStyle = {
