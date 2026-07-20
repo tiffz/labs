@@ -32,11 +32,12 @@ function stripHtmlTagsIteratively(value: string): string {
 }
 
 function decodeBasicEntitiesOnce(value: string): string {
+  // Named entities first, `&amp;` last so `&amp;lt;` becomes `&lt;` not `<`.
   return value
     .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
     .replace(/\u00a0/g, ' ');
 }
 
