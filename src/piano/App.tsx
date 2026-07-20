@@ -325,7 +325,9 @@ function PianoApp() {
 
           <div className="score-container">
             {state.score ? (
-              <Suspense fallback={<div className="empty-score">Loading score…</div>}>
+              <Suspense
+                fallback={<div className="empty-score score-loading">Loading score…</div>}
+              >
                 <ScoreDisplay
                   score={state.score}
                   currentMeasureIndex={state.currentMeasureIndex}

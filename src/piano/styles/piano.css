@@ -261,6 +261,27 @@ body {
   overflow: hidden;
 }
 
+/*
+ * Hold the space the notation is about to occupy.
+ *
+ * ScoreDisplay is lazy, and its container grew 139px -> 1184px on mount,
+ * shoving the sidebar below it down the page — 0.43 CLS, nearly all of this
+ * route's total. This area is blank either way while the chunk loads, so
+ * reserving more of it costs nothing on screen.
+ *
+ * Only narrow viewports need the tall reservation: at desktop widths the
+ * staff wraps into far fewer lines and the shift never showed up there.
+ */
+.score-loading {
+  min-height: 200px;
+}
+
+@media (max-width: 768px) {
+  .score-loading {
+    min-height: 120vh;
+  }
+}
+
 /* ==========================================================================
    SHARED COMPONENTS – Buttons
    ========================================================================== */
