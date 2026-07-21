@@ -63,3 +63,6 @@ AUDIT_REPORT.md
 __pycache__/
 # Abandoned Blender Studio base-mesh assets (skin-swap dropped — see ADR 0018)
 tools/muscle-anatomy/data/human-base-meshes/
+
+# Agent isolation worktrees (harness-managed, never commit)
+.claude/worktrees/
