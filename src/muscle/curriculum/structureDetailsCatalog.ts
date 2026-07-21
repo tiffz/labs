@@ -137,7 +137,7 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Deltoid_muscle',
   },
   muscle_deltoid_lateral: {
-    definition: 'Shoulder cap width in three-quarter views; sits forward of the acromion.',
+    definition: 'Shoulder cap width in three-quarter views; caps the acromion and reads as the widest point of the shoulder.',
     colloquialNames: ['side delt', 'middle deltoid'],
     latinName: 'Musculus deltoideus',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Deltoid_muscle',
@@ -311,8 +311,8 @@ export const STRUCTURE_DETAILS_BY_ID: Record<string, StructureDetails> = {
   },
   muscle_gastrocnemius: {
     definition: 'Twin calf diamond on the back leg; peaks on plantarflexion. Part of triceps surae with soleus.',
-    colloquialNames: ['calf', 'calves', 'triceps surae'],
-    latinName: 'Musculus triceps surae (gastrocnemius)',
+    colloquialNames: ['calf', 'calves'],
+    latinName: 'Musculus gastrocnemius',
     wikipediaUrl: 'https://en.wikipedia.org/wiki/Gastrocnemius_muscle',
   },
   muscle_tibialis_anterior: {

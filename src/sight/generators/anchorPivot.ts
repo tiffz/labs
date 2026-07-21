@@ -9,11 +9,24 @@ const SYSTEM_OFFSETS: Record<HarmonySystem, number[]> = {
   tetradic: [0, 90, 180, 270],
 };
 
-const SYSTEM_BY_LEVEL: HarmonySystem[] = ['complementary', 'splitComplementary', 'triadic', 'tetradic'];
+// Harmony (anchor-pivot) levels the curriculum actually reaches, keyed by the
+// exact level number so the generated system matches each level's label. Only
+// levels 23–24 use the anchor-pivot module (21–22 are gamut); the previous
+// `level - 21` offset landed level 23 ("Complementary pivot") on triadic and
+// level 24 ("Split & triadic pivot") on tetradic.
+const SYSTEMS_BY_LEVEL: Record<number, HarmonySystem[]> = {
+  23: ['complementary'],
+  24: ['splitComplementary', 'triadic'],
+};
+
+function anchorPivotSystemsForLevel(level: number): HarmonySystem[] {
+  return SYSTEMS_BY_LEVEL[level] ?? ['complementary'];
+}
 
 export function generateAnchorPivotChallenge(seed: number, level: number): AnchorPivotChallenge {
   const rng = createRng(seed);
-  const system = SYSTEM_BY_LEVEL[(level - 21) % SYSTEM_BY_LEVEL.length] ?? 'complementary';
+  const systems = anchorPivotSystemsForLevel(level);
+  const system = systems[Math.floor(rng() * systems.length)] ?? 'complementary';
   const pivotHue = rng() * 360;
   const offsets = SYSTEM_OFFSETS[system];
   const targetAngles = offsets.map((o) => (pivotHue + o) % 360);
