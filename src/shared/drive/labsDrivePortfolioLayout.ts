@@ -86,11 +86,19 @@ export async function readLabsDriveProgressJson(
   return driveGetMedia(accessToken, progressFileId);
 }
 
-/** True when `ensureLabsDrivePortfolioProgressLayout` created an empty stub (not app data yet). */
+/**
+ * True when `ensureLabsDrivePortfolioProgressLayout` created an empty stub (not app data yet).
+ *
+ * Keyed ONLY on the explicit `_placeholder === true` flag the layout stub writes. Do NOT key on
+ * `schemaVersion` (e.g. `=== 0`): an app or migration whose real envelope legitimately uses a
+ * given schema number would be mistaken for an empty stub, so every pull would treat rich cloud
+ * data as empty, mark the pull succeeded, and let the next push clobber it. `schemaVersion` is a
+ * data-format number, never a placeholder signal.
+ */
 export function isLabsDrivePortfolioProgressPlaceholder(json: string): boolean {
   try {
-    const data = JSON.parse(json) as { schemaVersion?: number; _placeholder?: boolean };
-    return data.schemaVersion === 0 || data._placeholder === true;
+    const data = JSON.parse(json) as { _placeholder?: boolean };
+    return data._placeholder === true;
   } catch {
     return false;
   }

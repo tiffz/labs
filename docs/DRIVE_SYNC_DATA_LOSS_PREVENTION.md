@@ -162,6 +162,8 @@ Avoid: destructive actions without confirm; coarse LWW on compound rows; silent 
 
 Add rows to [`PROCESS_BACKLOG.md`](PROCESS_BACKLOG.md) when discovered; remove when fixed.
 
+**Red-team (2026-07-21):** a multi-agent adversarial audit produced [`DRIVE_SYNC_REDTEAM_2026-07.md`](DRIVE_SYNC_REDTEAM_2026-07.md) — 32 confirmed findings. Fixed: history-recovery revision ordering (#25), placeholder/`schemaVersion` decoupling (#23). Tracked remainder in `PROCESS_BACKLOG.md` § Drive-sync red-team. **Note:** the 10 layers above defend _data loss_, not _API abuse_ — there is no absolute Drive request-rate governor yet (retries ignore `Retry-After`, no jitter); a shared throttled `driveFetch` wrapper is the tracked fix.
+
 ---
 
 ## Testing expectations
