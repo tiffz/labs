@@ -74,7 +74,7 @@ export default function DebriefPhase({ debrief, onHome, onRestart }: DebriefPhas
         </div>
         {hasSkipped ? (
           <Typography className="gesture-debrief-skipped-note">
-            Skipped photos are not marked as drawn — they may appear in a future session.
+            Skipped photos are not marked as drawn. They may appear in a future session.
           </Typography>
         ) : null}
       </section>

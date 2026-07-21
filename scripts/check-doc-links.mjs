@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Doc hygiene, two passes over the guidance corpus (docs/, root *.md, src markdown,
- * .cursor/rules, .cursor/skills):
+ * .agents/rules, .agents/skills):
  *   1. Every relative markdown link resolves to a file/directory on disk.
  *   2. Every `npm run <script>` citation exists in package.json scripts.
  * Plus: shared-catalog demo symbols resolve (legacy check).
@@ -36,7 +36,7 @@ function collectMarkdownFiles() {
       pushIfMd(full);
     }
   };
-  for (const root of ['docs', 'src', '.cursor/rules', '.cursor/skills', 'e2e', 'tools', 'workers', '.github']) {
+  for (const root of ['docs', 'src', '.agents/rules', '.agents/skills', 'e2e', 'tools', 'workers', '.github']) {
     walk(path.join(repoRoot, root));
   }
   return out;

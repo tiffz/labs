@@ -40,7 +40,7 @@ Canonical theory/typing lives in `src/shared/music/**`. Import **`chordTheory`**
 
 Primary unit tests live with utilities (e.g. `src/chords/utils/*.test.ts`).
 
-Renderer regressions are covered in component tests:
+Component tests cover renderer regressions:
 
 - `src/chords/components/ChordScoreRenderer.test.tsx` guards 12/8 `one-per-beat`
   engraving so stray flag glyphs do not reappear.

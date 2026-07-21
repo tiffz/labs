@@ -88,7 +88,7 @@ flowchart TD
   `LabsGoogleInteractiveAuthRequiredError` it falls into the existing empty catch and skips
   the cloud diff — the user's next manual click refreshes auth and the next mount re-runs the
   check.
-- **Stanza** [`useStanzaDriveBackup.ts`](../../src/stanza/hooks/useStanzaDriveBackup.ts):
+- **Stanza** [`useStanzaDriveBackup.tsx`](../../src/stanza/hooks/useStanzaDriveBackup.tsx):
   `flushDriveWrite` and `pullFromDriveAndMerge` reuse their existing `silent: boolean` option
   as a single dial that also controls `{ interactive: !silent }`. The auto-pull and auto-push
   effects already passed `silent: true`, so they're popup-free without further plumbing. On
@@ -153,5 +153,5 @@ flowchart TD
   — regression tests pinning both invariants.
 - [`src/scales/context/ScalesDriveBackupContext.tsx`](../../src/scales/context/ScalesDriveBackupContext.tsx)
   — Scales cloud-check now `interactive: false`.
-- [`src/stanza/hooks/useStanzaDriveBackup.ts`](../../src/stanza/hooks/useStanzaDriveBackup.ts)
+- [`src/stanza/hooks/useStanzaDriveBackup.tsx`](../../src/stanza/hooks/useStanzaDriveBackup.tsx)
   — Stanza auto-pull / auto-push now `interactive: false`, with calm error messaging.

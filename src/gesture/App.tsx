@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, startTransition, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
 import {
   LabsKeyboardShortcutsHost,
@@ -14,8 +14,10 @@ import { seedGestureE2ePreviewFixtures } from './e2e/gestureE2eSeed';
 import { applyGestureLinenCssVars } from './design/linenTheme';
 import { gestureGoogleClientConfigured } from './hooks/useGestureDriveBackup';
 import { useGestureAutoReindex } from './hooks/useGestureAutoReindex';
-import DebriefPhase from './phases/DebriefPhase';
-import ZenSessionPhase from './phases/ZenSessionPhase';
+// Neither phase exists on the home screen everyone lands on, and the session
+// phase drags in the whole drawing surface. Load them when a session starts.
+const DebriefPhase = lazy(() => import('./phases/DebriefPhase'));
+const ZenSessionPhase = lazy(() => import('./phases/ZenSessionPhase'));
 import type { AppPhase, SessionConfig, SessionDebrief } from './types';
 
 function GestureMaintenanceEffects(): null {
@@ -71,21 +73,24 @@ function GestureAppContent(): React.ReactElement {
     setPhase('home');
   }, []);
 
+  // Enter the lazy phases through a transition. React then keeps the current
+  // screen mounted while the chunk loads instead of unmounting it for the null
+  // fallback, so a cold-cache start does not flash blank.
   const startSession = useCallback((config: SessionConfig) => {
     setSessionConfig(config);
-    setPhase('session');
+    startTransition(() => setPhase('session'));
   }, []);
 
   const finishSession = useCallback((result: SessionDebrief) => {
     setDebrief(result);
-    setPhase('debrief');
+    startTransition(() => setPhase('debrief'));
   }, []);
 
   const restartSession = useCallback(() => {
     if (!debrief) return;
     setSessionConfig(debrief.config);
     setDebrief(null);
-    setPhase('session');
+    startTransition(() => setPhase('session'));
   }, [debrief]);
 
   return (
@@ -94,12 +99,17 @@ function GestureAppContent(): React.ReactElement {
       <SkipToMain />
       <main id="main" className="gesture-main">
         {e2eSeedReady && phase === 'home' ? <GestureAppShell onStartSession={startSession} /> : null}
-        {e2eSeedReady && phase === 'session' && sessionConfig ? (
-          <ZenSessionPhase config={sessionConfig} onExit={finishSession} />
-        ) : null}
-        {e2eSeedReady && phase === 'debrief' && debrief ? (
-          <DebriefPhase debrief={debrief} onHome={backHome} onRestart={restartSession} />
-        ) : null}
+        {/* Fallback stays null because the transition above keeps the prior
+            screen mounted during the chunk fetch; this only ever shows if the
+            transition is bypassed. */}
+        <Suspense fallback={null}>
+          {e2eSeedReady && phase === 'session' && sessionConfig ? (
+            <ZenSessionPhase config={sessionConfig} onExit={finishSession} />
+          ) : null}
+          {e2eSeedReady && phase === 'debrief' && debrief ? (
+            <DebriefPhase debrief={debrief} onHome={backHome} onRestart={restartSession} />
+          ) : null}
+        </Suspense>
       </main>
     </div>
   );

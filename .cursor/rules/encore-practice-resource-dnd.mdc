@@ -11,6 +11,8 @@ globs:
   - e2e/smoke/encore-practice-resource-dnd.spec.ts
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/encore-practice-resource-dnd.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Encore practice resource DnD
 
 Read [`src/encore/AGENTS.md`](../../src/encore/AGENTS.md) § Practice resource DnD before editing chip drag.

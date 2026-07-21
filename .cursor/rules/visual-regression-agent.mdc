@@ -1,3 +1,8 @@
+---
+---
+
+<!-- AUTO-GENERATED from .agents/rules/visual-regression-agent.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Visual regression (agents)
 
 Read skill [`labs-visual-judge`](../skills/labs-visual-judge/SKILL.md) (diff triage + rubric) and [`labs-visual-regression`](../skills/labs-visual-regression/SKILL.md) (baseline mechanics) before updating `e2e/visual/apps.visual.spec.ts-snapshots/`.

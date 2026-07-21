@@ -150,7 +150,7 @@ export default function ImportModal({ open, onClose, onImport, onMediaFile, init
                 Sheet music: MusicXML, MIDI, MuseScore (.musicxml, .xml, .mxl, .mid, .midi, .mscz)
               </p>
               <p className="import-drop-formats" style={{ marginTop: 4 }}>
-                Audio/Video: MP3, MP4, WAV, OGG, FLAC, AAC — syncs with playback
+                Audio/Video: MP3, MP4, WAV, OGG, FLAC, AAC (syncs with playback)
               </p>
               <input
                 ref={fileInputRef}

@@ -8,6 +8,7 @@ import SkipPreviousIcon from '@mui/icons-material/SkipPrevious';
 import CloseIcon from '@mui/icons-material/Close';
 import { useLiveQuery } from 'dexie-react-hooks';
 import AppTooltip from '../../shared/components/AppTooltip';
+import { useLabsConfirm } from '../../shared/components/useLabsConfirm';
 import ZenTimerRing from '../components/ZenTimerRing';
 import { recordGestureDraw } from '../db/gestureLocalData';
 import { gestureDb } from '../db/gestureDb';
@@ -133,6 +134,22 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
 
   const markDone = useCallback(() => void advance('complete'), [advance]);
   const goNext = useCallback(() => void advance('skip'), [advance]);
+  const {
+    confirm: confirmEndSessionDialog,
+    dialog: endSessionDialog,
+    open: endSessionDialogOpen,
+  } = useLabsConfirm();
+  const confirmEndSession = useCallback(async () => {
+    if (
+      await confirmEndSessionDialog({
+        title: 'End this session?',
+        message: 'Progress for completed photos is saved.',
+        confirmLabel: 'End session',
+      })
+    ) {
+      finishSession();
+    }
+  }, [confirmEndSessionDialog, finishSession]);
   const goBack = useCallback(() => {
     if (index <= 0 || advancingRef.current) return;
     advancingRef.current = true;
@@ -153,13 +170,13 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
       onMarkDone: markDone,
       onSkip: goNext,
       onBack: goBack,
-      onExit: () => {
-        if (window.confirm('End this session? Progress for completed photos is saved.')) {
-          finishSession();
-        }
-      },
+      onExit: confirmEndSession,
     },
-    Boolean(current) && ready,
+    // Suppress session hotkeys while the end-session dialog is open. The native
+    // confirm() blocked the thread so keys never leaked behind it; this dialog
+    // does not, and Enter/Space/arrows would otherwise mark-done, pause, or
+    // skip the photo behind the modal.
+    Boolean(current) && ready && !endSessionDialogOpen,
   );
 
   const timerProgress =
@@ -277,11 +294,7 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
         <AppTooltip title="End session (Esc)">
           <IconButton
             aria-label="End session"
-            onClick={() => {
-              if (window.confirm('End this session? Progress for completed photos is saved.')) {
-                finishSession();
-              }
-            }}
+            onClick={() => void confirmEndSession()}
             className="gesture-zen-control-btn"
             size="small"
           >
@@ -289,6 +302,7 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
           </IconButton>
         </AppTooltip>
       </div>
+      {endSessionDialog}
     </div>
   );
 }

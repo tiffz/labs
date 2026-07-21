@@ -56,6 +56,6 @@ Users asked for: changes to **propagate automatically** between devices, visible
 - [`src/stanza/drive/stanzaDriveSyncMeta.ts`](../../src/stanza/drive/stanzaDriveSyncMeta.ts)
 - [`src/stanza/drive/stanzaDriveTombstones.ts`](../../src/stanza/drive/stanzaDriveTombstones.ts)
 - [`src/stanza/drive/stanzaDriveUndoSnapshots.ts`](../../src/stanza/drive/stanzaDriveUndoSnapshots.ts)
-- [`src/stanza/hooks/useStanzaDriveBackup.ts`](../../src/stanza/hooks/useStanzaDriveBackup.ts)
+- [`src/stanza/hooks/useStanzaDriveBackup.tsx`](../../src/stanza/hooks/useStanzaDriveBackup.tsx)
 - [`src/stanza/components/StanzaAccountMenu.tsx`](../../src/stanza/components/StanzaAccountMenu.tsx)
 - [`src/stanza/components/StanzaWorkspace.tsx`](../../src/stanza/components/StanzaWorkspace.tsx) — `removeSongById` tombstone write + URL strip; bootstrap effect's Re-add prompt.

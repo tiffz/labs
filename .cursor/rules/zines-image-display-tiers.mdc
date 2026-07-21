@@ -11,6 +11,8 @@ globs:
   - src/zines/utils/pdfGenerator.ts
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/zines-image-display-tiers.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Zine Studio image / export tiers
 
 Canonical: [`src/zines/DEVELOPMENT.md`](../../src/zines/DEVELOPMENT.md) § Image display tiers and § Export DPI & size math.

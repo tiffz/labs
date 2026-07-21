@@ -1,14 +1,16 @@
 ---
 description: Focus ring theming — tokens, inset vs outset, sticky bar bleed, portal-safe accent
 globs:
-  - "**/*.css"
-  - "**/labsChrome.css"
-  - "**/appSharedThemes.css"
-  - "**/metronome-*.css"
-  - "**/*metronome*"
-  - "src/shared/components/**"
-  - "src/**/main.tsx"
+  - **/*.css
+  - **/labsChrome.css
+  - **/appSharedThemes.css
+  - **/metronome-*.css
+  - **/*metronome*
+  - src/shared/components/**
+  - src/**/main.tsx
 ---
+
+<!-- AUTO-GENERATED from .agents/rules/focus-theming.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Focus theming
 

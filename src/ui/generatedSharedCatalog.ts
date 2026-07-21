@@ -12941,6 +12941,40 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-labsconfirmdialog-tsx-labsconfirmdialog",
+    "name": "LabsConfirmDialog",
+    "path": "src/shared/components/LabsConfirmDialog.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Themed replacement for `window.confirm()` on destructive actions. Rendered imperatively via ./useLabsConfirm ; most call sites should use that hook rather than this component directly.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labsconfirmdialog-tsx-labsconfirmdialogprops",
+    "name": "LabsConfirmDialogProps",
+    "path": "src/shared/components/LabsConfirmDialog.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-labsdebugdock-tsx-labs-debug-dock-height-var",
     "name": "LABS_DEBUG_DOCK_HEIGHT_VAR",
     "path": "src/shared/components/LabsDebugDock.tsx",
@@ -15082,6 +15116,47 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "zines"
     ],
     "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-uselabsconfirm-tsx-labsconfirmoptions",
+    "name": "LabsConfirmOptions",
+    "path": "src/shared/components/useLabsConfirm.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [
+      "piano",
+      "words",
+      "zines"
+    ],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-uselabsconfirm-tsx-uselabsconfirm",
+    "name": "useLabsConfirm",
+    "path": "src/shared/components/useLabsConfirm.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Drop-in async replacement for `window.confirm()` that renders a themed dialog instead of the browser's native one. Preserves the same calling shape (`await confirm(...)` resolves to a boolean) so existing `if (!window.confirm(msg)) return;` guards migrate with a small diff: ```tsx const { confirm, dialog } = useLabsConfirm(); // ... if (!(await confirm({ title: 'Delete this?', message: 'This cannot be undone.' }))) return; // ... return <>{dialog}{...rest of the component}</>; ``` `open` reports whether a dialog is currently showing. Gate global keyboard shortcuts on it — the native `confirm()` blocked the main thread, so window-level hotkeys never fired while it was up; this dialog does not, so a host that listens on `window` must suppress those keys itself while `open`.",
+    "tags": [
+      "components",
+      "react"
+    ],
+    "appsUsing": [
+      "piano",
+      "words",
+      "zines"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -20073,6 +20148,38 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     ],
     "appsUsing": [],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-layout-useviewportmatch-ts-useisnarrowviewport",
+    "name": "useIsNarrowViewport",
+    "path": "src/shared/layout/useViewportMatch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True while the viewport is at or below `maxWidthPx`. Defaults to the `md` breakpoint in `labs-breakpoints.css`. Pass the value matching the CSS this drives — a hook and a media query disagreeing about the breakpoint is its own class of bug.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "piano"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-layout-useviewportmatch-ts-useviewportmatch",
+    "name": "useViewportMatch",
+    "path": "src/shared/layout/useViewportMatch.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Live `matchMedia` result, correct from the first render onward.",
+    "tags": [],
+    "appsUsing": [
+      "drums",
+      "piano"
+    ],
+    "exportType": "function",
     "demoId": null
   },
   {

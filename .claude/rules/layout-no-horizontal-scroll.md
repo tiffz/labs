@@ -1,0 +1,47 @@
+---
+paths:
+  - 'src/**/*.tsx'
+  - 'src/**/*.css'
+  - 'e2e/smoke/**/*.spec.ts'
+---
+
+<!-- AUTO-GENERATED from .agents/rules/layout-no-horizontal-scroll.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
+> Avoid unintended horizontal scroll on primary page surfaces; fix on sight and add smoke coverage when touching layout.
+
+# No unintended horizontal scroll
+
+Primary screens and panels should **not** show a page- or panel-level horizontal scrollbar unless horizontal scroll is an explicit product requirement (wide tables, notation strips, timelines).
+
+## Agent workflow
+
+1. **After layout/CSS changes** on a primary surface, check for horizontal overflow (devtools or the layout heuristic smoke).
+2. **Fix on sight** when you introduce or notice horizontal scroll on a dashboard, library shell, dialog body, or full-page view.
+3. **Prefer containment fixes** over hiding symptoms:
+   - `minWidth: 0` on grid/flex children that should shrink
+   - `maxWidth: '100%'` on nested surfaces
+   - `overflowX: 'clip'` or `'hidden'` on page/panel shells when inner regions own deliberate scroll
+   - Wrap wide content in an opt-in scroll host (see below)
+4. **Do not** set `overflow-x: auto` on page shells to “fix” overflow — contain wide content locally.
+
+## Opt-in horizontal scroll
+
+When horizontal scroll is intentional, wrap content in a dedicated host and mark it:
+
+```html
+<div class="labs-horizontal-scroll-host" data-labs-allow-horizontal-scroll>
+  <!-- table, wide notation, etc. -->
+</div>
+```
+
+Tables and MRT shells already scroll inside their bounded container — keep overflow on the **inner** shell, not the page.
+
+## Verification
+
+- Heuristic: `e2e/helpers/horizontalScrollHeuristic.ts` → `runHorizontalScrollHeuristicInBrowser`
+- Encore dashboard: `e2e/smoke/layout-heuristics-encore.spec.ts`
+- Core math: `src/shared/test/horizontalScrollHeuristicCore.ts`
+
+When adding a new primary route or master–detail panel, extend the matching layout-heuristics smoke.
+
+See also: [`docs/E2E_SMOKE_CONVENTIONS.md`](../../docs/E2E_SMOKE_CONVENTIONS.md), [`docs/AGENT_INVARIANTS.md`](../../docs/AGENT_INVARIANTS.md).

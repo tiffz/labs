@@ -5,6 +5,8 @@ globs:
   - public/styles/**/*.css
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/spa-css-conventions.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # SPA CSS conventions
 
 Full prose: [`STYLE_GUIDE.md`](../../STYLE_GUIDE.md) § HTML entry, Focus and motion, Icon-only controls.

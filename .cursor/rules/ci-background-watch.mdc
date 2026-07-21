@@ -3,6 +3,8 @@ description: Default to non-blocking, background CI/CD after push — keep worki
 alwaysApply: true
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/ci-background-watch.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # CI/CD is non-blocking by default
 
 After a push/PR, do not sit idle watching CI (~8–15 min). Default flow:

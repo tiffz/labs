@@ -5,6 +5,7 @@ import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
+import { useLabsConfirm } from '../../shared/components/useLabsConfirm';
 import {
   useEffect,
   useRef,
@@ -192,8 +193,10 @@ export function SketchbookSeedEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onCollapse]);
 
+  const { confirm: confirmDelete, dialog: deleteDialog } = useLabsConfirm();
+
   const onDelete = async (): Promise<void> => {
-    if (!window.confirm('Delete this sketchbook entry? This cannot be undone.')) return;
+    if (!(await confirmDelete({ title: 'Delete this entry?', message: 'This cannot be undone.' }))) return;
     setBusy(true);
     try {
       if (saveTimerRef.current != null) {
@@ -432,6 +435,7 @@ export function SketchbookSeedEditor({
           Promote to comic
         </Button>
       </div>
+      {deleteDialog}
     </div>
   );
 }

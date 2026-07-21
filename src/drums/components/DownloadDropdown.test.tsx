@@ -339,7 +339,6 @@ describe('DownloadDropdown', () => {
 
   it('should handle download errors gracefully', async () => {
     vi.spyOn(audioExport, 'renderRhythmAudio').mockRejectedValue(new Error('Export failed'));
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => { });
 
     render(
       <div>
@@ -358,11 +357,8 @@ describe('DownloadDropdown', () => {
     const downloadButton = screen.getByText('Download');
     fireEvent.click(downloadButton);
 
-    await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith('Failed to export audio: Export failed. Try again.');
-    });
-
-    alertSpy.mockRestore();
+    const errorAlert = await screen.findByRole('alert');
+    expect(errorAlert).toHaveTextContent('Failed to export audio: Export failed. Try again.');
   });
 });
 

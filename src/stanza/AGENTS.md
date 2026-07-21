@@ -41,7 +41,7 @@ Do not add ad-hoc `rgba(232, 72, 160, …)` for selection states when `--labs-se
 When changing Stanza backup / restore:
 
 1. **Every blob tier needs upload + hydrate** — mirror `stem_audio/` (`stanzaDriveStemSync.ts`) and `main_audio/` (`stanzaDriveMainMediaSync.ts`). Metadata-only rows without bytes are a sync bug.
-2. **Merge paths must hydrate** — auto-pull, conflict merge, and undo restore call `hydrateStanzaLibraryMainMediaFromDrive` + stems (see `useStanzaDriveBackup.ts`).
+2. **Merge paths must hydrate** — auto-pull, conflict merge, and undo restore call `hydrateStanzaLibraryMainMediaFromDrive` + stems (see `useStanzaDriveBackup.tsx`).
 3. **Push before envelope** — `flushDriveWrite` uploads main media and stems before writing `progress.json`.
 4. **Conflict merge must `markPullSucceeded()`** — otherwise auto-push stays gated on a fresh device.
 5. **README + envelope comments** stay aligned with on-disk folders (`main_audio/`, `stem_audio/`).

@@ -295,7 +295,7 @@ export const OriginalsSongDashboardPanel = memo(function OriginalsSongDashboardP
               }}>
               <WarningAmberOutlinedIcon sx={{ fontSize: 16 }} aria-hidden />
               <Typography variant="caption" sx={{ fontWeight: 600, lineHeight: 1.45 }}>
-                Updated before started date — worth a quick check.
+                Updated before started date. Worth a quick check.
               </Typography>
             </Stack>
           ) : null}

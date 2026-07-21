@@ -28,7 +28,24 @@
   font-feature-settings: 'liga';
 }
 
+/*
+ * Before the icon font loads, the ligature name ("arrow_drop_down") renders as
+ * literal text in a fallback family — far wider than the single glyph it
+ * becomes. Hiding only the color leaves that text driving layout, so every
+ * content-sized icon button is born too wide and snaps narrower on font load
+ * (measured: Darbuka's Play button shifted 89px, its metronome button 25px).
+ *
+ * Material glyphs are drawn on a square em box, so `1em` is the width the icon
+ * will settle at. Reserving it up front — and clipping the fallback text that
+ * would otherwise overflow it — makes the pending and ready boxes identical,
+ * so the font swap costs no layout shift.
+ *
+ * Icons that already set an explicit width win on specificity and keep it;
+ * those were never the ones shifting.
+ */
 html.icons-pending .material-symbols-outlined,
 html.icons-pending .material-icons {
   color: transparent !important;
+  width: 1em;
+  overflow: hidden;
 }

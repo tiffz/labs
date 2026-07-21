@@ -4,6 +4,8 @@ globs:
   - src/**/*.tsx
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/user-copy.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # User-visible copy
 
 Read [`docs/USER_COPY_STYLE.md`](../../docs/USER_COPY_STYLE.md) first. App deltas: nearest `src/<app>/COPY_STYLE.md` when present.

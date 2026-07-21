@@ -261,6 +261,32 @@ body {
   overflow: hidden;
 }
 
+/*
+ * Hold the space the notation is about to occupy.
+ *
+ * ScoreDisplay is lazy, and its container grew 139px -> 1184px on mount,
+ * shoving the sidebar below it down the page — 0.43 CLS, nearly all of this
+ * route's total. This area is blank either way while the chunk loads, so
+ * reserving more of it costs nothing on screen.
+ *
+ * Only narrow viewports need the tall reservation: at desktop widths the
+ * staff wraps into far fewer lines and the shift never showed up there.
+ */
+.score-loading {
+  min-height: 200px;
+  /* Keep "Loading score…" at the top of the reserved area. .empty-score
+     centers its content, which on the tall mobile reservation below would push
+     the message ~60vh down and off-screen — reintroducing the blank-area
+     impression the reservation exists to prevent. */
+  justify-content: flex-start;
+}
+
+@media (max-width: 768px) {
+  .score-loading {
+    min-height: 120vh;
+  }
+}
+
 /* ==========================================================================
    SHARED COMPONENTS – Buttons
    ========================================================================== */
@@ -548,7 +574,9 @@ body {
   color: var(--piano-text);
 }
 .sb-toggle-arrow {
-  font-size: 18px;
+  /* Toggle chrome here is ~26px tall; the FOUC-clip guard
+     (e2e/visual/visualTestUtils.ts) requires button height >= 1.5x font-size. */
+  font-size: 16px;
   color: var(--piano-text-secondary);
   transition: transform var(--transition-normal);
 }
@@ -716,6 +744,12 @@ body {
   width: 28px;
   min-width: 28px;
   flex: 0 0 28px;
+  /* align-self: stretch (inherited) has no fixed row height to stretch to
+     when this is the row's only tall sibling, so it collapses to content.
+     24px is the coarse-pointer touch floor (responsive-all-apps.spec.ts) and
+     also clears the FOUC-clip ratio for the 11px glyph below, which wants
+     at least 1.5x (e2e/visual/visualTestUtils.ts). */
+  min-height: 24px;
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -732,7 +766,9 @@ body {
     opacity var(--transition-fast);
 }
 .sb-shared-bpm-input .sb-tempo-reset-btn .material-symbols-outlined {
-  font-size: 18px;
+  /* Button chrome here is ~18px tall; the FOUC-clip guard
+     (e2e/visual/visualTestUtils.ts) requires button height >= 1.5x font-size. */
+  font-size: 11px;
   line-height: 1;
 }
 .sb-shared-bpm-input .sb-tempo-reset-btn:hover:not(:disabled) {
@@ -3954,6 +3990,11 @@ body {
   color: var(--piano-text-secondary);
   cursor: pointer;
   transition: background var(--transition-fast);
+}
+.ep-close .material-symbols-outlined {
+  /* Button chrome here is 32px tall; the FOUC-clip guard
+     (e2e/visual/visualTestUtils.ts) requires button height >= 1.5x font-size. */
+  font-size: 20px;
 }
 .ep-close:hover {
   background: var(--piano-surface);

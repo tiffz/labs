@@ -355,6 +355,50 @@ Apps historically re-specified MUI `Popover`'s `anchorOrigin`, `transformOrigin`
 
 Migrate existing MUI `Popover` usages opportunistically (i.e. when touching the surrounding code). `SharedExportPopover` should eventually adopt this primitive as well; it remains on direct `Popover` usage for now because it carries its own theming contract.
 
+## Destructive confirms (`useLabsConfirm` / `LabsConfirmDialog`)
+
+Do not call `window.confirm()` in production UI — it is unstyled, unthemeable,
+and blocks the main thread (window-level hotkeys keep firing behind it because
+it never really blocks React's event listeners). Use `useLabsConfirm`
+([`src/shared/components/useLabsConfirm.tsx`](./components/useLabsConfirm.tsx)),
+a drop-in async replacement that renders the themed `LabsConfirmDialog`:
+
+```tsx
+const { confirm, dialog, open } = useLabsConfirm();
+// ...
+if (
+  !(await confirm({
+    title: 'Delete this section?',
+    message: 'This cannot be undone.',
+  }))
+)
+  return;
+// ...
+return (
+  <>
+    {dialog}
+    {/* rest of the component */}
+  </>
+);
+```
+
+- **`confirmLabel` must match the title's verb** — a "Discard changes?" prompt
+  needs `confirmLabel: 'Discard'`, not the default `Delete`. Set
+  `destructive: false` for non-destructive confirms (restore, continue) to drop
+  the red button.
+- **Gate global hotkeys on `open`** — because the dialog does not block the
+  thread, a host that listens on `window` (e.g. a session keyboard hook) must
+  suppress its keys while `open` is true, or Enter/Space will drive the UI
+  behind the modal.
+- Render `{dialog}` once in the component tree. For a confirm needed inside a
+  non-component hook, call `useLabsConfirm()` in that hook and surface `dialog`
+  through its return value for the consumer to render (see
+  `useWordsSectionsState`, `useStanzaDriveBackup`).
+- Use the `LabsConfirmDialog` component directly only when you own the open
+  state; the hook is the default.
+
+Debug-only panels may keep `window.confirm`.
+
 ## LabsDebugDock (URL-gated debug chrome)
 
 For local-only debug surfaces (e.g. practice timelines), wrap app-specific content in `LabsDebugDock` from [`src/shared/components/LabsDebugDock.tsx`](./components/LabsDebugDock.tsx). It provides a consistent bottom dock, collapse affordance, and **Copy bundle** (JSON for bug reports / LLM paste).

@@ -32,6 +32,7 @@ import {
   DEFAULT_SONG_KEY,
   SECTION_CREATE_DEFAULTS,
 } from '../utils/wordsAppDefaults';
+import { useLabsConfirm } from '../../shared/components/useLabsConfirm';
 
 export function useWordsSectionsState() {
   const { push, isReplayingRef } = useLabsUndo();
@@ -191,21 +192,25 @@ export function useWordsSectionsState() {
     [applySectionsChange]
   );
 
+  const { confirm: confirmRemoveSection, dialog: removeSectionDialog } = useLabsConfirm();
   const removeSection = useCallback(
-    (
+    async (
       sectionId: string,
       sectionDisplayName: string,
       onBeforeRemove?: () => void
     ) => {
       if (sections.length <= 1) return;
-      const confirmed = window.confirm(`Delete ${sectionDisplayName}?`);
+      const confirmed = await confirmRemoveSection({
+        title: `Delete ${sectionDisplayName}?`,
+        message: 'This cannot be undone.',
+      });
       if (!confirmed) return;
       onBeforeRemove?.();
       applySectionsChange((previous) =>
         previous.filter((section) => section.id !== sectionId)
       );
     },
-    [sections.length, applySectionsChange]
+    [sections.length, applySectionsChange, confirmRemoveSection]
   );
 
   const moveSection = useCallback(
@@ -330,6 +335,7 @@ export function useWordsSectionsState() {
     unlinkAllChorusLyrics,
     linkAllChorusTemplates,
     unlinkAllChorusTemplates,
+    removeSectionDialog,
   };
 }
 

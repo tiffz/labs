@@ -145,6 +145,7 @@ import {
   ENCORE_ROW_HOVER_TARGET_CLASS,
 } from '../ui/encoreRowHoverActions';
 import AppTooltip from '../../shared/components/AppTooltip';
+import { useLabsConfirm } from '../../shared/components/useLabsConfirm';
 
 const REPERTOIRE_VIEW_STORAGE_KEY = 'encore.library.repertoireView';
 
@@ -787,6 +788,7 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
   const [songResourcesTarget, setSongResourcesTarget] = useState<EncoreSong | null>(null);
   const [songResourcesSection, setSongResourcesSection] = useState<SongResourcesEditSection>('all');
   const [menuAnchor, setMenuAnchor] = useState<null | { el: HTMLElement; song: EncoreSong }>(null);
+  const { confirm: confirmDeleteSong, dialog: confirmDeleteSongDialog } = useLabsConfirm();
   const [importMenuAnchor, setImportMenuAnchor] = useState<HTMLElement | null>(null);
   const [viewMode, setViewMode] = useState<RepertoireViewMode>(() => {
     if (typeof window === 'undefined') return 'table';
@@ -2374,8 +2376,10 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
             const song = menuAnchor?.song;
             setMenuAnchor(null);
             if (!song) return;
-            if (!window.confirm(`Delete “${song.title}” from your library?`)) return;
-            void deleteSong(song.id);
+            void (async () => {
+              if (!(await confirmDeleteSong({ title: `Delete “${song.title}” from your library?`, message: 'This cannot be undone.' }))) return;
+              void deleteSong(song.id);
+            })();
           }}
         >
           Delete
@@ -2602,6 +2606,7 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
         autoHideDuration={10_000}
         onClose={() => setBulkSpotifyRefreshToast(null)}
       />
+      {confirmDeleteSongDialog}
     </Box>
   );
 }, encoreTabBodyPropsAreEqual);

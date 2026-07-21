@@ -217,7 +217,7 @@ export default function DriveFolderImportDialog({
               <Alert severity="warning" sx={{ mb: 2, py: 0.75 }}>
                 <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
                   The scan hit a safety limit ({scan.rowsListed.toLocaleString()} Drive rows listed). Some PDFs in
-                  very large folder trees may be missing — try importing subfolders separately.
+                  very large folder trees may be missing. Try importing subfolders separately.
                 </Typography>
               </Alert>
             ) : null}

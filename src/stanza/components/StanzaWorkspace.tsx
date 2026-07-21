@@ -145,6 +145,7 @@ import { useMetronomePreferences } from '../../shared/audio/platform/metronome';
 import { useStanzaMetronomePersistence } from '../hooks/useStanzaMetronomePersistence';
 import { createMediaTimelineDrumScheduler } from '../../shared/audio/platform/hooks/useMediaTimelineDrumScheduler';
 import DrumAccompaniment from '../../shared/components/music/DrumAccompaniment';
+import { useLabsConfirm } from '../../shared/components/useLabsConfirm';
 import type { MusicKey } from '../../shared/music/musicInputConstants';
 import { transposeSongKey, formatSongKeyButtonLabel, formatSongKeyDisplay } from '../../shared/music/songKeyFormat';
 import { useStanzaLocalStemMixer } from '../hooks/useStanzaLocalStemMixer';
@@ -1704,12 +1705,15 @@ export default function StanzaWorkspace() {
     };
   }, [practiceSource, selected, getLocalMainMedia, seekUnifiedRef]);
 
+  const { confirm: confirmRemoveAudio, dialog: confirmRemoveAudioDialog } = useLabsConfirm();
   const removeUploadedPracticeAudio = useCallback(async () => {
     if (!selected?.localAudioBlob) return;
     if (
-      !window.confirm(
-        'Remove the uploaded file from this song? YouTube playback and your sections stay.',
-      )
+      !(await confirmRemoveAudio({
+        title: 'Remove the uploaded file from this song?',
+        message: 'YouTube playback and your sections stay.',
+        confirmLabel: 'Remove',
+      }))
     ) {
       return;
     }
@@ -1730,7 +1734,7 @@ export default function StanzaWorkspace() {
         },
       });
     }
-  }, [isReplayingRef, pauseUnified, pushUndo, selected]);
+  }, [confirmRemoveAudio, isReplayingRef, pauseUnified, pushUndo, selected]);
 
   const getTime = useCallback(() => {
     if (playingRef.current) {
@@ -3043,6 +3047,7 @@ export default function StanzaWorkspace() {
           if (p?.files[0]) void attachLocalPracticeAudio(p.songId, p.files[0], { replaceYoutube: true });
         }}
       />
+      {confirmRemoveAudioDialog}
     </Box>
   );
 }

@@ -3,6 +3,11 @@
 
 .labs-metronome-split-control--default,
 .labs-metronome-settings-popover--default {
+  /* Split halves use overflow:hidden for radius, so the content box is
+     shorter than the outer control (~24px here). Token is further ×0.9 in
+     metronome-control.css; keep the final glyph under half-height/1.5 so the
+     FOUC-clip guard (e2e/visual/visualTestUtils.ts) sees clearance. */
+  --metro-icon-size: 1rem;
   --metro-accent: #7c3aed;
   --metro-accent-dot: #7c3aed;
   --metro-split-border: rgba(0, 0, 0, 0.1);

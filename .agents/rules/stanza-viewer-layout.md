@@ -1,0 +1,22 @@
+---
+description: Stanza viewer layout — CSS module and shell; no width in sx
+globs:
+  - src/stanza/stanza-viewer-layout.css
+  - src/stanza/stanza.css
+  - src/stanza/components/StanzaViewerLayout.tsx
+  - src/stanza/components/StanzaWorkspace.tsx
+---
+
+# Stanza viewer layout
+
+1. **Layout lives in CSS** — [`src/stanza/stanza-viewer-layout.css`](../../src/stanza/stanza-viewer-layout.css) + tokens on `.stanza-app`. Do not set viewer width, grid template, or horizontal padding in `StanzaWorkspace` `sx`.
+
+2. **Shell component** — Use [`StanzaViewerLayout`](../../src/stanza/components/StanzaViewerLayout.tsx) for the song viewer; do not re-wrap with ad-hoc `Box` shells.
+
+3. **Workbench width** — `width: var(--stanza-viewer-content-width)` on `.stanza-viewer-workbench`, not `width: 100%` + `max-width`. Library and grid must stay inside the workbench.
+
+4. **No `mx: auto` on `.stanza-viewer-body-grid` alone** — misaligns library vs timeline.
+
+5. **After layout changes** — Browser-check at ~1100px width; e2e: `e2e/stanza-viewer-layout.spec.ts`. See [`src/stanza/LAYOUT.md`](../../src/stanza/LAYOUT.md).
+
+6. **Do not viewport-lock the song viewer** — Pinning `.stanza-app` to `100dvh` with a capped library footer steals space from the video. Library stays a natural-height footer below `.stanza-viewer-scroll`; page scroll is OK when the workbench is tall.

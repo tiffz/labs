@@ -1257,9 +1257,12 @@
   }
 
   .drums-shared-bpm-input .shared-bpm-arrow .material-symbols-outlined {
-    width: 16px;
-    height: 16px;
-    font-size: 16px;
+    width: 12px;
+    height: 12px;
+    /* Button chrome here is ~19.5-20.5px tall; the FOUC-clip guard
+       (e2e/visual/visualTestUtils.ts) requires button height >= 1.5x this
+       font-size, so 12px keeps a safe margin instead of 16px's near-miss. */
+    font-size: 12px;
   }
 
   .drums-shared-bpm-input .shared-bpm-rate-btn.inline {
@@ -2834,6 +2837,16 @@
     font-weight: 700;
     color: var(--text-color);
     font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  .download-dropdown__error-message {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.65rem;
+    margin: 0.5rem 0;
+    font-size: 0.8rem;
+    color: #dc2626;
   }
 
   .download-dropdown .drums-floating-menu__primary-action {

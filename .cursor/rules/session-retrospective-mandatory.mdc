@@ -3,6 +3,8 @@ description: End-of-session retrospective — required deliverable for substanti
 alwaysApply: true
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/session-retrospective-mandatory.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Session retrospective (required)
 
 Substantial session = **any** of: ≥2 bugs fixed, multi-subsystem touch, >30 min friction, or user asks for process/UX feedback.

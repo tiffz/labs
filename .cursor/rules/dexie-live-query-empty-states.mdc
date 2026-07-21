@@ -8,6 +8,8 @@ globs:
   - src/shared/dexie/**
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/dexie-live-query-empty-states.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Dexie live query — loading vs empty
 
 `dexie-react-hooks#useLiveQuery` returns **`undefined` until the first emission**. That is **loading**, not an empty library.

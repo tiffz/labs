@@ -3,6 +3,8 @@ name: labs-e2e-smoke
 description: Adds or extends Labs Playwright e2e smokes — fixtures, routeRegistry, scoped e2e map, and presubmit gates. Use when adding app journey smokes, Drive import stubs, or updating run-scoped-e2e.mjs.
 ---
 
+<!-- AUTO-GENERATED from .agents/skills/labs-e2e-smoke/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Labs e2e smoke
 
 ## Canonical docs
@@ -29,4 +31,4 @@ description: Adds or extends Labs Playwright e2e smokes — fixtures, routeRegis
 
 ## Presubmit / push
 
-- Shell, provider, or `e2e/` changes → `npm run presubmit:push` before push (see [`.cursor/rules/pre-commit-checks.mdc`](../../rules/pre-commit-checks.mdc)).
+- Shell, provider, or `e2e/` changes → `npm run presubmit:push` before push (see [`.agents/rules/pre-commit-checks.mdc`](../../rules/pre-commit-checks.mdc)).

@@ -304,7 +304,7 @@ export function TabImportWizard({ isOpen, onClose, onImport, rawTabText = '', in
                                     <p className="text-sm">Paste tab text to detect {activeTab}</p>
                                     {state.selectedType === 'guitar' && (
                                         <p className="text-xs text-red-400 mt-2">
-                                            Ensure code blocks like [tab]...[/tab] are included for best results.
+                                            Ensure code blocks like [tab]…[/tab] are included for best results.
                                         </p>
                                     )}
                                     {state.detectedType && state.detectedType !== state.selectedType && (

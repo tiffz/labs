@@ -3841,6 +3841,10 @@ body.wand-mode-active * {
 .cost-star {
   width: 14px;
   height: 14px;
+  /* Matches the box above; without this the vendored 24px default
+     overflows it and the FOUC-clip guard (e2e/visual/visualTestUtils.ts)
+     flags the glyph as clipped before the box can even shrink it. */
+  font-size: 14px;
   color: #f57c00;
   font-variation-settings: 'FILL' 1;
   display: inline-flex;

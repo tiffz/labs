@@ -417,7 +417,7 @@ export function ArtVersionPanel({
       </div>
       {viewingLatest ? (
         <p className="lyrefly-version-panel__latest-hint">
-          Latest picks — edits on the page grid below apply here. Snapshot or upload set to save a named version.
+          Latest picks. Edits on the page grid below apply here. Snapshot or upload set to save a named version.
         </p>
       ) : selectedVersion ? (
         <section className="lyrefly-version-detail" aria-label={`Details for ${selectedVersion.label}`}>

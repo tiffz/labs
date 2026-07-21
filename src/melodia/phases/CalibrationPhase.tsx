@@ -191,7 +191,7 @@ export default function CalibrationPhase({
           Sing your Do
         </Typography>
         <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
-          Hold any comfortable pitch on &quot;ah&quot; for two seconds. We pick the steadiest
+          Hold any comfortable pitch on &quot;ah&quot; for 2 seconds. We pick the steadiest
           part as your home tone.
         </Typography>
         {captureState === 'listening' && (

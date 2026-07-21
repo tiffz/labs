@@ -28,7 +28,7 @@ Zine Box uses **one OAuth surface** for both features:
 | Portfolio backup (`Tiff Zhang Labs/ZineBox/`) | `drive.file`                | `useZineboxDriveBackup`   |
 | Drive folder PDF import                       | `drive.readonly` + metadata | `DriveFolderImportDialog` |
 
-Both call `ensureZineboxGoogleDriveAccess` in [`drive/zineboxGoogleDriveAccess.ts`](drive/zineboxGoogleDriveAccess.ts), which requests the combined import scope set in a **single GIS prompt** on first sign-in (Account menu or **Review import**). Cached tokens are reused for backup and import until they expire.
+Both call `ensureZineboxGoogleDriveAccess` in [`drive/zineboxGoogleDriveAccess.ts`](drive/zineboxGoogleDriveAccess.ts), which requests the combined import scope set in a **single GIS prompt** on first sign-in (Account menu or **Review import**). The app reuses cached tokens for backup and import until they expire.
 
 Do not call `ensureLabsGoogleAccessTokenForDrive` (narrow backup-only scopes) from Zine Box — that split caused a second sign-in prompt for import.
 

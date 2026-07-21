@@ -1,12 +1,14 @@
 ---
 description: Labs shared breakpoint scale and responsive layout defaults — use when editing CSS/layout or adding app shells.
+alwaysApply: false
 globs:
   - src/**/*.css
   - src/**/*.tsx
   - src/shared/templates/**
   - e2e/smoke/layout-heuristics*.spec.ts
-alwaysApply: false
 ---
+
+<!-- AUTO-GENERATED from .agents/rules/responsive-design.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
 
 # Responsive design (Labs)
 
@@ -14,12 +16,12 @@ Canonical: [`docs/RESPONSIVE_DESIGN.md`](../../docs/RESPONSIVE_DESIGN.md).
 
 ## Breakpoints (do not invent new ones without DESIGN.md)
 
-| Name | Width  | Use |
-| ---- | ------ | --- |
-| xs   | 480px  | Single-column grids |
+| Name | Width  | Use                            |
+| ---- | ------ | ------------------------------ |
+| xs   | 480px  | Single-column grids            |
 | sm   | 640px  | Stack toolbars / denser chrome |
-| md   | 900px  | Collapse dual panes |
-| lg   | 1200px | Optional wide desktop |
+| md   | 900px  | Collapse dual panes            |
+| lg   | 1200px | Optional wide desktop          |
 
 ## Hard gate (new or changed surfaces)
 

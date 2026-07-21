@@ -3,6 +3,8 @@ name: labs-ui-design-variations
 description: Builds multiple in-app UI design themes with a live preview selector for Labs micro-apps. Use when exploring visual direction, comparing palettes, or the user asks for design iterations to preview inline before picking a winner.
 ---
 
+<!-- AUTO-GENERATED from .agents/skills/labs-ui-design-variations/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Labs UI design variations
 
 Use this workflow when the user wants to **compare visual directions in the running app** (not static mocks). Goal: 4–6 distinct, production-quality themes switchable without reload.
@@ -68,7 +70,7 @@ Use this workflow when the user wants to **compare visual directions in the runn
 - Design doc: [`src/gesture/DESIGN.md`](../../../src/gesture/DESIGN.md)
 - Tokens: [`src/gesture/design/linenTheme.ts`](../../../src/gesture/design/linenTheme.ts)
 - CSS: [`src/gesture/gesture.css`](../../../src/gesture/gesture.css)
-- Cursor rule: [`.cursor/rules/gesture-linen-design.mdc`](../../rules/gesture-linen-design.mdc)
+- Cursor rule: [`.agents/rules/gesture-linen-design.mdc`](../../rules/gesture-linen-design.mdc)
 
 ## Folder drag-and-drop (collections upload)
 
@@ -82,7 +84,7 @@ Browser folder drops require **`dataTransfer.items` + `webkitGetAsEntry()`** —
 
 1. Ask which theme id to keep (or merge traits)
 2. **Write `src/<app>/DESIGN.md`** — palette, typography, spacing, component rules, do/don't for future agents
-3. Add **`.cursor/rules/<app>-<name>-design.mdc`** (globs: `src/<app>/**`) linking to `DESIGN.md`
+3. Add **`.agents/rules/<app>-<name>-design.md`** (globs: `src/<app>/**`) linking to `DESIGN.md`
 4. Fold tokens into `design/<name>Theme.ts` + CSS fallbacks; update `getAppTheme('<app>')` in `appTheme.ts`
 5. Merge winning theme CSS into main stylesheet; **remove picker** and delete multi-theme registry/provider files
 6. Update app `AGENTS.md` + `README.md` § Design

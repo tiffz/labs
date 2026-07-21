@@ -18,6 +18,7 @@ import {
 } from '../drive/gestureUploadActivity';
 import type { GestureCollectionUploadHandle } from '../hooks/useGestureCollectionUpload';
 import type { GesturePack } from '../types';
+import { useLabsConfirm } from '../../shared/components/useLabsConfirm';
 
 type InterruptedUploadBannerProps = {
   pack: GesturePack;
@@ -90,7 +91,8 @@ export default function InterruptedUploadBanner({
     handleContinuePick();
   };
 
-  const handleFolderSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { confirm: confirmFolderMismatch, dialog: confirmFolderMismatchDialog } = useLabsConfirm();
+  const handleFolderSelected = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const list = e.target.files ? [...e.target.files] : [];
     e.target.value = '';
     if (list.length === 0) return;
@@ -100,9 +102,12 @@ export default function InterruptedUploadBanner({
       pack.uploadSourceFolderName &&
       pickedName &&
       pickedName !== pack.uploadSourceFolderName &&
-      !window.confirm(
-        `You selected "${pickedName}", but this upload started as "${pack.uploadSourceFolderName}". Continue anyway?`,
-      )
+      !(await confirmFolderMismatch({
+        title: 'Different folder selected',
+        message: `You selected "${pickedName}", but this upload started as "${pack.uploadSourceFolderName}". Continue anyway?`,
+        confirmLabel: 'Continue',
+        destructive: false,
+      }))
     ) {
       return;
     }
@@ -143,6 +148,7 @@ export default function InterruptedUploadBanner({
           Remove…
         </Button>
       </div>
+      {confirmFolderMismatchDialog}
     </div>
   );
 }

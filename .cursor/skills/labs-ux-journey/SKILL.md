@@ -3,13 +3,15 @@ name: labs-ux-journey
 description: Mandatory before non-trivial Labs UI — journey sketch in chat, then implement with gestalt/redundancy checks. Use for new screens, layout changes, upload/sync UX, or repeated UX feedback.
 ---
 
+<!-- AUTO-GENERATED from .agents/skills/labs-ux-journey/SKILL.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Labs UX journey
 
 ## Hard gate (read first)
 
 **Do not create or edit UI files until you post the journey sketch in chat.**
 
-Read [`docs/UX_AGENT_GUIDE.md`](../../../docs/UX_AGENT_GUIDE.md). Always-on rule: [`.cursor/rules/ux-journey-mandatory.mdc`](../../rules/ux-journey-mandatory.mdc).
+Read [`docs/UX_AGENT_GUIDE.md`](../../../docs/UX_AGENT_GUIDE.md). Always-on rule: [`.agents/rules/ux-journey-mandatory.mdc`](../../rules/ux-journey-mandatory.mdc).
 
 If the user waived the sketch explicitly, note that in chat and proceed.
 

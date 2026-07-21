@@ -1,5 +1,6 @@
 /* eslint-disable react/prop-types */
 import React, { memo, useCallback } from 'react';
+import { useLabsConfirm } from '../../shared/components/useLabsConfirm';
 
 interface UploadedImage {
   file?: File; // Optional - may be undefined for synthetic images (split/combined)
@@ -32,11 +33,15 @@ const SharedImageLibrary: React.FC<SharedImageLibraryProps> = memo(({
   totalSlots,
   compact = false,
 }) => {
-  const handleClearAll = useCallback(() => {
-    if (onClearAll && window.confirm('Remove all uploaded images? This cannot be undone.')) {
+  const { confirm: confirmClearAll, dialog: confirmClearAllDialog } = useLabsConfirm();
+  const handleClearAll = useCallback(async () => {
+    if (
+      onClearAll &&
+      (await confirmClearAll({ title: 'Remove all uploaded images?', message: 'This cannot be undone.', confirmLabel: 'Remove all' }))
+    ) {
       onClearAll();
     }
-  }, [onClearAll]);
+  }, [confirmClearAll, onClearAll]);
 
   if (images.length === 0) return null;
 
@@ -57,7 +62,7 @@ const SharedImageLibrary: React.FC<SharedImageLibraryProps> = memo(({
           </h2>
           {onClearAll && (
             <button 
-              onClick={handleClearAll}
+              onClick={() => void handleClearAll()}
               className="text-red-400 hover:text-red-500 text-sm font-heading font-bold flex items-center gap-1"
             >
               🗑️ Clear
@@ -127,6 +132,7 @@ const SharedImageLibrary: React.FC<SharedImageLibraryProps> = memo(({
           </p>
         )}
       </div>
+      {confirmClearAllDialog}
     </div>
   );
 });

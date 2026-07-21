@@ -9,12 +9,12 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 
 /** Custom portfolio Drive hooks — document why factory is insufficient before adding here. */
 const PORTFOLIO_DRIVE_HOOK_ALLOWLIST = new Set([
-  'src/stanza/hooks/useStanzaDriveBackup.ts', // custom media hydrate + row review (ADR 0020)
+  'src/stanza/hooks/useStanzaDriveBackup.tsx', // custom media hydrate + row review (ADR 0020)
 ]);
 
 const PORTFOLIO_DRIVE_HOOKS = [
   'src/gesture/hooks/useGestureDriveBackup.ts',
-  'src/stanza/hooks/useStanzaDriveBackup.ts',
+  'src/stanza/hooks/useStanzaDriveBackup.tsx',
   'src/scales/hooks/useScalesDriveBackup.ts',
   'src/zinebox/hooks/useZineboxDriveBackup.ts',
   'src/lyrefly/hooks/useLyreflyDriveBackup.ts',
@@ -47,7 +47,7 @@ describe('portfolio Drive hook guardrails', () => {
     // and overwrites the Drive copy with local-only state.
     const pullFiles = [
       'src/shared/drive/createLabsPortfolioDriveBackup.ts',
-      'src/stanza/hooks/useStanzaDriveBackup.ts',
+      'src/stanza/hooks/useStanzaDriveBackup.tsx',
     ];
     const violations: string[] = [];
     for (const rel of pullFiles) {

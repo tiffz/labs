@@ -25,6 +25,18 @@ interface FloorDimensions {
   worldScale: number;   // Uniform world scale factor
 }
 
+/**
+ * Height the side panel occupies, which the world has to give up.
+ *
+ * Column layout puts the panel along the bottom; wider layouts put it beside
+ * the world, where it costs no height. Shared with World2D so the two cannot
+ * drift apart — they disagreeing is what produced the load-time jump.
+ */
+export function initialSidePanelHeight(): number {
+  if (typeof window === 'undefined') return 0;
+  return window.innerWidth <= 768 ? Math.round(window.innerHeight * 0.6) : 0;
+}
+
 class CatCoordinateSystem {
   // World dimensions (logical units)
   private static readonly WORLD_WIDTH = 1400; // Slightly reduced from 1600 for cozier feel
@@ -44,7 +56,10 @@ class CatCoordinateSystem {
   private viewportWidth: number = 800;
   public viewportHeight: number = 600; // Made public for door height calculation
   private sidePanelWidth: number = 450;
-  private sidePanelHeight: number = 0;
+  // Seed from the same rule World2D uses. Starting at 0 meant the constructor
+  // computed the floor from the whole window height, so the world painted at
+  // the wrong size and then snapped once the panel height arrived.
+  private sidePanelHeight: number = initialSidePanelHeight();
   private cameraX: number = 0;
   
   private listeners: Set<() => void> = new Set();

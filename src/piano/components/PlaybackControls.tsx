@@ -369,7 +369,7 @@ const PlaybackControls: React.FC = () => {
       {state.countingIn && (
         <div className="sb-counting-in">
           <span className="material-symbols-outlined sb-counting-icon">timer</span>
-          Count-in...
+          Count-in…
         </div>
       )}
 

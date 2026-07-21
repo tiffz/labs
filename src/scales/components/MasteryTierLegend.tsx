@@ -37,7 +37,9 @@ export default function MasteryTierLegend({
           component="span"
           aria-hidden="true"
           className="material-symbols-outlined"
-          sx={{ fontSize: 18, lineHeight: 1 }}
+          // Button chrome here is 24px; the FOUC-clip guard
+          // (e2e/visual/visualTestUtils.ts) requires button height >= 1.5x font-size.
+          sx={{ fontSize: 16, lineHeight: 1 }}
         >
           info
         </Box>

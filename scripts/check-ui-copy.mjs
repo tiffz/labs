@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const baselinePath = path.join(repoRoot, 'scripts/check-ui-copy-baseline.json');
@@ -42,14 +43,55 @@ function isCommentLine(line) {
   return trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*');
 }
 
-/** Rough heuristic: does the offending text appear inside quotes or JSX text? */
+/**
+ * Rough heuristic: does the offending text appear inside a string literal
+ * (attribute value)? JSX text content is handled separately via AST — see
+ * extractJsxTextLines — since a regex tied to one physical line can't see
+ * JSX text that wraps across multiple source lines.
+ */
 function inUserVisibleString(line, needle) {
   const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return (
-    new RegExp(`['"\`][^'"\`]*${escaped}[^'"\`]*['"\`]`).test(line) ||
-    // JSX text: `>` not part of `=>`; exclude expression braces/parens (code, not copy).
-    new RegExp(`(?<!=)>\\s*[^<{}()]*${escaped}`).test(line)
+  return new RegExp(`['"\`][^'"\`]*${escaped}[^'"\`]*['"\`]`).test(line);
+}
+
+/**
+ * AST-based JSX text extraction (TypeScript compiler API, already a repo
+ * dependency — see scripts/generate-shared-catalog.mjs). Returns one entry
+ * per physical line of rendered JSX text, correctly handling text that
+ * wraps across multiple source lines inside a single JSXText node — the
+ * gap a same-line regex heuristic cannot see.
+ */
+function extractJsxTextLines(content, fileName) {
+  const sourceFile = ts.createSourceFile(
+    fileName,
+    content,
+    ts.ScriptTarget.Latest,
+    true,
+    fileName.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
+  const results = [];
+
+  function visit(node) {
+    if (ts.isJsxText(node)) {
+      const text = node.getText(sourceFile);
+      // A JSX text node that is *only* an em dash (or similar) is a rendered
+      // glyph/symbol (e.g. a musical rest mark), not prose — real em dashes
+      // in copy are always embedded between words.
+      if (text.trim() && text.trim() !== EM_DASH) {
+        const startPos = node.getStart(sourceFile);
+        const startLine = sourceFile.getLineAndCharacterOfPosition(startPos).line;
+        text.split('\n').forEach((physicalLine, offset) => {
+          if (physicalLine.trim()) {
+            results.push({ line: startLine + offset + 1, text: physicalLine });
+          }
+        });
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+  return results;
 }
 
 const TELLS = [
@@ -97,13 +139,29 @@ const REGEX_TELLS = [
   },
 ];
 
+/** Anchor-free JSX-text variants of the two REGEX_TELLS that apply to free text
+ * (not just attribute values) — the AST pass already knows it's real JSX text,
+ * so it doesn't need the `['"`>]` prefix the per-line regex uses to infer context. */
+const JSX_TEXT_REGEX_TELLS = [
+  {
+    id: '"There is/are" opener in UI string (front-load the subject)',
+    test: (text) => /^\s*(?:…)?\s*There (?:is|are)\b/.test(text),
+  },
+  {
+    id: 'spelled-out number before plural noun (use numerals)',
+    test: (text) =>
+      /\b(?:two|three|four|five|six|seven|eight|nine|ten) [a-z]+(?:s|es)\b/.test(text),
+  },
+];
+
 const violations = [];
 
 for (const file of walk(srcRoot)) {
   const rel = path.relative(repoRoot, file).replaceAll(path.sep, '/');
   if (ALLOWLIST_PATH_SNIPPETS.some((s) => rel.includes(s))) continue;
 
-  const lines = fs.readFileSync(file, 'utf8').split('\n');
+  const content = fs.readFileSync(file, 'utf8');
+  const lines = content.split('\n');
   lines.forEach((rawLine, index) => {
     if (isCommentLine(rawLine)) return;
     // Strip JS spread syntax (`...ident`, `...[`) so it can't false-positive the "..." tell.
@@ -119,6 +177,21 @@ for (const file of walk(srcRoot)) {
       }
     }
   });
+
+  // AST pass: catches JSX text that wraps across multiple source lines,
+  // which the per-line regex pass above cannot see.
+  for (const { line: lineNum, text } of extractJsxTextLines(content, rel)) {
+    for (const tell of TELLS) {
+      if (text.includes(tell.needle)) {
+        violations.push(`${rel}:${lineNum}: ${tell.id}`);
+      }
+    }
+    for (const tell of JSX_TEXT_REGEX_TELLS) {
+      if (tell.test(text)) {
+        violations.push(`${rel}:${lineNum}: ${tell.id}`);
+      }
+    }
+  }
 }
 
 if (updateBaseline) {

@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DriveHttpError } from '../../shared/drive/driveFetch';
+import { useLabsConfirm } from '../../shared/components/useLabsConfirm';
 import {
   ensureLabsDrivePortfolioProgressLayout,
   getLabsDriveProgressFileMeta,
@@ -263,6 +264,7 @@ async function mergeRemoteEnvelopeIntoLocal(
 export function useStanzaDriveBackup() {
   const identity = useLabsEncoreGoogleIdentity();
   const { withBlockingJob } = useLabsBlockingJobs();
+  const { confirm: confirmRestoreSnapshot, dialog: confirmRestoreSnapshotDialog } = useLabsConfirm();
   const [testerOk, setTesterOk] = useState(false);
   const [testerResolved, setTesterResolved] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -606,9 +608,12 @@ export function useStanzaDriveBackup() {
         const localRows = await stanzaDb.songs.toArray();
         const gainCount = countSongsThatWouldGainMarkersFromSnapshot(localRows, env.songs);
         if (gainCount > 0) {
-          const ok = window.confirm(
-            `This will bring back sections for ${gainCount} song${gainCount === 1 ? '' : 's'}. Continue?`,
-          );
+          const ok = await confirmRestoreSnapshot({
+            title: 'Restore this snapshot?',
+            message: `This will bring back sections for ${gainCount} song${gainCount === 1 ? '' : 's'}.`,
+            confirmLabel: 'Restore',
+            destructive: false,
+          });
           if (!ok) return;
         }
         await snapshotLocalLibraryBeforeMerge('pre-restore');
@@ -648,7 +653,7 @@ export function useStanzaDriveBackup() {
         setBusy(false);
       }
     },
-    [],
+    [confirmRestoreSnapshot],
   );
 
   const restoreLatestPrePullSnapshot = useCallback(async () => {
@@ -801,6 +806,7 @@ export function useStanzaDriveBackup() {
     undoSnapshots,
     applyUndoSnapshot,
     restoreLatestPrePullSnapshot,
+    confirmRestoreSnapshotDialog,
     canUndoLastSync: undoSnapshots.some((s) => s.trigger === 'pre-pull'),
     /**
      * True when the device has a Drive backup we can restore from (snapshot or fresh pull).

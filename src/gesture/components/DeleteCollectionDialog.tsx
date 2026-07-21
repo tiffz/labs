@@ -187,8 +187,6 @@ export default function DeleteCollectionDialog({
     }
   }, [deleting, onCancelUpload, onClose, onComplete, onError, packCount, packs, primaryPack, scope, withBatch]);
 
-  const statusLabel = deleting ? deleteStatusLabel(scope, deleteProgress, bulkIndex, packCount) : null;
-
   return (
     <Dialog
       open={open}
@@ -263,22 +261,12 @@ export default function DeleteCollectionDialog({
                     display: "block"
                   }}>
                   Trashes photos and folders under Gesture Reference Packs only (Drive trash ~30 days).
-                  Folders linked from elsewhere stay on Drive — use App only.
+                  Folders linked from elsewhere stay on Drive. Use App only.
                 </Typography>
               </span>
             }
           />
         </RadioGroup>
-        {deleting ? (
-          <Typography
-            variant="body2"
-            sx={{
-              color: "text.secondary",
-              mt: 1.5
-            }}>
-            {statusLabel}
-          </Typography>
-        ) : null}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={handleClose} disabled={interactionDisabled}>

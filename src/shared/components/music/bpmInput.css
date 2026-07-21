@@ -223,9 +223,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
-  font-size: 14px;
+  width: 10px;
+  height: 10px;
+  /* Button chrome is ~17-18px tall; the FOUC-clip guard
+     (e2e/visual/visualTestUtils.ts) requires button height >= 1.5x this
+     font-size, so 10px keeps a safe margin instead of 14px's near-miss. */
+  font-size: 10px;
   line-height: 1;
 }
 

@@ -1,0 +1,13 @@
+---
+description: Require running pre-commit checks before considering a task complete
+alwaysApply: true
+---
+
+# Pre-commit verification
+
+Run **`npm run presubmit`** before telling the user a task is done and before suggesting `git commit`. It mirrors CI's blocking gates (guardrail contracts, lint, knip, typecheck, build, scoped Vitest + scoped e2e). `.husky/pre-push` adds full smoke + playback regressions (`presubmit:push`). Subsets while iterating are fine; always finish with presubmit.
+
+- **Zero ESLint warnings in files you touched** — verify with `npx eslint <changed-files>`; fix `react-hooks/exhaustive-deps`, Fast Refresh (`only-export-components` — keep hooks in `use*.ts`, helpers in `*Utils.ts`), and `no-console` instead of deferring them.
+- **Flaky test (fails once, passes on retry)** → fix the root cause before re-running; rule [`flaky-tests.md`](flaky-tests.md).
+- **Layout/CSS changes** → `npm run verify:layout`. **Shell/provider/route/entry-HTML wiring** → run `npm run presubmit` (build + scoped e2e) and hard-refresh affected routes; HMR hides wiring and cache bugs.
+- Scoping details: [`docs/CI_PATH_SCOPING.md`](../../docs/CI_PATH_SCOPING.md).

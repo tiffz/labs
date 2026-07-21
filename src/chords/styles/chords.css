@@ -808,6 +808,19 @@
   border-radius: 0;
 }
 
+.chords-key-input .option-chip-lock {
+  /* height:100% above has no explicit ancestor height to resolve against here,
+     so it collapses to content size — pin a floor so the icon below can't
+     shrink the box in lockstep and keep failing the FOUC-clip ratio check. */
+  min-height: 16px;
+}
+
+.chords-key-input .option-chip-lock .material-symbols-outlined {
+  /* This row's chrome height can shrink to ~16px; the FOUC-clip guard
+     (e2e/visual/visualTestUtils.ts) requires button height >= 1.5x font-size. */
+  font-size: 0.625rem;
+}
+
 .chords-key-dropdown {
   --key-dropdown-bg: var(--bg-card);
   --key-dropdown-border: var(--border-color);

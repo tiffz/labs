@@ -4,6 +4,8 @@ globs:
   - src/gesture/**/*
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/gesture-linen-design.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Gesture Room — Linen design
 
 Read [`src/gesture/DESIGN.md`](../../src/gesture/DESIGN.md) before changing UI in The Gesture Room.

@@ -147,8 +147,8 @@ export function LabsPortfolioDriveHistoryRecoverDialog(
                 color: "text.secondary",
                 mb: 1.5
               }}>
-              {scanSummary}. Select {entityNoun}s that disappeared after a bad sync to merge them back — nothing
-              you still have locally will be overwritten.
+              {scanSummary}. Select {entityNoun}s that disappeared after a bad sync to merge them back. Nothing
+              you still have locally is overwritten.
             </Typography>
             {entries.length === 0 ? (
               <Typography variant="body2">No missing {entityNoun}s found in Drive history.</Typography>

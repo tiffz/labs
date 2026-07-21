@@ -368,7 +368,7 @@ export default function App(): ReactElement {
                 color: "text.secondary",
                 lineHeight: 1.45
               }}>
-              Short ping through speakers; we listen on the mic for delay. Headphones block that path—use manual ms.
+              Short ping through speakers; we listen on the mic for delay. Headphones block that path. Use manual ms.
             </Typography>
             <FormControlLabel
               sx={{ alignItems: 'flex-start', mr: 0 }}

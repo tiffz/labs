@@ -3,6 +3,8 @@ description: Require running pre-commit checks before considering a task complet
 alwaysApply: true
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/pre-commit-checks.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Pre-commit verification
 
 Run **`npm run presubmit`** before telling the user a task is done and before suggesting `git commit`. It mirrors CI's blocking gates (guardrail contracts, lint, knip, typecheck, build, scoped Vitest + scoped e2e). `.husky/pre-push` adds full smoke + playback regressions (`presubmit:push`). Subsets while iterating are fine; always finish with presubmit.

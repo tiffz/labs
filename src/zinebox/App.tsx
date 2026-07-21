@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 
 import SkipToMain from '../shared/components/SkipToMain';
 import {
@@ -9,13 +9,17 @@ import { LabsUndoProvider } from '../shared/undo/LabsUndoContext';
 import { AppShellLayout } from '../shared/layout/AppShellLayout';
 import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
 import LibraryView from './components/LibraryView';
-import ZineboxDebugPanel from './components/ZineboxDebugPanel';
-import ZineboxDesignThemePicker from './components/ZineboxDesignThemePicker';
+// Debug dock and the theme picker are both opt-in surfaces; neither belongs in
+// the bundle every reader downloads.
+const ZineboxDebugPanel = lazy(() => import('./components/ZineboxDebugPanel'));
+const ZineboxDesignThemePicker = lazy(() => import('./components/ZineboxDesignThemePicker'));
 import { useZineboxDesignTheme } from './context/useZineboxDesignTheme';
 import { isZineboxDesignPreviewEnabled } from './design/zineboxDesignThemes';
 import { ZineboxDriveBackupProvider } from './context/ZineboxDriveBackupContext';
 import { useZineboxUrlState } from './hooks/useZineboxUrlState';
-import ReaderView from './reader/ReaderView';
+// The reader pulls pdfjs-dist, comfortably the heaviest thing Zine Box ships.
+// Landing on the library should not pay for it.
+const ReaderView = lazy(() => import('./reader/ReaderView'));
 import { navigateZineboxHash, zineboxLibraryHref } from './routes/zineboxHash';
 
 function useZineboxDebugMode(): boolean {
@@ -82,13 +86,41 @@ export default function App(): React.ReactElement {
             <SkipToMain />
             <main id="main">
               <AppShellLayout
-                header={showDesignPicker && route.kind === 'library' ? <ZineboxDesignThemePicker /> : null}
+                header={
+                  showDesignPicker && route.kind === 'library' ? (
+                    <Suspense fallback={null}>
+                      <ZineboxDesignThemePicker />
+                    </Suspense>
+                  ) : null
+                }
                 footer={null}
               >
-                {content}
+                {/* Only ReaderView is lazy here, and it pulls pdfjs-dist, so on
+                    a cold cache the chunk fetch is not instant. Show the reader's
+                    own loading shell rather than a blank frame — it matches what
+                    ReaderView renders while its PDF decodes, so the two are
+                    seamless. (Hash navigation fires setRoute outside any
+                    transition, so startTransition would not hold the library.) */}
+                <Suspense
+                  fallback={
+                    route.kind === 'read' ? (
+                      <div
+                        className="zinebox-reader zinebox-reader--loading"
+                        aria-busy="true"
+                        aria-label="Loading reader"
+                      />
+                    ) : null
+                  }
+                >
+                  {content}
+                </Suspense>
               </AppShellLayout>
             </main>
-            {debugMode ? <ZineboxDebugPanel /> : null}
+            {debugMode ? (
+              <Suspense fallback={null}>
+                <ZineboxDebugPanel />
+              </Suspense>
+            ) : null}
           </div>
         </ZineboxDriveBackupProvider>
       </LabsKeyboardShortcutsHost>

@@ -692,6 +692,15 @@ body {
   min-height: 0;
 }
 
+.ui-numeric-stepper-field-demo {
+  /* NumericStepperField is documented as a piece meant for BpmInput's
+     shell (which sets a 38px row height via --bpm-shell-height); standalone
+     here it has no shell to stretch against and its arrows collapse to
+     ~9px, well under the FOUC-clip guard's 1.5x-font-size floor
+     (e2e/visual/visualTestUtils.ts). Pin the shell's real-world height. */
+  min-height: 38px;
+}
+
 .ui-variant-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));

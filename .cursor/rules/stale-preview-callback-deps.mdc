@@ -6,6 +6,8 @@ globs:
   - src/gesture/**
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/stale-preview-callback-deps.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Stale preview state — callback deps
 
 Root cause class: **`stale state`**.

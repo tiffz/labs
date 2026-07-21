@@ -32,12 +32,6 @@ Use Vite multi-page configuration to support multiple independent micro-apps sha
 - Shared dependencies in root `package.json`
 - Shared test setup in `src/shared/test/`
 
-### Benefits
-
-- Easy to add new micro-apps
-- Consistent build and deployment process
-- Shared utilities and test infrastructure
-
 ## Cross-App Reuse Boundary
 
 ### Decision
@@ -104,12 +98,6 @@ Users were experiencing stale UI updates requiring manual hard refresh.
 
 **Deployment Headers**: `public/_headers` file for platforms that support it
 
-### Benefits
-
-- Users always see latest updates
-- Static assets cached efficiently
-- No manual refresh required
-
 ## Accessibility and UI Primitive Strategy
 
 ### Decision
@@ -120,7 +108,7 @@ Adopt MUI as the default primitive library for complex interactive widgets and e
 
 - Custom dialog/menu implementations were producing repeat regressions in keyboard navigation and focus behavior.
 - Shared primitives reduce maintenance burden and improve consistency across apps.
-- A11y checks should be enforced by tooling, not just code review.
+- Tooling, not just code review, should enforce a11y checks.
 
 ### Implementation
 
@@ -128,12 +116,6 @@ Adopt MUI as the default primitive library for complex interactive widgets and e
 - Keep per-app look-and-feel using app-scoped theme tokens and ThemeProviders.
 - Enable `eslint-plugin-jsx-a11y` in the root ESLint flat config.
 - Add shared accessibility test helpers in `src/shared/test/` for repeatable audits.
-
-### Benefits
-
-- Better baseline accessibility across all micro-apps.
-- Fewer bespoke focus-trap/click-away bugs.
-- Faster future development through reusable, tested patterns.
 
 ## Responsive-By-Default UI Policy
 
@@ -161,12 +143,6 @@ All music apps must ship mobile-first layouts and shared controls that remain us
 - For JS-driven geometry:
   - Recompute viewport-dependent positions on resize.
   - Avoid hard-coded desktop offsets when placing floating UI.
-
-### Benefits
-
-- New music features are responsive by default.
-- Existing apps share the same mobile interaction baseline.
-- Less app-by-app rework after first mobile QA pass.
 
 ## Quality Assurance
 
@@ -317,11 +293,6 @@ Separate neutral global base CSS from decorative page chrome to prevent style bl
 - New app pages should include `/styles/shared.css` by default and only include `/styles/labs-home.css` when intentionally building a landing-style page.
 - Starter template for new app entry HTML: `src/shared/templates/app-index.starter.html`.
 
-### Benefits
-
-- New app UIs no longer need brittle overrides for inherited `body`/`h1` styles.
-- Decorative site styling becomes opt-in and easier to evolve independently.
-
 ## SPA Shell Hardening
 
 ### Decision
@@ -331,7 +302,7 @@ Every app entry HTML must paint its resting background before any CSS loads, mus
 ### Rationale
 
 - A flash of unstyled content (FOUC) was visible in production while `pulse.css`, `piano.css`, etc. streamed in — the browser painted the default white background before the app's theme took over.
-- Labs is an experimentation surface, not an installable product. Chrome's PWA heuristics could still fire `beforeinstallprompt` on repeat visits even though we don't ship a manifest, and a stale `vite-plugin-pwa` service worker had been observed on older deploys.
+- Labs is an experimentation surface, not an installable product. Chrome's PWA heuristics could still fire `beforeinstallprompt` on repeat visits even though we don't ship a manifest, and older deploys sometimes ran a stale `vite-plugin-pwa` service worker.
 
 ### Implementation
 
@@ -344,12 +315,6 @@ Every app entry HTML must paint its resting background before any CSS loads, mus
 - **Cache headers.** HTML entries only set `<meta http-equiv="Cache-Control" content="no-cache" />`. The triple `no-cache, no-store, must-revalidate` was retired because `build-version.txt` polling already forces a reload on new releases, and aggressive `no-store` defeated useful HTTP caching.
 - **Canonical template.** `src/shared/templates/app-index.starter.html` encodes this contract. Start new apps by copying it verbatim.
 
-### Benefits
-
-- No FOUC on cold loads. The paint matches the final theme.
-- PWA install prompts are impossible to reach, intentionally.
-- Old service workers on returning devices self-destruct on first visit.
-
 ## Accessibility Baseline
 
 ### Decision
@@ -358,7 +323,7 @@ Every app mounts its primary content inside a single `<main id="main">` landmark
 
 ### Rationale
 
-- Keyboard and screen-reader users were forced to tab through repeated header chrome to reach app content.
+- Keyboard and screen-reader users had to tab through repeated header chrome to reach app content.
 - Some apps removed browser-default focus outlines without providing a replacement ring, failing WCAG 2.4.7.
 - Animations played at full speed even when the OS requested reduced motion.
 
@@ -370,12 +335,6 @@ Every app mounts its primary content inside a single `<main id="main">` landmark
 - **Icon-only buttons.** Provide `aria-label` on every icon-only button. `AppTooltip` uses `describeChild={true}` and therefore does _not_ become the button's accessible name.
 - **Reduced motion.** The global override in `shared.css` clamps animation, transition, and scroll durations under `@media (prefers-reduced-motion: reduce)`. Apps only need to re-enable an animation inside their own `@media` block if it is essential to the UX.
 - **Contrast.** Muted text tokens must meet WCAG AA (4.5:1 on the app's background). Piano's muted token was bumped from `#94a3b8` to `#64748b` as reference.
-
-### Benefits
-
-- Keyboard and AT users can bypass chrome and reach the app in one keystroke.
-- Focus is always visible for keyboard users.
-- Reduced-motion requests are honored automatically without per-app work.
 
 ## Cross-Platform Viewport
 

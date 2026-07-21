@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Beam, Dot, BarlineType } from 'vexflow';
 import type { ParsedRhythm, Note, DrumSound, TimeSignature, RepeatMarker, SectionRepeat } from '../types';
 import { drawDrumSymbol } from '../assets/drumSymbols';
@@ -455,7 +455,11 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     }
   }, []);
 
-  useEffect(() => {
+  // Layout effect, not a plain effect: this must land before the browser
+  // paints. Measuring afterwards let the first pass run on a fallback width,
+  // wrap the staff into the wrong number of lines, and then reflow to a
+  // different height once the real width arrived.
+  useLayoutEffect(() => {
     if (exportMode) {
       setContainerWidth(exportLayoutWidth);
       return;
@@ -484,6 +488,12 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
 
   useEffect(() => {
     if (!containerRef.current || rhythm.measures.length === 0) {
+      return;
+    }
+    // Wait for a real measurement rather than guessing. The layout effect
+    // above supplies one before first paint, so this only skips the render
+    // that would have used a placeholder width.
+    if (!exportMode && containerWidth <= 0) {
       return;
     }
 
@@ -567,11 +577,11 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         : compactMode
           ? 24
           : 40;
+      // containerWidth is guaranteed positive here — the effect returns early
+      // otherwise, so there is no viewport-width guess to fall back to.
       const availableWidth = exportMode
         ? exportLayoutWidth - containerPadding
-        : containerWidth > 0
-          ? containerWidth - containerPadding
-          : window.innerWidth - containerPadding;
+        : containerWidth - containerPadding;
       const baseMaxLineWidth = exportMode
         ? Math.max(DRUMS_SCORE_EXPORT_LAYOUT.minLineWidth, availableWidth)
         : Math.max(420, Math.min(1200, availableWidth));

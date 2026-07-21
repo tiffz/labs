@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 
 import SkipToMain from '../shared/components/SkipToMain';
@@ -9,10 +9,21 @@ import { LabsUndoProvider } from '../shared/undo/LabsUndoContext';
 import { ComicProfileLoading, ComicProfileView } from './components/ComicProfileView';
 import { LyreflyAppHeader } from './components/LyreflyAppHeader';
 import { LyreflyProfileChrome } from './components/LyreflyProfileChrome';
-import { ProjectWorkbench } from './components/ProjectWorkbench';
 import { ShowcaseGallery } from './components/ShowcaseGallery';
-import { SketchbookTab } from './components/SketchbookTab';
-import { LyreflyVersionShareView } from './components/LyreflyVersionShareView';
+// Split off the routes the gallery landing never needs. The workbench in
+// particular pulls the whole editor; loading it up front delayed first paint
+// for everyone, including the majority who land on the gallery and stay there.
+const ProjectWorkbench = lazy(() =>
+  import('./components/ProjectWorkbench').then((m) => ({ default: m.ProjectWorkbench }))
+);
+const SketchbookTab = lazy(() =>
+  import('./components/SketchbookTab').then((m) => ({ default: m.SketchbookTab }))
+);
+const LyreflyVersionShareView = lazy(() =>
+  import('./components/LyreflyVersionShareView').then((m) => ({
+    default: m.LyreflyVersionShareView,
+  }))
+);
 import { LyreflyDriveBackupProvider } from './context/LyreflyDriveBackupContext';
 import { applyLyreflyRisoCubeCssVars } from './design/risoCubeTheme';
 import {
@@ -136,7 +147,17 @@ export default function App(): ReactElement {
                 rootClassName="lyrefly-layout app-shell-root"
                 header={<LyreflyAppHeader route={route} />}
               >
-                {mainContent}
+                {/* Reuses the profile loading state so a lazy route arriving
+                    looks the same as data arriving. */}
+                <Suspense
+                  fallback={
+                    <div className="lyrefly-workbench lyrefly-workbench--profile">
+                      <ComicProfileLoading />
+                    </div>
+                  }
+                >
+                  {mainContent}
+                </Suspense>
               </AppShellLayout>
             </main>
           </div>

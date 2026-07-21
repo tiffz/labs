@@ -10,6 +10,8 @@ globs:
   - src/encore/originals/**/*
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/playback-ui-regressions.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Playback UI regressions
 
 Read [`PLAYBACK_HOOK_PATTERN.md`](../../src/shared/hooks/PLAYBACK_HOOK_PATTERN.md) and [`PLAYBACK_RENDERING_AUDIT.md`](../../src/shared/music/PLAYBACK_RENDERING_AUDIT.md) before editing playback hooks, notation renderers, or portaled pickers.
@@ -24,4 +26,4 @@ Read [`PLAYBACK_HOOK_PATTERN.md`](../../src/shared/hooks/PLAYBACK_HOOK_PATTERN.m
 
 Smokes: `e2e/playback-ui-regressions.spec.ts` (Encore drums settings, Stanza practice-rail highlight, Words host-input + presets).
 
-Inline drum profiles: `.cursor/rules/inline-drum-ux.mdc`, `inlineDrumUxContract.test.tsx`.
+Inline drum profiles: `.agents/rules/inline-drum-ux.mdc`, `inlineDrumUxContract.test.tsx`.

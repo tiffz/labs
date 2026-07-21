@@ -16,7 +16,7 @@ fail() {
 
 echo "== check:agent-docs: skills =="
 
-for skill_dir in .cursor/skills/labs-*/; do
+for skill_dir in .agents/skills/labs-*/; do
   [ -d "$skill_dir" ] || continue
   skill_name=$(basename "$skill_dir")
   skill_md="${skill_dir}SKILL.md"
@@ -61,9 +61,9 @@ for skill_dir in .cursor/skills/labs-*/; do
   fi
 done
 
-skills_readme=".cursor/skills/README.md"
+skills_readme=".agents/skills/README.md"
 if [ -f "$skills_readme" ]; then
-  for skill_dir in .cursor/skills/labs-*/; do
+  for skill_dir in .agents/skills/labs-*/; do
     skill_name=$(basename "$skill_dir")
     if ! grep -q "\`${skill_name}\`" "$skills_readme" 2>/dev/null; then
       fail "${skills_readme} missing row for ${skill_name}"
@@ -73,12 +73,13 @@ else
   fail "missing ${skills_readme}"
 fi
 
-echo "== check:agent-docs: cursor rules index =="
+echo "== check:agent-docs: agent rules index =="
 
-rules_readme=".cursor/rules/README.md"
-for mdc in .cursor/rules/*.mdc; do
-  base=$(basename "$mdc")
-  if ! git ls-files --error-unmatch "$mdc" >/dev/null 2>&1; then
+rules_readme=".agents/rules/README.md"
+for rule_file in .agents/rules/*.md; do
+  base=$(basename "$rule_file")
+  [ "$base" = "README.md" ] && continue
+  if ! git ls-files --error-unmatch "$rule_file" >/dev/null 2>&1; then
     continue
   fi
   if ! grep -q "${base}" "$rules_readme" 2>/dev/null; then
@@ -88,7 +89,7 @@ done
 
 echo "== check:agent-docs: AGENTS.md task routing skills =="
 
-for skill_dir in .cursor/skills/labs-*/; do
+for skill_dir in .agents/skills/labs-*/; do
   skill_name=$(basename "$skill_dir")
   if ! grep -q "${skill_name}" AGENTS.md 2>/dev/null; then
     fail "AGENTS.md task routing missing reference to ${skill_name}"
@@ -115,13 +116,15 @@ evals_doc="docs/GUIDANCE_EVALS.md"
 if [ -f "$evals_doc" ]; then
   # Every labs-* skill named in a golden scenario must exist on disk.
   for skill in $(grep -o 'labs-[a-z0-9-]*' "$evals_doc" | sort -u); do
-    if [ ! -d ".cursor/skills/${skill}" ]; then
+    if [ ! -d ".agents/skills/${skill}" ]; then
       fail "${evals_doc} references missing skill ${skill}"
     fi
   done
-  # Every .mdc rule named in a golden scenario must exist on disk.
-  for rule in $(grep -o '[a-z0-9-]*\.mdc' "$evals_doc" | sort -u); do
-    if [ ! -f ".cursor/rules/${rule}" ]; then
+  # Every rule named in a golden scenario must exist on disk. Bare
+  # backtick-wrapped names only (`flaky-tests.md`), not path-qualified doc
+  # links (`docs/FLAKY_TESTS.md`) or fragments (CUJs.md).
+  for rule in $(grep -oE '`[a-z0-9-]+\.md`' "$evals_doc" | tr -d '`' | sort -u); do
+    if [ ! -f ".agents/rules/${rule}" ]; then
       fail "${evals_doc} references missing rule ${rule}"
     fi
   done
@@ -166,7 +169,7 @@ fi
 echo "== check:agent-docs: skills-ref validate =="
 
 if command -v npx >/dev/null 2>&1; then
-  for skill_dir in .cursor/skills/labs-*/; do
+  for skill_dir in .agents/skills/labs-*/; do
     skill_name=$(basename "$skill_dir")
     if ! npx --yes skills-ref validate "$skill_dir"; then
       fail "skills-ref validate failed for ${skill_name}"

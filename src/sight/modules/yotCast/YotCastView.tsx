@@ -40,7 +40,7 @@ export default function YotCastView({
   return (
     <div className="sight-workspace sight-workspace--single">
       <Typography variant="subtitle2" component="p">
-        {LIGHT_LABELS[challenge.lightPrompt]} — pick the cast scene.
+        {LIGHT_LABELS[challenge.lightPrompt]}: pick the cast scene.
       </Typography>
       <div className="sight-yot-options" role="group" aria-label="Scene options">
         {challenge.options.map((scene, index) => (

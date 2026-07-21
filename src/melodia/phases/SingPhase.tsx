@@ -195,7 +195,7 @@ export default function SingPhase({
         {layout && <MelodiaInkTrace layout={layout} pitchTrail={pitchTrail} elapsedSec={elapsedSec} />}
       </MelodiaStaff>
       <Typography variant="subtitle1" component="h3" sx={{ fontWeight: 700, m: 0 }}>
-        Sing — out loud
+        Sing out loud
       </Typography>
       <Typography variant="body2" className="melodia-ink-pink" sx={{ lineHeight: 1.5 }}>
         Sing the staff. We sketch your pitch in pink as you go.

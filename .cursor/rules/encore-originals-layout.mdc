@@ -4,6 +4,8 @@ globs:
   - src/encore/originals/**
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/encore-originals-layout.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Encore Originals layout
 
 Read [`src/encore/theme/encoreM3Layout.ts`](../../src/encore/theme/encoreM3Layout.ts) and [`originals/DEVELOPMENT.md`](../../src/encore/originals/DEVELOPMENT.md) before changing song page or library list layout.

@@ -4,6 +4,8 @@ globs:
   - src/lyrefly/**/*
 ---
 
+<!-- AUTO-GENERATED from .agents/rules/lyrefly-riso-cube-design.md — do not edit directly. Edit the source and run `npm run generate:agent-guidance`. -->
+
 # Lyrefly — Riso Cube design
 
 Read [`src/lyrefly/DESIGN.md`](../../src/lyrefly/DESIGN.md) before changing UI in Lyrefly.

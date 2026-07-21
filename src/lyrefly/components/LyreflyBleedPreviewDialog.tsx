@@ -72,7 +72,7 @@ export function LyreflyBleedPreviewDialog({
       data-testid="lyrefly-bleed-preview-dialog"
     >
       <DialogTitle id="lyrefly-bleed-preview-title" sx={{ pr: 6 }}>
-        Bleed preview — {summary.presetLabel}
+        Bleed preview: {summary.presetLabel}
         <IconButton
           aria-label="Close bleed preview"
           onClick={onClose}
@@ -94,20 +94,20 @@ export function LyreflyBleedPreviewDialog({
         <ul className="lyrefly-print-spec__legend">
           <li>
             <span className="lyrefly-print-spec__swatch lyrefly-print-spec__swatch--bleed" aria-hidden />
-            Bleed — extend art through this zone
+            Bleed: extend art through this zone
           </li>
           <li>
             <span className="lyrefly-print-spec__swatch lyrefly-print-spec__swatch--trim" aria-hidden />
-            Trim line — finished page edge
+            Trim line: finished page edge
           </li>
           <li>
             <span className="lyrefly-print-spec__swatch lyrefly-print-spec__swatch--quiet" aria-hidden />
-            Safe zone — keep text inside
+            Safe zone: keep text inside
           </li>
           {spec.binding !== 'staple' ? (
             <li>
               <span className="lyrefly-print-spec__swatch lyrefly-print-spec__swatch--gutter" aria-hidden />
-              Gutter — binding margin in book preview
+              Gutter: binding margin in book preview
             </li>
           ) : null}
         </ul>
