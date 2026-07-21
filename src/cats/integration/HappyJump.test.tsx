@@ -8,7 +8,7 @@ describe('Happy Jump', () => {
   const cleanup = setupTestCleanup();
 
   // setupTestCleanup manages its own timers but does not undo a manual
-  // vi.useFakeTimers(); restore real timers so they do not bleed to later tests.
+  // vi.useFakeTimers(); restore real timers so they do not bleed into later tests in this file.
   afterEach(() => {
     vi.useRealTimers();
   });

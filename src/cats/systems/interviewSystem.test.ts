@@ -151,7 +151,7 @@ describe('Interview System', () => {
       vi.spyOn(Math, 'random').mockImplementation(seededRandom(2));
       const messages = new Set();
 
-      for (let i = 0; i < 200; i++) { // More attempts needed since success is only 20%
+      for (let i = 0; i < 200; i++) { // More attempts needed since success is a minority (35%) outcome
         const result = performInterview('box_factory');
         if (result.success) {
           messages.add(result.message);
