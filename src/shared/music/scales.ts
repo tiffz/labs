@@ -42,6 +42,78 @@ const PENTA_MINOR                  = [0, 2, 3, 5, 7];
 const PENTA_RH = [1, 2, 3, 4, 5];
 const PENTA_LH = [5, 4, 3, 2, 1];
 
+// --- Note-name spelling -----------------------------------------------------
+//
+// Each ScoreNote carries only a MIDI number, but a MIDI number is
+// enharmonically ambiguous (70 is both A#4 and Bb4). To spell a scale so
+// every degree gets its own letter — no doubled or skipped letters, and the
+// key-correct accidental (Bb in a flat key, not A#) — we walk the musical
+// alphabet by *letter offset* from the tonic and derive the accidental from
+// the pitch. A per-key sharp/flat toggle cannot do this: D harmonic minor
+// needs both Bb (the 6th) and C# (the raised 7th) in the same octave.
+
+const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'] as const;
+// Natural (unaltered) pitch class of each letter above.
+const LETTER_PITCH_CLASS = [0, 2, 4, 5, 7, 9, 11];
+
+// Letter offset from the tonic for each note of a one-octave exercise. Scales
+// (all minor variants included) step one letter per degree; arpeggios step by
+// thirds (root, 3rd, 5th, octave); pentascales are five consecutive letters.
+const SCALE_LETTER_OFFSETS = [0, 1, 2, 3, 4, 5, 6, 7];
+const ARP_LETTER_OFFSETS   = [0, 2, 4, 7];
+const PENTA_LETTER_OFFSETS = [0, 1, 2, 3, 4];
+
+function getBaseLetterOffsets(type: ExerciseType): number[] {
+  if (type === 'arpeggio')   return ARP_LETTER_OFFSETS;
+  if (type === 'pentascale') return PENTA_LETTER_OFFSETS;
+  return SCALE_LETTER_OFFSETS;
+}
+
+/** Expand one-octave letter offsets to `octaves`, mirroring `expandIntervals`
+ *  (each octave adds 7 letters, matching the 12-semitone step there). */
+function expandLetterOffsets(base: number[], octaves: number, isPentascale: boolean): number[] {
+  if (octaves === 1) return base;
+  if (isPentascale) {
+    const result: number[] = [];
+    for (let o = 0; o < octaves; o++)
+      for (const off of base) result.push(off + o * 7);
+    return result;
+  }
+  const interior = base.slice(0, -1);
+  const result: number[] = [];
+  for (let o = 0; o < octaves; o++)
+    for (const off of interior) result.push(off + o * 7);
+  result.push(base[base.length - 1] + (octaves - 1) * 7);
+  return result;
+}
+
+const ACCIDENTAL_SUFFIX: Record<number, string> = {
+  [-2]: 'bb', [-1]: 'b', 0: '', 1: '#', 2: '##',
+};
+
+/**
+ * Spell a MIDI note as a VexFlow pitch string (e.g. `'Bb/4'`, `'C#/5'`,
+ * `'Cb/5'`) using the letter a given number of steps above the tonic.
+ * The octave is taken from the *letter*, not the sounding pitch, so Cb5 and
+ * B4 (same pitch) spell with the correct — and different — octave numbers.
+ */
+function spellNote(tonicLetterIndex: number, letterOffset: number, midi: number): string {
+  const letterIndex = (((tonicLetterIndex + letterOffset) % 7) + 7) % 7;
+  const letter = LETTERS[letterIndex];
+  const naturalPc = LETTER_PITCH_CLASS[letterIndex];
+  // Choose the octave whose natural pitch for this letter is nearest `midi`,
+  // leaving a small accidental (a semitone or two).
+  const octaveTimes = Math.round((midi - naturalPc) / 12); // = octave + 1
+  const accidental = midi - (octaveTimes * 12 + naturalPc);
+  const suffix = ACCIDENTAL_SUFFIX[accidental] ?? '';
+  return `${letter}${suffix}/${octaveTimes - 1}`;
+}
+
+function tonicLetterIndex(key: Key): number {
+  const idx = LETTERS.indexOf(key[0] as (typeof LETTERS)[number]);
+  return idx < 0 ? 0 : idx;
+}
+
 interface SubConfig {
   duration: NoteDuration;
   perMeasure: number;
@@ -153,6 +225,10 @@ const MINOR: KeyData[] = [
   { key: 'D',  rh: 62, lh: 50, sRh: [1,2,3,1,2,3,4,5], sLh: [5,4,3,2,1,3,2,1], aRh: [1,2,3,5], aLh: [5,3,2,1],
     sLh2: LH_5_4_3_2_1_3_2_1_TWO_OCT, aLh2: LH_ARP_5_3_2_1_TWO_OCT },
   { key: 'D#', rh: 63, lh: 51, sRh: [3,1,2,3,4,1,2,3], sLh: [2,1,4,3,2,1,3,2], aRh: [2,1,2,4], aLh: [3,2,1,3] },
+  // Eb minor is the same physical scale as D# minor (the curriculum spells
+  // it with flats, so it must be reachable under the 'Eb' key). Same MIDI
+  // root and fingering; only the written spelling differs.
+  { key: 'Eb', rh: 63, lh: 51, sRh: [3,1,2,3,4,1,2,3], sLh: [2,1,4,3,2,1,3,2], aRh: [2,1,2,4], aLh: [3,2,1,3] },
   { key: 'E',  rh: 64, lh: 52, sRh: [1,2,3,1,2,3,4,5], sLh: [5,4,3,2,1,3,2,1], aRh: [1,2,3,5], aLh: [5,3,2,1],
     sLh2: LH_5_4_3_2_1_3_2_1_TWO_OCT, aLh2: LH_ARP_5_3_2_1_TWO_OCT },
   { key: 'F',  rh: 65, lh: 53, sRh: [1,2,3,4,1,2,3,4], sLh: [5,4,3,2,1,3,2,1], aRh: [1,2,3,5], aLh: [5,3,2,1],
@@ -162,6 +238,9 @@ const MINOR: KeyData[] = [
   { key: 'G',  rh: 55, lh: 43, sRh: [1,2,3,1,2,3,4,5], sLh: [5,4,3,2,1,3,2,1], aRh: [1,2,3,5], aLh: [5,3,2,1],
     sLh2: LH_5_4_3_2_1_3_2_1_TWO_OCT, aLh2: LH_ARP_5_3_2_1_TWO_OCT },
   { key: 'G#', rh: 56, lh: 44, sRh: [3,4,1,2,3,1,2,3], sLh: [3,2,1,3,2,1,4,3], aRh: [2,1,2,4], aLh: [3,2,1,3] },
+  // Ab minor is the same physical scale as G# minor (the curriculum spells
+  // it with flats — seven of them — so it must be reachable under 'Ab').
+  { key: 'Ab', rh: 56, lh: 44, sRh: [3,4,1,2,3,1,2,3], sLh: [3,2,1,3,2,1,4,3], aRh: [2,1,2,4], aLh: [3,2,1,3] },
   { key: 'A',  rh: 57, lh: 45, sRh: [1,2,3,1,2,3,4,5], sLh: [5,4,3,2,1,3,2,1], aRh: [1,2,3,5], aLh: [5,3,2,1],
     sLh2: LH_5_4_3_2_1_3_2_1_TWO_OCT, aLh2: LH_ARP_5_3_2_1_TWO_OCT },
   { key: 'Bb', rh: 58, lh: 46, sRh: [2,1,2,3,1,2,3,4], sLh: [2,1,3,2,1,4,3,2], aRh: [2,1,2,4], aLh: [3,2,1,2] },
@@ -264,10 +343,18 @@ function getExplicitFingering(
   return null;
 }
 
+/** A generated note carries its MIDI pitch, fingering, and letter-correct
+ *  spelling (a VexFlow pitch string such as `'Bb/4'`). */
+interface GenNote {
+  midi: number;
+  finger: number;
+  spelling: string;
+}
+
 function applyDirection(
-  notes: { midi: number; finger: number }[],
+  notes: GenNote[],
   direction: Direction,
-): { midi: number; finger: number }[] {
+): GenNote[] {
   if (direction === 'ascending')  return notes;
   if (direction === 'descending') return [...notes].reverse();
   return [...notes, ...[...notes].reverse().slice(1)];
@@ -285,10 +372,10 @@ function applyDirection(
  * to the same behavior as `applyDirection`.
  */
 function applyScaleDirection(
-  ascendingNotes: { midi: number; finger: number }[],
-  descendingNotes: { midi: number; finger: number }[],
+  ascendingNotes: GenNote[],
+  descendingNotes: GenNote[],
   direction: Direction,
-): { midi: number; finger: number }[] {
+): GenNote[] {
   if (direction === 'ascending')  return ascendingNotes;
   if (direction === 'descending') return [...descendingNotes].reverse();
   // 'both': ascend through the ascending form, then descend through the
@@ -320,7 +407,7 @@ function fillWithRests(remainingBeats: number): ScoreNote[] {
 }
 
 function buildMeasures(
-  notes: { midi: number; finger: number }[],
+  notes: GenNote[],
   cfg: SubConfig,
 ): ScoreMeasure[] {
   const beatsPerNote = DURATION_BEATS[cfg.duration] * (cfg.tuplet ? (cfg.tuplet.normal / cfg.tuplet.actual) : 1);
@@ -333,6 +420,7 @@ function buildMeasures(
     const scoreNotes: ScoreNote[] = chunk.map(n => ({
       id: generateNoteId(),
       pitches: [n.midi],
+      spelling: [n.spelling],
       duration: cfg.duration,
       finger: n.finger,
       tuplet: cfg.tuplet,
@@ -435,10 +523,18 @@ export function generateExerciseScore(
   const intervalsAsc  = expandIntervals(baseIvAscRaw, octaves, isPenta);
   const intervalsDesc = expandIntervals(baseIvDescRaw, octaves, isPenta);
 
-  const rhAsc  = intervalsAsc.map((iv, i) => ({ midi: data.rh + iv, finger: rhFing[i] }));
-  const lhAsc  = intervalsAsc.map((iv, i) => ({ midi: data.lh + iv, finger: lhFing[i] }));
-  const rhDesc = intervalsDesc.map((iv, i) => ({ midi: data.rh + iv, finger: rhFing[i] }));
-  const lhDesc = intervalsDesc.map((iv, i) => ({ midi: data.lh + iv, finger: lhFing[i] }));
+  // Letter offset from the tonic for each note. Ascending and descending
+  // share this array: a scale degree keeps its letter name regardless of
+  // direction (the melodic-minor 6th/7th change *pitch* between asc and
+  // desc, not letter). Aligns by index with both interval arrays because
+  // every scale interval set has the same length (8 for scales).
+  const tonicIdx = tonicLetterIndex(key);
+  const letterOffsets = expandLetterOffsets(getBaseLetterOffsets(type), octaves, isPenta);
+
+  const rhAsc: GenNote[]  = intervalsAsc.map((iv, i) => ({ midi: data.rh + iv, finger: rhFing[i], spelling: spellNote(tonicIdx, letterOffsets[i], data.rh + iv) }));
+  const lhAsc: GenNote[]  = intervalsAsc.map((iv, i) => ({ midi: data.lh + iv, finger: lhFing[i], spelling: spellNote(tonicIdx, letterOffsets[i], data.lh + iv) }));
+  const rhDesc: GenNote[] = intervalsDesc.map((iv, i) => ({ midi: data.rh + iv, finger: rhFing[i], spelling: spellNote(tonicIdx, letterOffsets[i], data.rh + iv) }));
+  const lhDesc: GenNote[] = intervalsDesc.map((iv, i) => ({ midi: data.lh + iv, finger: lhFing[i], spelling: spellNote(tonicIdx, letterOffsets[i], data.lh + iv) }));
 
   const rhNotes = isScale
     ? applyScaleDirection(rhAsc, rhDesc, direction)

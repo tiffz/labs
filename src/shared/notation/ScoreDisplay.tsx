@@ -24,6 +24,7 @@ import {
   getKeyAccidentalMap,
   getKeySignatureInfo,
   getVexflowKey,
+  resolveRenderPitchKey,
   GREYED_CURRENT,
   GREYED_NOTE,
   GREYED_STAFF,
@@ -694,7 +695,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             rhMeasure.notes.forEach((note, noteIdx) => {
               const vfDur = DURATION_VEXFLOW[note.duration] + (note.dotted ? 'd' : '') + (note.rest ? 'r' : '');
               const needs8va = !note.rest && note.pitches.some(p => p >= TREBLE_8VA_THRESHOLD);
-              const keys = note.rest ? ['b/4'] : note.pitches.map(p => midiToPitchStringForKey(needs8va ? p - 12 : p, score.key));
+              const keys = note.rest ? ['b/4'] : note.pitches.map((p, pi) => resolveRenderPitchKey(note, pi, p, needs8va, score.key));
               const staveNote = new StaveNote({ keys, duration: vfDur, clef: 'treble', stemDirection: 1 });
               if (note.dotted) Dot.buildAndAttach([staveNote], { all: true });
               if (!note.rest) {
@@ -778,7 +779,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             lhMeasure.notes.forEach((note, noteIdx) => {
               const vfDur = DURATION_VEXFLOW[note.duration] + (note.dotted ? 'd' : '') + (note.rest ? 'r' : '');
               const needsBass8va = !note.rest && note.pitches.some(p => p >= BASS_8VA_THRESHOLD);
-              const keys = note.rest ? ['d/3'] : note.pitches.map(p => midiToPitchStringForKey(needsBass8va ? p - 12 : p, score.key));
+              const keys = note.rest ? ['d/3'] : note.pitches.map((p, pi) => resolveRenderPitchKey(note, pi, p, needsBass8va, score.key));
               const staveNote = new StaveNote({ keys, duration: vfDur, clef: 'bass', stemDirection: -1 });
               if (note.dotted) Dot.buildAndAttach([staveNote], { all: true });
               if (!note.rest) {
@@ -865,7 +866,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             if (vMeasure) {
               vMeasure.notes.forEach((note, noteIdx) => {
                 const vfDur = DURATION_VEXFLOW[note.duration] + (note.dotted ? 'd' : '') + (note.rest ? 'r' : '');
-                const keys = note.rest ? ['b/4'] : note.pitches.map(p => midiToPitchStringForKey(p, score.key));
+                const keys = note.rest ? ['b/4'] : note.pitches.map((p, pi) => resolveRenderPitchKey(note, pi, p, false, score.key));
                 const staveNote = new StaveNote({ keys, duration: vfDur, clef: 'treble', stemDirection: 1 });
                 if (note.dotted) Dot.buildAndAttach([staveNote], { all: true });
                 if (!note.rest) {

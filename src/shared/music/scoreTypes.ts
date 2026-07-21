@@ -9,6 +9,20 @@ export type NoteDuration = 'whole' | 'half' | 'quarter' | 'eighth' | 'sixteenth'
 export interface ScoreNote {
   id: string;
   pitches: number[];
+  /**
+   * Optional explicit VexFlow pitch strings (one per entry in `pitches`),
+   * e.g. `['Bb/4']` or `['C#/5']`. When present the renderer uses these
+   * verbatim instead of deriving a spelling from the MIDI number + key.
+   *
+   * A single MIDI number is enharmonically ambiguous (70 is both A#4 and
+   * Bb4), and a per-key sharp/flat toggle cannot spell scales that mix
+   * accidentals within one octave — D harmonic minor needs both Bb (the
+   * 6th) and C# (the raised 7th). Generators that know the scale degree of
+   * each note (see `generateExerciseScore`) attach the letter-correct
+   * spelling here so every degree gets its own letter name, with no
+   * doubled or skipped letters.
+   */
+  spelling?: string[];
   duration: NoteDuration;
   dotted?: boolean;
   rest?: boolean;
