@@ -28242,6 +28242,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-notation-usevexflowmusicfontready-ts-usevexflowmusicfontready",
+    "name": "useVexFlowMusicFontReady",
+    "path": "src/shared/notation/useVexFlowMusicFontReady.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "VexFlow 5 draws music glyphs (noteheads, clefs, rests) as SVG `<text>` in the Bravura SMuFL font, which registers as a `FontFace` and loads asynchronously. An interactive renderer that formats and draws before that font resolves paints the noteheads in a system fallback — blank/tofu glyphs offset from any custom symbols drawn imperatively at the formatter's (correct) coordinates. On the Darbuka trainer that surfaced as noteheads briefly \"detached\" from the drum symbols, self-correcting once the font landed. This hook reports when the music font is usable so a renderer can hold its first draw until then. It returns `true` synchronously once a loaded Bravura face is present — so an in-session remount (navigating between songs, a list of mini-notations) never waits. A fresh page load, including a refresh, does wait: the face registers lazily on first use, so it is not loaded at first mount; that wait is brief and shrinks to a HTTP-cached fetch on refresh. Falls back to `true` where the Font Loading API is unavailable (jsdom, SSR) so tests and non-DOM paths render.",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-notation-vexflowduration-ts-isdottedsixteenthduration",
     "name": "isDottedSixteenthDuration",
     "path": "src/shared/notation/vexFlowDuration.ts",

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Beam, Dot, BarlineType } from 'vexflow';
 import type { ParsedRhythm, Note, DrumSound, TimeSignature } from '../rhythm/types';
 import { drawDrumSymbol } from './drumSymbols';
+import { useVexFlowMusicFontReady } from './useVexFlowMusicFontReady';
 import DiceIcon from '../components/DiceIcon';
 import {
   getDefaultBeatGrouping,
@@ -556,8 +557,12 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
   // Resolve style to NotationStyle object
   const resolvedStyle = useMemo(() => resolveNotationStyle(style), [style]);
 
+  // Wait for the Bravura music font so noteheads never paint in a fallback glyph
+  // detached from the drum symbols (see useVexFlowMusicFontReady).
+  const musicFontReady = useVexFlowMusicFontReady();
+
   useEffect(() => {
-    if (!containerRef.current || rhythm.measures.length === 0) {
+    if (!containerRef.current || rhythm.measures.length === 0 || !musicFontReady) {
       return;
     }
 
@@ -816,7 +821,7 @@ const DrumNotationMini: React.FC<DrumNotationMiniProps> = ({
     } catch (error) {
       console.error('Error rendering drum notation:', error);
     }
-  }, [rhythm, currentNoteIndex, width, height, resolvedStyle, showDrumSymbols, drumSymbolScale, showMetronomeDots, currentBeat, isPlaying]);
+  }, [rhythm, currentNoteIndex, width, height, resolvedStyle, showDrumSymbols, drumSymbolScale, showMetronomeDots, currentBeat, isPlaying, musicFontReady]);
 
   if (rhythm.measures.length === 0) {
     return null;

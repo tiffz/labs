@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Dot, BarlineType } from 'vexflow';
 import { drawDrumSymbol } from '../../shared/notation/drumSymbols';
+import { useVexFlowMusicFontReady } from '../../shared/notation/useVexFlowMusicFontReady';
 import type { DrumSound } from '../types';
 
 interface MiniNotationRendererProps {
@@ -105,8 +106,12 @@ const MiniNotationRenderer: React.FC<MiniNotationRendererProps> = ({
     return detectRepeatedMeasures(pattern);
   }, [pattern, showCompactRepeats]);
 
+  // Wait for the Bravura music font so noteheads never paint in a fallback glyph
+  // detached from the drum symbols (see useVexFlowMusicFontReady).
+  const musicFontReady = useVexFlowMusicFontReady();
+
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !musicFontReady) return;
 
     containerRef.current.innerHTML = '';
 
@@ -214,7 +219,7 @@ const MiniNotationRenderer: React.FC<MiniNotationRendererProps> = ({
     } catch (error) {
       console.error('Error rendering mini notation for pattern:', uniquePattern, error);
     }
-  }, [uniquePattern, width, height, repeatCount]);
+  }, [uniquePattern, width, height, repeatCount, musicFontReady]);
 
   return (
     <div 
