@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Dot, Beam } from 'vexflow';
 import { parsePatternToNotes, durationToVexFlow, isDottedDuration } from '../utils/notationHelpers';
 import { drawDrumSymbol } from '../assets/drumSymbols';
+import { useVexFlowMusicFontReady } from '../../shared/notation/useVexFlowMusicFontReady';
 import type { TimeSignature } from '../types';
 import {
   getBeatGroupingInSixteenths,
@@ -28,9 +29,12 @@ const SimpleVexFlowNote: React.FC<SimpleVexFlowNoteProps> = ({
   timeSignature = { numerator: 4, denominator: 4 },
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  // Wait for the Bravura music font so noteheads never paint in a fallback glyph
+  // detached from the drum symbols (see useVexFlowMusicFontReady).
+  const musicFontReady = useVexFlowMusicFontReady();
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !musicFontReady) return;
     containerRef.current.innerHTML = '';
 
     try {
@@ -162,7 +166,7 @@ const SimpleVexFlowNote: React.FC<SimpleVexFlowNoteProps> = ({
     } catch (error) {
       console.error('Error rendering VexFlow note:', error);
     }
-  }, [pattern, width, height, timeSignature]);
+  }, [pattern, width, height, timeSignature, musicFontReady]);
 
   return (
     <div 
