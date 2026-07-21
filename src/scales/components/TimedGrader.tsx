@@ -14,9 +14,9 @@ import {
 } from '../../shared/practice/pitchMatch';
 import { isDebugEnabled, logDebugEvent } from '../utils/practiceDebugLog';
 
-// Scales practice is about precision; we use tighter timing windows than
-// the piano app (which uses 120ms / 200ms grace) so that "perfect" actually
-// means on the beat. With the prior 120ms window at slower tempos, notes
+// Scales practice is about precision; we use tighter timing windows than the
+// looser 120ms / 200ms grace of general practice playback so that "perfect"
+// actually means on the beat. With the prior 120ms window at slower tempos, notes
 // played a tenth of a beat early/late were still tallied as perfect, which
 // felt much too lenient given the visual feedback (blue/amber colouring).
 const PERFECT_THRESHOLD_MS = 80;
@@ -55,8 +55,7 @@ function pickTimingReferenceTime(
 
 /**
  * Invisible component that grades MIDI input against expected notes during
- * timed (metronome) playback in the scales app. Adapted from the piano app's
- * PracticeMode evaluation logic.
+ * timed (metronome) playback in the scales app.
  *
  * Each note is graded as perfect/early/late/wrong_pitch/missed based on
  * timing offset from the expected beat position. Results are dispatched

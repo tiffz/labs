@@ -100,8 +100,8 @@
   --cs-title-size: var(--font-size-sm, 0.88rem);
   --cs-meta-size: 0.74rem;
   --cs-meta-line-height: 1.28;
-  /* Narrower popover width for the piano app; matches the inline host
-     section width so both chord-style menus render at the same size. */
+  /* Narrower popover width for the piano theme appearance; matches the inline
+     host section width so both chord-style menus render at the same size. */
   --cs-dropdown-min-width: min(480px, calc(100vw - 24px));
   --cs-dropdown-max-width: min(540px, calc(100vw - 24px));
 }

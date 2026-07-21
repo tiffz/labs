@@ -595,8 +595,8 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         : 0;
 
       // A note counts as fully "correct" only when both pitch and timing
-      // are right — matching the piano app's rule. Previously the scales
-      // app counted any pitch-correct note as correct, so early/late notes
+      // are right. Previously the scales app counted any pitch-correct note
+      // as correct, so early/late notes
       // (colored blue/amber in the score) were silently tallied as 100%.
       const results = Array.from(state.practiceResults.values());
       const perfect = results.filter(r => r.pitchCorrect && r.timing === 'perfect').length;
