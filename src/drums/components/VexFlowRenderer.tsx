@@ -435,8 +435,8 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
   // Hold the first draw until the Bravura music font is usable. VexFlow 5 paints
   // noteheads as `<text>` in that font; drawing before it resolves renders them
   // in a system fallback offset from the custom drum symbols — the transient
-  // "detached notehead" flash on cold load. Cached (every refresh) → true
-  // synchronously, so there is no added delay.
+  // "detached notehead" flash on a fresh load. In-session remounts after the
+  // font has loaded are synchronous, so this adds no delay there.
   const musicFontReady = useVexFlowMusicFontReady();
 
   // Selection rectangle ref for direct DOM manipulation (avoids re-render conflicts with VexFlow)
@@ -1636,7 +1636,8 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     // Keep the loop-selection highlight visible while a section plays. If an
     // active selection has no highlight in the SVG (a re-render dropped it), ask
     // the render effect to redraw it — once per loss, so a genuinely un-drawable
-    // selection cannot loop the render.
+    // selection cannot loop the render. The render effect redraws an active
+    // selection whose highlight went missing on the next playback tick.
     const selectionActive = Boolean(
       selection && selection.startCharPosition !== null && selection.endCharPosition !== null,
     );

@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 // The hook must never draw notation before the Bravura music font is usable —
@@ -61,5 +61,22 @@ describe('useVexFlowMusicFontReady', () => {
     const { result } = renderHook(() => useVexFlowMusicFontReady());
     expect(result.current).toBe(true);
     expect(ensureVexFlowFontsLoaded).not.toHaveBeenCalled();
+  });
+
+  it('degrades to a fallback draw if the font load stalls (never hangs)', () => {
+    vi.useFakeTimers();
+    try {
+      // A load that never settles must not hold the first draw forever.
+      ensureVexFlowFontsLoaded.mockImplementationOnce(() => new Promise(() => {}));
+      stubDocumentFonts([{ family: 'Bravura', status: 'loading' }]);
+      const { result } = renderHook(() => useVexFlowMusicFontReady());
+      expect(result.current).toBe(false);
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(result.current).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

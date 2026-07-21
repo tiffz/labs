@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ensureVexFlowFontsLoaded } from './vexFlowFontExport';
 
+/** Cap the first-draw wait so a stalled font load degrades to a fallback draw. */
+const MUSIC_FONT_READY_TIMEOUT_MS = 3000;
+
 /**
  * VexFlow 5 draws music glyphs (noteheads, clefs, rests) as SVG `<text>` in the
  * Bravura SMuFL font, which registers as a `FontFace` and loads asynchronously.
@@ -11,10 +14,13 @@ import { ensureVexFlowFontsLoaded } from './vexFlowFontExport';
  * drum symbols, self-correcting once the font landed.
  *
  * This hook reports when the music font is usable so a renderer can hold its
- * first draw until then. It returns `true` synchronously when the font is
- * already cached (the common case, and every refresh) so there is no added
- * delay; only a genuine cold load waits. Falls back to `true` where the Font
- * Loading API is unavailable (jsdom, SSR) so tests and non-DOM paths render.
+ * first draw until then. It returns `true` synchronously once a loaded Bravura
+ * face is present — so an in-session remount (navigating between songs, a list
+ * of mini-notations) never waits. A fresh page load, including a refresh, does
+ * wait: the face registers lazily on first use, so it is not loaded at first
+ * mount; that wait is brief and shrinks to a HTTP-cached fetch on refresh.
+ * Falls back to `true` where the Font Loading API is unavailable (jsdom, SSR)
+ * so tests and non-DOM paths render.
  */
 export function useVexFlowMusicFontReady(): boolean {
   const [ready, setReady] = useState<boolean>(() => isMusicFontReadySync());
@@ -24,17 +30,24 @@ export function useVexFlowMusicFontReady(): boolean {
       return;
     }
     let cancelled = false;
-    // Resolves via `document.fonts.ready`, which always settles — the renderer
-    // never hangs waiting on the font.
+    // Draw in a fallback rather than hold the notation forever if the font load
+    // ever stalls (no internal timeout in `loadFonts`). The normal path settles
+    // via `document.fonts.ready` long before this fires.
+    const settle = () => {
+      if (!cancelled) {
+        setReady(true);
+      }
+    };
+    const timeout = window.setTimeout(settle, MUSIC_FONT_READY_TIMEOUT_MS);
     ensureVexFlowFontsLoaded()
       .catch(() => {})
       .finally(() => {
-        if (!cancelled) {
-          setReady(true);
-        }
+        window.clearTimeout(timeout);
+        settle();
       });
     return () => {
       cancelled = true;
+      window.clearTimeout(timeout);
     };
   }, [ready]);
 
