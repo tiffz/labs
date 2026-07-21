@@ -9,7 +9,7 @@ import js from '@eslint/js';
 export default [
   // Global ignores
   {
-    ignores: ['dist/', 'node_modules/', '*.min.js', 'build/', 'coverage/', 'public/', 'storybook-static/'],
+    ignores: ['dist/', 'node_modules/', '*.min.js', 'build/', 'coverage/', 'public/', 'storybook-static/', '.claude/worktrees/'],
   },
 
   // Base JS and TS configs
