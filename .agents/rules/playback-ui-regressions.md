@@ -21,6 +21,7 @@ Read [`PLAYBACK_HOOK_PATTERN.md`](../../src/shared/hooks/PLAYBACK_HOOK_PATTERN.m
 - **Portal skins:** trigger + menu both use `appearance` → `resolvePlaybackFieldSelectMenuAppearance()`; allowlist `.shared-playback-field-select-popover` on click-outside. Nested drum Edit menus: allowlist `isDrumPatternEditMenuTarget` + resolve Text-node targets via `resolveEventTargetElement` (see `inline-drum-ux.md`).
 - **Async stop:** `playbackGenerationRef` + check after every `await`; real `stopAll()` (abandon bus). Test: stop during slow `ensureInstrument`.
 - **VexFlow order:** format → beams → draw → redraw stems → draw beams → highlight toggle.
+- **Music font gate:** interactive VexFlow renders hold the first draw on `useVexFlowMusicFontReady` — VexFlow 5 paints noteheads as `<text>` in the async Bravura font, so drawing early flashes fallback glyphs offset from custom symbols. Only the export path may bypass (it preloads via `ensureVexFlowFontsLoaded`).
 
 Smokes: `e2e/playback-ui-regressions.spec.ts` (Encore drums settings, Stanza practice-rail highlight, Words host-input + presets).
 

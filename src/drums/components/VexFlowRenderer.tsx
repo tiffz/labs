@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from
 import { Renderer, Stave, StaveNote, Voice, Formatter, Beam, Dot, BarlineType } from 'vexflow';
 import type { ParsedRhythm, Note, DrumSound, TimeSignature, RepeatMarker, SectionRepeat } from '../types';
 import { drawDrumSymbol } from '../assets/drumSymbols';
+import { useVexFlowMusicFontReady } from '../../shared/notation/useVexFlowMusicFontReady';
 import { getDefaultBeatGrouping, isCompoundTimeSignature, isAsymmetricTimeSignature, getBeatGroupingInSixteenths, getSixteenthsPerMeasure } from '../utils/timeSignatureUtils';
 import {
   DRUMS_SCORE_EXPORT_LAYOUT,
@@ -431,9 +432,24 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
 
   // Re-render when the notation container width changes.
   const [containerWidth, setContainerWidth] = useState(exportMode ? exportLayoutWidth : 0);
+  // Hold the first draw until the Bravura music font is usable. VexFlow 5 paints
+  // noteheads as `<text>` in that font; drawing before it resolves renders them
+  // in a system fallback offset from the custom drum symbols — the transient
+  // "detached notehead" flash on a fresh load. In-session remounts after the
+  // font has loaded are synchronous, so this adds no delay there.
+  const musicFontReady = useVexFlowMusicFontReady();
 
   // Selection rectangle ref for direct DOM manipulation (avoids re-render conflicts with VexFlow)
   const selectionRectRef = useRef<HTMLDivElement | null>(null);
+
+  // Loop-selection highlight lives inside the notation SVG and is only drawn by
+  // the main render effect. A re-render that lands during playback (e.g. a
+  // container-width change while a section loops) can leave the SVG without it
+  // even though the loop keeps playing off the selection *state*. Bumping this
+  // nonce re-runs the render to restore the highlight; `selectionHealPendingRef`
+  // limits it to one attempt per loss so it never thrashes.
+  const [selectionHealNonce, setSelectionHealNonce] = useState(0);
+  const selectionHealPendingRef = useRef(false);
 
   // Helper to update selection rectangle position (direct DOM manipulation)
   const updateSelectionRect = useCallback((rect: SelectionRect | null) => {
@@ -494,6 +510,12 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     // above supplies one before first paint, so this only skips the render
     // that would have used a placeholder width.
     if (!exportMode && containerWidth <= 0) {
+      return;
+    }
+    // Interactive draws wait for the music font so noteheads never paint in a
+    // fallback glyph detached from the drum symbols (see useVexFlowMusicFontReady).
+    // Export runs after its own font preload, so it does not gate on this.
+    if (!exportMode && !musicFontReady) {
       return;
     }
 
@@ -1593,7 +1615,7 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
     // Preview rendering is handled in a separate useEffect below
     // Note: notation, timeSignature, and onDropPattern are used for drag/drop but don't need to trigger re-renders
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rhythm, metronomeEnabled, metronomeSubdivisionLevel, containerWidth, selection, compactMode, exportMode, exportLayoutWidth]);
+  }, [rhythm, metronomeEnabled, metronomeSubdivisionLevel, containerWidth, selection, compactMode, exportMode, exportLayoutWidth, musicFontReady, selectionHealNonce]);
 
   // Playback note highlight — DOM-only updates so playhead does not re-layout the staff.
   useEffect(() => {
@@ -1610,7 +1632,24 @@ const VexFlowRenderer: React.FC<VexFlowRendererProps> = ({
         simileGroupsRef.current,
       );
     }
-  }, [currentNote, rhythm]);
+
+    // Keep the loop-selection highlight visible while a section plays. If an
+    // active selection has no highlight in the SVG (a re-render dropped it), ask
+    // the render effect to redraw it — once per loss, so a genuinely un-drawable
+    // selection cannot loop the render. The render effect redraws an active
+    // selection whose highlight went missing on the next playback tick.
+    const selectionActive = Boolean(
+      selection && selection.startCharPosition !== null && selection.endCharPosition !== null,
+    );
+    if (selectionActive && !svgElement.querySelector('.selection-highlight')) {
+      if (!selectionHealPendingRef.current) {
+        selectionHealPendingRef.current = true;
+        setSelectionHealNonce((n) => n + 1);
+      }
+    } else {
+      selectionHealPendingRef.current = false;
+    }
+  }, [currentNote, rhythm, selection]);
 
   // Separate effect to update metronome dot highlighting
   useEffect(() => {
