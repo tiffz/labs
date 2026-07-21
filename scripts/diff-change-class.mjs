@@ -36,7 +36,11 @@ function changedFiles(baseRef) {
 }
 
 const jsonMode = process.argv.includes('--json');
-const baseArg = process.argv.find((a) => a !== '--json' && !a.endsWith('diff-change-class.mjs'));
+// Skip argv[0] (node binary) and argv[1] (this script). The old
+// `.find(!endsWith('diff-change-class.mjs'))` matched argv[0] — the node path —
+// so baseRef became the executable path and every `git diff` threw, silently
+// disabling the docs-only / e2e-only fast paths (they fell back to full runs).
+const baseArg = process.argv.slice(2).find((a) => a !== '--json');
 const baseRef = gitRef(baseArg);
 const files = changedFiles(baseRef);
 

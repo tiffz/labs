@@ -1,12 +1,5 @@
 import '@testing-library/jest-dom';
-import { toHaveNoViolations } from 'jest-axe';
-import { afterEach, expect } from 'vitest';
-
-type VitestMatchers = Parameters<typeof expect.extend>[0];
-const axeMatchers: VitestMatchers = {
-  toHaveNoViolations: toHaveNoViolations as never,
-};
-expect.extend(axeMatchers);
+import { afterEach } from 'vitest';
 
 // Mock requestAnimationFrame and cancelAnimationFrame for test environment
 let animationFrameId = 0;

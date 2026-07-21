@@ -26,8 +26,12 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:5173',
     ignoreHTTPSErrors: true,
     video: 'off',
-    screenshot: 'off',
-    trace: process.env.CI ? 'on-first-retry' : 'off',
+    // Capture a trace + screenshot on failure in CI. `on-first-retry` never
+    // fired here because retries are 0, so CI e2e failures used to ship no
+    // trace at all — the single biggest e2e triage tax. `retain-on-failure`
+    // does not need retries and does not mask flakes.
+    screenshot: process.env.CI ? 'only-on-failure' : 'off',
+    trace: process.env.CI ? 'retain-on-failure' : 'off',
     viewport: { width: 1440, height: 900 },
   },
   projects: [
