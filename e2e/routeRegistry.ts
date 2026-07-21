@@ -253,7 +253,10 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     route: '/muscle/',
     title: /Muscle Memory/i,
     visibleSelector: '[data-testid="muscle-app"]',
-    smokeVisibleTimeoutMs: 20_000,
+    // WebGL scene + GLB streaming is CPU-heavy under CI's software renderer
+    // (swiftshader); give the shell-visible wait extra headroom so the
+    // responsive/smoke scans run after it settles, not against it.
+    smokeVisibleTimeoutMs: 35_000,
     smoke: true,
     visual: false,
     notes: 'WIP — shell + study journey smokes; visual via seeded muscle row below',

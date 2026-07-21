@@ -25,6 +25,14 @@ type RouteOverride = {
  */
 const ROUTE_OVERRIDES: Record<string, RouteOverride> = {};
 
+/**
+ * Routes heavy enough that the heuristic scan must wait for the page to settle
+ * first, or it competes with still-running main-thread work and times out under
+ * CI's software renderer (`heavy-page-ci-flake`). Keep this short — every entry
+ * is a page that boots slowly.
+ */
+const SETTLE_BEFORE_SCAN = new Set<string>(['/muscle/', '/ui/']);
+
 // Coarse pointer so `@media (pointer: coarse)` ergonomics rules apply, like a real phone.
 test.use({ hasTouch: true });
 
@@ -41,7 +49,17 @@ test.describe('Responsive floor: 390px, all app routes', () => {
       await expect(page.locator(visibleSelector)).toBeVisible(
         smokeVisibleTimeoutMs ? { timeout: smokeVisibleTimeoutMs } : undefined,
       );
-      // Let post-boot layout (fonts, async panels) settle one frame.
+      // Heavy pages (WebGL scenes, large catalogs) keep the main thread busy
+      // after `load`, so a `page.evaluate` heuristic fired too early competes
+      // with that work and times out under CI's software renderer — the top
+      // nightly flake class. For those routes only, wait for the page to stop
+      // streaming before scanning (best-effort; proceed even if never idle).
+      // Scoped to heavy routes so the other ~24 don't hold a browser page open
+      // longer and add concurrent load to timing-sensitive specs.
+      if (SETTLE_BEFORE_SCAN.has(route)) {
+        await page.waitForLoadState('networkidle', { timeout: 8_000 }).catch(() => {});
+      }
+      // Then let post-boot layout (fonts, async panels) settle one frame.
       await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
 
       const scroll = await page.evaluate(runHorizontalScrollHeuristicInBrowser, {

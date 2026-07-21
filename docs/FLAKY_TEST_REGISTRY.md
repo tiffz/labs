@@ -25,6 +25,9 @@ Track known flaky tests so they get fixed or quarantined — not masked with ret
 
 | `e2e/visual/apps.visual.spec.ts` | `home-mobile` baseline drift after Lyrefly catalog on `/` | agent | resolved | Import Linux nightly actual; `REGRESSION_WORKFLOW.md` § homepage catalog |
 
+| `e2e/smoke/responsive-all-apps.spec.ts` | `mobile floor /muscle/` (and `/ui/`) — `page.evaluate` heuristic scan 50s timeout under CI software-WebGL; passes <1s locally (`heavy-page-ci-flake`) | agent | resolved | Wait `networkidle` (bounded) before scanning so the scan runs after the page settles, not against it; muscle `smokeVisibleTimeoutMs` 20s→35s; Lighthouse run-error advisory for `/muscle/` (2026-07-21) |
+| `e2e/smoke/encore-practice-resource-dnd.spec.ts` | `drag Listen chip to Play section` — `toBeHidden()` fails intermittently on nightly (drag occasionally does not register) | agent | watching | Playwright DnD timing; not yet reproduced locally. Root-cause candidate: add explicit `mouse.move` steps / `dragTo` with hover settle. Quarantine if it recurs on the merge gate. |
+
 | `e2e/smoke/layout-heuristics-stanza.spec.ts` | `missing content node` — headings not mounted when `main#main` visible | agent | resolved | `expectStanzaLibraryChrome` in `beforeEach` (2026-06-23) |
 
 | `e2e/smoke/words-practice-interaction.spec.ts` | 448ms vs 400ms budget under parallel full smoke | agent | resolved | Warmup click + `RELAXED_INTERACTION_BUDGET_MS` (2026-06-23) |
