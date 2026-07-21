@@ -23,7 +23,18 @@ type RouteOverride = {
  * tagging the element with `data-labs-allow-horizontal-scroll` /
  * `data-labs-allow-small-touch-target` at the source with a comment.
  */
-const ROUTE_OVERRIDES: Record<string, RouteOverride> = {};
+const ROUTE_OVERRIDES: Record<string, RouteOverride> = {
+  // Muscle's WebGL scene monopolizes the main thread under CI's software
+  // renderer, and the touch-target heuristic (which enumerates every
+  // interactive element and forces layout across the large browse DOM) starves
+  // there — timing out even at a 65s budget while passing in <1s on hardware
+  // GPUs. Its responsive scroll/contrast floor is covered reliably by
+  // e2e/smoke/layout-heuristics-muscle.spec.ts (which omits the touch-target
+  // scan for the same reason). Follow-up: add a touch-target check scoped to
+  // `.muscle-canvas-view-controls` there so that coverage is not lost.
+  // (`heavy-page-ci-flake` — see docs/FLAKY_TEST_REGISTRY.md.)
+  '/muscle/': { skip: 'WebGL main-thread contention starves the touch-target scan under CI; scroll/contrast covered by layout-heuristics-muscle.spec.ts' },
+};
 
 /**
  * Routes heavy enough that the heuristic scan must wait for the page to settle
@@ -31,7 +42,7 @@ const ROUTE_OVERRIDES: Record<string, RouteOverride> = {};
  * CI's software renderer (`heavy-page-ci-flake`). Keep this short — every entry
  * is a page that boots slowly.
  */
-const SETTLE_BEFORE_SCAN = new Set<string>(['/muscle/', '/ui/']);
+const SETTLE_BEFORE_SCAN = new Set<string>(['/ui/']);
 
 // Coarse pointer so `@media (pointer: coarse)` ergonomics rules apply, like a real phone.
 test.use({ hasTouch: true });
