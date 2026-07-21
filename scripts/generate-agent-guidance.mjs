@@ -122,7 +122,11 @@ function generateRuleForClaude(baseName, frontmatter, body) {
   const parts = [];
   if (hasPaths) {
     parts.push('---', 'paths:');
-    for (const glob of globs) parts.push(`  - "${glob}"`);
+    // Single quotes match what prettier rewrites YAML frontmatter to. Emitting
+    // double quotes here made `check:agent-guidance` unwinnable: the pre-commit
+    // prettier pass reformatted the generated files, so a regenerate-and-commit
+    // never matched a fresh generate. Globs never contain single quotes.
+    for (const glob of globs) parts.push(`  - '${glob}'`);
     parts.push('---', '');
   }
   parts.push(GENERATED_NOTE.replace('{source}', `rules/${baseName}.md`));
