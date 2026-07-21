@@ -23,7 +23,9 @@ Canonical: [`docs/CONTENT_ACCURACY.md`](../../docs/CONTENT_ACCURACY.md) ·
 
 Content correctness has **no compiler** — types/lint/screenshots pass while a
 scale is misspelled, a color exercise grades the wrong answer, or a muscle is
-mislabeled. Two defenses, both required for content-heavy code:
+mislabeled. Two defenses — an exhaustive integrity test and domain-expert review
+— both required for content-heavy code, with one correctness property the test
+must assert:
 
 ## Must
 

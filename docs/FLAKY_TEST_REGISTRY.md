@@ -11,6 +11,8 @@ Track known flaky tests so they get fixed or quarantined — not masked with ret
 3. Quarantined tests are excluded from `test:fast` and pre-commit (`vite.config.ts` exclude pattern).
 4. After deadline: **fix root cause** or **delete the test** — do not extend quarantine without a new registry row.
 
+**Statuses:** `resolved` (root-caused and fixed), `quarantined` (excluded, 7-day deadline), `watching` (observed intermittently, not yet reproduced locally — still runs; quarantine it if it recurs on the merge gate).
+
 ## Registry
 
 | File / spec                                    | Symptom                                | Owner | Status   | Fix / notes                                                              |
@@ -27,6 +29,7 @@ Track known flaky tests so they get fixed or quarantined — not masked with ret
 
 | `e2e/smoke/responsive-all-apps.spec.ts` | `mobile floor /muscle/` (and `/ui/`) — `page.evaluate` heuristic scan 50s timeout under CI software-WebGL; passes <1s locally (`heavy-page-ci-flake`) | agent | resolved | Wait `networkidle` (bounded) before scanning so the scan runs after the page settles, not against it; muscle `smokeVisibleTimeoutMs` 20s→35s; Lighthouse run-error advisory for `/muscle/` (2026-07-21) |
 | `e2e/smoke/encore-practice-resource-dnd.spec.ts` | `drag Listen chip to Play section` — `toBeHidden()` fails intermittently on nightly (drag occasionally does not register) | agent | watching | Playwright DnD timing; not yet reproduced locally. Root-cause candidate: add explicit `mouse.move` steps / `dragTo` with hover settle. Quarantine if it recurs on the merge gate. |
+| `e2e/playback-ui-regressions.spec.ts` | `drum mini notation highlight advances during playback` — highlight-appears/moves polls (10s/8s) too tight under pre-push full-suite CPU load; real-time audio starts+advances slowly (passes <5s standalone) | agent | resolved | Poll windows 10s/8s→20s/20s + test budget 60s→90s — honest headroom for a real-time clock that can't be sped up, not a retry (2026-07-21) |
 
 | `e2e/smoke/layout-heuristics-stanza.spec.ts` | `missing content node` — headings not mounted when `main#main` visible | agent | resolved | `expectStanzaLibraryChrome` in `beforeEach` (2026-06-23) |
 
