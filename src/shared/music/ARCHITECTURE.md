@@ -8,7 +8,6 @@ safe and maintainable.
 - `src/beat`: beat/chord analysis, media sync, practice sections.
 - `src/chords`: chord progression generator and playback.
 - `src/drums` (and `src/drums/universal_tom`): rhythm editing and playback.
-- `src/piano`: score playback, MIDI practice, chord exercise generation.
 - `src/words`: lyric sections + rhythm/chord playback composition.
 
 ## Shared Music Layers

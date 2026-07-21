@@ -20,7 +20,7 @@ import {
 
 const MAX_SHIFT_PX = 2;
 
-const ROUTES = ['/drums/', '/piano/', '/words/', '/chords/', '/scales/', '/sight/', '/ui/'];
+const ROUTES = ['/drums/', '/words/', '/chords/', '/scales/', '/sight/', '/ui/'];
 
 test.describe('Icon font load causes no layout shift', () => {
   // This spec holds the icon font back on purpose and then waits out the swap,

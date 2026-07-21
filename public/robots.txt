@@ -8,7 +8,6 @@ Allow: /chords/
 Allow: /corp/
 Allow: /drums/
 Allow: /forms/
-Allow: /piano/
 Allow: /pitch/
 Allow: /count/
 Allow: /scales/

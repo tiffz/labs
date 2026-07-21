@@ -19,7 +19,6 @@ Current counts (run with `rg '!important' src --type css -c` to refresh):
 | `src/shared/components/music/appSharedThemes.css`     |    25 |
 | `src/chords/styles/chords.css`                        |    23 |
 | `src/drums/styles/drums.css`                          |    18 |
-| `src/piano/styles/piano.css`                          |    17 |
 | `src/ui/styles/ui.css`                                |    12 |
 | `src/forms/styles/forms.css`                          |    10 |
 | `src/zines/styles/zines.css`                          |    10 |
@@ -87,7 +86,7 @@ Prescribed fix:
 
 Phase 3 deliverable (this doc): audit and canonical patterns only. **No CSS edits.** Touching 65 lines of `beat.css` without the surrounding component split risks silent visual regressions that our Playwright baselines catch but that would still churn snapshots.
 
-Phase 4 deliverable: for each component we split (PlaybackBar, words/App, beat/App, drums/VexFlowRenderer, piano/store), include an `!important`-trim pass scoped to the CSS files co-located with that component, run visual regression, and update snapshots once visually verified.
+Phase 4 deliverable: for each component we split (PlaybackBar, words/App, beat/App, drums/VexFlowRenderer), include an `!important`-trim pass scoped to the CSS files co-located with that component, run visual regression, and update snapshots once visually verified.
 
 Exit criteria for "audit complete":
 

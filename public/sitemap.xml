@@ -26,11 +26,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://labs.tiffzhang.com/piano/</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://labs.tiffzhang.com/scales/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

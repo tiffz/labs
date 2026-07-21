@@ -76,11 +76,6 @@ const APP_SMOKE_SPECS = {
     { file: 'e2e/smoke/app-shells.spec.ts', grep: '/words/' },
     { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/words/' },
   ],
-  piano: [
-    'e2e/smoke/piano-key-interaction.spec.ts',
-    { file: 'e2e/smoke/app-shells.spec.ts', grep: '/piano/' },
-    { file: 'e2e/smoke/responsive-all-apps.spec.ts', grep: '/piano/' },
-  ],
   chords: [
     'e2e/smoke/chords-play-interaction.spec.ts',
     'src/chords/e2e/chords-init.spec.ts',

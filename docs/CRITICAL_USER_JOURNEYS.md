@@ -95,7 +95,6 @@ All micro-apps maintain `src/<app>/CUJs.md` (22/22). Primary journeys with inter
 | Drums      | [`src/drums/CUJs.md`](../src/drums/CUJs.md)     | Playback configure                                           |
 | Chords     | [`src/chords/CUJs.md`](../src/chords/CUJs.md)   | Progression practice                                         |
 | Words      | [`src/words/CUJs.md`](../src/words/CUJs.md)     | Prosody drills                                               |
-| Piano      | [`src/piano/CUJs.md`](../src/piano/CUJs.md)     | Lesson flow                                                  |
 | Pitch      | [`src/pitch/CUJs.md`](../src/pitch/CUJs.md)     | Interval training                                            |
 | Cats       | [`src/cats/CUJs.md`](../src/cats/CUJs.md)       | Game loop                                                    |
 | Agility    | [`src/agility/CUJs.md`](../src/agility/CUJs.md) | Latency / MIDI drills                                        |

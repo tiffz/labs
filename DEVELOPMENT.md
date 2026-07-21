@@ -301,7 +301,7 @@ Every app entry HTML must paint its resting background before any CSS loads, mus
 
 ### Rationale
 
-- A flash of unstyled content (FOUC) was visible in production while `pulse.css`, `piano.css`, etc. streamed in — the browser painted the default white background before the app's theme took over.
+- A flash of unstyled content (FOUC) was visible in production while `pulse.css`, `drums.css`, etc. streamed in — the browser painted the default white background before the app's theme took over.
 - Labs is an experimentation surface, not an installable product. Chrome's PWA heuristics could still fire `beforeinstallprompt` on repeat visits even though we don't ship a manifest, and older deploys sometimes ran a stale `vite-plugin-pwa` service worker.
 
 ### Implementation
@@ -334,7 +334,7 @@ Every app mounts its primary content inside a single `<main id="main">` landmark
 - **Focus rings.** Never use bare `outline: none`. If you must suppress the default ring, replace it with a matching `:focus-visible` rule using the theme accent.
 - **Icon-only buttons.** Provide `aria-label` on every icon-only button. `AppTooltip` uses `describeChild={true}` and therefore does _not_ become the button's accessible name.
 - **Reduced motion.** The global override in `shared.css` clamps animation, transition, and scroll durations under `@media (prefers-reduced-motion: reduce)`. Apps only need to re-enable an animation inside their own `@media` block if it is essential to the UX.
-- **Contrast.** Muted text tokens must meet WCAG AA (4.5:1 on the app's background). Piano's muted token was bumped from `#94a3b8` to `#64748b` as reference.
+- **Contrast.** Muted text tokens must meet WCAG AA (4.5:1 on the app's background). A muted token bumped from `#94a3b8` to `#64748b` is the reference fix.
 
 ## Cross-Platform Viewport
 
@@ -418,7 +418,7 @@ Combined with path imports from `@mui/material/<Component>` (not barrel imports 
 ### Related rules
 
 - **No `@mui/material` barrel imports.** Import each component from its path: `import Button from '@mui/material/Button'`.
-- **Lazy-load heavy modals and optional surfaces** with `React.lazy` + `<Suspense>`. Reference implementations: `src/piano/App.tsx` (ImportModal, Analytics, VideoPlayer, DebugPanel) and `src/stanza/components/StanzaWorkspace.tsx` (suggest-sections dialog, tap tempo).
+- **Lazy-load heavy modals and optional surfaces** with `React.lazy` + `<Suspense>`. Reference implementations: `src/zinebox/App.tsx` (reader/pdfjs, debug dock, theme picker) and `src/stanza/components/StanzaWorkspace.tsx` (suggest-sections dialog, tap tempo).
 
 ## Playback UI patterns
 

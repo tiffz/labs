@@ -69,7 +69,6 @@ type FunctionalSection =
 const APP_LINKS: Record<string, { label: string; href: string }> = {
   chords: { label: 'Chords', href: '/chords/' },
   drums: { label: 'Drums', href: '/drums/' },
-  piano: { label: 'Piano', href: '/piano/' },
   words: { label: 'Words', href: '/words/' },
   ui: { label: 'UI Gallery', href: '/ui/' },
 };

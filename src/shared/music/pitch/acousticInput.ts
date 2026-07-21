@@ -24,10 +24,10 @@ export interface AcousticInputFactoryOptions {
 }
 
 /**
- * Thin lifecycle wrapper around {@link MicrophonePitchInput}. Each app used to
- * maintain its own copy (`src/piano/utils/acousticInput.ts`,
- * `src/scales/utils/acousticInput.ts`) which drifted subtly over time. Use
- * this factory so both apps stay on the same semantics.
+ * Thin lifecycle wrapper around {@link MicrophonePitchInput}. Apps used to
+ * maintain their own copy (e.g. `src/scales/utils/acousticInput.ts`) which
+ * drifted subtly over time. Use this factory so apps stay on the same
+ * semantics.
  */
 export class AcousticInput {
   private readonly input: MicrophonePitchInput;

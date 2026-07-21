@@ -20,7 +20,7 @@ const SHARED_ROOT = import.meta.dirname;
  * leaf module instead.
  */
 const ALLOWLISTED_CLUSTERS: string[][] = [
-  ['audio', 'beat', 'components', 'hooks', 'music', 'notation', 'playback', 'practice', 'rhythm'],
+  ['audio', 'beat', 'components', 'hooks', 'music', 'notation', 'playback', 'rhythm'],
   ['drive', 'google', 'session'],
 ];
 

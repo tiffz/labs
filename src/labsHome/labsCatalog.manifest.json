@@ -58,14 +58,6 @@
       "iconClass": "stanza"
     },
     {
-      "path": "/piano/",
-      "title": "Piano Practice",
-      "shortDescription": "Practice piano with exercises, MIDI support, and realtime feedback",
-      "stage": "unlisted",
-      "category": "music",
-      "iconClass": "piano"
-    },
-    {
       "path": "/melodia/",
       "title": "Melodia Online",
       "shortDescription": "Sight-singing: rhythm tap, audiation, sing with pitch trace and listen-back duet",

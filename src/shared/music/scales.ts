@@ -38,14 +38,9 @@ const ARP_MAJOR                    = [0, 4, 7, 12];
 const ARP_MINOR                    = [0, 3, 7, 12];
 const PENTA_MAJOR                  = [0, 2, 4, 5, 7];
 const PENTA_MINOR                  = [0, 2, 3, 5, 7];
-const CHROMATIC                    = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 const PENTA_RH = [1, 2, 3, 4, 5];
 const PENTA_LH = [5, 4, 3, 2, 1];
-
-const CHROMATIC_FINGER: Record<number, number> = {
-  0: 1, 1: 3, 2: 1, 3: 3, 4: 1, 5: 2, 6: 3, 7: 1, 8: 3, 9: 1, 10: 3, 11: 1,
-};
 
 interface SubConfig {
   duration: NoteDuration;
@@ -269,12 +264,6 @@ function getExplicitFingering(
   return null;
 }
 
-function chromaticFingering(startMidi: number, count: number): number[] {
-  return Array.from({ length: count }, (_, i) =>
-    CHROMATIC_FINGER[(startMidi + i) % 12]
-  );
-}
-
 function applyDirection(
   notes: { midi: number; finger: number }[],
   direction: Direction,
@@ -409,15 +398,6 @@ function keySlug(key: string): string {
   return normalized.toLowerCase();
 }
 
-export const MAJOR_KEYS: Key[] = MAJOR.map(d => d.key);
-export const MINOR_KEYS: Key[] = MINOR.map(d => d.key);
-
-export const CHROMATIC_NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-const NOTE_TO_SEMITONE: Record<string, number> = {
-  'C': 0, 'C#': 1, 'D': 2, 'D#': 3, 'E': 4, 'F': 5,
-  'F#': 6, 'G': 7, 'G#': 8, 'A': 9, 'A#': 10, 'B': 11,
-};
-
 export function generateExerciseScore(
   quality: 'major' | 'minor',
   type: ExerciseType,
@@ -497,47 +477,3 @@ export function generateExerciseScore(
   };
 }
 
-export function generateChromaticScore(
-  startNote: string,
-  direction: Direction,
-  octaves: number = 1,
-  subdivision: Subdivision = 2,
-): PianoScore | null {
-  const semitone = NOTE_TO_SEMITONE[startNote];
-  if (semitone === undefined) return null;
-
-  const rhStart = 60 + semitone;
-  const lhStart = 48 + semitone;
-
-  const intervals = expandIntervals(CHROMATIC, octaves, false);
-
-  const rhFing = chromaticFingering(rhStart, intervals.length);
-  const lhFing = chromaticFingering(lhStart, intervals.length);
-
-  const rhSeq = intervals.map((iv, i) => ({ midi: rhStart + iv, finger: rhFing[i] }));
-  const lhSeq = intervals.map((iv, i) => ({ midi: lhStart + iv, finger: lhFing[i] }));
-
-  const rhNotes = applyDirection(rhSeq, direction);
-  const lhNotes = applyDirection(lhSeq, direction);
-
-  const cfg = subConfig(subdivision);
-  const dirLabel = { ascending: 'Ascending', descending: 'Descending', both: 'Asc & Desc' }[direction];
-
-  let title = `Chromatic from ${startNote} (${dirLabel}`;
-  if (octaves > 1) title += `, ${octaves} Oct`;
-  title += ')';
-
-  return {
-    id: `chromatic-${keySlug(startNote)}-${direction}-${octaves}-${subdivision}`,
-    title,
-    key: 'C' as Key,
-    timeSignature: cfg.timeSig,
-    tempo: 80,
-    parts: [
-      { id: 'rh', name: 'Right Hand', clef: 'treble', hand: 'right', measures: buildMeasures(rhNotes, cfg) },
-      { id: 'lh', name: 'Left Hand',  clef: 'bass',   hand: 'left',  measures: buildMeasures(lhNotes, cfg) },
-    ],
-  };
-}
-
-export const DEFAULT_SCORE = generateExerciseScore('major', 'scale', 'C', 'both')!;

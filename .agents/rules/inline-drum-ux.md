@@ -9,7 +9,6 @@ globs:
   - src/words/components/WordsSectionSettingsMenu.tsx
   - src/words/components/WordsSoundSettingsPanel.tsx
   - src/words/hooks/useWordsMenuDismiss.ts
-  - src/piano/components/PlaybackControls.tsx
 ---
 
 # Inline drum UX
@@ -32,7 +31,7 @@ Read [`inlineDrumUxDefaults.ts`](../../src/shared/components/music/inlineDrumUxD
 | --------------------------------- | ------------------------ | ----------------------------------------- | ----- |
 | `settings-panel`                  | Encore Originals, Chords | in Edit menu                              | off   |
 | `practice-rail`                   | Stanza mix rail          | in Edit menu                              | on    |
-| `sidebar-compact`                 | Piano                    | in Edit menu                              | on    |
+| `sidebar-compact`                 | (no current host)        | in Edit menu                              | on    |
 | `settings-panel` + host overrides | Words                    | hidden (host field); presets in Edit menu | off   |
 
 ## Tests

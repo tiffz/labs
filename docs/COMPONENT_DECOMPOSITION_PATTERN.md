@@ -50,7 +50,6 @@ These are the files flagged in the engineering audit as over-size and ripe for t
 
 ### Completed in the Phase 4 rollout PR series
 
-- **`src/piano/store.tsx`** — partial split: `storeTypes.ts` extracted; `store.tsx` ~1256 lines. Next: `reducer.ts` + `PianoProvider.tsx` (skill `labs-component-decomposition`).
 - **`src/words/utils/prosodyEngine.ts`** — engine + `prosodyEngineTypes.ts` for types/constants.
 
 ### In progress — Stanza workspace (ADR 0013 follow-up)
