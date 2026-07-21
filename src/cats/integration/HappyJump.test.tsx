@@ -6,7 +6,13 @@ import { setupTestCleanup } from '../../shared/test/testUtils';
 describe('Happy Jump', () => {
   // Set up automatic cleanup for timers, DOM, and mocks
   const cleanup = setupTestCleanup();
-  
+
+  // setupTestCleanup manages its own timers but does not undo a manual
+  // vi.useFakeTimers(); restore real timers so they do not bleed to later tests.
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('dispatches a happy-jump signal after rapid clicks', async () => {
     vi.useFakeTimers();
     

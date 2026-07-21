@@ -29,6 +29,9 @@ describe('ServerLogger', () => {
   });
 
   afterEach(() => {
+    // A nested beforeEach fakes setTimeout; restore real timers so it does not
+    // bleed into later tests (or other files under a non-isolated pool).
+    vi.useRealTimers();
     window.history.replaceState({}, '', window.location.pathname);
   });
 

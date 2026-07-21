@@ -6,6 +6,17 @@ import {
   getInterviewConfig
 } from './interviewSystem';
 
+/** Deterministic uniform [0,1) generator (mulberry32) for reproducible variety. */
+function seededRandom(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 describe('Interview System', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -119,33 +130,34 @@ describe('Interview System', () => {
 
   describe('Message Variety', () => {
     it('provides different rejection messages on multiple failures', () => {
-      // Don't mock Math.random so we get natural variety
+      // Seeded PRNG (mulberry32) instead of real Math.random: still sweeps
+      // [0,1) for genuine message variety, but deterministically, so the
+      // >3-distinct assertion cannot fail by chance.
+      vi.spyOn(Math, 'random').mockImplementation(seededRandom(1));
       const messages = new Set();
-      
-      // Run many failures to collect different messages
+
       for (let i = 0; i < 50; i++) {
         const result = performInterview('box_factory');
         if (!result.success) {
           messages.add(result.message);
         }
       }
-      
+
       // Should have variety in rejection messages (we have 25 different ones)
       expect(messages.size).toBeGreaterThan(3);
     });
 
     it('provides different success messages on multiple successes', () => {
-      // Don't mock Math.random so we get natural variety
+      vi.spyOn(Math, 'random').mockImplementation(seededRandom(2));
       const messages = new Set();
-      
-      // Run many successes to collect different messages
+
       for (let i = 0; i < 200; i++) { // More attempts needed since success is only 20%
         const result = performInterview('box_factory');
         if (result.success) {
           messages.add(result.message);
         }
       }
-      
+
       // Should have variety in success messages (we have 10 different ones)
       expect(messages.size).toBeGreaterThan(3);
     });
