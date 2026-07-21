@@ -12,6 +12,9 @@ export default defineConfig({
     'src/**/e2e/**/*.spec.ts',
     'e2e/**/*.spec.ts',
   ],
+  // Never discover specs inside agent-isolation worktrees (harness copies of the
+  // whole repo under .claude/worktrees/) — they would double-run and flake.
+  testIgnore: ['**/.claude/**'],
   timeout: 30_000,
   retries: 0,
   expect: {
@@ -37,7 +40,7 @@ export default defineConfig({
   projects: [
     {
       name: 'e2e',
-      testIgnore: ['**/*.visual.spec.ts'],
+      testIgnore: ['**/*.visual.spec.ts', '**/.claude/**'],
     },
     {
       name: 'visual',

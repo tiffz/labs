@@ -1166,6 +1166,8 @@ export default defineConfig({
       'e2e/**',
       'node_modules/**',
       'dist/**',
+      // Agent-isolation worktrees are full repo copies; never run their tests.
+      '.claude/**',
       // Expensive benchmark test - only run when shared tempo files change (via INCLUDE_BEAT_BENCHMARK env)
       ...(!INCLUDE_BEAT_BENCHMARK ? ['**/bpmDetectionBenchmark.test.ts'] : []),
       // Fast mode: exclude slow regression/audit/stress tests for rapid development iteration.

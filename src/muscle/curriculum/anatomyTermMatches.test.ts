@@ -32,6 +32,10 @@ describe('anatomyTermMatches', () => {
     if (!triTerm) return;
     const triChips = getTermChipNodes(triTerm);
     expect(triChips.some((node) => node.id === 'muscle_triceps_long_head')).toBe(true);
-    expect(triChips.some((node) => node.id === 'muscle_gastrocnemius')).toBe(true);
+    // Gastrocnemius has two heads, not three — it is not a "tri-" muscle. It must
+    // not surface here (it only did while mislabeled "triceps surae"). The
+    // three-headed triceps surae *group* is gastrocnemius + soleus, not the
+    // gastrocnemius alone.
+    expect(triChips.some((node) => node.id === 'muscle_gastrocnemius')).toBe(false);
   });
 });
