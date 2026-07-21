@@ -14,6 +14,7 @@ This is the source of truth (tool-agnostic). `.cursor/skills/*` and `.claude/ski
 | [`labs-session-retrospective`](labs-session-retrospective/SKILL.md)     | Substantial session complete; **deliver** retrospective; codify learnings |
 | [`labs-ux-journey`](labs-ux-journey/SKILL.md)                           | New/major UI; journey hierarchy; gestalt, redundancy, visual weight       |
 | [`labs-babysit-pr`](labs-babysit-pr/SKILL.md)                           | Keep a PR merge-ready (comments, CI, conflicts); merge when user asks     |
+| [`labs-local-review`](labs-local-review/SKILL.md)                       | Pre-merge "second opinion" — 3 read-only reviewer subagents, verify, gate |
 | [`labs-split-to-prs`](labs-split-to-prs/SKILL.md)                       | Split branch/work into small reviewable PRs                               |
 | [`labs-write-adr`](labs-write-adr/SKILL.md)                             | Material architecture decision (routing, OAuth, boundaries)               |
 | [`labs-component-decomposition`](labs-component-decomposition/SKILL.md) | Split oversized React containers (>600 lines)                             |
