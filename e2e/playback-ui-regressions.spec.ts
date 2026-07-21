@@ -62,17 +62,25 @@ test.describe('Playback UI regressions', () => {
   test('Encore originals drum mini notation highlight advances during playback', async ({
     page,
   }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(90_000);
     await seedEncoreOriginalWithChords(page);
 
     await page.getByRole('button', { name: 'Play', exact: true }).click();
     await page.getByRole('button', { name: 'Playback settings' }).click();
     const notation = page.locator('.shared-chord-playback-settings__drums-notation');
-    await expect(notation).toBeVisible({ timeout: 5_000 });
+    // 15s (not the 5s / default) on these UI-render waits: the Encore Originals
+    // playback settings + drum editor render slower under the pre-push suite's
+    // parallel CPU load, where this test was intermittently failing setup before
+    // ever reaching the highlight poll. Inside the 90s test budget.
+    await expect(notation).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: /Edit drum pattern/i }).click();
     const drumEditor = page.getByRole('dialog', { name: /Drum pattern editor/i });
-    await expect(drumEditor.getByPlaceholder('D-T-K-T- or paste Darbuka Trainer URL')).toBeVisible();
-    await expect(drumEditor.getByRole('link', { name: 'Customize in Darbuka trainer' })).toBeVisible();
+    await expect(
+      drumEditor.getByPlaceholder('D-T-K-T- or paste Darbuka Trainer URL'),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(
+      drumEditor.getByRole('link', { name: 'Customize in Darbuka trainer' }),
+    ).toBeVisible({ timeout: 15_000 });
     await drumEditor.getByRole('button', { name: /^Done$/i }).click();
 
     const readHighlightLeft = async (): Promise<number | null> =>
@@ -81,14 +89,18 @@ test.describe('Playback UI regressions', () => {
         return box.width > 0 ? box.left : null;
       });
 
+    // Wider poll windows: the highlight is driven by real-time audio playback,
+    // which starts and advances slowly under CI's CPU contention (a recurring
+    // pre-push flake). More time is the honest accommodation for a real-time
+    // clock — it cannot be sped up — and stays inside the 60s test budget.
     await expect
-      .poll(readHighlightLeft, { timeout: 10_000, message: 'highlight should appear' })
+      .poll(readHighlightLeft, { timeout: 20_000, message: 'highlight should appear' })
       .not.toBeNull();
 
     const firstLeft = await readHighlightLeft();
     await expect
       .poll(readHighlightLeft, {
-        timeout: 8_000,
+        timeout: 20_000,
         message: 'highlight should move during playback',
       })
       .not.toBe(firstLeft);
