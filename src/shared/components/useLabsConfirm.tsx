@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { LabsConfirmDialog } from './LabsConfirmDialog';
 
 export interface LabsConfirmOptions {
@@ -22,12 +22,24 @@ export interface LabsConfirmOptions {
  * // ...
  * return <>{dialog}{...rest of the component}</>;
  * ```
+ *
+ * `open` reports whether a dialog is currently showing. Gate global keyboard
+ * shortcuts on it — the native `confirm()` blocked the main thread, so
+ * window-level hotkeys never fired while it was up; this dialog does not, so a
+ * host that listens on `window` must suppress those keys itself while `open`.
  */
-export function useLabsConfirm(): { confirm: (options: LabsConfirmOptions) => Promise<boolean>; dialog: ReactNode } {
+export function useLabsConfirm(): {
+  confirm: (options: LabsConfirmOptions) => Promise<boolean>;
+  dialog: ReactNode;
+  open: boolean;
+} {
   const [pending, setPending] = useState<LabsConfirmOptions | null>(null);
   const resolverRef = useRef<((value: boolean) => void) | null>(null);
 
   const confirm = useCallback((options: LabsConfirmOptions): Promise<boolean> => {
+    // A second prompt before the first resolves would strand the earlier
+    // caller's `await` forever. Settle it as cancelled before taking over.
+    resolverRef.current?.(false);
     setPending(options);
     return new Promise<boolean>((resolve) => {
       resolverRef.current = resolve;
@@ -39,6 +51,15 @@ export function useLabsConfirm(): { confirm: (options: LabsConfirmOptions) => Pr
     resolverRef.current?.(result);
     resolverRef.current = null;
   }, []);
+
+  // Unmounting mid-prompt should cancel, not hang the awaiting caller.
+  useEffect(
+    () => () => {
+      resolverRef.current?.(false);
+      resolverRef.current = null;
+    },
+    []
+  );
 
   const dialog = pending ? (
     <LabsConfirmDialog
@@ -53,5 +74,5 @@ export function useLabsConfirm(): { confirm: (options: LabsConfirmOptions) => Pr
     />
   ) : null;
 
-  return { confirm, dialog };
+  return { confirm, dialog, open: pending !== null };
 }

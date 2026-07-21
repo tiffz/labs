@@ -143,7 +143,7 @@ const NoteInput: React.FC<NoteInputProps> = ({ onImportClick, onJumpToSelection 
   };
   const { confirm: confirmDiscard, dialog: discardDialog } = useLabsConfirm();
   const handleCancel = async (): Promise<void> => {
-    if (hasChanges && !(await confirmDiscard({ title: 'Discard unsaved changes?', message: 'This cannot be undone.' }))) return;
+    if (hasChanges && !(await confirmDiscard({ title: 'Discard unsaved changes?', message: 'This cannot be undone.', confirmLabel: 'Discard' }))) return;
     dispatch({ type: 'CANCEL_EDIT' });
   };
 

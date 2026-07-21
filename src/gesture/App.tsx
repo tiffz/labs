@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, startTransition, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
 import {
   LabsKeyboardShortcutsHost,
@@ -73,21 +73,24 @@ function GestureAppContent(): React.ReactElement {
     setPhase('home');
   }, []);
 
+  // Enter the lazy phases through a transition. React then keeps the current
+  // screen mounted while the chunk loads instead of unmounting it for the null
+  // fallback, so a cold-cache start does not flash blank.
   const startSession = useCallback((config: SessionConfig) => {
     setSessionConfig(config);
-    setPhase('session');
+    startTransition(() => setPhase('session'));
   }, []);
 
   const finishSession = useCallback((result: SessionDebrief) => {
     setDebrief(result);
-    setPhase('debrief');
+    startTransition(() => setPhase('debrief'));
   }, []);
 
   const restartSession = useCallback(() => {
     if (!debrief) return;
     setSessionConfig(debrief.config);
     setDebrief(null);
-    setPhase('session');
+    startTransition(() => setPhase('session'));
   }, [debrief]);
 
   return (
@@ -96,9 +99,9 @@ function GestureAppContent(): React.ReactElement {
       <SkipToMain />
       <main id="main" className="gesture-main">
         {e2eSeedReady && phase === 'home' ? <GestureAppShell onStartSession={startSession} /> : null}
-        {/* No fallback: both phases follow a deliberate click, and a flash of
-            placeholder reads worse here than the brief hold on the home
-            screen the chunk fetch actually costs. */}
+        {/* Fallback stays null because the transition above keeps the prior
+            screen mounted during the chunk fetch; this only ever shows if the
+            transition is bypassed. */}
         <Suspense fallback={null}>
           {e2eSeedReady && phase === 'session' && sessionConfig ? (
             <ZenSessionPhase config={sessionConfig} onExit={finishSession} />

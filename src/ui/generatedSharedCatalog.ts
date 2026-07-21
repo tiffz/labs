@@ -15146,7 +15146,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "Drop-in async replacement for `window.confirm()` that renders a themed dialog instead of the browser's native one. Preserves the same calling shape (`await confirm(...)` resolves to a boolean) so existing `if (!window.confirm(msg)) return;` guards migrate with a small diff: ```tsx const { confirm, dialog } = useLabsConfirm(); // ... if (!(await confirm({ title: 'Delete this?', message: 'This cannot be undone.' }))) return; // ... return <>{dialog}{...rest of the component}</>; ```",
+    "description": "Drop-in async replacement for `window.confirm()` that renders a themed dialog instead of the browser's native one. Preserves the same calling shape (`await confirm(...)` resolves to a boolean) so existing `if (!window.confirm(msg)) return;` guards migrate with a small diff: ```tsx const { confirm, dialog } = useLabsConfirm(); // ... if (!(await confirm({ title: 'Delete this?', message: 'This cannot be undone.' }))) return; // ... return <>{dialog}{...rest of the component}</>; ``` `open` reports whether a dialog is currently showing. Gate global keyboard shortcuts on it — the native `confirm()` blocked the main thread, so window-level hotkeys never fired while it was up; this dialog does not, so a host that listens on `window` must suppress those keys itself while `open`.",
     "tags": [
       "components",
       "react"

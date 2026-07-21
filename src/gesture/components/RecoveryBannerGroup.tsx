@@ -33,8 +33,8 @@ export default function RecoveryBannerGroup({ banners }: RecoveryBannerGroupProp
             {banners.length} collections need attention
           </Typography>
           <Typography className="gesture-recovery-summary-copy" variant="body2">
-            Uploads that stopped partway through. Your photos are safe. Pick up where each
-            one left off, or remove it.
+            These collections stopped before finishing. Your photos are safe. Pick up
+            where each one left off, or remove it.
           </Typography>
         </div>
         <Button

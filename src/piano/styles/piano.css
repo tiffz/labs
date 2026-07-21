@@ -274,6 +274,11 @@ body {
  */
 .score-loading {
   min-height: 200px;
+  /* Keep "Loading score…" at the top of the reserved area. .empty-score
+     centers its content, which on the tall mobile reservation below would push
+     the message ~60vh down and off-screen — reintroducing the blank-area
+     impression the reservation exists to prevent. */
+  justify-content: flex-start;
 }
 
 @media (max-width: 768px) {

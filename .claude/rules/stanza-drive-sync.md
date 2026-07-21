@@ -1,7 +1,7 @@
 ---
 paths:
   - 'src/stanza/drive/**'
-  - 'src/stanza/hooks/useStanzaDriveBackup.ts'
+  - 'src/stanza/hooks/useStanzaDriveBackup.tsx'
   - 'src/stanza/drive/stanzaDriveEnvelope.ts'
 ---
 

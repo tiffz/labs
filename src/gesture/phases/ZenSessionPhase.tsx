@@ -134,7 +134,11 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
 
   const markDone = useCallback(() => void advance('complete'), [advance]);
   const goNext = useCallback(() => void advance('skip'), [advance]);
-  const { confirm: confirmEndSessionDialog, dialog: endSessionDialog } = useLabsConfirm();
+  const {
+    confirm: confirmEndSessionDialog,
+    dialog: endSessionDialog,
+    open: endSessionDialogOpen,
+  } = useLabsConfirm();
   const confirmEndSession = useCallback(async () => {
     if (
       await confirmEndSessionDialog({
@@ -168,7 +172,11 @@ export default function ZenSessionPhase({ config, onExit }: ZenSessionPhaseProps
       onBack: goBack,
       onExit: confirmEndSession,
     },
-    Boolean(current) && ready,
+    // Suppress session hotkeys while the end-session dialog is open. The native
+    // confirm() blocked the thread so keys never leaked behind it; this dialog
+    // does not, and Enter/Space/arrows would otherwise mark-done, pause, or
+    // skip the photo behind the modal.
+    Boolean(current) && ready && !endSessionDialogOpen,
   );
 
   const timerProgress =

@@ -37,7 +37,7 @@ const SharedImageLibrary: React.FC<SharedImageLibraryProps> = memo(({
   const handleClearAll = useCallback(async () => {
     if (
       onClearAll &&
-      (await confirmClearAll({ title: 'Remove all uploaded images?', message: 'This cannot be undone.' }))
+      (await confirmClearAll({ title: 'Remove all uploaded images?', message: 'This cannot be undone.', confirmLabel: 'Remove all' }))
     ) {
       onClearAll();
     }

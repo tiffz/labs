@@ -95,9 +95,25 @@ export default function App(): React.ReactElement {
                 }
                 footer={null}
               >
-                {/* No fallback: opening a comic is a deliberate click, and the
-                    library staying put beats a placeholder flashing over it. */}
-                <Suspense fallback={null}>{content}</Suspense>
+                {/* Only ReaderView is lazy here, and it pulls pdfjs-dist, so on
+                    a cold cache the chunk fetch is not instant. Show the reader's
+                    own loading shell rather than a blank frame — it matches what
+                    ReaderView renders while its PDF decodes, so the two are
+                    seamless. (Hash navigation fires setRoute outside any
+                    transition, so startTransition would not hold the library.) */}
+                <Suspense
+                  fallback={
+                    route.kind === 'read' ? (
+                      <div
+                        className="zinebox-reader zinebox-reader--loading"
+                        aria-busy="true"
+                        aria-label="Loading reader"
+                      />
+                    ) : null
+                  }
+                >
+                  {content}
+                </Suspense>
               </AppShellLayout>
             </main>
             {debugMode ? (

@@ -2,7 +2,7 @@
 description: Stanza Google Drive backup — blob tiers, merge/hydrate paths, push ordering
 globs:
   - src/stanza/drive/**
-  - src/stanza/hooks/useStanzaDriveBackup.ts
+  - src/stanza/hooks/useStanzaDriveBackup.tsx
   - src/stanza/drive/stanzaDriveEnvelope.ts
 ---
 

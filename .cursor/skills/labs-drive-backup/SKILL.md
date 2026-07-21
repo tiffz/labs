@@ -61,7 +61,7 @@ Do **not** reintroduce a coarse whole-library conflict dialog.
 
 | App      | Hook                                         |
 | -------- | -------------------------------------------- |
-| Stanza   | `src/stanza/hooks/useStanzaDriveBackup.ts`   |
+| Stanza   | `src/stanza/hooks/useStanzaDriveBackup.tsx`  |
 | Scales   | `src/scales/hooks/useScalesDriveBackup.ts`   |
 | Gesture  | `src/gesture/hooks/useGestureDriveBackup.ts` |
 | Zine Box | `src/zinebox/hooks/useZineboxDriveBackup.ts` |
