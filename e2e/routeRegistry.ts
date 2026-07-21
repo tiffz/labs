@@ -123,14 +123,6 @@ export const APP_ROUTE_REGISTRY: RouteSpec[] = [
     visualId: 'midi',
   },
   {
-    route: '/piano/',
-    title: /Piano Practice/i,
-    visibleSelector: '#root',
-    smoke: true,
-    visual: true,
-    visualId: 'piano',
-  },
-  {
     route: '/pitch/',
     title: /Find Your Pitch|Tiff Zhang Labs/i,
     visibleSelector: '#root',

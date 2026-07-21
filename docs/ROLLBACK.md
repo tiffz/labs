@@ -44,7 +44,7 @@ After deployment, confirm:
 
 - root page responds,
 - `/drums/` responds,
-- `/piano/` responds,
+- `/scales/` responds,
 - the regression symptom is gone.
 
 ## Follow-up

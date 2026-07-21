@@ -13,8 +13,7 @@ import {
 
 /**
  * Invisible component that evaluates MIDI input against the expected notes
- * in a free-tempo exercise, following the same release-gated pattern as the
- * piano app's PracticeMode.
+ * in a free-tempo exercise, using a release-gated matching pattern.
  *
  * Only correct hits are recorded — wrong notes are silently ignored so the
  * player can experiment without penalty.

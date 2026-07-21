@@ -19,7 +19,6 @@ const APP_DIRS = [
   'beat',
   'chords',
   'drums',
-  'piano',
   'words',
   'cats',
   'zines',

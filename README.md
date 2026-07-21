@@ -17,7 +17,7 @@ npm run dev
 
 ```text
 src/
-  <app>/                 # app-local code (beat, chords, drums, piano, words, etc.)
+  <app>/                 # app-local code (beat, chords, drums, words, etc.)
   shared/                # shared components, music/audio/playback/rhythm utilities
   ui/                    # internal shared catalog + demo workspace
 public/                  # static assets
@@ -93,7 +93,7 @@ Notes:
 - Follow docs precedence in `docs/SOURCE_OF_TRUTH.md` when guidance conflicts.
 - When adding or reorganizing documentation, follow `docs/DOCUMENTATION_STRATEGY.md` (canonical homes, no duplication).
 - Material cross-cutting architecture decisions: see `docs/adr/README.md` (ADRs complement `DEVELOPMENT.md`).
-- AI coding assistants: see [`AGENTS.md`](AGENTS.md) (nested `src/<app>/AGENTS.md` for Encore, Stanza, shared, Words, Drums, Piano, Chords, Cats, Scales).
+- AI coding assistants: see [`AGENTS.md`](AGENTS.md) (nested `src/<app>/AGENTS.md` for Encore, Stanza, shared, Words, Drums, Chords, Cats, Scales).
 
 ## Responsive Checklist (Music Apps)
 

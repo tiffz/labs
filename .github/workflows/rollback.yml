@@ -113,7 +113,7 @@ jobs:
 
           curl -fsSL "${BASE_URL}" >/dev/null
           curl -fsSL "${BASE_URL}drums/" >/dev/null
-          curl -fsSL "${BASE_URL}piano/" >/dev/null
+          curl -fsSL "${BASE_URL}scales/" >/dev/null
 
       - name: Rollback summary
         if: always()

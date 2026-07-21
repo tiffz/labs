@@ -50,7 +50,6 @@ const allAppsRequiringChrome = [
   'src/chords/main.tsx',
   'src/encore/main.tsx',
   'src/stanza/main.tsx',
-  'src/piano/main.tsx',
   'src/midi/main.tsx',
   'src/scales/main.tsx',
   'src/pitch/main.tsx',

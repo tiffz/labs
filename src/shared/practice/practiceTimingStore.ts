@@ -24,14 +24,6 @@ export function recordMidiNoteOff(midiNote: number) {
   heldNotes.delete(midiNote);
 }
 
-export function isNoteHeld(midiNote: number): boolean {
-  return heldNotes.has(midiNote);
-}
-
-export function getMidiNoteOnTime(midiNote: number): number | undefined {
-  return midiNoteOnTimes.get(midiNote);
-}
-
 export function getAllMidiNoteOnTimes(): ReadonlyMap<number, number> {
   return midiNoteOnTimes;
 }

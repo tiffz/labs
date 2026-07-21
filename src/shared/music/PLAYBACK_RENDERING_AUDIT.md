@@ -18,13 +18,6 @@ This document inventories the current playback-rendering systems across Labs mus
 - **Playback coupling**: `hooks/usePlayback.ts` + `utils/rhythmPlayer.ts`.
 - **Current risk**: some notation helpers and symbol drawing logic are duplicated across renderer variants.
 
-### Piano (`src/piano`)
-
-- **Primary renderer**: `components/ScoreDisplay.tsx`
-- **Key capabilities**: grand staff, ties/tuplets/beams, practice-note states, playback note coloring, repeat/navigation symbols.
-- **Playback coupling**: app-specific score model and practice state.
-- **Current risk**: tightly app-shaped data model makes direct renderer sharing high-risk.
-
 ### Chords (`src/chords`)
 
 - **Primary renderer**: `components/ChordScoreRenderer.tsx`

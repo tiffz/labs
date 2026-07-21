@@ -19,7 +19,7 @@ import type { ComponentType } from 'react';
  *
  * This helper is intentionally tiny; it exists to make the pattern
  * discoverable and uniform across apps. Long-form migration for
- * story/App.test.tsx, piano/ImportModal.test.tsx, drums/App.test.tsx, and
+ * story/App.test.tsx, drums/App.test.tsx, and
  * zines/App.test.tsx is tracked in Phase 1 of the codebase-health plan.
  */
 export function synchronousLazyStub<Props extends object>(

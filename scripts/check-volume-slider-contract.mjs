@@ -17,24 +17,6 @@ if (/AppSlider[\s\S]*volume|volume[\s\S]*AppSlider/i.test(wordsSoundPanel)) {
   failures.push('WordsSoundSettingsPanel must not use AppSlider for volume — use PlaybackVolumeRow');
 }
 
-const pianoPlayback = fs.readFileSync(
-  path.join(root, 'src/piano/components/PlaybackControls.tsx'),
-  'utf8',
-);
-if (!pianoPlayback.includes('AppLinearVolumeSlider')) {
-  failures.push('Piano PlaybackControls must use AppLinearVolumeSlider for mix rails');
-}
-if (/AppSlider/.test(pianoPlayback) && /volume-slider/.test(pianoPlayback)) {
-  // AppSlider may still appear for non-volume; flag only if still driving volume-slider class.
-  const volumeBlocks = pianoPlayback.match(/volume-slider[\s\S]{0,120}/g) ?? [];
-  for (const block of volumeBlocks) {
-    if (block.includes('AppSlider') || !pianoPlayback.includes('AppLinearVolumeSlider')) {
-      failures.push('Piano PlaybackControls volume-slider rows must use AppLinearVolumeSlider');
-      break;
-    }
-  }
-}
-
 const drumsSettings = fs.readFileSync(
   path.join(root, 'src/drums/components/SettingsMenu.tsx'),
   'utf8',

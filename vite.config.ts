@@ -40,7 +40,6 @@ const MULTI_APP_INPUTS = {
   words: resolve(__dirname, 'src/words/index.html'),
   pitch: resolve(__dirname, 'src/pitch/index.html'),
   universal_tom: resolve(__dirname, 'src/drums/universal_tom/index.html'),
-  piano: resolve(__dirname, 'src/piano/index.html'),
   scales: resolve(__dirname, 'src/scales/index.html'),
   melodia: resolve(__dirname, 'src/melodia/index.html'),
   count: resolve(__dirname, 'src/count/index.html'),

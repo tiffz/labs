@@ -21,6 +21,6 @@ Enforced by **`eslint-plugin-jsx-a11y`**, **`src/shared/spaGuardrails.test.ts`**
 - **Focus rings:** no `overflow: hidden` on split buttons / toolbars that clip `:focus-visible` outlines.
 - MUI: path imports only — `import Button from '@mui/material/Button'` (never `@mui/material` barrel).
 - No bare `outline: none` without `:focus-visible` replacement.
-- Lazy-load heavy modals/surfaces with `React.lazy` + `Suspense` (see `piano/App.tsx`, `beat/App.tsx`).
+- Lazy-load heavy modals/surfaces with `React.lazy` + `Suspense` (see `beat/App.tsx`, `words/App.tsx`).
 
 Run **`npx eslint <changed-tsx>`** on edited files.

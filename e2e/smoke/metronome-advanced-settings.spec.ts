@@ -45,16 +45,6 @@ test.describe('Metronome split control', () => {
     });
   });
 
-  test('Piano split control is cohesive', async ({ page }) => {
-    await page.goto('/piano/');
-    await expect(page.locator('#root')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('.sb-icon-row')).toBeVisible({ timeout: 15_000 });
-    await expectMetronomeSplitControl(page, page.locator('.sb-icon-row'), {
-      appearance: 'piano',
-      enabled: true,
-    });
-  });
-
   test('Midi split control is cohesive', async ({ page }) => {
     await page.goto('/midi/');
     await expect(page.locator('#main')).toBeVisible({ timeout: 15_000 });
