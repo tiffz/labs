@@ -11,6 +11,14 @@ import { useEffect, useState } from 'react';
  * costs nothing and removes the shift entirely.
  *
  * SSR-safe: with no `window`, falls back to the desktop branch.
+ *
+ * Matches on the **layout** viewport (`matchMedia`), deliberately not the
+ * visual viewport. Pinch-zoom and the on-screen keyboard shrink the visual
+ * viewport without changing the layout width, and switching a whole app to its
+ * mobile layout mid-zoom or when a field is focused would be jarring — the
+ * breakpoint should track the page's real width, which is what `matchMedia`
+ * reports. (Piano's pre-shared effect OR'd in a `visualViewport.width` check;
+ * that parity is intentionally dropped.)
  */
 
 function queryMatchesNow(query: string): boolean {

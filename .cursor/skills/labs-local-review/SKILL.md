@@ -96,6 +96,7 @@ it just moved.
 
 ## Notes
 
+- Rationale for the gate and the three-role split: [ADR 0023](../../../docs/adr/0023-local-review-merge-gate.md).
 - Reviewers are **read-only**. If one proposes a diff, you apply it — never let a
   reviewer edit the branch, or the thing under review stops matching what was
   reviewed.

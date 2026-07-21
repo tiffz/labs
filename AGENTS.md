@@ -113,7 +113,7 @@ Commands quick reference: root [`README.md`](README.md) and `package.json` scrip
 ### Ask first
 
 - **Git commit**, **push**, or **open a PR** (unless the user explicitly requested it).
-- **Merge to `main`** — allowed only after the [`labs-local-review`](.agents/skills/labs-local-review/SKILL.md) gate is green (three reviewer subagents, findings verified, zero open blockers). Without that gate, treat merge as ask-first.
+- **Merge to `main`** — allowed only after the [`labs-local-review`](.agents/skills/labs-local-review/SKILL.md) gate is green (three reviewer subagents, findings verified, zero open blockers); rationale in [ADR 0023](docs/adr/0023-local-review-merge-gate.md). Without that gate, treat merge as ask-first.
 - **Visual baseline updates** (`e2e/visual/*-snapshots/`) — skill `labs-visual-regression`.
 - **New ADR** or material architecture change — skill `labs-write-adr`.
 - Expanding scope beyond the user’s request.

@@ -54,5 +54,6 @@ Skip an ADR for routine features, one-off UI tweaks, or purely internal refactor
 | [0020](./0020-silent-union-sync-row-conflicts-only.md)                    | Silent union sync — prompt only for true row-level conflicts                          |
 | [0021](./0021-shared-audio-platform.md)                                   | Shared audio platform (look-ahead scheduler, measure transport)                       |
 | [0022](./0022-advanced-metronome-preferences.md)                          | Advanced metronome preferences surface                                                |
+| [0023](./0023-local-review-merge-gate.md)                                 | Local-review merge gate for `main` (three reviewer subagents)                         |
 
-**Note:** A few early numbers were reused for unrelated topics (0007, 0010, 0012). Do **not** renumber — cite by full filename. Next new ADR is **0023**.
+**Note:** A few early numbers were reused for unrelated topics (0007, 0010, 0012). Do **not** renumber — cite by full filename. Next new ADR is **0024**.
