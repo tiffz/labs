@@ -102,7 +102,8 @@
     "audit-refresh": "node scripts/audit-pipeline.js --force",
     "audit-refresh:fast": "node scripts/audit-pipeline.js --force --skip-code-audit",
     "melodia:ingest": "tsx scripts/melodia/ingest-folder.mts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "check:tsc-ratchet": "node scripts/check-tsc-ratchet.mjs"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
