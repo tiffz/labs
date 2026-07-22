@@ -1,6 +1,34 @@
 import { StaveNote, StringNumber, Fraction } from 'vexflow';
 import type { ScoreNote } from '../music/scoreTypes';
+import { midiToPitchStringForKey } from '../music/scoreTypes';
 import type { PracticeNoteResult } from '../practice/types';
+
+/** Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`). */
+export function shiftPitchStringOctave(pitchStr: string, delta: number): string {
+  return pitchStr.replace(/\/(-?\d+)$/, (_m, oct: string) => `/${parseInt(oct, 10) + delta}`);
+}
+
+/**
+ * Resolve the VexFlow pitch key for one pitch of a note. Prefers the note's
+ * explicit, letter-correct `spelling` (attached by generators that know the
+ * scale degree — see `generateExerciseScore`), falling back to a key-based
+ * MIDI spelling for notes that carry none (e.g. chord voicings, edits).
+ *
+ * `needs8va` requests the note be drawn an octave lower (under an 8va
+ * bracket); the octave is shifted for both spelling sources so the bracket
+ * stays consistent.
+ */
+export function resolveRenderPitchKey(
+  note: Pick<ScoreNote, 'spelling'>,
+  pitchIdx: number,
+  midi: number,
+  needs8va: boolean,
+  scoreKey: string,
+): string {
+  const explicit = note.spelling?.[pitchIdx];
+  if (explicit) return needs8va ? shiftPitchStringOctave(explicit, -1) : explicit;
+  return midiToPitchStringForKey(needs8va ? midi - 12 : midi, scoreKey);
+}
 
 export const FINGER_CROSSING_BOX_STROKE = '#0f766e';
 export const FINGER_CROSSING_BOX_FILL = 'rgba(200, 240, 228, 0.22)';

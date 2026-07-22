@@ -27618,7 +27618,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation"
     ],
@@ -27635,7 +27635,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation"
     ],
@@ -27669,7 +27669,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -27687,7 +27687,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -27705,7 +27705,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation"
     ],
@@ -27722,7 +27722,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation"
     ],
@@ -27739,7 +27739,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation"
     ],
@@ -27756,7 +27756,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation"
     ],
@@ -27773,7 +27773,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation"
     ],
@@ -27790,7 +27790,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -27808,7 +27808,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation"
     ],
@@ -27825,7 +27825,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -27843,7 +27843,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -27861,7 +27861,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -27879,7 +27879,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation"
     ],
@@ -27896,7 +27896,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation"
     ],
@@ -27913,7 +27913,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation"
     ],
@@ -27930,7 +27930,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation"
     ],
@@ -27947,7 +27947,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation"
     ],
@@ -27964,7 +27964,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -27982,7 +27982,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -28000,7 +28000,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -28018,7 +28018,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -28036,7 +28036,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -28054,7 +28054,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -28072,7 +28072,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation"
     ],
@@ -28089,7 +28089,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -28107,7 +28107,24 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-resolverenderpitchkey",
+    "name": "resolveRenderPitchKey",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Resolve the VexFlow pitch key for one pitch of a note. Prefers the note's explicit, letter-correct `spelling` (attached by generators that know the scale degree — see `generateExerciseScore`), falling back to a key-based MIDI spelling for notes that carry none (e.g. chord voicings, edits). `needs8va` requests the note be drawn an octave lower (under an 8va bracket); the octave is shifted for both spelling sources so the bracket stays consistent.",
     "tags": [
       "notation"
     ],
@@ -28124,7 +28141,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -28142,7 +28159,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -28160,7 +28177,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -28172,13 +28189,30 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-notation-scoredisplayhelpers-ts-shiftpitchstringoctave",
+    "name": "shiftPitchStringOctave",
+    "path": "src/shared/notation/scoreDisplayHelpers.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
+    "tags": [
+      "notation"
+    ],
+    "appsUsing": [
+      "words"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-notation-scoredisplayhelpers-ts-treble-8va-threshold",
     "name": "TREBLE_8VA_THRESHOLD",
     "path": "src/shared/notation/scoreDisplayHelpers.ts",
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
@@ -28230,7 +28264,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "No JSDoc summary provided.",
+    "description": "Shift the octave number of a VexFlow pitch string (e.g. `'Bb/4'` → `'Bb/3'`).",
     "tags": [
       "notation",
       "api"
