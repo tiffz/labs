@@ -17119,6 +17119,19 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-labsdrivesyncguard-ts-assertlabsdrivewriteallowed",
+    "name": "assertLabsDriveWriteAllowed",
+    "path": "src/shared/drive/labsDriveSyncGuard.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Choke-point gate for every Drive write. Refuses a write when auto-push is not yet allowed (no reconciling pull this session) unless the caller threads an explicit user-confirmed replace token. Living inside the write primitive makes \"no push before a reconciling pull\" structural, not a caller convention, so every present and future direct caller inherits it (red-team #11).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-labsdrivesyncguard-ts-labsdriveautopushallowed",
     "name": "labsDriveAutoPushAllowed",
     "path": "src/shared/drive/labsDriveSyncGuard.ts",
@@ -17129,6 +17142,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-labsdrivesyncguard-ts-labsdriveautopushblockederror",
+    "name": "LabsDriveAutoPushBlockedError",
+    "path": "src/shared/drive/labsDriveSyncGuard.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "A Drive write was attempted before this session completed a reconciling pull (or manual backup) and without an explicit user-confirmed replace token. Writing would push local-only state over richer cloud data. The write primitive fails closed and throws this instead of overwriting (ADR 0020; DRIVE_SYNC_DATA_LOSS_PREVENTION Layer 2; red-team #9/#10/#11/#18).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "class",
     "demoId": null
   },
   {

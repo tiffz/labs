@@ -6,7 +6,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DriveHttpError } from './driveFetch';
 import { labsDriveFolderUrl } from './labsDriveFolderUrl';
-import { labsDriveAutoPushAllowed } from './labsDriveSyncGuard';
+import {
+  assertLabsDriveWriteAllowed,
+  labsDriveAutoPushAllowed,
+} from './labsDriveSyncGuard';
 import { withLabsDriveSyncLock } from './labsDriveSyncLock';
 import {
   formatLabsDriveSyncError,
@@ -192,8 +195,26 @@ export function createLabsPortfolioDriveBackup<
     );
 
     const flushDriveWrite = useCallback(
-      async (opts?: { silent?: boolean; onUploadLabel?: (label: string) => void }) =>
-        withLabsDriveSyncLock(config.appFolderName, async () => {
+      async (opts?: {
+        silent?: boolean;
+        /**
+         * User-confirmed "replace Drive with local" (e.g. {@link confirmReplaceDriveOnly}).
+         * The ONLY way to write before a reconciling pull this session — every other
+         * caller must pull first. Do not thread from any silent/auto path.
+         */
+        intentionalReplace?: boolean;
+        onUploadLabel?: (label: string) => void;
+      }) => {
+        // Choke-point gate: refuse to overwrite cloud before a reconciling pull this
+        // session unless the user explicitly confirmed a replace. Fail closed BEFORE
+        // acquiring the sync lock or an OAuth token — a never-pulled/sparse device must
+        // not push over richer cloud (ADR 0020; red-team #9/#10/#11/#18).
+        assertLabsDriveWriteAllowed({
+          appFolderName: config.appFolderName,
+          autoPushAllowed: allowAutoPush(),
+          intentionalReplace: opts?.intentionalReplace ?? false,
+        });
+        return withLabsDriveSyncLock(config.appFolderName, async () => {
         driveSyncInProgressRef.current = true;
         try {
           const token = await config.ensureAccess({ interactive: !opts?.silent });
@@ -209,6 +230,11 @@ export function createLabsPortfolioDriveBackup<
             const metaBefore = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
             const envelope = config.buildEnvelope(local);
             const body = config.serializeEnvelope(envelope);
+            // TODO(red-team #10): use the LAST-PULLED etag as the If-Match precondition,
+            // not this freshly-read current etag, so a device that pulled long ago gets a
+            // 412 → pull → merge instead of a clean overwrite. Deferred: it needs a
+            // lastPulledEtag threaded through readSyncMeta/writeSyncMeta across every app.
+            // The auto-push gate above already blocks the never-pulled overwrite case.
             await writeLabsDriveProgressJson(token, refs.progressFileId, body, metaBefore.etag);
             const metaAfter = await getLabsDriveProgressFileMeta(token, refs.progressFileId);
             config.writeSyncMeta({
@@ -235,8 +261,9 @@ export function createLabsPortfolioDriveBackup<
         } finally {
           driveSyncInProgressRef.current = false;
         }
-        }),
-      [],
+        });
+      },
+      [allowAutoPush],
     );
 
     const pullFromDriveAndMerge = useCallback(
@@ -372,7 +399,10 @@ export function createLabsPortfolioDriveBackup<
       if (!conflict) return;
       const job = startBlockingJob('Backing up to Google Drive…');
       try {
-        await flushDriveWrite({ onUploadLabel: (label) => job.updateLabel(label) });
+        // The one legitimate replace path: the user chose "replace Drive with local"
+        // in the conflict dialog. Thread intentionalReplace so the choke-point gate
+        // permits the write even though this session has not completed a pull.
+        await flushDriveWrite({ intentionalReplace: true, onUploadLabel: (label) => job.updateLabel(label) });
         markManualBackupSucceeded();
         setConflict(null);
       } catch (e) {
@@ -406,8 +436,11 @@ export function createLabsPortfolioDriveBackup<
             (label) => job.updateLabel(label),
           );
           setConflict(null);
-          await flushDriveWrite({ silent: true, onUploadLabel: (label) => job.updateLabel(label) });
+          // applyMerged above already reconciled the remote envelope into local, so
+          // this session is caught up — mark BEFORE the flush so the choke-point gate
+          // permits it (no replace token: this path merged remote, it does not replace it).
           markManualBackupSucceeded();
+          await flushDriveWrite({ silent: true, onUploadLabel: (label) => job.updateLabel(label) });
         } catch (e) {
           setMessage(e instanceof Error ? e.message : 'Merge or backup failed.');
         } finally {
