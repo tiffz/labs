@@ -17,6 +17,14 @@ export default defineConfig({
   testIgnore: ['**/.claude/**'],
   timeout: 30_000,
   retries: 0,
+  // Cap local parallelism to keep peak memory low. Playwright's default (~50% of
+  // cores → 4 Chromium here) spikes RAM on a 16GB dev machine and can push it
+  // into swap, slowing renders enough to flake the tail-end playback specs during
+  // the pre-push. CI runners have dedicated RAM and keep the default for speed.
+  // Override locally with LABS_E2E_WORKERS.
+  workers: process.env.CI
+    ? undefined
+    : Number(process.env.LABS_E2E_WORKERS) || 2,
   expect: {
     toHaveScreenshot: {
       animations: 'disabled',

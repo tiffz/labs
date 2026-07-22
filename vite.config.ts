@@ -1187,7 +1187,10 @@ export default defineConfig({
     pool: 'threads', // Use threads for better isolation
     // Vitest 4 pool rework: poolOptions.threads.maxThreads → top-level maxWorkers
     // (minThreads was removed upstream; only maxWorkers has an effect).
-    maxWorkers: 6,
+    // Local runs cap workers to keep peak memory low on a 16GB dev machine (6
+    // isolated threads alongside the e2e Chromium pool was tipping it into swap);
+    // CI keeps 6 for speed. Override with LABS_VITEST_WORKERS.
+    maxWorkers: process.env.CI ? 6 : Number(process.env.LABS_VITEST_WORKERS) || 3,
     isolate: true, // Isolate each test file to prevent memory leaks
     // Reduce memory footprint
     maxConcurrency: 6, // Increased from 4 for better parallelism

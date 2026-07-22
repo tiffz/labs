@@ -74,6 +74,14 @@ Skill: **`labs-babysit-pr`**. When adding checks, prefer extending the matching 
 | Sight LCP advisory flake (~3250ms vs 3000ms)                    | Sample started before practice shell painted                                                                   | Wait for practice chrome; budget 3500ms — `layout-advisory.spec.ts`                                                                                                                                                                          |
 | Interaction budget flake (~450ms vs 400ms) under parallel smoke | Cold first interaction + 4 workers on shared CI runner                                                         | Warmup action + `RELAXED_INTERACTION_BUDGET_MS`; see `words-practice-interaction.spec.ts`                                                                                                                                                    |
 
+## Local pre-push memory (dev machines)
+
+`.husky/pre-push` runs the full e2e suite on the **dev server**, so it is memory-hungry: Playwright's default (~50% of cores) launches several Chromium at once, and Vitest runs 6 isolated threads. On a 16GB machine that peak can tip the system into swap, which slows renders enough to **flake the tail-end playback specs** (`e2e/playback-ui-regressions.spec.ts`) — a load artifact, not a real regression (those specs pass in seconds standalone and in CI).
+
+- **Parallelism is capped locally** (CI is uncapped — dedicated RAM): Playwright `workers: 2`, Vitest `maxWorkers: 3`, both `!CI`-gated, overridable via `LABS_E2E_WORKERS` / `LABS_VITEST_WORKERS`. Enforced by `src/shared/toolingConfigGuardrails.test.ts`.
+- **If a push still flakes on a playback spec:** it is memory, not code. Free RAM (a browser with many tabs is usually the largest consumer) or push from a **fresh terminal** (a long agent session accumulates memory a new process tree clears). Do **not** widen the flaky waits to chase it, and never `git push --no-verify`.
+- **Push branches early**, while the machine is fresh, and batch related work into one branch to minimise ~10-minute pre-push cycles.
+
 ## Related
 
 - [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
