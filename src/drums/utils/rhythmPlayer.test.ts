@@ -332,7 +332,7 @@ describe('rhythmPlayer timing accuracy', () => {
         undefined,
         true,
         undefined,
-        { measureAccentVolume: 90, beatGroupAccentVolume: 70, nonAccentVolume: 40, emphasizeSimpleRhythms: false, metronomeVolume: 100, reverbStrength: 0 },
+        { measureAccentVolume: 90, beatGroupAccentVolume: 70, nonAccentVolume: 40, emphasizeSimpleRhythms: false, metronomeVolume: 100, reverbStrength: 0, autoScrollDuringPlayback: true },
         undefined,
         'sixteenth',
         basePrefs,
@@ -500,7 +500,7 @@ describe('rhythmPlayer timing accuracy', () => {
       // The pattern is D, T repeating — verify we never see two T's in a row
       // (which would indicate the D at the loop boundary was skipped).
       for (let i = 1; i < sounds.length; i++) {
-        if (sounds[i - 1] === 'tak' || sounds[i - 1] === 'T') {
+        if (sounds[i - 1] === 'tak') {
           expect(sounds[i]).not.toBe(sounds[i - 1]);
         }
       }

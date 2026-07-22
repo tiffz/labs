@@ -15,8 +15,11 @@ export type MediaTimelineClockOptions = {
  */
 export class MediaTimelineClock implements AudioClockSource {
   private _lastBeatIndex: number | null = null;
+  private opts: MediaTimelineClockOptions;
 
-  constructor(private opts: MediaTimelineClockOptions) {}
+  constructor(opts: MediaTimelineClockOptions) {
+    this.opts = opts;
+  }
 
   get bpm(): number {
     return this.opts.bpm;

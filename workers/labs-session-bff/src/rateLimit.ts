@@ -1,3 +1,5 @@
+import type { KVNamespaceLike } from './constants';
+
 /**
  * 10s (was 30s): the limiter now charges only successful refreshes, and clients
  * single-flight, so the min interval only needs to catch a hot retry loop —
@@ -45,7 +47,7 @@ function normalizeBucket(existing: RateLimitBucket | null, nowMs: number): RateL
 
 /** Read-only check — does NOT charge the bucket (see {@link recordRefreshSuccess}). */
 async function checkBucket(
-  kv: KVNamespace,
+  kv: KVNamespaceLike,
   key: string,
   nowMs: number,
   maxPerHour: number,
@@ -60,7 +62,7 @@ async function checkBucket(
   return { allowed: true };
 }
 
-async function chargeBucket(kv: KVNamespace, key: string, nowMs: number): Promise<void> {
+async function chargeBucket(kv: KVNamespaceLike, key: string, nowMs: number): Promise<void> {
   const bucket = normalizeBucket(parseBucket(await kv.get(key)), nowMs);
   bucket.lastAtMs = nowMs;
   bucket.hourCount += 1;
@@ -74,7 +76,7 @@ async function chargeBucket(kv: KVNamespace, key: string, nowMs: number): Promis
  * immediate retry can succeed instead of compounding into a 429.
  */
 export async function checkRefreshRateLimit(
-  kv: KVNamespace,
+  kv: KVNamespaceLike,
   sessionId: string,
   clientIp: string,
 ): Promise<{ allowed: boolean; reason?: string }> {
@@ -87,7 +89,7 @@ export async function checkRefreshRateLimit(
 
 /** Charge both buckets after a successful token refresh. */
 export async function recordRefreshSuccess(
-  kv: KVNamespace,
+  kv: KVNamespaceLike,
   sessionId: string,
   clientIp: string,
 ): Promise<void> {

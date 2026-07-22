@@ -59,7 +59,11 @@ function clamp100(n: number): number {
 
 /** Unified mix calculations — wraps playbackVolumeMix for all apps. */
 export class LabsAudioMixBus {
-  constructor(private channels: AudioMixChannels) {}
+  private channels: AudioMixChannels;
+
+  constructor(channels: AudioMixChannels) {
+    this.channels = channels;
+  }
 
   getChannels(): AudioMixChannels {
     return this.channels;

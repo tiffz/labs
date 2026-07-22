@@ -6,7 +6,7 @@ import {
   setPrimaryPerformanceVideo,
   syncPerformanceLegacyVideoFields,
 } from './performanceVideoModel';
-import type { EncorePerformance } from '../../types';
+import type { EncorePerformance } from '../types';
 
 const basePerformance = (): EncorePerformance => ({
   id: 'perf-1',

@@ -109,7 +109,7 @@ function exercise(
   return {
     exerciseId,
     completedStageId: null,
-    currentStageId: null,
+    currentStageId: `${exerciseId}-p1`,
     history: [],
     needsReview: false,
     reviewStageId: null,

@@ -9,6 +9,8 @@ const performance: EncorePerformance = {
   date: '2026-06-01',
   venueTag: 'Club',
   externalVideoUrl: 'https://www.youtube.com/watch?v=abc123',
+  createdAt: '2026-06-01T00:00:00.000Z',
+  updatedAt: '2026-06-01T00:00:00.000Z',
 };
 
 describe('PerformanceVideoPlayableThumb', () => {

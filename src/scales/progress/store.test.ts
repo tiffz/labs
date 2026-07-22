@@ -1118,7 +1118,7 @@ describe('loadProgress migrations', () => {
 
   it('round-trips a v3 payload preserving seenOnboarding=true and introduction flags', () => {
     const v3Payload: ScalesProgressData = {
-      version: 3,
+      version: 4,
       currentTierId: 'tier-1',
       exercises: {},
       seenOnboarding: true,
@@ -1156,7 +1156,7 @@ describe('loadProgress migrations', () => {
 
   it('markOnboardingSeen flips the flag idempotently', () => {
     const before: ScalesProgressData = {
-      version: 3,
+      version: 4,
       currentTierId: 'tier-1',
       exercises: {},
       seenOnboarding: false,
@@ -1199,7 +1199,7 @@ describe('combined major scale + pentascale mastery', () => {
           history: [],
           needsReview: false,
           reviewStageId: null,
-          lastPracticedAt: Date.now(),
+          lastPracticedAt: new Date().toISOString(),
         },
       },
       seenOnboarding: false,

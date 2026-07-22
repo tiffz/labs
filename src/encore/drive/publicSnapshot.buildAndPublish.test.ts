@@ -186,8 +186,8 @@ describe('buildPublicSnapshot', () => {
         id: 'p1',
         songId: 's1',
         videos: [
-          { id: 'v1', videoTargetDriveFileId: 'primaryDrive' },
-          { id: 'v2', externalVideoUrl: 'https://youtu.be/secondary' },
+          { id: 'v1', videoTargetDriveFileId: 'primaryDrive', createdAt: '2026-06-01T00:00:00.000Z' },
+          { id: 'v2', externalVideoUrl: 'https://youtu.be/secondary', createdAt: '2026-06-01T00:00:00.000Z' },
         ],
         primaryVideoId: 'v1',
         externalVideoUrl: 'https://youtu.be/secondary',

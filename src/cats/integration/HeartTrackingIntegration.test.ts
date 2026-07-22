@@ -1,10 +1,10 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { HeartSpawningService } from '../services/HeartSpawningService';
+import { describe, test, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
+import { HeartSpawningService, type HeartVisuals } from '../services/HeartSpawningService';
 
 describe('Heart Tracking Integration', () => {
   let heartSpawningService: HeartSpawningService;
-  let mockOnHeartSpawned: ReturnType<typeof vi.fn>;
-  let mockOnTrackableHeartSet: ReturnType<typeof vi.fn>;
+  let mockOnHeartSpawned: Mock<(heart: HeartVisuals) => void>;
+  let mockOnTrackableHeartSet: Mock<(heartId: number | null) => void>;
   let heartContainer: HTMLDivElement;
 
   beforeEach(() => {
@@ -14,8 +14,8 @@ describe('Heart Tracking Integration', () => {
     document.body.appendChild(heartContainer);
 
     // Setup mocks
-    mockOnHeartSpawned = vi.fn();
-    mockOnTrackableHeartSet = vi.fn();
+    mockOnHeartSpawned = vi.fn<(heart: HeartVisuals) => void>();
+    mockOnTrackableHeartSet = vi.fn<(heartId: number | null) => void>();
 
     // Create service
     heartSpawningService = new HeartSpawningService({
@@ -99,8 +99,8 @@ describe('Heart Tracking Integration', () => {
 
       heartSpawningService.spawnHearts(config);
 
-      // Get the trackable heart ID
-      const trackableHeartId = mockOnTrackableHeartSet.mock.calls[0][0];
+      // Get the trackable heart ID (the first spawned heart is always set trackable)
+      const trackableHeartId = mockOnTrackableHeartSet.mock.calls[0][0]!;
 
       // Simulate heart being added to DOM (this would normally be done by React)
       const heartElement = document.createElement('div');

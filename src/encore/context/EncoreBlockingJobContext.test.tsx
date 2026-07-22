@@ -133,9 +133,9 @@ describe('EncoreBlockingJobProvider', () => {
   it('registers a beforeunload listener only while jobs are non-empty', async () => {
     const api = renderProvider();
     const beforeUnloadAddCount = () =>
-      addEventSpy.mock.calls.filter((c) => c[0] === 'beforeunload').length;
+      addEventSpy.mock.calls.filter((c: Parameters<typeof window.addEventListener>) => c[0] === 'beforeunload').length;
     const beforeUnloadRemoveCount = () =>
-      removeEventSpy.mock.calls.filter((c) => c[0] === 'beforeunload').length;
+      removeEventSpy.mock.calls.filter((c: Parameters<typeof window.removeEventListener>) => c[0] === 'beforeunload').length;
 
     expect(beforeUnloadAddCount()).toBe(0);
 
@@ -159,7 +159,7 @@ describe('EncoreBlockingJobProvider', () => {
   it('silent jobs do not arm beforeunload or render the snackbar', async () => {
     const api = renderProvider();
     const beforeUnloadAddCount = () =>
-      addEventSpy.mock.calls.filter((c) => c[0] === 'beforeunload').length;
+      addEventSpy.mock.calls.filter((c: Parameters<typeof window.addEventListener>) => c[0] === 'beforeunload').length;
 
     expect(beforeUnloadAddCount()).toBe(0);
 

@@ -6,6 +6,7 @@ import {
   useWordsTimeSignatureTemplateReset,
 } from './useWordsPlaybackLifecycle';
 import { DEFAULT_SECTIONS } from '../utils/wordsAppDefaults';
+import type { SongSection } from '../../shared/music/songSections';
 
 function keyDown(init: KeyboardEventInit & { target?: HTMLElement }) {
   const { target, ...rest } = init;
@@ -183,7 +184,7 @@ describe('useWordsPlaybackLifecycle', () => {
 
 describe('useWordsTimeSignatureTemplateReset', () => {
   it('updates section templates when time signature changes', () => {
-    const applySectionsChange = vi.fn();
+    const applySectionsChange = vi.fn<(transform: (previous: SongSection[]) => SongSection[]) => void>();
     const setBackingBeatNotation = vi.fn();
     const templatePresets = [{ notation: 'D-T-__T-D---T---' }, { notation: 'D---D---D---D---' }];
 

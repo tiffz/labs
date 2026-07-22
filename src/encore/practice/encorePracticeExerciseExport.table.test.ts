@@ -81,7 +81,7 @@ describe('buildLyricsInOwnWordsGoogleDocLayout', () => {
     const twoSectionRun: EncoreLyricsInOwnWordsExerciseRun = {
       ...baseRun,
       sections: [
-        baseRun.sections[0]!,
+        baseRun.sections![0]!,
         {
           title: 'Chorus',
           lines: [{ original: 'Chorus line', rewrite: 'Chorus rewrite' }],

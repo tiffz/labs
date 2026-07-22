@@ -43,7 +43,7 @@ describe('originalsWorkflowCompletion', () => {
       ...createBlankOriginalSong(),
       brainstormHtml: '<p>idea</p>',
       lyricsAndChords: '[Verse]\n[C]Hello world',
-      takes: [{ id: 't1', label: 'Take 1', driveFileId: 'abc', mimeType: 'audio/mpeg' }],
+      takes: [{ id: 't1', label: 'Take 1', driveFileId: 'abc', mimeType: 'audio/mpeg', timestamp: 1, source: 'imported' as const }],
     };
     expect(isOriginalDemoReady(song)).toBe(true);
     expect(originalsLibraryStageLabel(song)).toBe('Demo ready');
@@ -65,7 +65,7 @@ describe('originalsWorkflowCompletion', () => {
       ...createBlankOriginalSong(),
       brainstormHtml: '<p>idea</p>',
       lyricsAndChords: '[Verse]\n[C]Hello',
-      takes: [{ id: 't1', label: 'Take 1', driveFileId: 'abc', mimeType: 'audio/mpeg' }],
+      takes: [{ id: 't1', label: 'Take 1', driveFileId: 'abc', mimeType: 'audio/mpeg', timestamp: 1, source: 'imported' as const }],
     };
     expect(originalsLibraryStageProgressDetail(song)).toBeNull();
   });

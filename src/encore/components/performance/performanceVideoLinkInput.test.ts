@@ -21,7 +21,7 @@ describe('videoToLinkInput', () => {
 
 describe('isVideoLinkInputDirty', () => {
   it('detects trimmed changes', () => {
-    const video = { id: 'v1', videoTargetDriveFileId: 'abc123' };
+    const video = { id: 'v1', videoTargetDriveFileId: 'abc123', createdAt: '2026-06-01T00:00:00.000Z' };
     expect(isVideoLinkInputDirty(video, 'abc123')).toBe(false);
     expect(isVideoLinkInputDirty(video, ' abc123 ')).toBe(false);
     expect(isVideoLinkInputDirty(video, 'xyz')).toBe(true);

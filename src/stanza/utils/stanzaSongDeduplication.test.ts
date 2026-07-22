@@ -15,17 +15,18 @@ function song(overrides: Partial<StanzaSong> & { id: string }): StanzaSong {
 
 describe('stanzaSongContentKey', () => {
   it('keys YouTube rows by ytId', () => {
-    expect(stanzaSongContentKey({ id: 'a', ytId: 'abc123', driveSourceFileId: undefined })).toBe('yt:abc123');
+    expect(stanzaSongContentKey({ id: 'a', title: 'Song', ytId: 'abc123', driveSourceFileId: undefined })).toBe('yt:abc123');
   });
 
   it('keys Drive-imported rows by driveSourceFileId', () => {
-    expect(stanzaSongContentKey({ id: 'a', ytId: null, driveSourceFileId: 'fileX' })).toBe('drive:fileX');
+    expect(stanzaSongContentKey({ id: 'a', title: 'Song', ytId: null, driveSourceFileId: 'fileX' })).toBe('drive:fileX');
   });
 
   it('keys local-only rows by fingerprint when available', () => {
     expect(
       stanzaSongContentKey({
         id: 'row-1',
+        title: 'Song',
         ytId: null,
         driveSourceFileId: undefined,
         localMediaFingerprint: '12345:180.00',
@@ -47,7 +48,7 @@ describe('stanzaSongContentKey', () => {
 
   it('prefers YouTube over Drive when both are present', () => {
     expect(
-      stanzaSongContentKey({ id: 'a', ytId: 'yt1', driveSourceFileId: 'driveZ' }),
+      stanzaSongContentKey({ id: 'a', title: 'Song', ytId: 'yt1', driveSourceFileId: 'driveZ' }),
     ).toBe('yt:yt1');
   });
 });

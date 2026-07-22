@@ -1,10 +1,11 @@
 export class DriveHttpError extends Error {
-  constructor(
-    message: string,
-    public status: number,
-    public body?: string,
-  ) {
+  status: number;
+  body?: string;
+
+  constructor(message: string, status: number, body?: string) {
     super(message);
+    this.status = status;
+    this.body = body;
     this.name = 'DriveHttpError';
   }
 }

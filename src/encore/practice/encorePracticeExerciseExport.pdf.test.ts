@@ -9,6 +9,8 @@ describe('buildPracticeExercisePdfBytes (Unicode)', () => {
       title: 'T',
       artist: 'A',
       journalMarkdown: '',
+      createdAt: '2020-01-01T00:00:00Z',
+      updatedAt: '2020-01-02T00:00:00Z',
     };
     const run: EncoreLyricsInOwnWordsExerciseRun = {
       id: 'r1',

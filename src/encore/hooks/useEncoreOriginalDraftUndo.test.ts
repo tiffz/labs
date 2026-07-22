@@ -2,7 +2,7 @@ import { renderHook, act } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { LabsUndoProvider, useLabsUndo } from '../../shared/undo/LabsUndoContext';
-import { createBlankOriginalSong } from '../originals/types';
+import { createBlankOriginalSong, type EncoreOriginalSong } from '../originals/types';
 import { useEncoreOriginalDraftUndo } from './useEncoreOriginalDraftUndo';
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -11,7 +11,7 @@ function wrapper({ children }: { children: ReactNode }) {
 
 describe('useEncoreOriginalDraftUndo', () => {
   it('pushes undo for draft mutations and restores on undo', async () => {
-    let draft = createBlankOriginalSong();
+    let draft: EncoreOriginalSong | null = createBlankOriginalSong();
     draft = { ...draft, title: 'Before' };
     const setDraft = vi.fn((next: typeof draft | null | ((prev: typeof draft | null) => typeof draft | null)) => {
       draft = typeof next === 'function' ? next(draft) : next ?? draft;

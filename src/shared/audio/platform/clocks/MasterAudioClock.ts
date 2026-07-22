@@ -7,10 +7,13 @@ export class MasterAudioClock implements AudioClockSource {
   private _startAudioTime = 0;
   private _playing = false;
 
-  constructor(
-    public bpm: number,
-    public timeSignature: TimeSignature,
-  ) {}
+  bpm: number;
+  timeSignature: TimeSignature;
+
+  constructor(bpm: number, timeSignature: TimeSignature) {
+    this.bpm = bpm;
+    this.timeSignature = timeSignature;
+  }
 
   get isPlaying(): boolean {
     return this._playing;

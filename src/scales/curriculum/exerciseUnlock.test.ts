@@ -14,7 +14,7 @@ const gMajorId = 'G-major-scale';
 
 function baseProgress(exercises: ScalesProgressData['exercises']): ScalesProgressData {
   return {
-    version: 3,
+    version: 4,
     currentTierId: 'tier-1',
     exercises,
     seenOnboarding: true,
@@ -76,7 +76,7 @@ describe('isSessionExerciseUnlocked', () => {
     const ex: SessionExercise = {
       exerciseId: gMajorId,
       stageId: 'x',
-      key: 'G',
+      key: 'G' as const,
       kind: 'major-scale',
       hand: 'right',
       bpm: 60,
@@ -100,7 +100,7 @@ describe('canAdvanceToNextInSessionPlan', () => {
       {
         exerciseId: cMajorId,
         stageId: cStages[0]!.id,
-        key: 'C',
+        key: 'C' as const,
         kind: 'major-scale' as const,
         hand: 'right' as const,
         bpm: 0,
@@ -114,7 +114,7 @@ describe('canAdvanceToNextInSessionPlan', () => {
       {
         exerciseId: gMajorId,
         stageId: gStages[0]!.id,
-        key: 'G',
+        key: 'G' as const,
         kind: 'major-scale' as const,
         hand: 'right' as const,
         bpm: 0,
@@ -163,7 +163,7 @@ describe('findNextUnlockedSessionIndex', () => {
         {
           exerciseId: cMajorId,
           stageId: cStages[0]!.id,
-          key: 'C',
+          key: 'C' as const,
           kind: 'major-scale' as const,
           hand: 'right' as const,
           bpm: 0,
@@ -177,7 +177,7 @@ describe('findNextUnlockedSessionIndex', () => {
         {
           exerciseId: gMajorId,
           stageId: gStages[0]!.id,
-          key: 'G',
+          key: 'G' as const,
           kind: 'major-scale' as const,
           hand: 'right' as const,
           bpm: 0,
@@ -191,7 +191,7 @@ describe('findNextUnlockedSessionIndex', () => {
         {
           exerciseId: gMajorId,
           stageId: gStages[0]!.id,
-          key: 'G',
+          key: 'G' as const,
           kind: 'major-scale' as const,
           hand: 'right' as const,
           bpm: 0,

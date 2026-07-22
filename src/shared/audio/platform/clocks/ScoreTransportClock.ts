@@ -8,11 +8,15 @@ export class ScoreTransportClock implements AudioClockSource {
   private _playing = false;
   private _elapsedSec = 0;
 
-  constructor(
-    public bpm: number,
-    public timeSignature: TimeSignature,
-    public beatMap: BeatMap | null = null,
-  ) {}
+  bpm: number;
+  timeSignature: TimeSignature;
+  beatMap: BeatMap | null;
+
+  constructor(bpm: number, timeSignature: TimeSignature, beatMap: BeatMap | null = null) {
+    this.bpm = bpm;
+    this.timeSignature = timeSignature;
+    this.beatMap = beatMap;
+  }
 
   get isPlaying(): boolean {
     return this._playing;

@@ -14,7 +14,19 @@ function song(partial: Partial<StanzaSong> & Pick<StanzaSong, 'id'>): StanzaSong
     practiceSource: 'local',
     localTransposeSemitones: 2,
     localOriginalKey: 'C major',
-    analysisCache: { beat: { bpm: 120 }, version: 1 } as StanzaSong['analysisCache'],
+    analysisCache: {
+      beat: {
+        bpm: 120,
+        confidence: 0.9,
+        confidenceLevel: 'high',
+        beats: [0, 0.5, 1],
+        musicStartTime: 0,
+        musicEndTime: 180,
+        offset: 0,
+        warnings: [],
+      },
+      metadata: { analysisVersion: 'test', analyzedAt: 0, stale: false },
+    },
     ...partial,
   };
 }

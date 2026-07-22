@@ -1,21 +1,21 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest';
 import { HeartSpawningService } from '../services/HeartSpawningService';
-import type { HeartConfig } from '../services/HeartSpawningService';
+import type { HeartConfig, HeartVisuals } from '../services/HeartSpawningService';
 import { setupTestCleanup, createTestTimeout } from '../../shared/test/testUtils';
 
 describe('Pouncing Heart Integration Tests', () => {
   let heartSpawningService: HeartSpawningService;
-  let mockOnHeartSpawned: ReturnType<typeof vi.fn>;
-  let mockOnTrackableHeartSet: ReturnType<typeof vi.fn>;
+  let mockOnHeartSpawned: Mock<(heart: HeartVisuals) => void>;
+  let mockOnTrackableHeartSet: Mock<(heartId: number | null) => void>;
   
   // Set up automatic cleanup for timers, DOM, and mocks
   const cleanup = setupTestCleanup();
   const testTimeout = createTestTimeout(cleanup.timers);
 
   beforeEach(() => {
-    mockOnHeartSpawned = vi.fn();
-    mockOnTrackableHeartSet = vi.fn();
-    
+    mockOnHeartSpawned = vi.fn<(heart: HeartVisuals) => void>();
+    mockOnTrackableHeartSet = vi.fn<(heartId: number | null) => void>();
+
     heartSpawningService = new HeartSpawningService({
       onHeartSpawned: mockOnHeartSpawned,
       onTrackableHeartSet: mockOnTrackableHeartSet,

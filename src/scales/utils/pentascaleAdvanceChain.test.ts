@@ -16,7 +16,7 @@ function sessionEx(overrides: Partial<SessionExercise>): SessionExercise {
     clickMode: 'beat',
     mutePlayback: false,
     octaves: 1,
-    purpose: undefined,
+    purpose: 'new',
     ...overrides,
   };
 }

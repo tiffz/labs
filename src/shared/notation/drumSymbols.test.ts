@@ -4,7 +4,10 @@ import { drawDrumsSymbolLegendOnCanvas, drawDrumSymbolOnCanvas } from './drumSym
 describe('drumSymbols canvas helpers', () => {
   beforeEach(() => {
     vi.stubGlobal('Path2D', class MockPath2D {
-      constructor(public d: string) {}
+      d: string;
+      constructor(d: string) {
+        this.d = d;
+      }
     });
   });
 

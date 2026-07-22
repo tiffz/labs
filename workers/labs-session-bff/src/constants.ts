@@ -13,8 +13,25 @@ export const SESSION_COOKIE_NAME = 'labs_session';
 export const OAUTH_STATE_TTL_SECONDS = 600;
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 90;
 
+/**
+ * Minimal Cloudflare KV surface the BFF actually uses (get/put/delete). Declared
+ * locally so these modules typecheck both in the worker build (which loads
+ * `@cloudflare/workers-types`) and in the repo-root full typecheck (which does
+ * not), where the ambient `KVNamespace` global is unavailable. The real runtime
+ * binding is structurally compatible.
+ */
+export interface KVNamespaceLike {
+  get(key: string): Promise<string | null>;
+  put(
+    key: string,
+    value: string,
+    options?: { expirationTtl?: number; expiration?: number },
+  ): Promise<void>;
+  delete(key: string): Promise<void>;
+}
+
 export type Env = {
-  SESSION_KV: KVNamespace;
+  SESSION_KV: KVNamespaceLike;
   GOOGLE_CLIENT_ID: string;
   GOOGLE_CLIENT_SECRET: string;
   SESSION_SIGNING_KEY: string;

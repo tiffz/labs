@@ -17,7 +17,7 @@ export type DrivePdfImportCandidate = DriveFileListRow & {
 export function isDrivePdfFile(f: {
   name?: string;
   mimeType?: string;
-  shortcutDetails?: { targetMimeType?: string };
+  shortcutDetails?: { targetMimeType?: string; targetId?: string };
 }): boolean {
   const mt = (f.mimeType ?? '').toLowerCase();
   const n = (f.name ?? '').toLowerCase();

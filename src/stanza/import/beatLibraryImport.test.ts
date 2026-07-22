@@ -144,12 +144,14 @@ describe('importBeatLibraryIfNeeded', () => {
     ).toBe('dQw4w9WgXcQ');
     expect(
       resolveBeatYoutubeVideoId({
+        fingerprint: '',
         sourceUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         title: 'Rick',
       }),
     ).toBe('dQw4w9WgXcQ');
     expect(
       resolveBeatYoutubeVideoId({
+        fingerprint: '',
         title: 'YouTube dQw4w9WgXcQ',
       }),
     ).toBe('dQw4w9WgXcQ');

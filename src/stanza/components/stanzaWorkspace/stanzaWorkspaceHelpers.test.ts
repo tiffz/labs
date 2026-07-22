@@ -29,7 +29,7 @@ describe('songHasPractice', () => {
     expect(songHasPractice({ id: '1', title: 'T', updatedAt: 0, markers: [{ id: 'm', time: 0 }] } as StanzaSong)).toBe(
       true,
     );
-    expect(songHasPractice({ id: '1', title: 'T', updatedAt: 0, stats: { seg: { focusSec: 1 } } } as StanzaSong)).toBe(
+    expect(songHasPractice({ id: '1', ytId: null, title: 'T', markers: [], updatedAt: 0, stats: { seg: { totalMs: 1, lastPracticed: 0 } } })).toBe(
       true,
     );
   });

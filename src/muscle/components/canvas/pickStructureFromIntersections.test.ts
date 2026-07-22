@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { getNodesForRegion } from '../../curriculum';
 import { pickStructureFromIntersections } from './pickStructureFromIntersections';
 
-function hit(mesh: Mesh, distance: number) {
-  return { object: mesh, distance, point: new THREE.Vector3(), face: null, faceIndex: 0, uv: null };
+function hit(mesh: Mesh, distance: number): THREE.Intersection {
+  return { object: mesh, distance, point: new THREE.Vector3() };
 }
 
 describe('pickStructureFromIntersections', () => {

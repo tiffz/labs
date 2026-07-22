@@ -4,7 +4,7 @@ import { scheduleStyledChordMeasure } from './scheduleStyledChordMeasure';
 describe('scheduleStyledChordMeasure', () => {
   it('schedules playNote calls for a valid chord symbol', () => {
     const playNote = vi.fn();
-    const instrument = { playNote, stopAll: vi.fn(), disconnect: vi.fn(), connect: vi.fn() };
+    const instrument = { playNote, stopAll: vi.fn(), disconnect: vi.fn(), connect: vi.fn(), getOutput: vi.fn() };
 
     const scheduled = scheduleStyledChordMeasure({
       symbol: 'Fm',
@@ -25,7 +25,7 @@ describe('scheduleStyledChordMeasure', () => {
 
   it('returns false when velocity is zero (muted)', () => {
     const playNote = vi.fn();
-    const instrument = { playNote, stopAll: vi.fn(), disconnect: vi.fn(), connect: vi.fn() };
+    const instrument = { playNote, stopAll: vi.fn(), disconnect: vi.fn(), connect: vi.fn(), getOutput: vi.fn() };
 
     expect(
       scheduleStyledChordMeasure({

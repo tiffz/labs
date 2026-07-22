@@ -24,6 +24,8 @@ describe('buildPracticeExerciseExportPlainText', () => {
       artist: 'A',
       journalMarkdown: '',
       lyricsSourceGenius: '[Verse]\nLine one',
+      createdAt: '2020-01-01T00:00:00Z',
+      updatedAt: '2020-01-02T00:00:00Z',
     };
     const run: EncoreLyricsInOwnWordsExerciseRun = {
       id: 'r1',
@@ -47,6 +49,8 @@ describe('practiceExerciseGoogleDocTitle', () => {
       title: 'T',
       artist: 'A',
       journalMarkdown: '',
+      createdAt: '2020-01-01T00:00:00Z',
+      updatedAt: '2020-01-02T00:00:00Z',
     };
     const run: EncoreLyricsInOwnWordsExerciseRun = {
       id: 'r1',

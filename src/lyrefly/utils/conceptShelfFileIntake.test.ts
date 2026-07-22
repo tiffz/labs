@@ -39,7 +39,9 @@ function mockDataTransfer(input: {
     },
     items: items as unknown as DataTransferItemList,
     getData: (type: string) => input.getData?.(type) ?? '',
-  } as DataTransfer;
+    // Partial DOM DataTransfer fake — only the members the intake helpers read are
+    // implemented, so a direct cast cannot structurally overlap the full interface.
+  } as unknown as DataTransfer;
 }
 
 describe('conceptShelfFileIntake', () => {

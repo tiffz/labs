@@ -26,8 +26,11 @@ function cacheKey(pageNumber: number, options: PageRenderOptions): CacheKey {
 export class ReaderPageCache {
   private readonly cache = new Map<CacheKey, CachedPageRender>();
   private readonly order: CacheKey[] = [];
+  private readonly maxEntries: number;
 
-  constructor(private readonly maxEntries = 12) {}
+  constructor(maxEntries = 12) {
+    this.maxEntries = maxEntries;
+  }
 
   has(pageNumber: number, options: PageRenderOptions): boolean {
     return this.cache.has(cacheKey(pageNumber, options));

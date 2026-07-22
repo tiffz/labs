@@ -1,7 +1,7 @@
 import '@fontsource/cormorant-garamond/400.css';
 import '@fontsource/cormorant-garamond/600.css';
 import '../shared/ui/fonts/appFonts';
-import React, { StrictMode } from 'react';
+import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 import { ThemeProvider } from '@mui/material/styles';
 import { installServerLogger } from '../shared/utils/serverLogger';
