@@ -20,5 +20,16 @@ if command -v lsof >/dev/null 2>&1 && lsof -ti :5173 >/dev/null 2>&1; then
   echo "pre-push: port 5173 is in use; e2e will reuse it. If specs fail with ERR_ABORTED: kill \$(lsof -ti :5173)" >&2
 fi
 
-echo "pre-push: running presubmit:push…"
-npm run presubmit:push
+# Default: presubmit (lint, typecheck, build, Vitest, and SCOPED e2e for changed
+# apps) — low memory and reliable on a laptop. The FULL cross-app e2e smoke +
+# playback run browsers for every app; on a 16GB machine with a browser/Zoom open
+# they exhaust RAM and flake render-sensitive specs. They already run in CI as a
+# required merge check, so they are not duplicated here by default. Opt in with
+# LABS_FULL_E2E_PUSH=1 to run the full local gate before a risky cross-app push.
+if [ "$LABS_FULL_E2E_PUSH" = "1" ]; then
+  echo "pre-push: running presubmit:push (full e2e)…"
+  npm run presubmit:push
+else
+  echo "pre-push: running presubmit (fast + scoped e2e). Full cross-app e2e runs in CI; set LABS_FULL_E2E_PUSH=1 for the full local gate."
+  npm run presubmit
+fi

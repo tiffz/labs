@@ -7,7 +7,7 @@ alwaysApply: true
 
 # Pre-commit verification
 
-Run **`npm run presubmit`** before telling the user a task is done and before suggesting `git commit`. It mirrors CI's blocking gates (guardrail contracts, lint, knip, typecheck, build, scoped Vitest + scoped e2e). `.husky/pre-push` adds full smoke + playback regressions (`presubmit:push`). Subsets while iterating are fine; always finish with presubmit.
+Run **`npm run presubmit`** before telling the user a task is done and before suggesting `git commit`. It mirrors CI's blocking gates (guardrail contracts, lint, knip, typecheck, build, scoped Vitest + scoped e2e). `.husky/pre-push` runs the same `presubmit` by default; the **full cross-app e2e smoke + playback** run in **CI as a required merge check** (a full local run needs browsers for every app and exhausts RAM on a laptop, flaking render-sensitive specs). Opt into the full local gate with **`LABS_FULL_E2E_PUSH=1 git push`** before a risky cross-app change. Subsets while iterating are fine; always finish with presubmit.
 
 - **Zero ESLint warnings in files you touched** — verify with `npx eslint <changed-files>`; fix `react-hooks/exhaustive-deps`, Fast Refresh (`only-export-components` — keep hooks in `use*.ts`, helpers in `*Utils.ts`), and `no-console` instead of deferring them.
 - **Flaky test (fails once, passes on retry)** → fix the root cause before re-running; rule [`flaky-tests.mdc`](flaky-tests.mdc).

@@ -17,6 +17,14 @@ export default defineConfig({
   testIgnore: ['**/.claude/**'],
   timeout: 30_000,
   retries: 0,
+  // Cap local parallelism to keep peak memory low. Playwright's default (~50% of
+  // cores → 4 Chromium here) spikes RAM on a 16GB dev machine and can push it
+  // into swap, slowing renders enough to flake the tail-end playback specs during
+  // the pre-push. CI runners have dedicated RAM and keep the default for speed.
+  // Override locally with LABS_E2E_WORKERS.
+  workers: process.env.CI
+    ? undefined
+    : Number(process.env.LABS_E2E_WORKERS) || 2,
   expect: {
     toHaveScreenshot: {
       animations: 'disabled',
@@ -86,8 +94,12 @@ export default defineConfig({
       : []),
   ],
   snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}{ext}',
+  // LABS_E2E_PREVIEW=1 serves a production build via `vite preview` instead of the
+  // dev server (pre-compiled assets, closer to CI/prod). Run `npm run build` first.
   webServer: {
-    command: 'vite --open=false --strictPort --port=5173',
+    command: process.env.LABS_E2E_PREVIEW
+      ? 'vite preview --host 127.0.0.1 --strictPort --port=5173'
+      : 'vite --open=false --strictPort --port=5173',
     url: 'http://127.0.0.1:5173',
     reuseExistingServer: !process.env.CI,
     stderr: 'pipe',

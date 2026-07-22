@@ -74,6 +74,14 @@ Skill: **`labs-babysit-pr`**. When adding checks, prefer extending the matching 
 | Sight LCP advisory flake (~3250ms vs 3000ms)                    | Sample started before practice shell painted                                                                   | Wait for practice chrome; budget 3500ms — `layout-advisory.spec.ts`                                                                                                                                                                          |
 | Interaction budget flake (~450ms vs 400ms) under parallel smoke | Cold first interaction + 4 workers on shared CI runner                                                         | Warmup action + `RELAXED_INTERACTION_BUDGET_MS`; see `words-practice-interaction.spec.ts`                                                                                                                                                    |
 
+## Local pre-push memory (dev machines)
+
+Running the **full cross-app e2e** (browsers for every app) locally exhausts RAM on a 16GB laptop with a browser/Zoom open, tipping it into swap and flaking render-sensitive specs (`e2e/playback-ui-regressions.spec.ts` — a load artifact, not a real regression: they pass in seconds standalone and in CI). So:
+
+- **`.husky/pre-push` defaults to `presubmit`** (lint, typecheck, build, Vitest, scoped e2e for changed apps — low memory). The **full e2e smoke + playback run in CI** as a required merge check, not on every local push. Opt into the full local gate with **`LABS_FULL_E2E_PUSH=1 git push`**.
+- **Local parallelism is capped** for whatever e2e does run (CI is uncapped — dedicated RAM): Playwright `workers: 2`, Vitest `maxWorkers: 3`, `!CI`-gated, overridable via `LABS_E2E_WORKERS` / `LABS_VITEST_WORKERS`. `LABS_E2E_PREVIEW=1` runs e2e against a production `vite preview` build (needs `npm run build` first). All enforced by `src/shared/toolingConfigGuardrails.test.ts`.
+- **If a push still flakes on a playback spec** (e.g. with `LABS_FULL_E2E_PUSH=1`): it is memory, not code. Free RAM or push from a **fresh terminal**. Do **not** widen the flaky waits to chase it, and never `git push --no-verify`.
+
 ## Related
 
 - [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
