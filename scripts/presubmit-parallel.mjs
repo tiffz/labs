@@ -69,6 +69,7 @@ const staticChecks = [
   npmRun('lint', 'lint'),
   npmRun('knip', 'knip'),
   npmRun('typecheck', 'typecheck'),
+  npmRun('full typecheck ratchet', 'check:tsc-ratchet'),
 ];
 if (existsSync('src/muscle/main.tsx')) {
   staticChecks.push(npmRun('muscle public assets', 'muscle:validate-assets'));
