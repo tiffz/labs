@@ -6,7 +6,19 @@ entry criteria, and status. Update the status column when an item starts or land
 items here first, then link out.
 
 Review cadence: skim during each `labs-session-retrospective` when touching an affected
-subsystem; full re-prioritization quarterly with the [`GUIDANCE_EVALS.md`](GUIDANCE_EVALS.md) run.
+subsystem; full re-prioritization quarterly with the [`GUIDANCE_EVALS.md`](GUIDANCE_EVALS.md) run,
+and via the standing **regression-pattern review + tech-debt tournament** (see
+[`CONTINUOUS_PROCESS_IMPROVEMENT.md`](CONTINUOUS_PROCESS_IMPROVEMENT.md) § Standing regression-pattern review).
+
+## 2026-07 tournament winners (waved plan)
+
+Full report + evidence: [`QUALITY_TOURNAMENT_2026-07.md`](QUALITY_TOURNAMENT_2026-07.md) (57 findings, 55 confirmed). Unifying insight: Labs owns the advisory-ratchet pattern (`check-jscpd-ratchet.mjs`) but applied it to only ~2 attributes — clone it to the rest.
+
+- **Wave 1 (freeze accrual, days):** ✅ **per-file size ratchet** landed (`componentSizeGuardrails.test.ts` + baseline — this cycle). Remaining: 🏆 full-typecheck ratchet (`tsconfig.app.json` excludes all tests → 172 errors run nowhere), react-hooks + exhaustive-deps baseline ratchet (684 frozen), coverage/hex ratchets, advisory-perf-budget guardrail (dominant e2e-flake cause), knip `exports:'warn'`→ratchet.
+- **Wave 2 (one source of truth, 1–2 wk):** app/route registry + divergence check (`parallel-registry-drift`, the grand-prize regression class), registry-derived icon/CLS smokes.
+- **Wave 3 (single-surface → all-surface, 2–3 wk):** `MergePolicy` across all 6 Drive apps (not just EncoreSong), `usePlaybackGeneration` hook, VexFlow font-gate enumerator across all 4 notation surfaces, runtime guard-parity test, data-loss coverage-manifest guardrail.
+- **Wave 4 (decompositions held by the Wave-1 ratchet):** VexFlowRenderer 1,115-line effect → pure `renderDrumScore`; StanzaWorkspace/SessionScreen splits; Encore dedup + shared-fork migration.
+- **Wave 5 (guidance self-checking):** guidance-eval 90-day gate; AGENT_INVARIANTS `enforcement-kind` tagging; doc-link citation validation.
 
 ## Prioritized queue
 
