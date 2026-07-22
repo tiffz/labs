@@ -76,11 +76,11 @@ Skill: **`labs-babysit-pr`**. When adding checks, prefer extending the matching 
 
 ## Local pre-push memory (dev machines)
 
-`.husky/pre-push` runs the full e2e suite on the **dev server**, so it is memory-hungry: Playwright's default (~50% of cores) launches several Chromium at once, and Vitest runs 6 isolated threads. On a 16GB machine that peak can tip the system into swap, which slows renders enough to **flake the tail-end playback specs** (`e2e/playback-ui-regressions.spec.ts`) — a load artifact, not a real regression (those specs pass in seconds standalone and in CI).
+Running the **full cross-app e2e** (browsers for every app) locally exhausts RAM on a 16GB laptop with a browser/Zoom open, tipping it into swap and flaking render-sensitive specs (`e2e/playback-ui-regressions.spec.ts` — a load artifact, not a real regression: they pass in seconds standalone and in CI). So:
 
-- **Parallelism is capped locally** (CI is uncapped — dedicated RAM): Playwright `workers: 2`, Vitest `maxWorkers: 3`, both `!CI`-gated, overridable via `LABS_E2E_WORKERS` / `LABS_VITEST_WORKERS`. Enforced by `src/shared/toolingConfigGuardrails.test.ts`.
-- **If a push still flakes on a playback spec:** it is memory, not code. Free RAM (a browser with many tabs is usually the largest consumer) or push from a **fresh terminal** (a long agent session accumulates memory a new process tree clears). Do **not** widen the flaky waits to chase it, and never `git push --no-verify`.
-- **Push branches early**, while the machine is fresh, and batch related work into one branch to minimise ~10-minute pre-push cycles.
+- **`.husky/pre-push` defaults to `presubmit`** (lint, typecheck, build, Vitest, scoped e2e for changed apps — low memory). The **full e2e smoke + playback run in CI** as a required merge check, not on every local push. Opt into the full local gate with **`LABS_FULL_E2E_PUSH=1 git push`**.
+- **Local parallelism is capped** for whatever e2e does run (CI is uncapped — dedicated RAM): Playwright `workers: 2`, Vitest `maxWorkers: 3`, `!CI`-gated, overridable via `LABS_E2E_WORKERS` / `LABS_VITEST_WORKERS`. `LABS_E2E_PREVIEW=1` runs e2e against a production `vite preview` build (needs `npm run build` first). All enforced by `src/shared/toolingConfigGuardrails.test.ts`.
+- **If a push still flakes on a playback spec** (e.g. with `LABS_FULL_E2E_PUSH=1`): it is memory, not code. Free RAM or push from a **fresh terminal**. Do **not** widen the flaky waits to chase it, and never `git push --no-verify`.
 
 ## Related
 

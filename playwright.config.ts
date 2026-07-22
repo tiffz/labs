@@ -94,8 +94,12 @@ export default defineConfig({
       : []),
   ],
   snapshotPathTemplate: '{testDir}/{testFilePath}-snapshots/{arg}{ext}',
+  // LABS_E2E_PREVIEW=1 serves a production build via `vite preview` instead of the
+  // dev server (pre-compiled assets, closer to CI/prod). Run `npm run build` first.
   webServer: {
-    command: 'vite --open=false --strictPort --port=5173',
+    command: process.env.LABS_E2E_PREVIEW
+      ? 'vite preview --host 127.0.0.1 --strictPort --port=5173'
+      : 'vite --open=false --strictPort --port=5173',
     url: 'http://127.0.0.1:5173',
     reuseExistingServer: !process.env.CI,
     stderr: 'pipe',
