@@ -148,6 +148,39 @@ Avoid: destructive actions without confirm; coarse LWW on compound rows; silent 
 
 **Honest limit:** We cannot make “impossible to write a bug” absolute while OAuth can open user-picked folders. We **can** refuse high-blast trash outside Labs trees and keep cloud history dense enough that a bad day is recoverable.
 
+## API rate limiting (abuse / ban prevention)
+
+The 10 data-loss layers above protect the user's **content**. They do **not** protect the user's Google
+**account** from API abuse: a stray timer-constant edit or a fan-out (parallel shard upload, thumbnail
+grid storm) could burst Drive requests past Google's per-user quota and into abuse-detection / ban
+territory. That gap is closed at the shared choke point every app's reads and writes flow through —
+[`driveFetch`](../src/shared/drive/driveFetch.ts), backed by
+[`driveRequestGovernor.ts`](../src/shared/drive/driveRequestGovernor.ts) (Drive red-team rec #3):
+
+| Governor                  | What it prevents                                         | How                                                                                    |
+| ------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Bounded concurrency**   | Fan-out burst (shard upload, thumbnail storm)            | Module-level semaphore caps in-flight requests at `DRIVE_MAX_CONCURRENT_REQUESTS` (6)  |
+| **Full-jitter backoff**   | Synchronized retry waves (the abuse-detection signature) | 429/5xx/network retries use exponential backoff with full jitter — never a fixed delay |
+| **`Retry-After` honored** | Retrying before Google says the door is open             | 429/503 wait **at least** the header value (delta-seconds or HTTP-date) before retry   |
+
+Transparent to callers: 2xx and non-retryable errors (400/403/404/**412 etag**/…) are returned
+unchanged; only retry/concurrency **timing** changes. Ad-hoc per-caller `[0, 500, 1500]` retry loops
+were removed in favor of this single governed path (no nested retries).
+
+**Scope / not covered:** resumable **byte** uploads (`driveResumableUpload.ts`) use a separate XHR path
+(308 handling) with their own retry, and are already fan-out-limited at the call site (Gesture
+`gestureUploadDuplicateFilter` concurrency). Once-per-day revision pinning
+(`driveUpdateRevisionKeepForever`) is low-volume and left on raw `fetch`. Adjust `DRIVE_*` constants in
+`driveRequestGovernor.ts` — do not reintroduce fixed-delay retry loops at call sites. The auto-pull
+cadence floor (`LABS_DRIVE_AUTO_PULL_MIN_INTERVAL_MS >= 60s`) is regression-guarded in
+`driveRequestGovernor.test.ts`.
+
+---
+
+## Testing expectations
+
+---
+
 ## Known gaps (tracked)
 
 | Priority | Gap                                                | Mitigation today                                                                                                                                               |

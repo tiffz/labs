@@ -19,6 +19,81 @@ import type {
  *      edits — those should also be surfaced by the content-aware conflict dialog).
  */
 
+/**
+ * Merge disposition for a single {@link EncoreSong} field. The union deliberately captures the
+ * *distinct* semantics already implemented across the live cross-device merge and the history
+ * recovery reconstruction, so every field is classified with one conscious value:
+ *
+ * - `lww` — whole-row last-writer-wins scalar: the winning row's value is taken as-is, no content
+ *   protection (identity + metadata fields).
+ * - `exercise-runs` — content-aware union of practice-exercise runs by stable id (filled beats
+ *   empty — see {@link mergeExerciseRunLists}). The one disposition the **live pull merge** guards
+ *   today (ADR 0019).
+ * - `union-by-id` — union a list of `{ id }` rows, first side wins on id collision.
+ * - `union-by-drive-file-id` — union a list of attachments by `driveFileId`.
+ * - `union-scalar-set` — union a primitive string list with set semantics.
+ * - `preserve-filled-text` — keep a non-blank string over a blank one.
+ * - `preserve-filled-scalar` — keep a defined scalar over `undefined` (`a ?? b`).
+ */
+export type MergePolicy =
+  | 'lww'
+  | 'exercise-runs'
+  | 'union-by-id'
+  | 'union-by-drive-file-id'
+  | 'union-scalar-set'
+  | 'preserve-filled-text'
+  | 'preserve-filled-scalar';
+
+/**
+ * Canonical per-field merge disposition for **every** key of {@link EncoreSong}.
+ *
+ * Why it exists: the historical merge spread `{ ...newerRow }` and re-applied a *hand-listed* set of
+ * content fields, so a newly added rich field round-tripped through wire + UI with **zero type error
+ * yet was silently dropped on cross-device merge** (last-writer-wins) — the class behind the
+ * "Because of You" incident (ADR 0019) and the Drive-sync red-team findings. The
+ * `satisfies Record<keyof EncoreSong, MergePolicy>` below turns that into a **compile error**: adding
+ * a field to `EncoreSong` fails typecheck until it is given a conscious disposition here. Both the
+ * live merge ({@link mergeSongPreservingExercises}) and the history recovery union (`unionSongPair`
+ * in `encoreDataRecovery.ts`) are driven from this map, so the new field is also routed at runtime.
+ *
+ * The disposition is the field's canonical cross-device semantics, honored in full by the recovery
+ * reconstruction. The **live** pull merge is a narrower ADR-0019 protection: it guards `exercise-runs`
+ * content and otherwise keeps whole-row LWW (scalars *and* lists — the documented trade-off; broaden
+ * only via a new ADR). Do not change an existing field's disposition without an ADR: it changes merge
+ * outcomes.
+ */
+export const SONG_MERGE_POLICY = {
+  id: 'lww',
+  title: 'lww',
+  artist: 'lww',
+  albumArtUrl: 'preserve-filled-scalar',
+  spotifyTrackId: 'preserve-filled-scalar',
+  youtubeVideoId: 'preserve-filled-scalar',
+  referenceLinks: 'union-by-id',
+  backingLinks: 'union-by-id',
+  performanceKey: 'preserve-filled-scalar',
+  journalMarkdown: 'preserve-filled-text',
+  lyricsSourceGenius: 'preserve-filled-text',
+  practiceExerciseRuns: 'exercise-runs',
+  sheetMusicDriveFileId: 'lww',
+  backingTrackDriveFileId: 'lww',
+  recordingDriveFileIds: 'union-scalar-set',
+  attachments: 'union-by-drive-file-id',
+  miscResources: 'union-by-id',
+  practicing: 'lww',
+  practiceRemovedAt: 'lww',
+  milestoneProgress: 'lww',
+  songOnlyMilestones: 'lww',
+  tags: 'lww',
+  createdAt: 'lww',
+  updatedAt: 'lww',
+} satisfies Record<keyof EncoreSong, MergePolicy>;
+
+/** Typed `Object.keys` over {@link SONG_MERGE_POLICY} (avoids widening to `string`). */
+export function songMergePolicyKeys(): (keyof EncoreSong)[] {
+  return Object.keys(SONG_MERGE_POLICY) as (keyof EncoreSong)[];
+}
+
 function stripHtmlTagsIteratively(value: string): string {
   let s = value;
   let prev = '';
@@ -147,10 +222,39 @@ export function mergeSongPreservingExercises(
   options?: MergeExerciseRunListsOptions,
 ): EncoreSong {
   const base = local.updatedAt >= remote.updatedAt ? local : remote;
-  const mergedRuns = mergeExerciseRunLists(local.practiceExerciseRuns, remote.practiceExerciseRuns, options);
   const merged: EncoreSong = { ...base };
-  if (mergedRuns) merged.practiceExerciseRuns = mergedRuns;
-  else delete merged.practiceExerciseRuns;
+  // Driven by SONG_MERGE_POLICY: the live cross-device merge keeps the newer row whole (LWW) and
+  // only unions content classified `exercise-runs` (ADR 0019). Iterating the policy — rather than
+  // re-listing fields by hand — means a newly added EncoreSong field cannot silently bypass this
+  // merge: it must be classified in SONG_MERGE_POLICY (compile-enforced) and is routed here.
+  for (const key of songMergePolicyKeys()) {
+    const policy = SONG_MERGE_POLICY[key];
+    switch (policy) {
+      case 'exercise-runs': {
+        const mergedRuns = mergeExerciseRunLists(
+          local.practiceExerciseRuns,
+          remote.practiceExerciseRuns,
+          options,
+        );
+        if (mergedRuns) merged.practiceExerciseRuns = mergedRuns;
+        else delete merged.practiceExerciseRuns;
+        break;
+      }
+      // Whole-row LWW for scalars and lists on the live merge (ADR 0019 scope). The richer
+      // union/preserve dispositions are honored by the history recovery reconstruction, not here.
+      case 'lww':
+      case 'union-by-id':
+      case 'union-by-drive-file-id':
+      case 'union-scalar-set':
+      case 'preserve-filled-text':
+      case 'preserve-filled-scalar':
+        break;
+      default: {
+        const exhaustive: never = policy;
+        throw new Error(`Unhandled song merge policy: ${String(exhaustive)}`);
+      }
+    }
+  }
   return merged;
 }
 

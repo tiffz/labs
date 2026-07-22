@@ -16094,6 +16094,159 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-drive-driverequestgovernor-ts-resetdriverequestgovernorfortests",
+    "name": "__resetDriveRequestGovernorForTests",
+    "path": "src/shared/drive/driveRequestGovernor.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Test-only: drain the semaphore so a leaked slot from one test cannot bleed into the next.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driverequestgovernor-ts-computedriveretrybackoffms",
+    "name": "computeDriveRetryBackoffMs",
+    "path": "src/shared/drive/driveRequestGovernor.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Full-jitter exponential backoff: a uniform sample in `[0, min(cap, base * 2^(attempt-1)))`. `attempt` is 1-based. Full jitter (rather than fixed or equal-jitter) maximally de-synchronizes retries across tabs / devices so they do not arrive as a wave.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driverequestgovernor-ts-computedriveretrywaitms",
+    "name": "computeDriveRetryWaitMs",
+    "path": "src/shared/drive/driveRequestGovernor.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Wait before the next retry of a retryable HTTP response. Honors `Retry-After` as a floor (`>=` the header value) while still adding jittered backoff so a fleet does not retry in lockstep even when Google hands everyone the same `Retry-After`.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driverequestgovernor-ts-drive-max-concurrent-requests",
+    "name": "DRIVE_MAX_CONCURRENT_REQUESTS",
+    "path": "src/shared/drive/driveRequestGovernor.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Max simultaneous in-flight Drive requests (reads + writes) across every Labs app. A small constant so a fan-out edit cannot burst. Override for tests / tuning.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driverequestgovernor-ts-drive-max-retry-attempts",
+    "name": "DRIVE_MAX_RETRY_ATTEMPTS",
+    "path": "src/shared/drive/driveRequestGovernor.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Max automatic retries for a single retryable (429 / 5xx / network) Drive request.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driverequestgovernor-ts-drive-retry-after-max-ms",
+    "name": "DRIVE_RETRY_AFTER_MAX_MS",
+    "path": "src/shared/drive/driveRequestGovernor.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Upper bound we honor from a `Retry-After` header. Guards against a hostile or clock-skewed value pinning a request for hours; a genuine Google `Retry-After` is seconds to low minutes.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driverequestgovernor-ts-drive-retry-backoff-base-ms",
+    "name": "DRIVE_RETRY_BACKOFF_BASE_MS",
+    "path": "src/shared/drive/driveRequestGovernor.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Base delay for exponential backoff (doubled each attempt, before jitter).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driverequestgovernor-ts-drive-retry-backoff-cap-ms",
+    "name": "DRIVE_RETRY_BACKOFF_CAP_MS",
+    "path": "src/shared/drive/driveRequestGovernor.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Exponential-backoff ceiling before jitter is applied.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driverequestgovernor-ts-driveinflightrequestcount",
+    "name": "driveInFlightRequestCount",
+    "path": "src/shared/drive/driveRequestGovernor.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Current number of Drive requests holding a slot (in-flight or waiting out a retry).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driverequestgovernor-ts-parseretryafterms",
+    "name": "parseRetryAfterMs",
+    "path": "src/shared/drive/driveRequestGovernor.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Parse a `Retry-After` header into milliseconds. Accepts delta-seconds (`\"2\"`) and an HTTP-date (`\"Wed, 21 Oct 2026 07:28:00 GMT\"`). Returns null when absent / unparseable, and clamps to . A past HTTP-date clamps up to 0 (retry now).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-drive-driverequestgovernor-ts-runwithdriveconcurrencylimit",
+    "name": "runWithDriveConcurrencyLimit",
+    "path": "src/shared/drive/driveRequestGovernor.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Run `fn` while holding one of the slots. Extra callers queue until a slot frees. The slot is held for the whole operation (including retry waits) so a request backing off on `Retry-After` still counts against the in-flight budget.",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-drive-driveresumableupload-ts-drive-resumable-chunk-bytes",
     "name": "DRIVE_RESUMABLE_CHUNK_BYTES",
     "path": "src/shared/drive/driveResumableUpload.ts",

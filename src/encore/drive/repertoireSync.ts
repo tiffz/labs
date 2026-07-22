@@ -116,6 +116,11 @@ export async function pullRepertoireFromDrive(
   const deletedRunIds = new Set(mergedExtras.deletedExerciseRunIds ?? []);
   // Content-aware: never let a newer-but-empty song row wipe filled exercise answers (ADR 0019).
   const mergedSongs = mergeSongRecords(localSongs, wire.songs, { deletedRunIds });
+  // TODO(drive-sync-redteam #2): performances still merge whole-row last-writer-wins, so a second
+  // video logged on another device is dropped when a newer sparse copy of the same performance wins
+  // (`EncorePerformance.videos` / `primaryVideoId`). Give EncorePerformance a policy map + per-field
+  // merge mirroring SONG_MERGE_POLICY / mergeSongPreservingExercises (union `videos` by id) before
+  // relying on cross-device performance-video sync. Left as LWW here to preserve current behavior.
   const mergedPerf = mergeRecordsByUpdatedAt<EncorePerformance>(localPerf, wire.performances);
   onProgress?.(0.48);
   await yieldToMain();
