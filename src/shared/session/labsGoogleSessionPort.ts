@@ -116,11 +116,11 @@ export type LabsBffRefreshErrorCode =
   | 'unknown';
 
 export class LabsBffRefreshError extends Error {
-  constructor(
-    message: string,
-    readonly code: LabsBffRefreshErrorCode,
-  ) {
+  readonly code: LabsBffRefreshErrorCode;
+
+  constructor(message: string, code: LabsBffRefreshErrorCode) {
     super(message);
+    this.code = code;
     this.name = 'LabsBffRefreshError';
   }
 }

@@ -25,7 +25,10 @@ describe('loadGesturePackStatsAggregate', () => {
     await gestureDb.drawHistory.put({
       driveFileId: 'f1',
       packId: 'pack-a',
+      firstDrawnAt: '2026-01-02T00:00:00.000Z',
       lastDrawnAt: '2026-01-02T00:00:00.000Z',
+      totalMs: 1000,
+      sessionCount: 1,
     });
 
     const stats = await loadGesturePackStatsAggregate();

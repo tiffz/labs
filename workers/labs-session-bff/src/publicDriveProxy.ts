@@ -1,4 +1,4 @@
-import type { Env } from './constants';
+import type { Env, KVNamespaceLike } from './constants';
 import { clientIp } from './http';
 import { jsonResponse } from './http';
 
@@ -19,7 +19,7 @@ function supportsAllDrivesParam(url: URL): 'true' | 'false' {
   return url.searchParams.get('supportsAllDrives') === 'true' ? 'true' : 'false';
 }
 
-async function checkPublicDriveRateLimit(kv: KVNamespace, ip: string): Promise<boolean> {
+async function checkPublicDriveRateLimit(kv: KVNamespaceLike, ip: string): Promise<boolean> {
   const nowMs = Date.now();
   const hourStart = Math.floor(nowMs / 3_600_000) * 3_600_000;
   const key = `ratelimit:public-drive:${ip}:${hourStart}`;

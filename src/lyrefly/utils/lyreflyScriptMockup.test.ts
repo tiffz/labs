@@ -28,8 +28,12 @@ describe('scriptBlocksForPage + panelCountForPage', () => {
     const page1 = scriptBlocksForPage(blocks, 1);
     const page2 = scriptBlocksForPage(blocks, 2);
 
-    expect(page1.every((b) => b.type === 'page_section' || b.pageNumber === 1)).toBe(true);
-    expect(page2.every((b) => b.type === 'page_section' || b.pageNumber === 2)).toBe(true);
+    expect(page1.every((b) => b.type === 'page_section' || (b.type !== 'beat_sheet_line' && b.pageNumber === 1))).toBe(
+      true,
+    );
+    expect(page2.every((b) => b.type === 'page_section' || (b.type !== 'beat_sheet_line' && b.pageNumber === 2))).toBe(
+      true,
+    );
     expect(panelCountForPage(page1)).toBe(1);
     expect(panelCountForPage(page2)).toBe(1);
   });

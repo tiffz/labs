@@ -14,7 +14,7 @@ describe('short clip BPM detection (drum loops)', () => {
       type: 'drumPattern',
       seed: 12001,
     });
-    const result = await detectTempoEnsemble(buffer);
+    const result = await detectTempoEnsemble(buffer as unknown as AudioBuffer);
     expect(Math.abs(result.consensusBpm - 120)).toBeLessThanOrEqual(5);
   });
 
@@ -25,7 +25,7 @@ describe('short clip BPM detection (drum loops)', () => {
       type: 'drumPattern',
       seed: 12002,
     });
-    const result = await detectTempoEnsemble(slice);
+    const result = await detectTempoEnsemble(slice as unknown as AudioBuffer);
     expect(Math.abs(result.consensusBpm - 120)).toBeLessThanOrEqual(5);
   });
 
@@ -36,7 +36,7 @@ describe('short clip BPM detection (drum loops)', () => {
       type: 'drumPattern',
       seed: 15001,
     });
-    const result = await detectTempoEnsemble(buffer);
+    const result = await detectTempoEnsemble(buffer as unknown as AudioBuffer);
     expect(result.consensusBpm).toBeGreaterThan(145);
     expect(result.consensusBpm).toBeLessThan(155);
   });

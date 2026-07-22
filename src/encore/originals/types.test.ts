@@ -21,8 +21,8 @@ describe('preferredOriginalTake', () => {
     const song = {
       ...createBlankOriginalSong(),
       takes: [
-        { id: 'a', label: 'A', driveFileId: '1', mimeType: 'audio/mpeg' },
-        { id: 'b', label: 'B', driveFileId: '2', mimeType: 'audio/mpeg' },
+        { id: 'a', label: 'A', driveFileId: '1', mimeType: 'audio/mpeg', timestamp: 1, source: 'imported' as const },
+        { id: 'b', label: 'B', driveFileId: '2', mimeType: 'audio/mpeg', timestamp: 2, source: 'imported' as const },
       ],
     };
     expect(preferredOriginalTake(song)?.id).toBe('a');
@@ -33,17 +33,17 @@ describe('preferredOriginalTake', () => {
       ...createBlankOriginalSong(),
       mainTakeId: 'b',
       takes: [
-        { id: 'a', label: 'A', driveFileId: '1', mimeType: 'audio/mpeg' },
-        { id: 'b', label: 'B', driveFileId: '2', mimeType: 'audio/mpeg' },
+        { id: 'a', label: 'A', driveFileId: '1', mimeType: 'audio/mpeg', timestamp: 1, source: 'imported' as const },
+        { id: 'b', label: 'B', driveFileId: '2', mimeType: 'audio/mpeg', timestamp: 2, source: 'imported' as const },
       ],
     };
     expect(preferredOriginalTake(song)?.id).toBe('b');
   });
 
   it('originalTakeHasPlayableSource detects drive and local flags', () => {
-    expect(originalTakeHasPlayableSource({ id: 'a', label: 'A', driveFileId: 'x', mimeType: 'audio/mpeg' })).toBe(true);
-    expect(originalTakeHasPlayableSource({ id: 'b', label: 'B', mimeType: 'audio/mpeg', hasLocalAudio: true })).toBe(true);
-    expect(originalTakeHasPlayableSource({ id: 'c', label: 'C', mimeType: 'audio/mpeg' })).toBe(false);
+    expect(originalTakeHasPlayableSource({ id: 'a', label: 'A', driveFileId: 'x', mimeType: 'audio/mpeg', timestamp: 1, source: 'imported' })).toBe(true);
+    expect(originalTakeHasPlayableSource({ id: 'b', label: 'B', mimeType: 'audio/mpeg', hasLocalAudio: true, timestamp: 2, source: 'recorded' })).toBe(true);
+    expect(originalTakeHasPlayableSource({ id: 'c', label: 'C', mimeType: 'audio/mpeg', timestamp: 3, source: 'imported' })).toBe(false);
   });
 });
 
@@ -69,10 +69,10 @@ describe('normalizeEncoreOriginalSong', () => {
       ...createBlankOriginalSong(),
       lyricsAndChords: '[Chorus]\n[C]Hey',
       sectionPlaybackOverrides: {
-        'chorus-0': { customPlayback: true, chordStyleId: 'jazz' },
+        'chorus-0': { customPlayback: true, chordStyleId: 'jazzy' },
       },
     });
-    expect(song.sectionPlaybackOverrides?.['chorus-0']?.chordStyleId).toBe('jazz');
+    expect(song.sectionPlaybackOverrides?.['chorus-0']?.chordStyleId).toBe('jazzy');
   });
 
   it('remaps orphaned sectionPlaybackOverrides after section reorder', () => {

@@ -20,7 +20,7 @@ describe('resolveSectionPlaybackSettings', () => {
 
   it('inherits global settings when customPlayback is false', () => {
     const overrides: Record<string, SectionPlaybackOverride> = {
-      'verse-0': { customPlayback: false, chordStyleId: 'jazz' },
+      'verse-0': { customPlayback: false, chordStyleId: 'jazzy' },
     };
     expect(resolveSectionPlaybackSettings(global, overrides, 'verse-0')).toEqual(global);
   });
@@ -29,13 +29,13 @@ describe('resolveSectionPlaybackSettings', () => {
     const overrides: Record<string, SectionPlaybackOverride> = {
       'chorus-0': {
         customPlayback: true,
-        chordStyleId: 'jazz',
+        chordStyleId: 'jazzy',
         drumsEnabled: true,
         drumPattern: 'D-T-K-T-',
       },
     };
     const resolved = resolveSectionPlaybackSettings(global, overrides, 'chorus-0');
-    expect(resolved.chordStyleId).toBe('jazz');
+    expect(resolved.chordStyleId).toBe('jazzy');
     expect(resolved.drumsEnabled).toBe(true);
     expect(resolved.drumPattern).toBe('D-T-K-T-');
     expect(resolved.soundType).toBe(global.soundType);

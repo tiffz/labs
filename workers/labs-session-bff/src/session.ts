@@ -1,4 +1,4 @@
-import { SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS, type SessionCookiePayload, type StoredSessionRecord } from './constants';
+import { SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS, type KVNamespaceLike, type SessionCookiePayload, type StoredSessionRecord } from './constants';
 import { decryptString, encryptString, randomToken, signSessionPayload, verifySessionPayload } from './crypto';
 
 const encoder = new TextEncoder();
@@ -58,7 +58,7 @@ function base64UrlToBytes(value: string): Uint8Array {
 }
 
 export async function storeSession(
-  kv: KVNamespace,
+  kv: KVNamespaceLike,
   input: {
     googleSub: string;
     email: string;
@@ -102,7 +102,7 @@ export async function buildSessionCookie(
 }
 
 export async function loadSession(
-  kv: KVNamespace,
+  kv: KVNamespaceLike,
   sessionId: string,
   encryptionKeyHex: string,
 ): Promise<(StoredSessionRecord & { refreshToken: string }) | null> {
@@ -120,7 +120,7 @@ export async function loadSession(
  * grant) — the prior token remains valid, so sign-in continues seamlessly.
  */
 export async function loadRefreshTokenForUser(
-  kv: KVNamespace,
+  kv: KVNamespaceLike,
   googleSub: string,
   encryptionKeyHex: string,
 ): Promise<string | null> {
@@ -130,7 +130,7 @@ export async function loadRefreshTokenForUser(
   return session?.refreshToken ?? null;
 }
 
-export async function deleteSession(kv: KVNamespace, sessionId: string, googleSub: string): Promise<void> {
+export async function deleteSession(kv: KVNamespaceLike, sessionId: string, googleSub: string): Promise<void> {
   await kv.delete(sessionKvKey(sessionId));
   const mapped = await kv.get(userKvKey(googleSub));
   if (mapped === sessionId) await kv.delete(userKvKey(googleSub));

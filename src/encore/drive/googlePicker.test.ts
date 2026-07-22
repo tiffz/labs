@@ -47,7 +47,9 @@ describe('googlePickerSetOriginFromEnvAndWindow', () => {
     };
     win.self = win as unknown as Window;
     win.top = win as unknown as Window;
-    expect(googlePickerSetOriginFromEnvAndWindow(' https://parent.example ', win)).toBe('https://parent.example');
+    expect(googlePickerSetOriginFromEnvAndWindow(' https://parent.example ', win as unknown as Window)).toBe(
+      'https://parent.example',
+    );
   });
 
   it('returns null for top-level window', () => {

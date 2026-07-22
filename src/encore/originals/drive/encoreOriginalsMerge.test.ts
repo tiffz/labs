@@ -84,12 +84,12 @@ describe('mergeOriginalSongPreservingContent', () => {
     });
     const remote = base({
       brainstormHtml: '<p></p>',
-      stageCompletion: { writing: true },
+      stageCompletion: { write: true },
       updatedAt: '2026-01-05T00:00:00.000Z',
     });
     const merged = mergeOriginalSongPreservingContent(local, remote);
     expect(merged.brainstormHtml).toContain('Ideas');
-    expect(merged.stageCompletion).toEqual({ brainstorm: true, writing: true });
+    expect(merged.stageCompletion).toEqual({ brainstorm: true, write: true });
   });
 });
 

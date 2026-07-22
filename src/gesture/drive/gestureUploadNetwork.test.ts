@@ -47,7 +47,7 @@ describe('gestureUploadNetwork', () => {
 
     it('resolves true when the browser comes back online', async () => {
       const promise = waitForNetworkOnline({ maxWaitMs: 5000 });
-      navigator.onLine = true;
+      vi.stubGlobal('navigator', { onLine: true });
       window.dispatchEvent(new Event('online'));
       await expect(promise).resolves.toBe(true);
     });

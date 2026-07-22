@@ -28,12 +28,12 @@ describe('overlayKeyForStanzaSong', () => {
 
 describe('mergeStanzaPracticeOverlayIntoRows', () => {
   it('applies overlay markers when overlay is richer', () => {
-    const local = [song('s1', [{ id: 'm1', label: 'A', timeSec: 1 }])];
+    const local = [song('s1', [{ id: 'm1', label: 'A', time: 1 }])];
     const overlay = buildStanzaPracticeOverlayFromRows([
       {
         ...song('s1', [
-          { id: 'm1', label: 'A', timeSec: 1 },
-          { id: 'm2', label: 'B', timeSec: 2 },
+          { id: 'm1', label: 'A', time: 1 },
+          { id: 'm2', label: 'B', time: 2 },
         ]),
         updatedAt: 2000,
       },
@@ -46,11 +46,11 @@ describe('mergeStanzaPracticeOverlayIntoRows', () => {
   it('keeps local markers when overlay is sparser', () => {
     const local = [
       song('s1', [
-        { id: 'm1', label: 'A', timeSec: 1 },
-        { id: 'm2', label: 'B', timeSec: 2 },
+        { id: 'm1', label: 'A', time: 1 },
+        { id: 'm2', label: 'B', time: 2 },
       ]),
     ];
-    const overlay = buildStanzaPracticeOverlayFromRows([song('s1', [{ id: 'm1', label: 'A', timeSec: 1 }])]);
+    const overlay = buildStanzaPracticeOverlayFromRows([song('s1', [{ id: 'm1', label: 'A', time: 1 }])]);
     const merged = mergeStanzaPracticeOverlayIntoRows(local, overlay);
     expect(merged[0].markers).toHaveLength(2);
   });
@@ -58,14 +58,14 @@ describe('mergeStanzaPracticeOverlayIntoRows', () => {
   it('keeps local drumsEnabled when overlay has equal markers but false toggle', () => {
     const local = [
       {
-        ...song('s1', [{ id: 'm1', label: 'A', timeSec: 1 }]),
+        ...song('s1', [{ id: 'm1', label: 'A', time: 1 }]),
         drumsEnabled: true,
         updatedAt: 2000,
       },
     ];
     const overlay = buildStanzaPracticeOverlayFromRows([
       {
-        ...song('s1', [{ id: 'm1', label: 'A', timeSec: 1 }]),
+        ...song('s1', [{ id: 'm1', label: 'A', time: 1 }]),
         drumsEnabled: false,
         updatedAt: 2000,
       },

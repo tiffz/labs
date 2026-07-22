@@ -174,7 +174,6 @@ export function reorderAttachmentsOfKind(
 }
 
 function repairPrimaryLinkFlags(
-  base: EncoreSong,
   refs: EncoreMediaLink[],
   backing: EncoreMediaLink[],
 ): { referenceLinks: EncoreMediaLink[]; backingLinks: EncoreMediaLink[] } {
@@ -209,7 +208,7 @@ function removeMediaLinkFromSong(
   if (fromRefs) refs = sourceList;
   else backing = sourceList;
 
-  const repaired = repairPrimaryLinkFlags(base, refs, backing);
+  const repaired = repairPrimaryLinkFlags(refs, backing);
   return {
     song: syncSongLegacyMediaIds({
       ...base,

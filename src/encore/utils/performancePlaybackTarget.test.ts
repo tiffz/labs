@@ -8,10 +8,12 @@ const basePerformance = (): EncorePerformance => ({
   date: '2026-06-11',
   venueTag: 'Club',
   videos: [
-    { id: 'v1', videoTargetDriveFileId: 'drive-primary' },
-    { id: 'v2', externalVideoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+    { id: 'v1', videoTargetDriveFileId: 'drive-primary', createdAt: '2026-06-11T00:00:00.000Z' },
+    { id: 'v2', externalVideoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', createdAt: '2026-06-11T00:00:00.000Z' },
   ],
   primaryVideoId: 'v1',
+  createdAt: '2026-06-11T00:00:00.000Z',
+  updatedAt: '2026-06-11T00:00:00.000Z',
 });
 
 describe('performanceVideoPlaybackTarget', () => {
@@ -36,7 +38,7 @@ describe('performanceVideoPlaybackTarget', () => {
   it('returns null when the clip has no playable source', () => {
     const perf: EncorePerformance = {
       ...basePerformance(),
-      videos: [{ id: 'v-empty' }],
+      videos: [{ id: 'v-empty', createdAt: '2026-06-11T00:00:00.000Z' }],
       primaryVideoId: 'v-empty',
     };
     expect(performanceVideoPlaybackTarget(perf)).toBeNull();

@@ -72,12 +72,14 @@ describe('bookletImageExports', () => {
       return TINY_PNG;
     };
     const originalGetContext = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function getContext(
+    const mockedGetContext = function getContext(
       this: HTMLCanvasElement,
       type: string,
-      options?: CanvasRenderingContext2DSettings,
-    ) {
-      const ctx = originalGetContext.call(this, type as '2d', options);
+      ...args: unknown[]
+    ): RenderingContext | null {
+      const ctx = originalGetContext.call(this, type as never, ...(args as [])) as unknown as
+        | RenderingContext
+        | null;
       if (ctx) return ctx;
       return {
         fillStyle: '',
@@ -87,6 +89,7 @@ describe('bookletImageExports', () => {
         drawImage() {},
       } as unknown as CanvasRenderingContext2D;
     };
+    HTMLCanvasElement.prototype.getContext = mockedGetContext as unknown as HTMLCanvasElement['getContext'];
 
     vi.stubGlobal(
       'fetch',

@@ -9,9 +9,9 @@ describe('setOriginalsSectionPlaybackOverride', () => {
   it('adds and removes section overrides', () => {
     const withOverride = setOriginalsSectionPlaybackOverride(undefined, 'chorus-0', {
       customPlayback: true,
-      chordStyleId: 'jazz',
+      chordStyleId: 'jazzy',
     });
-    expect(withOverride?.['chorus-0']?.chordStyleId).toBe('jazz');
+    expect(withOverride?.['chorus-0']?.chordStyleId).toBe('jazzy');
 
     const cleared = setOriginalsSectionPlaybackOverride(withOverride, 'chorus-0', null);
     expect(cleared).toBeUndefined();

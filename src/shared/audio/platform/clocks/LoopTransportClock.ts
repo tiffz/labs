@@ -6,11 +6,15 @@ export class LoopTransportClock implements AudioClockSource {
   private _audioStartTimeSec = 0;
   private _playing = false;
 
-  constructor(
-    public bpm: number,
-    public timeSignature: TimeSignature,
-    public loopDurationBeats: number,
-  ) {}
+  bpm: number;
+  timeSignature: TimeSignature;
+  loopDurationBeats: number;
+
+  constructor(bpm: number, timeSignature: TimeSignature, loopDurationBeats: number) {
+    this.bpm = bpm;
+    this.timeSignature = timeSignature;
+    this.loopDurationBeats = loopDurationBeats;
+  }
 
   get isPlaying(): boolean {
     return this._playing;

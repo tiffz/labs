@@ -24,7 +24,6 @@ export class MetronomeRuntimeCoordinator {
   private useLegacyClicks = true;
   private clickSample: Awaited<ReturnType<typeof loadClickSample>> = null;
   private clickCtx: AudioContext | null = null;
-  private scheduledUpToBeat = -1;
 
   setPreferences(prefs: MetronomePreferences, baseline: MetronomePreferences): void {
     this.prefs = prefs;
@@ -60,7 +59,6 @@ export class MetronomeRuntimeCoordinator {
     this.enabled = false;
     this.scheduler.stop();
     this.engine?.stop();
-    this.scheduledUpToBeat = -1;
   }
 
   /** Full teardown for unmount: releases the engine's AudioContext and the legacy click context. */
@@ -125,7 +123,7 @@ export class MetronomeRuntimeCoordinator {
   }
 
   resync(): void {
-    this.scheduledUpToBeat = -1;
+    // No look-ahead scheduling state to reset; the engine reschedules on its own.
   }
 
   getEngine(): MetronomeEngine | null {

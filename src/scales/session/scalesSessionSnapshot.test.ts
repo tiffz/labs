@@ -14,7 +14,7 @@ function freshProgress(): ScalesProgressData {
   const cId = 'C-pentascale-major';
   const stageId = findExercise(cId)!.exercise.stages[0].id;
   return {
-    version: 3,
+    version: 4,
     currentTierId: 'tier-0',
     exercises: {
       [cId]: {

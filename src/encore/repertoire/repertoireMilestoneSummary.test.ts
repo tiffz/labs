@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { EncoreMilestoneDefinition, EncoreSong } from '../types';
 import { milestoneProgressSummary } from './repertoireMilestoneSummary';
 
-function song(partial: Partial<EncoreSong> & Pick<EncoreSong, 'id' | 'title' | 'artist' | 'journalMarkdown' | 'createdAt' | 'updatedAt'>): EncoreSong {
+function song(partial: Partial<EncoreSong> & Pick<EncoreSong, 'id' | 'title' | 'artist' | 'createdAt' | 'updatedAt'>): EncoreSong {
   return {
     journalMarkdown: '',
     ...partial,

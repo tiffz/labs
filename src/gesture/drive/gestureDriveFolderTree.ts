@@ -26,11 +26,12 @@ async function findOrCreateSubfolder(
 /** Ensures nested Drive folders under a pack root; caches by collection-relative path. */
 export class GestureDriveFolderCache {
   private readonly cache = new Map<string, string>();
+  private readonly accessToken: string;
+  private readonly packFolderId: string;
 
-  constructor(
-    private readonly accessToken: string,
-    private readonly packFolderId: string,
-  ) {
+  constructor(accessToken: string, packFolderId: string) {
+    this.accessToken = accessToken;
+    this.packFolderId = packFolderId;
     this.cache.set('', packFolderId);
   }
 

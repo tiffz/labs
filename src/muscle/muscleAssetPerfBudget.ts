@@ -21,12 +21,10 @@ const ATLAS_COMPLETE_ID = 'atlas_complete';
 
 export type MuscleManifestMesh = {
   nodeId: string;
-  meshName: string;
-  triangleCount: number;
+  triangleCount?: number;
 };
 
 export type MuscleManifestRegion = {
-  region: string;
   meshes?: MuscleManifestMesh[];
 };
 
@@ -49,11 +47,12 @@ export function auditMuscleManifestTriangleBudgets(manifest: MuscleManifest): st
 
     let regionTotal = 0;
     for (const mesh of entry.meshes) {
-      regionTotal += mesh.triangleCount;
+      const triangleCount = mesh.triangleCount ?? 0;
+      regionTotal += triangleCount;
       const meshCap = skinMeshTriangleCap(mesh.nodeId);
-      if (mesh.triangleCount > meshCap) {
+      if (triangleCount > meshCap) {
         violations.push(
-          `${regionId}/${mesh.nodeId}: ${mesh.triangleCount.toLocaleString()} tris exceeds mesh cap ${meshCap.toLocaleString()}`,
+          `${regionId}/${mesh.nodeId}: ${triangleCount.toLocaleString()} tris exceeds mesh cap ${meshCap.toLocaleString()}`,
         );
       }
     }

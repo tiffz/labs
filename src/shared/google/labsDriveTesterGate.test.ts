@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   getLabsDriveBackupRestrictionHashesFromEnv,
   isEmailAllowedLabsDriveBackup,
@@ -26,10 +26,9 @@ describe('labsDriveTesterGate', () => {
 
   describe('isEmailAllowedLabsDriveBackup', () => {
     it('allows any signed-in user when optional restriction list is unset', async () => {
-      const prev = import.meta.env.VITE_LABS_DRIVE_TESTER_HASHES;
-      import.meta.env.VITE_LABS_DRIVE_TESTER_HASHES = '';
+      vi.stubEnv('VITE_LABS_DRIVE_TESTER_HASHES', '');
       expect(await isEmailAllowedLabsDriveBackup('user@example.com')).toBe(true);
-      import.meta.env.VITE_LABS_DRIVE_TESTER_HASHES = prev;
+      vi.unstubAllEnvs();
     });
 
     it('returns false for empty email', async () => {
@@ -39,10 +38,9 @@ describe('labsDriveTesterGate', () => {
 
   describe('getLabsDriveBackupRestrictionHashesFromEnv', () => {
     it('reads only the Drive-specific env var', () => {
-      const prev = import.meta.env.VITE_LABS_DRIVE_TESTER_HASHES;
-      import.meta.env.VITE_LABS_DRIVE_TESTER_HASHES = 'abcd'.repeat(16);
+      vi.stubEnv('VITE_LABS_DRIVE_TESTER_HASHES', 'abcd'.repeat(16));
       expect(getLabsDriveBackupRestrictionHashesFromEnv().size).toBe(1);
-      import.meta.env.VITE_LABS_DRIVE_TESTER_HASHES = prev;
+      vi.unstubAllEnvs();
     });
   });
 });

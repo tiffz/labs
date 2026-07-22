@@ -94,7 +94,7 @@ describe('LabsBlockingJobProvider', () => {
   it('silent jobs do not arm beforeunload or render the snackbar', async () => {
     const { api } = renderProvider();
     const beforeUnloadAddCount = () =>
-      addEventSpy.mock.calls.filter((c) => c[0] === 'beforeunload').length;
+      addEventSpy.mock.calls.filter((c: unknown[]) => c[0] === 'beforeunload').length;
 
     let resolveFn!: () => void;
     const promise = new Promise<void>((r) => {

@@ -26,7 +26,6 @@ function song(partial: Partial<EncoreSong> & { id: string; title: string; artist
 function perf(partial: Partial<EncorePerformance> & { id: string; songId: string; venueTag: string }): EncorePerformance {
   return {
     date: '2026-05-01',
-    eventName: '',
     notes: '',
     createdAt: NOW,
     updatedAt: NOW,

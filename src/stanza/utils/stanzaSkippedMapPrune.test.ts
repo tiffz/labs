@@ -8,7 +8,7 @@ function seg(id: string, start: number, end: number): DerivedSegment {
 
 describe('pruneStanzaSkippedBySegmentId', () => {
   it('drops skip keys that no longer match live segments', () => {
-    const skipped = {
+    const skipped: Record<string, true> = {
       'stanzaSeg:__stanza_start__:m1': true,
       'stanzaSeg:m1:__stanza_end__': true,
     };

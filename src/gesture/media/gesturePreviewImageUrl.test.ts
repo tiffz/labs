@@ -56,7 +56,7 @@ describe('gesturePreviewImageUrl', () => {
     vi.mocked(mediaFetch.fetchAndCacheGestureMediaBlob).mockResolvedValue(null);
     vi.mocked(mediaFetch.peekCachedGestureMediaUrl).mockReturnValue(null);
     vi.mocked(mediaFetch.resolveGesturePreviewTierUrl).mockImplementation(
-      async (token: string, fileId: string) =>
+      async (token: string | null, fileId: string) =>
         token
           ? `https://lh3.googleusercontent.com/${fileId}=s320`
           : `https://drive.google.com/thumbnail?id=${fileId}&sz=w320`,

@@ -28,7 +28,7 @@ describe('stanzaDriveSongNeedsMediaDownload', () => {
       stanzaDriveSongNeedsMediaDownload(
         row({
           driveSourceFileId: 'file1',
-          localAudioBlob: new Blob([1], { type: 'audio/mpeg' }),
+          localAudioBlob: new Blob(['x'], { type: 'audio/mpeg' }),
         }),
       ),
     ).toBe(false);

@@ -154,11 +154,11 @@ describe('readDataTransferDrop', () => {
                 isDirectory: false,
                 name: file.name,
                 file: (cb: (f: File) => void) => cb(file),
-              })) as FileSystemEntry[],
+              })) as unknown as FileSystemEntry[],
             );
           },
         }),
-      } as FileSystemEntry;
+      } as unknown as FileSystemEntry;
     };
 
     const fileA = new File(['a'], 'a.jpg', { type: 'image/jpeg' });
@@ -194,7 +194,7 @@ describe('readDataTransferDrop', () => {
             read = true;
           },
         }),
-      } as FileSystemEntry;
+      } as unknown as FileSystemEntry;
     };
 
     const snapshot = {

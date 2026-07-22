@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi, type Mock } from 'vitest';
 
 /** Minimal mock GainNode with spied AudioParam. */
 export function createMockGainNode() {
@@ -44,11 +44,11 @@ export interface MockAudioContext {
   currentTime: number;
   state: AudioContextState;
   destination: AudioDestinationNode;
-  createGain: ReturnType<typeof vi.fn>;
-  createBufferSource: ReturnType<typeof vi.fn>;
-  decodeAudioData: ReturnType<typeof vi.fn>;
-  resume: ReturnType<typeof vi.fn>;
-  close: ReturnType<typeof vi.fn>;
+  createGain: Mock<() => ReturnType<typeof createMockGainNode>>;
+  createBufferSource: Mock<() => AudioBufferSourceNode & { _end: () => void }>;
+  decodeAudioData: Mock<(...args: unknown[]) => Promise<AudioBuffer>>;
+  resume: Mock<() => Promise<void>>;
+  close: Mock<() => Promise<void>>;
   _sources: Array<AudioBufferSourceNode & { _end: () => void }>;
   _gains: Array<ReturnType<typeof createMockGainNode>>;
 }

@@ -15,10 +15,12 @@ const stackedPerformance: EncorePerformance = {
   date: '2026-06-01',
   venueTag: 'Club',
   videos: [
-    { id: 'v1', videoTargetDriveFileId: 'drive-primary' },
-    { id: 'v2', externalVideoUrl: 'https://www.youtube.com/watch?v=abc123' },
+    { id: 'v1', videoTargetDriveFileId: 'drive-primary', createdAt: '2026-06-01T00:00:00.000Z' },
+    { id: 'v2', externalVideoUrl: 'https://www.youtube.com/watch?v=abc123', createdAt: '2026-06-01T00:00:00.000Z' },
   ],
   primaryVideoId: 'v1',
+  createdAt: '2026-06-01T00:00:00.000Z',
+  updatedAt: '2026-06-01T00:00:00.000Z',
 };
 
 describe('PerformanceExtraVideosChip', () => {

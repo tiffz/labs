@@ -147,7 +147,7 @@ function WideSparkline(props: { values: number[]; labels: string[]; color: strin
           points={`0,${h} ${pts.join(' ')} ${w},${h}`}
         />
         <polyline fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" points={pts.join(' ')} />
-        {values.map((v, i) =>
+        {values.map((_, i) =>
           i % labelEvery === 0 ? (
             <text key={i} x={(i / denom) * w} y={h + 22} textAnchor="middle" fill="currentColor" fontSize="11" opacity="0.6">
               {labels[i] ?? ''}

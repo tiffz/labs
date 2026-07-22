@@ -24,7 +24,8 @@ describe('createFacingSpreadPdf', () => {
       fillRect() {},
       drawImage() {},
     };
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as unknown as CanvasRenderingContext2D);
+    // getContext is overloaded; the spy resolves to the WebGPU signature, so cast the 2D mock to that param type.
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as unknown as GPUCanvasContext);
     vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue(TINY_PNG);
   });
 

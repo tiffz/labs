@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { ScalesProgressData } from '../progress/types';
 import { assessScalesDriveBackupConflict, shouldPromptScalesDriveMerge } from './scalesDriveConflict';
-import type { ScalesDriveEnvelopeV1 } from './scalesDriveEnvelope';
+import { SCALES_DRIVE_APP_ID, type ScalesDriveEnvelopeV1 } from './scalesDriveEnvelope';
 
 function envelope(overrides: Partial<ScalesDriveEnvelopeV1> = {}): ScalesDriveEnvelopeV1 {
   return {
-    version: 1,
+    schemaVersion: 1,
+    app: SCALES_DRIVE_APP_ID,
     exportedAt: '2026-06-03T00:00:00.000Z',
     payload: {
       version: 4,

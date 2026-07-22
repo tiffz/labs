@@ -32,7 +32,7 @@ describe('scrapboardStoryGenerate', () => {
       layouts.reduce((sum, row) => sum + row.conventionality, 0) / Math.max(1, layouts.length);
     expect(avg).toBeGreaterThan(uniformAvg - 0.02);
     const bleedPicks = picks.filter(
-      (row) => row.conventionality < 0.2 || /bleed/i.test(row.id) || /bleed/i.test(row.label),
+      (row) => row.conventionality < 0.2 || /bleed/i.test(row.id) || /bleed/i.test(row.label ?? ''),
     ).length;
     expect(bleedPicks / picks.length).toBeLessThan(0.25);
   });
@@ -42,7 +42,7 @@ describe('scrapboardStoryGenerate', () => {
     const plan = generateStoryPage(4242, layout);
     expect(plan.panels).toHaveLength(layout.panels.length);
     expect(plan.cast.length).toBeGreaterThanOrEqual(2);
-    const castNames = plan.cast.map((c) => c.label);
+    const castNames = plan.cast.map((c) => c.label).filter((name): name is string => Boolean(name));
     const dialogue = plan.panels.flatMap((p) => p.blocks).filter((b) => b.kind === 'dialogue');
     expect(dialogue.length).toBeGreaterThan(0);
     const named = dialogue.filter((b) => castNames.some((name) => b.content.includes(name)));

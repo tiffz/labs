@@ -5,9 +5,15 @@ import type { ParsedRhythm, TimeSignature } from '../types';
 const timeSignature: TimeSignature = { numerator: 4, denominator: 4 };
 const rhythm: ParsedRhythm = {
   isValid: true,
-  measures: [{ notes: [{ sound: 'dum', duration: 'sixteenth', durationInSixteenths: 16, isDotted: false }] }],
+  measures: [
+    {
+      notes: [{ sound: 'dum', duration: 'sixteenth', durationInSixteenths: 16, isDotted: false }],
+      totalDuration: 16,
+    },
+  ],
   timeSignature,
   repeats: [],
+  measureMapping: [{ sourceMeasureIndex: 0, sourceStringIndex: 0 }],
 };
 
 describe('exportDrumsScoreSheet', () => {

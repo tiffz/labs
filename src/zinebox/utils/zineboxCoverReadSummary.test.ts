@@ -15,6 +15,7 @@ function comic(
     id: 'c',
     title: 'Test',
     source: 'Local',
+    fileId: 'c',
     filename: 'test.pdf',
     coverThumbnailBase64: '',
     readStatus,

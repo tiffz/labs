@@ -5,7 +5,7 @@ import type { ScalesProgressData } from '../progress/types';
 
 function freshProgress(): ScalesProgressData {
   return {
-    version: 3,
+    version: 4,
     exercises: {},
     currentTierId: 'tier-0',
     seenOnboarding: false,
