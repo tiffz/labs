@@ -5,6 +5,7 @@ import type {
   EncoreSong,
 } from '../types';
 import {
+  SONG_MERGE_POLICY,
   exerciseRunAnswerCount,
   exerciseRunHasContent,
   isBlankExerciseAnswer,
@@ -138,6 +139,58 @@ describe('mergeSongPreservingExercises', () => {
     expect(exerciseRunAnswerCount(merged.practiceExerciseRuns![0])).toBe(3);
     // Scalar fields still take the newer row's metadata.
     expect(merged.updatedAt).toBe('2026-06-01T00:00:00.000Z');
+  });
+});
+
+describe('SONG_MERGE_POLICY', () => {
+  // A fixture with EVERY EncoreSong key present and non-empty. It is the belt-and-suspenders partner
+  // to the `satisfies Record<keyof EncoreSong, MergePolicy>` compile check: adding a synced field
+  // fails to compile until it is classified in the policy, AND fails this test until it is added to
+  // this fixture — so the policy can never silently omit a real field (or list a stale one).
+  const fullyPopulatedSong: EncoreSong = {
+    id: 's',
+    title: 'T',
+    artist: 'A',
+    albumArtUrl: 'https://art/x',
+    spotifyTrackId: 'spot-1',
+    youtubeVideoId: 'yt-1',
+    referenceLinks: [{ id: 'r', source: 'youtube', youtubeVideoId: 'yt-1' }],
+    backingLinks: [{ id: 'b', source: 'youtube', youtubeVideoId: 'yt-2' }],
+    performanceKey: 'A',
+    journalMarkdown: 'journal',
+    lyricsSourceGenius: '[Verse 1]\nla la',
+    practiceExerciseRuns: [nineQuestionsRun('run', ['a'], '2026-01-01T00:00:00.000Z')],
+    sheetMusicDriveFileId: 'sheet-1',
+    backingTrackDriveFileId: 'backtrack-1',
+    recordingDriveFileIds: ['rec-1'],
+    attachments: [{ kind: 'chart', driveFileId: 'att-1' }],
+    miscResources: [{ id: 'm', kind: 'link', label: 'L', url: 'https://x/m', createdAt: 't' }],
+    practicing: true,
+    practiceRemovedAt: '2026-01-01T00:00:00.000Z',
+    milestoneProgress: { 'mile-1': { state: 'done' } },
+    songOnlyMilestones: [{ id: 'so', label: 'L', state: 'todo' }],
+    tags: ['Pop'],
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-06-01T00:00:00.000Z',
+  };
+
+  it('classifies every EncoreSong field (keys match a fully-populated fixture)', () => {
+    expect(Object.keys(SONG_MERGE_POLICY).sort()).toEqual(Object.keys(fullyPopulatedSong).sort());
+  });
+
+  it('drives the live merge to protect exercise runs (rich-older vs sparse-newer)', () => {
+    // The one field the live pull merge guards (ADR 0019). Its disposition powers the merge below.
+    expect(SONG_MERGE_POLICY.practiceExerciseRuns).toBe('exercise-runs');
+    const richOlder = song('s', '2026-01-01T00:00:00.000Z', [
+      ownWordsRun('run-1', ['a', 'b'], '2026-01-01T00:00:00.000Z'),
+    ]);
+    const sparseNewer = song('s', '2026-09-01T00:00:00.000Z', [
+      ownWordsRun('run-1', ['', ''], '2026-09-01T00:00:00.000Z'),
+    ]);
+    const merged = mergeSongPreservingExercises(sparseNewer, richOlder);
+    expect(exerciseRunAnswerCount(merged.practiceExerciseRuns![0])).toBe(2);
+    // Scalars stay whole-row LWW on the live merge (documented ADR 0019 trade-off).
+    expect(merged.updatedAt).toBe('2026-09-01T00:00:00.000Z');
   });
 });
 

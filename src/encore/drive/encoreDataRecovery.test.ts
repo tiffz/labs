@@ -12,6 +12,7 @@ import {
   type RepertoireHistorySnapshot,
   type SongRecoveryEntry,
 } from './encoreDataRecovery';
+import { SONG_MERGE_POLICY } from './encoreRepertoireMerge';
 
 function song(id: string, over: Partial<EncoreSong> = {}): EncoreSong {
   return {
@@ -192,5 +193,47 @@ describe('buildSongRestore', () => {
     const next = buildSongRestore(missingEntry, undefined, ['mediaRefs', 'lyrics']);
     expect(next?.id).toBe('s');
     expect(next?.lyricsSourceGenius).toBe('recovered lyrics');
+  });
+});
+
+describe('recovery reconstruction honors SONG_MERGE_POLICY for every non-lww field', () => {
+  // Rich historical copy: every union/preserve field carries content.
+  const richHistorical = song('rich', {
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    albumArtUrl: 'https://art/x',
+    spotifyTrackId: 'spot-1',
+    youtubeVideoId: 'yt-1',
+    performanceKey: 'A',
+    referenceLinks: [mediaLink('ref-1')],
+    backingLinks: [mediaLink('bk-1')],
+    journalMarkdown: 'my journal',
+    lyricsSourceGenius: '[Verse 1]\nla la',
+    practiceExerciseRuns: [nineQuestions('run-1', ['answer'])],
+    recordingDriveFileIds: ['rec-1'],
+    attachments: [{ kind: 'chart', driveFileId: 'att-1' }],
+    miscResources: [misc('m-1')],
+  });
+  // Sparse but NEWER current copy: none of that content, newer clock — the #1/#2/#3 loss shape.
+  const sparseNewer = song('rich', { updatedAt: '2026-09-01T00:00:00.000Z', journalMarkdown: '' });
+
+  const plan = buildDataRecoveryPlan(
+    { songs: [sparseNewer], performances: NO_PERF },
+    [snap('rev:1', [richHistorical])],
+  );
+  const recovered = plan[0]?.recoveredSong;
+
+  const NON_LWW_FIELDS = (Object.keys(SONG_MERGE_POLICY) as (keyof typeof SONG_MERGE_POLICY)[]).filter(
+    (k) => SONG_MERGE_POLICY[k] !== 'lww',
+  );
+
+  it('reconstructs a recovery entry for the sparse current song', () => {
+    expect(recovered).toBeDefined();
+  });
+
+  // One assertion per non-lww field: a newly classified union/preserve field with no merge wiring
+  // (or one missing from the rich fixture above) fails here as well as at the type level.
+  it.each(NON_LWW_FIELDS)('preserves rich %s over the newer sparse copy', (field) => {
+    expect(recovered?.[field]).toBeDefined();
+    expect(recovered?.[field]).toEqual(richHistorical[field]);
   });
 });

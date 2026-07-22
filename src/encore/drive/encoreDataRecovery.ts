@@ -1,11 +1,14 @@
 import type {
-  EncoreMediaLink,
-  EncoreMiscResource,
   EncorePerformance,
   EncoreSong,
   EncoreSongAttachment,
 } from '../types';
-import { mergeExerciseRunLists, songExerciseAnswerCount } from './encoreRepertoireMerge';
+import {
+  SONG_MERGE_POLICY,
+  mergeExerciseRunLists,
+  songExerciseAnswerCount,
+  songMergePolicyKeys,
+} from './encoreRepertoireMerge';
 
 /**
  * Generalized data-loss recovery from history (Drive revisions + local pre-sync snapshots).
@@ -119,37 +122,68 @@ function unionStrings(
   return [...set];
 }
 
-/** Union one historical copy into the accumulator. Accumulator content always wins for scalars. */
+/**
+ * Union one historical copy into the accumulator. Accumulator content always wins for scalars.
+ *
+ * Driven field-by-field from {@link SONG_MERGE_POLICY} (see `encoreRepertoireMerge.ts`): every
+ * `EncoreSong` key is routed by its disposition, so a newly added synced field cannot be silently
+ * dropped from the richest-copy reconstruction — it must be classified in the policy (compile-
+ * enforced) and is processed here at runtime. `acc` (the richer/current copy) wins scalars; `hist`
+ * only contributes content `acc` is missing.
+ */
 function unionSongPair(acc: EncoreSong, hist: EncoreSong): EncoreSong {
   const next: EncoreSong = { ...acc };
+  const write = (key: keyof EncoreSong, value: unknown) => {
+    (next as unknown as Record<string, unknown>)[key] = value;
+  };
 
-  const runs = mergeExerciseRunLists(acc.practiceExerciseRuns, hist.practiceExerciseRuns);
-  if (runs) next.practiceExerciseRuns = runs;
-
-  const ref = unionById<EncoreMediaLink>(acc.referenceLinks, hist.referenceLinks);
-  if (ref) next.referenceLinks = ref;
-  const backing = unionById<EncoreMediaLink>(acc.backingLinks, hist.backingLinks);
-  if (backing) next.backingLinks = backing;
-
-  const attachments = unionAttachments(acc.attachments, hist.attachments);
-  if (attachments) next.attachments = attachments;
-  const recordings = unionStrings(acc.recordingDriveFileIds, hist.recordingDriveFileIds);
-  if (recordings) next.recordingDriveFileIds = recordings;
-
-  const misc = unionById<EncoreMiscResource>(acc.miscResources, hist.miscResources);
-  if (misc) next.miscResources = misc;
-
-  if (isBlankText(next.lyricsSourceGenius) && !isBlankText(hist.lyricsSourceGenius)) {
-    next.lyricsSourceGenius = hist.lyricsSourceGenius;
+  for (const key of songMergePolicyKeys()) {
+    const policy = SONG_MERGE_POLICY[key];
+    switch (policy) {
+      case 'lww':
+        // `acc` wins: next[key] already carries the accumulator's value.
+        break;
+      case 'exercise-runs': {
+        const runs = mergeExerciseRunLists(acc.practiceExerciseRuns, hist.practiceExerciseRuns);
+        if (runs) next.practiceExerciseRuns = runs;
+        break;
+      }
+      case 'union-by-id': {
+        const merged = unionById<{ id: string }>(
+          acc[key] as { id: string }[] | undefined,
+          hist[key] as { id: string }[] | undefined,
+        );
+        if (merged) write(key, merged);
+        break;
+      }
+      case 'union-by-drive-file-id': {
+        const merged = unionAttachments(acc.attachments, hist.attachments);
+        if (merged) next.attachments = merged;
+        break;
+      }
+      case 'union-scalar-set': {
+        const merged = unionStrings(acc.recordingDriveFileIds, hist.recordingDriveFileIds);
+        if (merged) next.recordingDriveFileIds = merged;
+        break;
+      }
+      case 'preserve-filled-text': {
+        const accText = acc[key] as string | undefined;
+        const histText = hist[key] as string | undefined;
+        if (isBlankText(accText) && !isBlankText(histText)) write(key, histText);
+        break;
+      }
+      case 'preserve-filled-scalar': {
+        const accVal = acc[key] as string | undefined;
+        const histVal = hist[key] as string | undefined;
+        write(key, accVal ?? histVal);
+        break;
+      }
+      default: {
+        const exhaustive: never = policy;
+        throw new Error(`Unhandled song merge policy: ${String(exhaustive)}`);
+      }
+    }
   }
-  if (isBlankText(next.journalMarkdown) && !isBlankText(hist.journalMarkdown)) {
-    next.journalMarkdown = hist.journalMarkdown;
-  }
-
-  next.youtubeVideoId = next.youtubeVideoId ?? hist.youtubeVideoId;
-  next.spotifyTrackId = next.spotifyTrackId ?? hist.spotifyTrackId;
-  next.performanceKey = next.performanceKey ?? hist.performanceKey;
-  next.albumArtUrl = next.albumArtUrl ?? hist.albumArtUrl;
 
   return next;
 }

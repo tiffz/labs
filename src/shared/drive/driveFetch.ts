@@ -4,6 +4,12 @@ import {
   formatDriveRequestFailure,
   isTransientDriveHttpStatus,
 } from './driveFetchErrors';
+import {
+  DRIVE_MAX_RETRY_ATTEMPTS,
+  computeDriveRetryBackoffMs,
+  computeDriveRetryWaitMs,
+  runWithDriveConcurrencyLimit,
+} from './driveRequestGovernor';
 import { uploadDriveFileResumableChunked } from './driveResumableUpload';
 import { tryRefreshGoogleAccessTokenViaBff } from '../session/labsGoogleSessionPort';
 
@@ -16,29 +22,82 @@ export {
 const DRIVE_BASE = 'https://www.googleapis.com/drive/v3';
 const UPLOAD_BASE = 'https://www.googleapis.com/upload/drive/v3';
 
-const TRANSIENT_RETRY_DELAYS_MS = [0, 500, 1500] as const;
+function driveRetrySleep(ms: number): Promise<void> {
+  if (ms <= 0) return Promise.resolve();
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** A thrown `fetch` error is retryable unless the browser knows it is offline (fail fast then). */
+function isRetryableDriveNetworkError(err: unknown): boolean {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return false;
+  if (err instanceof TypeError) return true;
+  if (err instanceof DOMException && (err.name === 'AbortError' || err.name === 'NetworkError')) {
+    return true;
+  }
+  const msg = err instanceof Error ? err.message : String(err);
+  return /failed to fetch|network|load failed|timeout/i.test(msg);
+}
 
 /**
- * Authorized Drive fetch with one 401 → BFF cookie refresh → retry. Access tokens
- * expire mid-session (1h TTL); when the BFF holds a live session this converts what
- * used to surface as "sign in again" into a silent recovery. Never opens GIS
- * (ADR 0010/0011) — a second 401 falls through to the caller's error path.
+ * Authorized Drive fetch, the single choke point every Labs app's Drive I/O flows through.
+ *
+ * - **One 401 → BFF cookie refresh → retry.** Access tokens expire mid-session (1h TTL); when the
+ *   BFF holds a live session this converts what used to surface as "sign in again" into a silent
+ *   recovery. Never opens GIS (ADR 0010/0011) — a second 401 falls through to the caller's error path.
+ * - **Bounded global concurrency + jittered, `Retry-After`-honoring retries** (Drive red-team rec #3,
+ *   see `driveRequestGovernor.ts`): caps in-flight requests so a fan-out cannot burst, and retries
+ *   429/5xx/network with full jitter so retries never arrive as a synchronized wave.
+ *
+ * 2xx and non-retryable errors (400/403/404/412/…) are returned to the caller unchanged.
  */
 async function driveFetch(
   accessToken: string,
   url: string,
   init?: Omit<RequestInit, 'headers'> & { headers?: Record<string, string> },
 ): Promise<Response> {
-  const doFetch = (token: string) =>
-    fetch(url, {
-      ...init,
-      headers: { ...(init?.headers ?? {}), Authorization: `Bearer ${token}` },
-    });
-  const res = await doFetch(accessToken);
-  if (res.status !== 401) return res;
-  const refreshed = await tryRefreshGoogleAccessTokenViaBff();
-  if (!refreshed || refreshed === accessToken) return res;
-  return doFetch(refreshed);
+  return runWithDriveConcurrencyLimit(async () => {
+    const doFetch = (token: string) =>
+      fetch(url, {
+        ...init,
+        headers: { ...(init?.headers ?? {}), Authorization: `Bearer ${token}` },
+      });
+
+    let token = accessToken;
+    let refreshedOnce = false;
+    let retries = 0;
+    for (;;) {
+      let res: Response;
+      try {
+        res = await doFetch(token);
+      } catch (err) {
+        if (retries < DRIVE_MAX_RETRY_ATTEMPTS && isRetryableDriveNetworkError(err)) {
+          retries += 1;
+          await driveRetrySleep(computeDriveRetryBackoffMs(retries));
+          continue;
+        }
+        throw err;
+      }
+
+      if (res.status === 401 && !refreshedOnce) {
+        refreshedOnce = true;
+        const refreshed = await tryRefreshGoogleAccessTokenViaBff();
+        if (!refreshed || refreshed === token) return res;
+        token = refreshed;
+        continue; // token refresh does not consume the transient-retry budget
+      }
+
+      if (retries < DRIVE_MAX_RETRY_ATTEMPTS && isTransientDriveHttpStatus(res.status)) {
+        retries += 1;
+        const waitMs = computeDriveRetryWaitMs(res.headers.get('Retry-After'), retries, Date.now());
+        // Drain the discarded body so the socket can be reused before we back off.
+        await res.text().catch(() => undefined);
+        await driveRetrySleep(waitMs);
+        continue;
+      }
+
+      return res;
+    }
+  });
 }
 
 /** Drive v3 rejects `etag` in `fields` masks; use the HTTP `ETag` response header for concurrency (`If-Match`). */
@@ -353,27 +412,18 @@ export async function driveCreateAnyoneReaderPermission(
   fileId: string
 ): Promise<void> {
   const url = `${DRIVE_BASE}/files/${encodeURIComponent(fileId)}/permissions`;
-  const init = {
+  // Transient (429/5xx) retries with jitter + Retry-After live in driveFetch now.
+  const res = await driveFetch(accessToken, url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       role: 'reader',
       type: 'anyone',
     }),
-  };
-  let lastStatus = 0;
-  let lastText = '';
-  for (let attempt = 0; attempt < TRANSIENT_RETRY_DELAYS_MS.length; attempt += 1) {
-    if (TRANSIENT_RETRY_DELAYS_MS[attempt] > 0) {
-      await new Promise((r) => setTimeout(r, TRANSIENT_RETRY_DELAYS_MS[attempt]));
-    }
-    const res = await driveFetch(accessToken, url, init);
-    if (res.ok) return;
-    lastStatus = res.status;
-    lastText = await res.text();
-    if (!isTransientDriveHttpStatus(lastStatus)) break;
-  }
-  throw new DriveHttpError(formatDriveRequestFailure('POST', 'files/permissions', lastStatus, lastText), lastStatus, lastText);
+  });
+  if (res.ok) return;
+  const text = await res.text();
+  throw new DriveHttpError(formatDriveRequestFailure('POST', 'files/permissions', res.status, text), res.status, text);
 }
 
 export type DriveFileContentFingerprint = {
@@ -415,23 +465,11 @@ export async function driveGetFileMetadata(
     fields,
     supportsAllDrives: 'true',
   }).toString()}`;
-  let lastStatus = 0;
-  let lastText = '';
-  let res: Response | null = null;
-  for (let attempt = 0; attempt < TRANSIENT_RETRY_DELAYS_MS.length; attempt += 1) {
-    if (TRANSIENT_RETRY_DELAYS_MS[attempt] > 0) {
-      await new Promise((r) => setTimeout(r, TRANSIENT_RETRY_DELAYS_MS[attempt]));
-    }
-    res = await driveFetch(accessToken, `${DRIVE_BASE}${path}${qs}`);
-    if (res.ok) break;
-    lastStatus = res.status;
-    lastText = await res.text();
-    if (!isTransientDriveHttpStatus(lastStatus)) {
-      throw new DriveHttpError(formatDriveRequestFailure('GET', path, lastStatus, lastText), lastStatus, lastText);
-    }
-  }
-  if (!res?.ok) {
-    throw new DriveHttpError(formatDriveRequestFailure('GET', path, lastStatus, lastText), lastStatus, lastText);
+  // driveFetch governs transient (429/5xx) retries with jitter + Retry-After.
+  const res = await driveFetch(accessToken, `${DRIVE_BASE}${path}${qs}`);
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new DriveHttpError(formatDriveRequestFailure('GET', path, res.status, errText), res.status, errText);
   }
   const text = await res.text();
   const data = JSON.parse(text) as {
@@ -518,21 +556,13 @@ export async function driveResolveThumbnailLink(accessToken: string, fileId: str
     fields: 'mimeType,thumbnailLink,shortcutDetails',
     supportsAllDrives: 'true',
   }).toString()}`;
-  let lastStatus = 0;
-  let res: Response | null = null;
-  for (let attempt = 0; attempt < TRANSIENT_RETRY_DELAYS_MS.length; attempt += 1) {
-    if (TRANSIENT_RETRY_DELAYS_MS[attempt] > 0) {
-      await new Promise((r) => setTimeout(r, TRANSIENT_RETRY_DELAYS_MS[attempt]));
-    }
-    res = await driveFetch(accessToken, `${DRIVE_BASE}${path}${qs}`);
-    if (res.ok) break;
-    lastStatus = res.status;
-    await res.text();
-    if (!isTransientDriveHttpStatus(lastStatus)) {
-      return null;
-    }
+  // driveFetch governs transient (429/5xx) retries with jitter + Retry-After; a persistent
+  // failure returns a non-ok response here, which we treat as "no thumbnail" (null).
+  const res = await driveFetch(accessToken, `${DRIVE_BASE}${path}${qs}`);
+  if (!res.ok) {
+    await res.text().catch(() => undefined);
+    return null;
   }
-  if (!res?.ok) return null;
   const text = await res.text();
   try {
     const data = JSON.parse(text) as {
@@ -671,49 +701,31 @@ export async function driveFileHasAnyoneReader(
   fileId: string,
 ): Promise<boolean> {
   const id = fileId.trim();
-  let lastStatus = 0;
-  let lastText = '';
-  for (let attempt = 0; attempt < TRANSIENT_RETRY_DELAYS_MS.length; attempt += 1) {
-    if (TRANSIENT_RETRY_DELAYS_MS[attempt] > 0) {
-      await new Promise((r) => setTimeout(r, TRANSIENT_RETRY_DELAYS_MS[attempt]));
+  let pageToken: string | undefined;
+  // driveFetch governs transient (429/5xx) retries per request; a survivor throws below.
+  do {
+    const params = new URLSearchParams({
+      fields: 'nextPageToken,permissions(id,type,role)',
+      pageSize: '100',
+      supportsAllDrives: 'true',
+    });
+    if (pageToken) params.set('pageToken', pageToken);
+    const path = `/files/${encodeURIComponent(id)}/permissions`;
+    const res = await driveFetch(accessToken, `${DRIVE_BASE}${path}?${params}`);
+    const text = await res.text();
+    if (res.ok) {
+      const data = JSON.parse(text) as {
+        nextPageToken?: string;
+        permissions?: Array<{ type?: string; role?: string }>;
+      };
+      if ((data.permissions ?? []).some(permissionGrantsPublicLink)) {
+        return true;
+      }
+      pageToken = data.nextPageToken?.trim() || undefined;
+      continue;
     }
-    let pageToken: string | undefined;
-    let hitTransient = false;
-    do {
-      const params = new URLSearchParams({
-        fields: 'nextPageToken,permissions(id,type,role)',
-        pageSize: '100',
-        supportsAllDrives: 'true',
-      });
-      if (pageToken) params.set('pageToken', pageToken);
-      const path = `/files/${encodeURIComponent(id)}/permissions`;
-      const res = await driveFetch(accessToken, `${DRIVE_BASE}${path}?${params}`);
-      const text = await res.text();
-      if (res.ok) {
-        const data = JSON.parse(text) as {
-          nextPageToken?: string;
-          permissions?: Array<{ type?: string; role?: string }>;
-        };
-        if ((data.permissions ?? []).some(permissionGrantsPublicLink)) {
-          return true;
-        }
-        pageToken = data.nextPageToken?.trim() || undefined;
-        continue;
-      }
-      if (res.status === 404 || res.status === 403) return false;
-      lastStatus = res.status;
-      lastText = text;
-      if (isTransientDriveHttpStatus(res.status)) {
-        hitTransient = true;
-        break;
-      }
-      throw new DriveHttpError(formatDriveRequestFailure('GET', path, res.status, text), res.status, text);
-    } while (pageToken);
-    if (!hitTransient) return false;
-  }
-  throw new DriveHttpError(
-    formatDriveRequestFailure('GET', `/files/${id}/permissions`, lastStatus, lastText),
-    lastStatus,
-    lastText,
-  );
+    if (res.status === 404 || res.status === 403) return false;
+    throw new DriveHttpError(formatDriveRequestFailure('GET', path, res.status, text), res.status, text);
+  } while (pageToken);
+  return false;
 }
