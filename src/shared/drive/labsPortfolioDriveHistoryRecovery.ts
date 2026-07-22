@@ -26,7 +26,28 @@ export async function scanPortfolioProgressRevisions<TEnvelope>(
   const snapshots: PortfolioProgressRevisionSnapshot<TEnvelope>[] = [];
   let revisionsSkipped = 0;
 
-  for (const row of revisionRows.slice(0, maxRevisions)) {
+  // `driveListRevisions` returns Drive's order (oldest → newest), but recovery must
+  // look at the NEWEST revisions: accidental empty overwrites and the daily
+  // `keepForever` pins (see `maybePinDailyDriveFileRevision`) both land at the newest
+  // end. Slicing oldest-first would structurally miss its own pins on files with more
+  // than `maxRevisions` revisions. Sort newest-first before the cap, and always keep
+  // pinned revisions regardless of position — the pruner keeps them for recovery.
+  const withOrder = revisionRows.map((row, index) => ({ row, index }));
+  const newestFirst = [...withOrder].sort((a, b) => {
+    const at = a.row.modifiedTime ?? '';
+    const bt = b.row.modifiedTime ?? '';
+    if (at !== bt) return bt.localeCompare(at);
+    // Fall back to Drive's order (later index = newer) when times tie or are absent.
+    return b.index - a.index;
+  });
+  const capped = newestFirst.slice(0, maxRevisions);
+  const cappedIds = new Set(capped.map((entry) => entry.row.id));
+  const pinnedBeyondCap = newestFirst
+    .slice(maxRevisions)
+    .filter((entry) => entry.row.keepForever && !cappedIds.has(entry.row.id));
+  const rowsToScan = [...capped, ...pinnedBeyondCap].map((entry) => entry.row);
+
+  for (const row of rowsToScan) {
     if (!row.id) continue;
     try {
       const raw = await driveGetRevisionMedia(accessToken, progressFileId, row.id);
