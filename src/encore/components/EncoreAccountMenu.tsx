@@ -262,7 +262,7 @@ export function EncoreAccountMenu(props: {
         }
         meta={
           syncState === 'deferred'
-            ? 'Changes on this device are not backed up yet. Review to resolve.'
+            ? 'Review the changes on this device to back them up.'
             : driveBanner.lastSuccessfulPushAt
               ? `Last sync ${formatRelativeSyncInstant(driveBanner.lastSuccessfulPushAt)}.`
               : syncState === 'error' && syncMessage

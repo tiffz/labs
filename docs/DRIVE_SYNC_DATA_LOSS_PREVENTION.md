@@ -75,9 +75,10 @@ New sync work must use `createLabsPortfolioDriveBackup`; custom hooks require an
 | E2e merge/tombstone smoke            | ✅ shared   | ✅ shared              | ✅ shared          | ✅ shared        | ✅ shared      | ✅ shared  |
 
 † Encore: exercise-run deletes use `encoreExerciseRunTombstones`; song/performance deletes use
-`encoreRepertoireTombstones` — clocked tombstones (`id -> deletedAt`) honored by the pull +
-conflict-resolve merge filters, so a delete does not resurrect **and** a restored/re-edited row with
-a newer clock supersedes its tombstone (no cross-device undo loss). The **core** data-loss layers
+`encoreRepertoireTombstones` — clocked tombstones (`id -> deletedAt`) honored by the pull,
+conflict-**analysis**, and conflict-resolve merge filters, so a delete does not resurrect, a settled
+delete is never surfaced as a conflict choice the merge would then discard, **and** a restored/re-edited
+row with a newer clock supersedes its tombstone (no cross-device undo loss). The **core** data-loss layers
 (delete tombstones, auto-push gate, content-aware merge, pre-merge undo, exercise-run tombstones)
 are asserted wired by `src/encore/drive/driveSyncLayerPresence.test.ts` so the doc cannot out-run
 the code on those; the remaining ✅ rows (412 retry, tab-close flush, revision recovery,

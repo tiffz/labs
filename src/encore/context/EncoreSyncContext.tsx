@@ -350,8 +350,9 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
   const dismissConflict = useCallback(() => {
     setConflict(null);
     setConflictAnalysis(null);
-    // "Decide later" leaves local edits diverged and unpushed (the auto-push gate stays closed until
-    // a reconciling resolve), so surface "not backed up" instead of a false "Backed up" (S4).
+    // "Decide later" leaves local edits diverged from Drive, so surface "not backed up" instead of a
+    // false "Backed up" (S4). If an earlier pull already opened the auto-push gate, a later edit's
+    // push 412s on the stale etag and flips to "error" — also honest, and If-Match blocks the clobber.
     setSyncState('deferred');
   }, []);
 
