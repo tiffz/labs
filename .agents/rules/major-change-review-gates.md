@@ -39,4 +39,13 @@ Skip all major-change gates for bug fixes, polish, docs, and clearly-in-scope sm
 work. When unsure whether a change is "major", the tier decides: on a `protected`
 app, prefer running the gate.
 
-Root cause classes: `product-scope-drift`, `architecture-review-gap`, `ux-design-review-gap`, `qa-escaped-defect`.
+## Auto-merge waits for the QA gate (protected data-loss)
+
+Do not arm auto-merge (`gh pr merge --auto`) on a `protected`-tier PR that touches
+sync, merge, or delete/data-loss paths until
+[`labs-qa-review`](../skills/labs-qa-review/SKILL.md) has passed. Auto-merge lands the
+PR the moment CI goes green, which can beat a still-running review and ship a defect
+the gate would have caught — this is how #99's cross-device data-loss bug (B1) reached
+`main`. Order: run QA, fix blockers, **then** arm auto-merge.
+
+Root cause classes: `product-scope-drift`, `architecture-review-gap`, `ux-design-review-gap`, `qa-escaped-defect`, `qa-gate-bypassed-by-automerge`.
