@@ -1,0 +1,8 @@
+{
+  "total": 586,
+  "byRule": {
+    "complexity": 262,
+    "max-lines-per-function": 324
+  },
+  "note": "Advisory complexity/function-length ratchet across src (rules held off in eslint.config.js). Report-only — never fails. Ratchet DOWN. Regenerate: node scripts/check-complexity-ratchet.mjs --update"
+}
