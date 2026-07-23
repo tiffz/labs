@@ -1,4 +1,4 @@
-import { injectSvgStyle } from '../../shared/notation/vexFlowFontExport';
+import { injectSvgStyle } from '../../shared/vexflow/vexFlowFontExport';
 import {
   DRUMS_SCORE_EXPORT_STAFF_STROKE,
   DRUMS_SCORE_EXPORT_STAFF_STROKE_WIDTH,

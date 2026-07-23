@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // tests pin the readiness contract without a real browser font stack.
 
 const ensureVexFlowFontsLoaded = vi.hoisted(() => vi.fn(() => Promise.resolve()));
-vi.mock('./vexFlowFontExport', () => ({ ensureVexFlowFontsLoaded }));
+vi.mock('../vexflow/vexFlowFontExport', () => ({ ensureVexFlowFontsLoaded }));
 
 import { useVexFlowMusicFontReady } from './useVexFlowMusicFontReady';
 

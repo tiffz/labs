@@ -38,12 +38,11 @@ const GATE_IMPORT = /useVexFlowMusicFontReady|ensureVexFlowFontsLoaded/;
  * the surface genuinely cannot use the gate (say why).
  */
 const FONT_GATE_LEDGER = new Set<string>([
-  // Blocked by the shared-module cycle ratchet: this file lives in `shared/music`, but
-  // both arms of the gate live in `shared/notation`, which already imports `shared/music`.
-  // Importing the gate here adds a `music↔notation` mutual pair that `sharedModuleCycles`
-  // rejects ("break the cycle instead"). Burn down once the gate (or `vexFlowFontExport`)
-  // moves to a cycle-free shared home. The React sibling (MelodiaStaff) is already gated.
-  'shared/music/melodiaVexFirstMeasure.ts',
+  // Empty: every VexFlow notation surface now routes through the music-font gate. The last
+  // holdout (shared/music/melodiaVexFirstMeasure.ts) was unblocked by moving vexFlowFontExport
+  // to the cycle-free leaf shared/vexflow/, so importing ensureVexFlowFontsLoaded from music no
+  // longer creates a music<->notation mutual pair. Keep this set empty — a new ungated surface
+  // must be wired, not ledgered, unless it genuinely cannot use the gate (say why).
 ]);
 
 function listSourceFiles(): string[] {

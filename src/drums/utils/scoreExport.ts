@@ -7,7 +7,7 @@ import {
   ensureVexFlowFontsLoaded,
   injectSvgStyle,
   VEXFLOW_NOTATION_FONTS,
-} from '../../shared/notation/vexFlowFontExport';
+} from '../../shared/vexflow/vexFlowFontExport';
 import { drawDrumsSymbolLegendOnCanvas } from '../../shared/notation/drumSymbols';
 import { createPdfBlobFromCanvas } from '../../shared/utils/labsPdfFromCanvas';
 import { svgElementToCanvas, svgElementToPngBlob } from '../../shared/utils/svgToCanvas';

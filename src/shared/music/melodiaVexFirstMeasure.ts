@@ -1,6 +1,7 @@
 import { Formatter, Renderer, Stave, StaveNote, Voice } from 'vexflow';
 import type { NoteDuration, PianoScore, ScoreNote } from './scoreTypes';
 import { pickMelodyPart } from './melodiaPipeline/partUtils';
+import { ensureVexFlowFontsLoaded } from '../vexflow/vexFlowFontExport';
 
 const DUR_VEX: Record<NoteDuration, string> = {
   whole: 'w',
@@ -27,13 +28,20 @@ function scoreNoteToVexKeys(note: ScoreNote): { keys: string[]; duration: string
   return { keys, duration: d };
 }
 
-/** Renders the first measure of the melody part into `container` (replaces inner HTML). */
-export function drawMelodiaFirstMeasurePreview(
+/**
+ * Renders the first measure of the melody part into `container` (replaces inner HTML).
+ *
+ * Awaits the Bravura/Academico music fonts first (music-font gate): VexFlow 5 paints noteheads as
+ * SVG `<text>`, so drawing before the font loads flashes fallback glyphs offset from the real
+ * symbols. Fonts are cached after first load, so repeat calls resolve immediately.
+ */
+export async function drawMelodiaFirstMeasurePreview(
   container: HTMLDivElement,
   score: PianoScore,
   width = 520,
   height = 220,
-): void {
+): Promise<void> {
+  await ensureVexFlowFontsLoaded(['Bravura', 'Academico']);
   container.innerHTML = '';
   const renderer = new Renderer(container, Renderer.Backends.SVG);
   renderer.resize(width, height);

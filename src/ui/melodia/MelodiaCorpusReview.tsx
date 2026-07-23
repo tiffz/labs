@@ -20,11 +20,17 @@ export default function MelodiaCorpusReview() {
   useEffect(() => {
     const el = hostRef.current;
     if (!el || !normalized) return;
-    try {
-      drawMelodiaFirstMeasurePreview(el, normalized.score);
-    } catch (e) {
-      setParseError(e instanceof Error ? e.message : String(e));
-    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        await drawMelodiaFirstMeasurePreview(el, normalized.score);
+      } catch (e) {
+        if (!cancelled) setParseError(e instanceof Error ? e.message : String(e));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [normalized]);
 
   const onMusicXmlFile = useCallback(
