@@ -771,6 +771,7 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
   /** While this tab is keep-alive hidden, skip rebuilding heavy derived data (Dexie still updates elsewhere). */
   const libraryStatsCacheRef = useRef({ topVenues: [] as [string, number][], totalPerf: 0 });
   const venueOptionsCacheRef = useRef<string[]>([]);
+  const tagFilterOptionsCacheRef = useRef<string[]>([]);
   const perfBySongCacheRef = useRef(new Map<string, EncorePerformance[]>());
   const repertoireTableDataCacheRef = useRef<EncoreRepertoireMrtRow[]>([]);
   const repertoireColumnsCacheRef = useRef<MRT_ColumnDef<EncoreRepertoireMrtRow>[]>([]);
@@ -1003,7 +1004,15 @@ const LibraryScreenBody = memo(function LibraryScreenBody({
     return next;
   }, [heavyListTabActive, repertoireSongs, perfBySong, repertoireExtras.milestoneTemplate]);
 
-  const tagFilterOptions = useMemo(() => collectAllSongTags(songs), [songs]);
+  const tagFilterOptions = useMemo(() => {
+    // Gate like the sibling heavy memos: collectAllSongTags is an O(n) scan +
+    // localeCompare sort over every song; without the tab gate it re-ran on every
+    // song write even while the Library tab was hidden (encore-list-tab-performance).
+    if (!heavyListTabActive) return tagFilterOptionsCacheRef.current;
+    const next = collectAllSongTags(songs);
+    tagFilterOptionsCacheRef.current = next;
+    return next;
+  }, [heavyListTabActive, songs]);
 
   const openSong = useCallback((s: EncoreSong, e?: ReactMouseEvent | globalThis.MouseEvent | null) => {
     const navigate = () => navigateEncore({ kind: 'song', id: s.id });
