@@ -4,7 +4,6 @@ import {
   buildWireFromTables,
   defaultRepertoireExtrasRow,
   maxRepertoireClock,
-  mergeRecordsByUpdatedAt,
   mergeRepertoireExtras,
   parseRepertoireWire,
   repertoireExtrasFromWire,
@@ -17,10 +16,15 @@ import { snapshotEncoreRepertoireBeforeSync } from './encoreDriveUndoSnapshots';
 import { isShardedSyncEnabled, pullChangedShards } from './repertoireSharded';
 import {
   mergeExerciseRunLists,
+  mergePerformancePreservingVideos,
+  mergePerformanceRecords,
   mergeSongPreservingExercises,
   mergeSongRecords,
   songExerciseAnswerCount,
 } from './encoreRepertoireMerge';
+import {
+  assertLabsDriveWriteAllowed,
+} from '../../shared/drive/labsDriveSyncGuard';
 
 export type SyncConflictReason = 'local_and_remote_changed';
 
@@ -88,7 +92,18 @@ export type PullRepertoireOptions = {
 
 export type PushRepertoireOptions = {
   onProgress?: RepertoireSyncProgress;
+  /**
+   * Auto-push data-loss gate (P0). When present, the push refuses to run unless a reconciling pull
+   * has succeeded this session (`autoPushAllowed`) or the caller is an explicit user-confirmed
+   * replace (`intentionalReplace`). Living in the write primitive makes "no sparse push before a
+   * reconciling pull" structural, so a fresh/empty device cannot clobber richer cloud data within
+   * the ~1200ms initial-pull window (DRIVE_SYNC_DATA_LOSS_PREVENTION Layer 2; labsDriveSyncGuard).
+   */
+  writeGuard?: { autoPushAllowed: boolean; intentionalReplace?: boolean };
 };
+
+/** Human-readable app-folder name used in the auto-push-blocked error copy. */
+const ENCORE_DRIVE_FOLDER_NAME = 'Encore';
 
 export type RunInitialSyncOptions = {
   onProgress?: RepertoireSyncProgress;
@@ -114,14 +129,18 @@ export async function pullRepertoireFromDrive(
     (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(extrasRow.updatedAt);
   const mergedExtras = mergeRepertoireExtras(localExtrasRow, extrasRow);
   const deletedRunIds = new Set(mergedExtras.deletedExerciseRunIds ?? []);
+  const deletedSongIds = new Set(mergedExtras.deletedSongIds ?? []);
+  const deletedPerformanceIds = new Set(mergedExtras.deletedPerformanceIds ?? []);
   // Content-aware: never let a newer-but-empty song row wipe filled exercise answers (ADR 0019).
-  const mergedSongs = mergeSongRecords(localSongs, wire.songs, { deletedRunIds });
-  // TODO(drive-sync-redteam #2): performances still merge whole-row last-writer-wins, so a second
-  // video logged on another device is dropped when a newer sparse copy of the same performance wins
-  // (`EncorePerformance.videos` / `primaryVideoId`). Give EncorePerformance a policy map + per-field
-  // merge mirroring SONG_MERGE_POLICY / mergeSongPreservingExercises (union `videos` by id) before
-  // relying on cross-device performance-video sync. Left as LWW here to preserve current behavior.
-  const mergedPerf = mergeRecordsByUpdatedAt<EncorePerformance>(localPerf, wire.performances);
+  // Tombstone filter: a song deleted on any device stays deleted (union merge cannot resurrect it).
+  const mergedSongs = mergeSongRecords(localSongs, wire.songs, { deletedRunIds }).filter(
+    (s) => !deletedSongIds.has(s.id),
+  );
+  // Content-aware: union `videos` by id so a video logged on another device is never dropped by a
+  // newer-but-sparser copy (PERFORMANCE_MERGE_POLICY). Tombstone filter drops purged performances.
+  const mergedPerf = mergePerformanceRecords(localPerf, wire.performances).filter(
+    (p) => !deletedPerformanceIds.has(p.id),
+  );
   onProgress?.(0.48);
   await yieldToMain();
   await encoreDb.transaction('rw', encoreDb.songs, encoreDb.performances, encoreDb.repertoireExtras, encoreDb.dirtySync, async () => {
@@ -150,6 +169,13 @@ export async function pushRepertoireToDrive(
   ifMatch: string | undefined,
   opts?: PushRepertoireOptions,
 ): Promise<void> {
+  if (opts?.writeGuard) {
+    assertLabsDriveWriteAllowed({
+      appFolderName: ENCORE_DRIVE_FOLDER_NAME,
+      autoPushAllowed: opts.writeGuard.autoPushAllowed,
+      intentionalReplace: opts.writeGuard.intentionalReplace ?? false,
+    });
+  }
   const onProgress = opts?.onProgress;
   onProgress?.(0.12);
   const songs = await encoreDb.songs.toArray();
@@ -361,6 +387,10 @@ export async function runInitialSyncIfPossible(
     } else if (localDirty) {
       onProgress?.(0.35);
       await pushRepertoireToDrive(accessToken, layout.repertoireFileId, meta.lastRemoteEtag, {
+        // Reaches here only when localDirty && !remoteNewer, which implies a prior pull set
+        // lastRemote (remoteNewer is forced true when lastRemote is empty), so the reconciling
+        // read has happened — the push is allowed.
+        writeGuard: { autoPushAllowed: true },
         onProgress: (p) => {
           if (p == null) {
             onProgress?.(null);
@@ -383,13 +413,18 @@ export async function resolveConflictUseRemoteThenPush(accessToken: string): Pro
   if (!meta.repertoireFileId) throw new Error('Not bootstrapped');
   await pullRepertoireFromDrive(accessToken, meta.repertoireFileId);
   const m2 = await getSyncMeta();
-  await pushRepertoireToDrive(accessToken, meta.repertoireFileId, m2.lastRemoteEtag);
+  await pushRepertoireToDrive(accessToken, meta.repertoireFileId, m2.lastRemoteEtag, {
+    writeGuard: { autoPushAllowed: true, intentionalReplace: true },
+  });
 }
 
 export async function resolveConflictKeepLocal(accessToken: string): Promise<void> {
   const meta = await getSyncMeta();
   if (!meta.repertoireFileId) throw new Error('Not bootstrapped');
-  await pushRepertoireToDrive(accessToken, meta.repertoireFileId, undefined);
+  // User explicitly chose "keep this device" — an intentional replace of the cloud copy.
+  await pushRepertoireToDrive(accessToken, meta.repertoireFileId, undefined, {
+    writeGuard: { autoPushAllowed: false, intentionalReplace: true },
+  });
 }
 
 /**
@@ -419,6 +454,8 @@ export async function resolveConflictWithChoices(
     (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(wire.exportedAt);
   const mergedExtras = mergeRepertoireExtras(localExtrasRow, extrasRow);
   const deletedRunIds = new Set(mergedExtras.deletedExerciseRunIds ?? []);
+  const deletedSongIds = new Set(mergedExtras.deletedSongIds ?? []);
+  const deletedPerformanceIds = new Set(mergedExtras.deletedPerformanceIds ?? []);
 
   const remoteSongsById = new Map(wire.songs.map((s) => [s.id, s] as const));
   const remotePerfById = new Map(wire.performances.map((p) => [p.id, p] as const));
@@ -480,12 +517,18 @@ export async function resolveConflictWithChoices(
       } else if (choice === 'remote') {
         mergedPerf.push(r);
       } else {
-        mergedPerf.push(l.updatedAt >= r.updatedAt ? l : r);
+        // Auto-merge (no explicit choice): content-aware — union videos so a video logged on the
+        // other device is not dropped by a newer-but-sparser copy (PERFORMANCE_MERGE_POLICY).
+        mergedPerf.push(mergePerformancePreservingVideos(l, r));
       }
     } else {
       mergedPerf.push((l ?? r) as EncorePerformance);
     }
   }
+
+  // Honor delete tombstones so a resolved conflict cannot resurrect a row deleted on any device.
+  const filteredSongs = mergedSongs.filter((s) => !deletedSongIds.has(s.id));
+  const filteredPerf = mergedPerf.filter((p) => !deletedPerformanceIds.has(p.id));
 
   await encoreDb.transaction(
     'rw',
@@ -497,8 +540,8 @@ export async function resolveConflictWithChoices(
       await encoreDb.songs.clear();
       await encoreDb.performances.clear();
       await encoreDb.dirtySync.clear();
-      await encoreDb.songs.bulkPut(mergedSongs);
-      await encoreDb.performances.bulkPut(mergedPerf);
+      await encoreDb.songs.bulkPut(filteredSongs);
+      await encoreDb.performances.bulkPut(filteredPerf);
       await encoreDb.repertoireExtras.put(mergedExtras);
     },
   );
@@ -506,5 +549,7 @@ export async function resolveConflictWithChoices(
   // Push the merged result without an If-Match etag — we are intentionally overwriting Drive
   // with the user-selected merge (the row choices already represent their intent for the
   // "both-edited" overlap; pull-then-push is unnecessary).
-  await pushRepertoireToDrive(accessToken, meta.repertoireFileId, undefined);
+  await pushRepertoireToDrive(accessToken, meta.repertoireFileId, undefined, {
+    writeGuard: { autoPushAllowed: true, intentionalReplace: true },
+  });
 }
