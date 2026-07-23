@@ -61,6 +61,10 @@ export default [
       // errors. Keep the classic gates hard; defer the compiler suite until
       // we can burn it down without a 700-finding mega-PR (track in
       // DEPENDENCY_UPGRADE_PLAN / TECH_DEBT_ROADMAP).
+      // These 14 `off` rules are FROZEN by a CI-only ratchet
+      // (scripts/check-react-hooks-ratchet.mjs, baseline 684): new violations
+      // fail CI even though the rules are off here. Burn a rule to 0, then flip
+      // it to 'error' below and drop it from that script's RULES list.
       'react-hooks/static-components': 'off',
       'react-hooks/use-memo': 'off',
       'react-hooks/preserve-manual-memoization': 'off',
