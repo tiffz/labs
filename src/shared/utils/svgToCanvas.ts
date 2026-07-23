@@ -9,7 +9,7 @@ export interface SvgToCanvasOptions {
   drawHeader?: (ctx: CanvasRenderingContext2D, width: number, headerHeight: number) => void;
   /**
    * Mutate the detached SVG clone before serialization (e.g. inline notation
-   * fonts via `notation/vexFlowFontExport` so blob rasterization keeps glyphs).
+   * fonts via `vexflow/vexFlowFontExport` so blob rasterization keeps glyphs).
    * Kept as a callback so this utils module stays free of notation imports.
    */
   prepareClone?: (clone: SVGSVGElement) => Promise<void> | void;

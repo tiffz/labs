@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ensureVexFlowFontsLoaded } from './vexFlowFontExport';
+import { ensureVexFlowFontsLoaded } from '../vexflow/vexFlowFontExport';
 
 /** Cap the first-draw wait so a stalled font load degrades to a fallback draw. */
 const MUSIC_FONT_READY_TIMEOUT_MS = 3000;

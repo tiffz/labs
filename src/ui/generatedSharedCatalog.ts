@@ -24340,7 +24340,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "music-core",
-    "description": "Renders the first measure of the melody part into `container` (replaces inner HTML).",
+    "description": "Renders the first measure of the melody part into `container` (replaces inner HTML). Awaits the Bravura/Academico music fonts first (music-font gate): VexFlow 5 paints noteheads as SVG `<text>`, so drawing before the font loads flashes fallback glyphs offset from the real symbols. Fonts are cached after first load, so repeat calls resolve immediately.",
     "tags": [
       "music"
     ],
@@ -28524,92 +28524,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "chords"
     ],
     "exportType": "function",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-notation-vexflowfontexport-ts-buildvexflowsvgfontstyles",
-    "name": "buildVexFlowSvgFontStyles",
-    "path": "src/shared/notation/vexFlowFontExport.ts",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-core",
-    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
-    "tags": [
-      "notation"
-    ],
-    "appsUsing": [
-      "drums"
-    ],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-notation-vexflowfontexport-ts-ensurevexflowfontsloaded",
-    "name": "ensureVexFlowFontsLoaded",
-    "path": "src/shared/notation/vexFlowFontExport.ts",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-core",
-    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
-    "tags": [
-      "notation"
-    ],
-    "appsUsing": [
-      "drums"
-    ],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-notation-vexflowfontexport-ts-fetchvexflowfontdataurl",
-    "name": "fetchVexFlowFontDataUrl",
-    "path": "src/shared/notation/vexFlowFontExport.ts",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-core",
-    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
-    "tags": [
-      "notation"
-    ],
-    "appsUsing": [
-      "drums"
-    ],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-notation-vexflowfontexport-ts-injectsvgstyle",
-    "name": "injectSvgStyle",
-    "path": "src/shared/notation/vexFlowFontExport.ts",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-core",
-    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
-    "tags": [
-      "notation"
-    ],
-    "appsUsing": [
-      "drums"
-    ],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-notation-vexflowfontexport-ts-vexflow-notation-fonts",
-    "name": "VEXFLOW_NOTATION_FONTS",
-    "path": "src/shared/notation/vexFlowFontExport.ts",
-    "kind": "component",
-    "stability": "stable",
-    "owner": "shared-core",
-    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
-    "tags": [
-      "notation",
-      "api"
-    ],
-    "appsUsing": [
-      "drums"
-    ],
-    "exportType": "const",
     "demoId": null
   },
   {
@@ -34203,6 +34117,83 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "words"
     ],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-vexflow-vexflowfontexport-ts-buildvexflowsvgfontstyles",
+    "name": "buildVexFlowSvgFontStyles",
+    "path": "src/shared/vexflow/vexFlowFontExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
+    "tags": [],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-vexflow-vexflowfontexport-ts-ensurevexflowfontsloaded",
+    "name": "ensureVexFlowFontsLoaded",
+    "path": "src/shared/vexflow/vexFlowFontExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
+    "tags": [],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-vexflow-vexflowfontexport-ts-fetchvexflowfontdataurl",
+    "name": "fetchVexFlowFontDataUrl",
+    "path": "src/shared/vexflow/vexFlowFontExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
+    "tags": [],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-vexflow-vexflowfontexport-ts-injectsvgstyle",
+    "name": "injectSvgStyle",
+    "path": "src/shared/vexflow/vexFlowFontExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
+    "tags": [],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-vexflow-vexflowfontexport-ts-vexflow-notation-fonts",
+    "name": "VEXFLOW_NOTATION_FONTS",
+    "path": "src/shared/vexflow/vexFlowFontExport.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "VexFlow SMuFL fonts used for notation glyphs rendered as SVG `<text>`.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "drums"
+    ],
+    "exportType": "const",
     "demoId": null
   },
   {

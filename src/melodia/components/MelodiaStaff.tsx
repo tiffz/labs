@@ -12,7 +12,7 @@ import VexFlow, {
 import type { NoteDuration, PianoScore, ScoreNote } from '../../shared/music/scoreTypes';
 import { durationToBeats } from '../../shared/music/scoreTypes';
 import { pickMelodyPart } from '../../shared/music/melodiaPipeline/partUtils';
-import { ensureVexFlowFontsLoaded } from '../../shared/notation/vexFlowFontExport';
+import { ensureVexFlowFontsLoaded } from '../../shared/vexflow/vexFlowFontExport';
 import { midiToSolfege } from './MelodiaStaff.utils';
 
 const VEX_DURATIONS: Record<NoteDuration, string> = {
