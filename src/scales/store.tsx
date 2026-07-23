@@ -229,7 +229,8 @@ type Action =
   /** Tester-only: replace local progress from Google Drive restore. */
   | { type: 'REPLACE_PROGRESS_FROM_CLOUD'; progress: ScalesProgressData };
 
-function initialState(): ScalesState {
+// eslint-disable-next-line react-refresh/only-export-components -- exported for reducer unit tests
+export function initialState(): ScalesState {
   const audioPrefs = loadAudioPrefs();
   const progress = loadProgress();
   const restored = restoreSessionFromSnapshot(progress);
@@ -378,7 +379,8 @@ function isNonCurriculumPlan(plan: SessionPlan | null | undefined): boolean {
   return plan?.kind === 'free' || plan?.kind === 'routine';
 }
 
-function reducer(state: ScalesState, action: Action): ScalesState {
+// eslint-disable-next-line react-refresh/only-export-components -- exported for reducer unit tests
+export function reducer(state: ScalesState, action: Action): ScalesState {
   switch (action.type) {
     case 'SET_SCREEN': {
       if (action.screen === 'home') {
@@ -427,11 +429,15 @@ function reducer(state: ScalesState, action: Action): ScalesState {
     }
 
     case 'START_FREE_PRACTICE': {
+      const plan = planFreePracticeSession(action.item, Date.now());
+      // Defensive: never enter the session screen with an ungeneratable score
+      // (would strand on "Loading exercise…"). The picker only offers valid
+      // combinations, so this should not fire in normal use.
+      if (!generateScoreForExercise(plan.exercises[0]!)) return state;
       // Remember the selection so the picker re-opens pre-filled, then run a
       // one-item non-curriculum session.
       const progress = setLastFreePracticeParams(state.progress, action.item);
       saveProgress(progress);
-      const plan = planFreePracticeSession(action.item, Date.now());
       const next = transitionStartSession({ ...state, progress }, plan);
       if (next.activeExercise && next.sessionPlan) {
         saveSessionSnapshot({
@@ -445,8 +451,14 @@ function reducer(state: ScalesState, action: Action): ScalesState {
     }
 
     case 'START_ROUTINE': {
-      const plan = planRoutineSession(action.routine, Date.now());
-      if (plan.exercises.length === 0) return state;
+      const rawPlan = planRoutineSession(action.routine, Date.now());
+      // Drop any item whose score won't generate (e.g. a routine synced from a
+      // newer app version with a scale kind this build can't render) so the
+      // session never strands on "Loading exercise…". If nothing is playable,
+      // stay put rather than opening an empty session.
+      const exercises = rawPlan.exercises.filter(ex => generateScoreForExercise(ex) != null);
+      if (exercises.length === 0) return state;
+      const plan = { ...rawPlan, exercises };
       const next = transitionStartSession(state, plan);
       if (next.activeExercise && next.sessionPlan) {
         saveSessionSnapshot({
@@ -854,16 +866,18 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         homeNoteDoubleTapAwait: null,
       };
 
-      // Free-practice and routine sessions do not chain into the curriculum.
-      // When the user's own content is done, return home with the summary —
-      // the curriculum planner never runs.
+      // Free-practice and routine sessions do not chain into the curriculum,
+      // and they are not "lessons" — returning to the normal home avoids the
+      // curriculum "Lesson complete / Next lesson / Up next" framing (and the
+      // recap card that would otherwise render synthetic `free:` exercise ids).
+      // Free/routine practice advances nothing, so there is nothing to recap.
       if (isNonCurriculumPlan(state.sessionPlan)) {
         clearSessionSnapshot();
         return {
           ...afterClearingRuns,
           screen: 'home',
-          sessionComplete: true,
-          lastSessionSummary: summary,
+          sessionComplete: false,
+          lastSessionSummary: null,
           sessionPlan: null,
           activeExercise: null,
           activeExerciseIndex: 0,

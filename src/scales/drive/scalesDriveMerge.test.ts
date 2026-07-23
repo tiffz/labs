@@ -209,4 +209,13 @@ describe('custom routine merge', () => {
     expect(progress.customRoutines?.map(r => r.id)).toEqual(['a']);
     expect(progress.deletedRoutineIds?.a).toBeUndefined();
   });
+
+  it('preserves the device-local lastFreePracticeParams through a merge', () => {
+    const local = baseProgress({
+      lastFreePracticeParams: { kind: 'major-scale', key: 'Bb', hand: 'both', octaves: 2, bpm: 88, subdivision: 'none' },
+    });
+    const remote = baseProgress(); // stripped from the synced envelope, so never present remotely
+    const { progress } = mergeScalesProgress(local, remote);
+    expect(progress.lastFreePracticeParams?.key).toBe('Bb');
+  });
 });

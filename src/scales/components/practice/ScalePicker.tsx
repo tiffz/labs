@@ -18,6 +18,20 @@ import {
   keysForKind,
 } from '../../practice/freePracticeOptions';
 
+// Secondary-selection visual language (docs/SELECTION_VISUAL_HIERARCHY.md):
+// a tinted brand wash + brand text, not MUI's neutral grey `action.selected`.
+const selectedToggleSx = {
+  '&.Mui-selected, &.Mui-selected:hover': {
+    backgroundColor: 'var(--labs-selection-secondary-bg, rgba(5, 150, 105, 0.14))',
+    color: 'var(--labs-selection-secondary-fg, #047857)',
+    borderColor: 'var(--labs-selection-secondary-border, rgba(5, 150, 105, 0.28))',
+    fontWeight: 600,
+  },
+  '&.Mui-selected:hover': {
+    backgroundColor: 'var(--labs-selection-secondary-hover-bg, rgba(5, 150, 105, 0.2))',
+  },
+} as const;
+
 const SUBDIVISION_LABELS: Record<SubdivisionMode, string> = {
   none: 'Quarter notes',
   eighth: 'Eighths',
@@ -124,7 +138,7 @@ export default function ScalePicker({
                 aria-label="Hands"
               >
                 {(['right', 'left', 'both'] as Hand[]).map(h => (
-                  <ToggleButton key={h} value={h} sx={{ textTransform: 'none', px: 2.5 }}>
+                  <ToggleButton key={h} value={h} sx={{ textTransform: 'none', px: 2.5, ...selectedToggleSx }}>
                     {HAND_LABELS[h]}
                   </ToggleButton>
                 ))}
@@ -142,8 +156,8 @@ export default function ScalePicker({
                 onChange={(_e, next: 1 | 2 | null) => next && onChange({ ...value, octaves: next })}
                 aria-label="Octaves"
               >
-                <ToggleButton value={1} sx={{ px: 2.5 }}>1</ToggleButton>
-                <ToggleButton value={2} sx={{ px: 2.5 }}>2</ToggleButton>
+                <ToggleButton value={1} sx={{ px: 2.5, ...selectedToggleSx }}>1</ToggleButton>
+                <ToggleButton value={2} sx={{ px: 2.5, ...selectedToggleSx }}>2</ToggleButton>
               </ToggleButtonGroup>
             </Box>
 

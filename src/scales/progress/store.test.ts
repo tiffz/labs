@@ -1506,4 +1506,31 @@ describe('custom routines', () => {
     });
     expect(data.lastFreePracticeParams?.key).toBe('Bb');
   });
+
+  it('drops structurally malformed routine items on load, keeps valid ones', () => {
+    localStorage.setItem('scales-progress', JSON.stringify({
+      version: 5,
+      currentTierId: 'tier-1',
+      exercises: {},
+      seenOnboarding: true,
+      introducedConcepts: {},
+      introducedExerciseHands: {},
+      customRoutines: [{
+        id: 'r1',
+        name: 'Corrupt',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        items: [
+          { kind: 'major-scale', key: 'C', hand: 'both', octaves: 2, bpm: 72, subdivision: 'none' }, // valid
+          { kind: 'major-scale', hand: 'both', octaves: 2, bpm: 72, subdivision: 'none' },            // no key
+          { kind: 'major-scale', key: 'C', hand: 'sideways', octaves: 2, bpm: 72, subdivision: 'none' }, // bad hand
+          { kind: 'major-scale', key: 'C', hand: 'both', octaves: 3, bpm: 72, subdivision: 'none' },   // bad octaves
+          null,                                                                                          // junk
+        ],
+      }],
+    }));
+    const routines = getCustomRoutines(loadProgress());
+    expect(routines).toHaveLength(1);
+    expect(routines[0].items).toHaveLength(1);
+    expect(routines[0].items[0].key).toBe('C');
+  });
 });

@@ -448,9 +448,32 @@ function defaultProgress(): ScalesProgressData {
 }
 
 /**
+ * Structural validation for a persisted practice item. Guards the loader
+ * against corrupted / hand-edited localStorage by dropping structurally
+ * malformed items (which could crash score generation). Semantic validity —
+ * whether a well-formed item's score actually generates in this app version —
+ * is enforced later by the `START_ROUTINE` / `START_FREE_PRACTICE` reducer
+ * guards, so a routine synced from a newer version is not silently discarded
+ * here; it just skips the items this build cannot render.
+ */
+function isStructurallyValidPracticeItem(it: unknown): it is PracticeItem {
+  if (!it || typeof it !== 'object') return false;
+  const p = it as Partial<PracticeItem>;
+  return (
+    typeof p.kind === 'string'
+    && typeof p.key === 'string'
+    && (p.hand === 'right' || p.hand === 'left' || p.hand === 'both')
+    && (p.octaves === 1 || p.octaves === 2)
+    && typeof p.bpm === 'number'
+    && Number.isFinite(p.bpm)
+    && typeof p.subdivision === 'string'
+  );
+}
+
+/**
  * Defensive normalizer for the persisted `customRoutines` array. A corrupted
- * or partial blob (or a hand-edited localStorage) must never crash the loader,
- * so every field is validated and bad entries are dropped rather than trusted.
+ * or partial blob must never crash the loader, so malformed routines and items
+ * are dropped rather than trusted.
  */
 function sanitizeCustomRoutines(raw: unknown): ScalesCustomRoutine[] {
   if (!Array.isArray(raw)) return [];
@@ -464,7 +487,7 @@ function sanitizeCustomRoutines(raw: unknown): ScalesCustomRoutine[] {
       id: r.id,
       name: r.name,
       updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : new Date(0).toISOString(),
-      items: r.items.filter((it): it is PracticeItem => !!it && typeof it === 'object'),
+      items: r.items.filter(isStructurallyValidPracticeItem),
     });
   }
   return result;

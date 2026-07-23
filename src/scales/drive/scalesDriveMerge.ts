@@ -282,6 +282,10 @@ export function mergeScalesProgress(
     ),
     customRoutines,
     deletedRoutineIds,
+    // Device-local scratch: keep the local last-picker selection through the
+    // merge so a Drive pull does not reset the Free Practice picker to defaults.
+    // (It is stripped from the synced envelope, so `remote` never carries it.)
+    lastFreePracticeParams: local.lastFreePracticeParams,
     progressUpdatedAt: maxIso(local.progressUpdatedAt, remote.progressUpdatedAt),
   })!;
 

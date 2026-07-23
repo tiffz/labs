@@ -1,4 +1,6 @@
 import { lazy, Suspense } from 'react';
+import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@mui/material/Box';
 import { ScalesProvider, useScales, hasEnabledMidiDevice } from './store';
 import HomeScreen from './components/HomeScreen';
 import ProgressScreen from './components/ProgressScreen';
@@ -19,6 +21,14 @@ const RoutinesScreen = lazy(() => import('./components/RoutinesScreen'));
 const debugMode = readLabsDebugFromLocation().debug;
 if (debugMode) enableDebug();
 
+function LazyScreenFallback() {
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', pt: 12 }} aria-label="Loading" role="status">
+      <CircularProgress size={28} />
+    </Box>
+  );
+}
+
 function ScreenRouter() {
   const { state } = useScales();
 
@@ -35,13 +45,13 @@ function ScreenRouter() {
       return <ProgressScreen />;
     case 'free-practice':
       return (
-        <Suspense fallback={null}>
+        <Suspense fallback={<LazyScreenFallback />}>
           <FreePracticeScreen />
         </Suspense>
       );
     case 'routines':
       return (
-        <Suspense fallback={null}>
+        <Suspense fallback={<LazyScreenFallback />}>
           <RoutinesScreen />
         </Suspense>
       );

@@ -2,6 +2,7 @@
 description: Generative / curriculum content needs an exhaustive validity test and expert review — the accuracy attribute has no compiler
 globs:
   - src/scales/curriculum/**
+  - src/scales/practice/**
   - src/scales/progress/**
   - src/sight/curriculum/**
   - src/sight/generators/**
