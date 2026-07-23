@@ -56,5 +56,6 @@ Skip an ADR for routine features, one-off UI tweaks, or purely internal refactor
 | [0022](./0022-advanced-metronome-preferences.md)                          | Advanced metronome preferences surface                                                 |
 | [0023](./0023-local-review-merge-gate.md)                                 | Local-review merge gate for `main` (three reviewer subagents)                          |
 | [0024](./0024-major-change-ux-qa-review-gates.md)                         | Senior-reviewer gates for major changes (PM, architecture, UX, QA) + app quality tiers |
+| [0025](./0025-chart-playback-single-transport.md)                         | One transport for chart playback (single AudioContext + position owner) — Proposed     |
 
-**Note:** A few early numbers were reused for unrelated topics (0007, 0010, 0012). Do **not** renumber — cite by full filename. Next new ADR is **0025**.
+**Note:** A few early numbers were reused for unrelated topics (0007, 0010, 0012). Do **not** renumber — cite by full filename. Next new ADR is **0026**.
