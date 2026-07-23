@@ -199,18 +199,22 @@ export function useChartChordPlayback({
       if (drumVolume > 0 && drumPlayer) {
         const drumCtx = drumPlayer.getAudioContext();
         if (!drumCtx || drumCtx.state !== 'running') return;
+        // Clamp an overdue measure start to "now" so a late measure's drums PLAY
+        // (like the chord path clamps notes) instead of being per-hit skipped ->
+        // the "chords sound, drums silent on the last looped measure" bug. The
+        // structural fix is one shared context + one late decision (ADR 0025);
+        // this keeps chord and drum audible-together until then.
+        const drumMeasureStart = Math.max(
+          measureStartAudioTimeFromEpoch(drumCtx, playbackEpochPerfRef.current, stepIndex, measureMs),
+          drumCtx.currentTime,
+        );
         scheduleDrumMeasure({
           drumPlayer,
           pattern: measureSettings.drumPattern,
           timeSignature: CHART_CHORD_PLAYBACK_TIME_SIGNATURE,
           tempo,
           volume: drumVolume,
-          measureStartTime: measureStartAudioTimeFromEpoch(
-            drumCtx,
-            playbackEpochPerfRef.current,
-            stepIndex,
-            measureMs,
-          ),
+          measureStartTime: drumMeasureStart,
         });
       }
     },
