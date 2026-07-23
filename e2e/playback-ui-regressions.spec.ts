@@ -8,7 +8,11 @@ async function seedEncoreOriginalWithChords(page: Page): Promise<void> {
   await enterEncoreApp(page);
   await page.evaluate(
     (storageKey) => {
-      sessionStorage.setItem(
+      // Seed the SAME storage the app reads: chord playback settings moved from
+      // sessionStorage to localStorage (durable song-wide drum config). Seeding
+      // sessionStorage here left the app on its drumsEnabled:false default, so the
+      // drum notation never rendered and this test failed.
+      localStorage.setItem(
         storageKey,
         JSON.stringify({
           chordStyleId: 'simple',
