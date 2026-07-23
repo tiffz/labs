@@ -200,9 +200,15 @@ if (updateBaseline) {
   process.exit(0);
 }
 
-const baseline = fs.existsSync(baselinePath)
-  ? JSON.parse(fs.readFileSync(baselinePath, 'utf8'))
-  : null;
+// Read-or-null in one syscall (no existsSync-then-read TOCTOU race — js/file-system-race).
+function readBaseline() {
+  try {
+    return JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+const baseline = readBaseline();
 
 if (baseline === null) {
   console.error(

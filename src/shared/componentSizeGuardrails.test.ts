@@ -18,7 +18,10 @@ import baseline from './componentSizeBaseline.json';
 const THRESHOLD = 600;
 const REPO_ROOT = resolve(__dirname, '../..');
 const SRC = join(REPO_ROOT, 'src');
-const EXEMPT = /\.test\.|\.stories\.|generatedSharedCatalog|atlasMeshRegistry|\.d\.ts$/;
+// Group the unanchored substring matches so the `$` clearly binds to `.d.ts` only
+// (js/regex/missing-regexp-anchor): exempt any path containing one of the substrings,
+// or ending in `.d.ts`.
+const EXEMPT = /(?:\.test\.|\.stories\.|generatedSharedCatalog|atlasMeshRegistry)|\.d\.ts$/;
 
 function walk(dir: string): string[] {
   const out: string[] = [];

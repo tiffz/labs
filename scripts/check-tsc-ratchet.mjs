@@ -16,7 +16,7 @@
  *   node scripts/check-tsc-ratchet.mjs --update   # lower the baseline to current (never raises)
  */
 import { execSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -35,7 +35,15 @@ function countErrors() {
 }
 
 const current = countErrors();
-const baseline = existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, 'utf8')).errors : null;
+// Read-or-null in one syscall (no existsSync-then-read TOCTOU race — js/file-system-race).
+function readBaseline() {
+  try {
+    return JSON.parse(readFileSync(baselinePath, 'utf8')).errors;
+  } catch {
+    return null; // absent on first run, or unreadable — treat as no baseline
+  }
+}
+const baseline = readBaseline();
 
 if (baseline == null || update) {
   const next = baseline == null ? current : Math.min(baseline, current);
