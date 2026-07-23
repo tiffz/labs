@@ -36,7 +36,11 @@ export function loadChordPlaybackSettings(
   fallback: ChordPlaybackSettings = DEFAULT_CHORD_PLAYBACK_SETTINGS,
 ): ChordPlaybackSettings {
   try {
-    const raw = sessionStorage.getItem(storageKey);
+    // localStorage, not sessionStorage: song-wide chord/drum settings must survive
+    // a tab close and a new tab. sessionStorage is per-tab and wiped on session end,
+    // which reset the song-wide drum config to defaults (drumsEnabled defaults to
+    // false, so song-wide drums vanished while per-section overrides in Dexie stayed).
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return { ...fallback };
     const parsed = JSON.parse(raw) as Partial<ChordPlaybackSettings>;
     return { ...fallback, ...parsed };
@@ -47,7 +51,7 @@ export function loadChordPlaybackSettings(
 
 export function saveChordPlaybackSettings(storageKey: string, settings: ChordPlaybackSettings): void {
   try {
-    sessionStorage.setItem(storageKey, JSON.stringify(settings));
+    localStorage.setItem(storageKey, JSON.stringify(settings));
   } catch {
     /* ignore */
   }
