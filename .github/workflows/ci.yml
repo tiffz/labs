@@ -229,6 +229,31 @@ jobs:
     - name: Check for dead code
       run: npm run knip
 
+  # CI-only: the 14 React Compiler react-hooks rules take >3 min across `src`,
+  # too slow for presubmit. Its own job keeps `checks` fast and parallel.
+  # docs/TECH_DEBT_ROADMAP.md § 2026-07 Wave 1.
+  react-hooks-ratchet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      HUSKY: 0
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version-file: '.nvmrc'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: React-hooks (React Compiler) ratchet
+      run: npm run check:react-hooks-ratchet
+
   vitest:
     needs: scope
     runs-on: ubuntu-latest
@@ -401,7 +426,7 @@ jobs:
         retention-days: 1
 
   deploy:
-    needs: [checks, vitest, e2e, build]
+    needs: [checks, react-hooks-ratchet, vitest, e2e, build]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     concurrency:

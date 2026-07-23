@@ -1,0 +1,20 @@
+{
+  "total": 684,
+  "byRule": {
+    "react-hooks/config": 0,
+    "react-hooks/error-boundaries": 0,
+    "react-hooks/gating": 0,
+    "react-hooks/globals": 0,
+    "react-hooks/immutability": 15,
+    "react-hooks/incompatible-library": 0,
+    "react-hooks/preserve-manual-memoization": 43,
+    "react-hooks/purity": 7,
+    "react-hooks/refs": 419,
+    "react-hooks/set-state-in-effect": 189,
+    "react-hooks/set-state-in-render": 0,
+    "react-hooks/static-components": 9,
+    "react-hooks/unsupported-syntax": 0,
+    "react-hooks/use-memo": 2
+  },
+  "note": "React-compiler react-hooks rule violations across src (14 rules held off in eslint.config.js). Ratchet DOWN only. Regenerate: node scripts/check-react-hooks-ratchet.mjs --update"
+}
