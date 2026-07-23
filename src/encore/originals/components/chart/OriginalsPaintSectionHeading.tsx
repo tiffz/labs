@@ -190,6 +190,11 @@ export function OriginalsPaintSectionHeading({
         >
           <Box
             sx={{
+              // min-height:0 lets this flex child shrink below its content height so
+              // overflowY actually engages; without it the Paper (overflow:hidden)
+              // clips the bottom of the panel and the drum pattern is unreachable.
+              flex: '1 1 auto',
+              minHeight: 0,
               overflowY: 'auto',
               overflowX: 'hidden',
               overscrollBehavior: 'contain',
@@ -451,6 +456,11 @@ export function OriginalsPaintSectionHeading({
       >
         <Box
           sx={{
+            // min-height:0 lets this flex child shrink below its content height so
+            // overflowY actually engages; without it the Paper (overflow:hidden)
+            // clips the bottom of the panel and the drum pattern is unreachable.
+            flex: '1 1 auto',
+            minHeight: 0,
             overflowY: 'auto',
             overflowX: 'hidden',
             overscrollBehavior: 'contain',
