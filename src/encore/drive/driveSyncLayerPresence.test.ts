@@ -36,12 +36,20 @@ describe('Drive sync data-loss layer presence (Encore)', () => {
     }
   });
 
-  it('Layer: delete tombstones — the merge FILTERS songs/performances by tombstone', () => {
+  it('Layer: delete tombstones — the merge FILTERS songs/performances by tombstone (clock-aware)', () => {
     // A tombstone that is stored but not consulted is the exact "doc claims ✅, code does not" bug.
-    expect(repertoireSync).toContain('deletedSongIds');
-    expect(repertoireSync).toContain('deletedPerformanceIds');
-    expect(repertoireSync).toMatch(/\.filter\(\s*\(s\) => !deletedSongIds\.has\(s\.id\)\s*\)/);
-    expect(repertoireSync).toMatch(/\.filter\(\s*\(p\) => !deletedPerformanceIds\.has\(p\.id\)\s*\)/);
+    // The pull merge and conflict-resolve merge both route rows through filterTombstonedRows, which
+    // applies the clock supersede (B1). Two call sites (pull + resolveConflictWithChoices).
+    expect(repertoireSync).toContain('filterTombstonedRows');
+    expect(repertoireSync.match(/filterTombstonedRows\(/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+    expect(repertoireSync).toContain('mergedExtras.deletedSongIds');
+    expect(repertoireSync).toContain('mergedExtras.deletedPerformanceIds');
+  });
+
+  it('Layer: auto-push gate is fail-closed — the assert is unconditional, not gated on writeGuard', () => {
+    // S1: `if (opts?.writeGuard)` would let a caller that forgets the guard bypass the gate.
+    expect(repertoireSync).not.toMatch(/if \(opts\?\.writeGuard\) \{\s*assertLabsDriveWriteAllowed/);
+    expect(repertoireSync).toMatch(/autoPushAllowed: opts\?\.writeGuard\?\.autoPushAllowed \?\? false/);
   });
 
   it('Layer: delete tombstones — delete sites RECORD tombstones (and undo clears them)', () => {
