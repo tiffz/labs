@@ -25,7 +25,7 @@ import {
 import {
   assertLabsDriveWriteAllowed,
 } from '../../shared/drive/labsDriveSyncGuard';
-import { filterTombstonedRows } from './encoreRepertoireTombstones';
+import { filterTombstonedRows, type RepertoireTombstones } from './encoreRepertoireTombstones';
 
 export type SyncConflictReason = 'local_and_remote_changed';
 
@@ -268,23 +268,40 @@ function classifyRow(
   return 'inSync';
 }
 
+/** Delete tombstones (per-id `deletedAt` clock) known at conflict-analysis time. */
+export interface RepertoireConflictTombstones {
+  deletedSongIds?: RepertoireTombstones;
+  deletedPerformanceIds?: RepertoireTombstones;
+}
+
 /**
  * Compute a row-level conflict analysis between local and remote repertoire snapshots. Used by
  * the new {@link runInitialSyncIfPossible} flow: when `bothEdited.length === 0` we silently
  * auto-merge; otherwise the conflict review dialog asks the user only about the overlapping rows.
+ *
+ * Tombstoned rows are dropped from both sides first (clock supersede — the same
+ * {@link filterTombstonedRows} the resolve/pull paths apply), so a row already deleted on either
+ * device is never surfaced as a choice the merge would then silently discard (S3). A row restored
+ * with a newer `updatedAt` than its tombstone survives the filter and is still surfaced.
  */
 export function analyzeRepertoireConflict(
   local: { songs: EncoreSong[]; performances: EncorePerformance[] },
   remote: { songs: EncoreSong[]; performances: EncorePerformance[] },
   syncMeta: Pick<SyncMetaRow, 'lastSyncedLocalMaxUpdatedAt' | 'lastRemoteModified'>,
+  tombstones?: RepertoireConflictTombstones,
 ): ConflictAnalysis {
   const lastSynced = syncMeta.lastSyncedLocalMaxUpdatedAt ?? '';
   const lastRemote = syncMeta.lastRemoteModified ?? '';
 
-  const localSongsById = new Map(local.songs.map((s) => [s.id, s] as const));
-  const remoteSongsById = new Map(remote.songs.map((s) => [s.id, s] as const));
-  const localPerfById = new Map(local.performances.map((p) => [p.id, p] as const));
-  const remotePerfById = new Map(remote.performances.map((p) => [p.id, p] as const));
+  const liveLocalSongs = filterTombstonedRows(local.songs, tombstones?.deletedSongIds);
+  const liveRemoteSongs = filterTombstonedRows(remote.songs, tombstones?.deletedSongIds);
+  const liveLocalPerf = filterTombstonedRows(local.performances, tombstones?.deletedPerformanceIds);
+  const liveRemotePerf = filterTombstonedRows(remote.performances, tombstones?.deletedPerformanceIds);
+
+  const localSongsById = new Map(liveLocalSongs.map((s) => [s.id, s] as const));
+  const remoteSongsById = new Map(liveRemoteSongs.map((s) => [s.id, s] as const));
+  const localPerfById = new Map(liveLocalPerf.map((p) => [p.id, p] as const));
+  const remotePerfById = new Map(liveRemotePerf.map((p) => [p.id, p] as const));
 
   const localOnly: ConflictRowSummary[] = [];
   const remoteOnly: ConflictRowSummary[] = [];
@@ -353,10 +370,19 @@ export async function runInitialSyncIfPossible(
       try {
         const raw = await driveGetMedia(accessToken, layout.repertoireFileId);
         const wire = parseRepertoireWire(raw);
+        // Union local + remote delete tombstones so analysis matches the post-resolution filter:
+        // a row already deleted on either device is not offered as a conflict choice (S3).
+        const remoteExtrasRow = repertoireExtrasFromWire(wire);
+        const localExtrasRow = extras ?? defaultRepertoireExtrasRow(remoteExtrasRow.updatedAt);
+        const mergedExtras = mergeRepertoireExtras(localExtrasRow, remoteExtrasRow);
         analysis = analyzeRepertoireConflict(
           { songs, performances },
           { songs: wire.songs, performances: wire.performances },
           meta,
+          {
+            deletedSongIds: mergedExtras.deletedSongIds,
+            deletedPerformanceIds: mergedExtras.deletedPerformanceIds,
+          },
         );
       } catch {
         // If we cannot read remote, fall back to coarse conflict.

@@ -350,7 +350,9 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
   const dismissConflict = useCallback(() => {
     setConflict(null);
     setConflictAnalysis(null);
-    setSyncState('idle');
+    // "Decide later" leaves local edits diverged and unpushed (the auto-push gate stays closed until
+    // a reconciling resolve), so surface "not backed up" instead of a false "Backed up" (S4).
+    setSyncState('deferred');
   }, []);
 
   const acknowledgeSilentMerge = useCallback(() => {

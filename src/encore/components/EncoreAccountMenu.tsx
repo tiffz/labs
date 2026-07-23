@@ -233,9 +233,11 @@ export function EncoreAccountMenu(props: {
         ? { tone: 'error' as const, label: 'Sync error' }
         : syncState === 'conflict'
           ? { tone: 'warning' as const, label: 'Conflict' }
-          : driveBanner.lastSuccessfulPushAt
-            ? { tone: 'ok' as const, label: 'Backed up' }
-            : { tone: 'idle' as const, label: 'Setting up' };
+          : syncState === 'deferred'
+            ? { tone: 'warning' as const, label: 'Not backed up' }
+            : driveBanner.lastSuccessfulPushAt
+              ? { tone: 'ok' as const, label: 'Backed up' }
+              : { tone: 'idle' as const, label: 'Setting up' };
 
   const driveStatusIcon = (() => {
     if (driveStatus.tone === 'ok') return <CheckCircleIcon sx={{ fontSize: 14 }} />;
@@ -256,11 +258,13 @@ export function EncoreAccountMenu(props: {
           </>
         }
         meta={
-          driveBanner.lastSuccessfulPushAt
-            ? `Last sync ${formatRelativeSyncInstant(driveBanner.lastSuccessfulPushAt)}.`
-            : syncState === 'error' && syncMessage
-              ? syncMessage
-              : undefined
+          syncState === 'deferred'
+            ? 'Changes on this device are not backed up yet. Review to resolve.'
+            : driveBanner.lastSuccessfulPushAt
+              ? `Last sync ${formatRelativeSyncInstant(driveBanner.lastSuccessfulPushAt)}.`
+              : syncState === 'error' && syncMessage
+                ? syncMessage
+                : undefined
         }
         utilityActions={[
           ...(driveBanner.rootFolderId
@@ -309,9 +313,9 @@ export function EncoreAccountMenu(props: {
           },
         }}
         inlineSecondary={
-          syncState === 'error'
+          syncState === 'error' || syncState === 'deferred'
             ? {
-                label: 'Retry sync',
+                label: syncState === 'deferred' ? 'Review changes' : 'Retry sync',
                 icon: driveRetryBusy ? <RefreshIcon className="spin" fontSize="small" /> : <RefreshIcon fontSize="small" />,
                 loading: driveRetryBusy,
                 onClick: () => {

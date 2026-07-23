@@ -1,7 +1,12 @@
 import { createContext } from 'react';
 import type { ConflictAnalysis, SyncCheckResult } from '../drive/repertoireSync';
 
-export type SyncUiState = 'idle' | 'syncing' | 'error' | 'conflict';
+/**
+ * `deferred`: a conflict the user dismissed ("Decide later") without resolving. Local edits diverge
+ * from Drive and were never pushed, so the status surface must say "not backed up" rather than
+ * silently reverting to "Backed up" (S4). Cleared by the next successful sync/resolve.
+ */
+export type SyncUiState = 'idle' | 'syncing' | 'error' | 'conflict' | 'deferred';
 
 /** Fired after the merge half of a silent auto-merge completes; consumers can show a toast. */
 export type SilentAutoMergeSummary = {

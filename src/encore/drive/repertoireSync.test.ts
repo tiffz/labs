@@ -484,6 +484,44 @@ describe('analyzeRepertoireConflict', () => {
     expect(a.localOnly.map((x) => `${x.kind}:${x.id}`)).toEqual(['performance:p1']);
     expect(a.remoteOnly.map((x) => `${x.kind}:${x.id}`)).toEqual(['performance:p2']);
   });
+
+  // S3: a row already deleted (tombstone supersedes both sides' updatedAt) must not be surfaced as a
+  // conflict choice, since the post-resolution filter would silently discard whatever the user picks.
+  it('does not surface a row whose tombstone supersedes both local and remote (S3)', () => {
+    const local = { songs: [song('s1', '2025-06-01T00:00:00.000Z')], performances: [] };
+    const remote = { songs: [song('s1', '2025-06-02T00:00:00.000Z')], performances: [] };
+    const a = analyzeRepertoireConflict(local, remote, meta, {
+      deletedSongIds: { s1: '2025-06-03T00:00:00.000Z' }, // deletedAt newer than both rows
+    });
+    expect(a.localOnly).toEqual([]);
+    expect(a.remoteOnly).toEqual([]);
+    expect(a.bothEdited).toEqual([]);
+  });
+
+  it('drops a tombstoned performance from the analysis (S3)', () => {
+    const local = {
+      songs: [song('s1', '2025-04-01T00:00:00.000Z')],
+      performances: [perf('p1', 's1', '2025-06-10T00:00:00.000Z')],
+    };
+    const remote = { songs: [song('s1', '2025-04-01T00:00:00.000Z')], performances: [] };
+    const a = analyzeRepertoireConflict(local, remote, meta, {
+      deletedPerformanceIds: { p1: '2025-06-11T00:00:00.000Z' },
+    });
+    expect(a.localOnly).toEqual([]);
+    expect(a.remoteOnly).toEqual([]);
+    expect(a.bothEdited).toEqual([]);
+  });
+
+  // The tombstone clock cuts both ways: a row restored/re-edited with a newer updatedAt than its
+  // tombstone survives the filter and is still surfaced (no regression of legitimate un-delete).
+  it('still surfaces a row restored after its tombstone (clock supersede)', () => {
+    const local = { songs: [song('s1', '2025-06-05T00:00:00.000Z')], performances: [] }; // re-edited
+    const remote = { songs: [], performances: [] };
+    const a = analyzeRepertoireConflict(local, remote, meta, {
+      deletedSongIds: { s1: '2025-06-03T00:00:00.000Z' }, // older than the restored local row
+    });
+    expect(a.localOnly.map((x) => x.id)).toEqual(['s1']);
+  });
 });
 
 describe('resolveConflictWithChoices', () => {
