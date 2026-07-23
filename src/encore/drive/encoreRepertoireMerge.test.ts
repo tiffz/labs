@@ -2,17 +2,23 @@ import { describe, expect, it } from 'vitest';
 import type {
   EncoreCharacterNineQuestionsExerciseRun,
   EncoreLyricsInOwnWordsExerciseRun,
+  EncorePerformance,
   EncoreSong,
 } from '../types';
 import {
+  PERFORMANCE_MERGE_POLICY,
   SONG_MERGE_POLICY,
   exerciseRunAnswerCount,
   exerciseRunHasContent,
   isBlankExerciseAnswer,
   mergeExerciseRunLists,
   mergeExerciseRunPair,
+  mergePerformancePreservingVideos,
+  mergePerformanceRecords,
+  mergePerformanceVideoLists,
   mergeSongPreservingExercises,
   mergeSongRecords,
+  performanceMergePolicyKeys,
 } from './encoreRepertoireMerge';
 
 function ownWordsRun(
@@ -203,5 +209,55 @@ describe('mergeSongRecords', () => {
     const merged = mergeSongRecords(local, remote);
     expect(merged).toHaveLength(1);
     expect(exerciseRunAnswerCount(merged[0].practiceExerciseRuns![0])).toBe(1);
+  });
+});
+
+describe('PERFORMANCE_MERGE_POLICY (P0-3)', () => {
+  function perf(
+    id: string,
+    updatedAt: string,
+    videos?: { id: string; url: string }[],
+  ): EncorePerformance {
+    return {
+      id,
+      songId: 's1',
+      date: '2025-01-15',
+      venueTag: 'Open Mic',
+      notes: '',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt,
+      videos: videos?.map((v) => ({ id: v.id, externalVideoUrl: v.url, createdAt: updatedAt })),
+    };
+  }
+
+  it('classifies every EncorePerformance key (compile-enforced) and unions videos', () => {
+    expect(performanceMergePolicyKeys()).toContain('videos');
+    expect(PERFORMANCE_MERGE_POLICY.videos).toBe('union-by-id');
+  });
+
+  it('unions videos by id — a video on only one side is never dropped', () => {
+    const merged = mergePerformanceVideoLists(
+      [{ id: 'a', createdAt: '2025-01-01T00:00:00.000Z' }],
+      [{ id: 'b', createdAt: '2025-02-01T00:00:00.000Z' }],
+    );
+    expect((merged ?? []).map((v) => v.id).sort()).toEqual(['a', 'b']);
+  });
+
+  it('mergePerformancePreservingVideos keeps the newer scalars but unions videos', () => {
+    const local = perf('p1', '2025-01-01T00:00:00.000Z', [{ id: 'v1', url: 'http://a' }]);
+    const remote = { ...perf('p1', '2025-06-01T00:00:00.000Z', [{ id: 'v2', url: 'http://b' }]), notes: 'newer note' };
+    const merged = mergePerformancePreservingVideos(local, remote);
+    expect(merged.notes).toBe('newer note'); // newer row wins on scalars
+    expect((merged.videos ?? []).map((v) => v.id).sort()).toEqual(['v1', 'v2']);
+  });
+
+  it('mergePerformanceRecords unions by id across lists', () => {
+    const merged = mergePerformanceRecords(
+      [perf('p1', '2025-01-01T00:00:00.000Z', [{ id: 'v1', url: 'a' }])],
+      [perf('p1', '2025-06-01T00:00:00.000Z', [{ id: 'v2', url: 'b' }]), perf('p2', '2025-03-01T00:00:00.000Z')],
+    );
+    expect(merged.map((p) => p.id).sort()).toEqual(['p1', 'p2']);
+    const p1 = merged.find((p) => p.id === 'p1')!;
+    expect((p1.videos ?? []).map((v) => v.id).sort()).toEqual(['v1', 'v2']);
   });
 });
