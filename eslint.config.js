@@ -79,6 +79,12 @@ export default [
       'react-hooks/gating': 'off',
       'react-hooks/incompatible-library': 'off',
       'react-hooks/unsupported-syntax': 'off',
+      // exhaustive-deps ships as 'warn' in recommended and lint sets no
+      // --max-warnings, so stale/missing effect deps never blocked CI. The
+      // active count is already 0 (every real case is an explicit inline
+      // eslint-disable with a documented reason), so promote to 'error': new
+      // undisabled violations now fail CI instead of silently warning.
+      'react-hooks/exhaustive-deps': 'error',
       'react/react-in-jsx-scope': 'off',
       // Enforced after the SPA a11y audit. Keep these at 'error' so new
       // regressions block CI instead of silently accumulating.

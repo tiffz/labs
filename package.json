@@ -104,7 +104,8 @@
     "melodia:ingest": "tsx scripts/melodia/ingest-folder.mts",
     "prepare": "husky",
     "check:tsc-ratchet": "node scripts/check-tsc-ratchet.mjs",
-    "check:react-hooks-ratchet": "node scripts/check-react-hooks-ratchet.mjs"
+    "check:react-hooks-ratchet": "node scripts/check-react-hooks-ratchet.mjs",
+    "check:knip-exports-ratchet": "node scripts/check-knip-exports-ratchet.mjs"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
