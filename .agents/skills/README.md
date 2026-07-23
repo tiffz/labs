@@ -20,6 +20,7 @@ This is the source of truth (tool-agnostic). `.cursor/skills/*` and `.claude/ski
 | [`labs-ux-review`](labs-ux-review/SKILL.md)                             | Pre-merge gate — senior UX designer audits the rendered UI of a major UX change       |
 | [`labs-qa-review`](labs-qa-review/SKILL.md)                             | Pre-merge gate — QA tester stress-tests a major feature; bugs become regression tests |
 | [`labs-agentic-review`](labs-agentic-review/SKILL.md)                   | Audit agent guidance (subagents/skills/rules) for agentic best practices              |
+| [`labs-architecture-audit`](labs-architecture-audit/SKILL.md)           | Proactively hunt fragile subsystems that breed bug clusters; escalate on clustering   |
 | [`labs-split-to-prs`](labs-split-to-prs/SKILL.md)                       | Split branch/work into small reviewable PRs                                           |
 | [`labs-write-adr`](labs-write-adr/SKILL.md)                             | Material architecture decision (routing, OAuth, boundaries)                           |
 | [`labs-component-decomposition`](labs-component-decomposition/SKILL.md) | Split oversized React containers (>600 lines)                                         |
