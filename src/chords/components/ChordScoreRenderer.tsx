@@ -19,6 +19,7 @@ import {
   setVexFlowNoteGroupColor,
   syncKeyedSvgHighlights,
 } from '../../shared/notation/playbackSvgHighlight';
+import { useVexFlowMusicFontReady } from '../../shared/notation/useVexFlowMusicFontReady';
 import {
   generateChordClefBeams,
   redrawBeamedStemsIfMissing,
@@ -136,6 +137,10 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
   });
   const prevHighlightedRef = useRef<Set<string>>(new Set());
   const [layoutWidth, setLayoutWidth] = useState(0);
+  // Hold the first draw until the Bravura music font is usable: VexFlow 5 paints
+  // noteheads as `<text>` in that font, so drawing early flashes fallback glyphs
+  // (see useVexFlowMusicFontReady). In-session remounts are synchronous.
+  const musicFontReady = useVexFlowMusicFontReady();
 
   useEffect(() => {
     const el = containerRef.current;
@@ -175,7 +180,9 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
   // Main render effect — only runs when musical content changes (NOT on highlight changes)
   useEffect(() => {
     if (!containerRef.current) return;
-    
+    // Wait for the music font so noteheads never paint in a detached fallback glyph.
+    if (!musicFontReady) return;
+
     if (!scrollContainerRef.current) {
       let element: HTMLElement | null = containerRef.current;
       while (element && element !== document.body) {
@@ -552,7 +559,7 @@ const ChordScoreRenderer: React.FC<ChordScoreRendererProps> = ({
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- activeNoteGroups handled separately to avoid full re-render
-  }, [state, layoutWidth]);
+  }, [state, layoutWidth, musicFontReady]);
 
   // Lightweight highlight effect — toggles fill/stroke on existing SVG elements without re-rendering
   useEffect(() => {

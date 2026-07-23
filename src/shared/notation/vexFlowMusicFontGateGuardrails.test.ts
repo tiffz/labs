@@ -38,12 +38,12 @@ const GATE_IMPORT = /useVexFlowMusicFontReady|ensureVexFlowFontsLoaded/;
  * the surface genuinely cannot use the gate (say why).
  */
 const FONT_GATE_LEDGER = new Set<string>([
-  'chords/components/ChordScoreRenderer.tsx', // TODO burn down: FOUC on cold Chords load
-  'chords/components/ChordStylePreview.tsx', // TODO burn down: FOUC on cold Chords style preview
-  'words/components/VexLyricScore.tsx', // TODO burn down: FOUC on cold Words load
-  'shared/notation/ScoreDisplay.tsx', // TODO burn down: shared — fixes Scales + Midi at once
-  'melodia/components/MelodiaStaff.tsx', // divergent: own inline loadFonts('Bravura','Academico'); migrate to the shared hook (may need an Academico option)
-  'shared/music/melodiaVexFirstMeasure.ts', // divergent: part of Melodia's own font path (see MelodiaStaff)
+  // Blocked by the shared-module cycle ratchet: this file lives in `shared/music`, but
+  // both arms of the gate live in `shared/notation`, which already imports `shared/music`.
+  // Importing the gate here adds a `music↔notation` mutual pair that `sharedModuleCycles`
+  // rejects ("break the cycle instead"). Burn down once the gate (or `vexFlowFontExport`)
+  // moves to a cycle-free shared home. The React sibling (MelodiaStaff) is already gated.
+  'shared/music/melodiaVexFirstMeasure.ts',
 ]);
 
 function listSourceFiles(): string[] {

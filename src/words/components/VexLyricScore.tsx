@@ -24,6 +24,7 @@ import {
   type MetronomeLayoutNoteAnchor,
 } from '../../shared/notation/metronomeDotLayout';
 import { unionMetronomeGlyphBoundsVexFlow } from '../../shared/notation/scoreDisplayHelpers';
+import { useVexFlowMusicFontReady } from '../../shared/notation/useVexFlowMusicFontReady';
 import type { SubdivisionLevel } from '../../shared/audio/metronome/types';
 
 interface VexLyricScoreProps {
@@ -202,6 +203,8 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
   scrollContainer = null,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  // Hold the first draw until the Bravura music font is usable (see useVexFlowMusicFontReady).
+  const musicFontReady = useVexFlowMusicFontReady();
   const noteElementsRef = useRef<Map<string, SVGElement>>(new Map());
   const noteLineIndexRef = useRef<Map<string, number>>(new Map());
   const symbolElementsRef = useRef<Map<string, SVGGElement>>(new Map());
@@ -241,6 +244,7 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
 
   useEffect(() => {
     if (!containerRef.current) return;
+    if (!musicFontReady) return;
     containerRef.current.innerHTML = '';
     noteElementsRef.current = new Map();
     noteLineIndexRef.current = new Map();
@@ -302,19 +306,14 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
       return Math.max(148, Math.min(336, withSectionGap));
     });
     const lines = wrapMeasureIndexes(measureWidths, maxLineWidth);
-
     const totalWidth = Math.max(320, leftPad + maxLineWidth + rightPad);
     const totalHeight = Math.max(180, topPad + lines.length * lineGap + 28);
-
     const renderer = new Renderer(containerRef.current, Renderer.Backends.SVG);
     renderer.resize(totalWidth, totalHeight);
     const context = renderer.getContext();
     const svg = containerRef.current.querySelector('svg');
     if (!svg) return;
-    svg.style.transformOrigin = 'top left';
-    svg.style.transform = `scale(${clampedZoom})`;
-    svg.style.width = `${totalWidth}px`;
-    svg.style.height = `${totalHeight}px`;
+    svg.style.cssText = `transform-origin: top left; transform: scale(${clampedZoom}); width: ${totalWidth}px; height: ${totalHeight}px;`;
     containerRef.current.style.height = `${Math.round(totalHeight * clampedZoom)}px`;
 
     lines.forEach((line, lineIndex) => {
@@ -790,6 +789,7 @@ const VexLyricScore: React.FC<VexLyricScoreProps> = ({
     sectionMarkers,
     syncPlaybackHighlight,
     zoomLevel,
+    musicFontReady,
   ]);
 
   useEffect(() => {
