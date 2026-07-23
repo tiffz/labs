@@ -1,4 +1,6 @@
 import type {
+  EncorePerformance,
+  EncorePerformanceVideo,
   EncorePracticeExerciseRun,
   EncoreSong,
 } from '../types';
@@ -272,6 +274,118 @@ export function mergeSongRecords(
   for (const s of remote) {
     const cur = byId.get(s.id);
     byId.set(s.id, cur ? mergeSongPreservingExercises(cur, s, options) : s);
+  }
+  return [...byId.values()].sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
+}
+
+/**
+ * Canonical per-field merge disposition for **every** key of {@link EncorePerformance}.
+ *
+ * Why it exists (P0 sync data-loss fix): performances historically merged whole-row last-writer-wins
+ * (`mergeRecordsByUpdatedAt`), so a second video logged on another device was dropped the moment a
+ * newer-but-sparser copy of the same performance won — the same "newer sparse copy beats richer
+ * older copy" class as the "Because of You" song incident (ADR 0019), but for `videos`. The
+ * `satisfies Record<keyof EncorePerformance, MergePolicy>` turns that into a **compile error**:
+ * adding a field to `EncorePerformance` fails typecheck until it is given a conscious disposition.
+ *
+ * As with {@link SONG_MERGE_POLICY}, the **live** pull merge ({@link mergePerformancePreservingVideos})
+ * is the narrower protection: it unions the content field (`videos`) and otherwise keeps the newer
+ * row whole (LWW). Do not change an existing field's disposition without an ADR.
+ */
+export const PERFORMANCE_MERGE_POLICY = {
+  id: 'lww',
+  songId: 'lww',
+  date: 'lww',
+  venueTag: 'lww',
+  videoShortcutDriveFileId: 'preserve-filled-scalar',
+  videoTargetDriveFileId: 'preserve-filled-scalar',
+  externalVideoUrl: 'preserve-filled-scalar',
+  videos: 'union-by-id',
+  primaryVideoId: 'preserve-filled-scalar',
+  notes: 'preserve-filled-text',
+  accompanimentTags: 'union-scalar-set',
+  createdAt: 'lww',
+  updatedAt: 'lww',
+} satisfies Record<keyof EncorePerformance, MergePolicy>;
+
+/** Typed `Object.keys` over {@link PERFORMANCE_MERGE_POLICY}. */
+export function performanceMergePolicyKeys(): (keyof EncorePerformance)[] {
+  return Object.keys(PERFORMANCE_MERGE_POLICY) as (keyof EncorePerformance)[];
+}
+
+/**
+ * Union two performance video lists by stable `id`. A video present on only one side is kept (never
+ * dropped — the whole point of the P0 fix), and a shared id keeps the local copy (video sub-objects
+ * are effectively immutable once created; the base row already carried the newer scalars).
+ */
+export function mergePerformanceVideoLists(
+  local: EncorePerformanceVideo[] | undefined,
+  remote: EncorePerformanceVideo[] | undefined,
+): EncorePerformanceVideo[] | undefined {
+  const localList = local ?? [];
+  const remoteList = remote ?? [];
+  if (!localList.length && !remoteList.length) return undefined;
+  const byId = new Map<string, EncorePerformanceVideo>();
+  const order: string[] = [];
+  const consider = (video: EncorePerformanceVideo) => {
+    if (byId.has(video.id)) return;
+    byId.set(video.id, video);
+    order.push(video.id);
+  };
+  for (const v of localList) consider(v);
+  for (const v of remoteList) consider(v);
+  return order.map((id) => byId.get(id)!);
+}
+
+/**
+ * Merge two versions of the same performance. Scalars follow newer-`updatedAt`-wins (no per-field
+ * clocks), but `videos` are unioned by id so a video logged on a second device is never dropped by
+ * a newer-but-sparser copy. Iterating {@link PERFORMANCE_MERGE_POLICY} — rather than re-listing
+ * fields — means a newly added field cannot silently bypass this merge.
+ */
+export function mergePerformancePreservingVideos(
+  local: EncorePerformance,
+  remote: EncorePerformance,
+): EncorePerformance {
+  const base = local.updatedAt >= remote.updatedAt ? local : remote;
+  const merged: EncorePerformance = { ...base };
+  for (const key of performanceMergePolicyKeys()) {
+    const policy = PERFORMANCE_MERGE_POLICY[key];
+    switch (policy) {
+      case 'union-by-id': {
+        const mergedVideos = mergePerformanceVideoLists(local.videos, remote.videos);
+        if (mergedVideos) merged.videos = mergedVideos;
+        else delete merged.videos;
+        break;
+      }
+      // Whole-row LWW for scalars/sets on the live merge (mirrors SONG_MERGE_POLICY live scope).
+      case 'lww':
+      case 'union-scalar-set':
+      case 'preserve-filled-text':
+      case 'preserve-filled-scalar':
+        break;
+      default: {
+        const exhaustive: never = policy;
+        throw new Error(`Unhandled performance merge policy: ${String(exhaustive)}`);
+      }
+    }
+  }
+  return merged;
+}
+
+/**
+ * Union-merge local and remote performance lists by id using {@link mergePerformancePreservingVideos}
+ * for the overlap. Drop-in replacement for the historical `mergeRecordsByUpdatedAt` on performances.
+ */
+export function mergePerformanceRecords(
+  local: EncorePerformance[],
+  remote: EncorePerformance[],
+): EncorePerformance[] {
+  const byId = new Map<string, EncorePerformance>();
+  for (const p of local) byId.set(p.id, p);
+  for (const p of remote) {
+    const cur = byId.get(p.id);
+    byId.set(p.id, cur ? mergePerformancePreservingVideos(cur, p) : p);
   }
   return [...byId.values()].sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
 }

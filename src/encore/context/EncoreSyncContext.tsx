@@ -74,6 +74,19 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
   const drivePushDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const drivePushChainRef = useRef<Promise<void>>(Promise.resolve());
 
+  /**
+   * Auto-push data-loss gate (P0): the background push must not run until a reconciling pull has
+   * succeeded this session. Otherwise a fresh/empty device that edits within the ~1200ms initial
+   * pull window pushes with no `If-Match` and clobbers richer cloud data (DRIVE_SYNC_DATA_LOSS_
+   * PREVENTION Layer 2; equivalent to `labsDriveAutoPushAllowed`). Edits made before the first pull
+   * stay in Dexie (the pull unions them in) and flush once the pull completes.
+   */
+  const sessionPullSucceededRef = useRef(false);
+  const pendingBackgroundPushRef = useRef(false);
+  // Populated by an effect (never mutated during render) so the earlier-defined runSync can flush a
+  // deferred push once the reconciling pull opens the gate, without a forward reference.
+  const markSessionReconciledRef = useRef<(() => void) | null>(null);
+
   useEffect(() => {
     if (!googleAccessToken) {
       drivePushChainRef.current = Promise.resolve();
@@ -113,6 +126,7 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
             };
             try {
               await resolveConflictWithChoicesDrive(token, new Map());
+              markSessionReconciledRef.current?.();
               setSyncState('idle');
               setConflict(null);
               setConflictAnalysis(null);
@@ -136,6 +150,9 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
           setProgress(1);
           return;
         }
+        // Reconciling sync succeeded (pull, guarded push, or already-in-sync) — open the auto-push
+        // gate and flush any edits deferred during the initial-pull window.
+        markSessionReconciledRef.current?.();
         try {
           await pullChangedOriginalsShards(token);
           await pushOriginalsDirtyShards(token);
@@ -180,6 +197,12 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
    * before the tab is backgrounded/closed, which is what makes them recoverable later (ADR 0019).
    */
   const runBackgroundPushNow = useCallback(() => {
+    // Gate: defer every auto-push until a reconciling pull has succeeded this session. The pending
+    // flag lets the post-pull success path flush the edits that accrued during the pull window.
+    if (!sessionPullSucceededRef.current) {
+      pendingBackgroundPushRef.current = true;
+      return;
+    }
     drivePushChainRef.current = drivePushChainRef.current
       .catch(() => undefined)
       .then(async () => {
@@ -198,7 +221,10 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
               }
               const meta = await getSyncMeta();
               if (!meta.repertoireFileId) return;
-              await pushRepertoireToDrive(token, meta.repertoireFileId, meta.lastRemoteEtag);
+              await pushRepertoireToDrive(token, meta.repertoireFileId, meta.lastRemoteEtag, {
+                // Guaranteed allowed: runBackgroundPushNow returns early until the session pull succeeds.
+                writeGuard: { autoPushAllowed: true },
+              });
               await pushOriginalsDirtyShards(token);
               setSyncState('idle');
               setSyncMessage(null);
@@ -221,6 +247,23 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
       runBackgroundPushNow();
     }, 500);
   }, [runBackgroundPushNow]);
+
+  /**
+   * Open the auto-push gate after a reconciling pull/merge and flush any push that was deferred while
+   * the gate was closed (fresh-device initial-pull window). Exposed via a ref so the earlier-defined
+   * sync flows can call it without a forward reference.
+   */
+  const markSessionReconciled = useCallback(() => {
+    sessionPullSucceededRef.current = true;
+    if (pendingBackgroundPushRef.current) {
+      pendingBackgroundPushRef.current = false;
+      runBackgroundPushNow();
+    }
+  }, [runBackgroundPushNow]);
+
+  useEffect(() => {
+    markSessionReconciledRef.current = markSessionReconciled;
+  }, [markSessionReconciled]);
 
   /**
    * Flush a pending debounced push the moment the tab is hidden or unloaded. Without this a user who
@@ -254,6 +297,7 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
       setSyncState('syncing');
       try {
         await resolveConflictUseRemoteThenPush(token);
+        markSessionReconciledRef.current?.();
         setConflict(null);
         setConflictAnalysis(null);
         setSyncState('idle');
@@ -271,6 +315,7 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
       setSyncState('syncing');
       try {
         await resolveConflictKeepLocal(token);
+        markSessionReconciledRef.current?.();
         setConflict(null);
         setConflictAnalysis(null);
         setSyncState('idle');
@@ -289,6 +334,7 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
         setSyncState('syncing');
         try {
           await resolveConflictWithChoicesDrive(token, choices);
+          markSessionReconciledRef.current?.();
           setConflict(null);
           setConflictAnalysis(null);
           setSyncState('idle');
