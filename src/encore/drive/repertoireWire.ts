@@ -1,4 +1,5 @@
 import { unionDeletedExerciseRunIds } from './encoreExerciseRunTombstones';
+import { unionDeletedRowIds } from './encoreRepertoireTombstones';
 import type { RepertoireExtrasRow } from '../db/encoreDb';
 import type { EncoreDriveContentIndex } from './encoreDriveContentIndex';
 import {
@@ -136,12 +137,19 @@ export function parseRepertoireWire(json: string): RepertoireWirePayload {
     driveUploadFolderOverrides: parseDriveUploadFolderOverrides(data.driveUploadFolderOverrides),
     driveUploadFolderOverrideLabels: parseDriveUploadFolderOverrideLabels(data.driveUploadFolderOverrideLabels),
     driveContentIndex: parseDriveContentIndex(data.driveContentIndex),
-    deletedExerciseRunIds: Array.isArray(data.deletedExerciseRunIds)
-      ? (data.deletedExerciseRunIds as unknown[])
-          .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
-          .map((x) => x.trim())
-      : undefined,
+    deletedExerciseRunIds: parseStringIdArray(data.deletedExerciseRunIds),
+    deletedSongIds: parseStringIdArray(data.deletedSongIds),
+    deletedPerformanceIds: parseStringIdArray(data.deletedPerformanceIds),
   };
+}
+
+/** Parse a wire string-id list (tombstones): trim, drop blanks, or `undefined` when absent/empty. */
+function parseStringIdArray(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out = (raw as unknown[])
+    .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+    .map((x) => x.trim());
+  return out.length > 0 ? out : undefined;
 }
 
 function parseDriveContentIndex(raw: unknown): EncoreDriveContentIndex | undefined {
@@ -225,6 +233,12 @@ export function buildWireFromTables(
       extras.deletedExerciseRunIds && extras.deletedExerciseRunIds.length > 0
         ? [...extras.deletedExerciseRunIds]
         : undefined,
+    deletedSongIds:
+      extras.deletedSongIds && extras.deletedSongIds.length > 0 ? [...extras.deletedSongIds] : undefined,
+    deletedPerformanceIds:
+      extras.deletedPerformanceIds && extras.deletedPerformanceIds.length > 0
+        ? [...extras.deletedPerformanceIds]
+        : undefined,
   };
 }
 
@@ -259,6 +273,12 @@ export function repertoireExtrasFromWire(wire: RepertoireWirePayload): Repertoir
     deletedExerciseRunIds:
       wire.deletedExerciseRunIds && wire.deletedExerciseRunIds.length > 0
         ? [...wire.deletedExerciseRunIds]
+        : undefined,
+    deletedSongIds:
+      wire.deletedSongIds && wire.deletedSongIds.length > 0 ? [...wire.deletedSongIds] : undefined,
+    deletedPerformanceIds:
+      wire.deletedPerformanceIds && wire.deletedPerformanceIds.length > 0
+        ? [...wire.deletedPerformanceIds]
         : undefined,
     updatedAt: wire.exportedAt,
   };
@@ -322,6 +342,8 @@ export function mergeRepertoireExtras(
       local.deletedExerciseRunIds,
       remote.deletedExerciseRunIds,
     ),
+    deletedSongIds: unionDeletedRowIds(local.deletedSongIds, remote.deletedSongIds),
+    deletedPerformanceIds: unionDeletedRowIds(local.deletedPerformanceIds, remote.deletedPerformanceIds),
     updatedAt:
       [local.updatedAt, remote.updatedAt].sort((a, b) => b.localeCompare(a))[0] ?? new Date().toISOString(),
   };

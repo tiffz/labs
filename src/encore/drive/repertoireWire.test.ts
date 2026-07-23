@@ -5,6 +5,7 @@ import {
   buildWireFromTables,
   defaultRepertoireExtrasRow,
   mergeRecordsByUpdatedAt,
+  mergeRepertoireExtras,
   parseRepertoireWire,
   repertoireExtrasFromWire,
   serializeRepertoireWire,
@@ -139,5 +140,56 @@ describe('mergeRecordsByUpdatedAt', () => {
     const merged = mergeRecordsByUpdatedAt<EncoreSong>([a], [b]);
     expect(merged).toHaveLength(1);
     expect(merged[0]!.title).toBe('B');
+  });
+});
+
+describe('song/performance delete tombstones (P0-1)', () => {
+  it('round-trips deletedSongIds and deletedPerformanceIds through the wire', () => {
+    const iso = '2025-06-01T00:00:00.000Z';
+    const extras = {
+      ...defaultRepertoireExtrasRow(iso),
+      deletedSongIds: ['s1', 's2'],
+      deletedPerformanceIds: ['p9'],
+    };
+    const round = parseRepertoireWire(serializeRepertoireWire(buildWireFromTables([], [], extras)));
+    expect(round.deletedSongIds).toEqual(['s1', 's2']);
+    expect(round.deletedPerformanceIds).toEqual(['p9']);
+  });
+
+  it('derives extras row tombstones from a parsed wire', () => {
+    const wire = parseRepertoireWire(
+      JSON.stringify({
+        version: 1,
+        exportedAt: '2025-06-01T00:00:00.000Z',
+        songs: [],
+        performances: [],
+        deletedSongIds: ['x'],
+        deletedPerformanceIds: ['y'],
+      }),
+    );
+    const row = repertoireExtrasFromWire(wire);
+    expect(row.deletedSongIds).toEqual(['x']);
+    expect(row.deletedPerformanceIds).toEqual(['y']);
+  });
+
+  it('mergeRepertoireExtras unions tombstones across devices', () => {
+    const a = { ...defaultRepertoireExtrasRow('2025-06-01T00:00:00.000Z'), deletedSongIds: ['s1'], deletedPerformanceIds: ['p1'] };
+    const b = { ...defaultRepertoireExtrasRow('2025-06-02T00:00:00.000Z'), deletedSongIds: ['s2'], deletedPerformanceIds: ['p2'] };
+    const merged = mergeRepertoireExtras(a, b);
+    expect([...(merged.deletedSongIds ?? [])].sort()).toEqual(['s1', 's2']);
+    expect([...(merged.deletedPerformanceIds ?? [])].sort()).toEqual(['p1', 'p2']);
+  });
+
+  it('drops empty/blank tombstone ids on parse', () => {
+    const wire = parseRepertoireWire(
+      JSON.stringify({
+        version: 1,
+        exportedAt: '2025-06-01T00:00:00.000Z',
+        songs: [],
+        performances: [],
+        deletedSongIds: ['', '  ', 'ok'],
+      }),
+    );
+    expect(wire.deletedSongIds).toEqual(['ok']);
   });
 });

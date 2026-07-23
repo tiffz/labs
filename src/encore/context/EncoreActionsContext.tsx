@@ -11,6 +11,12 @@ import { encoreDb, markDirtyRow, markDirtyRows, type RepertoireExtrasRow } from 
 import type { EncorePerformance, EncoreSong } from '../types';
 import { syncSongLegacyMediaIds } from '../repertoire/songMediaLinks';
 import { defaultRepertoireExtrasRow } from '../drive/repertoireWire';
+import {
+  clearDeletedPerformanceIds,
+  clearDeletedSongIds,
+  recordDeletedPerformanceIds,
+  recordDeletedSongIds,
+} from '../drive/encoreRepertoireTombstones';
 import { publishSnapshotToDrive, type BuildPublicSnapshotOptions } from '../drive/publicSnapshot';
 import { reorganizeAllDriveUploads, type ReorganizeDriveUploadsResult } from '../drive/driveReorganize';
 import { syncPerformanceVideo, syncPerformanceVideoFileName } from '../drive/performanceShortcut';
@@ -159,6 +165,8 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
         { kind: 'song', rowId: id, op: 'delete' },
         ...perfIdsToDelete.map((pid) => ({ kind: 'performance' as const, rowId: pid, op: 'delete' as const })),
       ]);
+      await recordDeletedSongIds([id]);
+      await recordDeletedPerformanceIds(perfIdsToDelete);
       scheduleBackgroundSync();
       if (willPushUndo && songSnap && perfsSnap) {
         pushUndo({
@@ -171,6 +179,9 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
               { kind: 'song', rowId: songSnap.id, op: 'upsert' },
               ...perfsSnap.map((p) => ({ kind: 'performance' as const, rowId: p.id, op: 'upsert' as const })),
             ]);
+            // Restore clears the tombstones so the merge does not re-filter the recovered rows.
+            await clearDeletedSongIds([songSnap.id]);
+            await clearDeletedPerformanceIds(perfsSnap.map((p) => p.id));
             scheduleBackgroundSync();
           },
           redo: async () => {
@@ -182,6 +193,8 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
               { kind: 'song', rowId: id, op: 'delete' },
               ...perfIdsToDelete.map((pid) => ({ kind: 'performance' as const, rowId: pid, op: 'delete' as const })),
             ]);
+            await recordDeletedSongIds([id]);
+            await recordDeletedPerformanceIds(perfIdsToDelete);
             scheduleBackgroundSync();
           },
         });
@@ -287,17 +300,20 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
       const snap = willPushUndo ? cloneRow(prev) : undefined;
       await encoreDb.performances.delete(id);
       await markDirtyRow('performance', id, 'delete');
+      await recordDeletedPerformanceIds([id]);
       scheduleBackgroundSync();
       if (willPushUndo && snap) {
         pushUndo({
           undo: async () => {
             await encoreDb.performances.put(snap);
             await markDirtyRow('performance', id, 'upsert');
+            await clearDeletedPerformanceIds([id]);
             scheduleBackgroundSync();
           },
           redo: async () => {
             await encoreDb.performances.delete(id);
             await markDirtyRow('performance', id, 'delete');
+            await recordDeletedPerformanceIds([id]);
             scheduleBackgroundSync();
           },
         });
@@ -385,6 +401,8 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
         ...ids.map((id) => ({ kind: 'song' as const, rowId: id, op: 'delete' as const })),
         ...collectedPerfIds.map((pid) => ({ kind: 'performance' as const, rowId: pid, op: 'delete' as const })),
       ]);
+      await recordDeletedSongIds(ids);
+      await recordDeletedPerformanceIds(collectedPerfIds);
       scheduleBackgroundSync();
       if (willPushUndo) {
         pushUndo({
@@ -397,6 +415,8 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
               ...songSnaps.map((s) => ({ kind: 'song' as const, rowId: s.id, op: 'upsert' as const })),
               ...perfSnaps.map((p) => ({ kind: 'performance' as const, rowId: p.id, op: 'upsert' as const })),
             ]);
+            await clearDeletedSongIds(songSnaps.map((s) => s.id));
+            await clearDeletedPerformanceIds(perfSnaps.map((p) => p.id));
             scheduleBackgroundSync();
           },
           redo: async () => {
@@ -410,6 +430,8 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
               ...ids.map((id) => ({ kind: 'song' as const, rowId: id, op: 'delete' as const })),
               ...collectedPerfIds.map((pid) => ({ kind: 'performance' as const, rowId: pid, op: 'delete' as const })),
             ]);
+            await recordDeletedSongIds(ids);
+            await recordDeletedPerformanceIds(collectedPerfIds);
             scheduleBackgroundSync();
           },
         });
@@ -490,6 +512,7 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
         await Promise.all(ids.map((id) => encoreDb.performances.delete(id)));
       });
       await markDirtyRows(ids.map((id) => ({ kind: 'performance' as const, rowId: id, op: 'delete' as const })));
+      await recordDeletedPerformanceIds(ids);
       scheduleBackgroundSync();
       if (willPushUndo) {
         pushUndo({
@@ -500,6 +523,7 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
             await markDirtyRows(
               snaps.map((p) => ({ kind: 'performance' as const, rowId: p.id, op: 'upsert' as const })),
             );
+            await clearDeletedPerformanceIds(snaps.map((p) => p.id));
             scheduleBackgroundSync();
           },
           redo: async () => {
@@ -507,6 +531,7 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
               await Promise.all(ids.map((id) => encoreDb.performances.delete(id)));
             });
             await markDirtyRows(ids.map((id) => ({ kind: 'performance' as const, rowId: id, op: 'delete' as const })));
+            await recordDeletedPerformanceIds(ids);
             scheduleBackgroundSync();
           },
         });

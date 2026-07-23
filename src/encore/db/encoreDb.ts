@@ -103,6 +103,17 @@ export interface RepertoireExtrasRow {
    * across devices (see ADR 0019 follow-up).
    */
   deletedExerciseRunIds?: string[];
+  /**
+   * Song ids the user deleted locally — union merge skips these so a delete on one device is not
+   * resurrected by another device still holding the row (P0 sync data-loss fix). Mirrors
+   * {@link deletedExerciseRunIds}; recorded/cleared via `encoreRepertoireTombstones`.
+   */
+  deletedSongIds?: string[];
+  /**
+   * Performance ids the user deleted locally (including performances cascade-deleted with their
+   * song) — union merge skips these so cross-device sync cannot resurrect a deleted performance.
+   */
+  deletedPerformanceIds?: string[];
   updatedAt: string;
 }
 
