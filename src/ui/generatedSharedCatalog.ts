@@ -32358,6 +32358,64 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-test-popoverviewportfitcore-ts-evaluatepopoverviewportfit",
+    "name": "evaluatePopoverViewportFit",
+    "path": "src/shared/test/popoverViewportFitCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Returns ok, or the first violation: - `paper-exceeds-viewport`: the Paper itself runs past the bottom of the screen. - `content-clamped-not-scrollable`: content is taller than the Paper's box, but nothing scrolls — the bottom is unreachable. This is the Encore section-playback menu bug (missing `min-height: 0` on the flex scroll child).",
+    "tags": [],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-popoverviewportfitcore-ts-popover-viewport-fit-defaults",
+    "name": "POPOVER_VIEWPORT_FIT_DEFAULTS",
+    "path": "src/shared/test/popoverViewportFitCore.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pure popover viewport-fit math — keep in sync with the e2e helper that measures open `.labs-popover-surface` elements. Detects the class of bug where a clamped popover (maxHeight + overflow:hidden Paper) contains content taller than its box but no descendant actually scrolls, so the bottom is clipped and unreachable (root cause: a flex-column scroll child missing `min-height: 0`).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-popoverviewportfitcore-ts-popoverviewportfitinput",
+    "name": "PopoverViewportFitInput",
+    "path": "src/shared/test/popoverViewportFitCore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pure popover viewport-fit math — keep in sync with the e2e helper that measures open `.labs-popover-surface` elements. Detects the class of bug where a clamped popover (maxHeight + overflow:hidden Paper) contains content taller than its box but no descendant actually scrolls, so the bottom is clipped and unreachable (root cause: a flex-column scroll child missing `min-height: 0`).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-test-popoverviewportfitcore-ts-popoverviewportfitresult",
+    "name": "PopoverViewportFitResult",
+    "path": "src/shared/test/popoverViewportFitCore.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Pure popover viewport-fit math — keep in sync with the e2e helper that measures open `.labs-popover-surface` elements. Detects the class of bug where a clamped popover (maxHeight + overflow:hidden Paper) contains content taller than its box but no descendant actually scrolls, so the bottom is clipped and unreachable (root cause: a flex-column scroll child missing `min-height: 0`).",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-test-testutils-ts-createtesttimeout",
     "name": "createTestTimeout",
     "path": "src/shared/test/testUtils.ts",

@@ -186,6 +186,13 @@
   margin-top: 2px;
 }
 
+/* The column centers its children; let the toolbar row span the full width so its
+   own justify-content: flex-end right-aligns the Edit button (the staff still opts
+   into centering separately via .drum-notation-mini-x-scroll below). */
+.shared-chord-playback-settings__drums-notation .drum-notation-mini-header-row {
+  align-self: stretch;
+}
+
 .shared-chord-playback-settings__drums-notation .darbuka-trainer-icon-link {
   color: rgba(109, 40, 217, 0.62);
 }
