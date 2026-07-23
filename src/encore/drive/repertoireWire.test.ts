@@ -5,6 +5,7 @@ import {
   buildWireFromTables,
   defaultRepertoireExtrasRow,
   mergeRecordsByUpdatedAt,
+  mergeRepertoireExtras,
   parseRepertoireWire,
   repertoireExtrasFromWire,
   serializeRepertoireWire,
@@ -139,5 +140,62 @@ describe('mergeRecordsByUpdatedAt', () => {
     const merged = mergeRecordsByUpdatedAt<EncoreSong>([a], [b]);
     expect(merged).toHaveLength(1);
     expect(merged[0]!.title).toBe('B');
+  });
+});
+
+describe('song/performance delete tombstones (P0-1, clocked)', () => {
+  it('round-trips the id -> deletedAt tombstone maps through the wire', () => {
+    const iso = '2025-06-01T00:00:00.000Z';
+    const extras = {
+      ...defaultRepertoireExtrasRow(iso),
+      deletedSongIds: { s1: iso, s2: iso },
+      deletedPerformanceIds: { p9: iso },
+    };
+    const round = parseRepertoireWire(serializeRepertoireWire(buildWireFromTables([], [], extras)));
+    expect(round.deletedSongIds).toEqual({ s1: iso, s2: iso });
+    expect(round.deletedPerformanceIds).toEqual({ p9: iso });
+  });
+
+  it('migrates a legacy id-only array wire to the clock map (deletedAt = exportedAt)', () => {
+    const wire = parseRepertoireWire(
+      JSON.stringify({
+        version: 1,
+        exportedAt: '2025-06-01T00:00:00.000Z',
+        songs: [],
+        performances: [],
+        deletedSongIds: ['x'],
+        deletedPerformanceIds: ['y'],
+      }),
+    );
+    const row = repertoireExtrasFromWire(wire);
+    expect(row.deletedSongIds).toEqual({ x: '2025-06-01T00:00:00.000Z' });
+    expect(row.deletedPerformanceIds).toEqual({ y: '2025-06-01T00:00:00.000Z' });
+  });
+
+  it('mergeRepertoireExtras unions tombstones and keeps the latest deletedAt per id', () => {
+    const a = {
+      ...defaultRepertoireExtrasRow('2025-06-01T00:00:00.000Z'),
+      deletedSongIds: { s1: '2025-01-01T00:00:00.000Z', shared: '2025-01-01T00:00:00.000Z' },
+    };
+    const b = {
+      ...defaultRepertoireExtrasRow('2025-06-02T00:00:00.000Z'),
+      deletedSongIds: { s2: '2025-01-01T00:00:00.000Z', shared: '2025-09-09T00:00:00.000Z' },
+    };
+    const merged = mergeRepertoireExtras(a, b);
+    expect(Object.keys(merged.deletedSongIds ?? {}).sort()).toEqual(['s1', 's2', 'shared']);
+    expect(merged.deletedSongIds?.shared).toBe('2025-09-09T00:00:00.000Z'); // latest wins
+  });
+
+  it('drops blank ids on parse', () => {
+    const wire = parseRepertoireWire(
+      JSON.stringify({
+        version: 1,
+        exportedAt: '2025-06-01T00:00:00.000Z',
+        songs: [],
+        performances: [],
+        deletedSongIds: ['', '  ', 'ok'],
+      }),
+    );
+    expect(Object.keys(wire.deletedSongIds ?? {})).toEqual(['ok']);
   });
 });

@@ -103,6 +103,15 @@ export interface RepertoireExtrasRow {
    * across devices (see ADR 0019 follow-up).
    */
   deletedExerciseRunIds?: string[];
+  /**
+   * Deleted-song tombstones as `id -> deletedAt` (ISO). The pull merge filters a song only when its
+   * tombstone `deletedAt >= song.updatedAt`, so a delete is not resurrected by a peer's stale copy
+   * yet a restored/re-edited song with a newer clock supersedes its tombstone (P0 + B1 fixes).
+   * Recorded/cleared via `encoreRepertoireTombstones`.
+   */
+  deletedSongIds?: Record<string, string>;
+  /** Deleted-performance tombstones as `id -> deletedAt` (ISO); same clock-supersede semantics. */
+  deletedPerformanceIds?: Record<string, string>;
   updatedAt: string;
 }
 

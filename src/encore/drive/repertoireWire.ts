@@ -1,4 +1,5 @@
 import { unionDeletedExerciseRunIds } from './encoreExerciseRunTombstones';
+import { parseTombstones, unionDeletedRowIds } from './encoreRepertoireTombstones';
 import type { RepertoireExtrasRow } from '../db/encoreDb';
 import type { EncoreDriveContentIndex } from './encoreDriveContentIndex';
 import {
@@ -110,9 +111,10 @@ export function parseRepertoireWire(json: string): RepertoireWirePayload {
   if (data.version !== 1 || !Array.isArray(data.songs) || !Array.isArray(data.performances)) {
     throw new Error('Invalid repertoire_data.json');
   }
+  const exportedAt = data.exportedAt ?? new Date().toISOString();
   return {
     version: 1,
-    exportedAt: data.exportedAt ?? new Date().toISOString(),
+    exportedAt,
     songs: data.songs as EncoreSong[],
     performances: data.performances as EncorePerformance[],
     venueCatalog: Array.isArray(data.venueCatalog) ? data.venueCatalog : undefined,
@@ -136,12 +138,20 @@ export function parseRepertoireWire(json: string): RepertoireWirePayload {
     driveUploadFolderOverrides: parseDriveUploadFolderOverrides(data.driveUploadFolderOverrides),
     driveUploadFolderOverrideLabels: parseDriveUploadFolderOverrideLabels(data.driveUploadFolderOverrideLabels),
     driveContentIndex: parseDriveContentIndex(data.driveContentIndex),
-    deletedExerciseRunIds: Array.isArray(data.deletedExerciseRunIds)
-      ? (data.deletedExerciseRunIds as unknown[])
-          .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
-          .map((x) => x.trim())
-      : undefined,
+    deletedExerciseRunIds: parseStringIdArray(data.deletedExerciseRunIds),
+    // Tombstones parse both the clock map and the legacy id-only array (pre-clock wires).
+    deletedSongIds: parseTombstones(data.deletedSongIds, exportedAt),
+    deletedPerformanceIds: parseTombstones(data.deletedPerformanceIds, exportedAt),
   };
+}
+
+/** Parse a wire string-id list (tombstones): trim, drop blanks, or `undefined` when absent/empty. */
+function parseStringIdArray(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out = (raw as unknown[])
+    .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+    .map((x) => x.trim());
+  return out.length > 0 ? out : undefined;
 }
 
 function parseDriveContentIndex(raw: unknown): EncoreDriveContentIndex | undefined {
@@ -225,6 +235,8 @@ export function buildWireFromTables(
       extras.deletedExerciseRunIds && extras.deletedExerciseRunIds.length > 0
         ? [...extras.deletedExerciseRunIds]
         : undefined,
+    deletedSongIds: nonEmptyTombstones(extras.deletedSongIds),
+    deletedPerformanceIds: nonEmptyTombstones(extras.deletedPerformanceIds),
   };
 }
 
@@ -260,8 +272,17 @@ export function repertoireExtrasFromWire(wire: RepertoireWirePayload): Repertoir
       wire.deletedExerciseRunIds && wire.deletedExerciseRunIds.length > 0
         ? [...wire.deletedExerciseRunIds]
         : undefined,
+    deletedSongIds: nonEmptyTombstones(wire.deletedSongIds),
+    deletedPerformanceIds: nonEmptyTombstones(wire.deletedPerformanceIds),
     updatedAt: wire.exportedAt,
   };
+}
+
+/** Shallow-copy a tombstone map, or `undefined` when absent/empty. */
+function nonEmptyTombstones(
+  map: Record<string, string> | undefined,
+): Record<string, string> | undefined {
+  return map && Object.keys(map).length > 0 ? { ...map } : undefined;
 }
 
 /** Merge local and remote extras without silently dropping local-only settings on conflict resolve. */
@@ -322,6 +343,8 @@ export function mergeRepertoireExtras(
       local.deletedExerciseRunIds,
       remote.deletedExerciseRunIds,
     ),
+    deletedSongIds: unionDeletedRowIds(local.deletedSongIds, remote.deletedSongIds),
+    deletedPerformanceIds: unionDeletedRowIds(local.deletedPerformanceIds, remote.deletedPerformanceIds),
     updatedAt:
       [local.updatedAt, remote.updatedAt].sort((a, b) => b.localeCompare(a))[0] ?? new Date().toISOString(),
   };

@@ -155,7 +155,10 @@ export async function applyDataRecovery(
   });
 
   // Force-write (no If-Match): the restored data is a non-destructive superset of current + history.
+  // This is a user-initiated recovery — an intentional replace, so it clears the fail-closed gate.
   const fileId = await resolveRepertoireFileId(accessToken);
-  await pushRepertoireToDrive(accessToken, fileId, undefined);
+  await pushRepertoireToDrive(accessToken, fileId, undefined, {
+    writeGuard: { autoPushAllowed: false, intentionalReplace: true },
+  });
   return { songsRestored, performancesRestored };
 }

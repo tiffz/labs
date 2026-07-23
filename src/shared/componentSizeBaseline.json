@@ -75,7 +75,6 @@
   "src/chords/components/ManualControls.tsx": 622,
   "src/encore/repertoire/songMediaLinks.ts": 614,
   "src/words/App.tsx": 613,
-  "src/encore/context/EncoreActionsContext.tsx": 605,
   "src/drums/utils/guitarTabParser.ts": 604,
   "src/encore/practice/encorePracticeExerciseModel.ts": 602
 }

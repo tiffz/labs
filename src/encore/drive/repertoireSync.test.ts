@@ -133,6 +133,11 @@ function wirePayload(songs: EncoreSong[], performances: EncorePerformance[]): st
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Reset the drive-fetch once-queues too: clearAllMocks keeps queued mockResolvedValueOnce values,
+  // so a test that throws before consuming them would leak the queue into the next test.
+  (driveGetMedia as any).mockReset();
+  (driveGetFileMetadata as any).mockReset();
+  (drivePatchJsonMedia as any).mockReset();
   songsTable = makeTable<EncoreSong>();
   perfTable = makeTable<EncorePerformance>();
   extrasTable = makeTable<RepertoireExtrasRow>();
@@ -199,7 +204,9 @@ describe('pushRepertoireToDrive', () => {
       etag: 'fromMeta',
     });
 
-    await pushRepertoireToDrive('tok', REPERTOIRE_FILE_ID, 'priorEtag');
+    await pushRepertoireToDrive('tok', REPERTOIRE_FILE_ID, 'priorEtag', {
+      writeGuard: { autoPushAllowed: true },
+    });
 
     expect(drivePatchJsonMedia).toHaveBeenCalledTimes(1);
     const [, fileIdArg, bodyArg, ifMatchArg] = (drivePatchJsonMedia as any).mock.calls[0];
@@ -576,5 +583,147 @@ describe('resolveConflictKeepLocal', () => {
   it('throws when meta has no repertoireFileId', async () => {
     syncMetaState = { id: 'default' };
     await expect(resolveConflictKeepLocal('tok')).rejects.toThrow('Not bootstrapped');
+  });
+});
+
+describe('P0 sync data-loss cluster', () => {
+  function wireWithExtras(
+    songs: EncoreSong[],
+    performances: EncorePerformance[],
+    extras: Partial<RepertoireWirePayload> = {},
+  ): string {
+    const wire: RepertoireWirePayload = {
+      version: 1,
+      exportedAt: '2025-06-01T00:00:00.000Z',
+      songs,
+      performances,
+      venueCatalog: [],
+      milestoneTemplate: [],
+      ...extras,
+    };
+    return JSON.stringify(wire);
+  }
+
+  function meta(modifiedTime: string, etag = 'etagX') {
+    return { id: REPERTOIRE_FILE_ID, modifiedTime, etag };
+  }
+
+  describe('song/performance delete tombstones (P0-1, clocked)', () => {
+    it('a locally-deleted song is not resurrected by a remote copy on pull', async () => {
+      // Local device deleted s1 at 2025-06-02 (after the row's clock); remote still lists it.
+      extrasTable.rows = [
+        { id: 'default', venueCatalog: [], milestoneTemplate: [], deletedSongIds: { s1: '2025-06-02T00:00:00.000Z' }, updatedAt: '2025-06-02T00:00:00.000Z' },
+      ];
+      (driveGetMedia as any).mockResolvedValueOnce(
+        wireWithExtras([song('s1', '2025-05-01T00:00:00.000Z'), song('s2', '2025-05-01T00:00:00.000Z')], []),
+      );
+      (driveGetFileMetadata as any).mockResolvedValueOnce(meta('2025-06-01T01:00:00.000Z'));
+
+      await pullRepertoireFromDrive('tok', REPERTOIRE_FILE_ID);
+
+      expect(songsTable.rows.map((s) => s.id)).toEqual(['s2']);
+    });
+
+    it('a locally-deleted performance is not resurrected by a remote copy on pull', async () => {
+      extrasTable.rows = [
+        { id: 'default', venueCatalog: [], milestoneTemplate: [], deletedPerformanceIds: { p1: '2025-06-02T00:00:00.000Z' }, updatedAt: '2025-06-02T00:00:00.000Z' },
+      ];
+      (driveGetMedia as any).mockResolvedValueOnce(
+        wireWithExtras([], [perf('p1', 's1', '2025-05-01T00:00:00.000Z'), perf('p2', 's1', '2025-05-01T00:00:00.000Z')]),
+      );
+      (driveGetFileMetadata as any).mockResolvedValueOnce(meta('2025-06-01T01:00:00.000Z'));
+
+      await pullRepertoireFromDrive('tok', REPERTOIRE_FILE_ID);
+
+      expect(perfTable.rows.map((p) => p.id)).toEqual(['p2']);
+    });
+
+    it('a remote tombstone removes a row this device still holds (delete propagates back)', async () => {
+      songsTable.rows = [song('s1', '2025-05-01T00:00:00.000Z')];
+      (driveGetMedia as any).mockResolvedValueOnce(
+        wireWithExtras([], [], { deletedSongIds: { s1: '2025-06-02T00:00:00.000Z' } }),
+      );
+      (driveGetFileMetadata as any).mockResolvedValueOnce(meta('2025-06-01T01:00:00.000Z'));
+
+      await pullRepertoireFromDrive('tok', REPERTOIRE_FILE_ID);
+
+      expect(songsTable.rows.map((s) => s.id)).toEqual([]);
+    });
+
+    it('B1: a song restored (bumped clock) after its tombstone survives on a peer that still holds the tombstone', async () => {
+      // Peer B still carries the tombstone for s1 (deleted at 2025-06-02). Device A restored s1 via
+      // undo, bumping its updatedAt to 2025-07-10 (> tombstone) and pushing it in the wire.
+      extrasTable.rows = [
+        { id: 'default', venueCatalog: [], milestoneTemplate: [], deletedSongIds: { s1: '2025-06-02T00:00:00.000Z' }, updatedAt: '2025-06-02T00:00:00.000Z' },
+      ];
+      (driveGetMedia as any).mockResolvedValueOnce(
+        wireWithExtras([song('s1', '2025-07-10T00:00:00.000Z', 'Restored')], []),
+      );
+      (driveGetFileMetadata as any).mockResolvedValueOnce(meta('2025-07-10T01:00:00.000Z'));
+
+      await pullRepertoireFromDrive('tok', REPERTOIRE_FILE_ID);
+
+      // The restored row's newer clock supersedes the stale tombstone — no silent cross-device loss.
+      expect(songsTable.rows.map((s) => s.id)).toEqual(['s1']);
+      expect(songsTable.rows[0].title).toBe('Restored');
+    });
+  });
+
+  describe('performance video union on pull (P0-3)', () => {
+    it('unions videos so a video logged on another device is not dropped by a newer sparse copy', async () => {
+      const local: EncorePerformance = {
+        ...perf('p1', 's1', '2025-05-01T00:00:00.000Z'),
+        videos: [{ id: 'v-local', externalVideoUrl: 'http://a', createdAt: '2025-05-01T00:00:00.000Z' }],
+      };
+      songsTable.rows = [];
+      perfTable.rows = [local];
+      // Remote is NEWER but only carries a different single video (the sparse-newer clobber case).
+      const remote: EncorePerformance = {
+        ...perf('p1', 's1', '2025-06-01T00:00:00.000Z'),
+        videos: [{ id: 'v-remote', externalVideoUrl: 'http://b', createdAt: '2025-06-01T00:00:00.000Z' }],
+      };
+      (driveGetMedia as any).mockResolvedValueOnce(wireWithExtras([], [remote]));
+      (driveGetFileMetadata as any).mockResolvedValueOnce(meta('2025-06-01T01:00:00.000Z'));
+
+      await pullRepertoireFromDrive('tok', REPERTOIRE_FILE_ID);
+
+      const merged = perfTable.rows.find((p) => p.id === 'p1')!;
+      expect((merged.videos ?? []).map((v) => v.id).sort()).toEqual(['v-local', 'v-remote']);
+    });
+  });
+
+  describe('auto-push gate (P0-2)', () => {
+    it('refuses an auto-push when no reconciling pull happened this session', async () => {
+      await expect(
+        pushRepertoireToDrive('tok', REPERTOIRE_FILE_ID, undefined, {
+          writeGuard: { autoPushAllowed: false },
+        }),
+      ).rejects.toThrow(/paused until this device syncs/i);
+      expect(drivePatchJsonMedia).not.toHaveBeenCalled();
+    });
+
+    it('allows a push once the reconciling pull has succeeded', async () => {
+      songsTable.rows = [song('s1', '2025-05-01T00:00:00.000Z')];
+      (drivePatchJsonMedia as any).mockResolvedValueOnce(meta('2025-06-01T00:00:00.000Z', 'p'));
+      (driveGetFileMetadata as any).mockResolvedValueOnce(meta('2025-06-01T00:00:01.000Z', 'm'));
+
+      await pushRepertoireToDrive('tok', REPERTOIRE_FILE_ID, 'etag', {
+        writeGuard: { autoPushAllowed: true },
+      });
+
+      expect(drivePatchJsonMedia).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows an explicit user-confirmed replace even before a pull', async () => {
+      songsTable.rows = [song('s1', '2025-05-01T00:00:00.000Z')];
+      (drivePatchJsonMedia as any).mockResolvedValueOnce(meta('2025-06-01T00:00:00.000Z', 'p'));
+      (driveGetFileMetadata as any).mockResolvedValueOnce(meta('2025-06-01T00:00:01.000Z', 'm'));
+
+      await pushRepertoireToDrive('tok', REPERTOIRE_FILE_ID, undefined, {
+        writeGuard: { autoPushAllowed: false, intentionalReplace: true },
+      });
+
+      expect(drivePatchJsonMedia).toHaveBeenCalledTimes(1);
+    });
   });
 });
