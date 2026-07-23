@@ -253,9 +253,12 @@ export function EncoreAccountMenu(props: {
         status={{ tone: driveStatus.tone, label: driveStatus.label, icon: driveStatusIcon ?? undefined }}
         identity={googleEmail ? { label: 'Signed in as', value: googleEmail } : undefined}
         description={
-          <>
-            Backed up to <strong>{ENCORE_ROOT_FOLDER}</strong> in your Drive.
-          </>
+          // Don't claim "Backed up to Drive" next to a "Not backed up" pill (S4).
+          syncState === 'deferred' ? undefined : (
+            <>
+              Backed up to <strong>{ENCORE_ROOT_FOLDER}</strong> in your Drive.
+            </>
+          )
         }
         meta={
           syncState === 'deferred'
