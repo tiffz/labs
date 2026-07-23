@@ -199,6 +199,9 @@ jobs:
     - name: Unused-exports ratchet
       run: npm run check:knip-exports-ratchet
 
+    - name: Registry drift (build inputs ↔ route registry)
+      run: npm run check:registry-drift
+
     - name: Generate shared catalog
       run: npm run generate:shared-catalog
 

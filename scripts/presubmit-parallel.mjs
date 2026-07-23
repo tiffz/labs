@@ -67,6 +67,7 @@ const staticChecks = [
   npmRun('labs catalog current', 'check:labs-catalog'),
   npmRun('knip config comments', 'check:knip-config'),
   npmRun('knip exports ratchet', 'check:knip-exports-ratchet'),
+  npmRun('registry drift', 'check:registry-drift'),
   npmRun('lint', 'lint'),
   npmRun('knip', 'knip'),
   npmRun('typecheck', 'typecheck'),
