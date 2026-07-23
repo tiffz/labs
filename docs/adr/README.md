@@ -27,33 +27,34 @@ Skip an ADR for routine features, one-off UI tweaks, or purely internal refactor
 
 ## Index
 
-| ADR                                                                       | Title                                                                                 |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [0001](./0001-static-hosting-hash-routing.md)                             | Static hosting (GitHub Pages) and hash-based client routing                           |
-| [0002](./0002-historical-decisions-in-development.md)                     | Backfill: prior decisions in `DEVELOPMENT.md`                                         |
-| [0003](./0003-stanza-multi-stem-playback.md)                              | Stanza optional multi-stem playback (local, Drive metadata)                           |
-| [0004](./0004-stanza-stem-web-audio-mixer.md)                             | Stanza stem mix bus (Web Audio `MediaElementSource` + gains)                          |
-| [0005](./0005-shared-find-the-beat-analyzer.md)                           | Shared Find-the-Beat analyzer (Essentia) for Stanza + Beat                            |
-| [0006](./0006-stanza-drive-backup-merge-and-restore.md)                   | Stanza Drive backup: conflict prompt, merge, local undo snapshots                     |
-| [0007](./0007-encore-owned-practice-resources-stanza-secondary-client.md) | Encore-owned practice resources on Drive; Stanza secondary client                     |
-| [0007](./0007-revision-stanza-encore-federated-sync.md)                   | Revision: Stanza↔Encore federated sync (overlay)                                      |
-| [0008](./0008-stanza-section-marker-model-and-metronome-calibration.md)   | Stanza section/marker data model and per-section metronome calibration                |
-| [0009](./0009-stanza-drums-and-metronome-volume.md)                       | Stanza drums groove (BPM-locked, per-section override) and metronome volume           |
-| [0010](./0010-sight-adaptive-progress.md)                                 | Color Sight adaptive progress, daily queue, and diagnostics                           |
-| [0010](./0010-encore-no-background-google-refresh.md)                     | Encore never silently refreshes Google sign-in in the background                      |
-| [0011](./0011-labs-stanza-scales-no-background-google-refresh.md)         | Stanza / Scales / shared Labs Google sign-in mirrors the no-background-refresh policy |
-| [0012](./0012-encore-originals-local-first-domain.md)                     | Encore Originals: separate local-first songwriting domain and Drive layout            |
-| [0012](./0012-scales-drive-sync-parity.md)                                | Scales Drive sync parity with Stanza portfolio backup                                 |
-| [0013](./0013-stanza-subsumes-find-the-beat.md)                           | Stanza subsumes Find the Beat; optional analysis layers and library migration         |
-| [0014](./0014-google-oauth-session-bff.md)                                | Google OAuth session BFF on Cloudflare Workers (refresh server-side; no GIS silent)   |
-| [0015](./0015-muscle-memory-local-first-anatomy.md)                       | Muscle Memory: local-first anatomy training, Dexie SRS, region GLB assets             |
-| [0016](./0016-client-crash-telemetry.md)                                  | Client crash telemetry: local-first Phase 1; production beacon deferred (free tier)   |
-| [0017](./0017-spa-native-link-navigation.md)                              | SPA in-app navigation with native link semantics (href + shared click helpers)        |
-| [0018](./0018-muscle-memory-no-skin-overlay.md)                           | Muscle Memory drops the skin overlay (muscle-vs-skeleton écorché)                     |
-| [0019](./0019-encore-non-destructive-sync-merge.md)                       | Encore content-aware non-destructive sync merge + Drive revision recovery             |
-| [0020](./0020-silent-union-sync-row-conflicts-only.md)                    | Silent union sync — prompt only for true row-level conflicts                          |
-| [0021](./0021-shared-audio-platform.md)                                   | Shared audio platform (look-ahead scheduler, measure transport)                       |
-| [0022](./0022-advanced-metronome-preferences.md)                          | Advanced metronome preferences surface                                                |
-| [0023](./0023-local-review-merge-gate.md)                                 | Local-review merge gate for `main` (three reviewer subagents)                         |
+| ADR                                                                       | Title                                                                                  |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| [0001](./0001-static-hosting-hash-routing.md)                             | Static hosting (GitHub Pages) and hash-based client routing                            |
+| [0002](./0002-historical-decisions-in-development.md)                     | Backfill: prior decisions in `DEVELOPMENT.md`                                          |
+| [0003](./0003-stanza-multi-stem-playback.md)                              | Stanza optional multi-stem playback (local, Drive metadata)                            |
+| [0004](./0004-stanza-stem-web-audio-mixer.md)                             | Stanza stem mix bus (Web Audio `MediaElementSource` + gains)                           |
+| [0005](./0005-shared-find-the-beat-analyzer.md)                           | Shared Find-the-Beat analyzer (Essentia) for Stanza + Beat                             |
+| [0006](./0006-stanza-drive-backup-merge-and-restore.md)                   | Stanza Drive backup: conflict prompt, merge, local undo snapshots                      |
+| [0007](./0007-encore-owned-practice-resources-stanza-secondary-client.md) | Encore-owned practice resources on Drive; Stanza secondary client                      |
+| [0007](./0007-revision-stanza-encore-federated-sync.md)                   | Revision: Stanza↔Encore federated sync (overlay)                                       |
+| [0008](./0008-stanza-section-marker-model-and-metronome-calibration.md)   | Stanza section/marker data model and per-section metronome calibration                 |
+| [0009](./0009-stanza-drums-and-metronome-volume.md)                       | Stanza drums groove (BPM-locked, per-section override) and metronome volume            |
+| [0010](./0010-sight-adaptive-progress.md)                                 | Color Sight adaptive progress, daily queue, and diagnostics                            |
+| [0010](./0010-encore-no-background-google-refresh.md)                     | Encore never silently refreshes Google sign-in in the background                       |
+| [0011](./0011-labs-stanza-scales-no-background-google-refresh.md)         | Stanza / Scales / shared Labs Google sign-in mirrors the no-background-refresh policy  |
+| [0012](./0012-encore-originals-local-first-domain.md)                     | Encore Originals: separate local-first songwriting domain and Drive layout             |
+| [0012](./0012-scales-drive-sync-parity.md)                                | Scales Drive sync parity with Stanza portfolio backup                                  |
+| [0013](./0013-stanza-subsumes-find-the-beat.md)                           | Stanza subsumes Find the Beat; optional analysis layers and library migration          |
+| [0014](./0014-google-oauth-session-bff.md)                                | Google OAuth session BFF on Cloudflare Workers (refresh server-side; no GIS silent)    |
+| [0015](./0015-muscle-memory-local-first-anatomy.md)                       | Muscle Memory: local-first anatomy training, Dexie SRS, region GLB assets              |
+| [0016](./0016-client-crash-telemetry.md)                                  | Client crash telemetry: local-first Phase 1; production beacon deferred (free tier)    |
+| [0017](./0017-spa-native-link-navigation.md)                              | SPA in-app navigation with native link semantics (href + shared click helpers)         |
+| [0018](./0018-muscle-memory-no-skin-overlay.md)                           | Muscle Memory drops the skin overlay (muscle-vs-skeleton écorché)                      |
+| [0019](./0019-encore-non-destructive-sync-merge.md)                       | Encore content-aware non-destructive sync merge + Drive revision recovery              |
+| [0020](./0020-silent-union-sync-row-conflicts-only.md)                    | Silent union sync — prompt only for true row-level conflicts                           |
+| [0021](./0021-shared-audio-platform.md)                                   | Shared audio platform (look-ahead scheduler, measure transport)                        |
+| [0022](./0022-advanced-metronome-preferences.md)                          | Advanced metronome preferences surface                                                 |
+| [0023](./0023-local-review-merge-gate.md)                                 | Local-review merge gate for `main` (three reviewer subagents)                          |
+| [0024](./0024-major-change-ux-qa-review-gates.md)                         | Senior-reviewer gates for major changes (PM, architecture, UX, QA) + app quality tiers |
 
-**Note:** A few early numbers were reused for unrelated topics (0007, 0010, 0012). Do **not** renumber — cite by full filename. Next new ADR is **0024**.
+**Note:** A few early numbers were reused for unrelated topics (0007, 0010, 0012). Do **not** renumber — cite by full filename. Next new ADR is **0025**.

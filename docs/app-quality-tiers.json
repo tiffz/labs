@@ -1,0 +1,151 @@
+{
+  "_note": "Quality tier = regression-criticality, INDEPENDENT of public listing (stage in labsCatalog.manifest.json). tier = f(usage, owner criticality, lifecycle) — see docs/APP_QUALITY_TIERS.md. Seed values below come from the owner's stated usage; refresh `usage` via scripts/fetch-app-usage.mjs (GA4) and adjust `criticality`/`tier` by hand. A human confirms tier changes; a quiet week does not auto-demote a critical app.",
+  "usageWindowDays": 90,
+  "usageUpdated": null,
+  "tiers": {
+    "protected": "Do not regress. Full rigor: labs-qa-review + labs-ux-review on major changes, blocking visual/e2e, guardrails required, no sweeping rewrite without an architecture pass.",
+    "standard": "Normal rigor: scoped tests, the labs-local-review trio at merge, gates by usual right-sizing.",
+    "experimental": "Move fast: sweeping changes fine with minimal testing; skip heavy gates; promote when usage rises or it graduates to stable."
+  },
+  "apps": {
+    "drums": {
+      "tier": "protected",
+      "criticality": "high",
+      "usage": null,
+      "why": "Darbuka Rhythm Trainer — used regularly by the owner (stated). Public-stable."
+    },
+    "encore": {
+      "tier": "protected",
+      "criticality": "high",
+      "private": true,
+      "usage": null,
+      "why": "Nearly all of the owner's singing practice runs through it. Unlisted because it is PRIVATE (restricted Drive login: owner + husband), not because it is early. Canonical tier != stage example."
+    },
+    "count": {
+      "tier": "protected",
+      "criticality": "high",
+      "usage": null,
+      "why": "Metronome/count-in used regularly (stated). CONFIRM this is the 'metronome app' the owner meant."
+    },
+    "words": {
+      "tier": "standard",
+      "criticality": "medium",
+      "usage": null,
+      "why": "Public-stable rhythm app; default standard pending GA."
+    },
+    "chords": {
+      "tier": "standard",
+      "criticality": "medium",
+      "usage": null,
+      "why": "Default standard pending GA."
+    },
+    "pitch": {
+      "tier": "standard",
+      "criticality": "medium",
+      "usage": null,
+      "why": "Default standard pending GA."
+    },
+    "scales": {
+      "tier": "standard",
+      "criticality": "medium",
+      "usage": null,
+      "why": "Default standard pending GA."
+    },
+    "stanza": {
+      "tier": "standard",
+      "criticality": "medium",
+      "usage": null,
+      "why": "Practice viewer; default standard pending GA. Raise if usage is high."
+    },
+    "melodia": {
+      "tier": "experimental",
+      "criticality": "low",
+      "usage": null,
+      "why": "Early development, low usage (stated) — sweeping changes are low-risk."
+    },
+    "midi": {
+      "tier": "experimental",
+      "criticality": "low",
+      "usage": null,
+      "why": "Scratchpad; early/low-use. Confirm with GA."
+    },
+    "agility": {
+      "tier": "standard",
+      "criticality": "medium",
+      "usage": null,
+      "why": "Default standard pending GA."
+    },
+    "zines": {
+      "tier": "standard",
+      "criticality": "medium",
+      "usage": null,
+      "why": "Public-stable; default standard pending GA."
+    },
+    "sight": {
+      "tier": "experimental",
+      "criticality": "low",
+      "usage": null,
+      "why": "Color Sight Trainer — early development, low usage (stated)."
+    },
+    "gesture": {
+      "tier": "standard",
+      "criticality": "medium",
+      "usage": null,
+      "why": "Default standard pending GA."
+    },
+    "zinebox": {
+      "tier": "standard",
+      "criticality": "medium",
+      "usage": null,
+      "why": "Default standard pending GA."
+    },
+    "lyrefly": {
+      "tier": "standard",
+      "criticality": "medium",
+      "usage": null,
+      "why": "Default standard pending GA."
+    },
+    "palette": {
+      "tier": "standard",
+      "criticality": "medium",
+      "usage": null,
+      "why": "Default standard pending GA."
+    },
+    "scrapboard": {
+      "tier": "standard",
+      "criticality": "medium",
+      "usage": null,
+      "why": "Default standard pending GA."
+    },
+    "muscle": {
+      "tier": "experimental",
+      "criticality": "low",
+      "usage": null,
+      "why": "Muscle Memory — early development, low usage (stated)."
+    },
+    "forms": {
+      "tier": "standard",
+      "criticality": "medium",
+      "usage": null,
+      "why": "Public-stable; default standard pending GA."
+    },
+    "story": {
+      "tier": "experimental",
+      "criticality": "low",
+      "usage": null,
+      "why": "Generator in development; confirm with GA."
+    },
+    "cats": {
+      "tier": "experimental",
+      "criticality": "low",
+      "usage": null,
+      "why": "Game in development; low-risk. Confirm with GA."
+    },
+    "corp": {
+      "tier": "experimental",
+      "criticality": "low",
+      "usage": null,
+      "why": "Internal demo game; low-risk."
+    }
+  }
+}
