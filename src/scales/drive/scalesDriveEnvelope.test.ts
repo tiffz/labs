@@ -8,7 +8,7 @@ import {
 import type { ScalesProgressData } from '../progress/types';
 
 const minimalProgress = (): ScalesProgressData => ({
-  version: 4,
+  version: 5,
   exercises: {},
   currentTierId: 'tier-0',
   introducedConcepts: {},

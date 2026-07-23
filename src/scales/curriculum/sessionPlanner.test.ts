@@ -14,7 +14,7 @@ describe('planSession', () => {
     const cStages = findExercise(cId)!.exercise.stages;
     const gStages = findExercise(gId)!.exercise.stages;
     const data: ScalesProgressData = {
-      version: 4,
+      version: 5,
       currentTierId: 'tier-0',
       exercises: {
         [cId]: {
@@ -65,7 +65,7 @@ describe('planSession', () => {
       };
     };
     const data: ScalesProgressData = {
-      version: 4,
+      version: 5,
       currentTierId: 'tier-0',
       exercises: {
         'C-pentascale-major': done('C-pentascale-major'),
@@ -94,7 +94,7 @@ describe('planSession', () => {
     const cId = 'C-pentascale-major';
     const cStages = findExercise(cId)!.exercise.stages;
     const data: ScalesProgressData = {
-      version: 4,
+      version: 5,
       currentTierId: 'tier-1',
       exercises: {
         [cId]: {
@@ -123,7 +123,7 @@ describe('planSession', () => {
     const cId = 'C-major-scale';
     const cStages = findExercise(cId)!.exercise.stages;
     const data: ScalesProgressData = {
-      version: 4,
+      version: 5,
       currentTierId: 'tier-1',
       exercises: {
         [cId]: {
@@ -152,7 +152,7 @@ describe('planSession', () => {
     const gId = 'G-major-scale';
     const cStages = findExercise(cId)!.exercise.stages;
     const data: ScalesProgressData = {
-      version: 4,
+      version: 5,
       currentTierId: 'tier-1',
       exercises: {
         [cId]: {

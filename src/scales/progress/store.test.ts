@@ -25,9 +25,14 @@ import {
   findPentascaleMajorSibling,
   exerciseContributesToGlobalMasteryTotals,
   getMasteryTier,
+  getCustomRoutines,
+  saveRoutine,
+  deleteRoutine,
+  setLastFreePracticeParams,
 } from './store';
 import { findExercise } from '../curriculum/tiers';
 import type { ScalesProgressData, PracticeRecord, ExerciseProgress } from './types';
+import type { ScalesCustomRoutine } from '../curriculum/types';
 
 const EXERCISE_ID = 'C-major-scale';
 
@@ -36,12 +41,13 @@ function fresh(): ScalesProgressData {
   // expectations across cases.
   localStorage.clear();
   return {
-    version: 4,
+    version: 5,
     exercises: {},
     currentTierId: 'tier-1',
     seenOnboarding: false,
     introducedConcepts: {},
     introducedExerciseHands: {},
+    customRoutines: [],
   };
 }
 
@@ -951,7 +957,7 @@ describe('loadProgress migrations', () => {
 
   it('returns a fresh v4 record when storage is empty', () => {
     const loaded = loadProgress();
-    expect(loaded.version).toBe(4);
+    expect(loaded.version).toBe(5);
     expect(loaded.seenOnboarding).toBe(false);
     expect(loaded.exercises).toEqual({});
     expect(loaded.introducedConcepts).toEqual({});
@@ -989,7 +995,7 @@ describe('loadProgress migrations', () => {
     localStorage.setItem('scales-progress', JSON.stringify(v1Payload));
 
     const migrated = loadProgress();
-    expect(migrated.version).toBe(4);
+    expect(migrated.version).toBe(5);
     expect(migrated.currentTierId).toBe('tier-2');
     expect(migrated.seenOnboarding).toBe(false);
     const ex = migrated.exercises['C-major-scale'];
@@ -1009,7 +1015,7 @@ describe('loadProgress migrations', () => {
     localStorage.setItem('scales-progress', JSON.stringify(v2Payload));
 
     const loaded = loadProgress();
-    expect(loaded.version).toBe(4);
+    expect(loaded.version).toBe(5);
     expect(loaded.seenOnboarding).toBe(true);
     expect(loaded.introducedConcepts).toEqual({});
     expect(loaded.introducedExerciseHands).toEqual({});
@@ -1046,7 +1052,7 @@ describe('loadProgress migrations', () => {
     localStorage.setItem('scales-progress', JSON.stringify(v2Payload));
 
     const loaded = loadProgress();
-    expect(loaded.version).toBe(4);
+    expect(loaded.version).toBe(5);
     expect(loaded.introducedConcepts.freeTempo).toBe(true);
     expect(loaded.introducedConcepts.metronome).toBe(true);
     expect(loaded.introducedConcepts.handsTogether).toBe(true);
@@ -1095,7 +1101,7 @@ describe('loadProgress migrations', () => {
     localStorage.setItem('scales-progress', JSON.stringify(v2Payload));
 
     const loaded = loadProgress();
-    expect(loaded.version).toBe(4);
+    expect(loaded.version).toBe(5);
     // All single-octave concepts should be set.
     expect(loaded.introducedConcepts.freeTempo).toBe(true);
     expect(loaded.introducedConcepts.metronome).toBe(true);
@@ -1118,7 +1124,7 @@ describe('loadProgress migrations', () => {
 
   it('round-trips a v3 payload preserving seenOnboarding=true and introduction flags', () => {
     const v3Payload: ScalesProgressData = {
-      version: 4,
+      version: 5,
       currentTierId: 'tier-1',
       exercises: {},
       seenOnboarding: true,
@@ -1142,7 +1148,7 @@ describe('loadProgress migrations', () => {
     };
     localStorage.setItem('scales-progress', JSON.stringify(futurePayload));
     const loaded = loadProgress();
-    expect(loaded.version).toBe(4);
+    expect(loaded.version).toBe(5);
     expect(loaded.currentTierId).not.toBe('tier-9');
     expect(loaded.seenOnboarding).toBe(false);
   });
@@ -1150,13 +1156,13 @@ describe('loadProgress migrations', () => {
   it('returns a fresh default when the stored payload is corrupted', () => {
     localStorage.setItem('scales-progress', '{not valid json');
     const loaded = loadProgress();
-    expect(loaded.version).toBe(4);
+    expect(loaded.version).toBe(5);
     expect(loaded.exercises).toEqual({});
   });
 
   it('markOnboardingSeen flips the flag idempotently', () => {
     const before: ScalesProgressData = {
-      version: 4,
+      version: 5,
       currentTierId: 'tier-1',
       exercises: {},
       seenOnboarding: false,
@@ -1189,7 +1195,7 @@ describe('combined major scale + pentascale mastery', () => {
     const penta = findExercise('C-pentascale-major')!.exercise;
     const lastPentaStageId = penta.stages[penta.stages.length - 1]!.id;
     const data: ScalesProgressData = {
-      version: 4,
+      version: 5,
       currentTierId: 'tier-1',
       exercises: {
         'C-pentascale-major': {
@@ -1433,5 +1439,71 @@ describe('overlearning', () => {
     }));
     const loaded = loadProgress();
     expect(loaded.exercises['F-pentascale-major']!.currentStageId).toBe('F-pentascale-major-p8g');
+  });
+});
+
+describe('custom routines', () => {
+  const routine = (id: string, name = id): ScalesCustomRoutine => ({
+    id,
+    name,
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    items: [{ kind: 'major-scale', key: 'C', hand: 'both', octaves: 2, bpm: 72, subdivision: 'none' }],
+  });
+
+  it('a fresh migration exposes an empty routine list', () => {
+    localStorage.clear();
+    expect(getCustomRoutines(loadProgress())).toEqual([]);
+  });
+
+  it('saveRoutine upserts by id and stamps updatedAt', () => {
+    let data = fresh();
+    data = saveRoutine(data, routine('r1', 'First'), '2026-02-02T00:00:00.000Z');
+    expect(getCustomRoutines(data)).toHaveLength(1);
+    expect(getCustomRoutines(data)[0].updatedAt).toBe('2026-02-02T00:00:00.000Z');
+
+    data = saveRoutine(data, routine('r1', 'Renamed'), '2026-03-03T00:00:00.000Z');
+    expect(getCustomRoutines(data)).toHaveLength(1);
+    expect(getCustomRoutines(data)[0].name).toBe('Renamed');
+  });
+
+  it('deleteRoutine removes the routine and records a tombstone', () => {
+    let data = fresh();
+    data = saveRoutine(data, routine('r1'), '2026-02-02T00:00:00.000Z');
+    data = deleteRoutine(data, 'r1', '2026-04-04T00:00:00.000Z');
+    expect(getCustomRoutines(data)).toEqual([]);
+    expect(data.deletedRoutineIds?.r1).toBe('2026-04-04T00:00:00.000Z');
+  });
+
+  it('re-saving a deleted id clears its tombstone', () => {
+    let data = fresh();
+    data = saveRoutine(data, routine('r1'), '2026-02-02T00:00:00.000Z');
+    data = deleteRoutine(data, 'r1', '2026-04-04T00:00:00.000Z');
+    data = saveRoutine(data, routine('r1', 'Reborn'), '2026-05-05T00:00:00.000Z');
+    expect(getCustomRoutines(data)).toHaveLength(1);
+    expect(data.deletedRoutineIds?.r1).toBeUndefined();
+  });
+
+  it('deleteRoutine on an unknown id is a no-op reference', () => {
+    const data = fresh();
+    expect(deleteRoutine(data, 'nope')).toBe(data);
+  });
+
+  it('routines and tombstones survive a save/load round-trip', () => {
+    localStorage.clear();
+    let data = loadProgress();
+    data = saveRoutine(data, routine('r1'), '2026-02-02T00:00:00.000Z');
+    data = saveRoutine(data, routine('r2'), '2026-03-03T00:00:00.000Z');
+    data = deleteRoutine(data, 'r2', '2026-04-04T00:00:00.000Z');
+    saveProgress(data);
+    const loaded = loadProgress();
+    expect(getCustomRoutines(loaded).map(r => r.id)).toEqual(['r1']);
+    expect(loaded.deletedRoutineIds?.r2).toBe('2026-04-04T00:00:00.000Z');
+  });
+
+  it('setLastFreePracticeParams remembers the last selection', () => {
+    const data = setLastFreePracticeParams(fresh(), {
+      kind: 'major-scale', key: 'Bb', hand: 'both', octaves: 2, bpm: 88, subdivision: 'none',
+    });
+    expect(data.lastFreePracticeParams?.key).toBe('Bb');
   });
 });

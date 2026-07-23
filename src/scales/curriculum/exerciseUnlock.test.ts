@@ -14,7 +14,7 @@ const gMajorId = 'G-major-scale';
 
 function baseProgress(exercises: ScalesProgressData['exercises']): ScalesProgressData {
   return {
-    version: 4,
+    version: 5,
     currentTierId: 'tier-1',
     exercises,
     seenOnboarding: true,

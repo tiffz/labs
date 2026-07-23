@@ -12,6 +12,9 @@ import { ScalesDriveBackupProvider } from './context/ScalesDriveBackupContext';
 
 /** SessionScreen pulls ScoreDisplay/VexFlow — keep off the home-screen first paint. */
 const SessionScreen = lazy(() => import('./components/SessionScreen'));
+/** Free-practice + routines are secondary surfaces — lazy so they don't weigh the home paint. */
+const FreePracticeScreen = lazy(() => import('./components/FreePracticeScreen'));
+const RoutinesScreen = lazy(() => import('./components/RoutinesScreen'));
 
 const debugMode = readLabsDebugFromLocation().debug;
 if (debugMode) enableDebug();
@@ -30,6 +33,18 @@ function ScreenRouter() {
       );
     case 'progress':
       return <ProgressScreen />;
+    case 'free-practice':
+      return (
+        <Suspense fallback={null}>
+          <FreePracticeScreen />
+        </Suspense>
+      );
+    case 'routines':
+      return (
+        <Suspense fallback={null}>
+          <RoutinesScreen />
+        </Suspense>
+      );
     default:
       return <HomeScreen />;
   }

@@ -8,7 +8,13 @@ import type {
   PendingRegressNotice,
 } from './types';
 import { TIERS, findExercise } from '../curriculum/tiers';
-import type { ExerciseDefinition, ExerciseKind, Stage } from '../curriculum/types';
+import type {
+  ExerciseDefinition,
+  ExerciseKind,
+  Stage,
+  PracticeItem,
+  ScalesCustomRoutine,
+} from '../curriculum/types';
 import { triggerConcepts } from '../curriculum/concepts';
 import {
   getGuidedThresholdCriteria,
@@ -430,14 +436,48 @@ export interface ReviewEntry {
 
 function defaultProgress(): ScalesProgressData {
   return {
-    version: 4,
+    version: 5,
     exercises: {},
     currentTierId: TIERS[0].id,
     seenOnboarding: false,
     introducedConcepts: {},
     introducedExerciseHands: {},
+    customRoutines: [],
     progressUpdatedAt: new Date().toISOString(),
   };
+}
+
+/**
+ * Defensive normalizer for the persisted `customRoutines` array. A corrupted
+ * or partial blob (or a hand-edited localStorage) must never crash the loader,
+ * so every field is validated and bad entries are dropped rather than trusted.
+ */
+function sanitizeCustomRoutines(raw: unknown): ScalesCustomRoutine[] {
+  if (!Array.isArray(raw)) return [];
+  const result: ScalesCustomRoutine[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue;
+    const r = entry as Partial<ScalesCustomRoutine>;
+    if (typeof r.id !== 'string' || typeof r.name !== 'string') continue;
+    if (!Array.isArray(r.items)) continue;
+    result.push({
+      id: r.id,
+      name: r.name,
+      updatedAt: typeof r.updatedAt === 'string' ? r.updatedAt : new Date(0).toISOString(),
+      items: r.items.filter((it): it is PracticeItem => !!it && typeof it === 'object'),
+    });
+  }
+  return result;
+}
+
+/** Validate the tombstone map (routine id → ISO deletion time). */
+function sanitizeDeletedRoutineIds(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, string> = {};
+  for (const [id, ts] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof ts === 'string') out[id] = ts;
+  }
+  return out;
 }
 
 function defaultProgressUpdatedAt(data: {
@@ -535,6 +575,9 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
     seenOnboarding?: unknown;
     introducedConcepts?: unknown;
     introducedExerciseHands?: unknown;
+    customRoutines?: unknown;
+    deletedRoutineIds?: unknown;
+    lastFreePracticeParams?: unknown;
   };
   if (typeof data.version !== 'number') return null;
   if (typeof data.currentTierId !== 'string') return null;
@@ -558,9 +601,10 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
     const { introducedConcepts, introducedExerciseHands } = backfillIntroductions(exercises);
     return {
       ...v2,
-      version: 4,
+      version: 5,
       introducedConcepts,
       introducedExerciseHands,
+      customRoutines: [],
       exercises: Object.fromEntries(
         Object.entries(exercises).map(([id, ep]) => [
           id,
@@ -572,7 +616,7 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
   if (data.version === 2) {
     const { introducedConcepts, introducedExerciseHands } = backfillIntroductions(exercises);
     return {
-      version: 4,
+      version: 5,
       exercises: Object.fromEntries(
         Object.entries(exercises).map(([id, ep]) => [
           id,
@@ -583,6 +627,7 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
       seenOnboarding: data.seenOnboarding === true,
       introducedConcepts,
       introducedExerciseHands,
+      customRoutines: [],
     };
   }
   if (data.version === 3) {
@@ -606,7 +651,8 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
     };
     const v3: ScalesProgressData = {
       ...v3Base,
-      version: 4,
+      version: 5,
+      customRoutines: [],
       progressUpdatedAt:
         typeof (data as { progressUpdatedAt?: unknown }).progressUpdatedAt === 'string'
           ? (data as { progressUpdatedAt: string }).progressUpdatedAt
@@ -623,7 +669,11 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
     };
     return v3;
   }
-  if (data.version === 4) {
+  if (data.version === 4 || data.version === 5) {
+    // v4 and v5 share the same exercise/onboarding shape; v5 adds
+    // `customRoutines` + `lastFreePracticeParams`. A v4 blob has neither
+    // (defaults to an empty routine list, no last params) — a lossless
+    // upgrade. A v5 blob carries them through, sanitized.
     const introducedConcepts =
       data.introducedConcepts && typeof data.introducedConcepts === 'object'
         ? (data.introducedConcepts as IntroducedConcepts)
@@ -632,8 +682,8 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
       data.introducedExerciseHands && typeof data.introducedExerciseHands === 'object'
         ? (data.introducedExerciseHands as Record<string, IntroducedHands>)
         : {};
-    const base = {
-      version: 4 as const,
+    const base: ScalesProgressData = {
+      version: 5 as const,
       exercises: Object.fromEntries(
         Object.entries(exercises).map(([id, ep]) => [
           id,
@@ -647,6 +697,12 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
       seenOnboarding: data.seenOnboarding === true,
       introducedConcepts,
       introducedExerciseHands,
+      customRoutines: sanitizeCustomRoutines(data.customRoutines),
+      deletedRoutineIds: sanitizeDeletedRoutineIds(data.deletedRoutineIds),
+      lastFreePracticeParams:
+        data.lastFreePracticeParams && typeof data.lastFreePracticeParams === 'object'
+          ? (data.lastFreePracticeParams as PracticeItem)
+          : undefined,
     };
     return {
       ...base,
@@ -667,6 +723,70 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
 export function markOnboardingSeen(data: ScalesProgressData): ScalesProgressData {
   if (data.seenOnboarding) return data;
   return { ...data, seenOnboarding: true };
+}
+
+// --- Custom routines (Free Practice / My Routines) --------------------------
+//
+// Routines live alongside curriculum progress but are fully independent of it:
+// none of these helpers touch `exercises`, `currentTierId`, or unlock state.
+// Each returns a new immutable `ScalesProgressData` (same pattern as
+// `markOnboardingSeen`); the caller persists via `saveProgress`.
+
+/** Read the routine list, tolerating pre-v5 data that never set the field. */
+export function getCustomRoutines(data: ScalesProgressData): ScalesCustomRoutine[] {
+  return data.customRoutines ?? [];
+}
+
+/**
+ * Insert or replace a routine by id (upsert), stamping `updatedAt` to `now`
+ * so Drive's last-writer-wins merge resolves correctly. `now` is injected so
+ * tests stay deterministic.
+ */
+export function saveRoutine(
+  data: ScalesProgressData,
+  routine: ScalesCustomRoutine,
+  now: string = new Date().toISOString(),
+): ScalesProgressData {
+  const stamped = { ...routine, updatedAt: now };
+  const existing = getCustomRoutines(data);
+  const idx = existing.findIndex(r => r.id === routine.id);
+  const customRoutines =
+    idx >= 0
+      ? existing.map((r, i) => (i === idx ? stamped : r))
+      : [...existing, stamped];
+  // Re-creating an id supersedes any prior deletion tombstone for it.
+  const deletedRoutineIds = { ...(data.deletedRoutineIds ?? {}) };
+  delete deletedRoutineIds[routine.id];
+  return { ...data, customRoutines, deletedRoutineIds };
+}
+
+/**
+ * Remove a routine by id and record a tombstone so a delete on this device is
+ * not resurrected by a Drive pull that still lists it. No-op (same reference)
+ * when the id is neither present nor already tombstoned.
+ */
+export function deleteRoutine(
+  data: ScalesProgressData,
+  id: string,
+  now: string = new Date().toISOString(),
+): ScalesProgressData {
+  const existing = getCustomRoutines(data);
+  // The UI only deletes a routine the user can see, so a not-present id is a
+  // pure no-op — do not mint a tombstone for something that was never here.
+  if (!existing.some(r => r.id === id)) return data;
+  return {
+    ...data,
+    customRoutines: existing.filter(r => r.id !== id),
+    deletedRoutineIds: { ...(data.deletedRoutineIds ?? {}), [id]: now },
+  };
+}
+
+/** Remember the last free-practice picker selection (device-local scratch). */
+export function setLastFreePracticeParams(
+  data: ScalesProgressData,
+  params: PracticeItem,
+): ScalesProgressData {
+  return { ...data, lastFreePracticeParams: params };
 }
 
 /**

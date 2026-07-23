@@ -14,6 +14,7 @@ import {
   getMasteryTier,
   getReviewExercises,
   getCombinedMajorScaleMastery,
+  getCustomRoutines,
 } from '../progress/store';
 import ScalesInputSources from './InputSources';
 import ScalesAccountMenu from './ScalesAccountMenu';
@@ -197,9 +198,10 @@ function BigStat({
 }
 
 export default function HomeScreen() {
-  const { state, dispatch, startSession } = useScales();
+  const { state, dispatch, startSession, startRoutine } = useScales();
   const { progress, microphoneActive, sessionComplete, lastSessionSummary } = state;
   const anyDeviceEnabled = hasEnabledMidiDevice(state);
+  const savedRoutines = getCustomRoutines(progress);
   // Pre-compute the next session plan for the post-session "Up next"
   // tip. Cheap synchronous call — same shape we'd run on Practice now.
   const upcomingPlan = sessionComplete && lastSessionSummary ? planSession(progress) : null;
@@ -350,6 +352,90 @@ export default function HomeScreen() {
       : null;
 
   const openProgressMap = () => dispatch({ type: 'SET_SCREEN', screen: 'progress' });
+  const openFreePractice = () => dispatch({ type: 'SET_SCREEN', screen: 'free-practice' });
+  const openRoutines = () => dispatch({ type: 'SET_SCREEN', screen: 'routines' });
+
+  // Secondary, progressive-disclosure entries — quieter than "Practice now".
+  // Saved routines surface as light tappable tiles (the "Due for review" tile
+  // pattern), each starting that routine in order.
+  const secondaryEntries = (
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2.5, mb: { xs: 6, md: 8 } }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 1.5 }}>
+        <Button
+          variant="outlined"
+          onClick={openFreePractice}
+          startIcon={<Icon name="tune" size={18} />}
+          sx={{ borderRadius: '999px', px: 2.5, height: 40, ...TYPE.labelLarge, textTransform: 'none' }}
+        >
+          Practice something specific
+        </Button>
+        <Button
+          variant="outlined"
+          onClick={openRoutines}
+          startIcon={<Icon name="list_alt" size={18} />}
+          sx={{ borderRadius: '999px', px: 2.5, height: 40, ...TYPE.labelLarge, textTransform: 'none' }}
+        >
+          My routines
+        </Button>
+      </Box>
+      {savedRoutines.length > 0 && (
+        <Box sx={{ width: '100%', maxWidth: 460, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {savedRoutines.slice(0, 3).map(routine => (
+            <ButtonBase
+              key={routine.id}
+              onClick={() => hasInput && startRoutine(routine)}
+              disabled={!hasInput || routine.items.length === 0}
+              focusRipple
+              aria-label={`Start routine ${routine.name}, ${routine.items.length} ${routine.items.length === 1 ? 'item' : 'items'}`}
+              sx={{
+                display: 'flex',
+                width: '100%',
+                alignItems: 'center',
+                textAlign: 'left',
+                gap: 1.5,
+                px: 2,
+                py: 1.5,
+                borderRadius: '12px',
+                border: theme => `1px solid ${theme.palette.divider}`,
+                transition: 'background-color 120ms ease',
+                '&:hover': { bgcolor: 'action.hover' },
+                '&.Mui-disabled': { opacity: 0.6 },
+                '&:focus-visible': {
+                  outline: theme => `2px solid ${theme.palette.primary.main}`,
+                  outlineOffset: '2px',
+                },
+              }}
+            >
+              <Box
+                aria-hidden="true"
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  bgcolor: theme => `${theme.palette.primary.main}1F`,
+                  color: 'primary.main',
+                }}
+              >
+                <Icon name="play_arrow" size={18} />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ ...TYPE.labelLarge, color: 'text.primary' }} noWrap>
+                  {routine.name}
+                </Typography>
+                <Typography sx={{ ...TYPE.bodyMedium, color: 'text.secondary' }}>
+                  {routine.items.length} {routine.items.length === 1 ? 'item' : 'items'}
+                </Typography>
+              </Box>
+            </ButtonBase>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
 
   const ctaTooltipTitle = hasInput
     ? PIANO_ADVANCE_BUTTON_TOOLTIP
@@ -504,6 +590,8 @@ export default function HomeScreen() {
           {primaryCtaButton}
         </Box>
       )}
+
+      {secondaryEntries}
 
       {/* Progress + stats grid */}
       <Box
