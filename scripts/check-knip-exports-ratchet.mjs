@@ -11,7 +11,7 @@
  *   node scripts/check-knip-exports-ratchet.mjs --update    # rewrite baseline to current (any direction)
  */
 import { execSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -46,7 +46,15 @@ function collectCounts() {
 }
 
 const counts = collectCounts();
-const baseline = existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, 'utf8')) : null;
+// Read-or-null in one syscall (no existsSync-then-read TOCTOU race — js/file-system-race).
+function readBaseline() {
+  try {
+    return JSON.parse(readFileSync(baselinePath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+const baseline = readBaseline();
 
 function writeBaseline(c) {
   const sorted = Object.fromEntries(Object.entries(c).sort(([a], [b]) => a.localeCompare(b)));

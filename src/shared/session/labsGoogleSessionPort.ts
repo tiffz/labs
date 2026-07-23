@@ -243,7 +243,6 @@ export async function signInWithGoogleViaBff(options?: {
   return new Promise((resolve, reject) => {
     let settled = false;
     const expectedBffOrigin = bffOrigin();
-    const allowedOrigins = new Set([expectedBffOrigin, returnOrigin]);
 
     let broadcastChannel: BroadcastChannel | null = null;
 
@@ -291,7 +290,9 @@ export async function signInWithGoogleViaBff(options?: {
     };
 
     const onMessage = (event: MessageEvent) => {
-      if (!allowedOrigins.has(event.origin)) return;
+      // Explicit origin allowlist — direct comparison so static analysis verifies it
+      // (js/missing-origin-check). Equivalent to the prior Set membership check.
+      if (event.origin !== expectedBffOrigin && event.origin !== returnOrigin) return;
       handleOAuthDonePayload(event.data as LabsGoogleOAuthDoneMessage | undefined);
     };
 
@@ -300,7 +301,7 @@ export async function signInWithGoogleViaBff(options?: {
       broadcastChannel.onmessage = (event: MessageEvent<LabsGoogleOAuthDoneMessage>) => {
         // BroadcastChannel is same-origin; treat a missing origin as this window's origin.
         const origin = event.origin || window.location.origin;
-        if (!allowedOrigins.has(origin)) return;
+        if (origin !== expectedBffOrigin && origin !== returnOrigin) return;
         handleOAuthDonePayload(event.data);
       };
     } catch {
