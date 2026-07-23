@@ -45,7 +45,7 @@
     "dev": "npm run generate:shared-catalog && npm run generate:labs-catalog && vite",
     "build": "vite build",
     "build:analyze": "ANALYZE=true vite build",
-    "lint": "eslint . && npm run check:shared-theme-contract",
+    "lint": "eslint . --cache --cache-location .cache/eslint/lint --cache-strategy content && npm run check:shared-theme-contract",
     "deps:outdated": "npm outdated --long",
     "deps:update:safe": "npm update",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",

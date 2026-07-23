@@ -54,12 +54,18 @@ function countViolations() {
   let out = '';
   try {
     // eslint exits non-zero when it reports errors; JSON is on stdout regardless.
-    out = execSync(`npx eslint src --rule '${ruleOverride}' --format json`, {
-      cwd: root,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-      maxBuffer: 64 * 1024 * 1024,
-    });
+    // --cache (content strategy) makes re-runs incremental: unchanged files skip the
+    // expensive React Compiler analysis. Separate cache-location from `npm run lint`
+    // because this run uses different --rule overrides (different effective config).
+    out = execSync(
+      `npx eslint src --rule '${ruleOverride}' --cache --cache-location .cache/eslint/react-hooks --cache-strategy content --format json`,
+      {
+        cwd: root,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+        maxBuffer: 64 * 1024 * 1024,
+      },
+    );
   } catch (e) {
     out = `${e.stdout ?? ''}`;
     if (!out.trim()) {
