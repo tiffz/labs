@@ -16,6 +16,7 @@ import {
   removeOrphanBeamedFlags,
   suppressBeamedNoteFlags,
 } from '../utils/chordNotationBeams';
+import { useVexFlowMusicFontReady } from '../../shared/notation/useVexFlowMusicFontReady';
 
 interface ChordStylePreviewProps {
   strategy: ChordStylingStrategy;
@@ -73,9 +74,13 @@ const ChordStylePreview: React.FC<ChordStylePreviewProps> = ({
   height = 80,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  // Hold the first draw until the Bravura music font is usable (see
+  // useVexFlowMusicFontReady) so the preview never flashes fallback glyphs.
+  const musicFontReady = useVexFlowMusicFontReady();
 
   useEffect(() => {
     if (!containerRef.current) return;
+    if (!musicFontReady) return;
     containerRef.current.innerHTML = '';
 
     try {
@@ -198,7 +203,7 @@ const ChordStylePreview: React.FC<ChordStylePreviewProps> = ({
         containerRef.current.innerHTML = '<div style="padding: 0.5rem; color: #999; font-size: 0.75rem;">Preview unavailable</div>';
       }
     }
-  }, [strategy, timeSignature, width, height]);
+  }, [strategy, timeSignature, width, height, musicFontReady]);
 
   return (
     <div

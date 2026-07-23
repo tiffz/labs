@@ -28468,7 +28468,9 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "notation"
     ],
     "appsUsing": [
-      "drums"
+      "chords",
+      "drums",
+      "words"
     ],
     "exportType": "function",
     "demoId": null

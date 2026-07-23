@@ -163,14 +163,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v7
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v7
-      with:
-        node-version-file: '.nvmrc'
-        cache: 'npm'
+    - name: Setup project (Node + cached deps)
+      uses: ./.github/actions/setup-project
 
-    - name: Install dependencies
-      run: npm ci
+    # Persist the ESLint cache for `npm run lint` across runs (see react-hooks job).
+    - name: Cache ESLint (lint) results
+      uses: actions/cache@v6
+      with:
+        path: .cache/eslint
+        key: eslint-lint-${{ runner.os }}-${{ github.sha }}
+        restore-keys: |
+          eslint-lint-${{ runner.os }}-
 
     - name: Enforce shared-layer import boundaries
       run: npm run check:import-boundaries
@@ -198,6 +201,9 @@ jobs:
 
     - name: Unused-exports ratchet
       run: npm run check:knip-exports-ratchet
+
+    - name: Registry drift (build inputs ↔ route registry)
+      run: npm run check:registry-drift
 
     - name: Generate shared catalog
       run: npm run generate:shared-catalog
@@ -245,14 +251,19 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v7
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v7
-      with:
-        node-version-file: '.nvmrc'
-        cache: 'npm'
+    - name: Setup project (Node + cached deps)
+      uses: ./.github/actions/setup-project
 
-    - name: Install dependencies
-      run: npm ci
+    # Persist the ESLint cache across runs (rolling key: fresh each commit, restored
+    # from the most recent prefix match). The React Compiler rules are the slow part;
+    # with the cache, an incremental PR only re-analyzes the files it changed.
+    - name: Cache ESLint (react-hooks) results
+      uses: actions/cache@v6
+      with:
+        path: .cache/eslint
+        key: eslint-react-hooks-${{ runner.os }}-${{ github.sha }}
+        restore-keys: |
+          eslint-react-hooks-${{ runner.os }}-
 
     - name: React-hooks (React Compiler) ratchet
       run: npm run check:react-hooks-ratchet
@@ -270,14 +281,8 @@ jobs:
       with:
         fetch-depth: 0  # Scoped Vitest diffs against merge base
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v7
-      with:
-        node-version-file: '.nvmrc'
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
+    - name: Setup project (Node + cached deps)
+      uses: ./.github/actions/setup-project
 
     - name: Run tests (full)
       if: needs.scope.outputs.vitest_mode == 'full'
@@ -321,14 +326,8 @@ jobs:
       with:
         fetch-depth: 0  # Scoped e2e diffs against merge base
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v7
-      with:
-        node-version-file: '.nvmrc'
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
+    - name: Setup project (Node + cached deps)
+      uses: ./.github/actions/setup-project
 
     - name: Resolve Playwright version
       id: playwright-version
@@ -402,14 +401,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v7
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v7
-      with:
-        node-version-file: '.nvmrc'
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
+    - name: Setup project (Node + cached deps)
+      uses: ./.github/actions/setup-project
 
     - name: Build project
       env:

@@ -45,7 +45,7 @@
     "dev": "npm run generate:shared-catalog && npm run generate:labs-catalog && vite",
     "build": "vite build",
     "build:analyze": "ANALYZE=true vite build",
-    "lint": "eslint . && npm run check:shared-theme-contract",
+    "lint": "eslint . --cache --cache-location .cache/eslint/lint --cache-strategy content && npm run check:shared-theme-contract",
     "deps:outdated": "npm outdated --long",
     "deps:update:safe": "npm update",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
@@ -105,7 +105,8 @@
     "prepare": "husky",
     "check:tsc-ratchet": "node scripts/check-tsc-ratchet.mjs",
     "check:react-hooks-ratchet": "node scripts/check-react-hooks-ratchet.mjs",
-    "check:knip-exports-ratchet": "node scripts/check-knip-exports-ratchet.mjs"
+    "check:knip-exports-ratchet": "node scripts/check-knip-exports-ratchet.mjs",
+    "check:registry-drift": "node scripts/check-registry-drift.mjs"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

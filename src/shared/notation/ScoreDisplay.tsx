@@ -35,6 +35,7 @@ import {
   TREBLE_8VA_THRESHOLD,
   unionNoteheadBoundsVexFlow,
 } from './scoreDisplayHelpers';
+import { useVexFlowMusicFontReady } from './useVexFlowMusicFontReady';
 
 export interface GhostNote {
   midi: number;
@@ -99,6 +100,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const stateKeyRef = useRef('');
   const [containerWidth, setContainerWidth] = useState(0);
+  const musicFontReady = useVexFlowMusicFontReady();
   const autoScrollStateRef = useRef<PlaybackAutoScrollState>({
     lastMarker: null,
     lastScrollAtMs: 0,
@@ -108,21 +110,17 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-
     const updateWidth = () => {
       const next = Math.round(el.clientWidth || 0);
       setContainerWidth((prev) => (prev === next ? prev : next));
     };
-
     updateWidth();
     window.addEventListener('resize', updateWidth);
-
     let resizeObserver: ResizeObserver | null = null;
     if (typeof ResizeObserver !== 'undefined') {
-      resizeObserver = new ResizeObserver(() => updateWidth());
+      resizeObserver = new ResizeObserver(updateWidth);
       resizeObserver.observe(el);
     }
-
     return () => {
       window.removeEventListener('resize', updateWidth);
       resizeObserver?.disconnect();
@@ -161,6 +159,8 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
 
   useEffect(() => {
     if (!containerRef.current) return;
+    // Hold the first draw until the Bravura music font is usable (see useVexFlowMusicFontReady).
+    if (!musicFontReady) return;
 
     const stateKey = JSON.stringify({
       id: score.id, key: score.key, ts: score.timeSignature,
@@ -1512,7 +1512,7 @@ const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         containerRef.current.innerHTML = `<p style="color: red; padding: 1rem;">Score failed to render. Try again.</p>`;
       }
     }
-  }, [score, currentMeasureIndex, currentNoteIndices, activeMidiNotes, practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes, zoomLevel, selectedMeasureRange, showVocalPart, showChords, highlightActiveMatches, highlightActiveMatchMode, highlightActiveMatchSemitoneSlack, crossingHighlightRegions, containerWidth]);
+  }, [score, currentMeasureIndex, currentNoteIndices, activeMidiNotes, practiceResultsByNoteId, greyedOutHands, hiddenHands, ghostNotes, zoomLevel, selectedMeasureRange, showVocalPart, showChords, highlightActiveMatches, highlightActiveMatchMode, highlightActiveMatchSemitoneSlack, crossingHighlightRegions, containerWidth, musicFontReady]);
 
   // Auto-scroll during playback to keep current measure visible
   useEffect(() => {

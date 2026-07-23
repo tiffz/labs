@@ -19,19 +19,19 @@ import {
 } from '../drive/encoreRepertoireTombstones';
 import { publishSnapshotToDrive, type BuildPublicSnapshotOptions } from '../drive/publicSnapshot';
 import { reorganizeAllDriveUploads, type ReorganizeDriveUploadsResult } from '../drive/driveReorganize';
-import { syncPerformanceVideo, syncPerformanceVideoFileName } from '../drive/performanceShortcut';
+import {
+  renameSongPerformanceVideoShortcuts,
+  syncSavedPerformanceVideoShortcuts,
+} from '../drive/performanceVideoSideEffects';
 import {
   normalizeEncorePerformance,
   syncPerformanceLegacyVideoFields,
 } from '../utils/performanceVideoModel';
-import { installServerLogger } from '../../shared/utils/serverLogger';
 import { useEncoreAuth } from './EncoreAuthContext';
 import { useEncoreLibraryExtras } from './EncoreLibraryContext';
 import { useEncoreSync } from './useEncoreSync';
 import { useEncoreBlockingJobs } from './EncoreBlockingJobContext';
 import { useLabsUndo } from '../../shared/undo/LabsUndoContext';
-
-const serverLogger = installServerLogger('ENCORE');
 
 /**
  * Mutation surface: every Encore-data write goes through here. Writes touch only the affected
@@ -82,6 +82,16 @@ function cloneRow<T>(value: T): T {
   return structuredClone(value);
 }
 
+/**
+ * Restore a deleted row with a fresh `updatedAt` so its clock supersedes its delete tombstone across
+ * devices (B1): the pull merge only filters a row when its tombstone `deletedAt >= row.updatedAt`,
+ * so a restored row must be stamped after the delete or a peer that still holds the tombstone would
+ * silently re-drop it. Undo of a delete is a re-creation event, so a fresh clock is correct.
+ */
+function restoredFromDelete<T extends { updatedAt: string }>(row: T, at: string): T {
+  return { ...row, updatedAt: at };
+}
+
 export function EncoreActionsProvider({ children }: { children: ReactNode }): ReactElement {
   const { googleAccessToken } = useEncoreAuth();
   const { effectiveDisplayName, repertoireExtras } = useEncoreLibraryExtras();
@@ -102,27 +112,7 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
       await markDirtyRow('song', synced.id, 'upsert');
       scheduleBackgroundSync();
       if (googleAccessToken && previous && previous.title !== synced.title) {
-        void (async () => {
-          try {
-            const songPerformances = await encoreDb.performances.where('songId').equals(song.id).toArray();
-            await Promise.all(
-              songPerformances
-                .filter((p) => p.videoShortcutDriveFileId || p.videoTargetDriveFileId)
-                .map((p) =>
-                  syncPerformanceVideoFileName(
-                    googleAccessToken,
-                    p,
-                    synced,
-                    driveUploadFolderOverridesRef.current,
-                  ).catch((err) => {
-                    serverLogger.warn('encore.saveSong: video rename failed', err);
-                  }),
-                ),
-            );
-          } catch (err) {
-            serverLogger.warn('encore.saveSong: video rename batch failed', err);
-          }
-        })();
+        renameSongPerformanceVideoShortcuts(googleAccessToken, synced, driveUploadFolderOverridesRef.current);
       }
       if (willPushUndo && nextSnap) {
         const id = synced.id;
@@ -171,9 +161,12 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
       if (willPushUndo && songSnap && perfsSnap) {
         pushUndo({
           undo: async () => {
+            const restoredAt = new Date().toISOString();
             await encoreDb.transaction('rw', encoreDb.songs, encoreDb.performances, async () => {
-              await encoreDb.songs.put(songSnap);
-              await Promise.all(perfsSnap.map((perf) => encoreDb.performances.put(perf)));
+              await encoreDb.songs.put(restoredFromDelete(songSnap, restoredAt));
+              await Promise.all(
+                perfsSnap.map((perf) => encoreDb.performances.put(restoredFromDelete(perf, restoredAt))),
+              );
             });
             await markDirtyRows([
               { kind: 'song', rowId: songSnap.id, op: 'upsert' },
@@ -233,60 +226,12 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
         });
       }
       if (googleAccessToken) {
-        const videos = toSave.videos ?? [];
-        const entries =
-          videos.length > 0
-            ? videos
-            : toSave.videoTargetDriveFileId
-              ? [
-                  {
-                    id: toSave.primaryVideoId ?? toSave.id,
-                    videoTargetDriveFileId: toSave.videoTargetDriveFileId,
-                    videoShortcutDriveFileId: toSave.videoShortcutDriveFileId,
-                  },
-                ]
-              : [];
-        if (entries.length > 0) {
-          void (async () => {
-            try {
-              const song = (await encoreDb.songs.get(toSave.songId)) ?? null;
-              let updatedVideos = [...videos];
-              let shortcutChanged = false;
-              for (const video of entries) {
-                if (!video.videoTargetDriveFileId?.trim()) continue;
-                const pseudo: EncorePerformance = {
-                  ...toSave,
-                  videoTargetDriveFileId: video.videoTargetDriveFileId,
-                  videoShortcutDriveFileId: video.videoShortcutDriveFileId,
-                };
-                const result = await syncPerformanceVideo(
-                  googleAccessToken,
-                  pseudo,
-                  song,
-                  driveUploadFolderOverridesRef.current,
-                );
-                if (result.shortcutCreatedId && result.shortcutCreatedId !== video.videoShortcutDriveFileId) {
-                  shortcutChanged = true;
-                  if (updatedVideos.length > 0) {
-                    updatedVideos = updatedVideos.map((v) =>
-                      v.id === video.id ? { ...v, videoShortcutDriveFileId: result.shortcutCreatedId } : v,
-                    );
-                  }
-                }
-              }
-              if (shortcutChanged) {
-                const merged = syncPerformanceLegacyVideoFields({
-                  ...toSave,
-                  videos: updatedVideos.length > 0 ? updatedVideos : toSave.videos,
-                });
-                await encoreDb.performances.put(merged);
-                scheduleBackgroundSync();
-              }
-            } catch (err) {
-              serverLogger.warn('encore.savePerformance: video shortcut sync failed', err);
-            }
-          })();
-        }
+        syncSavedPerformanceVideoShortcuts({
+          accessToken: googleAccessToken,
+          performance: toSave,
+          driveUploadFolderOverrides: driveUploadFolderOverridesRef.current,
+          onUpdated: scheduleBackgroundSync,
+        });
       }
     },
     [googleAccessToken, isReplayingRef, pushUndo, scheduleBackgroundSync],
@@ -305,7 +250,7 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
       if (willPushUndo && snap) {
         pushUndo({
           undo: async () => {
-            await encoreDb.performances.put(snap);
+            await encoreDb.performances.put(restoredFromDelete(snap, new Date().toISOString()));
             await markDirtyRow('performance', id, 'upsert');
             await clearDeletedPerformanceIds([id]);
             scheduleBackgroundSync();
@@ -407,9 +352,12 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
       if (willPushUndo) {
         pushUndo({
           undo: async () => {
+            const restoredAt = new Date().toISOString();
             await encoreDb.transaction('rw', encoreDb.songs, encoreDb.performances, async () => {
-              await Promise.all(songSnaps.map((s) => encoreDb.songs.put(s)));
-              await Promise.all(perfSnaps.map((p) => encoreDb.performances.put(p)));
+              await Promise.all(songSnaps.map((s) => encoreDb.songs.put(restoredFromDelete(s, restoredAt))));
+              await Promise.all(
+                perfSnaps.map((p) => encoreDb.performances.put(restoredFromDelete(p, restoredAt))),
+              );
             });
             await markDirtyRows([
               ...songSnaps.map((s) => ({ kind: 'song' as const, rowId: s.id, op: 'upsert' as const })),
@@ -517,8 +465,11 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
       if (willPushUndo) {
         pushUndo({
           undo: async () => {
+            const restoredAt = new Date().toISOString();
             await encoreDb.transaction('rw', encoreDb.performances, async () => {
-              await Promise.all(snaps.map((p) => encoreDb.performances.put(p)));
+              await Promise.all(
+                snaps.map((p) => encoreDb.performances.put(restoredFromDelete(p, restoredAt))),
+              );
             });
             await markDirtyRows(
               snaps.map((p) => ({ kind: 'performance' as const, rowId: p.id, op: 'upsert' as const })),
