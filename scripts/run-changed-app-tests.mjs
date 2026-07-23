@@ -82,6 +82,19 @@ if (shared || apps.size === 0 || apps.size > 3) {
   process.exit(0);
 }
 
+// Repo-wide invariants scan ALL of src/ regardless of which app changed, so a per-app scoped run
+// would skip them — which let a file grow past the size baseline (and could hide a new import-
+// boundary or module-cycle violation) until a full-vitest PR tripped it. Always run them.
+const REPO_WIDE_GUARDRAILS = [
+  'src/shared/componentSizeGuardrails.test.ts', // advisory size report + hard new-god-file cap
+  'src/shared/sharedModuleCycles.test.ts', // blocking: no new cross-module cycles
+  'src/shared/importBoundaries.test.ts', // blocking: no cross-app imports
+];
+console.log('test:changed-apps: repo-wide guardrails');
+execSync(`npx vitest run ${REPO_WIDE_GUARDRAILS.join(' ')} --passWithNoTests ${vitestExtraArgs}`.trim(), {
+  stdio: 'inherit',
+});
+
 for (const app of apps) {
   console.log(`test:changed-apps: vitest src/${app}`);
   // --passWithNoTests: non-app src dirs (e.g. src/types) have no Vitest files.
