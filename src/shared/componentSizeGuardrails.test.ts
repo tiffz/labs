@@ -4,16 +4,19 @@ import { describe, expect, it } from 'vitest';
 import baseline from './componentSizeBaseline.json';
 
 /**
- * Per-file size ratchet — the Wave-1 flagship from the 2026-07 quality tournament
- * (docs/QUALITY_TOURNAMENT_2026-07.md, tech-debt #2). The 600-line decomposition
- * standard (docs/COMPONENT_DECOMPOSITION_PATTERN.md) had NO enforcement, so its own
- * pilot (StanzaWorkspace) sat at 3k lines and oversized files monotonically regrew.
+ * Per-file size guard. The 600-line decomposition standard
+ * (docs/COMPONENT_DECOMPOSITION_PATTERN.md) had NO enforcement, so oversized files
+ * monotonically regrew.
  *
- * This freezes today's ceilings: a **new** source file must be <= THRESHOLD lines,
- * and a currently-oversized file (in the baseline) may only **shrink**, never grow.
- * Decomposition becomes mechanically unavoidable instead of opt-in. Same monotonic
- * shape as `sharedModuleCycles.test.ts` / jscpd ratchet — update the baseline DOWN
- * (never up) as files are split. Generated data files are exempt.
+ * **Two-part policy (advisory per-file, hard for new files):**
+ * - **HARD:** a **new** source file must be <= THRESHOLD lines — prevents new god-files.
+ * - **ADVISORY:** growth of already-baselined oversized files is *reported, not blocked*.
+ *   A raw per-file line freeze taxed legitimate growth (a P0 data-loss fix was blocked by it)
+ *   and rewarded artificial splits (extract-a-helper-just-to-pass hurts leanness). Line count
+ *   is a poor proxy for complexity; per-unit complexity + the no-new-god-file gate are the real
+ *   leanness signals. The baseline is now a watch-list, not a freeze. (Owner decision 2026-07-23;
+ *   the follow-up is complexity/function-length lint rules — see PROCESS_BACKLOG.)
+ * Generated data files are exempt.
  */
 const THRESHOLD = 600;
 const REPO_ROOT = resolve(__dirname, '../..');
@@ -57,23 +60,24 @@ describe('per-file size ratchet', () => {
     ).toEqual([]);
   });
 
-  it('baselined oversized files only shrink, never grow', () => {
+  it('reports growth/shrinkage of baselined oversized files (ADVISORY — never fails)', () => {
     const grew = Object.entries(base)
       .filter(([rel, was]) => sizes.has(rel) && (sizes.get(rel) as number) > was)
-      .map(([rel, was]) => `${rel}: ${was} -> ${sizes.get(rel)} (must not grow)`);
-    expect(grew, `Oversized file(s) grew:\n  ${grew.join('\n  ')}`).toEqual([]);
-  });
-
-  it('baseline stays honest: no entry that has dropped to/under threshold or been removed', () => {
-    // Keeps the baseline shrinking. If a file split below THRESHOLD (or was deleted),
-    // remove its row so it re-enters the hard cap in test 1.
-    const stale = Object.keys(base).filter(
+      .map(([rel, was]) => `${rel}: ${was} -> ${sizes.get(rel)}`);
+    const nowUnderThreshold = Object.keys(base).filter(
       (rel) => !sizes.has(rel) || (sizes.get(rel) as number) <= THRESHOLD,
     );
-    expect(
-      stale,
-      `Baseline rows no longer needed (file split below ${THRESHOLD} or removed) — delete them ` +
-        `from componentSizeBaseline.json:\n  ${stale.join('\n  ')}`,
-    ).toEqual([]);
+    if (grew.length > 0) {
+      console.warn(
+        `[size-advisory] baselined oversized files grew (decompose when practical; not blocking):\n  ${grew.join('\n  ')}`,
+      );
+    }
+    if (nowUnderThreshold.length > 0) {
+      console.warn(
+        `[size-advisory] baselined files now <= ${THRESHOLD} — trim componentSizeBaseline.json:\n  ${nowUnderThreshold.join('\n  ')}`,
+      );
+    }
+    // Non-blocking by design: the only hard size gate is the NEW-file cap above.
+    expect(Array.isArray(grew)).toBe(true);
   });
 });
