@@ -45,6 +45,7 @@ sync, merge, or delete/data-loss paths until
 [`labs-qa-review`](../skills/labs-qa-review/SKILL.md) has passed. Auto-merge lands the
 PR the moment CI goes green, which can beat a still-running review and ship a defect
 the gate would have caught — this is how #99's cross-device data-loss bug (B1) reached
-`main`. Order: run QA, fix blockers, **then** arm auto-merge.
+`main` (root cause class `qa-escaped-defect`, sequencing variant). Order: run QA, fix
+blockers, **then** arm auto-merge.
 
-Root cause classes: `product-scope-drift`, `architecture-review-gap`, `ux-design-review-gap`, `qa-escaped-defect`, `qa-gate-bypassed-by-automerge`.
+Root cause classes: `product-scope-drift`, `architecture-review-gap`, `ux-design-review-gap`, `qa-escaped-defect`.
