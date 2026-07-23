@@ -196,6 +196,9 @@ jobs:
     - name: Knip ignore config comments
       run: npm run check:knip-config
 
+    - name: Unused-exports ratchet
+      run: npm run check:knip-exports-ratchet
+
     - name: Generate shared catalog
       run: npm run generate:shared-catalog
 
