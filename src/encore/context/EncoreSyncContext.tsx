@@ -350,7 +350,10 @@ export function EncoreSyncProvider({ children }: { children: ReactNode }): React
   const dismissConflict = useCallback(() => {
     setConflict(null);
     setConflictAnalysis(null);
-    setSyncState('idle');
+    // "Decide later" leaves local edits diverged from Drive, so surface "not backed up" instead of a
+    // false "Backed up" (S4). If an earlier pull already opened the auto-push gate, a later edit's
+    // push 412s on the stale etag and flips to "error" — also honest, and If-Match blocks the clobber.
+    setSyncState('deferred');
   }, []);
 
   const acknowledgeSilentMerge = useCallback(() => {

@@ -233,9 +233,11 @@ export function EncoreAccountMenu(props: {
         ? { tone: 'error' as const, label: 'Sync error' }
         : syncState === 'conflict'
           ? { tone: 'warning' as const, label: 'Conflict' }
-          : driveBanner.lastSuccessfulPushAt
-            ? { tone: 'ok' as const, label: 'Backed up' }
-            : { tone: 'idle' as const, label: 'Setting up' };
+          : syncState === 'deferred'
+            ? { tone: 'warning' as const, label: 'Not backed up' }
+            : driveBanner.lastSuccessfulPushAt
+              ? { tone: 'ok' as const, label: 'Backed up' }
+              : { tone: 'idle' as const, label: 'Setting up' };
 
   const driveStatusIcon = (() => {
     if (driveStatus.tone === 'ok') return <CheckCircleIcon sx={{ fontSize: 14 }} />;
@@ -251,16 +253,21 @@ export function EncoreAccountMenu(props: {
         status={{ tone: driveStatus.tone, label: driveStatus.label, icon: driveStatusIcon ?? undefined }}
         identity={googleEmail ? { label: 'Signed in as', value: googleEmail } : undefined}
         description={
-          <>
-            Backed up to <strong>{ENCORE_ROOT_FOLDER}</strong> in your Drive.
-          </>
+          // Don't claim "Backed up to Drive" next to a "Not backed up" pill (S4).
+          syncState === 'deferred' ? undefined : (
+            <>
+              Backed up to <strong>{ENCORE_ROOT_FOLDER}</strong> in your Drive.
+            </>
+          )
         }
         meta={
-          driveBanner.lastSuccessfulPushAt
-            ? `Last sync ${formatRelativeSyncInstant(driveBanner.lastSuccessfulPushAt)}.`
-            : syncState === 'error' && syncMessage
-              ? syncMessage
-              : undefined
+          syncState === 'deferred'
+            ? 'Review the changes on this device to back them up.'
+            : driveBanner.lastSuccessfulPushAt
+              ? `Last sync ${formatRelativeSyncInstant(driveBanner.lastSuccessfulPushAt)}.`
+              : syncState === 'error' && syncMessage
+                ? syncMessage
+                : undefined
         }
         utilityActions={[
           ...(driveBanner.rootFolderId
@@ -309,9 +316,9 @@ export function EncoreAccountMenu(props: {
           },
         }}
         inlineSecondary={
-          syncState === 'error'
+          syncState === 'error' || syncState === 'deferred'
             ? {
-                label: 'Retry sync',
+                label: syncState === 'deferred' ? 'Review changes' : 'Retry sync',
                 icon: driveRetryBusy ? <RefreshIcon className="spin" fontSize="small" /> : <RefreshIcon fontSize="small" />,
                 loading: driveRetryBusy,
                 onClick: () => {

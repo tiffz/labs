@@ -96,4 +96,21 @@ describe('Drive sync data-loss layer presence (Encore)', () => {
     expect(repertoireSync).toContain('deletedRunIds');
     expect(repertoireWire).toContain('unionDeletedExerciseRunIds');
   });
+
+  it('Layer: conflict ANALYSIS filters tombstoned rows, not just the resolve/pull merge (S3)', () => {
+    // Without this, the review dialog offers "keep this device" for a row already deleted elsewhere,
+    // then the post-resolution filter silently discards the pick. analyzeRepertoireConflict must take
+    // tombstones and route both sides through filterTombstonedRows.
+    expect(repertoireSync).toMatch(/analyzeRepertoireConflict[\s\S]*tombstones/);
+    expect(repertoireSync).toMatch(/filterTombstonedRows\(local\.songs/);
+    expect(repertoireSync).toMatch(/filterTombstonedRows\(remote\.songs/);
+  });
+
+  it('Layer: dismissing a conflict surfaces "not backed up", not a false "Backed up" (S4)', () => {
+    // "Decide later" leaves edits diverged and unpushed; the status must not revert to idle/Backed up.
+    expect(syncContext).toMatch(/dismissConflict[\s\S]*setSyncState\('deferred'\)/);
+    const accountMenu = read('../components/EncoreAccountMenu.tsx');
+    expect(accountMenu).toContain("syncState === 'deferred'");
+    expect(accountMenu).toContain('Not backed up');
+  });
 });
