@@ -65,4 +65,21 @@ describe('BaseInstrument.stopAll', () => {
     expect(stopB).toHaveBeenCalledOnce();
     expect(instrument.activeVoiceCount).toBe(0);
   });
+
+  it('stops sources AT the bus-fade end, never at 0 (anti-click ordering)', () => {
+    // Cutting an oscillator/sample mid-waveform while the gain is still audible
+    // clicks. stopAll must ramp the bus to 0 first and stop each source at that
+    // ramp-end time — so voice.stop is called with a positive time, not 0.
+    const ctx = createMockAudioContext();
+    const instrument = new TestInstrument(ctx);
+    const stop = vi.fn();
+    instrument.registerVoice(stop);
+
+    instrument.stopAll(0); // even a 0ms request gets the minimum anti-click fade
+
+    const stopAt = stop.mock.calls[0][0] as number;
+    expect(stopAt).toBeGreaterThan(0);
+    // The stop time equals the bus-gain ramp end (currentTime 0 + min fade).
+    expect(stopAt).toBeCloseTo(0.012, 5);
+  });
 });

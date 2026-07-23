@@ -199,18 +199,22 @@ export function useChartChordPlayback({
       if (drumVolume > 0 && drumPlayer) {
         const drumCtx = drumPlayer.getAudioContext();
         if (!drumCtx || drumCtx.state !== 'running') return;
+        // Clamp an overdue measure start to "now" so a late measure's drums PLAY
+        // (like the chord path clamps notes) instead of being per-hit skipped ->
+        // the "chords sound, drums silent on the last looped measure" bug. The
+        // structural fix is one shared context + one late decision (ADR 0025);
+        // this keeps chord and drum audible-together until then.
+        const drumMeasureStart = Math.max(
+          measureStartAudioTimeFromEpoch(drumCtx, playbackEpochPerfRef.current, stepIndex, measureMs),
+          drumCtx.currentTime,
+        );
         scheduleDrumMeasure({
           drumPlayer,
           pattern: measureSettings.drumPattern,
           timeSignature: CHART_CHORD_PLAYBACK_TIME_SIGNATURE,
           tempo,
           volume: drumVolume,
-          measureStartTime: measureStartAudioTimeFromEpoch(
-            drumCtx,
-            playbackEpochPerfRef.current,
-            stepIndex,
-            measureMs,
-          ),
+          measureStartTime: drumMeasureStart,
         });
       }
     },
@@ -419,8 +423,14 @@ export function useChartChordPlayback({
       const loop = loopPlaybackRef.current || sectionId !== null;
       const idx = stepIndexRef.current;
       // Rebuild with a fresh epoch — never replay notes that piled up while suspended.
-      const resumeSteps =
-        idx >= playSteps.length ? playSteps : playSteps.slice(Math.min(idx, playSteps.length - 1));
+      // When looping, keep the WHOLE section as the loop body: slicing to the
+      // current (look-ahead) step makes every later wrap restart from mid-section
+      // instead of the section start. Only the non-loop resume-to-end case slices.
+      const resumeSteps = loop
+        ? playSteps
+        : idx >= playSteps.length
+          ? playSteps
+          : playSteps.slice(Math.min(idx, playSteps.length - 1));
       if (resumeSteps.length === 0) return;
       beginPlayback(resumeSteps, { loop, sectionId });
     };
