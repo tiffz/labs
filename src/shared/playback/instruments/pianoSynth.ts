@@ -108,8 +108,13 @@ export class PianoSynthesizer extends BaseInstrument {
     
     lfo.onended = () => {
       lfoGain.disconnect();
+      // modulationGain is wired noteGain -> modulationGain -> output in playNote;
+      // it must be disconnected too or a GainNode leaks per long note, growing the
+      // live graph across a seamless loop until the tab OOM-crashes. (sampledPiano
+      // already disconnects its equivalent node on ended — this path did not.)
+      modulationGain.disconnect();
     };
-    
+
     return modulationGain;
   }
   
@@ -188,9 +193,9 @@ export class PianoSynthesizer extends BaseInstrument {
         noteGain.connect(this.output);
       }
       
-      const release = this.trackVoice(() => {
+      const release = this.trackVoice((when) => {
         try {
-          osc.stop(0);
+          osc.stop(when ?? 0);
         } catch {
           /* already stopped */
         }

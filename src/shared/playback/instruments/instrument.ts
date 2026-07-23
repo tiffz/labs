@@ -47,7 +47,10 @@ export interface Instrument {
 }
 
 type TrackedVoice = {
-  stop: () => void;
+  /** Stop this voice's source. `when` (AudioContext time) lets stopAll defer the
+   *  hard stop until the bus fade has reached silence, so sources are never cut
+   *  mid-waveform (that abrupt cut is the audible click on pause/restart). */
+  stop: (when?: number) => void;
 };
 
 /**
@@ -63,6 +66,8 @@ export abstract class BaseInstrument implements Instrument {
   protected connectedDestination: AudioNode | null = null;
   protected disposed: boolean = false;
   private activeVoices = new Set<TrackedVoice>();
+  /** Pending deferred disconnect of a faded-out bus; cleared on re-stop/dispose. */
+  private busTeardownTimer: number | null = null;
 
   constructor(audioContext: AudioContext) {
     this.audioContext = audioContext;
@@ -76,7 +81,7 @@ export abstract class BaseInstrument implements Instrument {
    * Register a voice so {@link stopAll} can stop it. Call `release` from the
    * voice's `onended` (or equivalent) so completed notes leave the set.
    */
-  protected trackVoice(stop: () => void): () => void {
+  protected trackVoice(stop: (when?: number) => void): () => void {
     const voice: TrackedVoice = { stop };
     this.activeVoices.add(voice);
     return () => {
@@ -93,50 +98,49 @@ export abstract class BaseInstrument implements Instrument {
     if (this.disposed) return;
 
     const now = this.audioContext.currentTime;
-    const fadeTime = Math.max(0, fadeTimeMs) / 1000;
+    // Always fade at least a few ms before cutting sources. Stopping an
+    // oscillator/sample mid-waveform at an arbitrary point clicks; ramping the
+    // bus to silence first and stopping AT the ramp end removes the pop. 12ms is
+    // inaudible as latency. (Callers that pass 0 still get the anti-click fade.)
+    const fadeMs = Math.max(12, Math.max(0, fadeTimeMs));
+    const fadeTime = fadeMs / 1000;
+    const stopAt = now + fadeTime;
 
-    // Hard-stop every tracked oscillator / buffer source. Leaving them on a muted
-    // bus across loop wraps was the long-session OOM path.
+    const oldOutput = this.output;
+    oldOutput.gain.cancelScheduledValues(now);
+    oldOutput.gain.setValueAtTime(oldOutput.gain.value, now);
+    oldOutput.gain.linearRampToValueAtTime(0, stopAt);
+
+    // Hard-stop every tracked source AT the ramp end (bus is already silent, so
+    // no click), then drop them so they cannot leak across loop wraps.
     for (const voice of this.activeVoices) {
       try {
-        voice.stop();
+        voice.stop(stopAt);
       } catch {
         /* already stopped */
       }
     }
     this.activeVoices.clear();
 
-    const oldOutput = this.output;
-    oldOutput.gain.cancelScheduledValues(now);
-    oldOutput.gain.setValueAtTime(oldOutput.gain.value, now);
-    if (fadeTime > 0) {
-      oldOutput.gain.linearRampToValueAtTime(0, now + fadeTime);
-    } else {
-      oldOutput.gain.setValueAtTime(0, now);
-    }
-
+    // Route subsequent notes to a fresh bus at full gain.
     this.output = this.audioContext.createGain();
     this.output.gain.value = 1;
     if (this.connectedDestination) {
       this.output.connect(this.connectedDestination);
     }
 
-    if (fadeTime <= 0) {
-      try {
-        oldOutput.disconnect();
-      } catch {
-        /* ignore */
-      }
-      return;
+    // Disconnect the faded bus after the ramp + stop settle.
+    if (this.busTeardownTimer !== null) {
+      window.clearTimeout(this.busTeardownTimer);
     }
-
-    window.setTimeout(() => {
+    this.busTeardownTimer = window.setTimeout(() => {
+      this.busTeardownTimer = null;
       try {
         oldOutput.disconnect();
       } catch {
         /* ignore */
       }
-    }, fadeTimeMs + 20);
+    }, fadeMs + 20);
   }
 
   connect(destination: AudioNode): void {
@@ -155,7 +159,11 @@ export abstract class BaseInstrument implements Instrument {
 
   dispose(): void {
     this.disposed = true;
-    this.stopAll(10);
+    // Cancel any pending deferred bus disconnect so it cannot fire post-dispose.
+    if (this.busTeardownTimer !== null) {
+      window.clearTimeout(this.busTeardownTimer);
+      this.busTeardownTimer = null;
+    }
     this.disconnect();
   }
 }

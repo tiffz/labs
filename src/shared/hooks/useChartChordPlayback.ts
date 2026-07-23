@@ -419,8 +419,14 @@ export function useChartChordPlayback({
       const loop = loopPlaybackRef.current || sectionId !== null;
       const idx = stepIndexRef.current;
       // Rebuild with a fresh epoch — never replay notes that piled up while suspended.
-      const resumeSteps =
-        idx >= playSteps.length ? playSteps : playSteps.slice(Math.min(idx, playSteps.length - 1));
+      // When looping, keep the WHOLE section as the loop body: slicing to the
+      // current (look-ahead) step makes every later wrap restart from mid-section
+      // instead of the section start. Only the non-loop resume-to-end case slices.
+      const resumeSteps = loop
+        ? playSteps
+        : idx >= playSteps.length
+          ? playSteps
+          : playSteps.slice(Math.min(idx, playSteps.length - 1));
       if (resumeSteps.length === 0) return;
       beginPlayback(resumeSteps, { loop, sectionId });
     };
