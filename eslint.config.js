@@ -85,6 +85,14 @@ export default [
       // eslint-disable with a documented reason), so promote to 'error': new
       // undisabled violations now fail CI instead of silently warning.
       'react-hooks/exhaustive-deps': 'error',
+      // Function size / complexity are held `off` here and tracked by an ADVISORY
+      // ratchet (scripts/check-complexity-ratchet.mjs, baseline complexity-baseline.json)
+      // that reports growth but never fails the build. The file-size guard
+      // (componentSizeGuardrails) catches whole god-files; these catch a single huge
+      // function or deeply-nested branch inside a small file. Burn the baseline down,
+      // then flip a rule to 'error' here and drop it from the ratchet's RULE_OVERRIDES.
+      complexity: 'off',
+      'max-lines-per-function': 'off',
       'react/react-in-jsx-scope': 'off',
       // Enforced after the SPA a11y audit. Keep these at 'error' so new
       // regressions block CI instead of silently accumulating.
