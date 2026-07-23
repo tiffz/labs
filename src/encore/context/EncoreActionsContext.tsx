@@ -82,6 +82,16 @@ function cloneRow<T>(value: T): T {
   return structuredClone(value);
 }
 
+/**
+ * Restore a deleted row with a fresh `updatedAt` so its clock supersedes its delete tombstone across
+ * devices (B1): the pull merge only filters a row when its tombstone `deletedAt >= row.updatedAt`,
+ * so a restored row must be stamped after the delete or a peer that still holds the tombstone would
+ * silently re-drop it. Undo of a delete is a re-creation event, so a fresh clock is correct.
+ */
+function restoredFromDelete<T extends { updatedAt: string }>(row: T, at: string): T {
+  return { ...row, updatedAt: at };
+}
+
 export function EncoreActionsProvider({ children }: { children: ReactNode }): ReactElement {
   const { googleAccessToken } = useEncoreAuth();
   const { effectiveDisplayName, repertoireExtras } = useEncoreLibraryExtras();
@@ -171,9 +181,12 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
       if (willPushUndo && songSnap && perfsSnap) {
         pushUndo({
           undo: async () => {
+            const restoredAt = new Date().toISOString();
             await encoreDb.transaction('rw', encoreDb.songs, encoreDb.performances, async () => {
-              await encoreDb.songs.put(songSnap);
-              await Promise.all(perfsSnap.map((perf) => encoreDb.performances.put(perf)));
+              await encoreDb.songs.put(restoredFromDelete(songSnap, restoredAt));
+              await Promise.all(
+                perfsSnap.map((perf) => encoreDb.performances.put(restoredFromDelete(perf, restoredAt))),
+              );
             });
             await markDirtyRows([
               { kind: 'song', rowId: songSnap.id, op: 'upsert' },
@@ -305,7 +318,7 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
       if (willPushUndo && snap) {
         pushUndo({
           undo: async () => {
-            await encoreDb.performances.put(snap);
+            await encoreDb.performances.put(restoredFromDelete(snap, new Date().toISOString()));
             await markDirtyRow('performance', id, 'upsert');
             await clearDeletedPerformanceIds([id]);
             scheduleBackgroundSync();
@@ -407,9 +420,12 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
       if (willPushUndo) {
         pushUndo({
           undo: async () => {
+            const restoredAt = new Date().toISOString();
             await encoreDb.transaction('rw', encoreDb.songs, encoreDb.performances, async () => {
-              await Promise.all(songSnaps.map((s) => encoreDb.songs.put(s)));
-              await Promise.all(perfSnaps.map((p) => encoreDb.performances.put(p)));
+              await Promise.all(songSnaps.map((s) => encoreDb.songs.put(restoredFromDelete(s, restoredAt))));
+              await Promise.all(
+                perfSnaps.map((p) => encoreDb.performances.put(restoredFromDelete(p, restoredAt))),
+              );
             });
             await markDirtyRows([
               ...songSnaps.map((s) => ({ kind: 'song' as const, rowId: s.id, op: 'upsert' as const })),
@@ -517,8 +533,11 @@ export function EncoreActionsProvider({ children }: { children: ReactNode }): Re
       if (willPushUndo) {
         pushUndo({
           undo: async () => {
+            const restoredAt = new Date().toISOString();
             await encoreDb.transaction('rw', encoreDb.performances, async () => {
-              await Promise.all(snaps.map((p) => encoreDb.performances.put(p)));
+              await Promise.all(
+                snaps.map((p) => encoreDb.performances.put(restoredFromDelete(p, restoredAt))),
+              );
             });
             await markDirtyRows(
               snaps.map((p) => ({ kind: 'performance' as const, rowId: p.id, op: 'upsert' as const })),

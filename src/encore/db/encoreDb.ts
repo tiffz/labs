@@ -104,16 +104,14 @@ export interface RepertoireExtrasRow {
    */
   deletedExerciseRunIds?: string[];
   /**
-   * Song ids the user deleted locally — union merge skips these so a delete on one device is not
-   * resurrected by another device still holding the row (P0 sync data-loss fix). Mirrors
-   * {@link deletedExerciseRunIds}; recorded/cleared via `encoreRepertoireTombstones`.
+   * Deleted-song tombstones as `id -> deletedAt` (ISO). The pull merge filters a song only when its
+   * tombstone `deletedAt >= song.updatedAt`, so a delete is not resurrected by a peer's stale copy
+   * yet a restored/re-edited song with a newer clock supersedes its tombstone (P0 + B1 fixes).
+   * Recorded/cleared via `encoreRepertoireTombstones`.
    */
-  deletedSongIds?: string[];
-  /**
-   * Performance ids the user deleted locally (including performances cascade-deleted with their
-   * song) — union merge skips these so cross-device sync cannot resurrect a deleted performance.
-   */
-  deletedPerformanceIds?: string[];
+  deletedSongIds?: Record<string, string>;
+  /** Deleted-performance tombstones as `id -> deletedAt` (ISO); same clock-supersede semantics. */
+  deletedPerformanceIds?: Record<string, string>;
   updatedAt: string;
 }
 

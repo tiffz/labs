@@ -394,8 +394,8 @@ export interface RepertoireWirePayload {
   driveContentIndex?: import('./drive/encoreDriveContentIndex').EncoreDriveContentIndex;
   /** Cleared exercise run ids — tombstones so union merge cannot resurrect deleted runs. */
   deletedExerciseRunIds?: string[];
-  /** Deleted song ids — tombstones so union merge cannot resurrect a song deleted on another device. */
-  deletedSongIds?: string[];
-  /** Deleted performance ids — tombstones so union merge cannot resurrect a deleted performance. */
-  deletedPerformanceIds?: string[];
+  /** Deleted-song tombstones (`id -> deletedAt` ISO); merge filters by clock supersede. */
+  deletedSongIds?: Record<string, string>;
+  /** Deleted-performance tombstones (`id -> deletedAt` ISO); merge filters by clock supersede. */
+  deletedPerformanceIds?: Record<string, string>;
 }

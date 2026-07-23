@@ -25,6 +25,7 @@ import {
 import {
   assertLabsDriveWriteAllowed,
 } from '../../shared/drive/labsDriveSyncGuard';
+import { filterTombstonedRows } from './encoreRepertoireTombstones';
 
 export type SyncConflictReason = 'local_and_remote_changed';
 
@@ -93,11 +94,12 @@ export type PullRepertoireOptions = {
 export type PushRepertoireOptions = {
   onProgress?: RepertoireSyncProgress;
   /**
-   * Auto-push data-loss gate (P0). When present, the push refuses to run unless a reconciling pull
-   * has succeeded this session (`autoPushAllowed`) or the caller is an explicit user-confirmed
-   * replace (`intentionalReplace`). Living in the write primitive makes "no sparse push before a
-   * reconciling pull" structural, so a fresh/empty device cannot clobber richer cloud data within
-   * the ~1200ms initial-pull window (DRIVE_SYNC_DATA_LOSS_PREVENTION Layer 2; labsDriveSyncGuard).
+   * Auto-push data-loss gate (P0). The push refuses to run unless a reconciling pull has succeeded
+   * this session (`autoPushAllowed`) or the caller is an explicit user-confirmed replace
+   * (`intentionalReplace`). The gate is **fail-closed**: a caller that omits `writeGuard` is treated
+   * as `{autoPushAllowed:false, intentionalReplace:false}` and blocked, so "no sparse push before a
+   * reconciling pull" is structural — a forgotten guard cannot silently bypass Layer 2
+   * (DRIVE_SYNC_DATA_LOSS_PREVENTION Layer 2; labsDriveSyncGuard).
    */
   writeGuard?: { autoPushAllowed: boolean; intentionalReplace?: boolean };
 };
@@ -129,17 +131,18 @@ export async function pullRepertoireFromDrive(
     (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(extrasRow.updatedAt);
   const mergedExtras = mergeRepertoireExtras(localExtrasRow, extrasRow);
   const deletedRunIds = new Set(mergedExtras.deletedExerciseRunIds ?? []);
-  const deletedSongIds = new Set(mergedExtras.deletedSongIds ?? []);
-  const deletedPerformanceIds = new Set(mergedExtras.deletedPerformanceIds ?? []);
   // Content-aware: never let a newer-but-empty song row wipe filled exercise answers (ADR 0019).
-  // Tombstone filter: a song deleted on any device stays deleted (union merge cannot resurrect it).
-  const mergedSongs = mergeSongRecords(localSongs, wire.songs, { deletedRunIds }).filter(
-    (s) => !deletedSongIds.has(s.id),
+  // Tombstone filter (clock supersede): a deleted row stays deleted unless it was restored/re-edited
+  // with a newer `updatedAt` than its tombstone — so cross-device undo of a delete is not lost (B1).
+  const mergedSongs = filterTombstonedRows(
+    mergeSongRecords(localSongs, wire.songs, { deletedRunIds }),
+    mergedExtras.deletedSongIds,
   );
   // Content-aware: union `videos` by id so a video logged on another device is never dropped by a
   // newer-but-sparser copy (PERFORMANCE_MERGE_POLICY). Tombstone filter drops purged performances.
-  const mergedPerf = mergePerformanceRecords(localPerf, wire.performances).filter(
-    (p) => !deletedPerformanceIds.has(p.id),
+  const mergedPerf = filterTombstonedRows(
+    mergePerformanceRecords(localPerf, wire.performances),
+    mergedExtras.deletedPerformanceIds,
   );
   onProgress?.(0.48);
   await yieldToMain();
@@ -169,13 +172,13 @@ export async function pushRepertoireToDrive(
   ifMatch: string | undefined,
   opts?: PushRepertoireOptions,
 ): Promise<void> {
-  if (opts?.writeGuard) {
-    assertLabsDriveWriteAllowed({
-      appFolderName: ENCORE_DRIVE_FOLDER_NAME,
-      autoPushAllowed: opts.writeGuard.autoPushAllowed,
-      intentionalReplace: opts.writeGuard.intentionalReplace ?? false,
-    });
-  }
+  // Fail-closed: omitting writeGuard means neither condition holds, so the write is blocked. Every
+  // caller must consciously declare autoPushAllowed (post-pull) or intentionalReplace (user action).
+  assertLabsDriveWriteAllowed({
+    appFolderName: ENCORE_DRIVE_FOLDER_NAME,
+    autoPushAllowed: opts?.writeGuard?.autoPushAllowed ?? false,
+    intentionalReplace: opts?.writeGuard?.intentionalReplace ?? false,
+  });
   const onProgress = opts?.onProgress;
   onProgress?.(0.12);
   const songs = await encoreDb.songs.toArray();
@@ -454,8 +457,6 @@ export async function resolveConflictWithChoices(
     (await encoreDb.repertoireExtras.get('default')) ?? defaultRepertoireExtrasRow(wire.exportedAt);
   const mergedExtras = mergeRepertoireExtras(localExtrasRow, extrasRow);
   const deletedRunIds = new Set(mergedExtras.deletedExerciseRunIds ?? []);
-  const deletedSongIds = new Set(mergedExtras.deletedSongIds ?? []);
-  const deletedPerformanceIds = new Set(mergedExtras.deletedPerformanceIds ?? []);
 
   const remoteSongsById = new Map(wire.songs.map((s) => [s.id, s] as const));
   const remotePerfById = new Map(wire.performances.map((p) => [p.id, p] as const));
@@ -527,8 +528,8 @@ export async function resolveConflictWithChoices(
   }
 
   // Honor delete tombstones so a resolved conflict cannot resurrect a row deleted on any device.
-  const filteredSongs = mergedSongs.filter((s) => !deletedSongIds.has(s.id));
-  const filteredPerf = mergedPerf.filter((p) => !deletedPerformanceIds.has(p.id));
+  const filteredSongs = filterTombstonedRows(mergedSongs, mergedExtras.deletedSongIds);
+  const filteredPerf = filterTombstonedRows(mergedPerf, mergedExtras.deletedPerformanceIds);
 
   await encoreDb.transaction(
     'rw',
