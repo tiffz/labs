@@ -10,6 +10,27 @@ How agents should design and implement UI so humans spend less time on gestalt, 
 
 **Hard gate (always-on):** [`.cursor/rules/ux-journey-mandatory.mdc`](../.cursor/rules/ux-journey-mandatory.mdc) — post journey sketch in chat **before UI code**.
 
+## The UX restraint rules (subtraction first)
+
+Orwell's rules of writing, for interfaces. LLM-authored UI over-builds — help text
+that explains the obvious, the same button in two places, over-carding, decoration
+that does no work. Default to **subtraction**: a design is done not when there is
+nothing left to add, but when there is nothing left to remove.
+
+1. **If an element can be removed and the design still works, remove it.** The master rule — the visual "cut the word out."
+2. **Never explain in text what the UI already shows.** No help text for the obvious, no label that repeats its icon, no tooltip restating the heading. (`ux-redundancy`)
+3. **Show each action once.** The same button in two places, or a control and its near-duplicate, is one control too many.
+4. **One primary action per screen; everything else is quieter.** Three loud buttons above the fold means none is primary. (`ux-journey-overload`)
+5. **No card, border, shadow, or divider that isn't doing work.** Group with space first; add a container only when grouping fails without it. Never card-in-card. (`ux-visual-weight`)
+6. **One control that does the whole job beats three that each do part of it.** Consolidate.
+7. **Show state, don't narrate it.** One aggregate status, not a sentence on every row.
+8. **Fewest steps, fewest choices, fewest words.** Every added option spends the user's attention.
+9. **Break a rule only when removing the element genuinely costs the user clarity or a task** — and say why.
+
+Scoped rule: [`.agents/rules/ux-restraint.md`](../.agents/rules/ux-restraint.md). The
+`labs-ux-review` gate and `labs-review-ux-design` reviewer check designs against
+these before they reach a human. The sections below elaborate rules 2, 4, and 5.
+
 ## Before you layout (mandatory for new screens / major UX)
 
 Run skill **`labs-ux-journey`** and **post the journey sketch in chat** (not only in PR):

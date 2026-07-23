@@ -29,6 +29,16 @@ changed code, and whether new behavior has any.
 
 - **Regressions the diff invites** — a changed function's other callers, an
   altered type's other consumers, a removed guard, a default that shifted.
+- **Unintended / out-of-scope changes** — does the diff do what the PR says, and
+  _only_ that? Flag files that changed for no stated reason, a hidden behavior
+  change ridden in on a "refactor", a widened public interface, a reformat that
+  buries the real change, a stray debug/`console` line, commented-out code, or a
+  dependency added for one call site.
+- **Tech debt introduced** — a copy-pasted block that should be shared, a new
+  special case that should be a general rule, a `TODO`/`FIXME` with no owner or
+  issue, a magic number, a type escape hatch (`any`, `as`, non-null `!`, `@ts-ignore`),
+  a swallowed error (`catch {}`), or a guardrail weakened rather than satisfied.
+  Say what it will cost later and the cheaper shape now.
 - **Correctness** — edge cases (empty, loading vs. empty per
   `dexie-live-query-empty-states`, first render, error paths), off-by-one,
   unhandled rejects, `await`-after-state races, effect dependency arrays.
