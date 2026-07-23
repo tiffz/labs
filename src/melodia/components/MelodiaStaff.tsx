@@ -12,6 +12,7 @@ import VexFlow, {
 import type { NoteDuration, PianoScore, ScoreNote } from '../../shared/music/scoreTypes';
 import { durationToBeats } from '../../shared/music/scoreTypes';
 import { pickMelodyPart } from '../../shared/music/melodiaPipeline/partUtils';
+import { ensureVexFlowFontsLoaded } from '../../shared/notation/vexFlowFontExport';
 import { midiToSolfege } from './MelodiaStaff.utils';
 
 const VEX_DURATIONS: Record<NoteDuration, string> = {
@@ -222,8 +223,9 @@ export default function MelodiaStaff({
     let cancelled = false;
     void (async () => {
       try {
-        await VexFlow.loadFonts('Bravura', 'Academico');
-        VexFlow.setFonts('Bravura', 'Academico');
+        // Route through the shared music-font gate so the first draw holds until
+        // Bravura (noteheads) and Academico (solfège text) are loaded — no FOUC.
+        await ensureVexFlowFontsLoaded(['Bravura', 'Academico']);
       } catch {
         /* Non-fatal: draw may still succeed from embedded font data */
       }
