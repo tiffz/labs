@@ -74,9 +74,9 @@ export class SimpleSynthesizer extends BaseInstrument {
     osc.connect(noteGain);
     noteGain.connect(this.output);
     
-    const release = this.trackVoice(() => {
+    const release = this.trackVoice((when) => {
       try {
-        osc.stop(0);
+        osc.stop(when ?? 0);
       } catch {
         /* already stopped */
       }
