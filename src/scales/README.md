@@ -10,11 +10,18 @@ Route: `/scales/`.
 
 ## Features
 
+- **Guided path** — the default one-button curriculum: hit "Practice now" and the app auto-plans a short session from the tier/stage spiral. This stays the primary experience.
+- **Free practice** — "Practice something specific": pick any scale (kind × key × hand × octaves × tempo × subdivision) and drill it in isolation, **ungated** by curriculum unlock. Nothing here counts toward the guided path.
+- **My routines** — build a named, ordered set of practice items (from templates or scratch) and run it on autopilot, in the order you set. Routines sync via Drive.
 - **Scale catalog** — major, minor, pentatonic, modal, and custom scales drawn from the shared music catalog.
 - **Key + range selection** — transpose any scale to any key and choose how many octaves to practice.
 - **Tempo control + metronome** — shares the global transport with Piano and Beat.
 - **MIDI + acoustic input** — same grading pipeline as Piano; see "Shared Dependencies" below.
 - **Visual + audio feedback** — highlights the target note and flags incorrect notes in real time.
+
+Free practice and routines run on the **same** session runtime as the curriculum via a `SessionPlan.kind` discriminator (`'curriculum' | 'free' | 'routine'`); non-curriculum sessions never write curriculum progress, so they can't corrupt unlock/mastery/review. See `practice/` and `progress/store.ts` (v5 `customRoutines`).
+
+The Practice surfaces (picker, routines, Home Practice lane) use the shared `TYPE` scale + `Icon` from `components/scalesUi.tsx` and the app's single-emerald identity — outlined 16px cards, `${primary.main}08/14/1A` alpha-tint washes for selection/hover, M3 weight 500. No per-surface palettes.
 
 ## Copy and tone
 
@@ -28,10 +35,13 @@ Teaching principles and advancement rules: **`PEDAGOGY.md`**.
 src/scales/
 ├── App.tsx              # Shell + state
 ├── App.test.tsx         # Unit tests
-├── store.tsx            # App-local store
-├── components/          # Scale pickers, indicator, practice controls
-├── curriculum/          # Curriculum / lesson plan data
-├── progress/            # Persistence for per-user progress
+├── store.tsx            # App-local store (reducer, session-kind lifecycle)
+├── components/          # Screens (Home, Session, Progress, FreePractice, Routines) + practice/ScalePicker
+├── curriculum/          # Curriculum / lesson plan data + shared exercise/plan types
+├── practice/            # Free practice + custom routines: plan constructors, templates, picker options
+├── progress/            # Persistence for per-user progress (v5: customRoutines + tombstones)
+├── session/             # In-progress session snapshot (resume across refresh)
+├── drive/               # Google Drive backup: envelope, merge, conflict, undo snapshots
 ├── utils/               # Scales grading + scales-side AcousticInput extension
 └── styles/
 ```

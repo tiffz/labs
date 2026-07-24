@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useReducer, useCallback, useRef, useEffect, useState } from 'react';
-import type { SessionPlan, SessionExercise, ExerciseDefinition, Stage } from './curriculum/types';
+import type {
+  SessionPlan,
+  SessionExercise,
+  ExerciseDefinition,
+  Stage,
+  PracticeItem,
+  ScalesCustomRoutine,
+} from './curriculum/types';
 import type { ScalesProgressData, PracticeRecord } from './progress/types';
 import type { PracticeNoteResult } from '../shared/practice/types';
 import type { PianoScore } from '../shared/music/scoreTypes';
@@ -13,9 +20,14 @@ import {
   markGuidanceIntroduced,
   stageAdvancementGateMet,
   clearPendingRegressNotice,
+  saveRoutine as saveRoutineToProgress,
+  deleteRoutine as deleteRoutineFromProgress,
+  setLastFreePracticeParams,
+  pushRecentPracticeItem,
 } from './progress/store';
 import { findExercise } from './curriculum/tiers';
 import { planSession } from './curriculum/sessionPlanner';
+import { planFreePracticeSession, planRoutineSession } from './practice/freePractice';
 import {
   clearSessionSnapshot,
   restoreSessionFromSnapshot,
@@ -53,7 +65,7 @@ const analytics = createAppAnalytics('scales');
  */
 const MIC_LATENCY_COMPENSATION_MS = 180;
 
-type Screen = 'home' | 'session' | 'progress';
+type Screen = 'home' | 'session' | 'progress' | 'free-practice' | 'routines';
 
 export interface ExerciseResult {
   /** Ratio of fully-correct hits (pitch + perfect timing) to total notes. */
@@ -172,6 +184,10 @@ type Action =
   | { type: 'ABSORB_HOME_NOTE_GATE' }
   | { type: 'CLEAR_HOME_PRACTICE_CUE' }
   | { type: 'START_SESSION'; plan: SessionPlan }
+  | { type: 'START_FREE_PRACTICE'; item: PracticeItem }
+  | { type: 'START_ROUTINE'; routine: ScalesCustomRoutine }
+  | { type: 'SAVE_ROUTINE'; routine: ScalesCustomRoutine }
+  | { type: 'DELETE_ROUTINE'; id: string }
   | { type: 'SET_ACTIVE_EXERCISE'; index: number; score: PianoScore }
   | { type: 'SET_PLAYING'; isPlaying: boolean }
   | { type: 'UPDATE_POSITION'; measureIndex: number; noteIndices: Map<string, number> }
@@ -214,7 +230,8 @@ type Action =
   /** Tester-only: replace local progress from Google Drive restore. */
   | { type: 'REPLACE_PROGRESS_FROM_CLOUD'; progress: ScalesProgressData };
 
-function initialState(): ScalesState {
+// eslint-disable-next-line react-refresh/only-export-components -- exported for reducer unit tests
+export function initialState(): ScalesState {
   const audioPrefs = loadAudioPrefs();
   const progress = loadProgress();
   const restored = restoreSessionFromSnapshot(progress);
@@ -350,11 +367,21 @@ function transitionStartSession(state: ScalesState, plan: SessionPlan): ScalesSt
     isPlaying: false,
     currentMeasureIndex: -1,
     currentNoteIndices: new Map(),
-    sessionTierIdAtStart: state.progress.currentTierId,
+    // Free-practice and routine sessions are not the curriculum, so there is
+    // no tier to graduate from. `null` also keeps COMPLETE_SESSION from
+    // mistaking a routine for a tier-in-progress.
+    sessionTierIdAtStart:
+      plan.kind && plan.kind !== 'curriculum' ? null : state.progress.currentTierId,
   };
 }
 
-function reducer(state: ScalesState, action: Action): ScalesState {
+/** True for sessions that must not feed the linear curriculum ladder. */
+function isNonCurriculumPlan(plan: SessionPlan | null | undefined): boolean {
+  return plan?.kind === 'free' || plan?.kind === 'routine';
+}
+
+// eslint-disable-next-line react-refresh/only-export-components -- exported for reducer unit tests
+export function reducer(state: ScalesState, action: Action): ScalesState {
   switch (action.type) {
     case 'SET_SCREEN': {
       if (action.screen === 'home') {
@@ -400,6 +427,65 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         });
       }
       return next;
+    }
+
+    case 'START_FREE_PRACTICE': {
+      const plan = planFreePracticeSession(action.item, Date.now());
+      // Defensive: never enter the session screen with an ungeneratable score
+      // (would strand on "Loading exercise…"). The picker only offers valid
+      // combinations, so this should not fire in normal use.
+      if (!generateScoreForExercise(plan.exercises[0]!)) return state;
+      // Remember the selection (pre-fill) and add it to recents ("pick up where
+      // you left off"), then run a one-item non-curriculum session.
+      const progress = pushRecentPracticeItem(
+        setLastFreePracticeParams(state.progress, action.item),
+        action.item,
+      );
+      saveProgress(progress);
+      const next = transitionStartSession({ ...state, progress }, plan);
+      if (next.activeExercise && next.sessionPlan) {
+        saveSessionSnapshot({
+          sessionPlan: next.sessionPlan,
+          activeExerciseIndex: next.activeExerciseIndex,
+          activeExercise: next.activeExercise,
+          sessionTierIdAtStart: next.sessionTierIdAtStart,
+        });
+      }
+      return next;
+    }
+
+    case 'START_ROUTINE': {
+      const rawPlan = planRoutineSession(action.routine, Date.now());
+      // Drop any item whose score won't generate (e.g. a routine synced from a
+      // newer app version with a scale kind this build can't render) so the
+      // session never strands on "Loading exercise…". If nothing is playable,
+      // stay put rather than opening an empty session.
+      const exercises = rawPlan.exercises.filter(ex => generateScoreForExercise(ex) != null);
+      if (exercises.length === 0) return state;
+      const plan = { ...rawPlan, exercises };
+      const next = transitionStartSession(state, plan);
+      if (next.activeExercise && next.sessionPlan) {
+        saveSessionSnapshot({
+          sessionPlan: next.sessionPlan,
+          activeExerciseIndex: next.activeExerciseIndex,
+          activeExercise: next.activeExercise,
+          sessionTierIdAtStart: next.sessionTierIdAtStart,
+        });
+      }
+      return next;
+    }
+
+    case 'SAVE_ROUTINE': {
+      const progress = saveRoutineToProgress(state.progress, action.routine, new Date().toISOString());
+      saveProgress(progress);
+      return { ...state, progress };
+    }
+
+    case 'DELETE_ROUTINE': {
+      const progress = deleteRoutineFromProgress(state.progress, action.id);
+      if (progress === state.progress) return state;
+      saveProgress(progress);
+      return { ...state, progress };
     }
 
     case 'SET_ACTIVE_EXERCISE':
@@ -617,6 +703,31 @@ function reducer(state: ScalesState, action: Action): ScalesState {
       const correct = perfect;
       const accuracy = total > 0 ? correct / total : 0;
 
+      // Free-practice and routine runs are not the curriculum: never write to
+      // `progress.exercises` (which would leak synthetic ids into review,
+      // staleness, mastery, and per-exercise Drive merge). We still surface the
+      // in-session result and log the run for the summary card. `advanced: true`
+      // lets the flow move on to the next item / finish instead of auto-looping
+      // forever — there is no advancement gate to clear here.
+      if (isNonCurriculumPlan(state.sessionPlan)) {
+        const runRecord: SessionRunRecord = {
+          exerciseId: action.exerciseId,
+          stageId: action.stageId,
+          advanced: true,
+          accuracy,
+          purpose: action.purpose,
+        };
+        return {
+          ...state,
+          isPlaying: false,
+          currentMeasureIndex: -1,
+          currentNoteIndices: new Map(),
+          freeTempoRunComplete: false,
+          lastExerciseResult: { accuracy, correct, total, advanced: true, breakdown },
+          currentSessionRuns: [...state.currentSessionRuns, runRecord],
+        };
+      }
+
       const record: PracticeRecord = {
         exerciseId: action.exerciseId,
         stageId: action.stageId,
@@ -758,6 +869,26 @@ function reducer(state: ScalesState, action: Action): ScalesState {
         homeMidiGatePulse: state.midiNoteOnPulse,
         homeNoteDoubleTapAwait: null,
       };
+
+      // Free-practice and routine sessions do not chain into the curriculum,
+      // and they are not "lessons" — returning to the normal home avoids the
+      // curriculum "Lesson complete / Next lesson / Up next" framing (and the
+      // recap card that would otherwise render synthetic `free:` exercise ids).
+      // Free/routine practice advances nothing, so there is nothing to recap.
+      if (isNonCurriculumPlan(state.sessionPlan)) {
+        clearSessionSnapshot();
+        return {
+          ...afterClearingRuns,
+          screen: 'home',
+          sessionComplete: false,
+          lastSessionSummary: null,
+          sessionPlan: null,
+          activeExercise: null,
+          activeExerciseIndex: 0,
+          score: null,
+          sessionTierIdAtStart: null,
+        };
+      }
 
       if (tierGraduated) {
         clearSessionSnapshot();
@@ -1004,6 +1135,10 @@ interface ScalesContextValue {
   state: ScalesState;
   dispatch: React.Dispatch<Action>;
   startSession: () => void;
+  /** Start a one-item free-practice session for a user-chosen scale. */
+  startFreePractice: (item: PracticeItem) => void;
+  /** Run a saved routine on autopilot, in the order the user set. */
+  startRoutine: (routine: ScalesCustomRoutine) => void;
   startMicrophoneInput: () => Promise<boolean>;
   stopMicrophoneInput: () => void;
   toggleMicrophone: () => void;
@@ -1222,8 +1357,21 @@ export function ScalesProvider({ children }: { children: React.ReactNode }) {
     });
   }, [state.progress]);
 
+  const startFreePractice = useCallback((item: PracticeItem) => {
+    dispatch({ type: 'START_FREE_PRACTICE', item });
+    analytics.trackEvent('session_start', { exercise_count: 1, session_kind: 'free' });
+  }, []);
+
+  const startRoutine = useCallback((routine: ScalesCustomRoutine) => {
+    dispatch({ type: 'START_ROUTINE', routine });
+    analytics.trackEvent('session_start', {
+      exercise_count: routine.items.length,
+      session_kind: 'routine',
+    });
+  }, []);
+
   return (
-    <ScalesContext.Provider value={{ state, dispatch, startSession, startMicrophoneInput, stopMicrophoneInput, toggleMicrophone, toggleMidiDevice, audioBootstrapping, midiReady }}>
+    <ScalesContext.Provider value={{ state, dispatch, startSession, startFreePractice, startRoutine, startMicrophoneInput, stopMicrophoneInput, toggleMicrophone, toggleMidiDevice, audioBootstrapping, midiReady }}>
       {children}
     </ScalesContext.Provider>
   );
