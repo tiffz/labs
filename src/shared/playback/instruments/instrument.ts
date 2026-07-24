@@ -5,6 +5,8 @@
  * to be completely decoupled from how sounds are actually produced.
  */
 
+import { registerDiagnosticInstrument } from '../audioDiagnostics';
+
 export interface PlayNoteParams {
   frequency: number; // Hz
   startTime: number; // Absolute AudioContext.currentTime
@@ -75,10 +77,14 @@ export abstract class BaseInstrument implements Instrument {
    */
   private busTeardowns = new Set<{ timer: number; node: GainNode }>();
 
+  /** Remove this instrument from the live-diagnostics registry on dispose. */
+  private unregisterDiagnostics: () => void;
+
   constructor(audioContext: AudioContext) {
     this.audioContext = audioContext;
     this.output = audioContext.createGain();
     this.output.gain.value = 1.0;
+    this.unregisterDiagnostics = registerDiagnosticInstrument(this);
   }
 
   abstract playNote(params: PlayNoteParams): void;
@@ -176,6 +182,7 @@ export abstract class BaseInstrument implements Instrument {
       }
     }
     this.busTeardowns.clear();
+    this.unregisterDiagnostics();
     this.disconnect();
   }
 
