@@ -2,7 +2,17 @@
 
 ## Status
 
-Proposed (July 2026)
+Accepted (2026-07-23) — owner greenlit the full three-step direction after the
+long-play crash recurred on a build that already carries the #91 per-note leak fix,
+confirming the residual cause is structural (no wrap-time voice choke + dual clock),
+not the fixed `modulationGain` leak.
+
+Implementation lands incrementally (each step is independently shippable). First
+increment: fix the `stopAll` bus-teardown single-slot leak (a faded output bus was
+orphaned when two stops landed in one fade window) + a `pendingBusTeardownCount`
+bounded-teardown guardrail (`instrument.busTeardown.test.ts`). Steps 1–3 below
+follow, each gated by an invariant test, with a heap/voice-count measurement pass to
+confirm the specific crash is gone.
 
 ## Context
 

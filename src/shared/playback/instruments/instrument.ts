@@ -66,8 +66,14 @@ export abstract class BaseInstrument implements Instrument {
   protected connectedDestination: AudioNode | null = null;
   protected disposed: boolean = false;
   private activeVoices = new Set<TrackedVoice>();
-  /** Pending deferred disconnect of a faded-out bus; cleared on re-stop/dispose. */
-  private busTeardownTimer: number | null = null;
+  /**
+   * Pending deferred disconnects of faded-out buses. A Set (not a single slot) so two
+   * `stopAll`s within one fade window — rapid Play/Stop, fast section switches, tab
+   * visibility flips — each disconnect their own old bus. A single slot let the second
+   * call clear the first timer and orphan its bus `GainNode`, wired to `destination`
+   * forever: one leaked node per rapid re-stop, unbounded over a long session.
+   */
+  private busTeardowns = new Set<{ timer: number; node: GainNode }>();
 
   constructor(audioContext: AudioContext) {
     this.audioContext = audioContext;
@@ -129,18 +135,18 @@ export abstract class BaseInstrument implements Instrument {
       this.output.connect(this.connectedDestination);
     }
 
-    // Disconnect the faded bus after the ramp + stop settle.
-    if (this.busTeardownTimer !== null) {
-      window.clearTimeout(this.busTeardownTimer);
-    }
-    this.busTeardownTimer = window.setTimeout(() => {
-      this.busTeardownTimer = null;
+    // Disconnect the faded bus after the ramp + stop settle. Each stopAll tracks its
+    // OWN teardown (see busTeardowns) so a rapid second stop cannot orphan this bus.
+    const entry: { timer: number; node: GainNode } = { timer: 0, node: oldOutput };
+    entry.timer = window.setTimeout(() => {
+      this.busTeardowns.delete(entry);
       try {
         oldOutput.disconnect();
       } catch {
         /* ignore */
       }
     }, fadeMs + 20);
+    this.busTeardowns.add(entry);
   }
 
   connect(destination: AudioNode): void {
@@ -159,11 +165,22 @@ export abstract class BaseInstrument implements Instrument {
 
   dispose(): void {
     this.disposed = true;
-    // Cancel any pending deferred bus disconnect so it cannot fire post-dispose.
-    if (this.busTeardownTimer !== null) {
-      window.clearTimeout(this.busTeardownTimer);
-      this.busTeardownTimer = null;
+    // Cancel pending deferred disconnects and disconnect their buses now, so no faded
+    // bus is left wired to `destination` after dispose (and no timer fires post-dispose).
+    for (const entry of this.busTeardowns) {
+      window.clearTimeout(entry.timer);
+      try {
+        entry.node.disconnect();
+      } catch {
+        /* ignore */
+      }
     }
+    this.busTeardowns.clear();
     this.disconnect();
+  }
+
+  /** Test / diagnostics — buses awaiting deferred disconnect (should stay bounded). */
+  get pendingBusTeardownCount(): number {
+    return this.busTeardowns.size;
   }
 }
