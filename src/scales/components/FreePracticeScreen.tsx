@@ -20,10 +20,11 @@ import {
   FREE_PRACTICE_MIN_BPM,
   FREE_PRACTICE_MAX_BPM,
   keysForKind,
+  keyForKindOrDefault,
   defaultPracticeItem,
   practiceItemHeadline,
 } from '../practice/freePracticeOptions';
-import { getRecentPracticeItems } from '../progress/store';
+import { getRecentPracticeItems, practiceItemIdentity } from '../progress/store';
 import { createRoutineId } from '../practice/routineTemplates';
 import type { ExerciseKind, Hand, Key, PracticeItem, SubdivisionMode } from '../curriculum/types';
 
@@ -63,11 +64,8 @@ export default function FreePracticeScreen() {
 
   const goHome = () => dispatch({ type: 'SET_SCREEN', screen: 'home' });
 
-  const setKind = (kind: ExerciseKind) => {
-    const keys = keysForKind(kind);
-    const key = keys.includes(item.key) ? item.key : keys[0];
-    setItem({ ...item, kind, key });
-  };
+  const setKind = (kind: ExerciseKind) =>
+    setItem({ ...item, kind, key: keyForKindOrDefault(kind, item.key) });
 
   const selectedOption = FREE_PRACTICE_KINDS.find(k => k.kind === item.kind) ?? FREE_PRACTICE_KINDS[0];
   const qualityLabel = selectedOption.quality === 'minor' ? 'minor' : 'major';
@@ -96,7 +94,7 @@ export default function FreePracticeScreen() {
         </Typography>
       </Box>
       <Typography sx={{ color: 'text.secondary', mb: 3, ml: 5.5, mt: -0.5, fontSize: '0.9rem' }}>
-        Pick anything to drill. Nothing here counts against your path.
+        {"Drill anything you like. It won't touch your path."}
       </Typography>
 
       <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
@@ -107,9 +105,9 @@ export default function FreePracticeScreen() {
         <Box sx={{ mb: 3 }}>
           <SectionLabel>Pick up where you left off</SectionLabel>
           <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5, mx: -0.5, px: 0.5 }}>
-            {recents.map((r, i) => (
+            {recents.map(r => (
               <ButtonBase
-                key={i}
+                key={practiceItemIdentity(r)}
                 focusRipple
                 disabled={!hasInput}
                 onClick={() => startFreePractice(r)}
@@ -149,11 +147,18 @@ export default function FreePracticeScreen() {
               aria-label={fam.label}
               sx={{
                 display: 'block', textAlign: 'left', p: 1.5, borderRadius: '14px',
-                border: theme => `1.5px solid ${selected ? fam.accent : theme.palette.divider}`,
-                boxShadow: selected ? `0 0 0 3px ${fam.accent}2e` : 'none',
-                bgcolor: 'background.paper', transition: 'transform 120ms ease',
+                // Selection + focus use the shared brand tokens, never the
+                // per-family accent (which stays on the glyph chip only) — so
+                // every card selects the same way and the focus ring is consistent.
+                border: theme => `1.5px solid ${selected
+                  ? 'var(--labs-selection-secondary-border, ' + theme.palette.primary.main + ')'
+                  : theme.palette.divider}`,
+                bgcolor: selected
+                  ? 'var(--labs-selection-secondary-bg, rgba(5, 150, 105, 0.14))'
+                  : 'background.paper',
+                transition: 'transform 120ms ease',
                 '&:hover': { transform: 'translateY(-1px)' },
-                '&:focus-visible': { outline: `2px solid ${fam.accent}`, outlineOffset: 2 },
+                '&:focus-visible': { outline: theme => `2px solid ${theme.palette.primary.main}`, outlineOffset: 2 },
               }}
             >
               <Box sx={{
@@ -255,9 +260,10 @@ export default function FreePracticeScreen() {
           disabled={!hasInput}
           onClick={() => startFreePractice(item)}
           startIcon={<MSym name="play_arrow" size={20} />}
+          aria-label={`Start ${practiceItemHeadline(item)}`}
           sx={{ borderRadius: '999px', px: 4, height: 48 }}
         >
-          Start {practiceItemHeadline(item)}
+          Start
         </Button>
         <Button
           variant="outlined"

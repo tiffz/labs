@@ -24,6 +24,20 @@ describe('scalesDriveEnvelope', () => {
     expect(back.payload.currentTierId).toBe('tier-0');
   });
 
+  it('strips device-local scratch (lastFreePracticeParams, recentPracticeItems) from the synced payload', () => {
+    const item = { kind: 'major-scale' as const, key: 'Bb' as const, hand: 'both' as const, octaves: 2 as const, bpm: 80, subdivision: 'none' as const };
+    const env = buildScalesDriveEnvelope({
+      ...minimalProgress(),
+      lastFreePracticeParams: item,
+      recentPracticeItems: [item],
+      customRoutines: [{ id: 'r1', name: 'Keep me', updatedAt: '2026-01-01T00:00:00.000Z', items: [item] }],
+    });
+    expect(env.payload.lastFreePracticeParams).toBeUndefined();
+    expect(env.payload.recentPracticeItems).toBeUndefined();
+    // Routines still sync.
+    expect(env.payload.customRoutines).toHaveLength(1);
+  });
+
   it('rejects wrong app', () => {
     const bad = JSON.stringify({
       schemaVersion: 1,

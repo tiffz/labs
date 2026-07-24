@@ -818,9 +818,15 @@ export function setLastFreePracticeParams(
 
 const MAX_RECENT_PRACTICE_ITEMS = 6;
 
-/** Stable identity for de-duplicating recents (all params that make a distinct drill). */
-function practiceItemKey(item: PracticeItem): string {
-  return [item.kind, item.key, item.hand, item.octaves, item.bpm, item.subdivision].join('|');
+/**
+ * Musical identity of a practice item (kind + key) — the axis recents track
+ * ("what", not "how"). Recents de-dupe and the chip label both key off this, so
+ * distinct-looking chips are genuinely distinct scales; re-drilling a scale at a
+ * new tempo/hand updates its single recent rather than adding a look-alike.
+ * Also a stable React key for the recents list.
+ */
+export function practiceItemIdentity(item: PracticeItem): string {
+  return `${item.kind}|${item.key}`;
 }
 
 export function getRecentPracticeItems(data: ScalesProgressData): PracticeItem[] {
@@ -829,14 +835,14 @@ export function getRecentPracticeItems(data: ScalesProgressData): PracticeItem[]
 
 /**
  * Record a just-started free-practice item at the front of the recents list,
- * de-duplicated and capped. Device-local scratch.
+ * de-duplicated by musical identity and capped. Device-local scratch.
  */
 export function pushRecentPracticeItem(
   data: ScalesProgressData,
   item: PracticeItem,
 ): ScalesProgressData {
-  const key = practiceItemKey(item);
-  const rest = getRecentPracticeItems(data).filter(it => practiceItemKey(it) !== key);
+  const id = practiceItemIdentity(item);
+  const rest = getRecentPracticeItems(data).filter(it => practiceItemIdentity(it) !== id);
   return { ...data, recentPracticeItems: [item, ...rest].slice(0, MAX_RECENT_PRACTICE_ITEMS) };
 }
 

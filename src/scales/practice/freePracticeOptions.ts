@@ -25,26 +25,43 @@ export const FREE_PRACTICE_MAJOR_KEYS: readonly Key[] = [
   'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'Db', 'Ab', 'Eb', 'Bb', 'F',
 ];
 
-/** Keys offered for minor-quality kinds. */
+/**
+ * Keys offered for minor-quality kinds, in true circle-of-fifths order
+ * (relative minors): each adjacent tonic is a perfect fifth from the last, so
+ * the wheel teaches correct key relationships. Asserted in the options test.
+ */
 export const FREE_PRACTICE_MINOR_KEYS: readonly Key[] = [
-  'A', 'E', 'B', 'F#', 'C#', 'G#', 'D', 'G', 'C', 'F', 'Bb', 'Eb',
+  'A', 'E', 'B', 'F#', 'C#', 'G#', 'Eb', 'Bb', 'F', 'C', 'G', 'D',
 ];
 
 export const FREE_PRACTICE_KINDS: readonly FreePracticeKindOption[] = [
+  // Accents are darkened to the -600/-700 range so the white glyph clears
+  // contrast; they are a deliberate per-family data-color axis (see README) and
+  // never drive focus/selection chrome — only the glyph chip.
   { kind: 'major-scale', label: 'Major scale', quality: 'major', blurb: 'Bright, most pop and classical', accent: '#059669', glyph: 'M' },
-  { kind: 'natural-minor-scale', label: 'Natural minor', quality: 'minor', blurb: 'Darker, folk and film', accent: '#6366f1', glyph: 'm' },
-  { kind: 'harmonic-minor-scale', label: 'Harmonic minor', quality: 'minor', blurb: 'That raised-7th color', accent: '#8b5cf6', glyph: 'h' },
-  { kind: 'melodic-minor-scale', label: 'Melodic minor', quality: 'minor', blurb: 'Jazz and smooth lines', accent: '#a855f7', glyph: '≀' },
-  { kind: 'arpeggio-major', label: 'Major arpeggio', quality: 'major', blurb: 'Chord shapes and leaps', accent: '#f59e0b', glyph: '△' },
-  { kind: 'arpeggio-minor', label: 'Minor arpeggio', quality: 'minor', blurb: 'Minor chord shapes', accent: '#ea580c', glyph: '▽' },
-  { kind: 'pentascale-major', label: 'Major pentascale', quality: 'major', blurb: 'Five-finger warm-ups', accent: '#0ea5e9', glyph: '5' },
-  { kind: 'pentascale-minor', label: 'Minor pentascale', quality: 'minor', blurb: 'Five fingers, minor', accent: '#0891b2', glyph: '5' },
+  { kind: 'natural-minor-scale', label: 'Natural minor', quality: 'minor', blurb: 'Darker, folk and film', accent: '#4f46e5', glyph: 'n' },
+  { kind: 'harmonic-minor-scale', label: 'Harmonic minor', quality: 'minor', blurb: 'That raised-7th color', accent: '#7c3aed', glyph: 'h' },
+  { kind: 'melodic-minor-scale', label: 'Melodic minor', quality: 'minor', blurb: 'Jazz and smooth lines', accent: '#9333ea', glyph: 'm' },
+  { kind: 'arpeggio-major', label: 'Major arpeggio', quality: 'major', blurb: 'Chord shapes and leaps', accent: '#d97706', glyph: '△' },
+  { kind: 'arpeggio-minor', label: 'Minor arpeggio', quality: 'minor', blurb: 'Minor chord shapes', accent: '#c2410c', glyph: '▽' },
+  { kind: 'pentascale-major', label: 'Major pentascale', quality: 'major', blurb: 'Five-finger warm-ups', accent: '#0284c7', glyph: 'P' },
+  { kind: 'pentascale-minor', label: 'Minor pentascale', quality: 'minor', blurb: 'Five fingers, minor', accent: '#0e7490', glyph: 'p' },
 ];
 
 /** Keys available for a given kind, by its quality. */
 export function keysForKind(kind: ExerciseKind): readonly Key[] {
   const option = FREE_PRACTICE_KINDS.find(k => k.kind === kind);
   return option?.quality === 'minor' ? FREE_PRACTICE_MINOR_KEYS : FREE_PRACTICE_MAJOR_KEYS;
+}
+
+/**
+ * Keep the current key if the new kind supports it, else fall back to the
+ * first available — so switching family (which can flip major<->minor keys)
+ * never lands on an invalid (kind, key) pair. Extracted for unit testing.
+ */
+export function keyForKindOrDefault(kind: ExerciseKind, currentKey: Key): Key {
+  const keys = keysForKind(kind);
+  return keys.includes(currentKey) ? currentKey : keys[0];
 }
 
 export const FREE_PRACTICE_HANDS: readonly Hand[] = ['right', 'left', 'both'];

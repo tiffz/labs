@@ -21,6 +21,8 @@ Route: `/scales/`.
 
 Free practice and routines run on the **same** session runtime as the curriculum via a `SessionPlan.kind` discriminator (`'curriculum' | 'free' | 'routine'`); non-curriculum sessions never write curriculum progress, so they can't corrupt unlock/mastery/review. See `practice/` and `progress/store.ts` (v5 `customRoutines`).
 
+**Practice picker color axis (intentional diversion):** the scale-family cards in `practice/freePracticeOptions.ts` use a per-family accent (`accent`) as a **data-color** cue on the glyph chip only. This is a deliberate categorical palette in an otherwise single-emerald app; it must **never** drive focus rings or selection chrome (those use the shared brand / `--labs-selection-secondary-*` tokens). Accents are kept in the -600/-700 range so the white glyph clears contrast.
+
 ## Copy and tone
 
 Learner-facing strings should follow **`COPY_STYLE.md`** in this folder (warm, concise, no em-dash essay voice). Update it when you add new UI surfaces that show prose.

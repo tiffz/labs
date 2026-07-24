@@ -218,4 +218,16 @@ describe('custom routine merge', () => {
     const { progress } = mergeScalesProgress(local, remote);
     expect(progress.lastFreePracticeParams?.key).toBe('Bb');
   });
+
+  it('keeps device-local recents from the local side and ignores any remote recents', () => {
+    const local = baseProgress({
+      recentPracticeItems: [{ kind: 'major-scale', key: 'Bb', hand: 'both', octaves: 2, bpm: 72, subdivision: 'none' }],
+    });
+    // A stray remote recents (should never happen — stripped from the envelope) must not bleed in.
+    const remote = baseProgress({
+      recentPracticeItems: [{ kind: 'major-scale', key: 'F#', hand: 'both', octaves: 2, bpm: 72, subdivision: 'none' }],
+    });
+    const { progress } = mergeScalesProgress(local, remote);
+    expect(progress.recentPracticeItems?.map(r => r.key)).toEqual(['Bb']);
+  });
 });

@@ -34,7 +34,7 @@ import {
 } from './store';
 import { findExercise } from '../curriculum/tiers';
 import type { ScalesProgressData, PracticeRecord, ExerciseProgress } from './types';
-import type { ScalesCustomRoutine } from '../curriculum/types';
+import type { ScalesCustomRoutine, PracticeItem } from '../curriculum/types';
 
 const EXERCISE_ID = 'C-major-scale';
 
@@ -1527,6 +1527,21 @@ describe('custom routines', () => {
     expect(after[0].key).toBe('D');
     expect(after.filter(r => r.key === 'D')).toHaveLength(1);
     expect(after).toHaveLength(6);
+  });
+
+  it('de-dupes recents by musical identity (kind+key), not by full params', () => {
+    let data: ScalesProgressData = fresh();
+    data = pushRecentPracticeItem(data, {
+      kind: 'major-scale', key: 'C', hand: 'both', octaves: 2, bpm: 60, subdivision: 'none',
+    });
+    // Same scale, different hand/tempo — must collapse to one recent (the latest).
+    data = pushRecentPracticeItem(data, {
+      kind: 'major-scale', key: 'C', hand: 'right', octaves: 1, bpm: 120, subdivision: 'eighth',
+    });
+    const recents = getRecentPracticeItems(data);
+    expect(recents).toHaveLength(1);
+    expect(recents[0].bpm).toBe(120); // updated to the most recent params
+    expect(recents[0].hand).toBe('right');
   });
 
   it('drops structurally malformed routine items on load, keeps valid ones', () => {

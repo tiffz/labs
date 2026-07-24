@@ -16,6 +16,7 @@ import {
   getCombinedMajorScaleMastery,
   getCustomRoutines,
   getRecentPracticeItems,
+  practiceItemIdentity,
 } from '../progress/store';
 import { practiceItemHeadline } from '../practice/freePracticeOptions';
 import ScalesInputSources from './InputSources';
@@ -382,9 +383,9 @@ export default function HomeScreen() {
 
       {recentPractice.length > 0 && (
         <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5, mx: -0.5, px: 0.5, mb: 2 }}>
-          {recentPractice.slice(0, 5).map((r, i) => (
+          {recentPractice.slice(0, 5).map(r => (
             <ButtonBase
-              key={i}
+              key={practiceItemIdentity(r)}
               focusRipple
               disabled={!hasInput}
               onClick={() => startFreePractice(r)}
@@ -552,7 +553,7 @@ export default function HomeScreen() {
         >
           {sessionComplete
             ? 'Nice work. Ready for the next one?'
-            : 'Guided practice for piano scales & arpeggios.'}
+            : 'Guided lessons for piano scales and arpeggios.'}
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
           <ScalesInputSources />
