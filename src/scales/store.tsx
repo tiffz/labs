@@ -23,6 +23,7 @@ import {
   saveRoutine as saveRoutineToProgress,
   deleteRoutine as deleteRoutineFromProgress,
   setLastFreePracticeParams,
+  pushRecentPracticeItem,
 } from './progress/store';
 import { findExercise } from './curriculum/tiers';
 import { planSession } from './curriculum/sessionPlanner';
@@ -434,9 +435,12 @@ export function reducer(state: ScalesState, action: Action): ScalesState {
       // (would strand on "Loading exercise…"). The picker only offers valid
       // combinations, so this should not fire in normal use.
       if (!generateScoreForExercise(plan.exercises[0]!)) return state;
-      // Remember the selection so the picker re-opens pre-filled, then run a
-      // one-item non-curriculum session.
-      const progress = setLastFreePracticeParams(state.progress, action.item);
+      // Remember the selection (pre-fill) and add it to recents ("pick up where
+      // you left off"), then run a one-item non-curriculum session.
+      const progress = pushRecentPracticeItem(
+        setLastFreePracticeParams(state.progress, action.item),
+        action.item,
+      );
       saveProgress(progress);
       const next = transitionStartSession({ ...state, progress }, plan);
       if (next.activeExercise && next.sessionPlan) {

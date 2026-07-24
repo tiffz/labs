@@ -15,7 +15,9 @@ import {
   getReviewExercises,
   getCombinedMajorScaleMastery,
   getCustomRoutines,
+  getRecentPracticeItems,
 } from '../progress/store';
+import { practiceItemHeadline } from '../practice/freePracticeOptions';
 import ScalesInputSources from './InputSources';
 import ScalesAccountMenu from './ScalesAccountMenu';
 import MasteryDetailsDialog, { type MasteryCategory } from './MasteryDetailsDialog';
@@ -198,10 +200,11 @@ function BigStat({
 }
 
 export default function HomeScreen() {
-  const { state, dispatch, startSession, startRoutine } = useScales();
+  const { state, dispatch, startSession, startRoutine, startFreePractice } = useScales();
   const { progress, microphoneActive, sessionComplete, lastSessionSummary } = state;
   const anyDeviceEnabled = hasEnabledMidiDevice(state);
   const savedRoutines = getCustomRoutines(progress);
+  const recentPractice = getRecentPracticeItems(progress);
   // Pre-compute the next session plan for the post-session "Up next"
   // tip. Cheap synchronous call — same shape we'd run on Practice now.
   const upcomingPlan = sessionComplete && lastSessionSummary ? planSession(progress) : null;
@@ -355,31 +358,71 @@ export default function HomeScreen() {
   const openFreePractice = () => dispatch({ type: 'SET_SCREEN', screen: 'free-practice' });
   const openRoutines = () => dispatch({ type: 'SET_SCREEN', screen: 'routines' });
 
-  // Secondary, progressive-disclosure entries — quieter than "Practice now".
-  // Saved routines surface as light tappable tiles (the "Due for review" tile
-  // pattern), each starting that routine in order.
-  const secondaryEntries = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2.5, mb: { xs: 6, md: 8 } }}>
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 1.5 }}>
+  // "Practice" — the first-class second lane. Learn (above) is the loud default;
+  // Practice is a clearly-labeled section: pick up a recent scale in one tap,
+  // open the picker, or run a saved routine. Present, polished, never nagging.
+  const practiceSection = (
+    <Box sx={{ mb: { xs: 6, md: 8 } }}>
+      <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', mb: 0.5 }}>
+        <Typography sx={{ ...TYPE.labelMedium, color: 'text.secondary', textTransform: 'uppercase' }}>
+          Practice
+        </Typography>
+        <Button
+          variant="text"
+          onClick={openRoutines}
+          endIcon={<Icon name="arrow_forward" size={16} />}
+          sx={{ ...TYPE.labelLarge, color: 'primary.main', textTransform: 'none', minWidth: 0, px: 1 }}
+        >
+          My routines{savedRoutines.length > 0 ? ` (${savedRoutines.length})` : ''}
+        </Button>
+      </Box>
+      <Typography sx={{ ...TYPE.bodyMedium, color: 'text.secondary', mb: 2 }}>
+        {"Drill anything you like. It won't touch your path."}
+      </Typography>
+
+      {recentPractice.length > 0 && (
+        <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 0.5, mx: -0.5, px: 0.5, mb: 2 }}>
+          {recentPractice.slice(0, 5).map((r, i) => (
+            <ButtonBase
+              key={i}
+              focusRipple
+              disabled={!hasInput}
+              onClick={() => startFreePractice(r)}
+              aria-label={`Start ${practiceItemHeadline(r)}`}
+              sx={{
+                flex: '0 0 auto', gap: 1, px: 1.25, py: 1, borderRadius: '999px',
+                border: theme => `1px solid ${theme.palette.divider}`,
+                ...TYPE.labelLarge, whiteSpace: 'nowrap',
+                '&:hover': { bgcolor: 'action.hover' },
+                '&.Mui-disabled': { opacity: 0.55 },
+                '&:focus-visible': { outline: theme => `2px solid ${theme.palette.primary.main}`, outlineOffset: 2 },
+              }}
+            >
+              <Box aria-hidden sx={{
+                width: 20, height: 20, borderRadius: '50%', display: 'grid', placeItems: 'center',
+                bgcolor: theme => `${theme.palette.primary.main}29`, color: 'primary.main', flexShrink: 0,
+              }}>
+                <Icon name="play_arrow" size={14} />
+              </Box>
+              {practiceItemHeadline(r)}
+            </ButtonBase>
+          ))}
+        </Box>
+      )}
+
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
         <Button
           variant="outlined"
           onClick={openFreePractice}
-          startIcon={<Icon name="tune" size={18} />}
-          sx={{ borderRadius: '999px', px: 2.5, height: 40, ...TYPE.labelLarge, textTransform: 'none' }}
+          startIcon={<Icon name="piano" size={18} />}
+          sx={{ borderRadius: '999px', px: 3, height: 44, ...TYPE.labelLarge, textTransform: 'none' }}
         >
-          Practice something specific
-        </Button>
-        <Button
-          variant="outlined"
-          onClick={openRoutines}
-          startIcon={<Icon name="list_alt" size={18} />}
-          sx={{ borderRadius: '999px', px: 2.5, height: 40, ...TYPE.labelLarge, textTransform: 'none' }}
-        >
-          My routines
+          Pick a scale
         </Button>
       </Box>
+
       {savedRoutines.length > 0 && (
-        <Box sx={{ width: '100%', maxWidth: 460, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
           {savedRoutines.slice(0, 3).map(routine => (
             <ButtonBase
               key={routine.id}
@@ -388,44 +431,24 @@ export default function HomeScreen() {
               focusRipple
               aria-label={`Start routine ${routine.name}, ${routine.items.length} ${routine.items.length === 1 ? 'item' : 'items'}`}
               sx={{
-                display: 'flex',
-                width: '100%',
-                alignItems: 'center',
-                textAlign: 'left',
-                gap: 1.5,
-                px: 2,
-                py: 1.5,
-                borderRadius: '12px',
+                display: 'flex', width: '100%', alignItems: 'center', textAlign: 'left', gap: 1.5,
+                px: 2, py: 1.5, borderRadius: '12px',
                 border: theme => `1px solid ${theme.palette.divider}`,
                 transition: 'background-color 120ms ease',
                 '&:hover': { bgcolor: 'action.hover' },
                 '&.Mui-disabled': { opacity: 0.6 },
-                '&:focus-visible': {
-                  outline: theme => `2px solid ${theme.palette.primary.main}`,
-                  outlineOffset: '2px',
-                },
+                '&:focus-visible': { outline: theme => `2px solid ${theme.palette.primary.main}`, outlineOffset: '2px' },
               }}
             >
-              <Box
-                aria-hidden="true"
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  bgcolor: theme => `${theme.palette.primary.main}1F`,
-                  color: 'primary.main',
-                }}
-              >
-                <Icon name="play_arrow" size={18} />
+              <Box aria-hidden="true" sx={{
+                width: 32, height: 32, borderRadius: '50%', display: 'inline-flex', alignItems: 'center',
+                justifyContent: 'center', flexShrink: 0,
+                bgcolor: theme => `${theme.palette.primary.main}1F`, color: 'primary.main',
+              }}>
+                <Icon name="playlist_play" size={20} />
               </Box>
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography sx={{ ...TYPE.labelLarge, color: 'text.primary' }} noWrap>
-                  {routine.name}
-                </Typography>
+                <Typography sx={{ ...TYPE.labelLarge, color: 'text.primary' }} noWrap>{routine.name}</Typography>
                 <Typography sx={{ ...TYPE.bodyMedium, color: 'text.secondary' }}>
                   {routine.items.length} {routine.items.length === 1 ? 'item' : 'items'}
                 </Typography>
@@ -468,7 +491,7 @@ export default function HomeScreen() {
             fontSize: '1rem',
           }}
         >
-          {sessionComplete ? 'Next lesson' : 'Practice now'}
+          {sessionComplete ? 'Next lesson' : "Start today's session"}
         </Button>
       </Box>
     </Tooltip>
@@ -591,7 +614,7 @@ export default function HomeScreen() {
         </Box>
       )}
 
-      {secondaryEntries}
+      <Box sx={{ maxWidth: 600, mx: 'auto' }}>{practiceSection}</Box>
 
       {/* Progress + stats grid */}
       <Box
@@ -913,9 +936,9 @@ export default function HomeScreen() {
                     <Typography sx={{ ...TYPE.bodyMedium, color: 'text.secondary' }}>
                       Your next{' '}
                       <Box component="span" sx={{ color: 'primary.main', fontWeight: 500 }}>
-                        Practice now
+                        session
                       </Box>{' '}
-                      session will include {dueForReview === 1 ? 'it' : 'them'}.
+                      will include {dueForReview === 1 ? 'it' : 'them'}.
                     </Typography>
                   </Box>
                   <Icon

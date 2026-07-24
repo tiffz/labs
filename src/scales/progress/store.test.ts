@@ -29,6 +29,8 @@ import {
   saveRoutine,
   deleteRoutine,
   setLastFreePracticeParams,
+  getRecentPracticeItems,
+  pushRecentPracticeItem,
 } from './store';
 import { findExercise } from '../curriculum/tiers';
 import type { ScalesProgressData, PracticeRecord, ExerciseProgress } from './types';
@@ -1505,6 +1507,26 @@ describe('custom routines', () => {
       kind: 'major-scale', key: 'Bb', hand: 'both', octaves: 2, bpm: 88, subdivision: 'none',
     });
     expect(data.lastFreePracticeParams?.key).toBe('Bb');
+  });
+
+  it('pushRecentPracticeItem keeps newest first, de-dupes, and caps at 6', () => {
+    let data: ScalesProgressData = fresh();
+    const item = (key: string) => ({
+      kind: 'major-scale' as const, key: key as PracticeItem['key'],
+      hand: 'both' as const, octaves: 2 as const, bpm: 72, subdivision: 'none' as const,
+    });
+    for (const k of ['C', 'G', 'D', 'A', 'E', 'B', 'F']) data = pushRecentPracticeItem(data, item(k));
+    const recents = getRecentPracticeItems(data);
+    expect(recents).toHaveLength(6);              // capped
+    expect(recents[0].key).toBe('F');             // newest first
+    expect(recents.map(r => r.key)).not.toContain('C'); // oldest dropped
+
+    // Re-drilling an existing item moves it to the front without duplicating.
+    data = pushRecentPracticeItem(data, item('D'));
+    const after = getRecentPracticeItems(data);
+    expect(after[0].key).toBe('D');
+    expect(after.filter(r => r.key === 'D')).toHaveLength(1);
+    expect(after).toHaveLength(6);
   });
 
   it('drops structurally malformed routine items on load, keeps valid ones', () => {

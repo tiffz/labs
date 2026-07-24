@@ -193,6 +193,12 @@ export interface ScalesProgressData {
    * excluded from Drive sync.
    */
   lastFreePracticeParams?: PracticeItem;
+  /**
+   * Recently practiced items (newest first, capped), powering the "pick up
+   * where you left off" row that makes Practice mode fast and personal.
+   * Device-local scratch — excluded from Drive sync.
+   */
+  recentPracticeItems?: PracticeItem[];
   /** ISO timestamp bumped on meaningful local saves — used for Drive merge heuristics. */
   progressUpdatedAt?: string;
 }

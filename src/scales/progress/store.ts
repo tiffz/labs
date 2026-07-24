@@ -601,6 +601,7 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
     customRoutines?: unknown;
     deletedRoutineIds?: unknown;
     lastFreePracticeParams?: unknown;
+    recentPracticeItems?: unknown;
   };
   if (typeof data.version !== 'number') return null;
   if (typeof data.currentTierId !== 'string') return null;
@@ -726,6 +727,9 @@ function migrateProgress(raw: unknown): ScalesProgressData | null {
         data.lastFreePracticeParams && typeof data.lastFreePracticeParams === 'object'
           ? (data.lastFreePracticeParams as PracticeItem)
           : undefined,
+      recentPracticeItems: Array.isArray(data.recentPracticeItems)
+        ? data.recentPracticeItems.filter(isStructurallyValidPracticeItem)
+        : undefined,
     };
     return {
       ...base,
@@ -810,6 +814,30 @@ export function setLastFreePracticeParams(
   params: PracticeItem,
 ): ScalesProgressData {
   return { ...data, lastFreePracticeParams: params };
+}
+
+const MAX_RECENT_PRACTICE_ITEMS = 6;
+
+/** Stable identity for de-duplicating recents (all params that make a distinct drill). */
+function practiceItemKey(item: PracticeItem): string {
+  return [item.kind, item.key, item.hand, item.octaves, item.bpm, item.subdivision].join('|');
+}
+
+export function getRecentPracticeItems(data: ScalesProgressData): PracticeItem[] {
+  return data.recentPracticeItems ?? [];
+}
+
+/**
+ * Record a just-started free-practice item at the front of the recents list,
+ * de-duplicated and capped. Device-local scratch.
+ */
+export function pushRecentPracticeItem(
+  data: ScalesProgressData,
+  item: PracticeItem,
+): ScalesProgressData {
+  const key = practiceItemKey(item);
+  const rest = getRecentPracticeItems(data).filter(it => practiceItemKey(it) !== key);
+  return { ...data, recentPracticeItems: [item, ...rest].slice(0, MAX_RECENT_PRACTICE_ITEMS) };
 }
 
 /**

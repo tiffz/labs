@@ -12,6 +12,12 @@ export interface FreePracticeKindOption {
   kind: ExerciseKind;
   label: string;
   quality: 'major' | 'minor';
+  /** One-line "what it's good for" shown on the family card. */
+  blurb: string;
+  /** Per-family accent (hex) so the picker reads as a colorful menu, not a form. */
+  accent: string;
+  /** Short glyph for the card's colored chip. */
+  glyph: string;
 }
 
 /** Keys offered for major-quality kinds (all 12, circle-of-fifths order-ish). */
@@ -25,14 +31,14 @@ export const FREE_PRACTICE_MINOR_KEYS: readonly Key[] = [
 ];
 
 export const FREE_PRACTICE_KINDS: readonly FreePracticeKindOption[] = [
-  { kind: 'major-scale', label: 'Major scale', quality: 'major' },
-  { kind: 'natural-minor-scale', label: 'Natural minor scale', quality: 'minor' },
-  { kind: 'harmonic-minor-scale', label: 'Harmonic minor scale', quality: 'minor' },
-  { kind: 'melodic-minor-scale', label: 'Melodic minor scale', quality: 'minor' },
-  { kind: 'arpeggio-major', label: 'Major arpeggio', quality: 'major' },
-  { kind: 'arpeggio-minor', label: 'Minor arpeggio', quality: 'minor' },
-  { kind: 'pentascale-major', label: 'Major pentascale', quality: 'major' },
-  { kind: 'pentascale-minor', label: 'Minor pentascale', quality: 'minor' },
+  { kind: 'major-scale', label: 'Major scale', quality: 'major', blurb: 'Bright, most pop and classical', accent: '#059669', glyph: 'M' },
+  { kind: 'natural-minor-scale', label: 'Natural minor', quality: 'minor', blurb: 'Darker, folk and film', accent: '#6366f1', glyph: 'm' },
+  { kind: 'harmonic-minor-scale', label: 'Harmonic minor', quality: 'minor', blurb: 'That raised-7th color', accent: '#8b5cf6', glyph: 'h' },
+  { kind: 'melodic-minor-scale', label: 'Melodic minor', quality: 'minor', blurb: 'Jazz and smooth lines', accent: '#a855f7', glyph: '≀' },
+  { kind: 'arpeggio-major', label: 'Major arpeggio', quality: 'major', blurb: 'Chord shapes and leaps', accent: '#f59e0b', glyph: '△' },
+  { kind: 'arpeggio-minor', label: 'Minor arpeggio', quality: 'minor', blurb: 'Minor chord shapes', accent: '#ea580c', glyph: '▽' },
+  { kind: 'pentascale-major', label: 'Major pentascale', quality: 'major', blurb: 'Five-finger warm-ups', accent: '#0ea5e9', glyph: '5' },
+  { kind: 'pentascale-minor', label: 'Minor pentascale', quality: 'minor', blurb: 'Five fingers, minor', accent: '#0891b2', glyph: '5' },
 ];
 
 /** Keys available for a given kind, by its quality. */
