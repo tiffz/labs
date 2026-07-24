@@ -10,6 +10,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
 import Collapse from '@mui/material/Collapse';
 import BpmInput from '../../../shared/components/music/BpmInput';
+import { TYPE } from '../scalesUi';
 import type { ExerciseKind, Hand, Key, PracticeItem, SubdivisionMode } from '../../curriculum/types';
 import {
   FREE_PRACTICE_KINDS,
@@ -18,17 +19,12 @@ import {
   keysForKind,
 } from '../../practice/freePracticeOptions';
 
-// Secondary-selection visual language (docs/SELECTION_VISUAL_HIERARCHY.md):
-// a tinted brand wash + brand text, not MUI's neutral grey `action.selected`.
+// The app's emerald alpha-tint selection (matches the rest of the Practice UI).
 const selectedToggleSx = {
   '&.Mui-selected, &.Mui-selected:hover': {
-    backgroundColor: 'var(--labs-selection-secondary-bg, rgba(5, 150, 105, 0.14))',
-    color: 'var(--labs-selection-secondary-fg, #047857)',
-    borderColor: 'var(--labs-selection-secondary-border, rgba(5, 150, 105, 0.28))',
-    fontWeight: 600,
-  },
-  '&.Mui-selected:hover': {
-    backgroundColor: 'var(--labs-selection-secondary-hover-bg, rgba(5, 150, 105, 0.2))',
+    backgroundColor: (t: { palette: { primary: { main: string } } }) => `${t.palette.primary.main}14`,
+    color: 'primary.main',
+    borderColor: 'primary.main',
   },
 } as const;
 
@@ -127,7 +123,7 @@ export default function ScalePicker({
         <Collapse in={moreOpen}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
             <Box>
-              <Typography component="span" sx={{ display: 'block', mb: 1, fontWeight: 500, fontSize: '0.875rem' }}>
+              <Typography component="span" sx={{ ...TYPE.labelLarge, display: 'block', color: 'text.secondary', mb: 1 }}>
                 Hands
               </Typography>
               <ToggleButtonGroup
@@ -146,7 +142,7 @@ export default function ScalePicker({
             </Box>
 
             <Box>
-              <Typography component="span" sx={{ display: 'block', mb: 1, fontWeight: 500, fontSize: '0.875rem' }}>
+              <Typography component="span" sx={{ ...TYPE.labelLarge, display: 'block', color: 'text.secondary', mb: 1 }}>
                 Octaves
               </Typography>
               <ToggleButtonGroup
@@ -176,7 +172,7 @@ export default function ScalePicker({
             </FormControl>
 
             <Box>
-              <Typography component="span" sx={{ display: 'block', mb: 1, fontWeight: 500, fontSize: '0.875rem' }}>
+              <Typography component="span" sx={{ ...TYPE.labelLarge, display: 'block', color: 'text.secondary', mb: 1 }}>
                 Tempo
               </Typography>
               <BpmInput

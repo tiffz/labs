@@ -374,7 +374,7 @@ export default function HomeScreen() {
           endIcon={<Icon name="arrow_forward" size={16} />}
           sx={{ ...TYPE.labelLarge, color: 'primary.main', textTransform: 'none', minWidth: 0, px: 1 }}
         >
-          My routines{savedRoutines.length > 0 ? ` (${savedRoutines.length})` : ''}
+          Your routines{savedRoutines.length > 0 ? ` (${savedRoutines.length})` : ''}
         </Button>
       </Box>
       <Typography sx={{ ...TYPE.bodyMedium, color: 'text.secondary', mb: 2 }}>

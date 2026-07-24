@@ -2,15 +2,16 @@ import { useMemo, useRef } from 'react';
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import Typography from '@mui/material/Typography';
+import { TYPE } from '../scalesUi';
 import type { Key } from '../../curriculum/types';
 
 /**
- * Circle-of-fifths key selector — the "splashy", musician-native way to pick a
- * key. The `keys` list is already in circle-of-fifths order, so adjacent keys
- * on the ring are a perfect fifth apart. Behaves as a single-select radio group:
- * one tab stop (the selected key), arrow keys move around the ring. The selected
- * key uses the shared secondary-selection treatment (tinted brand wash) so solid
- * brand green stays reserved for the Start action. Each key is a ≥44px target.
+ * Circle-of-fifths key selector — the musician-native way to pick a key. The
+ * `keys` list is already in circle-of-fifths order, so adjacent keys on the ring
+ * are a perfect fifth apart. Behaves as a single-select radio group: one tab
+ * stop (the selected key), arrow keys move around the ring. Selection uses the
+ * app's emerald alpha-tint pattern (not a solid fill — solid green stays
+ * reserved for Start). Each key is a ≥44px target.
  */
 export default function CircleOfFifths({
   keys,
@@ -71,10 +72,10 @@ export default function CircleOfFifths({
         }}
       >
         <Box>
-          <Typography sx={{ fontSize: '1.5rem', fontWeight: 700, lineHeight: 1, color: 'primary.main' }}>
+          <Typography sx={{ ...TYPE.displaySmall, fontSize: '1.75rem', lineHeight: 1, color: 'primary.main' }}>
             {value}
           </Typography>
-          <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', mt: 0.25 }}>
+          <Typography sx={{ ...TYPE.bodySmall, color: 'text.secondary', mt: 0.25 }}>
             {qualityLabel}
           </Typography>
         </Box>
@@ -94,19 +95,16 @@ export default function CircleOfFifths({
             onClick={() => onChange(k)}
             sx={{
               position: 'absolute', left, top, width: btn, height: btn, borderRadius: '50%',
-              fontWeight: 700, fontSize: '0.9rem',
-              border: theme => `1.5px solid ${selected
-                ? 'var(--labs-selection-secondary-border, ' + theme.palette.primary.main + ')'
-                : theme.palette.divider}`,
-              bgcolor: selected
-                ? 'var(--labs-selection-secondary-bg, rgba(5, 150, 105, 0.14))'
-                : 'background.paper',
-              color: selected
-                ? 'var(--labs-selection-secondary-fg, #047857)'
-                : 'text.primary',
+              ...TYPE.labelLarge,
+              border: theme => `${selected ? 2 : 1}px solid ${selected ? theme.palette.primary.main : theme.palette.divider}`,
+              bgcolor: selected ? theme => `${theme.palette.primary.main}14` : 'background.paper',
+              color: selected ? 'primary.main' : 'text.primary',
               transition: 'transform 120ms ease, background-color 120ms ease',
               transform: selected ? 'scale(1.08)' : 'none',
-              '&:hover': { borderColor: 'primary.main', bgcolor: selected ? undefined : 'action.hover' },
+              '&:hover': {
+                borderColor: 'primary.main',
+                bgcolor: selected ? theme => `${theme.palette.primary.main}1F` : 'action.hover',
+              },
               '&:focus-visible': {
                 outline: theme => `2px solid ${theme.palette.primary.main}`,
                 outlineOffset: '2px',
