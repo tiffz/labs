@@ -66,10 +66,13 @@ test.describe('Muscle Memory study journey', () => {
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Full muscle', { timeout: 15_000 });
   });
 
-  // @soak: ~47s atlas GLB load, flaky under parallel CI load (see
-  // FLAKY_TEST_REGISTRY). Excluded from PR-CI full smoke; runs nightly
-  // (test:e2e:soak) and in muscle-scoped e2e runs.
+  // @soak: the full-body atlas GLB (~400k tris) journey. Even serial (test:e2e:soak
+  // now pins --workers=1), the worst-case cumulative — canvas-ready (up to 90s on CI
+  // software WebGL) + layer status + search + structure-card render (60s) — brushes the
+  // 180s describe cap and tips over on slow nights. Give this one test a generous budget;
+  // the sibling non-@soak "full body tab loads atlas view" already covers plain atlas load.
   test('full body atlas shows structure card from browser @soak', async ({ page }) => {
+    test.setTimeout(300_000);
     await page.goto('/muscle/');
     await expectMuscleCanvasReady(page);
     await expect(page.getByTestId('muscle-layer-status')).toContainText('Full muscle', {
