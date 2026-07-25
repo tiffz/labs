@@ -36,11 +36,12 @@ import type { TimeSignature } from './types';
 import { createAppAnalytics } from '../shared/utils/analytics';
 import SkipToMain from '../shared/components/SkipToMain';
 import LabsDebugDock from '../shared/components/LabsDebugDock';
-import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
+import { isLabsDebugVisible } from '../shared/debug/labsDebugAccess';
 
 const analytics = createAppAnalytics('drums');
 
-const drumsDebugMode = readLabsDebugFromLocation().debug;
+// Dock is read-only diagnostics (help text + Copy bundle), so it shows on the diagnostics tier. ADR 0026.
+const drumsDebugMode = isLabsDebugVisible();
 import { DEFAULT_SETTINGS } from './types/settings';
 
 const App: React.FC = () => {

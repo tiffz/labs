@@ -15146,6 +15146,88 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-debug-labsdebugaccess-ts-computelabsdebugtier",
+    "name": "computeLabsDebugTier",
+    "path": "src/shared/debug/labsDebugAccess.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Two-tier debug access, so debug can be safe in production. - `off`: no `?debug`/`?dev`. - `diagnostics`: `?debug` in prod, anonymous — **read-only** telemetry only (counters, heap, build/version, route state). No mutations, no destructive actions, no god-mode. - `full`: localhost (dev) always, OR `?debug` in prod while the owner is signed in — everything, including destructive/god-mode/data-dump surfaces. Gate any mutating, destructive, or data-dumping control on . Read-only readouts may render whenever . Rationale: ADR 0026.",
+    "tags": [],
+    "appsUsing": [
+      "cats",
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-labsdebugaccess-ts-islabsdebugfull",
+    "name": "isLabsDebugFull",
+    "path": "src/shared/debug/labsDebugAccess.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True on the full (dev/owner) tier — gate destructive + god-mode + data-dump controls on this.",
+    "tags": [],
+    "appsUsing": [
+      "cats",
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-labsdebugaccess-ts-islabsdebugvisible",
+    "name": "isLabsDebugVisible",
+    "path": "src/shared/debug/labsDebugAccess.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "True when ANY debug surface should render (diagnostics or full).",
+    "tags": [],
+    "appsUsing": [
+      "cats",
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-labsdebugaccess-ts-labsdebugaccess",
+    "name": "labsDebugAccess",
+    "path": "src/shared/debug/labsDebugAccess.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Debug tier for the current runtime context.",
+    "tags": [],
+    "appsUsing": [
+      "cats",
+      "drums"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-debug-labsdebugaccess-ts-labsdebugtier",
+    "name": "LabsDebugTier",
+    "path": "src/shared/debug/labsDebugAccess.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "cats",
+      "drums"
+    ],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
     "id": "src-shared-debug-labsdebuglog-ts-labsdebug",
     "name": "labsDebug",
     "path": "src/shared/debug/labsDebugLog.ts",
@@ -15258,8 +15340,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "description": "Moved to `../utils/readLabsDebugParams` so `utils` (serverLogger) does not depend on `debug` while `debug` (labsDebugLog) depends on `utils` — that directory-level cycle is guarded by `sharedModuleCycles.test.ts`. This re-export keeps existing import paths working.",
     "tags": [],
     "appsUsing": [
-      "cats",
-      "drums"
+      "cats"
     ],
     "exportType": "named",
     "demoId": null
@@ -15274,8 +15355,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "description": "Moved to `../utils/readLabsDebugParams` so `utils` (serverLogger) does not depend on `debug` while `debug` (labsDebugLog) depends on `utils` — that directory-level cycle is guarded by `sharedModuleCycles.test.ts`. This re-export keeps existing import paths working.",
     "tags": [],
     "appsUsing": [
-      "cats",
-      "drums"
+      "cats"
     ],
     "exportType": "named",
     "demoId": null
@@ -15290,8 +15370,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "description": "Moved to `../utils/readLabsDebugParams` so `utils` (serverLogger) does not depend on `debug` while `debug` (labsDebugLog) depends on `utils` — that directory-level cycle is guarded by `sharedModuleCycles.test.ts`. This re-export keeps existing import paths working.",
     "tags": [],
     "appsUsing": [
-      "cats",
-      "drums"
+      "cats"
     ],
     "exportType": "named",
     "demoId": null
@@ -18618,7 +18697,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "shared-core",
-    "description": "Scopes for Labs Drive token refresh (Stanza/Scales + shared storage with Encore). Matches Encore `GOOGLE_SCOPES` so `writePersistedGoogleSession` from Labs apps does not replace Encore’s token with a narrower one (which would break YouTube / Drive metadata in Encore).",
+    "description": "Scopes for Labs Drive token refresh (Stanza/Scales + shared storage with Encore). Matches Encore `GOOGLE_SCOPES` so `writePersistedGoogleSession` from Labs apps does not replace Encore’s token with a narrower one (which would break Drive metadata in Encore). `youtube.readonly` is intentionally absent: Google rejects it bundled with `drive.file` in one authorization (Error 400). Encore requests YouTube read access separately (incremental auth) when a YouTube feature runs — keep this set and Encore `GOOGLE_SCOPES` in sync WITHOUT it.",
     "tags": [
       "api"
     ],
@@ -29153,6 +29232,146 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "chords",
       "words"
     ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audiodiagnostics-ts-resetaudiodiagnosticsfortest",
+    "name": "__resetAudioDiagnosticsForTest",
+    "path": "src/shared/playback/audioDiagnostics.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Test-only reset so a suite starts from a clean registry.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audiodiagnostics-ts-audiodiagnosticssnapshot",
+    "name": "AudioDiagnosticsSnapshot",
+    "path": "src/shared/playback/audioDiagnostics.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Live audio-graph diagnostics registry. The crash class we care about — voices/nodes accumulating across a seamless loop until the tab OOMs — is invisible until you watch the live counts over time. Every instrument and scheduler reports itself here so a single snapshot sums the live WebAudio graph across the whole app: tracked voices, buses awaiting teardown, scheduled sources, and pending callbacks. A dev overlay polls it so you can SEE the numbers stay flat while playing (healthy) vs climb (leak); the chord-chart soak test asserts the same snapshot stays bounded over K loop passes. Registration is a Set add/remove — zero cost when nothing reads the snapshot. A source that never unregisters (a leaked, undisposed instrument) shows up as a rising `instruments`/`schedulers` count, which is itself a leak signal.",
+    "tags": [
+      "playback",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audiodiagnostics-ts-audioschedulersource",
+    "name": "AudioSchedulerSource",
+    "path": "src/shared/playback/audioDiagnostics.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Live audio-graph diagnostics registry. The crash class we care about — voices/nodes accumulating across a seamless loop until the tab OOMs — is invisible until you watch the live counts over time. Every instrument and scheduler reports itself here so a single snapshot sums the live WebAudio graph across the whole app: tracked voices, buses awaiting teardown, scheduled sources, and pending callbacks. A dev overlay polls it so you can SEE the numbers stay flat while playing (healthy) vs climb (leak); the chord-chart soak test asserts the same snapshot stays bounded over K loop passes. Registration is a Set add/remove — zero cost when nothing reads the snapshot. A source that never unregisters (a leaked, undisposed instrument) shows up as a rising `instruments`/`schedulers` count, which is itself a leak signal.",
+    "tags": [
+      "playback",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audiodiagnostics-ts-audiovoicesource",
+    "name": "AudioVoiceSource",
+    "path": "src/shared/playback/audioDiagnostics.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Live audio-graph diagnostics registry. The crash class we care about — voices/nodes accumulating across a seamless loop until the tab OOMs — is invisible until you watch the live counts over time. Every instrument and scheduler reports itself here so a single snapshot sums the live WebAudio graph across the whole app: tracked voices, buses awaiting teardown, scheduled sources, and pending callbacks. A dev overlay polls it so you can SEE the numbers stay flat while playing (healthy) vs climb (leak); the chord-chart soak test asserts the same snapshot stays bounded over K loop passes. Registration is a Set add/remove — zero cost when nothing reads the snapshot. A source that never unregisters (a leaked, undisposed instrument) shows up as a rising `instruments`/`schedulers` count, which is itself a leak signal.",
+    "tags": [
+      "playback",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audiodiagnostics-ts-exposeaudiodiagnosticsfordebug",
+    "name": "exposeAudioDiagnosticsForDebug",
+    "path": "src/shared/playback/audioDiagnostics.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Expose the snapshot on `window.__labsAudioDiagnostics()` for dev-console watching and e2e soak assertions. Idempotent; call once when debug mode is on. No-op off-DOM.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audiodiagnostics-ts-getaudiodiagnosticssnapshot",
+    "name": "getAudioDiagnosticsSnapshot",
+    "path": "src/shared/playback/audioDiagnostics.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Sum the live WebAudio graph across every registered source. Cheap; call on demand.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audiodiagnostics-ts-registerdiagnosticinstrument",
+    "name": "registerDiagnosticInstrument",
+    "path": "src/shared/playback/audioDiagnostics.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Register an instrument; call the returned fn from its `dispose`.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audiodiagnostics-ts-registerdiagnosticscheduler",
+    "name": "registerDiagnosticScheduler",
+    "path": "src/shared/playback/audioDiagnostics.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Register a scheduler; call the returned fn from its `stop`/teardown.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audiodiagnosticsoverlay-tsx-audiodiagnosticsoverlay",
+    "name": "AudioDiagnosticsOverlay",
+    "path": "src/shared/playback/AudioDiagnosticsOverlay.tsx",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Dev-only live audio-graph readout. Renders nothing unless `?debug` (or `?dev`) is on. The loop-then-crash class is invisible from a single frame — you have to watch the live counts over minutes. Play a chord chart and watch: flat numbers = healthy; `voices`/`heap` climbing every loop = a leak. Also exposes the same snapshot on `window.__labsAudioDiagnostics()` for the console and the chord-chart soak test. Plain inline-styled div on purpose — this is developer tooling, not product UI, so it stays out of the shared-UI/journey surface and adds no MUI weight to the app bundle path a normal user loads.",
+    "tags": [
+      "playback",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
     "exportType": "function",
     "demoId": null
   },

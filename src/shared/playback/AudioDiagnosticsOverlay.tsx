@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { readLabsDebugFromLocation } from '../debug/readLabsDebugParams';
+import { isLabsDebugVisible } from '../debug/labsDebugAccess';
 import {
   exposeAudioDiagnosticsForDebug,
   getAudioDiagnosticsSnapshot,
@@ -19,7 +19,8 @@ import {
  * path a normal user loads.
  */
 export function AudioDiagnosticsOverlay(): React.ReactElement | null {
-  const enabled = readLabsDebugFromLocation().debug;
+  // Read-only telemetry, so it renders on the `diagnostics` tier too (safe in prod). Gate: ADR 0026.
+  const enabled = isLabsDebugVisible();
   const [snap, setSnap] = useState<AudioDiagnosticsSnapshot | null>(null);
   const baselineHeapRef = useRef<number | null>(null);
   const peakVoicesRef = useRef(0);
