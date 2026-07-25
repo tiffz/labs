@@ -149,6 +149,8 @@ export default function SightDebugPanel({
             confirmMessage:
               'Clear localStorage for every Labs app on this site? This removes unsynced progress everywhere and cannot be undone. Cloud backups may still exist, but local-only data will be lost.',
             onConfirm: handleClearAllLocal,
+            // Quieter than the Sight-only clear: it is the nuke, so de-emphasize it.
+            emphasis: 'muted',
           },
         ]}
       />

@@ -11,6 +11,11 @@ export interface LabsDebugDangerAction {
   confirmMessage: string;
   onConfirm: () => void | Promise<void>;
   disabled?: boolean;
+  /**
+   * `muted` de-emphasizes a secondary destructive action next to a louder one (e.g. a
+   * "clear everything" nuke you don't want to be the eye's first target). Default `danger`.
+   */
+  emphasis?: 'danger' | 'muted';
 }
 
 export interface LabsDebugDangerZoneProps {
@@ -54,7 +59,7 @@ export default function LabsDebugDangerZone({
         {actions.map((action) => (
           <LabsDebugButton
             key={action.label}
-            variant="danger"
+            variant={action.emphasis ?? 'danger'}
             stopPropagation={false}
             disabled={action.disabled}
             onClick={() => void run(action)}
