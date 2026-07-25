@@ -47,8 +47,9 @@
         <div class="catalog-filters" role="group" aria-label="Filter by listing">
           <button class="filter-chip is-active" type="button" data-filter-stage="all">All</button>
           <button class="filter-chip" type="button" data-filter-stage="stable">Stable</button>
-          <button class="filter-chip" type="button" data-filter-stage="development">Experimental</button>
-          <button class="filter-chip" type="button" data-filter-stage="unlisted">Unlisted</button>
+          <button class="filter-chip" type="button" data-filter-stage="experimental">Experimental</button>
+          <button class="filter-chip" type="button" data-filter-stage="private">Private</button>
+          <button class="filter-chip" type="button" data-filter-stage="in-development">In development</button>
         </div>
       </div>
 
@@ -59,7 +60,7 @@
             <h2 class="section-title">Music</h2>
           </div>
           <div class="apps-grid">
-            <!-- Stable + experimental first; unlisted last (order from labsCatalog.manifest.json + scripts/render-labs-catalog.mjs). -->
+            <!-- Stable + experimental first; private + in-development last (order from labsCatalog.manifest.json + scripts/render-labs-catalog.mjs). -->
 
             <a href="/drums/" class="app-card" data-stage="stable" data-name="Darbuka Rhythm Trainer" data-description="Learn and practice Darbuka drum rhythms">
               <div class="app-icon drums"></div>
@@ -88,76 +89,76 @@
               <span class="status-badge status-stable">Stable</span>
             </a>
 
-            <a href="/chords/" class="app-card" data-stage="development" data-name="Chord Progression Generator" data-description="Generate random chord progressions for practice and inspiration">
+            <a href="/chords/" class="app-card" data-stage="experimental" data-name="Chord Progression Generator" data-description="Generate random chord progressions for practice and inspiration">
               <div class="app-icon chords"></div>
               <div class="app-info">
                 <h3 class="app-title">Chord Progression Generator</h3>
                 <p class="app-description">Generate random chord progressions for practice and inspiration</p>
               </div>
-              <span class="status-badge status-development">Experimental</span>
+              <span class="status-badge status-experimental">Experimental</span>
             </a>
 
-            <a href="/pitch/" class="app-card" data-stage="development" data-name="Find Your Pitch" data-description="Sing into a mic for live note, cents, and contour feedback">
+            <a href="/pitch/" class="app-card" data-stage="experimental" data-name="Find Your Pitch" data-description="Sing into a mic for live note, cents, and contour feedback">
               <div class="app-icon pitch"></div>
               <div class="app-info">
                 <h3 class="app-title">Find Your Pitch</h3>
                 <p class="app-description">Sing into a mic for live note, cents, and contour feedback</p>
               </div>
-              <span class="status-badge status-development">Experimental</span>
+              <span class="status-badge status-experimental">Experimental</span>
             </a>
 
-            <a href="/scales/" class="app-card" data-stage="development" data-name="Learn Your Scales" data-description="Guided curriculum for mastering piano scales and arpeggios">
-              <div class="app-icon piano"></div>
-              <div class="app-info">
-                <h3 class="app-title">Learn Your Scales</h3>
-                <p class="app-description">Guided curriculum for mastering piano scales and arpeggios</p>
-              </div>
-              <span class="status-badge status-development">Experimental</span>
-            </a>
-
-            <a href="/stanza/" class="app-card" data-stage="development" data-name="Stanza" data-description="Practice songs in sections with markers, loops, and a metronome">
+            <a href="/stanza/" class="app-card" data-stage="experimental" data-name="Stanza" data-description="Practice songs in sections with markers, loops, and a metronome">
               <div class="app-icon stanza"></div>
               <div class="app-info">
                 <h3 class="app-title">Stanza</h3>
                 <p class="app-description">Practice songs in sections with markers, loops, and a metronome</p>
               </div>
-              <span class="status-badge status-development">Experimental</span>
+              <span class="status-badge status-experimental">Experimental</span>
             </a>
 
-            <a href="/melodia/" class="app-card" data-stage="unlisted" data-name="Melodia Online" data-description="Sight-singing: rhythm tap, audiation, sing with pitch trace and listen-back duet">
-              <div class="app-icon melodia"></div>
-              <div class="app-info">
-                <h3 class="app-title">Melodia Online</h3>
-                <p class="app-description">Sight-singing: rhythm tap, audiation, sing with pitch trace and listen-back duet</p>
-              </div>
-              <span class="status-badge status-unlisted">Unlisted</span>
-            </a>
-
-            <a href="/midi/" class="app-card" data-stage="unlisted" data-name="Midi Scratchpad" data-description="Always-listening piano loop capture with dual-layer notation and riff guide mode">
+            <a href="/scales/" class="app-card" data-stage="private" data-name="Learn Your Scales" data-description="Guided curriculum for mastering piano scales and arpeggios">
               <div class="app-icon piano"></div>
               <div class="app-info">
-                <h3 class="app-title">Midi Scratchpad</h3>
-                <p class="app-description">Always-listening piano loop capture with dual-layer notation and riff guide mode</p>
+                <h3 class="app-title">Learn Your Scales</h3>
+                <p class="app-description">Guided curriculum for mastering piano scales and arpeggios</p>
               </div>
-              <span class="status-badge status-unlisted">Unlisted</span>
+              <span class="status-badge status-private">Private</span>
             </a>
 
-            <a href="/agility/" class="app-card" data-stage="unlisted" data-name="Vocal Agility Trainer" data-description="Metronome subdivision drills with timing heatmaps and twelve optional palettes">
-              <div class="app-icon agility"></div>
-              <div class="app-info">
-                <h3 class="app-title">Vocal Agility Trainer</h3>
-                <p class="app-description">Metronome subdivision drills with timing heatmaps and twelve optional palettes</p>
-              </div>
-              <span class="status-badge status-unlisted">Unlisted</span>
-            </a>
-
-            <a href="/encore/" class="app-card" data-stage="unlisted" data-name="Encore" data-description="Personal repertoire companion: songs, journals, performances, and Drive backup">
+            <a href="/encore/" class="app-card" data-stage="private" data-name="Encore" data-description="Personal repertoire companion: songs, journals, performances, and Drive backup">
               <div class="app-icon encore"></div>
               <div class="app-info">
                 <h3 class="app-title">Encore</h3>
                 <p class="app-description">Personal repertoire companion: songs, journals, performances, and Drive backup</p>
               </div>
-              <span class="status-badge status-unlisted">Unlisted</span>
+              <span class="status-badge status-private">Private</span>
+            </a>
+
+            <a href="/melodia/" class="app-card" data-stage="in-development" data-name="Melodia Online" data-description="Sight-singing: rhythm tap, audiation, sing with pitch trace and listen-back duet">
+              <div class="app-icon melodia"></div>
+              <div class="app-info">
+                <h3 class="app-title">Melodia Online</h3>
+                <p class="app-description">Sight-singing: rhythm tap, audiation, sing with pitch trace and listen-back duet</p>
+              </div>
+              <span class="status-badge status-in-development">In development</span>
+            </a>
+
+            <a href="/midi/" class="app-card" data-stage="in-development" data-name="Midi Scratchpad" data-description="Always-listening piano loop capture with dual-layer notation and riff guide mode">
+              <div class="app-icon piano"></div>
+              <div class="app-info">
+                <h3 class="app-title">Midi Scratchpad</h3>
+                <p class="app-description">Always-listening piano loop capture with dual-layer notation and riff guide mode</p>
+              </div>
+              <span class="status-badge status-in-development">In development</span>
+            </a>
+
+            <a href="/agility/" class="app-card" data-stage="in-development" data-name="Vocal Agility Trainer" data-description="Metronome subdivision drills with timing heatmaps and twelve optional palettes">
+              <div class="app-icon agility"></div>
+              <div class="app-info">
+                <h3 class="app-title">Vocal Agility Trainer</h3>
+                <p class="app-description">Metronome subdivision drills with timing heatmaps and twelve optional palettes</p>
+              </div>
+              <span class="status-badge status-in-development">In development</span>
             </a>
 
           </div>
@@ -187,76 +188,76 @@
               <span class="status-badge status-stable">Stable</span>
             </a>
 
-            <a href="/palette/" class="app-card" data-stage="development" data-name="Palette Generator" data-description="Generate color palettes from images, colors, and settings using color theory principles.">
+            <a href="/palette/" class="app-card" data-stage="experimental" data-name="Palette Generator" data-description="Generate color palettes from images, colors, and settings using color theory principles.">
               <div class="app-icon palettegen"></div>
               <div class="app-info">
                 <h3 class="app-title">Palette Generator</h3>
                 <p class="app-description">Generate color palettes from images, colors, and settings using color theory principles.</p>
               </div>
-              <span class="status-badge status-development">Experimental</span>
+              <span class="status-badge status-experimental">Experimental</span>
             </a>
 
-            <a href="/story/" class="app-card" data-stage="development" data-name="Save the Cat Story Generator" data-description="Generate random story plots from the Save the Cat beat structure">
+            <a href="/story/" class="app-card" data-stage="experimental" data-name="Save the Cat Story Generator" data-description="Generate random story plots from the Save the Cat beat structure">
               <div class="app-icon story"></div>
               <div class="app-info">
                 <h3 class="app-title">Save the Cat Story Generator</h3>
                 <p class="app-description">Generate random story plots from the Save the Cat beat structure</p>
               </div>
-              <span class="status-badge status-development">Experimental</span>
+              <span class="status-badge status-experimental">Experimental</span>
             </a>
 
-            <a href="/sight/" class="app-card" data-stage="unlisted" data-name="Color Sight Trainer" data-description="Train value, relativity, and gamut perception in Oklch space">
-              <div class="app-icon sight"></div>
-              <div class="app-info">
-                <h3 class="app-title">Color Sight Trainer</h3>
-                <p class="app-description">Train value, relativity, and gamut perception in Oklch space</p>
-              </div>
-              <span class="status-badge status-unlisted">Unlisted</span>
-            </a>
-
-            <a href="/gesture/" class="app-card" data-stage="unlisted" data-name="The Gesture Room" data-description="Timed reference drawing from your own Drive photo collections">
+            <a href="/gesture/" class="app-card" data-stage="private" data-name="The Gesture Room" data-description="Timed reference drawing from your own Drive photo collections">
               <div class="app-icon gesture"></div>
               <div class="app-info">
                 <h3 class="app-title">The Gesture Room</h3>
                 <p class="app-description">Timed reference drawing from your own Drive photo collections</p>
               </div>
-              <span class="status-badge status-unlisted">Unlisted</span>
+              <span class="status-badge status-private">Private</span>
             </a>
 
-            <a href="/zinebox/" class="app-card" data-stage="unlisted" data-name="Zine Box" data-description="Local-first indie comic reader with Google Drive backup">
+            <a href="/zinebox/" class="app-card" data-stage="private" data-name="Zine Box" data-description="Local-first indie comic reader with Google Drive backup">
               <div class="app-icon zinebox"></div>
               <div class="app-info">
                 <h3 class="app-title">Zine Box</h3>
                 <p class="app-description">Local-first indie comic reader with Google Drive backup</p>
               </div>
-              <span class="status-badge status-unlisted">Unlisted</span>
+              <span class="status-badge status-private">Private</span>
             </a>
 
-            <a href="/lyrefly/" class="app-card" data-stage="unlisted" data-name="Lyrefly" data-description="Comic project workbench — track ideas, script, thumbs, art, and publishing">
+            <a href="/sight/" class="app-card" data-stage="in-development" data-name="Color Sight Trainer" data-description="Train value, relativity, and gamut perception in Oklch space">
+              <div class="app-icon sight"></div>
+              <div class="app-info">
+                <h3 class="app-title">Color Sight Trainer</h3>
+                <p class="app-description">Train value, relativity, and gamut perception in Oklch space</p>
+              </div>
+              <span class="status-badge status-in-development">In development</span>
+            </a>
+
+            <a href="/lyrefly/" class="app-card" data-stage="in-development" data-name="Lyrefly" data-description="Comic project workbench — track ideas, script, thumbs, art, and publishing">
               <div class="app-icon lyrefly"></div>
               <div class="app-info">
                 <h3 class="app-title">Lyrefly</h3>
                 <p class="app-description">Comic project workbench — track ideas, script, thumbs, art, and publishing</p>
               </div>
-              <span class="status-badge status-unlisted">Unlisted</span>
+              <span class="status-badge status-in-development">In development</span>
             </a>
 
-            <a href="/scrapboard/" class="app-card" data-stage="unlisted" data-name="Scrapboard" data-description="Rough comic panel mockups in seconds">
+            <a href="/scrapboard/" class="app-card" data-stage="in-development" data-name="Scrapboard" data-description="Rough comic panel mockups in seconds">
               <div class="app-icon scrapboard"></div>
               <div class="app-info">
                 <h3 class="app-title">Scrapboard</h3>
                 <p class="app-description">Rough comic panel mockups in seconds</p>
               </div>
-              <span class="status-badge status-unlisted">Unlisted</span>
+              <span class="status-badge status-in-development">In development</span>
             </a>
 
-            <a href="/muscle/" class="app-card" data-stage="unlisted" data-name="Muscle Memory" data-description="Learn artistic anatomy in 3D with spaced-repetition quizzes">
+            <a href="/muscle/" class="app-card" data-stage="in-development" data-name="Muscle Memory" data-description="Learn artistic anatomy in 3D with spaced-repetition quizzes">
               <div class="app-icon muscle"></div>
               <div class="app-info">
                 <h3 class="app-title">Muscle Memory</h3>
                 <p class="app-description">Learn artistic anatomy in 3D with spaced-repetition quizzes</p>
               </div>
-              <span class="status-badge status-unlisted">Unlisted</span>
+              <span class="status-badge status-in-development">In development</span>
             </a>
 
           </div>
@@ -268,22 +269,22 @@
           </div>
           <div class="apps-grid">
 
-            <a href="/cats/" class="app-card" data-stage="development" data-name="Cat Clicker" data-description="Click a cat for the greater good">
+            <a href="/cats/" class="app-card" data-stage="experimental" data-name="Cat Clicker" data-description="Click a cat for the greater good">
               <div class="app-icon cats"></div>
               <div class="app-info">
                 <h3 class="app-title">Cat Clicker</h3>
                 <p class="app-description">Click a cat for the greater good</p>
               </div>
-              <span class="status-badge status-development">Experimental</span>
+              <span class="status-badge status-experimental">Experimental</span>
             </a>
 
-            <a href="/corp/" class="app-card" data-stage="development" data-name="Corporate Ladder" data-description="Crawl through the dungeons of corporate life">
+            <a href="/corp/" class="app-card" data-stage="experimental" data-name="Corporate Ladder" data-description="Crawl through the dungeons of corporate life">
               <div class="app-icon corp"></div>
               <div class="app-info">
                 <h3 class="app-title">Corporate Ladder</h3>
                 <p class="app-description">Crawl through the dungeons of corporate life</p>
               </div>
-              <span class="status-badge status-development">Experimental</span>
+              <span class="status-badge status-experimental">Experimental</span>
             </a>
 
           </div>

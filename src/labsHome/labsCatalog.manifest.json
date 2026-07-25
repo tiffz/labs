@@ -29,7 +29,7 @@
       "path": "/chords/",
       "title": "Chord Progression Generator",
       "shortDescription": "Generate random chord progressions for practice and inspiration",
-      "stage": "development",
+      "stage": "experimental",
       "category": "music",
       "iconClass": "chords"
     },
@@ -37,7 +37,7 @@
       "path": "/pitch/",
       "title": "Find Your Pitch",
       "shortDescription": "Sing into a mic for live note, cents, and contour feedback",
-      "stage": "development",
+      "stage": "experimental",
       "category": "music",
       "iconClass": "pitch"
     },
@@ -45,7 +45,7 @@
       "path": "/scales/",
       "title": "Learn Your Scales",
       "shortDescription": "Guided curriculum for mastering piano scales and arpeggios",
-      "stage": "development",
+      "stage": "private",
       "category": "music",
       "iconClass": "piano"
     },
@@ -53,7 +53,7 @@
       "path": "/stanza/",
       "title": "Stanza",
       "shortDescription": "Practice songs in sections with markers, loops, and a metronome",
-      "stage": "development",
+      "stage": "experimental",
       "category": "music",
       "iconClass": "stanza"
     },
@@ -61,7 +61,7 @@
       "path": "/melodia/",
       "title": "Melodia Online",
       "shortDescription": "Sight-singing: rhythm tap, audiation, sing with pitch trace and listen-back duet",
-      "stage": "unlisted",
+      "stage": "in-development",
       "category": "music",
       "iconClass": "melodia"
     },
@@ -69,7 +69,7 @@
       "path": "/midi/",
       "title": "Midi Scratchpad",
       "shortDescription": "Always-listening piano loop capture with dual-layer notation and riff guide mode",
-      "stage": "unlisted",
+      "stage": "in-development",
       "category": "music",
       "iconClass": "piano"
     },
@@ -77,7 +77,7 @@
       "path": "/agility/",
       "title": "Vocal Agility Trainer",
       "shortDescription": "Metronome subdivision drills with timing heatmaps and twelve optional palettes",
-      "stage": "unlisted",
+      "stage": "in-development",
       "category": "music",
       "iconClass": "agility"
     },
@@ -85,7 +85,7 @@
       "path": "/encore/",
       "title": "Encore",
       "shortDescription": "Personal repertoire companion: songs, journals, performances, and Drive backup",
-      "stage": "unlisted",
+      "stage": "private",
       "category": "music",
       "iconClass": "encore"
     },
@@ -101,7 +101,7 @@
       "path": "/sight/",
       "title": "Color Sight Trainer",
       "shortDescription": "Train value, relativity, and gamut perception in Oklch space",
-      "stage": "unlisted",
+      "stage": "in-development",
       "category": "art",
       "iconClass": "sight"
     },
@@ -109,7 +109,7 @@
       "path": "/gesture/",
       "title": "The Gesture Room",
       "shortDescription": "Timed reference drawing from your own Drive photo collections",
-      "stage": "unlisted",
+      "stage": "private",
       "category": "art",
       "iconClass": "gesture"
     },
@@ -117,7 +117,7 @@
       "path": "/zinebox/",
       "title": "Zine Box",
       "shortDescription": "Local-first indie comic reader with Google Drive backup",
-      "stage": "unlisted",
+      "stage": "private",
       "category": "art",
       "iconClass": "zinebox"
     },
@@ -125,7 +125,7 @@
       "path": "/lyrefly/",
       "title": "Lyrefly",
       "shortDescription": "Comic project workbench — track ideas, script, thumbs, art, and publishing",
-      "stage": "unlisted",
+      "stage": "in-development",
       "category": "art",
       "iconClass": "lyrefly"
     },
@@ -133,7 +133,7 @@
       "path": "/palette/",
       "title": "Palette Generator",
       "shortDescription": "Generate color palettes from images, colors, and settings using color theory principles.",
-      "stage": "development",
+      "stage": "experimental",
       "category": "art",
       "iconClass": "palettegen"
     },
@@ -141,7 +141,7 @@
       "path": "/scrapboard/",
       "title": "Scrapboard",
       "shortDescription": "Rough comic panel mockups in seconds",
-      "stage": "unlisted",
+      "stage": "in-development",
       "category": "art",
       "iconClass": "scrapboard"
     },
@@ -149,7 +149,7 @@
       "path": "/muscle/",
       "title": "Muscle Memory",
       "shortDescription": "Learn artistic anatomy in 3D with spaced-repetition quizzes",
-      "stage": "unlisted",
+      "stage": "in-development",
       "category": "art",
       "iconClass": "muscle"
     },
@@ -165,7 +165,7 @@
       "path": "/story/",
       "title": "Save the Cat Story Generator",
       "shortDescription": "Generate random story plots from the Save the Cat beat structure",
-      "stage": "development",
+      "stage": "experimental",
       "category": "art",
       "iconClass": "story"
     },
@@ -173,7 +173,7 @@
       "path": "/cats/",
       "title": "Cat Clicker",
       "shortDescription": "Click a cat for the greater good",
-      "stage": "development",
+      "stage": "experimental",
       "category": "games",
       "iconClass": "cats"
     },
@@ -181,7 +181,7 @@
       "path": "/corp/",
       "title": "Corporate Ladder",
       "shortDescription": "Crawl through the dungeons of corporate life",
-      "stage": "development",
+      "stage": "experimental",
       "category": "games",
       "iconClass": "corp"
     }
