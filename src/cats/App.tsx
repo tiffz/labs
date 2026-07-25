@@ -42,6 +42,7 @@ import { ErrorReporter } from './components/ui/ErrorReporter';
 import { catCoordinateSystem } from './services/CatCoordinateSystem';
 import { ViewportProvider } from './context/ViewportContext';
 import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
+import { isLabsDebugFull } from '../shared/debug/labsDebugAccess';
 
 import './styles/cats.css';
 
@@ -292,8 +293,10 @@ function App() {
   catActionsRef.current = catActions;
 
   useEffect(() => {
-    const { debug, overlay } = readLabsDebugFromLocation();
-    if (debug) {
+    // Dev mode sends screenshots to the dev-only snapshot endpoint, so it needs the
+    // full tier (localhost or signed-in owner). The read-only overlay stays visible. ADR 0026.
+    const { overlay } = readLabsDebugFromLocation();
+    if (isLabsDebugFull()) {
       setIsDevMode(true);
     }
     if (overlay) {

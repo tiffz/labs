@@ -142,7 +142,7 @@ Commands quick reference: root [`README.md`](README.md) and `package.json` scrip
 ## Security
 
 - Never commit `.env`, API keys, OAuth client secrets, or credential files.
-- Labs debug mode (`?debug` / `?dev`) is **local dev only** — do not expose debug endpoints in production builds.
+- Labs debug mode (`?debug` / `?dev`) is **tiered** ([ADR 0026](docs/adr/0026-tiered-debug-access.md), `src/shared/debug/labsDebugAccess.ts`): anonymous prod `?debug` gets the read-only **`diagnostics`** tier only; the **`full`** tier (destructive actions, god-mode, data dumps, dev endpoints) needs localhost **or** the signed-in owner. Gate every mutating/destructive/data-dump control on `isLabsDebugFull()`; render read-only readouts on `isLabsDebugVisible()`. Never expose the dev-server `/__debug_*` endpoints or token/PII in any tier.
 - Use **Copy bundle** in LabsDebugDock for assistant artifacts; there is no automatic browser→LLM pipe.
 
 ## Skills

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import LabsDebugDock from '../../../shared/components/LabsDebugDock';
-import { isLabsDebugEnabled } from '../../../shared/debug/readLabsDebugParams';
+import { isLabsDebugVisible } from '../../../shared/debug/labsDebugAccess';
 import { ALL_NODES } from '../../curriculum';
 import {
   REQUIRED_FULL_BODY_BONE_IDS,
@@ -21,10 +21,7 @@ function missingFromInventory(required: readonly string[], loaded: readonly stri
 }
 
 export default function MuscleAnatomyDebugPanel() {
-  const enabled = useMemo(
-    () => typeof window !== 'undefined' && isLabsDebugEnabled(window.location.search),
-    [],
-  );
+  const enabled = useMemo(() => isLabsDebugVisible(), []);
   const [snapshot, setSnapshot] = useState(getMuscleAnatomyDebugSnapshot);
 
   useEffect(() => {

@@ -1,4 +1,5 @@
 import { PreciseScheduler } from '../../preciseScheduler';
+import { registerDiagnosticScheduler } from '../../../playback/audioDiagnostics';
 
 export const DEFAULT_LOOK_AHEAD_SEC = 0.25;
 /**
@@ -21,6 +22,8 @@ export class LookAheadAudioScheduler {
   private scheduler = new PreciseScheduler();
   private tickFn: ((horizonSec: number, nowSec: number) => void) | null = null;
   private sessionToken = 0;
+  /** Live-diagnostics registration; present only while a session is running. */
+  private unregisterDiagnostics: (() => void) | null = null;
 
   start(
     tick: (horizonSec: number, nowSec: number) => void,
@@ -28,6 +31,8 @@ export class LookAheadAudioScheduler {
   ): number {
     this.stop();
     this.sessionToken = this.scheduler.beginSession();
+    // Register while playing so the diagnostics snapshot counts only live transports.
+    this.unregisterDiagnostics = registerDiagnosticScheduler(this.scheduler);
     this.tickFn = tick;
     const lookAhead = options?.lookAheadSec ?? DEFAULT_LOOK_AHEAD_SEC;
     this.scheduler.startLoop(() => {
@@ -46,6 +51,8 @@ export class LookAheadAudioScheduler {
   stop(): void {
     this.tickFn = null;
     this.scheduler.stop();
+    this.unregisterDiagnostics?.();
+    this.unregisterDiagnostics = null;
   }
 
   isSessionValid(token: number): boolean {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import SkipToMain from '../shared/components/SkipToMain';
-import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
+import { isLabsDebugFull } from '../shared/debug/labsDebugAccess';
 import { LabsKeyboardShortcutsHost, sightKeyboardShortcutSections } from '../shared/keyboardShortcuts';
 import { createAppAnalytics } from '../shared/utils/analytics';
 import SightDebugPanel from './components/SightDebugPanel';
@@ -27,7 +27,9 @@ function resolveInitialPhase(debug: boolean): AppPhase {
 }
 
 export default function App(): React.ReactElement {
-  const debug = readLabsDebugFromLocation().debug;
+  // Sight's debug surface is all dev/owner tooling (sandbox god-mode, destructive localStorage
+  // clears), so gate it on the full tier — never shown to an anonymous prod ?debug visitor.
+  const debug = isLabsDebugFull();
   const [phase, setPhase] = useState<AppPhase>(() => resolveInitialPhase(debug));
   const [profile, setProfile] = useState<SightProfile>(() => readProfile());
   const [practiceRound, setPracticeRound] = useState<PracticeRound | null>(null);

@@ -9,6 +9,13 @@ const IDENTITY_STORAGE_KEY = 'encore_google_identity_v1';
 export const ENCORE_GOOGLE_SESSION_STORAGE_KEY = STORAGE_KEY;
 
 /**
+ * The persisted-identity key. Exported as the canonical source of truth: `shared/debug`'s
+ * owner check re-declares this literal (to avoid a `debug -> google` module edge), and a test
+ * pins the two together so a rename here can't silently downgrade owner debug to diagnostics.
+ */
+export const ENCORE_GOOGLE_IDENTITY_STORAGE_KEY = IDENTITY_STORAGE_KEY;
+
+/**
  * Fired on this window after identity is written or cleared. The native `storage` event does not
  * run in the tab that performed `localStorage.setItem`, so hooks like {@link useLabsEncoreGoogleIdentity}
  * listen for this to stay in sync after Drive token flows.

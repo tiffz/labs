@@ -1,5 +1,6 @@
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
+import { AudioDiagnosticsOverlay } from '../../shared/playback/AudioDiagnosticsOverlay';
 import ButtonBase from '@mui/material/ButtonBase';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
@@ -377,6 +378,9 @@ export function EncoreMainShell(): React.ReactElement {
   return (
     <LabsKeyboardShortcutsHost sections={encoreKeyboardShortcutSections} theme="encore">
     <EncoreAppShell>
+      {/* Read-only audio-graph readout to watch for playback leaks. Shows on the
+          diagnostics tier, so prod `?debug` gets it too (ADR 0026). */}
+      <AudioDiagnosticsOverlay />
       <AppBar
         position="sticky"
         color="transparent"

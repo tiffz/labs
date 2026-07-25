@@ -5,7 +5,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import SkipToMain from '../shared/components/SkipToMain';
 import LabsDebugDock from '../shared/components/LabsDebugDock';
-import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
+import { isLabsDebugFull } from '../shared/debug/labsDebugAccess';
 import { createAppAnalytics } from '../shared/utils/analytics';
 import {
   calibrationTransposeSemitones,
@@ -78,7 +78,7 @@ function loadCatalogExercise(
 }
 
 export default function App(): ReactElement {
-  const debugMode = readLabsDebugFromLocation().debug;
+  const debugMode = isLabsDebugFull();
   const [state, dispatch] = useReducer(melodiaReducer, initialMelodiaState);
   const [hydrated, setHydrated] = useState(false);
 
