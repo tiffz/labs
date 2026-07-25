@@ -51,4 +51,8 @@ if ! grep -q 'run-scoped-e2e.mjs "origin/${{ github.base_ref }}"' "$CI_YML"; the
   exit 1
 fi
 
+# Deploy-gating jobs must equal the branch-protection required checks (else a PR merges
+# green while a deploy-gating job is red and the deploy silently skips — see #120/#121).
+node scripts/check-ci-gating.mjs
+
 echo "check:workflows: ok (single Pages deploy path, scoped e2e base-ref parity)"

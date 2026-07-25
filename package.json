@@ -22,6 +22,7 @@
     "check:css-important": "node scripts/check-css-important.mjs",
     "check:css-import-order": "node scripts/check-css-import-order.mjs",
     "check:workflows": "sh scripts/check-workflows.sh",
+    "check:ci-gating": "node scripts/check-ci-gating.mjs",
     "check:jscpd-ratchet": "node scripts/check-jscpd-ratchet.mjs",
     "muscle:validate-assets": "node scripts/validate-muscle-assets.mjs",
     "muscle:export-glbs": "node scripts/export-muscle-procedural-glbs.mjs",
