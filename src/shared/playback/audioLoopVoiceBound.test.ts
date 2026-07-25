@@ -105,12 +105,28 @@ describe('chord-instrument voices stay bounded over K loop passes', () => {
     expect(peak).toBeLessThan(PASSES); // the point: bounded per-measure, not growing with K
   });
 
-  it('unregisters the instrument from diagnostics on dispose (no leaked instrument)', () => {
+  it('registers on connect, not construction (an unconnected instrument is not pinned)', () => {
     __resetAudioDiagnosticsForTest();
     const { ctx } = createMockContext();
     const synth = new PianoSynthesizer(ctx);
+    // Construction alone must not add a strong ref to the registry.
+    expect(getAudioDiagnosticsSnapshot().instruments).toBe(0);
+    synth.connect(ctx.createGain() as unknown as AudioNode);
     expect(getAudioDiagnosticsSnapshot().instruments).toBe(1);
     synth.dispose();
+    expect(getAudioDiagnosticsSnapshot().instruments).toBe(0);
+  });
+
+  it('releases from diagnostics on disconnect without dispose (the words-teardown leak)', () => {
+    // useWordsChordPlayback tears down with stopAll + disconnect and no dispose. If the
+    // registry pinned on construction, that instrument would leak for the page lifetime.
+    __resetAudioDiagnosticsForTest();
+    const { ctx } = createMockContext();
+    const synth = new PianoSynthesizer(ctx);
+    synth.connect(ctx.createGain() as unknown as AudioNode);
+    expect(getAudioDiagnosticsSnapshot().instruments).toBe(1);
+    synth.stopAll(20);
+    synth.disconnect();
     expect(getAudioDiagnosticsSnapshot().instruments).toBe(0);
   });
 });

@@ -77,14 +77,21 @@ export abstract class BaseInstrument implements Instrument {
    */
   private busTeardowns = new Set<{ timer: number; node: GainNode }>();
 
-  /** Remove this instrument from the live-diagnostics registry on dispose. */
-  private unregisterDiagnostics: () => void;
+  /**
+   * Diagnostics membership is tied to graph connection, NOT construction. The
+   * registry holds a strong ref, so registering in the constructor would pin every
+   * instrument whose teardown does `disconnect()` without `dispose()` (e.g.
+   * `useWordsChordPlayback` unmount / sound switch) for the page lifetime — the
+   * leak detector would itself leak. Registering on `connect` / releasing on
+   * `disconnect` means the registry holds exactly the instruments wired to the
+   * live graph, which is the set the snapshot is meant to sum.
+   */
+  private unregisterDiagnostics: (() => void) | null = null;
 
   constructor(audioContext: AudioContext) {
     this.audioContext = audioContext;
     this.output = audioContext.createGain();
     this.output.gain.value = 1.0;
-    this.unregisterDiagnostics = registerDiagnosticInstrument(this);
   }
 
   abstract playNote(params: PlayNoteParams): void;
@@ -158,11 +165,20 @@ export abstract class BaseInstrument implements Instrument {
   connect(destination: AudioNode): void {
     this.connectedDestination = destination;
     this.output.connect(destination);
+    // Idempotent: `registerDiagnosticInstrument` is a Set add, and we only hold one
+    // unregister fn, so a reconnect without a disconnect does not double-count.
+    if (!this.unregisterDiagnostics) {
+      this.unregisterDiagnostics = registerDiagnosticInstrument(this);
+    }
   }
 
   disconnect(): void {
     this.output.disconnect();
     this.connectedDestination = null;
+    if (this.unregisterDiagnostics) {
+      this.unregisterDiagnostics();
+      this.unregisterDiagnostics = null;
+    }
   }
 
   getOutput(): GainNode {
@@ -182,7 +198,7 @@ export abstract class BaseInstrument implements Instrument {
       }
     }
     this.busTeardowns.clear();
-    this.unregisterDiagnostics();
+    // disconnect() releases the diagnostics registration.
     this.disconnect();
   }
 

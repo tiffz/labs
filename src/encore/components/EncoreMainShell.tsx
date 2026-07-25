@@ -378,7 +378,8 @@ export function EncoreMainShell(): React.ReactElement {
   return (
     <LabsKeyboardShortcutsHost sections={encoreKeyboardShortcutSections} theme="encore">
     <EncoreAppShell>
-      {/* Dev-only (?debug): live audio-graph readout to watch for playback leaks. */}
+      {/* Read-only audio-graph readout to watch for playback leaks. Shows on the
+          diagnostics tier, so prod `?debug` gets it too (ADR 0026). */}
       <AudioDiagnosticsOverlay />
       <AppBar
         position="sticky"

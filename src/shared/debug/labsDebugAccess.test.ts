@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { computeLabsDebugTier } from './labsDebugAccess';
+import { computeLabsDebugTier, LABS_DEBUG_OWNER_IDENTITY_KEY } from './labsDebugAccess';
+import { ENCORE_GOOGLE_IDENTITY_STORAGE_KEY } from '../google/encoreGoogleTokenStorage';
 
 /**
  * The debug tier decides what a `?debug` visitor may see/do. The security-shaped invariant: an
@@ -24,5 +25,13 @@ describe('computeLabsDebugTier', () => {
     const tier = computeLabsDebugTier({ debugRequested: true, isDev: false, ownerSignedIn: false });
     expect(tier).toBe('diagnostics');
     expect(tier).not.toBe('full');
+  });
+});
+
+describe('owner-identity key', () => {
+  it('matches the canonical google-token-storage key (no silent drift)', () => {
+    // ownerSignedIn re-declares the key to avoid a debug->google module edge; if the canonical
+    // key is renamed without updating the debug copy, owner debug silently drops to diagnostics.
+    expect(LABS_DEBUG_OWNER_IDENTITY_KEY).toBe(ENCORE_GOOGLE_IDENTITY_STORAGE_KEY);
   });
 });

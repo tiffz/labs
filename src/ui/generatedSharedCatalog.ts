@@ -15194,6 +15194,24 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-debug-labsdebugaccess-ts-labs-debug-owner-identity-key",
+    "name": "LABS_DEBUG_OWNER_IDENTITY_KEY",
+    "path": "src/shared/debug/labsDebugAccess.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "The persisted-identity localStorage key. Re-declared here (not imported) to avoid a `shared/debug -> shared/google` module edge in the cycle ledger. It mirrors `ENCORE_GOOGLE_IDENTITY_STORAGE_KEY` in google/encoreGoogleTokenStorage.ts; a test pins them equal so a rename there can't silently drift this owner check.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [
+      "cats",
+      "drums"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-debug-labsdebugaccess-ts-labsdebugaccess",
     "name": "labsDebugAccess",
     "path": "src/shared/debug/labsDebugAccess.ts",
@@ -18055,6 +18073,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "tags": [],
     "appsUsing": [],
     "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-google-encoregoogletokenstorage-ts-encore-google-identity-storage-key",
+    "name": "ENCORE_GOOGLE_IDENTITY_STORAGE_KEY",
+    "path": "src/shared/google/encoreGoogleTokenStorage.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "The persisted-identity key. Exported as the canonical source of truth: `shared/debug`'s owner check re-declares this literal (to avoid a `debug -> google` module edge), and a test pins the two together so a rename here can't silently downgrade owner debug to diagnostics.",
+    "tags": [
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
     "demoId": null
   },
   {
@@ -29257,7 +29290,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "Live audio-graph diagnostics registry. The crash class we care about — voices/nodes accumulating across a seamless loop until the tab OOMs — is invisible until you watch the live counts over time. Every instrument and scheduler reports itself here so a single snapshot sums the live WebAudio graph across the whole app: tracked voices, buses awaiting teardown, scheduled sources, and pending callbacks. A dev overlay polls it so you can SEE the numbers stay flat while playing (healthy) vs climb (leak); the chord-chart soak test asserts the same snapshot stays bounded over K loop passes. Registration is a Set add/remove — zero cost when nothing reads the snapshot. A source that never unregisters (a leaked, undisposed instrument) shows up as a rising `instruments`/`schedulers` count, which is itself a leak signal.",
+    "description": "Live audio-graph diagnostics registry. The crash class we care about — voices/nodes accumulating across a seamless loop until the tab OOMs — is invisible until you watch the live counts over time. Every instrument and scheduler reports itself here so a single snapshot sums the live WebAudio graph across the whole app: tracked voices, buses awaiting teardown, scheduled sources, and pending callbacks. A dev overlay polls it so you can SEE the numbers stay flat while playing (healthy) vs climb (leak); the chord-chart soak test asserts the same snapshot stays bounded over K loop passes. Registration is a Set add/remove — zero cost when nothing reads the snapshot. Instruments register on `connect` and release on `disconnect`, so the registry holds a strong ref only to instruments wired to the live graph (never pinning one whose teardown skips `dispose`). A `voices`/`buses` count that climbs while playing loops, or an `instruments` count that never falls back as sessions end, is the leak signal.",
     "tags": [
       "playback",
       "api"
@@ -29273,7 +29306,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "Live audio-graph diagnostics registry. The crash class we care about — voices/nodes accumulating across a seamless loop until the tab OOMs — is invisible until you watch the live counts over time. Every instrument and scheduler reports itself here so a single snapshot sums the live WebAudio graph across the whole app: tracked voices, buses awaiting teardown, scheduled sources, and pending callbacks. A dev overlay polls it so you can SEE the numbers stay flat while playing (healthy) vs climb (leak); the chord-chart soak test asserts the same snapshot stays bounded over K loop passes. Registration is a Set add/remove — zero cost when nothing reads the snapshot. A source that never unregisters (a leaked, undisposed instrument) shows up as a rising `instruments`/`schedulers` count, which is itself a leak signal.",
+    "description": "Live audio-graph diagnostics registry. The crash class we care about — voices/nodes accumulating across a seamless loop until the tab OOMs — is invisible until you watch the live counts over time. Every instrument and scheduler reports itself here so a single snapshot sums the live WebAudio graph across the whole app: tracked voices, buses awaiting teardown, scheduled sources, and pending callbacks. A dev overlay polls it so you can SEE the numbers stay flat while playing (healthy) vs climb (leak); the chord-chart soak test asserts the same snapshot stays bounded over K loop passes. Registration is a Set add/remove — zero cost when nothing reads the snapshot. Instruments register on `connect` and release on `disconnect`, so the registry holds a strong ref only to instruments wired to the live graph (never pinning one whose teardown skips `dispose`). A `voices`/`buses` count that climbs while playing loops, or an `instruments` count that never falls back as sessions end, is the leak signal.",
     "tags": [
       "playback",
       "api"
@@ -29289,7 +29322,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "Live audio-graph diagnostics registry. The crash class we care about — voices/nodes accumulating across a seamless loop until the tab OOMs — is invisible until you watch the live counts over time. Every instrument and scheduler reports itself here so a single snapshot sums the live WebAudio graph across the whole app: tracked voices, buses awaiting teardown, scheduled sources, and pending callbacks. A dev overlay polls it so you can SEE the numbers stay flat while playing (healthy) vs climb (leak); the chord-chart soak test asserts the same snapshot stays bounded over K loop passes. Registration is a Set add/remove — zero cost when nothing reads the snapshot. A source that never unregisters (a leaked, undisposed instrument) shows up as a rising `instruments`/`schedulers` count, which is itself a leak signal.",
+    "description": "Live audio-graph diagnostics registry. The crash class we care about — voices/nodes accumulating across a seamless loop until the tab OOMs — is invisible until you watch the live counts over time. Every instrument and scheduler reports itself here so a single snapshot sums the live WebAudio graph across the whole app: tracked voices, buses awaiting teardown, scheduled sources, and pending callbacks. A dev overlay polls it so you can SEE the numbers stay flat while playing (healthy) vs climb (leak); the chord-chart soak test asserts the same snapshot stays bounded over K loop passes. Registration is a Set add/remove — zero cost when nothing reads the snapshot. Instruments register on `connect` and release on `disconnect`, so the registry holds a strong ref only to instruments wired to the live graph (never pinning one whose teardown skips `dispose`). A `voices`/`buses` count that climbs while playing loops, or an `instruments` count that never falls back as sessions end, is the leak signal.",
     "tags": [
       "playback",
       "api"
@@ -29335,7 +29368,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "Register an instrument; call the returned fn from its `dispose`.",
+    "description": "Register an instrument; call the returned fn from its `disconnect`.",
     "tags": [
       "playback"
     ],
@@ -29365,7 +29398,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "Dev-only live audio-graph readout. Renders nothing unless `?debug` (or `?dev`) is on. The loop-then-crash class is invisible from a single frame — you have to watch the live counts over minutes. Play a chord chart and watch: flat numbers = healthy; `voices`/`heap` climbing every loop = a leak. Also exposes the same snapshot on `window.__labsAudioDiagnostics()` for the console and the chord-chart soak test. Plain inline-styled div on purpose — this is developer tooling, not product UI, so it stays out of the shared-UI/journey surface and adds no MUI weight to the app bundle path a normal user loads.",
+    "description": "Read-only live audio-graph readout. Renders on the `diagnostics` tier and up, so prod `?debug` shows it (it exposes no mutations or data — safe in prod, ADR 0026). The loop-then-crash class is invisible from a single frame — you have to watch the live counts over minutes. Play a chord chart and watch: flat numbers = healthy; `voices`/`heap` climbing every loop = a leak. Also exposes the same snapshot on `window.__labsAudioDiagnostics()` for the console and the chord-chart soak test. Plain inline-styled div on purpose — this is developer tooling, not product UI, so it stays out of the shared-UI/journey surface and adds no MUI weight to the app bundle path a normal user loads.",
     "tags": [
       "playback",
       "api",

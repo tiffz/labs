@@ -45,13 +45,23 @@ read-only readouts whenever `isLabsDebugVisible()`.
 
 - **Prod is safe by default**: an anonymous `?debug` visitor can never reach a
   destructive action or god-mode, only read-only diagnostics.
+- **The owner gate is a default-safe UX guard, not a security boundary.** Client code
+  can always self-elevate by writing the identity key in devtools — but every full-tier
+  control it unlocks is client-side and acts only on the forger's own browser (local
+  progress, their own localStorage), and the dev-server `/__debug_*` endpoints stay
+  `import.meta.env.DEV`-gated server-side. The gate keeps the destructive surface off by
+  default for ordinary visitors; it is not a defense against a determined local user.
 - **The owner gets full debug in prod** by being signed in — no build flag needed.
 - Guardrail: `labsDebugAccess.test.ts` pins the invariant (anon prod = diagnostics, never
   full). The tiered model is the single home for future hardening.
 - Migration is incremental: each app's debug entry point swaps its `?debug` read for
-  `isLabsDebugFull()` (tooling) or `isLabsDebugVisible()` (read-only). This ADR lands the
-  gate + the two most-exposed surfaces (sight, zinebox); the rest follow, plus a unified
-  `LabsDebugProvider`/dock mounted in every shell (Encore included) and shared debug
+  `isLabsDebugFull()` (tooling) or `isLabsDebugVisible()` (read-only). The gate + full
+  app migration land together — sight, zinebox, melodia, cats (dev-mode POST → full),
+  drums (dock → full), muscle (read-only inventory → diagnostics), plus Encore's
+  read-only audio overlay on the diagnostics tier. **Scales is the one exception**: a
+  parallel agent owns it, so its gate swap is deferred and tracked in
+  [`TECH_DEBT_ROADMAP.md`](../TECH_DEBT_ROADMAP.md) (the remaining hole is local-only, no
+  data leak). Still to come: a unified `LabsDebugProvider`/dock and shared debug
   primitives (state dump, danger zone, button styles) to remove the per-app duplication.
 
 ## Alternatives considered

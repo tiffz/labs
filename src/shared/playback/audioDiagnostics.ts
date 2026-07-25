@@ -9,9 +9,11 @@
  * numbers stay flat while playing (healthy) vs climb (leak); the chord-chart soak test
  * asserts the same snapshot stays bounded over K loop passes.
  *
- * Registration is a Set add/remove — zero cost when nothing reads the snapshot. A
- * source that never unregisters (a leaked, undisposed instrument) shows up as a rising
- * `instruments`/`schedulers` count, which is itself a leak signal.
+ * Registration is a Set add/remove — zero cost when nothing reads the snapshot.
+ * Instruments register on `connect` and release on `disconnect`, so the registry holds
+ * a strong ref only to instruments wired to the live graph (never pinning one whose
+ * teardown skips `dispose`). A `voices`/`buses` count that climbs while playing loops,
+ * or an `instruments` count that never falls back as sessions end, is the leak signal.
  */
 
 export interface AudioVoiceSource {
@@ -44,7 +46,7 @@ export interface AudioDiagnosticsSnapshot {
 const instruments = new Set<AudioVoiceSource>();
 const schedulers = new Set<AudioSchedulerSource>();
 
-/** Register an instrument; call the returned fn from its `dispose`. */
+/** Register an instrument; call the returned fn from its `disconnect`. */
 export function registerDiagnosticInstrument(source: AudioVoiceSource): () => void {
   instruments.add(source);
   return () => {

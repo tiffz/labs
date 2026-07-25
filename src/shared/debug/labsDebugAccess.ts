@@ -25,15 +25,24 @@ export function computeLabsDebugTier(input: {
 }
 
 /**
+ * The persisted-identity localStorage key. Re-declared here (not imported) to avoid a
+ * `shared/debug -> shared/google` module edge in the cycle ledger. It mirrors
+ * `ENCORE_GOOGLE_IDENTITY_STORAGE_KEY` in google/encoreGoogleTokenStorage.ts; a test pins them
+ * equal so a rename there can't silently drift this owner check.
+ */
+export const LABS_DEBUG_OWNER_IDENTITY_KEY = 'encore_google_identity_v1';
+
+/**
  * Owner presence: a persisted Google identity means the allowlisted owner signed into a Labs
  * private app on this device (those apps use a restricted OAuth client, so only the owner can).
- * Read the localStorage key directly to avoid a `shared/debug -> shared/google` module edge
- * (cycle ledger). Key mirrors IDENTITY_STORAGE_KEY in google/encoreGoogleTokenStorage.ts.
+ * The owner gate is a default-safe UX guard, not a hard security boundary — client code can
+ * always self-elevate by writing this key; the destructive controls it unlocks act only on the
+ * forger's own browser, and dev-server endpoints stay `import.meta.env.DEV`-gated. ADR 0026.
  */
 function ownerSignedIn(): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    const raw = window.localStorage.getItem('encore_google_identity_v1');
+    const raw = window.localStorage.getItem(LABS_DEBUG_OWNER_IDENTITY_KEY);
     if (!raw) return false;
     const v = JSON.parse(raw) as { email?: unknown };
     return typeof v?.email === 'string' && v.email.trim().length > 0;

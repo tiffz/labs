@@ -36,12 +36,13 @@ import type { TimeSignature } from './types';
 import { createAppAnalytics } from '../shared/utils/analytics';
 import SkipToMain from '../shared/components/SkipToMain';
 import LabsDebugDock from '../shared/components/LabsDebugDock';
-import { isLabsDebugVisible } from '../shared/debug/labsDebugAccess';
+import { isLabsDebugFull } from '../shared/debug/labsDebugAccess';
 
 const analytics = createAppAnalytics('drums');
 
-// Dock is read-only diagnostics (help text + Copy bundle), so it shows on the diagnostics tier. ADR 0026.
-const drumsDebugMode = isLabsDebugVisible();
+// The dock reserves layout height and its Copy bundle serializes page state, so it is a
+// full-tier surface (localhost or signed-in owner), not read-only diagnostics. ADR 0026.
+const drumsDebugMode = isLabsDebugFull();
 import { DEFAULT_SETTINGS } from './types/settings';
 
 const App: React.FC = () => {

@@ -7,7 +7,8 @@ import {
 } from './audioDiagnostics';
 
 /**
- * Dev-only live audio-graph readout. Renders nothing unless `?debug` (or `?dev`) is on.
+ * Read-only live audio-graph readout. Renders on the `diagnostics` tier and up, so
+ * prod `?debug` shows it (it exposes no mutations or data — safe in prod, ADR 0026).
  *
  * The loop-then-crash class is invisible from a single frame — you have to watch the
  * live counts over minutes. Play a chord chart and watch: flat numbers = healthy;
@@ -67,7 +68,8 @@ export function AudioDiagnosticsOverlay(): React.ReactElement | null {
         maxWidth: '90vw',
       }}
     >
-      {`audio  voices ${snap.voices} (peak ${peakVoicesRef.current})  buses ${snap.buses}\n` +
+      {`labs audio diagnostics · ?debug\n` +
+        `audio  voices ${snap.voices} (peak ${peakVoicesRef.current})  buses ${snap.buses}\n` +
         `sched  src ${snap.sources}  cb ${snap.callbacks}  inst ${snap.instruments}  live-sched ${snap.schedulers}\n` +
         `heap   ${snap.heapMB === null ? 'n/a (non-Chrome)' : `${snap.heapMB.toFixed(1)} MB`}` +
         (heapDelta === null ? '' : `  Δ ${heapDelta >= 0 ? '+' : ''}${heapDelta.toFixed(1)} MB`)}
