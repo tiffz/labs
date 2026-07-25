@@ -18,15 +18,39 @@ document.addEventListener('DOMContentLoaded', function() {
     return h === 'localhost' || h === '127.0.0.1';
   }
 
-  // Unlisted apps: show in the catalog on local dev only. Production still serves /app/ URLs;
-  // they are just omitted from this directory page.
+  // Whether someone is signed into a Labs private app on this device. The private apps
+  // use a restricted Google OAuth client (only the owner + husband can complete sign-in),
+  // so a persisted identity effectively means "one of us". Synchronous localStorage read;
+  // key mirrors IDENTITY_STORAGE_KEY in src/shared/google/encoreGoogleTokenStorage.ts.
+  function labsHasPrivateAppAccess() {
+    try {
+      var raw = window.localStorage.getItem('encore_google_identity_v1');
+      if (!raw) return false;
+      var v = JSON.parse(raw);
+      return !!(v && typeof v.email === 'string' && v.email.trim());
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function removeStage(stage) {
+    document.querySelectorAll('[data-stage="' + stage + '"]').forEach(function (el) {
+      el.remove();
+    });
+    document.querySelectorAll('[data-filter-stage="' + stage + '"]').forEach(function (el) {
+      el.remove();
+    });
+  }
+
+  // Visibility gate (localhost shows everything; apps stay URL-reachable regardless):
+  //  - in-development: never shown on the public directory.
+  //  - private: shown only when signed into a private app (restricted to the allowlist).
+  // Production still serves /app/ URLs directly — this only controls the directory grid.
   if (!isLabsCatalogLocalHost()) {
-    document.querySelectorAll('[data-stage="unlisted"]').forEach(function (el) {
-      el.remove();
-    });
-    document.querySelectorAll('[data-filter-stage="unlisted"]').forEach(function (el) {
-      el.remove();
-    });
+    removeStage('in-development');
+    if (!labsHasPrivateAppAccess()) {
+      removeStage('private');
+    }
   }
 
   // Catalog filtering (used on homepage).

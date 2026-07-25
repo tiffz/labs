@@ -19,7 +19,7 @@
       "criticality": "high",
       "private": true,
       "usage": null,
-      "why": "Nearly all of the owner's singing practice runs through it. Unlisted because it is PRIVATE (restricted Drive login: owner + husband), not because it is early. Canonical tier != stage example."
+      "why": "Nearly all of the owner's singing practice runs through it. Stage is `private` (restricted Drive login: owner + husband), not early. Canonical tier != stage example."
     },
     "count": {
       "tier": "protected",

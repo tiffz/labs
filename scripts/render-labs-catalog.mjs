@@ -22,12 +22,17 @@ const NOT_FOUND_MARKER_END = '<!-- labs-404-catalog:generated:end -->';
 
 const checkMode = process.argv.includes('--check');
 
-const STAGE_ORDER = { stable: 0, development: 1, unlisted: 2 };
+// Maturity ladder, public first: stable > experimental. Then the hidden track:
+// private (stable but restricted to signed-in allowlisted users) and in-development
+// (earlier than experimental, not shown publicly). See public/scripts/shared.js for the
+// prod visibility gate.
+const STAGE_ORDER = { stable: 0, experimental: 1, private: 2, 'in-development': 3 };
 
 const STAGE_BADGE = {
   stable: { klass: 'status-stable', label: 'Stable' },
-  development: { klass: 'status-development', label: 'Experimental' },
-  unlisted: { klass: 'status-unlisted', label: 'Unlisted' },
+  experimental: { klass: 'status-experimental', label: 'Experimental' },
+  private: { klass: 'status-private', label: 'Private' },
+  'in-development': { klass: 'status-in-development', label: 'In development' },
 };
 
 const SECTIONS = [
@@ -76,7 +81,7 @@ function validateApps(apps) {
     }
     if (!Object.hasOwn(STAGE_ORDER, a.stage)) {
       throw new Error(
-        `${manifestPath}: ${label} invalid stage ${JSON.stringify(a.stage)} (expected stable | development | unlisted)`,
+        `${manifestPath}: ${label} invalid stage ${JSON.stringify(a.stage)} (expected stable | experimental | private | in-development)`,
       );
     }
     const allowedCat = new Set(SECTIONS.map((s) => s.category));
@@ -164,7 +169,7 @@ function renderCatalogHtml(apps) {
       sec.category === 'music'
         ? [
             `          <div class="apps-grid">`,
-            `            <!-- Stable + experimental first; unlisted last (order from labsCatalog.manifest.json + scripts/render-labs-catalog.mjs). -->`,
+            `            <!-- Stable + experimental first; private + in-development last (order from labsCatalog.manifest.json + scripts/render-labs-catalog.mjs). -->`,
             ``,
           ].join('\n')
         : [`          <div class="apps-grid">`, ``].join('\n');

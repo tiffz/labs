@@ -414,13 +414,19 @@ body {
   border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
-.status-development {
+.status-experimental {
   color: #92400e;
   background: rgba(245, 158, 11, 0.2);
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.status-unlisted {
+.status-private {
+  color: #5b21b6;
+  background: rgba(139, 92, 246, 0.16);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+}
+
+.status-in-development {
   color: #475569;
   background: rgba(100, 116, 139, 0.14);
   border: 1px solid rgba(71, 85, 105, 0.28);
