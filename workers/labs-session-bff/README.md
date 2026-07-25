@@ -102,9 +102,30 @@ The session cookie is set by the worker origin. On `labs-session-bff.tiffz.worke
 
 Everything is prepared in `wrangler.toml` (commented `routes` block with step-by-step instructions). The one thing an agent cannot do: `tiffzhang.com` DNS currently lives at Namecheap, and Cloudflare Workers custom domains require the zone on Cloudflare DNS. Once the zone is added and nameservers switched, uncomment the route, deploy, add the new callback URI in Google Cloud Console, and update `VITE_LABS_SESSION_BFF_URL`.
 
+## Autodeploy (GitHub Actions)
+
+`.github/workflows/deploy-session-bff.yml` runs `wrangler deploy` whenever code under
+`workers/labs-session-bff/**` lands on `main` (or via **Run workflow**). It only ships
+**code** — the secrets below are set once with `wrangler secret put` and persist in
+Cloudflare, so `wrangler deploy` never touches them.
+
+One-time setup (an agent cannot do this — it needs your Cloudflare account):
+
+1. Create a Cloudflare API token — **My Profile → API Tokens → Create Token**, template
+   **Edit Cloudflare Workers** (or a custom token with **Account → Workers Scripts → Edit**).
+2. Add it as a GitHub repo secret: **Settings → Secrets and variables → Actions → New
+   repository secret**, name `CLOUDFLARE_API_TOKEN`. If the token spans multiple accounts,
+   also add `CLOUDFLARE_ACCOUNT_ID`.
+
+Until `CLOUDFLARE_API_TOKEN` exists the job **skips cleanly** (green, with a warning), so
+merging the workflow never red-fails. Manual deploy still works any time: `npm run deploy`
+from this directory.
+
 ## Rollback
 
-Unset `VITE_LABS_SESSION_BFF_URL` and redeploy Pages. No data migration required.
+Unset `VITE_LABS_SESSION_BFF_URL` and redeploy Pages. No data migration required. To roll
+back the Worker itself, redeploy a previous commit (`git checkout <sha> -- . && npm run
+deploy`) or use **Deployments → Rollback** in the Cloudflare dashboard.
 
 ## Manual QA
 
