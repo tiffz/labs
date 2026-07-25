@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { isLabsDebugVisible } from '../debug/labsDebugAccess';
 import {
   exposeAudioDiagnosticsForDebug,
@@ -19,35 +19,41 @@ import {
  * stays out of the shared-UI/journey surface and adds no MUI weight to the app bundle
  * path a normal user loads.
  */
+interface OverlayView {
+  snap: AudioDiagnosticsSnapshot;
+  peakVoices: number;
+  heapDelta: number | null;
+}
+
 export function AudioDiagnosticsOverlay(): React.ReactElement | null {
   // Read-only telemetry, so it renders on the `diagnostics` tier too (safe in prod). Gate: ADR 0026.
   const enabled = isLabsDebugVisible();
-  const [snap, setSnap] = useState<AudioDiagnosticsSnapshot | null>(null);
-  const baselineHeapRef = useRef<number | null>(null);
-  const peakVoicesRef = useRef(0);
+  // Peak-voices and heap-baseline accumulate across samples inside the effect (closure vars,
+  // NOT refs) and fold into one view object, so render reads state only — never a ref value
+  // during render (react-hooks/refs).
+  const [view, setView] = useState<OverlayView | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
     exposeAudioDiagnosticsForDebug();
+    let baselineHeap: number | null = null;
+    let peakVoices = 0;
     const sample = () => {
       const next = getAudioDiagnosticsSnapshot();
-      if (next.heapMB !== null && baselineHeapRef.current === null) {
-        baselineHeapRef.current = next.heapMB;
-      }
-      peakVoicesRef.current = Math.max(peakVoicesRef.current, next.voices);
-      setSnap(next);
+      if (next.heapMB !== null && baselineHeap === null) baselineHeap = next.heapMB;
+      peakVoices = Math.max(peakVoices, next.voices);
+      const heapDelta =
+        next.heapMB !== null && baselineHeap !== null ? next.heapMB - baselineHeap : null;
+      setView({ snap: next, peakVoices, heapDelta });
     };
     sample();
     const id = window.setInterval(sample, 500);
     return () => window.clearInterval(id);
   }, [enabled]);
 
-  if (!enabled || !snap) return null;
+  if (!enabled || !view) return null;
 
-  const heapDelta =
-    snap.heapMB !== null && baselineHeapRef.current !== null
-      ? snap.heapMB - baselineHeapRef.current
-      : null;
+  const { snap, peakVoices, heapDelta } = view;
 
   return (
     <div
@@ -69,7 +75,7 @@ export function AudioDiagnosticsOverlay(): React.ReactElement | null {
       }}
     >
       {`labs audio diagnostics · ?debug\n` +
-        `audio  voices ${snap.voices} (peak ${peakVoicesRef.current})  buses ${snap.buses}\n` +
+        `audio  voices ${snap.voices} (peak ${peakVoices})  buses ${snap.buses}\n` +
         `sched  src ${snap.sources}  cb ${snap.callbacks}  inst ${snap.instruments}  live-sched ${snap.schedulers}\n` +
         `heap   ${snap.heapMB === null ? 'n/a (non-Chrome)' : `${snap.heapMB.toFixed(1)} MB`}` +
         (heapDelta === null ? '' : `  Δ ${heapDelta >= 0 ? '+' : ''}${heapDelta.toFixed(1)} MB`)}
