@@ -56,7 +56,10 @@ jobs:
 
       - name: Install worker deps
         if: steps.guard.outputs.skip != 'true'
-        run: npm ci
+        # --legacy-peer-deps: wrangler@4 declares a peerOptional on @cloudflare/workers-types@^5,
+        # but the worker pins ^4 (types only, benign). Strict `npm ci` rejects the mismatch; this
+        # installs the committed lockfile tree as-is. Bumping workers-types to v5 is the real fix.
+        run: npm ci --legacy-peer-deps
         working-directory: workers/labs-session-bff
 
       - name: Typecheck worker
