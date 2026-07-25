@@ -60,6 +60,7 @@ import { encoreAppHref, isModifiedOrNonPrimaryClick } from '../routes/encoreAppH
 import { encoreLoopbackUrlFromCurrent } from '../spotify/spotifyRedirectUri';
 import { readAndClearSpotifyOAuthFlash } from '../spotify/completeOAuthFromUrl';
 import { fetchYouTubePlaylistItems, type YouTubePlaylistItemRow } from '../youtube/youtubePlaylistApi';
+import { ensureYouTubeReadonlyAccessToken } from '../youtube/youtubeAccess';
 import type { EncoreSong } from '../types';
 import {
   findExistingSongForImport,
@@ -451,7 +452,7 @@ export function PlaylistImportDialog(props: {
       return;
     }
     if (ytIds.length && !googleAccessToken) {
-      setMsg('YouTube import needs Google sign-in (YouTube readonly scope).');
+      setMsg('Sign in with Google first. YouTube import then asks for YouTube access separately.');
       return;
     }
     setBusy(true);
@@ -495,19 +496,31 @@ export function PlaylistImportDialog(props: {
 
         const mergedYt: YouTubePlaylistItemRow[] = [];
         const seenVideo = new Set<string>();
-        if (googleAccessToken) {
-          for (const id of ytIds) {
-            try {
-              const chunk = await fetchYouTubePlaylistItems(googleAccessToken, id);
-              for (const row of chunk) {
-                if (seenVideo.has(row.videoId)) continue;
-                seenVideo.add(row.videoId);
-                mergedYt.push(row);
+        if (ytIds.length) {
+          // YouTube read access is a SEPARATE consent from the Drive/login session — Google
+          // rejects the two scopes bundled. Acquire a youtube.readonly token on this gesture.
+          let youtubeToken: string | null = null;
+          try {
+            youtubeToken = await ensureYouTubeReadonlyAccessToken();
+          } catch (e) {
+            warnings.push(`YouTube access: ${e instanceof Error ? e.message : String(e)}`);
+          }
+          if (youtubeToken) {
+            for (const id of ytIds) {
+              try {
+                const chunk = await fetchYouTubePlaylistItems(youtubeToken, id);
+                for (const row of chunk) {
+                  if (seenVideo.has(row.videoId)) continue;
+                  seenVideo.add(row.videoId);
+                  mergedYt.push(row);
+                }
+              } catch (e) {
+                warnings.push(`YouTube playlist ${id}: ${e instanceof Error ? e.message : String(e)}`);
               }
-            } catch (e) {
-              warnings.push(`YouTube playlist ${id}: ${e instanceof Error ? e.message : String(e)}`);
+              bump();
             }
-            bump();
+          } else {
+            for (let i = 0; i < ytIds.length; i += 1) bump();
           }
         }
 

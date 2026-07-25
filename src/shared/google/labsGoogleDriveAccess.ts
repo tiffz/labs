@@ -41,14 +41,17 @@ export const LABS_GOOGLE_DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/dri
 /**
  * Scopes for Labs Drive token refresh (Stanza/Scales + shared storage with Encore).
  * Matches Encore `GOOGLE_SCOPES` so `writePersistedGoogleSession` from Labs apps does not replace
- * Encore’s token with a narrower one (which would break YouTube / Drive metadata in Encore).
+ * Encore’s token with a narrower one (which would break Drive metadata in Encore).
+ *
+ * `youtube.readonly` is intentionally absent: Google rejects it bundled with `drive.file` in one
+ * authorization (Error 400). Encore requests YouTube read access separately (incremental auth)
+ * when a YouTube feature runs — keep this set and Encore `GOOGLE_SCOPES` in sync WITHOUT it.
  */
 export const LABS_GOOGLE_DRIVE_SESSION_SCOPES = [
   LABS_GOOGLE_DRIVE_FILE_SCOPE,
   'https://www.googleapis.com/auth/drive.metadata.readonly',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
-  'https://www.googleapis.com/auth/youtube.readonly',
 ].join(' ');
 
 /**
@@ -64,7 +67,7 @@ export const LABS_GOOGLE_DRIVE_IMPORT_SCOPES = [
   LABS_GOOGLE_DRIVE_READONLY_SCOPE,
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
-  'https://www.googleapis.com/auth/youtube.readonly',
+  // youtube.readonly intentionally absent — see LABS_GOOGLE_DRIVE_SESSION_SCOPES.
 ].join(' ');
 
 function getGoogleClientId(): string {
