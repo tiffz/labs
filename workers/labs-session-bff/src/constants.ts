@@ -1,11 +1,18 @@
-/** Matches Encore {@link GOOGLE_SCOPES}, shared {@link LABS_GOOGLE_DRIVE_SESSION_SCOPES}, plus read for Zine Box import. */
+/**
+ * Matches Encore {@link GOOGLE_SCOPES}, shared {@link LABS_GOOGLE_DRIVE_SESSION_SCOPES}, plus
+ * `drive.readonly` for Zine Box import.
+ *
+ * `youtube.readonly` is intentionally absent. Google rejects it bundled with `drive.file` in one
+ * authorization ("scopes that cannot be requested together", Error 400 invalid_request) — this
+ * consent flow is the login path, so bundling it blocked every sign-in. Encore requests YouTube
+ * read access separately (client-side incremental auth) when playlist import runs.
+ */
 export const LABS_GOOGLE_OAUTH_SCOPES = [
   'https://www.googleapis.com/auth/drive.file',
   'https://www.googleapis.com/auth/drive.metadata.readonly',
   'https://www.googleapis.com/auth/drive.readonly',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
-  'https://www.googleapis.com/auth/youtube.readonly',
 ].join(' ');
 
 export const LABS_GOOGLE_OAUTH_DONE_PATH = '/google-oauth-done.html';

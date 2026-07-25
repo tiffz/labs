@@ -113,7 +113,9 @@ const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/drive.metadata.readonly',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile',
-  'https://www.googleapis.com/auth/youtube.readonly',
+  // NOTE: youtube.readonly is deliberately NOT here. Google rejects it bundled with drive.file
+  // in one authorization (Error 400 "scopes that cannot be requested together"). Playlist import
+  // requests it separately via ensureYouTubeReadonlyAccessToken (incremental auth on a gesture).
 ].join(' ');
 
 const GOOGLE_GATE_BYPASS_STORAGE_KEY = 'encore_continue_without_google';
