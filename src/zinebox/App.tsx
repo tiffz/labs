@@ -7,7 +7,7 @@ import {
 } from '../shared/keyboardShortcuts';
 import { LabsUndoProvider } from '../shared/undo/LabsUndoContext';
 import { AppShellLayout } from '../shared/layout/AppShellLayout';
-import { readLabsDebugFromLocation } from '../shared/debug/readLabsDebugParams';
+import { isLabsDebugFull } from '../shared/debug/labsDebugAccess';
 import LibraryView from './components/LibraryView';
 // Debug dock and the theme picker are both opt-in surfaces; neither belongs in
 // the bundle every reader downloads.
@@ -24,11 +24,11 @@ import { navigateZineboxHash, zineboxLibraryHref } from './routes/zineboxHash';
 
 function useZineboxDebugMode(): boolean {
   const [debugMode, setDebugMode] = useState(() =>
-    typeof window !== 'undefined' ? readLabsDebugFromLocation().debug : false,
+    typeof window !== 'undefined' ? isLabsDebugFull() : false,
   );
 
   useEffect(() => {
-    setDebugMode(readLabsDebugFromLocation().debug);
+    setDebugMode(isLabsDebugFull());
   }, []);
 
   return debugMode;
