@@ -405,6 +405,18 @@ For local-only debug surfaces (e.g. practice timelines), wrap app-specific conte
 
 While mounted, the dock sets `--labs-debug-dock-height` on `:root` (and mirrors `--debug-panel-height` for Scales). **Each full-viewport app shell should always use** `height: calc(100dvh - var(--labs-debug-dock-height, 0px))` in its own CSS (see Scales, Sight, Gesture). The variable defaults to `0px` when the dock is absent so **non-debug layout is unchanged**. [`public/styles/shared.css`](../../public/styles/shared.css) also applies the same calc under `html:has(.labs-debug-dock)` as a backstop — do not rely on `:has()` alone without the always-on app rule.
 
+### Dock building blocks (do not re-roll)
+
+Compose the dock body from these instead of copy-pasting a `DEBUG_BTN` style object or a `JSON.stringify` `<pre>` per app:
+
+| Need                         | Use                                                                                            |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| A debug action button        | [`LabsDebugButton`](./components/LabsDebugButton.tsx) (`variant="danger"` for destructive)      |
+| Read-only JSON state readout | [`LabsDebugStateDump`](./components/LabsDebugStateDump.tsx) (`data={{ … }}`)                     |
+| Confirm-gated destructive ops | [`LabsDebugDangerZone`](./components/LabsDebugDangerZone.tsx) — every action routes through `window.confirm` in one place |
+
+`LabsDebugButton` stops click propagation by default (dock-header clicks toggle collapse); pass `stopPropagation={false}` for a body button. `LabsDebugDangerZone` is **full-tier only** — gate its host panel on `isLabsDebugFull()` (ADR 0026), never the `diagnostics` tier.
+
 ## App-specific shared primitives
 
 Some primitives live under `src/<app>/ui/` because their data shapes are app-specific. **Encore:** see [`src/encore/UI_PRIMITIVES.md`](../encore/UI_PRIMITIVES.md) (do not hand-roll media rows, integration cards, or Spotify sync panels).

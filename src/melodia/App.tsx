@@ -5,6 +5,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import SkipToMain from '../shared/components/SkipToMain';
 import LabsDebugDock from '../shared/components/LabsDebugDock';
+import LabsDebugStateDump from '../shared/components/LabsDebugStateDump';
 import { isLabsDebugFull } from '../shared/debug/labsDebugAccess';
 import { createAppAnalytics } from '../shared/utils/analytics';
 import {
@@ -289,21 +290,17 @@ export default function App(): ReactElement {
       </main>
       {debugMode && (
         <LabsDebugDock appId="melodia" accentColor="#e91e8c" title="Melodia" defaultCollapsed>
-          <Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap', m: 0, p: 1 }}>
-            {JSON.stringify(
-              {
-                phase: state.phase,
-                pathIndex: state.pathIndex,
-                helpLevel: state.helpLevel,
-                calibrationMidi: state.calibrationMidi,
-                comfort: state.comfort,
-                exerciseId: state.exercise?.id,
-                trailLen: state.pitchTrail.length,
-              },
-              null,
-              2,
-            )}
-          </Typography>
+          <LabsDebugStateDump
+            data={{
+              phase: state.phase,
+              pathIndex: state.pathIndex,
+              helpLevel: state.helpLevel,
+              calibrationMidi: state.calibrationMidi,
+              comfort: state.comfort,
+              exerciseId: state.exercise?.id,
+              trailLen: state.pitchTrail.length,
+            }}
+          />
         </LabsDebugDock>
       )}
     </div>
