@@ -21,6 +21,7 @@ On PRs and `main`, `CI/CD` runs **parallel jobs** (each with `timeout-minutes` s
 | **`vitest`** | Scoped (`run-changed-app-tests.mjs`) or full `npm test` per `scope`, with **one retry** in CI for rare worker teardown flakes; audio regression report |
 | **`e2e`**    | Smoke (scoped or full per `scope`) + playback UI regressions + visual (see below); Playwright browsers cached by version                               |
 | **`build`**  | Production build (artifact reused by `deploy` — no second compile on `main`) + advisory bundle report                                                  |
+| **`react-hooks-ratchet`** | The 14 React Compiler `react-hooks/*` rules across `src` vs a committed baseline (CI-only — too slow for presubmit; run locally with `npm run check:react-hooks-ratchet` before pushing risky component changes) |
 
 **Visual regression:** **scoped diffs are blocking** — `run-scoped-visual.mts` runs the changed apps' visual routes and fails the job on mismatch (classify per `docs/VISUAL_JUDGE_RUBRIC.md`, skill `labs-visual-judge`). **Cross-cutting/full diffs stay advisory** (warning + artifacts, job green) until ~2 weeks of clean nightly visual runs, then flip to blocking. Full visual matrix, **coverage**, and **Lighthouse** run **nightly** (`Nightly Portfolio Audit`).
 
@@ -30,8 +31,26 @@ Only **`ci.yml` → `deploy`** automatically calls `actions/deploy-pages` on pus
 
 - **`rollback.yml`** also deploys Pages, but only via manual **`workflow_dispatch`** — it shares the same `pages-deploy-${{ github.ref }}` concurrency group so rollback and CI deploy cannot race.
 - **`concurrency`** group `pages-deploy-${{ github.ref }}` with `cancel-in-progress: true` — rapid pushes cancel stale deploys; only latest `main` publishes.
-- **`deploy` job** depends on `checks`, `vitest`, `e2e`, and `build`; it waits 90s / 120s and retries `actions/deploy-pages` up to **three** times when an attempt fails (typical errors: `in progress deployment`, GitHub `Deployment failed, try again later`).
-- Presubmit guard **`npm run check:workflows`** fails if more than one **automatic** workflow invokes `deploy-pages` (rollback excluded).
+- **`deploy` job** depends on `checks`, `react-hooks-ratchet`, `vitest`, `e2e`, and `build`; it waits 90s / 120s and retries `actions/deploy-pages` up to **three** times when an attempt fails (typical errors: `in progress deployment`, GitHub `Deployment failed, try again later`).
+- Presubmit guard **`npm run check:workflows`** fails if more than one **automatic** workflow invokes `deploy-pages` (rollback excluded), and (via `check:ci-gating`) if `deploy.needs` drifts from the required-check set below.
+
+### Required status checks (deploy-gating invariant)
+
+**Every job in `deploy.needs` MUST be a required status check on `main`.** If not, a PR can merge green (branch protection only enforces the required set) while a deploy-gating job is red — then the `main` push **skips `deploy`** with no red X, and prod silently goes stale. This is how #120/#121 merged but never deployed (`react-hooks-ratchet` gated the deploy but was not required).
+
+The gating set is: **`checks`, `react-hooks-ratchet`, `vitest`, `e2e`, `build`** (kept in sync by `scripts/check-ci-gating.mjs`). To verify or set branch protection to match:
+
+```sh
+# Verify
+gh api repos/tiffz/labs/branches/main/protection/required_status_checks --jq '.contexts'
+# Set (must include every deploy-gating job)
+gh api -X PATCH repos/tiffz/labs/branches/main/protection/required_status_checks \
+  -f strict=false \
+  -f 'contexts[]=checks' -f 'contexts[]=react-hooks-ratchet' \
+  -f 'contexts[]=vitest' -f 'contexts[]=e2e' -f 'contexts[]=build'
+```
+
+When you add or remove a `deploy.needs` job: update `REQUIRED_CHECKS` in `scripts/check-ci-gating.mjs`, this list, **and** run the `gh api` command above — all three must agree.
 
 Do **not** add a second Pages deploy workflow. Doc/asset path changes are covered by `ci.yml` path filters (`**.md`, images, `CNAME`, `LICENSE`, `public/**`).
 
