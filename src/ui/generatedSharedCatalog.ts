@@ -12859,6 +12859,91 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-labsdebugbutton-tsx-labsdebugbutton",
+    "name": "LabsDebugButton",
+    "path": "src/shared/components/LabsDebugButton.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "The one button style for `LabsDebugDock` toolbars and bodies. Apps kept copy-pasting a `DEBUG_BTN` / `DEBUG_BTN_DANGER` CSSProperties pair; this is the shared source of truth. Debug controls live inside the dock header, whose click toggles collapse — so clicks stop propagating by default. Pass `stopPropagation={false}` for a body button outside the header.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labsdebugbutton-tsx-labsdebugbuttonprops",
+    "name": "LabsDebugButtonProps",
+    "path": "src/shared/components/LabsDebugButton.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "The one button style for `LabsDebugDock` toolbars and bodies. Apps kept copy-pasting a `DEBUG_BTN` / `DEBUG_BTN_DANGER` CSSProperties pair; this is the shared source of truth. Debug controls live inside the dock header, whose click toggles collapse — so clicks stop propagating by default. Pass `stopPropagation={false}` for a body button outside the header.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labsdebugdangerzone-tsx-labsdebugdangeraction",
+    "name": "LabsDebugDangerAction",
+    "path": "src/shared/components/LabsDebugDangerZone.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labsdebugdangerzone-tsx-labsdebugdangerzone",
+    "name": "LabsDebugDangerZone",
+    "path": "src/shared/components/LabsDebugDangerZone.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Confirm-gated destructive actions for a `LabsDebugDock` (clear-localStorage, wipe-library). Every action routes through `window.confirm` here, so the confirm-before-destroy invariant lives in one place instead of being re-implemented per app. Full-tier only — never render this on the `diagnostics` tier (gate with `isLabsDebugFull`).",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labsdebugdangerzone-tsx-labsdebugdangerzoneprops",
+    "name": "LabsDebugDangerZoneProps",
+    "path": "src/shared/components/LabsDebugDangerZone.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-labsdebugdock-tsx-labs-debug-dock-height-var",
     "name": "LABS_DEBUG_DOCK_HEIGHT_VAR",
     "path": "src/shared/components/LabsDebugDock.tsx",
@@ -12951,6 +13036,23 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
       "drums"
     ],
     "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-labsdebugstatedump-tsx-labsdebugstatedump",
+    "name": "LabsDebugStateDump",
+    "path": "src/shared/components/LabsDebugStateDump.tsx",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "The pretty-printed JSON state block every `LabsDebugDock` body was hand-rolling (`<Typography component=\"pre\">{JSON.stringify(obj, null, 2)}</Typography>`). One home for the styling so read-only debug readouts stay consistent across apps.",
+    "tags": [
+      "components",
+      "api",
+      "react"
+    ],
+    "appsUsing": [],
+    "exportType": "default",
     "demoId": null
   },
   {

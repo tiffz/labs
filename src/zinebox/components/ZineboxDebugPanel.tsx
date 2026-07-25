@@ -1,30 +1,15 @@
-import { useCallback, useState, type CSSProperties } from 'react';
+import { useCallback, useState } from 'react';
 import Typography from '@mui/material/Typography';
 
 import LabsDebugDock from '../../shared/components/LabsDebugDock';
+import LabsDebugButton from '../../shared/components/LabsDebugButton';
+import LabsDebugStateDump from '../../shared/components/LabsDebugStateDump';
 import { clearZineboxLocalData } from '../db/clearZineboxLocalData';
 import { mockImportFromDrive } from '../db/mockDriveImport';
 import { useZineboxCollections, useZineboxComics } from '../hooks/useZineboxComics';
 import { navigateZineboxHash, zineboxLibraryHref } from '../routes/zineboxHash';
 
 const ACCENT = '#ff1493';
-
-const DEBUG_BTN: CSSProperties = {
-  background: 'transparent',
-  color: '#e2e8f0',
-  border: '1px solid #334155',
-  borderRadius: 3,
-  padding: '2px 8px',
-  fontSize: 10,
-  cursor: 'pointer',
-};
-
-const DEBUG_BTN_DANGER: CSSProperties = {
-  ...DEBUG_BTN,
-  color: '#fecaca',
-  borderColor: '#991b1b',
-  background: 'rgba(127, 29, 29, 0.35)',
-};
 
 export default function ZineboxDebugPanel(): React.ReactElement {
   const { comics, comicsHydrated } = useZineboxComics();
@@ -66,44 +51,24 @@ export default function ZineboxDebugPanel(): React.ReactElement {
       layout="toolbar-top"
       toolbar={
         <>
-          <button
-            type="button"
-            style={DEBUG_BTN_DANGER}
-            disabled={busy}
-            onClick={(e) => {
-              e.stopPropagation();
-              void handleClearLibrary();
-            }}
-          >
+          <LabsDebugButton variant="danger" disabled={busy} onClick={() => void handleClearLibrary()}>
             Clear library
-          </button>
-          <button
-            type="button"
-            style={DEBUG_BTN}
-            disabled={busy}
-            onClick={(e) => {
-              e.stopPropagation();
-              void handleImportSample();
-            }}
-          >
+          </LabsDebugButton>
+          <LabsDebugButton disabled={busy} onClick={() => void handleImportSample()}>
             Sample library
-          </button>
+          </LabsDebugButton>
         </>
       }
     >
-      <Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap', m: 0, p: 1, color: '#e2e8f0' }}>
-        {JSON.stringify(
-          {
-            comicsHydrated,
-            collectionsHydrated,
-            comicCount: comics.length,
-            stackCount: collections.length,
-            e2eSeed: typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('e2eSeed'),
-          },
-          null,
-          2,
-        )}
-      </Typography>
+      <LabsDebugStateDump
+        data={{
+          comicsHydrated,
+          collectionsHydrated,
+          comicCount: comics.length,
+          stackCount: collections.length,
+          e2eSeed: typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('e2eSeed'),
+        }}
+      />
       <Typography component="p" sx={{ m: 0, p: 1, pt: 0, fontSize: 10, lineHeight: 1.45, color: '#94a3b8' }}>
         Clear library wipes IndexedDB for Zine Box only (comics, stacks, PDF blobs). Encore, Gesture, Stanza, and
         Google sign-in are untouched.
