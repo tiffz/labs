@@ -1,0 +1,75 @@
+name: Deploy session BFF worker
+
+# Autodeploy the Cloudflare Worker (labs-session-bff) when its code lands on main.
+# Secrets (GOOGLE_CLIENT_SECRET, SESSION_SIGNING_KEY, …) are set once via `wrangler secret put`
+# and persist in Cloudflare — `wrangler deploy` never touches them, so CI only ships code.
+# Enable by adding the CLOUDFLARE_API_TOKEN secret (see workers/labs-session-bff/README.md).
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'workers/labs-session-bff/**'
+      - '.github/workflows/deploy-session-bff.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+# One deploy at a time; never cancel an in-flight deploy mid-publish.
+concurrency:
+  group: deploy-session-bff
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: wrangler deploy
+    runs-on: ubuntu-latest
+    steps:
+      # Skip cleanly (green, with a warning) until the deploy token is configured, so merging
+      # this workflow never produces a red failure before the secret exists.
+      - name: Check for Cloudflare token
+        id: guard
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CF_TOKEN" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::CLOUDFLARE_API_TOKEN not set; skipping worker deploy. Add it under Settings > Secrets and variables > Actions (see workers/labs-session-bff/README.md § Autodeploy)."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+          cache-dependency-path: workers/labs-session-bff/package-lock.json
+
+      - name: Install worker deps
+        if: steps.guard.outputs.skip != 'true'
+        run: npm ci
+        working-directory: workers/labs-session-bff
+
+      - name: Typecheck worker
+        if: steps.guard.outputs.skip != 'true'
+        run: npm run typecheck
+        working-directory: workers/labs-session-bff
+
+      - name: Deploy to Cloudflare
+        if: steps.guard.outputs.skip != 'true'
+        run: npm run deploy
+        working-directory: workers/labs-session-bff
+        env:
+          # wrangler reads these from the environment; CLOUDFLARE_ACCOUNT_ID is optional when the
+          # API token is scoped to a single account.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
