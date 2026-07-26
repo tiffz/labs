@@ -188,6 +188,91 @@ describe('useChartChordPlayback stop', () => {
     vi.useRealTimers();
   });
 
+  it('loops the whole song when loopWholeSong is on, and stops at the end when off', async () => {
+    vi.useFakeTimers();
+    // Two single-chord sections → four one-measure playback steps (the whole song).
+    const multiSectionLayout: ChartLayout = {
+      sections: [
+        {
+          sectionId: 'verse-1',
+          type: 'Verse',
+          header: 'Verse 1',
+          lines: [
+            { lineId: 'line-1', text: 'Hello', chords: [{ id: 'c1', charIndex: 0, chordName: 'C' }] },
+          ],
+        },
+        {
+          sectionId: 'chorus-0',
+          type: 'Chorus',
+          header: 'Chorus',
+          lines: [
+            { lineId: 'line-2', text: 'World', chords: [{ id: 'c2', charIndex: 0, chordName: 'G' }] },
+          ],
+        },
+      ],
+    };
+    const measureMs = chartPlaybackMeasureDurationMs(120);
+    const SONG_STEPS = 4;
+
+    const { result } = renderHook(() =>
+      useChartChordPlayback({
+        layout: multiSectionLayout,
+        tempo: 120,
+        storageKey: 'test-chart-playback-loop-all',
+      }),
+    );
+
+    // Off (default) → the main Play runs the whole song once (4 measures) then stops.
+    await act(async () => {
+      result.current.start();
+      await vi.advanceTimersByTimeAsync(measureMs * 8);
+    });
+    expect(result.current.playingSectionId).toBeNull();
+    expect(scheduleStyledChordMeasure).toHaveBeenCalledTimes(SONG_STEPS);
+    expect(result.current.playing).toBe(false);
+
+    // On → the same main Play loops the whole song: it plays past the end
+    // (more measures than the song is long) and never stops on its own.
+    scheduleStyledChordMeasure.mockClear();
+    act(() => {
+      result.current.updateSettings({ loopWholeSong: true });
+    });
+    await act(async () => {
+      result.current.start();
+      await vi.advanceTimersByTimeAsync(measureMs * 8);
+    });
+    expect(result.current.playing).toBe(true);
+    expect(result.current.playingSectionId).toBeNull();
+    expect(scheduleStyledChordMeasure.mock.calls.length).toBeGreaterThan(SONG_STEPS);
+
+    act(() => {
+      result.current.stop();
+    });
+    expect(result.current.playing).toBe(false);
+
+    vi.useRealTimers();
+  });
+
+  it('persists loopWholeSong across hook instances via storageKey', async () => {
+    const storageKey = 'test-chart-playback-loop-persist';
+    localStorage.removeItem(storageKey);
+
+    const first = renderHook(() =>
+      useChartChordPlayback({ layout, tempo: 120, storageKey }),
+    );
+    expect(first.result.current.settings.loopWholeSong).toBe(false);
+    act(() => {
+      first.result.current.updateSettings({ loopWholeSong: true });
+    });
+    first.unmount();
+
+    const second = renderHook(() =>
+      useChartChordPlayback({ layout, tempo: 120, storageKey }),
+    );
+    expect(second.result.current.settings.loopWholeSong).toBe(true);
+    localStorage.removeItem(storageKey);
+  });
+
   it('flushes voices when the tab is hidden while playing', async () => {
     Object.defineProperty(document, 'hidden', { configurable: true, value: false });
     const { result } = renderHook(() =>

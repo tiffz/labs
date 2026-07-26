@@ -345,8 +345,16 @@ export function useChartChordPlayback({
   );
 
   const start = useCallback(() => {
-    beginPlayback(steps, { loop: false, sectionId: null });
+    beginPlayback(steps, { loop: settingsRef.current.loopWholeSong, sectionId: null });
   }, [beginPlayback, steps]);
+
+  // Toggling "Loop song" mid-play takes effect at the next wrap. Only full-song
+  // playback reads this ref; section loops set loop=true on their own (sectionId).
+  useEffect(() => {
+    if (playing && playingSectionId === null) {
+      loopPlaybackRef.current = settings.loopWholeSong;
+    }
+  }, [playing, playingSectionId, settings.loopWholeSong]);
 
   const startSectionLoop = useCallback(
     (sectionId: string) => {

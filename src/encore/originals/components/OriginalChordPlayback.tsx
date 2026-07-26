@@ -1,4 +1,5 @@
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import RepeatIcon from '@mui/icons-material/Repeat';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import StopIcon from '@mui/icons-material/Stop';
 import Box from '@mui/material/Box';
@@ -76,6 +77,21 @@ function OriginalChordPlaybackControls({
       : 'Stop chord playback'
     : 'Play chord chart';
 
+  const loopWholeSong = settings.loopWholeSong;
+  const loopButton = (
+    <Tooltip title="Loop song">
+      <IconButton
+        size="small"
+        aria-label="Loop song"
+        aria-pressed={loopWholeSong}
+        onClick={() => updateSettings({ loopWholeSong: !loopWholeSong })}
+        sx={{ p: 0.35, color: loopWholeSong ? 'primary.main' : 'text.secondary' }}
+      >
+        <RepeatIcon fontSize="small" />
+      </IconButton>
+    </Tooltip>
+  );
+
   const settingsButton = (
     <Tooltip title="Playback settings">
       <IconButton
@@ -146,6 +162,7 @@ function OriginalChordPlaybackControls({
               {playing ? <StopIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
             </IconButton>
           </Tooltip>
+          {loopButton}
           {settingsButton}
         </Stack>
         {settingsPopover}
@@ -167,6 +184,7 @@ function OriginalChordPlaybackControls({
         >
           {playing ? 'Stop' : 'Play'}
         </Button>
+        {loopButton}
         {settingsButton}
       </Stack>
       {settingsPopover}
