@@ -107,6 +107,19 @@ function parseTombstones(raw: unknown): StanzaDriveTombstone[] {
   return out;
 }
 
+function parseYoutubeTombstones(raw: unknown): StanzaYoutubeTombstone[] {
+  if (!Array.isArray(raw)) return [];
+  const out: StanzaYoutubeTombstone[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as { videoId?: unknown; removedAt?: unknown };
+    if (typeof o.videoId !== 'string' || !o.videoId.trim()) continue;
+    if (typeof o.removedAt !== 'string') continue;
+    out.push({ videoId: o.videoId.trim(), removedAt: o.removedAt });
+  }
+  return out;
+}
+
 export function parseStanzaDriveEnvelope(json: string): StanzaDriveEnvelopeV1 {
   const data = JSON.parse(json) as Partial<StanzaDriveEnvelopeV1>;
   if (data.schemaVersion !== 1) throw new Error('Unsupported Stanza backup version.');
@@ -121,5 +134,9 @@ export function parseStanzaDriveEnvelope(json: string): StanzaDriveEnvelopeV1 {
   };
   const tombstones = parseTombstones(data.deletedDriveSourceFileIds);
   if (tombstones.length > 0) env.deletedDriveSourceFileIds = tombstones;
+  // Previously dropped on parse, so YouTube deletions never converged cross-device on pull; the
+  // pull path (`mergeRemoteEnvelopeIntoLocal`) unions this list, so it must survive parsing.
+  const youtubeTombstones = parseYoutubeTombstones(data.deletedYoutubeVideoIds);
+  if (youtubeTombstones.length > 0) env.deletedYoutubeVideoIds = youtubeTombstones;
   return env;
 }
