@@ -6,6 +6,10 @@ import {
   type StanzaDriveTombstone,
 } from './stanzaDriveTombstones';
 import {
+  readStanzaLocalSongTombstones,
+  type StanzaLocalSongTombstone,
+} from './stanzaLocalSongTombstones';
+import {
   readStanzaYoutubeTombstones,
   type StanzaYoutubeTombstone,
 } from './stanzaYoutubeTombstones';
@@ -68,6 +72,13 @@ export interface StanzaDriveEnvelopeV1 {
   deletedDriveSourceFileIds?: StanzaDriveTombstone[];
   /** YouTube video ids the user removed — optional for back-compat. */
   deletedYoutubeVideoIds?: StanzaYoutubeTombstone[];
+  /**
+   * Row ids of **keyless local** uploads removed (no `ytId` / `driveSourceFileId`; see
+   * [ADR 0027](../../../docs/adr/0027-stanza-organize-cross-source-merge-contract.md)). Other
+   * devices union these and skip a remote-only row whose `id` appears here, so an Organize merge
+   * that dropped a pure-local duplicate does not resurrect on the next pull. Optional for back-compat.
+   */
+  deletedLocalSongIds?: StanzaLocalSongTombstone[];
 }
 
 export async function buildStanzaDriveEnvelope(): Promise<StanzaDriveEnvelopeV1> {
@@ -75,6 +86,7 @@ export async function buildStanzaDriveEnvelope(): Promise<StanzaDriveEnvelopeV1>
   const songs: StanzaSongDriveRow[] = rows.map(songWithoutBlob);
   const deletedDriveSourceFileIds = readStanzaDriveTombstones();
   const deletedYoutubeVideoIds = readStanzaYoutubeTombstones();
+  const deletedLocalSongIds = readStanzaLocalSongTombstones();
   const env: StanzaDriveEnvelopeV1 = {
     schemaVersion: 1,
     exportedAt: new Date().toISOString(),
@@ -86,6 +98,9 @@ export async function buildStanzaDriveEnvelope(): Promise<StanzaDriveEnvelopeV1>
   }
   if (deletedYoutubeVideoIds.length > 0) {
     env.deletedYoutubeVideoIds = deletedYoutubeVideoIds;
+  }
+  if (deletedLocalSongIds.length > 0) {
+    env.deletedLocalSongIds = deletedLocalSongIds;
   }
   return env;
 }
@@ -107,6 +122,32 @@ function parseTombstones(raw: unknown): StanzaDriveTombstone[] {
   return out;
 }
 
+function parseYoutubeTombstones(raw: unknown): StanzaYoutubeTombstone[] {
+  if (!Array.isArray(raw)) return [];
+  const out: StanzaYoutubeTombstone[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as { videoId?: unknown; removedAt?: unknown };
+    if (typeof o.videoId !== 'string' || !o.videoId.trim()) continue;
+    if (typeof o.removedAt !== 'string') continue;
+    out.push({ videoId: o.videoId.trim(), removedAt: o.removedAt });
+  }
+  return out;
+}
+
+function parseLocalSongTombstones(raw: unknown): StanzaLocalSongTombstone[] {
+  if (!Array.isArray(raw)) return [];
+  const out: StanzaLocalSongTombstone[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as { songId?: unknown; removedAt?: unknown };
+    if (typeof o.songId !== 'string' || !o.songId.trim()) continue;
+    if (typeof o.removedAt !== 'string') continue;
+    out.push({ songId: o.songId.trim(), removedAt: o.removedAt });
+  }
+  return out;
+}
+
 export function parseStanzaDriveEnvelope(json: string): StanzaDriveEnvelopeV1 {
   const data = JSON.parse(json) as Partial<StanzaDriveEnvelopeV1>;
   if (data.schemaVersion !== 1) throw new Error('Unsupported Stanza backup version.');
@@ -121,5 +162,11 @@ export function parseStanzaDriveEnvelope(json: string): StanzaDriveEnvelopeV1 {
   };
   const tombstones = parseTombstones(data.deletedDriveSourceFileIds);
   if (tombstones.length > 0) env.deletedDriveSourceFileIds = tombstones;
+  // Previously dropped on parse, so YouTube deletions never converged cross-device on pull; the
+  // pull path (`mergeRemoteEnvelopeIntoLocal`) unions this list, so it must survive parsing.
+  const youtubeTombstones = parseYoutubeTombstones(data.deletedYoutubeVideoIds);
+  if (youtubeTombstones.length > 0) env.deletedYoutubeVideoIds = youtubeTombstones;
+  const localSongTombstones = parseLocalSongTombstones(data.deletedLocalSongIds);
+  if (localSongTombstones.length > 0) env.deletedLocalSongIds = localSongTombstones;
   return env;
 }

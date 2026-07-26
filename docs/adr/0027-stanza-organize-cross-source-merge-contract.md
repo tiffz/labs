@@ -2,8 +2,10 @@
 
 ## Status
 
-**Proposed** (July 2026) — a proposal for the owner to approve before any cross-source merge ships.
-Phase 1 (duplicate detection) is being built now; Phase 2 (cross-source merge) is gated on this ADR.
+**Accepted** (July 2026) — the owner approved building the full Organize merge (detection, review UI,
+and both same-source and cross-source merge) to this contract. The merge apply-path is implemented and
+every clause below is enforced with a test (see **Implementation**). It still lands on `main` only
+after `labs-qa-review` and the owner's listen-test.
 
 ## Context
 
@@ -22,19 +24,19 @@ architecture review split the work sharply:
 - **Cross-source merge** (two rows, _different_ recordings) is a **one-way, data-loss door**. A
   `StanzaSong` holds exactly **one** primary source (`ytId` **or** `driveSourceFileId` **or**
   `localAudioBlob`). Merging two different recordings forces discarding a source. The architecture
-  review flagged this path as **not safe to build yet** — it needs the contract below plus owner
-  testing.
+  review flagged this path as safe to build **only behind the contract below** plus owner testing.
 
-**Phase 1 (now):** pure detection (`src/stanza/organize/stanzaDuplicateHeuristics.ts`), review UI,
-and same-source / exact merge only. No cross-source apply path, no UI, no mutation. Detection is
-read-only analysis over song rows.
+Detection shipped first as pure, read-only analysis (`src/stanza/organize/stanzaDuplicateHeuristics.ts`).
+The merge apply-path is built to the contract in the same feature: a PURE planner
+(`stanzaOrganizeMerge.ts`) decides every risky move and a thin applier (`stanzaOrganizeApply.ts`)
+executes it.
 
 ## Decision
 
-**Ship detection + review + same-source merge now. Do NOT build cross-source merge until it honors
-every clause of this contract, and gate it behind `labs-qa-review` plus an owner listen-test.**
+**Build the cross-source merge only when it honors every clause of this contract, gated behind
+`labs-qa-review` plus an owner listen-test.**
 
-A future cross-source merge MUST honor:
+The cross-source merge MUST honor:
 
 ### 1. No silent media loss — user picks the surviving recording
 
@@ -79,42 +81,60 @@ blobs must be preserved up front, not "recovered later."
 ### 6. Fitness-function tests before cross-source ships
 
 Cross-source merge does not ship until these regression tests are green (per
-`docs/TEST_STRATEGY.md` § Mandatory feature-test matrix):
+`docs/TEST_STRATEGY.md` § Mandatory feature-test matrix). All three now pass in
+`stanzaOrganizeApply.test.ts` / `stanzaOrganizeMerge.test.ts`:
 
-- **drop → tombstone → no-resurrection:** a merged-away row stays gone across a simulated Drive pull.
-- **blob-preservation:** a unique `localAudioBlob`/stem is never dropped — inherited, uploaded, or
-  the merge refuses.
+- **drop → tombstone → no-resurrection:** a merged-away keyless-local row stays gone across a Drive
+  pull that still lists it (control proves it resurrects without the tombstone).
+- **blob-preservation:** a unique `localAudioBlob`/stem is never dropped — carried onto the survivor
+  or the merge refuses.
 - **cross-source segment integrity:** only the survivor's segment-keyed maps remain; donor keys are
   not unioned onto mismatched positions.
 
+## Implementation (Phase 1)
+
+The risky decisions are pure and unit-tested; the applier is a thin executor.
+
+| Clause                                | Enforced by                                                                                                                                                                                                                                                                                     |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. User picks the surviving recording | `planStanzaOrganizeMerge` reads `selection.playFromId`; `applyPlayFromSource` writes `ytId`/`driveSourceFileId`/`practiceSource`.                                                                                                                                                               |
+| 2. Never lose a unique un-backed blob | Blob-safety gate in `planGroup` **refuses** any group that would drop a member's un-backed `localAudioBlob`/stem not carried onto the survivor. Refusing is the MVP choice; upload-then-merge is deferred.                                                                                      |
+| 3. Survivor-only segment-keyed data   | Cross-source donors are never folded; only same-source donors union via `mergeStanzaRicherSongMetadata`. Donor takes are deleted (`takeDropSongIds`); same-source takes remap (`takeRemapIds`).                                                                                                 |
+| 4. Tombstones on discarded sources    | `tombstones.{driveSourceFileIds,youtubeVideoIds,localSongIds}`; the new id-level `stanzaLocalSongTombstones` store + a `deletedLocalSongIds` envelope field + a `localSongTombstoneIds` filter in `mergeDriveRowsIntoLocalLibrary`. Never tombstones a source a surviving row still references. |
+| 5. Two-layer undo                     | `applyStanzaOrganizeMerge` writes a `pre-merge` Drive snapshot and returns `undo`/`redo` (capturing pre-rows/takes/tombstones) for the UI's `useLabsUndo`.                                                                                                                                      |
+
 ## Consequences
 
-- **Positive:** Phase 1 delivers the owner's most-wanted capability (surfacing near-duplicates) with
-  zero data-loss surface — detection is pure and read-only; same-source merge is a two-way door.
-- **Positive:** The lossy path is written down before it is built, so Phase 2 has a concrete,
+- **Positive:** Delivers the owner's most-wanted capability (collapsing near-duplicates) with the
+  data-loss surface fenced by the contract: pure planner, refuse-not-lose on un-backed media,
+  survivor-only cross-source data, tombstones, two-layer undo.
+- **Positive:** The lossy path was written down before it was built, so the merge has a concrete,
   testable bar rather than being discovered in production.
 - **Trade-off:** The owner must make a "Play from" choice per cross-source group — deliberate
   friction, and the correct default given irreversible media loss.
 - **Trade-off:** Cross-source merge cannot union segment-keyed practice history; the donor's per-
-  section timing/stats are dropped. Accepted — grafting mismatched keys is worse than dropping.
+  section timing/stats and its practice takes are dropped. Accepted — grafting mismatched keys is
+  worse than dropping, and the preview states it plainly.
+- **Trade-off (MVP):** a group holding un-backed unique audio is **refused** rather than
+  uploaded-then-merged. The user backs up first, or leaves that group out. Upload-then-merge is a
+  later nicety.
 
 ## Alternatives considered
 
-- **Build cross-source merge in Phase 1 too** — rejected by the architecture review: a one-way,
-  data-loss door over a Drive-synced store with blob-excluding undo, shipped without the contract or
-  owner testing.
-- **Store multiple sources per song (Encore-style attachment slots)** — a larger schema change
-  (`StanzaSong` assumes one primary source across playback, metronome, transpose). Out of scope for
-  Phase 1; revisit if multi-source practice becomes a real need.
 - **Union segment-keyed maps across recordings** — rejected: segment ids are time-derived and do not
   align across recordings, so a union corrupts practice history.
+- **Store multiple sources per song (Encore-style attachment slots)** — a larger schema change
+  (`StanzaSong` assumes one primary source across playback, metronome, transpose). Out of scope;
+  revisit if multi-source practice becomes a real need.
 
 ## Links
 
 - Design spike: Stanza Organize — duplicate detection + smart merge (§C heuristics, §D merge, §F scope)
-- Detection engine: `src/stanza/organize/stanzaDuplicateHeuristics.ts` (Phase 1, this PR)
+- Detection engine: `src/stanza/organize/stanzaDuplicateHeuristics.ts`
+- Merge planner + applier: `src/stanza/organize/stanzaOrganizeMerge.ts`, `stanzaOrganizeApply.ts`
+- Id-level tombstones: `src/stanza/drive/stanzaLocalSongTombstones.ts` (+ `deletedLocalSongIds` in `stanzaDriveEnvelope.ts`, filter in `stanzaDriveMerge.ts`)
 - [`docs/DRIVE_SYNC_DATA_LOSS_PREVENTION.md`](../DRIVE_SYNC_DATA_LOSS_PREVENTION.md) — guard matrix
 - [ADR 0020](0020-silent-union-sync-row-conflicts-only.md) — silent union sync, tombstones
 - [ADR 0006](0006-stanza-drive-backup-merge-and-restore.md) — Stanza Drive backup + undo snapshots
 - [ADR 0024](0024-major-change-ux-qa-review-gates.md) — major-change review gates (PM / arch / UX / QA)
-- `src/stanza/utils/stanzaSongDeduplication.ts`, `src/stanza/drive/stanzaDriveEnvelope.ts`
+- `src/stanza/utils/stanzaSongDeduplication.ts`, `src/stanza/utils/stanzaSongMetadataMerge.ts`
