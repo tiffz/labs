@@ -289,10 +289,10 @@ When using `valueLabelDisplay="auto"` or `"on"`:
 
 **Never nest a popover-owning control inside another popover.** A value surfaced as a chip/dropdown trigger whose editor is richer than a single option list must expose an **embed mode** that renders its editor body inline, so the host chip owns exactly **one** popover. Two established idioms — use one, do not add a third:
 
-| Idiom | How | Example |
-| ----- | --- | ------- |
-| **Inline panel body** | The control renders only its editor panel (no `AnchoredPopover`) | `BpmInput presetPanel="inline"`, `TimeSignatureInput layout="block"` |
-| **Headless picker** | Extract the menu as a standalone component the host drives with its own `open`/`anchorEl`/`onClose` | `KeyInputPicker` (from `KeyInput`), used by `EncoreKeyChip` |
+| Idiom                 | How                                                                                                 | Example                                                              |
+| --------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **Inline panel body** | The control renders only its editor panel (no `AnchoredPopover`)                                    | `BpmInput presetPanel="inline"`, `TimeSignatureInput layout="block"` |
+| **Headless picker**   | Extract the menu as a standalone component the host drives with its own `open`/`anchorEl`/`onClose` | `KeyInputPicker` (from `KeyInput`), used by `EncoreKeyChip`          |
 
 Single-choice trigger-plus-list controls (`PlaybackSoundSelect`, `ChordStyleInput`) are exempt — their closed trigger already **is** the compact value display, so there is no second popover. Guard: `BpmInput.test.tsx` asserts inline mode mounts no second panel on focus.
 
@@ -421,13 +421,19 @@ While mounted, the dock sets `--labs-debug-dock-height` on `:root` (and mirrors 
 
 Compose the dock body from these instead of copy-pasting a `DEBUG_BTN` style object or a `JSON.stringify` `<pre>` per app:
 
-| Need                         | Use                                                                                            |
-| ---------------------------- | ---------------------------------------------------------------------------------------------- |
-| A debug action button        | [`LabsDebugButton`](./components/LabsDebugButton.tsx) (`variant="danger"` for destructive)      |
-| Read-only JSON state readout | [`LabsDebugStateDump`](./components/LabsDebugStateDump.tsx) (`data={{ … }}`)                     |
+| Need                          | Use                                                                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| A debug action button         | [`LabsDebugButton`](./components/LabsDebugButton.tsx) (`variant="danger"` for destructive)                                |
+| Read-only JSON state readout  | [`LabsDebugStateDump`](./components/LabsDebugStateDump.tsx) (`data={{ … }}`)                                              |
 | Confirm-gated destructive ops | [`LabsDebugDangerZone`](./components/LabsDebugDangerZone.tsx) — every action routes through `window.confirm` in one place |
 
 `LabsDebugButton` stops click propagation by default (dock-header clicks toggle collapse); pass `stopPropagation={false}` for a body button. `LabsDebugDangerZone` is **full-tier only** — gate its host panel on `isLabsDebugFull()` (ADR 0026), never the `diagnostics` tier.
+
+## LocalDevBadge (dev-only environment indicator)
+
+[`LocalDevBadge`](./components/LocalDevBadge.tsx) shows a tiny fixed `LOCAL` badge in the bottom-left corner so the owner can tell at a glance whether a tab is the local dev server or the deployed prod build. It is gated on `import.meta.env.DEV` (true on the Vite dev server, false in the production build), so it is tree-shaken out of prod entirely — it is **not** a `?debug` tier control (environment, not debug tier).
+
+Mounted **once** in [`LabsErrorBoundary`](./components/LabsErrorBoundary.tsx), which every micro-app wraps its root in, so all apps get it with no per-app edit. It is `pointer-events: none` (never blocks clicks), `aria-hidden`, animation-free, theme-aware, and sits at `z-index: 9000` (below `LabsDebugDock`'s 9999). No `/ui` gallery demo: it has no interactive states or appearance variants, and only renders on the dev server.
 
 ## App-specific shared primitives
 

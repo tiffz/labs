@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { appendLabsCrashLogEntry } from '../utils/labsCrashLog';
+import LocalDevBadge from './LocalDevBadge';
 import './LabsErrorBoundary.css';
 
 export type LabsErrorBoundaryProps = {
@@ -65,10 +66,18 @@ export default class LabsErrorBoundary extends Component<
   };
 
   public render(): ReactNode {
-    if (!this.state.hasError) return this.props.children;
+    if (!this.state.hasError) {
+      return (
+        <>
+          {this.props.children}
+          <LocalDevBadge />
+        </>
+      );
+    }
 
     const message = this.state.error?.message?.trim() || 'An unexpected error occurred.';
     return (
+      <>
       <div role="alert" className="labs-error-boundary-page">
         <div className="labs-error-boundary-card">
           <div className="labs-error-boundary-icon" aria-hidden="true">
@@ -110,6 +119,8 @@ export default class LabsErrorBoundary extends Component<
           </details>
         </div>
       </div>
+      <LocalDevBadge />
+      </>
     );
   }
 }
