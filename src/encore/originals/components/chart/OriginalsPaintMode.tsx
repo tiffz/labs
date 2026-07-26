@@ -29,6 +29,8 @@ export type OriginalsPaintModeProps = {
     sectionId: string,
     override: OriginalsSectionPlaybackOverride | null,
   ) => void;
+  onApplyChordsToSameType?: (sectionId: string) => void;
+  onApplyDrumsToSameType?: (sectionId: string) => void;
   onStamp?: (sectionId: string, lineId: string, charIndex: number) => void;
   onSelectChord?: (sectionId: string, lineId: string, charIndex: number, chordId: string) => void;
   onSelectWord?: (sectionId: string, lineId: string, charIndex: number) => void;
@@ -49,6 +51,8 @@ export function OriginalsPaintMode({
   scrollHeader,
   onApplySectionProgression,
   onSectionPlaybackOverrideChange,
+  onApplyChordsToSameType,
+  onApplyDrumsToSameType,
   onStamp,
   onSelectChord,
   onSelectWord,
@@ -79,6 +83,8 @@ export function OriginalsPaintMode({
               sectionPlaybackOverride={sectionPlaybackOverrides?.[section.sectionId]}
               onApply={onApplySectionProgression}
               onSectionPlaybackOverrideChange={onSectionPlaybackOverrideChange}
+              onApplyChordsToSameType={onApplyChordsToSameType}
+              onApplyDrumsToSameType={onApplyDrumsToSameType}
             />
             {section.lines.map((line) => (
               <OriginalsPaintLine

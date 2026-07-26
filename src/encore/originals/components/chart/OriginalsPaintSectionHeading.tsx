@@ -27,6 +27,10 @@ import {
   createSectionPlaybackOverrideFromGlobal,
   type OriginalsSectionPlaybackOverride,
 } from '../../sectionPlaybackOverrides';
+import {
+  canApplySectionToSameType,
+  sectionTypePlural,
+} from '../../applySectionToSameType';
 import { OriginalsSectionPlaybackSettingsPanel } from './OriginalsSectionPlaybackSettingsPanel';
 
 const PLAYBACK_SETTINGS_STORAGE_KEY = 'encore-originals-chord-playback-settings';
@@ -47,6 +51,10 @@ export type OriginalsPaintSectionHeadingProps = {
     sectionId: string,
     override: OriginalsSectionPlaybackOverride | null,
   ) => void;
+  /** Copy this section's chords onto every other same-type section (one undoable commit). */
+  onApplyChordsToSameType?: (sectionId: string) => void;
+  /** Copy this section's drum override onto every other same-type section (one undoable commit). */
+  onApplyDrumsToSameType?: (sectionId: string) => void;
 };
 
 /**
@@ -61,6 +69,8 @@ export function OriginalsPaintSectionHeading({
   sectionPlaybackOverride,
   onApply,
   onSectionPlaybackOverrideChange,
+  onApplyChordsToSameType,
+  onApplyDrumsToSameType,
 }: OriginalsPaintSectionHeadingProps): ReactElement {
   const progressionButtonRef = useRef<HTMLButtonElement | null>(null);
   const playbackButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -261,6 +271,19 @@ export function OriginalsPaintSectionHeading({
 
   const globalPlaybackSettings = readGlobalPlaybackSettings();
 
+  const canApplyToSameType = canApplySectionToSameType(layout, section.sectionId);
+  const sameTypePlural = sectionTypePlural(section.type);
+
+  const applyChordsToSameType = () => {
+    onApplyChordsToSameType?.(section.sectionId);
+    closeProgression();
+  };
+
+  const applyDrumsToSameType = () => {
+    onApplyDrumsToSameType?.(section.sectionId);
+    closePlayback();
+  };
+
   return (
     <>
       <div
@@ -420,6 +443,17 @@ export function OriginalsPaintSectionHeading({
               Apply progression
             </button>
           </div>
+          {canApplyToSameType && onApplyChordsToSameType ? (
+            <div className="encore-originals-section-apply-all">
+              <button
+                type="button"
+                className="encore-originals-section-apply-all-button"
+                onClick={applyChordsToSameType}
+              >
+                Apply chords to all {sameTypePlural}
+              </button>
+            </div>
+          ) : null}
         </div>
       </AnchoredPopover>
 
@@ -477,6 +511,17 @@ export function OriginalsPaintSectionHeading({
             onCustomPlaybackChange={setCustomPlayback}
             onOverrideChange={patchPlaybackOverride}
           />
+          {canApplyToSameType && onApplyDrumsToSameType ? (
+            <div className="encore-originals-section-apply-all encore-originals-section-apply-all--playback">
+              <button
+                type="button"
+                className="encore-originals-section-apply-all-button"
+                onClick={applyDrumsToSameType}
+              >
+                Apply drums to all {sameTypePlural}
+              </button>
+            </div>
+          ) : null}
         </Box>
       </AnchoredPopover>
     </>

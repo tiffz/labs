@@ -8,6 +8,11 @@ import Typography from '@mui/material/Typography';
 import { alpha, useTheme } from '@mui/material/styles';
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import type { ChartPlaybackStep } from '../../../shared/music/chordPro/chartPlaybackSequence';
+import { serializeChartLayoutToChordPro } from '../../../shared/music/chordPro/chordChartLayout';
+import {
+  applySectionChordsToSameType,
+  applySectionDrumsToSameType,
+} from '../applySectionToSameType';
 import {
   encoreSurfaceBandPadY,
   encoreSurfaceContentPad,
@@ -125,6 +130,44 @@ export function OriginalsSongWorkspace({
       });
     },
     [onSongChange, song.sectionPlaybackOverrides],
+  );
+
+  // Bulk apply runs through onPersist (structural, undoable) so one Cmd+Z reverts the whole apply.
+  const onApplyChordsToSameType = useCallback(
+    (sectionId: string) => {
+      const nextChordPro = serializeChartLayoutToChordPro(
+        applySectionChordsToSameType(chart.layout, sectionId),
+      );
+      if (nextChordPro === song.lyricsAndChords) return;
+      void onPersist({
+        ...song,
+        lyricsAndChords: nextChordPro,
+        updatedAt: new Date().toISOString(),
+      });
+    },
+    [chart.layout, onPersist, song],
+  );
+
+  const onApplyDrumsToSameType = useCallback(
+    (sectionId: string) => {
+      const nextOverrides = applySectionDrumsToSameType(
+        song.sectionPlaybackOverrides,
+        chart.layout,
+        sectionId,
+      );
+      if (
+        JSON.stringify(nextOverrides ?? null) ===
+        JSON.stringify(song.sectionPlaybackOverrides ?? null)
+      ) {
+        return;
+      }
+      void onPersist({
+        ...song,
+        sectionPlaybackOverrides: nextOverrides,
+        updatedAt: new Date().toISOString(),
+      });
+    },
+    [chart.layout, onPersist, song],
   );
 
   const songTimeSignature = useMemo(() => originalSongTimeSignature(song), [song]);
@@ -401,6 +444,8 @@ export function OriginalsSongWorkspace({
                   onDeleteSelected={onDeleteSelectedChord}
                   onApplySectionProgression={chart.onApplySectionProgression}
                   onSectionPlaybackOverrideChange={onSectionPlaybackOverrideChange}
+                  onApplyChordsToSameType={onApplyChordsToSameType}
+                  onApplyDrumsToSameType={onApplyDrumsToSameType}
                 />
               </Box>
             </OriginalsChartPlaybackProvider>

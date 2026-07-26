@@ -851,6 +851,41 @@ body.labs-drum-pattern-edit-menu-open .encore-originals-lyric-token {
   cursor: not-allowed;
 }
 
+.encore-originals-section-apply-all {
+  display: flex;
+  padding-top: 0.45rem;
+  margin-top: 0.08rem;
+  border-top: 1px solid color-mix(in srgb, #94a3b8 18%, #e2e8f0);
+}
+
+.encore-originals-section-apply-all--playback {
+  padding: 0.9rem 1.5rem 0.4rem;
+  margin-top: 0;
+}
+
+.encore-originals-section-apply-all-button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: #5b21b6;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.34rem 0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.encore-originals-section-apply-all-button:hover {
+  background: #f5f3ff;
+}
+
+.encore-originals-section-apply-all-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.32);
+}
+
 .encore-originals-section-progression-menu
   .encore-originals-section-progression-menu-inner {
   min-width: min(18rem, calc(100vw - 24px));
