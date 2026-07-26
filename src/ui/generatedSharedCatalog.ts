@@ -3924,6 +3924,38 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-platform-scheduling-index-ts-chart-background-look-ahead-sec",
+    "name": "CHART_BACKGROUND_LOOK_AHEAD_SEC",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-audio-platform-scheduling-index-ts-chart-look-ahead-sec",
+    "name": "CHART_LOOK_AHEAD_SEC",
+    "path": "src/shared/audio/platform/scheduling/index.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "No JSDoc summary provided.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "named",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-platform-scheduling-index-ts-createdrumpatternschedulercallback",
     "name": "createDrumPatternSchedulerCallback",
     "path": "src/shared/audio/platform/scheduling/index.ts",
@@ -4111,6 +4143,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-audio-platform-scheduling-lookaheadaudioscheduler-ts-chart-background-look-ahead-sec",
+    "name": "CHART_BACKGROUND_LOOK_AHEAD_SEC",
+    "path": "src/shared/audio/platform/scheduling/LookAheadAudioScheduler.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Look-ahead horizon while a background-capable transport is hidden. A background tab pauses rAF and throttles timers to ~1 Hz, so a hidden tick must schedule far enough ahead that audio never gaps before the next ~1 Hz wakeup. Safe now that chart playback drops any overdue backlog through the single late gate (ADR 0025) instead of clamping it to a frozen clock and blasting it on resume.",
+    "tags": [
+      "audio",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-audio-platform-scheduling-lookaheadaudioscheduler-ts-chart-look-ahead-sec",
     "name": "CHART_LOOK_AHEAD_SEC",
     "path": "src/shared/audio/platform/scheduling/LookAheadAudioScheduler.ts",
@@ -4290,7 +4338,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "utility",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "Pause look-ahead transports when the tab is hidden and re-anchor on return. When Chrome suspends AudioContext, `currentTime` freezes while `performance.now()` keeps advancing. Hosts that map perf→audio time then clamp every overdue note to \"now\"; on resume they fire as one loud blast. Pausing scheduling + flushing voices on hide, then re-anchoring on show, prevents that.",
+    "description": "Fire host callbacks on tab hide / show. A thin dispatcher — the host decides what hide and show mean. Historically hosts PAUSED on hide: when Chrome suspends AudioContext, `currentTime` freezes while `performance.now()` keeps advancing, and a host that clamped overdue notes to \"now\" would blast a pile of voices on resume. With the single late gate (ADR 0025) an overdue backlog is dropped, not clamped, so background playback can keep scheduling while hidden and only re-anchor if the context actually suspended.",
     "tags": [
       "audio"
     ],
@@ -4305,7 +4353,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "Pause look-ahead transports when the tab is hidden and re-anchor on return. When Chrome suspends AudioContext, `currentTime` freezes while `performance.now()` keeps advancing. Hosts that map perf→audio time then clamp every overdue note to \"now\"; on resume they fire as one loud blast. Pausing scheduling + flushing voices on hide, then re-anchoring on show, prevents that.",
+    "description": "Fire host callbacks on tab hide / show. A thin dispatcher — the host decides what hide and show mean. Historically hosts PAUSED on hide: when Chrome suspends AudioContext, `currentTime` freezes while `performance.now()` keeps advancing, and a host that clamped overdue notes to \"now\" would blast a pile of voices on resume. With the single late gate (ADR 0025) an overdue backlog is dropped, not clamped, so background playback can keep scheduling while hidden and only re-anchor if the context actually suspended.",
     "tags": [
       "audio",
       "api"
@@ -25713,6 +25761,69 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "music-core",
     "description": "No JSDoc summary provided.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-schedulechartmeasure-ts-chart-measure-late-skip-sec",
+    "name": "CHART_MEASURE_LATE_SKIP_SEC",
+    "path": "src/shared/music/scheduleChartMeasure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "How late a measure's start may fall behind the shared clock before the whole measure is dropped. One measure being a few ms late is inaudible; beyond this we skip it wholesale rather than clamp it to \"now\" and fire it late.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-schedulechartmeasure-ts-chartmeasurescheduleresult",
+    "name": "ChartMeasureScheduleResult",
+    "path": "src/shared/music/scheduleChartMeasure.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "How late a measure's start may fall behind the shared clock before the whole measure is dropped. One measure being a few ms late is inaudible; beyond this we skip it wholesale rather than clamp it to \"now\" and fire it late.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "type",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-schedulechartmeasure-ts-schedulechartmeasure",
+    "name": "scheduleChartMeasure",
+    "path": "src/shared/music/scheduleChartMeasure.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Schedule one chart measure — chord and drums together on one clock (ADR 0025). The **single late gate**: chord and drum share one context and one decision. If the measure start is overdue past , the whole measure is SKIPPED — never clamped to `currentTime`, never fired late. This is the structural fix for the long-play crash (a suspended/backlogged clock used to clamp every overdue note to \"now\" and blast a pile of voices on resume) and what makes a wide background look-ahead safe: a frozen-clock backlog is dropped, not replayed. Replaces the old divergent handling — the chord path clamped overdue notes (so a late measure still sounded) while the drum path skipped overdue hits (so it went silent). Now both paths make the identical schedule-or-skip decision.",
+    "tags": [
+      "music"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-music-schedulechartmeasure-ts-schedulechartmeasureparams",
+    "name": "ScheduleChartMeasureParams",
+    "path": "src/shared/music/scheduleChartMeasure.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "How late a measure's start may fall behind the shared clock before the whole measure is dropped. One measure being a few ms late is inaudible; beyond this we skip it wholesale rather than clamp it to \"now\" and fire it late.",
     "tags": [
       "music",
       "api"
