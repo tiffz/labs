@@ -8,6 +8,7 @@ import {
   readMediaSeekableEndSec,
   readPositiveFiniteMediaDurationSec,
   resolvePrematureMediaEndResume,
+  STANZA_PREMATURE_RESUME_STALL_WINDOW_SEC,
 } from '../utils/stanzaMediaDuration';
 import type { DerivedSegment } from '../utils/segments';
 import {
@@ -66,6 +67,8 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
    * Cleared during normal advancing playback so a new song/position is never blocked.
    */
   const lastPrematureResumeTargetRef = useRef<number | null>(null);
+  /** Media element the guard's target belongs to — a new element means a new song/source. */
+  const prematureResumeMediaElRef = useRef<HTMLMediaElement | null>(null);
 
   const performLoopWrap = useCallback((seekTarget: number) => {
     if (!loopWrapGuardRef.current.tryPerform()) return;
@@ -109,12 +112,14 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
       previousResumeTargetSec: lastPrematureResumeTargetRef.current,
     });
     if (!resume) {
-      // Element reached its authoritative end (or cannot advance past it). Let it stop;
-      // clear the guard so a later premature end on a different position/song resumes.
-      lastPrematureResumeTargetRef.current = null;
+      // Element reached its authoritative end (or cannot advance past it). Let it stop.
+      // Keep the target: if the element re-fires `ended` at the same freeze, the guard must
+      // trip again. The transport tick clears the target on genuine motion (advance / earlier
+      // landing / element swap / pause), so a later premature end elsewhere still resumes.
       return false;
     }
     lastPrematureResumeTargetRef.current = resume.seekTo;
+    prematureResumeMediaElRef.current = el;
 
     refsRef.current.durationRef.current = Math.max(
       refsRef.current.durationRef.current,
@@ -203,6 +208,10 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
           pausedForSkipExhausted = false;
           loopWrapPrevTimeRef.current = null;
           loopWrapStallFramesRef.current = 0;
+          // A real pause (not the stutter — the element stays "playing" through it) clears the
+          // guard so a later legitimate premature end resumes.
+          lastPrematureResumeTargetRef.current = null;
+          prematureResumeMediaElRef.current = null;
           scheduleNext(true);
           return;
         }
@@ -213,13 +222,24 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
         if (d > refs.durationRef.current) {
           refs.durationRef.current = d;
         }
-        // Normal mid-track playback clears the premature-end resume guard so it only ever
-        // constrains a genuine end-of-media stall, never a fresh song/position.
-        if (
-          Number.isFinite(tLive) &&
-          (d <= 0 || tLive < d - STANZA_LOOP_WRAP_TOLERANCE_SEC)
-        ) {
-          lastPrematureResumeTargetRef.current = null;
+        // Clear the premature-end resume guard only on GENUINE motion relative to the stored
+        // target — the element advanced past it (real VBR tail / streaming caught up) or landed
+        // well before it (manual seek / new song), or the media element itself changed (song
+        // swap). Never clear while the playhead sits at/just below the target: that IS the
+        // frozen-bug state the guard exists to catch, and clearing there would let the next
+        // `ended` resume again (endless ended -> resume -> clamp loop).
+        const resumeTarget = lastPrematureResumeTargetRef.current;
+        if (resumeTarget != null) {
+          const mediaEl = refs.isYoutubeRef.current ? null : getLocalMainMedia();
+          const elementChanged = mediaEl !== prematureResumeMediaElRef.current;
+          const advancedPastTarget =
+            Number.isFinite(tLive) && tLive > resumeTarget + STANZA_PREMATURE_RESUME_STALL_WINDOW_SEC;
+          const landedEarlier =
+            Number.isFinite(tLive) && tLive < resumeTarget - STANZA_PREMATURE_RESUME_STALL_WINDOW_SEC;
+          if (elementChanged || advancedPastTarget || landedEarlier) {
+            lastPrematureResumeTargetRef.current = null;
+            prematureResumeMediaElRef.current = null;
+          }
         }
         const segs = refs.segmentsRef.current;
         const skipped = refs.skippedBySegmentIdRef.current;
