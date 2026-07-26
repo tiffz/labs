@@ -130,7 +130,9 @@ describe('chord-instrument voices stay bounded over K loop passes', () => {
     expect(getAudioDiagnosticsSnapshot().instruments).toBe(0);
   });
 
-  it('caps live voices under a scheduling-desync flood (no unbounded OOM growth)', () => {
+  // Heavy stress test (24k voice-creations): ~1s alone, but shares CPU with parallel
+  // workers under full CI and can exceed the 10s default. Raise its budget per FLAKY_TESTS.
+  it('caps live voices under a scheduling-desync flood (no unbounded OOM growth)', { timeout: 60_000 }, () => {
     // Simulate the dual-clock crash: many overdue measures fire at once, so hundreds of
     // notes are scheduled without any ending. The voice ceiling must steal the oldest and
     // hold the live set bounded instead of growing until the tab OOMs.
