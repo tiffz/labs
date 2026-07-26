@@ -283,6 +283,18 @@ When using `valueLabelDisplay="auto"` or `"on"`:
 - Sidebar playback speed shows values like `0.75×` in the stepper field — use the shared `shared-bpm-stepper--playback-speed` width tokens (`5.5ch`); do not cap the value field with a tight `max-width` in app CSS.
 - Milestone labels under the speed slider are positioned by rate (`left: %`), not `space-between`; do not re-center them in app overrides.
 - Use `SliderMilestoneLabels` + `buildSliderMilestones` from `sliderMilestoneUtils.ts` for any new slider dropdown; do not render raw `<span>` lists inside `.shared-bpm-milestones`.
+- **Embedding `BpmInput` inside a chip/menu:** pass `presetPanel="inline"` so the slider + presets render as a panel body **without their own popover**. `BpmInput`'s default `presetPanel="popover"` opens an `AnchoredPopover` on focus — nesting that inside a chip's menu is a popover-in-a-popover (the `EncoreBpmChip` bug). See § Embedding a control inside a chip or menu.
+
+### Embedding a control inside a chip or menu
+
+**Never nest a popover-owning control inside another popover.** A value surfaced as a chip/dropdown trigger whose editor is richer than a single option list must expose an **embed mode** that renders its editor body inline, so the host chip owns exactly **one** popover. Two established idioms — use one, do not add a third:
+
+| Idiom | How | Example |
+| ----- | --- | ------- |
+| **Inline panel body** | The control renders only its editor panel (no `AnchoredPopover`) | `BpmInput presetPanel="inline"`, `TimeSignatureInput layout="block"` |
+| **Headless picker** | Extract the menu as a standalone component the host drives with its own `open`/`anchorEl`/`onClose` | `KeyInputPicker` (from `KeyInput`), used by `EncoreKeyChip` |
+
+Single-choice trigger-plus-list controls (`PlaybackSoundSelect`, `ChordStyleInput`) are exempt — their closed trigger already **is** the compact value display, so there is no second popover. Guard: `BpmInput.test.tsx` asserts inline mode mounts no second panel on focus.
 
 ### Playback field selects (`playbackFieldSelect.css`)
 

@@ -178,4 +178,55 @@ describe('BpmInput', () => {
       expect(screen.queryByText('Common BPMs')).not.toBeInTheDocument();
     });
   });
+
+  describe('presetPanel="inline" (embed in a chip/menu, no nested popover)', () => {
+    it('renders the slider and presets immediately, without focusing the input', () => {
+      render(<BpmInput value={120} onChange={vi.fn()} presetPanel="inline" />);
+      // Default mode hides these behind a focus-triggered popover; inline shows them up front.
+      expect(screen.getByRole('slider', { name: 'Tempo slider' })).toBeInTheDocument();
+      expect(screen.getByText('Common BPMs')).toBeInTheDocument();
+    });
+
+    it('does not open a second popover when the field is focused', () => {
+      render(<BpmInput value={120} onChange={vi.fn()} presetPanel="inline" />);
+      const before = screen.getAllByRole('slider', { name: 'Tempo slider' }).length;
+      fireEvent.focus(screen.getByRole('textbox'));
+      // Focus must not mount another panel — exactly one slider before and after.
+      expect(screen.getAllByRole('slider', { name: 'Tempo slider' })).toHaveLength(before);
+      expect(before).toBe(1);
+    });
+
+    it('still edits tempo from an inline preset', () => {
+      const onChange = vi.fn();
+      render(<BpmInput value={120} onChange={onChange} presetPanel="inline" />);
+      const presetList = screen.getByRole('list', { name: 'Common BPM presets' });
+      fireEvent.click(within(presetList).getByRole('button', { name: '140' }));
+      expect(onChange).toHaveBeenCalledWith(140);
+    });
+
+    it('lets Escape bubble so a host menu can close (no swallowed key)', () => {
+      const onHostKeyDown = vi.fn();
+      render(
+        // Test scaffold: a React parent handler to observe synthetic-event propagation.
+        // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+        <div onKeyDown={onHostKeyDown}>
+          <BpmInput value={120} onChange={vi.fn()} presetPanel="inline" />
+        </div>,
+      );
+      fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Escape' });
+      expect(onHostKeyDown).toHaveBeenCalled();
+    });
+  });
+
+  it('popover mode swallows Escape (keeps it off the host) while dismissing its own panel', () => {
+    const onHostKeyDown = vi.fn();
+    render(
+      // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+      <div onKeyDown={onHostKeyDown}>
+        <BpmInput value={120} onChange={vi.fn()} />
+      </div>,
+    );
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Escape' });
+    expect(onHostKeyDown).not.toHaveBeenCalled();
+  });
 });

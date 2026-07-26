@@ -360,7 +360,8 @@
   cursor: not-allowed;
 }
 
-.shared-bpm-dropdown {
+.shared-bpm-dropdown,
+.shared-bpm-inline-panel {
   --bpm-focus: var(--accent-primary, var(--theme-primary, #7c3aed));
   --bpm-border: var(
     --border-subtle,
@@ -423,7 +424,8 @@
   gap: 0.82rem;
 }
 
-.shared-bpm-dropdown:has(.shared-bpm-slider-wrap) {
+.shared-bpm-dropdown:has(.shared-bpm-slider-wrap),
+.shared-bpm-inline-panel:has(.shared-bpm-slider-wrap) {
   overflow: visible;
   max-height: none;
 }
@@ -432,8 +434,26 @@
   overflow: visible !important;
 }
 
-.shared-bpm-dropdown:has(.shared-bpm-slider-wrap) .shared-bpm-dropdown-list {
+.shared-bpm-dropdown:has(.shared-bpm-slider-wrap) .shared-bpm-dropdown-list,
+.shared-bpm-inline-panel:has(.shared-bpm-slider-wrap) .shared-bpm-dropdown-list {
   overflow: visible;
+}
+
+/* Inline embed (inside a chip menu): keep the --bpm-* tokens from the shared rule
+   above, but drop the popover-paper chrome so it reads as a panel body, not a card. */
+.shared-bpm-inline-panel {
+  background: transparent;
+  max-height: none;
+  overflow: visible;
+  margin-top: 0;
+  min-width: 0;
+  max-width: none;
+}
+
+.shared-bpm-inline-panel .shared-bpm-dropdown-list {
+  min-width: 0;
+  padding-inline: 0;
+  padding-bottom: 0;
 }
 
 .shared-bpm-slider-wrap {
