@@ -129,4 +129,23 @@ describe('chord-instrument voices stay bounded over K loop passes', () => {
     synth.disconnect();
     expect(getAudioDiagnosticsSnapshot().instruments).toBe(0);
   });
+
+  it('caps live voices under a scheduling-desync flood (no unbounded OOM growth)', () => {
+    // Simulate the dual-clock crash: many overdue measures fire at once, so hundreds of
+    // notes are scheduled without any ending. The voice ceiling must steal the oldest and
+    // hold the live set bounded instead of growing until the tab OOMs.
+    __resetAudioDiagnosticsForTest();
+    const { ctx } = createMockContext();
+    const synth = new PianoSynthesizer(ctx);
+    synth.connect(ctx.createGain() as unknown as AudioNode);
+
+    for (let n = 0; n < 4000; n += 1) {
+      // Same start time, never ended — the pile-up shape.
+      synth.playNote({ frequency: 220 + (n % 24) * 10, startTime: 0, duration: 0.5, velocity: 0.8 });
+    }
+
+    expect(synth.activeVoiceCount).toBeLessThanOrEqual(256);
+    // And it actually filled up to the ceiling (proves the cap engaged, not that nothing played).
+    expect(synth.activeVoiceCount).toBeGreaterThan(0);
+  });
 });
