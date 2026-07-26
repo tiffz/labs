@@ -85,9 +85,45 @@ function listCrashLogEntries(db: IDBDatabase): Promise<LabsCrashLogEntry[]> {
   });
 }
 
+// Rate-limit the crash logger so it cannot feed a death-spiral. When an error loops (e.g.
+// an OOM tears down providers and every re-render re-throws ~7x/sec), each unthrottled call
+// allocates an entry + stack string AND `trimEntries` reads-and-sorts every row — so the
+// logger itself accelerates the OOM. Short-circuit BEFORE any allocation / DB open: drop
+// repeats of the same error, and cap total writes in a rolling window. Root cause: the
+// observed `useEncoreAuth outside provider` storm that filled IndexedDB until it OOM'd.
+const CRASH_LOG_DEDUP_MS = 1000;
+const CRASH_LOG_WINDOW_MS = 5000;
+const CRASH_LOG_MAX_PER_WINDOW = 10;
+const crashLogRecentWrites: number[] = [];
+const crashLogLastByKey = new Map<string, number>();
+
+export function shouldRecordCrashEntry(
+  source: string,
+  message: string,
+  now: number = Date.now(),
+): boolean {
+  const key = `${source}::${message}`;
+  const last = crashLogLastByKey.get(key);
+  if (last !== undefined && now - last < CRASH_LOG_DEDUP_MS) return false;
+  while (crashLogRecentWrites.length && now - crashLogRecentWrites[0] > CRASH_LOG_WINDOW_MS) {
+    crashLogRecentWrites.shift();
+  }
+  if (crashLogRecentWrites.length >= CRASH_LOG_MAX_PER_WINDOW) return false;
+  crashLogLastByKey.set(key, now);
+  crashLogRecentWrites.push(now);
+  return true;
+}
+
+/** Test-only reset of the rate-limiter window. */
+export function __resetCrashLogRateLimitForTest(): void {
+  crashLogRecentWrites.length = 0;
+  crashLogLastByKey.clear();
+}
+
 export async function appendLabsCrashLogEntry(
   partial: Omit<LabsCrashLogEntry, 'id' | 'timestamp' | 'route'> & { route?: string },
 ): Promise<void> {
+  if (!shouldRecordCrashEntry(partial.source, partial.message)) return;
   const db = await openDb();
   if (!db) return;
 

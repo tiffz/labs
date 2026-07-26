@@ -13081,7 +13081,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "Shared render-error boundary for Labs micro-apps. Recovery: Try again (clear boundary) or Reload (full page).",
+    "description": "Shared render-error boundary for Labs micro-apps. Recovery: Try again (clear boundary) or Reload (full page). After a repeated-throw loop it goes fatal and offers only Reload, so it can't spiral.",
     "tags": [
       "components",
       "api",
@@ -33433,6 +33433,31 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-labscrashlog-ts-resetcrashlogratelimitfortest",
+    "name": "__resetCrashLogRateLimitForTest",
+    "path": "src/shared/utils/labsCrashLog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Test-only reset of the rate-limiter window.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-labscrashlog-ts-appendlabscrashlogentry",
     "name": "appendLabsCrashLogEntry",
     "path": "src/shared/utils/labsCrashLog.ts",
@@ -33562,6 +33587,31 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
   {
     "id": "src-shared-utils-labscrashlog-ts-readlabscrashlogentries",
     "name": "readLabsCrashLogEntries",
+    "path": "src/shared/utils/labsCrashLog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "IndexedDB crash log — local-first crash history (export via LabsDebugDock). Optional production beacon when `VITE_LABS_CRASH_BEACON_URL` is set — see docs/adr/0016-client-crash-telemetry.md",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-utils-labscrashlog-ts-shouldrecordcrashentry",
+    "name": "shouldRecordCrashEntry",
     "path": "src/shared/utils/labsCrashLog.ts",
     "kind": "utility",
     "stability": "stable",
