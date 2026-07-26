@@ -5,6 +5,10 @@ import {
   getAudioDiagnosticsSnapshot,
   type AudioDiagnosticsSnapshot,
 } from './audioDiagnostics';
+import {
+  exposeAudioBreadcrumbForDebug,
+  recordAudioBreadcrumb,
+} from './audioPlaybackBreadcrumb';
 
 /**
  * Read-only live audio-graph readout. Renders on the `diagnostics` tier and up, so
@@ -36,10 +40,14 @@ export function AudioDiagnosticsOverlay(): React.ReactElement | null {
   useEffect(() => {
     if (!enabled) return;
     exposeAudioDiagnosticsForDebug();
+    // Console helpers to pull the crash trail after a reload: window.__labsDownloadAudioTrace().
+    exposeAudioBreadcrumbForDebug();
     let baselineHeap: number | null = null;
     let peakVoices = 0;
     const sample = () => {
       const next = getAudioDiagnosticsSnapshot();
+      // Mirror to the localStorage crash breadcrumb (survives an OOM the in-page state doesn't).
+      recordAudioBreadcrumb(next);
       if (next.heapMB !== null && baselineHeap === null) baselineHeap = next.heapMB;
       peakVoices = Math.max(peakVoices, next.voices);
       const heapDelta =
