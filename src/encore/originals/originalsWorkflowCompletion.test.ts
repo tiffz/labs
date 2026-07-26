@@ -30,6 +30,23 @@ describe('originalsWorkflowCompletion', () => {
     expect(isStageComplete(done, 'brainstorm')).toBe(true);
   });
 
+  it('marking a later stage complete retroactively completes earlier stages', () => {
+    // Bug: started lyrics but brainstorm still read incomplete. Completion is monotonic —
+    // a done later stage implies the earlier ones are done.
+    const withChords = toggleStageCompletion(createBlankOriginalSong(), 'chords');
+    expect(isStageComplete(withChords, 'brainstorm')).toBe(true);
+    expect(isStageComplete(withChords, 'write')).toBe(true);
+    expect(isStageComplete(withChords, 'chords')).toBe(true);
+    // A stage with no completed later stage stays incomplete.
+    expect(isStageComplete(withChords, 'takes')).toBe(false);
+  });
+
+  it('a later heuristic completes earlier stages (lyrics imply brainstorm done)', () => {
+    const song = { ...createBlankOriginalSong(), lyricsAndChords: '[Verse]\nfirst real lyric line\n' };
+    expect(isStageComplete(song, 'write')).toBe(true);
+    expect(isStageComplete(song, 'brainstorm')).toBe(true);
+  });
+
   it('advances inferred stage when brainstorm is complete', () => {
     const song = {
       ...createBlankOriginalSong(),

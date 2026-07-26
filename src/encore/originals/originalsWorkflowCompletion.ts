@@ -46,10 +46,24 @@ export function isStageHeuristicallyComplete(song: EncoreOriginalSong, stage: Or
   }
 }
 
-export function isStageComplete(song: EncoreOriginalSong, stage: OriginalsWorkflowStage): boolean {
+/** A stage's own completion — its manual flag if set, else its content heuristic. */
+export function isStageCompleteRaw(song: EncoreOriginalSong, stage: OriginalsWorkflowStage): boolean {
   const manual = song.stageCompletion?.[stage];
   if (manual !== undefined) return manual;
   return isStageHeuristicallyComplete(song, stage);
+}
+
+export function isStageComplete(song: EncoreOriginalSong, stage: OriginalsWorkflowStage): boolean {
+  // Completion is monotonic: reaching (or marking) any later stage implies the earlier
+  // ones are done. So a stage counts complete if it — or any stage after it — is complete
+  // on its own. Without this the stepper shows "brainstorm incomplete" while you're already
+  // writing lyrics, which reads as inconsistent.
+  const startIndex = ORIGINALS_WORKFLOW_STAGES.findIndex((step) => step.id === stage);
+  if (startIndex === -1) return isStageCompleteRaw(song, stage);
+  for (let i = startIndex; i < ORIGINALS_WORKFLOW_STAGES.length; i += 1) {
+    if (isStageCompleteRaw(song, ORIGINALS_WORKFLOW_STAGES[i].id)) return true;
+  }
+  return false;
 }
 
 /** All workflow stages complete — song has lyrics, chords, and at least one demo take. */
@@ -69,7 +83,7 @@ export function toggleStageCompletion(
   song: EncoreOriginalSong,
   stage: OriginalsWorkflowStage,
 ): EncoreOriginalSong {
-  const current = isStageComplete(song, stage);
+  const current = isStageCompleteRaw(song, stage);
   return {
     ...song,
     stageCompletion: {
