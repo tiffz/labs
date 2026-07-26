@@ -154,7 +154,7 @@ describe('planStanzaOrganizeMerge — cross-source segment integrity (ADR 0027)'
     );
   });
 
-  it('play-from swaps the source and tombstones the discarded (canonical) source', () => {
+  it('play-from swaps the source to a dropped donor and does not tombstone the survivor own source', () => {
     const rows = [
       song({ id: 'a', ytId: 'vidA', title: 'Song', updatedAt: 200 }),
       song({ id: 'b', ytId: 'vidB', title: 'Song', updatedAt: 100 }),
@@ -163,8 +163,9 @@ describe('planStanzaOrganizeMerge — cross-source segment integrity (ADR 0027)'
     const merged = plan.mergedRows[0];
     expect(merged.ytId).toBe('vidB');
     expect(merged.practiceSource).toBe('youtube');
-    // The kept source (vidB) is not tombstoned; the discarded canonical source (vidA) is.
-    expect(plan.tombstones.youtubeVideoIds).toEqual(['vidA']);
+    // vidB is the survivor's kept source. vidA belongs to the SURVIVING canonical (row a keeps its
+    // id), so it must not be tombstoned — the row cannot resurrect and vidA stays recoverable.
+    expect(plan.tombstones.youtubeVideoIds).toEqual([]);
   });
 });
 
@@ -252,6 +253,35 @@ describe('planStanzaOrganizeMerge — blob preservation (never lose unique un-ba
     expect(plan.mergedRows[0].localAudioBlob).toBeTruthy();
   });
 
+  it('play-from a metadata-only twin does not wipe the canonical real blob', () => {
+    // Regression: B is the metadata-only twin (same fingerprint, NO bytes) that a device which
+    // synced metadata but never hydrated produces. Choosing it as "Play from" must not overwrite
+    // A's only copy with undefined. A's blob (or a refusal) must survive.
+    const realBlob = blob('a-bytes');
+    const rows = [
+      song({
+        id: 'a',
+        title: 'Song',
+        updatedAt: 200,
+        localAudioBlob: realBlob,
+        localMediaFingerprint: '5000:200.00',
+      }),
+      song({
+        id: 'b',
+        title: 'Song',
+        updatedAt: 100,
+        // Twin: fingerprint present, but no localAudioBlob and no Drive backing.
+        localMediaFingerprint: '5000:200.00',
+      }),
+    ];
+    const plan = planStanzaOrganizeMerge(rows, [sel(['a', 'b'], 'a', 'b')]);
+    expect(plan.refusals).toEqual([]);
+    const merged = plan.mergedRows[0];
+    expect(merged.id).toBe('a');
+    // The real bytes are preserved, never replaced by the twin's absent blob.
+    expect(merged.localAudioBlob).toBe(realBlob);
+  });
+
   it('refuses when a dropped cross-source donor has an un-backed stem blob', () => {
     const rows = [
       song({ id: 'a', ytId: 'vidA', title: 'Song', updatedAt: 200 }),
@@ -302,8 +332,39 @@ describe('planStanzaOrganizeMerge — tombstones', () => {
     expect(plan.refusals).toEqual([]);
     expect(plan.droppedRowIds).toEqual(['b']);
     expect(plan.tombstones.localSongIds).toEqual(['b']);
-    // A's discarded YouTube source is also tombstoned.
-    expect(plan.tombstones.youtubeVideoIds).toEqual(['vidA']);
+    // A survives (canonical keeps its id), so its own vidA is NOT tombstoned — it can't resurrect
+    // and stays recoverable.
+    expect(plan.tombstones.youtubeVideoIds).toEqual([]);
+  });
+
+  it('does not tombstone the surviving canonical own backed Drive source on a cross-source play-from', () => {
+    // Regression: C survives (keeps its id) but plays P's upload. C's own backed recording (driveC)
+    // must NOT be tombstoned — the row can't resurrect, and reaping its backing would strip a
+    // recovery path the metadata-only undo cannot rebuild.
+    const rows = [
+      song({
+        id: 'c',
+        title: 'Song',
+        updatedAt: 200,
+        driveSourceFileId: 'driveC',
+        practiceSource: 'local',
+        localMediaFingerprint: '5000:200.00',
+      }),
+      song({
+        id: 'p',
+        title: 'Song',
+        updatedAt: 100,
+        localAudioBlob: blob('p-bytes'),
+        driveSourceFileId: 'driveP',
+        localMediaFingerprint: '6000:150.00',
+      }),
+    ];
+    const plan = planStanzaOrganizeMerge(rows, [sel(['c', 'p'], 'c', 'p')]);
+    expect(plan.refusals).toEqual([]);
+    expect(plan.droppedRowIds).toEqual(['p']);
+    // driveC belongs to the surviving canonical — never tombstoned. driveP moved onto the survivor
+    // (referenced), so it isn't tombstoned either.
+    expect(plan.tombstones.driveSourceFileIds).toEqual([]);
   });
 
   it('does not tombstone a discarded source that another surviving row still references', () => {

@@ -49,6 +49,12 @@ export interface StanzaOrganizeApplyReport {
   takesDropped: number;
   refusals: StanzaOrganizeRefusal[];
   tombstones: StanzaOrganizeTombstones;
+  /**
+   * False when a deletion tombstone did not persist (e.g. localStorage quota). A dropped row with
+   * no tombstone can resurrect on the next Drive pull, so the caller should warn the user to retry
+   * rather than treat the merge as fully safe.
+   */
+  tombstonesPersisted: boolean;
 }
 
 export interface StanzaOrganizeApplyResult {
@@ -108,6 +114,7 @@ function writeTombstones(tombstones: StanzaOrganizeTombstones): {
   addedDriveFileIds: string[];
   addedYoutubeVideoIds: string[];
   addedLocalSongIds: string[];
+  persisted: boolean;
 } {
   const preDrive = getStanzaDriveTombstoneFileIds();
   const preYoutube = getStanzaYoutubeTombstoneVideoIds();
@@ -121,7 +128,18 @@ function writeTombstones(tombstones: StanzaOrganizeTombstones): {
   for (const id of tombstones.youtubeVideoIds) addStanzaYoutubeTombstone(id);
   for (const id of tombstones.localSongIds) addStanzaLocalSongTombstone(id);
 
-  return { addedDriveFileIds, addedYoutubeVideoIds, addedLocalSongIds };
+  // Verify every intended tombstone actually persisted — the underlying stores swallow a
+  // localStorage quota/private-mode failure, which would otherwise leave a dropped row with no
+  // tombstone (a silent resurrection gap). Surface it instead of hiding it.
+  const nowDrive = getStanzaDriveTombstoneFileIds();
+  const nowYoutube = getStanzaYoutubeTombstoneVideoIds();
+  const nowLocal = getStanzaLocalSongTombstoneIds();
+  const persisted =
+    tombstones.driveSourceFileIds.every((id) => nowDrive.has(id)) &&
+    tombstones.youtubeVideoIds.every((id) => nowYoutube.has(id)) &&
+    tombstones.localSongIds.every((id) => nowLocal.has(id));
+
+  return { addedDriveFileIds, addedYoutubeVideoIds, addedLocalSongIds, persisted };
 }
 
 /**
@@ -145,6 +163,7 @@ export async function applyStanzaOrganizeMerge(
     takesDropped: 0,
     refusals: plan.refusals,
     tombstones: plan.tombstones,
+    tombstonesPersisted: true,
   };
 
   // Nothing to apply (all groups refused, or empty selection) — surface refusals, do not snapshot.
@@ -163,8 +182,19 @@ export async function applyStanzaOrganizeMerge(
   const preTakes = await readTakesForSongIds(songIds);
   const preLastSelected = readStanzaLastSelectedSongId();
 
+  // Ordering guarantee: the destructive Dexie transaction commits, then tombstones are written
+  // with NO `await` in between — deleting a row and recording its tombstone happen in one
+  // synchronous continuation, so a racing Drive pull cannot observe dropped-rows-without-tombstones
+  // within this tab. (Tombstones live in localStorage and cannot join the Dexie transaction, so
+  // full cross-store atomicity is impossible; `writeTombstones` verifies persistence and the report
+  // flags a failure.)
   const { takesRemapped, takesDropped } = await applyPlanWrites(plan);
   const added = writeTombstones(plan.tombstones);
+  if (!added.persisted) {
+    console.error(
+      '[stanza-organize] tombstones did not persist; dropped rows may resurrect on the next Drive pull',
+    );
+  }
 
   const report: StanzaOrganizeApplyReport = {
     ...baseReport,
@@ -172,6 +202,7 @@ export async function applyStanzaOrganizeMerge(
     droppedRows: plan.droppedRowIds.length,
     takesRemapped,
     takesDropped,
+    tombstonesPersisted: added.persisted,
   };
 
   const undo = async (): Promise<void> => {

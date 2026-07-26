@@ -235,11 +235,17 @@ function applyPlayFromSource(
     next.ytId = null;
     next.practiceSource = 'local';
     next.driveSourceFileId = playFrom.driveSourceFileId;
-    next.localAudioBlob = playFrom.localAudioBlob;
-    next.localVideoThumbnailBlob = playFrom.localVideoThumbnailBlob;
+    // Only move bytes the play-from member actually holds. A metadata-only twin (fingerprint but
+    // no `localAudioBlob` — the shape a device that synced metadata but never hydrated produces)
+    // must NOT overwrite the survivor's real blob with `undefined`, or the only copy is lost and
+    // the metadata-only Drive undo cannot restore it.
+    if (playFrom.localAudioBlob) {
+      next.localAudioBlob = playFrom.localAudioBlob;
+      next.localVideoThumbnailBlob = playFrom.localVideoThumbnailBlob;
+      next.driveMainMediaBytesFingerprint = playFrom.driveMainMediaBytesFingerprint;
+    }
     next.localMediaFingerprint =
       playFrom.localMediaFingerprint ?? stanzaLocalMediaFingerprintForRow(playFrom) ?? undefined;
-    next.driveMainMediaBytesFingerprint = playFrom.driveMainMediaBytesFingerprint;
   } else if (kind === 'drive') {
     next.ytId = null;
     next.practiceSource = 'local';
@@ -249,9 +255,14 @@ function applyPlayFromSource(
   return next;
 }
 
-/** Id of the member whose main `localAudioBlob` the merged row keeps (or null when none). */
+/**
+ * Id of the member whose main `localAudioBlob` the merged row keeps (or null when none). The
+ * play-from member only owns the kept blob when it actually HOLDS one — a metadata-only twin
+ * (fingerprint, no bytes) never overwrites the survivor's real blob, so ownership falls back to
+ * the canonical. Must stay in lockstep with the overwrite guard in `applyPlayFromSource`.
+ */
 function keptMainBlobOwnerId(canonical: StanzaSong, playFrom: StanzaSong): string | null {
-  if (playFrom.id !== canonical.id && stanzaOrganizeSourceKind(playFrom) === 'upload') {
+  if (playFrom.id !== canonical.id && playFrom.localAudioBlob) {
     return playFrom.id;
   }
   return canonical.localAudioBlob ? canonical.id : null;
@@ -355,7 +366,6 @@ export function planStanzaOrganizeMerge(
   const takeRemapIds = new Map<string, string>();
   const takeDropSongIds: string[] = [];
   const refusals: StanzaOrganizeRefusal[] = [];
-  const appliedMemberIds: string[] = [];
   const mergedById = new Map<string, StanzaSong>();
 
   for (const selection of selections) {
@@ -373,7 +383,6 @@ export function planStanzaOrganizeMerge(
     }
     for (const id of g.sameSourceDonorIds) takeRemapIds.set(id, g.canonicalId);
     takeDropSongIds.push(...g.crossSourceDonorIds);
-    for (const m of g.members) appliedMemberIds.push(m.id);
   }
 
   // --- Tombstones: only for a discarded source no surviving row still references. ---
@@ -393,13 +402,17 @@ export function planStanzaOrganizeMerge(
   const youtubeVideoIds = new Set<string>();
   const driveSourceFileIds = new Set<string>();
   const localSongIds = new Set<string>();
-  for (const id of new Set(appliedMemberIds)) {
+  // Only a DROPPED row produces a deletion tombstone. A surviving canonical whose source a
+  // cross-source "Play from" replaced keeps its id, so it can never resurrect (a remote row with
+  // that id matches by id on pull) — tombstoning its old, still-recoverable Drive/YouTube source
+  // would wrongly mark the survivor's backing deleted. Reap only genuinely removed rows' sources.
+  for (const id of droppedRowIds) {
     const member = byId.get(id)!;
     const y = trimmed(member.ytId);
     if (y && !referencedYtIds.has(y)) youtubeVideoIds.add(y);
     const d = trimmed(member.driveSourceFileId);
     if (d && !referencedDriveIds.has(d)) driveSourceFileIds.add(d);
-    if (droppedSet.has(id) && !y && !d) localSongIds.add(id);
+    if (!y && !d) localSongIds.add(id);
   }
 
   return {

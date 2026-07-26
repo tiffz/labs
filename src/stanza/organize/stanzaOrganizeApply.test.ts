@@ -97,6 +97,7 @@ describe('applyStanzaOrganizeMerge — writes', () => {
     expect(await stanzaDb.takes.get('tb')).toBeUndefined();
     expect(await stanzaDb.takes.get('ta')).toBeTruthy();
     expect(getStanzaYoutubeTombstoneVideoIds().has('vidB')).toBe(true);
+    expect(report.tombstonesPersisted).toBe(true);
   });
 
   it('remaps stanzaLastSelectedSongId off a dropped row', async () => {
