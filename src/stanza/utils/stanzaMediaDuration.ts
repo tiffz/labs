@@ -70,6 +70,13 @@ export function resolveStickyTransportDurationSec(opts: {
 
 const PREMATURE_END_EPS_SEC = 0.05;
 
+/**
+ * How far below a prior resume target a fresh `ended` still counts as "the same freeze".
+ * A `ended` this close to (or past, up to this margin below) the previous attempt with no
+ * new element range means the element clamped and cannot advance — stop, do not retry.
+ */
+export const STANZA_PREMATURE_RESUME_STALL_WINDOW_SEC = 2;
+
 export type PrematureMediaEndResume = {
   shouldResume: boolean;
   seekTo: number;
@@ -82,6 +89,15 @@ export type PrematureMediaEndResume = {
  * seekable/buffered past the freeze, or a known horizon (decoded AudioBuffer / fingerprint).
  *
  * Do not speculative-nudge without evidence — that hides real EOF and erodes trust.
+ *
+ * A media element cannot play past its own hard `duration`. When the only evidence is an
+ * analyzed horizon (decoded PCM / fingerprint) that the element itself will not honor — its
+ * `seekable`/`buffered` ranges do not extend past the freeze — resuming just re-clamps to
+ * `duration` and re-fires `ended`, an unbounded stutter that hangs playback before the
+ * timeline's (analyzed) end. `previousResumeTargetSec` lets the caller pass the prior
+ * attempt's target so a non-advancing element stops at its authoritative end instead of
+ * looping. An element that *did* advance (real VBR tail) ends past the prior target and
+ * still resumes.
  */
 export function resolvePrematureMediaEndResume(opts: {
   currentTime: number;
@@ -90,6 +106,8 @@ export function resolvePrematureMediaEndResume(opts: {
   bufferedEnd: number | null;
   /** Decoded buffer / fingerprint / grown transport — may exceed element metadata. */
   knownHorizonSec?: number | null;
+  /** `seekTo` of the previous premature-end resume, to detect an element that cannot advance. */
+  previousResumeTargetSec?: number | null;
 }): PrematureMediaEndResume | null {
   const t = opts.currentTime;
   if (!Number.isFinite(t) || t < 0) return null;
@@ -115,6 +133,20 @@ export function resolvePrematureMediaEndResume(opts: {
     (buffered != null && buffered > t + PREMATURE_END_EPS_SEC);
   const hasKnownHorizonEvidence = known != null && known > t + PREMATURE_END_EPS_SEC;
   if (!hasRangeEvidence && !hasKnownHorizonEvidence) return null;
+
+  // Non-advancing guard: we already tried to resume to `prevTarget` and the element ended
+  // again at (or just below) that point without its own range extending past it. The element
+  // will not honor the analyzed horizon — stop at its authoritative end instead of looping.
+  const prevTarget = opts.previousResumeTargetSec;
+  if (prevTarget != null && Number.isFinite(prevTarget)) {
+    const endedAgainAtSameFreeze =
+      t <= prevTarget + PREMATURE_END_EPS_SEC &&
+      t >= prevTarget - STANZA_PREMATURE_RESUME_STALL_WINDOW_SEC;
+    const rangePastPrevTarget =
+      (seekable != null && seekable > prevTarget + PREMATURE_END_EPS_SEC) ||
+      (buffered != null && buffered > prevTarget + PREMATURE_END_EPS_SEC);
+    if (endedAgainAtSameFreeze && !rangePastPrevTarget) return null;
+  }
 
   const seekTo = Math.min(t + 0.05, horizon - PREMATURE_END_EPS_SEC);
   if (!(seekTo > t + 0.001)) return null;
