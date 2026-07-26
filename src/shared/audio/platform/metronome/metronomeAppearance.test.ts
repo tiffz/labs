@@ -14,10 +14,11 @@ describe('metronomeAppearance', () => {
     expect(resolveMetronomeAppearance('chords')).toBe('chords');
     expect(resolveMetronomeAppearance('stanza')).toBe('stanza');
     expect(resolveMetronomeAppearance('midi')).toBe('midi');
+    expect(resolveMetronomeAppearance('encore')).toBe('encore');
   });
 
   it('falls back to default for unknown values', () => {
-    expect(resolveMetronomeAppearance('encore')).toBe('default');
+    expect(resolveMetronomeAppearance('bogus')).toBe('default');
     expect(resolveMetronomeAppearance(undefined)).toBe('default');
   });
 

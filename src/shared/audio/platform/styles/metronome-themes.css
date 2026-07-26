@@ -304,6 +304,33 @@
   --metro-slider-color: var(--midi-accent, #ff4499);
 }
 
+/* Encore (Originals chord playback) — MUI fuchsia theme (#ad1fbf), 12px radius. */
+.labs-metronome-split-control--encore,
+.labs-metronome-settings-popover--encore {
+  --metro-split-radius: 12px;
+  --metro-split-min-height: 34px;
+  --metro-menu-padding: 0;
+  --metro-menu-icon-size: 0.625rem;
+  --metro-split-border: rgba(173, 31, 191, 0.18);
+  --metro-split-border-hover: rgba(173, 31, 191, 0.38);
+  --metro-split-bg: #ffffff;
+  --metro-split-hover-bg: color-mix(in srgb, #ad1fbf 5%, #ffffff);
+  --metro-split-divider: rgba(173, 31, 191, 0.16);
+  --metro-accent: #ad1fbf;
+  --metro-accent-dot: #ad1fbf;
+  --metro-primary-color: #5b6675;
+  --metro-menu-color: #5b6675;
+  --metro-primary-hover-bg: color-mix(in srgb, #ad1fbf 7%, #ffffff);
+  --metro-menu-hover-bg: color-mix(in srgb, #ad1fbf 9%, #ffffff);
+  --metro-primary-active-bg: #ad1fbf;
+  --metro-primary-active-color: #ffffff;
+  --metro-primary-active-border: #ad1fbf;
+  --metro-split-active-hover-bg: rgba(255, 255, 255, 0.16);
+  --metro-panel-bg: #ffffff;
+  --metro-panel-border: rgba(76, 29, 149, 0.1);
+  --metro-slider-color: #ad1fbf;
+}
+
 /*
  * Secondary selection bridge — portaled metronome popovers do not inherit app-shell
  * --theme-primary. Derive settings toggles from --metro-accent on each appearance wrapper.
@@ -328,7 +355,10 @@
 .labs-metronome-settings-panel--stanza,
 .labs-metronome-split-control--midi,
 .labs-metronome-settings-popover--midi,
-.labs-metronome-settings-panel--midi {
+.labs-metronome-settings-panel--midi,
+.labs-metronome-split-control--encore,
+.labs-metronome-settings-popover--encore,
+.labs-metronome-settings-panel--encore {
   --metro-toggle-selected-bg: color-mix(
     in srgb,
     var(--metro-accent, #7c3aed) 12%,

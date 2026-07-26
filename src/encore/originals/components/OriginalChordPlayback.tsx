@@ -87,7 +87,7 @@ function OriginalChordPlaybackControls({
       preferences={metronomePreferences}
       onPreferencesChange={setMetronomePreferences}
       timeSignature={CHART_CHORD_PLAYBACK_TIME_SIGNATURE}
-      appearance="chords"
+      appearance="encore"
       ariaLabel="Metronome"
     />
   );
