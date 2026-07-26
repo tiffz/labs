@@ -25895,37 +25895,6 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
-    "id": "src-shared-music-schedulemetronomemeasure-ts-schedulemetronomemeasure",
-    "name": "scheduleMetronomeMeasure",
-    "path": "src/shared/music/scheduleMetronomeMeasure.ts",
-    "kind": "utility",
-    "stability": "stable",
-    "owner": "music-core",
-    "description": "Schedule one measure of beat clicks on the shared chart clock (ADR 0025). Called only after reports the measure was scheduled (not skipped-late), so clicks ride the same single transport and never fire on a frozen/overdue measure — staying in sync with chords and drums.",
-    "tags": [
-      "music"
-    ],
-    "appsUsing": [],
-    "exportType": "function",
-    "demoId": null
-  },
-  {
-    "id": "src-shared-music-schedulemetronomemeasure-ts-schedulemetronomemeasureparams",
-    "name": "ScheduleMetronomeMeasureParams",
-    "path": "src/shared/music/scheduleMetronomeMeasure.ts",
-    "kind": "model",
-    "stability": "stable",
-    "owner": "music-core",
-    "description": "No JSDoc summary provided.",
-    "tags": [
-      "music",
-      "api"
-    ],
-    "appsUsing": [],
-    "exportType": "type",
-    "demoId": null
-  },
-  {
     "id": "src-shared-music-schedulestyledchordmeasure-ts-schedulestyledchordmeasure",
     "name": "scheduleStyledChordMeasure",
     "path": "src/shared/music/scheduleStyledChordMeasure.ts",

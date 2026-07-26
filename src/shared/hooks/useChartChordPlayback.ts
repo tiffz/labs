@@ -33,7 +33,14 @@ import type { SampledPianoLoadState } from '../music/sampledPianoLoadState';
 import { useSampledPianoPreload } from './useSampledPianoPreload';
 import { createChartDrumAudioPlayer } from '../music/scheduleDrumMeasure';
 import { scheduleChartMeasure } from '../music/scheduleChartMeasure';
-import { scheduleMetronomeMeasure } from '../music/scheduleMetronomeMeasure';
+import {
+  useMetronomePreferences,
+  type MetronomePreferences,
+} from '../audio/platform/metronome';
+import {
+  GridMetronomeScheduler,
+  type GridMetronomePlaybackPrefs,
+} from '../audio/metronome/gridMetronomePlayback';
 import type { AudioPlayer } from '../audio/audioPlayer';
 import type { Instrument } from '../playback/instruments';
 
@@ -58,6 +65,9 @@ export type UseChartChordPlaybackResult = {
   playingSectionId: string | null;
   settings: ChordPlaybackSettings;
   updateSettings: (patch: Partial<ChordPlaybackSettings>) => void;
+  /** Shared metronome preferences (subdivision, voice/click/drum sources, levels). */
+  metronomePreferences: MetronomePreferences;
+  setMetronomePreferences: (next: MetronomePreferences) => void;
   start: () => void;
   startSectionLoop: (sectionId: string) => void;
   stop: () => void;
@@ -106,6 +116,21 @@ export function useChartChordPlayback({
   sectionPlaybackOverridesRef.current = sectionPlaybackOverrides;
   const lastBeatUiPerfRef = useRef(0);
 
+  // Shared metronome: same engine, appearance, and preferences as the other apps
+  // (drums/words/…). It rides the SINGLE chart transport (ADR 0025) — the grid
+  // scheduler polls the same AudioContext the chords/drums use, so clicks stay in sync
+  // and every advanced setting (subdivision / voice / click / drum) is live.
+  const { preferences: metronomePreferences, setPreferences: setMetronomePreferences } =
+    useMetronomePreferences({
+      storageKey: `${storageKey}:metronome`,
+      timeSignature: CHART_CHORD_PLAYBACK_TIME_SIGNATURE,
+    });
+  const metronomePrefsRef = useRef(metronomePreferences);
+  metronomePrefsRef.current = metronomePreferences;
+  const metronomeSchedulerRef = useRef<GridMetronomeScheduler | null>(null);
+  /** AudioContext time of beat 0 (the first measure's start) for the current play. */
+  const metronomeAnchorAudioTimeRef = useRef(0);
+
   const steps = useMemo(() => chartLayoutToPlayablePlaybackSteps(layout), [layout]);
 
   const updateSettings = useCallback(
@@ -125,6 +150,7 @@ export function useChartChordPlayback({
     stepIndexRef.current = 0;
     instrumentSessionRef.current?.stopAll();
     drumPlayerRef.current?.stopAll();
+    metronomeSchedulerRef.current?.reset();
   }, [instrumentSessionRef]);
 
   const stop = useCallback(() => {
@@ -197,7 +223,10 @@ export function useChartChordPlayback({
         measureMs,
       );
 
-      const result = scheduleChartMeasure({
+      // Metronome no longer rides the per-measure chord path — the shared grid
+      // scheduler polls the same AudioContext in the rAF tick (see the beat-UI effect),
+      // so subdivisions between measure boundaries schedule correctly.
+      scheduleChartMeasure({
         ctx: chordCtx,
         measureStartTime,
         instrument,
@@ -212,22 +241,6 @@ export function useChartChordPlayback({
         tempo,
         shouldContinue: () => generation === playbackGenerationRef.current,
       });
-
-      // Metronome is a song-wide click track (not per-section). Ride the same clock
-      // and the same late gate — only click a measure that was actually scheduled, so
-      // an overdue/skipped measure stays silent and clicks never drift from the chords.
-      if (
-        result === 'scheduled' &&
-        currentSettings.metronomeEnabled &&
-        generation === playbackGenerationRef.current
-      ) {
-        scheduleMetronomeMeasure({
-          ctx: chordCtx,
-          measureStartTime,
-          tempo,
-          timeSignature: CHART_CHORD_PLAYBACK_TIME_SIGNATURE,
-        });
-      }
     },
     [tempo],
   );
@@ -282,6 +295,16 @@ export function useChartChordPlayback({
 
         playbackEpochPerfRef.current = performance.now() + CHART_SCHEDULE_LEAD_MS;
         const measureMs = chartPlaybackMeasureDurationMs(tempo);
+        // Anchor the metronome grid to beat 0 (the first measure's start) on the shared
+        // clock, then reset the scheduler so it counts from that anchor.
+        metronomeAnchorAudioTimeRef.current = measureStartAudioTimeFromEpoch(
+          ready.ctx,
+          playbackEpochPerfRef.current,
+          0,
+          measureMs,
+        );
+        if (!metronomeSchedulerRef.current) metronomeSchedulerRef.current = new GridMetronomeScheduler();
+        metronomeSchedulerRef.current.reset();
         if (!transportRef.current) transportRef.current = new LookAheadAudioScheduler();
         const transport = transportRef.current;
 
@@ -400,6 +423,22 @@ export function useChartChordPlayback({
 
     const tick = () => {
       const now = performance.now();
+
+      // Metronome look-ahead poll on the SAME AudioContext as chords/drums (ADR 0025),
+      // so clicks stay locked to the chord grid and honor every live preference. The
+      // grid scheduler dedupes slots, so polling every frame is safe.
+      if (settingsRef.current.metronomeEnabled) {
+        const ctx = instrumentSessionRef.current?.getAudioContext();
+        const scheduler = metronomeSchedulerRef.current;
+        if (ctx && ctx.state === 'running' && scheduler) {
+          const prefs = metronomePrefsRef.current as GridMetronomePlaybackPrefs;
+          scheduler.configure(tempo, CHART_CHORD_PLAYBACK_TIME_SIGNATURE, prefs, 0);
+          const elapsed = ctx.currentTime - metronomeAnchorAudioTimeRef.current;
+          const masterVolume = prefs.masterMuted ? 0 : prefs.masterVolume;
+          void scheduler.pollTimeline(ctx, elapsed, prefs, masterVolume, 0.03);
+        }
+      }
+
       const elapsedSec = (now - measureStartPerfRef.current) / 1000;
       const nextBeatTime = Math.min(elapsedSec, measureDurationSec);
       // Throttle React state — drum notation highlight must not run every frame.
@@ -415,6 +454,8 @@ export function useChartChordPlayback({
       if (animFrameRef.current !== null) cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = null;
     };
+    // instrumentSessionRef/metronome refs are stable; only playing/tempo gate this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- instrumentSessionRef
   }, [playing, tempo]);
 
   const playbackBeat = useMemo(() => {
@@ -477,6 +518,8 @@ export function useChartChordPlayback({
     playingSectionId,
     settings,
     updateSettings,
+    metronomePreferences,
+    setMetronomePreferences,
     start,
     startSectionLoop,
     stop,

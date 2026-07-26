@@ -17,8 +17,10 @@ vi.mock('../../../shared/hooks/useChartChordPlayback', () => ({
 // useCallback/useState references while a beat ticks.
 const stableSettings = {} as UseChartChordPlaybackResult['settings'];
 const stableLoad = {} as UseChartChordPlaybackResult['sampledPianoLoad'];
+const stableMetronomePrefs = {} as UseChartChordPlaybackResult['metronomePreferences'];
 const stableFns = {
   updateSettings: vi.fn(),
+  setMetronomePreferences: vi.fn(),
   start: vi.fn(),
   startSectionLoop: vi.fn(),
   stop: vi.fn(),
@@ -33,6 +35,8 @@ function makeResult(playbackBeatTime: number): UseChartChordPlaybackResult {
     playingSectionId: null,
     settings: stableSettings,
     updateSettings: stableFns.updateSettings,
+    metronomePreferences: stableMetronomePrefs,
+    setMetronomePreferences: stableFns.setMetronomePreferences,
     start: stableFns.start,
     startSectionLoop: stableFns.startSectionLoop,
     stop: stableFns.stop,

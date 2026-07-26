@@ -9,8 +9,9 @@ import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import { useRef, useState, type ReactElement } from 'react';
 import AnchoredPopover from '../../../shared/components/AnchoredPopover';
-import MetronomeToggleButton from '../../../shared/components/MetronomeToggleButton';
+import { MetronomeSplitControl } from '../../../shared/audio/platform/metronome';
 import { ChordPlaybackSettingsPanel } from '../../../shared/components/music/ChordPlaybackSettingsPanel';
+import { CHART_CHORD_PLAYBACK_TIME_SIGNATURE } from '../../../shared/music/chordPlaybackSettings';
 import { useChartChordPlayback, type UseChartChordPlaybackResult } from '../../../shared/hooks/useChartChordPlayback';
 import {
   popoverAnchorEl,
@@ -57,6 +58,8 @@ function OriginalChordPlaybackControls({
     playingSectionId,
     settings,
     updateSettings,
+    metronomePreferences,
+    setMetronomePreferences,
     start,
     stop,
     sampledPianoLoad,
@@ -78,13 +81,14 @@ function OriginalChordPlaybackControls({
     : 'Play chord chart';
 
   const metronomeButton = (
-    <MetronomeToggleButton
+    <MetronomeSplitControl
       enabled={settings.metronomeEnabled}
       onToggle={() => updateSettings({ metronomeEnabled: !settings.metronomeEnabled })}
+      preferences={metronomePreferences}
+      onPreferencesChange={setMetronomePreferences}
+      timeSignature={CHART_CHORD_PLAYBACK_TIME_SIGNATURE}
+      appearance="chords"
       ariaLabel="Metronome"
-      tooltipOn="Metronome on"
-      tooltipOff="Metronome off"
-      className="encore-originals-metronome-toggle"
     />
   );
 

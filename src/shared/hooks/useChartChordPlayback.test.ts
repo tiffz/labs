@@ -6,7 +6,9 @@ import { chartPlaybackMeasureDurationMs } from '../music/chordPro/chartPlaybackS
 
 const scheduleStyledChordMeasure = vi.fn();
 const scheduleDrumMeasure = vi.fn();
-const scheduleMetronomeMeasure = vi.fn();
+const gridConfigure = vi.fn();
+const gridPollTimeline = vi.fn().mockResolvedValue(undefined);
+const gridReset = vi.fn();
 const ensureInstrument = vi.fn();
 const stopAll = vi.fn();
 
@@ -49,8 +51,18 @@ vi.mock('../music/scheduleDrumMeasure', () => ({
   scheduleDrumMeasure: (...args: unknown[]) => scheduleDrumMeasure(...args),
 }));
 
-vi.mock('../music/scheduleMetronomeMeasure', () => ({
-  scheduleMetronomeMeasure: (...args: unknown[]) => scheduleMetronomeMeasure(...args),
+vi.mock('../audio/metronome/gridMetronomePlayback', () => ({
+  GridMetronomeScheduler: class {
+    configure(...args: unknown[]) {
+      gridConfigure(...args);
+    }
+    reset(...args: unknown[]) {
+      gridReset(...args);
+    }
+    pollTimeline(...args: unknown[]) {
+      return gridPollTimeline(...args);
+    }
+  },
 }));
 
 vi.mock('../music/chordInstrumentSession', () => ({
@@ -102,7 +114,9 @@ describe('useChartChordPlayback stop', () => {
     seatPreloadRef();
     scheduleStyledChordMeasure.mockClear();
     scheduleDrumMeasure.mockClear();
-    scheduleMetronomeMeasure.mockClear();
+    gridConfigure.mockClear();
+    gridPollTimeline.mockClear();
+    gridReset.mockClear();
     stopAll.mockClear();
     createChartDrumAudioPlayer.mockClear();
     ensureInstrument.mockResolvedValue({
@@ -283,7 +297,7 @@ describe('useChartChordPlayback stop', () => {
     });
   });
 
-  it('schedules metronome clicks each measure when metronomeEnabled — same clock as chords', async () => {
+  it('drives the shared metronome grid scheduler on the chart context when metronome is on', async () => {
     vi.useFakeTimers();
     const { result } = renderHook(() =>
       useChartChordPlayback({
@@ -306,9 +320,8 @@ describe('useChartChordPlayback stop', () => {
       await vi.advanceTimersByTimeAsync(chartPlaybackMeasureDurationMs(120) * 2);
     });
 
-    // A measure was scheduled (ticks fired) AND the metronome rode the same call.
-    expect(scheduleStyledChordMeasure).toHaveBeenCalled();
-    expect(scheduleMetronomeMeasure).toHaveBeenCalled();
+    // The shared grid scheduler is polled on the chart's AudioContext — one transport.
+    expect(gridPollTimeline).toHaveBeenCalled();
 
     act(() => {
       result.current.stop();
@@ -316,7 +329,7 @@ describe('useChartChordPlayback stop', () => {
     vi.useRealTimers();
   });
 
-  it('schedules no metronome clicks when metronomeEnabled is off', async () => {
+  it('does not drive the metronome scheduler when metronome is off', async () => {
     vi.useFakeTimers();
     const { result } = renderHook(() =>
       useChartChordPlayback({
@@ -337,7 +350,7 @@ describe('useChartChordPlayback stop', () => {
 
     // Chords scheduled (ticks fired), but the metronome stayed silent while off.
     expect(scheduleStyledChordMeasure).toHaveBeenCalled();
-    expect(scheduleMetronomeMeasure).not.toHaveBeenCalled();
+    expect(gridPollTimeline).not.toHaveBeenCalled();
 
     act(() => {
       result.current.stop();
