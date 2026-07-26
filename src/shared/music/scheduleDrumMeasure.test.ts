@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
-import { scheduleDrumMeasure } from './scheduleDrumMeasure';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createChartDrumAudioPlayer, scheduleDrumMeasure } from './scheduleDrumMeasure';
+import { createMockAudioContext } from '../audio/__test__/mockAudioContext';
 import type { AudioPlayer } from '../audio/audioPlayer';
 
 function mockDrumPlayer(currentTime: number): AudioPlayer {
@@ -65,5 +66,32 @@ describe('scheduleDrumMeasure', () => {
 
     const play = drumPlayer.playNowIfReady as ReturnType<typeof vi.fn>;
     expect(play).not.toHaveBeenCalled();
+  });
+});
+
+describe('createChartDrumAudioPlayer single-context invariant (ADR 0025 step 1)', () => {
+  beforeEach(() => {
+    // Sample loads only need to resolve; the invariant under test is which context
+    // the player ends up on, not what it decodes.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(8) })),
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('borrows the passed context so drums and chords share ONE AudioContext', async () => {
+    const sharedCtx = createMockAudioContext();
+    const player = createChartDrumAudioPlayer(sharedCtx as unknown as AudioContext);
+    await player.initialize();
+
+    // The whole point of ADR 0025 step 1: the drum player must ride the chord
+    // session's clock. A refactor that mints its own `new AudioContext()` (the
+    // dual-clock regression this replaces) would return a different object here.
+    expect(player.getAudioContext()).toBe(sharedCtx);
   });
 });

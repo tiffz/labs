@@ -9,18 +9,27 @@ const scheduleDrumMeasure = vi.fn();
 const ensureInstrument = vi.fn();
 const stopAll = vi.fn();
 
+// Capture the context handed to the drum-player factory so a test can assert the
+// ADR 0025 "one AudioContext" wiring: the drum player must be built on the SAME
+// ctx the chord session exposes, never a freshly minted second one.
+const createChartDrumAudioPlayer = vi.fn(() => ({
+  initialize: vi.fn().mockResolvedValue(undefined),
+  ensureResumed: vi.fn().mockResolvedValue(true),
+  getAudioContext: () => ({ currentTime: 0, state: 'running' }),
+  stopAll: vi.fn(),
+  destroy: vi.fn(),
+}));
+
+// Stable reference for the chord session's AudioContext — identity is what the
+// single-context invariant checks, so it must be the same object every resolve.
+const chordSessionCtx = { currentTime: 0, state: 'running' as const };
+
 vi.mock('../music/scheduleStyledChordMeasure', () => ({
   scheduleStyledChordMeasure: (...args: unknown[]) => scheduleStyledChordMeasure(...args),
 }));
 
 vi.mock('../music/scheduleDrumMeasure', () => ({
-  createChartDrumAudioPlayer: vi.fn(() => ({
-    initialize: vi.fn().mockResolvedValue(undefined),
-    ensureResumed: vi.fn().mockResolvedValue(true),
-    getAudioContext: () => ({ currentTime: 0, state: 'running' }),
-    stopAll: vi.fn(),
-    destroy: vi.fn(),
-  })),
+  createChartDrumAudioPlayer: (...args: unknown[]) => createChartDrumAudioPlayer(...args),
   scheduleDrumMeasure: (...args: unknown[]) => scheduleDrumMeasure(...args),
 }));
 
@@ -78,8 +87,9 @@ describe('useChartChordPlayback stop', () => {
     scheduleStyledChordMeasure.mockClear();
     scheduleDrumMeasure.mockClear();
     stopAll.mockClear();
+    createChartDrumAudioPlayer.mockClear();
     ensureInstrument.mockResolvedValue({
-      ctx: { currentTime: 0, state: 'running' },
+      ctx: chordSessionCtx,
       instrument: { stopAll: vi.fn() },
     });
     Object.defineProperty(document, 'hidden', { configurable: true, value: false });
@@ -215,5 +225,37 @@ describe('useChartChordPlayback stop', () => {
     expect(result.current.playing).toBe(true);
 
     Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+  });
+
+  it('builds the drum player on the chord session context — one AudioContext (ADR 0025 step 1)', async () => {
+    const { result } = renderHook(() =>
+      useChartChordPlayback({
+        layout,
+        tempo: 120,
+        storageKey: 'test-chart-playback-single-context',
+      }),
+    );
+
+    // Drums off by default — enable so the drum player is actually built.
+    act(() => {
+      result.current.updateSettings({ drumsEnabled: true });
+    });
+
+    await act(async () => {
+      result.current.start();
+      // Drain ensureInstrument -> ensureAudioContextRunning -> ensureDrumPlayerReady.
+      for (let i = 0; i < 8; i += 1) await Promise.resolve();
+    });
+
+    // The invariant: the drum-player factory received the EXACT ctx object the chord
+    // session exposed — not a second minted context (the dual-clock regression).
+    // Assert object IDENTITY (`toBe`), not `toHaveBeenCalledWith` — the latter deep-
+    // equals, so a freshly minted `{currentTime,state}` would slip past.
+    expect(createChartDrumAudioPlayer).toHaveBeenCalledTimes(1);
+    expect(createChartDrumAudioPlayer.mock.calls[0]?.[0]).toBe(chordSessionCtx);
+
+    act(() => {
+      result.current.stop();
+    });
   });
 });

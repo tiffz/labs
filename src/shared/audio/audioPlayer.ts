@@ -12,6 +12,12 @@ export interface AudioPlayerConfig {
   reverbImpulseUrl?: string;
   /** Whether to enable reverb by default */
   enableReverb?: boolean;
+  /**
+   * Borrow an existing AudioContext instead of minting one. When set, this player
+   * shares the owner's clock (ADR 0025 single transport) and must NOT own its lifecycle:
+   * it skips the resume/visibility handlers and never closes the context on `destroy`.
+   */
+  externalContext?: AudioContext;
 }
 
 /**
@@ -25,6 +31,8 @@ export interface AudioPlayerConfig {
  */
 export class AudioPlayer {
   private audioContext: AudioContext | null = null;
+  /** False when the context is borrowed (ADR 0025) — do not close it or manage its lifecycle. */
+  private ownsContext = true;
   private buffers: Map<string, AudioBuffer> = new Map();
   private clickBuffer: AudioBuffer | null = null;
   private isInitialized = false;
@@ -47,36 +55,44 @@ export class AudioPlayer {
     if (this.isInitialized) return;
 
     try {
-      // Create AudioContext
-      const AudioContextClass =
-        window.AudioContext ||
-        (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      this.audioContext = new AudioContextClass();
+      if (this.config.externalContext) {
+        // Borrowed context (ADR 0025 single transport): share the owner's clock and
+        // leave its lifecycle — resume, visibility, close — to the owner.
+        this.audioContext = this.config.externalContext;
+        this.ownsContext = false;
+      } else {
+        // Create AudioContext
+        const AudioContextClass =
+          window.AudioContext ||
+          (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        this.audioContext = new AudioContextClass();
+        this.ownsContext = true;
 
-      // Set up visibility change handler to resume audio when tab becomes visible
-      this.visibilityChangeHandler = () => {
-        if (document.visibilityState === 'visible' && this.audioContext?.state === 'suspended') {
-          this.audioContext.resume().catch(err => {
-            console.warn('Failed to resume AudioContext on visibility change:', err);
-          });
-        }
-      };
-      document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+        // Set up visibility change handler to resume audio when tab becomes visible
+        this.visibilityChangeHandler = () => {
+          if (document.visibilityState === 'visible' && this.audioContext?.state === 'suspended') {
+            this.audioContext.resume().catch(err => {
+              console.warn('Failed to resume AudioContext on visibility change:', err);
+            });
+          }
+        };
+        document.addEventListener('visibilitychange', this.visibilityChangeHandler);
 
-      // Only auto-resume when the tab is visible. Blind resume after background
-      // suspend dumps any notes clamped to a frozen clock as a loud blast.
-      this.stateChangeHandler = () => {
-        if (
-          this.audioContext?.state === 'suspended' &&
-          typeof document !== 'undefined' &&
-          document.visibilityState === 'visible'
-        ) {
-          this.audioContext.resume().catch(err => {
-            console.warn('Failed to resume suspended AudioContext:', err);
-          });
-        }
-      };
-      this.audioContext.addEventListener('statechange', this.stateChangeHandler);
+        // Only auto-resume when the tab is visible. Blind resume after background
+        // suspend dumps any notes clamped to a frozen clock as a loud blast.
+        this.stateChangeHandler = () => {
+          if (
+            this.audioContext?.state === 'suspended' &&
+            typeof document !== 'undefined' &&
+            document.visibilityState === 'visible'
+          ) {
+            this.audioContext.resume().catch(err => {
+              console.warn('Failed to resume suspended AudioContext:', err);
+            });
+          }
+        };
+        this.audioContext.addEventListener('statechange', this.stateChangeHandler);
+      }
 
       // Load all configured sounds
       const loadPromises: Promise<void>[] = [];
@@ -405,15 +421,20 @@ export class AudioPlayer {
     }
 
     if (this.audioContext) {
-      this.audioContext.close().catch(err => {
-        console.warn('Error closing AudioContext:', err);
-      });
+      // Only close a context we own — a borrowed one (ADR 0025) belongs to the chord
+      // session; closing it here would kill chord playback too.
+      if (this.ownsContext) {
+        this.audioContext.close().catch(err => {
+          console.warn('Error closing AudioContext:', err);
+        });
+      }
       this.audioContext = null;
     }
 
     this.buffers.clear();
     this.clickBuffer = null;
     this.isInitialized = false;
+    this.ownsContext = true;
   }
 }
 

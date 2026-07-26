@@ -69,6 +69,17 @@ export abstract class BaseInstrument implements Instrument {
   protected disposed: boolean = false;
   private activeVoices = new Set<TrackedVoice>();
   /**
+   * Hard ceiling on simultaneously-tracked voices — a crash safety net, NOT voice management.
+   * The default piano rings 6 oscillators per note, so a dense chord measure (e.g. an
+   * eighth-notes style, 5-note chords) can ring a few hundred voices, and the look-ahead may
+   * hold a measure or two at once — a legit peak near ~500. This ceiling sits far above that
+   * so it never cuts a sounding note, yet far below the tens-of-thousands an upstream
+   * scheduling desync piles up (ADR 0025 dual-clock: chord audio time bridged onto a drifted
+   * context fires many overdue measures at once) before the tab OOMs. At the ceiling we steal
+   * the oldest voice, so a desync degrades to a glitch, not a crash.
+   */
+  private static readonly MAX_ACTIVE_VOICES = 2048;
+  /**
    * Pending deferred disconnects of faded-out buses. A Set (not a single slot) so two
    * `stopAll`s within one fade window — rapid Play/Stop, fast section switches, tab
    * visibility flips — each disconnect their own old bus. A single slot let the second
@@ -101,6 +112,19 @@ export abstract class BaseInstrument implements Instrument {
    * voice's `onended` (or equivalent) so completed notes leave the set.
    */
   protected trackVoice(stop: (when?: number) => void): () => void {
+    // Voice-steal the oldest when at the ceiling — bounds memory so a scheduling desync
+    // can't OOM the tab (see MAX_ACTIVE_VOICES). Set iteration is insertion order = FIFO.
+    if (this.activeVoices.size >= BaseInstrument.MAX_ACTIVE_VOICES) {
+      const oldest = this.activeVoices.values().next().value;
+      if (oldest) {
+        this.activeVoices.delete(oldest);
+        try {
+          oldest.stop();
+        } catch {
+          /* already stopped */
+        }
+      }
+    }
     const voice: TrackedVoice = { stop };
     this.activeVoices.add(voice);
     return () => {

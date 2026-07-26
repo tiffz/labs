@@ -103,4 +103,40 @@ describe('AudioPlayer', () => {
     expect(mockCtx.close).toHaveBeenCalled();
     expect(player.getState()).toBe('uninitialized');
   });
+
+  describe('borrowed external context (ADR 0025 single transport)', () => {
+    function makeExternalCtx() {
+      const ctx = Object.assign(createMockAudioContext(), {
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      });
+      ctx.decodeAudioData.mockResolvedValue(fakeBuffer);
+      return ctx;
+    }
+
+    it('shares the provided context and adds no lifecycle handlers of its own', async () => {
+      const externalCtx = makeExternalCtx();
+      const player = new AudioPlayer({
+        externalContext: externalCtx as unknown as AudioContext,
+        soundUrls: { dum: '/dum.wav' },
+        enableReverb: false,
+      });
+      await player.initialize();
+      expect(player.getAudioContext()).toBe(externalCtx);
+      // The owner manages resume/visibility — a borrowed player must not attach its own.
+      expect(externalCtx.addEventListener).not.toHaveBeenCalled();
+    });
+
+    it('never closes a borrowed context on destroy (that context is the owner\'s)', async () => {
+      const externalCtx = makeExternalCtx();
+      const player = new AudioPlayer({
+        externalContext: externalCtx as unknown as AudioContext,
+        enableReverb: false,
+      });
+      await player.initialize();
+      player.destroy();
+      expect(externalCtx.close).not.toHaveBeenCalled();
+      expect(player.getAudioContext()).toBeNull();
+    });
+  });
 });

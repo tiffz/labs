@@ -59,6 +59,8 @@ export function scheduleDrumMeasure({
   }
 }
 
-export function createChartDrumAudioPlayer(): AudioPlayer {
-  return createDrumAudioPlayer({ includeClick: false }).underlying;
+export function createChartDrumAudioPlayer(externalContext?: AudioContext): AudioPlayer {
+  // Borrow the chord session's context (ADR 0025 single transport) so chords and drums
+  // share one clock — no dual-clock drift, the crash class this replaces.
+  return createDrumAudioPlayer({ includeClick: false, externalContext }).underlying;
 }

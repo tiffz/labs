@@ -136,20 +136,31 @@ export function useChartChordPlayback({
     onActiveStepChange?.(null);
   }, [resetTransport, onActiveStepChange]);
 
-  const ensureDrumPlayerReady = useCallback(async (): Promise<AudioPlayer | null> => {
-    let drumPlayer = drumPlayerRef.current;
-    if (!drumPlayer) {
-      drumPlayer = createChartDrumAudioPlayer();
-      drumPlayerRef.current = drumPlayer;
-      drumsReadyRef.current = false;
-    }
-    if (!drumsReadyRef.current) {
-      await drumPlayer.initialize();
-      drumsReadyRef.current = true;
-    }
-    const resumed = await drumPlayer.ensureResumed();
-    return resumed ? drumPlayer : null;
-  }, []);
+  const ensureDrumPlayerReady = useCallback(
+    async (sharedContext: AudioContext): Promise<AudioPlayer | null> => {
+      let drumPlayer = drumPlayerRef.current;
+      // The chord session (and its context) can be recreated between plays. Rebuild the
+      // drum player on the current context so both always share one clock (ADR 0025).
+      if (drumPlayer && drumPlayer.getAudioContext() !== null && drumPlayer.getAudioContext() !== sharedContext) {
+        drumPlayer.destroy();
+        drumPlayer = null;
+        drumPlayerRef.current = null;
+        drumsReadyRef.current = false;
+      }
+      if (!drumPlayer) {
+        drumPlayer = createChartDrumAudioPlayer(sharedContext);
+        drumPlayerRef.current = drumPlayer;
+        drumsReadyRef.current = false;
+      }
+      if (!drumsReadyRef.current) {
+        await drumPlayer.initialize();
+        drumsReadyRef.current = true;
+      }
+      const resumed = await drumPlayer.ensureResumed();
+      return resumed ? drumPlayer : null;
+    },
+    [],
+  );
 
   /** Hot path: schedule one measure with already-warmed instruments (no awaits). */
   const scheduleMeasureSync = useCallback(
@@ -262,7 +273,8 @@ export function useChartChordPlayback({
           );
         let drumPlayer: AudioPlayer | null = null;
         if (wantDrums) {
-          drumPlayer = await ensureDrumPlayerReady();
+          // Share the chord session's context so drums and chords ride one clock (ADR 0025).
+          drumPlayer = await ensureDrumPlayerReady(ready.ctx);
           if (generation !== playbackGenerationRef.current) return;
         }
 
