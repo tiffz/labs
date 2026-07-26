@@ -7,6 +7,8 @@ export type CreateDrumAudioPlayerOptions = {
   includeClick?: boolean;
   /** When true, reuse a module-level singleton (rhythmPlayer path). */
   singleton?: boolean;
+  /** Borrow an existing AudioContext (ADR 0025 single transport) instead of minting one. */
+  externalContext?: AudioContext;
 };
 
 let rhythmSingleton: DrumAudioPlayerFacade | null = null;
@@ -20,6 +22,7 @@ export class DrumAudioPlayerFacade {
       clickUrl: options.includeClick !== false ? CLICK_SAMPLE_URL : undefined,
       soundUrls: { ...DRUM_SAMPLE_URLS },
       enableReverb: options.enableReverb ?? false,
+      externalContext: options.externalContext,
     });
   }
 
