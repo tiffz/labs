@@ -165,28 +165,9 @@ export function openMonospaceChartPrintWindow(
     : `<article class="chart">${headerHtml}<div class="content">${asciiChartTextToPrintHtml(single)}</div></article>`;
 
   const html = buildPrintDocumentHtml(bodyHtml, options.suggestedFileName);
-  const printWin = window.open('about:blank', '_blank', 'noopener,noreferrer');
 
-  if (printWin) {
-    printWin.document.open();
-    printWin.document.write(html);
-    printWin.document.close();
-    printWin.document.title = options.suggestedFileName;
-
-    const triggerPrint = () => {
-      printWin.focus();
-      printWin.print();
-      printWin.addEventListener('afterprint', () => printWin.close(), { once: true });
-    };
-
-    if (printWin.document.readyState === 'complete') {
-      window.setTimeout(triggerPrint, 150);
-    } else {
-      printWin.onload = () => window.setTimeout(triggerPrint, 150);
-    }
-    return;
-  }
-
+  // Print in place via a hidden iframe — no new browser tab. The iframe document
+  // title becomes the browser's Save-as-PDF default name (`Title - Chord Chart`).
   openPrintHtmlInHiddenIframe(html, (win) => {
     win.document.title = options.suggestedFileName;
     win.focus();
