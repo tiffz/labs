@@ -289,10 +289,10 @@ When using `valueLabelDisplay="auto"` or `"on"`:
 
 **Never nest a popover-owning control inside another popover.** A value surfaced as a chip/dropdown trigger whose editor is richer than a single option list must expose an **embed mode** that renders its editor body inline, so the host chip owns exactly **one** popover. Two established idioms — use one, do not add a third:
 
-| Idiom | How | Example |
-| ----- | --- | ------- |
-| **Inline panel body** | The control renders only its editor panel (no `AnchoredPopover`) | `BpmInput presetPanel="inline"`, `TimeSignatureInput layout="block"` |
-| **Headless picker** | Extract the menu as a standalone component the host drives with its own `open`/`anchorEl`/`onClose` | `KeyInputPicker` (from `KeyInput`), used by `EncoreKeyChip` |
+| Idiom                 | How                                                                                                 | Example                                                              |
+| --------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **Inline panel body** | The control renders only its editor panel (no `AnchoredPopover`)                                    | `BpmInput presetPanel="inline"`, `TimeSignatureInput layout="block"` |
+| **Headless picker**   | Extract the menu as a standalone component the host drives with its own `open`/`anchorEl`/`onClose` | `KeyInputPicker` (from `KeyInput`), used by `EncoreKeyChip`          |
 
 Single-choice trigger-plus-list controls (`PlaybackSoundSelect`, `ChordStyleInput`) are exempt — their closed trigger already **is** the compact value display, so there is no second popover. Guard: `BpmInput.test.tsx` asserts inline mode mounts no second panel on focus.
 
@@ -307,6 +307,7 @@ Closed playback pickers (sound, chord style trigger, similar single-choice field
 - **Helpers** (`playbackFieldSelect.ts`): `PlaybackFieldSelectAppearance`, `playbackFieldSelectPopoverSlotProps`, `playbackFloatingPanelSlotProps`, `forwardWheelToPageScroller`, `resolvePlaybackFieldSelectAppearance`.
 - **Floating panels + nested menus**: use `playbackFloatingPanelSlotProps` on the outer popover and `playbackFieldSelectPopoverSlotProps` on field selects (`PLAYBACK_FIELD_SELECT_Z_INDEX` keeps menus above the panel). Backdrop wheel events forward to `.in-scroll-region` so the page still scrolls while a menu is open; backdrop clicks close as usual. Pair floating popovers with `usePopoverScrollAnchorSync` + `popoverAnchorEl()` so menus track anchors inside nested scroll regions (Encore `.in-scroll-region`). Nested **drum Edit** menus also need the [Nested Edit menu checklist](#nested-edit-menu-checklist-portal-styling) above (`isDrumPatternEditMenuTarget`, frozen `anchorPosition`).
 - **Custom menus**: reuse `playbackFieldSelectPopoverSlotProps(appearance)` on MUI `Popover` `slotProps` and put options in `.shared-playback-field-select__menu-list` / `.shared-playback-field-select__option` when you need a simple list; override `--pfs-*` on a parent selector for app tint without forking the trigger markup.
+- **Tall settings panels must scroll, not clip**: give the Paper `PLAYBACK_FLOATING_PANEL_PAPER_SX` (viewport-bounded `maxHeight`, flex column, `overflow: hidden`) and wrap the body in a `<Box sx={PLAYBACK_FLOATING_PANEL_SCROLL_BODY_SX}>` (`minHeight: 0` + `overflowY: auto`). The `minHeight: 0` is load-bearing — without it the flex child cannot shrink, `overflowY` never engages, and the Paper clips the bottom controls out of reach. Guard: `playbackFieldSelect.test.ts` § scroll contract.
 
 #### Portaled appearance checklist
 
@@ -421,10 +422,10 @@ While mounted, the dock sets `--labs-debug-dock-height` on `:root` (and mirrors 
 
 Compose the dock body from these instead of copy-pasting a `DEBUG_BTN` style object or a `JSON.stringify` `<pre>` per app:
 
-| Need                         | Use                                                                                            |
-| ---------------------------- | ---------------------------------------------------------------------------------------------- |
-| A debug action button        | [`LabsDebugButton`](./components/LabsDebugButton.tsx) (`variant="danger"` for destructive)      |
-| Read-only JSON state readout | [`LabsDebugStateDump`](./components/LabsDebugStateDump.tsx) (`data={{ … }}`)                     |
+| Need                          | Use                                                                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| A debug action button         | [`LabsDebugButton`](./components/LabsDebugButton.tsx) (`variant="danger"` for destructive)                                |
+| Read-only JSON state readout  | [`LabsDebugStateDump`](./components/LabsDebugStateDump.tsx) (`data={{ … }}`)                                              |
 | Confirm-gated destructive ops | [`LabsDebugDangerZone`](./components/LabsDebugDangerZone.tsx) — every action routes through `window.confirm` in one place |
 
 `LabsDebugButton` stops click propagation by default (dock-header clicks toggle collapse); pass `stopPropagation={false}` for a body button. `LabsDebugDangerZone` is **full-tier only** — gate its host panel on `isLabsDebugFull()` (ADR 0026), never the `diagnostics` tier.

@@ -8,7 +8,11 @@ import type { PopoverActions } from '@mui/material/Popover';
 import Tooltip from '@mui/material/Tooltip';
 import { useRef, useState, type MouseEvent, type ReactElement } from 'react';
 import AnchoredPopover from '../../../../shared/components/AnchoredPopover';
-import { playbackFloatingPanelSlotProps } from '../../../../shared/components/music/playbackFieldSelect';
+import {
+  PLAYBACK_FLOATING_PANEL_PAPER_SX,
+  PLAYBACK_FLOATING_PANEL_SCROLL_BODY_SX,
+  playbackFloatingPanelSlotProps,
+} from '../../../../shared/components/music/playbackFieldSelect';
 import {
   popoverAnchorEl,
   usePopoverScrollAnchorSync,
@@ -171,36 +175,14 @@ export function OriginalsPaintSectionHeading({
             ...playbackFloatingPanelSlotProps({
               paperClassName:
                 'encore-originals-chords-playback-settings-menu encore-originals-section-playback-menu',
-              paperSx: {
-                width: 420,
-                maxWidth: 'min(420px, calc(100vw - 24px))',
-                maxHeight:
-                  'calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
-                mt: 0.75,
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-                borderRadius: 3,
-              },
+              paperSx: PLAYBACK_FLOATING_PANEL_PAPER_SX,
             }),
             paper: {
               onMouseDown: (event: MouseEvent<HTMLDivElement>) => event.stopPropagation(),
             },
           }}
         >
-          <Box
-            sx={{
-              // min-height:0 lets this flex child shrink below its content height so
-              // overflowY actually engages; without it the Paper (overflow:hidden)
-              // clips the bottom of the panel and the drum pattern is unreachable.
-              flex: '1 1 auto',
-              minHeight: 0,
-              overflowY: 'auto',
-              overflowX: 'hidden',
-              overscrollBehavior: 'contain',
-              WebkitOverflowScrolling: 'touch',
-            }}
-          >
+          <Box sx={PLAYBACK_FLOATING_PANEL_SCROLL_BODY_SX}>
             <OriginalsSectionPlaybackSettingsPanel
               sectionLabel={label}
               hasCustomPlayback={hasCustomPlayback}

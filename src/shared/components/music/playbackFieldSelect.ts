@@ -151,3 +151,37 @@ export function playbackFloatingPanelSlotProps(opts?: {
     },
   };
 }
+
+/**
+ * Paper layout for a floating settings panel (chord/section playback settings):
+ * a viewport-bounded, flex column that clips so the inner scroll body owns
+ * overflow. `maxHeight` keeps the panel inside the viewport at any anchor
+ * position (short viewports included); `overflow: hidden` on the Paper hands
+ * scrolling to the body below. Pair with `PLAYBACK_FLOATING_PANEL_SCROLL_BODY_SX`.
+ */
+export const PLAYBACK_FLOATING_PANEL_PAPER_SX: SystemStyleObject = {
+  width: 420,
+  maxWidth: 'min(420px, calc(100vw - 24px))',
+  maxHeight: 'calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+  mt: 0.75,
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+  borderRadius: 3,
+};
+
+/**
+ * Scrolling body inside a `PLAYBACK_FLOATING_PANEL_PAPER_SX` panel.
+ * `minHeight: 0` lets this flex child shrink below its content height so
+ * `overflowY: auto` actually engages; without it the Paper (overflow: hidden)
+ * clips the bottom of the panel and the lowest controls (drum pattern) are
+ * unreachable — the settings-popover overflow bug.
+ */
+export const PLAYBACK_FLOATING_PANEL_SCROLL_BODY_SX: SystemStyleObject = {
+  flex: '1 1 auto',
+  minHeight: 0,
+  overflowY: 'auto',
+  overflowX: 'hidden',
+  overscrollBehavior: 'contain',
+  WebkitOverflowScrolling: 'touch',
+};

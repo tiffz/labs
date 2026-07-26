@@ -18,7 +18,11 @@ import {
 import type { ChartLayout } from '../../../shared/music/chordPro/chordChartLayout';
 import type { ChartPlaybackStep } from '../../../shared/music/chordPro/chartPlaybackSequence';
 import type { SectionPlaybackOverride } from '../../../shared/music/resolveSectionPlaybackSettings';
-import { playbackFloatingPanelSlotProps } from '../../../shared/components/music/playbackFieldSelect';
+import {
+  PLAYBACK_FLOATING_PANEL_PAPER_SX,
+  PLAYBACK_FLOATING_PANEL_SCROLL_BODY_SX,
+  playbackFloatingPanelSlotProps,
+} from '../../../shared/components/music/playbackFieldSelect';
 import { useOptionalOriginalsChartPlayback } from '../context/useOriginalsChartPlayback';
 
 const PLAYBACK_SETTINGS_STORAGE_KEY = 'encore-originals-chord-playback-settings';
@@ -107,28 +111,11 @@ function OriginalChordPlaybackControls({
       slotProps={{
         ...playbackFloatingPanelSlotProps({
           paperClassName: 'encore-originals-chords-playback-settings-menu',
-          paperSx: {
-            width: 420,
-            maxWidth: 'min(420px, calc(100vw - 24px))',
-            maxHeight:
-              'calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
-            mt: 0.75,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            borderRadius: 3,
-          },
+          paperSx: PLAYBACK_FLOATING_PANEL_PAPER_SX,
         }),
       }}
     >
-      <Box
-        sx={{
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          overscrollBehavior: 'contain',
-          WebkitOverflowScrolling: 'touch',
-        }}
-      >
+      <Box sx={PLAYBACK_FLOATING_PANEL_SCROLL_BODY_SX}>
         <ChordPlaybackSettingsPanel
           settings={settings}
           onChange={updateSettings}

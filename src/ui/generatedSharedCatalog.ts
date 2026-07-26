@@ -14449,6 +14449,46 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-components-music-playbackfieldselect-ts-playback-floating-panel-paper-sx",
+    "name": "PLAYBACK_FLOATING_PANEL_PAPER_SX",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Paper layout for a floating settings panel (chord/section playback settings): a viewport-bounded, flex column that clips so the inner scroll body owns overflow. `maxHeight` keeps the panel inside the viewport at any anchor position (short viewports included); `overflow: hidden` on the Paper hands scrolling to the body below. Pair with `PLAYBACK_FLOATING_PANEL_SCROLL_BODY_SX`.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-components-music-playbackfieldselect-ts-playback-floating-panel-scroll-body-sx",
+    "name": "PLAYBACK_FLOATING_PANEL_SCROLL_BODY_SX",
+    "path": "src/shared/components/music/playbackFieldSelect.ts",
+    "kind": "component",
+    "stability": "stable",
+    "owner": "shared-ui",
+    "description": "Scrolling body inside a `PLAYBACK_FLOATING_PANEL_PAPER_SX` panel. `minHeight: 0` lets this flex child shrink below its content height so `overflowY: auto` actually engages; without it the Paper (overflow: hidden) clips the bottom of the panel and the lowest controls (drum pattern) are unreachable — the settings-popover overflow bug.",
+    "tags": [
+      "components",
+      "music",
+      "api"
+    ],
+    "appsUsing": [
+      "drums",
+      "words"
+    ],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-components-music-playbackfieldselect-ts-playbackfieldselectappearance",
     "name": "PlaybackFieldSelectAppearance",
     "path": "src/shared/components/music/playbackFieldSelect.ts",
