@@ -4,8 +4,8 @@ import { loadEnv } from 'vite';
 import type { Connect, Plugin, PreviewServer, ViteDevServer } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import react from '@vitejs/plugin-react';
-import { resolve, basename } from 'path';
-import { copyFileSync, rmSync } from 'node:fs';
+import { resolve, basename, dirname } from 'path';
+import { copyFileSync, rmSync, realpathSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { compression } from 'vite-plugin-compression2';
@@ -352,6 +352,23 @@ export default defineConfig({
     /** Spotify OAuth redirect URIs cannot use `localhost`; default dev URL is loopback. */
     host: '127.0.0.1',
     middlewareMode: false,
+    fs: {
+      // A git worktree symlinks node_modules to the main checkout, which lives outside the
+      // worktree root — so Vite's default fs.allow 403s every @fontsource asset. Follow the
+      // symlink and allow its real parent so fonts/icons serve from any worktree. In a normal
+      // (non-worktree) checkout node_modules is real and its parent is the project root, so
+      // this is a harmless no-op there.
+      allow: [
+        process.cwd(),
+        ...(() => {
+          try {
+            return [dirname(realpathSync(resolve(process.cwd(), 'node_modules')))];
+          } catch {
+            return [];
+          }
+        })(),
+      ],
+    },
   },
   plugins: [
     encoreDrivePublicDevProxyPlugin(),

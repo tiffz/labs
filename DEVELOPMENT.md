@@ -269,6 +269,8 @@ npm run lint         # Check code quality
 npm run build        # Production build
 ```
 
+Running the dev server from a **git worktree** serves fonts fine: `vite.config.ts` `server.fs.allow` follows the `node_modules` symlink to its real parent (the main checkout), so `@fontsource` assets do not 403. A normal checkout is unaffected — the realpath resolves inside the project root.
+
 ## Shared Music and Catalog Guardrails
 
 - Canonical shared music architecture: `src/shared/music/ARCHITECTURE.md`
