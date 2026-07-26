@@ -18,6 +18,8 @@ export type ChordPlaybackSettings = {
   drumsMuted: boolean;
   /** Darbuka-style notation for one 4/4 measure (e.g. `D---D---D---D---`). */
   drumPattern: string;
+  /** Song-wide beat click track, in sync with chords and drums. */
+  metronomeEnabled: boolean;
 };
 
 export const DEFAULT_CHORD_PLAYBACK_SETTINGS: ChordPlaybackSettings = {
@@ -29,6 +31,7 @@ export const DEFAULT_CHORD_PLAYBACK_SETTINGS: ChordPlaybackSettings = {
   drumsVolume: 42,
   drumsMuted: false,
   drumPattern: 'D---D---D---D---',
+  metronomeEnabled: false,
 };
 
 export function loadChordPlaybackSettings(

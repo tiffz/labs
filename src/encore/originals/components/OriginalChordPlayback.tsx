@@ -1,3 +1,4 @@
+import AvTimerIcon from '@mui/icons-material/AvTimer';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import StopIcon from '@mui/icons-material/Stop';
@@ -76,6 +77,22 @@ function OriginalChordPlaybackControls({
       : 'Stop chord playback'
     : 'Play chord chart';
 
+  const metronomeOn = settings.metronomeEnabled;
+  const metronomeButton = (
+    <Tooltip title={metronomeOn ? 'Metronome on' : 'Metronome off'}>
+      <IconButton
+        size="small"
+        color="inherit"
+        aria-label="Metronome"
+        aria-pressed={metronomeOn}
+        onClick={() => updateSettings({ metronomeEnabled: !metronomeOn })}
+        sx={{ p: 0.35, color: metronomeOn ? 'primary.main' : 'text.secondary' }}
+      >
+        <AvTimerIcon sx={{ fontSize: 20 }} />
+      </IconButton>
+    </Tooltip>
+  );
+
   const settingsButton = (
     <Tooltip title="Playback settings">
       <IconButton
@@ -146,6 +163,7 @@ function OriginalChordPlaybackControls({
               {playing ? <StopIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
             </IconButton>
           </Tooltip>
+          {metronomeButton}
           {settingsButton}
         </Stack>
         {settingsPopover}
@@ -167,6 +185,7 @@ function OriginalChordPlaybackControls({
         >
           {playing ? 'Stop' : 'Play'}
         </Button>
+        {metronomeButton}
         {settingsButton}
       </Stack>
       {settingsPopover}

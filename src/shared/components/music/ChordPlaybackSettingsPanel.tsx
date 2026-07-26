@@ -221,7 +221,7 @@ export function ChordPlaybackSettingsPanel({
                 isPlaying={playing}
                 currentBeatTime={playbackBeatTime}
                 currentBeat={playbackBeat}
-                metronomeEnabled={false}
+                metronomeEnabled={settings.metronomeEnabled}
                 volume={settings.drumsMuted ? 0 : settings.drumsVolume}
                 notationValue={settings.drumPattern}
                 onNotationValueChange={(drumPattern) => onChange({ drumPattern })}

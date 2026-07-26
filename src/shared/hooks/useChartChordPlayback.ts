@@ -33,6 +33,7 @@ import type { SampledPianoLoadState } from '../music/sampledPianoLoadState';
 import { useSampledPianoPreload } from './useSampledPianoPreload';
 import { createChartDrumAudioPlayer } from '../music/scheduleDrumMeasure';
 import { scheduleChartMeasure } from '../music/scheduleChartMeasure';
+import { scheduleMetronomeMeasure } from '../music/scheduleMetronomeMeasure';
 import type { AudioPlayer } from '../audio/audioPlayer';
 import type { Instrument } from '../playback/instruments';
 
@@ -196,7 +197,7 @@ export function useChartChordPlayback({
         measureMs,
       );
 
-      scheduleChartMeasure({
+      const result = scheduleChartMeasure({
         ctx: chordCtx,
         measureStartTime,
         instrument,
@@ -211,6 +212,22 @@ export function useChartChordPlayback({
         tempo,
         shouldContinue: () => generation === playbackGenerationRef.current,
       });
+
+      // Metronome is a song-wide click track (not per-section). Ride the same clock
+      // and the same late gate — only click a measure that was actually scheduled, so
+      // an overdue/skipped measure stays silent and clicks never drift from the chords.
+      if (
+        result === 'scheduled' &&
+        currentSettings.metronomeEnabled &&
+        generation === playbackGenerationRef.current
+      ) {
+        scheduleMetronomeMeasure({
+          ctx: chordCtx,
+          measureStartTime,
+          tempo,
+          timeSignature: CHART_CHORD_PLAYBACK_TIME_SIGNATURE,
+        });
+      }
     },
     [tempo],
   );

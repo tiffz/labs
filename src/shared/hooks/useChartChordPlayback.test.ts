@@ -6,6 +6,7 @@ import { chartPlaybackMeasureDurationMs } from '../music/chordPro/chartPlaybackS
 
 const scheduleStyledChordMeasure = vi.fn();
 const scheduleDrumMeasure = vi.fn();
+const scheduleMetronomeMeasure = vi.fn();
 const ensureInstrument = vi.fn();
 const stopAll = vi.fn();
 
@@ -46,6 +47,10 @@ vi.mock('../music/scheduleStyledChordMeasure', () => ({
 vi.mock('../music/scheduleDrumMeasure', () => ({
   createChartDrumAudioPlayer: (...args: unknown[]) => createChartDrumAudioPlayer(...args),
   scheduleDrumMeasure: (...args: unknown[]) => scheduleDrumMeasure(...args),
+}));
+
+vi.mock('../music/scheduleMetronomeMeasure', () => ({
+  scheduleMetronomeMeasure: (...args: unknown[]) => scheduleMetronomeMeasure(...args),
 }));
 
 vi.mock('../music/chordInstrumentSession', () => ({
@@ -97,6 +102,7 @@ describe('useChartChordPlayback stop', () => {
     seatPreloadRef();
     scheduleStyledChordMeasure.mockClear();
     scheduleDrumMeasure.mockClear();
+    scheduleMetronomeMeasure.mockClear();
     stopAll.mockClear();
     createChartDrumAudioPlayer.mockClear();
     ensureInstrument.mockResolvedValue({
@@ -275,5 +281,67 @@ describe('useChartChordPlayback stop', () => {
     act(() => {
       result.current.stop();
     });
+  });
+
+  it('schedules metronome clicks each measure when metronomeEnabled — same clock as chords', async () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() =>
+      useChartChordPlayback({
+        layout,
+        tempo: 120,
+        storageKey: 'test-chart-playback-metronome-on',
+      }),
+    );
+
+    act(() => {
+      result.current.updateSettings({ metronomeEnabled: true });
+    });
+
+    await act(async () => {
+      result.current.startSectionLoop('verse-1');
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(chartPlaybackMeasureDurationMs(120) * 2);
+    });
+
+    // A measure was scheduled (ticks fired) AND the metronome rode the same call.
+    expect(scheduleStyledChordMeasure).toHaveBeenCalled();
+    expect(scheduleMetronomeMeasure).toHaveBeenCalled();
+
+    act(() => {
+      result.current.stop();
+    });
+    vi.useRealTimers();
+  });
+
+  it('schedules no metronome clicks when metronomeEnabled is off', async () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() =>
+      useChartChordPlayback({
+        layout,
+        tempo: 120,
+        storageKey: 'test-chart-playback-metronome-off',
+      }),
+    );
+
+    await act(async () => {
+      result.current.startSectionLoop('verse-1');
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(chartPlaybackMeasureDurationMs(120) * 2);
+    });
+
+    // Chords scheduled (ticks fired), but the metronome stayed silent while off.
+    expect(scheduleStyledChordMeasure).toHaveBeenCalled();
+    expect(scheduleMetronomeMeasure).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.stop();
+    });
+    vi.useRealTimers();
   });
 });

@@ -180,7 +180,7 @@ export function OriginalsSectionPlaybackSettingsPanel({
                     isPlaying={false}
                     currentBeatTime={0}
                     currentBeat={0}
-                    metronomeEnabled={false}
+                    metronomeEnabled={globalSettings.metronomeEnabled}
                     volume={effectiveDrumVolume}
                     notationValue={effectiveDrumPattern}
                     onNotationValueChange={
