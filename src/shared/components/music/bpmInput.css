@@ -452,8 +452,17 @@
 
 .shared-bpm-inline-panel .shared-bpm-dropdown-list {
   min-width: 0;
-  padding-inline: 0;
-  padding-bottom: 0;
+  /* The host menu supplies outer padding; tighten the panel's own so it reads compact. */
+  padding: 0.25rem 0 0;
+  gap: 0.5rem;
+}
+
+.shared-bpm-inline-panel .shared-bpm-slider-wrap {
+  padding-block: 0.5rem;
+}
+
+.shared-bpm-inline-panel .shared-bpm-presets-section {
+  padding-top: 0.15rem;
 }
 
 .shared-bpm-slider-wrap {
