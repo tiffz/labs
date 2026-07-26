@@ -58,5 +58,6 @@ Skip an ADR for routine features, one-off UI tweaks, or purely internal refactor
 | [0024](./0024-major-change-ux-qa-review-gates.md)                         | Senior-reviewer gates for major changes (PM, architecture, UX, QA) + app quality tiers |
 | [0025](./0025-chart-playback-single-transport.md)                         | One transport for chart playback (single AudioContext + position owner)                |
 | [0026](./0026-tiered-debug-access.md)                                     | Tiered debug access (read-only diagnostics in prod; full tier for localhost/owner)     |
+| [0027](./0027-stanza-organize-cross-source-merge-contract.md)             | Stanza Organize cross-source merge safety contract — Proposed                          |
 
-**Note:** A few early numbers were reused for unrelated topics (0007, 0010, 0012). Do **not** renumber — cite by full filename. Next new ADR is **0027**.
+**Note:** A few early numbers were reused for unrelated topics (0007, 0010, 0012). Do **not** renumber — cite by full filename. Next new ADR is **0028**.
