@@ -139,13 +139,31 @@ describe('chord-instrument voices stay bounded over K loop passes', () => {
     const synth = new PianoSynthesizer(ctx);
     synth.connect(ctx.createGain() as unknown as AudioNode);
 
+    // 4000 notes * 6 osc = 24000 voice-creations, far past the 2048 ceiling.
     for (let n = 0; n < 4000; n += 1) {
       // Same start time, never ended — the pile-up shape.
       synth.playNote({ frequency: 220 + (n % 24) * 10, startTime: 0, duration: 0.5, velocity: 0.8 });
     }
 
-    expect(synth.activeVoiceCount).toBeLessThanOrEqual(256);
+    expect(synth.activeVoiceCount).toBeLessThanOrEqual(2048);
     // And it actually filled up to the ceiling (proves the cap engaged, not that nothing played).
     expect(synth.activeVoiceCount).toBeGreaterThan(0);
+  });
+
+  it('does not steal at a legitimate dense-playback voice count (ceiling above real polyphony)', () => {
+    // 6 oscillators/note × 100 notes = 600 live voices — a plausible dense measure + look-ahead.
+    // The old 256 ceiling would have capped (and cut sounding notes) here; the real one must not.
+    __resetAudioDiagnosticsForTest();
+    const { ctx } = createMockContext();
+    const synth = new PianoSynthesizer(ctx);
+    synth.connect(ctx.createGain() as unknown as AudioNode);
+
+    for (let n = 0; n < 100; n += 1) {
+      synth.playNote({ frequency: 220 + n * 3, startTime: 0, duration: 0.5, velocity: 0.8 });
+    }
+
+    // Grew well past the old ceiling with no stealing → 600 legit voices are safe.
+    expect(synth.activeVoiceCount).toBeGreaterThan(256);
+    expect(synth.activeVoiceCount).toBeLessThanOrEqual(2048);
   });
 });
