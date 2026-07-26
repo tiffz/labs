@@ -48,6 +48,8 @@ Both paths share the same guard so duplicate seeks do not fire in the same turn.
 
 **Play-through premature `ended`:** Resume only with **evidence** (longer seekable/buffered, or known horizon from decode/fingerprint). No speculative nudges without evidence. Resume uses `playUnified` so transpose/stems restart.
 
+**Non-advancing element (hard EOF):** A media element cannot seek past its own hard `duration`. When a Drive mp4's container end is shorter than the decoded horizon, resuming on the analyzed horizon alone re-clamps to `duration` and re-fires `ended` forever, hanging playback before the timeline end. `resolvePrematureMediaEndResume` takes `previousResumeTargetSec`; if the element ends again at the prior target with no element range past it, we stop at the element's authoritative end. An element that actually advanced (real VBR tail) or grew seekable/buffered still resumes. The guard clears on normal mid-track playback (`useStanzaTransportLoop`).
+
 **Sticky duration:** Media `timeupdate` / `durationchange` / source-switch writers must use `resolveStickyTransportDurationSec` so short HTML5 metadata never shrinks a longer decoded/fingerprint horizon.
 
 ## Tests

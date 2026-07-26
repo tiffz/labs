@@ -59,6 +59,13 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
   const loopWrapPrevTimeRef = useRef<number | null>(null);
   const loopWrapStallFramesRef = useRef(0);
   const loopWrapGuardRef = useRef(createStanzaLoopWrapGuard());
+  /**
+   * `seekTo` of the last premature-end resume, so a media element that cannot advance past
+   * its own hard `duration` (Drive mp4 whose container end is shorter than the decoded
+   * horizon) stops at its authoritative end instead of an endless `ended`→resume→clamp loop.
+   * Cleared during normal advancing playback so a new song/position is never blocked.
+   */
+  const lastPrematureResumeTargetRef = useRef<number | null>(null);
 
   const performLoopWrap = useCallback((seekTarget: number) => {
     if (!loopWrapGuardRef.current.tryPerform()) return;
@@ -99,8 +106,15 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
       seekableEnd: readMediaSeekableEndSec(el),
       bufferedEnd: readMediaBufferedEndSec(el),
       knownHorizonSec: knownHorizon > 0 ? knownHorizon : null,
+      previousResumeTargetSec: lastPrematureResumeTargetRef.current,
     });
-    if (!resume) return false;
+    if (!resume) {
+      // Element reached its authoritative end (or cannot advance past it). Let it stop;
+      // clear the guard so a later premature end on a different position/song resumes.
+      lastPrematureResumeTargetRef.current = null;
+      return false;
+    }
+    lastPrematureResumeTargetRef.current = resume.seekTo;
 
     refsRef.current.durationRef.current = Math.max(
       refsRef.current.durationRef.current,
@@ -198,6 +212,14 @@ export function useStanzaTransportLoop(opts: UseStanzaTransportLoopOptions): {
         const d = resolveReportedTransportDuration();
         if (d > refs.durationRef.current) {
           refs.durationRef.current = d;
+        }
+        // Normal mid-track playback clears the premature-end resume guard so it only ever
+        // constrains a genuine end-of-media stall, never a fresh song/position.
+        if (
+          Number.isFinite(tLive) &&
+          (d <= 0 || tLive < d - STANZA_LOOP_WRAP_TOLERANCE_SEC)
+        ) {
+          lastPrematureResumeTargetRef.current = null;
         }
         const segs = refs.segmentsRef.current;
         const skipped = refs.skippedBySegmentIdRef.current;
