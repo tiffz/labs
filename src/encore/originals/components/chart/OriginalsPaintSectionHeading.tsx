@@ -450,7 +450,7 @@ export function OriginalsPaintSectionHeading({
                 className="encore-originals-section-apply-all-button"
                 onClick={applyChordsToSameType}
               >
-                Apply chords to all {sameTypePlural}
+                Replace chords in all {sameTypePlural}
               </button>
             </div>
           ) : null}
@@ -518,7 +518,7 @@ export function OriginalsPaintSectionHeading({
                 className="encore-originals-section-apply-all-button"
                 onClick={applyDrumsToSameType}
               >
-                Apply drums to all {sameTypePlural}
+                Replace drums in all {sameTypePlural}
               </button>
             </div>
           ) : null}
