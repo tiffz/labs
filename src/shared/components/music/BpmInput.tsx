@@ -273,19 +273,26 @@ const BpmInput: React.FC<BpmInputProps> = ({
                 }
                 if (event.key === 'Escape') {
                   event.preventDefault();
-                  event.stopPropagation();
                   setDraft(String(Math.round(value)));
-                  dismissPresetPanel();
-                  if (document.activeElement !== inputRef.current) {
-                    restoreInputFocusAfterDismiss();
+                  // Inline mode has no popover to dismiss; let Escape bubble so a host
+                  // menu/dialog (e.g. EncoreBpmChip) can close on it.
+                  if (!isInlinePanel) {
+                    event.stopPropagation();
+                    dismissPresetPanel();
+                    if (document.activeElement !== inputRef.current) {
+                      restoreInputFocusAfterDismiss();
+                    }
                   }
                 }
                 if (event.key === 'ArrowUp') {
                   event.preventDefault();
+                  // Keep arrows on the stepper — don't let a host MenuList arrow-nav steal focus.
+                  if (isInlinePanel) event.stopPropagation();
                   bump(step);
                 }
                 if (event.key === 'ArrowDown') {
                   event.preventDefault();
+                  if (isInlinePanel) event.stopPropagation();
                   bump(-step);
                 }
               }}
