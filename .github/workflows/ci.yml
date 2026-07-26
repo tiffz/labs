@@ -422,7 +422,12 @@ jobs:
         retention-days: 1
 
   deploy:
-    needs: [checks, react-hooks-ratchet, vitest, e2e, build]
+    # MUST equal the branch-protection required status checks (checks, vitest, e2e, build).
+    # The deploy ships exactly what the merge gate approved — if a job gates the deploy but
+    # not the merge, a PR merges green and the deploy silently skips (see #120/#121).
+    # `react-hooks-ratchet` is an advisory debt ratchet (visible on the PR, not a ship gate),
+    # so it is deliberately NOT here. Guarded by scripts/check-ci-gating.mjs.
+    needs: [checks, vitest, e2e, build]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     concurrency:

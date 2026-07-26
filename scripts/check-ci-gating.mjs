@@ -21,9 +21,11 @@
 import { readFileSync } from 'node:fs';
 
 // The canonical gating set. MUST equal ci.yml deploy.needs AND the `main` branch-protection
-// required status checks. `scope` is excluded: it is a needs-dependency of the test jobs, not
-// a deploy gate, and reports no independent pass/fail worth requiring.
-const REQUIRED_CHECKS = ['build', 'checks', 'e2e', 'react-hooks-ratchet', 'vitest'];
+// required status checks. `scope` is excluded (a needs-dependency of the test jobs, not a
+// deploy gate). `react-hooks-ratchet` is excluded on purpose: it is an advisory debt ratchet
+// (visible on the PR, ratchet-down by design), not a ship gate — keeping it out of deploy.needs
+// is what stops a green PR from silently skipping the deploy.
+const REQUIRED_CHECKS = ['build', 'checks', 'e2e', 'vitest'];
 
 const ciPath = '.github/workflows/ci.yml';
 const doc = 'docs/CI_RELIABILITY.md';
