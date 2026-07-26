@@ -71,6 +71,8 @@ export function EncoreBpmChip({
           min={min}
           max={max}
           layout="block"
+          // Render the slider + presets inline inside this menu — never a popover-in-a-popover.
+          presetPanel="inline"
           showRandomize={false}
           showRateActions={false}
           showPresetDropdown

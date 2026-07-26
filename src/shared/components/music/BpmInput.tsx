@@ -21,6 +21,14 @@ interface BpmInputProps {
   appearance?: MusicInputAppearance;
   /** `inline` keeps the shell only as wide as the stepper; `block` fills the row (default). */
   layout?: 'inline' | 'block';
+  /**
+   * Where the slider + presets render.
+   * - `popover` (default): behind a focus-triggered `AnchoredPopover` (portable toolbar use).
+   * - `inline`: as a panel body directly under the stepper, no popover of its own — use this
+   *   when embedding inside another popover/menu (e.g. a chip) so you never nest popovers.
+   *   See SHARED_UI_CONVENTIONS § Embedding a control inside a chip or menu.
+   */
+  presetPanel?: 'popover' | 'inline';
   disabled?: boolean;
   showRandomize?: boolean;
   showPresetDropdown?: boolean;
@@ -51,6 +59,7 @@ const BpmInput: React.FC<BpmInputProps> = ({
   className,
   appearance = 'default',
   layout = 'block',
+  presetPanel = 'popover',
   disabled = false,
   showRandomize = false,
   showPresetDropdown = true,
@@ -63,6 +72,7 @@ const BpmInput: React.FC<BpmInputProps> = ({
   sliderClassName,
   presetPanelHorizontal = 'left',
 }) => {
+  const isInlinePanel = presetPanel === 'inline';
   const [draft, setDraft] = useState(String(value));
   const [isEditing, setIsEditing] = useState(false);
   const [isPresetOpen, setIsPresetOpen] = useState(false);
@@ -159,9 +169,55 @@ const BpmInput: React.FC<BpmInputProps> = ({
       inputRef.current?.blur();
     };
 
+    if (isInlinePanel) return;
     document.addEventListener('pointerdown', handlePointerDownOutside, true);
     return () => document.removeEventListener('pointerdown', handlePointerDownOutside, true);
-  }, [isPresetOpen]);
+  }, [isPresetOpen, isInlinePanel]);
+
+  // The slider + presets body, shared by the popover (default) and inline (embedded) modes.
+  const pickerPanel = (
+    <div className="shared-bpm-dropdown-list" aria-label="Common BPM options">
+      <div className="shared-bpm-slider-wrap">
+        <AppSlider
+          className={['shared-bpm-slider', sliderClassName].filter(Boolean).join(' ')}
+          min={min}
+          max={max}
+          step={step}
+          value={Math.round(value)}
+          marks={sliderMarks}
+          aria-label="Tempo slider"
+          onChange={(event) => {
+            const next = clamp(Number(event.target.value), min, max);
+            onChange(next);
+            setDraft(String(next));
+          }}
+        />
+        <SliderMilestoneLabels milestones={milestoneLabels} />
+      </div>
+      <div className="shared-bpm-presets-section">
+        <span className="shared-bpm-presets-label">Common BPMs</span>
+        <div className="shared-bpm-presets-row" role="list" aria-label="Common BPM presets">
+          {filteredPresets.map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              className={`shared-bpm-preset-chip ${Math.round(value) === preset ? 'active' : ''}`}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                onChange(preset);
+                setDraft(String(preset));
+                setIsEditing(false);
+                setIsPresetOpen(false);
+                if (!isInlinePanel) inputRef.current?.blur();
+              }}
+            >
+              {preset}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -187,7 +243,8 @@ const BpmInput: React.FC<BpmInputProps> = ({
                 if (disabled) return;
                 setDraft(String(Math.round(value)));
                 setIsEditing(true);
-                if (showPresetDropdown && !suppressPresetOpenOnFocusRef.current) {
+                // Inline mode shows the panel always, so focus must not open a second popover.
+                if (showPresetDropdown && !isInlinePanel && !suppressPresetOpenOnFocusRef.current) {
                   setIsPresetOpen(true);
                 }
                 suppressPresetOpenOnFocusRef.current = false;
@@ -283,76 +340,39 @@ const BpmInput: React.FC<BpmInputProps> = ({
             ) : null}
           </div>
         </div>
-        <AnchoredPopover
-          open={Boolean(showPresetDropdown && isPresetOpen && anchorRef.current && !disabled)}
-          anchorEl={anchorRef.current}
-          onClose={(_, reason) => {
-            dismissPresetPanel();
-            if (reason === 'escapeKeyDown') {
-              restoreInputFocusAfterDismiss();
-            } else if (reason === 'backdropClick') {
-              suppressPresetOpenOnFocusRef.current = true;
-              inputRef.current?.blur();
-            }
-          }}
-          disableScrollLock
-          placement={presetPanelHorizontal === 'right' ? 'bottom-end' : 'bottom-start'}
-          paperClassName={['shared-bpm-dropdown', dropdownClassName].filter(Boolean).join(' ')}
-          slotProps={{
-            paper: {
-              style: dropdownOffsetPx !== undefined ? { marginTop: `${dropdownOffsetPx}px` } : undefined,
-              ref: (node: HTMLDivElement | null) => {
-                dropdownPaperRef.current = node;
+        {isInlinePanel ? (
+          showPresetDropdown ? (
+            <div className="shared-bpm-inline-panel">{pickerPanel}</div>
+          ) : null
+        ) : (
+          <AnchoredPopover
+            open={Boolean(showPresetDropdown && isPresetOpen && anchorRef.current && !disabled)}
+            anchorEl={anchorRef.current}
+            onClose={(_, reason) => {
+              dismissPresetPanel();
+              if (reason === 'escapeKeyDown') {
+                restoreInputFocusAfterDismiss();
+              } else if (reason === 'backdropClick') {
+                suppressPresetOpenOnFocusRef.current = true;
+                inputRef.current?.blur();
+              }
+            }}
+            disableScrollLock
+            placement={presetPanelHorizontal === 'right' ? 'bottom-end' : 'bottom-start'}
+            paperClassName={['shared-bpm-dropdown', dropdownClassName].filter(Boolean).join(' ')}
+            slotProps={{
+              paper: {
+                style: dropdownOffsetPx !== undefined ? { marginTop: `${dropdownOffsetPx}px` } : undefined,
+                ref: (node: HTMLDivElement | null) => {
+                  dropdownPaperRef.current = node;
+                },
+                onKeyDownCapture: handlePresetPanelKeyDown,
               },
-              onKeyDownCapture: handlePresetPanelKeyDown,
-            },
-          }}
-        >
-          <div
-            className="shared-bpm-dropdown-list"
-            aria-label="Common BPM options"
+            }}
           >
-            <div className="shared-bpm-slider-wrap">
-              <AppSlider
-                className={['shared-bpm-slider', sliderClassName].filter(Boolean).join(' ')}
-                min={min}
-                max={max}
-                step={step}
-                value={Math.round(value)}
-                marks={sliderMarks}
-                aria-label="Tempo slider"
-                onChange={(event) => {
-                  const next = clamp(Number(event.target.value), min, max);
-                  onChange(next);
-                  setDraft(String(next));
-                }}
-              />
-              <SliderMilestoneLabels milestones={milestoneLabels} />
-            </div>
-            <div className="shared-bpm-presets-section">
-              <span className="shared-bpm-presets-label">Common BPMs</span>
-              <div className="shared-bpm-presets-row" role="list" aria-label="Common BPM presets">
-                {filteredPresets.map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    className={`shared-bpm-preset-chip ${Math.round(value) === preset ? 'active' : ''}`}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => {
-                      onChange(preset);
-                      setDraft(String(preset));
-                      setIsEditing(false);
-                      setIsPresetOpen(false);
-                      inputRef.current?.blur();
-                    }}
-                  >
-                    {preset}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </AnchoredPopover>
+            {pickerPanel}
+          </AnchoredPopover>
+        )}
       </div>
     </div>
   );

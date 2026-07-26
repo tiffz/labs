@@ -538,6 +538,25 @@ function BpmMultiDemo({
           )}
         </section>
       ))}
+      <section className="ui-preview-card" key="bpm-inline-panel">
+        <header>inline panel (embed in a chip / menu)</header>
+        <div
+          style={{
+            width: 300,
+            maxWidth: '100%',
+            border: '1px solid var(--theme-border, #d5d9e2)',
+            borderRadius: 10,
+            padding: 12,
+          }}
+        >
+          <BpmInput
+            value={values[BPM_SURFACES[0]]}
+            onChange={(next) => onChange(BPM_SURFACES[0], next)}
+            presetPanel="inline"
+            showRateActions={false}
+          />
+        </div>
+      </section>
     </div>
   );
 }
