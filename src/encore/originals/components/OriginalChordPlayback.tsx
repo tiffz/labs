@@ -1,4 +1,3 @@
-import AvTimerIcon from '@mui/icons-material/AvTimer';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import StopIcon from '@mui/icons-material/Stop';
@@ -10,6 +9,7 @@ import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import { useRef, useState, type ReactElement } from 'react';
 import AnchoredPopover from '../../../shared/components/AnchoredPopover';
+import MetronomeToggleButton from '../../../shared/components/MetronomeToggleButton';
 import { ChordPlaybackSettingsPanel } from '../../../shared/components/music/ChordPlaybackSettingsPanel';
 import { useChartChordPlayback, type UseChartChordPlaybackResult } from '../../../shared/hooks/useChartChordPlayback';
 import {
@@ -77,20 +77,15 @@ function OriginalChordPlaybackControls({
       : 'Stop chord playback'
     : 'Play chord chart';
 
-  const metronomeOn = settings.metronomeEnabled;
   const metronomeButton = (
-    <Tooltip title={metronomeOn ? 'Metronome on' : 'Metronome off'}>
-      <IconButton
-        size="small"
-        color="inherit"
-        aria-label="Metronome"
-        aria-pressed={metronomeOn}
-        onClick={() => updateSettings({ metronomeEnabled: !metronomeOn })}
-        sx={{ p: 0.35, color: metronomeOn ? 'primary.main' : 'text.secondary' }}
-      >
-        <AvTimerIcon sx={{ fontSize: 20 }} />
-      </IconButton>
-    </Tooltip>
+    <MetronomeToggleButton
+      enabled={settings.metronomeEnabled}
+      onToggle={() => updateSettings({ metronomeEnabled: !settings.metronomeEnabled })}
+      ariaLabel="Metronome"
+      tooltipOn="Metronome on"
+      tooltipOff="Metronome off"
+      className="encore-originals-metronome-toggle"
+    />
   );
 
   const settingsButton = (

@@ -605,6 +605,54 @@ body.labs-drum-pattern-edit-menu-open .encore-originals-lyric-token {
   margin-inline-end: 0.35rem;
 }
 
+/*
+ * Shared metronome toggle (src/shared/components/MetronomeToggleButton) sized to sit
+ * in the Originals playback transport next to the MUI Play + settings icon buttons.
+ * 32px box / 20px glyph keeps the icon >=1.5x clear of its chrome (material-icon-sizing).
+ * Uses the established Encore purple (#7c3aed) already used across originals.css.
+ */
+.encore-originals-metronome-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.encore-originals-metronome-toggle .material-symbols-outlined {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.encore-originals-metronome-toggle:hover {
+  background: color-mix(in srgb, #7c3aed 8%, transparent);
+  color: #4c1d95;
+}
+
+.encore-originals-metronome-toggle.active {
+  color: #7c3aed;
+}
+
+.encore-originals-metronome-toggle.active:hover {
+  background: color-mix(in srgb, #7c3aed 12%, transparent);
+}
+
+.encore-originals-metronome-toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, #7c3aed 55%, transparent);
+  outline-offset: 2px;
+}
+
 .encore-originals-workspace--write .encore-originals-workspace-content {
   display: flex;
   flex-direction: column;
