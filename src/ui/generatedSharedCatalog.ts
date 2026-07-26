@@ -29517,13 +29517,59 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "model",
     "stability": "stable",
     "owner": "playback-core",
-    "description": "Crash breadcrumb for audio playback — a rolling trail that SURVIVES an OOM tab crash. The loop-then-crash class kills the tab, taking any in-memory diagnostics with it, and even IndexedDB writes fail once memory is exhausted. So we mirror each audio-diagnostics sample into a bounded ring in `localStorage` (small strings, no structured clone). The writes just before the crash may fail, but the earlier ones — the climb that shows what leaked — persist. After a reload, `downloadAudioBreadcrumbTrail()` (also on `window.__labsDownloadAudioTrace()`) hands you the pre-crash trail as a JSON file.",
+    "description": "Crash breadcrumb for audio playback — a rolling trail that SURVIVES an OOM tab crash. The loop-then-crash class kills the tab, taking any in-memory diagnostics with it, and even IndexedDB writes fail once memory is exhausted. So we mirror each audio-diagnostics sample into a bounded ring in `localStorage` (small strings, no structured clone). The writes just before the crash may fail, but the earlier ones — the climb that shows what leaked — persist. After a reload, `downloadAudioBreadcrumbTrail()` (also on `window.__labsDownloadAudioTrace()`) hands you the pre-crash trail as a JSON file. On the dev server there is no manual step: while the audio-diagnostics overlay samples, `postAudioTraceToDevServer()` POSTs the summarized trail to the `POST /__debug_audio_trace` Vite middleware every few seconds (plus a final beacon on `pagehide`). The middleware writes `.debug-audio-traces/trace-<sessionId>.json` (gitignored, overwritten per POST, one file per tab) so an assistant can read the pre-crash trail off disk with no forwarding. The POST is strictly dev-only (`import.meta.env.DEV`) and carries only heap/voice counts + a query-stripped route url — never tokens or PII.",
     "tags": [
       "playback",
       "api"
     ],
     "appsUsing": [],
     "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-audiotracepayload",
+    "name": "AudioTracePayload",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Crash breadcrumb for audio playback — a rolling trail that SURVIVES an OOM tab crash. The loop-then-crash class kills the tab, taking any in-memory diagnostics with it, and even IndexedDB writes fail once memory is exhausted. So we mirror each audio-diagnostics sample into a bounded ring in `localStorage` (small strings, no structured clone). The writes just before the crash may fail, but the earlier ones — the climb that shows what leaked — persist. After a reload, `downloadAudioBreadcrumbTrail()` (also on `window.__labsDownloadAudioTrace()`) hands you the pre-crash trail as a JSON file. On the dev server there is no manual step: while the audio-diagnostics overlay samples, `postAudioTraceToDevServer()` POSTs the summarized trail to the `POST /__debug_audio_trace` Vite middleware every few seconds (plus a final beacon on `pagehide`). The middleware writes `.debug-audio-traces/trace-<sessionId>.json` (gitignored, overwritten per POST, one file per tab) so an assistant can read the pre-crash trail off disk with no forwarding. The POST is strictly dev-only (`import.meta.env.DEV`) and carries only heap/voice counts + a query-stripped route url — never tokens or PII.",
+    "tags": [
+      "playback",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-audiotracesessionid",
+    "name": "audioTraceSessionId",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Stable per-tab id, generated once per page load. Names the on-disk trace file so two tabs sampling at once each get their own `trace-<sessionId>.json` instead of clobbering one file. The manual download and the dev-server auto-POST both read this constant, so they agree.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-buildaudiotracepayload",
+    "name": "buildAudioTracePayload",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Build the JSON payload shared by the manual download and the dev-server auto-POST.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
     "demoId": null
   },
   {
@@ -29564,6 +29610,21 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "stability": "stable",
     "owner": "playback-core",
     "description": "Expose console helpers so a crash trail can be pulled after a reload without any UI.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-postaudiotracetodevserver",
+    "name": "postAudioTraceToDevServer",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Dev-only: POST the summarized crash trail to the Vite `/__debug_audio_trace` middleware so it lands on disk (`.debug-audio-traces/trace-<sessionId>.json`) even if the tab then OOM-crashes. Uses `sendBeacon` for the final unload flush, else `fetch(..., { keepalive: true })` so an in-flight POST survives the unload. Best-effort — never throws into the caller. NO-OP in a production build: the `import.meta.env.DEV` guard dead-code-eliminates the fetch, and the endpoint does not exist in prod anyway (belt and suspenders).",
     "tags": [
       "playback"
     ],

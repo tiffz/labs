@@ -595,6 +595,37 @@ export default defineConfig({
               res.end('{"ok":false}');
             }
           });
+          // Audio heap-breadcrumb trace receiver (dev only): the audio-diagnostics overlay auto-POSTs
+          // the summarized crash trail here so an OOM crash's trail lands on disk without manual export.
+          // One file per browser tab (`trace-<sessionId>.json`), overwritten per POST so it is always latest.
+          server.middlewares.use('/__debug_audio_trace', (req: IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => {
+            if (req.method !== 'POST') return next();
+            let body = '';
+            req.on('data', (chunk: Buffer) => {
+              body += chunk.toString();
+            });
+            req.on('end', async () => {
+              try {
+                const parsed = JSON.parse(body) as { sessionId?: unknown };
+                const fs = await import('node:fs');
+                const path = await import('node:path');
+                const baseDir = path.join(process.cwd(), '.debug-audio-traces');
+                if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir, { recursive: true });
+                // Sanitize the session id before it becomes a filename (no path traversal from client input).
+                const rawId = typeof parsed.sessionId === 'string' ? parsed.sessionId : '';
+                const sessionId = rawId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64) || 'unknown';
+                const filePath = path.join(baseDir, `trace-${sessionId}.json`);
+                fs.writeFileSync(filePath, JSON.stringify(parsed, null, 2));
+                console.log(`\n[LABS-DEBUG] Audio trace saved at ${filePath}`);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true, path: filePath }));
+              } catch (error) {
+                console.log('\n[LABS-DEBUG] Failed to save audio trace', error);
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end('{"ok":false}');
+              }
+            });
+          });
 
           // Regression inspector endpoints (local dev): expose baseline images and latest run metadata.
           server.middlewares.use('/__regression/summary', async (_req: IncomingMessage, res: ServerResponse) => {
