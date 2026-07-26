@@ -430,6 +430,12 @@ Compose the dock body from these instead of copy-pasting a `DEBUG_BTN` style obj
 
 `LabsDebugButton` stops click propagation by default (dock-header clicks toggle collapse); pass `stopPropagation={false}` for a body button. `LabsDebugDangerZone` is **full-tier only** — gate its host panel on `isLabsDebugFull()` (ADR 0026), never the `diagnostics` tier.
 
+## LocalDevBadge (dev-only environment indicator)
+
+[`LocalDevBadge`](./components/LocalDevBadge.tsx) shows a tiny fixed `LOCAL` badge in the bottom-left corner so the owner can tell at a glance whether a tab is the local dev server or the deployed prod build. It is gated on `import.meta.env.DEV` (true on the Vite dev server, false in the production build), so it is tree-shaken out of prod entirely — it is **not** a `?debug` tier control (environment, not debug tier).
+
+Mounted **once** in [`LabsErrorBoundary`](./components/LabsErrorBoundary.tsx), which every micro-app wraps its root in, so all apps get it with no per-app edit. It is `pointer-events: none` (never blocks clicks), `aria-hidden`, animation-free, theme-aware, and sits at `z-index: 9000` (below `LabsDebugDock`'s 9999). No `/ui` gallery demo: it has no interactive states or appearance variants, and only renders on the dev server.
+
 ## App-specific shared primitives
 
 Some primitives live under `src/<app>/ui/` because their data shapes are app-specific. **Encore:** see [`src/encore/UI_PRIMITIVES.md`](../encore/UI_PRIMITIVES.md) (do not hand-roll media rows, integration cards, or Spotify sync panels).
