@@ -29511,6 +29511,112 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-audiobreadcrumbsample",
+    "name": "AudioBreadcrumbSample",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "model",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Crash breadcrumb for audio playback — a rolling trail that SURVIVES an OOM tab crash. The loop-then-crash class kills the tab, taking any in-memory diagnostics with it, and even IndexedDB writes fail once memory is exhausted. So we mirror each audio-diagnostics sample into a bounded ring in `localStorage` (small strings, no structured clone). The writes just before the crash may fail, but the earlier ones — the climb that shows what leaked — persist. After a reload, `downloadAudioBreadcrumbTrail()` (also on `window.__labsDownloadAudioTrace()`) hands you the pre-crash trail as a JSON file.",
+    "tags": [
+      "playback",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "interface",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-clearaudiobreadcrumbtrail",
+    "name": "clearAudioBreadcrumbTrail",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Clear the trail (e.g. after downloading, or on a clean stop).",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-downloadaudiobreadcrumbtrail",
+    "name": "downloadAudioBreadcrumbTrail",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Trigger a JSON download of the trail. Works from the console after a crash + reload.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-exposeaudiobreadcrumbfordebug",
+    "name": "exposeAudioBreadcrumbForDebug",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Expose console helpers so a crash trail can be pulled after a reload without any UI.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-readaudiobreadcrumbtrail",
+    "name": "readAudioBreadcrumbTrail",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "The persisted trail (oldest first). Survives a reload after a crash.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-recordaudiobreadcrumb",
+    "name": "recordAudioBreadcrumb",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "Append one sample to the ring and persist. Best-effort — never throws into the caller.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
+    "id": "src-shared-playback-audioplaybackbreadcrumb-ts-summarizeaudiobreadcrumbtrail",
+    "name": "summarizeAudioBreadcrumbTrail",
+    "path": "src/shared/playback/audioPlaybackBreadcrumb.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "playback-core",
+    "description": "A compact summary of the trail: heap start/end/peak, voice/bus peaks, and whether heap grew monotonically (the leak signature). Cheap to read from the console.",
+    "tags": [
+      "playback"
+    ],
+    "appsUsing": [],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-playback-instrumentfactory-ts-createinstrumentforsoundtype",
     "name": "createInstrumentForSoundType",
     "path": "src/shared/playback/instrumentFactory.ts",
