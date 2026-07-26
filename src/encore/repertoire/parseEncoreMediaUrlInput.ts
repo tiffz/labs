@@ -21,7 +21,9 @@ export function parseEncoreMediaUrlInput(raw: string): ParsedEncoreMediaUrl | nu
   const stanza = parseStanzaPlaybackUrl(trimmed);
   if (stanza) {
     if (stanza.kind === 'youtube') {
-      return { kind: 'youtube', videoId: stanza.videoId, rawInput: trimmed };
+      // `rawInput` is re-parsed by `appendYoutube*Link` via `parseYoutubeVideoId`, which does not
+      // understand a Stanza URL. Hand it the resolved video id so the append succeeds.
+      return { kind: 'youtube', videoId: stanza.videoId, rawInput: stanza.videoId };
     }
     if (stanza.kind === 'drive') {
       return {
