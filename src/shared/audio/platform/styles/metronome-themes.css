@@ -305,33 +305,33 @@
 }
 
 /*
- * Encore (Originals chord playback) — MUI fuchsia theme (#ad1fbf), 12px radius.
- * Deliberately quiet: the transport sits next to borderless icon buttons, so the
- * metronome is a GHOST control — transparent idle (no pill outline), and its on-state
- * is a soft fuchsia TINT with a fuchsia glyph, not a loud solid CTA fill. It should
- * read as incorporated chrome, never one of the loudest elements on the page.
+ * Encore (Originals chord playback) — matches the outlined meta chips (Key / Time /
+ * BPM) that sit beside it in the toolbar, so it reads as just another button in the
+ * row: 30px tall, 0.45rem radius, the same lavender-violet outline, transparent idle.
+ * On-state is a quiet fuchsia (#ad1fbf, the Encore primary) tint + glyph, not a loud
+ * fill. Keep these three in lockstep — see originals.css .encore-originals-meta-chip.
  */
 .labs-metronome-split-control--encore,
 .labs-metronome-settings-popover--encore {
-  --metro-split-radius: 12px;
-  --metro-split-min-height: 34px;
+  --metro-split-radius: 0.45rem;
+  --metro-split-min-height: 30px;
+  --metro-split-height: 30px;
+  --metro-icon-size: 1.125rem;
   --metro-menu-padding: 0;
   --metro-menu-icon-size: 0.625rem;
-  --metro-split-border: transparent;
-  --metro-split-border-hover: rgba(173, 31, 191, 0.2);
+  --metro-split-border: color-mix(in srgb, #7c3aed 22%, #e9d5ff);
   --metro-split-bg: transparent;
-  --metro-split-hover-bg: color-mix(in srgb, #ad1fbf 6%, transparent);
-  --metro-split-divider: rgba(76, 29, 149, 0.12);
+  --metro-split-hover-bg: color-mix(in srgb, #ad1fbf 6%, #ffffff);
+  --metro-split-divider: color-mix(in srgb, #7c3aed 18%, #e9d5ff);
   --metro-accent: #ad1fbf;
   --metro-accent-dot: #ad1fbf;
   --metro-primary-color: #5b6675;
   --metro-menu-color: #5b6675;
-  --metro-primary-hover-bg: color-mix(in srgb, #ad1fbf 8%, transparent);
-  --metro-menu-hover-bg: color-mix(in srgb, #ad1fbf 10%, transparent);
-  --metro-primary-active-bg: color-mix(in srgb, #ad1fbf 13%, transparent);
+  --metro-primary-hover-bg: color-mix(in srgb, #ad1fbf 6%, #ffffff);
+  --metro-menu-hover-bg: color-mix(in srgb, #ad1fbf 8%, #ffffff);
+  --metro-primary-active-bg: color-mix(in srgb, #ad1fbf 12%, #ffffff);
   --metro-primary-active-color: #ad1fbf;
-  --metro-primary-active-border: transparent;
-  --metro-split-active-hover-bg: color-mix(in srgb, #ad1fbf 18%, transparent);
+  --metro-split-active-hover-bg: color-mix(in srgb, #ad1fbf 18%, #ffffff);
   --metro-panel-bg: #ffffff;
   --metro-panel-border: rgba(76, 29, 149, 0.1);
   --metro-slider-color: #ad1fbf;
