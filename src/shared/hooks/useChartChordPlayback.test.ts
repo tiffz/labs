@@ -9,6 +9,21 @@ const scheduleDrumMeasure = vi.fn();
 const ensureInstrument = vi.fn();
 const stopAll = vi.fn();
 
+// Shared, resettable preload ref (production returns a per-mount `useRef`). The hook's
+// unmount cleanup nulls `.current`, so re-seat it before each test for isolation.
+const preloadState = vi.hoisted(() => ({ ref: { current: null as unknown } }));
+function seatPreloadRef(): void {
+  preloadState.ref.current = {
+    isDisposed: () => false,
+    primeAudioContext: vi.fn(),
+    setSampleLoadListener: vi.fn(),
+    getAudioContext: () => ({ currentTime: 0, state: 'running' }),
+    ensureInstrument: (...args: unknown[]) => ensureInstrument(...args),
+    stopAll: (...args: unknown[]) => stopAll(...args),
+    dispose: vi.fn(),
+  };
+}
+
 vi.mock('../music/scheduleStyledChordMeasure', () => ({
   scheduleStyledChordMeasure: (...args: unknown[]) => scheduleStyledChordMeasure(...args),
 }));
@@ -29,6 +44,7 @@ vi.mock('../music/chordInstrumentSession', () => ({
     isDisposed: () => false,
     primeAudioContext: vi.fn(),
     setSampleLoadListener: vi.fn(),
+    getAudioContext: () => ({ currentTime: 0, state: 'running' }),
     ensureInstrument: (...args: unknown[]) => ensureInstrument(...args),
     stopAll: (...args: unknown[]) => stopAll(...args),
     dispose: vi.fn(),
@@ -44,16 +60,10 @@ vi.mock('../audio/usePlaybackWakeLock', () => ({
 }));
 
 vi.mock('./useSampledPianoPreload', () => ({
-  useSampledPianoPreload: () => ({
-    current: {
-      isDisposed: () => false,
-      primeAudioContext: vi.fn(),
-      setSampleLoadListener: vi.fn(),
-      ensureInstrument: (...args: unknown[]) => ensureInstrument(...args),
-      stopAll: (...args: unknown[]) => stopAll(...args),
-      dispose: vi.fn(),
-    },
-  }),
+  // Stable ref across renders (production returns a `useRef`). A fresh object each
+  // render would churn the [instrumentSessionRef] cleanup effect (it calls stopAll on
+  // teardown) on any background re-render.
+  useSampledPianoPreload: () => preloadState.ref,
 }));
 
 const layout: ChartLayout = {
@@ -75,6 +85,7 @@ const layout: ChartLayout = {
 
 describe('useChartChordPlayback stop', () => {
   beforeEach(() => {
+    seatPreloadRef();
     scheduleStyledChordMeasure.mockClear();
     scheduleDrumMeasure.mockClear();
     stopAll.mockClear();
@@ -188,7 +199,7 @@ describe('useChartChordPlayback stop', () => {
     vi.useRealTimers();
   });
 
-  it('flushes voices when the tab is hidden while playing', async () => {
+  it('keeps playing when the tab is hidden — no flush blast (ADR 0025 background playback)', async () => {
     Object.defineProperty(document, 'hidden', { configurable: true, value: false });
     const { result } = renderHook(() =>
       useChartChordPlayback({
@@ -211,9 +222,16 @@ describe('useChartChordPlayback stop', () => {
       await Promise.resolve();
     });
 
-    expect(stopAll).toHaveBeenCalled();
+    // Hidden no longer stops or flushes — playback continues in the background.
+    expect(stopAll).not.toHaveBeenCalled();
     expect(result.current.playing).toBe(true);
 
-    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+    // Returning to visible keeps playing (re-anchors only if the clock actually froze).
+    await act(async () => {
+      Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+      document.dispatchEvent(new Event('visibilitychange'));
+      await Promise.resolve();
+    });
+    expect(result.current.playing).toBe(true);
   });
 });
