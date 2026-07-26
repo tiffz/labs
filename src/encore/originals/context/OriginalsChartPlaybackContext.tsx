@@ -1,9 +1,10 @@
-import { type ReactElement, type ReactNode } from 'react';
+import { useMemo, type ReactElement, type ReactNode } from 'react';
 import {
   useChartChordPlayback,
   type UseChartChordPlaybackOptions,
 } from '../../../shared/hooks/useChartChordPlayback';
 import { OriginalsChartPlaybackContext } from './originalsChartPlaybackContextStore';
+import { OriginalsChartTransportContext } from './originalsChartTransportContextStore';
 
 export type OriginalsChartPlaybackProviderProps = UseChartChordPlaybackOptions & {
   children: ReactNode;
@@ -15,9 +16,52 @@ export function OriginalsChartPlaybackProvider({
   ...options
 }: OriginalsChartPlaybackProviderProps): ReactElement {
   const playback = useChartChordPlayback(options);
+
+  const {
+    playing,
+    canPlay,
+    playingSectionId,
+    settings,
+    updateSettings,
+    start,
+    startSectionLoop,
+    stop,
+    sampledPianoLoad,
+  } = playback;
+
+  // Transport view excludes the per-frame beat fields so the chart subtree (which
+  // subscribes here) stays off the 20Hz beat-tick re-render path. Referentially
+  // stable across beat ticks — deps are only the low-frequency transport fields.
+  const transport = useMemo(
+    () => ({
+      playing,
+      canPlay,
+      playingSectionId,
+      settings,
+      updateSettings,
+      start,
+      startSectionLoop,
+      stop,
+      sampledPianoLoad,
+    }),
+    [
+      playing,
+      canPlay,
+      playingSectionId,
+      settings,
+      updateSettings,
+      start,
+      startSectionLoop,
+      stop,
+      sampledPianoLoad,
+    ],
+  );
+
   return (
     <OriginalsChartPlaybackContext.Provider value={playback}>
-      {children}
+      <OriginalsChartTransportContext.Provider value={transport}>
+        {children}
+      </OriginalsChartTransportContext.Provider>
     </OriginalsChartPlaybackContext.Provider>
   );
 }

@@ -9,7 +9,7 @@ import type { OriginalsSectionPlaybackOverride } from '../../sectionPlaybackOver
 import type { ChordInteractionTarget, WordInteractionTarget } from '../../chartInteractionTypes';
 import { OriginalsPaintLine } from './OriginalsPaintLine';
 import { OriginalsPaintSectionHeading } from './OriginalsPaintSectionHeading';
-import { useOptionalOriginalsChartPlayback } from '../../context/useOriginalsChartPlayback';
+import { useOptionalOriginalsChartTransport } from '../../context/useOriginalsChartTransport';
 
 export type OriginalsPaintModeProps = {
   layout: ChartLayout;
@@ -53,7 +53,7 @@ export function OriginalsPaintMode({
   onSelectChord,
   onSelectWord,
 }: OriginalsPaintModeProps): ReactElement {
-  const chartPlayback = useOptionalOriginalsChartPlayback();
+  const chartPlayback = useOptionalOriginalsChartTransport();
 
   return (
     <Box className={['encore-originals-paint-mode', readOnly ? 'encore-originals-paint-mode--read-only' : ''].filter(Boolean).join(' ')}>
