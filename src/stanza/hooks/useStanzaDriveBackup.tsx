@@ -84,6 +84,11 @@ import {
   unionStanzaDriveTombstones,
 } from '../drive/stanzaDriveTombstones';
 import {
+  clearStanzaLocalSongTombstone,
+  getStanzaLocalSongTombstoneIds,
+  unionStanzaLocalSongTombstones,
+} from '../drive/stanzaLocalSongTombstones';
+import {
   getStanzaYoutubeTombstoneVideoIds,
   unionStanzaYoutubeTombstones,
 } from '../drive/stanzaYoutubeTombstones';
@@ -221,18 +226,26 @@ async function mergeRemoteEnvelopeIntoLocal(
   if (remoteEnvelope.deletedYoutubeVideoIds?.length) {
     unionStanzaYoutubeTombstones(remoteEnvelope.deletedYoutubeVideoIds);
   }
+  if (remoteEnvelope.deletedLocalSongIds?.length) {
+    unionStanzaLocalSongTombstones(remoteEnvelope.deletedLocalSongIds);
+  }
   const tombstoneFileIds = getStanzaDriveTombstoneFileIds();
   const youtubeTombstoneVideoIds = getStanzaYoutubeTombstoneVideoIds();
+  const localSongTombstoneIds = getStanzaLocalSongTombstoneIds();
   const localRows = await stanzaDb.songs.toArray();
-  const { nextRows, remappedIds, report, staleTombstoneFileIds } = mergeDriveRowsIntoLocalLibrary(
-    localRows,
-    remoteEnvelope.songs,
-    { tombstoneFileIds, youtubeTombstoneVideoIds },
-  );
+  const { nextRows, remappedIds, report, staleTombstoneFileIds, staleLocalSongTombstoneIds } =
+    mergeDriveRowsIntoLocalLibrary(localRows, remoteEnvelope.songs, {
+      tombstoneFileIds,
+      youtubeTombstoneVideoIds,
+      localSongTombstoneIds,
+    });
   await persistMergedSongs(nextRows);
   await remapStanzaTakesForConsolidation(remappedIds);
   for (const fid of staleTombstoneFileIds) {
     clearStanzaDriveTombstone(fid);
+  }
+  for (const id of staleLocalSongTombstoneIds) {
+    clearStanzaLocalSongTombstone(id);
   }
   await tryHydrateLibraryFromDrive({
     accessToken: opts?.accessToken,
@@ -764,14 +777,19 @@ export function useStanzaDriveBackup() {
     mergePayload: async (local, remote) => {
       const tombstoneFileIds = getStanzaDriveTombstoneFileIds();
       const youtubeTombstoneVideoIds = getStanzaYoutubeTombstoneVideoIds();
-      const { nextRows, remappedIds, staleTombstoneFileIds } = mergeDriveRowsIntoLocalLibrary(
-        local,
-        remote,
-        { tombstoneFileIds, youtubeTombstoneVideoIds },
-      );
+      const localSongTombstoneIds = getStanzaLocalSongTombstoneIds();
+      const { nextRows, remappedIds, staleTombstoneFileIds, staleLocalSongTombstoneIds } =
+        mergeDriveRowsIntoLocalLibrary(local, remote, {
+          tombstoneFileIds,
+          youtubeTombstoneVideoIds,
+          localSongTombstoneIds,
+        });
       await remapStanzaTakesForConsolidation(remappedIds);
       for (const fid of staleTombstoneFileIds) {
         clearStanzaDriveTombstone(fid);
+      }
+      for (const id of staleLocalSongTombstoneIds) {
+        clearStanzaLocalSongTombstone(id);
       }
       return nextRows;
     },

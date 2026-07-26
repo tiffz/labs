@@ -49,6 +49,14 @@ export interface StanzaDriveMergeOptions {
   tombstoneFileIds?: ReadonlySet<string>;
   /** Skip remote-only rows whose `ytId` was tombstoned locally or on Drive. */
   youtubeTombstoneVideoIds?: ReadonlySet<string>;
+  /**
+   * Skip remote-only rows whose row `id` was tombstoned — the id-level signal for **keyless
+   * local** uploads (no `ytId` / `driveSourceFileId`) that Organize merged away. Without it a
+   * dropped pure-local duplicate resurrects from its Drive metadata on the next pull. See
+   * [`stanzaLocalSongTombstones`](./stanzaLocalSongTombstones.ts) and
+   * [ADR 0027](../../../docs/adr/0027-stanza-organize-cross-source-merge-contract.md).
+   */
+  localSongTombstoneIds?: ReadonlySet<string>;
 }
 
 function stemMetaFromRemote(
@@ -241,12 +249,14 @@ export function mergeDriveRowsIntoLocalLibrary(
   remappedIds: Map<string, string>;
   report: StanzaDriveMergeReport;
   staleTombstoneFileIds: string[];
+  staleLocalSongTombstoneIds: string[];
 } {
   const localById = new Map(localRows.map((s) => [s.id, s]));
   const remoteById = new Map(remoteSongs.map((s) => [s.id, s]));
   const ids = new Set<string>([...localById.keys(), ...remoteById.keys()]);
   const tombstoneFileIds = options.tombstoneFileIds ?? new Set<string>();
   const youtubeTombstoneVideoIds = options.youtubeTombstoneVideoIds ?? new Set<string>();
+  const localSongTombstoneIds = options.localSongTombstoneIds ?? new Set<string>();
 
   const report: StanzaDriveMergeReport = {
     keptLocalOnly: 0,
@@ -272,6 +282,12 @@ export function mergeDriveRowsIntoLocalLibrary(
       continue;
     }
     if (!L && R) {
+      // Id-level tombstone (keyless local uploads Organize merged away). Checked first: a row id
+      // is unique, so its presence here means "this exact row was explicitly removed."
+      if (localSongTombstoneIds.has(R.id)) {
+        report.skippedTombstoned += 1;
+        continue;
+      }
       const remoteDriveFileId = R.driveSourceFileId?.trim();
       if (remoteDriveFileId && tombstoneFileIds.has(remoteDriveFileId)) {
         report.skippedTombstoned += 1;
@@ -351,7 +367,23 @@ export function mergeDriveRowsIntoLocalLibrary(
     }
   }
 
-  return { nextRows, remappedIds: consolidation.remappedIds, report, staleTombstoneFileIds };
+  // An id-level tombstone is stale when a surviving row still carries that id — the row is back
+  // (e.g. an undo restored it). Callers clear those so a later push stops broadcasting the delete.
+  const staleLocalSongTombstoneIds: string[] = [];
+  if (localSongTombstoneIds.size > 0) {
+    const survivingIds = new Set(nextRows.map((row) => row.id));
+    for (const id of localSongTombstoneIds) {
+      if (survivingIds.has(id)) staleLocalSongTombstoneIds.push(id);
+    }
+  }
+
+  return {
+    nextRows,
+    remappedIds: consolidation.remappedIds,
+    report,
+    staleTombstoneFileIds,
+    staleLocalSongTombstoneIds,
+  };
 }
 
 /**
