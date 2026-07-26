@@ -33433,6 +33433,31 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-utils-labscrashlog-ts-crashlogdedupkeycountfortest",
+    "name": "__crashLogDedupKeyCountForTest",
+    "path": "src/shared/utils/labsCrashLog.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "shared-core",
+    "description": "Test-only: current dedup-map size, to prove it stays bounded during a storm.",
+    "tags": [
+      "utils"
+    ],
+    "appsUsing": [
+      "cats",
+      "chords",
+      "corp",
+      "drums",
+      "forms",
+      "story",
+      "ui",
+      "words",
+      "zines"
+    ],
+    "exportType": "function",
+    "demoId": null
+  },
+  {
     "id": "src-shared-utils-labscrashlog-ts-resetcrashlogratelimitfortest",
     "name": "__resetCrashLogRateLimitForTest",
     "path": "src/shared/utils/labsCrashLog.ts",

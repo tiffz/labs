@@ -4,6 +4,7 @@ import {
   shouldReloadForPreloadError,
   shouldRecordCrashEntry,
   __resetCrashLogRateLimitForTest,
+  __crashLogDedupKeyCountForTest,
 } from './labsCrashLog';
 
 describe('shouldReloadForPreloadError (stale-chunk reload loop guard)', () => {
@@ -54,5 +55,18 @@ describe('shouldRecordCrashEntry (death-spiral rate limit)', () => {
     expect(shouldRecordCrashEntry('error-boundary', 'm10', t + 11)).toBe(false);
     // After the window passes, writes resume.
     expect(shouldRecordCrashEntry('error-boundary', 'm11', t + 6000)).toBe(true);
+  });
+
+  it('does not let the dedup map grow unbounded during a distinct-message storm', () => {
+    // A storm of never-repeating messages (IDs/coords in the text) can't collapse on dedup.
+    // Without eviction the map would grow with every accepted write; eviction keeps it bounded
+    // to the ~1s dedup window. Advance the clock across many windows and assert it stays small.
+    const start = 9_000_000;
+    for (let i = 0; i < 500; i += 1) {
+      // Space calls 100ms apart so time marches well past the 1s dedup window repeatedly.
+      shouldRecordCrashEntry('window-error', `unique-${i}`, start + i * 100);
+    }
+    // Only keys set within the last ~1s dedup window survive — a handful, nowhere near 500.
+    expect(__crashLogDedupKeyCountForTest()).toBeLessThan(50);
   });
 });
