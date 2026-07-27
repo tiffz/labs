@@ -104,9 +104,9 @@ function OriginalChordPlaybackControls({
         aria-label="Playback settings"
         aria-expanded={settingsOpen}
         onClick={() => setSettingsOpen((open) => !open)}
-        sx={{ p: 0.35, color: 'text.secondary' }}
+        sx={{ color: 'text.secondary' }}
       >
-        <SettingsOutlinedIcon sx={{ fontSize: 20 }} />
+        <SettingsOutlinedIcon sx={{ fontSize: 18 }} />
       </IconButton>
     </Tooltip>
   );
@@ -149,7 +149,7 @@ function OriginalChordPlaybackControls({
   if (compact) {
     return (
       <>
-        <Stack direction="row" spacing={0.15} sx={{
+        <Stack direction="row" spacing={0.5} className="encore-originals-transport" sx={{
           alignItems: "center"
         }}>
           <Tooltip title={playLabel}>
@@ -157,9 +157,8 @@ function OriginalChordPlaybackControls({
               size="small"
               aria-label={playLabel}
               onClick={togglePlayback}
-              sx={{ p: 0.35 }}
             >
-              {playing ? <StopIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
+              {playing ? <StopIcon sx={{ fontSize: 18 }} /> : <PlayArrowIcon sx={{ fontSize: 18 }} />}
             </IconButton>
           </Tooltip>
           {metronomeButton}
@@ -172,15 +171,15 @@ function OriginalChordPlaybackControls({
 
   return (
     <>
-      <Stack direction="row" spacing={0.15} sx={{
+      <Stack direction="row" spacing={0.5} className="encore-originals-transport" sx={{
         alignItems: "center"
       }}>
         <Button
           size="small"
           variant="text"
-          startIcon={playing ? <StopIcon fontSize="small" /> : <PlayArrowIcon fontSize="small" />}
+          startIcon={playing ? <StopIcon sx={{ fontSize: 18 }} /> : <PlayArrowIcon sx={{ fontSize: 18 }} />}
           onClick={togglePlayback}
-          sx={{ minWidth: 0, px: 1 }}
+          sx={{ minWidth: 0 }}
         >
           {playing ? 'Stop' : 'Play'}
         </Button>

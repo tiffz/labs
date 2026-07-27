@@ -317,8 +317,8 @@
   --metro-split-min-height: 30px;
   --metro-split-height: 30px;
   --metro-icon-size: 1.125rem;
+  --metro-primary-padding: 0 0.4rem;
   --metro-menu-padding: 0;
-  --metro-menu-icon-size: 0.625rem;
   --metro-split-border: color-mix(in srgb, #7c3aed 22%, #e9d5ff);
   --metro-split-bg: transparent;
   --metro-split-hover-bg: color-mix(in srgb, #ad1fbf 6%, #ffffff);
@@ -335,6 +335,18 @@
   --metro-panel-bg: #ffffff;
   --metro-panel-border: rgba(76, 29, 149, 0.1);
   --metro-slider-color: #ad1fbf;
+}
+
+/*
+ * Compact the two segments for the 30px toolbar size. These vars are re-declared on
+ * .labs-split-action-button itself (its default 2.25rem/1.75rem are sized for taller
+ * controls), so an appearance-wrapper value is shadowed — set them directly on the
+ * inner element with higher specificity. Snug segments = balanced padding around the
+ * timer + chevron, instead of a 15px timer stranded in a 36px segment.
+ */
+.labs-metronome-split-control--encore .labs-split-action-button {
+  --metro-primary-min-width: 1.65rem;
+  --metro-menu-width: 1.4rem;
 }
 
 /*
