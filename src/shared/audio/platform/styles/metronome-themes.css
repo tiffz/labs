@@ -316,13 +316,18 @@
   --metro-split-radius: 0.45rem;
   --metro-split-min-height: 30px;
   --metro-split-height: 30px;
-  --metro-icon-size: 1.125rem;
-  --metro-primary-padding: 0 0.4rem;
+  /* 1.3rem × 0.9 ≈ 18.7px glyph in a 30px box — as large as the 1.5× icon-sizing
+     floor allows, so the timer reads as a solid icon, not a dot. */
+  --metro-icon-size: 1.3rem;
+  --metro-primary-padding: 0 0.35rem;
   --metro-menu-padding: 0;
   --metro-split-border: color-mix(in srgb, #7c3aed 22%, #e9d5ff);
   --metro-split-bg: transparent;
   --metro-split-hover-bg: color-mix(in srgb, #ad1fbf 6%, #ffffff);
   --metro-split-divider: color-mix(in srgb, #7c3aed 18%, #e9d5ff);
+  /* On-state divider: the shared default is near-white (invisible on the fuchsia
+     tint). Use a fuchsia line so the split seam stays visible when the metronome is on. */
+  --metro-split-divider-active: color-mix(in srgb, #ad1fbf 34%, transparent);
   --metro-accent: #ad1fbf;
   --metro-accent-dot: #ad1fbf;
   --metro-primary-color: #5b6675;
