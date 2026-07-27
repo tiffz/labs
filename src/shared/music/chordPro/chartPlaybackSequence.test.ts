@@ -163,4 +163,30 @@ describe('chartPlaybackSequence', () => {
     };
     expect(estimateChartPlaybackDurationMs(layout, 120)).toBe(0);
   });
+
+  it('estimates a lyrics-only song (no chords) from its line breakdown + tempo', () => {
+    const layout: ChartLayout = {
+      sections: [
+        {
+          sectionId: 'v1',
+          type: 'Verse',
+          header: 'Verse 1',
+          lines: [
+            // Short line -> one measure.
+            { lineId: 'l1', text: 'Hello world', chords: [] },
+            // Long line (no chords) -> two measures via the length heuristic, not a
+            // flat one measure. Without this, a lyrics-only song under-estimates.
+            {
+              lineId: 'l2',
+              text: 'I have been waiting here for so long tonight',
+              chords: [],
+            },
+          ],
+        },
+      ],
+    };
+    expect(estimateChartPlaybackMeasureCount(layout)).toBe(3);
+    // 3 measures at 120 BPM = 6000ms (2000ms/measure) — a real, non-zero estimate.
+    expect(estimateChartPlaybackDurationMs(layout, 120)).toBe(6000);
+  });
 });

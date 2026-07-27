@@ -21833,6 +21833,22 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "demoId": null
   },
   {
+    "id": "src-shared-music-chordpro-chartplaybacksequence-ts-lyric-only-two-measure-word-threshold",
+    "name": "LYRIC_ONLY_TWO_MEASURE_WORD_THRESHOLD",
+    "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
+    "kind": "utility",
+    "stability": "stable",
+    "owner": "music-core",
+    "description": "Word count above which a lyrics-only line (no playable chords) is estimated at two measures instead of one — so a song with lyrics but no chords still gets a realistic duration from its line breakdown + tempo, not one flat measure per line.",
+    "tags": [
+      "music",
+      "api"
+    ],
+    "appsUsing": [],
+    "exportType": "const",
+    "demoId": null
+  },
+  {
     "id": "src-shared-music-chordpro-chartplaybacksequence-ts-sectionhasplayablechartsteps",
     "name": "sectionHasPlayableChartSteps",
     "path": "src/shared/music/chordPro/chartPlaybackSequence.ts",
