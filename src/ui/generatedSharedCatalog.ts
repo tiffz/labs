@@ -13319,7 +13319,7 @@ export const SHARED_CATALOG: ReadonlyArray<SharedCatalogEntry> = [
     "kind": "component",
     "stability": "stable",
     "owner": "shared-ui",
-    "description": "Ambient environment indicator for the owner. Shows a tiny fixed corner badge only on the local Vite dev server, so it is obvious at a glance whether a tab is localhost or the deployed production build. Gated on `import.meta.env.DEV` (true on the dev server, false in the prod build) so it is tree-shaken out of production entirely — it is NOT a `?debug` tier control. Non-interactive (`pointer-events: none`), so it never blocks clicks on the UI beneath it. Mounted once in `LabsErrorBoundary`, which every micro-app wraps its root in, so all apps get it without per-app edits.",
+    "description": "Ambient environment indicator for the owner. Shows a tiny fixed corner badge only on the local Vite dev server, so it is obvious at a glance whether a tab is localhost or the deployed production build. Two independent gates, because a bundle built WITHOUT production mode (so `import.meta.env.DEV` is `true`) once shipped to the real site and rendered the badge there — defeating its whole purpose: 1. `import.meta.env.DEV` — `false` in a correct prod build, so the whole component tree-shakes out entirely. 2. `isLocalDevHost()` — refuses to render on any deployed origin (labs.tiffzhang.com, *.github.io, …), so even a mis-built dev-mode bundle that reaches prod never shows the badge. It is NOT a `?debug` tier control. Non-interactive (`pointer-events: none`), so it never blocks clicks on the UI beneath it. Mounted once in `LabsErrorBoundary`, which every micro-app wraps its root in, so all apps get it without per-app edits.",
     "tags": [
       "components",
       "api",
