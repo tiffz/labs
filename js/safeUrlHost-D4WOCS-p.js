@@ -1,0 +1,1 @@
+function t(t){const n=t.trim();if(!n)return null;try{return new URL(n)}catch{try{return new URL(`https://${n}`)}catch{return null}}}function n(n,r){const e=t(n);if(!e)return!1;const o=e.hostname.toLowerCase(),s=r.toLowerCase();return o===s||o.endsWith(`.${s}`)}function r(t,r){return r.some(r=>n(t,r))}export{r as n,t as r,n as t};

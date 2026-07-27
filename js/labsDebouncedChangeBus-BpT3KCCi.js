@@ -1,0 +1,1 @@
+function e(){const e=new Set;let n=null,t=!1;const o=o=>{null!=n&&(window.clearTimeout(n),n=null),t=!1;const i=o?{immediate:!0}:void 0;for(const n of e)n(i)};return{subscribe:n=>(e.add(n),()=>e.delete(n)),notify(e){e?.immediate?o(!0):(t=!0,null==n&&(n=window.setTimeout(()=>o(!1),e?.debounceMs??750)))},isPending:()=>t}}export{e as t};

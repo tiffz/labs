@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <!-- Critical CSS: paints the app background during HTML parse so there is no FOUC
+         before the theme stylesheet loads. Keep small. Must match the app's body
+         background/color in its theme stylesheet. -->
+    <style>html{color-scheme:dark;background:#0a0a0a;color:#e8e8e8}</style>
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon-count.svg" />
+    <link rel="apple-touch-icon" href="/icons/favicon-count.svg" />
+    <meta name="description" content="Free online metronome that counts out loud. Practice 3+3+2 rhythms, odd meters like 7/8 and 5/8, subdivisions, and swing feel with spoken beat numbers. Supports 1-e-+-a and Takadimi counting." />
+    <meta name="keywords" content="vocal counting metronome, online metronome with voice, 3-3-2 rhythm practice tool, metronome with subdivisions, odd time signature metronome, Takadimi metronome, counting metronome online, rhythm practice tool" />
+    <title>Count Me In: A Metronome That Counts Out Loud</title>
+    <link rel="canonical" href="https://labs.tiffzhang.com/count/" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Count Me In: A Metronome That Counts Out Loud" />
+    <meta property="og:description" content="Free online metronome that counts out loud. Practice 3+3+2 rhythms, 7/8, 5/8, swing, and more with spoken counting, click, and drum sounds." />
+    <meta property="og:url" content="https://labs.tiffzhang.com/count/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tiff Zhang Labs" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Count Me In: Vocal Counting Metronome" />
+    <meta name="twitter:description" content="A metronome that counts out loud. Practice 3+3+2, odd meters, swing, and Takadimi with spoken beat counting." />
+
+    <!-- JSON-LD: SoftwareApplication -->
+    <link rel="stylesheet" href="/css/appSharedThemes-DgaHlCUV.css">
+    <link rel="stylesheet" href="/styles/shared.css" />
+    <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
+    <link rel="stylesheet" href="/css/labsChrome-Dt9u806P.css">
+    <link rel="stylesheet" href="/css/count-CoXoJSm6.css">
+    <link rel="stylesheet" href="/css/appFontsJetBrainsMono-DxATcqdj.css">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Count Me In",
+      "description": "A free online metronome that counts out loud. Practice asymmetric rhythms (3+3+2, 7/8, 5/8), subdivisions, and swing feel with spoken beat numbers, click tracks, and drum sounds.",
+      "url": "https://labs.tiffzhang.com/count/",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Any (Web Browser)",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Spoken beat counting with voice synthesis",
+        "3+3+2 and custom beat groupings for compound and asymmetric meters",
+        "Subdivision levels: quarter, eighth, triplet, sixteenth, swing",
+        "Two counting systems: standard (1 e + a) and Takadimi",
+        "Per-beat muting and subdivision mixer",
+        "Click track and drum sounds",
+        "Song profiles for saving metronome presets",
+        "Shareable URL with full configuration state"
+      ],
+      "author": {
+        "@type": "Person",
+        "name": "Tiff Zhang",
+        "url": "https://labs.tiffzhang.com"
+      }
+    }
+    </script>
+
+    <!-- JSON-LD: FAQPage (AEO for rhythm practice queries) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is a vocal counting metronome?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "A vocal counting metronome speaks beat numbers out loud instead of just clicking. Count Me In uses synthesized voice samples so you can hear '1, 2, 3, 4' (or Takadimi syllables) while you play, helping you internalize the rhythm without watching a screen."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the 3+3+2 rhythm pattern?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The 3+3+2 pattern divides 8 eighth notes into groups of 3, 3, and 2. It goes by many names depending on the tradition: tresillo in Afro-Cuban and Latin music, habanera in the 19th-century Cuban dance that spread worldwide, and it forms the first half of the son clave. The pattern has sub-Saharan African origins and you'll also hear it in funk, hip-hop, reggaeton, and pop music. In Count Me In, set the time signature to 8/8 and enter 3+3+2 as the beat grouping to practice it with vocal counting."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I practice odd time signatures like 7/8 or 5/8?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Set the time signature to 7/8 or 5/8 in Count Me In, then choose a beat grouping (for example, 2+2+3 or 3+2+2 for 7/8, or 3+2 or 2+3 for 5/8). Turn on voice counting so you can hear which beat you're on. Start at a slow tempo and increase as you get comfortable with where the accents fall."
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- Match pulse theme primary (see getAppTheme('pulse') in shared/ui/theme/appTheme.ts). -->
+    <style>:root { --labs-cc-accent: #00ff41; --labs-cc-on-accent: #0a0a0a; }</style>
+    <script defer src="/scripts/labs-cookie-consent.js"></script>
+    <script type="module" crossorigin src="/js/count-B7Nrarcl.js"></script>
+    <link rel="modulepreload" crossorigin href="/js/rolldown-runtime-iuO8RvI4.js">
+    <link rel="modulepreload" crossorigin href="/js/appSharedThemes-CfrrnTV1.js">
+    <link rel="modulepreload" crossorigin href="/js/vendor-CfxF-Kcd.js">
+    <link rel="modulepreload" crossorigin href="/js/readLabsDebugParams-C2TRQe2c.js">
+    <link rel="modulepreload" crossorigin href="/js/serverLogger-L6nmOLUM.js">
+    <link rel="modulepreload" crossorigin href="/js/labsChrome-Bf0H73ii.js">
+    <link rel="modulepreload" crossorigin href="/js/appTheme-B1rctvZ2.js">
+    <link rel="modulepreload" crossorigin href="/js/SkipToMain-D5-MDTSx.js">
+    <link rel="modulepreload" crossorigin href="/js/analytics-DF7A54wp.js">
+    <link rel="modulepreload" crossorigin href="/js/timeSignatureUtils-B7S2dNJd.js">
+    <link rel="modulepreload" crossorigin href="/js/gridBuilder-CXFsAdre.js">
+    <link rel="modulepreload" crossorigin href="/js/drumSampleUrls-DMcE8RBJ.js">
+    <link rel="modulepreload" crossorigin href="/js/clickService-OjowQi35.js">
+    <link rel="modulepreload" crossorigin href="/js/preciseScheduler-CJhZjhWW.js">
+    <link rel="modulepreload" crossorigin href="/js/MetronomeEngine-Dnz6CkSa.js">
+    <link rel="modulepreload" crossorigin href="/js/anchoredPopoverChrome-WY9oBkJp.js">
+    <link rel="modulepreload" crossorigin href="/js/AnchoredPopover-KE_Thf1b.js">
+    <link rel="modulepreload" crossorigin href="/js/musicInputConstants-eHH4oqoE.js">
+    <link rel="modulepreload" crossorigin href="/js/urlHistory-AaCv4sXe.js">
+    <link rel="modulepreload" crossorigin href="/js/wakeLock-BeCEH_0m.js">
+  <script>if("serviceWorker"in navigator)navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(s){s.unregister()})})</script>
+<script>addEventListener("beforeinstallprompt",function(e){e.preventDefault()});addEventListener("appinstalled",function(e){e.preventDefault()});</script>
+<script>
+(function(){
+  if(location.hostname==='localhost'||location.hostname==='127.0.0.1')return;
+  var V='1785168314767-9533b55f',K='__buildV';
+  if(sessionStorage.getItem(K)===V)return;
+  fetch('/build-version.txt?_='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.ok?r.text():V})
+    .then(function(t){
+      t=t.trim();
+      sessionStorage.setItem(K,t);
+      if(t!==V)location.reload();
+    })
+    .catch(function(){});
+})();
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

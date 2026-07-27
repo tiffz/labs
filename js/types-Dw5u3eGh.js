@@ -1,0 +1,1 @@
+var a=["Guitar","Violin","Piano","Flute","Drums","Band","Backing Track","Backing Vocals","Duet partner","Self-accompany"];export{a as t};

@@ -1,0 +1,1 @@
+import{o}from"./rolldown-runtime-iuO8RvI4.js";import{Ma as r}from"./vendor-CfxF-Kcd.js";import{n as s,t}from"./wakeLock-BeCEH_0m.js";var a=o(r(),1);function m(o){(0,a.useEffect)(()=>{if(o)return s(),()=>{t()};t()},[o])}export{m as t};

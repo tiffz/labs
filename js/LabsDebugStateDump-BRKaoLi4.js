@@ -1,0 +1,1 @@
+import{Da as r,oa as a}from"./vendor-CfxF-Kcd.js";var e=r();function n({data:r}){return(0,e.jsx)(a,{variant:"caption",component:"pre",sx:{whiteSpace:"pre-wrap",m:0,p:1,color:"#e2e8f0"},children:JSON.stringify(r,null,2)})}export{n as t};

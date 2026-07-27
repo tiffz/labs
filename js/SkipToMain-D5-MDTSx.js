@@ -1,0 +1,1 @@
+import{o as a}from"./rolldown-runtime-iuO8RvI4.js";import{Da as r,Ma as o}from"./vendor-CfxF-Kcd.js";o();var t=r();function n({target:a="#main",label:r="Skip to main content"}){return(0,t.jsx)("a",{className:"skip-to-main",href:a,children:r})}export{n as t};

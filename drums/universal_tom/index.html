@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light" />
+    <!-- Critical CSS: paints the app background during HTML parse so there is no FOUC. -->
+    <style>html{color-scheme:light;background:#faf5ff;color:#1f2937}</style>
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <title>Universal Tom Importer - Tiff Zhang Labs</title>
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon-drums.svg" />
+    <link rel="apple-touch-icon" href="/icons/favicon-drums.svg" />
+    <meta name="theme-color" content="#7c3aed" />
+    <meta name="description" content="Import Universal Tom rhythms to Darbuka Trainer" />
+
+
+    <style>
+        @font-face {
+            font-family: 'Roboto Fallback';
+            src: local('Segoe UI'), local('Helvetica Neue'), local('Arial');
+            size-adjust: 100.06%;
+            ascent-override: 92.77%;
+            descent-override: 24.41%;
+            line-gap-override: 0%;
+        }
+        body {
+            font-family: 'Roboto', 'Roboto Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-weight: 400;
+        }
+        body, button, input, select, textarea {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+    </style>
+    <style>:root { --labs-cc-accent: #7c3aed; --labs-cc-on-accent: #ffffff; }</style>
+  <link rel="stylesheet" href="/css/appSharedThemes-DgaHlCUV.css">
+    <link rel="stylesheet" href="/styles/shared.css" />
+    <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
+  <link rel="stylesheet" href="/css/drums-B0-q-A-m.css">
+    <script defer src="/scripts/labs-cookie-consent.js"></script>
+  <script type="module" crossorigin src="/js/universal_tom-BnvFYwEm.js"></script>
+  <link rel="modulepreload" crossorigin href="/js/rolldown-runtime-iuO8RvI4.js">
+  <link rel="modulepreload" crossorigin href="/js/appSharedThemes-CfrrnTV1.js">
+  <link rel="modulepreload" crossorigin href="/js/vendor-CfxF-Kcd.js">
+  <link rel="modulepreload" crossorigin href="/js/readLabsDebugParams-C2TRQe2c.js">
+  <link rel="modulepreload" crossorigin href="/js/serverLogger-L6nmOLUM.js">
+  <link rel="modulepreload" crossorigin href="/js/appTheme-B1rctvZ2.js">
+  <link rel="modulepreload" crossorigin href="/js/timeSignatureUtils-B7S2dNJd.js">
+  <link rel="modulepreload" crossorigin href="/js/rhythmParser-BT-kZnHi.js">
+  <link rel="modulepreload" crossorigin href="/js/notationHelpers-Bz3tcOAS.js">
+  <link rel="modulepreload" crossorigin href="/js/gridBuilder-CXFsAdre.js">
+  <link rel="modulepreload" crossorigin href="/js/drumSampleUrls-DMcE8RBJ.js">
+  <link rel="modulepreload" crossorigin href="/js/reverb-ChqUjAYc.js">
+  <link rel="modulepreload" crossorigin href="/js/audioPlayer-CYI4T123.js">
+  <link rel="modulepreload" crossorigin href="/js/metronomeVisualDots-BSCYMlSP.js">
+  <link rel="modulepreload" crossorigin href="/js/preload-helper-CeHMNELh.js">
+  <link rel="modulepreload" crossorigin href="/js/AppTooltip-CMHHRAAI.js">
+  <link rel="modulepreload" crossorigin href="/js/NotePalette-CadMl6iL.js">
+  <link rel="modulepreload" crossorigin href="/js/vexflow-CihnIYU4.js">
+  <link rel="modulepreload" crossorigin href="/js/drumSymbols-C1Em2qZ8.js">
+  <link rel="modulepreload" crossorigin href="/js/vexFlowFontExport-CH1vDojp.js">
+  <link rel="modulepreload" crossorigin href="/js/useVexFlowMusicFontReady-B3DJM49f.js">
+  <link rel="modulepreload" crossorigin href="/js/scoreExportLayout-DdXvWYhc.js">
+  <link rel="modulepreload" crossorigin href="/js/playbackAutoScroll-7xwvfKW4.js">
+  <link rel="modulepreload" crossorigin href="/js/metronomeDotLayout-vyCr5lr0.js">
+  <link rel="modulepreload" crossorigin href="/js/VexFlowRenderer-B19XYmWQ.js">
+<script>if("serviceWorker"in navigator)navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(s){s.unregister()})})</script>
+<script>addEventListener("beforeinstallprompt",function(e){e.preventDefault()});addEventListener("appinstalled",function(e){e.preventDefault()});</script>
+<script>
+(function(){
+  if(location.hostname==='localhost'||location.hostname==='127.0.0.1')return;
+  var V='1785168314767-9533b55f',K='__buildV';
+  if(sessionStorage.getItem(K)===V)return;
+  fetch('/build-version.txt?_='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.ok?r.text():V})
+    .then(function(t){
+      t=t.trim();
+      sessionStorage.setItem(K,t);
+      if(t!==V)location.reload();
+    })
+    .catch(function(){});
+})();
+</script>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>

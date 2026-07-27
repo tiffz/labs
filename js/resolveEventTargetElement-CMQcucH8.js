@@ -1,0 +1,1 @@
+function n(n){return n instanceof Element?n:n instanceof Text?n.parentElement:null}function t(t,e,o=document){const c=n(t.target);return!!c&&(!!o.contains(c)&&null!==c.closest(e))}export{n,t};

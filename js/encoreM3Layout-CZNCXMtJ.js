@@ -1,0 +1,1 @@
+var s={xs:2,sm:3,md:4},a={xs:3,sm:4},m={xs:1.5,sm:2},x={xs:1,sm:1.25},r={xs:1,sm:1.25},d={xs:.75,sm:1},o={xs:.75,sm:1},t={xs:3,sm:4},c={xs:2,sm:3},e={xs:2,sm:3},i={xs:2,sm:3};export{d as a,s as c,c as d,r as i,e as l,m as n,a as o,o as r,t as s,x as t,i as u};

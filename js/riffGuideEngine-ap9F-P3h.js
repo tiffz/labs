@@ -1,0 +1,1 @@
+function t(){return{id:crypto.randomUUID(),title:"My riff",steps:[],beatsPerStep:1}}function e(t,e,n,r){return!(!e||0===e.pitches.length)&&(!(Math.abs(n-r)>80)&&e.pitches.includes(t))}export{e as n,t};

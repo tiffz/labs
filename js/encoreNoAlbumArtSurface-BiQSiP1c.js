@@ -1,0 +1,1 @@
+import{wa as e}from"./vendor-CfxF-Kcd.js";function t(t){return{width:1,height:1,display:"flex",alignItems:"center",justifyContent:"center",background:`linear-gradient(165deg, ${e(t.palette.primary.main,.07)} 0%, ${e(t.palette.secondary.main,.04)} 48%, ${t.palette.action.hover} 100%)`}}function n(t){return{fontSize:32,color:e(t.palette.primary.main,.36)}}export{t as n,n as t};

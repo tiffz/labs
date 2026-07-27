@@ -1,0 +1,1 @@
+import{o as r}from"./rolldown-runtime-iuO8RvI4.js";import{Ma as o}from"./vendor-CfxF-Kcd.js";var t=r(o(),1),e=(0,t.createContext)(null);function n(){const r=(0,t.useContext)(e);if(!r)throw new Error("useMidi must be used within MidiProvider");return r}export{e as n,n as t};

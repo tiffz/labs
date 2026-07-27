@@ -1,0 +1,1 @@
+function t(t,r){const n=t?.trim();return n?`${n}'s ${r}`:`Your ${r}`}export{t};

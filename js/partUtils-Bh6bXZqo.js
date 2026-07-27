@@ -1,0 +1,1 @@
+function t(t){const n=t.parts.find(t=>"voice"===t.hand);return n||t.parts[0]}export{t};

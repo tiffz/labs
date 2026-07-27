@@ -1,0 +1,103 @@
+/* Shared app-safe CSS base.
+   Keep this file neutral so micro-apps can import it without style bleed.
+   Decorative site chrome lives in /styles/labs-home.css. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+#root {
+  min-height: 100%;
+}
+
+/* Skip link: visually hidden until focused so keyboard / assistive-tech
+   users can jump straight to the primary <main id="main"> landmark.
+   See <SkipToMain /> in src/shared/components/SkipToMain.tsx. */
+.skip-to-main {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10000;
+  padding: 8px 16px;
+  background: #0f172a;
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 6px;
+  transform: translateY(-200%);
+  transition: transform 150ms ease-out;
+}
+
+.skip-to-main:focus,
+.skip-to-main:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
+/* Global reduced-motion baseline. Apps may opt individual animations back in
+   inside their own `@media (prefers-reduced-motion: reduce)` blocks when an
+   animation is critical to the UX (e.g. beat-sync indicators). */
+:root {
+  --labs-debug-dock-height: 0px;
+  --debug-panel-height: 0px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * LabsDebugDock is position:fixed at the viewport bottom. While mounted, shrink
+ * full-viewport app shells so practice footers and controls stay above the bar.
+ * Height is synced to --labs-debug-dock-height (see LabsDebugDock.tsx).
+ */
+html:has(.labs-debug-dock) .sight-app,
+html:has(.labs-debug-dock) .scales-app,
+html:has(.labs-debug-dock) .piano-app,
+html:has(.labs-debug-dock) .melodia-app,
+html:has(.labs-debug-dock) .gesture-app {
+  box-sizing: border-box;
+  height: calc(100vh - var(--labs-debug-dock-height, 0px));
+  max-height: calc(100vh - var(--labs-debug-dock-height, 0px));
+  min-height: 0;
+}
+
+html:has(.labs-debug-dock) .zinebox-app {
+  box-sizing: border-box;
+  height: calc(100vh - var(--labs-debug-dock-height, 0px));
+  max-height: calc(100vh - var(--labs-debug-dock-height, 0px));
+  min-height: 0;
+}
+
+@supports (height: 100dvh) {
+  html:has(.labs-debug-dock) .sight-app,
+  html:has(.labs-debug-dock) .scales-app,
+  html:has(.labs-debug-dock) .piano-app,
+  html:has(.labs-debug-dock) .melodia-app,
+  html:has(.labs-debug-dock) .gesture-app {
+    height: calc(100dvh - var(--labs-debug-dock-height, 0px));
+    max-height: calc(100dvh - var(--labs-debug-dock-height, 0px));
+  }
+
+  html:has(.labs-debug-dock) .zinebox-app {
+    height: calc(100dvh - var(--labs-debug-dock-height, 0px));
+    max-height: calc(100dvh - var(--labs-debug-dock-height, 0px));
+  }
+}

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#0f766e" />
+    <!-- Critical CSS: paints the app background during HTML parse so there is no FOUC. -->
+    <style>html{color-scheme:light;background:#fce7f3;color:#1e1033}</style>
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon-pitch.svg" />
+    <link rel="apple-touch-icon" href="/icons/favicon-pitch.svg" />
+    <meta
+      name="description"
+      content="Find Your Pitch: playful live vocal feedback—note, cents, contour, and a reference keyboard."
+    />
+    <title>Find Your Pitch - Tiff Zhang Labs</title>
+    <link rel="canonical" href="https://labs.tiffzhang.com/pitch/" />
+    <meta property="og:title" content="Find Your Pitch - Tiff Zhang Labs" />
+    <meta property="og:description" content="Find Your Pitch: playful live vocal feedback—note, cents, contour, and a reference keyboard." />
+    <meta property="og:url" content="https://labs.tiffzhang.com/pitch/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tiff Zhang Labs" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Find Your Pitch - Tiff Zhang Labs" />
+    <meta name="twitter:description" content="Find Your Pitch: playful live vocal feedback—note, cents, contour, and a reference keyboard." />
+    <style>:root { --labs-cc-accent: #0f766e; --labs-cc-on-accent: #ffffff; }</style>
+    <link rel="stylesheet" href="/css/appSharedThemes-DgaHlCUV.css">
+    <link rel="stylesheet" href="/styles/shared.css" />
+    <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
+    <link rel="stylesheet" href="/css/labsChrome-Dt9u806P.css">
+    <link rel="stylesheet" href="/css/pitch-DeTth4wg.css">
+    <link rel="stylesheet" href="/css/onscreenPianoKeyboard-GZn3weyK.css">
+    <script defer src="/scripts/labs-cookie-consent.js"></script>
+    <script type="module" crossorigin src="/js/pitch-DgSI8WVG.js"></script>
+    <link rel="modulepreload" crossorigin href="/js/rolldown-runtime-iuO8RvI4.js">
+    <link rel="modulepreload" crossorigin href="/js/appSharedThemes-CfrrnTV1.js">
+    <link rel="modulepreload" crossorigin href="/js/vendor-CfxF-Kcd.js">
+    <link rel="modulepreload" crossorigin href="/js/readLabsDebugParams-C2TRQe2c.js">
+    <link rel="modulepreload" crossorigin href="/js/serverLogger-L6nmOLUM.js">
+    <link rel="modulepreload" crossorigin href="/js/labsChrome-Bf0H73ii.js">
+    <link rel="modulepreload" crossorigin href="/js/appTheme-B1rctvZ2.js">
+    <link rel="modulepreload" crossorigin href="/js/SkipToMain-D5-MDTSx.js">
+    <link rel="modulepreload" crossorigin href="/js/analytics-DF7A54wp.js">
+    <link rel="modulepreload" crossorigin href="/js/OnscreenPianoKeyboard-BAgtJM3B.js">
+    <link rel="modulepreload" crossorigin href="/js/microphonePitchInput-55-FsWs8.js">
+  <script>if("serviceWorker"in navigator)navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(s){s.unregister()})})</script>
+<script>addEventListener("beforeinstallprompt",function(e){e.preventDefault()});addEventListener("appinstalled",function(e){e.preventDefault()});</script>
+<script>
+(function(){
+  if(location.hostname==='localhost'||location.hostname==='127.0.0.1')return;
+  var V='1785168314767-9533b55f',K='__buildV';
+  if(sessionStorage.getItem(K)===V)return;
+  fetch('/build-version.txt?_='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.ok?r.text():V})
+    .then(function(t){
+      t=t.trim();
+      sessionStorage.setItem(K,t);
+      if(t!==V)location.reload();
+    })
+    .catch(function(){});
+})();
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+

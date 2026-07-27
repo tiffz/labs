@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <!-- Creative gradient for artistic feel -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Larger squircle background (matching the labs favicon) -->
+  <path d="M 6 2 
+           C 2 2 2 2 2 6
+           L 2 26
+           C 2 30 2 30 6 30
+           L 26 30
+           C 30 30 30 30 30 26
+           L 30 6
+           C 30 2 30 2 26 2
+           Z" 
+           fill="url(#bgGradient)"/>
+  
+  <!-- Book design (more book-like, less paper-like) -->
+  <g fill="white">
+    <!-- Main book cover -->
+    <rect x="8" y="7" width="16" height="20" rx="1" />
+    
+    <!-- Book spine (thicker for 3D effect) -->
+    <rect x="8" y="7" width="3" height="20" fill="#e5e7eb" />
+    
+    <!-- Book pages (visible edges for depth) -->
+    <rect x="10" y="8" width="13" height="18" fill="#f9fafb" stroke="#e5e7eb" stroke-width="0.3" />
+    <rect x="10.5" y="8.5" width="12" height="17" fill="#ffffff" stroke="#e5e7eb" stroke-width="0.2" />
+    
+    <!-- Book binding line -->
+    <line x1="11" y1="8" x2="11" y2="26" stroke="#d1d5db" stroke-width="0.8" />
+    
+    <!-- Title lines on cover -->
+    <line x1="13" y1="12" x2="21" y2="12" stroke="#9ca3af" stroke-width="0.6" />
+    <line x1="13" y1="14" x2="19" y2="14" stroke="#9ca3af" stroke-width="0.5" />
+    
+    <!-- Subtitle lines -->
+    <line x1="13" y1="17" x2="20" y2="17" stroke="#9ca3af" stroke-width="0.4" />
+    <line x1="13" y1="18.5" x2="18" y2="18.5" stroke="#9ca3af" stroke-width="0.4" />
+    
+    <!-- Small decorative element (like a small logo or design) -->
+    <circle cx="17" cy="22" r="1.5" fill="#f59e0b" opacity="0.6" />
+    <path d="M 16 22 L 17 21 L 18 22 L 17 23 Z" fill="#f59e0b" />
+  </g>
+</svg>

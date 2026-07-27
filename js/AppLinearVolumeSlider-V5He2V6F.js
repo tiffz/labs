@@ -1,0 +1,1 @@
+import{Da as i,ra as r}from"./vendor-CfxF-Kcd.js";var s=i(),a={flex:"1 1 0",minWidth:0,py:"6px",mx:.25,"& .MuiSlider-thumb":{width:9,height:9},"& .MuiSlider-rail":{opacity:.32}};function t({min:i=0,max:t=1,step:e=.02,size:m="small",sx:x,...l}){return(0,s.jsx)(r,{min:i,max:t,step:e,size:m,sx:Array.isArray(x)?[a,...x]:null!=x?[a,x]:a,...l})}export{t};

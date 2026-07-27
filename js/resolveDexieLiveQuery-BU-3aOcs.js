@@ -1,0 +1,1 @@
+function t(t,e){return{value:t??e,hydrated:void 0!==t}}export{t};

@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light" />
+    <!-- Critical CSS: paints the app background during HTML parse so there is no FOUC. -->
+    <style>html{color-scheme:light;background:#faf5ff;color:#1f2937}</style>
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <title>Darbuka Rhythm Trainer: Learn Middle Eastern Drum Patterns</title>
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon-drums.svg" />
+    <link rel="apple-touch-icon" href="/icons/favicon-drums.svg" />
+    <meta name="theme-color" content="#7c3aed" />
+    <meta name="description" content="Learn and practice darbuka rhythms like Maqsum, Baladi, Ayoub, and Malfuf. Interactive sequencer with notation, playback, and a library of Middle Eastern and world drum patterns." />
+    <link rel="canonical" href="https://labs.tiffzhang.com/drums/" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Darbuka Rhythm Trainer: Learn Middle Eastern Drum Patterns" />
+    <meta property="og:description" content="Learn darbuka rhythms like Maqsum, Baladi, and Malfuf with an interactive sequencer, notation display, and playback engine." />
+    <meta property="og:url" content="https://labs.tiffzhang.com/drums/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tiff Zhang Labs" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Darbuka Rhythm Trainer" />
+    <meta name="twitter:description" content="Learn darbuka rhythms like Maqsum, Baladi, and Malfuf with an interactive sequencer and playback engine." />
+
+    <!-- JSON-LD: SoftwareApplication -->
+  <link rel="stylesheet" href="/css/appSharedThemes-DgaHlCUV.css">
+  <link rel="stylesheet" href="/css/AppSlider-BZc00oKt.css">
+    <link rel="stylesheet" href="/styles/shared.css" />
+    <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
+  <link rel="stylesheet" href="/css/labsChrome-Dt9u806P.css">
+  <link rel="stylesheet" href="/css/NumericStepperField-DY9Zfhv0.css">
+  <link rel="stylesheet" href="/css/metronome-CGg7RQIz.css">
+  <link rel="stylesheet" href="/css/TimeSignatureInput-Dx0ckzZ9.css">
+  <link rel="stylesheet" href="/css/keyboardShortcuts-DSg37kDt.css">
+  <link rel="stylesheet" href="/css/drums-BIM9Y-9d.css">
+  <link rel="stylesheet" href="/css/drums-B0-q-A-m.css">
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Darbuka Rhythm Trainer",
+      "description": "Learn and practice darbuka drum rhythms with an interactive sequencer, notation display, and playback engine. Includes a library of Middle Eastern patterns like Maqsum, Baladi, Ayoub, Malfuf, and Kahleegi.",
+      "url": "https://labs.tiffzhang.com/drums/",
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Any (Web Browser)",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Library of Middle Eastern rhythms with variations (Maqsum, Baladi, Ayoub, Malfuf, and more)",
+        "Text-based notation system using D/T/K/S symbols",
+        "Interactive VexFlow score display with playback cursor",
+        "Drag-and-drop note palette for composing patterns",
+        "Tab import from drum tab or guitar tab formats",
+        "Rhythm recognition that identifies known patterns",
+        "Shareable URLs for any rhythm configuration"
+      ],
+      "author": {
+        "@type": "Person",
+        "name": "Tiff Zhang",
+        "url": "https://labs.tiffzhang.com"
+      }
+    }
+    </script>
+
+    <!-- JSON-LD: FAQPage -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is a darbuka?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "A darbuka (also spelled doumbek or tabla) is a goblet-shaped hand drum used across the Middle East, North Africa, and Central Asia. It produces three main sounds: dum (a deep bass tone from the center), tek (a sharp rim strike), and ka (a quieter rim tap). These sounds combine into rhythmic patterns like Maqsum, Baladi, and Ayoub that form the backbone of Arabic, Turkish, and Persian music."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is Maqsum rhythm?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Maqsum is one of the most common rhythms in Middle Eastern music. It's a 4/4 pattern with the sequence D-T-__T-D---T--- (dum, tek, rest, tek, dum, rest, tek, rest). It forms the rhythmic foundation for much of Egyptian and Lebanese popular music and belly dance."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the difference between Maqsum and Baladi?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Both are 4/4 rhythms, but Baladi starts with two consecutive dum strokes (D-D-__T-D---T---) while Maqsum starts with dum-tek (D-T-__T-D---T---). Baladi has an earthier, more grounded feel and is closely associated with Egyptian folk music and belly dance, while Maqsum is lighter and more versatile."
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- JSON-LD: ItemList of supported rhythms -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "Darbuka Rhythm Library",
+      "description": "Middle Eastern and world drum patterns available in the Darbuka Rhythm Trainer",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Maqsum",
+          "description": "A very common 4/4 rhythm in Middle Eastern drumming with a versatile groove. Forms the rhythmic foundation for much of Egyptian and Lebanese popular music and belly dance.",
+          "url": "https://labs.tiffzhang.com/drums/?rhythm=D-T-__T-D---T---"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Baladi",
+          "description": "A core Egyptian 4/4 rhythm that starts with two dum strokes. Has an earthy, grounded feel closely associated with Egyptian folk music.",
+          "url": "https://labs.tiffzhang.com/drums/?rhythm=D-D-__T-D---T---"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Saeidi",
+          "description": "An energetic 4/4 rhythm with two consecutive dum strokes in the second half of the measure.",
+          "url": "https://labs.tiffzhang.com/drums/?rhythm=D-T-__D-D---T---"
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": "Ayoub",
+          "description": "An energetic 2/4 rhythm often used in faster dance music and zar ceremonies.",
+          "url": "https://labs.tiffzhang.com/drums/?rhythm=D--KD-T-&time=2/4"
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "name": "Malfuf",
+          "description": "An 8/8 rhythm with a 3+3+2 feel (tresillo), featuring a strong dum followed by two teks. Common across Middle Eastern and North African music.",
+          "url": "https://labs.tiffzhang.com/drums/?rhythm=D-----T-----T---&time=8/8"
+        },
+        {
+          "@type": "ListItem",
+          "position": 6,
+          "name": "Kahleegi",
+          "description": "An 8/8 companion rhythm to Malfuf with a double dum opening and a 3+3+2 feel. Associated with Gulf-region dance music.",
+          "url": "https://labs.tiffzhang.com/drums/?rhythm=D-----D-----T---&time=8/8"
+        },
+        {
+          "@type": "ListItem",
+          "position": 7,
+          "name": "Rock",
+          "description": "A basic backbeat groove popular in Western pop and rock music.",
+          "url": "https://labs.tiffzhang.com/drums/?rhythm=D---T---D-D-T---"
+        }
+      ]
+    }
+    </script>
+    
+    <!-- Fallback font metrics (Roboto from @fontsource in appFonts.ts) -->
+    <style>
+        /* Create fallback fonts that match Roboto's metrics and weight */
+        /* Use system fonts that are closer to Roboto's weight */
+        @font-face {
+            font-family: 'Roboto Fallback';
+            src: local('Segoe UI'), local('Helvetica Neue'), local('Arial');
+            size-adjust: 100.06%;
+            ascent-override: 92.77%;
+            descent-override: 24.41%;
+            line-gap-override: 0%;
+        }
+        
+        /* Apply fallback with Roboto in font stack */
+        body {
+            font-family: 'Roboto', 'Roboto Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            font-weight: 400;
+        }
+        
+        /* Add subtle text rendering to increase perceived weight without layout shift */
+        body, button, input, select, textarea {
+            /* Slightly bolder rendering on fallback fonts */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+        
+        /* Ensure headings have proper weight */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            /* Extra boldness for headings */
+            letter-spacing: -0.01em;
+        }
+        
+        /* Strong and bold elements */
+        strong, b {
+            font-weight: 600;
+        }
+        
+        /* Buttons and labels need medium-bold weight */
+        button, label {
+            font-weight: 500;
+        }
+        
+        /* Specific weight for important UI elements */
+        .palette-section-title,
+        .input-label,
+        .note-table th,
+        .rhythm-info-title {
+            font-weight: 600;
+        }
+    </style>
+    <style>:root { --labs-cc-accent: #7c3aed; --labs-cc-on-accent: #ffffff; }</style>
+    <script defer src="/scripts/labs-cookie-consent.js"></script>
+  <script type="module" crossorigin src="/js/drums-J3daAMfe.js"></script>
+  <link rel="modulepreload" crossorigin href="/js/rolldown-runtime-iuO8RvI4.js">
+  <link rel="modulepreload" crossorigin href="/js/appSharedThemes-CfrrnTV1.js">
+  <link rel="modulepreload" crossorigin href="/js/vendor-CfxF-Kcd.js">
+  <link rel="modulepreload" crossorigin href="/js/readLabsDebugParams-C2TRQe2c.js">
+  <link rel="modulepreload" crossorigin href="/js/serverLogger-L6nmOLUM.js">
+  <link rel="modulepreload" crossorigin href="/js/labsChrome-Bf0H73ii.js">
+  <link rel="modulepreload" crossorigin href="/js/appTheme-B1rctvZ2.js">
+  <link rel="modulepreload" crossorigin href="/js/SkipToMain-D5-MDTSx.js">
+  <link rel="modulepreload" crossorigin href="/js/labsDebugAccess-wyU4TJBs.js">
+  <link rel="modulepreload" crossorigin href="/js/useLabsDisclosureMenu-BVbOKFSh.js">
+  <link rel="modulepreload" crossorigin href="/js/analytics-DF7A54wp.js">
+  <link rel="modulepreload" crossorigin href="/js/preload-helper-CeHMNELh.js">
+  <link rel="modulepreload" crossorigin href="/js/timeSignatureUtils-B7S2dNJd.js">
+  <link rel="modulepreload" crossorigin href="/js/LabsDisclosureChevron-C3oC4odi.js">
+  <link rel="modulepreload" crossorigin href="/js/presetDatabase-B1tiXKCX.js">
+  <link rel="modulepreload" crossorigin href="/js/AppSlider-Q2M9zfL3.js">
+  <link rel="modulepreload" crossorigin href="/js/AppTooltip-CMHHRAAI.js">
+  <link rel="modulepreload" crossorigin href="/js/gridBuilder-CXFsAdre.js">
+  <link rel="modulepreload" crossorigin href="/js/drumSampleUrls-DMcE8RBJ.js">
+  <link rel="modulepreload" crossorigin href="/js/clickService-OjowQi35.js">
+  <link rel="modulepreload" crossorigin href="/js/preciseScheduler-CJhZjhWW.js">
+  <link rel="modulepreload" crossorigin href="/js/MetronomeEngine-Dnz6CkSa.js">
+  <link rel="modulepreload" crossorigin href="/js/anchoredPopoverChrome-WY9oBkJp.js">
+  <link rel="modulepreload" crossorigin href="/js/AnchoredPopover-KE_Thf1b.js">
+  <link rel="modulepreload" crossorigin href="/js/AppLinearVolumeSlider-V5He2V6F.js">
+  <link rel="modulepreload" crossorigin href="/js/musicInputConstants-eHH4oqoE.js">
+  <link rel="modulepreload" crossorigin href="/js/NumericStepperField-2M3tBWBr.js">
+  <link rel="modulepreload" crossorigin href="/js/sliderMilestoneLabels-DI5xzKAO.js">
+  <link rel="modulepreload" crossorigin href="/js/BpmInput-BcM4xDKX.js">
+  <link rel="modulepreload" crossorigin href="/js/subdivisionClickSchedule-BsDVqgOv.js">
+  <link rel="modulepreload" crossorigin href="/js/metronome-OruHXJPV.js">
+  <link rel="modulepreload" crossorigin href="/js/reverb-ChqUjAYc.js">
+  <link rel="modulepreload" crossorigin href="/js/audioPlayer-CYI4T123.js">
+  <link rel="modulepreload" crossorigin href="/js/metronomeVisualDots-BSCYMlSP.js">
+  <link rel="modulepreload" crossorigin href="/js/scheduler-D50_7MT4.js">
+  <link rel="modulepreload" crossorigin href="/js/audioContextLifecycle-DirC93om.js">
+  <link rel="modulepreload" crossorigin href="/js/gridMetronomePlayback-ws1IpoN4.js">
+  <link rel="modulepreload" crossorigin href="/js/usePlayback-CHw7B0xN.js">
+  <link rel="modulepreload" crossorigin href="/js/notationHelpers-Bz3tcOAS.js">
+  <link rel="modulepreload" crossorigin href="/js/rhythmParser-BT-kZnHi.js">
+  <link rel="modulepreload" crossorigin href="/js/NotePalette-CadMl6iL.js">
+  <link rel="modulepreload" crossorigin href="/js/timeSignaturePresets-CN2PuS1Y.js">
+  <link rel="modulepreload" crossorigin href="/js/TimeSignatureInput-BjmQ0gtC.js">
+  <link rel="modulepreload" crossorigin href="/js/spaLinkClick-CYylYdv1.js">
+  <link rel="modulepreload" crossorigin href="/js/useLabsKeyboardShortcutsOpen-C7fQvjsn.js">
+  <link rel="modulepreload" crossorigin href="/js/keyboardShortcuts-C2ir9yiA.js">
+  <link rel="modulepreload" crossorigin href="/js/urlHistory-AaCv4sXe.js">
+  <link rel="modulepreload" crossorigin href="/js/wakeLock-BeCEH_0m.js">
+  <link rel="modulepreload" crossorigin href="/js/usePlaybackWakeLock-Co00WINY.js">
+  <link rel="modulepreload" crossorigin href="/js/resolveEventTargetElement-CMQcucH8.js">
+  <link rel="modulepreload" crossorigin href="/js/playbackFieldSelect-Bl_04eZ_.js">
+  <link rel="modulepreload" crossorigin href="/js/LabsDebugDock-B9cKdDK3.js">
+<script>if("serviceWorker"in navigator)navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(s){s.unregister()})})</script>
+<script>addEventListener("beforeinstallprompt",function(e){e.preventDefault()});addEventListener("appinstalled",function(e){e.preventDefault()});</script>
+<script>
+(function(){
+  if(location.hostname==='localhost'||location.hostname==='127.0.0.1')return;
+  var V='1785168314767-9533b55f',K='__buildV';
+  if(sessionStorage.getItem(K)===V)return;
+  fetch('/build-version.txt?_='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.ok?r.text():V})
+    .then(function(t){
+      t=t.trim();
+      sessionStorage.setItem(K,t);
+      if(t!==V)location.reload();
+    })
+    .catch(function(){});
+})();
+</script>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>
+

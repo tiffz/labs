@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "voice": "Samantha",
+  "sampleRate": 48000,
+  "samples": [
+    {
+      "id": "beat-1",
+      "text": "One",
+      "category": "beat",
+      "file": "beat-1.wav",
+      "duration": 270
+    },
+    {
+      "id": "beat-2",
+      "text": "Two",
+      "category": "beat",
+      "file": "beat-2.wav",
+      "duration": 237
+    },
+    {
+      "id": "beat-3",
+      "text": "Three",
+      "category": "beat",
+      "file": "beat-3.wav",
+      "duration": 260
+    },
+    {
+      "id": "beat-4",
+      "text": "Four",
+      "category": "beat",
+      "file": "beat-4.wav",
+      "duration": 239
+    },
+    {
+      "id": "beat-5",
+      "text": "Five",
+      "category": "beat",
+      "file": "beat-5.wav",
+      "duration": 251
+    },
+    {
+      "id": "beat-6",
+      "text": "Six",
+      "category": "beat",
+      "file": "beat-6.wav",
+      "duration": 343
+    },
+    {
+      "id": "beat-7",
+      "text": "Seven",
+      "category": "beat",
+      "file": "beat-7.wav",
+      "duration": 315
+    },
+    {
+      "id": "beat-8",
+      "text": "Eight",
+      "category": "beat",
+      "file": "beat-8.wav",
+      "duration": 181
+    },
+    {
+      "id": "beat-9",
+      "text": "Nine",
+      "category": "beat",
+      "file": "beat-9.wav",
+      "duration": 310
+    },
+    {
+      "id": "beat-10",
+      "text": "Ten",
+      "category": "beat",
+      "file": "beat-10.wav",
+      "duration": 272
+    },
+    {
+      "id": "beat-11",
+      "text": "Eleven",
+      "category": "beat",
+      "file": "beat-11.wav",
+      "duration": 333
+    },
+    {
+      "id": "beat-12",
+      "text": "Twelve",
+      "category": "beat",
+      "file": "beat-12.wav",
+      "duration": 333
+    },
+    {
+      "id": "ee",
+      "text": "ee",
+      "category": "sixteenth",
+      "file": "ee.wav",
+      "duration": 150
+    },
+    {
+      "id": "and",
+      "text": "and",
+      "category": "eighth",
+      "file": "and.wav",
+      "duration": 150
+    },
+    {
+      "id": "uh",
+      "text": "uh",
+      "category": "sixteenth",
+      "file": "uh.wav",
+      "duration": 150
+    },
+    {
+      "id": "la",
+      "text": "La",
+      "category": "counting",
+      "file": "la.wav",
+      "duration": 289
+    },
+    {
+      "id": "ta",
+      "text": "Ta",
+      "category": "triplet",
+      "file": "ta.wav",
+      "duration": 150
+    },
+    {
+      "id": "ki",
+      "text": "Ki",
+      "category": "triplet",
+      "file": "ki.wav",
+      "duration": 150
+    },
+    {
+      "id": "da",
+      "text": "Da",
+      "category": "triplet",
+      "file": "da.wav",
+      "duration": 150
+    },
+    {
+      "id": "di",
+      "text": "Di",
+      "category": "takadimi",
+      "file": "di.wav",
+      "duration": 150
+    },
+    {
+      "id": "mi",
+      "text": "Mi",
+      "category": "takadimi",
+      "file": "mi.wav",
+      "duration": 150
+    },
+    {
+      "id": "ka",
+      "text": "Ka",
+      "category": "takadimi",
+      "file": "ka.wav",
+      "duration": 150
+    }
+  ]
+}

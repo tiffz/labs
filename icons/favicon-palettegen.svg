@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
+  <defs>
+    <linearGradient id="pg-bg" x1="6" y1="4" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#241a36" />
+      <stop offset="100%" stop-color="#120d1c" />
+    </linearGradient>
+    <radialGradient id="pg-glow" cx="50%" cy="38%" r="58%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="32" height="32" rx="9" fill="url(#pg-bg)" />
+  <rect width="32" height="32" rx="9" fill="url(#pg-glow)" />
+  <circle cx="16" cy="17" r="4.2" fill="#ff4d9d" />
+  <circle cx="10" cy="12.5" r="3.3" fill="#fbbf24" />
+  <circle cx="22.2" cy="11.8" r="3.1" fill="#38bdf8" />
+  <circle cx="23.6" cy="19.6" r="3.5" fill="#2dd4a8" />
+  <circle cx="11.4" cy="22.2" r="2.9" fill="#a78bfa" />
+  <circle cx="17.2" cy="9.6" r="2.1" fill="#fb7185" opacity="0.92" />
+</svg>

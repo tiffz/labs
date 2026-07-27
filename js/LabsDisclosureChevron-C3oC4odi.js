@@ -1,0 +1,1 @@
+import{Da as a,Ji as s}from"./vendor-CfxF-Kcd.js";var r=a();function e({className:a}){return(0,r.jsx)(s,{className:["labs-disclosure-chevron",a].filter(Boolean).join(" "),"aria-hidden":!0})}export{e as t};

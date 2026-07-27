@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Signing in…</title>
+  </head>
+  <body>
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var error = params.get('error');
+        var payload = {
+          type: 'labs_google_oauth_done',
+          complete: !error,
+          error: error || undefined,
+        };
+        var target = window.location.origin;
+        var channelName = 'labs_google_oauth';
+
+        function notifyParent() {
+          if (window.opener && !window.opener.closed) {
+            try {
+              window.opener.postMessage(payload, target);
+            } catch (e) {
+              /* ignore */
+            }
+          }
+          try {
+            var bc = new BroadcastChannel(channelName);
+            bc.postMessage(payload);
+            bc.close();
+          } catch (e) {
+            /* ignore */
+          }
+        }
+
+        notifyParent();
+        if (!window.closed) {
+          document.body.textContent = error
+            ? 'Sign-in failed: ' + error
+            : 'Finishing sign-in…';
+          window.setTimeout(function () {
+            window.close();
+          }, 200);
+        }
+      })();
+    </script>
+  </body>
+</html>

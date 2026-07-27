@@ -1,0 +1,1 @@
+function t(t){return 440*Math.pow(2,(t-69)/12)}export{t};

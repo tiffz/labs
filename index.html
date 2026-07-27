@@ -2,18 +2,321 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta http-equiv="Cache-Control" content="no-cache" />
+    <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/favicon.svg" />
+    <meta name="theme-color" content="#8b5cf6" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <!-- Critical CSS: paints the page background during HTML parse so there is no FOUC. -->
+    <style>html{color-scheme:light;background:#ede2f4;color:#1e293b}</style>
+    <meta name="description" content="A collection of experimental music, art, and game apps by Tiff Zhang" />
     <title>Tiff Zhang Labs</title>
-  <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
+    <link rel="canonical" href="https://labs.tiffzhang.com/" />
+    <meta property="og:title" content="Tiff Zhang Labs" />
+    <meta property="og:description" content="A collection of experimental music, art, and game apps by Tiff Zhang" />
+    <meta property="og:url" content="https://labs.tiffzhang.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tiff Zhang Labs" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Tiff Zhang Labs" />
+    <meta name="twitter:description" content="A collection of experimental music, art, and game apps by Tiff Zhang" />
+
+    <!-- Styles -->
+    <style>:root { --labs-cc-accent: #8b5cf6; --labs-cc-on-accent: #ffffff; }</style>
+    <link rel="stylesheet" href="/styles/shared.css" />
+    <link rel="stylesheet" href="/styles/labs-cookie-consent.css" />
+    <link rel="stylesheet" href="/styles/labs-home.css" />
+    <link rel="stylesheet" href="/styles/index.css" />
+    <script defer src="/scripts/labs-cookie-consent.js"></script>
+  <script>if("serviceWorker"in navigator)navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(s){s.unregister()})})</script>
+<script>addEventListener("beforeinstallprompt",function(e){e.preventDefault()});addEventListener("appinstalled",function(e){e.preventDefault()});</script>
+<script>
+(function(){
+  if(location.hostname==='localhost'||location.hostname==='127.0.0.1')return;
+  var V='1785168314767-9533b55f',K='__buildV';
+  if(sessionStorage.getItem(K)===V)return;
+  fetch('/build-version.txt?_='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.ok?r.text():V})
+    .then(function(t){
+      t=t.trim();
+      sessionStorage.setItem(K,t);
+      if(t!==V)location.reload();
+    })
+    .catch(function(){});
+})();
+</script>
+</head>
   <body>
-    <h1>Welcome to Tiff Zhang Labs</h1>
-    <p>This is a collection of apps I've built for fun and learning.</p>
-    <p>Select an app:</p>
-    <ul>
-      <li><a href="/zines/">Zine Maker</a></li>
-      <li><a href="/cats/">Cat Clicker</a></li>
-      <!-- Add more apps here as you create them -->
-    </ul>
+    <!-- Floating bubbles -->
+    <div class="bubble" style="--size: 40px; --start-x: 10%; --final-x: 15%; --duration: 12s; --delay: 0s;"></div>
+    <div class="bubble" style="--size: 60px; --start-x: 80%; --final-x: 75%; --duration: 16s; --delay: 2s;"></div>
+    <div class="bubble" style="--size: 35px; --start-x: 30%; --final-x: 40%; --duration: 14s; --delay: 5s;"></div>
+    <div class="bubble" style="--size: 50px; --start-x: 70%; --final-x: 60%; --duration: 18s; --delay: 8s;"></div>
+    <div class="bubble" style="--size: 45px; --start-x: 15%; --final-x: 25%; --duration: 20s; --delay: 11s;"></div>
+    <div class="bubble" style="--size: 38px; --start-x: 85%; --final-x: 80%; --duration: 13s; --delay: 14s;"></div>
+    
+    <div class="container">
+      <h1>Tiff Zhang Labs</h1>
+      <p class="subtitle">A growing catalog of music, art, and game experiments</p>
+
+      <div class="catalog-toolbar">
+        <div class="catalog-filters" role="group" aria-label="Filter by listing">
+          <button class="filter-chip is-active" type="button" data-filter-stage="all">All</button>
+          <button class="filter-chip" type="button" data-filter-stage="stable">Stable</button>
+          <button class="filter-chip" type="button" data-filter-stage="experimental">Experimental</button>
+          <button class="filter-chip" type="button" data-filter-stage="private">Private</button>
+          <button class="filter-chip" type="button" data-filter-stage="in-development">In development</button>
+        </div>
+      </div>
+
+      <div class="catalog-columns">
+<!-- labs-catalog:generated:start -->
+        <section class="catalog-section" data-category-section="music">
+          <div class="section-heading">
+            <h2 class="section-title">Music</h2>
+          </div>
+          <div class="apps-grid">
+            <!-- Stable + experimental first; private + in-development last (order from labsCatalog.manifest.json + scripts/render-labs-catalog.mjs). -->
+
+            <a href="/drums/" class="app-card" data-stage="stable" data-name="Darbuka Rhythm Trainer" data-description="Learn and practice Darbuka drum rhythms">
+              <div class="app-icon drums"></div>
+              <div class="app-info">
+                <h3 class="app-title">Darbuka Rhythm Trainer</h3>
+                <p class="app-description">Learn and practice Darbuka drum rhythms</p>
+              </div>
+              <span class="status-badge status-stable">Stable</span>
+            </a>
+
+            <a href="/words/" class="app-card" data-stage="stable" data-name="Words in Rhythm" data-description="Turn words and lyrics into playable darbuka rhythms">
+              <div class="app-icon word-rhythm"></div>
+              <div class="app-info">
+                <h3 class="app-title">Words in Rhythm</h3>
+                <p class="app-description">Turn words and lyrics into playable darbuka rhythms</p>
+              </div>
+              <span class="status-badge status-stable">Stable</span>
+            </a>
+
+            <a href="/count/" class="app-card" data-stage="stable" data-name="Count Me In" data-description="Configurable metronome with vocal counting, subdivisions, and more">
+              <div class="app-icon count"></div>
+              <div class="app-info">
+                <h3 class="app-title">Count Me In</h3>
+                <p class="app-description">Configurable metronome with vocal counting, subdivisions, and more</p>
+              </div>
+              <span class="status-badge status-stable">Stable</span>
+            </a>
+
+            <a href="/chords/" class="app-card" data-stage="experimental" data-name="Chord Progression Generator" data-description="Generate random chord progressions for practice and inspiration">
+              <div class="app-icon chords"></div>
+              <div class="app-info">
+                <h3 class="app-title">Chord Progression Generator</h3>
+                <p class="app-description">Generate random chord progressions for practice and inspiration</p>
+              </div>
+              <span class="status-badge status-experimental">Experimental</span>
+            </a>
+
+            <a href="/pitch/" class="app-card" data-stage="experimental" data-name="Find Your Pitch" data-description="Sing into a mic for live note, cents, and contour feedback">
+              <div class="app-icon pitch"></div>
+              <div class="app-info">
+                <h3 class="app-title">Find Your Pitch</h3>
+                <p class="app-description">Sing into a mic for live note, cents, and contour feedback</p>
+              </div>
+              <span class="status-badge status-experimental">Experimental</span>
+            </a>
+
+            <a href="/stanza/" class="app-card" data-stage="experimental" data-name="Stanza" data-description="Practice songs in sections with markers, loops, and a metronome">
+              <div class="app-icon stanza"></div>
+              <div class="app-info">
+                <h3 class="app-title">Stanza</h3>
+                <p class="app-description">Practice songs in sections with markers, loops, and a metronome</p>
+              </div>
+              <span class="status-badge status-experimental">Experimental</span>
+            </a>
+
+            <a href="/scales/" class="app-card" data-stage="private" data-name="Learn Your Scales" data-description="Guided curriculum for mastering piano scales and arpeggios">
+              <div class="app-icon piano"></div>
+              <div class="app-info">
+                <h3 class="app-title">Learn Your Scales</h3>
+                <p class="app-description">Guided curriculum for mastering piano scales and arpeggios</p>
+              </div>
+              <span class="status-badge status-private">Private</span>
+            </a>
+
+            <a href="/encore/" class="app-card" data-stage="private" data-name="Encore" data-description="Personal repertoire companion: songs, journals, performances, and Drive backup">
+              <div class="app-icon encore"></div>
+              <div class="app-info">
+                <h3 class="app-title">Encore</h3>
+                <p class="app-description">Personal repertoire companion: songs, journals, performances, and Drive backup</p>
+              </div>
+              <span class="status-badge status-private">Private</span>
+            </a>
+
+            <a href="/melodia/" class="app-card" data-stage="in-development" data-name="Melodia Online" data-description="Sight-singing: rhythm tap, audiation, sing with pitch trace and listen-back duet">
+              <div class="app-icon melodia"></div>
+              <div class="app-info">
+                <h3 class="app-title">Melodia Online</h3>
+                <p class="app-description">Sight-singing: rhythm tap, audiation, sing with pitch trace and listen-back duet</p>
+              </div>
+              <span class="status-badge status-in-development">In development</span>
+            </a>
+
+            <a href="/midi/" class="app-card" data-stage="in-development" data-name="Midi Scratchpad" data-description="Always-listening piano loop capture with dual-layer notation and riff guide mode">
+              <div class="app-icon piano"></div>
+              <div class="app-info">
+                <h3 class="app-title">Midi Scratchpad</h3>
+                <p class="app-description">Always-listening piano loop capture with dual-layer notation and riff guide mode</p>
+              </div>
+              <span class="status-badge status-in-development">In development</span>
+            </a>
+
+            <a href="/agility/" class="app-card" data-stage="in-development" data-name="Vocal Agility Trainer" data-description="Metronome subdivision drills with timing heatmaps and twelve optional palettes">
+              <div class="app-icon agility"></div>
+              <div class="app-info">
+                <h3 class="app-title">Vocal Agility Trainer</h3>
+                <p class="app-description">Metronome subdivision drills with timing heatmaps and twelve optional palettes</p>
+              </div>
+              <span class="status-badge status-in-development">In development</span>
+            </a>
+
+          </div>
+        </section>
+
+        <section class="catalog-section" data-category-section="art">
+          <div class="section-heading">
+            <h2 class="section-title">Art &amp; Writing</h2>
+          </div>
+          <div class="apps-grid">
+
+            <a href="/zines/" class="app-card" data-stage="stable" data-name="Zine Studio" data-description="Format image files into zines for home or professional printing">
+              <div class="app-icon zines"></div>
+              <div class="app-info">
+                <h3 class="app-title">Zine Studio</h3>
+                <p class="app-description">Format image files into zines for home or professional printing</p>
+              </div>
+              <span class="status-badge status-stable">Stable</span>
+            </a>
+
+            <a href="/forms/" class="app-card" data-stage="stable" data-name="Form Intersections" data-description="3D visualization for Drawabox form intersections">
+              <div class="app-icon forms"></div>
+              <div class="app-info">
+                <h3 class="app-title">Form Intersections</h3>
+                <p class="app-description">3D visualization for Drawabox form intersections</p>
+              </div>
+              <span class="status-badge status-stable">Stable</span>
+            </a>
+
+            <a href="/palette/" class="app-card" data-stage="experimental" data-name="Palette Generator" data-description="Generate color palettes from images, colors, and settings using color theory principles.">
+              <div class="app-icon palettegen"></div>
+              <div class="app-info">
+                <h3 class="app-title">Palette Generator</h3>
+                <p class="app-description">Generate color palettes from images, colors, and settings using color theory principles.</p>
+              </div>
+              <span class="status-badge status-experimental">Experimental</span>
+            </a>
+
+            <a href="/story/" class="app-card" data-stage="experimental" data-name="Save the Cat Story Generator" data-description="Generate random story plots from the Save the Cat beat structure">
+              <div class="app-icon story"></div>
+              <div class="app-info">
+                <h3 class="app-title">Save the Cat Story Generator</h3>
+                <p class="app-description">Generate random story plots from the Save the Cat beat structure</p>
+              </div>
+              <span class="status-badge status-experimental">Experimental</span>
+            </a>
+
+            <a href="/gesture/" class="app-card" data-stage="private" data-name="The Gesture Room" data-description="Timed reference drawing from your own Drive photo collections">
+              <div class="app-icon gesture"></div>
+              <div class="app-info">
+                <h3 class="app-title">The Gesture Room</h3>
+                <p class="app-description">Timed reference drawing from your own Drive photo collections</p>
+              </div>
+              <span class="status-badge status-private">Private</span>
+            </a>
+
+            <a href="/zinebox/" class="app-card" data-stage="private" data-name="Zine Box" data-description="Local-first indie comic reader with Google Drive backup">
+              <div class="app-icon zinebox"></div>
+              <div class="app-info">
+                <h3 class="app-title">Zine Box</h3>
+                <p class="app-description">Local-first indie comic reader with Google Drive backup</p>
+              </div>
+              <span class="status-badge status-private">Private</span>
+            </a>
+
+            <a href="/sight/" class="app-card" data-stage="in-development" data-name="Color Sight Trainer" data-description="Train value, relativity, and gamut perception in Oklch space">
+              <div class="app-icon sight"></div>
+              <div class="app-info">
+                <h3 class="app-title">Color Sight Trainer</h3>
+                <p class="app-description">Train value, relativity, and gamut perception in Oklch space</p>
+              </div>
+              <span class="status-badge status-in-development">In development</span>
+            </a>
+
+            <a href="/lyrefly/" class="app-card" data-stage="in-development" data-name="Lyrefly" data-description="Comic project workbench — track ideas, script, thumbs, art, and publishing">
+              <div class="app-icon lyrefly"></div>
+              <div class="app-info">
+                <h3 class="app-title">Lyrefly</h3>
+                <p class="app-description">Comic project workbench — track ideas, script, thumbs, art, and publishing</p>
+              </div>
+              <span class="status-badge status-in-development">In development</span>
+            </a>
+
+            <a href="/scrapboard/" class="app-card" data-stage="in-development" data-name="Scrapboard" data-description="Rough comic panel mockups in seconds">
+              <div class="app-icon scrapboard"></div>
+              <div class="app-info">
+                <h3 class="app-title">Scrapboard</h3>
+                <p class="app-description">Rough comic panel mockups in seconds</p>
+              </div>
+              <span class="status-badge status-in-development">In development</span>
+            </a>
+
+            <a href="/muscle/" class="app-card" data-stage="in-development" data-name="Muscle Memory" data-description="Learn artistic anatomy in 3D with spaced-repetition quizzes">
+              <div class="app-icon muscle"></div>
+              <div class="app-info">
+                <h3 class="app-title">Muscle Memory</h3>
+                <p class="app-description">Learn artistic anatomy in 3D with spaced-repetition quizzes</p>
+              </div>
+              <span class="status-badge status-in-development">In development</span>
+            </a>
+
+          </div>
+        </section>
+
+        <section class="catalog-section" data-category-section="games">
+          <div class="section-heading">
+            <h2 class="section-title">Games</h2>
+          </div>
+          <div class="apps-grid">
+
+            <a href="/cats/" class="app-card" data-stage="experimental" data-name="Cat Clicker" data-description="Click a cat for the greater good">
+              <div class="app-icon cats"></div>
+              <div class="app-info">
+                <h3 class="app-title">Cat Clicker</h3>
+                <p class="app-description">Click a cat for the greater good</p>
+              </div>
+              <span class="status-badge status-experimental">Experimental</span>
+            </a>
+
+            <a href="/corp/" class="app-card" data-stage="experimental" data-name="Corporate Ladder" data-description="Crawl through the dungeons of corporate life">
+              <div class="app-icon corp"></div>
+              <div class="app-info">
+                <h3 class="app-title">Corporate Ladder</h3>
+                <p class="app-description">Crawl through the dungeons of corporate life</p>
+              </div>
+              <span class="status-badge status-experimental">Experimental</span>
+            </a>
+
+          </div>
+        </section>
+<!-- labs-catalog:generated:end -->
+      </div>
+
+      <footer class="labs-site-footer" aria-label="Site">
+        <a href="/legal/terms.html">Terms</a>
+        <span class="labs-site-footer-sep" aria-hidden="true">·</span>
+        <a href="/legal/privacy.html">Privacy</a>
+      </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/scripts/shared.js"></script>
   </body>
 </html> 

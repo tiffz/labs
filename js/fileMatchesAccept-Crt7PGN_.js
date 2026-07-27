@@ -1,0 +1,1 @@
+function t(t,e){if(!e)return!0;const r=e.split(",").map(t=>t.trim().toLowerCase()).filter(Boolean);if(0===r.length)return!0;const s=t.type.toLowerCase(),i=t.name.toLowerCase();for(const n of r)if(n.startsWith(".")){if(i.endsWith(n))return!0}else if(n.endsWith("/*")){if(s.startsWith(n.slice(0,-1)))return!0}else if(n===s)return!0;return!1}export{t};

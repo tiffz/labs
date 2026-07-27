@@ -1,0 +1,1 @@
+var a=new URL("/assets/click-9eHPiJ2Z.mp3",""+import.meta.url).href,e={dum:new URL("/assets/dum-ByyThUrk.wav",""+import.meta.url).href,tak:new URL("/assets/tak-_VaSjJUy.wav",""+import.meta.url).href,ka:new URL("/assets/ka-C9FZThZd.wav",""+import.meta.url).href,slap:new URL("/assets/slap2-CJrefSvn.wav",""+import.meta.url).href};export{e as n,a as t};
