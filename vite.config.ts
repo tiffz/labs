@@ -346,12 +346,33 @@ export default defineConfig({
       'react/jsx-runtime',
       '@emotion/react',
       '@emotion/styled',
+      // Heavy deps reachable ONLY behind React.lazy routes (Encore Originals editor:
+      // VexFlow chart render + TipTap brainstorm editor). Without listing them here the
+      // dep optimizer misses them on the initial scan and pre-bundles them on-demand at
+      // first navigation, which re-optimizes + full-reloads the tab — a multi-second
+      // "freeze" opening a song. Pre-bundle at startup instead.
+      'vexflow',
+      '@tiptap/react',
+      '@tiptap/starter-kit',
+      '@tiptap/extension-placeholder',
+      '@tiptap/extension-link',
     ],
   },
   server: {
     /** Spotify OAuth redirect URIs cannot use `localhost`; default dev URL is loopback. */
     host: '127.0.0.1',
     middlewareMode: false,
+    /**
+     * Pre-transform the heavy lazy Encore Originals chunks at dev startup so the FIRST
+     * navigation into the library/song editor isn't a cold on-demand transform waterfall.
+     * Dev-only; no prod-build effect.
+     */
+    warmup: {
+      clientFiles: [
+        './src/encore/originals/components/OriginalSongPage.tsx',
+        './src/encore/originals/components/OriginalsLibraryScreen.tsx',
+      ],
+    },
     fs: {
       // A git worktree symlinks node_modules to the main checkout, outside the worktree
       // root — so Vite's default fs.allow 403s every @fontsource asset. Follow the symlink
